@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Check-in R2 · six themes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;family=Chakra+Petch:wght@600;700&amp;family=Trirong:wght@600;700;800&amp;family=Syncopate:wght@700&amp;family=Cormorant+Garamond:wght@600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+*{box-sizing:border-box}
+p{margin:0}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-sunken:#18140F;--surface-inset:#1B1712;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-placeholder:#8B8270;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--danger:#C6533F;--disp:'Cinzel',serif;
+ width:2672px;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:34px}
+.bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.bh h2{margin:0;font:700 30px 'Cinzel',serif}
+.bh p{font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1300px;text-wrap:pretty}
+.bh p b{color:var(--fg)}
+.frames{display:flex;gap:44px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.lab b{color:var(--accent);font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:var(--fg-muted);text-wrap:pretty}
+.cap b{color:var(--fg);font-weight:600}
+.ph{width:390px;height:844px;border-radius:34px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;position:relative}
+.shot{position:absolute;inset:0;overflow:hidden}
+.shot img{width:100%;display:block}
+.scrim{position:absolute;inset:0;background:rgba(8,6,4,.64)}
+.sht{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border-strong);border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.mh{height:50px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 16px;border-bottom:1px solid var(--border)}
+.mh b{font-size:15px;font-weight:600}
+.x{width:44px;height:44px;border:0;background:transparent;color:var(--fg-muted);font-size:15px;display:flex;align-items:center;justify-content:center;font-family:inherit}
+.mb{padding:14px 16px 24px;display:flex;flex-direction:column;gap:18px}
+.intro{display:flex;gap:14px;align-items:center}
+.intro p{font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+.mini{width:44px;height:62px;flex:none;border-radius:5px;background:var(--surface-inset);padding:3px;box-shadow:0 6px 14px rgba(0,0,0,.5),inset 0 0 0 1px var(--border-strong);transform:rotate(-6deg)}
+.mini div{height:100%;border-radius:3px;border:1px solid var(--border-dashed);background:radial-gradient(40px 44px at 50% 46%,color-mix(in oklab,var(--accent) 24%,transparent),transparent 72%),var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.mini i{font-style:normal;font-size:4.5px;letter-spacing:1.5px;color:var(--accent-text)}
+.mini b{font:700 15px/1 var(--disp);color:var(--fg)}
+.q{display:flex;flex-direction:column;gap:9px}
+.qt{font-size:14px;font-weight:600}
+.qt small{margin-left:6px;font-size:12px;font-weight:400;color:var(--fg-faint)}
+.hand{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding-top:12px}
+.rc{aspect-ratio:63/88;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-raised);color:var(--fg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:inherit;padding:0;transform-origin:50% 100%;position:relative}
+.rc b{font:700 22px/1 var(--disp)}
+.rc span{font-size:11.5px;color:var(--fg-muted)}
+.rc .cr{position:absolute;top:9px;font-style:normal;font-size:7px;letter-spacing:2px;color:var(--accent-text)}
+.r1{transform:rotate(-6deg) translateY(5px)}
+.r2{transform:rotate(-3deg) translateY(1px)}
+.r4{transform:rotate(3deg) translateY(1px)}
+.r5{transform:rotate(6deg) translateY(5px)}
+.rc.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface-raised));transform:translateY(-10px) rotate(0);box-shadow:0 12px 22px rgba(0,0,0,.5)}
+.rc.on span{color:var(--fg)}
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.chip{height:40px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-body);font:13.5px 'IBM Plex Sans';display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;padding:0 6px}
+.chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface-raised));color:var(--fg)}
+.chip.on::before{content:'✓';font-size:12px;font-weight:700;color:var(--accent-text)}
+.more{display:flex;flex-direction:column;gap:6px}
+.more label{font-size:13px;font-weight:600}
+.more label small{margin-left:6px;font-size:12px;font-weight:400;color:var(--fg-faint)}
+.ta{width:100%;min-height:66px;resize:none;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);padding:10px 12px;font:16px/1.45 'IBM Plex Sans';color:var(--fg)}
+.ta::placeholder{color:var(--fg-placeholder)}
+.ft{display:flex;gap:10px;padding-top:2px}
+.bg,.bp{flex:1;height:44px;border-radius:10px;font:14px 'IBM Plex Sans';display:flex;align-items:center;justify-content:center;padding:0 16px}
+.bg{border:1px solid var(--border-strong);background:transparent;color:var(--fg)}
+.bp{border:1px solid transparent;background:var(--fg);color:var(--bg);font-weight:500}
+.bp.dis{opacity:.45}
+.bp.busy{opacity:.75}
+.mb.busy .hand,.mb.busy .chips,.mb.busy .ta{opacity:.6}
+.ty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 24px 34px;gap:8px}
+.stage{position:relative;width:240px;height:236px;display:flex;align-items:center;justify-content:center}
+.tc{width:150px;height:210px;border-radius:9px;background:var(--border-strong);padding:4px;box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.6);transform:rotate(-3deg);position:relative}
+.tc .in{height:100%;border-radius:7px;background:var(--surface-inset);padding:5px;display:flex;flex-direction:column;gap:3px}
+.tc .nm{height:17px;flex:none;border-radius:4px;background:var(--elevated);display:flex;align-items:center;padding:0 6px;font:600 9px 'IBM Plex Sans';color:var(--fg)}
+.tc .ar{height:86px;flex:none;border-radius:3px;background:radial-gradient(90px 70px at 50% 50%,color-mix(in oklab,var(--accent) 30%,transparent),transparent 75%),var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.6)}
+.tc .ar i{font-style:normal;font-size:7px;letter-spacing:2.5px;color:var(--accent-text)}
+.tc .ar b{font:800 30px/1 var(--disp);color:var(--fg)}
+.tc .tl{height:14px;white-space:nowrap;flex:none;border-radius:3px;background:var(--elevated);display:flex;align-items:center;justify-content:space-between;padding:0 6px;font:600 7.5px var(--disp);color:var(--fg)}
+.tc .tl i{font-style:normal;font-size:6px;color:var(--accent-text)}
+.tc .rt{flex:1;min-height:0;border-radius:3px;background:var(--surface-sunken);padding:5px 6px;font:7px/1.4 'IBM Plex Sans';color:var(--fg-body);overflow:hidden;text-align:left}
+.tc .fo{display:flex;justify-content:space-between;padding:0 2px;font:6px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.dm{position:absolute;font-style:normal;color:var(--accent-text);line-height:1}
+.ty h3{margin:12px 0 0;font:700 20px var(--disp);color:var(--fg);text-wrap:balance}
+.ty p{max-width:320px;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+.ty .bg{flex:none;min-width:140px;margin-top:10px}
+.toast{position:absolute;left:16px;right:16px;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;height:48px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 12px 28px rgba(0,0,0,.55);font-size:13px;color:var(--fg)}
+.toast i{width:7px;height:7px;border-radius:50%;background:var(--danger);flex:none}
+.toast span{flex:1}
+.toast button{height:44px;border:0;background:transparent;color:var(--accent-text);font:600 13px 'IBM Plex Sans';padding:0 10px}
+.new{outline:1.5px dashed rgba(207,135,69,.8);outline-offset:3px;border-radius:8px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;max-width:1700px}
+.note{border:1px solid var(--border-strong);border-radius:12px;background:#15120F;padding:16px 18px;font-size:13px;line-height:1.6;color:var(--fg-body)}
+.note h4{margin:0 0 4px;font:600 13px 'IBM Plex Sans';color:var(--fg)}
+.note b{color:var(--fg)}
+
+.pane{width:390px;border-radius:16px;border:1px solid var(--border-strong);background:var(--surface);overflow:hidden;color:var(--fg);font-family:'IBM Plex Sans',sans-serif}
+.pane .ty{border-top:1px solid var(--border);background:var(--surface)}
+.pane .mb{gap:16px}
+</style>
+</helmet>
+<div class="board">
+<div class="bh">
+<div class="kick"><span class="tag">R2</span>Check-in · all six themes · tokens only</div>
+<h2>Every theme gets the same hand and the same card</h2>
+<p>Nothing here is drawn in a fixed colour: the cards, the crown, the burst and the thank-you card all read the theme’s tokens, and the numerals and headings take the theme’s display face (Cinzel, Chakra Petch, Trirong, Syncopate, Cormorant Garamond, Metamorphous). Top: the hand with 4 picked and a chip on. Bottom: the thanks, mid-burst.</p>
+</div>
+<div class="frames">
+<div class="fr">
+<div class="lab"><b>Low Sun · Amonkhet</b></div>
+<div class="pane" style="--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-sunken:#18140F;--surface-inset:#1B1712;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--disp:'Cinzel',serif">
+<div class="mh"><b>How’s it going?</b><button class="x" aria-label="Close">✕</button></div>
+<div class="mb">
+<div class="q"><span class="qt">How’s it working for you?</span><div class="hand" role="radiogroup" aria-label="How’s it working for you?"><button class="rc r1" role="radio" aria-checked="false" aria-label="1 of 5, Rough"><b>1</b><span>Rough</span></button><button class="rc r2" role="radio" aria-checked="false" aria-label="2 of 5, Meh"><b>2</b><span>Meh</span></button><button class="rc r3" role="radio" aria-checked="false" aria-label="3 of 5, Okay"><b>3</b><span>Okay</span></button><button class="rc r4 on" role="radio" aria-checked="true" aria-label="4 of 5, Good"><i class="cr">◆◆◆</i><b>4</b><span>Good</span></button><button class="rc r5" role="radio" aria-checked="false" aria-label="5 of 5, Love it"><b>5</b><span>Love it</span></button></div></div>
+<div class="chips"><button class="chip">Collection</button><button class="chip">Commanders</button><button class="chip on">Decks</button></div>
+</div>
+<div class="ty">
+<div class="stage">
+<i class="dm" style="left:22px;top:30px;font-size:12px;opacity:.85">◆</i><i class="dm" style="left:8px;top:120px;font-size:8px;opacity:.6">◆</i><i class="dm" style="left:34px;top:196px;font-size:10px;opacity:.7">◆</i><i class="dm" style="right:20px;top:18px;font-size:9px;opacity:.65">◆</i><i class="dm" style="right:6px;top:100px;font-size:12px;opacity:.85">◆</i><i class="dm" style="right:30px;top:190px;font-size:8px;opacity:.55">◆</i>
+<div class="tc" role="img" aria-label="Thank you, a card from The 99"><div class="in"><div class="nm">Thank you</div><div class="ar"><i>◆ ◆ ◆</i><b>99</b></div><div class="tl"><span>Instant — Thanks</span><i>◆</i></div><div class="rt">When this resolves, the people building The 99 read every word and choose what to make better next.</div><div class="fo"><span>From the team</span><span>XCIX</span></div></div></div>
+</div>
+<h3>Thank you, truly!</h3>
+<p>This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.</p>
+</div>
+</div>
+</div>
+<div class="fr">
+<div class="lab"><b>Kamigawa</b></div>
+<div class="pane" style="--bg:#0E0F14;--surface:#16181F;--surface-raised:#191B22;--surface-sunken:#101219;--surface-inset:#13151C;--elevated:#20222A;--border:#181C26;--border-strong:#262A35;--border-dashed:#343843;--fg:#E6E8F0;--fg-body:#B1B6C7;--fg-muted:#959AAD;--fg-faint:#84899B;--accent:#FF4D9A;--accent-text:#FF4D9A;--disp:'Chakra Petch',sans-serif">
+<div class="mh"><b>How’s it going?</b><button class="x" aria-label="Close">✕</button></div>
+<div class="mb">
+<div class="q"><span class="qt">How’s it working for you?</span><div class="hand" role="radiogroup" aria-label="How’s it working for you?"><button class="rc r1" role="radio" aria-checked="false" aria-label="1 of 5, Rough"><b>1</b><span>Rough</span></button><button class="rc r2" role="radio" aria-checked="false" aria-label="2 of 5, Meh"><b>2</b><span>Meh</span></button><button class="rc r3" role="radio" aria-checked="false" aria-label="3 of 5, Okay"><b>3</b><span>Okay</span></button><button class="rc r4 on" role="radio" aria-checked="true" aria-label="4 of 5, Good"><i class="cr">◆◆◆</i><b>4</b><span>Good</span></button><button class="rc r5" role="radio" aria-checked="false" aria-label="5 of 5, Love it"><b>5</b><span>Love it</span></button></div></div>
+<div class="chips"><button class="chip">Collection</button><button class="chip">Commanders</button><button class="chip on">Decks</button></div>
+</div>
+<div class="ty">
+<div class="stage">
+<i class="dm" style="left:22px;top:30px;font-size:12px;opacity:.85">◆</i><i class="dm" style="left:8px;top:120px;font-size:8px;opacity:.6">◆</i><i class="dm" style="left:34px;top:196px;font-size:10px;opacity:.7">◆</i><i class="dm" style="right:20px;top:18px;font-size:9px;opacity:.65">◆</i><i class="dm" style="right:6px;top:100px;font-size:12px;opacity:.85">◆</i><i class="dm" style="right:30px;top:190px;font-size:8px;opacity:.55">◆</i>
+<div class="tc" role="img" aria-label="Thank you, a card from The 99"><div class="in"><div class="nm">Thank you</div><div class="ar"><i>◆ ◆ ◆</i><b>99</b></div><div class="tl"><span>Instant — Thanks</span><i>◆</i></div><div class="rt">When this resolves, the people building The 99 read every word and choose what to make better next.</div><div class="fo"><span>From the team</span><span>XCIX</span></div></div></div>
+</div>
+<h3>Thank you, truly!</h3>
+<p>This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.</p>
+</div>
+</div>
+</div>
+<div class="fr">
+<div class="lab"><b>Ixalan</b></div>
+<div class="pane" style="--bg:#0E1310;--surface:#171E19;--surface-raised:#1A221C;--surface-sunken:#101512;--surface-inset:#141B16;--elevated:#212A23;--border:#1D2620;--border-strong:#2C3830;--border-dashed:#3B4A3F;--fg:#E0E7DE;--fg-body:#B6C2B3;--fg-muted:#98A695;--fg-faint:#879383;--accent:#A3C445;--accent-text:#A3C445;--disp:'Trirong',serif">
+<div class="mh"><b>How’s it going?</b><button class="x" aria-label="Close">✕</button></div>
+<div class="mb">
+<div class="q"><span class="qt">How’s it working for you?</span><div class="hand" role="radiogroup" aria-label="How’s it working for you?"><button class="rc r1" role="radio" aria-checked="false" aria-label="1 of 5, Rough"><b>1</b><span>Rough</span></button><button class="rc r2" role="radio" aria-checked="false" aria-label="2 of 5, Meh"><b>2</b><span>Meh</span></button><button class="rc r3" role="radio" aria-checked="false" aria-label="3 of 5, Okay"><b>3</b><span>Okay</span></button><button class="rc r4 on" role="radio" aria-checked="true" aria-label="4 of 5, Good"><i class="cr">◆◆◆</i><b>4</b><span>Good</span></button><button class="rc r5" role="radio" aria-checked="false" aria-label="5 of 5, Love it"><b>5</b><span>Love it</span></button></div></div>
+<div class="chips"><button class="chip">Collection</button><button class="chip">Commanders</button><button class="chip on">Decks</button></div>
+</div>
+<div class="ty">
+<div class="stage">
+<i class="dm" style="left:22px;top:30px;font-size:12px;opacity:.85">◆</i><i class="dm" style="left:8px;top:120px;font-size:8px;opacity:.6">◆</i><i class="dm" style="left:34px;top:196px;font-size:10px;opacity:.7">◆</i><i class="dm" style="right:20px;top:18px;font-size:9px;opacity:.65">◆</i><i class="dm" style="right:6px;top:100px;font-size:12px;opacity:.85">◆</i><i class="dm" style="right:30px;top:190px;font-size:8px;opacity:.55">◆</i>
+<div class="tc" role="img" aria-label="Thank you, a card from The 99"><div class="in"><div class="nm">Thank you</div><div class="ar"><i>◆ ◆ ◆</i><b>99</b></div><div class="tl"><span>Instant — Thanks</span><i>◆</i></div><div class="rt">When this resolves, the people building The 99 read every word and choose what to make better next.</div><div class="fo"><span>From the team</span><span>XCIX</span></div></div></div>
+</div>
+<h3>Thank you, truly!</h3>
+<p>This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.</p>
+</div>
+</div>
+</div>
+<div class="fr">
+<div class="lab"><b>Phyrexia</b></div>
+<div class="pane" style="--bg:#0D0B0E;--surface:#151317;--surface-raised:#18161A;--surface-sunken:#100E12;--surface-inset:#131115;--elevated:#1E1C20;--border:#19161C;--border-strong:#262329;--border-dashed:#332F36;--fg:#E4E2E6;--fg-body:#B5B2BB;--fg-muted:#9A96A0;--fg-faint:#87838D;--accent:#52827A;--accent-text:#5D8E85;--disp:'Syncopate',sans-serif">
+<div class="mh"><b>How’s it going?</b><button class="x" aria-label="Close">✕</button></div>
+<div class="mb">
+<div class="q"><span class="qt">How’s it working for you?</span><div class="hand" role="radiogroup" aria-label="How’s it working for you?"><button class="rc r1" role="radio" aria-checked="false" aria-label="1 of 5, Rough"><b>1</b><span>Rough</span></button><button class="rc r2" role="radio" aria-checked="false" aria-label="2 of 5, Meh"><b>2</b><span>Meh</span></button><button class="rc r3" role="radio" aria-checked="false" aria-label="3 of 5, Okay"><b>3</b><span>Okay</span></button><button class="rc r4 on" role="radio" aria-checked="true" aria-label="4 of 5, Good"><i class="cr">◆◆◆</i><b>4</b><span>Good</span></button><button class="rc r5" role="radio" aria-checked="false" aria-label="5 of 5, Love it"><b>5</b><span>Love it</span></button></div></div>
+<div class="chips"><button class="chip">Collection</button><button class="chip">Commanders</button><button class="chip on">Decks</button></div>
+</div>
+<div class="ty">
+<div class="stage">
+<i class="dm" style="left:22px;top:30px;font-size:12px;opacity:.85">◆</i><i class="dm" style="left:8px;top:120px;font-size:8px;opacity:.6">◆</i><i class="dm" style="left:34px;top:196px;font-size:10px;opacity:.7">◆</i><i class="dm" style="right:20px;top:18px;font-size:9px;opacity:.65">◆</i><i class="dm" style="right:6px;top:100px;font-size:12px;opacity:.85">◆</i><i class="dm" style="right:30px;top:190px;font-size:8px;opacity:.55">◆</i>
+<div class="tc" role="img" aria-label="Thank you, a card from The 99"><div class="in"><div class="nm">Thank you</div><div class="ar"><i>◆ ◆ ◆</i><b>99</b></div><div class="tl"><span>Instant — Thanks</span><i>◆</i></div><div class="rt">When this resolves, the people building The 99 read every word and choose what to make better next.</div><div class="fo"><span>From the team</span><span>XCIX</span></div></div></div>
+</div>
+<h3>Thank you, truly!</h3>
+<p>This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.</p>
+</div>
+</div>
+</div>
+<div class="fr">
+<div class="lab"><b>Eldraine</b></div>
+<div class="pane" style="--bg:#120E17;--surface:#1B1821;--surface-raised:#1F1C25;--surface-sunken:#131018;--surface-inset:#17141D;--elevated:#26232C;--border:#241D30;--border-strong:#342C41;--border-dashed:#443C52;--fg:#E4DEEE;--fg-body:#B9B2C5;--fg-muted:#9C95A8;--fg-faint:#8F899B;--accent:#AE88E6;--accent-text:#AE88E6;--disp:'Cormorant Garamond',serif">
+<div class="mh"><b>How’s it going?</b><button class="x" aria-label="Close">✕</button></div>
+<div class="mb">
+<div class="q"><span class="qt">How’s it working for you?</span><div class="hand" role="radiogroup" aria-label="How’s it working for you?"><button class="rc r1" role="radio" aria-checked="false" aria-label="1 of 5, Rough"><b>1</b><span>Rough</span></button><button class="rc r2" role="radio" aria-checked="false" aria-label="2 of 5, Meh"><b>2</b><span>Meh</span></button><button class="rc r3" role="radio" aria-checked="false" aria-label="3 of 5, Okay"><b>3</b><span>Okay</span></button><button class="rc r4 on" role="radio" aria-checked="true" aria-label="4 of 5, Good"><i class="cr">◆◆◆</i><b>4</b><span>Good</span></button><button class="rc r5" role="radio" aria-checked="false" aria-label="5 of 5, Love it"><b>5</b><span>Love it</span></button></div></div>
+<div class="chips"><button class="chip">Collection</button><button class="chip">Commanders</button><button class="chip on">Decks</button></div>
+</div>
+<div class="ty">
+<div class="stage">
+<i class="dm" style="left:22px;top:30px;font-size:12px;opacity:.85">◆</i><i class="dm" style="left:8px;top:120px;font-size:8px;opacity:.6">◆</i><i class="dm" style="left:34px;top:196px;font-size:10px;opacity:.7">◆</i><i class="dm" style="right:20px;top:18px;font-size:9px;opacity:.65">◆</i><i class="dm" style="right:6px;top:100px;font-size:12px;opacity:.85">◆</i><i class="dm" style="right:30px;top:190px;font-size:8px;opacity:.55">◆</i>
+<div class="tc" role="img" aria-label="Thank you, a card from The 99"><div class="in"><div class="nm">Thank you</div><div class="ar"><i>◆ ◆ ◆</i><b>99</b></div><div class="tl"><span>Instant — Thanks</span><i>◆</i></div><div class="rt">When this resolves, the people building The 99 read every word and choose what to make better next.</div><div class="fo"><span>From the team</span><span>XCIX</span></div></div></div>
+</div>
+<h3>Thank you, truly!</h3>
+<p>This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.</p>
+</div>
+</div>
+</div>
+<div class="fr">
+<div class="lab"><b>Kaldheim</b></div>
+<div class="pane" style="--bg:#121217;--surface:#1E1F26;--surface-raised:#22232B;--surface-sunken:#16171D;--surface-inset:#1A1B22;--elevated:#2D2E35;--border:#1A1F2B;--border-strong:#2E3340;--border-dashed:#424755;--fg:#C6D2D3;--fg-body:#B3C0C2;--fg-muted:#95A4A6;--fg-faint:#8A999B;--accent:#6C97DB;--accent-text:#6C97DB;--disp:'Metamorphous',serif">
+<div class="mh"><b>How’s it going?</b><button class="x" aria-label="Close">✕</button></div>
+<div class="mb">
+<div class="q"><span class="qt">How’s it working for you?</span><div class="hand" role="radiogroup" aria-label="How’s it working for you?"><button class="rc r1" role="radio" aria-checked="false" aria-label="1 of 5, Rough"><b>1</b><span>Rough</span></button><button class="rc r2" role="radio" aria-checked="false" aria-label="2 of 5, Meh"><b>2</b><span>Meh</span></button><button class="rc r3" role="radio" aria-checked="false" aria-label="3 of 5, Okay"><b>3</b><span>Okay</span></button><button class="rc r4 on" role="radio" aria-checked="true" aria-label="4 of 5, Good"><i class="cr">◆◆◆</i><b>4</b><span>Good</span></button><button class="rc r5" role="radio" aria-checked="false" aria-label="5 of 5, Love it"><b>5</b><span>Love it</span></button></div></div>
+<div class="chips"><button class="chip">Collection</button><button class="chip">Commanders</button><button class="chip on">Decks</button></div>
+</div>
+<div class="ty">
+<div class="stage">
+<i class="dm" style="left:22px;top:30px;font-size:12px;opacity:.85">◆</i><i class="dm" style="left:8px;top:120px;font-size:8px;opacity:.6">◆</i><i class="dm" style="left:34px;top:196px;font-size:10px;opacity:.7">◆</i><i class="dm" style="right:20px;top:18px;font-size:9px;opacity:.65">◆</i><i class="dm" style="right:6px;top:100px;font-size:12px;opacity:.85">◆</i><i class="dm" style="right:30px;top:190px;font-size:8px;opacity:.55">◆</i>
+<div class="tc" role="img" aria-label="Thank you, a card from The 99"><div class="in"><div class="nm">Thank you</div><div class="ar"><i>◆ ◆ ◆</i><b>99</b></div><div class="tl"><span>Instant — Thanks</span><i>◆</i></div><div class="rt">When this resolves, the people building The 99 read every word and choose what to make better next.</div><div class="fo"><span>From the team</span><span>XCIX</span></div></div></div>
+</div>
+<h3>Thank you, truly!</h3>
+<p>This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.</p>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2672,"height":1010}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
