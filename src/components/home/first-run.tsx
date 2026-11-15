@@ -10,6 +10,7 @@
 // wins, which is why the locked cards are --surface-rail on --border and the
 // step-1 card is --surface-inset.
 
+import { InstallRow } from "../pwa/install-row";
 import { ArrivalsBanner } from "./arrivals-banner";
 import { HOME_HEADING_ID } from "./home-heading";
 import type { AboutLine } from "../../lib/about/notice";
@@ -213,6 +214,9 @@ export function FirstRunChecklist({
         <LockedStep n={3} title={c.step3Title} reason={c.step3Locked} />
         {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
             stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
+        {/* The install row (install onboarding R1c): only for a player who left the tour before its Install stop, and
+            decided on the client, so the server draws nothing here. */}
+        <InstallRow />
         {signature}
         {friends && <FirstRunFriendsRow {...friends} />}
         {news && <FirstRunNewsRow />}

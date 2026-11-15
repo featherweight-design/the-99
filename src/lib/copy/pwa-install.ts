@@ -36,4 +36,18 @@ export const pwaInstallCopy = {
     ],
     done: "Got it",
   },
+  /**
+   * The first-run checklist's install row (install onboarding R1c, the tour-skip fallback; /copy-review 2026-11-14). Its
+   * line follows the slot's ask: only Safari's names alerts, since push from a Chrome or Firefox install is unconfirmed.
+   */
+  row: {
+    title: "Install The 99",
+    line: {
+      safari: "Full screen and one tap away, and it can send the alerts you choose.",
+      chrome: "Full screen and one tap away. It takes about 10 seconds.",
+      firefox: "Full screen and one tap away. It takes about 10 seconds.",
+      android: "Full screen and one tap away. Your phone asks once.",
+    },
+    dismissAria: "Don’t show this again",
+  },
 } as const;

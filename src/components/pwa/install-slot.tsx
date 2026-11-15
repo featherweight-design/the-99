@@ -3,14 +3,14 @@
 import { useCardSearch } from "../card-search/card-search";
 import { useHelpOn } from "../help/help-root";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
 import { iphoneInstallBrowser, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent, type InstallBrowser } from "../../lib/pwa/install-detect";
 import { markInstalledAction } from "../../app/install-actions";
 import { TargetBox } from "../discovery/targets-provider";
-import { offerInstallAsk } from "./install-ask";
+import { installServerState, installState, offerInstallAsk, retireInstallRow, subscribeInstall } from "./install-ask";
 import { IosInstallSheet } from "./ios-install-sheet";
 
 /** Set once this launch has stamped (or tried to stamp) `installed_at`: the installed app's window gets a fresh
@@ -89,6 +89,8 @@ export function InstallSlot({ installed }: { installed: boolean }) {
   }, [installed]);
 
   const onPress = useCallback(async () => {
+    // Selecting the ask anywhere retires the checklist's fallback row for good (install onboarding G6).
+    retireInstallRow();
     if (!held) {
       if (browser) setSheetOpen(true);
       return;
@@ -125,7 +127,17 @@ export function InstallSlot({ installed }: { installed: boolean }) {
     });
   }, [drawn, browser, onPress]);
 
+  // The checklist's fallback row is the ask while it draws: the slot steps aside, keeping its ask offered (the row presses
+  // it) and its sheet. When the row goes, the slot reads its dismissal again, since the row's ✕ counted as one.
+  const { row } = useSyncExternalStore(subscribeInstall, installState, installServerState);
+  const [rowWas, setRowWas] = useState(row);
+  if (row !== rowWas) {
+    setRowWas(row);
+    if (!row) setDismissed(dismissalState() !== "active");
+  }
+
   if (!drawn) return null;
+  if (row) return sheetOpen && browser ? <IosInstallSheet browser={browser} onClose={() => setSheetOpen(false)} /> : null;
   return (
     <>
       {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill
