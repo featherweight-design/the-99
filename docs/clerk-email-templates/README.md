@@ -20,8 +20,8 @@ generated from the same shell and words as our own emails (`src/lib/email/clerk-
 4. Confirm `{{otp_code}}` is Clerk's code variable: put the cursor where it sits and use the editor's **Variable** insert; the
    list should offer the one-time code. If the variable has a different name, tell me and I will regenerate. Send yourself a test.
 5. **From address**: Clerk sends as `<local part>@the-99.dev`. Set the **local part to `invites`**, so Clerk's mail comes from
-   `invites@the-99.dev` (Hugh's ruling 2026-11-14). Our own mail (the invite and the two code emails) stays on
-   `invites@mail.the-99.dev`. Leave **Reply-To** empty (every footer says replies aren't read).
+   `invites@the-99.dev` (Hugh's ruling 2026-11-14). Our own mail (the friend invite and the newcomer and flyer code emails, sent through Resend
+   from `INVITE_EMAIL_FROM`) stays on `invites@mail.the-99.dev`: check that variable's production value matches. Leave **Reply-To** empty (every footer says replies aren't read).
 6. Turn **off** "Secured by Clerk" branding. Leave "Delivered by Clerk" **on**.
 7. List which other account emails are turned on (verify an added address, password changed, a new sign-in) and tell me: they
    take the same shell and go through the same copy review. They are not changed by this.
