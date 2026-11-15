@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>iPhone Safari, the row and its sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:1040px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:1040px;border-radius:14px}
+.shot.tall{border-radius:22px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div class="board" style="width: 1362px; min-height: 1910px">
+<div class="bh"><span class="k">Install onboarding · R1 · account 2 · 2026-11-15</span><h2>iPhone in Safari: one quiet row, the shipped sheet</h2><p class="cap">The ask is an unnumbered row in the first-run checklist, under step 3. It uses the Friends row's live box, the header slot's install glyph, and a bare ✕. Selecting it opens the shipped how-to sheet for this browser. All frames are the shipped components rendered with the shipped CSS (Low Sun). Copy is DRAFT for /copy-review.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">I0</span><span class="k">First run, whole page</span></div><img class="shot tall" src="art/io-home-safari-phone-full.png" alt="First run, whole page"><p class="cap"><b>Where it sits.</b> It goes under step 3 and above Add your friends and Choose your news. Those are the rows that sit outside the numbered path. Step 1 keeps the top of the page. The row never blocks a step, and it has no number, so the kicker stays at Step 1 of 3.</p></div><div class="fr "><div class="state"><span class="pill now">I1</span><span class="k">Safari · the row</span></div><img class="shot " src="art/io-home-safari-phone.png" alt="Safari · the row"><p class="cap"><b>Install The 99.</b> The line reads <i>Full screen and one tap away, and it can send the alerts you choose.</i> Only Safari's line mentions alerts, because push from a Safari install is sure. The whole row is one press (44px tall at least), and the ✕ is its own 44×44 press. While the row shows, the header's Install slot is hidden, so there's one ask at a time.</p></div><div class="fr "><div class="state"><span class="pill now">I1s</span><span class="k">Safari · Select</span></div><img class="shot " src="art/io-sheet-safari-phone.png" alt="Safari · Select"><p class="cap"><b>The shipped sheet, unchanged</b> (<code>IosInstallSheet</code>, Safari's step 1). Got it closes the sheet and the row stays, because opening the steps isn't the same as doing them. The row goes once the app is installed (call 6) or after its ✕.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1362,"height":1910}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

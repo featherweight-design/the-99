@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calls, states and the open question</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:1040px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:1040px;border-radius:14px}
+.shot.tall{border-radius:22px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div class="board" style="width: 1500px; min-height: 1400px">
+<div class="bh"><span class="k">Install onboarding · R1</span><h2>Calls, states and the open question</h2><p class="cap">Brief: <code>docs/superpowers/design-briefs/2026-11-15-install-onboarding.md</code> (branch <code>brief/install-onboarding</code>). This mirrors <code>design_handoff_the99_first_run_onboarding</code> and reuses the shipped how-to sheet from <code>design_handoff_the99_push</code>.</p></div><div class="rec"><span class="k">Open with Hugh · how we know a player installed</span><p class="cap"><b>Recommendation: A, a server flag.</b> The installed app stamps <code>installedAt</code> on its first signed-in open, and every browser session of that account stops asking (the row and the header slot). <b>B</b> (a local ✕ only) costs nothing, but it keeps asking an installed player in every Safari tab a friend's link opens. That means every invite and spare request sent over Messages.</p></div><div class="cols"><div class="sec"><h3>Calls</h3><ol class="li"><li><b>A checklist row, not a tour stop.</b> The tour lights parts of the page to explain them. Installing means leaving the browser for the Share menu, and doing that in the middle of the tour's overlay would strand the tour. Welcome and the About line are banners. A Home card after the first deck comes too late, because by then the player has done the first visit in a tab. The row is live from the first visit, like Add your friends.</li><li><b>Under step 3, above the signature, Friends and news rows.</b> It's the one row that changes where the rest of the visit happens, so it leads the unnumbered rows. It has no number, so it isn't a step on the path to a first recommendation.</li><li><b>The row.</b> It's the Friends row's live box (radius 14, 56px floor, <code>--surface-inset</code> on <code>--border-strong</code>), with the header slot's install glyph in the numerals' 22px slot, title <i>Install The 99</i> (the slot's own name) and a browser line. There are two presses, like the header slot: the row and a bare ✕.</li><li><b>One ask at a time.</b> While the row is on screen, the header's Install slot is hidden. The row's ✕ removes the row for good. It also counts as one header-slot dismiss (<code>dismissOnce</code>), so the slot stays quiet for 30 days, comes back once, and a second ✕ retires it, as shipped. The player keeps a way back without being asked twice in one visit.</li><li><b>Copy by browser.</b> Safari's line mentions the alerts the player chooses, because push from a Safari install is sure. Chrome, Firefox and Android don't mention alerts. The sheet itself is shipped and unchanged.</li><li><b>How we know they installed: option A, a server flag (recommended, yours to call).</b> The flag is set the first time the installed app opens while signed in. It hides the row and the header slot in every browser session of that account. With option B (a local ✕ only), an installed player keeps being asked whenever a link opens in Safari, and friend invites and spare-request links arrive exactly that way, from Messages. The cost is one nullable column and one idempotent write. The first launch draws nothing: no toast, no moment.</li><li><b>No About entry</b> (the brief's default).</li></ol></div><div class="sec"><h3>States</h3><table><tr><th>Frame</th><th>Who</th><th>When</th><th>Shows</th></tr><tr><td><b>I1–I3</b></td><td>iPhone Safari / Chrome / Firefox</td><td><code>iphoneInstallBrowser()</code> is set, not standalone, not dismissed, no <code>installedAt</code></td><td>The row. Select opens that browser's sheet.</td></tr><tr><td><b>I4</b></td><td>Android</td><td>A <code>beforeinstallprompt</code> is held, same gates</td><td>The row. Select opens the browser's prompt.</td></tr><tr><td><b>N1</b></td><td>Installed app</td><td><code>isStandalone()</code></td><td>No row. With option A, the first signed-in launch writes <code>installedAt</code>.</td></tr><tr><td><b>N1</b></td><td>In-app view, iPad, Edge, other</td><td><code>iosBrowser()</code> is webview, other or iPad</td><td>No row, as the header slot today.</td></tr><tr><td><b>N1</b></td><td>Already installed (A)</td><td><code>installedAt</code> is set</td><td>No row and no header slot, in any browser.</td></tr><tr><td><b>N1</b></td><td>After ✕</td><td><code>the99-install-row</code> is retired in local storage</td><td>No row for good. The header slot is quiet for 30 days.</td></tr><tr><td><b>D1</b></td><td>Desktop</td><td>No iPhone browser and no held prompt</td><td>No row, as shipped.</td></tr><tr><td><b>—</b></td><td>Cards arrive</td><td>The first run ends (cards or a deck)</td><td>The checklist and the row go. The header slot carries on under its own rules.</td></tr></table><h3 style="margin-top:14px">Gaps for engineering</h3><ul class="li"><li><b>G1 · <code>installedAt</code>.</b> A nullable timestamp on <code>user_prefs</code>. A client effect in the shell calls a server action once, when <code>isStandalone()</code> is true and the reader is signed in and has no stamp yet. The write is idempotent (<code>coalesce</code>).</li><li><b>G2 · One decision for row and slot.</b> A shared <code>useInstallAsk()</code> hook (browser, held prompt, dismissal, standalone, <code>installed</code> from the server) so the row and the slot never disagree. The slot hides while the row is mounted.</li><li><b>G3 · iOS storage.</b> The installed app keeps its own sign-in, separate from Safari, so the player signs in once more on the first launch. Hugh's call: should the sheet say so? It's left out of this round's copy.</li><li><b>G4 · Android decline.</b> After <code>userChoice</code> returns <code>dismissed</code>, the row goes for the visit. Nothing is stored, because Chrome itself decides when to offer the prompt again.</li><li>All new copy is DRAFT in <code>install-onboarding · copy strings.ts</code> and goes through /copy-review before build.</li></ul><h3 style="margin-top:14px">New words (DRAFT)</h3><table><tr><th>Key (<code>pwaInstallCopy</code>)</th><th>Copy</th></tr><tr><td><code>row.title</code></td><td>Install The 99</td></tr><tr><td><code>row.line.safari</code></td><td>Full screen and one tap away, and it can send the alerts you choose.</td></tr><tr><td><code>row.line.chrome / firefox</code></td><td>Full screen and one tap away. It takes about 10 seconds.</td></tr><tr><td><code>row.line.android</code></td><td>Full screen and one tap away. Your phone asks once.</td></tr><tr><td><code>row.dismissAria</code></td><td>Don’t show this again</td></tr></table></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1500,"height":1400}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
