@@ -37,11 +37,20 @@ function StepIcon({ icon }: { icon: string }) {
  * the navigation overlay makes inert while a press is pending, so Got it could not be tapped.
  * It mounts only after a press, so `document` always exists.
  */
-export function IosInstallSheet({ browser, onClose }: { browser: InstallBrowser; onClose: () => void }) {
+export function IosInstallSheet({
+  browser,
+  onClose,
+  returnFocusRef,
+}: {
+  browser: InstallBrowser;
+  onClose: () => void;
+  /** Where focus lands on close when the control that opened the sheet is gone (the checklist's fallback row). */
+  returnFocusRef?: React.RefObject<HTMLElement | null>;
+}) {
   const own = copy.browsers[browser];
   const steps = [{ icon: "share", num: "1", ...own.share }, ...copy.steps];
   const panelRef = useRef<HTMLDivElement>(null);
-  useDialogA11y(panelRef, onClose);
+  useDialogA11y(panelRef, onClose, returnFocusRef ? { returnFocusRef } : undefined);
   return createPortal(
     <div {...inertExemptProps} className="contents">
     <Sheet open onDismiss={onClose} ariaLabel={copy.ariaLabel} panelRef={panelRef}>

@@ -271,3 +271,19 @@ describe("FirstRunChecklist · Choose your news (menu and Home PR 6)", () => {
     expect(line({ commandersPlace: true })).toBe("Commanders and Decks open once your cards are in.");
   });
 });
+
+describe("FirstRunChecklist · the install row (install onboarding R1c)", () => {
+  it("draws the row under step 3, before the signature, Friends and news rows, once the header slot offers its ask", async () => {
+    const { offerInstallAsk } = await import("../pwa/install-ask");
+    render(<FirstRunChecklist news signature={<div data-testid="signature-row" />} />);
+    let withdraw = () => {};
+    act(() => {
+      withdraw = offerInstallAsk({ kind: "safari", press: () => {}, button: () => null, dismiss: () => {}, closeButton: () => null });
+    });
+    const row = document.querySelector("[data-install-row]")!;
+    expect(row).not.toBeNull();
+    const signature = screen.getByTestId("signature-row");
+    expect(row.compareDocumentPosition(signature) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    act(() => withdraw());
+  });
+});

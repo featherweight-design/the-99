@@ -549,6 +549,17 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     expect(installPress).toHaveBeenCalledTimes(1);
   });
 
+  it("holds the checklist's install row while it waits and runs, and lets it go when it ends", async () => {
+    const { installState } = await import("../pwa/install-ask");
+    render(<Home install="safari" />);
+    expect(installState().tour).toBe(true);
+    await arrive();
+    expect(installState().tour).toBe(true);
+    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    expect(installState().tour).toBe(false);
+    expect(localStorage.getItem(INSTALL_ROW_KEY)).toBeNull();
+  });
+
   it("keeps the card docked when the slot goes mid-stop, and drops only the ring and the pass-through", async () => {
     const { rerender } = render(<Home install="safari" />);
     await arrive();

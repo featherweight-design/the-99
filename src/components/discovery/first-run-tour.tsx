@@ -28,7 +28,7 @@ import { noteAppScroll } from "../../lib/ui/reveal";
 import { NoteDialog } from "../about/reference/creator-note";
 import { ARRIVE_MS } from "../moments/moments-provider";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
-import { installAsk, markInstallStopSeen, type InstallKind } from "../pwa/install-ask";
+import { holdInstallRowForTour, installAsk, markInstallStopSeen, type InstallKind } from "../pwa/install-ask";
 import { ThemePicker, themeInForce } from "../shell/theme-picker";
 import { useIsDesktop } from "../ui/use-is-desktop";
 import { useNavLocked, useTargets } from "./targets-provider";
@@ -186,6 +186,11 @@ export function FirstRunTour({
       off();
     };
   }, [phase, account, armed, again]);
+
+  // The checklist's install row waits while this tour may still open or runs (install onboarding G6): a row drawn under
+  // it would also take the header slot, and with it the Install stop's target.
+  const holdsRow = phase !== "done";
+  useLayoutEffect(() => (holdsRow ? holdInstallRowForTour() : undefined), [holdsRow]);
 
   if (phase === "running")
     return (

@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { InstallSlot } from "./install-slot";
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
-import { DISMISSAL_KEY, dismissalState } from "../../lib/pwa/install-dismissal";
+import { DISMISSAL_KEY, dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
 import { removeRaw } from "../ui/local-store";
 
 // What else shares the phone header with the slot: card search's icon, the ?, and (offline) the Offline pill.
@@ -204,6 +204,31 @@ describe("InstallSlot", () => {
     as(IPHONE);
     render(<InstallSlot installed={false} />);
     expect(markInstalled).not.toHaveBeenCalled();
+  });
+});
+
+describe("InstallSlot and the checklist's fallback row (install onboarding R1c)", () => {
+  it("steps aside while the row draws, keeping its ask, and reads its dismissal again when the row goes", async () => {
+    const { showInstallRow, installAsk } = await import("./install-ask");
+    as(IPHONE);
+    render(<InstallSlot installed={false} />);
+    expect(screen.getByRole("button", { name: copy.slotAria })).toBeTruthy();
+    let release = () => {};
+    act(() => void (release = showInstallRow()));
+    expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+    expect(installAsk()?.kind).toBe("safari");
+    // The row's ✕ counted one dismiss before it went: the slot stays quiet.
+    dismissOnce();
+    act(() => release());
+    expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+  });
+
+  it("selecting the slot retires the row for good", async () => {
+    const { INSTALL_ROW_KEY } = await import("./install-ask");
+    as(IPHONE);
+    render(<InstallSlot installed={false} />);
+    fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
+    expect(localStorage.getItem(INSTALL_ROW_KEY)).toBe("retired");
   });
 });
 
