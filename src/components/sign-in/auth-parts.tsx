@@ -125,8 +125,8 @@ export const GOOGLE_LEAVE_MS = 30_000;
 
 /**
  * The Google press's deadline to leave. Clerk's `sso()` can report no error and still go nowhere (a sign-in an earlier round
- * left behind), so a press that has not left by `GOOGLE_LEAVE_MS` comes back. `arm` starts it after a start reported no
- * error; `disarm` stops it, and the page's restore from the back/forward cache disarms it too (timers frozen there would
+ * left behind), so a press that has not left by `GOOGLE_LEAVE_MS` comes back. `arm` starts it at the press, so a start that
+ * never settles is covered too; `disarm` stops it, and the page's restore from the back/forward cache disarms it too (timers frozen there would
  * otherwise fire on the restored page).
  */
 export function useLeaveDeadline() {

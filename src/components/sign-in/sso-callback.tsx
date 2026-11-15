@@ -54,8 +54,9 @@ export function SsoCallback({ fromInvite = false, landing = HOME }: {
   // Whether the way back has answered (a landing, a way back to the sign-in, or a refusal): a step that settles later does
   // nothing more.
   const ended = useRef(false);
-  // This render's sign-in and sign-up, for the async steps: Clerk hands a NEW object to the next render when it updates, so
-  // a status read after an await comes from here, never from the object the step started with.
+  // This render's sign-in and sign-up, for the refusal: Clerk hands a NEW object to the next render when it updates, so the
+  // refusal's report and its reset read the latest. (The branch below reads the objects its step started with, as it always
+  // has: the protect step settles the resource those objects wrap.)
   const latest = useRef({ signIn, signUp, router, landing });
   useEffect(() => {
     latest.current = { signIn, signUp, router, landing };

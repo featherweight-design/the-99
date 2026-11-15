@@ -307,6 +307,8 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
 
   const comeBackFromGoogle = () => {
     leave.disarm();
+    // A press the deadline gave up on never starts Google later, when the fresh sign-in arrives.
+    setGoogleAfterReset(false);
     setGoogle(false);
     setGoogleLine(joinCopy.failed);
   };
@@ -334,7 +336,8 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
     leave.arm(comeBackFromGoogle);
     if (!signIn.id) return startGoogle();
     try {
-      await signIn.reset();
+      // Clerk answers a failed reset with `{ error }`, not a throw.
+      if ((await signIn.reset()).error) return comeBackFromGoogle();
       setGoogleAfterReset(true);
     } catch {
       comeBackFromGoogle();

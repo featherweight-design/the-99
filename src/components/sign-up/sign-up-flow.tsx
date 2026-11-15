@@ -237,8 +237,17 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     setGoogle(true);
     setGoogleLine(null);
     setLine(null);
+    // A press that has not left by the deadline comes back, from the press: a ticket check or a start that never settles is
+    // covered too.
+    const comeBack = () => {
+      leave.disarm();
+      setGoogle(false);
+      setGoogleLine(joinCopy.failed);
+    };
+    leave.arm(comeBack);
     const started = await start();
     if (started === "refused") {
+      leave.disarm();
       setGoogle(false);
       setScreen("refused");
       return;
@@ -254,15 +263,8 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
         failed = true;
       }
     }
-    // A success is leaving for Google; only a refusal before it comes back here, or a "success" that never leaves.
-    const comeBack = () => {
-      setGoogle(false);
-      setGoogleLine(joinCopy.failed);
-    };
-    if (failed) return comeBack();
-    // The sign-up's `sso()` patches an attempt it already holds rather than skipping it, so no reset is needed here; the
-    // deadline still brings back a press that never leaves.
-    leave.arm(comeBack);
+    // A success is leaving for Google; only a refusal before it comes back here. One that never leaves is the deadline's.
+    if (failed) comeBack();
   }
 
   const passwordRefused = line === signInCopy.tooShort || line === signInCopy.tooWeak || line === signInCopy.breached;

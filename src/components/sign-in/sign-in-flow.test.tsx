@@ -578,6 +578,36 @@ describe("SignInFlow: Google", () => {
     expect(screen.getByRole("button", { name: signInCopy.signingIn })).toBeTruthy();
   });
 
+  it("a press the deadline gave up on never starts Google when the fresh sign-in arrives late", async () => {
+    vi.useFakeTimers();
+    try {
+      const stale = s;
+      stale.id = "sia_left";
+      // Reset succeeds, but Clerk's fresh sign-in reaches no render before the deadline.
+      stale.reset = vi.fn(async () => ({ error: null }));
+      const { rerender } = render(<SignInFlow googleRefused />);
+      press(signInCopy.google);
+      await act(async () => {});
+      await act(async () => vi.advanceTimersByTime(GOOGLE_LEAVE_MS));
+      expect(alert()).toBe(joinCopy.failed);
+      const late = fresh();
+      rerender(<SignInFlow googleRefused />);
+      await act(async () => {});
+      expect(late.sso).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("comes back at once when Clerk refuses the reset", async () => {
+    s.id = "sia_left";
+    s.reset = vi.fn(async () => ({ error: refusal("reset_failed") })) as never;
+    render(<SignInFlow googleRefused />);
+    press(signInCopy.google);
+    await waitFor(() => expect(alert()).toBe(joinCopy.failed));
+    expect(s.sso).not.toHaveBeenCalled();
+  });
+
   it("clears nothing when there is no earlier sign-in", async () => {
     s.sso.mockImplementation(() => new Promise(() => {}));
     render(<SignInFlow />);
