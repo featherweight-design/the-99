@@ -12,7 +12,7 @@ import { and, arrayContained, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "../src/db";
 import { cards, collectionItems, deckCards, decks } from "../src/db/schema";
 import { getEdhrecData } from "../src/lib/edhrec/client";
-import { loadDeckSuggestions } from "../src/lib/decks/suggestions-read";
+import { loadDeckSuggestions, topPickNames } from "../src/lib/decks/suggestions-read";
 import { SHELF_CAP } from "../src/lib/decks/shelf-cap";
 // No signed-in reader here: every switch read takes the environment itself (`process.env`).
 
@@ -49,7 +49,8 @@ async function main() {
     let candidates = 0;
     let eligible = 0;
     if (topCards && topCards.length > 0) {
-      const lowerTopCards = topCards.slice(0, 100).map((n) => n.toLowerCase());
+      // The loader's own cut: ranked by inclusion first, then the first 100 names.
+      const lowerTopCards = topPickNames(topCards, data?.inclusionByName ?? {}).slice(0, 100).map((n) => n.toLowerCase());
       const candidateCards = await db
         .select({ oracleId: cards.oracleId, name: cards.name })
         .from(cards)
