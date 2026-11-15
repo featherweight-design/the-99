@@ -15,7 +15,8 @@ export function clerkEmailParts(kind: ClerkTemplateKind, origin: string): { subj
     subject: c.subject,
     html: renderShell({
       origin,
-      title: c.subject.replace(` ${CLERK_OTP}`, "").replace(`: ${CLERK_OTP}`, ""),
+      // The subject without its variable ("Your sign-in code for The 99"), for the document title.
+      title: c.subject.replace(`: ${CLERK_OTP}`, ""),
       preheader: c.preheader,
       panel: kickerHtml(c.kicker) + headingHtml(c.heading) + leadHtml(c.lead) + codeBoxHtml(CLERK_OTP) + fineHtml(c.fine),
       reason: c.reason,
