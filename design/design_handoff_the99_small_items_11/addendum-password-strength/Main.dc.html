@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q1 sign-up at 390</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:640px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:640px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet>
+<div class="board" style="width: 2222px; min-height: 3720px">
+<div class="bh"><span class="k">Live password strength · R1c · account 2 · 2026-11-15</span><h2>Q1 · Make your account: a meter, and three guides from the empty field</h2><p class="cap">R1c (Hugh: give players something visual out of the gate). Under <b>Password</b> sit a three-segment meter with its word and three guides that tick as the player types: <i>8 or more characters</i>, <i>A number or symbol</i>, <i>Not a common word, name or date</i>. They replace <i>At least 8 characters.</i> The guides are help. The meter (an estimator that agrees with Clerk) and Clerk on the press are the judges. Every frame is the shipped sign-up rendered with the shipped CSS (Low Sun). Copy is DRAFT for /copy-review.</p></div><p class="sub">While typing</p><div class="row"><div class="fr "><div class="state"><span class="pill now">E</span><span class="k">Empty</span></div><img class="shot " src="art/ps-q1-empty-p.webp" alt="Empty"><p class="cap"><b>Before any typing.</b> The three guides show from the start, so the player knows what's asked before the first key. The meter sits empty above them. Nothing moves when typing starts.</p></div><div class="fr "><div class="state"><span class="pill now">U</span><span class="k">Under 8</span></div><img class="shot " src="art/ps-q1-short-p.webp" alt="Under 8"><p class="cap"><b>colin9.</b> The guides tick live from the first key: <i>A number or symbol</i> is done. There's no word on the meter yet, because nothing is judged under 8.</p></div><div class="fr "><div class="state"><span class="pill now">W</span><span class="k">8+, weak</span></div><img class="shot " src="art/ps-q1-weak-p.webp" alt="8+, weak"><p class="cap"><b>colinmtg.</b> One segment and <i>Weak</i> in quiet ink, never <code>--danger</code>. The two open guides say what to change.</p></div><div class="fr "><div class="state"><span class="pill now">G</span><span class="k">Acceptable</span></div><img class="shot " src="art/ps-q1-good-p.webp" alt="Acceptable"><p class="cap"><b>Clerk level 2 passes.</b> All three ticked, two segments and <i>Good</i> in <code>--accent</code>. It makes no breach claim.</p></div><div class="fr "><div class="state"><span class="pill now">S</span><span class="k">Strong</span></div><img class="shot " src="art/ps-q1-strong-p.webp" alt="Strong"><p class="cap"><b>copper fox casts ninety.</b> Strong with no number or symbol. The guides are help, not rules, and the meter is the judge. That's why a missing tick never blocks the press.</p></div></div><p class="sub">Weak, and which guide is open</p><div class="row"><div class="fr "><div class="state"><span class="pill now">W·c</span><span class="k">Common, with a number</span></div><img class="shot " src="art/ps-q1-weak-common-p.webp" alt="Common, with a number"><p class="cap"><b>password1.</b> Two ticks, but <i>Not a common word, name or date</i> stays open. This is the guide that catches what a number or symbol can't fix.</p></div><div class="fr "><div class="state"><span class="pill now">W·d</span><span class="k">A name and a year</span></div><img class="shot " src="art/ps-q1-weak-date-p.webp" alt="A name and a year"><p class="cap"><b>colin1994.</b> The same open guide. A name and a year read as common to Clerk too.</p></div><div class="fr "><div class="state"><span class="pill now">W·all</span><span class="k">All ticked, still weak</span></div><img class="shot " src="art/ps-q1-weak-all-p.webp" alt="All ticked, still weak"><p class="cap"><b>Kq#7mzpa.</b> The rare case where every guide is met and the estimator still says weak. One extra line appears under the guides: <i>Still easy to guess. Try a longer one, or a few words together.</i></p></div></div><p class="sub">After the press (Clerk is the judge)</p><div class="row"><div class="fr "><div class="state"><span class="pill err">Q2</span><span class="k">Too short, after press</span></div><img class="shot " src="art/ps-q1-q2-p.webp" alt="Too short, after press"><p class="cap"><b>Pressed under 8.</b> The shipped line goes under the meter, in the same slot as today, with the danger edge. The meter empties, and the guides stay under the line, so what to change is still in view.</p></div><div class="fr "><div class="state"><span class="pill err">Q3</span><span class="k">Too weak, after press</span></div><img class="shot " src="art/ps-q1-q3-p.webp" alt="Too weak, after press"><p class="cap"><b>Clerk's answer wins.</b> The shipped refusal, and the open guides beneath it show what to fix. The next keystroke clears it, as today.</p></div><div class="fr "><div class="state"><span class="pill err">Q4</span><span class="k">Breached, after press</span></div><img class="shot " src="art/ps-q1-q4-p.webp" alt="Breached, after press"><p class="cap"><b>Only the press can know.</b> Every guide was ticked and it read <i>Good</i>. Clerk's breach line takes the slot and the meter empties, so nothing on screen still reads as good. The ticks stay, because they are still true.</p></div><div class="fr "><div class="state"><span class="pill was">Today</span><span class="k">Shipped, for reference</span></div><img class="shot " src="art/ps-q1-shipped-p.webp" alt="Shipped, for reference"><p class="cap"><b>What ships now.</b> The hint alone, with no meter. A weak password is only found out after the press.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2222,"height":3720}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

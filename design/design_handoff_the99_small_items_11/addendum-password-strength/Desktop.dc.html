@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Q1 and K5 at 1280</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:640px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:640px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet>
+<div class="board" style="width: 2792px; min-height: 2380px">
+<div class="bh"><span class="k">Live password strength · desktop 1280×800</span><h2>Desktop: the same column, the same slot</h2><p class="cap">The sign-up and reset pages are one centred column at every width, so desktop draws the same part at the column's width. There's nothing desktop-only.</p></div><p class="sub">Q1 · Make your account</p><div class="row"><div class="fr wide"><div class="state"><span class="pill now">E</span><span class="k">Empty</span></div><img class="shot dk" src="art/ps-q1-empty-d.webp" alt="Empty"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill now">U</span><span class="k">Under 8</span></div><img class="shot dk" src="art/ps-q1-short-d.webp" alt="Under 8"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill now">W</span><span class="k">8+, weak</span></div><img class="shot dk" src="art/ps-q1-weak-d.webp" alt="8+, weak"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill now">G</span><span class="k">Acceptable</span></div><img class="shot dk" src="art/ps-q1-good-d.webp" alt="Acceptable"><p class="cap"></p></div></div><div class="row"><div class="fr wide"><div class="state"><span class="pill now">S</span><span class="k">Strong</span></div><img class="shot dk" src="art/ps-q1-strong-d.webp" alt="Strong"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill err">Q2</span><span class="k">Too short, after press</span></div><img class="shot dk" src="art/ps-q1-q2-d.webp" alt="Too short, after press"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill err">Q3</span><span class="k">Too weak, after press</span></div><img class="shot dk" src="art/ps-q1-q3-d.webp" alt="Too weak, after press"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill err">Q4</span><span class="k">Breached, after press</span></div><img class="shot dk" src="art/ps-q1-q4-d.webp" alt="Breached, after press"><p class="cap"></p></div></div><p class="sub">K5 · Choose a new password</p><div class="row"><div class="fr wide"><div class="state"><span class="pill now">E</span><span class="k">Empty</span></div><img class="shot dk" src="art/ps-k5-empty-d.webp" alt="Empty"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill now">U</span><span class="k">Under 8</span></div><img class="shot dk" src="art/ps-k5-short-d.webp" alt="Under 8"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill now">W</span><span class="k">8+, weak</span></div><img class="shot dk" src="art/ps-k5-weak-d.webp" alt="8+, weak"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill now">G</span><span class="k">Acceptable</span></div><img class="shot dk" src="art/ps-k5-good-d.webp" alt="Acceptable"><p class="cap"></p></div></div><div class="row"><div class="fr wide"><div class="state"><span class="pill now">S</span><span class="k">Strong</span></div><img class="shot dk" src="art/ps-k5-strong-d.webp" alt="Strong"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill err">Q2</span><span class="k">Too short, after press</span></div><img class="shot dk" src="art/ps-k5-q2-d.webp" alt="Too short, after press"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill err">Q3</span><span class="k">Too weak, after press</span></div><img class="shot dk" src="art/ps-k5-q3-d.webp" alt="Too weak, after press"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill err">Q4</span><span class="k">Breached, after press</span></div><img class="shot dk" src="art/ps-k5-q4-d.webp" alt="Breached, after press"><p class="cap"></p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2792,"height":2380}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

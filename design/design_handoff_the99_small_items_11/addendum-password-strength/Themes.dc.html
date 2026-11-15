@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>All six themes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:640px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:640px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet>
+<div class="board" style="width: 2332px; min-height: 2180px">
+<div class="bh"><span class="k">Live password strength · themes</span><h2>All six themes: three tokens, no new ones</h2><p class="cap">Unlit segments use <code>--border-strong</code>, weak uses <code>--fg-muted</code>, and good and strong use <code>--accent</code>. Open guide rings use <code>--fg-faint</code>, and ticked ones use <code>--accent</code> with the checkbox's ✓ in <code>--bg</code>. Each theme already has these tokens. Weak stays apart from unlit in every theme, and good never borrows a green that could read as a verdict. K5 at 390.</p></div><div class="tl"><span></span><span class="k">Empty</span><span class="k">Weak</span><span class="k">Good</span><span class="k">Strong</span><span class="k">Q4 breached</span><span class="k">Low Sun (Amonkhet)</span><img class="shot crop" src="art/ps-crop-amonkhet-empty.webp" alt="Low Sun (Amonkhet) empty"><img class="shot crop" src="art/ps-crop-amonkhet-weak.webp" alt="Low Sun (Amonkhet) weak"><img class="shot crop" src="art/ps-crop-amonkhet-good.webp" alt="Low Sun (Amonkhet) good"><img class="shot crop" src="art/ps-crop-amonkhet-strong.webp" alt="Low Sun (Amonkhet) strong"><img class="shot crop" src="art/ps-crop-amonkhet-q4.webp" alt="Low Sun (Amonkhet) q4"><span class="k">Kamigawa</span><img class="shot crop" src="art/ps-crop-kamigawa-empty.webp" alt="Kamigawa empty"><img class="shot crop" src="art/ps-crop-kamigawa-weak.webp" alt="Kamigawa weak"><img class="shot crop" src="art/ps-crop-kamigawa-good.webp" alt="Kamigawa good"><img class="shot crop" src="art/ps-crop-kamigawa-strong.webp" alt="Kamigawa strong"><img class="shot crop" src="art/ps-crop-kamigawa-q4.webp" alt="Kamigawa q4"><span class="k">Ixalan</span><img class="shot crop" src="art/ps-crop-ixalan-empty.webp" alt="Ixalan empty"><img class="shot crop" src="art/ps-crop-ixalan-weak.webp" alt="Ixalan weak"><img class="shot crop" src="art/ps-crop-ixalan-good.webp" alt="Ixalan good"><img class="shot crop" src="art/ps-crop-ixalan-strong.webp" alt="Ixalan strong"><img class="shot crop" src="art/ps-crop-ixalan-q4.webp" alt="Ixalan q4"><span class="k">Phyrexia</span><img class="shot crop" src="art/ps-crop-phyrexia-empty.webp" alt="Phyrexia empty"><img class="shot crop" src="art/ps-crop-phyrexia-weak.webp" alt="Phyrexia weak"><img class="shot crop" src="art/ps-crop-phyrexia-good.webp" alt="Phyrexia good"><img class="shot crop" src="art/ps-crop-phyrexia-strong.webp" alt="Phyrexia strong"><img class="shot crop" src="art/ps-crop-phyrexia-q4.webp" alt="Phyrexia q4"><span class="k">Eldraine</span><img class="shot crop" src="art/ps-crop-eldraine-empty.webp" alt="Eldraine empty"><img class="shot crop" src="art/ps-crop-eldraine-weak.webp" alt="Eldraine weak"><img class="shot crop" src="art/ps-crop-eldraine-good.webp" alt="Eldraine good"><img class="shot crop" src="art/ps-crop-eldraine-strong.webp" alt="Eldraine strong"><img class="shot crop" src="art/ps-crop-eldraine-q4.webp" alt="Eldraine q4"><span class="k">Kaldheim</span><img class="shot crop" src="art/ps-crop-kaldheim-empty.webp" alt="Kaldheim empty"><img class="shot crop" src="art/ps-crop-kaldheim-weak.webp" alt="Kaldheim weak"><img class="shot crop" src="art/ps-crop-kaldheim-good.webp" alt="Kaldheim good"><img class="shot crop" src="art/ps-crop-kaldheim-strong.webp" alt="Kaldheim strong"><img class="shot crop" src="art/ps-crop-kaldheim-q4.webp" alt="Kaldheim q4"></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2332,"height":2180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
