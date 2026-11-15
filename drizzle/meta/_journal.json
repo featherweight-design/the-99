@@ -1709,6 +1709,13 @@
       "when": 1794699076344,
       "tag": "0243_pg_stat_statements",
       "breakpoints": true
+    },
+    {
+      "idx": 244,
+      "version": "7",
+      "when": 1794715490115,
+      "tag": "0244_user_prefs_installed_at",
+      "breakpoints": true
     }
   ]
 }

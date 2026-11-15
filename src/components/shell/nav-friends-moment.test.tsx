@@ -33,7 +33,7 @@ describe("M11 with Friends in the bar", () => {
   it("anchors on the Friends slot in the rail and the tab bar, never the account button", () => {
     render(<NavRail locked={false} theme="amonkhet" friendsMoment />);
     render(<TabBar locked={false} friendsMoment />);
-    render(<MobileHeader theme="amonkhet" />);
+    render(<MobileHeader theme="amonkhet" installed={false} />);
     const lines = new Set(eligibleAfterGame().map((c) => c.line));
     expect(lines).toEqual(new Set([momentsCopy.friendsAfterGameBar.line]));
     // One eligible anchor per slot: the rail's and the tab bar's (a render may run each hook more than once).

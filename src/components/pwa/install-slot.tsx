@@ -8,16 +8,46 @@ import { useCallback, useEffect, useState } from "react";
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
 import { dismissOnce, dismissalState } from "../../lib/pwa/install-dismissal";
 import { iphoneInstallBrowser, isStandalone, takeEarlyPrompt, type BeforeInstallPromptEvent, type InstallBrowser } from "../../lib/pwa/install-detect";
+import { markInstalledAction } from "../../app/install-actions";
 import { IosInstallSheet } from "./ios-install-sheet";
+
+/** Set once this launch has stamped (or tried to stamp) `installed_at`: the installed app's window gets a fresh
+ * `sessionStorage` on every launch, as the app loader's `LAUNCH_SEEN_KEY` relies on. */
+const INSTALLED_STAMP_KEY = "the99.installed.stamped";
+
+/**
+ * Stamps the account as installed from the installed app on a phone (install onboarding call 7): once per launch, and
+ * only while the shell read the stamp as unset. A phone only, since the slot only ever asks phones (d9 call 1): an
+ * install on a desktop says nothing about the phone. A failed write is tried again on the next launch.
+ */
+function stampInstalled(): void {
+  try {
+    // By the device, not the window: a phone held sideways is wider than any breakpoint, and a tablet is not a phone.
+    if (!/iPhone|iPod|Android.*Mobile/.test(navigator.userAgent)) return;
+    if (window.sessionStorage.getItem(INSTALLED_STAMP_KEY)) return;
+    window.sessionStorage.setItem(INSTALLED_STAMP_KEY, "1");
+  } catch {
+    // Storage blocked: stamp anyway. The write is a no-op once the stamp is set.
+  }
+  markInstalledAction().catch(() => {
+    try {
+      window.sessionStorage.removeItem(INSTALLED_STAMP_KEY);
+    } catch {
+      // Nothing to undo.
+    }
+  });
+}
 
 /**
  * The install slot in the phone header (Concert Crawl's `InstallSlot`; phone only by d9's call 1, since
  * desktop browsers show their own install button). It holds the browser's `beforeinstallprompt` and
  * shows that prompt on a press; on an iPhone in Safari, Chrome or Firefox, which have no such event, the press opens the how-to
  * sheet for that browser. It draws nothing once installed, after a dismiss (`install-dismissal.ts`), or when there is
- * neither a held prompt nor one of those iPhone browsers. It decides after mount, so the server draws nothing.
+ * neither a held prompt nor one of those iPhone browsers, nor once the account has opened the installed app on a phone
+ * (`installed`, `user_prefs.installed_at`; the installed app itself stamps it). It decides after mount, so the server
+ * draws nothing.
  */
-export function InstallSlot() {
+export function InstallSlot({ installed }: { installed: boolean }) {
   const search = useCardSearch() !== null;
   const help = useHelpOn();
   const online = useOnlineStatus();
@@ -28,7 +58,12 @@ export function InstallSlot() {
   const [sheetOpen, setSheetOpen] = useState(false);
 
   useEffect(() => {
-    if (isStandalone()) return;
+    if (isStandalone()) {
+      if (!installed) stampInstalled();
+      return;
+    }
+    // Installed elsewhere on this account: no ask in any browser (install onboarding call 7).
+    if (installed) return;
     // Read after mount on purpose: none of these exist on the server.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setBrowser(iphoneInstallBrowser());
@@ -49,7 +84,7 @@ export function InstallSlot() {
       window.removeEventListener("beforeinstallprompt", onPrompt);
       window.removeEventListener("appinstalled", onInstalled);
     };
-  }, []);
+  }, [installed]);
 
   const onPress = useCallback(async () => {
     if (!held) {
@@ -66,7 +101,8 @@ export function InstallSlot() {
     }
   }, [held, browser]);
 
-  if (dismissed || (!held && !browser)) return null;
+  // `installed` read here too: a tab open since before the stamp keeps its state when the shell hands it true.
+  if (installed || dismissed || (!held && !browser)) return null;
   return (
     <>
       {/* While offline the slot steps aside when the header cannot hold it, and returns the moment the offline pill

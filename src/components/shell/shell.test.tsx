@@ -8,7 +8,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let requestHeaders = new Headers();
 vi.mock("next/headers", () => ({ headers: async () => requestHeaders }));
-vi.mock("../../lib/moments/spent", () => ({ readSpentMoments: async () => [] }));
+const prefs = vi.hoisted(() => ({ readShellPrefs: vi.fn(async () => ({ spentMoments: [] as string[], installed: false })) }));
+vi.mock("../../lib/shell/prefs", () => prefs);
 vi.mock("../../lib/social/after-game", () => ({ friendsAfterGameDue: async () => false }));
 // The navigation-pending provider runs code-started pushes, so it reads the router; this suite
 // renders it outside an app router, where the real hook throws.
@@ -246,5 +247,26 @@ describe("Shell and adding a card from card details", () => {
     await renderShell();
     act(() => announceEditToast({ entryId: "e1", removed: false, text: "Saved. Sol Ring ×1." }));
     expect(screen.queryByText("Saved. Sol Ring ×1.")).toBeNull();
+  });
+});
+
+describe("Shell and the install stamp (install onboarding call 7)", () => {
+  const headerInstalled = () => navProps.filter((n) => "installed" in n).map((n) => n.installed);
+
+  it("hands the phone header the reader's install stamp", async () => {
+    navProps.length = 0;
+    prefs.readShellPrefs.mockResolvedValueOnce({ spentMoments: [], installed: true });
+    await renderShell();
+    expect(headerInstalled()).toEqual([true]);
+  });
+
+  it("asks as before when the read fails, and the page still renders", async () => {
+    navProps.length = 0;
+    prefs.readShellPrefs.mockRejectedValueOnce(new Error("down"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    await renderShell();
+    expect(screen.getByText("page")).toBeTruthy();
+    expect(headerInstalled()).toEqual([false]);
+    err.mockRestore();
   });
 });
