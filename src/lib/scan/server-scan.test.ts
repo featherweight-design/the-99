@@ -3,7 +3,7 @@
 // however long it stays, a new lookup for a second copy after the frame empties, and the retry with its own state.
 import { SCAN_MODEL } from "../card-scan/match";
 import { describe, expect, it, vi } from "vitest";
-import { DWELL_MS } from "./track";
+import { DWELL_MS, LOSE_MS } from "./track";
 import { LOOKUP_BACKOFF_MS, SURE_MARGIN } from "./lookup";
 import { EARLY_DWELL_MS, keepsFrameOne, serverScanner, settleOnFrameOne, type ServerState } from "./server-scan";
 import { startStableScan, nextStableScan } from "./stable-card";
@@ -67,7 +67,7 @@ describe("serverScanner", () => {
 
   it("drops the answer to a card that has left the frame", async () => {
     let land: (v: unknown) => void = () => {};
-    const fetch = vi.fn(() => new Promise((r) => { land = r; }));
+    const fetch = vi.fn().mockImplementationOnce(async () => unsure()).mockImplementation(() => new Promise((r) => { land = r; }));
     const { states, scanner } = await play([...hold(card(0), 6), ...hold(none, 10)], fetch as never);
     land(ok());
     await flush();
@@ -97,10 +97,10 @@ describe("serverScanner", () => {
   it("times a match from the start of the frame that asked, not just the round trip", async () => {
     let clock = 1000;
     let land: (v: unknown) => void = () => {};
-    const fetch = vi.fn(() => new Promise((r) => { land = r; }));
+    const fetch = vi.fn().mockImplementationOnce(async () => unsure()).mockImplementation(() => new Promise((r) => { land = r; }));
     const states: ServerState[] = [];
     const s = serverScanner(MODEL, { fetch: fetch as never, wait: async () => {}, now: () => clock }, (st) => states.push(st));
-    for (let i = 0; i < 6; i++) { s.frame(card(0), clock, clock - 300); clock += 150; }
+    for (let i = 0; i < 6; i++) { s.frame(card(0), clock, clock - 300); await flush(); clock += 150; }
     clock += 400;
     land(ok());
     await flush();
@@ -251,6 +251,52 @@ describe("serverScanner's frame-one lookup", () => {
     land(answer(0.5));
     await flush();
     expect(states).toEqual([]);
+  });
+  it("waits for a sure frame-one answer that lands after the early dwell: one request, and the card is taken", async () => {
+    let clock = 0;
+    let land: (v: unknown) => void = () => {};
+    const fetch = vi.fn().mockImplementationOnce(() => new Promise((r) => (land = r))).mockImplementation(async () => answer(0.5));
+    const states: ServerState["kind"][] = [];
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, (st) => states.push(st.kind));
+    for (const t of [0, 150, 300, 450]) { clock = t; s.frame(card(0), t); await flush(); }
+    expect(fetch).toHaveBeenCalledTimes(1);
+    land(answer(SURE_MARGIN));
+    await flush();
+    expect(states).toEqual(["match"]);
+    for (const t of [600, 750, 900, 1050]) { clock = t; expect(s.frame(card(0), t).kind).toBe("match"); await flush(); }
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+  it("sends the held early lookup at once when a frame-one answer past the early dwell is not sure", async () => {
+    let clock = 0;
+    let land: (v: unknown) => void = () => {};
+    const fetch = vi.fn().mockImplementationOnce(() => new Promise((r) => (land = r))).mockImplementation(async () => answer(0.5));
+    const states: ServerState["kind"][] = [];
+    const s = serverScanner(MODEL, { fetch, wait: async () => {}, now: () => clock }, (st) => states.push(st.kind));
+    for (const t of [0, 150, 300, 450]) { clock = t; s.frame(card(0), t); await flush(); }
+    // the early dwell has passed, but the frame-one answer is still out: nothing more is asked yet
+    expect(fetch).toHaveBeenCalledTimes(1);
+    land(answer(SURE_MARGIN - 0.01));
+    await flush();
+    // no frame read since: the early lookup went on the answer itself
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(states).toEqual(["looking", "match"]);
+  });
+  it("still aborts a frame-one lookup when the view empties before it answers", async () => {
+    let land: (v: unknown) => void = () => {};
+    const fetch = vi.fn().mockImplementationOnce(() => new Promise((r) => (land = r))).mockImplementation(async () => answer(0.5));
+    const { states } = await play([...hold(card(0), 4), ...hold(none, 10)], fetch);
+    land(answer(0.5));
+    await flush();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(states).toEqual(["idle"]);
+  });
+  it("opens again once a card goes unseen for LOSE_MS, with no empty view", async () => {
+    const fetch = vi.fn(async () => answer(0.5));
+    // card A is taken on its first frame, then two other cards flap in turn: neither settles, and A is dropped at LOSE_MS
+    const flap = Array.from({ length: Math.ceil(LOSE_MS / 150) + 2 }, (_, i) => card(i % 2 ? 3 : 1.5));
+    const { fetch: f, states } = await play([card(0), card(0), ...flap], fetch);
+    expect(states).not.toContain("idle");
+    expect(f).toHaveBeenCalledTimes(2);
   });
   it("opens again for the next card once the view has emptied", async () => {
     const fetch = vi.fn(async () => answer(0.5));

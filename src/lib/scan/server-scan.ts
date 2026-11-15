@@ -13,8 +13,10 @@
 // view. Its answer is kept only when it is sure (`keepsFrameOne`): the card then settles at once, exactly as a sure
 // early answer would settle it, and nothing more is asked. One that is not sure (or fails, or is refused) is dropped
 // with nothing shown, and the early and full-dwell lookups follow as they would have. A frame that breaks the card's
-// run (a blur, a flicker) never asks again: the next frame-one lookup waits for the view to empty, so a card that
-// replaces another without an empty view goes the early way alone. Measured on two lab sessions on staging
+// run (a blur, a flicker) never asks again: the next frame-one lookup waits for the tracked card to be gone (an empty
+// view, or unseen for `LOSE_MS`), so a card that replaces another goes the early way alone. While the frame-one answer
+// is still out when the card settles, the early lookup waits for it rather than abort it: a kept answer settles the
+// card with one request, and one not kept sends the early lookup at once. Measured on two lab sessions on staging
 // (2026-11-14, an Android and an iPhone, 92 tapped cards): every first frame at 0.10 or more named the right card (71
 // of 71), and the worst wrong one read 0.034.
 import { lookupCard, type LookupResult } from "./lookup";
@@ -69,9 +71,15 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
   // frame breaks it (an empty frame, another card), counted while the early answer is still on its way too; `asked` is
   // false until that answer has come back not confident.
   let confirm: { since: number | null; asked: boolean } | null = null;
-  // The frame-one lookup is open until a card frame uses it, and opens again only when the view empties: one per card
-  // brought in, never one per run a blurred frame starts.
+  // The frame-one lookup is open until a card frame uses it, and opens again only when the tracked card is gone (the
+  // view emptied, or the card went unseen for `LOSE_MS`): one per card brought in, never one per run a blurred frame
+  // starts.
   let frameOneOpen = true;
+  // The frame-one lookup in flight, and the card it asked about.
+  let frameOne: { ctl: AbortController; frame: ScanFrame } | null = null;
+  // The early lookup, held back while the same card's frame-one lookup is still out: sent at once if that answer is
+  // not kept, dropped if it is.
+  let heldEarly: { embedding: Float32Array; origin: number } | null = null;
   const set = (s: ServerState) => {
     state = s;
     onState(s);
@@ -80,6 +88,8 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
     inFlight?.abort();
     inFlight = null;
     confirm = null;
+    frameOne = null;
+    heldEarly = null;
   };
   const ask = (embedding: Float32Array, origin: number, early: boolean) => {
     const mine = new AbortController();
@@ -112,20 +122,34 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
   const askFrameOne = (f: Extract<ScanFrame, { kind: "card" }>, origin: number) => {
     const mine = new AbortController();
     inFlight = mine;
+    frameOne = { ctl: mine, frame: f };
     const t0 = deps.now();
+    // Not kept (unsure, failed, refused, or its card's run broke): the early lookup it held back goes now, since its
+    // dwell has already passed.
+    const drop = () => {
+      frameOne = null;
+      if (inFlight === mine) inFlight = null;
+      const early = heldEarly;
+      heldEarly = null;
+      if (early) ask(early.embedding, early.origin, true);
+    };
     void lookupCard(f.embedding, model, {
       fetch: deps.fetch, wait: deps.wait, signal: mine.signal,
       onRetry: () => {
-        if (inFlight === mine) inFlight = null;
+        if (frameOne?.ctl !== mine) return;
         mine.abort();
+        drop();
       },
     }).then((r) => {
-      if (inFlight !== mine) return;
-      inFlight = null;
-      if (!keepsFrameOne(r)) return;
+      if (frameOne?.ctl !== mine) return;
+      if (!keepsFrameOne(r)) return drop();
       const end = deps.now();
-      const settled = settleOnFrameOne(scan, f, end);
-      if (!settled) return;
+      // The card may have settled while the answer was out (its early lookup is then held back): it is already the card.
+      const settled = scan.value?.kind === "card" && sameCard(scan.value, f) ? scan : settleOnFrameOne(scan, f, end);
+      if (!settled) return drop();
+      frameOne = null;
+      inFlight = null;
+      heldEarly = null;
       scan = settled;
       confirm = null;
       set({ kind: "match", result: r, ms: Math.round(end - t0), totalMs: Math.round(end - origin) });
@@ -137,22 +161,28 @@ export function serverScanner(model: string, deps: Deps, onState: (s: ServerStat
     frame(f: ScanFrame, now: number, origin: number = now): ServerState {
       // When the run that settles on this frame began: its candidate's start, before the tracker forgets it.
       const runStart = scan.candidate?.since ?? now;
+      const wasCard = scan.value?.kind === "card";
       const out = nextStableScan(scan, f, now, EARLY_DWELL_MS);
       scan = out.scan;
-      // Any card frame closes the frame-one lookup, whether or not this one asks.
-      const frameOne = frameOneOpen && out.event === null;
+      // The tracked card is gone by any path (an empty view, or unseen for LOSE_MS): the next card gets a frame-one
+      // lookup. Any card frame then closes it, whether or not this one asks.
+      if (wasCard && scan.value?.kind !== "card") frameOneOpen = true;
+      const firstFrame = frameOneOpen && out.event === null;
       if (f.kind === "card") frameOneOpen = false;
       if (out.event?.kind === "empty") {
         forget();
         frameOneOpen = true;
         set({ kind: "idle" });
-      } else if (frameOne && f.kind === "card") {
+      } else if (firstFrame && f.kind === "card") {
         // The first card frame since the view emptied: asked about now, unless a lookup is already out.
         if (inFlight === null) askFrameOne(f, origin);
       } else if (out.event?.kind === "lookup") {
-        forget();
+        const held = frameOne !== null && sameCard(frameOne.frame, { kind: "card", embedding: out.event.embedding });
+        if (!held) forget();
         confirm = { since: runStart, asked: false };
-        ask(out.event.embedding, origin, true);
+        // The same card's frame-one answer is still out: wait for it rather than abort it and ask twice.
+        if (held) heldEarly = { embedding: out.event.embedding, origin };
+        else ask(out.event.embedding, origin, true);
       } else if (confirm !== null) {
         if (f.kind !== "card" || !scan.value || !sameCard(scan.value, f)) confirm.since = null;
         else if (confirm.since === null) confirm.since = now;
