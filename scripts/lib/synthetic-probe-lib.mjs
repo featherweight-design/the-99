@@ -25,7 +25,8 @@ export function failureEnvelope({ failed, base, eventId, now }) {
     level: "error",
     logger: "synthetic-probe",
     message: `Synthetic probe failed: ${failed.join(", ")}`,
-    environment: "production",
+    // Production only for production's own origin; a dispatch against another origin (staging) files under its own environment.
+    environment: base === "https://the-99.dev" ? "production" : "staging",
     tags: { site: "synthetic-probe", steps: failed.join(","), base },
   };
   const body = JSON.stringify(event);

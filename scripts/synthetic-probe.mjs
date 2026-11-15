@@ -1,7 +1,7 @@
 // The hourly synthetic sign-up probe (`.github/workflows/synthetic-probe.yml`): can a stranger still reach the front door? It loads the
 // signed-out landing, the sign-in page and a join page in a real browser and checks each draws what it should. READ-ONLY: it only
 // loads pages and types into the join form's email field; it never presses Send code (nothing is written, no mail is sent, no account
-// is made), and it signs in as no one. It is the one probe allowed to point at production (Hugh's approval, 2026-11-15) because of that.
+// is made), and it signs in as no one. It is the one probe allowed to point at production (Hugh approved it with the lane brief) because of that.
 //
 // The join step: with `SYNTHETIC_JOIN_CODE` (a six-character flyer code Hugh keeps live, a repository variable) it opens `/join/<code>`,
 // expects the email field and fills it WITHOUT submitting. With none set it opens an invite-token-shaped dead link and expects the

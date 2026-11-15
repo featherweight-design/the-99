@@ -23,6 +23,11 @@ describe("failureEnvelope", () => {
     expect(ev.tags).toEqual({ site: "synthetic-probe", steps: "landing,sign-in", base: "https://the-99.dev" });
     expect(Object.keys(ev).sort()).toEqual(["environment", "event_id", "level", "logger", "message", "platform", "tags", "timestamp"]);
   });
+  it("files a run against another origin under staging, not production", () => {
+    const other = failureEnvelope({ failed: ["landing"], base: "https://staging.the-99.dev", eventId: "b".repeat(32), now: 1_800_000_000_000 });
+    expect(JSON.parse(other.split("\n")[2]).environment).toBe("staging");
+    expect(JSON.parse(body).environment).toBe("production");
+  });
   it("builds the endpoint from a parsed DSN", () => {
     expect(envelopeUrl({ host: "o42.ingest.us.sentry.io", projectId: "4501", key: "abc123" })).toBe(
       "https://o42.ingest.us.sentry.io/api/4501/envelope/?sentry_version=7&sentry_key=abc123",
