@@ -43,7 +43,7 @@ function Mark({ lit }: { lit?: boolean }) {
 
 /**
  * The cold-start launch animation (design/design_handoff_the99_app_loader): the splash's icon grows, lands on a card that
- * flips face up, the crown lights on its face and the mark lifts into the phone header's logo while Home fades up.
+ * flips face up, the crown lights on its face and the mark lifts into the logo (the phone header's, or the rail's lockup from `md` up) while Home fades up.
  *
  * Drawn in every signed-in document and shown only when the head script marked `<html data-launch>` (`launch-detect.ts`):
  * the stylesheet keeps it `display: none` otherwise, and with reduced motion. It is an overlay, so Home renders and loads
