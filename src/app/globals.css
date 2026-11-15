@@ -1686,7 +1686,7 @@ html {
    no-preference only, so reduced motion is the static board: the picked card simply drawn lifted, chips on, no rise, no
    burst; the card's own 120ms cross-fade (the `.friend-card` rules above), and the words fading with it (below). */
 /* Each burst diamond's own end point, set inline per diamond (`BURST` in check-in-form.tsx). */
-.anim-check-in-burst { --dx: 0px; --dy: 0px; }
+[data-check-in-burst] { --dx: 0px; --dy: 0px; }
 @media (prefers-reduced-motion: no-preference) {
   /* A card's pick: a 220ms lift with a small overshoot; the wash and the border in 160ms; the crown fades in. The fan
      and the lift are Tailwind's `rotate` and `translate` properties, not `transform`, so those are what move. */
