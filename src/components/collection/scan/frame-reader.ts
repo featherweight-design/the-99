@@ -4,8 +4,7 @@ import { useCallback, useEffect, useRef } from "react";
 import { framePipeline, loadModelBytes, loadModels, loadOrt, sourceSize, type OrtSession, type Source } from "../../../lib/scan/pipeline";
 import type { OutlineStore } from "../../../lib/scan/outline";
 import { sessionHolder } from "../../../lib/scan/sessions";
-import { whenScanMarked } from "../../../lib/scan/marks";
-import { gpuAdapter, loadGpuEmbedder, startGpuEmbedder } from "../../../lib/scan/webgpu";
+import { SCANNER_GPU_START, scannerGpuEmbedder } from "../../../lib/scan/gpu-start";
 import type { FrameRead } from "./use-card-scan";
 
 type Pipe = ReturnType<typeof framePipeline>;
@@ -26,9 +25,10 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
   const sessions = useRef<ReturnType<typeof sessionHolder<OrtSession>> | null>(null);
   const pipe = useRef<Promise<Pipe> | null>(null);
   const alive = useRef(true);
-  // The embedder's bytes, kept from the WASM models being ready until the WebGPU load takes them (after the first
-  // answer) or the scanner closes: a close drops them, and the next open reads them from Cache Storage again.
-  const gpuModel = useRef<Promise<Uint8Array> | null>(null);
+  // This attempt's WebGPU load: the embedder's bytes, kept from the open until the WebGPU embedder settles (it may read
+  // them at open and again after the first answer) or the scanner closes, and the abort its close sends to a runtime
+  // download under way. A close drops the bytes, and the next open reads them from Cache Storage again.
+  const gpuLoad = useRef<{ bytes: Promise<Uint8Array>; abort: AbortController } | null>(null);
   const readyRef = useRef(onReady);
   useEffect(() => {
     readyRef.current = onReady;
@@ -44,33 +44,43 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       // The runtime and the model files download side by side; the sessions need both.
       // `report`: the scanner's load feeds its loading panel (`model-progress.ts`).
       const bytes = loadModelBytes(undefined, { report: true });
-      const adapter = gpuAdapter();
       const hold = (s: OrtSession) => {
         if (!held.accept(s)) throw new Error("the scanner closed");
         return s;
       };
       const infer = <T,>(fn: () => Promise<T>) => held.use(fn);
+      const load = { bytes: bytes.embedder, abort: new AbortController() };
+      if (sessions.current === held) gpuLoad.current = load;
+      // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`). Its runtime starts loading now, beside the
+      // camera and the WASM models, when it is already in Cache Storage, else only once the first answer is drawn, so a
+      // first-ever open never shares the network with it (`gpu-start.ts`). Until it is in, and for good if any part of
+      // it fails, frames embed on WASM. A load the scanner's close cut short is not a failure.
+      const open = () => alive.current && sessions.current === held;
+      const gpu = scannerGpuEmbedder({
+        mode: SCANNER_GPU_START,
+        model: () => (open() && gpuLoad.current === load ? load.bytes : null),
+        hold,
+        infer,
+        alive: open,
+        signal: load.abort.signal,
+      });
+      void gpu.then(() => {
+        if (gpuLoad.current === load) gpuLoad.current = null;
+      });
       const ort = await loadOrt();
       const models = await loadModels(ort, hold, { bytes, infer });
-      if (sessions.current === held) gpuModel.current = bytes.embedder;
       readyRef.current?.();
-      // The embedder moves to WebGPU where there is an adapter (`webgpu.ts`), its runtime loaded only once the first
-      // answer is drawn, so the first scan never shares the network or the main thread with it. Until it is in, and
-      // for good if any part of it fails, frames embed on WASM. A load the scanner's close cut short is not a failure.
-      const open = () => alive.current && sessions.current === held;
-      const gpu = whenScanMarked("scan:answer-drawn").then(() => {
-        const model = gpuModel.current;
-        gpuModel.current = null;
-        if (!model || !open()) return null;
-        return startGpuEmbedder({ adapter: async () => (await adapter).gpu, load: () => loadGpuEmbedder(model, hold, infer, open), alive: open });
-      });
       return framePipeline(ort, models, infer, gpu);
     })();
     pipe.current = attempt;
     // A failed load is tried again on the next frame, with a holder of its own.
     attempt.catch(() => {
       held.close();
-      if (sessions.current === held) sessions.current = null;
+      if (sessions.current === held) {
+        gpuLoad.current?.abort.abort();
+        gpuLoad.current = null;
+        sessions.current = null;
+      }
       if (pipe.current === attempt) pipe.current = null;
     });
     return attempt;
@@ -85,7 +95,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       outline?.clear();
       pipe.current = null;
       sessions.current?.close();
-      gpuModel.current = null;
+      gpuLoad.current?.abort.abort();
+      gpuLoad.current = null;
       sessions.current = null;
     };
   }, [outline, ensure]);

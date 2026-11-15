@@ -19,11 +19,14 @@ import { Checkbox } from "../ui/checkbox";
 import { ScanControls, tensorToImage, type Tap } from "./scan-controls";
 import { AGREE_FRAMES, AGREE_MARGIN } from "../../lib/scan/models";
 import { torchOf, type Torch } from "../../lib/scan/camera";
-import { framePipeline, loadModelBytes, loadModels, loadOrt, type OrtSession } from "../../lib/scan/pipeline";
+import { framePipeline, loadModelBytes, loadModels, loadOrt, modelFilesCached, type OrtSession } from "../../lib/scan/pipeline";
+import { scannerGpuEmbedder, type GpuStartMode } from "../../lib/scan/gpu-start";
+import { gpuRuntimeCached } from "../../lib/scan/webgpu";
+import { browserModelCacheDeps, evictOtherModelCaches, MODEL_CACHE_PREFIX, RUNTIME_CACHE_PREFIX } from "../../lib/scan/model-cache";
 import { advanceRun, MAX_MS, MAX_SPIKE_FRAMES, type CardRun, type SpikeRow } from "../../lib/scan-lab/spike";
 import { compareFrame, gpuAdapter, gpuRuntime, loadTimedModels, type TimedModels } from "../../lib/scan-lab/webgpu";
 import { lookupCard } from "../../lib/scan/lookup";
-import { resetScanMarks } from "../../lib/scan/marks";
+import { isScanMarked, resetScanMarks, scanMark } from "../../lib/scan/marks";
 import { serverScanner, type ServerState } from "../../lib/scan/server-scan";
 
 async function loadIndex(base: string): Promise<ScanIndex> {
@@ -46,6 +49,15 @@ function postSpike(row: SpikeRow): Promise<boolean> {
 }
 
 type FirstAnswer = { answered: boolean; oracleId: string | null; margin: number | null; ms: number };
+type StartupRow = Extract<SpikeRow, { kind: "startup" }>;
+
+/** Deletes the scanner's caches under each prefix, then reloads, so the next Start is a device's first-ever open
+ * (a page that already loaded the WebGPU runtime keeps it in memory, whatever Cache Storage holds). */
+async function clearScanCaches(prefixes: string[]): Promise<void> {
+  const store = browserModelCacheDeps().caches;
+  for (const p of prefixes) await evictOtherModelCaches("", store, p);
+  window.location.reload();
+}
 
 
 export function ScanLab({ indexBase, serverModel = null }: {
@@ -110,6 +122,31 @@ export function ScanLab({ indexBase, serverModel = null }: {
   const spikeModels = useRef<{ wasm: TimedModels; gpu: TimedModels } | null>(null);
   const spikeFrames = useRef<Extract<SpikeRow, { kind: "frames" }>["frames"]>([]);
   const cardRun = useRef<CardRun<Promise<FirstAnswer>> | null>(null);
+  // The embedder's WebGPU start (`gpu-start.ts`): off (WASM only, as the lab ran before) or one of the scanner's modes,
+  // run on the scanner's own path. `startup` is this Start's row, posted once its first answer is drawn and WebGPU
+  // settled, or as the page goes. `gpuLive` is false once the lab failed or the page was left.
+  const [startMode, setStartMode] = useState<"off" | GpuStartMode>("off");
+  const [cached, setCached] = useState<{ runtime: boolean; models: boolean } | null>(null);
+  const startup = useRef<{ row: StartupRow; t0: number; settled: boolean; posted: boolean } | null>(null);
+  const gpuLive = useRef(true);
+  // Aborts this Start's WebGPU runtime download as the lab fails or the page is left.
+  const gpuAbort = useRef<AbortController | null>(null);
+  const postStartup = useCallback((final: boolean) => {
+    const s = startup.current;
+    if (!s || s.posted) return;
+    if (!final && (s.row.firstAnswerMs === null || !s.settled)) return;
+    s.posted = true;
+    void postSpike(s.row).then((ok) => { if (!ok) setSpikeNote(copy.startupFailed); });
+  }, []);
+  // The first card answer drawn on this Start: the scanner's `scan:answer-drawn`, and the start-up row's moment.
+  const answered = useCallback((backend: "wasm" | "webgpu") => {
+    scanMark("scan:answer-drawn");
+    const s = startup.current;
+    if (!s || s.row.firstAnswerMs !== null) return;
+    s.row.firstAnswerMs = Math.min(MAX_MS, Math.round(performance.now() - s.t0));
+    s.row.firstBackend = backend;
+    postStartup(false);
+  }, [postStartup]);
   // The run as the press went down: the verdict is for the card held then, whatever the loop reads while it saves.
   const pressRun = useRef<CardRun<Promise<FirstAnswer>> | null>(null);
   const flushSpike = useCallback(() => {
@@ -164,27 +201,43 @@ export function ScanLab({ indexBase, serverModel = null }: {
     const models = sessions.current;
     held.open();
     models.open();
+    gpuLive.current = true;
+    // What a Start would find in Cache Storage, so a clear can be seen to have worked.
+    void Promise.all([gpuRuntimeCached(), modelFilesCached()]).then(([runtime, m]) => setCached({ runtime, models: m }));
     // Closing the tab runs no React cleanup: the last batch goes as the page is hidden (each post is keepalive).
     const hide = () => {
-      if (document.visibilityState === "hidden") flushSpike();
+      if (document.visibilityState === "hidden") {
+        flushSpike();
+        postStartup(true);
+      }
+    };
+    const leave = () => {
+      flushSpike();
+      postStartup(true);
     };
     document.addEventListener("visibilitychange", hide);
-    window.addEventListener("pagehide", flushSpike);
+    window.addEventListener("pagehide", leave);
     return () => {
       document.removeEventListener("visibilitychange", hide);
-      window.removeEventListener("pagehide", flushSpike);
+      window.removeEventListener("pagehide", leave);
       running.current = false;
+      gpuLive.current = false;
+      gpuAbort.current?.abort();
       server.current?.stop();
       flushSpike();
+      postStartup(true);
       spikeModels.current = null;
       held.close();
       models.close();
     };
-  }, [flushSpike]);
+  }, [flushSpike, postStartup]);
 
   const start = useCallback(async () => {
     const fail = (e: unknown) => {
       running.current = false;
+      gpuLive.current = false;
+      gpuAbort.current?.abort();
+      postStartup(true);
       stream.current.close();
       sessions.current.close();
       history.current = [];
@@ -206,6 +259,47 @@ export function ScanLab({ indexBase, serverModel = null }: {
     setStatus("loading");
     // Each lab start is its own open for the start-up marks (`marks.ts`).
     resetScanMarks();
+    // With Compare on, the spike loads its own WebGPU pair, so the embedder's start is not measured.
+    const mode = compare ? "off" : startMode;
+    // What Cache Storage holds is read before the open is marked, so the check is not counted in its times.
+    const [runtimeCached, modelsCached] = mode === "off" ? [false, false] : await Promise.all([gpuRuntimeCached(), modelFilesCached()]);
+    scanMark("scan:open");
+    gpuLive.current = true;
+    const t0 = performance.now();
+    startup.current = mode === "off" ? null : {
+      t0, settled: false, posted: false,
+      row: {
+        kind: "startup", mode, runtimeCached, modelsCached, firstAnswerMs: null, firstBackend: null, gpuReadyMs: null, gpu: null,
+        ua: navigator.userAgent.slice(0, 300),
+      },
+    };
+    // each held as it loads, so a failed sibling or leaving the page releases it, even late
+    const hold = (s: OrtSession) => {
+      if (!sessions.current.accept(s)) throw new Error("left the page");
+      return s;
+    };
+    const infer = <T,>(fn: () => Promise<T>) => sessions.current.use(fn);
+    // The models start downloading beside the runtime and the camera, as the scanner's do (`frame-reader.ts`).
+    const bytes = loadModelBytes();
+    // Started before the runtime: a failure is seen where the sessions await it, never as an unhandled rejection.
+    void Promise.allSettled([bytes.detector, bytes.embedder]);
+    const abort = new AbortController();
+    gpuAbort.current = abort;
+    // The scanner's own WebGPU start, in the chosen mode (`gpu-start.ts`): frames embed on WASM until it is in.
+    const gpu = mode === "off" ? undefined : scannerGpuEmbedder({
+      mode, runtimeCached: Promise.resolve(runtimeCached), model: () => bytes.embedder, hold, infer, alive: () => gpuLive.current,
+      signal: abort.signal,
+    });
+    const mine = startup.current;
+    void gpu?.then((run) => {
+      const s = startup.current;
+      // a Start that failed, or was replaced by another, records nothing for this one
+      if (!s || s !== mine || !gpuLive.current) return;
+      s.settled = true;
+      s.row.gpu = run ? "ready" : isScanMarked("scan:webgpu-none") ? "none" : "off";
+      if (run) s.row.gpuReadyMs = Math.min(MAX_MS, Math.round(performance.now() - t0));
+      postStartup(false);
+    });
     try {
       const [ort, index, media] = await Promise.all([
         loadOrt(),
@@ -221,12 +315,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
       ]);
       indexVersion.current = index?.meta.version ?? "server";
       if (!index) toggleServer(true);
-      // each held as it loads, so a failed sibling or leaving the page releases it, even late
-      const hold = (s: OrtSession) => {
-        if (!sessions.current.accept(s)) throw new Error("left the page");
-        return s;
-      };
-      const models = await loadModels(ort, hold, { infer: (fn) => sessions.current.use(fn) });
+      const models = await loadModels(ort, hold, { bytes, infer });
       if (compare) {
         // Both backends from the same cached bytes, in one runtime (the WebGPU build also runs WASM), each pair timed
         // the same way. A device without WebGPU, or a load that fails, is itself the finding.
@@ -284,7 +373,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
           if (cadenceDone(more, now)) void finishLog();
         }
       };
-      const pipe = framePipeline(ort, models, (fn) => sessions.current.use(fn));
+      const pipe = framePipeline(ort, models, infer, gpu);
       // No card: nothing a tap records may describe an earlier one, the kept frame included, but
       // the detector did run, so its timing is this frame's.
       const noCard = (t0: number, detMs: number) => {
@@ -336,6 +425,8 @@ export function ScanLab({ indexBase, serverModel = null }: {
                   // from the frame that asked to the answer, not this later frame's own work
                   detMs, embMs, matchMs: st.ms, totalMs: st.totalMs,
                 });
+                // the frame the answer is drawn on: on the server path, not always the frame that asked
+                answered(read.backend);
               } else {
                 serverRun.current = null;
                 // no answer for this frame: the screen may only lose what it shows, on time, and the log still
@@ -364,6 +455,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
                 kind: "card", crop, guesses, margin, agreed, committed, index: index.meta.version,
                 detMs, embMs, matchMs: Math.round(t3 - t2), totalMs: Math.round(t3 - t0),
               });
+              answered(read.backend);
             }
           }
         }
@@ -389,7 +481,7 @@ export function ScanLab({ indexBase, serverModel = null }: {
     } catch (e) {
       fail(e);
     }
-  }, [indexBase, serverModel, finishLog, toggleServer, compare, flushSpike]);
+  }, [indexBase, serverModel, finishLog, toggleServer, compare, flushSpike, startMode, postStartup, answered]);
 
   const record = useCallback(async (tap: Tap, correct: boolean) => {
     // one reading, the one the player was looking at (`ScanControls` holds it from the press, and `tapTarget` takes the
@@ -442,6 +534,29 @@ export function ScanLab({ indexBase, serverModel = null }: {
             <Checkbox checked={compare} onChange={setCompare} />
             {copy.compare}
           </label>
+          {!compare && (
+            <label className="flex flex-col gap-[4px] text-[14px]">
+              {copy.gpuStart}
+              <select
+                value={startMode}
+                onChange={(e) => setStartMode(e.target.value as "off" | GpuStartMode)}
+                className="self-start rounded-[8px] border bg-[color:var(--surface)] px-[10px] py-[6px] text-[16px]"
+              >
+                {(Object.keys(copy.gpuModes) as (keyof typeof copy.gpuModes)[]).map((m) => (
+                  <option key={m} value={m}>{copy.gpuModes[m]}</option>
+                ))}
+              </select>
+            </label>
+          )}
+          {cached && <p className="m-0 text-[12px] text-[color:var(--fg-muted)]">{copy.cacheState(cached.runtime, cached.models)}</p>}
+          <div className="flex flex-wrap gap-[8px]">
+            <button type="button" onClick={() => void clearScanCaches([RUNTIME_CACHE_PREFIX])} className="rounded-[8px] border px-[12px] py-[6px] text-[13px]">
+              {copy.clearRuntime}
+            </button>
+            <button type="button" onClick={() => void clearScanCaches([RUNTIME_CACHE_PREFIX, MODEL_CACHE_PREFIX])} className="rounded-[8px] border px-[12px] py-[6px] text-[13px]">
+              {copy.clearAll}
+            </button>
+          </div>
           <button type="button" onClick={() => void start()} className="self-start rounded-[8px] border px-[14px] py-[8px] text-[14px]">
             {copy.start}
           </button>

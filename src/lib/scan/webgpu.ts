@@ -2,8 +2,8 @@
 // 29ms against WASM's 82 on an iPhone and 85 against 236 on Android, with embeddings matching to a cosine of 0.9999995;
 // the detector ran slower on WebGPU on both, so it stays on WASM). The detector, and the embedder until WebGPU is
 // ready, run on the WASM runtime (`pipeline.ts`). WebGPU runs in onnxruntime-web's WebGPU build, a second runtime the
-// scanner starts loading only once its first answer is drawn, so the first scan never shares the network or the main
-// thread with it. Its 24.3MB WASM is kept in Cache Storage under a pinned SHA-256 (`model-cache.ts`), so only a
+// scanner starts loading at open when it is already cached, else only once its first answer is drawn, so a device's
+// first scan never shares the network with it (`gpu-start.ts`). Its 24.3MB WASM is kept in Cache Storage under a pinned SHA-256 (`model-cache.ts`), so only a
 // device's first scanner downloads it. Any WebGPU failure (the runtime or session will not load, the warm-up or a
 // later run throws, hangs past `GPU_RUN_TIMEOUT_MS` or answers an unusable embedding) leaves the embedder on WASM for
 // the rest of the scanner's session, silently. A session on the WebGPU provider still has onnxruntime's CPU provider
@@ -11,7 +11,7 @@
 import { EMBED_DIM } from "../card-scan/match";
 import { EMBED_H, EMBED_W } from "./geometry";
 import { ORT_BASE, ORT_WEBGPU_WASM_SHA256, ORT_WEBGPU_WASM_URL } from "./models";
-import { browserModelCacheDeps, pinnedBytes, pinnedCache, RUNTIME_CACHE_PREFIX, type ModelCacheDeps, type ModelFile } from "./model-cache";
+import { browserModelCacheDeps, filesCached, NotCached, pinnedBytes, type FetchOpts, pinnedCache, RUNTIME_CACHE_PREFIX, type ModelCacheDeps, type ModelFile } from "./model-cache";
 import { scanMark } from "./marks";
 import type { Ort, OrtSession, Run } from "./pipeline";
 
@@ -89,9 +89,17 @@ export async function loadOrtWebGpu(wasmBinary: Uint8Array): Promise<Ort> {
 
 const RUNTIME: ModelFile = { url: ORT_WEBGPU_WASM_URL, sha256: ORT_WEBGPU_WASM_SHA256 };
 
-/** The WebGPU build's WASM: from Cache Storage after a device's first download, checked against its pin either way. */
-export function webGpuRuntimeBytes(deps: ModelCacheDeps = browserModelCacheDeps()): Promise<Uint8Array> {
-  return pinnedBytes(RUNTIME, pinnedCache([RUNTIME], deps, RUNTIME_CACHE_PREFIX), deps, "scan:webgpu-runtime");
+/** The WebGPU build's WASM: from Cache Storage after a device's first download, checked against its pin either way.
+ * `opts.cacheOnly` never downloads it (`NotCached`), `opts.signal` aborts a download. */
+export function webGpuRuntimeBytes(deps: ModelCacheDeps = browserModelCacheDeps(), opts: FetchOpts = {}): Promise<Uint8Array> {
+  return pinnedBytes(RUNTIME, pinnedCache([RUNTIME], deps, RUNTIME_CACHE_PREFIX), deps, "scan:webgpu-runtime", undefined, opts);
+}
+
+export { NotCached };
+
+/** Whether the WebGPU build's WASM is already in Cache Storage (`filesCached`: nothing read, nothing downloaded). */
+export function gpuRuntimeCached(deps: ModelCacheDeps = browserModelCacheDeps()): Promise<boolean> {
+  return filesCached([RUNTIME], deps, RUNTIME_CACHE_PREFIX);
 }
 
 /**
@@ -99,11 +107,11 @@ export function webGpuRuntimeBytes(deps: ModelCacheDeps = browserModelCacheDeps(
  * bytes again, a load that fails is tried afresh by the next call, and a call whose scanner closed while the bytes
  * came in stops there (`ScannerClosed`) rather than compiling them for nothing.
  */
-export function runtimeLoader(bytes: () => Promise<Uint8Array>, load: (b: Uint8Array) => Promise<Ort>) {
+export function runtimeLoader(bytes: (opts: FetchOpts) => Promise<Uint8Array>, load: (b: Uint8Array) => Promise<Ort>) {
   let runtime: Promise<Ort> | null = null;
-  return async (alive: () => boolean = () => true): Promise<Ort> => {
+  return async (alive: () => boolean = () => true, opts: FetchOpts = {}): Promise<Ort> => {
     if (runtime) return runtime;
-    const b = await bytes();
+    const b = await bytes(opts);
     if (!alive()) throw new ScannerClosed();
     if (!runtime) {
       const mine = load(b);
@@ -117,7 +125,7 @@ export function runtimeLoader(bytes: () => Promise<Uint8Array>, load: (b: Uint8A
 }
 
 /** The WebGPU build with its cached WASM, once per page, for the scanner and the scan lab alike. */
-export const gpuRuntime = runtimeLoader(() => webGpuRuntimeBytes(), loadOrtWebGpu);
+export const gpuRuntime = runtimeLoader((opts) => webGpuRuntimeBytes(undefined, opts), loadOrtWebGpu);
 
 /**
  * The embedder on WebGPU: the runtime (`gpuRuntime`), the session created with the `webgpu` provider as the only one
@@ -133,9 +141,11 @@ export async function loadGpuEmbedder(
   hold: (s: OrtSession) => OrtSession,
   infer: Run,
   alive: () => boolean,
-  runtime: (alive: () => boolean) => Promise<Ort> = gpuRuntime,
+  runtime: (alive: () => boolean, opts?: FetchOpts) => Promise<Ort> = gpuRuntime,
+  /** How the runtime's bytes may be fetched (`gpu-start.ts`): cache only at open, and aborted by the scanner's close. */
+  fetch: FetchOpts = {},
 ): Promise<EmbedRun> {
-  const ort = await runtime(alive);
+  const ort = await runtime(alive, fetch);
   if (!alive()) throw new ScannerClosed();
   const s = hold(await ort.InferenceSession.create(await model, { executionProviders: ["webgpu"] }));
   if (!alive()) throw new ScannerClosed();
@@ -158,7 +168,8 @@ export type GpuEmbedderDeps = {
 
 /**
  * The WebGPU embedder, or null (the scanner stays on WASM) when there is no adapter (`scan:webgpu-none`), anything in
- * its load fails (`scan:webgpu-off`), or the scanner closed first (no mark). Never rejects.
+ * its load fails (`scan:webgpu-off`), or the scanner closed first (no mark). Rejects only with `NotCached`, a
+ * cache-only load that found no intact runtime (no mark: the caller waits and loads it later).
  */
 export async function startGpuEmbedder(deps: GpuEmbedderDeps): Promise<EmbedRun | null> {
   let present = false;
@@ -175,6 +186,7 @@ export async function startGpuEmbedder(deps: GpuEmbedderDeps): Promise<EmbedRun 
   try {
     return await deps.load();
   } catch (e) {
+    if (e instanceof NotCached) throw e;
     if (!(e instanceof ScannerClosed) && deps.alive()) scanMark("scan:webgpu-off", { stage: "load" });
     return null;
   }

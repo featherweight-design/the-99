@@ -1,4 +1,4 @@
-// The scan lab's WebGPU spike rows (`/lab/scan` with "Compare WebGPU" on, behind the plumbing switch
+// The scan lab's WebGPU spike rows (`/lab/scan` with "Compare WebGPU" on, or an embedder start mode chosen: the `startup` kind), behind the plumbing switch
 // `SCAN_LAB_ENABLED`). Signed in only: the proxy protects it like every other route, and the reader comes from the
 // Clerk session. It stores what `parseSpike` has checked field by field; a `run` row's tap must be the reader's own.
 import { auth } from "@clerk/nextjs/server";

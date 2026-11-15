@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { advanceRun, CORNER_DIVERGED, cosine, maxAbsDiff, MAX_SPIKE_FRAMES, parseSpike, RUN_GAP_FRAMES } from "./spike";
+import { GPU_START_MODES } from "../scan/gpu-start";
+import { advanceRun, STARTUP_MODES, CORNER_DIVERGED, cosine, maxAbsDiff, MAX_SPIKE_FRAMES, parseSpike, RUN_GAP_FRAMES } from "./spike";
 
 const times = { create: [400, 900], warm: [120, 300] };
 const backends = { kind: "backends", gpu: true, adapter: "apple common-3", ua: "Mozilla/5.0", wasm: times, webgpu: times, error: null };
@@ -20,6 +21,35 @@ describe("parseSpike", () => {
       { kind: "frames", frames: [{ ...frame, wd: -1 }] }, { kind: "frames", frames: [{ ...frame, cos: 2 }] },
       { ...run, resultId: "nope" }, { ...run, first: { ...run.first, oracleId: "x" } }, { ...run, frames: 1.5 }, { ...run, first: { oracleId: null, margin: null, ms: 1 } },
     ]) expect(parseSpike(bad)).toBeNull();
+  });
+});
+
+describe("parseSpike: startup rows", () => {
+  const startup = {
+    kind: "startup", mode: "at-open", runtimeCached: true, modelsCached: true, firstAnswerMs: 2400, firstBackend: "webgpu",
+    gpuReadyMs: 1900, gpu: "ready", ua: "Mozilla/5.0",
+  };
+  it("keeps each start-up row the lab writes", () => {
+    for (const row of [
+      startup,
+      { ...startup, mode: "after-answer", firstBackend: "wasm", gpuReadyMs: null, gpu: null },
+      { ...startup, mode: "frontload", runtimeCached: false, modelsCached: false, firstAnswerMs: null, firstBackend: null, gpu: "off", gpuReadyMs: null },
+      { ...startup, gpu: "none", gpuReadyMs: null },
+    ]) expect(parseSpike(JSON.parse(JSON.stringify(row)))).toEqual(row);
+  });
+  it("refuses a start-up row that is not what the lab writes", () => {
+    for (const bad of [
+      { ...startup, mode: "off" }, { ...startup, mode: "auto" }, { ...startup, runtimeCached: "yes" }, { ...startup, modelsCached: null },
+      { ...startup, firstAnswerMs: -1 }, { ...startup, firstAnswerMs: 1.5 }, { ...startup, gpuReadyMs: 120_001 },
+      { ...startup, firstBackend: "cpu" }, { ...startup, gpu: "pending" }, { ...startup, ua: "x".repeat(301) },
+      { ...startup, extra: 1 }, (({ ua: _u, ...r }) => r)(startup),
+      // the pairs the lab writes together
+      { ...startup, firstAnswerMs: null }, { ...startup, firstBackend: null },
+      { ...startup, gpuReadyMs: null }, { ...startup, gpu: "none" }, { ...startup, gpu: "off" }, { ...startup, gpu: null },
+    ]) expect(parseSpike(bad)).toBeNull();
+  });
+  it("accepts exactly the scanner's start modes", () => {
+    expect([...STARTUP_MODES]).toEqual([...GPU_START_MODES]);
   });
 });
 

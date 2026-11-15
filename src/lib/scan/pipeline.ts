@@ -7,7 +7,7 @@ import {
 } from "./geometry";
 import { normalise } from "./match";
 import { DETECTOR_BYTES, DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_BYTES, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
-import { browserModelCacheDeps, pinnedBytes, pinnedCache, type ModelCacheDeps, type ModelFile } from "./model-cache";
+import { browserModelCacheDeps, filesCached, pinnedBytes, pinnedCache, type ModelCacheDeps, type ModelFile } from "./model-cache";
 import { scanMark } from "./marks";
 import { trackModelFile } from "./model-progress";
 import { isDark } from "./camera";
@@ -99,6 +99,11 @@ function downloadModelBytes(deps: ModelCacheDeps, keys: ModelKey[], report: bool
   return out;
 }
 
+/** Whether both model files are already in Cache Storage, read without downloading (`filesCached`), for the scan lab. */
+export function modelFilesCached(deps: ModelCacheDeps = browserModelCacheDeps()): Promise<boolean> {
+  return filesCached([DETECTOR, EMBEDDER], deps);
+}
+
 /**
  * Both models' sessions, each created as soon as its own file is in and handed to `hold` (so a caller can release one
  * whose sibling failed), and each run once on a blank input before it is answered: onnxruntime-web's first run of a
@@ -140,7 +145,11 @@ export type DetectorRaw = { detIn: Float32Array; corners: Float32Array };
 
 export type FrameRead =
   | { kind: "none"; dark: boolean; detMs: number; raw?: DetectorRaw }
-  | { kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number; raw: DetectorRaw };
+  | {
+      kind: "card"; dark: boolean; crop: Float32Array; embedding: Float32Array; outline: Outline; detMs: number; embMs: number; raw: DetectorRaw;
+      /** The runtime that embedded this frame (`switchingEmbedder`), for the scan lab's start-up rows. */
+      backend: "wasm" | "webgpu";
+    };
 
 /** What `read` takes: the camera's `<video>`, or a still (a chosen photo's `ImageBitmap`). */
 export type Source = CanvasImageSource & ({ videoWidth: number; videoHeight: number } | { width: number; height: number });
@@ -203,7 +212,7 @@ export function framePipeline(
       const out = await embed.run(crop, alive);
       if (!alive()) return null;
       const embedding = normalise(out.data);
-      return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1), raw };
+      return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1), raw, backend: out.backend };
     },
   };
 }

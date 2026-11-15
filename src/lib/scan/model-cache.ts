@@ -24,6 +24,19 @@ export const MODEL_CACHE_PREFIX = "scan-models-";
 /** The WebGPU runtime's WASM has a cache of its own, so a new runtime pin never evicts the models, nor the reverse. */
 export const RUNTIME_CACHE_PREFIX = "scan-ort-";
 
+/**
+ * How one load may fetch: `cacheOnly` never downloads (a missing or corrupt copy throws `NotCached` instead), and
+ * `signal` aborts a download (the scanner closed under it).
+ */
+export type FetchOpts = { cacheOnly?: boolean; signal?: AbortSignal };
+
+/** Thrown by a `cacheOnly` load whose file is not in Cache Storage intact: the caller's cue to wait, never a failure. */
+export class NotCached extends Error {
+  constructor() {
+    super("not in Cache Storage");
+  }
+}
+
 /** The cache that holds exactly these files: named by their hashes, so another revision is another cache. Pure. */
 export function modelCacheName(files: readonly ModelFile[], prefix = MODEL_CACHE_PREFIX): string {
   return prefix + files.map((f) => f.sha256.slice(0, 12)).join("-");
@@ -58,7 +71,7 @@ export function browserModelCacheDeps(): ModelCacheDeps {
  * never refused for want of a cache.
  */
 export async function modelBytes(
-  file: ModelFile, cacheName: string, deps: ModelCacheDeps, onProgress?: (p: ModelProgress) => void,
+  file: ModelFile, cacheName: string, deps: ModelCacheDeps, onProgress?: (p: ModelProgress) => void, opts: FetchOpts = {},
 ): Promise<ModelBytes> {
   let cache: Cache | null = null;
   try {
@@ -80,8 +93,9 @@ export async function modelBytes(
       // an unreadable entry is downloaded again
     }
   }
+  if (opts.cacheOnly) throw new NotCached();
   onProgress?.({ from: "network", loaded: 0, total: file.size ?? null, keeps: cache !== null });
-  const res = await deps.fetch(file.url);
+  const res = await (opts.signal ? deps.fetch(file.url, { signal: opts.signal }) : deps.fetch(file.url));
   if (!res.ok) throw new Error(`model download failed: ${res.status}`);
   // The cache is handed the response's own stream (a clone), so the page holds one copy of the bytes, not two.
   const kept = cache ? cache.put(file.url, res.clone()).then(() => true, () => false) : Promise.resolve(false);
@@ -131,6 +145,25 @@ async function readCounting(res: Response, file: ModelFile, onProgress?: (loaded
   return loaded === out.byteLength ? out.buffer : out.slice(0, loaded).buffer;
 }
 
+/**
+ * Whether the cache for `files` under `prefix` holds every one of them, asked of Cache Storage without opening (so
+ * creating) the cache or reading a byte: a scanner decides from it what to start at open (`gpu-start.ts`), and the scan
+ * lab records it. The hash is not checked here, so a load started on its word reads with `cacheOnly` (a corrupt copy
+ * then throws `NotCached` rather than downloading). Never rejects.
+ */
+export async function filesCached(files: readonly ModelFile[], deps: ModelCacheDeps, prefix = MODEL_CACHE_PREFIX): Promise<boolean> {
+  const store = deps.caches;
+  if (!store) return false;
+  try {
+    const cacheName = modelCacheName(files, prefix);
+    if (!(await store.has(cacheName))) return false;
+    for (const f of files) if (!(await store.match(f.url, { cacheName }))) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** Deletes every scanner cache under `prefix` but `keep`: the files of a revision no longer pinned. */
 export async function evictOtherModelCaches(keep: string, store: CacheStorage | null, prefix = MODEL_CACHE_PREFIX): Promise<void> {
   if (!store) return;
@@ -152,9 +185,9 @@ export function pinnedCache(files: readonly ModelFile[], deps: ModelCacheDeps, p
 
 /** One pinned file's bytes (`modelBytes`, reporting to `onProgress` when given), marking `mark` with where they came from, their size and the hash check's time. */
 export async function pinnedBytes(
-  file: ModelFile, cacheName: string, deps: ModelCacheDeps, mark: ScanMark, onProgress?: (p: ModelProgress) => void,
+  file: ModelFile, cacheName: string, deps: ModelCacheDeps, mark: ScanMark, onProgress?: (p: ModelProgress) => void, opts: FetchOpts = {},
 ): Promise<Uint8Array> {
-  const m = await modelBytes(file, cacheName, deps, onProgress);
+  const m = await modelBytes(file, cacheName, deps, onProgress, opts);
   scanMark(mark, { from: m.from, bytes: m.bytes.byteLength, hashMs: Math.round(m.hashMs) });
   return m.bytes;
 }

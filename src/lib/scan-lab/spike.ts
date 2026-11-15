@@ -1,10 +1,18 @@
 import { isUuid } from "../uuid";
+// Types only from the scanner: the route that parses these rows runs on Node and must load no browser module.
+import type { GpuStartMode } from "../scan/gpu-start";
 
 // The scan lab's WebGPU spike (lane 58, round 2, 2026-11-13): with "Compare WebGPU" on, the lab runs both models on
 // WebGPU beside the WASM it always runs, on the same frames, and records what each costs and whether they agree. It
 // also records, for every card the player taps, the server's answer for that card's FIRST frame (its guess and
 // margin), so a first-frame lookup's margin can be set against the answer the player confirmed. Rows go to
 // `POST /api/scan-lab/spike` (staging only, behind `SCAN_LAB_ENABLED`). Readings and timings only: never an image.
+
+/** `GPU_START_MODES` (`gpu-start.ts`) as the route accepts them, kept here so the route imports nothing from the
+ * scanner. The two lists are held equal by `spike.test.ts`, and the type below fails to compile on one the other lacks. */
+export const STARTUP_MODES = ["after-answer", "at-open", "frontload"] as const satisfies readonly GpuStartMode[];
+const everyMode: Exclude<GpuStartMode, (typeof STARTUP_MODES)[number]> extends never ? true : false = true;
+void everyMode;
 
 /** A frame batch's cap, and the request body's. */
 export const MAX_SPIKE_FRAMES = 40;
@@ -57,6 +65,25 @@ export type SpikeRow =
       first: { answered: boolean; oracleId: string | null; margin: number | null; ms: number };
       /** Card frames read in the run before the tap. */
       frames: number;
+    }
+  | {
+      /** One lab start with an embedder start mode chosen (`gpu-start.ts`, Hugh 2026-11-15): is starting WebGPU at open
+       * faster to the first answer than starting it after? Posted once the first answer is drawn and WebGPU settled,
+       * or as the page goes with what it has. */
+      kind: "startup";
+      mode: GpuStartMode;
+      /** What Cache Storage held as the lab started: the WebGPU runtime, and both models. */
+      runtimeCached: boolean;
+      modelsCached: boolean;
+      /** From `scan:open` (marked after the lab's cache check, so that check is excluded) to the first answer drawn; null when none was. */
+      firstAnswerMs: number | null;
+      /** The runtime that embedded the frame the first answer was drawn on. */
+      firstBackend: "wasm" | "webgpu" | null;
+      /** From `scan:open` to the WebGPU embedder warmed and switched in; null when it never was. */
+      gpuReadyMs: number | null;
+      /** How WebGPU ended: switched in, no adapter, a load that failed, or null while it was still loading. */
+      gpu: "ready" | "none" | "off" | null;
+      ua: string;
     };
 
 const isMs = (v: unknown): v is number => Number.isInteger(v) && (v as number) >= 0 && (v as number) <= MAX_MS;
@@ -96,6 +123,18 @@ export function parseSpike(raw: unknown): SpikeRow | null {
     if (!isObj(f) || !keysAre(f, ["answered", "oracleId", "margin", "ms"]) || typeof f.answered !== "boolean") return null;
     if (!(f.oracleId === null || isUuid(f.oracleId)) || !(f.margin === null || isNum(f.margin, -2, 2)) || !isMs(f.ms)) return null;
     if (!Number.isInteger(raw.frames) || (raw.frames as number) < 0 || (raw.frames as number) > 100_000) return null;
+    return raw as SpikeRow;
+  }
+  if (raw.kind === "startup") {
+    const keys = ["kind", "mode", "runtimeCached", "modelsCached", "firstAnswerMs", "firstBackend", "gpuReadyMs", "gpu", "ua"];
+    if (!keysAre(raw, keys) || !STARTUP_MODES.includes(raw.mode as GpuStartMode)) return null;
+    if (typeof raw.runtimeCached !== "boolean" || typeof raw.modelsCached !== "boolean") return null;
+    if (!(raw.firstAnswerMs === null || isMs(raw.firstAnswerMs)) || !(raw.gpuReadyMs === null || isMs(raw.gpuReadyMs))) return null;
+    if (!(raw.firstBackend === null || raw.firstBackend === "wasm" || raw.firstBackend === "webgpu")) return null;
+    if (!(raw.gpu === null || raw.gpu === "ready" || raw.gpu === "none" || raw.gpu === "off") || !isText(raw.ua, 300)) return null;
+    // The lab writes each pair together: a backend only with the answer it served, a ready time only with "ready".
+    if ((raw.firstBackend === null) !== (raw.firstAnswerMs === null)) return null;
+    if ((raw.gpu === "ready") !== (raw.gpuReadyMs !== null)) return null;
     return raw as SpikeRow;
   }
   return null;
