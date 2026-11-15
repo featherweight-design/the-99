@@ -245,8 +245,8 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
 
   // The lit control's box, read every frame: the page scrolls, the rail settles, a theme changes the type.
   const [rect, setRect] = useState<Box | null>(null);
-  // On the Install stop, the slot's Install button: the pass-through over it is the one control under the scrim a press
-  // reaches (G2). The page is inert while the tour runs, so the slot itself takes no press or focus.
+  // On the Install stop, the slot's Install button and its ✕: the pass-throughs over them are the only controls under the
+  // scrim a press reaches (G2). The page is inert while the tour runs, so the slot itself takes no press or focus.
   const [pressBox, setPressBox] = useState<Box | null>(null);
   // And its ✕, which the boards keep operable mid-stop (STATES: the slot dismissed mid-run just goes).
   const [closeBox, setCloseBox] = useState<Box | null>(null);
@@ -258,10 +258,11 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
       const next = r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null;
       setRect((prev) => (sameBox(prev, next) ? prev : next));
       const b = step.key === "install" && next ? (ask?.button()?.getBoundingClientRect() ?? null) : null;
-      const press = b ? { x: b.left, y: b.top, w: b.width, h: b.height } : null;
+      // A box with no size is a button not drawn (the slot stepping aside): no pass-through over it.
+      const press = b && b.width > 0 && b.height > 0 ? { x: b.left, y: b.top, w: b.width, h: b.height } : null;
       setPressBox((prev) => (sameBox(prev, press) ? prev : press));
       const x = step.key === "install" && next ? (ask?.closeButton()?.getBoundingClientRect() ?? null) : null;
-      const close = x ? { x: x.left, y: x.top, w: x.width, h: x.height } : null;
+      const close = x && x.width > 0 && x.height > 0 ? { x: x.left, y: x.top, w: x.width, h: x.height } : null;
       setCloseBox((prev) => (sameBox(prev, close) ? prev : close));
       setFrame((prev) => (prev.w === window.innerWidth && prev.h === window.innerHeight ? prev : { w: window.innerWidth, h: window.innerHeight }));
       raf = window.requestAnimationFrame(tick);
@@ -521,7 +522,7 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
           </span>
         </div>
         {step.key === "install" && ask && pressBox && (
-          // Over the lit Install button, last in the card's own focus cycle, after Finish (READINESS clarification 2). A
+          // Over the lit Install button, in the card's own focus cycle after Finish (READINESS clarification 2). A
           // press ends the tour, then does the slot's own press once the page is live again: the sheet on an iPhone,
           // `prompt()` on Android, still inside the press's activation window.
           <button

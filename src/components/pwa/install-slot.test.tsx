@@ -188,6 +188,8 @@ describe("InstallSlot", () => {
     act(() => installAsk()!.dismiss());
     expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
     expect(dismissalState()).toBe("quiet");
+    // Gone, the slot withdraws its ask: nothing else can press it.
+    expect(installAsk()).toBeNull();
   });
 
   it("goes when the shell hands a tab that drew it the stamp", () => {

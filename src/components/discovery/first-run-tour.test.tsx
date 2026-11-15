@@ -31,7 +31,7 @@ const { TargetsProvider, useTarget } = await import("./targets-provider");
 const { useScrollLock } = await import("../../lib/a11y/dialog");
 const { ARRIVE_MS } = await import("../moments/moments-provider");
 const { offerInstallAsk, INSTALL_ROW_KEY } = await import("../pwa/install-ask");
-const { useEffect, useRef } = await import("react");
+const { useEffect, useRef, useState } = await import("react");
 type InstallKind = import("../pwa/install-ask").InstallKind;
 const installPress = vi.fn();
 const installDismiss = vi.fn();
@@ -39,18 +39,35 @@ const installDismiss = vi.fn();
 /** The header's Install slot as it draws: its target, and its ask offered. */
 function InstallSlotStub({ kind }: { kind: InstallKind }) {
   const button = useRef<HTMLButtonElement | null>(null);
-  const register = useTarget("tour:install");
   const close = useRef<HTMLButtonElement | null>(null);
-  useEffect(
-    () => offerInstallAsk({ kind, press: installPress, button: () => button.current, dismiss: installDismiss, closeButton: () => close.current }),
-    [kind],
-  );
+  const register = useTarget("tour:install");
+  // As the real slot does: its ✕ dismisses it, and it goes, withdrawing its ask.
+  const [gone, setGone] = useState(false);
+  useEffect(() => {
+    if (gone) return;
+    return offerInstallAsk({
+      kind,
+      press: installPress,
+      button: () => button.current,
+      dismiss: () => {
+        installDismiss();
+        setGone(true);
+      },
+      closeButton: () => close.current,
+    });
+  }, [kind, gone]);
+  // jsdom lays nothing out: the buttons report the header slot's boxes, so the pass-throughs have somewhere to sit.
+  const boxed = (ref: { current: HTMLButtonElement | null }, x: number) => (el: HTMLButtonElement | null) => {
+    ref.current = el;
+    if (el) el.getBoundingClientRect = () => new DOMRect(x, 20, 44, 44);
+  };
+  if (gone) return null;
   return (
     <span ref={register}>
-      <button type="button" ref={button}>
+      <button type="button" ref={boxed(button, 150)}>
         Install
       </button>
-      <button type="button" ref={close}>
+      <button type="button" ref={boxed(close, 194)}>
         ✕
       </button>
     </span>
@@ -558,6 +575,14 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     expect(installPress).not.toHaveBeenCalled();
     expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
     expect(document.activeElement).toBe(within(card()).getByRole("button", { name: "Finish" }));
+    // The slot is gone: both pass-throughs and the ring drop, the card stays docked.
+    await act(async () => {
+      vi.advanceTimersByTime(20);
+    });
+    expect(document.querySelector("[data-tour-install-dismiss]")).toBeNull();
+    expect(document.querySelector("[data-tour-install-press]")).toBeNull();
+    expect(document.querySelector("[data-tour-ring]")).toBeNull();
+    expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
     next();
     expect(screen.queryByRole("dialog")).toBeNull();
   });
