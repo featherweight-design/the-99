@@ -16,6 +16,7 @@ import { anonSalt } from "../rate/anon";
 import { recordHit, sweepAfterResponse } from "../rate/observe";
 import { overLimit, RATE_RULES, retryAfterSec } from "../rate/rules";
 import { captureServerError, captureServerWarning } from "../sentry/capture";
+import { logEvent } from "../sentry/log-event";
 import { foldEmail } from "./rules";
 
 /** The free plan's default: Resend's 100 a day, shared with Concert Crawl, less margin. */
@@ -68,11 +69,13 @@ export async function mailRefusal(to: string, now: Date = new Date()): Promise<M
     if (reachesWarning(sent, cap)) {
       console.warn(`[mail] daily send cap at 80% (${sent} of ${cap})`);
       captureServerWarning("mail-cap", "Daily mail cap reached 80%");
+      logEvent("mail.cap_hit", { level: "warning", cap }, "warn");
     }
     if (sent > cap) {
       if (sent === cap + 1) {
         console.warn(`[mail] daily send cap reached (${cap})`);
         captureServerWarning("mail-cap", "Daily mail cap reached");
+        logEvent("mail.cap_hit", { level: "reached", cap }, "warn");
       }
       return { reason: "capped" };
     }

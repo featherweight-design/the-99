@@ -6,6 +6,7 @@ import { sweepFlyerClaims } from "../../../../lib/flyer/sweep";
 import { sweepInvites } from "../../../../lib/invites/sweep";
 import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
+import { logEvent } from "../../../../lib/sentry/log-event";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
@@ -27,6 +28,7 @@ export async function GET(req: NextRequest) {
   if (!bearerMatches(req.headers.get("authorization"), secret)) return new Response("Unauthorized", { status: 401 });
   // The staging project runs the same `vercel.json`; there the cron answers before it reads anything (`staging-pause.ts`).
   if (cronPausedHere()) return pausedResponse();
+  const started = Date.now();
   try {
     const report = await sweepInvites();
     // The flyer trial's claims lapse on the same hourly run (flyer trial PR 2a).
@@ -63,11 +65,13 @@ export async function GET(req: NextRequest) {
     // Counts only, never an id or an address.
     console.info(`[invite-sweep] returned ${report.returned}, revoked ${report.revoked}, reconciled ${report.reconciled}, kept ${report.kept}; flyer released ${flyer.released}, kept ${flyer.kept}; launch list ${purgeNote}; signed-out reports ${reportNote}`);
     await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_INVITE_SWEEP);
+    logEvent("cron.run", { cron: "invite-sweep", result: "ok", ms: Date.now() - started });
     return Response.json({ ...report, flyer, launchList, anonReports });
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[invite-sweep] sweep failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
     captureServerError("invite-sweep", error);
+    logEvent("cron.run", { cron: "invite-sweep", result: "failed", ms: Date.now() - started });
     return new Response("Sweep failed", { status: 500 });
   }
 }

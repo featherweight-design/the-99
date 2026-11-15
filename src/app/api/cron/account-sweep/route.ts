@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { sweepTombstones } from "../../../../lib/account/sweep";
 import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
+import { logEvent } from "../../../../lib/sentry/log-event";
 import { cronPausedHere, pausedResponse } from "../../../../lib/cron/staging-pause";
 
 // Pin to Node: the neon-serverless websocket driver does not run on Edge.
@@ -21,16 +22,19 @@ export async function GET(req: NextRequest) {
   if (!bearerMatches(req.headers.get("authorization"), secret)) return new Response("Unauthorized", { status: 401 });
   // The staging project runs the same `vercel.json`; there the cron answers before it reads anything (`staging-pause.ts`).
   if (cronPausedHere()) return pausedResponse();
+  const started = Date.now();
   try {
     const report = await sweepTombstones();
     // Counts only, never an id.
     console.info(`[account-sweep] re-purged ${report.swept}, failed ${report.failed}, retired ${report.retired}`);
     await pingHeartbeat(process.env.BETTERSTACK_HEARTBEAT_ACCOUNT_SWEEP);
+    logEvent("cron.run", { cron: "account-sweep", result: "ok", ms: Date.now() - started });
     return Response.json(report);
   } catch (error) {
     const code = (error as { cause?: { code?: unknown }; code?: unknown })?.cause?.code ?? (error as { code?: unknown })?.code;
     console.error(`[account-sweep] sweep failed${typeof code === "string" && /^[0-9A-Z]{5}$/.test(code) ? ` (${code})` : ""}`);
     captureServerError("account-sweep", error);
+    logEvent("cron.run", { cron: "account-sweep", result: "failed", ms: Date.now() - started });
     return new Response("Sweep failed", { status: 500 });
   }
 }

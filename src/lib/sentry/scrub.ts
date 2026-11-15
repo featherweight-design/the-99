@@ -1,4 +1,4 @@
-// What leaves the app for Sentry. Errors only, and nothing about who the player is: no user, no
+// What an ERROR event may carry to Sentry (spans: `span-scrub.ts`; logs: `log-scrub.ts`). Nothing about who the player is: no user,
 // cookies, no headers, no request body (a webhook's body and signature included), no query string,
 // no exception message beyond a closed list of exact framework strings (`KEPT_EXCEPTION_MESSAGES`) and, for the rest, its skeleton
 // in a closed vocabulary of error words (`message-skeleton.ts`). A client error's message is the original and can carry a card
