@@ -242,18 +242,19 @@ export async function buildFillPlan(
   const ownedIds = new Set(pool.map((c) => c.oracleId));
   // Help me choose under "Any cards". Decided once here, for the buy pool below and `planFill`.
   const anyCards = Boolean(options.answers) && !sleeveableOnly;
+  // `topCards` is every card on the commander's EDHREC page in LIST order (new, high synergy, top,
+  // then by type), and `unownedTopCards` keeps its first 100. That cut decides which cards can be
+  // bought at all, and list order put the instants and sorceries last: Szarel's Worldsoul's Rage
+  // (53%) and Planetary Annihilation (48%) sat at 103 and 104 of 241 and were never candidates,
+  // while the deck went short on removal. Ranked by inclusion, the cut keeps the best-played cards
+  // of every type. Every buy pool below is cut from this ranking: a plain create, Any cards, and
+  // the reach's buying half alike.
+  const rankedTopCards = data?.topCards ? byInclusion(data.topCards, inclusionOf) : null;
   const unownedTop = dedupeSelectionFromPool(
-    data?.topCards && !sleeveableOnly
+    rankedTopCards && !sleeveableOnly
       ? await unownedTopCards(
           commanders,
-          // `topCards` is every card on the commander's EDHREC page in LIST order (new, high
-          // synergy, top, then by type), and `unownedTopCards` keeps its first 100. Under "Any
-          // cards" that cut decides which cards can be bought at all, and list order put the
-          // instants and sorceries last: Szarel's Worldsoul's Rage (53%) and Planetary Annihilation
-          // (48%) sat at 103 and 104 of 241 and were never candidates, while the deck went short on
-          // removal. Ranked by inclusion, the cut keeps the best-played cards of every type. The
-          // other callers keep list order.
-          anyCards ? byInclusion(data.topCards, inclusionOf) : data.topCards,
+          rankedTopCards,
           ownedIds,
           new Set(commanders.map((c) => c.oracleId)),
         )
@@ -265,9 +266,9 @@ export async function buildFillPlan(
   // player's explicit Hit places one (`boughtRaisers`). Read only with a bracket answer (Help me choose's
   // switch is retired, always on), and degraded rather than fatal, since an own-only fill does not need them.
   const reachOn = options.answers?.bracket != null;
-  const reachOnlyTop = sleeveableOnly && reachOn && data?.topCards
+  const reachOnlyTop = sleeveableOnly && reachOn && rankedTopCards
     ? dedupeSelectionFromPool(
-        await unownedTopCards(commanders, data.topCards, ownedIds, new Set(commanders.map((c) => c.oracleId)))
+        await unownedTopCards(commanders, rankedTopCards, ownedIds, new Set(commanders.map((c) => c.oracleId)))
           .catch((err) => { console.warn("buildFillPlan: no top cards for the reach's buying half", err); return []; }),
         excludeOracleIds,
       ).filter((c) => !onlyOracleIdsMiss(options.onlyOracleIds, c.oracleId))
