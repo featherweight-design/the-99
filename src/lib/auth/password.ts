@@ -24,8 +24,21 @@ export type StrengthReading = {
   guides: StrengthGuides;
 };
 
-/** Characters, not UTF-16 units, so an emoji counts once. */
-export const passwordLength = (pw: string): number => [...pw].length;
+const segmenter = typeof Intl !== "undefined" && "Segmenter" in Intl ? new Intl.Segmenter(undefined, { granularity: "grapheme" }) : null;
+
+/**
+ * The password's length as a player counts it: grapheme clusters (what reads as one character, so a ZWJ family emoji is 1),
+ * or code points where `Intl.Segmenter` is missing. Both the length guide and the submit gate on Q1 and K5 read this, so
+ * the guide never ticks for a password the gate would stop. Clerk counts on its server and does not document how; a
+ * grapheme count is never more than the code-point, UTF-16 or byte count, so it is the strictest reading and errs short:
+ * anything that clears 8 here clears 8 under any of Clerk's possible counts.
+ */
+export function passwordLength(pw: string): number {
+  if (!segmenter) return [...pw].length;
+  let n = 0;
+  for (const _ of segmenter.segment(pw)) n++;
+  return n;
+}
 
 export const hasNumberOrSymbol = (pw: string): boolean => /[^\p{L}\p{M}\s]/u.test(pw);
 

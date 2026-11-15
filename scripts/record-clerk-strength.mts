@@ -3,8 +3,10 @@
 // CI never calls Clerk; this is run by hand when the list or Clerk's settings change.
 //
 // How: it opens a dev-browser session on the dev Frontend API (the one the publishable key names), reads the instance's
-// public `/v1/environment` (sign-up mode, `min_zxcvbn_strength`), then for each password starts a ticket sign-up with a
-// `+clerk_test` address, the player's first name, that password and a DELIBERATELY INVALID ticket. The instance is
+// public `/v1/environment` (sign-up mode, `min_zxcvbn_strength`), then for each password starts a ticket sign-up with the
+// row's address (and first name on Q1 rows), that password and a DELIBERATELY INVALID ticket. Each row records exactly the
+// inputs Clerk was sent. Clerk does not read either as a user input here: a password equal to the address's local part, or
+// to the first name, is accepted (measured 2026-11-15). The instance is
 // invite-only, and Clerk checks the password before the ticket (measured 2026-11-15): a weak or breached password comes back
 // `form_password_not_strong_enough` or `form_password_pwned`, and a password Clerk accepts comes back `ticket_invalid_code`,
 // recorded as `accepted`. With no valid ticket there is no invitation to redeem, so no attempt can create a sign-up or a user.
@@ -20,8 +22,10 @@ import { ZxcvbnFactory } from "@zxcvbn-ts/core";
 import { adjacencyGraphs, dictionary as commonDictionary } from "@zxcvbn-ts/language-common";
 
 const OUT = new URL("../src/lib/auth/strength-fixture.json", import.meta.url);
-const Q1 = ["Colin", "colin@example.com"];
-const K5 = ["colin@example.com"];
+/** Exactly what Clerk is sent, and so exactly what each row records as the estimator's inputs: Q1 has the first name, K5 does not. */
+const EMAIL = "colin@example.com";
+const Q1 = ["Colin", EMAIL];
+const K5 = [EMAIL];
 
 /** The list: every drawn sample, its swap, and each common pattern the third guide must catch. */
 const LIST: ReadonlyArray<{ password: string; inputs: string[] }> = [
@@ -29,7 +33,8 @@ const LIST: ReadonlyArray<{ password: string; inputs: string[] }> = [
   ...["colin9", "colinmtg", "password1", "colin1994", "copper fox casts ninety", "tidal-rummage", "Trombone#47x", "Kq#7mzpa", "Summer2024!", "Kettle#4", "Lantern#47x"].map(
     (password) => ({ password, inputs: Q1 }),
   ),
-  ...["colinmtg", "Kettle#4", "Lantern#47x"].map((password) => ({ password, inputs: K5 })),
+  ...["Rummage#4", "Strawberry!123"].map((password) => ({ password, inputs: Q1 })),
+  ...["colinmtg", "colin1994", "Kettle#4", "Lantern#47x", "Rummage#4", "Strawberry!123"].map((password) => ({ password, inputs: K5 })),
   // Common patterns: dictionary words, l33t, dates and years, keyboard runs, sequences, repeats, names.
   ...[
     "sunflower",
@@ -75,6 +80,25 @@ const LIST: ReadonlyArray<{ password: string; inputs: string[] }> = [
     "Christmas!123",
     "Tr0ub4dor&3x",
   ].map((password) => ({ password, inputs: Q1 })),
+  // Names and English words with digits or a symbol, no year (orchestrator ruling B, 2026-11-15): does Clerk refuse as too
+  // weak anything the common-only estimator reads as Good?
+  ...[
+    "Gonzalez#19x",
+    "Margaret!42",
+    "Elephant#77",
+    "Johnson#88x",
+    "Williams!73",
+    "Jennifer#58",
+    "Michelle!36",
+    "Butterfly#64",
+    "Mountain!82",
+    "Garcia#47x",
+    "Patricia!91",
+    "Rodriguez#5x",
+    "Kitchen!38",
+    "Thompson#62",
+    "Victoria!27",
+  ].map((password) => ({ password, inputs: Q1 })),
 ];
 
 const { NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: pk } = requireEnv(["NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY"]);
@@ -118,12 +142,12 @@ const attempt = (body: URLSearchParams) =>
 const recordedAt = new Date().toISOString();
 const rows: Array<{ password: string; inputs: string[]; clerk: string; source: string; recordedAt: string }> = [];
 let blocked: string | null = null;
-for (const [i, { password, inputs }] of LIST.entries()) {
+for (const { password, inputs } of LIST) {
   if (!blocked) {
     const body = new URLSearchParams({
       strategy: "ticket",
       ticket: "not-a-ticket",
-      email_address: `colin+clerk_test${i}@example.com`,
+      email_address: EMAIL,
       password,
       ...(inputs.includes("Colin") ? { first_name: "Colin" } : {}),
     });

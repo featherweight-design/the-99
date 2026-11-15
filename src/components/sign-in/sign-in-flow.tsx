@@ -23,6 +23,7 @@ import { FriendCard } from "../social/friend-card";
 import { PendingReporter } from "../shell/pending-reporter";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { CodeBoxes, LINKS, QUIET, QUIET_LINK, link, mmss, press, useTicking } from "../join/join-parts";
+import { passwordLength } from "../../lib/auth/password";
 import { HOME, hashReturn, withReturn } from "../../lib/auth/return-to";
 import { mirrorUrl } from "../../lib/url/mirror";
 import { CODE_ERR, Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "./auth-parts";
@@ -287,7 +288,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
   // K5.
   function savePassword(e?: FormEvent) {
     e?.preventDefault();
-    if (password.length < MIN_PASSWORD) {
+    if (passwordLength(password) < MIN_PASSWORD) {
       setLine(copy.tooShort);
       return;
     }

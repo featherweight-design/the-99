@@ -29,6 +29,7 @@ import { LegalLinks } from "../legal/legal-links";
 import { FORM, NewcomerColumn } from "../join/newcomer-column";
 import { field, press, quietPress } from "../join/join-parts";
 import { Field, GOOGLE, GoogleMark, HINT, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK_INVITE, codesOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "../sign-in/auth-parts";
+import { passwordLength } from "../../lib/auth/password";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
 const FACE: CardFace = {
@@ -183,7 +184,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
     e?.preventDefault();
     if (locked) return;
     // Q2, before Clerk is asked.
-    if (asks.password && password.length < MIN_PASSWORD) {
+    if (asks.password && passwordLength(password) < MIN_PASSWORD) {
       setLine(signInCopy.tooShort);
       return;
     }
