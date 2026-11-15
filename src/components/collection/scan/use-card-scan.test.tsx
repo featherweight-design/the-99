@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { EMBED_DIM } from "../../../lib/card-scan/match";
 import { scanTimer } from "../../../lib/scan/timing";
+import { matchedPrinting } from "../../../lib/scan/printing-order";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import { ADDED_MS, DARK_HOLD_MS, useCardScan, type AddOutcome, type CardScanDeps, type FrameRead } from "./use-card-scan";
 
@@ -272,6 +273,25 @@ describe("useCardScan", () => {
       expect(onAdd).toHaveBeenCalledTimes(1);
     });
 
+    it("Fast mode adds the matched printing by itself, with no printing step, for lookalike printings", async () => {
+      const C18 = "00000000-0000-4000-8000-000000000018";
+      const C19 = "00000000-0000-4000-8000-000000000019";
+      const tower = { ...SOL, name: "Command Tower", scryfallId: C18, printings: [{ scryfallId: C18, score: 0.62 }, { scryfallId: C19, score: 0.5 }] };
+      const { hook, onAdd } = setup({ fetch: vi.fn(() => json({ index: "all", guesses: [tower], margin: null })) as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 4000 });
+      // Auto hands the sheet the guess with no printing of its own; the sheet adds at `matchedPrinting`, the best scored.
+      const [g, mode, , picked] = onAdd.mock.calls[0] as unknown as [{ printings: { scryfallId: string; score: number }[] }, string, unknown, unknown];
+      expect(mode).toBe("fast");
+      expect(picked).toBeUndefined();
+      expect(g.printings).toEqual(tower.printings);
+      const loaded = [C19, C18].map((id) => ({
+        scryfallId: id, setCode: id === C18 ? "c18" : "c19", setName: null, collectorNumber: "1", releasedAt: null, imageUri: null,
+        flavorName: null, finishes: ["nonfoil" as const], owned: {},
+      }));
+      expect(matchedPrinting(loaded, g.printings)?.scryfallId).toBe(C18);
+      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+    });
+
     it("does not take a card again across a missed frame or two after it was added", async () => {
       const frame: FrameRead = { frame: { kind: "card", embedding: unit() }, cardInView: true, dark: false };
       let gap = 0;
@@ -465,17 +485,27 @@ describe("useCardScan", () => {
       expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
     });
 
-    it("adds a sure card at its printing with no step when that printing clearly beat the next (a distinct frame)", async () => {
-      const loadChoices = vi.fn(async () => CHOICES);
-      const scored = { ...SOL, printings: [{ scryfallId: CHOICES[1].scryfallId, score: 0.92 }, { scryfallId: CHOICES[0].scryfallId, score: 0.55 }] };
-      const fetch = vi.fn(() => json({ index: "all", guesses: [scored], margin: null }));
-      const { hook, onAdd } = setup({ storage: normal, loadChoices, fetch: fetch as unknown as typeof globalThis.fetch });
-      await waitFor(() => expect(onAdd).toHaveBeenCalledTimes(1), { timeout: 4000 });
-      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: SOL.oracleId }), "normal", expect.anything(), { choices: CHOICES, printing: CHOICES[1] });
-      expect(hook.result.current.screen).not.toMatchObject({ panel: { kind: "choose" } });
+    // Command Tower's C18 and C19 printings share one picture but score far apart (staging: their rows sit at cosine
+    // 0.556), so a photo of the C19 card can put C18 0.12 ahead. #2915 filed such a sure card at C18 with no step.
+    const C18 = { ...choice("1"), setCode: "c18", collectorNumber: "240" };
+    const C19 = { ...choice("2"), setCode: "c19", collectorNumber: "237" };
+    const TOWER = {
+      ...SOL, name: "Command Tower", scryfallId: C18.scryfallId,
+      printings: [{ scryfallId: C18.scryfallId, score: 0.62 }, { scryfallId: C19.scryfallId, score: 0.5 }],
+    };
+
+    it("asks which printing for a sure card with lookalike printings, however far ahead one scored, and files the one picked", async () => {
+      const fetch = vi.fn(() => json({ index: "all", guesses: [TOWER], margin: null }));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: vi.fn(async () => [C19, C18]), fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: [C19, C18] } }), { timeout: 4000 });
+      await act(async () => new Promise((r) => setTimeout(r, 50)));
+      expect(onAdd).not.toHaveBeenCalled();
+      await act(async () => hook.result.current.choosePrinting(C19));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ oracleId: TOWER.oracleId }), "normal", expect.anything(), { choices: [C19, C18], printing: C19 });
     });
 
-    it("asks which printing when two printings look the same (scores about equal)", async () => {
+    it("asks which printing when a card has more than one printing, even with close scores", async () => {
       const loadChoices = vi.fn(async () => CHOICES);
       const scored = { ...SOL, printings: [{ scryfallId: CHOICES[1].scryfallId, score: 0.921 }, { scryfallId: CHOICES[0].scryfallId, score: 0.918 }] };
       const fetch = vi.fn(() => json({ index: "all", guesses: [scored], margin: null }));
@@ -557,6 +587,22 @@ describe("useCardScan", () => {
       await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: CHOICES } }));
       await act(async () => hook.result.current.choosePrinting(CHOICES[1]));
       expect(onAdd).toHaveBeenLastCalledWith(expect.anything(), "normal", expect.objectContaining({ photo: "data:first" }), expect.anything());
+    });
+
+    it("Add another copy of a sure card with lookalike printings opens the step, and adds nothing before a pick", async () => {
+      const fetch = vi.fn(() => json({ index: "all", guesses: [TOWER], margin: null }));
+      const { hook, onAdd } = setup({ storage: normal, loadChoices: async () => [C19, C18], fetch: fetch as unknown as typeof globalThis.fetch });
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: [C19, C18] } }), { timeout: 4000 });
+      await act(async () => hook.result.current.choosePrinting(C19));
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "sure", again: { kind: "duplicate" } } }), { timeout: 4000 });
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      act(() => hook.result.current.add());
+      await waitFor(() => expect(hook.result.current.screen).toMatchObject({ panel: { kind: "choose", choices: [C19, C18] } }));
+      await act(async () => new Promise((r) => setTimeout(r, 50)));
+      expect(onAdd).toHaveBeenCalledTimes(1);
+      await act(async () => hook.result.current.choosePrinting(C19));
+      expect(onAdd).toHaveBeenCalledTimes(2);
+      expect(onAdd).toHaveBeenLastCalledWith(expect.objectContaining({ oracleId: TOWER.oracleId }), "normal", expect.anything(), { choices: [C19, C18], printing: C19 });
     });
 
     it("Not this card adds nothing and reads on past that answer", async () => {

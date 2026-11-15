@@ -60,7 +60,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   row names the card and never a printing: the index matches the card, and the printing added is the sheet's (Auto
   takes the best-scored printing it matched, Normal asks), drawn on the list line.
   In the camera (Hugh, 2026-10-16), Auto adds a sure card with no press, at the printing the scan matched (#2146), and Normal opens that
-  card's printings on the panel (the shipped `PrintingRegion`) and adds the one picked; a card added and never out of
+  card's printings on the panel (the shipped `PrintingRegion`) and adds the one picked (by itself only when the card has a
+  single printing); a card added and never out of
   the frame is not taken again (R1), and a second copy needs the frame to empty first (R2). Below the gate the panel
   still asks Not sure, and nothing reaches the collection before the review's Save.
   **Auto's add is OPTIMISTIC** (Hugh, 2026-10-16; Fast was renamed Auto in every string a player reads): the sheet's
@@ -149,10 +150,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   database's own build against an exact scan per `ef_search`. A build that still misses at 1000 needs a rebuild with
   larger `m` / `ef_construction`, which is Hugh's to run on production.
   **Normal's printing step uses the server's scored printings** (`Guess.printings`, `orderPrintings`): a card with one
-  printing is added at it with no step, and so is a sure card (its own take, or Add another copy) whose best scored
-  printing beats the next scored one by `PRINTING_SURE_MARGIN` (0.10; Hugh, 2026-11-13: a direct image match adds as
-  Auto does). Lookalike printings (one picture, one frame) score about equal and keep asking, as does a card picked
-  from Not sure; the threshold's staging evidence sits beside the constant. Otherwise the step leads with the scored printings, best first and selected,
+  printing is added at it with no step; any other card asks, sure or not. No score margin skips the step: #2915 added
+  one (0.10) on the claim that printings sharing one picture score about equal, but staging's Command Tower C18 and C19
+  rows (the same art) sit at cosine 0.556, and Normal filed a C19 card as C18 with no step (2026-11-14). The step leads with the scored printings, best first and selected,
   behind `Show all printings`, and Add this printing takes the selection. A guess without scores (an older server)
   draws every printing and a tap takes it, as before. The printings are read once per card in a scanner session,
   begun for every card the server names the moment it answers (`choicesFor`), and each scan's own short list's Scryfall

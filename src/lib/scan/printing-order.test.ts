@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PrintingChoice } from "../collection/catalog-read";
-import { PRINTING_SURE_MARGIN, matchedPrinting, orderPrintings } from "./printing-order";
+import { matchedPrinting, orderPrintings, type PrintingOrder } from "./printing-order";
 
 const P = (id: string): PrintingChoice => ({
   scryfallId: id, setCode: id, setName: null, collectorNumber: "1", releasedAt: null, imageUri: null, flavorName: null,
@@ -38,28 +38,31 @@ describe("orderPrintings", () => {
 });
 
 describe("orderPrintings' printing gate", () => {
-  it("auto-picks a sure card's best printing when it clears the next scored one by the margin (a distinct frame)", () => {
-    const o = orderPrintings(loaded, [{ scryfallId: "old", score: 0.9 }, { scryfallId: "mid", score: 0.9 - 2 * PRINTING_SURE_MARGIN }], true);
-    expect(o.autoPick).toBe(true);
-    expect(o.preselected?.scryfallId).toBe("old");
+  // Command Tower's C18 and C19 printings share one picture, yet their index rows sit at cosine 0.556 (staging,
+  // 2026-11-14), so a photo of the C19 card can score C18 well ahead. #2915 took a sure card's best printing when it
+  // led by 0.10, and filed C19 cards as C18. A caller that still passes the old `sure` argument must get the step.
+  const C18 = P("c18-240");
+  const C19 = P("c19-237");
+  const scored = [{ scryfallId: C18.scryfallId, score: 0.62 }, { scryfallId: C19.scryfallId, score: 0.5 }];
+  // Passes the removed `sure` arg so this test fails on the pre-fix code.
+  const withSure = orderPrintings as unknown as (p: PrintingChoice[], s: typeof scored, sure: boolean) => PrintingOrder;
+
+  it("never auto-picks a card with two printings, however far ahead (and however sure) the best one scored", () => {
+    const o = withSure([C19, C18], scored, true);
+    expect(o.autoPick).toBe(false);
+    expect(o.preselected).toEqual(C18);
+    expect(o.short).toEqual([C18, C19]);
+    expect(orderPrintings([C19, C18], scored).autoPick).toBe(false);
+    expect(withSure(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.2 }], true).autoPick).toBe(false);
   });
 
-  it("asks for a lookalike pair (one picture, one frame: the scores about equal)", () => {
-    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.912 }, { scryfallId: "mid", score: 0.91 }], true).autoPick).toBe(false);
+  it("auto-picks a card with exactly one printing, sure or not", () => {
+    expect(withSure([C18], [{ scryfallId: C18.scryfallId, score: 0.62 }], true).autoPick).toBe(true);
+    expect(orderPrintings([C18], []).autoPick).toBe(true);
   });
 
-  it("asks for a card that was not sure, however clear its printing", () => {
-    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "mid", score: 0.3 }], false).autoPick).toBe(false);
-    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "mid", score: 0.3 }]).autoPick).toBe(false);
-  });
-
-  it("keeps today's rule with fewer than two scored printings, and weighs a runner-up the loaded list lacks", () => {
-    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }], true).autoPick).toBe(false);
-    expect(orderPrintings(loaded, [], true).autoPick).toBe(false);
-    // a runner-up the loaded list lacks still counts: close, it asks; far behind, the best is clear
-    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.94 }], true).autoPick).toBe(false);
-    expect(orderPrintings(loaded, [{ scryfallId: "old", score: 0.95 }, { scryfallId: "gone", score: 0.2 }], true).autoPick).toBe(true);
-    expect(orderPrintings([P("only")], [], true).autoPick).toBe(true);
+  it("Auto still takes the printing the scan scored best", () => {
+    expect(matchedPrinting([C19, C18], scored)).toEqual(C18);
   });
 });
 
