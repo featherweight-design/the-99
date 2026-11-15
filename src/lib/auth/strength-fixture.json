@@ -1,0 +1,373 @@
+{
+  "minZxcvbnStrength": 2,
+  "signUpMode": "restricted",
+  "rows": [
+    {
+      "password": "colin9",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_length_too_short",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "colinmtg",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "password1",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "colin1994",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "copper fox casts ninety",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "tidal-rummage",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Trombone#47x",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Kq#7mzpa",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Summer2024!",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_pwned",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Kettle#4",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Lantern#47x",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "colinmtg",
+      "inputs": [
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Kettle#4",
+      "inputs": [
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Lantern#47x",
+      "inputs": [
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "sunflower",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "basketball7",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "P@ssw0rd",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Password123!",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "iloveyou2",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "letmein!!",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "dragon2020",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "January1994",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "12/05/1994",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "qwertyuiop",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "asdfghjkl;",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "abcdefgh1",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "12345678",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "aaaaaaaa",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "abcabcabc",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Jennifer1",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Colin2025!",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "colin@example",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "monkey123",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_not_strong_enough",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "correct horse battery staple",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "form_password_pwned",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "violet anchor drifts slowly",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "zq8!Lm2#Vx",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    },
+    {
+      "password": "Rk4$wP9n!tYc",
+      "inputs": [
+        "Colin",
+        "colin@example.com"
+      ],
+      "clerk": "accepted",
+      "source": "clerk-dev",
+      "recordedAt": "2026-11-15T07:50:29.398Z"
+    }
+  ]
+}

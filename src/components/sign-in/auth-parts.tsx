@@ -9,7 +9,7 @@ import { taskPath } from "../../lib/auth/session-tasks";
 import { signInCopy } from "../../lib/copy/join";
 import { field, quietPress } from "../join/join-parts";
 
-export const MIN_PASSWORD = 8;
+export { MIN_PASSWORD } from "../../lib/auth/password";
 export { SSO_CALLBACK, SSO_CALLBACK_INVITE, SSO_FROM_INVITE } from "./sso-paths";
 
 /** K1's Google press: the outline press (`.gbtn`) with Google's mark. */
