@@ -68,7 +68,8 @@ describe("ResultView", () => {
   });
 
   it("draws no chip on an owned add nothing holds", () => {
-    render(<ResultView panel={panel} run={run()} />);
+    const free: UpgradePanel = { ...panel, cards: { ...panel.cards, add2: { ...panel.cards.add2, availability: { owned: 1, hard: 0, soft: 0, free: 1, claims: [] } } } };
+    render(<ResultView panel={free} run={run()} />);
     const owned = screen.getAllByRole("listitem").find((r) => within(r).queryByText("Add 2"))!;
     expect(within(owned).queryByText("you own it")).toBeNull();
     expect(within(owned).queryByText("$1.20")).toBeNull();
