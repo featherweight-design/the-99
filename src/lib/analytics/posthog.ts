@@ -108,7 +108,7 @@ export function posthogOptions(apiHost: string): Partial<PostHogConfig> {
   };
 }
 
-/** Super-properties on every event: `release`, the build's short commit SHA. Left off when there is none. */
+/** The build's short commit SHA as the `release` super-property. Left off when there is none. (`standalone` joins it in `startAnalytics`.) */
 export function releaseProperties(commitSha: string | undefined): Record<string, string> {
   const sha = commitSha?.trim();
   return sha ? { release: sha.slice(0, 7) } : {};
@@ -120,11 +120,13 @@ export type AnalyticsConfig = {
   commitSha: string | undefined;
   /** The page's hostname, `window.location.hostname`. */
   hostname: string;
+  /** Whether the app runs installed (`display-mode: standalone`): a super-property, so every event says which it came from. */
+  standalone?: boolean;
 };
 
 let client: Promise<PostHog | null> | null = null;
 /** Registered at init and again after every reset, which clears super-properties along with the identity. */
-let release: Record<string, string> = {};
+let release: Record<string, string | boolean> = {};
 
 /** Starts PostHog once, when both gates pass. Resolves to null when dormant or when anything fails. */
 export function startAnalytics(config: AnalyticsConfig): Promise<PostHog | null> {
@@ -134,7 +136,7 @@ export function startAnalytics(config: AnalyticsConfig): Promise<PostHog | null>
   client = import("posthog-js")
     .then(({ default: posthog }) => {
       posthog.init(key, posthogOptions(posthogApiHost(config.host)));
-      release = releaseProperties(config.commitSha);
+      release = { ...releaseProperties(config.commitSha), ...(config.standalone === undefined ? {} : { standalone: config.standalone }) };
       posthog.register(release);
       return posthog;
     })
@@ -194,5 +196,6 @@ export function captureSignOutEvidence(e: Evidence): void {
     online: e.online,
     pressed_sign_out: e.pressedSignOut,
     client_sessions: e.clientSessions,
+    client_changed: e.clientChanged,
   }));
 }

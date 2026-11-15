@@ -1,28 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { clerkCookies, platformOf, PRESS_WINDOW_MS, signOutEvidence, type BrowserFacts } from "./sign-out-evidence";
+import { clerkCookies, hashClientId, platformOf, PRESS_WINDOW_MS, signOutEvidence, type BrowserFacts } from "./sign-out-evidence";
 
 const facts: BrowserFacts = { standalone: true, platform: "ios", clientUat: "zero", sessionCookie: false, visibility: "visible", online: true };
 const now = Date.UTC(2026, 10, 8, 12);
 
 describe("signOutEvidence", () => {
   it("is null when this browser never saw the reader signed in", () => {
-    expect(signOutEvidence({ kind: "signed_out_load", seenAt: null, pressedAt: null, now, facts, clientSessions: 0 })).toBeNull();
+    expect(signOutEvidence({ kind: "signed_out_load", seenAt: null, pressedAt: null, now, facts, clientSessions: 0, storedClient: null, currentClient: null })).toBeNull();
   });
 
   it("carries whole hours since last seen, the browser facts and the session count", () => {
-    const e = signOutEvidence({ kind: "signed_out_load", seenAt: now - 50 * 3_600_000 - 1, pressedAt: null, now, facts, clientSessions: 0 });
-    expect(e).toEqual({ ...facts, kind: "signed_out_load", hoursSinceSeen: 50, pressedSignOut: false, clientSessions: 0 });
+    const e = signOutEvidence({ kind: "signed_out_load", seenAt: now - 50 * 3_600_000 - 1, pressedAt: null, now, facts, clientSessions: 0, storedClient: null, currentClient: null });
+    expect(e).toEqual({ ...facts, kind: "signed_out_load", hoursSinceSeen: 50, pressedSignOut: false, clientSessions: 0, storedClient: null, currentClient: null });
   });
 
   it("counts a Sign out press only inside its window", () => {
-    const base = { kind: "session_ended" as const, seenAt: now - 1000, now, facts, clientSessions: null };
+    const base = { kind: "session_ended" as const, seenAt: now - 1000, now, facts, clientSessions: null, storedClient: null, currentClient: null };
     expect(signOutEvidence({ ...base, pressedAt: now - 1000 })?.pressedSignOut).toBe(true);
     expect(signOutEvidence({ ...base, pressedAt: now - PRESS_WINDOW_MS - 1 })?.pressedSignOut).toBe(false);
     expect(signOutEvidence({ ...base, pressedAt: now + 1000 })?.pressedSignOut).toBe(false);
   });
 
   it("never reports negative hours for a clock that moved back", () => {
-    expect(signOutEvidence({ kind: "session_ended", seenAt: now + 10_000, pressedAt: null, now, facts, clientSessions: 1 })?.hoursSinceSeen).toBe(0);
+    expect(signOutEvidence({ kind: "session_ended", seenAt: now + 10_000, pressedAt: null, now, facts, clientSessions: 1, storedClient: null, currentClient: null })?.hoursSinceSeen).toBe(0);
+  });
+});
+
+describe("client changed", () => {
+  const base = { kind: "signed_out_load" as const, seenAt: now - 1000, pressedAt: null, now, facts, clientSessions: 0 };
+  it("is true for another client, false for the same one with no session, null when either side is unknown", () => {
+    const a = hashClientId("client_aaa");
+    const b = hashClientId("client_bbb");
+    expect(signOutEvidence({ ...base, storedClient: a, currentClient: b })?.clientChanged).toBe(true);
+    expect(signOutEvidence({ ...base, storedClient: a, currentClient: a })?.clientChanged).toBe(false);
+    expect(signOutEvidence({ ...base, storedClient: null, currentClient: a })?.clientChanged).toBeNull();
+    expect(signOutEvidence({ ...base, storedClient: a, currentClient: null })?.clientChanged).toBeNull();
+  });
+});
+
+describe("hashClientId", () => {
+  it("is stable, short, hex, and never the id", () => {
+    const h = hashClientId("client_2abc123");
+    expect(h).toBe(hashClientId("client_2abc123"));
+    expect(h).toMatch(/^[0-9a-f]{14}$/);
+    expect(h).not.toContain("2abc123");
+    expect(hashClientId("client_2abc124")).not.toBe(h);
+  });
+  it("is null with no id", () => {
+    expect(hashClientId(undefined)).toBeNull();
+    expect(hashClientId("")).toBeNull();
   });
 });
 
