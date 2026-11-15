@@ -8,7 +8,7 @@ describe("clerkEmailParts", () => {
     const m = clerkEmailParts(kind, "https://the-99.dev");
 
     it(`${kind}: puts Clerk's code variable once in its own <re-text> (as Clerk's default does) and once on its own line of the text`, () => {
-      expect(m.html).toMatch(/<re-text [^>]*>\s*\{\{otp_code\}\}\s*<\/re-text>/);
+      expect(m.html).toMatch(/<re-text [^>]*>\s*<span [^>]*>\{\{otp_code\}\}<\/span>\s*<\/re-text>/);
       expect(m.html.match(/\{\{otp_code\}\}/g)).toHaveLength(2); // the title carries it too, as Clerk's default does
       expect(m.text.split("\n")).toContain(CLERK_OTP);
       expect(m.subject).toContain(CLERK_OTP);
@@ -24,7 +24,7 @@ describe("clerkEmailParts", () => {
       expect(m.html.startsWith("<re-html>")).toBe(true);
       expect(m.html).not.toMatch(/<(table|td|tr|p|img|div|html|body)[\s>]/i);
       const tags = new Set([...m.html.matchAll(/<(\/?)([a-z][a-z0-9-]*)/g)].map((t) => t[2]));
-      for (const tag of tags) expect(["re-html", "re-head", "re-title", "re-style", "re-body", "re-preheader", "re-header", "re-main", "re-block", "re-heading", "re-text", "re-image", "re-link", "re-footer", "re-divider"], tag).toContain(tag);
+      for (const tag of tags) expect(["re-html", "re-head", "re-title", "re-body", "re-preheader", "re-header", "re-main", "re-block", "re-heading", "re-text", "re-image", "re-grid", "re-column", "re-footer", "re-divider", "span", "a", "br"], tag).toContain(tag);
       expect(m.html).toContain('background-color="#14110E"');
     });
 
