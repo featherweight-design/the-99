@@ -37,6 +37,15 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLE
 // is actually set up.
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// Clerk's testing token is fetched and set only for a development instance (pk_test) on this machine: never for a pk_live
+// key, never for a staging or production URL. `lib/env.mjs` loads the repository's env file, which sets
+// NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY; `clerkSetup` reads CLERK_PUBLISHABLE_KEY first, so either counts. The token stays in
+// Playwright's memory, never printed or written, and neither the key nor the token is ever logged.
+const CLERK_KEY = process.env.CLERK_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || "";
+const TESTING_TOKEN = CLERK_KEY.startsWith("pk_test_") && /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(BASE);
+if (!TESTING_TOKEN) {
+  console.error("Clerk testing token skipped: it is set only for a pk_test instance on a localhost PROBE_BASE.");
+}
 const inventoryPath = process.argv[2];
 
 if (!inventoryPath) throw new Error("Pass the inventory JSON path.");
@@ -56,7 +65,7 @@ const WIDTHS = inventory.widths ?? [
 ];
 
 async function signIn(page) {
-  await setupClerkTestingToken({ page });
+  if (TESTING_TOKEN) await setupClerkTestingToken({ page });
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
   await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 30_000 });
   const failure = await page.evaluate(
@@ -428,7 +437,7 @@ try {
     launchEmail = `sheet-${Date.now()}-${process.pid}@scratch-contact-sheet.test`;
     process.env[inventory.launchListEmailVar] = launchEmail;
   }
-  await clerkSetup();
+  if (TESTING_TOKEN) await clerkSetup();
   for (const size of WIDTHS) {
     // `"camera": { w, h, card?, share, cx, cy, angle }` on a width gives that width its own browser with a fake
     // camera playing the scene (`lib/fake-camera.mjs`), for a surface that reads the camera.
@@ -488,7 +497,9 @@ try {
     // Signed out still carries Clerk's testing token, or a page that talks to Clerk (the sign-in and sign-up flows)
     // is photographed behind its bot check.
     else {
-      await setupClerkTestingToken({ page });
+      // Only against a development Clerk instance on this machine (`TESTING_TOKEN`): never a pk_live key, never a
+      // staging or production URL. The token is held by Playwright in memory and is never printed or written to a file.
+      if (TESTING_TOKEN) await setupClerkTestingToken({ page });
       await page.goto(`${BASE}/offline`, { waitUntil: "domcontentloaded" });
     }
     // The server draws Low Sun for a key it does not know and a survivor for a retired one (`themeFor`), so a typo

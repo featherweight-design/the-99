@@ -16,7 +16,7 @@ vi.mock("../../lib/auth/strength-estimator", () => {
   };
 });
 
-import { ANNOUNCE_MS, usePasswordStrength } from "./use-password-strength";
+import { ANNOUNCE_MS, RETRY_MS, usePasswordStrength } from "./use-password-strength";
 
 beforeEach(() => {
   vi.useFakeTimers();
@@ -39,12 +39,14 @@ const pause = (ms = ANNOUNCE_MS) => act(() => vi.advanceTimersByTimeAsync(ms));
 
 describe("usePasswordStrength: the lazy estimator", () => {
   it("does not load the estimator until the field is focused, and reads unscored until then", async () => {
-    const h = hook("longenough");
+    const h = hook("");
     await flush();
     expect(m.loads).toBe(0);
     expect(h.result.current.reading.strength).toBe("short");
     expect(h.result.current.reading.guides.common).toBe(false);
     act(() => h.result.current.prime());
+    await flush();
+    h.rerender({ pw: "longenough", quiet: false });
     await flush();
     expect(m.loads).toBe(1);
     expect(h.result.current.reading.strength).toBe("good");
@@ -52,6 +54,39 @@ describe("usePasswordStrength: the lazy estimator", () => {
     act(() => h.result.current.prime());
     await flush();
     expect(m.loads).toBe(1);
+  });
+
+  it("loads on the first character too, for a field filled without a focus", async () => {
+    const h = hook("");
+    await flush();
+    expect(m.loads).toBe(0);
+    h.rerender({ pw: "longenough", quiet: false });
+    await flush();
+    expect(m.loads).toBe(1);
+    expect(h.result.current.reading.strength).toBe("good");
+  });
+
+  it("a failed load is tried again on a later focus or keystroke, at most once per RETRY_MS", async () => {
+    m.fail = true;
+    const h = hook("");
+    act(() => h.result.current.prime());
+    await flush();
+    expect(m.loads).toBe(1);
+    expect(h.result.current.reading.strength).toBe("short");
+    // Inside the backoff: neither a focus nor a keystroke tries again.
+    vi.resetModules();
+    m.fail = false;
+    act(() => h.result.current.prime());
+    h.rerender({ pw: "longenough", quiet: false });
+    await flush();
+    expect(m.loads).toBe(1);
+    expect(h.result.current.reading.strength).toBe("short");
+    // Past it, the next keystroke loads it.
+    await act(() => vi.advanceTimersByTimeAsync(RETRY_MS));
+    h.rerender({ pw: "longenough2", quiet: false });
+    await flush();
+    expect(m.loads).toBe(2);
+    expect(h.result.current.reading.strength).toBe("good");
   });
 
   it("passes the player's inputs to the estimator", async () => {
@@ -107,6 +142,23 @@ describe("usePasswordStrength: the polite line", () => {
     h.rerender({ pw: "abcdefghi1", quiet: false });
     await pause();
     expect(h.result.current.live).toBe("Good. 3 of 3 done.");
+  });
+
+  it("an emptied field resets the line: K5, the email screen, then K5 again speaks as the first time", async () => {
+    const h = hook();
+    h.rerender({ pw: "a1", quiet: false });
+    await pause();
+    expect(h.result.current.live).toBe("1 of 3 done.");
+    // The email screen: K5's field is gone, so the hook reads "". Nothing speaks and the line is cleared.
+    h.rerender({ pw: "", quiet: false });
+    await pause();
+    expect(h.result.current.live).toBe("");
+    // Back on K5, the same reading as before speaks again, since it is compared with the empty field.
+    h.rerender({ pw: "b2", quiet: false });
+    const before = renders;
+    await pause();
+    expect(renders).toBeGreaterThan(before);
+    expect(h.result.current.live).toBe("1 of 3 done.");
   });
 
   it("stays quiet while a refusal's alert shows, and speaks again once it clears", async () => {

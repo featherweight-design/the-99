@@ -26,7 +26,7 @@ import { CodeBoxes, LINKS, QUIET, QUIET_LINK, link, mmss, press, useTicking } fr
 import { passwordLength } from "../../lib/auth/password";
 import { HOME, hashReturn, withReturn } from "../../lib/auth/return-to";
 import { mirrorUrl } from "../../lib/url/mirror";
-import { CODE_ERR, Field, GOOGLE, GoogleMark, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, codeOf, isPasswordRefusal, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "./auth-parts";
+import { CODE_ERR, Field, GOOGLE, GoogleMark, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, SignLine, codeOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "./auth-parts";
 import { STRENGTH_ID, StrengthPanel } from "./strength-panel";
 import { usePasswordStrength } from "./use-password-strength";
 
@@ -360,7 +360,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
   // K5's live strength reads only K5's field, and the address as the player's own words (READINESS clarification 4).
   const choosing = screen === "newPassword";
   const strength = usePasswordStrength(choosing ? password : "", [address], choosing && !!line);
-  const errLine = line && <p id={LINE_ID} role="alert" className={codeScreen ? CODE_ERR : SIGN_ERR}>{line}</p>;
+  const errLine = line && <SignLine line={line} className={codeScreen ? CODE_ERR : SIGN_ERR} />;
   const foot = (
     <p className={QUIET.replace("mt-[22px]", "mt-[18px]")}>
       {copy.newHere} <Link href="/sign-up" className={QUIET_LINK}>{copy.howToJoin}<PendingReporter href="/sign-up" /></Link>
@@ -455,7 +455,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
         />
         {/* Live strength (R1c): any line takes the slot under its meter. Only Clerk's verdict empties the meter; the failed
             line is no verdict on strength (READINESS clarification 3). */}
-        <StrengthPanel reading={strength.reading} line={line} verdict={isPasswordRefusal(line)} live={strength.live} />
+        <StrengthPanel reading={strength.reading} line={line} live={strength.live} />
         <button type="submit" disabled={locked} className={press(busy ? "busy" : "ready")}>{busy || leaving ? copy.saving : copy.save}</button>
       </form>
     );

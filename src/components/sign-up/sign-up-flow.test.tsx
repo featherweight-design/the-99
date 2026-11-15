@@ -22,6 +22,14 @@ vi.mock("@clerk/nextjs", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: m.push, replace: m.replace }) }));
 vi.mock("../ui/hydrated-art", () => ({ FadingImg: () => null, useHydrated: () => true }));
 vi.mock("../ui/art-layer", () => ({ ArtLayer: () => null }));
+// Q1's estimator, reached by the panel's dynamic import on the field's first focus or character: 8 or more characters read Good.
+vi.mock("../../lib/auth/strength-estimator", () => ({
+  estimate: (pw: string) => ({
+    strength: pw.length >= 8 ? "good" : "short",
+    commonOk: pw.length >= 8,
+    guides: { length: pw.length >= 8, numberOrSymbol: false, common: pw.length >= 8 },
+  }),
+}));
 
 import { SignUpFlow } from "./sign-up-flow";
 import { GOOGLE_LEAVE_MS, LINE_ID } from "../sign-in/auth-parts";
@@ -284,6 +292,15 @@ describe("SignUpFlow: Make my account (Q2 to Q5)", () => {
     await makeWith();
     await screen.findByRole("heading", { name: signUpCopy.refusedTitle });
     expect(m.signInTicket).not.toHaveBeenCalled();
+  });
+
+  it("the polite line stays quiet while J3's failed line shows under the press", async () => {
+    s.create.mockImplementation(async () => ({ error: refusal("something_new") }));
+    await makeWith();
+    await waitFor(() => expect(alert()).toBe(joinCopy.failed));
+    // Past the 1s pause the line would speak after, it has said nothing: the alert is the one voice.
+    await act(() => new Promise((done) => setTimeout(done, 1300)));
+    expect(document.querySelector("[data-strength-live]")?.textContent).toBe("");
   });
 
   it.each([

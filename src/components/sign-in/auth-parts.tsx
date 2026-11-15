@@ -67,6 +67,14 @@ export function Field({ label, value, line, danger = false, locked, top = "", lo
   );
 }
 
+/**
+ * The sign-in's and sign-up's one line for a refusal or a failure: `LINE_ID`, `role="alert"` and the `SIGN_ERR` look (the code
+ * screens pass `CODE_ERR`). The flows and the strength panel's slot all draw it, so the three live in one place.
+ */
+export function SignLine({ line, className = SIGN_ERR }: { line: string; className?: string }) {
+  return <p id={LINE_ID} role="alert" className={className}>{line}</p>;
+}
+
 /** A line that is Clerk's verdict on a new password (Q2 to Q4), not a failure to reach it: the strength meter empties under it. */
 export const isPasswordRefusal = (line: string | null): boolean =>
   line === signInCopy.tooShort || line === signInCopy.tooWeak || line === signInCopy.breached;

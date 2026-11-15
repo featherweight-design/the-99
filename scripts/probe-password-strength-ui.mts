@@ -31,6 +31,11 @@ if (!PUBLISHABLE.startsWith("pk_test_") || !SECRET.startsWith("sk_test_")) {
   throw new Error("Refusing: this probe runs against Clerk's development instance only (pk_test/sk_test).");
 }
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// Clerk's testing token is fetched only for the development instance (checked above) on this machine: never for a staging
+// or production URL. It stays in Playwright's memory and is never printed or written.
+if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(BASE)) {
+  throw new Error("Refusing: PROBE_BASE must be a localhost dev server (the Clerk testing token is never set elsewhere).");
+}
 const OUT = process.env.PROBE_OUT ?? join(process.cwd(), "probe-out", "password-strength");
 const K5_EMAIL = process.env.PROBE_K5_EMAIL ?? "alpha-test+clerk_test@the99.app";
 if (!K5_EMAIL.includes("+clerk_test")) throw new Error("PROBE_K5_EMAIL must be a +clerk_test address (code 424242).");
@@ -114,6 +119,8 @@ const READ_PANEL = `(label) => {
     fgMuted: resolve("--fg-muted"),
     accent: resolve("--accent"),
     word: meter?.nextElementSibling?.textContent ?? null,
+    wordFits: meter?.nextElementSibling ? meter.nextElementSibling.scrollWidth <= meter.nextElementSibling.clientWidth : true,
+    wordWidth: meter?.nextElementSibling?.getBoundingClientRect().width ?? 0,
     guides: [...main.querySelectorAll("#password-strength li")].map((li) => li.hasAttribute("data-met")),
     describedBy: input?.getAttribute("aria-describedby") ?? null,
     live: main.querySelector("[data-strength-live]")?.textContent ?? null,
@@ -122,7 +129,7 @@ const READ_PANEL = `(label) => {
   };
 }`;
 type Panel = {
-  present: boolean; lit: number; litInk: string[]; fgMuted: string; accent: string; word: string | null;
+  present: boolean; lit: number; litInk: string[]; fgMuted: string; accent: string; word: string | null; wordFits: boolean; wordWidth: number;
   guides: boolean[]; describedBy: string | null; live: string | null; alert: string | null; text: string;
 };
 
@@ -195,6 +202,7 @@ async function runSurface(surface: Surface, width: (typeof WIDTHS)[number], brow
         const name = `${tag} ${theme} ${s.key}`;
         check(`${name}: lit ${s.lit}`, p.lit === s.lit, p.lit);
         check(`${name}: word "${s.word}"`, p.word === s.word, p.word);
+        check(`${name}: the word fits its box (min 44px)`, p.wordFits && p.wordWidth >= 44, { width: p.wordWidth, fits: p.wordFits });
         if (s.guides) check(`${name}: guides`, JSON.stringify(p.guides) === JSON.stringify(s.guides), p.guides);
         else check(`${name}: three guides`, p.guides.length === 3, p.guides);
         if (s.press) {

@@ -7,7 +7,7 @@
 import type { Strength, StrengthReading } from "../../lib/auth/password";
 import { strengthCopy } from "../../lib/copy/strength";
 import { SEGMENT } from "../ui/segment";
-import { HINT, LINE_ID, SIGN_ERR } from "./auth-parts";
+import { HINT, SignLine, isPasswordRefusal } from "./auth-parts";
 
 /** The guides list's id: the password field's `aria-describedby` names it (G2). */
 export const STRENGTH_ID = "password-strength";
@@ -36,16 +36,15 @@ function Mark({ met }: { met: boolean }) {
   );
 }
 
-export function StrengthPanel({ reading, line, verdict, live }: {
+export function StrengthPanel({ reading, line, live }: {
   reading: StrengthReading;
   /** The line in the hint's slot: Clerk's refusal (Q2 to Q4), or on K5 the failed line. */
   line: string | null;
-  /** The line is Clerk's verdict on the password: the meter empties. K5's failed line is not, so the meter keeps its reading. */
-  verdict: boolean;
   /** The polite screen-reader line (`usePasswordStrength`). */
   live: string;
 }) {
-  const strength: Strength = line && verdict ? "short" : reading.strength;
+  // Clerk's verdict on the password empties the meter; K5's failed line is no verdict, so the meter keeps its reading.
+  const strength: Strength = isPasswordRefusal(line) ? "short" : reading.strength;
   const lit = LIT[strength];
   const word = strength === "short" ? "" : strengthCopy.word[strength];
   const allMet = KEYS.every((k) => reading.guides[k]);
@@ -59,12 +58,12 @@ export function StrengthPanel({ reading, line, verdict, live }: {
         </div>
         <span
           aria-hidden
-          className={`w-[44px] text-right text-[12.5px] font-semibold leading-none ${strength === "weak" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}
+          className={`min-w-[44px] whitespace-nowrap text-right text-[12.5px] font-semibold leading-none ${strength === "weak" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}
         >
           {word}
         </span>
       </div>
-      {line && <p id={LINE_ID} role="alert" className={SIGN_ERR}>{line}</p>}
+      {line && <SignLine line={line} />}
       {/* `role="list"`: Safari drops a list's semantics once its bullets are styled away. */}
       <ul id={STRENGTH_ID} role="list" className="m-0 mt-[8px] flex list-none flex-col gap-[6px] p-0">
         {KEYS.map((k) => (

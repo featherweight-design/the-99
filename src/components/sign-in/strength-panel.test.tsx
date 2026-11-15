@@ -17,8 +17,8 @@ const reading = (strength: Strength, met: string): StrengthReading => ({
   guides: { length: met.includes("l"), numberOrSymbol: met.includes("m"), common: met.includes("c") },
 });
 
-function draw(r: StrengthReading, line: string | null = null, verdict = true) {
-  render(<StrengthPanel reading={r} line={line} verdict={verdict} live="" />);
+function draw(r: StrengthReading, line: string | null = null) {
+  render(<StrengthPanel reading={r} line={line} live="" />);
   const segments = [...document.querySelectorAll("[data-strength] > span")];
   return {
     lit: segments.filter((s) => s.hasAttribute("data-on")).length,
@@ -92,7 +92,7 @@ describe("StrengthPanel", () => {
     ["Q3", signInCopy.tooWeak, reading("weak", "l")],
     ["Q4", signInCopy.breached, reading("good", "lmc")],
   ])("%s: Clerk's line takes the slot under the meter as an alert, the meter empties, the guides stay", (_, want, r) => {
-    const p = draw(r, want, true);
+    const p = draw(r, want);
     expect(p.lit).toBe(0);
     expect(p.word).toBe("");
     const alert = screen.getByRole("alert");
@@ -107,8 +107,8 @@ describe("StrengthPanel", () => {
 
   it("a line in the slot hides the still-weak line, even with every guide ticked and the reading Weak", () => {
     // A verdict (Q3) and K5's failed line, which keeps the Weak reading on the meter.
-    for (const verdict of [true, false]) {
-      draw(reading("weak", "lmc"), verdict ? signInCopy.tooWeak : joinCopy.failed, verdict);
+    for (const line of [signInCopy.tooWeak, joinCopy.failed]) {
+      draw(reading("weak", "lmc"), line);
       expect(screen.getByRole("alert")).toBeTruthy();
       expect(screen.queryByText(strengthCopy.stillWeak)).toBeNull();
       cleanup();
@@ -116,7 +116,7 @@ describe("StrengthPanel", () => {
   });
 
   it("K5's failed line is no verdict on strength: the meter keeps its reading", () => {
-    const p = draw(reading("good", "lmc"), joinCopy.failed, false);
+    const p = draw(reading("good", "lmc"), joinCopy.failed);
     expect(screen.getByRole("alert").textContent).toBe(joinCopy.failed);
     expect(p.lit).toBe(2);
     expect(p.word).toBe(strengthCopy.word.good);
@@ -130,7 +130,7 @@ describe("StrengthPanel", () => {
   });
 
   it("carries one polite live line", () => {
-    render(<StrengthPanel reading={reading("weak", "l")} line={null} verdict live="Weak. 1 of 3 done." />);
+    render(<StrengthPanel reading={reading("weak", "l")} line={null} live="Weak. 1 of 3 done." />);
     const live = document.querySelector('[aria-live="polite"]');
     expect(live?.textContent).toBe("Weak. 1 of 3 done.");
     expect(live?.className).toContain("sr-only");
