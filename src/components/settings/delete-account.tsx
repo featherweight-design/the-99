@@ -120,6 +120,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
       fail(r.reason === "limited" ? a.tooMany : a.failed);
     } catch (err) {
       if (isReverificationCancelledError(err)) {
+        takeBack();
         setBusy(false);
         setScreen("d1");
         // A cancel this flow made itself (`fail`) has already said why; only the reader's ‹ says "Nothing was deleted."
@@ -127,6 +128,14 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
         failedOnce.current = false;
       } else fail(a.failed);
     }
+  }
+
+  // The account is still here: the sign-out evidence goes (as the menu's failed Sign out clears it), and a retry runs the
+  // on-device steps again. Every way a delete ends without deleting calls it: a failure, and a cancelled step-up.
+  function takeBack() {
+    if (!cleared.current) return;
+    cleared.current = false;
+    clearSignOutPressed();
   }
 
   const failedOnce = useRef(false);
@@ -137,12 +146,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     const p = pending.current;
     pending.current = null;
     p?.cancel();
-    // The account is still here: the sign-out evidence goes (as the menu's failed Sign out clears it), and a retry runs the
-    // on-device steps again.
-    if (cleared.current) {
-      cleared.current = false;
-      clearSignOutPressed();
-    }
+    takeBack();
     setBusy(false);
     setChecking(false);
     setScreen("d1");
@@ -150,7 +154,8 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
   }
 
   function leave() {
-    // The session is already gone on Clerk's side, so a throw here still lands on the landing.
+    // The session is already gone on Clerk's side; should Clerk's sign-out itself throw, a load of the landing is the way out
+    // (READINESS clarification 7). Its token can outlive the session by about a minute, so that load is the fallback only.
     clerk.signOut({ redirectUrl: DELETED_HREF }).catch(() => window.location.replace(DELETED_HREF));
   }
 
@@ -161,8 +166,11 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     setCode("");
     const session = clerk.session;
     if (!session) return fail(a.failed);
+    const asked = pending.current;
     try {
       const v = await session.startVerification({ level: "first_factor" });
+      // ‹ or Close while Clerk was starting the step-up: no code is sent for a delete already abandoned.
+      if (pending.current !== asked) return;
       const factors = v.supportedFirstFactors ?? [];
       const byCode = factors.find((f) => f.strategy === "email_code");
       const byPassword = factors.find((f) => f.strategy === "password");
@@ -174,6 +182,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
       setKind(facts.methods.includes("google") ? "google" : "code");
       await sendCode(to.id);
     } catch (err) {
+      if (pending.current !== asked) return;
       // No step to show: back to D1 with the line, the word kept.
       fail(tooMany(err) ? a.tooMany : a.failed);
     }
@@ -202,9 +211,12 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
     setChecking(true);
     setD2Line(null);
     try {
+      const asked = pending.current;
       const v = await session.attemptFirstFactorVerification(
         kind === "password" ? { strategy: "password", password } : { strategy: "email_code", code },
       );
+      // ‹ or Close while the check was on its way: the step-up is over, so nothing more happens on this device.
+      if (pending.current !== asked) return;
       if (v.status !== "complete") return fail(a.failed);
       await beforeDelete();
       const p = pending.current;

@@ -249,6 +249,31 @@ describe("D2, the step-up", () => {
     await waitFor(() => expect((go() as HTMLButtonElement).disabled).toBe(false));
   });
 
+  it("takes back the on-device steps when the client thought it was inside the window but the server asked for a step-up, then ‹", async () => {
+    m.checkAuthorization.mockReturnValue(true);
+    render(<DeleteAccount facts={NONE} onClose={() => {}} />);
+    typeAndDelete();
+    await screen.findByLabelText(signInCopy.passwordLabel);
+    expect(m.noteSignOut).toHaveBeenCalledTimes(1);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: a.back })));
+    await screen.findByText(a.notDeleted);
+    expect(m.clearSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("does nothing on this device when ‹ comes while the check is on its way and the check then passes", async () => {
+    let pass!: (v: unknown) => void;
+    m.attempt.mockReturnValue(new Promise((r) => (pass = r)));
+    render(<DeleteAccount facts={NONE} onClose={() => {}} />);
+    typeAndDelete();
+    fireEvent.change(await screen.findByLabelText(signInCopy.passwordLabel), { target: { value: "right" } });
+    fireEvent.click(screen.getByRole("button", { name: a.confirm }));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: a.back })));
+    await act(async () => pass({ status: "complete" }));
+    expect(m.clearRecent).not.toHaveBeenCalled();
+    expect(m.forget).not.toHaveBeenCalled();
+    expect(m.action).toHaveBeenCalledTimes(1);
+  });
+
   it("says too many tries on Clerk's 429, keeping the code", async () => {
     m.startVerification.mockResolvedValue({ supportedFirstFactors: [{ strategy: "email_code", safeIdentifier: "w@e.com", emailAddressId: "idn_1" }] });
     render(<DeleteAccount facts={{ ...NONE, methods: ["code"] }} onClose={() => {}} />);
