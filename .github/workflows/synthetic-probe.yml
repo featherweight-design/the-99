@@ -1,0 +1,63 @@
+name: Synthetic probe
+
+# Hourly: can a stranger still reach the front door? Loads the signed-out landing, the sign-in page and a join page of
+# production in a real browser (`scripts/synthetic-probe.mjs`). READ-ONLY: it never presses Send code, signs in as no one, writes
+# nothing and sends no mail. A failure turns the run red (GitHub emails whoever last edited the cron line) and, when the
+# repository secret SENTRY_DSN is set, sends one Sentry error naming the failed steps.
+#
+# Optional repository variable SYNTHETIC_JOIN_CODE: a live six-character flyer code, so the join step fills the email field of a
+# real join page (never submitting). Without it the join step opens a dead link and expects the refusal card.
+# Set the repository variable SYNTHETIC_PROBE_ENABLED to 'false' to stop the schedule. docs/agents/ops.md, "Synthetic probe".
+on:
+  schedule:
+    # Hourly, off the hour where scheduled jobs contend.
+    - cron: '17 * * * *'
+  workflow_dispatch:
+    inputs:
+      base:
+        description: 'Origin to probe (default production)'
+        required: false
+        default: 'https://the-99.dev'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: synthetic-probe
+  cancel-in-progress: false
+
+jobs:
+  probe:
+    if: ${{ vars.SYNTHETIC_PROBE_ENABLED != 'false' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      # Only Playwright is needed, not the app's whole install: the script has no other dependency. Hourly runs are paid minutes, so this
+      # stays small (about a minute): Playwright from npm at the version package.json pins, the browser cached by that version.
+      - name: Install Playwright
+        id: pw
+        run: |
+          version=$(node -p "require('./package.json').devDependencies.playwright.replace(/^[^0-9]*/, '')")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          npm install --no-save --no-package-lock --no-audit --no-fund "playwright@$version"
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install the browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Probe
+        env:
+          PROBE_BASE: ${{ inputs.base || 'https://the-99.dev' }}
+          SYNTHETIC_JOIN_CODE: ${{ vars.SYNTHETIC_JOIN_CODE }}
+          SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+        run: node scripts/synthetic-probe.mjs
