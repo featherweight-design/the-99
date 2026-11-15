@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-// @ts-expect-error the lib is plain .mjs
 import { envelopeUrl, failureEnvelope, parseDsn } from "./synthetic-probe-lib.mjs";
 
 describe("parseDsn", () => {
