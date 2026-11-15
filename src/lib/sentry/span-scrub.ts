@@ -7,7 +7,8 @@
 //     (`/_next/[path]` for build assets) when no route has it; any other host to its scheme and host alone
 //     (`https://edhrec.com/[path]`), since a third party's path holds card and commander slugs.
 //   - The NAME is kept only when it reduces to such a path, optionally after an HTTP method, or is one of Next's own fixed
-//     span names (with a reduced path after it, or nothing), or is SQL (a `db` span, string literals cut). Anything else, a `ui.*` span named by the element's selector (which carries `aria-label`,
+//     span names (with a reduced path after it, or nothing). A `db` span leaves as its op alone: no SQL in its name,
+//     its description or any attribute (a literal, quoted or not, could be a player's text or an id). Anything else, a `ui.*` span named by the element's selector (which carries `aria-label`,
 //     `title` and `alt`, so a deck's or a friend's name) included, is replaced by the span's op.
 //   - A STRING attribute is kept only when its key is on `STRING_KEEP` (fixed vocabularies: the op, the method, the SDK's
 //     own fields), or is a URL key and reduces to a path as above. A web vital's element, target or source (an element
@@ -108,15 +109,17 @@ export function acceptedName(reduced: string): string | null {
   return fixedName(reduced);
 }
 
-/** A span's name as it may leave: a reduced path, one of Next's names, SQL on a `db` span, else the op. */
+const opName = (op: string | undefined) => (op && /^[a-z][a-z0-9._-]{0,63}$/i.test(op) ? op : "span");
+
+/** A span's name as it may leave: a reduced path or one of Next's names, else the op (always the op for a `db` span). */
 export function scrubSpanName(name: string, op?: string): string {
+  if (op?.startsWith("db")) return opName(op);
   const reduced = reduceUrls(name);
-  if (op?.startsWith("db")) return reduced;
   if (!op?.startsWith("ui.")) {
     const accepted = acceptedName(reduced);
     if (accepted !== null) return accepted;
   }
-  return op && /^[a-z][a-z0-9._-]{0,63}$/i.test(op) ? op : "span";
+  return opName(op);
 }
 
 /** An element selector (`body > div.x > button[aria-label="..."]`) cut to its last element's bare tag name. */
@@ -127,7 +130,7 @@ export function tagNameOf(selector: string): string | undefined {
   return /^[a-z][a-z0-9-]{0,31}/i.exec(last)?.[0].toLowerCase();
 }
 
-function scrubAttribute(key: string, value: unknown, op: string | undefined): unknown {
+function scrubAttribute(key: string, value: unknown): unknown {
   if (typeof value === "number") return Number.isFinite(value) && !NUMBER_DENIED.test(key) ? value : undefined;
   if (typeof value === "boolean") return NUMBER_DENIED.test(key) ? undefined : value;
   if (Array.isArray(value)) {
@@ -141,7 +144,7 @@ function scrubAttribute(key: string, value: unknown, op: string | undefined): un
     if (SAFE_PATH.test(reduced)) return reduced;
     return key === "next.span_name" ? (fixedName(reduced) ?? undefined) : undefined;
   }
-  if (SQL_KEYS.has(key)) return op?.startsWith("db") ? reduceUrls(value) : undefined;
+  if (SQL_KEYS.has(key)) return undefined;
   if (STRING_KEEP.has(key) && !PERSONAL.test(value) && value.length <= 128) return value;
   return undefined;
 }
@@ -150,6 +153,21 @@ type SpanLike = { name: string; attributes?: Record<string, unknown> };
 
 /** METHOD plus the span's own route, for a span the SDK named by its method alone; null when it has no route to read. */
 function methodAndRoute(method: string, attributes: Record<string, unknown>): string | null {
+  // Another site first: its path can match one of the app's routes and would be named as ours. Its host alone, then.
+  const full = attributes["url.full"];
+  if (typeof full === "string" && /^https?:\/\//i.test(full)) {
+    try {
+      const url = new URL(full);
+      if (!ownHost(url.host)) return `${method} ${url.origin}/[path]`;
+    } catch {
+      return null;
+    }
+  }
+  const server = attributes["server.address"];
+  if (typeof server === "string" && /^[a-z0-9.-]+(:\d+)?$/i.test(server) && !ownHost(server)) {
+    const scheme = attributes["url.scheme"] === "http" ? "http" : "https";
+    return `${method} ${scheme}://${server.toLowerCase()}/[path]`;
+  }
   for (const key of ROUTE_KEYS) {
     const value = attributes[key];
     if (typeof value !== "string" || !(value.startsWith("/") || /^https?:\/\//i.test(value))) continue;
@@ -170,7 +188,7 @@ export function scrubSpan<T extends SpanLike & { is_segment?: boolean }>(span: T
         continue;
       }
       if (key === "sentry.description") continue;
-      const kept = scrubAttribute(key, value, op);
+      const kept = scrubAttribute(key, value);
       if (kept !== undefined) attributes[key] = kept;
     }
     const trimmed = span.name.trim();

@@ -36,10 +36,10 @@ describe("scrubSpan", () => {
     expect(JSON.stringify(out)).not.toMatch(/Kitchen|TOKEN123|ref=me/);
   });
 
-  it("drops any attribute holding an email or a Clerk id, and cuts SQL literals on a db span", () => {
-    const out = scrubSpan(span("select * from decks where name = 'Kitchen'", { "sentry.op": "db", note: "for someone@example.com", owner: "user_2NNEqL2nrIRdJ194", "db.query.text": "select * from decks where name = 'Kitchen table'" }));
-    expect(out.name).toBe("select * from decks where name = '?'");
-    expect(out.attributes).toEqual({ "sentry.op": "db", "db.query.text": "select * from decks where name = '?'" });
+  it("drops any attribute holding an email or a Clerk id, and every word of SQL on a db span", () => {
+    const out = scrubSpan(span("select * from decks where name = 'Kitchen'", { "sentry.op": "db", "db.system": "postgresql", note: "for someone@example.com", owner: "user_2NNEqL2nrIRdJ194", "db.query.text": "select * from decks where name = 'Kitchen table' and copies = 4" }));
+    expect(out.name).toBe("db");
+    expect(out.attributes).toEqual({ "sentry.op": "db", "db.system": "postgresql" });
     expect(reduceUrls("mail sent to someone@example.com")).toBe("mail sent to [redacted]");
   });
 
@@ -169,5 +169,35 @@ describe("route names survive the scrub", () => {
     expect(child("/decks/abc123").attributes).toEqual({ "sentry.segment.name": "/decks/[id]" });
     expect(child("GET /decks/abc123").attributes).toEqual({ "sentry.segment.name": "GET /decks/[id]" });
     expect(child("Kitchen table").attributes).toEqual({});
+  });
+
+  it("leaves a db span as its op: no SQL in its name or description, quoted or not", () => {
+    const out = scrubSpan({ name: "select * from deck_cards where quantity = 4 and deck_id = $1", span_id: "a", trace_id: "b", is_segment: false, attributes: {
+      "sentry.op": "db.sql.query", "db.system.name": "postgresql", "sentry.description": "select * from deck_cards where quantity = 4", "db.statement": "select 1",
+    } });
+    expect(out.name).toBe("db.sql.query");
+    expect(out.attributes).toEqual({ "sentry.op": "db.sql.query", "db.system.name": "postgresql", "sentry.description": "db.sql.query" });
+    expect(JSON.stringify(out)).not.toMatch(/select|quantity|= 4/);
+  });
+
+  it("scrubs a child span's description like its name", () => {
+    const out = scrubSpan({ name: "render route (app) /decks/abc123", span_id: "a", trace_id: "b", is_segment: false, attributes: {
+      "sentry.description": "render route (app) /decks/abc123",
+    } });
+    expect(out.name).toBe("render route (app) /decks/[id]");
+    expect(out.attributes).toEqual({ "sentry.description": "render route (app) /decks/[id]" });
+    const typed = scrubSpan({ name: "x", span_id: "a", trace_id: "b", is_segment: false, attributes: { "sentry.description": "Kitchen table brew" } });
+    expect(typed.attributes).toEqual({ "sentry.description": "span" });
+  });
+
+  it("names an outgoing request by another site's host even when its path matches one of our routes", () => {
+    const out = scrubSpan({ name: "GET", span_id: "a", trace_id: "b", is_segment: false, attributes: {
+      "sentry.op": "http.client", "http.request.method": "GET", "url.path": "/decks/abc123", "url.full": "https://api.example.com/decks/abc123",
+    } });
+    expect(out.name).toBe("GET https://api.example.com/[path]");
+    const byAddress = scrubSpan({ name: "GET", span_id: "a", trace_id: "b", is_segment: false, attributes: {
+      "sentry.op": "http.client", "url.path": "/decks/abc123", "server.address": "api.example.com",
+    } });
+    expect(byAddress.name).toBe("GET https://api.example.com/[path]");
   });
 });
