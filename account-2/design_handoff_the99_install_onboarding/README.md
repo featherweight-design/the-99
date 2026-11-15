@@ -1,4 +1,4 @@
-# Handoff: Install onboarding (R1b)
+# Handoff: Install onboarding (R1c)
 
 Account 2 · 2026-11-15 · a light stateful addendum to the first-run tour (`design_handoff_the99_discovery_onboarding`). It points the tour at the shipped header Install button (`src/components/pwa/install-slot.tsx`) and its shipped sheet (`design_handoff_the99_push`, `ios-install-sheet.tsx`).
 
@@ -9,6 +9,8 @@ Canvas: https://claude.ai/artifact/EYAvtkuyNtefUVyoFyMc28 (boards `Main`, `Brows
 
 **How it was drawn.** The frames are PNGs of the shipped components (`FirstRunChecklist`, `MobileHeader` with `InstallSlot`, `TabBar`, `NavRail`, and the `IosInstallSheet` body), rendered with the shipped CSS in Low Sun. They come from a scratch copy of main with `scratch-gen/ibpatch.diff` applied, which is the proposal as code, for reference only. That diff holds the `INSTALL` step in `tour-steps.ts`, the draft copy in `discovery.ts`, the slot's `tour:install` target, a scratch-only switch that makes the slot draw on the server, and the sheet split out of its portal. The tour card is TourRun's markup copied into `render-r1b.tsx`, and `post.js` places its cutout the way `cutoutFor` does. The boards come from `ib.py`.
 
+**R1c (Hugh, 2026-11-15: "what if they skip the tour?").** R1's row comes back only as a fallback for players who leave the tour before the Install stop (board `Fallback.dc.html`, frames F1, F1s, F2). The row's code is R1's `scratch-gen/iopatch.diff` (`install-row.tsx`, `pwaInstallCopy.row`).
+
 ## The calls
 
 1. **The header button is the ask, and the tour points at it.** There's no new control. A last stop in the first-run tour lights the button and says why to use it. As the last stop, the tour is already over when the player leaves for Share.
@@ -18,7 +20,8 @@ Canvas: https://claude.ai/artifact/EYAvtkuyNtefUVyoFyMc28 (boards `Main`, `Brows
 5. **No new dismissal.** The slot keeps its shipped rules: ✕ means quiet for 30 days, and a second ✕ retires it. The tour runs once.
 6. **No stop** wherever the slot doesn't draw: the installed app, in-app web views, iPad, Edge and other browsers, Android without a held prompt, a dismissed slot, and desktop (d9 call 1).
 7. **How we know they installed. OPEN, Hugh's call. Recommendation: A, a server flag.** The installed app stamps `installedAt` on its first signed-in open, and the slot (and so the stop) stays away in every browser session of that account. Under B, an installed player keeps seeing the button in every Safari tab a friend's link opens. The first launch draws nothing.
-8. **No About entry** (the brief's default). If About's tour entry counts stops, that count is Hugh's call at the next About batch.
+8. **R1c · the fallback row.** It shows only when the tour ended before the Install stop, the slot would draw, and it's still first run. It's R1's row: unnumbered, under step 3, in the Friends row's live box, titled **Install The 99** with a line per browser and a bare ✕. While it's on screen the header slot steps aside. Selecting it (or the header button) or its ✕ retires it for good, and the ✕ also counts as one header dismiss. A player who reached the stop never gets it.
+9. **No About entry** (the brief's default). If About's tour entry counts stops, that count is Hugh's call at the next About batch.
 
 ## Gaps for engineering
 
@@ -26,6 +29,7 @@ Canvas: https://claude.ai/artifact/EYAvtkuyNtefUVyoFyMc28 (boards `Main`, `Brows
 - **G2 · The stop.** `INSTALL` (target `tour:install`, registered by `InstallSlot`, kind `slot`), appended by `withInstallStop` when that target exists at the run's start at 390. On this stop only, presses pass through the cutout to the slot (lift the slot above the scrim, or cut a hole in the scrim). The press calls `onEnd(false)` and then the slot's `onPress`.
 - **G3 · Counts.** Step 1's foot gets variants for one more stop (`footSeven`/`footEight`). The kicker and diamonds already come from the step list.
 - **G4 · iOS keeps the installed app's sign-in separate from Safari**, so the player signs in once more on the first launch. Should the sheet say so? Hugh's call; it's left out.
+- **G6 · The fallback's trigger.** Reaching the Install stop writes a local `the99-install-row` = `seen`. The row draws when the tour is stamped done, the slot would draw, and the key is neither `seen` nor `retired`. Selecting the row or the header button, or the row's ✕, writes `retired`. The ✕ also calls `dismissOnce()`.
 - **G5 · Quick-return header.** The stop scrolls to the top before lighting, so the header is fully in view.
 
 ## Files
@@ -35,6 +39,7 @@ Canvas: https://claude.ai/artifact/EYAvtkuyNtefUVyoFyMc28 (boards `Main`, `Brows
 | `Main.dc.html` | B1 Safari stop, B1a after Finish, B1s the sheet |
 | `Browsers.dc.html` | B2/B2s Chrome, B3/B3s Firefox |
 | `Elsewhere.dc.html` | B4 Android, N1 no stop, D1 desktop 1300 |
+| `Fallback.dc.html` | F1 the fallback row, F1s its sheet, F2 after select or ✕ |
 | `Spec.dc.html` | calls, states, the open question, gaps, copy |
 | `STATES-install-onboarding.md` | the state table |
 | `install-onboarding · copy strings.ts` | new words, DRAFT for /copy-review |

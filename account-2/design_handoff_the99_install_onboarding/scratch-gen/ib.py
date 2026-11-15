@@ -8,7 +8,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = sys.argv[1]; BLOB = json.load(open(os.path.join(HERE, "ioblobs.json"))) if "blob" in sys.argv else None
 os.makedirs(OUT, exist_ok=True)
 def src(n):
-    n = (f"io-{n}.png" if n.startswith("home-none") else f"ib-{n}.png"); return BLOB[n] if BLOB else f"art/{n}"
+    n = (n[4:] + ".png") if n.startswith("raw:") else (f"io-{n}.png" if n.startswith("home-none") else f"ib-{n}.png"); return BLOB[n] if BLOB else f"art/{n}"
 
 CSS = r"""
 body{margin:0;background:#0A0B0F}
@@ -109,11 +109,22 @@ BOARDS["Elsewhere.dc.html"] = ("Android, no stop, desktop", W3, 1220, head(
     frame("D1", "Desktop · 1300 · no stop", "home-none-desktop", "<b>Desktop has no header button (d9 call 1), so it gets no stop.</b> The browser's own address-bar button covers it. The tour at 1300 is unchanged.", "dk", pill="was") +
     '</div>')
 
+W4 = 3 * 390 + 2 * 40 + 112
+BOARDS["Fallback.dc.html"] = ("Skipped the tour: the fallback row", W4, 1220, head(
+    "Install onboarding · R1c", "Skipped the tour: R1's row comes back as the fallback",
+    "Hugh's note: what if they skip the tour? A player who leaves the tour before the Install stop (its ✕, or closing it early) gets R1's row in the first-run checklist. Anyone who saw the stop never gets it. It goes for good as soon as they select it or the header button, or tap its ✕.") +
+    '<div class="row">' +
+    frame("F1", "Skipped · the row", "raw:io-home-safari-phone", "<b>Install The 99</b>, under step 3, in the Friends row's live box, with the browser line from R1 (only Safari's mentions alerts). While it's on screen, the header button steps aside, so there's one ask at a time. Android gets the same row with its own line while a prompt is held.") +
+    frame("F1s", "Select the row", "raw:io-sheet-safari-phone", "<b>The same shipped sheet</b> (or Chrome's prompt on Android). Selecting it retires the row for good, and the header button comes back as the one place to install.") +
+    frame("F2", "After select or ✕", "raw:io-home-none-phone", "<b>The checklist as shipped</b>, with the header button under its shipped rules. The row's ✕ also counts as one header dismiss (quiet for 30 days). The row only ever lives on the first-run checklist, so it's gone once cards are in.", pill="was") +
+    '</div>')
+
 CALLS = [
  "<b>The header button is the ask; the tour points at it.</b> R1's checklist row is gone, so there's one control for one action. The stop explains the button the way the other stops explain the nav. I'd ruled out a tour step before because installing sends the player out to Share mid-tour. As the last stop, the tour is already over when they go.",
  "<b>Last, after What's new, on phones only.</b> The stop is added when the run starts if the header button draws then. That's decided once, like the Credits stop. The kicker and diamonds count it (8 with Credits, 7 without), and step 1's foot reads one stop more (G3).",
  "<b>Lit as a slot.</b> The cutout covers the whole shipped slot, Install and its ✕ (5px room, 14 corner), so the ✕ the foot mentions is visible. The card docks above the tab bar as every phone stop does.",
  "<b>The lit button can be selected on this stop.</b> A press there ends the tour (stamped as finished, like Finish) and does the button's own press: the sheet on iPhone, <code>prompt()</code> on Android. Finish just closes the tour, and the button stays. The tour's ✕ skips as shipped.",
+ "<b>R1c · a fallback row for players who skip the tour.</b> It shows only when the tour ended before the Install stop (skipped with ✕, or the stop never came because the button didn't draw at the start but does now). It's R1's checklist row (Fallback board). It's retired for good once the player selects it or the header button, or taps its ✕. The header button steps aside while it's on screen. A player who saw the stop never gets it, so nobody is asked twice.",
  "<b>No new dismissal.</b> The button keeps its shipped rules: its ✕ means quiet for 30 days, and a second ✕ retires it. The stop never shows again, because the tour runs once (and on a replay only if the button draws).",
  "<b>Copy by browser.</b> Only Safari's body mentions alerts. The sheet is shipped and unchanged.",
  "<b>How we know they installed: option A, a server flag (recommended, yours to call).</b> The installed app stamps <code>installedAt</code> on its first signed-in open, and the header button (so the stop too) stays away in every browser session of that account. Under B, an installed player still sees the button in every Safari tab a friend's link opens. The first launch draws nothing.",
@@ -125,6 +136,8 @@ STATES = [
  ("B1a", "After Finish", "the tour ends", "the header button as shipped"),
  ("N1", "Installed app, in-app view, iPad, Edge, no prompt, dismissed", "the slot doesn't draw", "the tour as shipped, ending at What's new"),
  ("N1", "Installed elsewhere (A)", "<code>installedAt</code> is set", "no header button and no stop, in any browser"),
+ ("F1", "Skipped the tour", "the tour ended before the Install stop, the slot would draw, row not retired, still first run", "R1's row under step 3. The header button steps aside"),
+ ("F2", "Row selected or ✕", "<code>the99-install-row</code> retired", "no row, ever. The header button as shipped"),
  ("D1", "Desktop", "md and up", "the tour as shipped"),
 ]
 GAPS = [
@@ -132,6 +145,7 @@ GAPS = [
  "<b>G2 · The stop.</b> <code>INSTALL</code> in <code>tour-steps.ts</code> (target <code>tour:install</code>, registered by <code>InstallSlot</code>; kind slot), appended by <code>withInstallStop</code> when the slot's target exists at the run's start at 390. On this stop only, the cutout passes presses to the slot (lift the slot above the scrim, or give the scrim a hole). A press ends the tour with <code>onEnd(false)</code> and then runs the slot's <code>onPress</code>.",
  "<b>G3 · Counts.</b> Step 1's foot gains <code>footSeven</code>/<code>footEight</code> variants for the stop. The diamonds and kicker come from the step list as shipped.",
  "<b>G4 · iOS keeps the installed app's sign-in separate from Safari</b>, so the player signs in once more on the first launch. Hugh's call: should the sheet say so? It's left out.",
+ "<b>G6 · The fallback's trigger.</b> Reaching the Install stop writes a local <code>the99-install-row</code> = <code>seen</code>. The row draws when the tour is stamped done, the slot would draw, and the key is neither <code>seen</code> nor <code>retired</code>. Selecting the row or the header button, or the row's ✕, writes <code>retired</code>. The row's ✕ also calls <code>dismissOnce()</code>.",
  "<b>G5 · The header's quick-return.</b> The stop scrolls the page to the top before lighting, so the header is fully in view.",
  "All new copy is DRAFT (<code>tourCopy.steps.install</code>, in <code>install-onboarding · copy strings.ts</code>) for /copy-review.",
 ]
@@ -139,16 +153,18 @@ COPY = [("place", "Install"), ("title", "Play it from your home screen"),
  ("body.safari", "Install puts The 99 on your home screen: full screen, one tap away, and it can send the alerts you choose."),
  ("body.chrome / firefox", "Install puts The 99 on your home screen: full screen and one tap away. It takes about 10 seconds."),
  ("body.android", "Install puts The 99 on your home screen: full screen and one tap away. Your phone asks once."),
- ("foot", "Select the button up top now, or any time. Its ✕ hides it."), ("lit.install", "the Install button")]
+ ("foot", "Select the button up top now, or any time. Its ✕ hides it."), ("lit.install", "the Install button"),
+ ("row.title (pwaInstallCopy)", "Install The 99"), ("row.line.safari", "Full screen and one tap away, and it can send the alerts you choose."),
+ ("row.line.chrome / firefox", "Full screen and one tap away. It takes about 10 seconds."), ("row.line.android", "Full screen and one tap away. Your phone asks once."), ("row.dismissAria", "Don’t show this again")]
 
 def li(xs): return "".join(f"<li>{x}</li>" for x in xs)
-spec = head("Install onboarding · R1b", "Calls, states and the open question",
+spec = head("Install onboarding · R1c", "Calls, states and the open question",
             "Brief: <code>docs/superpowers/design-briefs/2026-11-15-install-onboarding.md</code>. R1b replaces R1's checklist row (Hugh, 2026-11-15: focus on the header button). It extends the first-run tour (<code>design_handoff_the99_discovery_onboarding</code>) and reuses the shipped sheet (<code>design_handoff_the99_push</code>).")
 spec += '<div class="rec"><span class="k">Open with Hugh · how we know a player installed</span><p class="cap"><b>Recommendation: A, a server flag.</b> The installed app stamps <code>installedAt</code> on its first signed-in open, and the header button and its tour stop stay away in every browser session of that account. <b>B</b> (no flag) costs nothing, but an installed player keeps seeing the button in every Safari tab a friend\'s link opens, and invites and spare requests arrive that way from Messages.</p></div>'
 spec += f'<div class="cols"><div class="sec"><h3>Calls</h3><ol class="li">{li(CALLS)}</ol></div><div class="sec"><h3>States</h3><table><tr><th>Frame</th><th>Who</th><th>When</th><th>Shows</th></tr>' + "".join(f"<tr><td><b>{a}</b></td><td>{b}</td><td>{c}</td><td>{d}</td></tr>" for a, b, c, d in STATES) + '</table>'
 spec += f'<h3 style="margin-top:14px">Gaps for engineering</h3><ul class="li">{li(GAPS)}</ul>'
 spec += '<h3 style="margin-top:14px">New words (DRAFT)</h3><table><tr><th>Key (<code>tourCopy.steps.install</code>)</th><th>Copy</th></tr>' + "".join(f"<tr><td><code>{k}</code></td><td>{v}</td></tr>" for k, v in COPY) + '</table></div></div>'
-BOARDS["Spec.dc.html"] = ("Calls, states and the open question", 1500, 1500, spec)
+BOARDS["Spec.dc.html"] = ("Calls, states and the open question", 1500, 1870, spec)
 
 for name, (title, w, h, body) in BOARDS.items():
     open(os.path.join(OUT, name), "w").write(doc(title, w, h, body))
