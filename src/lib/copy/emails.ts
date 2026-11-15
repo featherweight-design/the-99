@@ -60,3 +60,27 @@ export const inviteHandCopy = {
   credit: (commander: string) => `Art · ${commander}`,
   mark: "The 99",
 } as const;
+
+/** Clerk's templates: set in Clerk's dashboard, not sent by our code. `{{otp_code}}` is Clerk's variable (confirm it with the editor's Variable insert). */
+export const clerkEmailCopy = {
+  signIn: {
+    subject: "Your sign-in code for The 99: {{otp_code}}",
+    preheader: "Enter it on the sign-in page. It expires in 10 minutes.",
+    kicker: "Sign-in code",
+    heading: "Welcome back",
+    lead: "Enter this code on the sign-in page.",
+    textLead: "Welcome back. Enter this code on the sign-in page:",
+    fine: "It expires in 10 minutes. If you didn’t try to sign in, you can ignore this email. No one can get in without this code.",
+    reason: "You’re getting this because someone tried to sign in to The 99 with this address.",
+  },
+  reset: {
+    subject: "Your password reset code for The 99: {{otp_code}}",
+    preheader: "Enter it on the sign-in page. It expires in 10 minutes.",
+    kicker: "Password reset",
+    heading: "Reset your password",
+    lead: "Enter this code on the sign-in page, then choose a new password.",
+    textLead: "Enter this code on the sign-in page, then choose a new password:",
+    fine: "It expires in 10 minutes. If you didn’t ask to reset your password, you can ignore this email. Your password won’t change.",
+    reason: "You’re getting this because someone asked to reset the password for this address on The 99.",
+  },
+} as const;

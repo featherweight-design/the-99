@@ -1,0 +1,11 @@
+Welcome back. Enter this code on the sign-in page:
+
+{{otp_code}}
+
+It expires in 10 minutes. If you didn't try to sign in, you can ignore this email. No one can get in without this code.
+
+--
+You're getting this because someone tried to sign in to The 99 with this address.
+Search your library for a commander.
+Replies to this email aren't read.
+https://the-99.dev
