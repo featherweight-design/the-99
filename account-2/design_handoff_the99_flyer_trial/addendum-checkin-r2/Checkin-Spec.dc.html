@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Check-in R2 · spec</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+*{box-sizing:border-box}
+p{margin:0}
+.board{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-sunken:#18140F;--surface-inset:#1B1712;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-text:#CF8745;--disp:'Cinzel',serif;
+ width:1460px;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:var(--fg);display:flex;flex-direction:column;gap:30px}
+.kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.kick .tag{background:var(--accent);color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+h2{margin:6px 0 0;font:700 30px 'Cinzel',serif}
+h3{margin:0 0 12px;font:600 16px 'IBM Plex Sans';color:var(--fg)}
+.lede{margin-top:8px;font-size:14px;line-height:1.6;color:var(--fg-body);max-width:1200px}
+.sec{border:1px solid var(--border-strong);border-radius:12px;background:#15120F;padding:20px 22px;font-size:13.5px;line-height:1.6;color:var(--fg-body)}
+.sec b{color:var(--fg)}
+.sec ol,.sec ul{margin:0;padding-left:20px}
+.sec li{margin:5px 0}
+.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font:500 10.5px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint);padding:8px 10px;border-bottom:1px solid var(--border-strong)}
+td{text-wrap:pretty;padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top;color:var(--fg-body)}
+td code,code{font:12px 'IBM Plex Mono';color:var(--accent-text)}
+td s{color:var(--fg-faint)}
+td b{color:var(--fg);font-weight:500}
+.strip{display:flex;gap:28px;align-items:flex-end;padding:8px 0 4px}
+.kf{display:flex;flex-direction:column;align-items:center;gap:10px;width:150px}
+.kf small{text-wrap:balance;font:500 10.5px 'IBM Plex Mono';letter-spacing:.08em;color:var(--fg-faint);text-align:center}
+.kf small b{color:var(--accent-text);font-weight:600}
+.box{position:relative;width:150px;height:150px;display:flex;align-items:center;justify-content:center}
+.cb,.cf{width:75px;height:105px;border-radius:5px;box-shadow:0 10px 22px rgba(0,0,0,.6)}
+.cb{background:var(--surface-inset);padding:3px;box-shadow:0 10px 22px rgba(0,0,0,.6),inset 0 0 0 1px var(--border-strong)}
+.cb div{height:100%;border-radius:3px;border:1px solid var(--border-dashed);background:radial-gradient(60px 64px at 50% 46%,color-mix(in oklab,var(--accent) 22%,transparent),transparent 72%),var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cb i,.cf i{font-style:normal;font-size:5px;letter-spacing:1.5px;color:var(--accent-text)}
+.cb b{font:700 18px/1 var(--disp)}
+.cf{background:var(--border-strong);padding:2px}
+.cf div{height:100%;border-radius:4px;background:var(--surface-inset);padding:3px;display:flex;flex-direction:column;gap:2px}
+.cf .n{height:9px;border-radius:2px;background:var(--elevated)}
+.cf .a{height:43px;border-radius:2px;background:radial-gradient(45px 35px at 50% 50%,color-mix(in oklab,var(--accent) 30%,transparent),transparent 75%),var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.cf .a b{font:800 15px/1 var(--disp)}
+.cf .t{height:7px;border-radius:2px;background:var(--elevated)}
+.cf .r{flex:1;border-radius:2px;background:var(--surface-sunken)}
+.d{position:absolute;font-style:normal;color:var(--accent-text);line-height:1}
+.qs{display:flex;flex-direction:column;gap:14px}
+.qq{border-left:0;padding:14px 16px;border-radius:10px;background:var(--surface);border:1px solid var(--border-strong)}
+.qq b{color:var(--fg)}
+.qq .rec{display:inline-block;margin-left:6px;font:600 10px 'IBM Plex Mono';letter-spacing:.08em;color:#14110E;background:var(--accent);border-radius:4px;padding:2px 6px}
+</style>
+</helmet>
+<div class="board">
+<div>
+<div class="kick"><span class="tag">R2</span>Check-in · calls, motion, copy, accessibility</div>
+<h2>What changes, and how it moves</h2>
+<p class="lede">An addendum to the flyer-trial handoff. It reskins <code>CheckInForm</code> (src/components/feedback/check-in-form.tsx) and rewrites <code>checkInCopy</code> in src/lib/copy/report.ts. <code>CheckInPrompt</code>, the due rule, the snooze, the actions and the stored answers do not change.</p>
+</div>
+
+<div class="sec"><h3>Design’s calls</h3><ol>
+<li><b>The rating is a hand of five cards.</b> Card shape (63:88), fanned −6°, −3°, 0, 3°, 6° from the bottom centre, each with its number in the display face and a word: Rough, Meh, Okay, Good, Love it. The picked card lifts 10px, straightens, takes the accent wash and wears the crown (◆◆◆). Phone: five equal columns (about 67 by 93). Desktop: fixed 70 by 98, centred. The “not well / really well” ends go; the words do that job.</li>
+<li><b>The chips stay the shipped pills.</b> Turning one on gets a 180ms pop. No icons: Shopping and Precons have no nav icon, and half-iconned chips would look broken.</li>
+<li><b>The card back by the intro is the payoff.</b> A small tilted back (44 by 62, the 99 mark) sits beside the intro from the start. On send it becomes the shipped compact <code>FriendCard</code> (150 by 210, −3°) with the crowned face, and turns face up as the thanks. No new art, no images to break.</li>
+<li><b>Two thanks, chosen by the rating already given.</b> 3 to 5: “Thank you, truly!” and a burst of six crown diamonds. 1 or 2: “Thanks for telling us straight”, same card, no burst. The rating is the real trigger; nothing new is asked.</li>
+<li><b>Sending stays as shipped</b> (Sending…, everything held), with answers dimmed to .6. <b>Failed</b> stays the shipped toast with Try again; only its words change.</li>
+<li><b>Close</b> stays the only button under the thanks, plus the bare ✕. About › Report a problem is named in both thanks.</li>
+</ol></div>
+
+<div class="sec"><h3>The thanks, beat by beat</h3>
+<div class="strip">
+<div class="kf"><div class="box"><div class="cb" style="transform:translateY(24px) rotate(-3deg);opacity:.35"><div><i>◆◆◆</i><b>99</b></div></div></div><small><b>0ms</b> form fades out (150ms), back starts 24px low</small></div>
+<div class="kf"><div class="box"><div class="cb" style="transform:rotate(-3deg)"><div><i>◆◆◆</i><b>99</b></div></div></div><small><b>200ms</b> back in place; the shipped 200ms beat</small></div>
+<div class="kf"><div class="box"><div class="cb" style="transform:rotate(-3deg) scaleX(.18)"><div><i>◆◆◆</i><b>99</b></div></div></div><small><b>460ms</b> mid-turn (rotateY, 520ms, shipped curve)</small></div>
+<div class="kf"><div class="box"><i class="d" style="left:40px;top:40px;font-size:7px">◆</i><i class="d" style="right:38px;top:44px;font-size:6px">◆</i><i class="d" style="left:36px;bottom:40px;font-size:6px">◆</i><i class="d" style="right:40px;bottom:36px;font-size:7px">◆</i><div class="cf" style="transform:rotate(-3deg)"><div><span class="n"></span><span class="a"><i>◆◆◆</i><b>99</b></span><span class="t"></span><span class="r"></span></div></div></div><small><b>720ms</b> face up; diamonds leave the card, words fade in (200ms)</small></div>
+<div class="kf"><div class="box"><i class="d" style="left:6px;top:14px;font-size:9px;opacity:.7">◆</i><i class="d" style="right:4px;top:20px;font-size:8px;opacity:.6">◆</i><i class="d" style="left:2px;bottom:16px;font-size:7px;opacity:.5">◆</i><i class="d" style="right:8px;bottom:10px;font-size:9px;opacity:.6">◆</i><div class="cf" style="transform:rotate(-3deg)"><div><span class="n"></span><span class="a"><i>◆◆◆</i><b>99</b></span><span class="t"></span><span class="r"></span></div></div></div><small><b>1100ms</b> diamonds out at full spread, fading</small></div>
+<div class="kf"><div class="box"><div class="cf" style="transform:rotate(-3deg)"><div><span class="n"></span><span class="a"><i>◆◆◆</i><b>99</b></span><span class="t"></span><span class="r"></span></div></div></div><small><b>1420ms</b> settled. Nothing loops.</small></div>
+</div>
+<p style="margin-top:14px"><b>Reduced motion</b> (<code>prefers-reduced-motion: reduce</code>): no rise, no turn, no burst, no chip pop, no lift transition (the picked card is simply drawn lifted). The back cross-fades to the face over 120ms after the 200ms beat, which is the shipped <code>.friend-card</code> rule, and the words appear with it. Low ratings never burst in either mode.</p>
+</div>
+
+<div class="two">
+<div class="sec"><h3>Accessibility</h3><ul>
+<li>The hand is the shipped <code>role="radiogroup"</code> with five <code>role="radio"</code> buttons; each is named “4 of 5, Good”. Add arrow-key movement with a roving tabindex (today’s row has none).</li>
+<li>Hit boxes: phone cards about 67 by 93, chips 40 tall, buttons 44. The fan tilt never shrinks a hit box; the button is the card.</li>
+<li>The small back and the diamonds are <code>aria-hidden</code>. The face-up card is one image named “Thank you, a card from The 99”, as the shipped card does.</li>
+<li>On thanks, focus moves to the heading (tabindex −1) and the thanks container is a polite live region, so a screen reader hears the thanks once.</li>
+<li>Contrast: card words use <code>--fg-muted</code> on <code>--surface-raised</code> (≥4.5:1 in all six themes, as the shipped labels); the picked card’s word goes to <code>--fg</code>.</li>
+</ul></div>
+<div class="sec"><h3>Engineering notes (not design calls)</h3><ul>
+<li>Reuse <code>FriendCard</code> with <code>compact</code>, <code>face.crown</code> and <code>word</code>; mount it face down, set <code>up</code> on the next frame with <code>arrival</code> for the 200ms beat. The small back by the intro is a new 44 by 62 drawing of the same back.</li>
+<li>The burst is six absolutely placed ◆ in <code>--accent-text</code>, CSS keyframes only, removed after 1.5s. No library.</li>
+<li>Rating words map by index; the stored value stays the number 1 to 5.</li>
+<li>The thanks variant reads the rating already in state (≤ 2 is low). Nothing new is sent or stored.</li>
+<li>Tests that assert today’s strings (<code>check-in-form.test.tsx</code>) move to the new keys.</li>
+</ul></div>
+</div>
+
+<div class="sec"><h3>Copy for /copy-review (<code>checkInCopy</code>)</h3>
+<table>
+<tr><th style="width:170px">Key</th><th>Today</th><th>R2 draft</th></tr>
+<tr><td><code>intro</code></td><td><s>You’ve been using The 99 for a couple of weeks. Three quick questions.</s></td><td><b>You’ve been with The 99 for a couple of weeks. Three quick questions, and your answers steer what we improve next.</b></td></tr>
+<tr><td><code>rating</code></td><td><s>How is it working for you?</s></td><td><b>How’s it working for you?</b></td></tr>
+<tr><td><code>ratingEnds</code></td><td><s>not well · really well</s></td><td>Removed.</td></tr>
+<tr><td><code>ratingWords</code> (new)</td><td>—</td><td><b>Rough · Meh · Okay · Good · Love it</b></td></tr>
+<tr><td><code>ratingAria</code> (new)</td><td>—</td><td><b>4 of 5, Good</b></td></tr>
+<tr><td><code>morePlaceholder</code></td><td><s>Anything you’d change, or love</s></td><td><b>A wish, a gripe, a feature you love</b></td></tr>
+<tr><td><code>hint</code></td><td><s>Takes a minute</s></td><td><b>Takes about a minute</b></td></tr>
+<tr><td><code>sentTitle</code></td><td><s>Thanks, that helps.</s></td><td><b>Thank you, truly!</b></td></tr>
+<tr><td><code>sentBody</code></td><td><s>We read every answer. You can always tell us more from About › Report a problem.</s></td><td><b>This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.</b></td></tr>
+<tr><td><code>sentTitleLow</code> (new)</td><td>—</td><td><b>Thanks for telling us straight</b></td></tr>
+<tr><td><code>sentBodyLow</code> (new)</td><td>—</td><td><b>Hearing what isn’t working is exactly how we know what to fix. If something broke, About › Report a problem is the quickest way to show us.</b></td></tr>
+<tr><td><code>card.name</code> (new)</td><td>—</td><td><b>Thank you</b> (also the back’s word)</td></tr>
+<tr><td><code>card.type</code> (new)</td><td>—</td><td><b>Instant — Thanks</b></td></tr>
+<tr><td><code>card.rules</code> (new)</td><td>—</td><td><b>When this resolves, the people building The 99 read every word and choose what to make better next.</b></td></tr>
+<tr><td><code>card.credit</code> · <code>mark</code></td><td>—</td><td><b>From the team</b> · <b>XCIX</b> (the flyer card’s mark)</td></tr>
+<tr><td><code>card.aria</code> (new)</td><td>—</td><td><b>Thank you, a card from The 99</b></td></tr>
+<tr><td><code>failed</code></td><td><s>We couldn’t send that. Try again.</s></td><td><b>That didn’t go through. Your answers are still here.</b> (Try again stays <code>reportCopy.retry</code>)</td></tr>
+<tr><td>Kept</td><td colspan="2"><code>title</code> How’s it going? · <code>uses</code> · <code>pickAny</code> · <code>useOptions</code> · <code>pod</code> · <code>podOptions</code> · <code>more</code> · <code>notNow</code> · <code>send</code> · Sending… · Close</td></tr>
+</table></div>
+
+<div class="sec"><h3>Questions for Hugh</h3><div class="qs">
+<div class="qq"><b>Q1. One thanks or two?</b> <span class="rec">REC A</span><br>A: split by rating (1–2 quiet and sincere, 3–5 burst). B: one celebratory thanks for everyone. A avoids confetti for someone who just said it’s rough.</div>
+<div class="qq"><b>Q2. The card’s Magic joke.</b> <span class="rec">REC A</span><br>A: “Instant — Thanks” with the “When this resolves…” rules text. B: plainer text box (“Every answer is read by the people building The 99.”).</div>
+<div class="qq"><b>Q3. The five words.</b> <span class="rec">REC A</span><br>A: Rough · Meh · Okay · Good · Love it. B: numbers only, with today’s two end labels kept.</div>
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1460,"height":2570}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

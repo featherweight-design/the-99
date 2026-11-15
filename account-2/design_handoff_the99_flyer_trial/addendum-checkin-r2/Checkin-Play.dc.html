@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Check-in R2 · playable</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;family=Chakra+Petch:wght@600;700&amp;family=Trirong:wght@600;700;800&amp;family=Syncopate:wght@700&amp;family=Cormorant+Garamond:wght@600;700&amp;family=Metamorphous&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+*{box-sizing:border-box}
+p{margin:0}
+.pb{width:980px;padding:48px 48px 56px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:28px}
+.pb .kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#948B78}
+.pb .kick .tag{background:#CF8745;color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.pb h2{margin:6px 0 0;font:700 30px 'Cinzel',serif}
+.pb .lede{margin-top:8px;font-size:14px;line-height:1.6;color:#C0B8A6;max-width:860px}
+.row{display:flex;gap:48px;align-items:flex-start}
+.ph{width:390px;height:844px;flex:none;border-radius:34px;border:1px solid var(--border-strong);background:var(--bg);overflow:hidden;position:relative;color:var(--fg);font-family:'IBM Plex Sans',sans-serif}
+.shot{position:absolute;inset:0;overflow:hidden}
+.shot img{width:100%;display:block}
+.plain{position:absolute;inset:0;padding:70px 20px;display:flex;flex-direction:column;gap:12px;background:var(--bg)}
+.plain b{font:700 22px var(--disp);color:var(--fg)}
+.plain span{height:44px;border-radius:10px;background:var(--surface);border:1px solid var(--border)}
+.scrim{position:absolute;inset:0;background:rgba(8,6,4,.64)}
+.sht{position:absolute;left:0;right:0;bottom:0;background:var(--surface);border-top:1px solid var(--border-strong);border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+.mh{height:50px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 4px 0 16px;border-bottom:1px solid var(--border)}
+.mh b{font-size:15px;font-weight:600}
+.x{width:44px;height:44px;border:0;background:transparent;color:var(--fg-muted);font-size:15px;display:flex;align-items:center;justify-content:center;font-family:inherit;cursor:pointer}
+.mb{padding:14px 16px 24px;display:flex;flex-direction:column;gap:18px}
+.intro{display:flex;gap:14px;align-items:center}
+.intro p{font-size:13.5px;line-height:1.55;color:var(--fg-body)}
+.mini{width:44px;height:62px;flex:none;border-radius:5px;background:var(--surface-inset);padding:3px;box-shadow:0 6px 14px rgba(0,0,0,.5),inset 0 0 0 1px var(--border-strong);transform:rotate(-6deg)}
+.mini div{height:100%;border-radius:3px;border:1px solid var(--border-dashed);background:radial-gradient(40px 44px at 50% 46%,color-mix(in oklab,var(--accent) 24%,transparent),transparent 72%),var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center}
+.mini i{font-style:normal;font-size:4.5px;letter-spacing:1.5px;color:var(--accent-text)}
+.mini b{font:700 15px/1 var(--disp);color:var(--fg)}
+.q{display:flex;flex-direction:column;gap:9px}
+.qt{font-size:14px;font-weight:600}
+.qt small{margin-left:6px;font-size:12px;font-weight:400;color:var(--fg-faint)}
+.hand{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px;padding-top:12px}
+.rc{aspect-ratio:63/88;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-raised);color:var(--fg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;font-family:inherit;padding:0;transform-origin:50% 100%;position:relative;cursor:pointer;transition:transform 220ms cubic-bezier(.3,1.5,.5,1),background-color 160ms,border-color 160ms,box-shadow 220ms}
+.rc b{font:700 22px/1 var(--disp)}
+.rc span{font-size:11.5px;color:var(--fg-muted)}
+.rc .cr{position:absolute;top:9px;font-style:normal;font-size:7px;letter-spacing:2px;color:var(--accent-text);opacity:0;transform:translateY(4px);transition:opacity 160ms,transform 220ms}
+.r1{transform:rotate(-6deg) translateY(5px)}
+.r2{transform:rotate(-3deg) translateY(1px)}
+.r4{transform:rotate(3deg) translateY(1px)}
+.r5{transform:rotate(6deg) translateY(5px)}
+@media (hover:hover){.rc:not(.on):not(:disabled):hover{border-color:var(--fg-faint);transform:translateY(-4px) rotate(0)}}
+.rc.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,var(--surface-raised));transform:translateY(-10px) rotate(0);box-shadow:0 12px 22px rgba(0,0,0,.5)}
+.rc.on span{color:var(--fg)}
+.rc.on .cr{opacity:1;transform:none}
+.rc:focus-visible,.chip:focus-visible,.bg:focus-visible,.bp:focus-visible,.x:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.chips{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.chip{height:40px;border-radius:999px;border:1px solid var(--border-strong);background:transparent;color:var(--fg-body);font:13.5px 'IBM Plex Sans';display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap;padding:0 6px;cursor:pointer}
+.chip.on{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,var(--surface-raised));color:var(--fg);animation:pop 180ms cubic-bezier(.3,1.6,.5,1)}
+.chip.on::before{content:'✓';font-size:12px;font-weight:700;color:var(--accent-text)}
+@keyframes pop{0%{transform:scale(.94)}100%{transform:scale(1)}}
+.more{display:flex;flex-direction:column;gap:6px}
+.more label{font-size:13px;font-weight:600}
+.more label small{margin-left:6px;font-size:12px;font-weight:400;color:var(--fg-faint)}
+.ta{width:100%;min-height:66px;resize:none;border-radius:8px;border:1px solid var(--border-strong);background:var(--surface-sunken);padding:10px 12px;font:16px/1.45 'IBM Plex Sans';color:var(--fg)}
+.ta::placeholder{color:var(--fg-placeholder)}
+.ta:focus{outline:none;border-color:var(--accent)}
+.ft{display:flex;gap:10px;padding-top:2px}
+.bg,.bp{flex:1;height:44px;border-radius:10px;font:14px 'IBM Plex Sans';display:flex;align-items:center;justify-content:center;padding:0 16px;cursor:pointer}
+.bg{border:1px solid var(--border-strong);background:transparent;color:var(--fg)}
+.bp{border:1px solid transparent;background:var(--fg);color:var(--bg);font-weight:500}
+.bp:disabled{opacity:.45;cursor:default}
+.bp.busy{opacity:.75}
+.mb.busy .hand,.mb.busy .chips,.mb.busy .ta{opacity:.6;transition:opacity 150ms}
+.ty{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 24px 34px;gap:8px;animation:fadein 150ms linear both}
+@keyframes fadein{from{opacity:0}to{opacity:1}}
+.stage{position:relative;width:240px;height:236px;display:flex;align-items:center;justify-content:center}
+.tcw{width:150px;height:210px;transform:rotate(-3deg);perspective:700px;animation:arrive 200ms cubic-bezier(.2,.8,.3,1) both}
+@keyframes arrive{from{opacity:0;transform:translateY(24px) rotate(-3deg)}to{opacity:1;transform:rotate(-3deg)}}
+.turn{position:relative;width:100%;height:100%;transform-style:preserve-3d;animation:turn 520ms cubic-bezier(.45,.05,.25,1) 200ms both}
+@keyframes turn{from{transform:rotateY(0)}to{transform:rotateY(180deg)}}
+.face{position:absolute;inset:0;-webkit-backface-visibility:hidden;backface-visibility:hidden;border-radius:9px}
+.front{transform:rotateY(180deg)}
+.back{background:var(--surface-inset);padding:6px;box-shadow:0 20px 44px rgba(0,0,0,.6),inset 0 0 0 1px var(--border-strong)}
+.back div{height:100%;border-radius:6px;border:1px solid var(--border-dashed);background:radial-gradient(120px 130px at 50% 46%,color-mix(in oklab,var(--accent) 22%,transparent),transparent 72%),var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px}
+.back i{font-style:normal;font-size:8px;letter-spacing:3px;color:var(--accent-text)}
+.back b{font:700 34px/1 var(--disp);color:var(--fg)}
+.back small{font:7.5px 'IBM Plex Mono';letter-spacing:.35em;text-transform:uppercase;color:var(--accent-text)}
+.front{background:var(--border-strong);padding:4px;box-shadow:0 20px 44px rgba(0,0,0,.6),0 0 0 1px rgba(0,0,0,.6)}
+.front .in{height:100%;border-radius:7px;background:var(--surface-inset);padding:5px;display:flex;flex-direction:column;gap:3px}
+.front .nm{height:17px;flex:none;border-radius:4px;background:var(--elevated);display:flex;align-items:center;padding:0 6px;font:600 9px 'IBM Plex Sans';color:var(--fg)}
+.front .ar{height:86px;flex:none;border-radius:3px;background:radial-gradient(90px 70px at 50% 50%,color-mix(in oklab,var(--accent) 30%,transparent),transparent 75%),var(--surface-sunken);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;box-shadow:inset 0 0 0 1px rgba(0,0,0,.6)}
+.front .ar i{font-style:normal;font-size:7px;letter-spacing:2.5px;color:var(--accent-text)}
+.front .ar b{font:800 30px/1 var(--disp);color:var(--fg)}
+.front .tl{height:14px;white-space:nowrap;flex:none;border-radius:3px;background:var(--elevated);display:flex;align-items:center;justify-content:space-between;padding:0 6px;font:600 7.5px var(--disp);color:var(--fg)}
+.front .tl i{font-style:normal;font-size:6px;color:var(--accent-text)}
+.front .rt{flex:1;min-height:0;border-radius:3px;background:var(--surface-sunken);padding:5px 6px;font:7px/1.4 'IBM Plex Sans';color:var(--fg-body);overflow:hidden;text-align:left}
+.front .fo{display:flex;justify-content:space-between;padding:0 2px;font:6px 'IBM Plex Mono';letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.dm{position:absolute;left:50%;top:50%;font-style:normal;color:var(--accent-text);line-height:1;opacity:0;animation:burst 700ms cubic-bezier(.15,.7,.3,1) 720ms both}
+@keyframes burst{0%{opacity:0;transform:translate(-50%,-50%) scale(.3)}25%{opacity:1}100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% + var(--dy))) scale(1)}}
+.late{animation:fadein 200ms linear 720ms both}
+.ty h3{margin:12px 0 0;font:700 20px var(--disp);color:var(--fg);text-wrap:balance}
+.ty p{max-width:320px;font-size:13.5px;line-height:1.55;color:var(--fg-body);text-wrap:pretty}
+.ty .bg{flex:none;min-width:140px;margin-top:10px}
+.rm .tcw,.rm .chip.on,.rm .late,.rm .ty{animation:none}
+.rm .rc,.rm .rc .cr{transition:none}
+.rm .turn{animation:none;transform:none}
+.rm .front{transform:none;animation:fadein 120ms linear 200ms both}
+.rm .back{animation:fadeout 120ms linear 200ms both}
+@keyframes fadeout{from{opacity:1}to{opacity:0}}
+.rm .dm{display:none}
+.toast{position:absolute;left:16px;right:16px;top:150px;display:flex;align-items:center;gap:10px;padding:0 6px 0 14px;height:48px;border-radius:10px;background:var(--elevated);border:1px solid var(--border-strong);box-shadow:0 12px 28px rgba(0,0,0,.55);font-size:13px;color:var(--fg);animation:fadein 150ms linear both}
+.toast i{width:7px;height:7px;border-radius:50%;background:var(--danger);flex:none}
+.toast span{flex:1}
+.toast button{height:44px;border:0;background:transparent;color:var(--accent-text);font:600 13.5px 'IBM Plex Sans';padding:0 10px;text-decoration:underline;text-underline-offset:2px;cursor:pointer}
+.gone{position:absolute;left:16px;right:16px;bottom:110px;padding:14px 16px;border-radius:12px;background:var(--elevated);border:1px solid var(--border-strong);font-size:13px;line-height:1.5;color:var(--fg-body)}
+.ctl{flex:1;display:flex;flex-direction:column;gap:22px;padding-top:4px}
+.ctl h4{margin:0 0 10px;font:500 10.5px 'IBM Plex Mono';letter-spacing:.14em;text-transform:uppercase;color:#948B78}
+.pills{display:flex;flex-wrap:wrap;gap:8px}
+.pill{height:36px;padding:0 14px;border-radius:999px;border:1px solid #3A3229;background:transparent;color:#C0B8A6;font:13px 'IBM Plex Sans';cursor:pointer}
+.pill.on{border-color:#CF8745;color:#EDE6D8;background:rgba(207,135,69,.14)}
+.restart{align-self:flex-start;height:40px;padding:0 18px;border-radius:10px;border:0;background:#EDE6D8;color:#14110E;font:500 14px 'IBM Plex Sans';cursor:pointer}
+.tips{font-size:13px;line-height:1.6;color:#A59C89}
+.tips b{color:#EDE6D8;font-weight:600}
+.tips ol{margin:0;padding-left:18px}
+.tips li{margin:4px 0}
+</style>
+</helmet>
+<div class="pb">
+<div>
+<div class="kick"><span class="tag">R2</span>Playable · phone 390 · select Play, then answer</div>
+<h2>Try the check-in</h2>
+<p class="lede">Every control works. Send needs a card picked. A rating of 1 or 2 gets the quiet thanks; 3 to 5 gets the burst. Switch on “Next send fails” to see the toast, or “Reduced motion” to see the still version. Themes swap the tokens and the display face (the Home behind is the Low Sun capture, so other themes draw a plain Home).</p>
+</div>
+<div class="row">
+<div class="ph {{rmClass}}" style="{{themeStyle}}">
+<sc-if value="{{lowSun}}" hint-placeholder-val="{{true}}"><div class="shot"><img src="/_blob/197e02a678e491071ae1ede4128f7b19" alt=""></div></sc-if>
+<sc-if value="{{notLowSun}}" hint-placeholder-val="{{false}}"><div class="plain"><b>Welcome back</b><span></span><span></span><span></span></div></sc-if>
+<sc-if value="{{open}}" hint-placeholder-val="{{true}}">
+<div class="scrim"></div>
+<div class="sht" role="dialog" aria-label="How’s it going?">
+<div class="mh"><b>How’s it going?</b><button class="x" aria-label="Close" onClick="{{onClose}}">✕</button></div>
+<sc-if value="{{isForm}}" hint-placeholder-val="{{true}}">
+<div class="mb {{busyClass}}">
+<div class="intro"><div class="mini" aria-hidden="true"><div><i>◆◆◆</i><b>99</b></div></div><p>You’ve been with The 99 for a couple of weeks. Three quick questions, and your answers steer what we improve next.</p></div>
+<div class="q"><span class="qt" id="pl-rate">How’s it working for you?</span>
+<div class="hand" role="radiogroup" aria-labelledby="pl-rate">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="5">
+<button class="rc {{c.cls}}" role="radio" aria-checked="{{c.checked}}" aria-label="{{c.aria}}" disabled="{{busy}}" onClick="{{c.pick}}"><i class="cr" aria-hidden="true">◆◆◆</i><b>{{c.n}}</b><span>{{c.word}}</span></button>
+</sc-for>
+</div></div>
+<div class="q"><span class="qt">What do you use most?<small>pick any</small></span>
+<div class="chips"><sc-for list="{{uses}}" as="u" hint-placeholder-count="6"><button class="chip {{u.cls}}" aria-pressed="{{u.on}}" disabled="{{busy}}" onClick="{{u.pick}}">{{u.label}}</button></sc-for></div></div>
+<div class="q"><span class="qt">Would you tell your pod about it?</span>
+<div class="chips"><sc-for list="{{pods}}" as="u" hint-placeholder-count="3"><button class="chip {{u.cls}}" aria-pressed="{{u.on}}" disabled="{{busy}}" onClick="{{u.pick}}">{{u.label}}</button></sc-for></div></div>
+<div class="more"><label for="pl-note">Anything else?<small>optional</small></label><textarea id="pl-note" class="ta" placeholder="A wish, a gripe, a feature you love" value="{{note}}" onChange="{{onNote}}" readOnly="{{busy}}"></textarea></div>
+<div class="ft"><button class="bg" disabled="{{busy}}" onClick="{{onNotNow}}">Not now</button><button class="bp {{busyClass}}" disabled="{{sendOff}}" onClick="{{onSend}}">{{sendLabel}}</button></div>
+</div>
+</sc-if>
+<sc-if value="{{isSent}}" hint-placeholder-val="{{false}}">
+<div class="ty" aria-live="polite">
+<div class="stage">
+<sc-if value="{{burst}}" hint-placeholder-val="{{true}}">
+<i class="dm" style="--dx:-92px;--dy:-80px;font-size:12px">◆</i>
+<i class="dm" style="--dx:-110px;--dy:6px;font-size:8px">◆</i>
+<i class="dm" style="--dx:-80px;--dy:90px;font-size:10px">◆</i>
+<i class="dm" style="--dx:88px;--dy:-92px;font-size:9px">◆</i>
+<i class="dm" style="--dx:110px;--dy:-10px;font-size:12px">◆</i>
+<i class="dm" style="--dx:78px;--dy:84px;font-size:8px">◆</i>
+</sc-if>
+<div class="tcw"><div class="turn">
+<div class="face back" aria-hidden="true"><div><i>◆ ◆ ◆</i><b>99</b><small>Thank you</small></div></div>
+<div class="face front" role="img" aria-label="Thank you, a card from The 99"><div class="in">
+<div class="nm">Thank you</div>
+<div class="ar"><i>◆ ◆ ◆</i><b>99</b></div>
+<div class="tl"><span>Instant — Thanks</span><i>◆</i></div>
+<div class="rt">When this resolves, the people building The 99 read every word and choose what to make better next.</div>
+<div class="fo"><span>From the team</span><span>XCIX</span></div>
+</div></div>
+</div></div>
+</div>
+<h3 class="late">{{thanksTitle}}</h3>
+<p class="late">{{thanksBody}}</p>
+<button class="bg late" onClick="{{onDone}}">Close</button>
+</div>
+</sc-if>
+</div>
+<sc-if value="{{toast}}" hint-placeholder-val="{{false}}"><div class="toast" role="alert"><i></i><span>That didn’t go through. Your answers are still here.</span><button onClick="{{onRetry}}">Try again</button></div></sc-if>
+</sc-if>
+<sc-if value="{{closed}}" hint-placeholder-val="{{false}}"><div class="gone">{{closedLine}}</div></sc-if>
+</div>
+<div class="ctl">
+<div><h4>Theme</h4><div class="pills"><sc-for list="{{themes}}" as="t" hint-placeholder-count="6"><button class="pill {{t.cls}}" aria-pressed="{{t.on}}" onClick="{{t.pick}}">{{t.label}}</button></sc-for></div></div>
+<div><h4>Try</h4><div class="pills"><button class="pill {{rmPill}}" aria-pressed="{{reduced}}" onClick="{{onReduced}}">Reduced motion</button><button class="pill {{failPill}}" aria-pressed="{{fail}}" onClick="{{onFail}}">Next send fails</button></div></div>
+<button class="restart" onClick="{{onRestart}}">Start over</button>
+<div class="tips"><h4>The beats</h4><ol>
+<li><b>Pick a card:</b> it lifts 10px and straightens (220ms, a small overshoot), the crown fades in.</li>
+<li><b>Pick a chip:</b> a 180ms pop from .94.</li>
+<li><b>Send:</b> Sending… for the round trip; answers dim.</li>
+<li><b>Thanks:</b> form gives way (150ms fade), the card back rises 24px into place (200ms), turns over (520ms, the shipped curve), then the six diamonds burst and fade (700ms) as the words arrive (200ms fade at 720ms).</li>
+<li><b>Reduced motion:</b> no rise, no turn, no burst, no pop or lift animation. The back cross-fades to the face (120ms, the shipped rule) and the words appear with it.</li>
+</ol></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":980,"height":1140}}'>
+class Component extends DCLogic {
+  constructor(p) {
+    super(p);
+    this.state = { phase: 'form', rating: null, uses: [], pod: null, note: '', toast: false, fail: false, reduced: false, theme: 'amonkhet', closed: null, run: 0 };
+  }
+  send() {
+    if (this.state.rating === null || this.state.phase === 'sending') return;
+    this.setState({ phase: 'sending', toast: false });
+    const willFail = this.state.fail;
+    setTimeout(() => {
+      if (willFail) this.setState({ phase: 'form', toast: true, fail: false });
+      else this.setState({ phase: 'sent', run: this.state.run + 1 });
+    }, 900);
+  }
+  renderVals() {
+    const s = this.state;
+    const T = {
+      amonkhet: ['Low Sun', '#14110E', '#1E1A15', '#211D18', '#18140F', '#1B1712', '#29241F', '#2B241B', '#3A3229', '#494037', '#EDE6D8', '#C0B8A6', '#A59C89', '#948B78', '#8B8270', '#CF8745', '#CF8745', "'Cinzel',serif"],
+      kamigawa: ['Kamigawa', '#0E0F14', '#16181F', '#191B22', '#101219', '#13151C', '#20222A', '#181C26', '#262A35', '#343843', '#E6E8F0', '#B1B6C7', '#959AAD', '#84899B', '#7D8294', '#FF4D9A', '#FF4D9A', "'Chakra Petch',sans-serif"],
+      ixalan: ['Ixalan', '#0E1310', '#171E19', '#1A221C', '#101512', '#141B16', '#212A23', '#1D2620', '#2C3830', '#3B4A3F', '#E0E7DE', '#B6C2B3', '#98A695', '#879383', '#808C7C', '#A3C445', '#A3C445', "'Trirong',serif"],
+      phyrexia: ['Phyrexia', '#0D0B0E', '#151317', '#18161A', '#100E12', '#131115', '#1E1C20', '#19161C', '#262329', '#332F36', '#E4E2E6', '#B5B2BB', '#9A96A0', '#87838D', '#827E88', '#52827A', '#5D8E85', "'Syncopate',sans-serif"],
+      eldraine: ['Eldraine', '#120E17', '#1B1821', '#1F1C25', '#131018', '#17141D', '#26232C', '#241D30', '#342C41', '#443C52', '#E4DEEE', '#B9B2C5', '#9C95A8', '#8F899B', '#898395', '#AE88E6', '#AE88E6', "'Cormorant Garamond',serif"],
+      kaldheim: ['Kaldheim', '#121217', '#1E1F26', '#22232B', '#16171D', '#1A1B22', '#2D2E35', '#1A1F2B', '#2E3340', '#424755', '#C6D2D3', '#B3C0C2', '#95A4A6', '#8A999B', '#7C8A8C', '#6C97DB', '#6C97DB', "'Metamorphous',serif"]
+    };
+    const t = T[s.theme];
+    const themeStyle = `--bg:${t[1]};--surface:${t[2]};--surface-raised:${t[3]};--surface-sunken:${t[4]};--surface-inset:${t[5]};--elevated:${t[6]};--border:${t[7]};--border-strong:${t[8]};--border-dashed:${t[9]};--fg:${t[10]};--fg-body:${t[11]};--fg-muted:${t[12]};--fg-faint:${t[13]};--fg-placeholder:${t[14]};--accent:${t[15]};--accent-text:${t[16]};--danger:#C6533F;--disp:${t[17]}`;
+    const busy = s.phase === 'sending';
+    const words = ['Rough', 'Meh', 'Okay', 'Good', 'Love it'];
+    const cards = words.map((w, i) => {
+      const n = i + 1, on = s.rating === n;
+      return { n, word: w, cls: 'r' + n + (on ? ' on' : ''), checked: on ? 'true' : 'false', aria: `${n} of 5, ${w}`, pick: () => this.setState({ rating: n, toast: false }) };
+    });
+    const uses = ['Collection', 'Commanders', 'Decks', 'Shopping', 'Friends', 'Precons'].map((u) => {
+      const on = s.uses.includes(u);
+      return { label: u, on: on ? 'true' : 'false', cls: on ? 'on' : '', pick: () => this.setState({ toast: false, uses: on ? s.uses.filter((x) => x !== u) : s.uses.concat([u]) }) };
+    });
+    const pods = ['Yes', 'Maybe', 'Already have'].map((u) => {
+      const on = s.pod === u;
+      return { label: u, on: on ? 'true' : 'false', cls: on ? 'on' : '', pick: () => this.setState({ toast: false, pod: on ? null : u }) };
+    });
+    const themes = Object.keys(T).map((k) => ({ label: T[k][0], cls: s.theme === k ? 'on' : '', on: s.theme === k ? 'true' : 'false', pick: () => this.setState({ theme: k }) }));
+    const low = s.rating !== null && s.rating <= 2;
+    const reset = { phase: 'form', rating: null, uses: [], pod: null, note: '', toast: false, closed: null };
+    return {
+      themeStyle, themes, cards, uses, pods, busy,
+      lowSun: s.theme === 'amonkhet', notLowSun: s.theme !== 'amonkhet',
+      rmClass: s.reduced ? 'rm' : '',
+      open: s.closed === null, closed: s.closed !== null,
+      closedLine: s.closed === 'snooze' ? 'Not now: the check-in closes and comes back in 3 days (the fourth Not now ends it). Select Start over to replay.' : 'Closed. ✕ or Close ends this check-in. Select Start over to replay.',
+      isForm: s.phase !== 'sent', isSent: s.phase === 'sent',
+      busyClass: busy ? 'busy' : '',
+      sendLabel: busy ? 'Sending…' : 'Send',
+      sendOff: busy || s.rating === null,
+      note: s.note,
+      onNote: (e) => this.setState({ note: e.target.value, toast: false }),
+      onSend: () => this.send(),
+      onRetry: () => this.send(),
+      toast: s.toast,
+      burst: !low,
+      thanksTitle: low ? 'Thanks for telling us straight' : 'Thank you, truly!',
+      thanksBody: low ? 'Hearing what isn’t working is exactly how we know what to fix. If something broke, About › Report a problem is the quickest way to show us.' : 'This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.',
+      onClose: () => { if (!busy) this.setState({ closed: 'end', toast: false }); },
+      onNotNow: () => { if (!busy) this.setState({ closed: 'snooze', toast: false }); },
+      onDone: () => this.setState({ closed: 'end' }),
+      reduced: s.reduced ? 'true' : 'false', rmPill: s.reduced ? 'on' : '',
+      fail: s.fail ? 'true' : 'false', failPill: s.fail ? 'on' : '',
+      onReduced: () => this.setState({ reduced: !s.reduced }),
+      onFail: () => this.setState({ fail: !s.fail }),
+      onRestart: () => this.setState(reset)
+    };
+  }
+}
+</script>
+</body>
+</html>
