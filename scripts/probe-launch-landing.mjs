@@ -4,7 +4,8 @@
 // `(display-mode: standalone)` true BEFORE the head script runs, clears the session's seen flag, loads `/`, then freezes every
 // animation at 1500 ms (past the 1472 ms landing) and compares the flyer's centre diamond with the shell's crown.
 //
-// Windows: desktop 1280x800 (62px rail), tablet 1180x820 (touch, 88px rail) and, as the regression, a 390x844 phone (header).
+// Windows: desktop 1280x800 and 1920x1080 and a 768x560 one (62px rail), tablet 1180x820 (touch, 88px rail), a short touch 844x390 (rail, 16px) and, as the
+// regression, a 390x844 phone (header).
 // A negative control forces the old phone landing at the desktop window and must FAIL the same measurement.
 //
 // Run by hand against a dev server on a free port: `PROBE_BASE=http://localhost:3210 node scripts/probe-launch-landing.mjs`.
@@ -25,6 +26,7 @@ const TOLERANCE = 1.5;
 // frame (1500 ms) as a PNG, for the contact sheet. Firefox has no `isMobile`, so a touch window there is a touch-enabled desktop one.
 const ENGINES = { chromium, firefox, webkit };
 const ENGINE = process.env.PROBE_BROWSER ?? "chromium";
+if (!(ENGINE in ENGINES)) throw new Error(`PROBE_BROWSER must be one of ${Object.keys(ENGINES).join(", ")}`);
 const SHOTS = process.env.PROBE_SHOTS;
 if (SHOTS) mkdirSync(SHOTS, { recursive: true });
 
@@ -84,7 +86,8 @@ const WINDOWS = [
   { label: "short touch 844x390 (landscape phone)", viewport: { width: 844, height: 390 }, touch: true, expect: "rail" },
 ];
 
-// The crown's centre diamond: the largest polygon in the svg that is not inside the overlay and sits nearest the top-left.
+// The crown's centre diamond: the largest shape (by bounding box) in the first svg at the top-left that is not inside the overlay. In the rail that is the
+// large diamond (8.5 px a side, so 12.02 px across); the size check fails if some other shape were picked.
 const MEASURE = () => {
   const centre = (el) => {
     const r = el.getBoundingClientRect();
@@ -177,7 +180,7 @@ async function landing(browser, win, { forcePhone } = {}) {
   await page.waitForTimeout(150);
   const m = await page.evaluate(MEASURE);
   if (SHOTS && !forcePhone) {
-    const slug = win.label.split(" ").slice(0, 2).join("-").replace(/[^a-z0-9-]/gi, "").toLowerCase();
+    const slug = `${win.viewport.width}x${win.viewport.height}`;
     await page.screenshot({ path: `${SHOTS}/${ENGINE}-${slug}.png` });
   }
   await ctx.close();
