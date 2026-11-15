@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Android, no stop, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:1040px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:1040px;border-radius:14px}
+.shot.tall{border-radius:22px}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div class="board" style="width: 2012px; min-height: 1220px">
+<div class="bh"><span class="k">Install onboarding · R1b</span><h2>Android hands over to Chrome, and everyone else gets the tour as shipped</h2><p class="cap">The stop exists only where the header button exists, so the two can never disagree.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">B4</span><span class="k">Android · last stop</span></div><img class="shot " src="art/ib-tour-android-phone.png" alt="Android · last stop"><p class="cap"><b>Only while a <code>beforeinstallprompt</code> is held</b>, which is when the header button draws. Body ends <i>Your phone asks once.</i> Selecting the lit button calls <code>prompt()</code>, and Chrome's own install dialog opens (the browser's UI, not drawn). Chrome's ⋮ menu also keeps its own Install app item.</p></div><div class="fr "><div class="state"><span class="pill was">N1</span><span class="k">No stop</span></div><img class="shot " src="art/io-home-none-phone.png" alt="No stop"><p class="cap"><b>The tour ends at What's new, as shipped</b>, whenever the header button doesn't draw: the installed app, in-app web views (Instagram, Facebook), iPad, Edge and other unsourced iPhone browsers, Android with no held prompt, a dismissed button, and, with option A, an account that has opened the installed app.</p></div><div class="fr wide"><div class="state"><span class="pill was">D1</span><span class="k">Desktop · 1300 · no stop</span></div><img class="shot dk" src="art/io-home-none-desktop.png" alt="Desktop · 1300 · no stop"><p class="cap"><b>Desktop has no header button (d9 call 1), so it gets no stop.</b> The browser's own address-bar button covers it. The tour at 1300 is unchanged.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2012,"height":1220}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
