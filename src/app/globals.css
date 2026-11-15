@@ -1928,7 +1928,8 @@ html[data-launch] .launch-loader { display: block; }
   .ll-halo { animation-name: ll-halo; }
   .ll-num { animation-name: ll-num; }
   /* The rail's numeral is `icon.svg`'s own weight and size (`CROWNED99_SPECS["rail-62"]`), so there is nothing to settle onto from
-     `md` up; it must sit in this block, after the rule above, or it loses on order. */
+     `md` up. It sits in this block beside the rule it overrides, so the two read together (its selector is more specific, so order is
+     not what makes it win). */
   @media (min-width: 48rem) { .launch-loader .ll-num { animation-name: none; } }
   .ll-dl { animation-name: ll-dl; }
   .ll-dc { animation-name: ll-dc; }

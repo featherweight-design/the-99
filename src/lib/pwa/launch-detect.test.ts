@@ -56,7 +56,7 @@ describe("the landing", () => {
     expect(css).toMatch(/@media \(min-width: 48rem\) \{\s*\.launch-loader \{\s*--ll-land-x: calc\(var\(--rail-w\) \/ 2 - 0\.5px\);\s*--ll-land-y: 20px;\s*--ll-land-s: 0\.1897;/);
     expect(css).toMatch(/@media \(min-width: 48rem\) and \(hover: none\) and \(max-height: 459\.98px\) \{\s*\.launch-loader \{ --ll-land-y: 16px; \}/);
   });
-  it("turns the numeral settle off from md up, inside the no-preference block after the rule that sets it", () => {
+  it("turns the numeral settle off from md up, inside the no-preference block beside the rule that sets it", () => {
     const block = css.slice(css.indexOf("@media (prefers-reduced-motion: no-preference) {\n  .launch-loader,"));
     const set = block.indexOf(".ll-num { animation-name: ll-num; }");
     const off = block.indexOf("@media (min-width: 48rem) { .launch-loader .ll-num { animation-name: none; } }");

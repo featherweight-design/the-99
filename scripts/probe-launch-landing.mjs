@@ -71,6 +71,8 @@ const WINDOWS = [
   { label: "desktop 1280x800", viewport: { width: 1280, height: 800 }, touch: false, expect: "rail" },
   { label: "tablet 1180x820 (touch)", viewport: { width: 1180, height: 820 }, touch: true, expect: "rail" },
   { label: "phone 390x844 (regression)", viewport: { width: 390, height: 844 }, touch: true, expect: "header" },
+  // Under `md`: the header, not the rail, so the short-touch rail landing (16px) is only reachable at 768px and up and 459.98px or less.
+  { label: "short touch 844x390 (landscape phone)", viewport: { width: 844, height: 390 }, touch: true, expect: "rail" },
 ];
 
 // The crown's centre diamond: the largest polygon in the svg that is not inside the overlay and sits nearest the top-left.
@@ -110,8 +112,8 @@ async function landing(browser, win, { forcePhone } = {}) {
   await ctx.addInitScript(() => {
     const real = window.matchMedia.bind(window);
     window.matchMedia = (q) => (/display-mode:\s*standalone/.test(q) ? { ...real("all"), matches: true, media: q } : real(q));
-    // Every document of the run starts as a cold start: a Clerk handshake redirect would otherwise load a second document that finds the
-    // seen flag the first one wrote (the real app does exactly that, which is the point of the flag).
+    // Every document of the run starts as a cold start. The real app does the opposite on purpose (the flag keeps a handshake redirect's
+    // second document, a reload and later navigations quiet), so this probe does not prove once-per-session: `launch-detect.test.ts` does.
     try { sessionStorage.removeItem("the99.launch.seen"); } catch { /* blocked storage: nothing to clear */ }
         // Held from the first frame, so a slow dev compile can never let the 3 s run finish (the overlay removes itself at its end).
     const hold = () => {
@@ -183,7 +185,9 @@ try {
     }
     const dx = Math.abs(m.fly.x - m.shell.x);
     const dy = Math.abs(m.fly.y - m.shell.y);
-    check(m.attr === "1" || m.attr === null, `${win.label}: the loader played (head script marked the document)`);
+    check(m.attr === "1", `${win.label}: the loader played (head script marked the document)`);
+    // The scale: the flyer's centre diamond is drawn at the shell crown's own size (0.1897 of the launch mark against the rail's 6px diamond).
+    check(Math.abs(m.fly.w - m.shell.w) <= TOLERANCE, `${win.label}: the flyer's crown is the shell crown's size`, `fly ${m.fly.w.toFixed(2)} shell ${m.shell.w.toFixed(2)}`);
     if (dx > TOLERANCE || dy > TOLERANCE) console.log("      debug", JSON.stringify({ vars: m.vars, flyTransform: m.flyTransform }));
     check(dx <= TOLERANCE && dy <= TOLERANCE, `${win.label}: the flyer's crown lands on the ${win.expect}'s`, `dx ${dx.toFixed(2)} dy ${dy.toFixed(2)} (fly ${m.fly.x.toFixed(1)},${m.fly.y.toFixed(1)} shell ${m.shell.x.toFixed(1)},${m.shell.y.toFixed(1)})`);
   }
