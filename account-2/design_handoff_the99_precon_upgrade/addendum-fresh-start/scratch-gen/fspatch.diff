@@ -1,0 +1,154 @@
+--- a/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 16:56:59.986084786 +0000
++++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 17:02:08.045645327 +0000
+@@ -25,6 +25,7 @@
+ import { ResultView, leadOf, runDay } from "./result-view";
+ import { HistoryView } from "./history-view";
+ import { FailedView, WaitView } from "./wait-view";
++import { LastRun, freshCopy } from "./last-run";
+ 
+ const copy = preconUpgradeCopy;
+ // The foot's press is the accent fill (R2d boards), dimmed and still when off; Back is the hairline. Nothing in the foot only closes:
+@@ -36,7 +37,9 @@
+ /** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
+ export type FlowApply = { nextVersion: number; onApply: (runId: string) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
+ 
+-export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread }: {
++export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, deckOf = () => null, init = {} }: {
++  deckOf?: (runId: string) => string | null;
++  init?: { opened?: string; fromStart?: boolean; history?: boolean; fromHistory?: boolean };
+   /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
+   fileName: string;
+   precon: string;
+@@ -70,11 +73,13 @@
+   // Leaving the wait, the failure or the result for the picks (Try another strategy, a done cell of the tracker).
+   const [left, setLeft] = useState(kept !== null);
+   // A kept run opened from the same-picks ask shows as a result, free.
+-  const [opened, setOpened] = useState<string | null>(null);
++  const [opened, setOpened] = useState<string | null>(init.opened ?? null);
++  const [fromStart, setFromStart] = useState(init.fromStart ?? false);
+   // History is a list of every kept run; a row opened from it is read-only, with a way back to the list.
+-  const [history, setHistory] = useState(false);
+-  const [fromHistory, setFromHistory] = useState(false);
++  const [history, setHistory] = useState(init.history ?? false);
++  const [fromHistory, setFromHistory] = useState(init.fromHistory ?? false);
+   const hasRuns = panel.runs.some((r) => r.status === "done");
++  const newest = panel.runs.find((r) => r.status === "done") ?? null;
+   const resultId = opened ?? (view.kind === "results" ? view.runId : null);
+   const shown = resultId ? panel.runs.find((r) => r.id === resultId) ?? null : null;
+   // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
+@@ -206,10 +211,11 @@
+         <div className="flex flex-none items-start justify-between gap-[12px]">
+           <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
+             {stage === "history" && <button type="button" onClick={() => setHistory(false)} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.backLink}</button>}
++            {stage === "results" && fromStart && <button type="button" onClick={() => { setOpened(null); setFromStart(false); }} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.backLink}</button>}
+             {stage === "results" && fromHistory && <button type="button" onClick={() => { setOpened(null); setFromHistory(false); setHistory(true); }} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.back}</button>}
+             <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{stage === "results" ? copy.flow.resultTitle : copy.flow.title(precon)}</h2>
+           </div>
+-          {hasRuns && ((stage === "pick" && step === "intro") || (stage === "results" && !fromHistory)) && (
++          {hasRuns && ((stage === "pick" && step === "intro") || (stage === "results" && !fromHistory && !fromStart)) && (
+             <button type="button" onClick={() => setHistory(true)} className="flex min-h-[44px] flex-none cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[2px] font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">
+               <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" className="flex-none">
+                 <path d="M8 2.2a5.8 5.8 0 1 1-5.6 4.3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+@@ -231,7 +237,7 @@
+           </button>
+         </div>
+         {stage === "pick" && here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
+-        {stage !== "pick" && stage !== "history" && !(stage === "results" && fromHistory) && (
++        {stage !== "pick" && stage !== "history" && !(stage === "results" && (fromHistory || fromStart)) && (
+           <StepTracker
+             cells={runCells}
+             current={null}
+@@ -249,9 +255,10 @@
+         <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
+           {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
+           {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
+-          {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
++          {stage === "results" && shown && (fromHistory || fromStart) && deckOf(shown.id) && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{freshCopy.usedNote(deckOf(shown.id)!)}</p>}
+           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
+-          {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
++          {stage === "history" && <HistoryView panel={panel} art={art} deckOf={deckOf} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
++          {stage === "pick" && step === "intro" && newest && <LastRun panel={panel} art={art} run={newest} deck={deckOf(newest.id)} onOpen={() => { setOpened(newest.id); setFromStart(true); }} />}
+           {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} short={short ? { payments } : undefined} onMore={toCredits} />}
+           {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
+           {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
+--- a/src/components/decks/precons/upgrade/history-view.tsx	2026-11-15 16:56:59.986084786 +0000
++++ b/src/components/decks/precons/upgrade/history-view.tsx	2026-11-15 17:01:52.431856105 +0000
+@@ -9,6 +9,7 @@
+ import { leadOf, runDay } from "./result-view";
+ import type { UpgradeArt } from "./pick-steps";
+ import type { StrategyKey } from "@/lib/strategy/score";
++import { RunRow } from "./last-run";
+ 
+ const copy = preconUpgradeCopy.history;
+ 
+@@ -26,7 +27,7 @@
+   return groups;
+ }
+ 
+-export function HistoryView({ panel, art, onOpen }: { panel: UpgradePanel; art: UpgradeArt; onOpen: (runId: string) => void }) {
++export function HistoryView({ panel, art, onOpen, deckOf = () => null }: { panel: UpgradePanel; art: UpgradeArt; onOpen: (runId: string) => void; deckOf?: (id: string) => string | null }) {
+   const groups = monthGroups(panel.runs);
+   return (
+     <div className="flex flex-col gap-[14px]">
+@@ -45,35 +46,9 @@
+             <h4 className="m-0 font-mono text-[9.5px] font-normal uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">{g.month}</h4>
+             <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
+               {g.runs.map((r, ri) => {
+-                const lead = leadOf(panel, r);
+-                // The short name (before the comma), as the board writes it: `Rootha, Mastering the Moment` reads `Rootha`.
+-                const name = lead ? lead.cards.map((c) => c.name.split(",")[0]).join(" + ") : "";
+-                const uri = lead ? art.get(lead.cards[0]?.oracleId ?? "") ?? null : null;
+-                const key = r.strategyKey.split("/")[2] ?? "";
+                 return (
+                   <li key={r.id} className="m-0">
+-                    <button
+-                      type="button"
+-                      onClick={() => onOpen(r.id)}
+-                      // The newest run keeps a stronger edge, as the board draws it.
+-                      className={"flex w-full cursor-pointer flex-col gap-[8px] rounded-[10px] border border-solid bg-[color:var(--surface)] p-[10px_12px] text-left focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] "
+-                        + (gi === 0 && ri === 0 ? "border-[color:var(--border-strong)]" : "border-[color:var(--border)]")}
+-                    >
+-                      <span className="flex items-center gap-[8px] text-[13px] font-semibold text-[color:var(--fg)]">
+-                        <StrategyIcon strategy={key as StrategyKey} size={14} className="flex-none text-[color:var(--fg-muted)]" />
+-                        <span className="min-w-0 flex-1 truncate">{copy.row(r.strategyLabel, name, r.bracketTarget ?? r.bracketAfter)}</span>
+-                      </span>
+-                      <span className="flex items-center gap-[10px] font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+-                        {uri ? (
+-                          // eslint-disable-next-line @next/next/no-img-element
+-                          <img src={uri} alt="" loading="lazy" className="h-[26px] w-[26px] flex-none rounded-[4px] object-cover" />
+-                        ) : (
+-                          <span aria-hidden className="h-[26px] w-[26px] flex-none rounded-[4px] bg-[color:var(--surface-sunken)]" />
+-                        )}
+-                        <span className="min-w-0 flex-1">{r.refunded ? copy.short(r.pairs.length) : copy.swaps(r.pairs.length)}</span>
+-                        <span>{runDay(r.createdAt)} <span aria-hidden>›</span></span>
+-                      </span>
+-                    </button>
++                    <RunRow panel={panel} art={art} run={r} deck={deckOf(r.id)} strong={gi === 0 && ri === 0} onOpen={() => onOpen(r.id)} />
+                   </li>
+                 );
+               })}
+--- a/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 16:56:59.986084786 +0000
++++ b/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 17:05:03.916439909 +0000
+@@ -240,7 +240,7 @@
+                   key={p.position}
+                   cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
+                   addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
+-                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? copy.youOwnIt : dollars(p.addCents)}</span>]}
++                  aside={[null, <Chip key="p" owned={add?.owned ?? false} cents={p.addCents} claims={(add as any)?.claims ?? null} />]}
+                 />
+               );
+             })}
+@@ -250,3 +250,13 @@
+     </div>
+   );
+ }
++
++import { AvailabilityMarker } from "../../../ui/availability-marker";
++import { BuyTag } from "../../buy-tag";
++/** Engineering's in-flight change, drawn: the shared allocation chips in place of `you own it`. A free copy draws nothing (the
++ *  marker's free state is null); a copy held by another deck draws the row marker; an add you don't own draws the buy tag. */
++function Chip({ owned, cents, claims }: { owned: boolean; cents: number; claims: any }) {
++  if (!owned) return <BuyTag variant="row" density="collapsed" price={{ cents, foilCents: null, etchedCents: null, asOf: new Date("2026-11-15") } as any} newestAsOf={new Date("2026-11-15")} />;
++  if (!claims) return null;
++  return <AvailabilityMarker availability={claims} bareOne nameless seam="var(--surface-sunken)" className="shrink-0 font-mono text-[11.5px]" />;
++}
