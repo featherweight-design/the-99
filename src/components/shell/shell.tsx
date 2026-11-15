@@ -30,7 +30,7 @@ import { ownHeaderFace } from "../../lib/social/friends";
 import { friendLinksEnabled } from "../../lib/friend-links/flag";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { liveMoments } from "../../lib/moments/live";
-import { readSpentMoments } from "../../lib/moments/spent";
+import { readShellPrefs } from "../../lib/shell/prefs";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
 import { TargetsProvider } from "../discovery/targets-provider";
@@ -110,10 +110,12 @@ export default async function Shell({
   const sentryUser = hashedUserTag(userId);
   // The stuck-loader diagnostic (plumbing). The deployment rides along so the server can tell a page
   // that outlived a deploy from one that did not; it is already in every page's HTML.
-  // The moments live for this reader and the ones already spent (discovery R1). With none live the spent set is not
-  // read, and the provider is handed nothing, so no anchor registers.
+  // The moments live for this reader and the ones already spent (discovery R1), and whether they have opened the
+  // installed app (install onboarding call 7), from the one `user_prefs` row. With no moment live the provider is handed
+  // nothing, so no anchor registers.
   const moments = liveMoments(env);
-  const spentMoments = moments.length > 0 ? await perfRead("shell.momentsSpent", () => readSpentMoments(userId)) : [];
+  const prefs = await perfRead("shell.prefs", () => readShellPrefs(userId));
+  const spentMoments = moments.length > 0 ? prefs.spentMoments : [];
   // M11's condition (a game logged, no friend yet) is read only while that moment is live and unspent.
   const friendsMoment =
     moments.includes("friends-after-game") && !spentMoments.includes("friends-after-game")
@@ -192,7 +194,7 @@ export default async function Shell({
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
             `contentinfo` landmark) sits above it and clears the bar and the sheets by the same figure (launch epic A1). */}
         <div className="flex min-w-0 flex-1 flex-col pb-[var(--tabbar-h)] md:pb-0">
-          <MobileHeader theme={theme} {...door} />
+          <MobileHeader theme={theme} installed={prefs.installed} {...door} />
           {/* The bottom padding on mobile leaves room for the fixed tab bar, which
               is held to exactly --tabbar-h so this reservation is not an estimate. */}
           {/* `flex flex-col` continues the stretch chain the rail already starts,

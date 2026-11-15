@@ -2256,6 +2256,13 @@ export const userPrefs = pgTable(
      * unseen trade match exists (`markFriendsSeen`), because of the stamp trigger above.
      */
     friendsSeenAt: timestamp("friends_seen_at", { withTimezone: true }),
+    /**
+     * When this reader first opened the installed app, signed in, on a phone (install onboarding call 7, Hugh
+     * 2026-11-15, `lib/pwa/installed.ts`). Set, the header's Install slot, the tour's Install stop and the fallback row
+     * stay away in every browser of this account. Written once, only while null (`markInstalledWrite`), because of the
+     * stamp trigger above. Null is an app never opened, which is every account at first, so it needs no backfill.
+     */
+    installedAt: timestamp("installed_at", { withTimezone: true }),
   },
   (t) => [
     check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),

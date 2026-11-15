@@ -971,7 +971,14 @@ export function TabBar({
 // §Mobile Top Header / §Mobile Wordmark
 // ---------------------------------------------------------------------------
 
-export function MobileHeader({ theme, adminDoor, adminEnv, credits, face }: { theme: ThemeKey } & Omit<AdminDoorProps, "friendsMoment">) {
+export function MobileHeader({
+  theme,
+  installed,
+  adminDoor,
+  adminEnv,
+  credits,
+  face,
+}: { theme: ThemeKey; installed: boolean } & Omit<AdminDoorProps, "friendsMoment">) {
   const ref = useRef<HTMLElement>(null);
   const { mode, slides, under } = useQuickReturn(ref);
   return (
@@ -1006,7 +1013,7 @@ export function MobileHeader({ theme, adminDoor, adminEnv, credits, face }: { th
         {/* Offline, left of the avatar (Concert Crawl's PWA cluster, right-side slots). */}
         <OfflinePill place="header" />
         {/* Install, phone only: desktop browsers have their own install button (PWA plan, call 1). */}
-        <InstallSlot />
+        <InstallSlot installed={installed} />
         {/* Card search, left of the avatar (HP1). Drawn only where the shell mounted the search. */}
         <CardSearchIcon />
         {/* The ? and the avatar, 6px apart (discovery R2·8 row 15). The ? scrolls with the header, as the avatar does. */}

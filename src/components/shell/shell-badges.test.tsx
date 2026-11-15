@@ -4,7 +4,7 @@ import { render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("next/headers", () => ({ headers: async () => new Headers() }));
-vi.mock("../../lib/moments/spent", () => ({ readSpentMoments: async () => [] }));
+vi.mock("../../lib/shell/prefs", () => ({ readShellPrefs: async () => ({ spentMoments: [], installed: false }) }));
 vi.mock("../../lib/social/after-game", () => ({ friendsAfterGameDue: async () => false }));
 vi.mock("next/navigation", async (importOriginal) => ({
   ...(await importOriginal<typeof import("next/navigation")>()),

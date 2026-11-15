@@ -1,19 +1,9 @@
-import { eq, sql } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { userPrefs } from "../../db/schema";
 import type { MomentId } from "./registry";
 
 type Writer = Pick<typeof db, "insert">;
-
-/** The moments this reader has been shown, for good (`user_prefs.moments_spent`). No row reads as none. */
-export async function readSpentMoments(userId: string): Promise<string[]> {
-  const rows = await db
-    .select({ spent: userPrefs.momentsSpent })
-    .from(userPrefs)
-    .where(eq(userPrefs.userId, userId))
-    .limit(1);
-  return rows[0]?.spent ?? [];
-}
 
 /**
  * Records a moment as spent. Append-only, and it writes ONLY when it adds the id: `user_prefs` carries the

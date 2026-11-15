@@ -11,6 +11,8 @@ import { removeRaw } from "../ui/local-store";
 const crowd = vi.hoisted(() => ({ search: false, help: false }));
 vi.mock("../card-search/card-search", () => ({ useCardSearch: () => (crowd.search ? {} : null) }));
 vi.mock("../help/help-root", () => ({ useHelpOn: () => crowd.help }));
+const markInstalled = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("../../app/install-actions", () => ({ markInstalledAction: markInstalled }));
 
 const ANDROID = "Mozilla/5.0 (Linux; Android 14) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36";
 const IPHONE = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
@@ -34,13 +36,17 @@ function offerInstall() {
   return { prompt, event };
 }
 
-beforeEach(() => removeRaw(DISMISSAL_KEY));
+beforeEach(() => {
+  removeRaw(DISMISSAL_KEY);
+  window.sessionStorage.clear();
+  markInstalled.mockClear();
+});
 afterEach(cleanup);
 
 describe("InstallSlot", () => {
   it("draws nothing until the browser offers an install, then holds the offer and shows it on a press", async () => {
     as(ANDROID);
-    render(<InstallSlot />);
+    render(<InstallSlot installed={false} />);
     expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
     const { prompt, event } = offerInstall();
     expect(event.defaultPrevented).toBe(true);
@@ -63,7 +69,7 @@ describe("InstallSlot", () => {
     // Strict Mode replays the mount effect, and the replay must not drop the offer the first took.
     render(
       <StrictMode>
-        <InstallSlot />
+        <InstallSlot installed={false} />
       </StrictMode>,
     );
     await act(async () => {
@@ -78,7 +84,7 @@ describe("InstallSlot", () => {
     render(
       <main>
         <header>
-          <InstallSlot />
+          <InstallSlot installed={false} />
         </header>
       </main>,
     );
@@ -96,7 +102,7 @@ describe("InstallSlot", () => {
   it("on iPhone Chrome and Firefox opens the sheet with that browser's own step 1; on Edge or an in-app view there is no slot", () => {
     for (const [browser, token] of [["chrome", "CriOS/129.0"], ["firefox", "FxiOS/130.0"]] as const) {
       as(IPHONE.replace("Version/18.0", token));
-      render(<InstallSlot />);
+      render(<InstallSlot installed={false} />);
       fireEvent.click(screen.getByRole("button", { name: copy.slotAria }));
       const sheet = screen.getByRole("dialog", { name: copy.sheet.ariaLabel });
       expect(sheet.textContent).toContain(copy.sheet.browsers[browser].eyebrow);
@@ -106,7 +112,7 @@ describe("InstallSlot", () => {
     }
     for (const ua of [IPHONE.replace("Version/18.0", "EdgiOS/129.0"), IPHONE.replace("Safari/604.1", "Instagram 350.0.0.0")]) {
       as(ua);
-      render(<InstallSlot />);
+      render(<InstallSlot installed={false} />);
       expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
       cleanup();
     }
@@ -114,19 +120,46 @@ describe("InstallSlot", () => {
 
   it("goes for 30 days when dismissed, and stays gone on the next visit", () => {
     as(IPHONE);
-    render(<InstallSlot />);
+    render(<InstallSlot installed={false} />);
     fireEvent.click(screen.getByRole("button", { name: copy.dismissAria }));
     expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
     cleanup();
-    render(<InstallSlot />);
+    render(<InstallSlot installed={false} />);
     expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
   });
 
   it("draws nothing once the app is installed", () => {
     as(IPHONE, true);
-    render(<InstallSlot />);
+    render(<InstallSlot installed={false} />);
     offerInstall();
     expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+  });
+
+  it("draws nothing in any browser once the account has opened the installed app", () => {
+    as(IPHONE);
+    render(<InstallSlot installed />);
+    offerInstall();
+    expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+  });
+
+  it("stamps the account from the installed app's first launch, once per launch, and never once stamped", () => {
+    as(IPHONE, true);
+    render(<InstallSlot installed={false} />);
+    expect(markInstalled).toHaveBeenCalledTimes(1);
+    cleanup();
+    // A reload or a navigation in the same launch keeps its sessionStorage.
+    render(<InstallSlot installed={false} />);
+    expect(markInstalled).toHaveBeenCalledTimes(1);
+    cleanup();
+    window.sessionStorage.clear();
+    render(<InstallSlot installed />);
+    expect(markInstalled).toHaveBeenCalledTimes(1);
+  });
+
+  it("stamps nothing from a browser tab", () => {
+    as(IPHONE);
+    render(<InstallSlot installed={false} />);
+    expect(markInstalled).not.toHaveBeenCalled();
   });
 });
 
@@ -143,7 +176,7 @@ describe("InstallSlot, stepping aside in a full header", () => {
     crowd.help = state.help;
     setOnline(state.online);
     as(ANDROID);
-    render(<InstallSlot />);
+    render(<InstallSlot installed={false} />);
     offerInstall();
   };
 
