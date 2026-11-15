@@ -233,6 +233,41 @@
       "w": 2672,
       "h": 1081,
       "title": "A4 \u00b7 Six themes"
+    },
+    "A5-Calls.dc.html": {
+      "x": 16100,
+      "y": 0,
+      "w": 1846,
+      "h": 1967,
+      "title": "A5 \u00b7 Demo: the Precon Upgrade step"
+    },
+    "A5-Phone.dc.html": {
+      "x": 16100,
+      "y": 2127,
+      "w": 1734,
+      "h": 3148,
+      "title": "A5 \u00b7 Step 7 \u00b7 phone"
+    },
+    "A5-Tablet.dc.html": {
+      "x": 16100,
+      "y": 5435,
+      "w": 1948,
+      "h": 1391,
+      "title": "A5 \u00b7 Step 7 \u00b7 tablet"
+    },
+    "A5-Desktop.dc.html": {
+      "x": 16100,
+      "y": 6986,
+      "w": 2756,
+      "h": 1969,
+      "title": "A5 \u00b7 Step 7 \u00b7 desktop"
+    },
+    "A5-Themes.dc.html": {
+      "x": 16100,
+      "y": 9115,
+      "w": 2672,
+      "h": 1169,
+      "title": "A5 \u00b7 Six themes"
     }
   },
   "order": [
@@ -267,7 +302,12 @@
     "A4-Phone.dc.html",
     "A4-Behaviour.dc.html",
     "A4-Desktop.dc.html",
-    "A4-Themes.dc.html"
+    "A4-Themes.dc.html",
+    "A5-Calls.dc.html",
+    "A5-Phone.dc.html",
+    "A5-Tablet.dc.html",
+    "A5-Desktop.dc.html",
+    "A5-Themes.dc.html"
   ],
   "notes": {},
   "designSystems": []

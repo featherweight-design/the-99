@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A5 Calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap">
+<style>
+body{margin:0}
+.board{box-sizing:border-box;padding:48px 56px 64px;background:#0D0B09;font-family:'IBM Plex Sans',sans-serif;color:#EDE6D8;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:9px;max-width:1500px}
+.kick{display:flex;align-items:center;gap:10px;font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8F8676}
+.kick .tag{background:#CF8745;color:#14110E;border-radius:5px;padding:4px 8px;font-weight:600}
+.bh h2{margin:0;font:700 30px 'Cinzel',serif}
+.bh p,.note{font-size:14px;line-height:1.6;color:#C0B8A6;margin:0;text-wrap:pretty}
+.bh p b,.note b{color:#EDE6D8}
+.frames{display:flex;gap:44px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8F8676}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89;text-wrap:pretty}
+.cap b{color:#EDE6D8;font-weight:600}
+.shot{display:block;border:1px solid #3A3229;border-radius:6px}
+.rec{outline:2px solid #CF8745;outline-offset:6px;border-radius:6px}
+.notes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.note{border:1px solid #3A3229;border-radius:12px;background:#15120F;padding:16px 18px}
+.note h4{margin:0 0 6px;font:600 13px 'IBM Plex Sans',sans-serif;color:#EDE6D8}
+.note ul{margin:6px 0 0;padding-left:18px}.note li{margin:4px 0}
+code{font:12px 'IBM Plex Mono',monospace;color:#EDE6D8;background:#211D18;border-radius:4px;padding:1px 4px}
+.tbl{border-collapse:collapse;font-size:13px;color:#C0B8A6;width:100%}
+.tbl th{text-align:left;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8F8676;padding:8px 10px;border-bottom:1px solid #3A3229}
+.tbl td{padding:9px 10px;border-bottom:1px solid #2B241B;vertical-align:top;line-height:1.5}
+.tbl td b{color:#EDE6D8}
+</style>
+</helmet>
+<div class="board" style="width: 1846px; min-height: 1967px">
+<div class="bh"><div class="kick"><span class="tag">A5</span>Landing demo · a Precon Upgrade step</div><h2>Step 7 of 9: Upgrade this precon, one stored run, read-only</h2><p>The “Try it” demo gains a ninth step. It sits right after Suggested changes, carries its own <b>2 credits</b> label, and shows one stored upgrade read-only: the shipped result, with every card name opening its details. No live run. Every frame is the shipped demo dialog (<code>demo.tsx</code>’s markup and classes) with the shipped <code>ResultView</code> inside, rendered with the shipped CSS and fonts in Low Sun. The swaps are the Upgrade handoff’s illustrative run; the build draws the fixture’s own.</p></div><div style="max-width: 1500px"><table class="tbl"><tr><th>Step</th><th>Tool</th><th>Label</th><th></th></tr><tr><td><b>1</b></td><td>Wren’s collection</td><td>Free</td><td></td></tr><tr><td><b>2</b></td><td>The commanders Wren can build</td><td>Free</td><td></td></tr><tr><td><b>3</b></td><td>Help me choose</td><td>1 credit</td><td></td></tr><tr><td><b>4</b></td><td>A deck from what Wren owns</td><td>Free</td><td></td></tr><tr><td><b>5</b></td><td>Analysis and Overview</td><td>Free · Overview: 1 credit</td><td></td></tr><tr><td><b>6</b></td><td>Suggested changes</td><td>1–2 credits</td><td></td></tr><tr style="background:#1E1913"><td><b>7</b></td><td><b>Upgrade this precon</b></td><td><b>2 credits</b></td><td><b>New.</b> Prismari Artistry, led by Muddle, bracket 2 → 3, toward Spells: 14 swaps</td></tr><tr><td><b>8</b></td><td>Get it to 99</td><td>Free · Proposed cuts: 1 credit</td><td>was 7</td></tr><tr><td><b>9</b></td><td>Buy only what’s missing</td><td>Free · Which deck: 1 credit</td><td>was 8</td></tr></table></div><div class="notes"><div class="note"><h4>1 · Where it sits</h4><ul><li><b>Step 7</b>, after Suggested changes and before Get it to 99. Both write swaps for a deck: Suggested changes tunes a deck Wren built, Upgrade starts from a box. The last two steps finish decks (the count, then the shopping), so they stay last.</li><li>The bar gets nine segments; <code>Step 7 of 9</code>. The section’s lead and the start card say <b>nine of the tools</b> (frames below).</li></ul></div><div class="note"><h4>2 · Which precon</h4><ul><li><b>Prismari Artistry</b>, the Upgrade handoff’s own fixture: led by <b>Muddle</b> (the box’s alternate), bracket <b>2 → 3</b>, toward <b>Spells</b>, 14 swaps.</li><li>Chosen because it shows the part no other step does: a different commander leads, and the result opens with the Commander row.</li><li>Mutant Menace (the landing’s featured precon) would work the same, with whatever its run picks.</li></ul></div><div class="note"><h4>3 · What the visitor sees and selects</h4><ul><li>The precon’s name and the <code>read-only</code> chip, as Suggested changes heads its run. Then the shipped result: title and date, the four facts, the Commander row, and the <b>first 3 swaps</b>, then <b>Show all 14 swaps</b> (as step 4’s Show all 99).</li><li><b>Select a card</b>: any name opens the demo’s read-only card details. The ring sits on the first added card with its label to the right, so it covers no row.</li><li>No step tracker (the title and facts already say all three picks) and no foot (Start the deck and Try another strategy write).</li></ul></div></div><div class="frames"><div class="fr" style="width: 390px"><div class="lab">Start card · 390</div><img class="shot" src="/_blob/cf1e304b074e0d457059205d33d71a45" alt="Start card · 390" width="390" height="700" style="width: 390px; height: 700px"><div class="cap"><b>Step through nine of the tools</b>; the lead above says nine too.</div></div><div class="fr" style="width: 1300px"><div class="lab">Start card · 1300</div><img class="shot" src="/_blob/daa6be36ce4896223ae041f8a6ca529d" alt="Start card · 1300" width="1300" height="560" style="width: 1300px; height: 560px"><div class="cap">Only the count word changes. Nothing else on the start card moves.</div></div></div><div class="notes"><div class="note"><h4>Copy (drafts)</h4><ul><li>Title: <b>Upgrade this precon</b> (the tool’s shipped name). Label chip: <b>2 credits</b>.</li><li>Line: <i>Wren picked who leads a precon, how strong it plays and the strategy. The 99 found {n} swaps toward that plan, every card added under $12, and says why for each.</i></li><li>Ring: <b>Select a card</b>. Control: <b>Show all {n} swaps</b>.</li><li>Lead and start card: <b>nine</b> of the tools.</li></ul></div><div class="note"><h4>For engineering</h4><ul><li>Fixture: <code>Projected.upgrade = { precon, panel, runId }</code>, exported by <code>demo:export</code> from one real run on the fixture account (2 credits, once).</li><li><code>ResultView</code> gains <code>limit</code>: draws the first N swaps; the title, facts and group counts still count the whole run (<code>resultview-limit.diff</code>).</li><li>New <code>demo-step-upgrade.tsx</code>. Steps after 6 shift by one: <code>StepBody</code>, <code>cardStepsOf</code> (Shopping is now index 8), the rings, the tests that count eight.</li></ul></div><div class="note"><h4>Readiness</h4><b>Yellow.</b> One gap: the fixture run (G1) has to be made on staging and exported. The rest is a step, a prop and the renumbering. See <code>READINESS.md</code> in <code>addendum-precon-upgrade/</code>.</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1846,"height":1967}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
