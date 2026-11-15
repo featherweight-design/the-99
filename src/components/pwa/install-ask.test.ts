@@ -6,8 +6,8 @@ beforeEach(() => removeRaw(INSTALL_ROW_KEY));
 
 describe("the Install slot's ask", () => {
   it("is held while offered, and a stale withdrawal never clears a newer offer", () => {
-    const a = { kind: "safari" as const, press: vi.fn(), button: () => null };
-    const b = { kind: "android" as const, press: vi.fn(), button: () => null };
+    const a = { kind: "safari" as const, press: vi.fn(), button: () => null, dismiss: vi.fn(), closeButton: () => null };
+    const b = { kind: "android" as const, press: vi.fn(), button: () => null, dismiss: vi.fn(), closeButton: () => null };
     const withdrawA = offerInstallAsk(a);
     const withdrawB = offerInstallAsk(b);
     withdrawA();

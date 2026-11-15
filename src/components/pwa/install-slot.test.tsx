@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { InstallSlot } from "./install-slot";
 import { pwaInstallCopy as copy } from "../../lib/copy/pwa-install";
-import { DISMISSAL_KEY } from "../../lib/pwa/install-dismissal";
+import { DISMISSAL_KEY, dismissalState } from "../../lib/pwa/install-dismissal";
 import { removeRaw } from "../ui/local-store";
 
 // What else shares the phone header with the slot: card search's icon, the ?, and (offline) the Offline pill.
@@ -179,6 +179,15 @@ describe("InstallSlot", () => {
     cleanup();
     render(<InstallSlot installed={false} />);
     expect(markInstalled).toHaveBeenCalledTimes(2);
+  });
+
+  it("offers the tour its own ✕: one dismiss, and the slot goes", async () => {
+    const { installAsk } = await import("./install-ask");
+    as(IPHONE);
+    render(<InstallSlot installed={false} />);
+    act(() => installAsk()!.dismiss());
+    expect(screen.queryByRole("button", { name: copy.slotAria })).toBeNull();
+    expect(dismissalState()).toBe("quiet");
   });
 
   it("goes when the shell hands a tab that drew it the stamp", () => {

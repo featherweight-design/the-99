@@ -106,13 +106,23 @@ export function InstallSlot({ installed }: { installed: boolean }) {
   // `installed` read here too: a tab open since before the stamp keeps its state when the shell hands it true.
   const drawn = !installed && !dismissed && (held !== null || browser !== null);
   const button = useRef<HTMLButtonElement>(null);
+  const closeButton = useRef<HTMLButtonElement>(null);
   // While it draws on a phone, the tour's Install stop can ask which ask this is and press it (install onboarding G2). A
   // held prompt in a narrow desktop window still draws the slot as shipped, but offers no tour stop: its copy is a phone's.
   useEffect(() => {
     if (!drawn) return;
     const kind = browser ?? (/Android.*Mobile/.test(navigator.userAgent) ? "android" : null);
     if (!kind) return;
-    return offerInstallAsk({ kind, press: () => void onPress(), button: () => button.current });
+    return offerInstallAsk({
+      kind,
+      press: () => void onPress(),
+      button: () => button.current,
+      dismiss: () => {
+        dismissOnce();
+        setDismissed(true);
+      },
+      closeButton: () => closeButton.current,
+    });
   }, [drawn, browser, onPress]);
 
   if (!drawn) return null;
@@ -141,6 +151,7 @@ export function InstallSlot({ installed }: { installed: boolean }) {
           <span className="hidden sm:inline">{copy.slotLabel}</span>
         </button>
         <button
+          ref={closeButton}
           type="button"
           onClick={() => {
             dismissOnce();

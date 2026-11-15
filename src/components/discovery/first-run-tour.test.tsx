@@ -34,16 +34,24 @@ const { offerInstallAsk, INSTALL_ROW_KEY } = await import("../pwa/install-ask");
 const { useEffect, useRef } = await import("react");
 type InstallKind = import("../pwa/install-ask").InstallKind;
 const installPress = vi.fn();
+const installDismiss = vi.fn();
 
 /** The header's Install slot as it draws: its target, and its ask offered. */
 function InstallSlotStub({ kind }: { kind: InstallKind }) {
   const button = useRef<HTMLButtonElement | null>(null);
   const register = useTarget("tour:install");
-  useEffect(() => offerInstallAsk({ kind, press: installPress, button: () => button.current }), [kind]);
+  const close = useRef<HTMLButtonElement | null>(null);
+  useEffect(
+    () => offerInstallAsk({ kind, press: installPress, button: () => button.current, dismiss: installDismiss, closeButton: () => close.current }),
+    [kind],
+  );
   return (
     <span ref={register}>
       <button type="button" ref={button}>
         Install
+      </button>
+      <button type="button" ref={close}>
+        ✕
       </button>
     </span>
   );
@@ -120,6 +128,7 @@ beforeEach(() => {
   spend.mockClear();
   takeVisit.mockClear();
   installPress.mockClear();
+  installDismiss.mockClear();
   localStorage.clear();
 });
 afterEach(() => vi.useRealTimers());
@@ -538,6 +547,19 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     expect(within(card()).getByText(/it can send the alerts you choose/)).toBeInTheDocument();
     expect(within(card()).queryByRole("button", { name: "Install The 99" })).toBeNull();
     expect(document.querySelector("[data-tour-ring]")).toBeNull();
+  });
+
+  it("lets the slot's ✕ be pressed mid-stop: the slot's own dismiss runs, focus lands on Finish, and Finish ends the tour", async () => {
+    render(<Home install="safari" />);
+    await arrive();
+    for (let i = 0; i < 6; i++) next();
+    fireEvent.click(within(card()).getByRole("button", { name: "Dismiss install prompt" }));
+    expect(installDismiss).toHaveBeenCalledTimes(1);
+    expect(installPress).not.toHaveBeenCalled();
+    expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
+    expect(document.activeElement).toBe(within(card()).getByRole("button", { name: "Finish" }));
+    next();
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
   it("has no Install stop when the slot is not drawn as the run opens, even with its ask offered (the desktop header)", async () => {

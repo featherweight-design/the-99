@@ -248,6 +248,8 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
   // On the Install stop, the slot's Install button: the pass-through over it is the one control under the scrim a press
   // reaches (G2). The page is inert while the tour runs, so the slot itself takes no press or focus.
   const [pressBox, setPressBox] = useState<Box | null>(null);
+  // And its ✕, which the boards keep operable mid-stop (STATES: the slot dismissed mid-run just goes).
+  const [closeBox, setCloseBox] = useState<Box | null>(null);
   const [frame, setFrame] = useState({ w: window.innerWidth, h: window.innerHeight });
   useEffect(() => {
     let raf = 0;
@@ -258,6 +260,9 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
       const b = step.key === "install" && next ? (ask?.button()?.getBoundingClientRect() ?? null) : null;
       const press = b ? { x: b.left, y: b.top, w: b.width, h: b.height } : null;
       setPressBox((prev) => (sameBox(prev, press) ? prev : press));
+      const x = step.key === "install" && next ? (ask?.closeButton()?.getBoundingClientRect() ?? null) : null;
+      const close = x ? { x: x.left, y: x.top, w: x.width, h: x.height } : null;
+      setCloseBox((prev) => (sameBox(prev, close) ? prev : close));
       setFrame((prev) => (prev.w === window.innerWidth && prev.h === window.innerHeight ? prev : { w: window.innerWidth, h: window.innerHeight }));
       raf = window.requestAnimationFrame(tick);
     };
@@ -529,6 +534,21 @@ function TourRun({ precons, credits, mode, onEnd }: { precons: boolean; credits:
             }}
             className="fixed rounded-[12px] border-0 bg-transparent p-0 focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none"
             style={{ left: pressBox.x, top: pressBox.y, width: pressBox.w, height: pressBox.h }}
+          />
+        )}
+        {step.key === "install" && ask && closeBox && (
+          // Over the slot's ✕, after the Install pass-through: the slot's own dismiss. The slot goes, the card stays docked
+          // with its ring dropped, and focus moves to Finish, which ends the tour.
+          <button
+            type="button"
+            aria-label={pwaInstallCopy.dismissAria}
+            data-tour-install-dismiss
+            onClick={() => {
+              ask.dismiss();
+              nextRef.current?.focus({ preventScroll: true });
+            }}
+            className="fixed rounded-[12px] border-0 bg-transparent p-0 focus-visible:shadow-[0_0_0_2px_var(--accent)] focus-visible:outline-none"
+            style={{ left: closeBox.x, top: closeBox.y, width: closeBox.w, height: closeBox.h }}
           />
         )}
       </section>

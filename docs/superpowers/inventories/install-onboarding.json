@@ -114,6 +114,112 @@
           "settle": 800
         }
       ]
+    },
+    {
+      "id": "install-dismiss",
+      "label": "/?tour=1, the slot's ✕ pressed mid-stop (Tab, Tab, Enter): the slot goes, the card stays docked on 7 of 7 · Install with its ring dropped (STATES, last line)",
+      "view": "src/components/discovery/first-run-tour.tsx",
+      "widths": [
+        "iphone-safari"
+      ],
+      "steps": [
+        {
+          "goto": "/?tour=1",
+          "waitDialog": "Start with what you own",
+          "settle": 800
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 800
+        },
+        {
+          "pressKey": "Tab",
+          "settle": 200
+        },
+        {
+          "pressKey": "Tab",
+          "settle": 200
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "install-dismiss-finish",
+      "label": "/?tour=1, then Enter on Finish (focus moved there by the ✕): the tour ends, no slot in the header",
+      "view": "src/components/discovery/first-run-tour.tsx",
+      "widths": [
+        "iphone-safari"
+      ],
+      "steps": [
+        {
+          "goto": "/?tour=1",
+          "waitDialog": "Start with what you own",
+          "settle": 800
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 400
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 800
+        },
+        {
+          "pressKey": "Tab",
+          "settle": 200
+        },
+        {
+          "pressKey": "Tab",
+          "settle": 200
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 600
+        },
+        {
+          "pressKey": "Enter",
+          "settle": 800
+        }
+      ]
     }
   ]
 }

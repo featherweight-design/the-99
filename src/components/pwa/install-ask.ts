@@ -12,6 +12,10 @@ export type InstallAsk = {
   press: () => void;
   /** The slot's Install button, for the tour's pass-through over it. */
   button: () => HTMLElement | null;
+  /** The slot's own ✕: one dismiss, and the slot goes (30 days quiet, a second one retires it). */
+  dismiss: () => void;
+  /** The slot's ✕ button, for the tour's second pass-through. */
+  closeButton: () => HTMLElement | null;
 };
 
 let current: InstallAsk | null = null;
