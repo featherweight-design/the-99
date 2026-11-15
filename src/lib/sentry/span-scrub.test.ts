@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scrubSpan, scrubSpanName } from "./span-scrub";
+import { reduceUrls, scrubSpan, scrubSpanName } from "./span-scrub";
 
 const span = (name: string, attributes: Record<string, unknown> = {}) => ({ name, span_id: "a", trace_id: "b", is_segment: true, attributes });
 
@@ -35,9 +35,37 @@ describe("scrubSpan", () => {
     expect(JSON.stringify(out)).not.toMatch(/Kitchen|TOKEN123|ref=me/);
   });
 
-  it("drops any attribute holding an email or a Clerk id, and cuts SQL literals", () => {
-    const out = scrubSpan(span("select 1", { note: "for someone@example.com", owner: "user_2NNEqL2nrIRdJ194", "db.query.text": "select * from decks where name = 'Kitchen table'" }));
-    expect(out.attributes).toEqual({ "db.query.text": "select * from decks where name = '?'" });
-    expect(scrubSpanName("mail sent to someone@example.com")).toBe("mail sent to [redacted]");
+  it("drops any attribute holding an email or a Clerk id, and cuts SQL literals on a db span", () => {
+    const out = scrubSpan(span("select * from decks where name = 'Kitchen'", { "sentry.op": "db", note: "for someone@example.com", owner: "user_2NNEqL2nrIRdJ194", "db.query.text": "select * from decks where name = 'Kitchen table'" }));
+    expect(out.name).toBe("select * from decks where name = '?'");
+    expect(out.attributes).toEqual({ "sentry.op": "db", "db.query.text": "select * from decks where name = '?'" });
+    expect(reduceUrls("mail sent to someone@example.com")).toBe("mail sent to [redacted]");
+  });
+
+  it("cuts a web vital's target to its bare tag name: no aria-label, title, alt, id or class", () => {
+    const out = scrubSpan(span("/decks/[id]", {
+      "sentry.op": "ui.interaction.click",
+      "browser.web_vital.inp.target": 'body > div.shell > button#swap.pill[aria-label="Swap in: My Deck"]',
+      "browser.web_vital.lcp.element": 'body > main > img[alt="Atraxa, Kitchen table"]',
+      "browser.web_vital.cls.source.1": 'div[title="Hugh\'s pod"]',
+      "browser.web_vital.inp.value": 120,
+    }));
+    expect(out.attributes).toEqual({
+      "sentry.op": "ui.interaction.click",
+      "browser.web_vital.inp.target": "button",
+      "browser.web_vital.lcp.element": "img",
+      "browser.web_vital.cls.source.1": "div",
+      "browser.web_vital.inp.value": 120,
+    });
+    expect(JSON.stringify(out)).not.toMatch(/My Deck|Atraxa|Hugh|swap|shell/);
+    expect(scrubSpan(span("x", { "browser.web_vital.inp.target": 'span[aria-label="a > Kitchen table"]' })).attributes).toEqual({ "browser.web_vital.inp.target": "span" });
+  });
+
+  it("drops an unknown string attribute, and a span name that is neither a path nor one of Next's", () => {
+    const out = scrubSpan(span('body > button[aria-label="Swap in: My Deck"]', { "sentry.op": "ui.interaction.click", "some.new.attribute": "Kitchen table" }));
+    expect(out.name).toBe("ui.interaction.click");
+    expect(out.attributes).toEqual({ "sentry.op": "ui.interaction.click" });
+    expect(scrubSpanName("Kitchen table brew")).toBe("span");
+    expect(scrubSpanName("https://cards.scryfall.io/large/front/a/b/3f2a.jpg?1", "resource.img")).toBe("https://cards.scryfall.io/large/front/a/b/[id]");
   });
 });

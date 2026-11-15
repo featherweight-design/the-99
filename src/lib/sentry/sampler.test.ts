@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { QUIET_SAMPLE_RATE, TRACE_SAMPLE_RATE, traceRate } from "./sampler";
+import { forgetIncomingSampling, QUIET_SAMPLE_RATE, TRACE_SAMPLE_RATE, traceRate } from "./sampler";
 
 describe("traceRate", () => {
   it("samples ordinary pages and routes at the one rate, 10%", () => {
@@ -35,5 +35,35 @@ describe("traceRate", () => {
   it("decides each root itself: a caller's sampled=1 is not inherited", () => {
     expect(traceRate({ name: "GET /api/health", parentSampled: true } as never)).toBe(0);
     expect(traceRate({ name: "GET /decks", parentSampled: true } as never)).toBe(0.1);
+  });
+});
+
+describe("forgetIncomingSampling", () => {
+  // Core keeps a root span when `sampleRand < rate` (`tracing/sampling.js`); the rate is ours, the `sampleRand` is the scope's.
+  type Ctx = { traceId: string; parentSpanId?: string; sampled?: boolean; sampleRand: number; dsc?: unknown };
+  const incoming = (): Ctx => ({ traceId: "t", parentSpanId: "p", sampled: true, sampleRand: 0.000001, dsc: { sample_rand: "0.000001", sampled: "true" } });
+  const scopeWith = (ctx: Ctx) => ({ getPropagationContext: () => ctx, setPropagationContext: (next: Ctx) => void (ctx = next), get: () => ctx });
+
+  it("a caller's sampled=1 with sample_rand=0.000001 would force a quiet route without it", () => {
+    expect(incoming().sampleRand < traceRate({ name: "POST /api/card-scan/match" })).toBe(true);
+  });
+
+  it("gives an incoming trace a fresh sample_rand and no inherited decision, so the 0.01 and 0 routes are not forced", () => {
+    for (const name of ["POST /api/card-scan/match", "GET /api/rule-zero/tables/x", "GET /api/health", "GET /api/cron/push-flush"]) {
+      const scope = scopeWith(incoming());
+      forgetIncomingSampling({ scope, parentSpan: undefined }, () => 0.5);
+      const ctx = scope.get();
+      expect(ctx).toEqual({ traceId: "t", parentSpanId: "p", sampleRand: 0.5 });
+      expect(ctx.sampleRand < traceRate({ name, parentSampled: ctx.sampled } as never)).toBe(false);
+    }
+  });
+
+  it("leaves a child of a local span, and a request with no incoming trace, alone", () => {
+    const child = scopeWith(incoming());
+    forgetIncomingSampling({ scope: child, parentSpan: {} }, () => 0.5);
+    expect(child.get().sampleRand).toBe(0.000001);
+    const fresh = scopeWith({ traceId: "t", sampleRand: 0.3 });
+    forgetIncomingSampling({ scope: fresh, parentSpan: undefined }, () => 0.5);
+    expect(fresh.get().sampleRand).toBe(0.3);
   });
 });

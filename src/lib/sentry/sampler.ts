@@ -7,8 +7,11 @@
 //     the readiness and liveness checks, the crons, and the public CSP report sink (a stranger could post to it).
 //   - QUIET (`QUIET_SAMPLE_RATE`): routes a page calls over and over (a scan asks per card, a table polls every 20s),
 //     where 10% would be most of the quota and a hundredth still shows their latency.
-// An incoming trace's own decision is NOT inherited: a caller could send `sampled=1` on every request and spend the
-// quota for us, so each root span is decided here alone.
+// An incoming trace's decision is NOT inherited, on the server. The rate returned here is not enough on its own: core
+// compares it with the trace's `sample_rand`, which an incoming `baggage` header sets, so a caller sending
+// `sentry-sample_rand=0.000001` would be kept at any rate above 0. `forgetIncomingSampling` (registered on the server's
+// `prepareSpanScope` hook, `init-server.ts`) gives a root span continuing an incoming trace a fresh `sample_rand` and no
+// inherited decision first, so this rate alone decides. The trace id is kept, so a browser's trace still links.
 
 export const TRACE_SAMPLE_RATE = 0.1;
 export const QUIET_SAMPLE_RATE = 0.01;
@@ -63,4 +66,20 @@ export function traceRate(ctx: SamplerContext): number {
   if (paths.some((p) => DROPPED.some((re) => re.test(p)))) return 0;
   if (paths.some((p) => QUIET.some((re) => re.test(p)))) return QUIET_SAMPLE_RATE;
   return TRACE_SAMPLE_RATE;
+}
+
+/** The propagation context, as far as `forgetIncomingSampling` reads and writes it. */
+type PropagationLike = { traceId: string; parentSpanId?: string; sampled?: boolean; sampleRand: number; dsc?: unknown };
+type ScopeLike = { getPropagationContext(): PropagationLike; setPropagationContext(ctx: PropagationLike): void };
+
+/**
+ * The server's `prepareSpanScope` listener, after the SDK's own (which forks the scope for a remote parent and clears
+ * `parentSpan`): a root span about to continue an incoming trace keeps the trace id and parent id, and loses the caller's
+ * sampled flag, sample rate and `sample_rand`. A child of a local span is left alone.
+ */
+export function forgetIncomingSampling(spanScope: { scope: ScopeLike; parentSpan: unknown }, random: () => number = Math.random): void {
+  if (spanScope.parentSpan) return;
+  const ctx = spanScope.scope.getPropagationContext();
+  if (ctx.parentSpanId === undefined && ctx.sampled === undefined) return;
+  spanScope.scope.setPropagationContext({ traceId: ctx.traceId, parentSpanId: ctx.parentSpanId, sampleRand: random() });
 }
