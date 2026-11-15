@@ -38,27 +38,43 @@ export const reportCopy = {
   sentWithCode: (digest: string) => `Sent with error ${digest}`,
 } as const;
 
-// The check-in on Home (flyer trial PR 6; `Survey-Phone`, `Survey-Desktop`), verbatim from `flyer-trial · copy strings.ts`
-// `checkInCopy`. The sheet's Close and Try again and the "optional" tag are `reportCopy`'s.
+// The check-in on Home (flyer trial PR 6; `Survey-Phone`, `Survey-Desktop`), refreshed by check-in R2 (addendum
+// `addendum-checkin-r2`, Hugh 2026-11-15). /copy-review 2026-11-15: the card's type line takes the middle dot of the
+// shipped `typeFriend` ("Friend · since …") for the draft's em dash, and the high thanks drops its exclamation point.
+// The sheet's Close, Try again, Sending… and the "optional" tag are `reportCopy`'s.
 export const checkInCopy = {
   title: "How’s it going?",
-  intro: "You’ve been using The 99 for a couple of weeks. Three quick questions.",
-  rating: "How is it working for you?",
-  ratingEnds: ["not well", "really well"],
+  intro: "You’ve been with The 99 for a couple of weeks. Three quick questions, and your answers steer what we improve next.",
+  rating: "How’s it working for you?",
+  /** One word per card of the hand, by index; the stored rating stays 1 to 5. */
+  ratingWords: ["Rough", "Meh", "Okay", "Good", "Love it"],
+  ratingAria: (n: number, word: string) => `${n} of 5, ${word}`,
   uses: "What do you use most?",
   pickAny: "pick any",
   useOptions: ["Collection", "Commanders", "Decks", "Shopping", "Friends", "Precons"],
   pod: "Would you tell your pod about it?",
   podOptions: ["Yes", "Maybe", "Already have"],
   more: "Anything else?",
-  morePlaceholder: "Anything you’d change, or love",
-  hint: "Takes a minute",
+  morePlaceholder: "A wish, a gripe, a feature you love",
+  hint: "Takes about a minute",
   notNow: "Not now",
   send: "Send",
-  sentTitle: "Thanks, that helps.",
-  sentBody: "We read every answer. You can always tell us more from About › Report a problem.",
-  failed: "We couldn’t send that. Try again.",
-  // The send hit the feedback allowance it shares with problem reports (`sendCheckIn`, reason `limited`): the volume, not a fault, and
-  // it eases. Its own line, so a reader who has sent a few does not read "couldn't send" as breakage. Copy-reviewed.
+  /** Rated 3 to 5. */
+  sentTitle: "Thank you, truly.",
+  sentBody: "This genuinely helps us know what to improve. More to say later? About › Report a problem is always open.",
+  /** Rated 1 or 2. */
+  sentTitleLow: "Thanks for telling us straight",
+  sentBodyLow:
+    "Hearing what isn’t working is exactly how we know what to fix. If something broke, About › Report a problem is the quickest way to show us.",
+  /** The thank-you card (the compact `FriendCard`, crowned face). `name` is also the word on its back. */
+  card: {
+    name: "Thank you",
+    type: "Instant · Thanks",
+    rules: "When this resolves, the people building The 99 read every word and choose what to make better next.",
+    credit: "From the team",
+    mark: "XCIX",
+    aria: "Thank you, a card from The 99",
+  },
+  failed: "That didn’t go through. Your answers are still here.",
   failedLimited: "You’ve sent a few already. Try again later.",
 } as const;

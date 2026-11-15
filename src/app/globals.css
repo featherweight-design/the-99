@@ -1682,6 +1682,57 @@ html {
   .friend-card-turn[data-up="true"] .friend-card-back,
   .friend-card-turn[data-up="false"] .friend-card-front { opacity: 0; }
 }
+/* The check-in, round 2 (addendum `addendum-checkin-r2`, Checkin-Spec "Motion"). Every animation here is
+   no-preference only, so reduced motion is the static board: the picked card simply drawn lifted, chips on, no rise, no
+   burst, the words with the card's 120ms cross-fade (the `.friend-card` rules above). */
+/* Each burst diamond's own end point, set inline per diamond (`BURST` in check-in-form.tsx). */
+.anim-check-in-burst { --dx: 0px; --dy: 0px; }
+@media (prefers-reduced-motion: no-preference) {
+  /* A card's pick: a 220ms lift with a small overshoot; the wash and the border in 160ms; the crown fades in. The fan
+     and the lift are Tailwind's `rotate` and `translate` properties, not `transform`, so those are what move. */
+  .check-in-card {
+    transition: translate 220ms cubic-bezier(.3, 1.5, .5, 1), rotate 220ms cubic-bezier(.3, 1.5, .5, 1), background-color 160ms,
+      border-color 160ms, box-shadow 220ms;
+  }
+  .check-in-crown { transition: opacity 160ms, translate 220ms; }
+  /* The desktop's pointer hover: an unpicked card rises halfway and straightens. */
+  @media (hover: hover) and (pointer: fine) {
+    .check-in-card[aria-checked="false"]:not(:disabled):hover {
+      translate: 0 -4px;
+      rotate: 0deg;
+      border-color: var(--fg-faint);
+    }
+  }
+  /* A chip turning on pops from .94. */
+  .anim-chip-pop { animation: check-in-pop 180ms cubic-bezier(.3, 1.6, .5, 1); }
+  /* The thanks: the sheet's words fade in 150ms; the card rises 24px into place over the 200ms beat its turn waits. */
+  .anim-check-in-thanks { animation: check-in-fade 150ms linear; }
+  .anim-check-in-rise { animation: check-in-rise 200ms cubic-bezier(.2, .8, .3, 1) both; }
+  /* Heading, body and Close as the card lands face up (200ms beat + 520ms turn). */
+  .anim-check-in-late { animation: check-in-fade 200ms linear 720ms both; }
+  /* Rated 3 to 5: six diamonds out from the card's centre as it lands, once. */
+  .anim-check-in-burst { animation: check-in-burst 700ms cubic-bezier(.15, .7, .3, 1) 720ms both; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .anim-check-in-burst { display: none; }
+}
+@keyframes check-in-pop {
+  from { transform: scale(.94); }
+  to { transform: scale(1); }
+}
+@keyframes check-in-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes check-in-rise {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes check-in-burst {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.3); }
+  25% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(1); }
+}
 /* The column's heading and buttons arrive as the card lands (200ms + 520ms), on a card that turns: held while the
    card waits face down (`wait`), and timed from the render that starts its turn (`in`). */
 @media (prefers-reduced-motion: no-preference) {

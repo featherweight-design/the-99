@@ -27,7 +27,8 @@ describe("CheckInForm", () => {
     render(<CheckInForm onClose={() => {}} />);
     expect(screen.getByText(copy.intro)).toBeTruthy();
     expect(screen.getByText(copy.rating)).toBeTruthy();
-    for (const label of [...copy.ratingEnds, ...copy.useOptions, ...copy.podOptions]) expect(screen.getByText(label)).toBeTruthy();
+    for (const label of [...copy.ratingWords, ...copy.useOptions, ...copy.podOptions]) expect(screen.getByText(label)).toBeTruthy();
+    expect(screen.getByRole("radio", { name: copy.ratingAria(4, "Good") })).toBeTruthy();
     expect(screen.getByText(copy.pickAny)).toBeTruthy();
     expect(screen.getByText(copy.hint)).toBeTruthy();
     expect(screen.getByPlaceholderText(copy.morePlaceholder)).toBeTruthy();
@@ -135,5 +136,59 @@ describe("CheckInForm", () => {
     expect(onClose).not.toHaveBeenCalled();
     resolve({ ok: true });
     await waitFor(() => expect(screen.getByTestId("check-in-sent")).toBeTruthy());
+  });
+
+  it("reads Sending… with the answers dimmed while the send is out", async () => {
+    let resolve!: (v: { ok: true }) => void;
+    send.mockReturnValue(new Promise((r) => (resolve = r)));
+    render(<CheckInForm onClose={() => {}} />);
+    fireEvent.click(screen.getByTestId("check-in-rating-4"));
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(sendButton().textContent).toBe(reportCopy.sending));
+    expect(document.querySelector("[data-check-in-hand]")!.className).toMatch(/(^| )opacity-60( |$)/);
+    expect(screen.getByTestId("check-in-note").className).toMatch(/(^| )opacity-60( |$)/);
+    resolve({ ok: true });
+    await waitFor(() => expect(screen.getByTestId("check-in-sent")).toBeTruthy());
+  });
+
+  it("thanks a 3 to 5 with the burst and the card named as The 99's, and moves focus to the heading", async () => {
+    send.mockResolvedValue({ ok: true });
+    render(<CheckInForm onClose={() => {}} />);
+    fireEvent.click(screen.getByTestId("check-in-rating-3"));
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(screen.getByTestId("check-in-sent")).toBeTruthy());
+    const heading = screen.getByRole("heading", { name: copy.sentTitle });
+    expect(document.activeElement).toBe(heading);
+    expect(document.querySelectorAll("[data-check-in-burst]")).toHaveLength(6);
+    // Face up on the next frame, then one image named as The 99's card, not by its type line.
+    await waitFor(() => expect(screen.getByRole("img", { name: copy.card.aria })).toBeTruthy());
+  });
+
+  it("thanks a 1 or 2 straight, with no burst", async () => {
+    send.mockResolvedValue({ ok: true });
+    render(<CheckInForm onClose={() => {}} />);
+    fireEvent.click(screen.getByTestId("check-in-rating-2"));
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(screen.getByTestId("check-in-sent")).toBeTruthy());
+    expect(screen.getByText(copy.sentTitleLow)).toBeTruthy();
+    expect(screen.getByText(copy.sentBodyLow)).toBeTruthy();
+    expect(screen.queryByText(copy.sentTitle)).toBeNull();
+    expect(document.querySelectorAll("[data-check-in-burst]")).toHaveLength(0);
+  });
+
+  it("is one tab stop whose arrows move and check, wrapping", () => {
+    render(<CheckInForm onClose={() => {}} />);
+    const card = (n: number) => screen.getByTestId(`check-in-rating-${n}`);
+    expect([1, 2, 3, 4, 5].map((n) => card(n).tabIndex)).toEqual([0, -1, -1, -1, -1]);
+    card(1).focus();
+    fireEvent.keyDown(card(1), { key: "ArrowLeft" });
+    expect(card(5).getAttribute("aria-checked")).toBe("true");
+    expect(document.activeElement).toBe(card(5));
+    fireEvent.keyDown(card(5), { key: "ArrowRight" });
+    expect(card(1).getAttribute("aria-checked")).toBe("true");
+    expect([1, 2, 3, 4, 5].map((n) => card(n).tabIndex)).toEqual([0, -1, -1, -1, -1]);
+    fireEvent.keyDown(card(1), { key: "ArrowDown" });
+    expect(card(2).getAttribute("aria-checked")).toBe("true");
+    expect(card(2).tabIndex).toBe(0);
   });
 });

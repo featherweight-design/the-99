@@ -32,6 +32,11 @@ export type CardFace = {
   rules: string | PersonParts;
   /** The 99's own face (a flyer's invitation, no sender): the crowned 99 in the art box, and `credit` and `mark` for the footer's two ends. */
   crown?: { credit: string; mark: string };
+  /**
+   * The face-up card's accessible name, in place of `cardAria(name, commander, type)` (check-in R2 clarification 2: the
+   * thank-you card reads "Thank you, a card from The 99", not its type line). The 99's own words, never a person's.
+   */
+  aria?: string;
 };
 
 const SHADOW = "shadow-[0_34px_70px_rgba(0,0,0,.6),0_0_0_1px_rgba(0,0,0,.6)]";
@@ -122,6 +127,26 @@ export function InviteFan({ word }: { word: string }) {
   );
 }
 
+/**
+ * The 44×62 card back beside the check-in's intro (check-in R2 call 3): `CardBack`'s face at its smallest, drawn from the
+ * same tokens (`--surface-inset` frame, the dashed `--border-dashed` panel over the accent wash, the crowned 99), tilted
+ * -6°. Decorative: the payoff it promises is the thank-you card.
+ */
+export function MiniCardBack() {
+  return (
+    <span
+      aria-hidden
+      data-testid="mini-card-back"
+      className="box-border flex h-[62px] w-[44px] flex-none rotate-[-6deg] rounded-[5px] bg-[color:var(--surface-inset)] p-[3px] shadow-[0_6px_14px_rgba(0,0,0,.5),inset_0_0_0_1px_var(--border-strong)]"
+    >
+      <span className="flex h-full w-full flex-col items-center justify-center rounded-[3px] [border:1px_solid_var(--border-dashed)] bg-[color:var(--surface-sunken)] bg-[image:radial-gradient(40px_44px_at_50%_46%,color-mix(in_oklab,var(--accent)_24%,transparent),transparent_72%)]">
+        <span className="text-[4.5px] leading-none tracking-[1.5px] text-[color:var(--accent-text)]">◆◆◆</span>
+        <span className="font-display text-[15px] font-bold leading-none text-[color:var(--fg)]">99</span>
+      </span>
+    </span>
+  );
+}
+
 // The compact back is the 300×419 box at .5, so the board's 150×210 values are doubled here (pr5 table, Card back and
 // Back inner): radius 9px → 18, inner radius 6px → 12, inner border 1px → 2.
 function CardBack({ dim, word, compact }: { dim: boolean; word: string | null; compact: boolean }) {
@@ -160,7 +185,7 @@ function CardFront({ face, hidden, compact, signature }: { face: CardFace; hidde
       role="img"
       // The label names the card's person, so it is spread with its classes: `personAttrs` marks the element.
       {...personAttrs(
-        { "aria-label": copy.cardAria(face.name, face.commander?.name ?? null, face.type) },
+        { "aria-label": face.aria ?? copy.cardAria(face.name, face.commander?.name ?? null, face.type) },
         `friend-card-face friend-card-front box-border overflow-hidden ${compact ? `rounded-[18px] p-[8px] text-left ${COMPACT_SHADOW}` : `rounded-[17px] p-[3px] ${SHADOW}`} ${art || crown ? "bg-[color:var(--border-strong)]" : "bg-[linear-gradient(160deg,var(--fg-disabled),var(--border-strong))]"}`,
       )}
       aria-describedby={rulesId}
