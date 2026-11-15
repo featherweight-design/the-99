@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Scanner loading, rules and copy</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#FF4D9A}a:hover{color:#FF7AB4}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#6F7486}
+.cap{font-size:13px;line-height:1.55;color:#959AAD;margin:0}
+.cap b{color:#E6E8F0;font-weight:600}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:22px}
+.bh{display:flex;flex-direction:column;gap:8px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.spec{border:1px solid #262A35;border-radius:12px;background:#12141B;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.spec h4{margin:0;font:600 14px 'IBM Plex Sans',sans-serif;color:#E6E8F0}
+.spec p{margin:0;font-size:13px;line-height:1.55;color:#B1B6C7}
+.spec p b{color:#E6E8F0;font-weight:600}
+code{font:12px 'IBM Plex Mono',monospace;color:#E6E8F0}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.tl{display:flex;gap:0;align-items:stretch;border-radius:10px;overflow:hidden;border:1px solid #262A35}
+.tl div{padding:10px 12px;display:flex;flex-direction:column;gap:4px;font-size:12.5px;line-height:1.45;color:#B1B6C7;border-right:1px solid #262A35}
+.tl div:last-child{border-right:0}
+.tl b{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E6E8F0}
+.tl .a{background:color-mix(in srgb,#FF4D9A 14%,#12141B)}
+.tl .w{background:color-mix(in srgb,#FF4D9A 7%,#12141B)}
+.tl .s{background:#12141B}
+table{width:100%;border-collapse:collapse;font-size:13px;line-height:1.5}
+th{text-align:left;font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#6F7486;padding:0 10px 8px 0;border-bottom:1px solid #262A35}
+td{padding:9px 10px 9px 0;border-bottom:1px solid #181C26;color:#B1B6C7;vertical-align:top}
+td:first-child{white-space:nowrap}
+td b{color:#E6E8F0;font-weight:600}
+</style>
+</helmet>
+<div class="board" style="width:1100px;min-height:1540px">
+<div class="bh"><span class="k">Addendum · card scanning · the scanner’s first open · the calls</span><h2>Rules, timing and copy</h2></div>
+
+<div class="tl" aria-label="First open, start to finish">
+<div class="a" style="flex:8"><b>L1 · Getting the scanner ready</b>Open to the last model byte. The bar counts bytes. About 8s on a phone.</div>
+<div class="w" style="flex:2"><b>L2 · Almost ready</b>Runtime and warm-up. 0.2–2s.</div>
+<div class="s" style="flex:5"><b>L3 · Show a card to the camera</b>The shipped looking panel, and reading starts.</div>
+</div>
+
+<div class="grid2">
+<div class="spec"><h4>1 · A real bar, not a spinner</h4><p>The two model files (3.2 MB detector, 14.8 MB embedder) are counted together against their total, so the bar moves once, from start to full. The runtime can’t be measured, so it isn’t counted. If it is still loading when the last byte lands, L2 covers it along with the warm-up.</p><p>If the server sends no file size, the bar runs as L4’s indeterminate bar, with L1’s words and no figures.</p></div>
+<div class="spec"><h4>2 · In the panel, over a live camera</h4><p>The loading state is the shipped result panel (phone: above the tray; desktop: under the feed), with new words. There’s no scrim, overlay or extra screen. The camera starts as shipped, so the player can frame a card while it loads. ✕/Stop, Auto/Normal and the light all work, and a mode chosen now is the one the scanner reads with.</p><p>No outline is drawn while loading, because nothing is reading yet.</p></div>
+<div class="spec"><h4>3 · The hand-off</h4><p>When the first frame can be read, the panel turns into the shipped looking panel in place: a 150ms cross-fade of its contents (none with reduced motion), with no “ready” message, toast or sound. From then on the scanner works exactly as shipped.</p></div>
+<div class="spec"><h4>4 · A cached reopen shows it, quietly</h4><p>About 3s is too long to show “Show a card” when nothing can read. If the scanner isn’t ready 400ms after it opens, it shows <b>Starting the scanner</b> with an indeterminate bar above the shipped mode line. That way the hand-off changes only the heading. There are no figures and no first-time line, because nothing downloads.</p></div>
+</div>
+
+<div class="spec"><h4>When each one shows</h4>
+<table>
+<tr><th>State</th><th>Shown when</th><th>Ends when</th></tr>
+<tr><td><b>L1</b> Getting the scanner ready</td><td>The scanner opens and a model file isn’t in Cache Storage (or fails its hash check). If one model is cached, the bar and figures count only the one still downloading.</td><td>The last model byte lands → L2. ✕ or Stop abandons it.</td></tr>
+<tr><td><b>L2</b> Almost ready</td><td>Every model byte has landed, and the runtime or warm-up isn’t done.</td><td>The first frame can be read → L3.</td></tr>
+<tr><td><b>L4</b> Starting the scanner</td><td>Both models are cached at open, and the scanner still can’t read 400ms later.</td><td>The first frame can be read → L3.</td></tr>
+<tr><td><b>L3</b> Show a card</td><td>Shipped, unchanged (D7), once the scanner can read.</td><td>As shipped.</td></tr>
+</table>
+<p><b>Closing abandons it.</b> ✕ or Stop closes at once, with no confirm, as today. Nothing half-downloaded is kept, so the next open starts L1 from 0, and the copy doesn’t promise to resume. <b>Unchanged:</b> going offline mid-download shows the shipped offline notice, and a load that fails is the shipped “couldn’t start” notice. A turn across the 768px line keeps the state and its figures.</p></div>
+
+<div class="spec"><h4>Accessibility</h4><p>The bar is a <code>progressbar</code> with <code>aria-valuenow</code> on L1, and without it on L2 and L4. The panel’s existing polite live region announces only its heading changes (Getting the scanner ready, Almost ready, Show a card to the camera), never each MB. Focus stays on ✕ (Stop on desktop) as shipped.</p></div>
+
+<div class="spec"><h4>New words, for /copy-review · <code>collectionEditCopy.scan.loading</code></h4>
+<table>
+<tr><th>Key</th><th>Copy</th></tr>
+<tr><td><code>title</code></td><td>Getting the scanner ready</td></tr>
+<tr><td><code>firstLine</code></td><td>The first time on this device, the scanner downloads what it needs to read cards. After that it opens in a moment.</td></tr>
+<tr><td><code>size(done, total)</code></td><td>7.2 of 18 MB · one decimal, a trailing .0 dropped; the done figure bold</td></tr>
+<tr><td><code>almost</code></td><td>Almost ready</td></tr>
+<tr><td><code>reopen</code></td><td>Starting the scanner</td></tr>
+<tr><td><code>barLabel</code></td><td>Scanner download (the bar’s accessible name; L4’s bar is named by <code>reopen</code>)</td></tr>
+</table>
+<p>Kept as shipped: <code>view.looking</code>, <code>mode.fastLine</code>, <code>mode.normalLine</code>, <code>offlineBody</code>, <code>noStart</code>.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1100,"height":1540}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
