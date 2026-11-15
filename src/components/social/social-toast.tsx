@@ -6,7 +6,7 @@
 // window, held while it is hovered or holds focus, and on its own action.
 
 import { useEffect, useRef, useState } from "react";
-import { ToastFrame, useToastClock } from "../collection/edit-toast";
+import { ToastFrame, useToastClock } from "../collection/edit-toast-frame";
 import { useCartStacked } from "../decks/cart/cart-toast-stack";
 import { PersonText, type PersonParts } from "../../lib/person-name";
 
