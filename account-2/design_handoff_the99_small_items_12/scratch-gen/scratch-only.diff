@@ -1,0 +1,31 @@
+--- /home/user/the-99/src/components/cards/card-detail-context.tsx	2026-11-15 16:57:00.406724874 +0000
++++ src/components/cards/card-detail-context.tsx	2026-11-15 17:04:12.743116716 +0000
+@@ -225,7 +225,7 @@
+ 
+ export function useCardDetail(): CardDetailContextValue {
+   const ctx = useContext(CardDetailContext);
+-  if (!ctx) throw new Error("useCardDetail must be used inside a CardDetailProvider");
++  if (!ctx) return new Proxy({ openOracleId: null, pendingOracleId: null, revealing: false } as any, { get: (t, k) => (k in t ? t[k] : () => undefined) });
+   return ctx;
+ }
+ 
+--- /home/user/the-99/src/components/social/social-modal.tsx	2026-11-15 16:57:00.485580307 +0000
++++ src/components/social/social-modal.tsx	2026-11-15 17:08:12.910666353 +0000
+@@ -142,5 +142,5 @@
+       </div>
+     </div>
+   );
+-  return host ? createPortal(frame, host) : null;
++  return (globalThis as any).__INLINE ? frame : host ? createPortal(frame, host) : null;
+ }
+--- /home/user/the-99/src/components/social/signature-picker.tsx	2026-11-15 16:57:00.485580307 +0000
++++ src/components/social/signature-picker.tsx	2026-11-15 17:08:12.913015601 +0000
+@@ -70,7 +70,7 @@
+ }) {
+   const search = useRef<HTMLInputElement>(null);
+   const listId = useId();
+-  const [deck, setDeck] = useState<Deck>({ k: "loading" });
++  const [deck, setDeck] = useState<Deck>((globalThis as any).__DECK ?? { k: "loading" });
+   const [query, setQuery] = useState("");
+   const [found, setFound] = useState<Found>(null);
+   const [busy, setBusy] = useState(false);

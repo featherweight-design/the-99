@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Combo sheet refresh</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:640px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:640px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet><style>
+.shot.w420{width:420px;border-radius:12px}.shot.w340{width:340px;border-radius:12px}.shot.w640{width:640px;border-radius:12px}.shot.w410{width:410px;border-radius:12px}.shot.w720{width:720px;border-radius:10px}.shot.row390{width:390px;border-radius:10px}.shot.flat{border-radius:10px}
+.fr.w420{width:420px}.fr.w340{width:340px}.fr.w640{width:640px}.fr.w410{width:410px}.fr.w720{width:720px}
+.callout{border:1px solid #262A35;border-radius:12px;padding:16px 18px;background:#11131A;display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.open{border-color:rgba(227,154,79,.55)}
+</style>
+<div class="board" style="width: 2400px; min-height: 4006px">
+<div class="bh"><span class="k">Small items 12 · R1 · account 2 · 2026-11-15</span><h2>1 · The combo sheet, refreshed, with numbered steps</h2><p class="cap">One body for every way into a combo: card details' combo line, the deck's combos one piece away, and now the feed's combo item opened on its own. What changes: the pair leads as two real cards, the facts (Mana needed, Needs) move into one card above the steps, and the steps are numbered with mana symbols drawn as pips. What stays: the shipped plates and where-lines, the dashed missing piece, the back bar, the <code>.hd2</code> head, the foot with Spellbook and Add. Every frame is the shipped component (or a patched copy) rendered with the shipped CSS in Low Sun.</p></div><p class="sub">Today, for reference</p><div class="row"><div class="fr "><div class="state"><span class="pill was">Today</span><span class="k">Shipped, 390</span></div><img class="shot " src="art/si12-combo-shipped-p.webp" alt="Shipped, 390"><p class="cap"><b>What ships.</b> Small plates up top, a mono <i>Mana needed</i> label over a mono value, <i>Steps</i> as an unnumbered list (the <code>ol</code> is there, but the app's CSS drops the markers), <code>{W}{U}{B}{R}{G}</code> as raw braces, and <i>Needs</i> last, under the steps it should come before.</p></div><div class="fr w420"><div class="state"><span class="pill was">Today</span><span class="k">Shipped, desktop 760</span></div><img class="shot w420" src="art/si12-combo-shipped-d.webp" alt="Shipped, desktop 760"><p class="cap"><b>The same body at 760.</b> Every label is a 9px mono caption and every value is the same quiet ink, so nothing on the sheet leads.</p></div></div><p class="sub">Refreshed, 390 (every way in draws this one body)</p><div class="row"><div class="fr "><div class="state"><span class="pill now">1a</span><span class="k">From card details</span></div><img class="shot " src="art/si12-c-card-p.webp" alt="From card details"><p class="cap"><b>Opened from Avatar Aang's combo line.</b> The shipped <code>← Avatar Aang</code> bar stays. The pair sits up top as two cards at card shape with a slight tilt, joined by a <b>+</b>. Avatar Aang is the card under the sheet, so its plate takes no press. With the deck holding both, there is no Add.</p></div><div class="fr "><div class="state"><span class="pill now">1b</span><span class="k">One piece away</span></div><img class="shot " src="art/si12-c-oneaway-p.webp" alt="One piece away"><p class="cap"><b>Pushed from 5 combos one piece away.</b> The missing piece keeps the shipped dashed outline and where-line ($0.25 to buy). Mana needed and Needs sit together in one facts card <i>before</i> the steps, since Needs is what must already be true. Steps are numbered on the first-run step numeral, and <code>{X}</code> symbols draw as the shipped cost pips.</p></div><div class="fr "><div class="state"><span class="pill now">1c</span><span class="k">Long combo, first screen</span></div><img class="shot " src="art/si12-c-long-p.webp" alt="Long combo, first screen"><p class="cap"><b>9 steps.</b> The head and the foot (Spellbook, Add) stay pinned. The body scrolls, so the pair and the facts scroll away first.</p></div><div class="fr "><div class="state"><span class="pill now">1c</span><span class="k">Long combo, scrolled to the end</span></div><img class="shot " src="art/si12-c-long-p-end.webp" alt="Long combo, scrolled to the end"><p class="cap"><b>The end of the list.</b> A faint rule joins each numeral to the next, so a long run reads as one sequence. The count beside <i>Steps</i> says how long it is before you scroll. Steps text is a fixture: Spellbook's own words ship.</p></div></div><p class="sub">Opened from the feed, on its own (engineering is pointing the combo item here)</p><div class="row"><div class="fr row390"><div class="state"><span class="pill was">Feed</span><span class="k">The item that opens it</span></div><img class="shot row390" src="art/si12-feedrow-p.webp" alt="The item that opens it"><p class="cap"><b>The shipped combo item</b> on Home and in What's new. Its press now opens the sheet directly, with no card details under it.</p></div><div class="fr "><div class="state"><span class="pill now">1d</span><span class="k">Feed-opened, 390</span></div><img class="shot " src="art/si12-c-feed-p.webp" alt="Feed-opened, 390"><p class="cap"><b>Nothing to go back to</b>, so the head is the shipped <code>.hd2</code> (the combos list's head): eyebrow <i>Combos you can make</i> (the feed kind's name), the pair as the title, and the item's line as the lead, then a bare ✕. The body drops its own title. Both plates say where your copy is, and each opens its card details stacked, whose back reads <code>← Avatar Aang + Searing Touch</code>. The foot is the Spellbook link alone: nothing to add.</p></div></div><p class="sub">Desktop, 760 modal</p><div class="row"><div class="fr w420"><div class="state"><span class="pill now">1a</span><span class="k">From card details</span></div><img class="shot w420" src="art/si12-c-card-d.webp" alt="From card details"><p class="cap"><b>Two columns.</b> The pair on the left (128px plates, same tilt), the title, facts and steps on the right.</p></div><div class="fr w420"><div class="state"><span class="pill now">1b</span><span class="k">One piece away</span></div><img class="shot w420" src="art/si12-c-oneaway-d.webp" alt="One piece away"><p class="cap"><b>Add stays bottom right</b> in the shipped foot.</p></div><div class="fr w420"><div class="state"><span class="pill now">1c</span><span class="k">Long combo</span></div><img class="shot w420" src="art/si12-c-long-d.webp" alt="Long combo"><p class="cap"><b>9 steps at 760.</b> The modal stops at the shipped 85dvh cap and the body scrolls under the pinned head and foot.</p></div><div class="fr w420"><div class="state"><span class="pill now">1c</span><span class="k">Long combo, scrolled</span></div><img class="shot w420" src="art/si12-c-long-d-end.webp" alt="Long combo, scrolled"><p class="cap"><b>Scrolled to step 9.</b> The left column scrolls with it, as one body (no sticky column to keep in sync).</p></div><div class="fr w420"><div class="state"><span class="pill now">1d</span><span class="k">Feed-opened</span></div><img class="shot w420" src="art/si12-c-feed-d.webp" alt="Feed-opened"><p class="cap"><b>Over the page the item was on</b>, with the <code>.hd2</code> head and ✕.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2400,"height":4006}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

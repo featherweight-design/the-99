@@ -1,0 +1,145 @@
+--- /home/user/the-99/src/components/shell/account-menu.tsx	2026-11-15 16:57:00.482141138 +0000
++++ proposal/menu-new.tsx	2026-11-15 17:08:00.724385538 +0000
+@@ -9,30 +9,30 @@
+ // Corrections from design/design_handoff_the99_user_menu/READINESS.md are
+ // applied here and marked RD§n; the handoff itself is left verbatim.
+ 
+-import { inertExemptProps } from "@/lib/a11y/inert-page";
+-import { forgetThisDevice } from "../../lib/push/forget-device";
++import { inertExemptProps } from "../src/lib/a11y/inert-page";
++import { forgetThisDevice } from "../src/lib/push/forget-device";
+ import { useEffect, useId, useRef, useState } from "react";
+ import { createPortal } from "react-dom";
+ import { useClerk, useUser } from "@clerk/nextjs";
+-import { clearRecent } from "../../lib/card-search/recent";
+-import { leaveDialogsForNavigation, useDialogA11y } from "../../lib/a11y/dialog";
+-import { useMomentHold } from "../../lib/moments/hold";
+-import { TargetBox } from "../discovery/targets-provider";
++import { clearRecent } from "../src/lib/card-search/recent";
++import { leaveDialogsForNavigation, useDialogA11y } from "../src/lib/a11y/dialog";
++import { useMomentHold } from "../src/lib/moments/hold";
++import { TargetBox } from "../src/components/discovery/targets-provider";
+ import Link from "next/link";
+-import { shellCopy } from "../../lib/copy/shell";
+-import { aboutMenuCopy } from "../../lib/copy/about";
+-import { adminCopy } from "../../lib/copy/admin";
+-import { TOUR_HREF, tourAgainCopy } from "../../lib/copy/discovery";
+-import { accountIdentity, withOwnFace, type AccountIdentity, type OwnHeaderFace } from "../../lib/shell/identity";
+-import { FaceArt } from "../social/face";
+-import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+-import { ThemePicker } from "./theme-picker";
+-import type { ThemeKey } from "../../lib/theme/themes";
+-import { usePendingPush } from "./pending-push";
+-import { CreditChip } from "./credit-chip";
+-import { chipAction } from "../../app/credits/actions";
+-import type { ChipState } from "../../lib/payments/chip-rule";
+-import { clearSignOutPressed, noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
++import { shellCopy } from "../src/lib/copy/shell";
++import { aboutMenuCopy } from "../src/lib/copy/about";
++import { adminCopy } from "../src/lib/copy/admin";
++import { TOUR_HREF, tourAgainCopy } from "../src/lib/copy/discovery";
++import { accountIdentity, withOwnFace, type AccountIdentity, type OwnHeaderFace } from "../src/lib/shell/identity";
++import { FaceArt } from "../src/components/social/face";
++import { ART_CROP_TRIM } from "../src/components/ui/art-crop-trim";
++import { ThemePicker } from "../src/components/shell/theme-picker";
++import type { ThemeKey } from "../src/lib/theme/themes";
++import { usePendingPush } from "../src/components/shell/pending-push";
++import { CreditChip } from "../src/components/shell/credit-chip";
++import { chipAction } from "../src/app/credits/actions";
++import type { ChipState } from "../src/lib/payments/chip-rule";
++import { clearSignOutPressed, noteSignOutPressed } from "../src/lib/analytics/sign-out-evidence";
+ 
+ const { signOut: signOutLabel, triggerLabel, settings: settingsLabel } = shellCopy.accountMenu;
+ 
+@@ -203,6 +203,10 @@
+ }
+ 
+ type PanelProps = MenuItemsProps & {
++  /** Proposal: the picker is open over the menu (the face holds Friends' picking outline). */
++  picking?: boolean;
++  /** Proposal: draw the new piece's dashed copper outline. */
++  mark?: boolean;
+   identity: AccountIdentity;
+   /** The signature card's art for the head's avatar, or null for initials. */
+   art: string | null;
+@@ -213,7 +217,7 @@
+ };
+ 
+ /** Desktop popover (S5). No backdrop and no scroll lock — a menu, not a modal. */
+-function AccountPopover(props: PanelProps) {
++export function AccountPopover(props: PanelProps) {
+   const ref = useRef<HTMLDivElement | null>(null);
+   const chipRef = useRef<HTMLElement | null>(null);
+   useDialogA11y(ref, props.onClose, { lockScroll: false, initialFocusRef: chipRef });
+@@ -238,7 +242,7 @@
+         className="flex items-center gap-3"
+         style={{ padding: "12px 12px 14px", borderBottom: "1px solid var(--border)" }}
+       >
+-        <Avatar identity={props.identity} art={props.art} size={44} radius={12} fontSize={14} />
++        <EditFace {...props} size={44} radius={12} fontSize={14} />
+         <div className="min-w-0">
+           <div
+             id={props.nameId}
+@@ -279,7 +283,7 @@
+ }
+ 
+ /** Mobile bottom sheet (S8) + its backdrop (S9). */
+-function AccountSheet(props: PanelProps) {
++export function AccountSheet(props: PanelProps) {
+   const ref = useRef<HTMLDivElement | null>(null);
+   const chipRef = useRef<HTMLElement | null>(null);
+   useDialogA11y(ref, props.onClose, { initialFocusRef: chipRef });
+@@ -287,8 +291,7 @@
+   // Portalled to the body (card search plan PR B): the phone header that opens it is a fixed, translated layer while
+   // quick return has it back over the page, which would make it the backdrop's containing block and trap both under
+   // the tab bar.
+-  if (typeof document === "undefined") return null;
+-  return createPortal(
++  return (
+     <div {...inertExemptProps} className="contents">
+       <div
+         // A visual dismiss target only — the sheet carries the semantics.
+@@ -329,7 +332,7 @@
+           className="flex items-center gap-[14px]"
+           style={{ paddingBottom: 18, borderBottom: "1px solid var(--border)" }}
+         >
+-          <Avatar identity={props.identity} art={props.art} size={48} radius={14} fontSize={15} />
++          <EditFace {...props} size={48} radius={14} fontSize={15} />
+           <div className="min-w-0">
+             <div
+               id={props.nameId}
+@@ -360,8 +363,7 @@
+           <MenuItems {...props} />
+         </div>
+       </div>
+-    </div>,
+-    document.body,
++    </div>
+   );
+ }
+ 
+@@ -625,3 +627,24 @@
+     </div>
+   );
+ }
++
++/**
++ * Proposal (small items 12, item 2): the head's face is a press, as Friends' head face is (friends-head.tsx): the same
++ * 24px ✎ badge on its corner, or + while there is no signature card. It opens the shipped SignaturePicker over the menu.
++ */
++function EditFace(props: PanelProps & { size: number; radius: number; fontSize: number }) {
++  const has = props.art !== null;
++  return (
++    <button
++      type="button"
++      aria-label={has ? "Your signature card. Change" : "Choose your signature card"}
++      className={`relative flex-none cursor-pointer border-0 bg-transparent p-0 ${props.picking ? "outline-2 outline-offset-[3px] outline-[color:var(--accent)] [outline-style:solid]" : ""}`}
++      style={props.mark ? { outline: "1.5px dashed #C9853E", outlineOffset: 6, borderRadius: props.radius } : { borderRadius: props.radius }}
++    >
++      <Avatar identity={props.identity} art={props.art} size={props.size} radius={props.radius} fontSize={props.fontSize} />
++      <span aria-hidden className="absolute -bottom-[6px] -right-[6px] flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[color:var(--elevated)] text-[11px] text-[color:var(--fg)] [border:1px_solid_var(--border-dashed)]">
++        {has ? "\u270e" : "+"}
++      </span>
++    </button>
++  );
++}
