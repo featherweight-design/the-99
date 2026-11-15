@@ -26,6 +26,17 @@ export type ScanPanel =
    */
   | { kind: "choose"; guess: ScanGuess; choices: PrintingChoice[] | null };
 
+/**
+ * The looking panel while the scanner cannot read yet (loading addendum; "loading L1-L4", never bare L1-L4, which name
+ * the review states): `download` is loading L1, a model downloading, its bar over the bytes (`total` null: no figures,
+ * an indeterminate bar); `almost` is loading L2, every byte in and the runtime or warm-up finishing; `reopen` is
+ * loading L4, every model cached but the scanner still not ready 400ms after it opened. Loading L3 is the shipped
+ * looking panel. `firstLine` is false where the page has no Cache Storage.
+ */
+export type ScanLoading =
+  | { kind: "download" | "almost"; done: number; total: number | null; firstLine: boolean }
+  | { kind: "reopen" };
+
 export type ScanScreen =
   | { kind: "blocked" }
   | { kind: "scanning"; panel: ScanPanel; dark: boolean };

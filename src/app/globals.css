@@ -755,6 +755,18 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   0% { transform: rotate(0deg) scale(1); opacity: 0.95; }
   100% { transform: translate(-160px, 251px) rotate(-14deg) scale(0.3); opacity: 0; }
 }
+/* Card scanning, loading L2 (the scanner while it gets ready): every model byte is in, and a highlight runs along the
+   full bar while the runtime and warm-up finish. As drawn: a 40% band of white at 35%, 1.4s each way. Under reduced
+   motion the band is not drawn (scanner-view.tsx), so the bar just sits full. */
+@keyframes scan-shim {
+  from { background-position: -40% 0; }
+  to { background-position: 140% 0; }
+}
+.anim-scan-shim {
+  background: linear-gradient(90deg, transparent 0%, color-mix(in srgb, white 35%, transparent) 50%, transparent 100%) no-repeat;
+  background-size: 40% 100%;
+  animation: scan-shim 1.4s ease-in-out infinite;
+}
 @keyframes dots {
   0%, 100% { opacity: 0.25; }
   50% { opacity: 1; }

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 
 // The models never load here: the scanner is composed with a camera that refuses. The reader's ready callback is kept,
@@ -46,7 +46,7 @@ describe("CardScanner", () => {
       />,
     );
     expect(modelsReady).toBeTypeOf("function");
-    modelsReady!();
+    act(() => modelsReady!());
     // a frame read, so the session has a row to post
     await new Promise((r) => setTimeout(r, 50));
     unmount();

@@ -6,9 +6,10 @@ import {
   DETECTOR_SIZE, EMBED_H, EMBED_W, cornersFromDetector, letterbox, quadArea, rgbaToTensor, warpToTensor, type Pt,
 } from "./geometry";
 import { normalise } from "./match";
-import { DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
+import { DETECTOR_BYTES, DETECTOR_SHA256, DETECTOR_URL, EMBEDDER_BYTES, EMBEDDER_SHA256, EMBEDDER_URL, ORT_BASE, SHARPNESS_GATE } from "./models";
 import { browserModelCacheDeps, pinnedBytes, pinnedCache, type ModelCacheDeps, type ModelFile } from "./model-cache";
 import { scanMark } from "./marks";
+import { startModelLoad } from "./model-progress";
 import { isDark } from "./camera";
 import { outlineOf, type Outline } from "./outline";
 import { frameEmbedder, type EmbedRun } from "./webgpu";
@@ -33,8 +34,8 @@ export const MIN_CARD_AREA = 0.05;
 
 export type Run = <T>(fn: () => Promise<T>) => Promise<T>;
 
-const DETECTOR: ModelFile = { url: DETECTOR_URL, sha256: DETECTOR_SHA256 };
-const EMBEDDER: ModelFile = { url: EMBEDDER_URL, sha256: EMBEDDER_SHA256 };
+const DETECTOR: ModelFile = { url: DETECTOR_URL, sha256: DETECTOR_SHA256, size: DETECTOR_BYTES };
+const EMBEDDER: ModelFile = { url: EMBEDDER_URL, sha256: EMBEDDER_SHA256, size: EMBEDDER_BYTES };
 
 export async function loadOrt(): Promise<Ort> {
   const ort = (await import(/* webpackIgnore: true */ /* turbopackIgnore: true */ `${ORT_BASE}ort.wasm.min.mjs`)) as Ort;
@@ -52,11 +53,15 @@ let inFlight: ModelBytesLoads | null = null;
  * Both models' bytes, from Cache Storage when a scanner on this device already downloaded them (`model-cache.ts`).
  * Needs no runtime, so a scanner starts it beside the runtime's own download. A load already under way is shared, so
  * a scanner mounted twice (React's development double mount, or closed and opened again mid-download) never downloads
- * the files twice side by side; once both settle the bytes are let go.
+ * the files twice side by side; once both settle the bytes are let go. A close never aborts it (READINESS item 3 of the
+ * loading addendum): a reopen joins it, and the shared load's progress (`model-progress.ts`) is what its loading panel
+ * draws, so the bar shows how far the one real download has got.
  */
 export function loadModelBytes(deps?: ModelCacheDeps): ModelBytesLoads {
   if (inFlight && !deps) return inFlight;
-  const loads = downloadModelBytes(deps ?? browserModelCacheDeps());
+  const used = deps ?? browserModelCacheDeps();
+  // Only the shared load feeds the loading panel; a load handed its own deps (a test, the lab) is nobody's progress.
+  const loads = downloadModelBytes(used, deps ? undefined : startModelLoad(used.caches === null));
   // A failure is the caller's to see; the shared load itself never reports an unhandled rejection.
   loads.detector.catch(() => {});
   loads.embedder.catch(() => {});
@@ -69,10 +74,14 @@ export function loadModelBytes(deps?: ModelCacheDeps): ModelBytesLoads {
   return loads;
 }
 
-function downloadModelBytes(deps: ModelCacheDeps): ModelBytesLoads {
+function downloadModelBytes(deps: ModelCacheDeps, progress?: ReturnType<typeof startModelLoad>): ModelBytesLoads {
   const name = pinnedCache([DETECTOR, EMBEDDER], deps);
-  const one = (file: ModelFile, mark: "scan:detector-model" | "scan:embedder-model") => pinnedBytes(file, name, deps, mark);
-  return { detector: one(DETECTOR, "scan:detector-model"), embedder: one(EMBEDDER, "scan:embedder-model") };
+  const one = (file: ModelFile, key: "detector" | "embedder") => {
+    const load = pinnedBytes(file, name, deps, `scan:${key}-model`, progress?.report(key));
+    load.then(() => progress?.settle(key, true), () => progress?.settle(key, false));
+    return load;
+  };
+  return { detector: one(DETECTOR, "detector"), embedder: one(EMBEDDER, "embedder") };
 }
 
 /**

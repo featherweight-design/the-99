@@ -2,7 +2,8 @@
 // frame. The rest of the pipeline draws on canvases and runs the models, which the lab's browser proof exercises.
 import { describe, expect, it, vi } from "vitest";
 import { cardInView, loadModelBytes, loadModels, MIN_CARD_AREA, sourceSize, type Ort, type OrtSession, type Source } from "./pipeline";
-import { SHARPNESS_GATE } from "./models";
+import { DETECTOR_BYTES, EMBEDDER_BYTES, SHARPNESS_GATE } from "./models";
+import { resetModelLoad, scanModelLoad } from "./model-progress";
 
 const W = 1000, H = 1000;
 /** A square of the given share of the frame. */
@@ -55,6 +56,41 @@ describe("loadModelBytes", () => {
     } finally {
       fetchSpy.mockRestore();
     }
+  });
+
+  it("keeps one download going across a close, and a reopen reads its real progress (loading L1)", async () => {
+    resetModelLoad();
+    // Each file's body is held open, so the test says when its bytes land.
+    const bodies: ReadableStreamDefaultController<Uint8Array>[] = [];
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () =>
+      new Response(new ReadableStream<Uint8Array>({ start: (c) => void bodies.push(c) })));
+    try {
+      const first = loadModelBytes();
+      await vi.waitFor(() => expect(bodies).toHaveLength(2));
+      bodies[0].enqueue(new Uint8Array(1000));
+      // the scanner closes (its frame reader lets go of its sessions, never the load) and opens again
+      const reopened = loadModelBytes();
+      expect(reopened).toBe(first);
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      await vi.waitFor(() => {
+        const load = scanModelLoad.get()!;
+        expect(load.files.detector).toMatchObject({ from: "network", loaded: 1000, total: DETECTOR_BYTES, done: false });
+        expect(load.files.embedder).toMatchObject({ from: "network", loaded: 0, total: EMBEDDER_BYTES });
+      });
+      for (const b of bodies) b.close();
+      await expect(first.detector).rejects.toThrow(/pinned hash/);
+      await vi.waitFor(() => expect(scanModelLoad.get()?.settled).toBe(true));
+    } finally {
+      fetchSpy.mockRestore();
+      resetModelLoad();
+    }
+  });
+
+  it("feeds no loading bar from a load given its own deps", async () => {
+    resetModelLoad();
+    const loads = loadModelBytes({ caches: null, fetch: (async () => new Response("x")) as unknown as typeof fetch, sha256: async () => "no" });
+    await expect(loads.detector).rejects.toThrow();
+    expect(scanModelLoad.get()).toBeNull();
   });
 
   it("deletes the caches of a revision no longer pinned as it loads", async () => {

@@ -1,7 +1,8 @@
 import type { ScoredPrinting } from "../../../lib/card-scan/match";
 import type { PrintingChoice } from "../../../lib/collection/catalog-read";
 import type { ServerState } from "../../../lib/scan/server-scan";
-import type { ScanGuess, ScanPanel, ScanScreen } from "./scan-view";
+import type { ModelLoad } from "../../../lib/scan/model-progress";
+import type { ScanGuess, ScanLoading, ScanPanel, ScanScreen } from "./scan-view";
 
 /**
  * The scanner's screen from what the server scanner knows (`src/lib/scan/server-scan.ts`, PR 2b) and what the
@@ -70,4 +71,25 @@ function againFor(i: ScanInputs, oracleId: string): Extract<ScanPanel, { kind: "
 
 export function toScanGuess(g: { oracleId: string; name: string; typeLine?: string; imageUri?: string | null; printings?: readonly ScoredPrinting[] }): ScanGuess {
   return { oracleId: g.oracleId, name: g.name, typeLine: g.typeLine ?? "", imageUri: g.imageUri ?? null, ...(g.printings?.length ? { printings: g.printings } : {}) };
+}
+
+/** How long a cached open may take before it says it is starting (loading L4): a faster device never sees it. */
+export const REOPEN_AFTER_MS = 400;
+
+/**
+ * Which loading state the looking panel draws, pure (loading addendum, READINESS items 2 and 5). Ready, none: the
+ * shipped looking panel (loading L3). A model file downloading picks loading L1 at once, its bar counting only the
+ * files that download (a cached one adds nothing), then loading L2 once every downloaded file is in. With nothing
+ * downloading (both cached, or still being looked up), the shipped looking panel holds until `waited` (400ms after
+ * the open), then loading L4. A load that failed keeps its state while the next frame tries again.
+ */
+export function scanLoading(load: ModelLoad | null, ready: boolean, waited: boolean): ScanLoading | null {
+  if (ready) return null;
+  const net = load ? Object.values(load.files).filter((f) => f.from === "network") : [];
+  if (load && net.length > 0) {
+    const done = net.reduce((a, f) => a + f.loaded, 0);
+    const total = net.every((f) => f.total !== null) ? net.reduce((a, f) => a + (f.total ?? 0), 0) : null;
+    return { kind: net.every((f) => f.done) ? "almost" : "download", done, total, firstLine: !load.cacheless };
+  }
+  return waited ? { kind: "reopen" } : null;
 }

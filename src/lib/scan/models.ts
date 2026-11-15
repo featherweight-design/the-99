@@ -31,6 +31,10 @@ export const EMBEDDER_URL =
  * it (cut off, or not the file) is never run or cached. */
 export const DETECTOR_SHA256 = "05d2b90b928a5a3bf0f49aa90aa86211b2103d9c347c238fd18b4f544b3cb8ca";
 export const EMBEDDER_SHA256 = "fa092cdc8a25b0f3b80ee0ec0580fc9b4e0dc03bb49f9b7ffa43b83b88672ed2";
+/** Each model file's size in bytes at its pinned revision (Hugging Face's `X-Linked-Size`, 2026-11-14), so the
+ * scanner's loading bar knows its total (17.9MB) whether or not the download carries a `content-length`. */
+export const DETECTOR_BYTES = 3_185_226;
+export const EMBEDDER_BYTES = 14_756_557;
 
 /**
  * The detector's card-present gate on its `sharpness` output. The spike's empty scenes (600, many

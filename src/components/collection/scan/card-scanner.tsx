@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import type { ScanGuess, ScanMode } from "./scan-view";
 import { loadPrintingChoices } from "../../../app/collection/edit-actions";
@@ -12,6 +12,8 @@ import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
 import { nextFrame, useCardScan, type AddOutcome, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
 import { scanTimer, type ScanTimer } from "../../../lib/scan/timing";
 import { resetScanMarks, scanMark } from "../../../lib/scan/marks";
+import { scanModelLoad } from "../../../lib/scan/model-progress";
+import { REOPEN_AFTER_MS, scanLoading } from "./screen-state";
 
 const copy = collectionEditCopy.scan;
 
@@ -64,7 +66,25 @@ export function CardScanner({
     resetScanMarks();
     scanMark("scan:open");
   }, []);
-  const onModelsReady = useCallback(() => timer.loaded((deps?.now ?? (() => performance.now()))()), [timer, deps]);
+  // The loading panel (loading addendum): until the models are loaded and warmed, the looking panel says how far the
+  // shared load has got, read from the load itself so a scanner reopened mid-download shows its real progress.
+  const [ready, setReady] = useState(false);
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setWaited(true), REOPEN_AFTER_MS);
+    return () => clearTimeout(t);
+  }, []);
+  // A load that had already finished when this scanner opened is the last scanner's, about to be replaced by this one's.
+  const [staleLoad] = useState(() => {
+    const l = scanModelLoad.get();
+    return l?.settled ? l.id : null;
+  });
+  const modelLoad = useSyncExternalStore(scanModelLoad.subscribe, scanModelLoad.get, () => null);
+  const loading = scanLoading(modelLoad && modelLoad.id !== staleLoad ? modelLoad : null, ready, waited);
+  const onModelsReady = useCallback(() => {
+    setReady(true);
+    timer.loaded((deps?.now ?? (() => performance.now()))());
+  }, [timer, deps]);
   const readFrame = useFrameReader(outline, onModelsReady);
   // One mount follows the 768px line (the sheet keeps it across a turn), so a session can span both layouts.
   useEffect(() => timer.relayout(layout), [timer, layout]);
@@ -156,6 +176,7 @@ export function CardScanner({
       <ScannerView
         layout={layout}
         screen={screen}
+        loading={loading}
         outline={outline}
         mode={mode}
         torch={torch}

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { scanScreen, type ScanInputs } from "./screen-state";
+import { scanLoading, scanScreen, type ScanInputs } from "./screen-state";
+import type { FileLoad, ModelLoad } from "../../../lib/scan/model-progress";
 import type { ServerState } from "../../../lib/scan/server-scan";
 
 const SOL = { oracleId: "11111111-1111-4111-8111-111111111111", name: "Sol Ring", scryfallId: "s1", typeLine: "Artifact", imageUri: "https://img/sol", score: 0.97, printings: [] };
@@ -58,5 +59,53 @@ describe("scanScreen", () => {
     expect(panel({ server: { kind: "refused", reason: "off" } })).toEqual({ kind: "looking" });
     expect(panel({ server: match(true, []) })).toEqual({ kind: "looking" });
     expect(scanScreen({ ...base, dark: true })).toMatchObject({ dark: true });
+  });
+});
+
+describe("scanLoading (loading L1-L4)", () => {
+  const f = (over: Partial<FileLoad>): FileLoad => ({ from: "probe", loaded: 0, total: null, done: false, ...over });
+  const load = (detector: Partial<FileLoad>, embedder: Partial<FileLoad>, over: Partial<ModelLoad> = {}): ModelLoad => ({
+    id: 1, files: { detector: f(detector), embedder: f(embedder) }, cacheless: false, settled: false, ...over,
+  });
+
+  it("loading L1 the moment a file downloads, counting both downloads against their total", () => {
+    const l = load({ from: "network", loaded: 1_000_000, total: 3_185_226 }, { from: "network", loaded: 500_000, total: 14_756_557 });
+    expect(scanLoading(l, false, false)).toEqual({ kind: "download", done: 1_500_000, total: 17_941_783, firstLine: true });
+  });
+
+  it("loading L1 counts only the file still downloading when the other is cached", () => {
+    const l = load({ from: "cache", done: true }, { from: "network", loaded: 7, total: 14_756_557 });
+    expect(scanLoading(l, false, true)).toMatchObject({ kind: "download", done: 7, total: 14_756_557 });
+  });
+
+  it("loading L1 with no total known: no figures (an indeterminate bar)", () => {
+    expect(scanLoading(load({ from: "network", loaded: 9, total: null }, { from: "cache" }), false, false)).toMatchObject({ kind: "download", total: null });
+  });
+
+  it("drops the first-time line where the page has no Cache Storage", () => {
+    const l = load({ from: "network" }, { from: "network" }, { cacheless: true });
+    expect(scanLoading(l, false, false)).toMatchObject({ firstLine: false });
+  });
+
+  it("loading L2 once every downloaded byte is in, until the scanner can read", () => {
+    const l = load({ from: "network", loaded: 3, total: 3, done: true }, { from: "cache", done: true });
+    expect(scanLoading(l, false, false)).toEqual({ kind: "almost", done: 3, total: 3, firstLine: true });
+  });
+
+  it("loading L3 (the shipped looking panel) once the scanner can read", () => {
+    expect(scanLoading(load({ from: "network", done: true }, { from: "network", done: true }), true, true)).toBeNull();
+    expect(scanLoading(null, true, true)).toBeNull();
+  });
+
+  it("a cached open holds the looking panel for 400ms, then loading L4", () => {
+    const cached = load({ from: "cache" }, { from: "cache" });
+    expect(scanLoading(cached, false, false)).toBeNull();
+    expect(scanLoading(cached, false, true)).toEqual({ kind: "reopen" });
+    expect(scanLoading(null, false, true)).toEqual({ kind: "reopen" });
+  });
+
+  it("a load that failed keeps its loading L1 while the next frame tries again", () => {
+    const failed = load({ from: "network", loaded: 9, total: 20 }, { from: "network", loaded: 4, total: 30 }, { settled: true });
+    expect(scanLoading(failed, false, true)).toMatchObject({ kind: "download", done: 13, total: 50 });
   });
 });
