@@ -63,7 +63,9 @@ describe("ResultView", () => {
     const owned = rows.find((r) => within(r).queryByText("Add 2"))!;
     const buy = rows.find((r) => within(r).queryByText("Add 1"))!;
     expect(within(owned).queryByText("you own it")).toBeNull();
-    expect(within(owned).getByText(/Other deck/)).toBeInTheDocument();
+    // Count-only, as every row-sized chip: a deck name would crush the card name beside it.
+    expect(within(owned).queryByText(/Other deck/)).toBeNull();
+    expect(within(owned).getByText(/none free/)).toBeInTheDocument();
     expect(within(buy).getByText("$1.20")).toBeInTheDocument();
   });
 

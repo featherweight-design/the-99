@@ -241,7 +241,7 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
                   key={p.position}
                   cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
                   addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
-                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? (add.availability ? <AvailabilityMarker availability={add.availability} spoken /> : null) : dollars(p.addCents)}</span>]}
+                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? (add.availability ? <AvailabilityMarker availability={add.availability} nameless spoken foldWord="@max-[480px]:hidden" seam="var(--surface-sunken)" /> : null) : dollars(p.addCents)}</span>]}
                 />
               );
             })}
