@@ -207,6 +207,7 @@ export const tourCopy = {
     account: 'the account menu',
     banner: 'the line on Home',
     welcome: 'your welcome credits',
+    install: 'the Install button',
   },
   steps: {
     collection: {
@@ -216,8 +217,10 @@ export const tourCopy = {
       /** The middle part is the shipped `Precons I own`, drawn in `--fg` 600. */
       precons: { lead: 'No file?', rest: 'adds every card in the boxes you have, at their own printings.' },
       foot: 'Six stops · about a minute · ✕ skips the tour',
-      /** With the Credits stop: seven. */
+      /** With the Credits stop or the Install stop: seven. */
       footSeven: 'Seven stops · about a minute · ✕ skips the tour',
+      /** With both: eight (install onboarding G3, /copy-review 2026-11-14). */
+      footEight: 'Eight stops · about a minute · ✕ skips the tour',
       /** The tour taken again with the nav unlocked (R3·2); a locked dashboard keeps `body`. /copy-review 2026-10-17. */
       replayBody: 'Everything here is built from your collection. Drop in a new file whenever it changes.',
     },
@@ -271,6 +274,22 @@ export const tourCopy = {
       body: 'When the app learns something, one line on Home says so. This one opens About: every tool, mark and figure, by screen.',
       noteLead: 'There are a lot of Magic: The Gathering apps out there and a lot of them do really great things…',
       notePress: 'Read the note ›',
+    },
+    /**
+     * The Install stop (install onboarding, /copy-review 2026-11-14): last, at 390 only, while the header's Install slot
+     * draws. Its body follows the slot's ask; only Safari's names alerts (brief §3: push from a Chrome or Firefox install
+     * is unconfirmed).
+     */
+    install: {
+      place: 'Install',
+      title: 'Play it from your home screen',
+      body: {
+        safari: 'Install puts The 99 on your home screen: full screen, one tap away, and it can send the alerts you choose.',
+        chrome: 'Install puts The 99 on your home screen: full screen and one tap away. It takes about 10 seconds.',
+        firefox: 'Install puts The 99 on your home screen: full screen and one tap away. It takes about 10 seconds.',
+        android: 'Install puts The 99 on your home screen: full screen and one tap away. Your phone asks once.',
+      },
+      foot: 'Select the button up top now, or any time. Its ✕ hides it.',
     },
   },
 } as const;

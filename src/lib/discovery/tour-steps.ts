@@ -1,11 +1,11 @@
-// The first-run tour's six stops (seven with the Credits stop) and where its card goes (discovery R3·1b; design-tables/discovery-r3.md, "The
+// The first-run tour's six stops (seven with the Credits stop or the Install stop, eight with both) and where its card goes (discovery R3·1b; design-tables/discovery-r3.md, "The
 // spotlight", "The tour card" and "Step geometry"). Pure: the overlay reads a target's rect at run time and asks here
 // for the cutout around it and the card's place beside it.
 
 import { DEFAULT_THEME, isThemeKey } from "../theme/themes";
 import type { TargetId } from "./targets";
 
-export type StepKey = "collection" | "commanders" | "decks" | "buying" | "credits" | "look" | "whatsNew";
+export type StepKey = "collection" | "commanders" | "decks" | "buying" | "credits" | "look" | "whatsNew" | "install";
 /** What the cutout is drawn around, which sets its room and its corner. */
 export type CutoutKind = "card" | "slot" | "account" | "banner";
 /** Where the card sits at desktop, relative to the lit control. */
@@ -33,7 +33,7 @@ export type Step = {
   kind: CutoutKind;
   place: Placement;
   picture: Picture | null;
-  lit: "collection" | "collectionSlot" | "commanders" | "decks" | "welcome" | "account" | "banner";
+  lit: "collection" | "collectionSlot" | "commanders" | "decks" | "welcome" | "account" | "banner" | "install";
 };
 
 export const STEPS: readonly Step[] = [
@@ -73,10 +73,24 @@ const DASHBOARD_STEPS_WITH_CREDITS = withCreditsStop(DASHBOARD_STEPS);
  */
 export type TourCredits = readonly { id: string; name: string; short: string; cost: string }[];
 
-/** One of four module constants, so a run's list is fixed for its whole length. `withCredits` is required: no default. */
-export function stepsFor(mode: TourMode, withCredits: boolean): readonly Step[] {
-  if (mode === "dashboard") return withCredits ? DASHBOARD_STEPS_WITH_CREDITS : DASHBOARD_STEPS;
-  return withCredits ? STEPS_WITH_CREDITS : STEPS;
+/**
+ * The Install stop (install onboarding calls 1 to 3): LAST, after What's new, and only when the header's Install slot
+ * draws as the run starts, which is at 390 only (the slot is phone-only). Decided once at the run's start, like the
+ * Credits stop. Lit as a slot; its card docks like every phone stop, so `place` is never read.
+ */
+const INSTALL: Step = { key: "install", target: "tour:install", kind: "slot", place: "below-end", picture: null, lit: "install" };
+const withInstallStop = (steps: readonly Step[]): readonly Step[] => [...steps, INSTALL];
+const LISTS = {
+  "first-run": [STEPS, STEPS_WITH_CREDITS, withInstallStop(STEPS), withInstallStop(STEPS_WITH_CREDITS)],
+  dashboard: [DASHBOARD_STEPS, DASHBOARD_STEPS_WITH_CREDITS, withInstallStop(DASHBOARD_STEPS), withInstallStop(DASHBOARD_STEPS_WITH_CREDITS)],
+} as const;
+
+/**
+ * One of eight module constants, so a run's list is fixed for its whole length. `withCredits` and `withInstall` are
+ * required: no default.
+ */
+export function stepsFor(mode: TourMode, withCredits: boolean, withInstall: boolean): readonly Step[] {
+  return LISTS[mode][(withCredits ? 1 : 0) + (withInstall ? 2 : 0)];
 }
 
 export type Box = { x: number; y: number; w: number; h: number };

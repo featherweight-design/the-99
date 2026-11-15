@@ -32,7 +32,7 @@ export const pwaInstallCopy = {
     },
     steps: [
       { icon: "plus", num: "2", label: "Scroll to “Add to Home Screen”", detail: "It’s a few rows down, past AirDrop." },
-      { icon: "home", num: "3", label: "Tap Add", detail: "Top right. Now it opens full screen, with no address bar." },
+      { icon: "home", num: "3", label: "Tap Add", detail: "Top right. It opens full screen, with no address bar. Sign in once more the first time." },
     ],
     done: "Got it",
   },
