@@ -116,8 +116,9 @@ function convex(p: Pt[]): boolean {
 }
 
 /**
- * The part of a `w` x `h` frame the warp of the card under `corners` reads: the corners' bounding box, widened by one
- * pixel each way for the bilinear sample's second texel and for rounding, and clamped to the frame (a corner the
+ * The part of a `w` x `h` frame the warp of the card under `corners` reads: the corners' bounding box, from
+ * `floor(min) - 1` (exactly the lowest texel, since the warp samples half a pixel back, so there is NO spare margin on
+ * this side: never tighten it) to `ceil(max)` (one past the bilinear second texel), clamped to the frame (a corner the
  * detector put outside it included), so the pipeline reads back only that box rather than the whole frame. Every pixel
  * `warpToTensor` samples lies inside it: each output pixel's centre maps to a point inside the card's quad, and that
  * holds only for a convex quad (a homography onto a non-convex one folds, and samples outside it), so a non-convex or
