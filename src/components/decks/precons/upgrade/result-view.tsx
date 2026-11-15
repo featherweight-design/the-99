@@ -19,6 +19,7 @@ import { MarkKey } from "../../mark-key";
 import { factComboEntries } from "../../mark-key-entries";
 import { StrategyIcon } from "../../strategy-icon";
 import { CardDetailTrigger, useCardDetailIfAny } from "../../../cards/card-detail-context";
+import { AvailabilityMarker } from "../../../ui/availability-marker";
 import type { StrategyKey } from "@/lib/strategy/score";
 
 const copy = preconUpgradeCopy.results;
@@ -240,7 +241,7 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
                   key={p.position}
                   cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
                   addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
-                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? copy.youOwnIt : dollars(p.addCents)}</span>]}
+                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? (add.availability ? <AvailabilityMarker availability={add.availability} spoken /> : null) : dollars(p.addCents)}</span>]}
                 />
               );
             })}

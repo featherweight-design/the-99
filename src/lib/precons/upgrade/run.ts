@@ -11,6 +11,8 @@ import { runUpgrade, type UpgradeCallModel } from "./engine";
 import { runKey } from "./targets";
 import { holdBracket, isBracketTarget, playsAt, shortfall, type BracketRead, type BracketTarget } from "./hold";
 import { readOwnedOracleIds } from "../../decks/tuning-read";
+import { loadAvailability } from "../../decks/availability-query";
+import type { Availability } from "../../decks/availability";
 import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } from "./inputs";
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
@@ -41,7 +43,8 @@ export type PanelRun = StoredUpgrade & {
 };
 
 /** A card as a result row draws it, besides its name: its facts, and whether the reader owns a copy. */
-export type PanelCard = Partial<CardFacts> & { owned: boolean };
+/** `availability` is the claim picture of an owned card (what the allocation chips draw): absent for a card not owned or when the read could not reach. */
+export type PanelCard = Partial<CardFacts> & { owned: boolean; availability?: Availability };
 
 export type UpgradePanel = {
   /** The bracket the box plays at (2, 3 or 4), or null when it could not be read. Only picks at or above it are offered: an upgrade adds cards, it cannot take the box's own off. */
@@ -74,6 +77,8 @@ type Deps = {
   facts: (oracleIds: readonly string[]) => Promise<Map<string, CardFacts>>;
   /** Which of these cards the reader owns at all. */
   owned: (userId: string, oracleIds: readonly string[]) => Promise<Set<string>>;
+  /** The claim picture of these cards across the reader's decks. Fail-soft: a read that cannot reach draws no chip. */
+  availability: (userId: string, oracleIds: readonly string[]) => Promise<Map<string, Availability>>;
   /** Each swap's combo partner in the list with the pairs applied (`swap-partners.ts`), stored on the run. Its failure is isolated: see the press. */
   partners: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<StoredPair[]>;
   now: () => Date;
@@ -88,6 +93,7 @@ export const LIVE_DEPS: Deps = {
   facts: readCardFacts,
   started: readStartedRuns,
   owned: readOwnedOracleIds,
+  availability: (userId, oracleIds) => loadAvailability(userId, { oracleIds: [...oracleIds] }).catch(() => new Map<string, Availability>()),
   partners: readSwapPartners,
   now: () => new Date(),
 };
@@ -174,7 +180,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
   const offeredNow = offered(base);
   // Every card a result row names: the pairs' cuts and adds, and the commanders (the box's and the alternate).
   const named = [...new Set([...stored.flatMap((r) => r.pairs.flatMap((p) => [p.cutId, p.addId])), ...offeredNow.flatMap((c) => c.cards.map((k) => k.oracleId))])];
-  const [owned, facts, started] = await Promise.all([deps.owned(userId, named), deps.facts(named), deps.started(userId, stored.map((r) => r.id))]);
+  const [owned, facts, started, availability] = await Promise.all([deps.owned(userId, named), deps.facts(named), deps.started(userId, stored.map((r) => r.id)), deps.availability(userId, named)]);
   const runs = stored.map((r): PanelRun => {
     const buy = r.pairs.filter((p) => !owned.has(p.addId));
     const strategies = offeredNow.find((c) => r.strategyKey.startsWith(`${c.key}/`))?.strategies ?? [];
@@ -186,7 +192,10 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
     return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, started: started.has(r.id) };
   });
   const cardsOut: Record<string, PanelCard> = {};
-  for (const id of named) cardsOut[id] = { ...facts.get(id), owned: owned.has(id) };
+  for (const id of named) {
+    const a = owned.has(id) ? availability.get(id) : undefined;
+    cardsOut[id] = { ...facts.get(id), owned: owned.has(id), ...(a ? { availability: a } : {}) };
+  }
   const boxBracket = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
   return { boxBracket, commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, allowance };
 }
