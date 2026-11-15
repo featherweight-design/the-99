@@ -444,8 +444,7 @@ export function useCardScan(
       return choices;
     });
   }, []);
-  // `sure`: the card itself cleared the sure gate, so a clear printing match may skip the step (`orderPrintings`).
-  const choose = useCallback((g: ScanGuess, snap: Snap, from: object | null, sure: boolean) => {
+  const choose = useCallback((g: ScanGuess, snap: Snap, from: object | null) => {
     const seq = ++chooseSeq.current;
     setChoosing({ guess: g, snap, answer: from, choices: null });
     loadingChoices.current = true;
@@ -453,9 +452,9 @@ export function useCardScan(
       .then((choices) => {
         if (seq === chooseSeq.current) loadingChoices.current = false;
         if (seq !== chooseSeq.current) return;
-        // A card with one printing needs no step (Hugh, 2026-10-16): it goes on at that printing. Nor does a sure card
-        // whose best printing clearly beat the rest (Hugh, 2026-11-13): it goes on at that one, as Auto takes it.
-        const order = choices.length > 0 ? orderPrintings(choices, g.printings ?? [], sure) : null;
+        // A card with one printing needs no step (Hugh, 2026-10-16): it goes on at that printing. Any other card asks,
+        // however clearly one printing scored ahead: lookalike printings can score far apart (`orderPrintings`).
+        const order = choices.length > 0 ? orderPrintings(choices, g.printings ?? []) : null;
         if (order?.autoPick && order.preselected) {
           setChoosing((c) => (c ? { ...c, choices } : c));
           void commit(g, snap, { choices, printing: order.preselected }).then((ok) => {
@@ -508,7 +507,7 @@ export function useCardScan(
     const snap = snapNow();
     const from = answer;
     void Promise.resolve().then(async () => {
-      if (mode === "normal") return choose(g, snap, from, true);
+      if (mode === "normal") return choose(g, snap, from);
       // A card that could not be added is not tried again while it stays in view: the toast said so once.
       if (!(await commit(g, snap, undefined, from))) setDismissed(from);
     });
@@ -567,19 +566,18 @@ export function useCardScan(
       const g = held ?? current;
       if (!g) return;
       if (mode === "fast") return void commit(g);
-      // Normal's Add another copy opens the printing step with what the scanner saw when the press went down, or adds
-      // at once at a printing the scan clearly matched (`orderPrintings`), as the card's own take does.
+      // Normal's Add another copy opens the printing step with what the scanner saw when the press went down.
       const snap = heldSnap.current?.oracleId === g.oracleId ? heldSnap.current : snapNow();
       heldSnap.current = null;
       setHeld(null);
-      choose(g, snap, answer, true);
+      choose(g, snap, answer);
     },
     dismiss: () => setDismissed(answer),
     pick: (oracleId) => {
       const g = notSure.find((x) => x.oracleId === oracleId);
       if (!g) return;
       if (mode === "fast") return void commit(g);
-      choose(g, { named: notSure, crop: lastCrop.current, empties: empties.current }, answer, false);
+      choose(g, { named: notSure, crop: lastCrop.current, empties: empties.current }, answer);
     },
     choosePrinting: (printing) => {
       const c = choosing;
