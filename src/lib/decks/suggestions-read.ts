@@ -15,6 +15,7 @@ import { cards, collectionItems, deckCards } from "../../db/schema";
 import { withinColorIdentity } from "../cards/identity-where";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { getEdhrecData } from "../edhrec/client";
+import { byInclusion, inclusionLookup } from "../edhrec/inclusion-rank";
 import { mergeEdhrecData } from "../edhrec/merge";
 import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
@@ -90,7 +91,7 @@ type UnownedStapleCard = {
   imageUri: string | null; manaCost: string | null; manaValue: number; layout: string;
 };
 
-/** Unowned EDHREC top cards for this commander, ordered by EDHREC rank, that fit the deck's colour
+/** Unowned EDHREC top cards for this commander, in the order of `topCards`, that fit the deck's colour
     identity. Takes every commander for the same reason `ownedColorLegalPool`
     does: a pair's legal identity is the union of both, and a staple legal under
     that union must not be dropped because the primary alone cannot cast it.
@@ -139,6 +140,20 @@ export type DeckSuggestionsPayload = {
       same five cells about the same deck, and a second read is a second chance to disagree. */
   mix: RecommendedMix;
 };
+
+/**
+ * The order the Top picks shelf ranks EDHREC's names in: by inclusion, highest first. EDHREC's
+ * page lists New Cards first, so list order led Windgrace's shelf with Through the Forest Gate
+ * (5.6%) ahead of The Gitrog Monster (78%). Ranked BEFORE `unownedTopCards`, which keeps only
+ * the first 100 names: ranking after that cut would still lose a well-played card listed late.
+ * The same ranking Help me choose's Any cards uses (`buildFillPlan`).
+ */
+export function topPickNames(
+  topCards: readonly string[],
+  inclusionByName: Readonly<Record<string, number | undefined>>,
+): string[] {
+  return byInclusion(topCards, inclusionLookup(inclusionByName));
+}
 
 /**
  * The unowned staples the Top picks shelf is offered: the ranked list trimmed to one
@@ -289,7 +304,7 @@ export async function loadDeckSuggestions(
     // unownedTopCards returns the full ranked list; this loader trims it to the
     // Top picks shelf, which draws SHELF_CAP like every other shelf (#391).
     const excludeIds = new Set([...commanders.map((c) => c.oracleId), ...inDeck]);
-    const eligible = await unownedTopCards(commanders, topCards, ownedByOracleId, excludeIds);
+    const eligible = await unownedTopCards(commanders, topPickNames(topCards, inclusionByName), ownedByOracleId, excludeIds);
 
     unownedSuggestions = unownedAppend(eligible).map((c) =>
       buildSuggestionPayload(
@@ -342,12 +357,10 @@ export async function loadDeckSuggestions(
     );
 
   const shoppingFigures: Record<string, number> = {};
+  const inclusionOf = inclusionLookup(inclusionByName);
   for (const row of unownedDeckRows) {
-    const lower = row.name.toLowerCase();
-    const raw = inclusionByName[lower] ?? inclusionByName[lower.split(" // ")[0]];
-    if (raw != null && Number.isFinite(raw)) {
-      shoppingFigures[row.oracleId] = raw;
-    }
+    const figure = inclusionOf(row.name);
+    if (figure !== null) shoppingFigures[row.oracleId] = figure;
   }
 
   return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures, mix };

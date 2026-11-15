@@ -48,7 +48,7 @@ vi.mock("./fill", async (importActual) => ({
   planFill: m.planFill,
 }));
 
-import { buildFillPlan, byInclusion } from "./fill-plan";
+import { buildFillPlan } from "./fill-plan";
 import { getEdhrecData } from "../edhrec/client";
 
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["U"], manaCost: "{U}" }];
@@ -231,8 +231,4 @@ describe("the buy pool's order under Any cards", () => {
     expect(handed()).toEqual(LIST);
   });
 
-  it("ranks by inclusion, an unlisted name last, list order kept on a tie", () => {
-    const pct: Record<string, number> = { a: 10, b: 30, d: 10 };
-    expect(byInclusion(["a", "b", "c", "d"], (n) => pct[n] ?? null)).toEqual(["b", "a", "d", "c"]);
-  });
 });

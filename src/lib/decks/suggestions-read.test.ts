@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, unownedAppend } from "./suggestions-read";
+import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, topPickNames, unownedAppend } from "./suggestions-read";
 import { SHELF_CAP } from "./shelf-cap";
 
 /**
@@ -31,5 +33,34 @@ describe("unownedAppend", () => {
 
   it("keeps the ranking order and a short list whole", () => {
     expect(unownedAppend(["a", "b"])).toEqual(["a", "b"]);
+  });
+});
+
+// EDHREC's commander page lists New Cards first. In list order Windgrace's Top picks shelf
+// led with Through the Forest Gate (5.6% of decks) ahead of The Gitrog Monster (78%).
+describe("topPickNames", () => {
+  const windgrace = {
+    topCards: ["Through the Forest Gate", "Field of the Dead", "The Gitrog Monster", "Sol Ring"],
+    inclusionByName: { "through the forest gate": 5.6, "field of the dead": 41, "the gitrog monster": 78 },
+  };
+
+  it("ranks the shelf by inclusion, not by EDHREC's list order", () => {
+    expect(topPickNames(windgrace.topCards, windgrace.inclusionByName)).toEqual([
+      "The Gitrog Monster", "Field of the Dead", "Through the Forest Gate", "Sol Ring",
+    ]);
+  });
+
+  it("ranks before the 100-name cut, so a well-played card listed late still reaches the shelf", () => {
+    const late = [...Array.from({ length: 120 }, (_, i) => `New ${i}`), "The Gitrog Monster"];
+    const ranked = topPickNames(late, { "the gitrog monster": 78 });
+    expect(ranked.slice(0, 100)).toContain("The Gitrog Monster");
+  });
+
+  // The loader is too wide to run in a unit test, so this reads its source: the shelf's
+  // `unownedTopCards` call takes the ranked names, never `topCards` as listed.
+  it("is what the Top picks loader hands unownedTopCards", () => {
+    const src = readFileSync(join(process.cwd(), "src/lib/decks/suggestions-read.ts"), "utf8");
+    const loader = src.slice(src.indexOf("export async function loadDeckSuggestions"));
+    expect(loader).toMatch(/unownedTopCards\(commanders, topPickNames\(topCards, inclusionByName\),/);
   });
 });
