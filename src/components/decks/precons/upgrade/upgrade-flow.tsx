@@ -145,7 +145,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per open: the flow remounts on each press.
   }, []);
 
-  // The drawn "scrolls on" cue: a fade and a mono label while the body has more below the fold.
+  // The drawn "scrolls on" cue: a fade and a mono label while a pick step has more below the fold. The review of changes draws none.
   useEffect(() => {
     const el = body.current;
     if (!el) return;
@@ -259,7 +259,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
             <StrategyStep lead={leadName ?? ""} bracket={picks.bracket} options={lead.strategies} art={art} picked={picks.strategy} onPick={(k) => pick("strategy", k)} />
           )}
         </div>
-        {scrolls && (
+        {scrolls && stage !== "results" && (
           <span aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 flex h-[36px] items-end justify-center bg-gradient-to-t from-[color:var(--surface)] to-transparent pb-[2px] font-mono text-[9.5px] uppercase tracking-[0.1em] text-[color:var(--fg-faint)]">
             {copy.flow.scrolls}
           </span>
