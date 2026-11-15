@@ -25,7 +25,12 @@ function draw(r: StrengthReading, line: string | null = null) {
     segments,
     word: document.querySelector("[data-strength]")?.nextElementSibling?.textContent ?? null,
     met: [...document.querySelectorAll(`#${STRENGTH_ID} li`)].map((li) => li.hasAttribute("data-met")),
-    rows: [...document.querySelectorAll(`#${STRENGTH_ID} li`)].map((li) => li.textContent),
+    // What a screen reader reads of each row: its text without the aria-hidden mark (the ✓ is drawn, never read).
+    rows: [...document.querySelectorAll(`#${STRENGTH_ID} li`)].map((li) => {
+      const read = li.cloneNode(true) as Element;
+      read.querySelectorAll("[aria-hidden]").forEach((n) => n.remove());
+      return read.textContent;
+    }),
   };
 }
 

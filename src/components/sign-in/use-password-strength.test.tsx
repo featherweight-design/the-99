@@ -3,18 +3,25 @@
 import { act, renderHook } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ loads: 0, fail: false }));
-vi.mock("../../lib/auth/strength-estimator", () => {
-  m.loads++;
-  if (m.fail) throw new Error("chunk failed");
-  return {
-    estimate: (pw: string, inputs: readonly string[]) => ({
-      strength: pw.length < 8 ? "short" : inputs.some((i) => pw.includes(i)) ? "weak" : "good",
-      commonOk: pw.length >= 8,
-      guides: { length: pw.length >= 8, numberOrSymbol: /\d/.test(pw), common: pw.length >= 8 },
-    }),
-  };
-});
+const m = { loads: 0 };
+/**
+ * The estimator's chunk, registered per case with `vi.doMock` (a `vi.mock` factory's first result is cached past
+ * `vi.resetModules`, so a count or a failure set by a later case would never be seen). After `vi.resetModules`, the hook's
+ * next `import()` runs the factory registered last: each run is one load, and `fail` makes that load throw.
+ */
+function mockEstimator(fail: boolean) {
+  vi.doMock("../../lib/auth/strength-estimator", () => {
+    m.loads++;
+    if (fail) throw new Error("chunk failed");
+    return {
+      estimate: (pw: string, inputs: readonly string[]) => ({
+        strength: pw.length < 8 ? "short" : inputs.some((i) => pw.includes(i)) ? "weak" : "good",
+        commonOk: pw.length >= 8,
+        guides: { length: pw.length >= 8, numberOrSymbol: /\d/.test(pw), common: pw.length >= 8 },
+      }),
+    };
+  });
+}
 
 import { ANNOUNCE_MS, RETRY_MS, usePasswordStrength } from "./use-password-strength";
 
@@ -22,7 +29,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.resetModules();
   m.loads = 0;
-  m.fail = false;
+  mockEstimator(false);
 });
 afterEach(() => vi.useRealTimers());
 
@@ -67,7 +74,7 @@ describe("usePasswordStrength: the lazy estimator", () => {
   });
 
   it("a failed load is tried again on a later focus or keystroke, at most once per RETRY_MS", async () => {
-    m.fail = true;
+    mockEstimator(true);
     const h = hook("");
     act(() => h.result.current.prime());
     await flush();
@@ -75,7 +82,7 @@ describe("usePasswordStrength: the lazy estimator", () => {
     expect(h.result.current.reading.strength).toBe("short");
     // Inside the backoff: neither a focus nor a keystroke tries again.
     vi.resetModules();
-    m.fail = false;
+    mockEstimator(false);
     act(() => h.result.current.prime());
     h.rerender({ pw: "longenough", quiet: false });
     await flush();
@@ -97,7 +104,7 @@ describe("usePasswordStrength: the lazy estimator", () => {
   });
 
   it("a chunk that fails stays on the under-8 frame: no word, third guide open, number ticking live", async () => {
-    m.fail = true;
+    mockEstimator(true);
     const h = hook("longenough1");
     act(() => h.result.current.prime());
     await flush();
