@@ -164,11 +164,24 @@ export function sourceSize(s: Source): { width: number; height: number } {
   return "videoWidth" in s ? { width: s.videoWidth, height: s.videoHeight } : { width: s.width, height: s.height };
 }
 
+/** A 2D context's slice a read uses: a page canvas's, or an `OffscreenCanvas`'s in the read worker (`read-worker.ts`). */
+export type Ctx2d = Pick<CanvasRenderingContext2D, "drawImage" | "fillRect" | "getImageData"> & { fillStyle: CanvasRenderingContext2D["fillStyle"] };
+/** One canvas a read draws on, with its 2D context, or null when the browser gives none. */
+export type Canvas2d = { canvas: CanvasImageSource & { width: number; height: number }; ctx: Ctx2d } | null;
+
+/** A page canvas: the main thread's. */
+export function pageCanvas(): Canvas2d {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  return ctx ? { canvas, ctx } : null;
+}
+
 /**
  * What a pipeline is asked to do beyond reading: `measure` records each read's main-thread steps (`scanMeasure`), and
- * `raw` answers each read's `DetectorRaw` (the scan lab's Compare), its input copied out of the reused array.
+ * `raw` answers each read's `DetectorRaw` (the scan lab's Compare), its input copied out of the reused array. `canvas`
+ * makes each of its two canvases (`pageCanvas` by default; the read worker's are `OffscreenCanvas`es).
  */
-export type PipelineOpts = { measure?: boolean; raw?: boolean };
+export type PipelineOpts = { measure?: boolean; raw?: boolean; canvas?: () => Canvas2d };
 
 /**
  * The reader for one camera: `read` takes the frame in view (or a chosen photo) and answers what it holds, or null while the camera has
@@ -187,66 +200,77 @@ export type PipelineOpts = { measure?: boolean; raw?: boolean };
 export function framePipeline(
   ort: Ort, models: { detector: OrtSession; embedder: OrtSession }, infer: Run, gpu?: Promise<EmbedRun | null>, opts: PipelineOpts = {},
 ) {
-  const frame = document.createElement("canvas");
-  const square = document.createElement("canvas");
+  const make = opts.canvas ?? pageCanvas;
+  const f = make();
+  const sq2d = make();
+  if (!f || !sq2d) throw new Error("no 2d canvas");
+  const { canvas: frame, ctx: fctx } = f;
+  const { canvas: square, ctx: sctx } = sq2d;
   square.width = square.height = DETECTOR_SIZE;
-  const fctx = frame.getContext("2d", { willReadFrequently: true });
-  const sctx = square.getContext("2d", { willReadFrequently: true });
-  if (!fctx || !sctx) throw new Error("no 2d canvas");
   const { detector, embedder } = models;
   const embed = frameEmbedder(ort, embedder, infer, gpu);
   const detBuf = reusableBuffer(3 * DETECTOR_SIZE * DETECTOR_SIZE);
   const measure = opts.measure ? scanMeasure : () => {};
+  const read = async (video: Source, alive: () => boolean): Promise<FrameRead | null> => {
+    const { width: vw, height: vh } = sourceSize(video);
+    if (!vw || !vh) return null;
+    const t0 = performance.now();
+    const s = Math.min(1, MAX_FRAME_EDGE / Math.max(vw, vh));
+    frame.width = Math.round(vw * s);
+    frame.height = Math.round(vh * s);
+    fctx.drawImage(video, 0, 0, frame.width, frame.height);
+    const lb = letterbox(frame.width, frame.height);
+    sctx.fillStyle = "#000";
+    sctx.fillRect(0, 0, DETECTOR_SIZE, DETECTOR_SIZE);
+    sctx.drawImage(frame, lb.dx, lb.dy, lb.dw, lb.dh);
+    const sq = sctx.getImageData(0, 0, DETECTOR_SIZE, DETECTOR_SIZE).data;
+    // Darkness is read off the middle of the picture, never the letterbox's black bars.
+    const mid = sctx.getImageData(
+      Math.round(lb.dx + lb.dw / 4), Math.round(lb.dy + lb.dh / 4), Math.max(1, Math.round(lb.dw / 2)), Math.max(1, Math.round(lb.dh / 2)),
+    ).data;
+    const dark = isDark(mid);
+    const detData = rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE, detBuf.take());
+    measure("scan:read-capture", t0, performance.now());
+    // The lab's copy, taken before the array can go back: the next read refills the reused one.
+    const detIn = opts.raw ? Float32Array.from(detData) : null;
+    let det: Record<string, OrtTensor>;
+    try {
+      const input = new ort.Tensor("float32", detData, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
+      det = await infer(() => detector.run({ [detector.inputNames[0]]: input }));
+    } finally {
+      // The run has settled (`infer` awaits it), so the runtime is done with the array, and nothing else holds it.
+      detBuf.give(detData);
+    }
+    scanMark("scan:first-detect");
+    if (!alive()) return null;
+    const t1 = performance.now();
+    const detMs = Math.round(t1 - t0);
+    const raw = detIn ? { detIn, corners: det.corners.data } : undefined;
+    const corners = cornersFromDetector(det.corners.data, frame.width, frame.height);
+    if (!cardInView(det.sharpness.data[0], corners, frame.width, frame.height)) return { kind: "none", dark, detMs, raw };
+    // Only the card's box is read back (the whole frame when its corners are no box to warp from: `cardBounds`).
+    const box = cardBounds(corners, frame.width, frame.height) ?? { x: 0, y: 0, w: frame.width, h: frame.height };
+    const px = fctx.getImageData(box.x, box.y, box.w, box.h).data;
+    const t2 = performance.now();
+    measure("scan:read-readback", t1, t2, { bytes: px.length, frameBytes: frame.width * frame.height * 4 });
+    const crop = warpToTensor(px, frame.width, frame.height, corners, EMBED_W, EMBED_H, box);
+    measure("scan:read-warp", t2, performance.now());
+    if (!crop) return { kind: "none", dark, detMs, raw };
+    const out = await embed.run(crop, alive);
+    if (!alive()) return null;
+    const embedding = normalise(out.data);
+    return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1), raw, backend: out.backend };
+  };
   return {
+    /** `scan:read-main` (measured only): the whole read, start to answer. On the page's thread it is close to what the
+     * read held that thread for, as the WASM runs block it; a WebGPU embed's wait for the GPU is the part that does not. */
     async read(video: Source, alive: () => boolean = () => true): Promise<FrameRead | null> {
-      const { width: vw, height: vh } = sourceSize(video);
-      if (!vw || !vh) return null;
-      const t0 = performance.now();
-      const s = Math.min(1, MAX_FRAME_EDGE / Math.max(vw, vh));
-      frame.width = Math.round(vw * s);
-      frame.height = Math.round(vh * s);
-      fctx.drawImage(video, 0, 0, frame.width, frame.height);
-      const lb = letterbox(frame.width, frame.height);
-      sctx.fillStyle = "#000";
-      sctx.fillRect(0, 0, DETECTOR_SIZE, DETECTOR_SIZE);
-      sctx.drawImage(frame, lb.dx, lb.dy, lb.dw, lb.dh);
-      const sq = sctx.getImageData(0, 0, DETECTOR_SIZE, DETECTOR_SIZE).data;
-      // Darkness is read off the middle of the picture, never the letterbox's black bars.
-      const mid = sctx.getImageData(
-        Math.round(lb.dx + lb.dw / 4), Math.round(lb.dy + lb.dh / 4), Math.max(1, Math.round(lb.dw / 2)), Math.max(1, Math.round(lb.dh / 2)),
-      ).data;
-      const dark = isDark(mid);
-      const detData = rgbaToTensor(sq, DETECTOR_SIZE, DETECTOR_SIZE, detBuf.take());
-      measure("scan:read-capture", t0, performance.now());
-      // The lab's copy, taken before the array can go back: the next read refills the reused one.
-      const detIn = opts.raw ? Float32Array.from(detData) : null;
-      let det: Record<string, OrtTensor>;
+      const t = performance.now();
       try {
-        const input = new ort.Tensor("float32", detData, [1, 3, DETECTOR_SIZE, DETECTOR_SIZE]);
-        det = await infer(() => detector.run({ [detector.inputNames[0]]: input }));
+        return await read(video, alive);
       } finally {
-        // The run has settled (`infer` awaits it), so the runtime is done with the array, and nothing else holds it.
-        detBuf.give(detData);
+        measure("scan:read-main", t, performance.now(), { path: "main" });
       }
-      scanMark("scan:first-detect");
-      if (!alive()) return null;
-      const t1 = performance.now();
-      const detMs = Math.round(t1 - t0);
-      const raw = detIn ? { detIn, corners: det.corners.data } : undefined;
-      const corners = cornersFromDetector(det.corners.data, frame.width, frame.height);
-      if (!cardInView(det.sharpness.data[0], corners, frame.width, frame.height)) return { kind: "none", dark, detMs, raw };
-      // Only the card's box is read back (the whole frame when its corners are no box to warp from: `cardBounds`).
-      const box = cardBounds(corners, frame.width, frame.height) ?? { x: 0, y: 0, w: frame.width, h: frame.height };
-      const px = fctx.getImageData(box.x, box.y, box.w, box.h).data;
-      const t2 = performance.now();
-      measure("scan:read-readback", t1, t2, { bytes: px.length, frameBytes: frame.width * frame.height * 4 });
-      const crop = warpToTensor(px, frame.width, frame.height, corners, EMBED_W, EMBED_H, box);
-      measure("scan:read-warp", t2, performance.now());
-      if (!crop) return { kind: "none", dark, detMs, raw };
-      const out = await embed.run(crop, alive);
-      if (!alive()) return null;
-      const embedding = normalise(out.data);
-      return { kind: "card", dark, crop, embedding, outline: outlineOf(corners, frame.width, frame.height, vw, vh), detMs, embMs: Math.round(performance.now() - t1), raw, backend: out.backend };
     },
   };
 }

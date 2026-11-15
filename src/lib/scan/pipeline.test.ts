@@ -338,7 +338,9 @@ describe("framePipeline's read", () => {
       await settled();
       det.runs[1].settle();
       await l;
-      expect(measured.map((m) => m.name)).toEqual(["scan:read-capture", "scan:read-readback", "scan:read-warp"]);
+      expect(measured.map((m) => m.name)).toEqual(["scan:read-capture", "scan:read-readback", "scan:read-warp", "scan:read-main"]);
+      // The whole read, as the main thread's figure the lab compares a worker read's against.
+      expect(measured[3].detail).toEqual({ path: "main" });
       const box = readBacks.filter(([w]) => w === 1280).at(-1)!;
       expect(measured[1].detail).toEqual({ bytes: box[3] * box[4] * 4, frameBytes: 1280 * 720 * 4 });
     } finally {

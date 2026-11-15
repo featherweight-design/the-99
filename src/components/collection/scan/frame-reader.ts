@@ -5,9 +5,10 @@ import { framePipeline, loadModelBytes, loadModels, loadOrt, sourceSize, type Or
 import type { OutlineStore } from "../../../lib/scan/outline";
 import { sessionHolder } from "../../../lib/scan/sessions";
 import { SCANNER_GPU_START, scannerGpuEmbedder } from "../../../lib/scan/gpu-start";
+import { pageReadsInWorker, ReaderGone, startWorkerReader, type WorkerReader } from "../../../lib/scan/read-worker-client";
 import type { FrameRead } from "./use-card-scan";
 
-type Pipe = ReturnType<typeof framePipeline>;
+type Pipe = Pick<ReturnType<typeof framePipeline>, "read">;
 
 /**
  * `useCardScan`'s `readFrame` on the phone's own detector and embedder (`src/lib/scan/pipeline.ts`, 2c). The runtime
@@ -18,6 +19,10 @@ type Pipe = ReturnType<typeof framePipeline>;
  * goes through the same reader, so photos and the camera share one load of the models. A live frame also hands the
  * card's outline to `outline`, for the viewfinder to draw where the card is (a chosen photo has no viewfinder, so it
  * never does).
+ *
+ * Reads run in a worker where the browser can (`read-worker-client.ts`, card-scan speed lane PR D), so the page's
+ * thread only captures each frame; elsewhere, and for the rest of a session whose worker failed, on the main thread as
+ * before. A frame that was in a worker when it went reads as no card, quietly.
  */
 export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (source: Source) => Promise<FrameRead> {
   // One holder per load attempt: a failed attempt closes its own, so a model that loaded beside one that failed (or
@@ -29,6 +34,9 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
   // them at open and again after the first answer) or the scanner closes, and the abort its close sends to a runtime
   // download under way. A close drops the bytes, and the next open reads them from Cache Storage again.
   const gpuLoad = useRef<{ bytes: Promise<Uint8Array>; abort: AbortController } | null>(null);
+  // This open's read worker, terminated as the scanner closes, and whether its reads went back to the main thread.
+  const worker = useRef<WorkerReader | null>(null);
+  const mainOnly = useRef(false);
   const readyRef = useRef(onReady);
   useEffect(() => {
     readyRef.current = onReady;
@@ -44,6 +52,28 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
       // The runtime and the model files download side by side; the sessions need both.
       // `report`: the scanner's load feeds its loading panel (`model-progress.ts`).
       const bytes = loadModelBytes(undefined, { report: true });
+      if (!mainOnly.current && pageReadsInWorker()) {
+        const reader = await startWorkerReader(bytes, {
+          gpuMode: SCANNER_GPU_START,
+          // The worker went mid-session: the next frame loads the main thread's reader, as on a first open.
+          onGone: () => {
+            mainOnly.current = true;
+            if (worker.current === reader) worker.current = null;
+            if (pipe.current === attempt) pipe.current = null;
+          },
+        });
+        if (reader) {
+          if (!alive.current || sessions.current !== held) {
+            reader.close();
+            throw new Error("the scanner closed");
+          }
+          worker.current = reader;
+          readyRef.current?.();
+          return reader;
+        }
+        // Not this browser, or the worker would not start: the main thread reads, for the rest of this session.
+        mainOnly.current = true;
+      }
       const hold = (s: OrtSession) => {
         if (!held.accept(s)) throw new Error("the scanner closed");
         return s;
@@ -93,6 +123,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     return () => {
       alive.current = false;
       outline?.clear();
+      worker.current?.close();
+      worker.current = null;
       pipe.current = null;
       sessions.current?.close();
       gpuLoad.current?.abort.abort();
@@ -114,6 +146,8 @@ export function useFrameReader(outline?: OutlineStore, onReady?: () => void): (s
     // the error goes on to `useCardScan` as it always did.
     const r = await (await loaded).read(video, () => alive.current).catch((e: unknown) => {
       if (live) outline?.hide();
+      // The worker went with this frame in it: nothing read, and the next frame reads on the main thread.
+      if (e instanceof ReaderGone) return null;
       throw e;
     });
     if (!r || r.kind === "none") {
