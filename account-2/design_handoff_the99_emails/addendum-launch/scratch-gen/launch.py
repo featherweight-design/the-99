@@ -45,19 +45,23 @@ def small(t, mb=26):
 
 
 FEATURES = [
-    ("commanders", 376, "See what you can build",
+    ("commanders", 238, "See what you can build",
      "Every commander you own, ranked by how much of its deck you already have.",
-     "Two commander tiles with their fit scores, 84 and 79 out of 100"),
-    ("tune", 205, "Change a deck by describing it",
+     "Jace and Y&#8217;shtola, ranked with fit scores of 84 and 79 out of 100"),
+    ("tune", 106, "Change a deck by describing it",
      "Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.",
-     "Suggested changes for &#8220;More interaction&#8221;: add Chaos Warp and Abrade, cut Smokebraider"),
-    ("written", 200, "Read why a commander works",
+     "For &#8220;More interaction&#8221;: add Chaos Warp and Abrade, cut Smokebraider"),
+    ("written", 170, "Read why a commander works",
      "Every commander page explains how its deck plays, and every precon has an Overview. Both are free.",
      "Tam, the Possibility, with why this commander is worth building"),
-    ("credits", 176, "Start with 15 free credits",
-     "Enough to try every writing tool three times before you pay anything. You also get 1 free credit every day.",
+    ("credits", 98, "Try the writing tools free",
+     "Your welcome credits are enough to try every writing tool three times before you pay anything.",
      "15 welcome credits when you join, plus 1 free credit every day"),
 ]
+
+
+# The text twin has no pictures, so a feature whose image carries facts says them in words.
+TEXT_BODY = {"credits": "You start with 15 welcome credits, enough to try every writing tool three times before you pay anything, and get 1 free credit every day."}
 
 
 def feature(i, key, h, title, body, alt):
@@ -82,7 +86,7 @@ def launch(source):
              f'style="display:block;width:100%;max-width:520px;height:auto;border:0;font:italic 14px/1.5 {SANS};color:{C["muted"]};"></td></tr></table>')
     inner += kicker("Now open")
     inner += h1("Your next commander is already in your binder")
-    inner += p("The 99 is open to everyone today. Add the cards you own and see which decks they can build.", 24)
+    inner += p("The 99 is open to everyone, starting today.", 24)
     inner += button("Sign up free", "[[signup_url]]").replace("margin:0 auto 18px", "margin:0 auto 36px")
     inner += (f'<p style="margin:0 0 22px;font:600 12px/1.4 {SANS};letter-spacing:.22em;text-transform:uppercase;color:{C["muted"]};text-align:center;">'
               f'From your binder to a finished deck</p>')
@@ -100,7 +104,7 @@ def launch(source):
 
 
 def text(source):
-    feats = "".join(f"- {t}. {re.sub('&#8217;', chr(39), b)}\n" for _, _, t, b, _ in FEATURES)
+    feats = "".join(f"- {t}. {re.sub('&#8217;', chr(39), TEXT_BODY.get(k, b))}\n" for k, _, t, b, _ in FEATURES)
     return (f"Subject: {SUBJECT}\n\n"
             "Your next commander is already in your binder. The 99 is open to everyone today.\n\n"
             "Sign up free:\n[[signup_url]]\n\n"

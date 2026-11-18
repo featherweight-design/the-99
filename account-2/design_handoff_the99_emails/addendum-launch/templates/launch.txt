@@ -9,7 +9,7 @@ From your binder to a finished deck:
 - See what you can build. Every commander you own, ranked by how much of its deck you already have.
 - Change a deck by describing it. Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.
 - Read why a commander works. Every commander page explains how its deck plays, and every precon has an Overview. Both are free.
-- Start with 15 free credits. Enough to try every writing tool three times before you pay anything. You also get 1 free credit every day.
+- Try the writing tools free. You start with 15 welcome credits, enough to try every writing tool three times before you pay anything, and get 1 free credit every day.
 
 Sign up free:
 [[signup_url]]
