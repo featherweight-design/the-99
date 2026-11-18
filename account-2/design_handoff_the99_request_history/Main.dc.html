@@ -20,16 +20,21 @@ p{margin:0}
 .box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
 </style>
 </helmet>
-<div style="width: 1400px; min-height: 1500px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="width: 1400px; min-height: 1800px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
 <div style="display: flex; flex-direction: column; gap: 9px">
 <p class="lab"><b>R1</b> · Issue #2984 · Account 2 · 2026-11-18</p>
 <h1 style="margin: 0; font: 700 34px 'Cinzel', serif">Request history</h1>
 <p style="font-size: 15px; line-height: 1.6; color: #C0B8A6; max-width: 1100px">Every spare request you made, and every one made of you, with how it ended and when. The data is already kept: a ✕ only marks an ask cleared, never deletes it. Every frame is the shipped shell and the shipped Friends page, rendered from main with the shipped CSS, with this round’s proposal applied.</p>
 </div>
+<div class="box" style="border-color: #CF8745">
+<p class="lab"><b>R1b</b> · Hugh’s feedback, 2026-11-17</p>
+<div class="it"><span class="n">B1</span><p><b>Headings live inside their box.</b> Waiting on you, Your requests, Friends and each month of history are one panel: a header band (the shipped section-head type on the rail ground, links at its end) above the rows. No heading on a bare hairline.</p></div>
+<div class="it"><span class="n">B2</span><p><b>Empty states get a drawn mark</b>: the handover mark (a friend’s dashed card, the passed card with an accent edge and the spare glyph, an arc between) in CardFan’s inks, then a title and one line. Small inside Your requests (E2), large on an empty history tab (H3).</p></div>
+</div>
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
 <div class="box">
 <p class="lab"><b>Calls</b></p>
-<div class="it"><span class="n">1</span><p><b>The way in is “History ›” on Your requests’ head</b>, beside “newest first” (E1). With nothing open but a history, the section stays as its head and “Nothing open right now.” (E2). With no history at all, the section is absent, as today. The answer sheet’s “All your requests ›” is unchanged.</p></div>
+<div class="it"><span class="n">1</span><p><b>The way in is “History ›” in Your requests’ band</b>, beside “newest first” (E1). With nothing open but a history, the box stays with its band and an empty state (E2). With no history at all, the section is absent, as today. The answer sheet’s “All your requests ›” is unchanged.</p></div>
 <div class="it"><span class="n">2</span><p><b>One page, /friends/requests</b>: the friend page’s “‹ Friends”, a title, one line, and the shipped segmented switch (compact; fills the width on a phone): <b>You asked · Asked of you</b>. No new menu row.</p></div>
 <div class="it"><span class="n">3</span><p><b>Rows are Your requests’ shipped rows</b>: the card at card shape with the friend’s face in its corner, kicker, title, line. <b>No ✕ and no Ask again</b>: history only shows, and the live list keeps every action (one control per action). <b>The whole row opens card details.</b></p></div>
 <div class="it"><span class="n">4</span><p><b>Outcomes in the shipped words.</b> You asked: Requested, Accepted, Declined, No answer, Withdrawn. Asked of you: Waiting on you, Accepted, Declined, No answer. The kicker’s date is when it ended (an open one: when asked); the line names the deck and the day you asked.</p></div>
@@ -56,7 +61,7 @@ p{margin:0}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1800}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

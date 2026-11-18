@@ -1,12 +1,16 @@
-# The 99 — Card request history · R1 · awaiting Hugh's review
+# The 99 — Card request history · R1b · awaiting Hugh's review
 
 Account 2, 2026-11-18. Issue featherweight-design/the-99#2984. Canvas (account 2): "The 99 · Request History R1".
 Open the `.dc.html` files with `support.js` beside them; frames are PNGs in `art/` (the shipped shell and Friends page
 rendered from main with the shipped CSS, with the proposal applied).
 
+## R1b (Hugh, 2026-11-17)
+- **B1 Headings live inside their box.** Waiting on you, Your requests, Friends and each history month are one panel (`PANEL`): a header band (`BAND`: shipped section-head type on `--surface-rail`, hairline under, links at its end via `BAND_LINK`) above the rows. No heading on a bare hairline. `scratch-gen/section-panel.tsx`, `scratch-gen/sections.diff`.
+- **B2 Empty states get a drawn mark**: `HandoverMark` (friend's dashed card, the passed card with accent edge and spare glyph, an arc), CardFan inks, then title and one line (`PanelEmpty`, sm in Your requests E2, lg on an empty history tab H3).
+
 ## Calls
 1. **Way in: "History ›" on Your requests' head**, after "newest first" (E1). Nothing open but a history: the head and
-   "Nothing open right now." (E2). No history: section absent, as today. The answer sheet's "All your requests ›" stays.
+   an empty state, "Nothing open right now" (E2). No history: section absent, as today. The answer sheet's "All your requests ›" stays.
 2. **One page, `/friends/requests`**: "‹ Friends", title "Request history", one line, the shipped `SegmentedSwitch`
    (compact, `fill` on phone, `kind="tabs"`): **You asked · Asked of you**.
 3. **Rows = Your requests' shipped rows** (card at card shape, friend's face in the corner, kicker, title, line) with
@@ -32,5 +36,5 @@ rendered from main with the shipped CSS, with the proposal applied).
 - G5 Copy review owed on the new strings (`scratch-gen/request-history.tsx`, `historyCopy`).
 
 ## scratch-gen
-`request-history.tsx` (the page as code), `your-requests.diff` (the head link and empty state), `render.tsx` (frames).
+`request-history.tsx` (the page as code), `section-panel.tsx` (the box, band and empty mark), `sections.diff` (Your requests, Waiting on you, Friends), `render.tsx` (frames).
 Pipeline as `design_handoff_the99_friends_link/scratch-gen/README.md` (scratch copy of main, stubs, css.mjs, shoot.cjs).

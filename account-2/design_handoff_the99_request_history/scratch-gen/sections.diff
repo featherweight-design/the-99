@@ -1,0 +1,128 @@
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/yr.orig.tsx	2026-11-18 02:32:10.625805887 +0000
++++ src/components/social/your-requests.tsx	2026-11-18 02:52:39.975642554 +0000
+@@ -9,7 +9,10 @@
+ // Both writes answer with the shared toast on a failure and leave the row as it was (G5). ✕ revalidates `/friends`, so
+ // its row leaves with the action's redraw; Ask again revalidates nothing (it is Shopping's write), so the list refreshes
+ // itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
++import Link from "next/link";
+ import { useRouter } from "next/navigation";
++import { historyCopy } from "./request-history";
++import { BAND, BAND_LINK, PANEL, PanelEmpty } from "./section-panel";
+ import { useEffect, useRef, useState } from "react";
+ import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
+ import { feedAge } from "../../lib/feed/age";
+@@ -105,7 +108,7 @@
+   );
+ }
+ 
+-export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now: Date }) {
++export function YourRequests({ rows, now, history = false }: { rows: readonly YourRequest[]; now: Date; history?: boolean }) {
+   const router = useRouter();
+   const root = useRef<HTMLElement | null>(null);
+   const land = useLandFocus(root);
+@@ -138,6 +141,17 @@
+   });
+   useEffect(() => toTitle, []);
+   // The last row can leave while its press is out (expired, or its friend gone): a failure toast still shows.
++  // PROPOSAL (request history R1): with nothing live but a history to show, the section stays as its head and one line.
++  if (rows.length === 0 && history) return (
++    <section aria-labelledby="your-requests" data-testid="your-requests" className={PANEL}>
++      <h2 id="your-requests" className={BAND}>
++        Your requests
++        <Link href="/friends/requests" className={BAND_LINK}>{historyCopy.entry}</Link>
++      </h2>
++      <PanelEmpty title={historyCopy.noneOpenTitle} body={historyCopy.noneOpenBody} />
++      {toast.node}
++    </section>
++  );
+   if (rows.length === 0) return toast.node;
+ 
+   async function close(a: YourRequest, index: number, from: Element) {
+@@ -176,16 +190,16 @@
+   }
+ 
+   return (
+-    <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className="mt-[26px] md:mt-[34px]">
++    <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className={PANEL}>
+       <h2
+         id="your-requests"
+         tabIndex={-1}
+-        className="m-0 flex min-h-[44px] items-center justify-between gap-[12px] font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
++        className={BAND}
+       >
+         {m.head(rows.length)}
+-        <span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span>
++        <span className="flex items-center gap-[4px]"><span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span>{history && <Link href="/friends/requests" className={BAND_LINK}>{historyCopy.entry}</Link>}</span>
+       </h2>
+-      <ul className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
++      <ul className="m-0 flex list-none flex-col p-0">
+         {rows.map((a, index) => {
+           const text = requestText(a, now);
+           // Offered only when the server would take it (`canAskAgain`: no open ask for the card, no No from this friend
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/waiting-on-you.orig.tsx	2026-11-18 02:52:39.938136677 +0000
++++ src/components/social/waiting-on-you.tsx	2026-11-18 02:52:52.934230393 +0000
+@@ -28,6 +28,7 @@
+ import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
+ import { DismissButton, useFeedDismiss } from "../feed/dismiss";
+ import { KICKER_AGE } from "../feed/kicker-age";
++import { BAND, PANEL } from "./section-panel";
+ import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
+ import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
+ 
+@@ -131,15 +132,15 @@
+     land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
+   }
+   return (
+-    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
++    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className={PANEL}>
+       <h2
+         id="waiting-on-you"
+         tabIndex={-1}
+-        className="m-0 flex outline-none min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
++        className={`${BAND} text-[color:var(--accent-text)]!`}
+       >
+         {w.head(waiting.length)}
+       </h2>
+-      <div ref={root} className="mt-[12px] flex flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] [border:1px_solid_var(--border)]">
++      <div ref={root} className="flex flex-col">
+       <ul ref={listRef} className="m-0 flex list-none flex-col p-0">
+         {shown.map((item, index) =>
+           item.kind === "receipt" ? (
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/friends-list.orig.tsx	2026-11-18 02:52:39.939755212 +0000
++++ src/components/social/friends-list.tsx	2026-11-18 02:52:39.978855779 +0000
+@@ -18,6 +18,7 @@
+ import { useDialogA11y } from "../../lib/a11y/dialog";
+ import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
+ import { Face } from "./face";
++import { BAND, PANEL } from "./section-panel";
+ import { PendingReporter } from "../shell/pending-reporter";
+ import { useMomentHold } from "../../lib/moments/hold";
+ 
+@@ -63,15 +64,15 @@
+     if (shrank && (document.activeElement === null || document.activeElement === document.body)) head.current?.focus();
+   }, [friends.length]);
+   return (
+-    <section aria-labelledby="friends-head" className="mt-[26px] md:mt-[34px]">
+-      <h2 id="friends-head" ref={head} tabIndex={-1} className={`${SECTION_HEAD} outline-none`}>{f.head(friends.length)}</h2>
++    <section aria-labelledby="friends-head" className={PANEL}>
++      <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}>{f.head(friends.length)}</h2>
+       {friends.length === 0 ? (
+         <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
+           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
+           <p className="m-0 max-w-[560px] text-[13px] leading-[1.55] md:text-[13.5px] text-[color:var(--fg-muted)]">{emptyBody ?? f.emptyBody}</p>
+         </div>
+       ) : (
+-        <ul className="m-0 list-none p-0">
++        <ul className="m-0 list-none p-0 [&>li:last-child]:[border-bottom:0]">
+           {friends.map((friend) => (
+             <FriendRow
+               key={friend.publicId}
+@@ -105,7 +106,7 @@
+   linkable: boolean;
+ }) {
+   return (
+-    <li className="relative flex h-[60px] items-center gap-[12px] [border-bottom:1px_solid_var(--border)]" data-friend-row="">
++    <li className="relative flex h-[60px] items-center gap-[12px] pl-[14px] pr-[4px] [border-bottom:1px_solid_var(--border)] md:pl-[16px]" data-friend-row="">
+       <Face name={friend.displayName} commander={friend.commander} size={40} />
+       <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
+         {linkable ? (

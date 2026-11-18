@@ -11,6 +11,7 @@ import { PersonInitials, PersonText, personText, type PersonParts, type ThirdPar
 import { FadingImg } from "../ui/hydrated-art";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { SegmentedSwitch } from "../ui/segmented-switch";
+import { BAND, PANEL, PanelEmpty } from "./section-panel";
 
 export type HistoryRow = {
   id: string;
@@ -51,7 +52,8 @@ export const historyCopy = {
   emptyAsked: { title: "You haven’t asked for a spare yet", body: "Ask a friend from a card’s spares in Shopping or on their Spares tab." },
   emptyOfYou: { title: "Nobody has asked you for a spare yet", body: "When a friend asks for one of your spares, it waits on you on Friends." },
   entry: "History ›",
-  noneOpen: "Nothing open right now.",
+  noneOpenTitle: "Nothing open right now",
+  noneOpenBody: "Ask a friend for a spare from Shopping or their Spares tab. Every past request is in History.",
 } as const;
 const h = historyCopy;
 
@@ -97,9 +99,9 @@ export function HistoryList({ rows, dir, more }: { rows: readonly HistoryRow[]; 
   return (
     <div className="flex flex-col">
       {groups.map((g) => (
-        <section key={g.label} className="mt-[22px] first:mt-[18px]">
-          <h2 className="m-0 flex min-h-[32px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] pb-[6px]">{g.label}</h2>
-          <ul className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
+        <section key={g.label} className={`${PANEL} mt-[16px]! first:mt-[18px]!`}>
+          <h2 className={BAND}>{g.label}<span className="pr-[8px] font-sans text-[12.5px] font-medium normal-case tracking-normal">{g.rows.length}</span></h2>
+          <ul className="m-0 flex list-none flex-col p-0">
             {g.rows.map((a) => {
               const t = rowText(a, dir);
               return (
@@ -133,9 +135,8 @@ export function HistoryList({ rows, dir, more }: { rows: readonly HistoryRow[]; 
 function Empty({ dir }: { dir: "asked" | "ofYou" }) {
   const e = dir === "asked" ? h.emptyAsked : h.emptyOfYou;
   return (
-    <div className="mt-[18px] rounded-[14px] bg-[color:var(--surface-inset)] px-[18px] py-[22px] [border:1px_solid_var(--border)]">
-      <p className="m-0 text-[14px] font-semibold text-[color:var(--fg)]">{e.title}</p>
-      <p className="m-0 mt-[4px] text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{e.body}</p>
+    <div className={`${PANEL} mt-[18px]!`}>
+      <PanelEmpty size="lg" title={e.title} body={e.body} />
     </div>
   );
 }

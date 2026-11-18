@@ -79,8 +79,8 @@ const friendsPage = (rows: any[]) => (
     waiting={<YourRequests rows={rows} now={NOW} history />} />
 );
 for (const dev of ["phone", "desk"] as Dev[]) {
-  app(`E1-${dev}`, dev, friendsPage(LIVE));
-  app(`E2-${dev}`, dev, friendsPage([]));
+  app(`E1-${dev}`, dev, friendsPage(LIVE), { vh: dev === "phone" ? 1180 : 960 });
+  app(`E2-${dev}`, dev, friendsPage([]), { vh: dev === "phone" ? 1140 : 860 });
   app(`H1-${dev}`, dev, <RequestHistory asked={ASKED} ofYou={OFYOU} tab="asked" more />, { path: "/friends", vh: dev === "phone" ? 1390 : 1300 });
   app(`H2-${dev}`, dev, <RequestHistory asked={ASKED} ofYou={OFYOU} tab="ofYou" exFriends />, { path: "/friends", vh: dev === "phone" ? 1040 : 900 });
 }
