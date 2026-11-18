@@ -71,6 +71,7 @@ const out: Record<string, any> = {
   landed: <UpgradeFlow {...base} panel={panel([{ ...r2, id: "r4", createdAt: new Date("2026-11-15T17:00:00Z") }, r1u, r3])} deckOf={used} view={{ kind: "results", runId: "r4" }} />,
   rejected: <UpgradeFlow {...base} panel={panel([r1, r2, r3])} deckOf={used} init={{ opened: "r1", fromStart: true, rejected: ["add0"] }} />,
   "deck-rejected": <UpgradeFlow {...base} apply={deck} panel={panel([r1, r2, r3])} deckOf={used} init={{ opened: "r1", fromStart: true, rejected: ["add0"] }} />,
+  "rej-below": <UpgradeFlow {...base} panel={panel([r1, r2, r3])} deckOf={used} init={{ opened: "r1", fromStart: true, rejected: ["add0", "add11", "add13"], keptBracket: 2 }} />,
   history: <UpgradeFlow {...base} panel={panel([r1, r2, r3])} deckOf={used} init={{ history: true }} />,
 };
 for (const [k, el] of Object.entries(out)) writeFileSync(`hero/${k}.html`, R(el));

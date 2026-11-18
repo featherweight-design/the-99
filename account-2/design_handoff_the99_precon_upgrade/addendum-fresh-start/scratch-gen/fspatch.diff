@@ -1,5 +1,5 @@
 --- a/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 16:56:59.986084786 +0000
-+++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 17:17:16.177313295 +0000
++++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-18 02:55:11.544942431 +0000
 @@ -25,6 +25,7 @@
  import { ResultView, leadOf, runDay } from "./result-view";
  import { HistoryView } from "./history-view";
@@ -15,7 +15,7 @@
 -export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread }: {
 +export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, deckOf = () => null, init = {} }: {
 +  deckOf?: (runId: string) => string | null;
-+  init?: { opened?: string; fromStart?: boolean; history?: boolean; fromHistory?: boolean; rejected?: string[] };
++  init?: { opened?: string; fromStart?: boolean; history?: boolean; fromHistory?: boolean; rejected?: string[]; keptBracket?: number };
    /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
    fileName: string;
    precon: string;
@@ -69,7 +69,7 @@
 -          {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
 -          {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
 +          {stage === "results" && shown && (fromHistory || fromStart) && deckOf(shown.id) && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{freshCopy.usedNote(deckOf(shown.id)!)}</p>}
-+          {stage === "results" && shown && <ResultView panel={panel} run={shown} rejected={rejected} onToggle={toggle} />}
++          {stage === "results" && shown && <ResultView panel={panel} run={shown} rejected={rejected} onToggle={toggle} keptBracket={init.keptBracket ?? null} />}
 +          {stage === "history" && <HistoryView panel={panel} art={art} deckOf={deckOf} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
 +          {stage === "pick" && step === "intro" && newest && <LastRun panel={panel} art={art} run={newest} deck={deckOf(newest.id)} onOpen={() => { setOpened(newest.id); setFromStart(true); }} />}
            {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} short={short ? { payments } : undefined} onMore={toCredits} />}
@@ -145,7 +145,7 @@
                  );
                })}
 --- a/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 16:56:59.986084786 +0000
-+++ b/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 17:17:16.036305679 +0000
++++ b/src/components/decks/precons/upgrade/result-view.tsx	2026-11-18 02:55:11.544296469 +0000
 @@ -136,10 +136,10 @@
  /** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name and its marks, then what it carries.
   *  The name and the marks share one `min-w-0 flex-1` box (readiness clarification 5): the name truncates and gives up room
@@ -159,7 +159,7 @@
        <span aria-hidden className={sign === "+" ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}>{sign}</span>
        {owned !== null && (
          <span aria-hidden className={"h-[8px] w-[8px] flex-none rounded-full " + (owned ? "bg-[color:var(--success)]" : "border border-dashed border-[color:var(--fg-faint)]")} />
-@@ -148,23 +148,38 @@
+@@ -148,23 +148,41 @@
          <Name name={name} oracleId={oracleId} />
          <Marks marks={marks} />
        </span>
@@ -194,27 +194,30 @@
 +          <span className="min-w-0 flex-1 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">
 +            {off ? <><span className="font-semibold text-[color:var(--fg-body)]">{rejectCopy.rejected}</span> {rejectCopy.stays(cutName)}</> : reason}
 +          </span>
-+          <button type="button" onClick={reject.onToggle} aria-pressed={off} aria-label={off ? rejectCopy.undoAria(addName) : rejectCopy.aria(addName)}
-+            className="-my-[12px] -mr-[10px] flex h-[44px] flex-none cursor-pointer items-center justify-center gap-[6px] border-0 bg-transparent px-[10px] font-sans text-[12.5px] font-medium text-[color:var(--fg-muted)] hover:text-[color:var(--fg)]">
-+            {off ? <span className="text-[color:var(--accent-text)]">{rejectCopy.undo}</span> : <>{rejectCopy.press}<span aria-hidden className="text-[13px]">{"✕"}</span></>}
++          {/* #2985: the shipped Suggested changes Pick toggle (suggested-changes-pick-line.tsx), every swap starting picked. */}
++          <button type="button" onClick={reject.onToggle} aria-pressed={!off} aria-label={`${off ? rejectCopy.pick : rejectCopy.picked} ${addName}`}
++            className={`-my-[6px] flex h-[44px] min-w-[88px] flex-none cursor-pointer items-center justify-center gap-[6px] rounded-[7px] px-[12px] text-[12.5px] font-semibold md:h-[32px] md:min-w-[78px] ${
++              !off ? "bg-[color:var(--accent)] text-[color:var(--bg)] [border:1px_solid_var(--accent)]" : "bg-transparent text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]"}`}>
++            {off ? <span aria-hidden className="size-[13px] rounded-[3px]" style={{ border: "1.5px solid currentColor" }} /> : null}
++            {off ? rejectCopy.pick : rejectCopy.picked}
 +          </button>
 +        </span>
 +      ) : reason && <span className="text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{reason}</span>}
      </li>
    );
  }
-@@ -178,7 +193,9 @@
+@@ -178,7 +196,9 @@
    );
  }
  
 -export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun }) {
-+export function ResultView({ panel, run, rejected = new Set<string>(), onToggle }: { panel: UpgradePanel; run: PanelRun; rejected?: Set<string>; onToggle?: (addId: string) => void }) {
++export function ResultView({ panel, run, rejected = new Set<string>(), onToggle, keptBracket = null }: { panel: UpgradePanel; run: PanelRun; rejected?: Set<string>; onToggle?: (addId: string) => void; keptBracket?: number | null }) {
 +  const kept = run.pairs.filter((p) => !rejected.has(p.addId));
 +  const buyKept = kept.filter((p) => !panel.cards[p.addId]?.owned);
    const lead = leadOf(panel, run);
    const leadName = lead ? lead.cards.map((c) => c.name).join(" + ") : "";
    const box = panel.commanders.find((c) => c.isFace) ?? null;
-@@ -198,7 +215,7 @@
+@@ -198,17 +218,18 @@
          <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]">
            <StrategyIcon strategy={key as StrategyKey} size={18} />
          </span>
@@ -223,18 +226,21 @@
          <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{runDay(run.createdAt)}</span>
        </div>
        <div className="grid grid-cols-2 gap-[2px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[3px] md:grid-cols-4">
-@@ -206,8 +223,8 @@
+         <Fact label={copy.facts.ledBy}>{leadName}</Fact>
          <Fact label={copy.facts.bracket}>
-           <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
+-          <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
++          <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {keptBracket ?? run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
          </Fact>
 -        <Fact label={copy.facts.toBuy}>{run.toBuy.cards} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(run.toBuy.cents)}</span></Fact>
 -        <Fact label={copy.facts.yours}>{run.owned}</Fact>
 +        <Fact label={copy.facts.toBuy}>{buyKept.length} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(buyKept.reduce((n, p) => n + p.addCents, 0))}</span></Fact>
 +        <Fact label={copy.facts.yours}>{kept.length - buyKept.length}</Fact>
        </div>
++      {keptBracket !== null && run.bracketTarget !== null && keptBracket < run.bracketTarget && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{rejectCopy.below(keptBracket, run.bracketTarget)}</p>}
        {keyEntries.length > 0 && <MarkKey marks={keyEntries} regionAria={cardMarkCopy.keyRegionAria} />}
        {run.refunded && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.short(run.bracketTarget ?? run.bracketAfter ?? 0, run.pairs.length)}</p>}
-@@ -240,7 +257,8 @@
+       {changed && box && lead && (
+@@ -240,7 +261,8 @@
                    key={p.position}
                    cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
                    addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
@@ -244,7 +250,7 @@
                  />
                );
              })}
-@@ -250,3 +268,23 @@
+@@ -250,3 +272,25 @@
      </div>
    );
  }
@@ -260,11 +266,13 @@
 +}
 +
 +export const rejectCopy = {
-+  press: "Reject",
++  pick: "Pick",
++  picked: "✓ Picked",
 +  aria: (add: string) => `Reject this swap: keep the cut, don’t add ${add}`,
 +  undoAria: (add: string) => `Bring back the swap that adds ${add}`,
 +  undo: "Bring it back",
-+  rejected: "Rejected.",
++  rejected: "Not picked.",
 +  stays: (cut: string) => `${cut} stays in the deck.`,
-+  count: (n: number) => `${n} rejected`,
++  count: (n: number) => `${n} not picked`,
++  below: (b: number, want: number) => `Without the swaps you didn’t pick, it plays at bracket ${b}, under the ${want} you chose.`,
 +};

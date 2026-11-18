@@ -8,14 +8,11 @@ export const freshStartCopy = {
   notYet: "no deck yet",
   /** The dashed note on a used run, opened from the start screen or History. */
   usedNote: (deck: string) => `Already in ${deck}. Opening it again uses no credit.`,
-  /** R1b: rejecting a swap. */
-  reject: {
-    press: "Reject",
-    aria: (add: string) => `Reject this swap: keep the cut, don’t add ${add}`,
-    undo: "Bring it back",
-    undoAria: (add: string) => `Bring back the swap that adds ${add}`,
-    rejected: "Rejected.",
+  /** R1c (#2985): picking which swaps to keep. The toggle reuses suggestedChangesV2Copy.results.pick / picked. */
+  pick: {
+    notPicked: "Not picked.",
     stays: (cut: string) => `${cut} stays in the deck.`,
-    count: (n: number) => `${n} rejected`,
+    count: (n: number) => `${n} not picked`,
+    below: (b: number, want: number) => `Without the swaps you didn’t pick, it plays at bracket ${b}, under the ${want} you chose.`,
   },
 } as const;

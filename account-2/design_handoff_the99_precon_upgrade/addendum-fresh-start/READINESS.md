@@ -1,4 +1,4 @@
-# READINESS · Upgrade addendum fresh start (R1)
+# READINESS · Upgrade addendum fresh start (R1c)
 
 **Verdict (Design's read): Yellow.** The surfaces are shipped parts (intro, History row, result, wait); four gaps need engineering before build. Hugh's audit owed.
 
@@ -7,7 +7,7 @@
 |---|---|---|
 | **G25** | Seen per run | Store when a result was first shown (`seenAt` on the stored run, server-side so another device agrees). `useUpgradeRun`'s view becomes: pending → wait; newest done and unseen → its result; else none (the start screen). A run that lands while the flow is open is seen at once. |
 | **G26** | Which deck a run went into | `readStartedRuns` returns the deck's id and name per run, not a yes. Several decks from one run: the newest. A deck since deleted: no row, so the run reads `no deck yet`. `UpgradeFlow` takes `deckOf(runId)`. |
-| **G28** | Rejected swaps per run | Store the rejected adds on the run (the player's choice, free to change). Start (`createDeckFromPrecon` with run id) and Apply (`applyUpgradeOnDeck`) take only kept pairs; Undo restores what was applied. The short-run line and refund describe the run as found, unchanged. |
+| **G28** | Picked swaps per run (#2985) | Store the unpicked pairs on the run, server-side. Start (`prepareUpgradeIn` → `applyUpgradeIn`, `apply.ts`) and Apply (`applyUpgradeOnDeck`, `deck-apply.ts`) take `pairs: {cutId, addId}[]`, a subset of the stored run checked on the server; Undo restores exactly what was applied. Bracket fact re-read for the picked pairs (`bracketsOf`); To buy and Already yours count them. The short-run line and refund describe the run as found. |
 | **G27** | Retire the old opening rules | Drop `started` as the press's opening rule and the `fresh` flag. Update the A3 / A2c / R2d tests that expect the press to reopen the newest result. |
 
 ## Ready

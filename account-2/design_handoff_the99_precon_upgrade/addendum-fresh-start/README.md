@@ -2,7 +2,7 @@
 
 `design_handoff_the99_precon_upgrade/addendum-fresh-start/` · 2026-11-15 · account 2
 
-**Status: R1b, awaiting Hugh's audit.** R1b (Hugh, 2026-11-15): the allocation marker moved to where the card row puts it, and a way to reject a swap. Canvas: https://claude.ai/artifact/KxyeRMbPZ5akFWnnPHopip
+**Status: R1c, awaiting Hugh's audit.** R1b (Hugh, 2026-11-15): the allocation marker moved to where the card row puts it. R1c (2026-11-18): issue #2985 folded in, so the two ship together: pick which swaps to keep, with the Suggested changes Pick toggle (replaces R1b's Reject). Canvas: https://claude.ai/artifact/KxyeRMbPZ5akFWnnPHopip
 
 **Brief (Hugh, 2026-11-15).** "When running Precon Upgrade on a deck and coming back, it's still at the end state of the last run. Should we show a new Precon Upgrade screen instead to start the flow over with history accessible?" Engineering recommends yes. Already decided: result rows use the shared allocation chips instead of `you own it` (engineering, in flight). Open for Design: what a returning reader lands on and how it acknowledges the last run; how past runs are reached; three return states (applied, not applied, in progress).
 
@@ -14,7 +14,7 @@ Every frame is the shipped `UpgradeFlow` rendered with the shipped CSS (Low Sun)
 |---|---|
 | `Main.dc.html` | The calls, gaps G25 to G28, must-nots |
 | `F1-Applied.dc.html` | A finished run that went into a deck: start screen and opened result (390, 1300) |
-| `F2-Not-Applied.dc.html` | A finished run with no deck yet: start screen, opened result, swap rows with chips, rejecting a swap; precon page and deck page (390, 1300) |
+| `F2-Not-Applied.dc.html` | A finished run with no deck yet: start screen, opened result, swap rows with chips, picking which swaps to keep; precon page and deck page (390, 1300) |
 | `F3-In-Progress.dc.html` | A run in flight resumes on the wait; a run that landed while away shows once (390, 1300) |
 | `F4-History.dc.html` | History with where each run went; the first-time intro, unchanged (390, 1300) |
 | `STATES-fresh-start.md` | Every state, with must-nots |
@@ -32,7 +32,7 @@ Every frame is the shipped `UpgradeFlow` rendered with the shipped CSS (Low Sun)
 7. **In progress (F3): it resumes.** Unchanged from A3: the press reads `Upgrading toward Tokens · 0:05` and opens on the wait. No start screen while a run is in flight, because a second run can't start (`inFlight`).
 8. **Landed while away: shown once.** The first open after a run lands shows its result as A3 drew it (tracker, History link; the press pulsed twice when it landed). From then on it's `Your last upgrade` on the start screen. Seen means shown in the flow once, including a run that lands while the flow is open (G25).
 9. **Swap rows use the allocation chips, where the card row puts them (R1b).** In place of `you own it`, each side follows the shipped one-line row's All order (`docs/agents/card-row.md`): name and marks, then the availability marker and the buy tag flowing left of the fixed pip track. An add you own with a copy free draws nothing past the owned dot (the marker's free state is null); a copy held by another deck draws `◆ none free` (`AvailabilityMarker` row, bareOne, nameless); an add to buy draws the All row's bare `$` (`BuyTag` row, `density="glyph"`, its price in the tooltip). The run's total stays in the To buy fact.
-11. **Reject a swap (R1b).** Each swap's reason line ends with a `Reject ✕` press (44px hit), so the one-line card rows stay as shipped. Rejected: both sides dim to 45%, the line reads `Rejected. Sai, Master Thopterist stays in the deck.`, and the press becomes `Bring it back` in `--accent-text`. The title gains a mono `1 rejected`, To buy and Already yours recount, and the press counts the kept swaps (`Start the deck with these 13 swaps`, `Apply these 13 swaps`). Free, no confirm, kept with the run (G28), so reopening it shows the same choice. Every swap rejected: the press goes off. The commander pair has no Reject: who leads is a step, changed from the tracker.
+11. **Pick which swaps to keep (R1c, issue #2985).** Each swap's reason line ends with the shipped Suggested changes Pick toggle (`suggested-changes-pick-line.tsx`: 44px phone, 32px desktop), every swap starting `✓ Picked`; the rows stay one line. Unpicked: the toggle reads `Pick` with its empty box, both sides dim to 45%, and the line reads `Not picked. Sai, Master Thopterist stays in the deck.` The title adds a mono `3 not picked`; To buy, Already yours, the Bracket fact and the press (`Start the deck with these 11 swaps`, `Apply these 11 swaps`) follow the picked pairs. If they no longer reach the chosen bracket, one line under the facts: `Without the swaps you didn’t pick, it plays at bracket 2, under the 3 you chose.` Nothing is blocked. Pairs stay whole (no lone cut or add), so the deck stays at 99. Free, no confirm, kept with the run (G28). None picked: the press goes off. The commander pair has no toggle: who leads is a step, changed from the tracker.
 10. **The deck page gets the same start screen**, inside the band's flow, with A2c's intro line and Apply. A run already applied to another deck from this precon reads `in Muddle Tokens` and can still apply here.
 
 ## Open for Hugh
