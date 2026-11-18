@@ -1,0 +1,196 @@
+--- a/src/lib/collection/history-view.ts	2026-11-18 05:34:43.486638927 +0000
++++ b/src/lib/collection/history-view.ts	2026-11-18 05:35:57.132664422 +0000
+@@ -10,38 +10,79 @@
+ const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+ const DAY_MS = 86_400_000;
+ 
+-/** "Oct 9", UTC: month first, US order. */
+-export const dayLabel = (d: Date) => `${MONTHS[d.getUTCMonth()]} ${d.getUTCDate()}`;
++// PROPOSAL (#2986 R1): every date and time is the READER's wall clock, in the zone the browser reports.
++// `tz` is that zone (validTimeZone'd); the server render gets it from the `tz` cookie, and a first visit
++// without one renders the time slots after mount. Locale: the browser's (12/24 h follows it); "en-US" here.
++const LOCALE = "en-US";
++const DAY_MS_ = 86_400_000;
++const fmt = (d: Date, tz: string, o: Intl.DateTimeFormatOptions) => new Intl.DateTimeFormat(LOCALE, { timeZone: tz, ...o }).format(d);
++/** The reader's calendar day as a sortable number (y*10000+m*100+d) — the group key. */
++export const localDay = (d: Date, tz: string) => {
++  const p = new Intl.DateTimeFormat("en-US", { timeZone: tz, year: "numeric", month: "numeric", day: "numeric" }).formatToParts(d);
++  const n = (t: string) => Number(p.find((x) => x.type === t)?.value);
++  return n("year") * 10000 + n("month") * 100 + n("day");
++};
++const sameYear = (a: Date, b: Date, tz: string) => Math.floor(localDay(a, tz) / 10000) === Math.floor(localDay(b, tz) / 10000);
+ 
+-/** "14:02", UTC. */
+-export const timeLabel = (d: Date) =>
+-  `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
++/** "Nov 12", or "Dec 30, 2025" outside the reader's current year. */
++export const dayLabel = (d: Date, tz = "UTC", nowMs = Date.now()) =>
++  fmt(d, tz, sameYear(d, new Date(nowMs), tz) ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" });
+ 
+-const startOfDay = (ms: number) => ms - (((ms % DAY_MS) + DAY_MS) % DAY_MS);
++/** "2:02 PM" (or "14:02" where the locale is 24-hour). */
++export const clockLabel = (d: Date, tz: string) => fmt(d, tz, { hour: "numeric", minute: "2-digit" });
++
++/** An entry's time slot: "Just now" under a minute, "12 min ago" under an hour, then the clock. The day is the group's. */
++export function timeLabel(d: Date, nowMs: number, tz: string): string {
++  const ago = nowMs - d.getTime();
++  if (ago < 60_000) return "Just now";
++  if (ago < 3_600_000) return `${Math.floor(ago / 60_000)} min ago`;
++  return clockLabel(d, tz);
++}
++
++/** The same moment in a sentence: "just now", "12 min ago", "today at 9:30 AM", "yesterday at 3:15 PM", "Nov 12 at 12:05 PM". */
++export function whenPhrase(d: Date, nowMs: number, tz: string): string {
++  const ago = nowMs - d.getTime();
++  if (ago < 60_000) return "just now";
++  if (ago < 3_600_000) return `${Math.floor(ago / 60_000)} min ago`;
++  const days = dayDiff(d, nowMs, tz);
++  const at = clockLabel(d, tz);
++  if (days === 0) return `today at ${at}`;
++  if (days === 1) return `yesterday at ${at}`;
++  return `${dayLabel(d, tz, nowMs)} at ${at}`;
++}
++
++/** The full stamp for the time slot's tooltip and `<time>`: "Wednesday, November 18, 2026 at 2:13 PM MST". */
++export const fullStamp = (d: Date, tz: string) =>
++  fmt(d, tz, { weekday: "long", month: "long", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short" });
++
++/** Whole reader-calendar days between d and now. */
++function dayDiff(d: Date, nowMs: number, tz: string): number {
++  const toUtcMid = (k: number) => Date.UTC(Math.floor(k / 10000), Math.floor((k % 10000) / 100) - 1, k % 100);
++  return Math.round((toUtcMid(localDay(new Date(nowMs), tz)) - toUtcMid(localDay(d, tz))) / DAY_MS_);
++}
+ 
+ export type DayGroup = { key: string; label: string; entries: HistoryListEntry[] };
+ 
+ /**
+- * Entries newest first, grouped by UTC day, the first two days named `Today` and `Yesterday`.
+- * A day is one group however the entries arrive: `createdAt` is not guaranteed monotonic down the
+- * list, and a day that came back after another would otherwise repeat its key.
++ * Entries newest first, grouped by the READER's day: Today · Nov 18, Yesterday · Nov 17, then the weekday
++ * for the rest of the last week (Monday · Nov 16), then the date alone (Nov 12; Dec 30, 2025 in another year).
+  */
+-export function groupByDay(entries: readonly HistoryListEntry[], nowMs: number): DayGroup[] {
++export function groupByDay(entries: readonly HistoryListEntry[], nowMs: number, tz = "UTC"): DayGroup[] {
+   const c = collectionEditCopy.history;
+-  const today = startOfDay(nowMs);
+   const groups: DayGroup[] = [];
+   const byKey = new Map<string, DayGroup>();
+   for (const e of entries) {
+-    const start = startOfDay(e.createdAt.getTime());
+-    const seen = byKey.get(String(start));
++    const key = String(localDay(e.createdAt, tz));
++    const seen = byKey.get(key);
+     if (seen) {
+       seen.entries.push(e);
+       continue;
+     }
+-    const date = dayLabel(e.createdAt);
+-    const label = start === today ? c.today(date) : start === today - DAY_MS ? c.yesterday(date) : date;
+-    const group = { key: String(start), label, entries: [e] };
+-    byKey.set(group.key, group);
++    const date = dayLabel(e.createdAt, tz, nowMs);
++    const days = dayDiff(e.createdAt, nowMs, tz);
++    const label = days === 0 ? c.today(date) : days === 1 ? c.yesterday(date) : days < 7 ? c.weekday(fmt(e.createdAt, tz, { weekday: "long" }), date) : date;
++    const group = { key, label, entries: [e] };
++    byKey.set(key, group);
+     groups.push(group);
+   }
+   return groups;
+--- a/src/components/collection/history-list.tsx	2026-11-18 05:34:43.488983500 +0000
++++ b/src/components/collection/history-list.tsx	2026-11-18 05:35:57.131095146 +0000
+@@ -12,7 +12,7 @@
+ import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
+ import { historyKindOf, type HistoryKind } from "../../lib/collection/history-kind";
+ import {
+-  GROUP_FIRST, GROUP_STEP, SHORT_ENTRY_ROWS, dayLabel, entryTitle, groupByDay, groupRows, rowDelta, timeLabel, type RowGroup,
++  GROUP_FIRST, GROUP_STEP, SHORT_ENTRY_ROWS, dayLabel, entryTitle, fullStamp, groupByDay, groupRows, rowDelta, timeLabel, whenPhrase, type RowGroup,
+ } from "../../lib/collection/history-view";
+ import type { HistoryRow } from "../../db/schema";
+ import { cartDecksOf, type CartDecks } from "../../lib/collection/deck-line";
+@@ -226,7 +226,11 @@
+   onRevert,
+   onRetry,
+   anchor = true,
++  nowMs = Date.now(),
++  tz = "UTC",
+ }: {
++  nowMs?: number;
++  tz?: string;
+   e: HistoryListEntry;
+   title: string;
+   revertedByEntry?: HistoryListEntry;
+@@ -255,7 +259,7 @@
+         <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={{ color: TAG_INK[kind] }}>
+           {c.kinds[kind]}
+         </span>
+-        <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)] md:order-last">{timeLabel(e.createdAt)}</span>
++        <time dateTime={e.createdAt.toISOString()} title={fullStamp(e.createdAt, tz)} className="font-mono text-[11.5px] text-[color:var(--fg-faint)] md:order-last">{timeLabel(e.createdAt, nowMs, tz)}</time>
+         <span className="col-span-2 flex min-w-0 flex-col gap-[3px] md:col-span-1">
+           <span className="truncate text-[14px]" style={{ color: reverted ? "var(--fg-muted)" : "var(--fg)" }}>
+             {title} <Chevron kind="disclosure" open={isOpen} className="text-[color:var(--fg-faint)]" />
+@@ -288,11 +292,11 @@
+               {" · "}
+               {anchor ? (
+                 <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent-text)] underline underline-offset-2">
+-                  {c.revertedBy(timeLabel(revertedByEntry.createdAt))}
++                  {c.revertedBy(whenPhrase(revertedByEntry.createdAt, nowMs, tz))}
+                 </a>
+               ) : (
+                 // Drawn without row anchors (/about's figure): a link to nothing would be a dead end.
+-                <span>{c.revertedBy(timeLabel(revertedByEntry.createdAt))}</span>
++                <span>{c.revertedBy(whenPhrase(revertedByEntry.createdAt, nowMs, tz))}</span>
+               )}
+             </>
+           ) : null}
+@@ -338,7 +342,9 @@
+   reachesBack,
+   shipLabel,
+   focusId,
++  timeZone = "UTC",
+ }: {
++  timeZone?: string;
+   initial: HistoryListEntry[];
+   nextBefore: number | null;
+   nowMs: number;
+@@ -356,7 +362,7 @@
+   // The entry whose revert is being decided, with the words the dialog quotes.
+   const [reverting, setReverting] = useState<{ id: string; title: string; when: string; sync: boolean } | null>(null);
+   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
+-  const groups = useMemo(() => groupByDay(entries, nowMs), [entries, nowMs]);
++  const groups = useMemo(() => groupByDay(entries, nowMs, timeZone), [entries, nowMs]);
+ 
+   async function fetchDetail(id: string) {
+     setDetails((m) => new Map(m).set(id, "loading"));
+@@ -430,8 +436,10 @@
+                   isOpen={open.has(e.id)}
+                   detail={details.get(e.id)}
+                   onToggle={() => toggle(e.id)}
+-                  onRevert={(title, sync) => setReverting({ id: e.id, title, when: `${dayLabel(e.createdAt)}, ${timeLabel(e.createdAt)}`, sync })}
++                  onRevert={(title, sync) => setReverting({ id: e.id, title, when: whenPhrase(e.createdAt, nowMs, timeZone), sync })}
+                   onRetry={() => void fetchDetail(e.id)}
++                  nowMs={nowMs}
++                  tz={timeZone}
+                 />
+               ))}
+             </ul>
+--- a/src/lib/copy/collection-edit.ts	2026-11-18 05:34:43.490746298 +0000
++++ b/src/lib/copy/collection-edit.ts	2026-11-18 05:35:57.134529549 +0000
+@@ -377,7 +377,7 @@
+     noRows: "This change didn’t move anything. Your collection already matched.",
+     reverted: "Reverted",
+     /** Reads after `reverted` and a separator: "Reverted · by the revert at 15:30". */
+-    revertedBy: (when: string) => `by the revert at ${when}`,
++    revertedBy: (when: string) => `by the revert ${when}`,
+     undid: (title: string) => `Reverted “${title}”`,
+     /** (new) A revert whose own entry is not on this page, so it cannot be titled. */
+     undidOlder: "Reverted an earlier change",
+@@ -385,6 +385,8 @@
+     agedNote: "That change has aged out of history.",
+     today: (date: string) => `Today · ${date}`,
+     yesterday: (date: string) => `Yesterday · ${date}`,
++    /** (new, #2986) A day in the last week: "Monday · Nov 16". */
++    weekday: (day: string, date: string) => `${day} · ${date}`,
+     /** `details` is (new): a row whose printing or condition changed with its copies unchanged. */
+     groups: { left: "Left", down: "Went down", up: "Went up", new: "New", details: "Details" },
+     /** (new) The delta slot of a row whose copies did not move. */

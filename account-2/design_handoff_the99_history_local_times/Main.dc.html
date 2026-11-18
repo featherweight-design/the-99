@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>History in local time, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:flex;flex-direction:column;gap:10px;width:390px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+.tbl{border-collapse:collapse;width:100%;font-size:13px;line-height:1.5}
+.tbl td,.tbl th{border-top:1px solid #3A3229;padding:8px 10px 8px 0;vertical-align:top;text-align:left}
+.tbl th{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#948B78;border-top:0}
+.tbl td{color:#C0B8A6}
+.m{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.box{border:1px solid #3A3229;border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:10px;background:#15120F}
+.h3{font:600 15px 'IBM Plex Sans',sans-serif;color:#EDE6D8;margin:0}
+</style>
+</helmet>
+<div style="width: 1480px; min-height: 1880px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1200px">
+<p class="lab"><b>#2986</b> · /collection/history · 390 · reader in Denver, Wed Nov 18, 2:14 PM</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Your clock, not the server's</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6; max-width: 1080px">The shipped History list, rendered from <span class="m">history-list.tsx</span> with the same eight entries twice. Before, every time and every day heading is UTC: last night's 11:40 PM add sits under Today at 06:40. After, times and days are the reader's, and the last hour reads as minutes.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="ph"><p class="lab"><b>B1</b> · shipped (UTC)</p><img class="shot" src="/_blob/27e103c05c6df5b4d6c5f412b669b1e8" alt="Shipped History list with 24-hour UTC times"><p class="cap">21:13, 06:40 and “by the revert at 16:30” are all UTC. Swords to Plowshares (11:40 PM last night) lands under <b>Today</b>; the 7:30 PM Sync on Monday lands under <b>Yesterday</b>.</p></div>
+<div class="ph"><p class="lab"><b>A1</b> · proposed (local)</p><img class="shot" src="/_blob/caf7e164ace974a33460d019c047d6a8" alt="Proposed History list with local friendly times"><p class="cap"><b>Just now</b>, <b>16 min ago</b>, then the clock. Swords moves to Yesterday at 11:40 PM. The Sol Ring line says when the revert was: <b>today at 9:30 AM</b>. Days in the last week name the weekday.</p></div>
+<div style="display: flex; flex-direction: column; gap: 18px; flex: 1; min-width: 0">
+<div class="box">
+<p class="h3">Time slot (top right of each entry)</p>
+<table class="tbl">
+<tr><th>When</th><th>Reads</th></tr>
+<tr><td>Under a minute</td><td class="m">Just now</td></tr>
+<tr><td>Under an hour</td><td class="m">12 min ago</td></tr>
+<tr><td>Older (any group)</td><td class="m">2:02 PM</td></tr>
+</table>
+<p class="cap">The day is the group heading's, so the slot never repeats it. 12 or 24 hour follows the browser's locale (<span class="m">14:02</span> in en-GB). Same mono 11.5px, same spot. The slot is a <span class="m">&lt;time&gt;</span> with the full stamp as its tooltip: <b>Wednesday, November 18, 2026 at 2:13 PM MST</b>. “Just now” and “min ago” tick once a minute while the page is open and turn into the clock at an hour.</p>
+</div>
+<div class="box">
+<p class="h3">Day headings (grouped by the reader's day)</p>
+<table class="tbl">
+<tr><th>Day</th><th>Reads</th></tr>
+<tr><td>Today</td><td class="m">TODAY · NOV 18</td></tr>
+<tr><td>Yesterday</td><td class="m">YESTERDAY · NOV 17</td></tr>
+<tr><td>2 to 6 days ago</td><td class="m">MONDAY · NOV 16</td></tr>
+<tr><td>Older</td><td class="m">NOV 8</td></tr>
+<tr><td>Another year</td><td class="m">DEC 30, 2025</td></tr>
+</table>
+<p class="cap">Midnight is the reader's midnight. Shipped mono heading style, unchanged.</p>
+</div>
+<div class="box">
+<p class="h3">Sentences that quote a time</p>
+<table class="tbl">
+<tr><th>Where</th><th>Reads</th></tr>
+<tr><td>Reverted line</td><td>Reverted · <span class="m">by the revert today at 9:30 AM</span></td></tr>
+<tr><td>Revert confirm lede</td><td><span class="m">From yesterday at 3:15 PM.</span> Reverting this changes 1 copy.</td></tr>
+<tr><td>Foot, empty state, aged revert</td><td>local day: <span class="m">before Aug 20</span>, <span class="m">since Aug 1</span></td></tr>
+</table>
+<p class="cap">One phrase for all three: <span class="m">just now</span> · <span class="m">12 min ago</span> · <span class="m">today at 9:30 AM</span> · <span class="m">yesterday at 3:15 PM</span> · <span class="m">Nov 12 at 12:05 PM</span>. Shipped “by the revert at 16:30” gave no day, so a revert from another day read as today's.</p>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1480,"height":1880}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
