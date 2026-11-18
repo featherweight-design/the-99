@@ -54,7 +54,7 @@ FEATURES = [
     ("written", 170, "Read why a commander works",
      "Every commander page explains how its deck plays, and every precon has an Overview. Both are free.",
      "Tam, the Possibility, with why this commander is worth building"),
-    ("credits", 98, "Try the writing tools free",
+    ("credits", 116, "Try the writing tools free",
      "Your welcome credits are enough to try every writing tool three times before you pay anything.",
      "15 welcome credits when you join, plus 1 free credit every day"),
 ]
@@ -68,6 +68,8 @@ def feature(i, key, h, title, body, alt):
     """One feature, one box: the numbered label, the title and the sentence, then its capture of the shipped landing
     below them (320 wide, fluid on a phone). One column at every width, so each image sits under the words it shows."""
     w = 320
+    # The credits capture is the landing's whole value card (own border, radius and padding, transparent corners): no second frame.
+    frame = "border:0;" if key == "credits" else f"border:1px solid {C['line']};border-radius:10px;"
     hh = round(h * w / 240)
     return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{C["elevated"]}" '
             f'style="margin:0 0 20px;background:{C["elevated"]};border:1px solid {C["line"]};border-radius:12px;"><tr>'
@@ -76,7 +78,7 @@ def feature(i, key, h, title, body, alt):
             f'<p style="margin:0 0 8px;font:bold 22px/1.25 {SERIF};color:{C["h"]};">{title}</p>'
             f'<p style="margin:0 auto 20px;max-width:400px;font:15px/1.6 {SANS};color:{C["body"]};">{body}</p>'
             f'<img src="{ORIGIN}/email/feature-{key}@2x.png" width="{w}" height="{hh}" alt="{alt}" '
-            f'style="display:block;width:100%;max-width:{w}px;height:auto;margin:0 auto;border:1px solid {C["line"]};border-radius:10px;'
+            f'style="display:block;width:100%;max-width:{w}px;height:auto;margin:0 auto;{frame}'
             f'font:italic 13px/1.5 {SANS};color:{C["muted"]};"></td></tr></table>')
 
 

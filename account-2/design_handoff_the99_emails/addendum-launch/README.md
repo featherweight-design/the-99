@@ -36,7 +36,8 @@ the What credits cost link (a landing-only sheet); sweep for repeated copy (R2c,
 4. **Four feature boxes** under the landing’s “From your binder to a finished deck”: one elevated box each, one column
    at every width: brass ◆ 0n label, Georgia 22 title, one sentence, then the capture of the shipped landing it describes
    (320 wide, fluid; 18 sides on a phone). Captures, cropped so no picture repeats the words beside it: two commander tiles (art,
-   rank, fit only), Suggested changes’ example only, Tam’s read without its link, the 15 and +1 rows only (`art/feature-*@2x.png`, 480 wide).
+   rank, fit only), Suggested changes’ example only, Tam’s read without its link, the landing’s value card redrawn with
+   only the 15 and +1 rows and room around them (`scratch-gen/credits.cjs`; its own border, no second frame) (`art/feature-*@2x.png`, 480 wide).
 5. **Two Sign up free buttons, one action**: under the lead for readers who already know, and after the features with
    “Free to join. No card details.” and the raw link. Same words, same link. The text twin carries the link at both
    places too. No codes line.
