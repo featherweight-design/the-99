@@ -1,0 +1,237 @@
+<!doctype html>
+<html><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Metamorphous&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#121217;--surface:#1E1F26;--raised:#22232B;--sunken:#16171D;--elevated:#2D2E35;--border:#1A1F2B;--bs:#2E3340;--fg:#C6D2D3;--body:#B3C0C2;--muted:#95A4A6;--faint:#8A999B;--accent:#6C97DB;--primary:#C9D3D2;
+--mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;--disp:'Metamorphous',serif}
+*{box-sizing:border-box}
+body{margin:0;background:#0b0b0f;color:var(--fg);font-family:var(--sans);padding:20px}
+.board{background:var(--bg);position:relative;overflow:hidden;margin-bottom:40px}
+.lbl{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint)}
+.note{position:absolute;background:#F3E3A6;color:#2a2410;font:500 12px/1.4 var(--sans);padding:8px 10px;border-radius:6px;width:230px;box-shadow:0 4px 14px rgba(0,0,0,.5)}
+.note b{font-weight:600}
+.pin{position:absolute;width:22px;height:22px;border-radius:50%;background:#F3E3A6;color:#2a2410;font:600 12px/22px var(--sans);text-align:center;box-shadow:0 0 0 3px rgba(0,0,0,.4)}
+/* flip cluster */
+.flip{display:flex;align-items:center;gap:6px}
+.fbtn{height:32px;width:32px;border:1px solid var(--bs);border-radius:8px;background:rgba(18,18,23,.55);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:18px;line-height:1}
+.fbtn.hover{background:var(--elevated)}
+.fpos{font-family:var(--mono);font-size:13px;color:var(--body);padding:0 4px;white-space:nowrap}
+.fpos b{color:var(--fg);font-weight:500}
+.fcap{font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:6px;text-align:right}
+.tip{position:absolute;background:var(--elevated);border:1px solid var(--bs);border-radius:8px;padding:8px 10px;font-size:12.5px;color:var(--fg);white-space:nowrap;box-shadow:0 8px 20px rgba(0,0,0,.45)}
+.tip .k{font-family:var(--mono);font-size:11px;color:var(--faint);margin-left:10px;border:1px solid var(--bs);border-radius:4px;padding:1px 5px}
+.tip small{display:block;font-family:var(--mono);font-size:11px;color:var(--faint);margin-bottom:2px}
+/* phone */
+.phone{width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;border-radius:28px;box-shadow:0 0 0 8px #1c1c22}
+.pbtn{height:44px;width:44px;border:1px solid var(--bs);border-radius:10px;background:rgba(18,18,23,.6);display:flex;align-items:center;justify-content:center;color:var(--fg);font-size:22px}
+.chip{display:inline-flex;align-items:center;height:28px;padding:0 10px;border-radius:6px;font-family:var(--mono);font-size:13px}
+.ghost{height:44px;padding:0 16px;border:1px solid var(--bs);border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;color:var(--fg);background:transparent}
+.primary{height:44px;padding:0 18px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:600;color:#14161a;background:var(--primary)}
+/* arrange rows */
+.arow{display:flex;align-items:center;gap:14px;background:var(--surface);border:1px solid var(--bs);border-radius:10px;padding:8px 8px 8px 8px;height:72px}
+.arow .n{font-family:var(--mono);font-size:12px;color:var(--faint);width:18px;text-align:right}
+.arow img{width:84px;height:54px;object-fit:cover;border-radius:6px}
+.arow .t{flex:1;min-width:0}
+.arow .t div:first-child{font-family:var(--disp);font-size:18px;color:var(--fg);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.arow .t div:last-child{font-family:var(--mono);font-size:12px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.handle{width:44px;height:52px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:20px;letter-spacing:-2px;cursor:grab}
+.arow.lift{background:var(--raised);border-color:var(--accent);box-shadow:0 14px 30px rgba(0,0,0,.6);transform:rotate(-.6deg) translateX(6px)}
+.arow.lift .handle{background:var(--elevated);color:var(--fg);outline:2px solid var(--accent);outline-offset:-2px}
+.ghostslot{height:72px;border:1.5px dashed var(--bs);border-radius:10px}
+.menu{position:absolute;background:var(--raised);border:1px solid var(--bs);border-radius:10px;padding:6px;box-shadow:0 12px 28px rgba(0,0,0,.5);width:220px}
+.menu .h{font-family:var(--mono);font-size:11px;letter-spacing:.12em;color:var(--faint);padding:8px 10px 6px;text-transform:uppercase}
+.menu .r{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 10px;border-radius:6px;font-size:14px;color:var(--body)}
+.menu .r.on{background:var(--elevated);color:var(--fg)}
+.toolbar{display:flex;gap:10px;align-items:center}
+.tb{height:44px;border:1px solid var(--bs);border-radius:8px;display:flex;align-items:center;padding:0 14px;font-size:14px;color:var(--fg);background:var(--surface)}
+.card{width:100%;border:1px solid var(--bs);border-radius:12px;overflow:hidden;background:var(--surface)}
+h2.disp{font-family:var(--disp);font-weight:400;margin:0}
+</style></head><body>
+
+<!-- ================= D1 desktop deck header with flip ================= -->
+<div class="board" id="D1" style="width:1600px;height:700px;background:#0b0b0f">
+  <div style="position:absolute;left:0;top:0;width:1300px;height:640px;overflow:hidden">
+    <img src="ref/d-deck-top.png" style="width:1300px;display:block">
+    <!-- flip cluster, top-right of the band -->
+    <div style="position:absolute;right:18px;top:18px;text-align:right">
+      <div class="flip"><div class="fbtn">‹</div><div class="fpos"><b>1</b> of 5</div><div class="fbtn hover">›</div></div>
+      <div class="fcap">Last played · All decks</div>
+    </div>
+    <div class="tip" style="right:14px;top:84px"><small>NEXT DECK</small>Hollow Oak Hours <span class="k">→</span></div>
+  </div>
+  <div class="pin" style="left:1252px;top:6px">1</div>
+  <div class="note" style="left:1340px;top:10px"><b>1 · Flip lives in the band, top right.</b> ‹ position ›, the same 32px ghost square as ⋯. Under it, the order and the list it came from, so “1 of 5” never needs explaining.</div>
+  <div class="pin" style="left:1252px;top:124px">2</div>
+  <div class="note" style="left:1340px;top:130px"><b>2 · Hover (and focus) names the neighbour</b> and its key. ← and → do the same thing anywhere on the page, unless focus is in a field, a tab list, a carousel, a menu or an open sheet/modal.</div>
+  <div class="note" style="left:1340px;top:262px"><b>3 · Ends wrap.</b> On 5 of 5, › goes to 1 of 5. No dead buttons, no “can’t go further” state: the counter already says where you are.</div>
+  <div class="note" style="left:1340px;top:366px"><b>4 · What carries over:</b> the tab (?tab=) and sub-view stay; scroll goes back to the top; both neighbours are prefetched so the flip is instant.</div>
+  <div style="position:absolute;left:0;top:660px" class="lbl">D1 · Deck page, desktop · drawn over the shipped header (kaldheim)</div>
+</div>
+
+<!-- ================= D2 desktop states ================= -->
+<div class="board" id="D2" style="width:1180px;height:520px;padding:28px">
+  <div class="lbl" style="margin-bottom:18px">D2 · What the cluster says, by where the deck was opened from</div>
+  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px">
+    <div class="card" style="padding:18px">
+      <div class="lbl">From /decks, a folder</div>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end"><div style="text-align:right"><div class="flip"><div class="fbtn">‹</div><div class="fpos"><b>2</b> of 3</div><div class="fbtn">›</div></div><div class="fcap">Name · Simic</div></div></div>
+      <p style="font-size:13px;color:var(--body);line-height:1.5;margin:16px 0 0">Flips inside the folder you were in, in its order. The folder’s name replaces “All decks”.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <div class="lbl">From /decks, filtered or searched</div>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end"><div style="text-align:right"><div class="flip"><div class="fbtn">‹</div><div class="fpos"><b>1</b> of 2</div><div class="fbtn">›</div></div><div class="fcap">Custom · 2 filters on</div></div></div>
+      <p style="font-size:13px;color:var(--body);line-height:1.5;margin:16px 0 0">Only the decks the list was showing. “2 filters on” (or “Search: tink”) tells you why it’s 2, not 5.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <div class="lbl">Opened directly (Home, a link, a notification)</div>
+      <div style="margin-top:18px;display:flex;justify-content:flex-end"><div style="text-align:right"><div class="flip"><div class="fbtn">‹</div><div class="fpos"><b>4</b> of 5</div><div class="fbtn">›</div></div><div class="fcap">Last played · All decks</div></div></div>
+      <p style="font-size:13px;color:var(--body);line-height:1.5;margin:16px 0 0">Falls back to All decks in your saved sort, no filters. <b style="color:var(--fg)">Open call G1</b>: or show nothing here.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <div class="lbl">Only one deck in the list</div>
+      <div style="height:62px;margin-top:18px;border:1.5px dashed var(--bs);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--faint)">no cluster</div>
+      <p style="font-size:13px;color:var(--body);line-height:1.5;margin:16px 0 0">Nothing to flip to, so nothing is drawn (no greyed arrows).</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <div class="lbl">A friend’s deck, a precon page</div>
+      <div style="height:62px;margin-top:18px;border:1.5px dashed var(--bs);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:12px;color:var(--faint)">no cluster in R1</div>
+      <p style="font-size:13px;color:var(--body);line-height:1.5;margin:16px 0 0">Your own decks only. Friend decks could follow the friend’s page order later.</p>
+    </div>
+    <div class="card" style="padding:18px">
+      <div class="lbl">Keys</div>
+      <div style="font-size:13px;color:var(--body);line-height:1.9;margin-top:14px">
+        <span class="tip" style="position:static;display:inline-block;padding:2px 8px;box-shadow:none">←</span> previous deck &nbsp; <span class="tip" style="position:static;display:inline-block;padding:2px 8px;box-shadow:none">→</span> next deck<br>
+        Ignored while focus is in an input, textarea, select, [role=tablist], [role=listbox|menu|radiogroup], a carousel, or any open dialog/sheet. Modifier keys (⌘/Alt/Ctrl) pass through.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= P1 phone header with flip ================= -->
+<div class="board" id="P1" style="width:1180px;height:900px;background:#0b0b0f;padding:20px 28px">
+  <div class="phone" style="position:absolute;left:28px;top:24px">
+    <img src="art/p-topbar.png" style="width:390px;display:block">
+    <div style="position:relative;height:300px;overflow:hidden">
+      <img src="art/band-art.png" style="width:390px;height:300px;object-fit:cover;object-position:50% 30%;display:block">
+      <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(18,18,23,0) 30%,rgba(18,18,23,.92) 92%)"></div>
+      <div style="position:absolute;right:12px;top:12px;display:flex;align-items:center;gap:4px;background:rgba(18,18,23,.62);border:1px solid var(--bs);border-radius:12px;padding:3px">
+        <div class="pbtn" style="border:0;background:transparent">‹</div>
+        <div class="fpos" style="font-size:13px"><b>1</b> of 5</div>
+        <div class="pbtn" style="border:0;background:transparent">›</div>
+      </div>
+      <div style="position:absolute;left:18px;bottom:16px;right:18px">
+        <h2 class="disp" style="font-size:27px;text-shadow:0 2px 6px rgba(0,0,0,.8)">Ashen Banner Parade <span style="font-size:15px;color:var(--muted)">✎</span></h2>
+        <div style="font-family:var(--mono);font-size:12.5px;color:var(--body);margin-top:6px;display:flex;gap:6px;align-items:center"><span style="display:inline-flex;gap:3px"><i style="width:9px;height:9px;background:#e9e2cf;display:inline-block"></i><i style="width:9px;height:9px;background:#3A6AA5;display:inline-block"></i><i style="width:9px;height:9px;background:#98748F;display:inline-block"></i><i style="width:9px;height:9px;background:#C05A3E;display:inline-block"></i><i style="width:9px;height:9px;background:#4B7A46;display:inline-block"></i></span> Ashling, the Limitless · 5-color</div>
+      </div>
+    </div>
+    <div style="padding:14px 18px 0">
+      <div style="display:flex;gap:8px"><span class="chip" style="background:#1d2a3d;color:#7fa6e0">To buy</span><span class="chip" style="border:1px solid #8b7536;color:#d9bb6a">◈ Upgraded</span></div>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:14px"><div style="flex:1;height:5px;border-radius:3px;background:var(--accent)"></div><span style="font-family:var(--mono);font-size:16px"><b style="font-weight:500">99</b> <span style="color:var(--faint)">/ 99</span></span></div>
+      <div style="display:flex;gap:10px;margin-top:16px"><div class="ghost" style="flex:1.5;font-size:14px;white-space:nowrap;padding:0 8px">Update from a list</div><div class="primary" style="flex:1">Export</div><div class="ghost" style="width:44px;padding:0">⋯</div></div>
+      <div style="font-family:var(--mono);font-size:11.5px;color:var(--faint);margin-top:14px">Last played · All decks</div>
+    </div>
+    <img src="art/p-ready.png" style="width:390px;display:block;margin-top:14px">
+    <img src="art/p-tabbar.png" style="width:390px;position:absolute;bottom:0;left:0">
+  </div>
+  <div class="pin" style="left:400px;top:178px">1</div>
+  <div class="note" style="left:470px;top:150px;width:300px"><b>1 · Same cluster, phone size.</b> One 44px-tall pill on the band’s scrim, top right, with two 44×44 hit boxes. Thumb-reachable without covering the title, which stays left/bottom.</div>
+  <div class="pin" style="left:400px;top:560px">2</div>
+  <div class="note" style="left:470px;top:540px;width:300px"><b>2 · The order caption moves below the actions</b> on phone (the band has no room for a second line beside the pill). Same words as desktop.</div>
+  <div class="note" style="left:470px;top:300px;width:300px"><b>No swipe in R1.</b> The deck page already swipes in the add carousel, the tab strip and card rows; a page-level swipe would steal those. <b>Open call G2</b>: add an edge swipe on the band only, later.</div>
+  <div class="note" style="left:800px;top:150px;width:330px"><b>Flip on phone feels like:</b> tap ›, the page swaps in place (no slide animation, matching how tab switches land), scroll to top, same tab. The bottom tab bar stays on Decks.</div>
+  <div class="note" style="left:800px;top:300px;width:330px"><b>Ends wrap</b> here too. A single deck: no pill. A deck opened from Home: falls back to All decks in your sort (G1).</div>
+  <div style="position:absolute;left:28px;top:878px" class="lbl">P1 · Deck page, phone · header band redrawn from spine-mobile (no shipped capture of the band top)</div>
+</div>
+
+<!-- ================= O1 sort menu with Custom (desktop) ================= -->
+<div class="board" id="O1" style="width:1600px;height:720px;background:#0b0b0f">
+  <div style="position:absolute;left:0;top:0;width:1300px;height:660px;overflow:hidden">
+    <img src="ref/d-decks2.png" style="width:1300px;display:block">
+    <!-- cover old trigger with Custom state -->
+    <div style="position:absolute;left:1146px;top:227px;width:134px;height:36px;background:var(--bg)"></div>
+    <div style="position:absolute;left:1149px;top:229px;height:32px;padding:0 14px;display:flex;align-items:center;font-size:12.5px;color:var(--body);border:1px solid var(--bs);border-radius:8px;padding:0 10px;font-weight:500;white-space:nowrap">Sort · Custom</div>
+    <div class="menu" style="left:1057px;top:268px">
+      <div class="h">Sort decks</div>
+      <div class="r">Last played</div><div class="r">Name</div><div class="r">Newest</div>
+      <div class="r on">Custom <span style="color:var(--accent)">✓</span></div>
+      <div style="height:1px;background:var(--bs);margin:6px 4px"></div>
+      <div class="r" style="color:var(--fg)">Arrange decks… <span style="font-family:var(--mono);font-size:11px;color:var(--faint)">5</span></div>
+    </div>
+      </div>
+  <div class="pin" style="left:1288px;top:226px">1</div>
+  <div class="note" style="left:1340px;top:30px"><b>1 · Custom is a fourth sort.</b> Picking it the first time opens Arrange straight away, seeded with the order you were looking at, so there is no “empty custom order” state.</div>
+  <div class="note" style="left:1340px;top:168px"><b>2 · “Arrange decks…” sits under the sorts</b> and is the one way in. It is shown in every sort; choosing it also switches the sort to Custom (you can’t arrange a list sorted by name).</div>
+  <div class="note" style="left:1340px;top:306px"><b>3 · New decks join at the top</b> of a custom order (G3), since a new deck is usually the one you open next. Tiles stay links: no drag on the grid (deck_folders §18 holds).</div>
+  <div class="note" style="left:1340px;top:430px;width:180px"><b>Saved to your account</b>, so the order is the same on phone and desktop.</div>
+  <div style="position:absolute;left:0;top:680px" class="lbl">O1 · /decks desktop, sort menu open · over the shipped page</div>
+</div>
+
+<!-- ================= O2 arrange mode desktop ================= -->
+<div class="board" id="O2" style="width:1600px;height:780px;background:#0b0b0f">
+  <div style="position:absolute;left:0;top:0;width:1300px;height:740px;overflow:hidden;background:var(--bg)">
+    <img src="ref/d-decks2.png" style="width:1300px;display:block">
+    <div style="position:absolute;left:63px;top:154px;right:0;bottom:0;background:var(--bg)"></div>
+    <div style="position:absolute;left:84px;top:166px;right:32px">
+      <div style="display:flex;align-items:flex-end;justify-content:space-between;border-bottom:1px solid var(--border);padding-bottom:16px">
+        <div><div class="lbl">All decks · 5</div><h2 class="disp" style="font-size:24px;margin-top:6px">Arrange decks</h2>
+        <div style="font-size:13px;color:var(--muted);margin-top:6px">Drag ⠿ to move a deck. Filters and search are set aside until you’re done.</div></div>
+        <div style="display:flex;gap:10px"><div class="ghost" style="height:36px;font-size:14px">Cancel</div><div class="primary" style="height:36px;font-size:14px">Done</div></div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:16px;max-width:620px">
+        <div class="arow"><span class="n">1</span><img src="art/ashen.png"><div class="t"><div>Ashen Banner Parade</div><div>Ashling, the Limitless · 5-color</div></div><div class="handle">⠿</div></div>
+        <div class="ghostslot"></div>
+        <div class="arow"><span class="n">3</span><img src="art/lantern.png"><div class="t"><div>Lanternlight Tinkers</div><div>Zimone, Mystery Unraveler · Simic</div></div><div class="handle">⠿</div></div>
+        <div class="arow lift" style="margin-top:-150px;margin-bottom:78px;position:relative;z-index:2"><span class="n">2</span><img src="art/hollow.png"><div class="t"><div>Hollow Oak Hours</div><div>Brawn, Amadeus Cho · Simic</div></div><div class="handle">⠿</div></div>
+        <div class="arow"><span class="n">4</span><img src="art/wing.png"><div class="t"><div>Tidewrack Library</div><div>Azorius</div></div><div class="handle">⠿</div></div>
+        <div class="arow"><span class="n">5</span><img src="art/beast.png"><div class="t"><div>Saltmarsh Reclamation</div><div>Golgari</div></div><div class="handle">⠿</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="note" style="left:1340px;top:20px"><b>Arrange swaps the grid for rows</b>, one column, the tile’s art + name + commander line. Rows are not links in this mode, so dragging can’t open a deck.</div>
+  <div class="note" style="left:1340px;top:146px"><b>One control: the ⠿ handle</b> (44×52). Pointer: drag it. Keyboard: Tab to it, Space lifts, ↑/↓ move, Space drops, Esc puts it back. Live region reads “Hollow Oak Hours, 3 of 5”.</div>
+  <div class="note" style="left:1340px;top:290px"><b>Lifted row</b> raises with the accent edge; a dashed slot shows where it lands. Numbers update as it moves.</div>
+  <div class="note" style="left:1340px;top:392px"><b>Done saves</b> (one write of the whole order), <b>Cancel</b> drops changes. Leaving the page with changes asks once (shipped DeleteConfirm pane: “Keep arranging / Discard”).</div>
+  <div class="note" style="left:1340px;top:520px"><b>In a folder</b>, Arrange orders that folder’s decks only (heading reads “Simic · 3”). All decks orders everything. One saved order; a folder shows its decks in that order.</div>
+  <div style="position:absolute;left:0;top:752px" class="lbl">O2 · /decks desktop, Arrange mode, mid-drag</div>
+</div>
+
+<!-- ================= O3 phone sort sheet + arrange ================= -->
+<div class="board" id="O3" style="width:1180px;height:920px;background:#0b0b0f">
+  <!-- phone A: list with sort menu -->
+  <div class="phone" style="position:absolute;left:28px;top:24px">
+    <img src="ref/p-decks.png" style="width:390px;display:block">
+    <div style="position:absolute;inset:0;background:rgba(0,0,0,.55)"></div>
+    <div style="position:absolute;left:0;right:0;bottom:0;background:var(--raised);border-radius:16px 16px 0 0;border-top:1px solid var(--bs);padding:14px 16px 26px">
+      <div style="display:flex;justify-content:space-between;align-items:center"><div class="lbl">Sort decks</div><div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--muted)">✕</div></div>
+      <div class="menu" style="position:static;width:auto;border:0;box-shadow:none;padding:0;background:transparent">
+        <div class="r" style="height:48px;font-size:15px">Last played</div><div class="r" style="height:48px;font-size:15px">Name</div><div class="r" style="height:48px;font-size:15px">Newest</div>
+        <div class="r on" style="height:48px;font-size:15px">Custom <span style="color:var(--accent)">✓</span></div>
+        <div style="height:1px;background:var(--bs);margin:6px 4px"></div>
+        <div class="r" style="height:48px;font-size:15px;color:var(--fg)">Arrange decks… <span style="font-family:var(--mono);font-size:12px;color:var(--faint)">5</span></div>
+      </div>
+    </div>
+  </div>
+  <!-- phone B: arrange -->
+  <div class="phone" style="position:absolute;left:460px;top:24px">
+    <img src="art/p-topbar.png" style="width:390px;display:block">
+    <div style="padding:16px 16px 0">
+      <div class="lbl">All decks · 5</div>
+      <h2 class="disp" style="font-size:26px;margin-top:6px">Arrange decks</h2>
+      <div style="font-size:13.5px;color:var(--muted);margin-top:6px;line-height:1.4">Drag ⠿ to move a deck. Filters are set aside until you’re done.</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+        <div class="arow"><img src="art/ashen.png" style="width:64px;height:48px"><div class="t"><div style="font-size:16px">Ashen Banner Parade</div><div>5-color</div></div><div class="handle">⠿</div></div>
+        <div class="arow lift"><img src="art/lantern.png" style="width:64px;height:48px"><div class="t"><div style="font-size:16px">Lanternlight Tinkers</div><div>Simic</div></div><div class="handle">⠿</div></div>
+        <div class="ghostslot" style="height:72px"></div>
+        <div class="arow"><img src="art/wing.png" style="width:64px;height:48px"><div class="t"><div style="font-size:16px">Tidewrack Library</div><div>Azorius</div></div><div class="handle">⠿</div></div>
+        <div class="arow"><img src="art/beast.png" style="width:64px;height:48px"><div class="t"><div style="font-size:16px">Saltmarsh Reclamation</div><div>Golgari</div></div><div class="handle">⠿</div></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:74px;background:var(--bg);border-top:1px solid var(--border);padding:12px 16px;display:flex;gap:10px"><div class="ghost" style="flex:1">Cancel</div><div class="primary" style="flex:1">Done</div></div>
+    <img src="art/p-tabbar.png" style="width:390px;position:absolute;bottom:0;left:0">
+  </div>
+  <div class="note" style="left:880px;top:40px;width:280px"><b>Phone sort sheet</b> is the shipped ⇅ sheet with Custom and “Arrange decks…” added; rows 48px tall.</div>
+  <div class="note" style="left:880px;top:160px;width:280px"><b>Handle on the right</b>, 44×52, where the thumb is. Touch: press-and-move on the handle starts a drag at once (touch-action none on the handle only), so the list still scrolls everywhere else.</div>
+  <div class="note" style="left:880px;top:310px;width:280px"><b>Done / Cancel</b> pinned above the tab bar, full-width halves, 44px. Long lists autoscroll when a lifted row nears the top or bottom edge.</div>
+  <div class="note" style="left:880px;top:450px;width:280px"><b>Phone rows drop the numbers</b> and the commander name (colour only) to keep a big target and an unclipped deck name at 390px.</div>
+  <div style="position:absolute;left:28px;top:898px" class="lbl">O3 · /decks phone: sort sheet (over shipped page) and Arrange mode mid-drag</div>
+</div>
+</body></html>
