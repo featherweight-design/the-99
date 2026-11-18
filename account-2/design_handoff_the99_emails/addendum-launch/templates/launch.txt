@@ -1,21 +1,22 @@
 Subject: The 99 is open
 
-The 99 is open to everyone. You asked us to tell you the day it opened, and today's the day.
+Your next commander is already in your binder. The 99 is open to everyone, starting today.
 
-Where to start:
-1. Bring your collection. Upload a CSV, paste a list or scan your cards.
-2. See every commander you can already build, ranked by how much of its deck you own.
-3. Try the writing tools on your own decks with 15 welcome credits.
+From your binder to a finished deck:
+- See what you can build. Every commander you own, ranked by how much of its deck is already in your binder.
+- Tune it in your own words. Say what you want from the deck. It picks cards to add and cut, from your collection first, and says why for each.
+- Written for real. Every commander page opens with why it's worth building. Every precon has an Overview. Both are free to read.
+- 15 welcome credits. Enough to run every writing tool three times before you spend a thing. Plus 1 free credit every day.
 
 Sign up free:
 [[signup_url]]
 
-Free to join. No card details. You don't need an invite or a flyer code.
+Free to join. No card details.
 
 --
 You're getting this because this address was left on The 99's launch list at the-99.dev.
 This is the only email the launch list sends. Unsubscribe and we'll delete this address now:
 [[unsubscribe_url]]
-Search your library for a commander.
+99 problems, but your commander ain't one.
 Replies to this email aren't read.
 https://the-99.dev
