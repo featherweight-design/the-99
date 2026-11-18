@@ -1,0 +1,41 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-18T20:00:00Z"
+ },
+ "title": "The 99 · Deck flip and custom order",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1180,
+   "h": 560,
+   "title": "Main · the calls"
+  },
+  "Flip.dc.html": {
+   "x": 1260,
+   "y": 0,
+   "w": 2140,
+   "h": 1180,
+   "title": "1 · Flip: the strip under the art"
+  },
+  "Order.dc.html": {
+   "x": 0,
+   "y": 1260,
+   "w": 4500,
+   "h": 2100,
+   "title": "2 · Custom order and Arrange"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Flip.dc.html",
+  "Order.dc.html"
+ ],
+ "notes": []
+}

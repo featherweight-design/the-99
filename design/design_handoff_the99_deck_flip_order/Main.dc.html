@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Main · the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1180px; height: 560px; box-sizing: border-box; padding: 32px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #E1E8E9">Flip between decks + custom deck order</h2>
+    <p style="margin: 0; font-size: 15px; color: #95A4A6">#2989 and #2990 · the calls</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="width: 1100px; display: flex; flex-direction: column; gap: 14px; font-size: 16px; line-height: 1.55">
+      <p style="margin:0"><b style="color:#E1E8E9">Approved 2026-11-18 (R3).</b> Spec in README.md, gaps in READINESS.md.</p>
+      <p style="margin:0"><b style="color:#E1E8E9">Q1 Flip placement: A2.</b> One strip, ‹ All decks · 2 of 5 ‹ ›, under the commander art at both widths; ← → on desktop. Never over the art.</p>
+      <p style="margin:0"><b style="color:#E1E8E9">Q2 Arrange in folders: allowed.</b> One saved order; a folder’s decks move among themselves.</p>
+      <p style="margin:0"><b style="color:#E1E8E9">Arrange on desktop:</b> a centred 720px column with Cancel and Done on its heading.</p>
+      <p style="margin:0"><b style="color:#E1E8E9">Build:</b> two PRs, custom order first (the strip reads its order), mobile and desktop together in each.</p>
+      <p style="margin:0;color:#95A4A6">Rejected placements (above the art, in the count row, floating pill) stay on design-assets with the round history.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":560}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
