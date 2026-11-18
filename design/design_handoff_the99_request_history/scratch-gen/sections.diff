@@ -1,0 +1,210 @@
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/yr.orig.tsx	2026-11-18 02:32:10.625805887 +0000
++++ src/components/social/your-requests.tsx	2026-11-18 05:31:57.214627859 +0000
+@@ -9,7 +9,10 @@
+ // Both writes answer with the shared toast on a failure and leave the row as it was (G5). ✕ revalidates `/friends`, so
+ // its row leaves with the action's redraw; Ask again revalidates nothing (it is Shopping's write), so the list refreshes
+ // itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
++import Link from "next/link";
+ import { useRouter } from "next/navigation";
++import { historyCopy } from "./request-history";
++import { BAND, BAND_LINK, PANEL, PanelEmpty } from "./section-panel";
+ import { useEffect, useRef, useState } from "react";
+ import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
+ import { feedAge } from "../../lib/feed/age";
+@@ -105,7 +108,7 @@
+   );
+ }
+ 
+-export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now: Date }) {
++export function YourRequests({ rows, now, history = false, bare = false }: { rows: readonly YourRequest[]; now: Date; history?: boolean; bare?: boolean }) {
+   const router = useRouter();
+   const root = useRef<HTMLElement | null>(null);
+   const land = useLandFocus(root);
+@@ -138,6 +141,17 @@
+   });
+   useEffect(() => toTitle, []);
+   // The last row can leave while its press is out (expired, or its friend gone): a failure toast still shows.
++  // PROPOSAL (request history R1): with nothing live but a history to show, the section stays as its head and one line.
++  if (rows.length === 0 && history) return (
++    <section aria-labelledby="your-requests" data-testid="your-requests" className={bare ? "" : PANEL}>
++      <h2 id="your-requests" className={bare ? "sr-only" : BAND}>
++        Your requests
++        <Link href="/friends/requests" className={BAND_LINK}>{historyCopy.entry}</Link>
++      </h2>
++      <PanelEmpty title={historyCopy.noneOpenTitle} body={historyCopy.noneOpenBody} />
++      {toast.node}
++    </section>
++  );
+   if (rows.length === 0) return toast.node;
+ 
+   async function close(a: YourRequest, index: number, from: Element) {
+@@ -176,16 +190,16 @@
+   }
+ 
+   return (
+-    <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className="mt-[26px] md:mt-[34px]">
++    <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className={bare ? "" : PANEL}>
+       <h2
+         id="your-requests"
+         tabIndex={-1}
+-        className="m-0 flex min-h-[44px] items-center justify-between gap-[12px] font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
++        className={bare ? "sr-only" : BAND}
+       >
+         {m.head(rows.length)}
+-        <span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span>
++        <span className="flex items-center gap-[4px]"><span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span>{history && <Link href="/friends/requests" className={BAND_LINK}>{historyCopy.entry}</Link>}</span>
+       </h2>
+-      <ul className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
++      <ul className="m-0 flex list-none flex-col p-0">
+         {rows.map((a, index) => {
+           const text = requestText(a, now);
+           // Offered only when the server would take it (`canAskAgain`: no open ask for the card, no No from this friend
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/waiting-on-you.orig.tsx	2026-11-18 02:52:39.938136677 +0000
++++ src/components/social/waiting-on-you.tsx	2026-11-18 05:31:57.212906331 +0000
+@@ -28,6 +28,7 @@
+ import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
+ import { DismissButton, useFeedDismiss } from "../feed/dismiss";
+ import { KICKER_AGE } from "../feed/kicker-age";
++import { BAND, PANEL } from "./section-panel";
+ import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
+ import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
+ 
+@@ -66,7 +67,7 @@
+ const TITLE = "m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]";
+ const DETAIL = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]";
+ 
+-export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: Date }) {
++export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly WaitingRow[]; now: Date; bare?: boolean }) {
+   const [receipts, setReceipts] = useState<ReadonlyMap<string, Receipt>>(() => new Map());
+   const { expanded, root, expand } = useShowAll();
+   const listRef = useRef<HTMLUListElement | null>(null);
+@@ -131,15 +132,15 @@
+     land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
+   }
+   return (
+-    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
++    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className={bare ? "" : PANEL}>
+       <h2
+         id="waiting-on-you"
+         tabIndex={-1}
+-        className="m-0 flex outline-none min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
++        className={bare ? "sr-only" : `${BAND} text-[color:var(--accent-text)]!`}
+       >
+         {w.head(waiting.length)}
+       </h2>
+-      <div ref={root} className="mt-[12px] flex flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] [border:1px_solid_var(--border)]">
++      <div ref={root} className="flex flex-col">
+       <ul ref={listRef} className="m-0 flex list-none flex-col p-0">
+         {shown.map((item, index) =>
+           item.kind === "receipt" ? (
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/friends-list.orig.tsx	2026-11-18 02:52:39.939755212 +0000
++++ src/components/social/friends-list.tsx	2026-11-18 02:52:39.978855779 +0000
+@@ -18,6 +18,7 @@
+ import { useDialogA11y } from "../../lib/a11y/dialog";
+ import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
+ import { Face } from "./face";
++import { BAND, PANEL } from "./section-panel";
+ import { PendingReporter } from "../shell/pending-reporter";
+ import { useMomentHold } from "../../lib/moments/hold";
+ 
+@@ -63,15 +64,15 @@
+     if (shrank && (document.activeElement === null || document.activeElement === document.body)) head.current?.focus();
+   }, [friends.length]);
+   return (
+-    <section aria-labelledby="friends-head" className="mt-[26px] md:mt-[34px]">
+-      <h2 id="friends-head" ref={head} tabIndex={-1} className={`${SECTION_HEAD} outline-none`}>{f.head(friends.length)}</h2>
++    <section aria-labelledby="friends-head" className={PANEL}>
++      <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}>{f.head(friends.length)}</h2>
+       {friends.length === 0 ? (
+         <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
+           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
+           <p className="m-0 max-w-[560px] text-[13px] leading-[1.55] md:text-[13.5px] text-[color:var(--fg-muted)]">{emptyBody ?? f.emptyBody}</p>
+         </div>
+       ) : (
+-        <ul className="m-0 list-none p-0">
++        <ul className="m-0 list-none p-0 [&>li:last-child]:[border-bottom:0]">
+           {friends.map((friend) => (
+             <FriendRow
+               key={friend.publicId}
+@@ -105,7 +106,7 @@
+   linkable: boolean;
+ }) {
+   return (
+-    <li className="relative flex h-[60px] items-center gap-[12px] [border-bottom:1px_solid_var(--border)]" data-friend-row="">
++    <li className="relative flex h-[60px] items-center gap-[12px] pl-[14px] pr-[4px] [border-bottom:1px_solid_var(--border)] md:pl-[16px]" data-friend-row="">
+       <Face name={friend.displayName} commander={friend.commander} size={40} />
+       <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
+         {linkable ? (
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/pods-pane.orig.tsx	2026-11-18 04:11:00.902386004 +0000
++++ src/components/social/pods-pane.tsx	2026-11-18 04:11:00.950740591 +0000
+@@ -26,6 +26,7 @@
+ } from "../../app/friends/actions";
+ import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
+ import { PodCard } from "./pod-card";
++import { BAND, PANEL } from "./section-panel";
+ import { PodAddFriends } from "./pod-add-friends";
+ import { compareNames, type ThirdPartyName } from "../../lib/person-name";
+ import { SocialToast, type SocialToastState } from "./social-toast";
+@@ -226,8 +227,8 @@
+     : [];
+ 
+   return (
+-    <section aria-labelledby="pods-head" className="mt-[24px] md:mt-[34px]" data-testid="pods-pane">
+-      <div className="flex min-h-[44px] items-center justify-between [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]">
++    <section aria-labelledby="pods-head" className={PANEL} data-testid="pods-pane">
++      <div className={BAND}>
+         <h2 id="pods-head" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{copy.head(shown.length)}</h2>
+         <button
+           ref={newPodRef}
+@@ -243,6 +244,7 @@
+           {copy.newPod}
+         </button>
+       </div>
++      <div className="flex flex-col gap-[12px] p-[12px] md:p-[14px] [&>*]:mt-0!">
+       {creating ? (
+         <form
+           className="mt-[12px] flex flex-col gap-[8px] rounded-[12px] bg-[color:var(--surface-rail)] p-[14px] [border:1px_solid_var(--border-strong)] md:mt-[14px] md:px-[18px] md:py-[16px]"
+@@ -341,6 +343,7 @@
+         />
+       ) : null}
+       <SocialToast toast={toast} onDone={() => setToast(null)} />
++    </div>
+     </section>
+   );
+ }
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/friends-view.orig.tsx	2026-11-18 04:11:00.903869187 +0000
++++ src/components/social/friends-view.tsx	2026-11-18 04:12:02.720280175 +0000
+@@ -85,6 +85,7 @@
+   profile,
+   pods,
+   waiting,
++  side,
+   friends,
+   links,
+   accepted,
+@@ -102,6 +103,8 @@
+   pods?: ReactNode;
+   /** Waiting on you (menu and Home PR 7): the first section under the head; absent when it has no rows. */
+   waiting?: ReactNode;
++  /** PROPOSAL (request history R1c): the top of the right column from 1180 (Your requests), after Friends below it. */
++  side?: ReactNode;
+   friends: Friend[];
+   links: OpenInvite[];
+   /** The friend Accept just made (E10), resolved on the server from the URL's `publicId`; null for none. */
+@@ -454,7 +457,7 @@
+           inviteCount={invites && !friendLinks ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
+           decksSeen={decksSeen}
+         />
+-        <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_420px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
++        <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_448px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
+           <div data-friends-col="left" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
+             {waiting}
+             <FriendsList
+@@ -469,6 +472,7 @@
+             />
+           </div>
+           <div data-friends-col="right" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
++            {side}
+             {pods}
+             <OpenLinks
+               links={open}

@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Request history desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.dk{display:flex;flex-direction:column;gap:10px;width:650px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1452px; min-height: 960px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1200px">
+<p class="lab"><b>H</b> · /friends/requests · 1300</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">The same page in the shell’s 720 column</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The friend page’s column and back link; the switch takes its content width from md up.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="dk"><p class="lab"><b>H1</b> · You asked</p><img class="shot" src="art/H1-desk.png" alt="Request history on desktop, You asked"></div>
+<div class="dk"><p class="lab"><b>H2</b> · Asked of you, with the ex-friend line</p><img class="shot" src="art/H2-desk.png" alt="Request history on desktop, Asked of you"></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1452,"height":960}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

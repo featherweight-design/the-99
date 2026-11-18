@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Requests box with tabs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1512px; min-height: 2040px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1400px">
+<p class="lab"><b>R1d</b> · one Requests box · 390 and 1440</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Waiting on you and Your requests share one box, as two tabs</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The band holds the shipped segmented switch (compact, filling the band) with each tab’s count. The rows are unchanged. The box opens on Waiting on you when anything waits, else on Your requests. An answer you haven’t seen puts the diamond on Your requests’ tab, so it isn’t hidden. Request history moves to the box’s foot, since it covers both sides. Back to one left column on desktop: Requests, then Friends; Pods on the right.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 300px; flex: none">
+<p class="lab"><b>R1</b> · Waiting on you tab, phone</p>
+<img class="shot" src="art/R1-phone.png" alt="Friends on a phone with the Requests box on Waiting on you, then Friends and Pods">
+<p class="cap">Friends now starts after <b>one</b> list, not two. Pods follows it.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 300px; flex: none">
+<p class="lab"><b>R2</b> · Your requests tab, phone</p>
+<img class="shot" src="art/R2-phone.png" alt="Friends on a phone with the Requests box on Your requests">
+<p class="cap">Same rows, ✕ and Ask again as today. An empty tab shows the small handover mark and one line.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 720px; flex: none">
+<p class="lab"><b>D3</b> · desktop, 1440</p>
+<img class="shot" src="art/D3-wide.png" alt="Friends at 1440 with the Requests box and Friends on the left, Pods on the right">
+<p class="cap">Left: Requests, then Friends (about 545px down, above the fold). Right: Pods, at 448 so three seats fit. This retires R1c’s move of Your requests to the right column.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1512,"height":2040}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
