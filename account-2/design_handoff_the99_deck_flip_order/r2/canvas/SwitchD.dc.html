@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>D · Next deck at the foot</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2160px; height: 1610px; box-sizing: border-box; padding: 32px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="height: 76px; display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #E1E8E9">D · Next deck at the foot of the page</h2>
+    <p style="margin: 0; font-size: 15px; color: #95A4A6">When you reach the end of a deck, the shipped Decks tiles for the next (and previous) deck are waiting. Nothing new at the top of the page.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 390px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">PHONE · END OF THE LIST</div>
+      <img src="/_blob/12e35b581489f43aad721da19931fec1" alt="Next deck tile at the end of the phone deck page" style="width: 390px; height: 1330px; display: block; border-radius: 6px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 1300px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">DESKTOP · END OF THE PAGE</div>
+      <img src="/_blob/7fd8014c9a26a4d3ea495ee66ecb7b8d" alt="Previous and next deck tiles on desktop" style="width: 1300px; height: 1400px; display: block; border-radius: 6px">
+    </div>
+    <div style="width: 310px; display: flex; flex-direction: column; gap: 14px; padding-top: 26px">
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Phone:</b> the next deck as a full tile (it opens like it does on /decks), and a plain “‹ Previous · Tidewrack Library” button under it.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Desktop:</b> previous and next tiles side by side at the right. ← → flip from anywhere on the page.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #95A4A6">Most personality (real art), least chrome. But a 99-card list is long, so on phone you only find it after a scroll. Works best added to A, not alone.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2160,"height":1610}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>C · Switch deck</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2600px; height: 1410px; box-sizing: border-box; padding: 32px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="height: 76px; display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #E1E8E9">C · Switch deck button and list</h2>
+    <p style="margin: 0; font-size: 15px; color: #95A4A6">One more control in the header’s own actions row, reading “2 of 5”. It opens every deck in the list’s order, so you can jump anywhere, not only one step.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 390px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">PHONE · BUTTON</div>
+      <img src="/_blob/1b15b337b06a829f849be6f5ed10861c" alt="Switch deck button on phone" style="width: 390px; height: 1200px; display: block; border-radius: 6px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 390px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">PHONE · SHEET OPEN</div>
+      <img src="/_blob/6415aa99d7fd98517feba8d9cbc1ccf9" alt="Switch deck sheet on phone" style="width: 390px; height: 844px; display: block; border-radius: 6px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 1300px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">DESKTOP · MENU OPEN</div>
+      <img src="/_blob/9c7784e770f67c5a327421332ad274a7" alt="Switch deck menu on desktop" style="width: 1300px; height: 900px; display: block; border-radius: 6px">
+    </div>
+    <div style="width: 310px; display: flex; flex-direction: column; gap: 14px; padding-top: 26px">
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Phone:</b> a 44px button between Export and ⋯, styled like Export. The sheet lists the decks with art, status and count; the current one is ticked. Bare ✕ to close.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Desktop:</b> “2 of 5 ▾” beside Export, opening a menu under it. ← → still flip one step without opening it.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #95A4A6">Catch: the desktop actions row is full at 1300, so ⋯ wraps to a second line (as drawn). It would need Update from a list to shorten, or the button to go icon-only. Two taps to reach the next deck on phone.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2600,"height":1410}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

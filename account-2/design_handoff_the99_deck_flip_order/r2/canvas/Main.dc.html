@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Deck flip and custom order · Main</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Metamorphous&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#6C97DB}a:hover{color:#9DB9E8}
+</style>
+</helmet>
+<div style="width: 1240px; height: 1180px; box-sizing: border-box; padding: 56px 64px; background: #121217; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 28px">
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #8A999B">R2 · #2989 FLIP BETWEEN DECKS · #2990 CUSTOM ORDER</div>
+    <h1 style="margin: 0; font-family: Metamorphous, serif; font-weight: 400; font-size: 44px; color: #E1E8E9">Flip between decks, and put them in your order</h1>
+    <p style="margin: 0; font-size: 17px; line-height: 1.5; color: #B3C0C2; max-width: 1040px">Every frame on this canvas is the shipped app: the shell, the deck header and the Decks page are the real components rendered with the real CSS (kaldheim). Below the header, the rest of the deck page is the shipped capture. R1’s ‹ › on the commander art is gone; four other places to put it follow.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+    <div style="border: 1px solid #2E3340; border-radius: 12px; background: #1E1F26; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: #8A999B">WAYS TO FLIP</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">A · Deck strip (recommended).</b> A thin row above the band: ‹ All decks on the left, 2 of 5 ‹ › on the right. It also gives the phone a way back to the list, which it doesn’t have today.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">B · Neighbour buttons.</b> Under the header: Previous and Next, each naming the deck it goes to. Clearest, but it’s the tallest.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">C · Switch deck.</b> One more button in the header’s actions row, “2 of 5”, opening the whole list (sheet on phone, menu on desktop). Jumps to any deck, not just the next one. Desktop’s ⋯ wraps to a second line at 1300, so it needs room.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">D · Next deck at the foot.</b> The shipped deck tiles at the end of the page. No new chrome up top, but you have to scroll to find it. Pairs well with A.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #B3C0C2">All four: ← and → on desktop (not while typing or in tabs, carousels, menus or sheets). Ends wrap. Hidden when the list holds one deck. The tab you’re on is kept.</p>
+    </div>
+    <div style="border: 1px solid #2E3340; border-radius: 12px; background: #1E1F26; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: #8A999B">CUSTOM ORDER</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5">The shipped sort menu gains <b style="color: #E1E8E9">Custom</b> and an <b style="color: #E1E8E9">Arrange decks…</b> row (same menu on phone, from ⇅).</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5">Arrange turns the grid into rows with a handle. The handle is the only move control: drag it, or Space then ↑ ↓ on a keyboard. Done saves, Cancel drops it. Tiles stay links; no drag on the grid.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5">Saved to your account, so phone and desktop match. In a folder, Arrange orders that folder’s decks. Flipping follows whatever order the list is in.</p>
+    </div>
+  </div>
+  <div style="border: 1px solid #2E3340; border-radius: 12px; background: #1E1F26; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: #8A999B">FOR HUGH (RECOMMENDATION FIRST)</div>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Q1</b> Which way to flip: A strip (rec), B buttons, C switch list, D foot tiles, or A + D.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Q2</b> A deck opened from Home or a link: flip through All decks in your saved sort (rec), or show no flip.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Q3</b> New decks join a custom order at the top (rec) or bottom. <b style="color: #E1E8E9">Q4</b> Folders stay in name order (rec) or get arranged too.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

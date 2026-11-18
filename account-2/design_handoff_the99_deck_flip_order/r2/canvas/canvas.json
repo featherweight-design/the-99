@@ -1,0 +1,15 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-18T14:20:00Z"},"title":"Deck flip and custom order","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1240,"h":1180,"title":"Main · calls and open questions"},
+"Today.dc.html":{"x":1320,"y":0,"w":2160,"h":1410,"title":"Today · shipped deck page, no flip"},
+"SwitchA.dc.html":{"x":0,"y":1760,"w":2160,"h":1410,"title":"A · Deck strip above the band (recommended)"},
+"SwitchB.dc.html":{"x":2240,"y":1760,"w":2160,"h":1410,"title":"B · Neighbour buttons under the header"},
+"SwitchC.dc.html":{"x":0,"y":3290,"w":2600,"h":1410,"title":"C · Switch deck button and list"},
+"SwitchD.dc.html":{"x":2680,"y":3290,"w":2160,"h":1610,"title":"D · Next deck at the foot of the page"},
+"OrderMenu.dc.html":{"x":0,"y":5250,"w":2160,"h":1310,"title":"Custom order · sort menu"},
+"OrderArrange.dc.html":{"x":2240,"y":5250,"w":2160,"h":1070,"title":"Custom order · Arrange decks"}
+},
+"order":["Main.dc.html","Today.dc.html","SwitchA.dc.html","SwitchB.dc.html","SwitchC.dc.html","SwitchD.dc.html","OrderMenu.dc.html","OrderArrange.dc.html"],
+"notes":{"t1":{"x":0,"y":1530,"text":"Four ways to flip between decks, none on the commander art","kind":"title1","maxW":4840},
+"t2":{"x":0,"y":5020,"text":"Custom order for the Decks page","kind":"title1","maxW":4840}},
+"designSystems":[]}

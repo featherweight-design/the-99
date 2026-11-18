@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Custom order · Arrange decks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2160px; height: 1070px; box-sizing: border-box; padding: 32px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="height: 76px; display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #E1E8E9">Arrange decks, mid-drag</h2>
+    <p style="margin: 0; font-size: 15px; color: #95A4A6">A mode of the Decks page, inside the shipped shell. The grid becomes one column of rows so a drag can’t open a deck.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 390px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">PHONE · 390</div>
+      <img src="/_blob/6a49a1215fde2ad4863da05095663e19" alt="Arrange decks on phone" style="width: 390px; height: 844px; display: block; border-radius: 6px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 1300px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">DESKTOP · 1300</div>
+      <img src="/_blob/722628905ba59d89cb451a1bce77e2b4" alt="Arrange decks on desktop" style="width: 1300px; height: 860px; display: block; border-radius: 6px">
+    </div>
+    <div style="width: 310px; display: flex; flex-direction: column; gap: 14px; padding-top: 26px">
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Rows:</b> the tile’s art, name and status line; desktop adds the position and commander. The handle (44×52, on the right) is the only move control.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Moving:</b> drag the handle (touch starts at once on the handle; the page still scrolls elsewhere). Keyboard: Space lifts, ↑ ↓ move, Space drops, Esc puts it back. The lifted row raises with the accent edge; a dashed slot shows where it lands.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Done</b> saves the whole order, <b style="color: #E1E8E9">Cancel</b> drops it (phone: pinned above the tab bar). Filters and search step aside while arranging. In a folder, only that folder’s decks are listed.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2160,"height":1070}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
