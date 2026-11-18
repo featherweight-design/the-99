@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>F1 applied</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:650px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:650px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet>
+<div class="board" style="width: 2312px; min-height: 1200px">
+<div class="bh"><span class="k">Precon Upgrade · addendum fresh start · R2 · account 2 · 2026-11-18</span><h2>F1 · A finished run that went into a deck</h2><p class="cap">The last run was used: a deck was started from it on the precon page, or its swaps were applied on a deck. The reader lands on the start screen, where the row says <i>in Prismari Artistry</i>. Pressing <b>Next · Commander</b> starts a new upgrade; pressing the row opens the run for free.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">F1</span><span class="k">Start screen · 390</span></div><img class="shot " src="art/fs-applied-p.webp" alt="Start screen · 390"><p class="cap"><b>Your last upgrade</b> above the intro, as History's row. The intro below is unchanged, so <b>Next · Commander</b> is still the one press.</p></div><div class="fr "><div class="state"><span class="pill now">F1·o</span><span class="k">Opened · 390</span></div><img class="shot " src="art/fs-applied-open-p.webp" alt="Opened · 390"><p class="cap"><b>‹ Back</b> returns to the start screen. The dashed note says it's already in a deck and costs nothing to open again. Start stays live.</p></div><div class="fr wide"><div class="state"><span class="pill now">F1</span><span class="k">Start screen · 1300</span></div><img class="shot dk" src="art/fs-applied-d.webp" alt="Start screen · 1300"><p class="cap">The same in the 720 dialog. History in the title row, before the bare ✕.</p></div><div class="fr wide"><div class="state"><span class="pill now">F1·o</span><span class="k">Opened · 1300</span></div><img class="shot dk" src="art/fs-applied-open-d.webp" alt="Opened · 1300"><p class="cap">No tracker and no History link on a run opened from the start screen, as for a run opened from History.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2312,"height":1200}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
