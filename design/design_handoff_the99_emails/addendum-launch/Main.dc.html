@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Launch email R2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+.box{background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.li{font-size:13px;line-height:1.6;color:#C6B79A}
+.li b{color:#EDE6D8}
+.rec{display:inline-block;background:#C9A24B;color:#14110E;border-radius:4px;padding:1px 6px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.06em;margin-left:6px;vertical-align:1px}
+table.sj{border-collapse:collapse;width:100%;font-size:13px;color:#C6B79A}
+table.sj th{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8E8269;text-align:left;padding:6px 8px;border-bottom:1px solid #3A3229}
+table.sj td{padding:9px 8px;border-bottom:1px solid #2A241D;vertical-align:top;line-height:1.5}
+table.sj td b{color:#EDE6D8}
+</style>
+</helmet>
+<div style="width: 1600px; height: 2160px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">Launch email · R2c · account 2 · 2026-11-18 · addendum to branded emails R2</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">The day The 99 opens, with some sizzle</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1480px">Sent once through Resend to every address on <code>launch_list</code>, HTML plus a plain-text twin, on the shipped shell. Every frame here is a screenshot of <code>addendum-launch/templates/launch.html</code> rendered in Chromium at 648 and 375. All copy is DRAFT for <code>/copy-review</code>.</p>
+</div>
+<div class="box">
+<p class="k">What changed from R1 (Hugh, 2026-11-18)</p>
+<p class="li"><b>1 · The codes line is gone</b> (“You don’t need an invite…”), with the hairline above it.</p>
+<p class="li"><b>2 · More imagery, more sizzle.</b> The hero is a <b>fan of real commander cards</b> (Giada, Jace, Y’shtola, Tam) around The 99’s card back reading NOW OPEN, in the brass glow. The heading is the landing’s own headline, <b>“Your next commander is already in your binder”</b>, with “Now open” in the kicker. Then <b>four features</b> under the landing’s “From your binder to a finished deck”, each with a capture of the shipped landing: the commander tiles with fit scores, Suggested changes’ example, Tam’s commander read, and the 15 welcome credits block.</p>
+<p class="li"><b>3 · The tagline.</b> The footer line is <b>“99 problems, but your commander ain’t one.”</b> in place of “Search your library for a commander.” This is <code>emailShellCopy.flavor</code>, so it changes in <b>every</b> email (invite, codes, Clerk’s templates) with one string. The flyer’s pitch is a separate string and stays as it is unless you want that changed too.</p>
+</div>
+<div class="box">
+<p class="k">R2c · Hugh’s third pass and the repeat sweep (2026-11-18)</p>
+<p class="li"><b>Credits image:</b> now the landing’s whole value card, redrawn with room around it (30/34 padding, its own border and corners, no second frame), holding just the 15 and +1 rows. The “That’s enough…” paragraph and the <b>What credits cost</b> link are gone (that link only opens a sheet on the landing).</p>
+<p class="li"><b>Repeats removed:</b> F4 is titled <b>“Try the writing tools free”</b> with one sentence, “Your welcome credits are enough to try every writing tool three times before you pay anything.”, since the image already says 15 and +1 a day · the Suggested changes image is only its example (its header repeated our sentence) · the commander tiles show the art, rank and fit only (their prose repeated F3’s idea) · Tam’s read drops the inert “Open its page ›” · the lead is now just “The 99 is open to everyone, starting today.” (its second half repeated the heading and F1).</p>
+<p class="li"><b>Plain text keeps the facts</b> the pictures carry: F4 reads “You start with 15 welcome credits, enough to try every writing tool three times before you pay anything, and get 1 free credit every day.”</p>
+</div>
+<div class="box">
+<p class="k">R2b · Hugh’s second pass (2026-11-18)</p>
+<p class="li"><b>Two Sign up free buttons:</b> one right under the lead for readers who already know, one after the features. Same words, same link, so it reads as one action.</p>
+<p class="li"><b>Each image under its heading:</b> every feature is now one box, in one column at every width: the numbered label, the title, the sentence, then the capture of what it describes.</p>
+<p class="li"><b>Copy pass</b> (plainer, no slogans): “Written for real” → <b>“Read why a commander works”</b> / “Every commander page explains how its deck plays, and every precon has an Overview. Both are free.” · “Tune it in your own words” → <b>“Change a deck by describing it”</b> / “…It suggests cards to add and cut, starting with ones you own, and says why for each.” · F1 “…ranked by how much of its deck you already have.” · preheader “Make a free account and see what your cards can build. You start with 15 credits.” The formal /copy-review still runs before the build.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start">
+<div class="box">
+<p class="k">Subject and preheader</p>
+<table class="sj">
+<tr><th>Subject</th><th>Preheader</th></tr>
+<tr><td><b>The 99 is open</b><span class="rec">REC</span></td><td>Make a free account and see what your cards can build. You start with 15 credits.</td></tr>
+<tr><td><b>You asked us to tell you: The 99 is open</b></td><td>Same preheader. Longer, but names why it came.</td></tr>
+<tr><td><b>Your binder has a deck in it</b></td><td>The 99 is open to everyone. Make your free account today.</td></tr>
+</table>
+<p class="li">One action, two buttons: <b>Sign up free</b> under the lead and after the features, the second with “Free to join. No card details.”</p>
+</div>
+<div class="box">
+<p class="k">Unchanged from R1</p>
+<p class="li"><b>Codes don’t matter</b>, and now the email doesn’t mention them. The source (<code>code_id</code>) changes only the footer’s reason line.</p>
+<p class="li"><b>Unsubscribe line</b> in the footer: “This is the only email the launch list sends. Unsubscribe and we’ll delete this address now.” plus the one-click headers. <b>The page</b> (board U) is unchanged: offline page’s body, no shell, “You’re off the list.”, Visit The 99.</p>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start">
+<div class="box">
+<p class="k">Open for Hugh</p>
+<p class="li"><b>Q1 · Subject:</b> “The 99 is open” (rec), or one of the other two?</p>
+<p class="li"><b>Q2 · Already a member:</b> skip addresses that already have an account at send time (rec)?</p>
+<p class="li"><b>Q3 · Flyer pitch:</b> should the printed flyer’s headline also become the tagline, or stay “Search your library for a commander.”?</p>
+</div>
+<div class="box">
+<p class="k">Gaps for engineering</p>
+<p class="li"><b>G1 · Headers:</b> <code>List-Unsubscribe</code> + <code>List-Unsubscribe-Post: List-Unsubscribe=One-Click</code>.</p>
+<p class="li"><b>G2 · Token:</b> HMAC of the case-folded address. Valid: delete, U1. Bad: U2. Already gone: U1.</p>
+<p class="li"><b>G3 · Send once:</b> per-address send record, batched under Resend’s limit.</p>
+<p class="li"><b>G4 · Five static images</b> under <code>/email/</code>: <code>launch-fan@2x.png</code> (1040×560, transparent; card images fetched server-side once at build, never Scryfall from the email) and four <code>feature-*@2x.png</code> (480 wide) shot from the shipped landing at 2x on the made-up binder. References in <code>art/</code>. Images off, each box keeps its alt.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":2160}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plain-text launch email</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+.tx{background:#F7F5F1;color:#1F1F23;border-radius:10px;border:1px solid #D4D4DA;padding:18px 18px 20px;font:13px/1.55 'IBM Plex Mono',monospace;white-space:pre-wrap;word-break:break-word;margin:0}
+.sj{font:600 13px 'IBM Plex Sans',sans-serif;color:#EDE6D8}
+.hd{background:#1E1A15;border:1px solid #3A3229;border-radius:10px;padding:16px 18px;font:12.5px/1.7 'IBM Plex Mono',monospace;color:#C6B79A;white-space:pre-wrap;margin:0}
+</style>
+</helmet>
+<div style="width: 1400px; height: 1080px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">T · the plain-text twin and the headers</p>
+<h2 style="margin: 0; font: 700 26px 'Cinzel', serif">Same words, one layout</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1300px">The shipped plain-text rules: the first line is the heading as a sentence, the sign-up link alone after a label ending in a colon (once after the lead, once after the features), the four features as a dash list, then <code>--</code>, the reason, the unsubscribe line with its link alone on the next line, the tagline, the replies line and the site. Straight quotes. <code>addendum-launch/templates/launch.txt</code> holds the placeholders.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; align-items: start">
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p class="k">T1 · from the landing page</p>
+<p class="sj">The 99 is open</p>
+<pre class="tx">Your next commander is already in your binder. The 99 is open to everyone today.
+
+Sign up free:
+https://the-99.dev/sign-up
+
+From your binder to a finished deck:
+- See what you can build. Every commander you own, ranked by how much of its deck you already have.
+- Change a deck by describing it. Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.
+- Read why a commander works. Every commander page explains how its deck plays, and every precon has an Overview. Both are free.
+- Try the writing tools free. You start with 15 welcome credits, enough to try every writing tool three times before you pay anything, and get 1 free credit every day.
+
+Sign up free:
+https://the-99.dev/sign-up
+
+Free to join. No card details.
+
+--
+You're getting this because this address was left on The 99's launch list at the-99.dev.
+This is the only email the launch list sends. Unsubscribe and we'll delete this address now:
+https://the-99.dev/unsubscribe?t=lst_8kQ2vR7mXp4aN9cJ
+99 problems, but your commander ain't one.
+Replies to this email aren't read.
+https://the-99.dev</pre>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<p class="k">T2 · from a flyer: the reason line only</p>
+<pre class="tx">You're getting this because this address was left on The 99's launch list from a flyer.</pre>
+<p class="k" style="margin-top: 14px">T3 · the headers the send carries (G1)</p>
+<pre class="hd">From: The 99 &lt;invites@mail.the-99.dev&gt;
+Subject: The 99 is open
+List-Unsubscribe: &lt;https://the-99.dev/unsubscribe?t=…&gt;
+List-Unsubscribe-Post: List-Unsubscribe=One-Click</pre>
+<p style="font-size: 13px; line-height: 1.6; color: #A89B84">Gmail and Yahoo draw their own Unsubscribe next to the sender from these, and their one-click POST lands on the same delete as the link. No Reply-To, as with every other email.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1080}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
