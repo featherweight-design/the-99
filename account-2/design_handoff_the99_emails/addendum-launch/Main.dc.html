@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Launch email R1</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+.box{background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.box h3{margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#EDE6D8}
+.li{font-size:13px;line-height:1.6;color:#C6B79A}
+.li b{color:#EDE6D8}
+.rec{display:inline-block;background:#C9A24B;color:#14110E;border-radius:4px;padding:1px 6px;font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.06em;margin-left:6px;vertical-align:1px}
+table.sj{border-collapse:collapse;width:100%;font-size:13px;color:#C6B79A}
+table.sj th{font:500 10px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#8E8269;text-align:left;padding:6px 8px;border-bottom:1px solid #3A3229}
+table.sj td{padding:9px 8px;border-bottom:1px solid #2A241D;vertical-align:top;line-height:1.5}
+table.sj td b{color:#EDE6D8}
+</style>
+</helmet>
+<div style="width: 1600px; height: 1500px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">Launch email · R1 · account 2 · 2026-11-18 · addendum to branded emails R2</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">One email, the day The 99 opens</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1480px">Sent once through Resend to every address on <code>launch_list</code> (the landing page’s <b style="color:#EDE6D8">Tell me at launch</b> and the used-up flyer’s), HTML plus a plain-text twin, on the shipped shell exactly: mark tile, brass top rule, kicker, Georgia heading, the points box, one brass button, the flavor footer. Every frame on this canvas is a screenshot of the template in <code>addendum-launch/templates/</code>, rendered in Chromium at 648 and 375. Everything in it is DRAFT for <code>/copy-review</code>.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start">
+<div class="box">
+<p class="k">What it says</p>
+<p class="li"><b>The app is open:</b> kicker <b>◆ Now open ◆</b>, heading <b>“The 99 is open to everyone”</b> (the flyer’s shipped launched title, less “now”).</p>
+<p class="li"><b>What you can do first:</b> three numbered steps in the shipped points box, numerals in place of the diamonds because these go in order: bring your collection, see what you can build, try the writing tools with 15 welcome credits.</p>
+<p class="li"><b>One call to action:</b> <b>Sign up free</b> to <code>/sign-up</code>, the landing’s open-state button word, with its fine print “Free to join. No card details.” and the raw link under it.</p>
+</div>
+<div class="box">
+<p class="k">What it shows</p>
+<p class="li"><b>A launch hand:</b> the invite’s plain hand (three 99 card backs in the brass glow) with the top back reading <b>NOW OPEN</b> instead of INVITATION. One static PNG, <code>/email/launch-hand@2x.png</code>, made by the same <code>gen:email-images</code> script from <code>InviteHand</code> with a back word. No sender, no art fetch, nothing that can break at send time.</p>
+<p class="li">Images off, its box says what it is (board D).</p>
+</div>
+<div class="box">
+<p class="k">Do the flyer and invite codes matter?</p>
+<p class="li"><b>No, and the email says so.</b> At launch sign-up opens and flyer codes retire (the shipped <code>launchedBody</code>), so one fine line reads <b>“You don’t need an invite or a flyer code. Anyone can join now.”</b></p>
+<p class="li"><b>Where the source shows:</b> only the footer’s reason line. A row with a <code>code_id</code> says “from a flyer”; one without says “at the-99.dev”. The flyer’s label is admin-only and never shown.</p>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start">
+<div class="box">
+<p class="k">Subject and preheader</p>
+<table class="sj">
+<tr><th>Subject</th><th>Preheader</th></tr>
+<tr><td><b>The 99 is open</b><span class="rec">REC</span></td><td>Make your free account and see what your binder can build. 15 welcome credits are waiting.</td></tr>
+<tr><td><b>You asked us to tell you: The 99 is open</b></td><td>Same preheader. Longer, but names why it came.</td></tr>
+<tr><td><b>Your binder has a deck in it</b></td><td>The 99 is open to everyone. Make your free account today. (Cheekier; the brand’s flavor-in-headings move.)</td></tr>
+</table>
+<p class="li">Recommended because it is short enough for every phone inbox and reads as news, not a pitch. The preheader carries the value line the landing uses.</p>
+</div>
+<div class="box">
+<p class="k">Unsubscribe: the line and the page</p>
+<p class="li"><b>The line</b> sits in the footer, under the reason: <b>“This is the only email the launch list sends. Unsubscribe and we’ll delete this address now.”</b> It tells the truth about a one-time list (it is purged 30 days after launch anyway) and gives the reader the choice to go sooner.</p>
+<p class="li"><b>The page</b> is <code>/unsubscribe?t=…</code>, signed out, <b>no app shell</b>: the shipped offline page’s shape (eyebrow, display title, one sentence, one button). <b>“You’re off the list.”</b> / “We’ve deleted this address from the launch list, so The 99 won’t email it again.” / <b>Visit The 99</b>, so a reader who changed their mind still has a way in (board U).</p>
+<p class="li"><b>No confirm step:</b> a link scanner that opens it can only cancel an email that will never be sent again, so one press does it.</p>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start">
+<div class="box">
+<p class="k">Open for Hugh</p>
+<p class="li"><b>Q1 · Subject:</b> “The 99 is open” (rec), or one of the other two?</p>
+<p class="li"><b>Q2 · Hero:</b> the NOW OPEN hand (rec, one new static PNG), or reuse the shipped plain hand as is (INVITATION on the back, zero new assets)?</p>
+<p class="li"><b>Q3 · Already a member:</b> skip addresses that already have an account at send time (rec), so nobody is told to sign up for something they joined through an invite?</p>
+</div>
+<div class="box">
+<p class="k">Gaps for engineering</p>
+<p class="li"><b>G1 · Headers:</b> <code>List-Unsubscribe: &lt;https://the-99.dev/unsubscribe?t=…&gt;</code> and <code>List-Unsubscribe-Post: List-Unsubscribe=One-Click</code> on the Resend send, so Gmail and Yahoo show their own Unsubscribe (bulk-sender rule).</p>
+<p class="li"><b>G2 · Token:</b> <code>t</code> is an HMAC of the case-folded address, no account, no expiry. Valid: delete the row, show U1. Tampered or cut short: U2. A row already gone (or purged) still shows U1, so the page never says whether an address was listed.</p>
+<p class="li"><b>G3 · Send once:</b> a send log per address so a retried job never mails twice; batch under Resend’s rate limit; send from <code>invites@mail.the-99.dev</code> like the rest.</p>
+<p class="li"><b>G4 · The hand PNG:</b> <code>InviteHand</code> with a back word prop; reference <code>art/launch-hand@2x.png</code>.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

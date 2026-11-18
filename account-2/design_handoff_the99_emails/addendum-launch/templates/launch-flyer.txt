@@ -1,0 +1,21 @@
+Subject: The 99 is open
+
+The 99 is open to everyone. You asked us to tell you the day it opened, and today's the day.
+
+Where to start:
+1. Bring your collection. Upload a CSV, paste a list or scan your cards.
+2. See every commander you can already build, ranked by how much of its deck you own.
+3. Try the writing tools on your own decks with 15 welcome credits.
+
+Sign up free:
+[[signup_url]]
+
+Free to join. No card details. You don't need an invite or a flyer code.
+
+--
+You're getting this because this address was left on The 99's launch list from a flyer.
+This is the only email the launch list sends. Unsubscribe and we'll delete this address now:
+[[unsubscribe_url]]
+Search your library for a commander.
+Replies to this email aren't read.
+https://the-99.dev

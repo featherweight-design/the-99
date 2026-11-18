@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The launch email</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+.cap{font-size:12.5px;line-height:1.55;color:#A89B84}
+.cap b{color:#EDE6D8}
+.fm{display:block;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1700px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">L · the launch email, as sent</p>
+<h2 style="margin: 0; font: 700 26px 'Cinzel', serif">The 99 is open to everyone</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1580px">The shipped shell, nothing new in it but the numbered steps and the unsubscribe line. Top to bottom: mark tile, the NOW OPEN hand (280×270), kicker, heading, one lead, three steps, <b style="color:#EDE6D8">Sign up free</b>, its fine print, the raw link, then under the hairline the one line on codes. The footer adds the unsubscribe line between the reason and “Replies to this email aren’t read.”</p>
+</div>
+<div style="display: flex; gap: 44px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 648px">
+<img class="fm" src="art/launch-648.png" alt="The launch email at desktop width: hand of three 99 card backs reading Now open, the heading The 99 is open to everyone, three steps, a brass Sign up free button and the footer with Unsubscribe" style="width: 648px; height: 1336px">
+<p class="k">L1 · desktop · 600 column · from the landing page</p>
+<p class="cap">Subject <b>The 99 is open</b> · preheader <b>Make your free account and see what your binder can build. 15 welcome credits are waiting.</b></p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 375px">
+<img class="fm" src="art/launch-375.png" alt="The launch email at 375 wide" style="width: 375px; height: 1472px">
+<p class="k">L2 · phone · 375 · from the landing page</p>
+<p class="cap">Panel sides 24, heading 26: the shell’s own phone rules.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 375px">
+<img class="fm" src="art/launch-flyer-375.png" alt="The launch email at 375 for an address left on a flyer" style="width: 375px; height: 1472px">
+<p class="k">L3 · phone · 375 · from a flyer</p>
+<p class="cap">Only the reason line changes: <b>“…left on The 99’s launch list from a flyer.”</b> Every other word is the same, and no code is named.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
