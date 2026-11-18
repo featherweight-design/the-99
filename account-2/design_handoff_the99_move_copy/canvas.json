@@ -1,0 +1,8 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-18T03:40:00Z"},"title":"The 99 · Move a Copy Later R1","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1400,"h":1500,"title":"Move a copy later R1 · calls, questions, gaps"},
+"Details.dc.html":{"x":1480,"y":0,"w":1882,"h":1180,"title":"C · From card details · phone"},
+"History.dc.html":{"x":0,"y":1620,"w":1362,"h":1120,"title":"H · From collection History · phone"},
+"Desktop.dc.html":{"x":1442,"y":1620,"w":1452,"h":1640,"title":"D · Desktop"}
+},
+"order":["Main.dc.html","Details.dc.html","History.dc.html","Desktop.dc.html"],"notes":{},"designSystems":[]}

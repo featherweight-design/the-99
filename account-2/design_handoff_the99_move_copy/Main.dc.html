@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Move a copy later R1 calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+</style>
+</helmet>
+<div style="width: 1400px; min-height: 1500px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 9px">
+<p class="lab"><b>R1</b> · Issue #2980 · Account 2 · 2026-11-18</p>
+<h1 style="margin: 0; font: 700 34px 'Cinzel', serif">Move a copy to another deck later</h1>
+<p style="font-size: 15px; line-height: 1.6; color: #C0B8A6; max-width: 1150px">A copy went to the wrong deck and, once the receipt was gone, nothing offered the move. The shipped chooser (“Where this copy goes”) gets two more doors: card details and the collection History entry. Every frame is the shipped component rendered from main with the shipped CSS (amonkhet), with this round’s proposal applied. Example card: Swords to Plowshares, one copy, two decks list it.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+<div class="box">
+<p class="lab"><b>Calls</b></p>
+<div class="it"><span class="n">1</span><p><b>Card details: “Change” at the end of the In your decks heading</b> (C1), only when you own the card and no copy is free, so some deck is buying it or every copy is held. With a copy to spare there is nothing to move, so no Change. It opens the shipped chooser over card details: sheet on a phone, 520 modal on desktop.</p></div>
+<div class="it"><span class="n">2</span><p><b>The chooser is the shipped one</b>, title “Where this copy goes”, sub “Swords to Plowshares · ×1 in your collection” (C2). Deck names are the control, gets it / buys it, tap the pick again to go back to first committed (C3). It writes the reservation (assignCopyFor) and changes no deck list or version; every claimant’s marks and buy state update.</p></div>
+<div class="it"><span class="n">3</span><p><b>Decks that don’t list it, under “Not in their lists”</b>. One that can take it offers <b>Add it</b>: the card goes into that deck’s draft and the pick is kept for its commit (C4, Undo in the foot line). One that can’t says why in its row, never hidden: <b>has 99 already</b>, <b>outside its colors</b>, <b>its commander</b>.</p></div>
+<div class="it"><span class="n">4</span><p><b>History: “Change” at the end of an add’s “Went to …” line</b>, same rule as call 1, opening the same chooser (H1, H2). The record is never rewritten: after a move the line reads “Went to Giada’s Angels. Now Heroes of the Plains has it.” (H3). In an opened multi-card entry, each row’s line gets its own Change (not drawn).</p></div>
+<div class="it"><span class="n">5</span><p><b>Matches the removal chooser</b> (approved R1): the same row grammar (round mark, neutral default, accent pick, Back to first committed) and the same rule that a deck that can’t do something says why in its row.</p></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 24px">
+<div class="box">
+<p class="lab"><b>For Hugh</b> · three questions</p>
+<div class="it"><span class="n">Q1</span><p><b>Decks that don’t list the card?</b> <b>Recommended: Add it</b>, into the draft with the pick kept for commit (call 3). Other option: name them with “not in its list” and no action; you add it from the deck, then come back.</p></div>
+<div class="it"><span class="n">Q2</span><p><b>Decks outside its colors?</b> <b>Recommended:</b> a row each up to two, then one faint line “4 more decks are outside its colors.” Other option: a row each always.</p></div>
+<div class="it"><span class="n">Q3</span><p><b>Your Fabled Passage:</b> did Mutant Menace already list it when you added it? If yes, calls 1 and 4 fix it. If no, call 3 does.</p></div>
+</div>
+<div class="box">
+<p class="lab"><b>Gaps</b> · for the build</p>
+<div class="it"><span class="n">G1</span><p>Card details needs the chooser’s card off a receipt (<b>loadContestedCard</b> has the shape) plus the player’s other committed decks with their reason (color identity, 99 count, commander). New read.</p></div>
+<div class="it"><span class="n">G2</span><p><b>A kept pick for a draft add</b> has nowhere to live today (assignments need a committed version). A pending pick applied at commit, or drop the promise if Q1 goes the other way.</p></div>
+<div class="it"><span class="n">G3</span><p>History’s “Went to” is frozen at arrival; “Now X has it.” and Change need a live read per entry, only for entries whose card still has a choice.</p></div>
+<div class="it"><span class="n">G4</span><p>All new strings are DRAFT for /copy-review: Change’s sub, Not in their lists, Add it, in the draft · gets it on commit, has 99 already, outside its colors, its commander, the foot lines, Now X has it.</p></div>
+<div class="it"><span class="n">G5</span><p>Amends the card assignments handoff, which limits the chooser to /changes and receipts.</p></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

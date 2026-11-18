@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Move a copy desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89;max-width:1100px}
+.cap b{color:#EDE6D8;font-weight:600}
+.shot{display:block;width:1100px;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1452px; min-height: 1640px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1200px">
+<p class="lab"><b>D</b> · 1280</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">The same chooser, as the shipped 520 modal</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">Card details on desktop opens the same modal over its own dialog. Rows go one line wide, as they ship.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px"><p class="lab"><b>D1</b> · History, chooser open</p><img class="shot" src="art/H1-desk.png" alt="Desktop History with the chooser modal open"><p class="cap">The shipped modal from History’s Change. <b>Not in their lists</b> sits under the shipped row in the same scroller; Done stays in view.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px"><p class="lab"><b>D2</b> · History, after a move</p><img class="shot" src="art/H3-desk.png" alt="Desktop History after a move"><p class="cap">Change at the line’s end, under Revert. The record line keeps “Went to Giada’s Angels.” and says who has it now.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1452,"height":1640}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
