@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Request history entry on Friends</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:flex;flex-direction:column;gap:10px;width:390px;flex:none}
+.dk{display:flex;flex-direction:column;gap:10px;width:650px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1622px; min-height: 1180px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1500px">
+<p class="lab"><b>E</b> · Friends · 390 and 1300</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">History is one press from Your requests</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The shipped section gains “History ›” on its head. Nothing else on the rows changes.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="ph"><p class="lab"><b>E1</b> · two open, phone</p><img class="shot" src="art/E1-phone.png" alt="Friends on a phone: Your requests with History on its head"><p class="cap"><b>History ›</b> sits after “newest first”, a 44px press.</p></div>
+<div class="ph"><p class="lab"><b>E2</b> · nothing open, phone</p><img class="shot" src="art/E2-phone.png" alt="Friends on a phone: Your requests head with Nothing open right now"><p class="cap">Nothing live but a history to show: the head and <b>“Nothing open right now.”</b> No history: the section is absent, as today.</p></div>
+<div style="display: flex; flex-direction: column; gap: 30px">
+<div class="dk"><p class="lab"><b>E1</b> · two open, desktop</p><img class="shot" src="art/E1-desk.png" alt="Friends on desktop with History on Your requests"></div>
+<div class="dk"><p class="lab"><b>E2</b> · nothing open, desktop</p><img class="shot" src="art/E2-desk.png" alt="Friends on desktop with nothing open"></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1622,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

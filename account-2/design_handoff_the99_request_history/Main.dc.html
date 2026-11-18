@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Request history R1 calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+</style>
+</helmet>
+<div style="width: 1400px; min-height: 1500px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 9px">
+<p class="lab"><b>R1</b> · Issue #2984 · Account 2 · 2026-11-18</p>
+<h1 style="margin: 0; font: 700 34px 'Cinzel', serif">Request history</h1>
+<p style="font-size: 15px; line-height: 1.6; color: #C0B8A6; max-width: 1100px">Every spare request you made, and every one made of you, with how it ended and when. The data is already kept: a ✕ only marks an ask cleared, never deletes it. Every frame is the shipped shell and the shipped Friends page, rendered from main with the shipped CSS, with this round’s proposal applied.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px">
+<div class="box">
+<p class="lab"><b>Calls</b></p>
+<div class="it"><span class="n">1</span><p><b>The way in is “History ›” on Your requests’ head</b>, beside “newest first” (E1). With nothing open but a history, the section stays as its head and “Nothing open right now.” (E2). With no history at all, the section is absent, as today. The answer sheet’s “All your requests ›” is unchanged.</p></div>
+<div class="it"><span class="n">2</span><p><b>One page, /friends/requests</b>: the friend page’s “‹ Friends”, a title, one line, and the shipped segmented switch (compact; fills the width on a phone): <b>You asked · Asked of you</b>. No new menu row.</p></div>
+<div class="it"><span class="n">3</span><p><b>Rows are Your requests’ shipped rows</b>: the card at card shape with the friend’s face in its corner, kicker, title, line. <b>No ✕ and no Ask again</b>: history only shows, and the live list keeps every action (one control per action). <b>The whole row opens card details.</b></p></div>
+<div class="it"><span class="n">4</span><p><b>Outcomes in the shipped words.</b> You asked: Requested, Accepted, Declined, No answer, Withdrawn. Asked of you: Waiting on you, Accepted, Declined, No answer. The kicker’s date is when it ended (an open one: when asked); the line names the deck and the day you asked.</p></div>
+<div class="it"><span class="n">5</span><p><b>An open request says where to act</b>, never offers it here: “still open, 12 days left” on yours, “Answer it under Waiting on you.” on theirs.</p></div>
+<div class="it"><span class="n">6</span><p><b>Cleared asks show.</b> <b>Withdrawn asks never show on the holder’s side</b>: they were never told, and history must not tell them now.</p></div>
+<div class="it"><span class="n">7</span><p><b>Month groups, newest first, 30 at a time</b>, then “Show older requests” (Collection history’s “Show older changes”).</p></div>
+<div class="it"><span class="n">8</span><p><b>An empty tab names where requests come from</b> (H3), since one tab can be empty while the other is not.</p></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 24px">
+<div class="box">
+<p class="lab"><b>For Hugh</b> · two calls, each with a recommendation</p>
+<div class="it"><span class="n">Q1</span><p><b>How far back?</b> <b>Recommended: everything that’s kept.</b> Rows live until the account is deleted, and a player’s requests number in the dozens, so paging covers it with no retention job. Other option: the last 90 days, like Collection history.</p></div>
+<div class="it"><span class="n">Q2</span><p><b>Requests with ex-friends?</b> <b>Recommended: hidden</b>, with a faint foot line only when the player has some: “Requests with people you’re no longer friends with don’t show here. Add them back and they return.” (H2). Rows survive an unfriend, so re-friending brings them back, and every read keeps the friend-grant join (<code style="font:12px 'IBM Plex Mono',monospace;color:#CF8745">check:social-reads</code>). Other option: keep them as “A former friend”, which needs a read outside the grant.</p></div>
+</div>
+<div class="box">
+<p class="lab"><b>Gaps</b> for the build</p>
+<div class="it"><span class="n">G1</span><p><b>loadRequestHistory(viewerId, { direction, cursor })</b> in src/lib/social/, joining friend_links on the viewer, newest first, 30 a page. The holder direction leaves withdrawn out.</p></div>
+<div class="it"><span class="n">G2</span><p><b>No time is stored for a withdrawal.</b> Recommended: a nullable withdrawn_at, written by both withdraw paths. Without it, a withdrawn row shows only the day it was asked. An expired ask’s date is created_at + 14 days, as Your requests already derives it.</p></div>
+<div class="it"><span class="n">G3</span><p><b>The foot line’s trigger</b> is a count of the viewer’s own rows whose other side is no longer a friend: no names read.</p></div>
+<div class="it"><span class="n">G4</span><p><b>Card details</b> needs CardDetailProvider around the list, as on /friends.</p></div>
+<div class="it"><span class="n">G5</span><p><b>Copy review</b> owed on the new strings before the build.</p></div>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

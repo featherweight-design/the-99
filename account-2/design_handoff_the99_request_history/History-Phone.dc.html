@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Request history phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:flex;flex-direction:column;gap:10px;width:390px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1362px; min-height: 1690px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1200px">
+<p class="lab"><b>H</b> · /friends/requests · 390</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Every request, how it ended, and when</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">Your requests’ shipped rows with no ✕ and no Ask again. The whole row opens card details.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="ph"><p class="lab"><b>H1</b> · You asked</p><img class="shot" src="art/H1-phone.png" alt="Request history, You asked, grouped by month"><p class="cap">Every outcome: Requested, Accepted, Declined, Withdrawn, No answer. A cleared ask still shows. <b>Show older requests</b> after 30.</p></div>
+<div class="ph"><p class="lab"><b>H2</b> · Asked of you</p><img class="shot" src="art/H2-phone.png" alt="Request history, Asked of you"><p class="cap">An open one says <b>where to answer</b>, never offers Yes or No here. No withdrawn rows on this side. The foot line shows only when an ex-friend has rows (Q2).</p></div>
+<div class="ph"><p class="lab"><b>H3</b> · an empty tab</p><img class="shot" src="art/H3-phone.png" alt="Request history, Asked of you empty"><p class="cap">One tab can be empty while the other is not: it names where requests come from.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1362,"height":1690}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
