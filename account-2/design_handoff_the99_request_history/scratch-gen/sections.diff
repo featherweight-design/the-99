@@ -126,3 +126,76 @@
        <Face name={friend.displayName} commander={friend.commander} size={40} />
        <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
          {linkable ? (
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/pods-pane.orig.tsx	2026-11-18 04:11:00.902386004 +0000
++++ src/components/social/pods-pane.tsx	2026-11-18 04:11:00.950740591 +0000
+@@ -26,6 +26,7 @@
+ } from "../../app/friends/actions";
+ import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
+ import { PodCard } from "./pod-card";
++import { BAND, PANEL } from "./section-panel";
+ import { PodAddFriends } from "./pod-add-friends";
+ import { compareNames, type ThirdPartyName } from "../../lib/person-name";
+ import { SocialToast, type SocialToastState } from "./social-toast";
+@@ -226,8 +227,8 @@
+     : [];
+ 
+   return (
+-    <section aria-labelledby="pods-head" className="mt-[24px] md:mt-[34px]" data-testid="pods-pane">
+-      <div className="flex min-h-[44px] items-center justify-between [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]">
++    <section aria-labelledby="pods-head" className={PANEL} data-testid="pods-pane">
++      <div className={BAND}>
+         <h2 id="pods-head" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{copy.head(shown.length)}</h2>
+         <button
+           ref={newPodRef}
+@@ -243,6 +244,7 @@
+           {copy.newPod}
+         </button>
+       </div>
++      <div className="flex flex-col gap-[12px] p-[12px] md:p-[14px] [&>*]:mt-0!">
+       {creating ? (
+         <form
+           className="mt-[12px] flex flex-col gap-[8px] rounded-[12px] bg-[color:var(--surface-rail)] p-[14px] [border:1px_solid_var(--border-strong)] md:mt-[14px] md:px-[18px] md:py-[16px]"
+@@ -341,6 +343,7 @@
+         />
+       ) : null}
+       <SocialToast toast={toast} onDone={() => setToast(null)} />
++    </div>
+     </section>
+   );
+ }
+--- /tmp/claude-0/-home-user/40e15fe9-6ebe-53e9-852f-8a4c8ea86823/scratchpad/friends-view.orig.tsx	2026-11-18 04:11:00.903869187 +0000
++++ src/components/social/friends-view.tsx	2026-11-18 04:12:02.720280175 +0000
+@@ -85,6 +85,7 @@
+   profile,
+   pods,
+   waiting,
++  side,
+   friends,
+   links,
+   accepted,
+@@ -102,6 +103,8 @@
+   pods?: ReactNode;
+   /** Waiting on you (menu and Home PR 7): the first section under the head; absent when it has no rows. */
+   waiting?: ReactNode;
++  /** PROPOSAL (request history R1c): the top of the right column from 1180 (Your requests), after Friends below it. */
++  side?: ReactNode;
+   friends: Friend[];
+   links: OpenInvite[];
+   /** The friend Accept just made (E10), resolved on the server from the URL's `publicId`; null for none. */
+@@ -454,7 +457,7 @@
+           inviteCount={invites && !friendLinks ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
+           decksSeen={decksSeen}
+         />
+-        <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_420px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
++        <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_448px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
+           <div data-friends-col="left" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
+             {waiting}
+             <FriendsList
+@@ -469,6 +472,7 @@
+             />
+           </div>
+           <div data-friends-col="right" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
++            {side}
+             {pods}
+             <OpenLinks
+               links={open}

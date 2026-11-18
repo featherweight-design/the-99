@@ -1,4 +1,4 @@
-# The 99 — Card request history · R1b · awaiting Hugh's review
+# The 99 — Card request history · R1c · awaiting Hugh's review
 
 Account 2, 2026-11-18. Issue featherweight-design/the-99#2984. Canvas (account 2): "The 99 · Request History R1".
 Open the `.dc.html` files with `support.js` beside them; frames are PNGs in `art/` (the shipped shell and Friends page
@@ -7,6 +7,11 @@ rendered from main with the shipped CSS, with the proposal applied).
 ## R1b (Hugh, 2026-11-17)
 - **B1 Headings live inside their box.** Waiting on you, Your requests, Friends and each history month are one panel (`PANEL`): a header band (`BAND`: shipped section-head type on `--surface-rail`, hairline under, links at its end via `BAND_LINK`) above the rows. No heading on a bare hairline. `scratch-gen/section-panel.tsx`, `scratch-gen/sections.diff`.
 - **B2 Empty states get a drawn mark**: `HandoverMark` (friend's dashed card, the passed card with accent edge and spare glyph, an arc), CardFan inks, then title and one line (`PanelEmpty`, sm in Your requests E2, lg on an empty history tab H3).
+
+## R1c (Hugh, 2026-11-17: boxes and empty states approved; two columns, full layout with pods)
+- **C1 Your requests moves to the top of the right column from 1180** (`FriendsView` gains `side`), above Pods and open links. Left: Waiting on you, then Friends. At 1440 with three waiting and three requests, Friends' heading moves from ~880px (at the fold) to ~520px. Board `Layout` (D1 today's split boxed, D2 recommended, P1 phone).
+- **C2 Phone order follows the DOM**: Waiting on you, Friends, Your requests, Pods (Friends moves up on phone too; reading order = screen order).
+- **C3 Pods is boxed too** (band holds "Pods · N" + New pod; pod cards inside with 12-14px padding). Right column grows 420 → 448 so a pod's three seats still fit.
 
 ## Calls
 1. **Way in: "History ›" on Your requests' head**, after "newest first" (E1). Nothing open but a history: the head and

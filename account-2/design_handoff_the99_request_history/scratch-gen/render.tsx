@@ -8,6 +8,8 @@ import { FriendsView } from "../src/components/social/friends-view";
 import { YourRequests } from "../src/components/social/your-requests";
 import { RequestHistory, type HistoryRow } from "../src/components/social/request-history";
 import { named } from "../src/lib/person-name/mint";
+import { WaitingOnYou } from "../src/components/social/waiting-on-you";
+import { PodsPane } from "../src/components/social/pods-pane";
 
 mkdirSync("dz/frames", { recursive: true });
 const NOW = new Date("2026-11-18T02:00:00Z");
@@ -85,4 +87,28 @@ for (const dev of ["phone", "desk"] as Dev[]) {
   app(`H2-${dev}`, dev, <RequestHistory asked={ASKED} ofYou={OFYOU} tab="ofYou" exFriends />, { path: "/friends", vh: dev === "phone" ? 1040 : 900 });
 }
 app("H3-phone", "phone", <RequestHistory asked={ASKED} ofYou={[]} tab="ofYou" />);
+
+// R1c: the whole page with pods, at 1440, the shipped split (D1) and the proposal (D2), and the phone order (P1).
+const side = (k: K) => ({ publicId: k, displayName: F[k].name, commander: F[k].commander });
+const WAIT: any[] = [
+  { key: "fr-chris", kind: "friend-request", createdAt: ago(0.1), unseen: true, request: { requester: { publicId: "sam", displayName: named("Sam"), commander: null }, via: "link", sentAt: ago(0.1), noticedAt: ago(0.1), unseen: true } },
+  { key: "sr-1", kind: "spare-request", createdAt: ago(1), unseen: true, ask: { id: "s1", oracleId: "g", card: C.ghalta, copies: 1, deckName: named("Stompy"), spare: 2, asker: side("peter"), createdAt: ago(1), daysLeft: 13 } },
+  { key: "tm-1", kind: "trade-match", createdAt: ago(2), unseen: false, card: { oracleId: "j", ...C.jace }, friend: side("colin"), pods: [named("Thursday pod")], askable: true },
+];
+const LIVE3 = [...LIVE, live("l3", "chris", C.gisa, "no", 6)];
+const M = (k: K, owner = false, you = false): any => ({ publicId: you ? "me" : k, displayName: you ? named("Wren Calloway") : F[k].name, joinedAt: ago(30), isOwner: owner, isYou: you, isFriend: !you, commander: you ? { oracleId: "w", name: "Lathliss", artCropUri: "art/art-lathliss.jpg" } : F[k].commander });
+const PODS: any[] = [
+  { id: "p1", name: named("Thursday pod"), isOwner: true, members: [M("colin", false, true), M("colin"), M("max"), M("peter")].map((m, i) => i === 0 ? { ...m, isOwner: true } : m), nextOwner: { publicId: "colin", displayName: F.colin.name } },
+  { id: "p2", name: named("Cube night"), isOwner: false, members: [{ ...M("chris"), isOwner: true }, M("colin", false, true), M("max")], nextOwner: null },
+];
+const podsEl = <PodsPane pods={PODS} sharedIds={["p1"]} friends={FRIENDS as any} ruleZero={{ tables: [], now: NOW }} />;
+const full = (split: "shipped" | "proposed") => (
+  <FriendsView profile={ME} friends={FRIENDS as any} links={[]} accepted={null} origin="https://the-99.dev" nowMs={NOW.getTime()} maxLinks={10}
+    invites={null} decksSeen={{ seeDecks: true, seeUnfinished: false } as any} friendLinks={true} pods={podsEl}
+    waiting={<><WaitingOnYou rows={WAIT} now={NOW} />{split === "shipped" && <YourRequests rows={LIVE3} now={NOW} history />}</>}
+    side={split === "proposed" ? <YourRequests rows={LIVE3} now={NOW} history /> : undefined} />
+);
+app("D1-wide", "wide" as any, full("shipped"), { vh: 1220 });
+app("D2-wide", "wide" as any, full("proposed"), { vh: 1370 });
+app("P1-phone", "phone", full("proposed"), { vh: 2600 });
 writeFileSync("dz/frames.json", JSON.stringify(frames));

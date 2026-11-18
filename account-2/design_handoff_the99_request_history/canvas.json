@@ -3,6 +3,7 @@
 "Main.dc.html":{"x":0,"y":0,"w":1400,"h":1800,"title":"Request history R1 · calls, questions, gaps"},
 "Entry.dc.html":{"x":1480,"y":0,"w":1622,"h":1480,"title":"E · The way in, on Friends"},
 "History-Phone.dc.html":{"x":0,"y":1920,"w":1362,"h":1690,"title":"H · Request history · phone"},
-"History-Desktop.dc.html":{"x":1442,"y":1920,"w":1452,"h":960,"title":"H · Request history · desktop"}
+"History-Desktop.dc.html":{"x":1442,"y":1920,"w":1452,"h":960,"title":"H · Request history · desktop"},
+"Layout.dc.html":{"x":3182,"y":0,"w":1892,"h":1990,"title":"R1c · Friends with pods, full layout"}
 },
-"order":["Main.dc.html","Entry.dc.html","History-Phone.dc.html","History-Desktop.dc.html"],"notes":{},"designSystems":[]}
+"order":["Main.dc.html","Entry.dc.html","History-Phone.dc.html","History-Desktop.dc.html","Layout.dc.html"],"notes":{},"designSystems":[]}
