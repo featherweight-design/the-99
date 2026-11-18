@@ -40,8 +40,30 @@
            <ul
              aria-labelledby="availability-claims-heading"
 --- a/src/components/collection/history-list.tsx	2026-11-18 03:02:34.896857503 +0000
-+++ b/src/components/collection/history-list.tsx	2026-11-18 03:02:34.967502787 +0000
-@@ -143,10 +143,19 @@
++++ b/src/components/collection/history-list.tsx	2026-11-18 13:39:12.210616395 +0000
+@@ -50,13 +50,20 @@
+         <span className="block truncate text-[13.5px] text-[color:var(--fg)]">{row.name}</span>
+         {where ? <span className="block font-mono text-[11px] text-[color:var(--fg-faint)]">{where}</span> : null}
+         {rowDecks && row.wentTo ? (
+-          <span className="block text-[12px] text-[color:var(--fg-muted)]">
++          <span className="flex items-center gap-[10px]">
++          <span className="block min-w-0 flex-1 text-[12px] text-[color:var(--fg-muted)]">
+             {row.wentTo.soft ? gotItCopy.history.wentTo.leadSoft : gotItCopy.history.wentTo.lead}{" "}
+             <DeckNames
+               decks={cartDecksOf(row.wentTo.decks.map((d) => d.deckId), new Map(Object.entries(rowDecks)))}
+               linked={false}
+             />
+             {"."}
++            {/* PROPOSAL #2980: the record stays; a later move is said after it. */}
++            {(row as any).proposal?.now ? <>{" "}Now <span style={{ color: "var(--fg)" }}>{(row as any).proposal.now}</span> has it.</> : null}
++          </span>
++          {(row as any).proposal?.change ? (
++            <button type="button" aria-label={`Change where ${row.name} goes`} className="-my-[10px] min-h-[44px] flex-none text-[13px] text-[color:var(--accent-text)]">Change</button>
++          ) : null}
+           </span>
+         ) : null}
+       </span>
+@@ -143,10 +150,20 @@
  /** Where an add's or an upload's copies went, kept at arrival: one line under the entry. */
  function WentToLine({ wentTo, linked }: { wentTo: NonNullable<HistoryListEntry["wentTo"]>; linked: boolean }) {
    const w = gotItCopy.history.wentTo;
@@ -55,6 +77,7 @@
 +    <div className="flex items-center gap-[10px] pr-[14px]">
 +      <p className={DECK_LINE + " min-w-0 flex-1"}>
 +        {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
++        {(x as any)?.movable ? <>{" "}<a href="#" className="text-[color:var(--accent-text)] underline underline-offset-2">Change where {(x as any).movable} cards go</a></> : null}
 +        {x?.now ? <>{" "}Now <span style={{ color: "var(--fg)" }}>{x.now}</span> has it.</> : null}
 +      </p>
 +      {x?.change ? (
@@ -64,6 +87,31 @@
    );
  }
  
+@@ -157,8 +174,13 @@
+  * before an upload's placement was stamped has no entry line, so its rows speak for themselves.
+  */
+ function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<Record<string, string>> | null }) {
+-  const groups = useMemo(() => groupRows(rows), [rows]);
+-  const [picked, setPicked] = useState<RowGroup | null>(null);
++  // PROPOSAL #2980: a long entry whose cards still have a choice gets a last tab, Can move, holding just those rows.
++  const groups = useMemo(() => {
++    const g: { group: any; rows: HistoryRow[] }[] = groupRows(rows);
++    const movable = rows.filter((r) => (r as any).proposal?.change);
++    return movable.length > 0 ? [...g, { group: "move", rows: movable }] : g;
++  }, [rows]);
++  const [picked, setPicked] = useState<RowGroup | null>(((rows as any).__pick as RowGroup) ?? null);
+   const [shown, setShown] = useState(GROUP_FIRST);
+   const groupIds = useId();
+   if (rows.length === 0) return <p className="m-0 py-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.noRows}</p>;
+@@ -179,7 +201,7 @@
+           ids={{ tab: (g) => `${groupIds}-tab-${g}`, panel: (g) => `${groupIds}-panel-${g}` }}
+           segments={groups.map((g) => ({
+             value: g.group,
+-            label: `${c.groups[g.group]} ·`,
++            label: `${g.group === "move" ? "Can move" : c.groups[g.group as RowGroup]} ·`,
+             count: g.rows.length.toLocaleString("en-US"),
+           }))}
+           value={active.group}
 --- a/src/components/decks/copy-chooser-dialog.tsx	2026-11-18 03:02:34.904778209 +0000
 +++ b/src/components/decks/copy-chooser-dialog.tsx	2026-11-18 05:34:27.913262367 +0000
 @@ -20,8 +20,11 @@

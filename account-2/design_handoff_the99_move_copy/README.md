@@ -1,7 +1,7 @@
-# The 99 · Move a copy to another deck later (R1b, DRAFT)
+# The 99 · Move a copy to another deck later (R1c, DRAFT)
 
 Issue: featherweight-design/the-99 #2980. Account 2, 2026-11-18. Status: awaiting Hugh's review. No handoff PR until approved.
-Canvas: https://claude.ai/artifact/PXKbecyqx4VGUr9FwZxn2Q (boards Main, Details, Scenarios, Other, History, Desktop; frames in art/).
+Canvas: https://claude.ai/artifact/PXKbecyqx4VGUr9FwZxn2Q (boards Main, Details, Scenarios, Other, History, Desktop, Large; frames in art/).
 Every frame is the shipped component SSR'd from main with shipped CSS (amonkhet), proposal applied (scratch-gen/proposal.diff).
 
 ## Calls
@@ -17,7 +17,10 @@ Every frame is the shipped component SSR'd from main with shipped CSS (amonkhet)
    flip to buys it, the card goes into that deck's draft and gets the copy on commit; tap again undoes. A pick counts toward the row's cap.
    More than 6 decks: shipped SearchField `Find a deck` tops the list; it scrolls inside the chooser.
 4. **History door.** `Change` at the end of an add's `Went to …` line (same rule as 1), opens the same chooser. The record never changes;
-   after a move: `Went to A. Now B has it.` Opened multi-card entries: each row line gets its own Change (not drawn).
+   after a move: `Went to A. Now B has it.`
+4b. **Large entries (R1c, board L, from Hugh's 62-card capture).** Change goes on each card row's own `Went to …` line (RowLine; once per card,
+   as `wentTo` is), never on the entry's summary line when it names more than one deck. The summary line adds the link
+   `Change where N cards go`, which opens the entry on a new LAST tab `Can move · N` (after the shipped groups) holding only rows with a choice.
 5. Grammar matches the removal chooser (design_handoff_the99_collection_edit/addendum-removal-chooser).
 
 ## R1b scenarios
@@ -30,5 +33,5 @@ Did Mutant Menace already list Fabled Passage? Doesn't change the design, only w
 - G1 card details needs the contested card off a receipt (`loadContestedCard`) plus other committed decks whose color identity allows the card, with card counts.
 - G2 a kept pick for a draft add has no home (assignments need a committed version): pending pick applied at commit; one choice across both groups; counts toward the cap (extraGiven in proposal.diff).
 - G3 History `wentTo` is frozen at arrival; `Now X has it.` and Change need a live read per entry (only entries with a choice).
-- G4 strings DRAFT for /copy-review (Change sub, Other decks · N, N cards · makes N+1, adds it, adds it · gets it, Find a deck, foot lines, Now X has it; plural title for 2+ copies). No `claim` in any string.
+- G4 strings DRAFT for /copy-review (Change sub, Change where N cards go, Can move · N, Other decks · N, N cards · makes N+1, adds it, adds it · gets it, Find a deck, foot lines, Now X has it; plural title for 2+ copies). No `claim` in any string.
 - G5 amends design_handoff_the99_card_assignments (chooser limited to /changes + receipts).

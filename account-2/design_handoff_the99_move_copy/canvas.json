@@ -5,6 +5,7 @@
 "Scenarios.dc.html":{"x":2922,"y":0,"w":1362,"h":1180,"title":"M · More decks than copies · phone"},
 "Other.dc.html":{"x":0,"y":1620,"w":2222,"h":1300,"title":"O · Other decks · phone"},
 "History.dc.html":{"x":2302,"y":1620,"w":1362,"h":1120,"title":"H · From collection History · phone"},
-"Desktop.dc.html":{"x":0,"y":3040,"w":1452,"h":1720,"title":"D · Desktop"}
+"Desktop.dc.html":{"x":0,"y":3040,"w":1452,"h":1720,"title":"D · Desktop"},
+"Large.dc.html":{"x":1532,"y":3040,"w":1882,"h":2560,"title":"L · A large History entry · phone + desktop"}
 },
-"order":["Main.dc.html","Details.dc.html","Scenarios.dc.html","Other.dc.html","History.dc.html","Desktop.dc.html"],"notes":{},"designSystems":[]}
+"order":["Main.dc.html","Details.dc.html","Scenarios.dc.html","Other.dc.html","History.dc.html","Desktop.dc.html","Large.dc.html"],"notes":{},"designSystems":[]}

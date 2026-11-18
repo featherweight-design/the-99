@@ -7,7 +7,7 @@ import { NavRail, TabBar, MobileHeader } from "../src/components/shell/nav";
 import { AvailabilityDetail } from "../src/components/cards/card-detail-blocks";
 import { CopyChooserDialog } from "../src/components/decks/copy-chooser-dialog";
 import { OtherDecks, type OtherDeck } from "../src/components/decks/other-decks";
-import { HistoryList } from "../src/components/collection/history-list";
+import { HistoryList, HistoryEntryItem } from "../src/components/collection/history-list";
 
 mkdirSync("dz/frames", { recursive: true });
 const NOW = new Date("2026-11-18T02:00:00Z").getTime();
@@ -51,6 +51,39 @@ const ENTRIES = (moved: boolean) => [
   entry("e3", "2026-11-16T16:05:00Z", "Arcane Signet", went({ id: "dt", name: "Tam's Sweepers" }, {})),
 ];
 const history = (moved: boolean) => <HistoryList initial={ENTRIES(moved)} nextBefore={null} nowMs={NOW} reachesBack={new Date(NOW - 90 * 864e5)} reachesBackLabel="Aug 20" shipLabel="Aug 1" />;
+
+// ── R1c: a large History entry (Hugh's live capture, 62 cards to 9 decks).
+const BD: Record<string, string> = { mm: "HD Tune - Mutant Menace", zo: "HD - Zombies", pa: "HD Tune - Prismari Artistry", bi: "HD - Bilm",
+  gi: "HD - Gishath", ur: "HD - Urza", ka: "HD - Kaalia", ny: "HD - Nymris", ob: "HD - Obeka" };
+const R = (name: string, set: string, num: string, before: number, after: number, went?: [string, boolean?], prop?: any): any => ({
+  oracleId: name, setCode: set, collectorNumber: num, finish: "nonfoil", name,
+  before: before ? { quantity: before, scryfallId: null, condition: null } : null, after: { quantity: after, scryfallId: null, condition: null },
+  ...(went ? { wentTo: { soft: went[1] ? true : undefined, decks: [{ deckId: went[0], copies: 1 }] } } : {}), ...(prop ? { proposal: prop } : {}),
+});
+const UP = (moved: boolean) => [
+  R("Deathcap Glade", "sos", "253", 1, 2, ["mm"], moved ? { change: true, now: BD.gi } : { change: true }),
+  R("Swiftfoot Boots", "fdn", "355", 1, 2), R("Sol Ring", "soc", "128", 2, 3, ["bi", true]),
+  R("An Offer You Can't Refuse", "snc", "51", 1, 2, ["mm"], { change: true }),
+  R("Sol Ring", "m3c", "305", 1, 3), R("Sol Ring", "frc", "21", 1, 3), R("Arcane Signet", "fic", "332", 1, 3), R("Arcane Signet", "frc", "20", 1, 3),
+  R("Command Tower", "cmm", "1003", 2, 3), R("Exotic Orchard", "cmm", "1011", 1, 2), R("Path of Ancestry", "cmm", "1018", 1, 2),
+  R("Thought Vessel", "cmm", "403", 1, 2), R("Mind Stone", "cmm", "394", 1, 2),
+];
+const NEWR = Array.from({ length: 49 }, (_, i) => i === 3
+  ? R("Fabled Passage", "w17", "247", 0, 1, ["gi"], { change: true })
+  : R(["Llanowar Elves", "Counterspell", "Cultivate", "Beast Within", "Rhystic Study", "Dockside Extortionist", "Smothering Tithe"][i % 7], "cmm", String(300 + i), 0, 1, i % 5 === 0 ? [["zo", "pa", "ur", "ka"][i % 4]] : undefined));
+const BIG = entry("big", "2026-11-18T10:04:00Z", "Deathcap Glade", { decks: { named: [{ id: "mm", name: BD.mm }, { id: "zo", name: BD.zo }, { id: "pa", name: BD.pa }], more: 6, gone: 0 }, soft: false, proposal: { movable: 3 } });
+Object.assign(BIG, { rowCount: 62, raised: 62, copiesUp: 75 });
+const bigDetail = (pick?: string, moved = false): any => { const rows: any = [...UP(moved), ...NEWR]; if (pick) rows.__pick = pick; return { ...BIG, rows, sync: null, rowDecks: BD }; };
+const bigList = (open: boolean, pick?: string, moved = false) => (
+  <section className="px-[16px] pb-[32px] pt-[18px] md:px-[24px] md:pt-[24px]">
+    <div className="mt-[4px]">
+      <h2 className="m-0 mb-[6px] font-mono text-[10.5px] font-normal uppercase tracking-[0.14em] text-[color:var(--fg-muted)]">Today · Nov 18</h2>
+      <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
+        <HistoryEntryItem e={BIG} title="Deathcap Glade and 61 more" isOpen={open} detail={open ? bigDetail(pick, moved) : undefined} onToggle={() => {}} onRevert={() => {}} onRetry={() => {}} />
+      </ul>
+    </div>
+  </section>
+);
 const two = ["dg", "dh"], three = ["dg", "dh", "da"];
 
 type Dev = "phone" | "desk";
@@ -114,5 +147,10 @@ emit("H2-phone", "phone", <>{shell("/collection", history(false))}{chooser(conte
 emit("H3-phone", "phone", shell("/collection", history(true)), 760);
 emit("H1-desk", "desk", <>{shell("/collection", history(false))}{chooser(contested(1, two, ["dg"]), od(OTHER(), true))}</>, 900);
 emit("H3-desk", "desk", shell("/collection", history(true)), 640);
+emit("L1-phone", "phone", shell("/collection", bigList(false)), 760);
+emit("L2-phone", "phone", shell("/collection", bigList(true)), 1500);
+emit("L3-phone", "phone", shell("/collection", bigList(true, "move")), 1000);
+emit("L4-phone", "phone", shell("/collection", bigList(true, "move", true)), 1000);
+emit("L3-desk", "desk", shell("/collection", bigList(true, "move")), 760);
 writeFileSync("dz/frames.json", JSON.stringify(frames));
 console.log("ok", frames.length);
