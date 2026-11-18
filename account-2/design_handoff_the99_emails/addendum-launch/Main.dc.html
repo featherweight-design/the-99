@@ -24,28 +24,34 @@ table.sj td{padding:9px 8px;border-bottom:1px solid #2A241D;vertical-align:top;l
 table.sj td b{color:#EDE6D8}
 </style>
 </helmet>
-<div style="width: 1600px; height: 1500px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 24px">
+<div style="width: 1600px; height: 1860px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 24px">
 <div style="display: flex; flex-direction: column; gap: 8px">
-<p class="k">Launch email · R2 · account 2 · 2026-11-18 · addendum to branded emails R2</p>
+<p class="k">Launch email · R2b · account 2 · 2026-11-18 · addendum to branded emails R2</p>
 <h2 style="margin: 0; font: 700 30px 'Cinzel', serif">The day The 99 opens, with some sizzle</h2>
 <p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1480px">Sent once through Resend to every address on <code>launch_list</code>, HTML plus a plain-text twin, on the shipped shell. Every frame here is a screenshot of <code>addendum-launch/templates/launch.html</code> rendered in Chromium at 648 and 375. All copy is DRAFT for <code>/copy-review</code>.</p>
 </div>
 <div class="box">
 <p class="k">What changed from R1 (Hugh, 2026-11-18)</p>
 <p class="li"><b>1 · The codes line is gone</b> (“You don’t need an invite…”), with the hairline above it.</p>
-<p class="li"><b>2 · More imagery, more sizzle.</b> The hero is a <b>fan of real commander cards</b> (Giada, Jace, Y’shtola, Tam) around The 99’s card back reading NOW OPEN, in the brass glow. The heading is the landing’s own headline, <b>“Your next commander is already in your binder”</b>, with “Now open” in the kicker. Then <b>four feature rows</b> under the landing’s “From your binder to a finished deck”, each with a capture of the shipped landing: the commander tiles with fit scores, Suggested changes’ example, Tam’s written read, and the 15 welcome credits block. Image and words sit side by side at 600, alternating sides, and stack image-first on a phone.</p>
+<p class="li"><b>2 · More imagery, more sizzle.</b> The hero is a <b>fan of real commander cards</b> (Giada, Jace, Y’shtola, Tam) around The 99’s card back reading NOW OPEN, in the brass glow. The heading is the landing’s own headline, <b>“Your next commander is already in your binder”</b>, with “Now open” in the kicker. Then <b>four features</b> under the landing’s “From your binder to a finished deck”, each with a capture of the shipped landing: the commander tiles with fit scores, Suggested changes’ example, Tam’s commander read, and the 15 welcome credits block.</p>
 <p class="li"><b>3 · The tagline.</b> The footer line is <b>“99 problems, but your commander ain’t one.”</b> in place of “Search your library for a commander.” This is <code>emailShellCopy.flavor</code>, so it changes in <b>every</b> email (invite, codes, Clerk’s templates) with one string. The flyer’s pitch is a separate string and stays as it is unless you want that changed too.</p>
+</div>
+<div class="box">
+<p class="k">R2b · Hugh’s second pass (2026-11-18)</p>
+<p class="li"><b>Two Sign up free buttons:</b> one right under the lead for readers who already know, one after the features. Same words, same link, so it reads as one action.</p>
+<p class="li"><b>Each image under its heading:</b> every feature is now one box, in one column at every width: the numbered label, the title, the sentence, then the capture of what it describes.</p>
+<p class="li"><b>Copy pass</b> (plainer, no slogans): “Written for real” → <b>“Read why a commander works”</b> / “Every commander page explains how its deck plays, and every precon has an Overview. Both are free.” · “Tune it in your own words” → <b>“Change a deck by describing it”</b> / “…It suggests cards to add and cut, starting with ones you own, and says why for each.” · “15 welcome credits” → <b>“Start with 15 free credits”</b> / “Enough to try every writing tool three times before you pay anything. You also get 1 free credit every day.” · F1 “…ranked by how much of its deck you already have.” · lead “The 99 is open to everyone today. Add the cards you own and see which decks they can build.” · preheader “Make a free account and see what your cards can build. You start with 15 credits.” The formal /copy-review still runs before the build.</p>
 </div>
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; align-items: start">
 <div class="box">
 <p class="k">Subject and preheader</p>
 <table class="sj">
 <tr><th>Subject</th><th>Preheader</th></tr>
-<tr><td><b>The 99 is open</b><span class="rec">REC</span></td><td>Make your free account and see what your binder can build. 15 welcome credits are waiting.</td></tr>
+<tr><td><b>The 99 is open</b><span class="rec">REC</span></td><td>Make a free account and see what your cards can build. You start with 15 credits.</td></tr>
 <tr><td><b>You asked us to tell you: The 99 is open</b></td><td>Same preheader. Longer, but names why it came.</td></tr>
 <tr><td><b>Your binder has a deck in it</b></td><td>The 99 is open to everyone. Make your free account today.</td></tr>
 </table>
-<p class="li">Still one call to action: <b>Sign up free</b> after the features, with “Free to join. No card details.”</p>
+<p class="li">One action, two buttons: <b>Sign up free</b> under the lead and after the features, the second with “Free to join. No card details.”</p>
 </div>
 <div class="box">
 <p class="k">Unchanged from R1</p>
@@ -70,7 +76,7 @@ table.sj td b{color:#EDE6D8}
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1500}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1860}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

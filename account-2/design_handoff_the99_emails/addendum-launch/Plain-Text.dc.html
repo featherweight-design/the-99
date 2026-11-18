@@ -19,23 +19,26 @@ code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
 .hd{background:#1E1A15;border:1px solid #3A3229;border-radius:10px;padding:16px 18px;font:12.5px/1.7 'IBM Plex Mono',monospace;color:#C6B79A;white-space:pre-wrap;margin:0}
 </style>
 </helmet>
-<div style="width: 1400px; height: 1000px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="width: 1400px; height: 1080px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
 <div style="display: flex; flex-direction: column; gap: 8px">
 <p class="k">T · the plain-text twin and the headers</p>
 <h2 style="margin: 0; font: 700 26px 'Cinzel', serif">Same words, one layout</h2>
-<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1300px">The shipped plain-text rules: the first line is the heading as a sentence, the link alone after a label ending in a colon, the four features as a dash list, then <code>--</code>, the reason, the unsubscribe line with its link alone on the next line, the tagline, the replies line and the site. Straight quotes. <code>addendum-launch/templates/launch.txt</code> holds the placeholders.</p>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 1300px">The shipped plain-text rules: the first line is the heading as a sentence, the sign-up link alone after a label ending in a colon (once after the lead, once after the features), the four features as a dash list, then <code>--</code>, the reason, the unsubscribe line with its link alone on the next line, the tagline, the replies line and the site. Straight quotes. <code>addendum-launch/templates/launch.txt</code> holds the placeholders.</p>
 </div>
 <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 28px; align-items: start">
 <div style="display: flex; flex-direction: column; gap: 10px">
 <p class="k">T1 · from the landing page</p>
 <p class="sj">The 99 is open</p>
-<pre class="tx">Your next commander is already in your binder. The 99 is open to everyone, starting today.
+<pre class="tx">Your next commander is already in your binder. The 99 is open to everyone today.
+
+Sign up free:
+https://the-99.dev/sign-up
 
 From your binder to a finished deck:
-- See what you can build. Every commander you own, ranked by how much of its deck is already in your binder.
-- Tune it in your own words. Say what you want from the deck. It picks cards to add and cut, from your collection first, and says why for each.
-- Written for real. Every commander page opens with why it's worth building. Every precon has an Overview. Both are free to read.
-- 15 welcome credits. Enough to run every writing tool three times before you spend a thing. Plus 1 free credit every day.
+- See what you can build. Every commander you own, ranked by how much of its deck you already have.
+- Change a deck by describing it. Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.
+- Read why a commander works. Every commander page explains how its deck plays, and every precon has an Overview. Both are free.
+- Start with 15 free credits. Enough to try every writing tool three times before you pay anything. You also get 1 free credit every day.
 
 Sign up free:
 https://the-99.dev/sign-up
@@ -63,7 +66,7 @@ List-Unsubscribe-Post: List-Unsubscribe=One-Click</pre>
 </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1000}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1080}}'>
 class Component extends DCLogic {
 renderVals() { return {}; }
 }

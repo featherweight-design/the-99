@@ -4,23 +4,24 @@
 export const launchEmailCopy = {
   subject: "The 99 is open",
   /** Alternatives drawn on Main (Q1): "You asked us to tell you: The 99 is open", "Your binder has a deck in it". */
-  preheader: "Make your free account and see what your binder can build. 15 welcome credits are waiting.",
+  preheader: "Make a free account and see what your cards can build. You start with 15 credits.",
   fanAlt: "A fan of commander cards around The 99’s card back, which reads Now open",
   /** The 99 card back's word at the centre of the fan. */
   fanWord: "NOW OPEN",
   kicker: "Now open",
   /** The landing's hero title, shipped. */
   heading: "Your next commander is already in your binder",
-  lead: "The 99 is open to everyone, starting today. Bring the cards you own and see every deck hiding in them.",
-  textLead: "Your next commander is already in your binder. The 99 is open to everyone, starting today.",
+  lead: "The 99 is open to everyone today. Add the cards you own and see which decks they can build.",
+  textLead: "Your next commander is already in your binder. The 99 is open to everyone today.",
   /** The landing's loop title, shipped. */
   section: "From your binder to a finished deck",
   features: [
-    { title: "See what you can build", body: "Every commander you own, ranked by how much of its deck is already in your binder.", alt: "Two commander tiles with their fit scores, 84 and 79 out of 100" },
-    { title: "Tune it in your own words", body: "Say what you want from the deck. It picks cards to add and cut, from your collection first, and says why for each.", alt: "Suggested changes for “More interaction”: add Chaos Warp and Abrade, cut Smokebraider" },
-    { title: "Written for real", body: "Every commander page opens with why it’s worth building. Every precon has an Overview. Both are free to read.", alt: "Tam, the Possibility, with why this commander is worth building" },
-    { title: "15 welcome credits", body: "Enough to run every writing tool three times before you spend a thing. Plus 1 free credit every day.", alt: "15 welcome credits when you join, plus 1 free credit every day" },
+    { title: "See what you can build", body: "Every commander you own, ranked by how much of its deck you already have.", alt: "Two commander tiles with their fit scores, 84 and 79 out of 100" },
+    { title: "Change a deck by describing it", body: "Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.", alt: "Suggested changes for “More interaction”: add Chaos Warp and Abrade, cut Smokebraider" },
+    { title: "Read why a commander works", body: "Every commander page explains how its deck plays, and every precon has an Overview. Both are free.", alt: "Tam, the Possibility, with why this commander is worth building" },
+    { title: "Start with 15 free credits", body: "Enough to try every writing tool three times before you pay anything. You also get 1 free credit every day.", alt: "15 welcome credits when you join, plus 1 free credit every day" },
   ],
+  /** Drawn twice: under the lead, and after the features with buttonFine. One action, one word, one link. */
   button: "Sign up free",
   textLinkLabel: "Sign up free:",
   buttonFine: "Free to join. No card details.",

@@ -12,7 +12,7 @@ TAGLINE = "99 problems, but your commander ain&#8217;t one."
 TAGLINE_TEXT = "99 problems, but your commander ain't one."
 
 SUBJECT = "The 99 is open"
-PREHEADER = "Make your free account and see what your binder can build. 15 welcome credits are waiting."
+PREHEADER = "Make a free account and see what your cards can build. You start with 15 credits."
 STEPS = [
     "Bring your collection. Upload a CSV, paste a list or scan your cards.",
     "See every commander you can already build, ranked by how much of its deck you own.",
@@ -46,44 +46,34 @@ def small(t, mb=26):
 
 FEATURES = [
     ("commanders", 376, "See what you can build",
-     "Every commander you own, ranked by how much of its deck is already in your binder.",
+     "Every commander you own, ranked by how much of its deck you already have.",
      "Two commander tiles with their fit scores, 84 and 79 out of 100"),
-    ("tune", 205, "Tune it in your own words",
-     "Say what you want from the deck. It picks cards to add and cut, from your collection first, and says why for each.",
+    ("tune", 205, "Change a deck by describing it",
+     "Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.",
      "Suggested changes for &#8220;More interaction&#8221;: add Chaos Warp and Abrade, cut Smokebraider"),
-    ("written", 200, "Written for real",
-     "Every commander page opens with why it&#8217;s worth building. Every precon has an Overview. Both are free to read.",
+    ("written", 200, "Read why a commander works",
+     "Every commander page explains how its deck plays, and every precon has an Overview. Both are free.",
      "Tam, the Possibility, with why this commander is worth building"),
-    ("credits", 176, "15 welcome credits",
-     "Enough to run every writing tool three times before you spend a thing. Plus 1 free credit every day.",
+    ("credits", 176, "Start with 15 free credits",
+     "Enough to try every writing tool three times before you pay anything. You also get 1 free credit every day.",
      "15 welcome credits when you join, plus 1 free credit every day"),
 ]
 
 
 def feature(i, key, h, title, body, alt):
-    """One feature row: a 240-wide capture of the shipped landing beside its words; the two cells are fluid-hybrid
-    inline-blocks, so they sit side by side at 600 and stack (image first) under 520. Image side alternates."""
-    img = (f'<div class="fcol" style="display:inline-block;vertical-align:middle;width:100%;max-width:240px;">'
-           f'<img src="{ORIGIN}/email/feature-{key}@2x.png" width="240" height="{h}" alt="{alt}" '
-           f'style="display:block;width:100%;max-width:240px;height:auto;margin:0 auto;border:1px solid {C["line"]};border-radius:10px;'
-           f'font:italic 13px/1.5 {SANS};color:{C["muted"]};"></div>')
-    txt = (f'<div class="fcol" style="display:inline-block;vertical-align:middle;width:100%;max-width:250px;">'
-           f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td class="ftxt" style="padding:0;text-align:left;">'
-           f'<p style="margin:0 0 6px;font:600 11px/1.4 {SANS};letter-spacing:.22em;text-transform:uppercase;color:{C["accent"]};">{D}&nbsp;&nbsp;{i:02d}</p>'
-           f'<p style="margin:0 0 8px;font:bold 21px/1.25 {SERIF};color:{C["h"]};">{title}</p>'
-           f'<p style="margin:0;font:15px/1.6 {SANS};color:{C["body"]};">{body}</p></td></tr></table></div>')
-    gap = '<!--[if mso]></td><td width="24"></td><td width="250" valign="middle"><![endif]-->'
-    gap_r = '<!--[if mso]></td><td width="24"></td><td width="240" valign="middle"><![endif]-->'
-    spacer = '<div class="fgap" style="display:inline-block;width:24px;font-size:0;line-height:0;">&nbsp;</div>'
-    if i % 2:  # image left
-        cells = (f'<!--[if mso]><table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0"><tr><td width="240" valign="middle"><![endif]-->'
-                 f'{img}{gap}{spacer}{txt}<!--[if mso]></td></tr></table><![endif]-->')
-    else:      # image right on desktop; dir=rtl keeps the image first when stacked
-        cells = (f'<!--[if mso]><table role="presentation" width="520" cellpadding="0" cellspacing="0" border="0" dir="rtl"><tr><td width="240" valign="middle" dir="ltr"><![endif]-->'
-                 f'{img}{gap_r}{spacer}<div dir="ltr" style="display:inline-block;vertical-align:middle;width:100%;max-width:250px;" class="fcol">{txt}</div><!--[if mso]></td></tr></table><![endif]-->')
-    d = '' if i % 2 else ' dir="rtl"'
-    return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px;"><tr>'
-            f'<td align="center"{d} style="font-size:0;text-align:center;">{cells}</td></tr></table>')
+    """One feature, one box: the numbered label, the title and the sentence, then its capture of the shipped landing
+    below them (320 wide, fluid on a phone). One column at every width, so each image sits under the words it shows."""
+    w = 320
+    hh = round(h * w / 240)
+    return (f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{C["elevated"]}" '
+            f'style="margin:0 0 20px;background:{C["elevated"]};border:1px solid {C["line"]};border-radius:12px;"><tr>'
+            f'<td class="fbox" align="center" style="padding:26px 28px 28px;text-align:center;">'
+            f'<p style="margin:0 0 8px;font:600 11px/1.4 {SANS};letter-spacing:.22em;text-transform:uppercase;color:{C["accent"]};">{D}&nbsp;&nbsp;{i:02d}</p>'
+            f'<p style="margin:0 0 8px;font:bold 22px/1.25 {SERIF};color:{C["h"]};">{title}</p>'
+            f'<p style="margin:0 auto 20px;max-width:400px;font:15px/1.6 {SANS};color:{C["body"]};">{body}</p>'
+            f'<img src="{ORIGIN}/email/feature-{key}@2x.png" width="{w}" height="{hh}" alt="{alt}" '
+            f'style="display:block;width:100%;max-width:{w}px;height:auto;margin:0 auto;border:1px solid {C["line"]};border-radius:10px;'
+            f'font:italic 13px/1.5 {SANS};color:{C["muted"]};"></td></tr></table>')
 
 
 def launch(source):
@@ -92,7 +82,8 @@ def launch(source):
              f'style="display:block;width:100%;max-width:520px;height:auto;border:0;font:italic 14px/1.5 {SANS};color:{C["muted"]};"></td></tr></table>')
     inner += kicker("Now open")
     inner += h1("Your next commander is already in your binder")
-    inner += p("The 99 is open to everyone, starting today. Bring the cards you own and see every deck hiding in them.", 30)
+    inner += p("The 99 is open to everyone today. Add the cards you own and see which decks they can build.", 24)
+    inner += button("Sign up free", "[[signup_url]]").replace("margin:0 auto 18px", "margin:0 auto 36px")
     inner += (f'<p style="margin:0 0 22px;font:600 12px/1.4 {SANS};letter-spacing:.22em;text-transform:uppercase;color:{C["muted"]};text-align:center;">'
               f'From your binder to a finished deck</p>')
     for i, f in enumerate(FEATURES, 1):
@@ -104,14 +95,15 @@ def launch(source):
     html = html.replace("<br>Replies to this email aren&#8217;t read.", f"<br>{UNSUB}<br>Replies to this email aren&#8217;t read.")
     html = html.replace(FLAVOR, TAGLINE)
     html = html.replace("    .h1 { font-size:26px !important; }",
-                        "    .h1 { font-size:26px !important; }\n    .fcol { max-width:100% !important; }\n    .fcol img { max-width:327px !important; }\n    .fgap { display:block !important; width:100% !important; height:16px !important; }\n    .ftxt { text-align:center !important; }")
+                        "    .h1 { font-size:26px !important; }\n    .fbox { padding:22px 18px 20px !important; }")
     return html
 
 
 def text(source):
     feats = "".join(f"- {t}. {re.sub('&#8217;', chr(39), b)}\n" for _, _, t, b, _ in FEATURES)
     return (f"Subject: {SUBJECT}\n\n"
-            "Your next commander is already in your binder. The 99 is open to everyone, starting today.\n\n"
+            "Your next commander is already in your binder. The 99 is open to everyone today.\n\n"
+            "Sign up free:\n[[signup_url]]\n\n"
             "From your binder to a finished deck:\n" + feats +
             "\nSign up free:\n[[signup_url]]\n\n"
             "Free to join. No card details.\n\n"

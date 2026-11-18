@@ -1,12 +1,15 @@
 Subject: The 99 is open
 
-Your next commander is already in your binder. The 99 is open to everyone, starting today.
+Your next commander is already in your binder. The 99 is open to everyone today.
+
+Sign up free:
+[[signup_url]]
 
 From your binder to a finished deck:
-- See what you can build. Every commander you own, ranked by how much of its deck is already in your binder.
-- Tune it in your own words. Say what you want from the deck. It picks cards to add and cut, from your collection first, and says why for each.
-- Written for real. Every commander page opens with why it's worth building. Every precon has an Overview. Both are free to read.
-- 15 welcome credits. Enough to run every writing tool three times before you spend a thing. Plus 1 free credit every day.
+- See what you can build. Every commander you own, ranked by how much of its deck you already have.
+- Change a deck by describing it. Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.
+- Read why a commander works. Every commander page explains how its deck plays, and every precon has an Overview. Both are free.
+- Start with 15 free credits. Enough to try every writing tool three times before you pay anything. You also get 1 free credit every day.
 
 Sign up free:
 [[signup_url]]

@@ -5,11 +5,11 @@
 "launch": {"view": "canvas"},
 "pages": [],
 "boards": {
-"Main.dc.html": {"x": 0, "y": 0, "w": 1600, "h": 1500, "title": "Launch email R2 · what changed, calls, open questions, gaps"},
-"Launch.dc.html": {"x": 1680, "y": 0, "w": 1700, "h": 3240, "title": "L · The launch email as sent, desktop and phone"},
-"Dark-Mode.dc.html": {"x": 0, "y": 3360, "w": 2300, "h": 3240, "title": "D · Light and dark clients, images off"},
-"Plain-Text.dc.html": {"x": 2380, "y": 3360, "w": 1400, "h": 1000, "title": "T · The plain-text twin and the headers"},
-"Unsubscribe.dc.html": {"x": 0, "y": 6720, "w": 2300, "h": 2000, "title": "U · Unsubscribed page, 390 and desktop"}
+"Main.dc.html": {"x": 0, "y": 0, "w": 1600, "h": 1860, "title": "Launch email R2b · what changed, calls, open questions, gaps"},
+"Launch.dc.html": {"x": 1680, "y": 0, "w": 1700, "h": 3600, "title": "L · The launch email as sent, desktop and phone"},
+"Dark-Mode.dc.html": {"x": 0, "y": 3720, "w": 2300, "h": 3600, "title": "D · Light and dark clients, images off"},
+"Plain-Text.dc.html": {"x": 2380, "y": 3720, "w": 1400, "h": 1080, "title": "T · The plain-text twin and the headers"},
+"Unsubscribe.dc.html": {"x": 0, "y": 7440, "w": 2300, "h": 2000, "title": "U · Unsubscribed page, 390 and desktop"}
 },
 "order": ["Main.dc.html", "Launch.dc.html", "Dark-Mode.dc.html", "Plain-Text.dc.html", "Unsubscribe.dc.html"],
 "notes": {},
