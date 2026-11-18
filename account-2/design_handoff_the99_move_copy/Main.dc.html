@@ -31,23 +31,26 @@ p{margin:0}
 <p class="lab"><b>Calls</b></p>
 <div class="it"><span class="n">1</span><p><b>Card details: “Change” at the end of the In your decks heading</b> (C1), only when you own the card and no copy is free, so some deck is buying it or every copy is held. With a copy to spare there is nothing to move, so no Change. It opens the shipped chooser over card details: sheet on a phone, 520 modal on desktop.</p></div>
 <div class="it"><span class="n">2</span><p><b>The chooser is the shipped one</b>, title “Where this copy goes”, sub “Swords to Plowshares · ×1 in your collection” (C2). Deck names are the control, gets it / buys it, tap the pick again to go back to first committed (C3). It writes the reservation (assignCopyFor) and changes no deck list or version; every claimant’s marks and buy state update.</p></div>
-<div class="it"><span class="n">3</span><p><b>Decks that don’t list it, under “Not in their lists”</b>. One that can take it offers <b>Add it</b>: the card goes into that deck’s draft and the pick is kept for its commit (C4, Undo in the foot line). One that can’t says why in its row, never hidden: <b>has 99 already</b>, <b>outside its colors</b>, <b>its commander</b>.</p></div>
+<div class="it"><span class="n">3</span><p><b>R1b · “Other decks · N”, closed by default</b> under the decks that list it (O). One row that opens in place, however many decks. Open, it lists <b>only decks whose colors allow the card</b>, in the same rows as above: the mark, the deck, its card count, <b>adds it</b>. A deck at 99 or more is still offered and says so (“99 cards · makes 100”). Decks outside its colors are left out, with one faint line saying so.</p></div>
+<div class="it"><span class="n">3b</span><p><b>One choice across both groups.</b> Picking another deck works like picking above: accent row, “adds it · gets it”, and the decks above flip to buys it. The card goes into that deck’s draft and gets the copy when you commit. Tap again to undo. Closed, the header names the pick (O3). With more than 6 decks, a <b>Find a deck</b> field tops the open list (F1, F2).</p></div>
+<div class="it"><span class="n">3c</span><p><b>More decks than copies</b> (M) is the shipped row’s own case: one copy uses round marks, two copies use square marks with “2 of 2 given”. A pick in Other decks counts toward that cap (M3).</p></div>
 <div class="it"><span class="n">4</span><p><b>History: “Change” at the end of an add’s “Went to …” line</b>, same rule as call 1, opening the same chooser (H1, H2). The record is never rewritten: after a move the line reads “Went to Giada’s Angels. Now Heroes of the Plains has it.” (H3). In an opened multi-card entry, each row’s line gets its own Change (not drawn).</p></div>
 <div class="it"><span class="n">5</span><p><b>Matches the removal chooser</b> (approved R1): the same row grammar (round mark, neutral default, accent pick, Back to first committed) and the same rule that a deck that can’t do something says why in its row.</p></div>
 </div>
 <div style="display: flex; flex-direction: column; gap: 24px">
 <div class="box">
-<p class="lab"><b>For Hugh</b> · three questions</p>
-<div class="it"><span class="n">Q1</span><p><b>Decks that don’t list the card?</b> <b>Recommended: Add it</b>, into the draft with the pick kept for commit (call 3). Other option: name them with “not in its list” and no action; you add it from the deck, then come back.</p></div>
-<div class="it"><span class="n">Q2</span><p><b>Decks outside its colors?</b> <b>Recommended:</b> a row each up to two, then one faint line “4 more decks are outside its colors.” Other option: a row each always.</p></div>
-<div class="it"><span class="n">Q3</span><p><b>Your Fabled Passage:</b> did Mutant Menace already list it when you added it? If yes, calls 1 and 4 fix it. If no, call 3 does.</p></div>
+<p class="lab"><b>R1b</b> · Hugh’s feedback, 2026-11-17</p>
+<div class="it"><span class="n">B1</span><p>Top section kept. “Not in their lists” is now <b>Other decks</b>, a disclosure, in the top section’s row grammar.</p></div>
+<div class="it"><span class="n">B2</span><p><b>Only compatible decks are shown.</b> Decks outside its colors are never an option. Decks at 99 or over stay offered.</p></div>
+<div class="it"><span class="n">B3</span><p>The disclosure holds up past 1 card and 2 decks: 3 decks with 1 copy (M1), 3 decks with 2 copies (M2, M3), 12 other decks with Find (F1, F2).</p></div>
+<div class="it"><span class="n">Q</span><p><b>One question:</b> did Mutant Menace already list Fabled Passage when you added it? It doesn’t change the design, only which door fixes your copy.</p></div>
 </div>
 <div class="box">
 <p class="lab"><b>Gaps</b> · for the build</p>
-<div class="it"><span class="n">G1</span><p>Card details needs the chooser’s card off a receipt (<b>loadContestedCard</b> has the shape) plus the player’s other committed decks with their reason (color identity, 99 count, commander). New read.</p></div>
-<div class="it"><span class="n">G2</span><p><b>A kept pick for a draft add</b> has nowhere to live today (assignments need a committed version). A pending pick applied at commit, or drop the promise if Q1 goes the other way.</p></div>
+<div class="it"><span class="n">G1</span><p>Card details needs the chooser’s card off a receipt (<b>loadContestedCard</b> has the shape) plus the player’s other committed decks whose color identity allows the card, with each deck’s card count. New read.</p></div>
+<div class="it"><span class="n">G2</span><p><b>A kept pick for a draft add</b> has nowhere to live today (assignments need a committed version). It needs a pending pick applied at commit. One choice spans both groups, and an Other decks pick counts toward the row’s cap.</p></div>
 <div class="it"><span class="n">G3</span><p>History’s “Went to” is frozen at arrival; “Now X has it.” and Change need a live read per entry, only for entries whose card still has a choice.</p></div>
-<div class="it"><span class="n">G4</span><p>All new strings are DRAFT for /copy-review: Change’s sub, Not in their lists, Add it, in the draft · gets it on commit, has 99 already, outside its colors, its commander, the foot lines, Now X has it.</p></div>
+<div class="it"><span class="n">G4</span><p>All new strings are DRAFT for /copy-review: Change’s sub, Other decks · N, N cards · makes N+1, adds it, adds it · gets it, Find a deck, the two foot lines, Now X has it. With 2+ copies the shipped title “Where this copy goes” wants a plural.</p></div>
 <div class="it"><span class="n">G5</span><p>Amends the card assignments handoff, which limits the chooser to /changes and receipts.</p></div>
 </div>
 </div>

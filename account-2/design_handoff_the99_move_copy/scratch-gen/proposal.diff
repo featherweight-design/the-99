@@ -65,20 +65,21 @@
  }
  
 --- a/src/components/decks/copy-chooser-dialog.tsx	2026-11-18 03:02:34.904778209 +0000
-+++ b/src/components/decks/copy-chooser-dialog.tsx	2026-11-18 03:02:34.967673981 +0000
-@@ -20,8 +20,10 @@
++++ b/src/components/decks/copy-chooser-dialog.tsx	2026-11-18 05:34:27.913262367 +0000
+@@ -20,8 +20,11 @@
  const c = gotItCopy.receipt;
  
  export function CopyChooserDialog({
 -  card, cardName, thisDeckId, onCard, onWrite, onPending, onUnknown, onClose,
-+  card, cardName, thisDeckId, onCard, onWrite, onPending, onUnknown, onClose, sub, children,
++  card, cardName, thisDeckId, onCard, onWrite, onPending, onUnknown, onClose, sub, children, extraGiven,
  }: {
++  extraGiven?: number;
 +  sub?: string;
 +  children?: import("react").ReactNode;
    card: ContestedCard;
    cardName: string;
    /** The deck the copy was bought for: tagged `this deck` in the chooser, never promoted. */
-@@ -64,11 +66,12 @@
+@@ -64,11 +67,12 @@
          <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold" style={{ color: "var(--fg)" }}>
            {c.changeTitle}
          </h2>
@@ -87,48 +88,102 @@
          {/* The row is the body: it scrolls inside the cap, so the title and Done stay in view. The 6px pad and
              its negative margin keep a focus ring inside the scroller's clip. */}
          <div className="-m-[6px] min-h-0 flex-1 overflow-y-auto overscroll-contain p-[6px]">
-           <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} />
+-          <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} />
++          <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} extraGiven={extraGiven} />
 +          {children}
          </div>
          <div className="mt-[16px] flex flex-none justify-end">
            <GhostButton onClick={onClose} className="px-[18px] py-[9px] text-[13.5px]">{c.done}</GhostButton>
+--- a/src/components/decks/contested-card-row.tsx	2026-11-18 03:02:34.907022634 +0000
++++ b/src/components/decks/contested-card-row.tsx	2026-11-18 05:34:27.912923675 +0000
+@@ -50,7 +50,7 @@
+  * A commander's mark is dimmed: that copy cannot be moved, so a mark drawn at full strength
+  * would invite a press the next PR will have to refuse.
+  */
+-function AllocationMark({
++export function AllocationMark({
+   allocated,
+   copies,
+   commander,
+@@ -148,7 +148,10 @@
+   onWrite,
+   onPending,
+   onUnknown,
++  extraGiven = 0,
+ }: {
++  /** PROPOSAL #2980: copies given to an Other decks pick, which share this row's cap. */
++  extraGiven?: number;
+   card: ContestedCard;
+   thisDeckId?: string;
+   describedBy?: string;
+@@ -417,7 +420,7 @@
+       : card.claimants;
+   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
+   // the numerator counts every non-commander allocation and the denominator is what can move.
+-  const givenOut = Math.min(
++  const givenOut = extraGiven + Math.min(
+     // A brew holds only the copy it was given; its soft share of the leftover is not given out.
+     claimants.reduce((n, c) => n + (c.brew ? c.granted : Math.max(c.allocated - c.commanderCopies, 0)), 0),
+     inPlay,
 --- a/src/components/decks/other-decks.tsx	1970-01-01 00:00:00.000000000 +0000
-+++ b/src/components/decks/other-decks.tsx	2026-11-18 03:02:55.101307341 +0000
-@@ -0,0 +1,37 @@
-+// PROPOSAL #2980 (R1): the chooser's second group. Committed decks that do not list the card: one that can take it
-+// offers Add it (into its draft, the pick kept for its commit); one that cannot says why, in the row, never hidden.
-+export type OtherDeck = { id: string; name: string; state: "can" | "added" | "colors" | "full" | "commander" };
-+const OUT: Record<OtherDeck["state"], string> = {
-+  can: "Add it", added: "in the draft · gets it on commit", colors: "outside its colors", full: "has 99 already", commander: "its commander",
-+};
-+export function OtherDecks({ decks, cardName }: { decks: OtherDeck[]; cardName: string }) {
-+  const added = decks.find((d) => d.state === "added");
++++ b/src/components/decks/other-decks.tsx	2026-11-18 05:33:07.206705063 +0000
+@@ -0,0 +1,59 @@
++// PROPOSAL #2980 (R1b): the chooser's second group, "Other decks". Closed by default under the shipped row: one
++// disclosure row with the count. Open, it lists only the committed decks whose colors allow the card (a deck at or
++// over 99 is still offered: it says so). The rows ARE the shipped options (AllocationMark, name, stamp, outcome),
++// in the same single choice as the decks above: picking one adds the card to that deck's draft and gives it the copy.
++import { AllocationMark } from "./contested-card-row";
++import { SearchField } from "../ui/text-field";
++import { Chevron } from "../ui/chevron";
++
++export type OtherDeck = { id: string; name: string; cards: number; picked?: boolean };
++export function OtherDecks({ decks, cardName, open, copies, find, hiddenColors }: {
++  decks: OtherDeck[]; cardName: string; open: boolean; copies: number; find?: string; hiddenColors: number;
++}) {
++  const picked = decks.find((d) => d.picked);
++  const shown = find ? decks.filter((d) => d.name.toLowerCase().includes(find.toLowerCase())) : decks;
 +  return (
-+    <div className="mt-[10px] p-[12px_13px]" style={{ border: "1px solid var(--border)", borderRadius: 11, background: "var(--surface)" }}>
-+      <p className="m-0 mb-[7px] font-mono text-[10px] uppercase tracking-[0.13em]" style={{ color: "var(--fg-body)" }}>
-+        Not in their lists
-+      </p>
-+      <ul className="m-0 flex list-none flex-col gap-[4px] p-0">
-+        {decks.map((d) => {
-+          const no = d.state === "colors" || d.state === "full" || d.state === "commander";
-+          return (
-+            <li key={d.id} className="flex min-h-[52px] items-center justify-between gap-[11px] px-[8px] py-[6px] md:min-h-[44px]"
-+              style={{ borderRadius: 7, background: "var(--bg)", border: no ? "1px dashed var(--border)" : d.state === "added" ? "1px solid var(--accent)" : "1px solid transparent" }}>
-+              <span className="min-w-0 truncate text-[13px]" style={{ color: no ? "var(--fg-muted)" : "var(--fg)" }}>{d.name}</span>
-+              {d.state === "can" ? (
-+                <button type="button" className="-my-[6px] min-h-[44px] flex-none text-[13px] text-[color:var(--accent-text)]" aria-label={`Add ${cardName} to ${d.name} and give it this copy`}>{OUT.can}</button>
-+              ) : (
-+                <span className="flex-none font-mono text-[10.5px] md:text-[11px]" style={{ color: d.state === "added" ? "var(--success)" : "var(--fg-faint)" }}>{OUT[d.state]}</span>
-+              )}
-+            </li>
-+          );
-+        })}
-+      </ul>
-+      <p className="mb-0 mt-[8px] text-[11px]" style={{ color: "var(--fg-faint)" }}>
-+        {added
-+          ? <>Added to {added.name}’s draft. It gets this copy when you commit. <span style={{ color: "var(--accent-text)" }}>Undo</span></>
-+          : <>Add it puts {cardName} in that deck’s draft. It gets this copy when you commit.</>}
-+      </p>
++    <div className="mt-[10px]" style={{ border: "1px solid var(--border)", borderRadius: 11, background: "var(--surface)" }}>
++      <button type="button" aria-expanded={open}
++        className="flex min-h-[48px] w-full items-center gap-[10px] border-0 bg-transparent px-[13px] text-left">
++        <span className="flex-1 font-mono text-[10px] uppercase tracking-[0.13em]" style={{ color: "var(--fg-body)" }}>
++          Other decks <span style={{ color: "var(--fg-faint)" }}>· {decks.length}</span>
++        </span>
++        {!open && picked ? <span className="truncate text-[12.5px]" style={{ color: "var(--accent-text)" }}>{picked.name}</span> : null}
++        <Chevron kind="disclosure" open={open} className="text-[color:var(--fg-faint)]" />
++      </button>
++      {open ? (
++        <div className="px-[13px] pb-[12px]">
++          {decks.length > 6 ? (
++            <SearchField aria-label="Find a deck" placeholder="Find a deck" defaultValue={find ?? ""} containerClassName="mb-[8px]" />
++          ) : null}
++          <ul role="radiogroup" aria-label={`Other decks for ${cardName}`} className="m-0 flex list-none flex-col gap-[4px] p-0">
++            {shown.map((d) => (
++              <li key={d.id} role="radio" aria-checked={!!d.picked} tabIndex={-1}
++                className="flex min-h-[52px] flex-col justify-center gap-[1px] px-[8px] py-[6px] md:min-h-[44px] md:flex-row md:items-center md:gap-[11px]"
++                style={{ borderRadius: 7, background: "var(--bg)", border: d.picked ? "1px solid var(--accent)" : "1px solid transparent", cursor: "pointer" }}>
++                <span className="flex min-w-0 items-center gap-[11px] md:flex-1">
++                  <AllocationMark allocated={0} copies={copies} commander={false} picked={d.picked} />
++                  <span className="min-w-0 text-[13px] md:truncate" style={{ color: "var(--fg)" }}>{d.name}</span>
++                </span>
++                <span className="flex items-center gap-[8px] pl-[27px] md:flex-none md:pl-0">
++                  <span className="font-mono text-[10.5px] md:text-[11px]" style={{ color: d.cards >= 99 ? "var(--avail-over-fg)" : "var(--fg-faint)" }}>
++                    {d.cards >= 99 ? `${d.cards} cards · makes ${d.cards + 1}` : `${d.cards} cards`}
++                  </span>
++                  <span className="font-mono text-[10.5px] md:text-[11px]" style={{ color: d.picked ? "var(--success)" : "var(--fg-muted)" }}>
++                    {d.picked ? "adds it · gets it" : "adds it"}
++                  </span>
++                </span>
++              </li>
++            ))}
++          </ul>
++          <p className="mb-0 mt-[8px] text-[11px]" style={{ color: "var(--fg-faint)" }}>
++            {picked
++              ? <>{cardName} goes into {picked.name}’s draft and gets this copy when you commit. Tap it again to undo.</>
++              : <>Picking one adds {cardName} to its draft.{hiddenColors > 0 ? ` Decks outside its colors aren’t listed.` : ""}</>}
++          </p>
++        </div>
++      ) : null}
 +    </div>
 +  );
 +}
