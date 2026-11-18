@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R3 · what changed</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Metamorphous&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1240px; height: 1200px; box-sizing: border-box; padding: 56px 64px; background: #121217; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 24px">
+  <div style="display: flex; flex-direction: column; gap: 10px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: 0.14em; color: #8A999B">R3 · AFTER HUGH’S R2 NOTES</div>
+    <h1 style="margin: 0; font-family: Metamorphous, serif; font-weight: 400; font-size: 40px; color: #E1E8E9">One deck strip, four places to put it</h1>
+    <p style="margin: 0; font-size: 17px; line-height: 1.5; color: #B3C0C2; max-width: 1080px">The strip is now the same at both widths: ‹ All decks on the left, 2 of 5 and two arrows on the right. The desktop crumb and the hover card are gone (the arrows keep a plain tooltip). Only where it sits changes from board to board.</p>
+  </div>
+  <div style="border: 1px solid #2E3340; border-radius: 12px; background: #1E1F26; padding: 22px 24px; display: flex; flex-direction: column; gap: 12px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: #8A999B">PLACEMENTS</div>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">A1 · Above the art.</b> R2’s A, made consistent. +52px phone, +48px desktop. Farthest from the thumb.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">A2 · Under the art (my pick).</b> The strip becomes the first row under the commander image on phone, and a row under the band on desktop. Same height as A1, but it sits beside the title and count instead of above the art, about a third of the way down the phone.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">A3 · In the count row.</b> “99 / 99 | 2 of 5 ‹ ›”, sharing the progress bar’s row. No new height at all; the bar gets shorter. No “‹ All decks” link, so phone still has no way back except the tab.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">A4 · Pill by the thumbs.</b> A small ‹ 2 of 5 › pill floating bottom right, above the add-card bar. Closest to the thumb and always there as you scroll, but it sits over the card list.</p>
+  </div>
+  <div style="border: 1px solid #2E3340; border-radius: 12px; background: #1E1F26; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: #8A999B">ARRANGE</div>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Centred on desktop:</b> yes, a 720px column with Cancel and Done on its heading.</p>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Inside a folder (my pick: allow it):</b> the menu row reads “Arrange Simic…” and lists only that folder’s decks. There’s still one order: moving them among themselves leaves every other deck where it was in All decks. Limiting it to All decks works too, but then a folder’s order can only be changed from a 30-deck list.</p>
+  </div>
+  <div style="border: 1px solid #2E3340; border-radius: 12px; background: #1E1F26; padding: 22px 24px; display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; letter-spacing: 0.12em; color: #8A999B">FOR HUGH</div>
+    <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Q1</b> Placement: A2 under the art (rec), A1, A3 or A4. <b style="color: #E1E8E9">Q2</b> Arrange inside folders (rec) or All decks only.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

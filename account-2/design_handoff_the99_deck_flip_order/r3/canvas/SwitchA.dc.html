@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · Deck strip</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2160px; height: 1410px; box-sizing: border-box; padding: 32px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="height: 76px; display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #E1E8E9">A · Deck strip above the band <span style="font-size: 16px; font-weight: 500; color: #6C97DB">recommended</span></h2>
+    <p style="margin: 0; font-size: 15px; color: #95A4A6">A thin row between the app header and the deck’s band. Left: the way back to the list it came from. Right: where you are and the two arrows.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 390px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">PHONE · 390</div>
+      <img src="/_blob/2f193162977d6a0b24cad11e2e1cee74" alt="Deck strip on phone" style="width: 390px; height: 1200px; display: block; border-radius: 6px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 1300px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">DESKTOP · 1300 · NEXT HOVERED</div>
+      <img src="/_blob/735b7085a426595b624a9f2cccc5eb28" alt="Deck strip on desktop" style="width: 1300px; height: 900px; display: block; border-radius: 6px">
+    </div>
+    <div style="width: 310px; display: flex; flex-direction: column; gap: 14px; padding-top: 26px">
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Phone:</b> 52px row. “‹ All decks” (or the folder’s name) is a 44px link back to the list as you left it. Two 44×44 ghost squares, the header’s own chassis.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Desktop:</b> 48px row. Breadcrumb “Decks / All decks · Last played”, then 2 of 5 and 32px squares. Hover or focus names the deck and its key.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color: #E1E8E9">Filtered list:</b> the crumb reads “All decks · 2 filters on” so “2 of 2” makes sense.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5; color: #95A4A6">Why I’d pick it: nothing touches the art, the phone gets a way back it lacks today, and it costs 52px.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2160,"height":1410}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

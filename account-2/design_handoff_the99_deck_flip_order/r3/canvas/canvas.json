@@ -1,0 +1,22 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-18T14:20:00Z"},"title":"Deck flip and custom order","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1240,"h":1180,"title":"Main · calls and open questions"},
+"Today.dc.html":{"x":1320,"y":0,"w":2160,"h":1410,"title":"Today · shipped deck page, no flip"},
+"SwitchA.dc.html":{"x":0,"y":1760,"w":2160,"h":1410,"title":"A · Deck strip above the band (recommended)"},
+"SwitchB.dc.html":{"x":2240,"y":1760,"w":2160,"h":1410,"title":"B · Neighbour buttons under the header"},
+"SwitchC.dc.html":{"x":0,"y":3290,"w":2600,"h":1410,"title":"C · Switch deck button and list"},
+"SwitchD.dc.html":{"x":2680,"y":3290,"w":2160,"h":1610,"title":"D · Next deck at the foot of the page"},
+"OrderMenu.dc.html":{"x":0,"y":5250,"w":2160,"h":1310,"title":"Custom order · sort menu"},
+"OrderArrange.dc.html":{"x":2240,"y":5250,"w":2160,"h":1070,"title":"Custom order · Arrange decks"},
+"R3Main.dc.html":{"x":0,"y":7030,"w":1240,"h":1200,"title":"R3 · what changed and what to pick"},
+"R3A.dc.html":{"x":1320,"y":7030,"w":2160,"h":1200,"title":"R3 A1 · Strip above the art, same on both widths"},
+"R3E.dc.html":{"x":3560,"y":7030,"w":2160,"h":1200,"title":"R3 A2 · Strip under the art"},
+"R3F.dc.html":{"x":0,"y":8350,"w":2160,"h":1200,"title":"R3 A3 · In the count row (no new height)"},
+"R3G.dc.html":{"x":2240,"y":8350,"w":2600,"h":1200,"title":"R3 A4 · Pill by the thumbs"},
+"R3Arrange.dc.html":{"x":0,"y":9670,"w":3460,"h":1560,"title":"R3 · Arrange centred, and inside a folder"}
+},
+"order":["Main.dc.html","Today.dc.html","SwitchA.dc.html","SwitchB.dc.html","SwitchC.dc.html","SwitchD.dc.html","OrderMenu.dc.html","OrderArrange.dc.html","R3Main.dc.html","R3A.dc.html","R3E.dc.html","R3F.dc.html","R3G.dc.html","R3Arrange.dc.html"],
+"notes":{"t1":{"x":0,"y":1530,"text":"Four ways to flip between decks, none on the commander art","kind":"title1","maxW":4840},
+"t2":{"x":0,"y":5020,"text":"Custom order for the Decks page","kind":"title1","maxW":4840},
+"t3":{"x":0,"y":6800,"text":"R3 · Where the deck strip sits, and arranging inside folders","kind":"title1","maxW":5720}},
+"designSystems":[]}
