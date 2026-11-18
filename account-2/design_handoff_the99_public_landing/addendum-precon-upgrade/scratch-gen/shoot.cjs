@@ -2,14 +2,14 @@
 // over the first add's name exactly as PressRing draws it (3px stand-off, 2px accent, 5px halo, label "above").
 const { chromium } = require("playwright"); const path = require("path");
 const RING = (label) => {
-  const btn = [...document.querySelectorAll("[data-testid=demo-upgrade] button")].find((b) => b.textContent === "Brainstorm");
+  const btn = document.querySelector("[data-testid=demo-upgrade] article button[aria-label^='Open ']");
   const host = document.getElementById("panel"); if (!btn || !host) return;
   const at = host.getBoundingClientRect(), to = btn.getBoundingClientRect();
   const r = document.createElement("span");
   r.className = "pointer-events-none absolute z-[6] rounded-[10px] border-2 border-solid border-[color:var(--accent)] shadow-[0_0_0_5px_color-mix(in_oklab,var(--accent)_22%,transparent)]";
   Object.assign(r.style, { left: to.left - at.left - 3 + "px", top: to.top - at.top - 3 + "px", width: to.width + 6 + "px", height: to.height + 6 + "px" });
   const b = document.createElement("b");
-  b.className = "absolute whitespace-nowrap left-[calc(100%+8px)] top-1/2 -translate-y-1/2 rounded-[5px] bg-[color:var(--accent)] px-[7px] font-sans text-[10.5px] font-semibold leading-[18px] text-[color:var(--bg)]";
+  b.className = "absolute whitespace-nowrap bottom-[calc(100%+4px)] left-0 rounded-[5px] bg-[color:var(--accent)] px-[7px] font-sans text-[10.5px] font-semibold leading-[18px] text-[color:var(--bg)]";
   b.textContent = label; r.appendChild(b); host.appendChild(r);
 };
 (async () => {

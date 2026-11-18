@@ -1,5 +1,5 @@
---- src/lib/copy/landing.ts	2026-11-15 16:57:00.950977486 +0000
-+++ src/lib/copy/landing.ts	2026-11-15 17:04:52.488576888 +0000
+--- a/src/lib/copy/landing.ts
++++ b/src/lib/copy/landing.ts
 @@ -127,10 +127,10 @@
      /** The section's header, as on the board: it stays through the start, every step and the end. */
      eyebrow: "Try it",
@@ -13,16 +13,7 @@
      start: "Start",
      /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
      loading: "Loading",
-@@ -151,6 +151,8 @@
-     /** Step 4's counter under the key, and the control that expands the shipped list in place. */
-     markedCount: (n: number, total: number) => `${n} of ${total} \u00b7 the cards with a mark`,
-     showAll: (total: number) => `Show all ${total}`,
-+    /** Step 7 (addendum A5): the control under the first three swaps. */
-+    showAllSwaps: (total: number) => `Show all ${total} swaps`,
-     /** Step 2's count line above the commanders, the lane\u2019s own sentence said of the made-up player. */
-     commandersCount: (n: number, player: string) => `${n.toLocaleString("en-US")} ${n === 1 ? "commander" : "commanders"} ${player} owns and hasn\u2019t built`,
-     /** Step 4's line under the commander, the deck's own split: copies built of 99, owned, and to buy. */
-@@ -181,6 +183,7 @@
+@@ -181,6 +181,7 @@
        { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. Here are the cards that carry a mark; the key above them says what each mark means.`, press: "Hover a mark" },
        { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays, from the first turns to the win.", press: "Select a finding" },
        { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: (p: string) => `${p} asked for more interaction. The 99 picked a few swaps, a card in and a card out each, and says why.`, press: "Select a card" },

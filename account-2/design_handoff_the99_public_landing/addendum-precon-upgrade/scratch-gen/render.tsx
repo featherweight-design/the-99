@@ -1,5 +1,9 @@
 // A5 generator (scratch only): the demo dialog's shipped markup (demo.tsx, copied verbatim, static) on the PROPOSED step 7.
-import { renderToString } from "react-dom/server";
+import { renderToString as rts } from "react-dom/server";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { PathnameContext, SearchParamsContext } from "next/dist/shared/lib/hooks-client-context.shared-runtime";
+const router: any = { push() {}, replace() {}, refresh() {}, prefetch() {}, back() {}, forward() {} };
+const renderToString = (el: any) => rts(<AppRouterContext.Provider value={router}><PathnameContext.Provider value="/"><SearchParamsContext.Provider value={new URLSearchParams() as any}>{el}</SearchParamsContext.Provider></PathnameContext.Provider></AppRouterContext.Provider>);
 import { writeFileSync } from "node:fs";
 import { landingCopy } from "../src/lib/copy/landing";
 import { SEGMENT } from "../src/components/ui/segment";
@@ -9,40 +13,40 @@ import { Demo } from "../src/components/landing/demo/demo";
 
 const c = landingCopy.demo;
 const STEPS = c.steps.length;
-const slug = (n: string) => n.toLowerCase().replace(/[^a-z0-9]+/g, "-");
-// (cut, cutMv, cutOwned, add, addMv, addOwned, price$, why, theme, cutId, addColors, cutColors)
-const P: [string, number, boolean, string, number, boolean, number, string, string, string[], string[]][] = [
-  ["Sai, Master Thopterist", 3, true, "Brainstorm", 1, false, 120, "One mana, at instant speed: Muddle becomes a copy in the middle of combat.", "Artifacts", ["U"], ["U"]],
-  ["Wizard’s Staff", 3, false, "Ponder", 1, true, 40, "Finds the next spell for a single mana.", "Artifacts", ["R"], ["U"]],
-  ["Brudiclad, Telchor Engineer", 6, false, "Preordain", 1, false, 90, "Another one-mana look ahead, so every turn has a spell to cast.", "Artifacts", ["U", "R"], ["U"]],
-  ["Thopter Engineer", 3, true, "Lightning Bolt", 1, true, 110, "Three damage for one mana, and Muddle copies something on the way.", "Artifacts", ["R"], ["R"]],
-  ["Pia and Kiran Nalaar", 4, false, "Chaos Warp", 3, false, 90, "Answers any permanent, which red rarely can.", "Artifacts", ["R"], ["R"]],
-  ["Mind Stone", 2, true, "Fact or Fiction", 4, false, 50, "Four cards looked at, and the pile you keep is usually two spells.", "Artifacts", [], ["U"]],
-  ["Etherium Sculptor", 2, true, "Archmage Emeritus", 4, false, 30, "A card for every instant or sorcery.", "Artifacts", ["U"], ["U"]],
-  ["Retrofitter Foundry", 3, false, "Baral, Chief of Compliance", 2, false, 180, "Every spell costs one less, and your counterspells draw.", "Artifacts", [], ["U"]],
-  ["Foundry Inspector", 3, true, "Storm-Kiln Artist", 4, false, 60, "Treasure for every spell, and Muddle can copy it for more.", "Artifacts", [], ["R"]],
-  ["Unwinding Clock", 4, false, "Electrostatic Field", 2, false, 25, "A wall early, and 1 damage to each opponent with every spell.", "Artifacts", [], ["R"]],
-  ["Lathliss, Dragon Queen", 6, true, "Guttersnipe", 3, true, 35, "Two damage to each opponent with every spell.", "Tokens", ["R"], ["R"]],
-  ["Goblin Instigator", 2, true, "Veyran, Voice of Duality", 3, false, 310, "Your spell triggers happen twice, Muddle’s included.", "Tokens", ["R"], ["U", "R"]],
-  ["Krenko, Tin Street Kingpin", 3, false, "Mystic Confluence", 6, false, 160, "A counter, a bounce or three cards, whichever the turn needs.", "Tokens", ["R"], ["U"]],
-  ["Hellrider", 4, false, "Thousand-Year Storm", 6, false, 280, "Each spell is copied once for every spell before it that turn.", "Tokens", ["R"], ["U", "R"]],
+const idOf = (c: string) => [...new Set(c.split("").filter((x) => x === "U" || x === "R"))];
+const cmcOf = (c: string) => c.split("").reduce((n, x) => n + (/\d/.test(x) ? +x : 1), 0);
+// The fresh-start R2 fixture, verbatim: [cut, cutCost, cutOwned, add, addCost, addOwned, price, why, theme, cutWhy, cutGroup, addGroup, addRole, cutRole, cutType, addType]
+const P: any[] = [
+  ["Sai, Master Thopterist", "2U", true, "Counterspell", "UU", false, 150, "Two mana, at instant speed: stops their best spell and turns Muddle into a copy.", "Artifacts", "Makes Thopters off artifacts, and the deck casts fewer of them now.", "Creatures", "Instants", null, null, "Creature — Human Artificer", "Instant"],
+  ["Thopter Engineer", "2R", true, "Lightning Bolt", "R", "held", 0, "Three damage for one mana, and Muddle copies something on the way.", "Artifacts", "Its haste is for artifact creatures, and few are left.", "Creatures", "Instants", "removal", null, "Creature — Human Artificer", "Instant"],
+  ["Brudiclad, Telchor Engineer", "4UR", false, "Swan Song", "U", false, 1290, "One mana answers their best instant, sorcery or enchantment.", "Artifacts", "Six mana for a token plan the deck no longer runs.", "Creatures", "Instants", "removal", null, "Legendary Artifact Creature — Phyrexian Artificer", "Instant"],
+  ["Wizard’s Staff", "2R", false, "Searing Touch", "R", true, 0, "Cheap removal that copies well, and you own a spare.", "Artifacts", "An equipment the deck rarely has a body for.", "Artifacts", "Instants", "removal", null, "Artifact — Equipment", "Instant"],
+  ["Pia and Kiran Nalaar", "2RR", false, "Chaos Warp", "2R", false, 90, "Answers any permanent, which red rarely can.", "Artifacts", "Thopters for an artifact count the deck has left.", "Creatures", "Instants", "removal", null, "Legendary Creature — Human Artificer", "Instant"],
+  ["Mind Stone", "2", true, "Mystical Tutor", "U", false, 520, "Puts the spell the turn needs on top, for one mana.", "Artifacts", "Ramp the deck has enough of at this curve.", "Artifacts", "Instants", null, "ramp", "Artifact", "Instant"],
+  ["Etherium Sculptor", "1U", true, "Archmage Emeritus", "2UU", false, 30, "A card for every instant or sorcery.", "Artifacts", "Discounts artifacts, and the deck casts spells instead.", "Creatures", "Creatures", "draw", null, "Artifact Creature — Vedalken Artificer", "Creature — Human Wizard"],
+  ["Retrofitter Foundry", "3", false, "Baral, Chief of Compliance", "1U", false, 180, "Every spell costs one less, and your counterspells draw.", "Artifacts", "A slow engine that wants spare mana every turn.", "Artifacts", "Creatures", "draw", null, "Artifact", "Legendary Creature — Human Wizard"],
+  ["Foundry Inspector", "3", true, "Storm-Kiln Artist", "3R", false, 60, "Treasure for every spell, and Muddle can copy it for more.", "Artifacts", "Its discount is for artifacts only.", "Artifacts", "Creatures", "ramp", null, "Artifact Creature — Construct", "Creature — Dwarf Shaman"],
+  ["Unwinding Clock", "4", false, "Electrostatic Field", "1R", false, 25, "A wall early, and 1 damage to each opponent with every spell.", "Artifacts", "Untaps artifacts the deck no longer plays.", "Artifacts", "Creatures", null, null, "Artifact", "Creature — Wall"],
+  ["Lathliss, Dragon Queen", "4R", true, "Guttersnipe", "2R", true, 0, "Two damage to each opponent with every spell.", "Tokens", "Five mana for Dragons the deck doesn’t cast.", "Creatures", "Creatures", null, null, "Legendary Creature — Dragon", "Creature — Goblin Shaman"],
+  ["Goblin Instigator", "1R", true, "Veyran, Voice of Duality", "1UR", false, 310, "Your spell triggers happen twice, Muddle’s included.", "Tokens", "Two small bodies, and the deck isn’t going wide.", "Creatures", "Creatures", null, null, "Creature — Goblin Rogue", "Legendary Creature — Efreet Wizard"],
+  ["Krenko, Tin Street Kingpin", "2R", false, "Mystic Confluence", "3UUU", false, 160, "A counter, a bounce or three cards, whichever the turn needs.", "Tokens", "Goblins need attacks the spell plan won’t make.", "Creatures", "Instants", "draw", null, "Legendary Creature — Goblin Warrior", "Instant"],
+  ["Hellrider", "2RR", false, "Thousand-Year Storm", "4UR", false, 280, "Each spell is copied once for every spell before it that turn.", "Tokens", "Rewards a wide attack the deck won’t make.", "Creatures", "Enchantments", null, null, "Creature — Devil", "Enchantment"],
 ];
-const cards: Record<string, any> = {
-  rootha: { owned: true, cmc: 5, identity: ["U", "R"] },
-  muddle: { owned: false, cmc: 4, identity: ["U", "R"] },
-};
-const themes: Record<string, string> = {};
-const pairs = P.map(([cut, cmv, cown, add, amv, aown, cents, why, theme, cc, ac], i) => {
-  cards[slug(cut)] = { owned: cown, cmc: cmv, identity: cc };
-  cards[slug(add)] = { owned: aown, cmc: amv, identity: ac };
-  themes[slug(cut)] = theme;
-  return { cutId: slug(cut), cut, addId: slug(add), add, addCents: cents, reason: why, position: i };
+const IMG: Record<string, string> = { Counterspell: "art/c-counterspell.jpg", "Swan Song": "art/c-swan-song.jpg", "Searing Touch": "art/c-searing-touch.jpg", "Mystical Tutor": "art/c-mystical-tutor.jpg", "Sai, Master Thopterist": "art/c-sai.jpg", "Brudiclad, Telchor Engineer": "art/c-brudiclad.jpg", "Wizard’s Staff": "art/c-wizards-staff.jpg", "Lathliss, Dragon Queen": "art/c-lathliss.jpg" };
+const cards: Record<string, any> = { rootha: { cmc: 5, identity: ["U", "R"], owned: true }, muddle: { cmc: 4, identity: ["U", "R"], owned: true } };
+const held = { owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d2", name: "Niv-Mizzet Spells", mature: true }] };
+const pairs = P.map((p, i) => {
+  const cutId = `cut${i}`, addId = `add${i}`;
+  cards[cutId] = { cmc: cmcOf(p[1]), identity: idOf(p[1]), owned: p[2], group: p[10], role: p[13], typeLine: p[14], image: IMG[p[0]] ?? null };
+  cards[addId] = { cmc: cmcOf(p[4]), identity: idOf(p[4]), owned: !!p[5], ...(p[5] === "held" ? { claims: held } : {}), group: p[11], role: p[12], typeLine: p[15], image: IMG[p[3]] ?? null, bracketAfter: p[3] === "Mystical Tutor" ? [3] : null };
+  return { cutId, cut: p[0], addId, add: p[3], addCents: p[6], reason: p[7], cutReason: p[9], position: i };
 });
-const buy = pairs.filter((p) => !cards[p.addId].owned);
+const themes = Object.fromEntries(P.map((p, i) => [`cut${i}`, p[8]]));
+const toBuy = { cards: P.filter((p) => !p[5]).length, cents: P.reduce((n, p) => n + (p[5] ? 0 : p[6]), 0) };
 const strat = (key: string, label: string) => ({ key, label, blurb: "", source: "edhrec", backingIds: [], backing: [] });
-const run = { id: "r1", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T15:00:00Z"),
-  pairs, buyTotalCents: buy.reduce((n, p) => n + p.addCents, 0), bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
-  toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: pairs.length - buy.length, started: false, themes };
+const run = { id: "r1", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-12T19:00:00Z"),
+  pairs, buyTotalCents: toBuy.cents, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy, owned: 14 - toBuy.cards, started: false, themes };
+const buy = pairs.filter((p) => !cards[p.addId].owned);
 const panel = { boxBracket: 2, listFp: "x", cards, runs: [run], allowance: { used: 0, limit: 1, reopensAt: null, nextAt: null },
   commanders: [
     { key: "rootha", isFace: true, cards: [{ oracleId: "rootha", name: "Rootha, Mercurial Artist", manaCost: "{3}{U}{R}", cmc: 5, typeLine: "Legendary Creature" }], line: "", strategies: [strat("spellslinger", "Spells")] },
@@ -62,7 +66,7 @@ const LINK = "cursor-pointer border-0 bg-transparent p-0 underline underline-off
 const LABEL = "whitespace-nowrap font-mono text-[10.5px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-muted)]";
 const noop = () => {};
 
-function Dialog({ index, all = false }: { index: number; all?: boolean }) {
+function Dialog({ index, unpicked, seed = null }: { index: number; unpicked?: string[]; seed?: number[] | null }) {
   const step = c.steps[index];
   const line = (step.line as any)("Wren", String(pairs.length));
   return (
@@ -96,7 +100,7 @@ function Dialog({ index, all = false }: { index: number; all?: boolean }) {
                   <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage("Wren")}</span>
                   <div data-testid="demo-app" className="pt-[10px]">
                     <DemoProviders onOpen={noop} onClose={noop} openOracleId={null}>
-                      <StepUpgrade upgrade={upgrade} startAll={all} />
+                      <StepUpgrade upgrade={upgrade} unpicked={unpicked} seedSet={seed} />
                     </DemoProviders>
                   </div>
                 </div>
@@ -114,8 +118,9 @@ function Dialog({ index, all = false }: { index: number; all?: boolean }) {
     </div>
   );
 }
-writeFileSync("up/step7.html", renderToString(<Dialog index={6} />));
-writeFileSync("up/step7all.html", renderToString(<Dialog index={6} all />));
+writeFileSync("up/step7.html", renderToString(<Dialog index={6} seed={[3]} />));
+writeFileSync("up/step7mixed.html", renderToString(<Dialog index={6} unpicked={["c-cut0", "a-add3"]} />));
+writeFileSync("up/step7uneven.html", renderToString(<Dialog index={6} unpicked={["c-cut0"]} />));
 const art = [{ src: "art/c-ashling.jpg", name: "Ashling" }, { src: "art/c-giada.jpg", name: "Giada" }, { src: "art/c-zimone.jpg", name: "Zimone" }];
 writeFileSync("up/start.html", renderToString(<main className="flex flex-1 flex-col bg-[color:var(--bg)] text-[color:var(--fg)]"><Demo art={art} publicPages={false} /></main>));
-console.log(STEPS, buy.length, run.toBuy.cents);
+console.log(STEPS, buy.length, toBuy.cents);
