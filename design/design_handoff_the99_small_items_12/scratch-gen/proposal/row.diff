@@ -1,0 +1,72 @@
+--- /home/user/the-99/src/components/commanders/commander-row.tsx	2026-11-15 16:57:00.421756342 +0000
++++ proposal/row-new.tsx	2026-11-15 17:09:19.069798770 +0000
+@@ -17,25 +17,25 @@
+ 
+ import { type ReactNode, type Ref } from "react";
+ import Link from "next/link";
+-import { formatCents } from "../../lib/cards/price-fact";
+-import { commanderRowCopy, type GapPart } from "../../lib/copy/commander-row";
+-import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
+-import { discoveryCopy } from "../../lib/copy/commander-discovery";
+-import { explainedCopy } from "../../lib/copy/commander-explained";
+-import type { GapSlot } from "../../lib/edhrec/gap-slot";
+-import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score";
++import { formatCents } from "../src/lib/cards/price-fact";
++import { commanderRowCopy, type GapPart } from "../src/lib/copy/commander-row";
++import { commandersCopy, discoverCopy } from "../src/lib/copy/lanes";
++import { discoveryCopy } from "../src/lib/copy/commander-discovery";
++import { explainedCopy } from "../src/lib/copy/commander-explained";
++import type { GapSlot } from "../src/lib/edhrec/gap-slot";
++import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../src/lib/recs/score";
+ // Type-only, and required rather than stylistic: the price module reaches
+ // `src/db`, whose body throws when DATABASE_URL is unset. A type-only clause is
+ // erased at compile time, so none of that reaches the client bundle.
+-import type { PriceSlot as PriceSlotValue } from "../../lib/discovery/price";
+-import { fitSegments } from "../../lib/recs/format";
+-import { ArtWash, INK_SHADOW } from "../ui/art-wash";
+-import { FitBar } from "./fit-bar";
+-import { commanderDisplayName } from "../../lib/cards/printed-name";
+-import { IdentityPips } from "./commander-art";
+-import { PendingTrack } from "../shell/pending-track";
+-import { EyeOff } from "./eye-off";
+-import { hideCommanderCopy } from "../../lib/copy/commander-explained";
++import type { PriceSlot as PriceSlotValue } from "../src/lib/discovery/price";
++import { fitSegments } from "../src/lib/recs/format";
++import { ArtWash, INK_SHADOW } from "../src/components/ui/art-wash";
++import { FitBar } from "../src/components/commanders/fit-bar";
++import { commanderDisplayName } from "../src/lib/cards/printed-name";
++import { IdentityPips } from "../src/components/commanders/commander-art";
++import { PendingTrack } from "../src/components/shell/pending-track";
++import { EyeOff } from "../src/components/commanders/eye-off";
++import { hideCommanderCopy } from "../src/lib/copy/commander-explained";
+ 
+ const { price: priceCopy, untagged } = discoveryCopy;
+ 
+@@ -240,6 +240,11 @@
+       >
+         {formatted}
+       </span>
++      {/* Small items 12, item 3: the source stamp sits BESIDE the figure (6px), inside the figure's own item, so it
++          wraps with the price and never sits alone at the line's end. */}
++      <span aria-hidden="true" className="font-mono" style={{ fontSize: 10, color: "var(--fg-locked)", ...((globalThis as any).__MARK ? { outline: "1.5px dashed #C9853E", outlineOffset: 3, borderRadius: 3 } : {}) }}>
++        {priceCopy.source}
++      </span>
+       <span className="sr-only">
+         {priced ? priceCopy.aria(formatted) : priceCopy.notStockedAria}
+       </span>
+@@ -497,15 +502,6 @@
+               in the property table.
+ 
+               Decorative: `PriceFigure`'s sr-only sentence carries the reading. */}
+-          {priceDrawn && (
+-            <span
+-              aria-hidden="true"
+-              className="font-mono ml-auto"
+-              style={{ fontSize: 10, color: "var(--fg-locked)" }}
+-            >
+-              {priceCopy.source}
+-            </span>
+-          )}
+         </div>
+ 
+         {/* THE FIT BAR, BELOW THE FIGURES AT BOTH WIDTHS — the figure above,

@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Signature card from menu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:640px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:640px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet><style>
+.shot.w420{width:420px;border-radius:12px}.shot.w340{width:340px;border-radius:12px}.shot.w640{width:640px;border-radius:12px}.shot.w410{width:410px;border-radius:12px}.shot.w720{width:720px;border-radius:10px}.shot.row390{width:390px;border-radius:10px}.shot.flat{border-radius:10px}
+.fr.w420{width:420px}.fr.w340{width:340px}.fr.w640{width:640px}.fr.w410{width:410px}.fr.w720{width:720px}
+.callout{border:1px solid #262A35;border-radius:12px;padding:16px 18px;background:#11131A;display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.open{border-color:rgba(227,154,79,.55)}
+</style>
+<div class="board" style="width: 2480px; min-height: 3035px">
+<div class="bh"><span class="k">Small items 12 · R1 · account 2 · 2026-11-15</span><h2>2 · Change your signature card from the account menu</h2><p class="cap">Hugh: <i>Enable avatar editing from the user menu.</i> The call: the face in the menu's head becomes the press, drawn exactly as Friends' head face (✎ badge, or + with no card), and it opens the same shipped picker over the menu. No new menu row (Hugh's rule), no new screen, and Friends keeps its own way in.</p></div><p class="sub">Today, for reference</p><div class="row"><div class="fr "><div class="state"><span class="pill was">Today</span><span class="k">Sheet, 390</span></div><img class="shot " src="art/si12-m-shipped-p.webp" alt="Sheet, 390"><p class="cap"><b>Display-only.</b> The face in the head shows your signature card, but changing it means going to Friends.</p></div><div class="fr w340"><div class="state"><span class="pill was">Today</span><span class="k">Popover, desktop</span></div><img class="shot w340" src="art/si12-m-shipped-d.webp" alt="Popover, desktop"><p class="cap"><b>The same head at 44px</b> in the rail's popover.</p></div></div><p class="sub">The face is the press (no new menu row)</p><div class="row"><div class="fr "><div class="state"><span class="pill now">2a</span><span class="k">Sheet, with a card</span></div><img class="shot " src="art/si12-m-face-p.webp" alt="Sheet, with a card"><p class="cap"><b>Friends' face button, brought here.</b> The face gets the same 24px ✎ badge Friends' head draws (<code>friends-head.tsx</code>), and the whole face is the press. Named <i>Your signature card: Polyraptor. Change</i>. The rows below are unchanged.</p></div><div class="fr "><div class="state"><span class="pill now">2a</span><span class="k">New piece outlined</span></div><img class="shot " src="art/si12-m-mark-p.webp" alt="New piece outlined"><p class="cap"><b>The only new piece</b>, in the dashed copper outline: the face and its badge.</p></div><div class="fr "><div class="state"><span class="pill now">2b</span><span class="k">Sheet, no card yet</span></div><img class="shot " src="art/si12-m-none-p.webp" alt="Sheet, no card yet"><p class="cap"><b>No signature card:</b> initials, as today, with a <b>+</b> badge in place of ✎. Named <i>Choose your signature card</i>, the shipped string.</p></div><div class="fr "><div class="state"><span class="pill now">2c</span><span class="k">Picker, over the menu</span></div><img class="shot " src="art/si12-m-pick-p.webp" alt="Picker, over the menu"><p class="cap"><b>The shipped SignaturePicker</b>, unchanged, opens over the menu sheet: search, From your decks, printings, <i>Use initials instead</i>. ✕ goes back to the menu.</p></div><div class="fr "><div class="state"><span class="pill now">2d</span><span class="k">Saved</span></div><img class="shot " src="art/si12-m-saved-p.webp" alt="Saved"><p class="cap"><b>Back on the menu with the new face.</b> A pick saves as on Friends; the picker closes once the write lands, and focus returns to the face. The header trigger redraws too.</p></div></div><p class="sub">Desktop, the rail popover</p><div class="row"><div class="fr w340"><div class="state"><span class="pill now">2a</span><span class="k">Popover, with a card</span></div><img class="shot w340" src="art/si12-m-face-d.webp" alt="Popover, with a card"><p class="cap"><b>Same badge, 44px face.</b></p></div><div class="fr w340"><div class="state"><span class="pill now">2b</span><span class="k">No card yet</span></div><img class="shot w340" src="art/si12-m-none-d.webp" alt="No card yet"><p class="cap"><b>Initials and +.</b></p></div><div class="fr w640"><div class="state"><span class="pill now">2c</span><span class="k">Picker</span></div><img class="shot w640" src="art/si12-m-pick-d.webp" alt="Picker"><p class="cap"><b>The picker's 520 modal</b> opens over the page and the popover, which stays open under the scrim with the face outlined (Friends' picking outline). ✕ or a save returns to the popover.</p></div><div class="fr w340"><div class="state"><span class="pill now">2d</span><span class="k">Saved</span></div><img class="shot w340" src="art/si12-m-saved-d.webp" alt="Saved"><p class="cap"><b>The new face</b> in the popover head and on the rail trigger.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2480,"height":3035}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
