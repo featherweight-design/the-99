@@ -10,6 +10,7 @@ import { RequestHistory, type HistoryRow } from "../src/components/social/reques
 import { named } from "../src/lib/person-name/mint";
 import { WaitingOnYou } from "../src/components/social/waiting-on-you";
 import { PodsPane } from "../src/components/social/pods-pane";
+import { RequestsBox } from "../src/components/social/requests-box";
 
 mkdirSync("dz/frames", { recursive: true });
 const NOW = new Date("2026-11-18T02:00:00Z");
@@ -111,4 +112,17 @@ const full = (split: "shipped" | "proposed") => (
 app("D1-wide", "wide" as any, full("shipped"), { vh: 1220 });
 app("D2-wide", "wide" as any, full("proposed"), { vh: 1370 });
 app("P1-phone", "phone", full("proposed"), { vh: 2600 });
+
+// R1d: one Requests box, two tabs.
+const box = (tab: "waiting" | "mine") => (
+  <RequestsBox tab={tab} history waitingCount={WAIT.length} mineCount={LIVE3.length} unseenAnswer
+    waiting={<WaitingOnYou rows={WAIT} now={NOW} bare />} mine={<YourRequests rows={LIVE3} now={NOW} history bare />} />
+);
+const combined = (tab: "waiting" | "mine") => (
+  <FriendsView profile={ME} friends={FRIENDS as any} links={[]} accepted={null} origin="https://the-99.dev" nowMs={NOW.getTime()} maxLinks={10}
+    invites={null} decksSeen={{ seeDecks: true, seeUnfinished: false } as any} friendLinks={true} pods={podsEl} waiting={box(tab)} />
+);
+app("R1-phone", "phone", combined("waiting"), { vh: 2300 });
+app("R2-phone", "phone", combined("mine"), { vh: 2300 });
+app("D3-wide", "wide" as any, combined("waiting"), { vh: 980 });
 writeFileSync("dz/frames.json", JSON.stringify(frames));

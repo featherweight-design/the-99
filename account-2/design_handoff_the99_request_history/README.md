@@ -1,4 +1,4 @@
-# The 99 — Card request history · R1c · awaiting Hugh's review
+# The 99 — Card request history · R1d · awaiting Hugh's review
 
 Account 2, 2026-11-18. Issue featherweight-design/the-99#2984. Canvas (account 2): "The 99 · Request History R1".
 Open the `.dc.html` files with `support.js` beside them; frames are PNGs in `art/` (the shipped shell and Friends page
@@ -7,6 +7,11 @@ rendered from main with the shipped CSS, with the proposal applied).
 ## R1b (Hugh, 2026-11-17)
 - **B1 Headings live inside their box.** Waiting on you, Your requests, Friends and each history month are one panel (`PANEL`): a header band (`BAND`: shipped section-head type on `--surface-rail`, hairline under, links at its end via `BAND_LINK`) above the rows. No heading on a bare hairline. `scratch-gen/section-panel.tsx`, `scratch-gen/sections.diff`.
 - **B2 Empty states get a drawn mark**: `HandoverMark` (friend's dashed card, the passed card with accent edge and spare glyph, an arc), CardFan inks, then title and one line (`PanelEmpty`, sm in Your requests E2, lg on an empty history tab H3).
+
+## R1d (Hugh, 2026-11-17: combine Waiting on you and Your requests)
+- **D1 One Requests box, two tabs** (`scratch-gen/requests-box.tsx`): the band holds the shipped `SegmentedSwitch` (compact, `fill`, `kind="tabs"`): Waiting on you N · Your requests N. Rows unchanged (both lists gain `bare`, which drops their own box and keeps an sr-only heading). Opens on Waiting on you when anything waits, else Your requests. An unseen answer puts the diamond on Your requests' tab. An empty tab shows `PanelEmpty`.
+- **D2 Request history moves to the box's foot** ("Request history ›", right-aligned), covering both sides; it leaves Your requests' band.
+- **D3 Layout**: phone Requests, Friends, Pods. From 1180, left = Requests then Friends, right = Pods (448). **Retires R1c's C1** (Your requests no longer moves right; `side` slot not needed). Board `Tabs` (R1, R2, D3).
 
 ## R1c (Hugh, 2026-11-17: boxes and empty states approved; two columns, full layout with pods)
 - **C1 Your requests moves to the top of the right column from 1180** (`FriendsView` gains `side`), above Pods and open links. Left: Waiting on you, then Friends. At 1440 with three waiting and three requests, Friends' heading moves from ~880px (at the fold) to ~520px. Board `Layout` (D1 today's split boxed, D2 recommended, P1 phone).
