@@ -27,14 +27,15 @@ History lists every kept run with the same row. A row opened from History keeps 
 - Result (any) → Try another strategy → Strategy with the run's commander and bracket, as shipped.
 - ✕ anywhere closes. The next press follows the table again.
 
-## Picking which swaps to keep (R1c, #2985)
-| State | Row | Facts and press |
+## Picking adds and cuts (R2, #2985): Suggested changes' results, reused
+| State | Lists | Bar |
 |---|---|---|
-| Picked (default) | Reason line + `✓ Picked` toggle at its end | As found |
-| Unpicked | Both sides at 45%, chip hidden, `Not picked. <cut> stays in the deck.` + `Pick` toggle (empty box) | Title `11 swaps toward Spells · 3 not picked`; To buy, Already yours, Bracket and the press count picked pairs |
-| Picked pairs under the chosen bracket | as above | Bracket `2 → 2`; line `Without the swaps you didn’t pick, it plays at bracket 2, under the 3 you chose.` Press stays on |
-| None picked | Every row unpicked | Press off |
-Pairs stay whole. Picks are stored on the run (G28): opening it again from the start screen or History shows them. The commander pair has no toggle.
+| As found (default) | Every add and every cut `✓ Picked`; each side `14 of 14 chosen` | `+14 in −14 out · stays at 99 · bracket 2 → 3 · Upgraded, as asked`; `Start the deck with these 14 swaps` |
+| Mixed: Sai kept, Searing Touch dropped | Cut Sai `Pick` (stays), add Searing Touch `Pick` (stays out); `13 of 14 chosen` each | `+13 in −13 out`, press counts 13 |
+| Counts differ | e.g. one cut unpicked | `14 in, 13 out. Pick 1 more cut to apply, so the deck stays at 99.` Press off |
+| Bracket pick dropped (Mystical Tutor) | as above | Shipped warning `You asked for 3 · Upgraded. None of your picks moves it…`; press on |
+| None picked | all `Pick` | `0 in · 0 out`, `Pick up to 14 of each…`; press off |
+The commander pair has no Pick. Picks are stored on the run (G28): opening it again from the start screen or History shows them. Deck page: the same, with `Apply these N swaps`.
 
 ## Must-nots
 - Never reopen an old result on its own: only an unseen one opens by itself (state 2).
@@ -44,5 +45,5 @@ Pairs stay whole. Picks are stored on the run (G28): opening it again from the s
 - No status chip or stamp on the row: the words go on its existing mono line.
 - No row while a run is pending: the wait owns the window.
 - Picking never confirms, never costs a credit, and never asks for a new run.
-- Never split a pair: a lone cut or add would leave the deck off 99.
-- Never move the marker or buy tag right of the pips: the card row's order holds.
+- Never start or apply uneven counts: the deck stays at 99.
+- Never fork Suggested changes' results into an Upgrade copy: one component, one pick line, one bar.

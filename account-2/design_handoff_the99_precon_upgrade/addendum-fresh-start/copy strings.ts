@@ -1,4 +1,4 @@
-// Upgrade this precon · addendum fresh start (R1, 2026-11-15). DRAFT for /copy-review.
+// Upgrade this precon · addendum fresh start (R1 2026-11-15, R2 2026-11-18). DRAFT for /copy-review.
 // Add to preconUpgradeCopy.history in src/lib/copy/precon-upgrade.ts. Retires `history.past`.
 export const freshStartCopy = {
   /** The start screen's kicker over the newest kept run, in History's month-heading style. */
@@ -8,11 +8,6 @@ export const freshStartCopy = {
   notYet: "no deck yet",
   /** The dashed note on a used run, opened from the start screen or History. */
   usedNote: (deck: string) => `Already in ${deck}. Opening it again uses no credit.`,
-  /** R1c (#2985): picking which swaps to keep. The toggle reuses suggestedChangesV2Copy.results.pick / picked. */
-  pick: {
-    notPicked: "Not picked.",
-    stays: (cut: string) => `${cut} stays in the deck.`,
-    count: (n: number) => `${n} not picked`,
-    below: (b: number, want: number) => `Without the swaps you didn’t pick, it plays at bracket ${b}, under the ${want} you chose.`,
-  },
+  /** R2 (#2985): the result's lists, picks, tally and bar lines are suggestedChangesV2Copy as shipped. The bar's press reads
+   *  preconUpgradeCopy.results.start(n) / preconUpgradeDeckCopy.apply(n), n = picked adds (= picked cuts). No new strings. */
 } as const;

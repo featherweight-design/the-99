@@ -1,5 +1,5 @@
---- a/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-15 16:56:59.986084786 +0000
-+++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx	2026-11-18 02:55:11.544942431 +0000
+--- a/src/components/decks/precons/upgrade/upgrade-flow.tsx
++++ b/src/components/decks/precons/upgrade/upgrade-flow.tsx
 @@ -25,6 +25,7 @@
  import { ResultView, leadOf, runDay } from "./result-view";
  import { HistoryView } from "./history-view";
@@ -15,20 +15,17 @@
 -export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread }: {
 +export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, deckOf = () => null, init = {} }: {
 +  deckOf?: (runId: string) => string | null;
-+  init?: { opened?: string; fromStart?: boolean; history?: boolean; fromHistory?: boolean; rejected?: string[]; keptBracket?: number };
++  init?: { opened?: string; fromStart?: boolean; history?: boolean; fromHistory?: boolean; seedSet?: number[] };
    /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
    fileName: string;
    precon: string;
-@@ -70,11 +73,16 @@
+@@ -70,11 +73,13 @@
    // Leaving the wait, the failure or the result for the picks (Try another strategy, a done cell of the tracker).
    const [left, setLeft] = useState(kept !== null);
    // A kept run opened from the same-picks ask shows as a result, free.
 -  const [opened, setOpened] = useState<string | null>(null);
 +  const [opened, setOpened] = useState<string | null>(init.opened ?? null);
 +  const [fromStart, setFromStart] = useState(init.fromStart ?? false);
-+  // Fresh start R1b: swaps the player rejected, per run (stored on the run, G28).
-+  const [rejected, setRejected] = useState<Set<string>>(() => new Set(init.rejected ?? []));
-+  const toggle = (id: string) => setRejected((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
    // History is a list of every kept run; a row opened from it is read-only, with a way back to the list.
 -  const [history, setHistory] = useState(false);
 -  const [fromHistory, setFromHistory] = useState(false);
@@ -39,7 +36,7 @@
    const resultId = opened ?? (view.kind === "results" ? view.runId : null);
    const shown = resultId ? panel.runs.find((r) => r.id === resultId) ?? null : null;
    // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
-@@ -206,10 +214,11 @@
+@@ -206,10 +211,11 @@
          <div className="flex flex-none items-start justify-between gap-[12px]">
            <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
              {stage === "history" && <button type="button" onClick={() => setHistory(false)} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.backLink}</button>}
@@ -52,7 +49,7 @@
              <button type="button" onClick={() => setHistory(true)} className="flex min-h-[44px] flex-none cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[2px] font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">
                <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" className="flex-none">
                  <path d="M8 2.2a5.8 5.8 0 1 1-5.6 4.3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-@@ -231,7 +240,7 @@
+@@ -231,7 +237,7 @@
            </button>
          </div>
          {stage === "pick" && here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
@@ -61,7 +58,7 @@
            <StepTracker
              cells={runCells}
              current={null}
-@@ -249,9 +258,10 @@
+@@ -249,9 +255,30 @@
          <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
            {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
            {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
@@ -69,27 +66,74 @@
 -          {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
 -          {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
 +          {stage === "results" && shown && (fromHistory || fromStart) && deckOf(shown.id) && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{freshCopy.usedNote(deckOf(shown.id)!)}</p>}
-+          {stage === "results" && shown && <ResultView panel={panel} run={shown} rejected={rejected} onToggle={toggle} keptBracket={init.keptBracket ?? null} />}
++          {stage === "results" && shown && <ResultView panel={panel} run={shown} apply={!!apply} seedSet={init.seedSet ?? [shown.bracketAfter ?? 2]}
++            press={stale || refused ? null : { label: (n) => apply ? (apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(n)) : copy.results.start(n), onPress: () => (apply ? apply.onApply(shown.id) : onStart?.(shown.id)) }}
++            beside={<>
++              {(stale || refused) && <p role="note" className="m-0 w-full text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{stale ? (apply ? preconUpgradeDeckCopy.listChanged : copy.results.listChanged) : refused}</p>}
++            </>} />}
++          {stage === "results" && shown && <div className="flex justify-center md:justify-end">
++            <button
++              type="button"
++              onClick={() => {
++                if (shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: null });
++                setOpened(null);
++                setFromHistory(false);
++                setStep("strategy");
++                setLeft(true);
++              }}
++              className={`${GHOST_PRESS} flex items-center justify-center gap-[10px] h-[44px] w-full md:h-[36px] md:w-auto`}
++            >
++              {copy.results.another}
++              <span className="border-y-0 border-r-0 border-l border-solid border-l-[color:var(--border-strong)] pl-[10px] font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">{copy.results.anotherCost}</span>
++            </button>
++</div>}
 +          {stage === "history" && <HistoryView panel={panel} art={art} deckOf={deckOf} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
 +          {stage === "pick" && step === "intro" && newest && <LastRun panel={panel} art={art} run={newest} deck={deckOf(newest.id)} onOpen={() => { setOpened(newest.id); setFromStart(true); }} />}
            {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} short={short ? { payments } : undefined} onMore={toCredits} />}
            {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
            {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
-@@ -297,10 +307,10 @@
-             )}
-             {apply ? (
-               <button type="button" disabled={stale || apply.pending || refused !== null} aria-busy={apply.pending || undefined} onClick={() => apply.onApply(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>
+@@ -287,37 +314,8 @@
+             </div>
+             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.failed.retryLine}</p>
+           </div>
+-        ) : stage === "results" && shown ? (
+-          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-[10px]">
+-            {/* In the foot, beside the press it explains, so it is read whatever the body has scrolled to. */}
+-            {(stale || refused) && (
+-              <p role="note" className="m-0 w-full text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+-                {stale ? (apply ? preconUpgradeDeckCopy.listChanged : copy.results.listChanged) : refused}
+-              </p>
+-            )}
+-            {apply ? (
+-              <button type="button" disabled={stale || apply.pending || refused !== null} aria-busy={apply.pending || undefined} onClick={() => apply.onApply(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>
 -                {apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(shown.pairs.length)}
-+                {apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(shown.pairs.length - rejected.size)}
-               </button>
-             ) : (
+-              </button>
+-            ) : (
 -              <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
-+              <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length - rejected.size)}</button>
-             )}
-             <button
-               type="button"
---- a/src/components/decks/precons/upgrade/history-view.tsx	2026-11-15 16:56:59.986084786 +0000
-+++ b/src/components/decks/precons/upgrade/history-view.tsx	2026-11-15 17:01:52.431856105 +0000
+-            )}
+-            <button
+-              type="button"
+-              onClick={() => {
+-                if (shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: null });
+-                setOpened(null);
+-                setFromHistory(false);
+-                setStep("strategy");
+-                setLeft(true);
+-              }}
+-              className={`${GHOST_PRESS} flex items-center justify-center gap-[10px] md:order-1`}
+-            >
+-              {copy.results.another}
+-              <span className="border-y-0 border-r-0 border-l border-solid border-l-[color:var(--border-strong)] pl-[10px] font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">{copy.results.anotherCost}</span>
+-            </button>
+-          </div>
+-        ) : step === "strategy" && same && complete(picks) && !blocked ? (
++        ) : stage === "results" && shown ? null
++        : step === "strategy" && same && complete(picks) && !blocked ? (
+           <div className="flex flex-none flex-col gap-[10px]">
+             <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
+               {copy.same.body(same.strategyLabel, leadName ?? "", picks.bracket, runDay(same.createdAt))}
+--- a/src/components/decks/precons/upgrade/history-view.tsx
++++ b/src/components/decks/precons/upgrade/history-view.tsx
 @@ -9,6 +9,7 @@
  import { leadOf, runDay } from "./result-view";
  import type { UpgradeArt } from "./pick-steps";
@@ -144,8 +188,8 @@
                    </li>
                  );
                })}
---- a/src/components/decks/precons/upgrade/result-view.tsx	2026-11-15 16:56:59.986084786 +0000
-+++ b/src/components/decks/precons/upgrade/result-view.tsx	2026-11-18 02:55:11.544296469 +0000
+--- a/src/components/decks/precons/upgrade/result-view.tsx
++++ b/src/components/decks/precons/upgrade/result-view.tsx
 @@ -136,10 +136,10 @@
  /** One side of a swap: `−` or `+`, the owned dot (filled: a copy is yours), the name and its marks, then what it carries.
   *  The name and the marks share one `min-w-0 flex-1` box (readiness clarification 5): the name truncates and gives up room
@@ -211,46 +255,70 @@
  }
  
 -export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun }) {
-+export function ResultView({ panel, run, rejected = new Set<string>(), onToggle, keptBracket = null }: { panel: UpgradePanel; run: PanelRun; rejected?: Set<string>; onToggle?: (addId: string) => void; keptBracket?: number | null }) {
-+  const kept = run.pairs.filter((p) => !rejected.has(p.addId));
++export function ResultView({ panel, run, press = null, beside = null, seedSet = null, apply = false }: { panel: UpgradePanel; run: PanelRun; press?: { label: (n: number) => string; onPress: () => void } | null; beside?: ReactNode; seedSet?: number[] | null; apply?: boolean }) {
++  const kept = run.pairs;
 +  const buyKept = kept.filter((p) => !panel.cards[p.addId]?.owned);
    const lead = leadOf(panel, run);
    const leadName = lead ? lead.cards.map((c) => c.name).join(" + ") : "";
    const box = panel.commanders.find((c) => c.isFace) ?? null;
-@@ -198,17 +218,18 @@
+@@ -193,12 +213,13 @@
+     { combo: run.pairs.some((p) => p.cutCombo || p.addCombo) },
+   );
+   return (
+-    <div className="flex flex-col gap-[16px]">
++    // R2: the run's bar pins to the sheet's own foot, not over the app's tab bar.
++    <div className="flex flex-col gap-[16px]" style={{ ["--tabbar-h" as string]: "0px", ["--deck-foot-h" as string]: "0px" }}>
+       <div className="flex items-center gap-[10px]">
          <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]">
            <StrategyIcon strategy={key as StrategyKey} size={18} />
          </span>
 -        <h3 className="m-0 min-w-0 flex-1 font-display text-[16px] font-normal uppercase text-[color:var(--fg)]">{copy.title(run.pairs.length, run.strategyLabel)}</h3>
-+        <h3 className="m-0 min-w-0 flex-1 font-display text-[16px] font-normal uppercase text-[color:var(--fg)]">{copy.title(kept.length, run.strategyLabel)}{rejected.size > 0 && <span className="ml-[8px] font-mono text-[10.5px] normal-case text-[color:var(--fg-faint)]">{rejectCopy.count(rejected.size)}</span>}</h3>
++        <h3 className="m-0 min-w-0 flex-1 font-display text-[16px] font-normal uppercase text-[color:var(--fg)]">{copy.title(kept.length, run.strategyLabel)}</h3>
          <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{runDay(run.createdAt)}</span>
        </div>
        <div className="grid grid-cols-2 gap-[2px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[3px] md:grid-cols-4">
-         <Fact label={copy.facts.ledBy}>{leadName}</Fact>
+@@ -206,8 +227,8 @@
          <Fact label={copy.facts.bracket}>
--          <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
-+          <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {keptBracket ?? run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
+           <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
          </Fact>
 -        <Fact label={copy.facts.toBuy}>{run.toBuy.cards} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(run.toBuy.cents)}</span></Fact>
 -        <Fact label={copy.facts.yours}>{run.owned}</Fact>
 +        <Fact label={copy.facts.toBuy}>{buyKept.length} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(buyKept.reduce((n, p) => n + p.addCents, 0))}</span></Fact>
 +        <Fact label={copy.facts.yours}>{kept.length - buyKept.length}</Fact>
        </div>
-+      {keptBracket !== null && run.bracketTarget !== null && keptBracket < run.bracketTarget && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{rejectCopy.below(keptBracket, run.bracketTarget)}</p>}
        {keyEntries.length > 0 && <MarkKey marks={keyEntries} regionAria={cardMarkCopy.keyRegionAria} />}
        {run.refunded && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.short(run.bracketTarget ?? run.bracketAfter ?? 0, run.pairs.length)}</p>}
-       {changed && box && lead && (
-@@ -240,7 +261,8 @@
-                   key={p.position}
-                   cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
-                   addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
+@@ -226,27 +247,63 @@
+           </ul>
+         </section>
+       )}
+-      {groups.map((g) => (
+-        <section key={g.theme || "rest"} className="flex flex-col gap-[8px]">
+-          <h4 className="m-0 flex items-baseline gap-[8px] text-[14px] font-semibold text-[color:var(--fg)]">
+-            {g.theme === REST ? copy.cutsFromRest : copy.cutsFrom(g.theme)} <span className="font-mono text-[10.5px] font-normal text-[color:var(--fg-faint)]">{g.pairs.length}</span>
+-          </h4>
+-          <ul className="m-0 flex list-none flex-col p-0">
+-            {g.pairs.map((p) => {
+-              const add = panel.cards[p.addId];
+-              const cut = panel.cards[p.cutId];
+-              return (
+-                <Swap
+-                  key={p.position}
+-                  cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
+-                  addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
 -                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? copy.youOwnIt : dollars(p.addCents)}</span>]}
-+                  aside={[null, null]} chip={<Chip owned={add?.owned ?? false} cents={p.addCents} claims={(add as any)?.claims ?? null} />}
-+                  reject={{ rejected: rejected.has(p.addId), onToggle: () => onToggle?.(p.addId) }}
-                 />
-               );
-             })}
-@@ -250,3 +272,25 @@
+-                />
+-              );
+-            })}
+-          </ul>
+-        </section>
+-      ))}
++      <SuggestedChangesRun
++        runId={run.id} deckId={apply ? "deck" : ""} ask={askOf(run, panel)} lines={linesOf(run, panel)} live={null} startedAt={null} report={null}
++        permits={[panel.boxBracket]} newestPriceAsOf={ASOF} figures={FIGURES} drift={null} actions={INERT}
++        onChanged={async () => null} onAnnounce={() => {}} onNewRun={() => {}} groupingInMemory
++        press={press} beside={beside} seedSet={seedSet}
++      />
      </div>
    );
  }
@@ -276,3 +344,96 @@
 +  count: (n: number) => `${n} not picked`,
 +  below: (b: number, want: number) => `Without the swaps you didn’t pick, it plays at bracket ${b}, under the ${want} you chose.`,
 +};
++
++import { SuggestedChangesRun, type SuggestionSetActions } from "../../suggested-changes-run";
++import type { LineItem, V2Ask } from "../../../../lib/tuning/state";
++const ASOF = new Date("2026-11-15");
++const FIGURES = { typeCounts: { Creatures: 22, Instants: 9, Sorceries: 6, Artifacts: 11, Enchantments: 3 }, roles: [{ role: "draw", have: 7, target: 10 }, { role: "removal", have: 5, target: 8 }, { role: "ramp", have: 9, target: 10 }] } as any;
++const refuse = async () => ({ ok: false as const, message: "" });
++const INERT: SuggestionSetActions = { apply: refuse, undo: refuse, pick: async () => ({ ok: true }) } as any;
++/** R2: the run's ask, as Suggested changes reads one: N a side, the bracket aimed for. */
++function askOf(run: PanelRun, panel: UpgradePanel): V2Ask {
++  const t = run.bracketTarget ?? panel.boxBracket;
++  return { runId: run.id, requestedCount: run.pairs.length, units: 1, request: "", bracket: { choice: t > panel.boxBracket ? "up" : "keep", target: t }, restrictions: { capCents: null, sets: [], ownedOnly: false } } as any;
++}
++/** R2: the stored pairs as Suggested changes' lines, one per side; the pair's why goes on the add, the cut's own on the cut. */
++function linesOf(run: PanelRun, panel: UpgradePanel): LineItem[] {
++  const unpicked: string[] = (run as any).unpicked ?? [];
++  return run.pairs.flatMap((p: any) => {
++    const add: any = panel.cards[p.addId] ?? {};
++    const cut: any = panel.cards[p.cutId] ?? {};
++    const base = { evidence: [], position: p.position, verdict: "pending", applies: true, locked: false, applySet: null, verdictAt: null, rationaleShort: null };
++    return [
++      { ...base, side: "add", id: `a-${p.addId}`, cardOracleId: p.addId, cardName: p.add, cardTypeLine: add.typeLine ?? "", cardImageUri: add.image ?? null, rationale: p.reason,
++        owned: !!add.owned, ownedQuantity: add.owned ? 1 : 0, availability: add.claims ?? null, inDeck: false,
++        price: { cents: p.addCents || null, foilCents: null, etchedCents: null, asOf: ASOF }, bracketAfter: add.bracketAfter ?? null, typeGroup: add.group, role: add.role ?? null, picked: !unpicked.includes(`a-${p.addId}`) },
++      { ...base, side: "cut", id: `c-${p.cutId}`, cardOracleId: p.cutId, cardName: p.cut, cardTypeLine: cut.typeLine ?? "", cardImageUri: cut.image ?? null, rationale: p.cutReason,
++        owned: true, ownedQuantity: 1, availability: null, inDeck: true,
++        price: { cents: null, foilCents: null, etchedCents: null, asOf: ASOF }, bracketAfter: null, typeGroup: cut.group, role: cut.role ?? null, picked: !unpicked.includes(`c-${p.cutId}`) },
++    ] as LineItem[];
++  });
++}
+--- a/src/components/decks/suggested-changes-run.tsx
++++ b/src/components/decks/suggested-changes-run.tsx
+@@ -72,7 +72,7 @@
+  */
+ export function SuggestedChangesRun({
+   runId, ask, lines: readLines, live, startedAt, report, permits, declared = null, newestPriceAsOf, figures, drift, finishedHere = false,
+-  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, groupingInMemory = false, credits = null, past = null, deckId,
++  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, groupingInMemory = false, credits = null, past = null, deckId, press = null, beside = null, seedSet = null,
+ }: {
+   runId: string;
+   /** The run's deck, for the confirmation's Pull (Small items 4, item 2). */
+@@ -106,6 +106,11 @@
+    *  `readOnly` too). Its note leads, You asked sits beside the lead on desktop, and the lead says when it was applied.
+    *  `moved`: how many cards the list has changed by since the run read it, for History C's note; null when that cannot
+    *  be said, and the note reads uncounted. */
++  /** Upgrade fresh start R2 (scratch): the flow's own press in the bar's Apply place (Start or Apply, no confirm), and the press beside it. */
++  press?: { label: (pairs: number) => string; onPress: () => void } | null;
++  beside?: ReactNode;
++  /** Scratch only: the server's set read, seeded for a static frame. */
++  seedSet?: number[] | null;
+   past?: { date: string; stale: boolean; version?: number | null; moved?: number | null } | null;
+   /** The reader's free credits now (`freeCount` of the allowance): a refunded short run says how many are left. */
+   credits?: { left: number; total: number } | null;
+@@ -226,7 +231,7 @@
+     return () => { live = false; clearTimeout(timer); };
+   }, [setKey, waiting, runId, actions.setBracket, setRead?.key]);
+   const outcome = bracketOutcome(
+-    permits, ask?.bracket ?? null, [...pickedAdds, ...pickedCuts], setRead && setRead.key === setKey ? setRead.permits : null, declared,
++    permits, ask?.bracket ?? null, [...pickedAdds, ...pickedCuts], setRead && setRead.key === setKey ? setRead.permits : seedSet, declared,
+   );
+ 
+   // The applied sets, each its own Undo (spec §7a); the bar offers the one this visit applied, else the one found.
+@@ -572,7 +577,7 @@
+             {readFrom}
+           </div>
+         </div>
+-      ) : ask ? <YouAsked ask={ask} /> : null}
++      ) : ask && !press ? <YouAsked ask={ask} /> : null}
+       {/* Once in, the clock stays only for a run that came up short of the ask (Wait E); the Results boards draw none. */}
+       {clockFrom && (waiting || ofAsk !== null) ? (
+         <Clock startedAt={clockFrom} adds={adds.length} cuts={cuts.length} n={n} done={!waiting} />
+@@ -705,11 +710,13 @@
+               {busy === "undo" ? sc.undoing : sc.bar.undo(appliedSet.length)}
+             </button>
+           ) : null}
++          {beside}
+           {appliedBar ? null : (
+             <button
+               type="button"
+               onClick={() => {
+                 if (!applyOn) return;
++                if (press) return press.onPress();
+                 setPullFigures(null);
+                 setOpened((n) => n + 1);
+                 setConfirming(true);
+@@ -720,7 +727,7 @@
+                 ? "bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)]"
+                 : "cursor-default bg-transparent text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]"}`}
+             >
+-              {applyOn ? sc.bar.apply(t.adds * 2) : sc.run.applyOff}
++              {press ? press.label(t.adds) : applyOn ? sc.bar.apply(t.adds * 2) : sc.run.applyOff}
+             </button>
+           )}
+         </div>
