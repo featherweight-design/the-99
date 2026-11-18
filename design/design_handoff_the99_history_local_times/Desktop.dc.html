@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>History in local time, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.dk{display:flex;flex-direction:column;gap:10px;width:960px;flex:none}
+.shot{display:block;width:100%;border-radius:12px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 2120px; min-height: 1240px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1200px">
+<p class="lab"><b>#2986</b> · /collection/history · 1280 · reader in Denver, Wed Nov 18, 2:14 PM</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Same rules at the desk</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The time keeps its right-hand slot beside Revert. Hovering it shows the full stamp with the zone, so the exact moment is one look away.</p>
+</div>
+<div style="display: flex; gap: 80px; align-items: flex-start">
+<div class="dk"><p class="lab"><b>B2</b> · shipped (UTC)</p><img class="shot" src="art/B1-desk.png" alt="Shipped desktop History with UTC times"><p class="cap">Four entries under Today, one of them from 11:40 PM last night.</p></div>
+<div class="dk"><p class="lab"><b>A2</b> · proposed (local)</p><img class="shot" src="art/A1-desk.png" alt="Proposed desktop History with local friendly times"><p class="cap">Three under Today, Swords under Yesterday at <b>11:40 PM</b>, the Sync under <b>Monday · Nov 16</b> at <b>7:30 PM</b>.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2120,"height":1240}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
