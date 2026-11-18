@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>More decks than copies</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:flex;flex-direction:column;gap:10px;width:390px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1362px; min-height: 1180px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1200px">
+<p class="lab"><b>M</b> · more decks than copies · 390</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Three decks, one or two copies</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The top section is the shipped row, which already handles any number of decks and copies. Other decks joins the same count.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="ph"><p class="lab"><b>M1</b> · 3 decks, 1 copy</p><img class="shot" src="art/M1-phone.png" alt="Three decks, one copy"><p class="cap">Round marks: one copy, one pick. The first committed deck gets it; the other two buy it.</p></div>
+<div class="ph"><p class="lab"><b>M2</b> · 3 decks, 2 copies</p><img class="shot" src="art/M2-phone.png" alt="Three decks, two copies"><p class="cap">Square marks and <b>2 of 2 given</b>. Here Ajani’s Pride was picked over Heroes of the Plains. When both are given, a third tap gets the shipped “untick one first” reason.</p></div>
+<div class="ph"><p class="lab"><b>M3</b> · one goes to another deck</p><img class="shot" src="art/M3-phone.png" alt="Two copies, one to Samut's Haste"><p class="cap">A pick in Other decks <b>counts toward the cap</b>: Giada’s Angels and Samut’s Haste, 2 of 2 given.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1362,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

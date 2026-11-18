@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Other decks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:flex;flex-direction:column;gap:10px;width:390px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 2222px; min-height: 1300px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1300px">
+<p class="lab"><b>O</b> · other decks · 390</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Other decks: compatible only, picked like the decks above</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">One disclosure row under the shipped chooser row. Open, its rows are the same options as above. Decks outside the card’s colors are never listed; decks at 99 or more are.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="ph"><p class="lab"><b>O1</b> · open</p><img class="shot" src="art/O1-phone.png" alt="Other decks open"><p class="cap">Each deck shows its card count and <b>adds it</b>. Tam’s Sweepers at 99 stays an option and says <b>makes 100</b>. The foot line says what a pick does and that decks outside its colors aren’t listed.</p></div>
+<div class="ph"><p class="lab"><b>O2</b> · picked</p><img class="shot" src="art/O2-phone.png" alt="Tam's Sweepers picked"><p class="cap">Same tap as above: accent row, <b>adds it · gets it</b>, and both listing decks now buy it. It goes into the draft and gets the copy on commit. Tap again to undo.</p></div>
+<div class="ph"><p class="lab"><b>O3</b> · closed with a pick</p><img class="shot" src="art/O3-phone.png" alt="Other decks closed, naming the pick"><p class="cap">Closed again, the header names the pick in accent, so the choice is never hidden.</p></div>
+<div class="ph"><p class="lab"><b>F1</b> · many decks</p><img class="shot" src="art/F1-phone.png" alt="Twelve other decks with Find"><p class="cap">Past 6 decks, a <b>Find a deck</b> field (the shipped SearchField) tops the list. The list scrolls inside the chooser; the title and Done stay put.</p></div>
+<div class="ph"><p class="lab"><b>F2</b> · found</p><img class="shot" src="art/F2-phone.png" alt="Filtered to Heliod Lifegain"><p class="cap">Typing narrows it by name. A pick stays picked while it is filtered out.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2222,"height":1300}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

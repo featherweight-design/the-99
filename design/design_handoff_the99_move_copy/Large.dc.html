@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A large History entry</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:flex;flex-direction:column;gap:10px;width:390px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1882px; min-height: 2560px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1300px">
+<p class="lab"><b>L</b> · a large entry · 390 and 1280</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">62 cards to 9 decks: change each card where it is listed</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">Your live entry’s shape: Went up · 13, New · 49, the summary line naming three decks and 6 more. The shipped entry, groups and rows, with Change added per card.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="ph"><p class="lab"><b>L1</b> · closed</p><img class="shot" src="art/L1-phone.png" alt="Large entry closed"><p class="cap">The summary line keeps its names and adds <b>Change where 3 cards go</b>. It opens the entry on Can move. No Change on this line: it names nine decks.</p></div>
+<div class="ph"><p class="lab"><b>L2</b> · open, Went up</p><img class="shot" src="art/L2-phone.png" alt="Large entry open on Went up"><p class="cap">Each row whose card still has a choice ends its own line with <b>Change</b>: Deathcap Glade, An Offer You Can’t Refuse. Swiftfoot Boots and the spare Sol Rings have copies to spare, so they have none.</p></div>
+<div class="ph"><p class="lab"><b>L3</b> · Can move · 3</p><img class="shot" src="art/L3-phone.png" alt="Large entry on the Can move tab"><p class="cap">A last tab after the shipped groups holds just the cards with a choice, from every group (Fabled Passage is from New). Each Change opens that card’s chooser.</p></div>
+<div class="ph"><p class="lab"><b>L4</b> · after a move</p><img class="shot" src="art/L4-phone.png" alt="After moving Deathcap Glade"><p class="cap">The row keeps its record and adds <b>Now HD - Gishath has it.</b> It stays in Can move while it still has a choice.</p></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px"><p class="lab"><b>L5</b> · desktop, Can move</p><img src="art/L3-desk.png" alt="Large entry on desktop, Can move tab" style="display: block; width: 1100px; border-radius: 14px; border: 1px solid #3A3229"><p class="cap">The same entry at 1280: rows in the shipped column, Change at the end of each card’s line, under its count.</p></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1882,"height":2560}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

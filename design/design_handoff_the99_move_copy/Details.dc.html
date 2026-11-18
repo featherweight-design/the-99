@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>From card details phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.ph{display:flex;flex-direction:column;gap:10px;width:390px;flex:none}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 1362px; min-height: 1180px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1200px">
+<p class="lab"><b>C</b> · card details · 390</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Change where a copy goes, from the card</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The sheet pulled full, scrolled to the receipt. The In your decks block is the shipped AvailabilityDetail with Change added; the chooser is the shipped sheet.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div class="ph"><p class="lab"><b>C1</b> · the door</p><img class="shot" src="art/C1-phone.png" alt="Card details, In your decks with Change"><p class="cap"><b>Change</b> sits at the end of the In your decks heading, only while no copy is free. Deck names stay links to the deck.</p></div>
+<div class="ph"><p class="lab"><b>C2</b> · the chooser</p><img class="shot" src="art/C2-phone.png" alt="Where this copy goes, default"><p class="cap">The shipped chooser. The first committed deck gets it by default. <b>Other decks · 3</b> waits closed underneath.</p></div>
+<div class="ph"><p class="lab"><b>C3</b> · picked</p><img class="shot" src="art/C3-phone.png" alt="Heroes of the Plains picked"><p class="cap">A tap gives the copy to Heroes of the Plains: accent row, <b>gets it</b> and <b>buys it</b> swap at once. Tap again to go back. No list or version changes.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1362,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
