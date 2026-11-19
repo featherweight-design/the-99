@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Prototype · a 4-player table you can tap</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(art/cinzel-variable.woff2) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(art/ibm-plex-sans-variable.woff2) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(art/ibm-plex-mono-500.woff2) format("woff2");font-weight:500}
+body{margin:0}
+.scr{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--warning:#DEAA29;--fact:#8FA6BE;width:390px;height:844px;box-sizing:border-box;padding:6px;background:var(--bg);display:grid;grid-template-columns:155px 56px 155px;grid-template-rows:413px 413px;gap:6px;position:relative;overflow:hidden;font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg);user-select:none;-webkit-user-select:none;touch-action:manipulation}
+.cell{position:relative;border-radius:16px;perspective:900px}
+.rot{position:absolute;width:413px;height:155px;left:-129px;top:129px}
+.r90{transform:rotate(90deg)}.r270{transform:rotate(-90deg)}
+.flip{position:absolute;inset:0;transform-style:preserve-3d;transition:transform .45s cubic-bezier(.3,.7,.2,1)}
+.out .flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:16px;overflow:hidden;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
+.back{transform:rotateY(180deg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;background:#191510}
+.back .art{opacity:.16;filter:grayscale(1)}
+.back strong{position:relative;font-family:"Cinzel",serif;font-weight:700;font-size:26px}
+.back span{position:relative;font-size:12.5px;color:var(--fg-body)}
+.art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55;transition:opacity .7s}
+.turn .front .art{opacity:.72}
+.wash{position:absolute;inset:0;background:rgba(20,17,14,.5)}
+.ring{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .4s;pointer-events:none;overflow:visible}
+.ring path{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:1 1;stroke-dashoffset:0}
+.turn .ring{opacity:1}
+.ringA path{animation:ringA .65s cubic-bezier(.4,.1,.2,1) both}.ringB path{animation:ringB .65s cubic-bezier(.4,.1,.2,1) both}
+@keyframes ringA{0%{stroke-dashoffset:1}100%{stroke-dashoffset:0}}
+@keyframes ringB{0%{stroke-dashoffset:1}100%{stroke-dashoffset:0}}
+.pl{position:absolute;inset:0;pointer-events:none;opacity:0}
+.loss0{animation:lossA .6s ease-out}.loss1{animation:lossB .6s ease-out}
+.gain0{animation:gainA .6s ease-out}.gain1{animation:gainB .6s ease-out}
+@keyframes lossA{0%{opacity:.3;background:rgba(198,83,63,.35)}100%{opacity:0;background:rgba(198,83,63,.35)}}
+@keyframes lossB{0%{opacity:.3;background:rgba(198,83,63,.35)}100%{opacity:0;background:rgba(198,83,63,.35)}}
+@keyframes gainA{0%{opacity:.3;background:rgba(143,166,190,.35)}100%{opacity:0;background:rgba(143,166,190,.35)}}
+@keyframes gainB{0%{opacity:.3;background:rgba(143,166,190,.35)}100%{opacity:0;background:rgba(143,166,190,.35)}}
+.pane{position:absolute;inset:0;box-sizing:border-box;padding:6px 8px 8px 14px;display:flex;flex-direction:column}
+.who{position:relative;z-index:2;display:flex;align-items:center;gap:6px;height:44px;white-space:nowrap}
+.who b{font-weight:600;font-size:16px;margin-right:4px}
+.ib{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(20,17,14,.85);box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent);animation:pop .35s cubic-bezier(.3,1.6,.5,1)}
+@keyframes pop{0%{transform:scale(.4);opacity:0}100%{transform:scale(1);opacity:1}}
+.endt{height:40px;padding:0 16px;border-radius:999px;border:0;background:var(--accent);color:#14110E;font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px;animation:pop .3s cubic-bezier(.3,1.5,.5,1);transition:transform .08s}
+.endt:active{transform:scale(.94)}
+.mk{margin-left:auto;flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(20,17,14,.85);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);display:flex;align-items:center;justify-content:center;transition:transform .08s}
+.mk:active{transform:scale(.92)}
+.life{position:relative;flex:1;display:flex;align-items:center;justify-content:center}
+.half{position:absolute;top:0;bottom:0;width:50%;z-index:1;background:none;border:0;color:var(--fg-muted);font-size:30px;font-family:"IBM Plex Sans",sans-serif;padding:0 4px;display:flex;align-items:center;-webkit-tap-highlight-color:transparent;transition:background .12s}
+.half:active{background:rgba(237,230,216,.06)}
+.minus{left:0;justify-content:flex-start}.plus{right:0;justify-content:flex-end}
+.num{position:relative;font-family:"Cinzel",serif;font-weight:700;font-size:88px;line-height:1;pointer-events:none;text-shadow:0 2px 12px rgba(0,0,0,.6);display:inline-block}
+.t0{animation:tickA .12s ease-out}.t1{animation:tickB .12s ease-out}
+@keyframes tickA{0%{opacity:.7}100%{opacity:1}}
+@keyframes tickB{0%{opacity:.7}100%{opacity:1}}
+.delta{position:absolute;left:100%;top:8px;margin-left:6px;font-family:"IBM Plex Mono",monospace;font-size:18px;color:var(--accent);animation:fadein .15s ease-out;text-shadow:none}
+@keyframes fadein{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:none}}
+.pickbtn{position:absolute;inset:50px 8px 8px 14px;z-index:3;border-radius:12px;border:0;background:rgba(20,17,14,.93);box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent);font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px;animation:fadein .2s ease-out}
+.pickbtn.now{background:rgba(107,72,42,.95);color:var(--fg);box-shadow:inset 0 0 0 2px var(--accent)}
+.undo2{height:44px;padding:0 20px;border-radius:10px;border:0;background:rgba(20,17,14,.8);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;font-size:14px;margin-top:6px;position:relative}
+.spine{grid-column:2;grid-row:1 / span 2;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;position:relative;z-index:4}
+.sb{position:relative;width:48px;height:48px;border-radius:50%;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:flex;align-items:center;justify-content:center;font-family:"Cinzel",serif;font-weight:700;font-size:22px;transition:transform .08s,background .2s,color .2s}
+.sb:active{transform:scale(.92)}
+.tn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);font-family:"Cinzel",serif;font-weight:700;font-size:22px}
+.tn span{display:inline-block}
+.sb.on{color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.sb.off{color:var(--fg-faint)}
+.sb.act{background:var(--accent);color:#14110E;box-shadow:none}
+.sb img{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--surface);animation:pop .3s cubic-bezier(.3,1.6,.5,1)}
+.sb.dim{opacity:.35}
+.dnA{animation:dnA .45s cubic-bezier(.3,1.3,.5,1)}.dnB{animation:dnB .45s cubic-bezier(.3,1.3,.5,1)}
+@keyframes dnA{0%{transform:rotate(-120deg) scale(.5);opacity:0}100%{transform:none;opacity:1}}
+@keyframes dnB{0%{transform:rotate(-120deg) scale(.5);opacity:0}100%{transform:none;opacity:1}}
+.rule{width:26px;height:1px;background:var(--border-strong)}
+.night{position:absolute;inset:0;background:rgba(14,20,40,.22);pointer-events:none;opacity:0;transition:opacity .6s;z-index:3}
+.night.is{opacity:1}
+.fly{position:absolute;left:177px;width:36px;height:36px;border-radius:50%;background:var(--accent);color:#14110E;display:flex;align-items:center;justify-content:center;z-index:9;pointer-events:none;animation:fly .55s cubic-bezier(.5,0,.3,1) forwards;box-shadow:0 6px 18px rgba(0,0,0,.5)}
+@keyframes fly{0%{transform:translate(0,0) scale(1)}55%{transform:translate(calc(var(--dx) * .55),calc(var(--dy) * .55 - 30px)) scale(1.35)}100%{transform:translate(var(--dx),var(--dy)) scale(.6);opacity:0}}
+.veil{position:absolute;inset:0;z-index:10;background:rgba(0,0,0,.55);animation:veil .2s ease-out}
+@keyframes veil{0%{opacity:0}100%{opacity:1}}
+.sheet{position:absolute;width:844px;height:390px;left:-227px;top:227px;z-index:11}
+.sheetIn{position:absolute;inset:0;box-sizing:border-box;padding:14px 20px 16px;display:flex;flex-direction:column;gap:12px;background:var(--surface-raised);border-radius:0;animation:slide .26s cubic-bezier(.2,.8,.2,1)}
+@keyframes slide{0%{transform:translateY(80px);opacity:0}100%{transform:none;opacity:1}}
+.hd{display:flex;align-items:center;gap:12px;height:44px}
+.hd img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+.hd b{font-family:"Cinzel",serif;font-weight:700;font-size:21px}
+.hd i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--fg-muted)}
+.x{margin-left:auto;width:44px;height:44px;background:none;border:0;color:var(--fg);font-size:22px;font-family:"IBM Plex Sans",sans-serif}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border)}
+.tabs span{height:40px;display:flex;align-items:center;padding:0 16px;color:var(--fg-muted);font-weight:600;font-size:14px;border-bottom:2px solid transparent;margin-bottom:-1px}
+.tabs span.on{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs .sep{margin-left:auto}
+.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;flex:1}
+.src{position:relative;overflow:hidden;border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;flex-direction:column}
+.src.hot{box-shadow:inset 0 0 0 1px var(--warning)}
+.src img{width:100%;height:58px;object-fit:cover;opacity:.85}
+.nm{padding:7px 12px 0;font-size:13px;color:var(--fg-body)}
+.nm b{color:var(--fg);font-weight:600}
+.stp{flex:1;display:flex;align-items:center;justify-content:center;gap:14px}
+.stp button{width:52px;height:52px;border-radius:12px;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-size:26px;font-family:"IBM Plex Sans",sans-serif;transition:transform .08s}
+.stp button:active{transform:scale(.92)}
+.stp .v{font-family:"Cinzel",serif;font-weight:700;font-size:42px;min-width:64px;text-align:center;line-height:1}
+.hint{height:18px;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--warning);padding-bottom:6px}
+.dveil{position:absolute;inset:0;z-index:12;background:rgba(0,0,0,.3);animation:veil .2s ease-out}
+.dmove{position:absolute;left:163px;top:481px;width:64px;height:64px;z-index:13;perspective:700px}
+.dA{animation:pathA 1.3s cubic-bezier(.25,.6,.3,1) both}.dB{animation:pathB 1.3s cubic-bezier(.25,.6,.3,1) both}
+@keyframes pathA{0%{transform:translate(0,0) scale(.5)}30%{transform:translate(var(--x1),var(--y1)) scale(1.25)}60%{transform:translate(var(--x2),var(--y2)) scale(1.05)}82%{transform:translate(var(--x3),var(--y3)) scale(1.1)}100%{transform:translate(var(--x3),var(--y3)) scale(1)}}
+@keyframes pathB{0%{transform:translate(0,0) scale(.5)}30%{transform:translate(var(--x1),var(--y1)) scale(1.25)}60%{transform:translate(var(--x2),var(--y2)) scale(1.05)}82%{transform:translate(var(--x3),var(--y3)) scale(1.1)}100%{transform:translate(var(--x3),var(--y3)) scale(1)}}
+.cube{position:absolute;inset:0;transform-style:preserve-3d;border:0;padding:0;background:none}
+.sA{animation:spinA 1.15s cubic-bezier(.2,.65,.25,1) both}.sB{animation:spinB 1.15s cubic-bezier(.2,.65,.25,1) both}
+@keyframes spinA{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(calc(var(--rx) + 1080deg)) rotateY(calc(var(--ry) + 720deg)) rotateZ(var(--rz))}}
+@keyframes spinB{0%{transform:rotateX(0) rotateY(0) rotateZ(0)}100%{transform:rotateX(calc(var(--rx) + 1080deg)) rotateY(calc(var(--ry) + 720deg)) rotateZ(var(--rz))}}
+.df{position:absolute;inset:0;border-radius:12px;background:#EDE6D8;box-shadow:inset 0 0 0 1px rgba(0,0,0,.12),inset 0 -6px 12px rgba(0,0,0,.14);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:9px;box-sizing:border-box;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.df i{display:block;margin:auto;width:11px;height:11px;border-radius:50%}
+.df i.on{background:#14110E}
+.dshadow{position:absolute;left:4px;right:4px;bottom:-10px;height:14px;border-radius:50%;background:rgba(0,0,0,.45);filter:blur(6px)}
+.dres{position:absolute;left:50%;top:50%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;box-shadow:0 0 0 2px var(--accent);opacity:0;animation:land .5s ease-out 1.15s both;pointer-events:none}
+@keyframes land{0%{opacity:.9;transform:scale(.55)}100%{opacity:0;transform:scale(1.2)}}
+.dmenuveil{position:absolute;inset:0;z-index:11}
+.dmenu{position:absolute;left:131px;top:420px;width:128px;z-index:12;display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:16px;background:var(--elevated);box-shadow:0 10px 30px rgba(0,0,0,.55),inset 0 0 0 1px var(--border-strong);animation:pop .22s cubic-bezier(.3,1.4,.5,1);transform-origin:50% 100%}
+.dmenu button{height:52px;border-radius:10px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:15px;display:flex;align-items:center;gap:10px;padding:0 12px}
+.dmenu button:active{transform:scale(.96)}
+.d20{position:absolute;left:-6px;top:-6px;width:76px;height:76px;border:0;padding:0;background:none;filter:drop-shadow(0 4px 6px rgba(0,0,0,.4))}
+.d20.sA{animation:t20A 1.15s cubic-bezier(.2,.65,.25,1) both}.d20.sB{animation:t20B 1.15s cubic-bezier(.2,.65,.25,1) both}
+@keyframes t20A{0%{transform:rotate(0) rotateX(60deg)}40%{transform:rotate(500deg) rotateX(-40deg) rotateY(50deg)}75%{transform:rotate(760deg) rotateX(20deg) rotateY(-20deg)}100%{transform:rotate(calc(720deg + var(--rz))) rotateX(0) rotateY(0)}}
+@keyframes t20B{0%{transform:rotate(0) rotateX(60deg)}40%{transform:rotate(500deg) rotateX(-40deg) rotateY(50deg)}75%{transform:rotate(760deg) rotateX(20deg) rotateY(-20deg)}100%{transform:rotate(calc(720deg + var(--rz))) rotateX(0) rotateY(0)}}
+.coin{position:absolute;left:-4px;top:-4px;width:72px;height:72px;border:0;padding:0;background:none;transform-style:preserve-3d}
+.cf{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#E9B57E,#CF8745 60%,#9C6330);box-shadow:inset 0 0 0 4px rgba(20,17,14,.25);color:#14110E;font-family:"Cinzel",serif;font-weight:700;font-size:14px;backface-visibility:hidden;-webkit-backface-visibility:hidden}
+.cf.tails{transform:rotateY(180deg)}
+.coin.sA{animation:cA 1.15s cubic-bezier(.2,.65,.25,1) both}.coin.sB{animation:cB 1.15s cubic-bezier(.2,.65,.25,1) both}
+@keyframes cA{0%{transform:rotateY(0)}100%{transform:rotateY(calc(var(--ry) + 1800deg)) rotateZ(var(--rz))}}
+@keyframes cB{0%{transform:rotateY(0)}100%{transform:rotateY(calc(var(--ry) + 1800deg)) rotateZ(var(--rz))}}
+@media (prefers-reduced-motion: reduce){.scr *{animation-duration:1ms!important;transition-duration:1ms!important}}
+</style>
+</helmet>
+<div class="scr">
+  <sc-for list="{{seats}}" as="p" hint-placeholder-count="4">
+    <div class="cell {{p.cls}}" style="{{p.pos}}">
+      <div class="rot {{p.rot}}">
+        <div class="flip">
+          <div class="face front">
+            <img class="art" src="{{p.art}}" alt="">
+            <div class="wash"></div>
+            <div class="pl {{p.pulse}}"></div>
+            <svg class="ring {{p.ringCls}}" viewBox="0 0 413 155" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M206.5 1.25H397A15.75 15.75 0 0 1 411.75 16V77.5"/><path pathLength="1" d="M206.5 1.25H16A15.75 15.75 0 0 0 1.25 16V77.5"/><path pathLength="1" d="M206.5 153.75H397A15.75 15.75 0 0 0 411.75 139V77.5"/><path pathLength="1" d="M206.5 153.75H16A15.75 15.75 0 0 1 1.25 139V77.5"/></svg>
+            <div class="pane">
+              <div class="who">
+                <b>{{p.name}}</b>
+                <sc-if value="{{p.isMon}}" hint-placeholder-val="{{ false }}"><span class="ib" title="Monarch"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg></span></sc-if>
+                <sc-if value="{{p.isIni}}" hint-placeholder-val="{{ false }}"><span class="ib" title="Initiative"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></span></sc-if>
+                <sc-if value="{{p.isActive}}" hint-placeholder-val="{{ false }}"><button class="endt" onClick="{{endTurn}}">End turn<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 12h12M13 6l6 6-6 6"/></svg></button></sc-if>
+                <button class="mk" aria-label="{{p.sheetLabel}}" onClick="{{p.open}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button>
+              </div>
+              <div class="life">
+                <button class="half minus" aria-label="{{p.minusLabel}}" onClick="{{p.minus}}" onPointerDown="{{p.holdMinus}}" onPointerUp="{{stopHold}}" onPointerLeave="{{stopHold}}" onPointerCancel="{{stopHold}}">−</button>
+                <span class="num {{p.tickCls}}">{{p.life}}<sc-if value="{{p.hasPend}}" hint-placeholder-val="{{ false }}"><span class="delta">{{p.pendTxt}}</span></sc-if></span>
+                <button class="half plus" aria-label="{{p.plusLabel}}" onClick="{{p.plus}}" onPointerDown="{{p.holdPlus}}" onPointerUp="{{stopHold}}" onPointerLeave="{{stopHold}}" onPointerCancel="{{stopHold}}">+</button>
+              </div>
+              <sc-if value="{{p.picking}}" hint-placeholder-val="{{ false }}"><button class="pickbtn {{p.pickNow}}" onClick="{{p.pick}}"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="{{pickIcon}}"/></svg>{{p.pickLabel}}</button></sc-if>
+            </div>
+          </div>
+          <div class="face back">
+            <img class="art" src="{{p.art}}" alt="">
+            <strong>Out</strong>
+            <span>{{p.outTxt}}</span>
+            <button class="undo2" onClick="{{undo}}">Undo</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </sc-for>
+  <div class="spine">
+    <div class="tn" aria-label="{{turnLabel}}"><span class="{{turnCls}}">{{turn}}</span></div>
+    <div class="rule"></div>
+    <button class="{{crownCls}}" aria-label="{{crownLabel}}" onClick="{{pickCrown}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg><sc-if value="{{monArt}}" hint-placeholder-val="{{ false }}"><img src="{{monArt}}" alt=""></sc-if></button>
+    <button class="{{iniCls}}" aria-label="{{iniLabel}}" onClick="{{pickShield}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg><sc-if value="{{iniArt}}" hint-placeholder-val="{{ false }}"><img src="{{iniArt}}" alt=""></sc-if></button>
+    <button class="{{dnCls}}" aria-label="{{dnLabel}}" onClick="{{toggleDN}}"><span class="{{dnAnim}}" style="display:flex"><sc-if value="{{isNight}}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></sc-if><sc-if value="{{notNight}}" hint-placeholder-val="{{ true }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></sc-if></span></button>
+    <button class="{{diceBtnCls}}" aria-label="Roll dice or flip a coin" onClick="{{toggleDiceMenu}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></button>
+    <div class="rule"></div>
+    <button class="{{undoCls}}" aria-label="Undo the last change" onClick="{{undo}}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 010 10h-2"/></svg></button>
+  </div>
+  <div class="night {{nightCls}}"></div>
+  <sc-if value="{{diceMenu}}" hint-placeholder-val="{{ false }}">
+    <div class="dmenuveil" onClick="{{toggleDiceMenu}}"></div>
+    <div class="dmenu">
+      <button aria-label="Roll a six-sided die" onClick="{{rollD6}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg>d6</button>
+      <button aria-label="Roll a twenty-sided die" onClick="{{rollD20}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.5 5v9l-8.5 5-8.5-5v-9z"/><path d="M12 7.5l4.5 7.5h-9z"/></svg>d20</button>
+      <button aria-label="Flip a coin" onClick="{{rollCoin}}"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/></svg>Coin</button>
+    </div>
+  </sc-if>
+  <sc-if value="{{dice}}" hint-placeholder-val="{{ false }}">
+    <div class="dveil" onClick="{{closeDice}}"></div>
+    <div class="dmove {{dPath}}" style="{{dStyle}}">
+      <div class="dshadow"></div>
+      <sc-if value="{{isD6}}" hint-placeholder-val="{{ true }}"><button class="cube {{dSpin}}" aria-label="{{dLabel}}" onClick="{{reroll}}"><div class="df" style="transform:translateZ(32px)"><i></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i></i></div><div class="df" style="transform:rotateX(90deg) translateZ(32px)"><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i class="on"></i></div><div class="df" style="transform:rotateY(90deg) translateZ(32px)"><i class="on"></i><i></i><i></i><i></i><i class="on"></i><i></i><i></i><i></i><i class="on"></i></div><div class="df" style="transform:rotateY(-90deg) translateZ(32px)"><i class="on"></i><i></i><i class="on"></i><i></i><i></i><i></i><i class="on"></i><i></i><i class="on"></i></div><div class="df" style="transform:rotateX(-90deg) translateZ(32px)"><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i><i></i><i class="on"></i></div><div class="df" style="transform:rotateY(180deg) translateZ(32px)"><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i><i class="on"></i><i></i><i class="on"></i></div></button></sc-if>
+      <sc-if value="{{isD20}}" hint-placeholder-val="{{ false }}"><button class="d20 {{dSpin}}" aria-label="{{dLabel}}" onClick="{{reroll}}"><svg width="76" height="76" viewBox="0 0 100 100" aria-hidden="true"><polygon points="50,3 91,26.5 91,73.5 50,97 9,73.5 9,26.5" fill="#CF8745"/><polygon points="50,24 76,66 24,66" fill="#E3A066"/><g fill="none" stroke="#14110E" stroke-opacity=".35" stroke-width="1.6" stroke-linejoin="round"><polygon points="50,3 91,26.5 91,73.5 50,97 9,73.5 9,26.5"/><polygon points="50,24 76,66 24,66"/><path d="M50 3L50 24M91 26.5L76 66M9 26.5L24 66M91 73.5L76 66M9 73.5L24 66M50 97L76 66M50 97L24 66M9 26.5L50 24M91 26.5L50 24"/></g><text x="50" y="58" text-anchor="middle" font-family="Cinzel,serif" font-weight="700" font-size="22" fill="#14110E">{{dNum}}</text></svg></button></sc-if>
+      <sc-if value="{{isCoin}}" hint-placeholder-val="{{ false }}"><button class="coin {{dSpin}}" aria-label="{{dLabel}}" onClick="{{reroll}}"><span class="cf">Heads</span><span class="cf tails">Tails</span></button></sc-if>
+      <div class="dres"></div>
+    </div>
+  </sc-if>
+  <sc-if value="{{fly}}" hint-placeholder-val="{{ false }}">
+    <div class="fly" style="{{flyStyle}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="{{flyIcon}}"/></svg></div>
+  </sc-if>
+  <sc-if value="{{sheet}}" hint-placeholder-val="{{ false }}">
+    <div class="veil" onClick="{{closeSheet}}"></div>
+    <div class="sheet" style="{{sheetStyle}}" role="dialog" aria-label="{{sheetName}} sheet">
+      <div class="sheetIn">
+        <div class="hd"><img src="{{sheetArt}}" alt=""><b>{{sheetName}}</b><i>{{sheetLife}} life</i><button class="x" aria-label="Close" onClick="{{closeSheet}}">✕</button></div>
+        <div class="tabs"><span class="on">Commander damage</span><span>Counters</span><span>Tax</span><span>Mana</span><span class="sep">Table</span></div>
+        <div class="grid">
+          <sc-for list="{{sources}}" as="s" hint-placeholder-count="3">
+            <div class="src {{s.hot}}"><img src="{{s.art}}" alt=""><div class="nm"><b>{{s.cmd}}</b> · {{s.who}}</div><div class="stp"><button aria-label="1 less" onClick="{{s.less}}">−</button><span class="v">{{s.v}}</span><button aria-label="1 more" onClick="{{s.more}}">+</button></div><div class="hint">{{s.hint}}</div></div>
+          </sc-for>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.SEATS = [
+      { name: 'Colin', cmd: 'Ghalta', art: 'art/ghalta.jpg', col: 1, row: 1, rot: 'r90', cx: 83, cy: 212 },
+      { name: 'Peter', cmd: 'Giada', art: 'art/giada.jpg', col: 3, row: 1, rot: 'r270', cx: 307, cy: 212 },
+      { name: 'Max', cmd: 'Gisa', art: 'art/gisa.jpg', col: 3, row: 2, rot: 'r270', cx: 307, cy: 632 },
+      { name: 'You', cmd: 'Sai', art: 'art/sai.jpg', col: 1, row: 2, rot: 'r90', cx: 83, cy: 632 }
+    ];
+    this.timers = [null, null, null, null];
+    this.hold = null; this.held = false;
+    this.state = {
+      lives: [40, 40, 40, 40], pend: [0, 0, 0, 0], tick: [0, 0, 0, 0], sign: ['', '', '', ''],
+      out: [false, false, false, false], outTxt: ['', '', '', ''],
+      cd: [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]],
+      active: 1, first: 1, turn: 1, rt: 0, ring: 0, dice: null, diceK: 0, mon: null, ini: null, dn: 'off', dnTick: 0,
+      mode: null, fly: null, flyN: 0, sheet: null, hist: []
+    };
+  }
+  roll(kind) {
+    const r = (a, b) => Math.round(a + Math.random() * (b - a));
+    const n = kind === 'd20' ? r(1, 20) : kind === 'coin' ? r(1, 2) : r(1, 6);
+    const ROT = { 1: [0, 0], 6: [0, 180], 3: [0, -90], 4: [0, 90], 2: [-90, 0], 5: [90, 0] };
+    const x3 = r(-110, 110), y3 = r(-240, 220);
+    const rot = kind === 'd6' ? ROT[n] : kind === 'coin' ? [0, n === 1 ? 0 : 180] : [0, 0];
+    this.setState({ diceMenu: false, diceK: this.state.diceK + 1, dice: { kind, n, rx: rot[0], ry: rot[1], rz: r(-40, 40),
+      x1: r(-140, 140), y1: r(-300, 260), x2: Math.round((x3 + r(-140, 140)) / 2), y2: Math.round((y3 + r(-260, 220)) / 2), x3, y3 } });
+  }
+  componentWillUnmount() { this.timers.forEach((t) => clearTimeout(t)); this.stopHold(); }
+  snap(s) { return JSON.stringify({ lives: s.lives, out: s.out, outTxt: s.outTxt, cd: s.cd, active: s.active, turn: s.turn, mon: s.mon, ini: s.ini, dn: s.dn }); }
+  pushed(s) { const h = s.hist.slice(-40); h.push(this.snap(s)); return h; }
+  crossed(a, b, f) { const d = (x) => ((x - a + 4) % 4) || 4; return d(f) <= d(b); }
+  nextAlive(i, out) { for (let k = 1; k <= 4; k++) { const j = (i + k) % 4; if (!out[j]) return j; } return i; }
+  change(i, d, cdFrom) {
+    const s = this.state;
+    if (s.out[i]) return;
+    const hist = s.pend[i] === 0 ? this.pushed(s) : s.hist;
+    const lives = s.lives.slice(); lives[i] += d;
+    const pend = s.pend.slice(); pend[i] += d;
+    const tick = s.tick.slice(); tick[i] += 1;
+    const sign = s.sign.slice(); sign[i] = d < 0 ? 'loss' : 'gain';
+    let cd = s.cd;
+    if (cdFrom != null) { cd = s.cd.map((r) => r.slice()); cd[i][cdFrom] = Math.max(0, cd[i][cdFrom] - d); }
+    this.setState({ lives, pend, tick, sign, cd, hist });
+    clearTimeout(this.timers[i]);
+    this.timers[i] = setTimeout(() => this.commit(i), 2000);
+  }
+  commit(i) {
+    const s = this.state;
+    const pend = s.pend.slice(); pend[i] = 0;
+    let out = s.out, outTxt = s.outTxt, active = s.active;
+    const lethal = s.cd[i].findIndex((v) => v >= 21);
+    if (!s.out[i] && (s.lives[i] <= 0 || lethal >= 0)) {
+      out = s.out.slice(); out[i] = true;
+      outTxt = s.outTxt.slice();
+      outTxt[i] = lethal >= 0 ? '21 commander damage from ' + this.SEATS[lethal].cmd + ' · round ' + s.turn : 'Out of life · round ' + s.turn;
+      if (active === i) active = this.nextAlive(i, out);
+    }
+    const moved = active !== s.active;
+    let mon = s.mon, ini = s.ini;
+    if (out !== s.out) { if (mon === i) mon = active; if (ini === i) ini = active; }
+    this.setState({ pend, out, outTxt, active, mon, ini, turn: moved && this.crossed(s.active, active, s.first) ? s.turn + 1 : s.turn, rt: moved && this.crossed(s.active, active, s.first) ? s.rt + 1 : s.rt, ring: moved ? s.ring + 1 : s.ring });
+  }
+  endTurn() {
+    const s = this.state;
+    const active = this.nextAlive(s.active, s.out);
+    const nr = this.crossed(s.active, active, s.first);
+    this.setState({ hist: this.pushed(s), active, turn: nr ? s.turn + 1 : s.turn, rt: nr ? s.rt + 1 : s.rt, ring: s.ring + 1 });
+  }
+  startHold(i, d) {
+    this.stopHold(); this.held = false;
+    this.hold = setTimeout(() => {
+      this.held = true; this.change(i, d * 10);
+      this.hold = setInterval(() => this.change(i, d * 10), 380);
+    }, 480);
+  }
+  stopHold() { if (this.hold) { clearTimeout(this.hold); clearInterval(this.hold); this.hold = null; } }
+  tap(i, d) { if (this.held) { this.held = false; return; } this.change(i, d); }
+  toggleDN() {
+    const s = this.state;
+    const dn = s.dn === 'day' ? 'night' : 'day';
+    this.setState({ hist: this.pushed(s), dn, dnTick: s.dnTick + 1 });
+  }
+  startPick(kind) { this.setState({ mode: this.state.mode === kind ? null : kind }); }
+  pick(i) {
+    const s = this.state;
+    const kind = s.mode;
+    const upd = { hist: this.pushed(s), mode: null, flyN: s.flyN + 1, fly: { kind, to: i } };
+    if (kind === 'crown') upd.mon = i; else upd.ini = i;
+    this.setState(upd);
+    clearTimeout(this.flyT);
+    this.flyT = setTimeout(() => this.setState({ fly: null }), 560);
+  }
+  undo() {
+    const s = this.state;
+    if (!s.hist.length) return;
+    const h = s.hist.slice(); const prev = JSON.parse(h.pop());
+    this.timers.forEach((t) => clearTimeout(t));
+    this.setState(Object.assign({}, prev, { rt: prev.turn !== s.turn ? s.rt + 1 : s.rt, hist: h, pend: [0, 0, 0, 0], tick: s.tick.map((t) => t + 1), sign: ['', '', '', ''], ring: prev.active !== s.active ? s.ring + 1 : s.ring, mode: null }));
+  }
+  renderVals() {
+    const s = this.state, S = this.SEATS;
+    const crownPath = 'M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z';
+    const shieldPath = 'M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z';
+    const holder = s.mode === 'crown' ? s.mon : s.ini;
+    const seats = S.map((p, i) => {
+      const you = p.name === 'You';
+      const pe = s.pend[i];
+      return {
+        name: p.name, art: p.art, rot: p.rot,
+        pos: 'grid-column:' + p.col + ';grid-row:' + p.row,
+        cls: [s.active === i && !s.out[i] ? 'turn' : '', s.out[i] ? 'out' : ''].join(' '),
+        ringCls: s.active === i ? (s.ring % 2 ? 'ringB' : 'ringA') : '',
+        pulse: s.tick[i] && s.sign[i] ? s.sign[i] + (s.tick[i] % 2) : '',
+        tickCls: s.tick[i] ? 't' + (s.tick[i] % 2) : '',
+        life: s.lives[i], hasPend: pe !== 0, pendTxt: pe > 0 ? '+' + pe : '−' + Math.abs(pe),
+        isMon: s.mon === i, isIni: s.ini === i, isActive: s.active === i && !s.out[i] && !s.mode,
+        picking: !!s.mode && !s.out[i], pickNow: holder === i ? 'now' : '',
+        pickLabel: holder === i ? (s.mode === 'crown' ? 'Monarch now' : 'Has the initiative') : (s.mode === 'crown' ? (you ? 'Take the crown' : 'Crown ' + p.name) : (you ? 'Take the initiative' : 'Give ' + p.name + ' the initiative')),
+        pick: () => this.pick(i),
+        outTxt: s.outTxt[i],
+        sheetLabel: (you ? 'Your' : p.name + "'s") + ' sheet',
+        minusLabel: p.name + ' loses 1 life', plusLabel: p.name + ' gains 1 life',
+        minus: () => this.tap(i, -1), plus: () => this.tap(i, 1),
+        holdMinus: () => this.startHold(i, -1), holdPlus: () => this.startHold(i, 1),
+        open: () => this.setState({ sheet: { i } })
+      };
+    });
+    const fly = s.fly;
+    let flyStyle = '';
+    if (fly) {
+      const sy = fly.kind === 'crown' ? 360 : 420;
+      flyStyle = 'top:' + (sy - 18) + 'px;--dx:' + (S[fly.to].cx - 195) + 'px;--dy:' + (S[fly.to].cy - sy) + 'px';
+    }
+    const sh = s.sheet;
+    let sources = [], sheetStyle = '', sheetName = '', sheetArt = '', sheetLife = '';
+    if (sh) {
+      const t = sh.i, seat = S[t];
+      sheetStyle = 'transform:rotate(' + (seat.rot === 'r90' ? 90 : -90) + 'deg)';
+      sheetName = seat.name; sheetArt = seat.art; sheetLife = s.lives[t];
+      sources = S.map((q, j) => ({ q, j })).filter((o) => o.j !== t).map(({ q, j }) => {
+        const v = s.cd[t][j];
+        return { art: q.art, cmd: q.cmd, who: q.name, v, hot: v >= 14 ? 'hot' : '', hint: v >= 21 ? 'Lethal' : v >= 14 ? (21 - v) + ' more is lethal' : '',
+          more: () => this.change(t, -1, j), less: () => { if (s.cd[t][j] > 0) this.change(t, 1, j); } };
+      });
+    }
+    const monArt = s.mon != null ? S[s.mon].art : '';
+    const iniArt = s.ini != null ? S[s.ini].art : '';
+    return {
+      seats, turn: s.turn,
+      turnLabel: 'Round ' + s.turn + ', ' + S[s.active].name + "'s turn",
+      turnCls: s.rt ? (s.rt % 2 ? 'dnB' : 'dnA') : '',
+      endTurn: () => this.endTurn(), stopHold: () => this.stopHold(), undo: () => this.undo(), undoCls: 'sb' + (s.hist.length ? '' : ' dim'),
+      crownCls: 'sb ' + (s.mode === 'crown' ? 'act' : s.mon != null ? 'on' : 'off'),
+      iniCls: 'sb ' + (s.mode === 'shield' ? 'act' : s.ini != null ? 'on' : 'off'),
+      crownLabel: 'Monarch: ' + (s.mon != null ? S[s.mon].name : 'nobody') + '. Tap to pass it',
+      iniLabel: 'Initiative: ' + (s.ini != null ? S[s.ini].name : 'nobody') + '. Tap to pass it',
+      monArt: s.mode === 'crown' ? '' : monArt, iniArt: s.mode === 'shield' ? '' : iniArt,
+      pickCrown: () => this.startPick('crown'), pickShield: () => this.startPick('shield'),
+      pickIcon: s.mode === 'shield' ? shieldPath : crownPath,
+      dnCls: 'sb ' + (s.dn === 'off' ? 'off' : 'on'), dnAnim: s.dnTick ? (s.dnTick % 2 ? 'dnB' : 'dnA') : '',
+      dnLabel: s.dn === 'off' ? 'Day and night: not started. Tap to make it day' : 'It is ' + s.dn + '. Tap to flip it',
+      isNight: s.dn === 'night', notNight: s.dn !== 'night', nightCls: s.dn === 'night' ? 'is' : '',
+      toggleDN: () => this.toggleDN(),
+      fly: !!fly, flyStyle, flyIcon: fly && fly.kind === 'shield' ? shieldPath : crownPath,
+      sheet: !!sh, sheetStyle, sheetName, sheetArt, sheetLife, sources,
+      closeSheet: () => this.setState({ sheet: null }),
+      dice: !!s.dice, closeDice: () => this.setState({ dice: null }),
+      diceMenu: !!s.diceMenu, toggleDiceMenu: () => this.setState({ diceMenu: !s.diceMenu, dice: null }),
+      diceBtnCls: 'sb' + (s.diceMenu ? ' act' : ''),
+      rollD6: () => this.roll('d6'), rollD20: () => this.roll('d20'), rollCoin: () => this.roll('coin'),
+      reroll: () => this.roll(s.dice ? s.dice.kind : 'd6'),
+      isD6: !!s.dice && s.dice.kind === 'd6', isD20: !!s.dice && s.dice.kind === 'd20', isCoin: !!s.dice && s.dice.kind === 'coin',
+      dNum: s.dice ? s.dice.n : '',
+      dPath: s.diceK % 2 ? 'dB' : 'dA', dSpin: s.diceK % 2 ? 'sB' : 'sA',
+      dStyle: s.dice ? ['x1','y1','x2','y2','x3','y3'].map((k) => '--' + k + ':' + s.dice[k] + 'px').join(';') + ';--rx:' + s.dice.rx + 'deg;--ry:' + s.dice.ry + 'deg;--rz:' + s.dice.rz + 'deg' : '',
+      dLabel: s.dice ? (s.dice.kind === 'coin' ? (s.dice.n === 1 ? 'Heads' : 'Tails') + '. Tap to flip again' : 'Rolled a ' + s.dice.n + '. Tap to roll again') : ''
+    };
+  }
+}
+</script>
+</body>
+</html>
