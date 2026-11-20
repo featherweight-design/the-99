@@ -23,7 +23,7 @@ import {
   diffParts, diffRows, editChoosePrinting, editSetFinish, editSetQuantity, holdingKey, lineNote, linesFromHoldings, openNewLine, printingLabel, summarizeEdit,
   type EditCard, type EditLineState,
 } from "../../lib/collection/edit-lines";
-import type { ShortDeck } from "../../lib/collection/write";
+import type { ShortChoice, ShortDeck } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { PRIMARY } from "../ui/button";
 import { useSheetHost } from "../ui/sheet-host";
@@ -31,6 +31,7 @@ import { useIsDesktop } from "../ui/use-is-desktop";
 import { AddLine } from "./add-line";
 import { useVisualViewportFrame } from "../ui/visual-viewport";
 import { SHEET_FOOT_CLASS, SHEET_PANEL_CLASS } from "./sheet-frame";
+import { ShortDeckChooser, choosable } from "./short-deck-chooser";
 import { ShortDeckWarning } from "./short-deck-warning";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { useMomentHold } from "../../lib/moments/hold";
@@ -46,7 +47,7 @@ export type EditResult = {
 type Loaded = { choices: PrintingChoice[]; holdings: CardHolding[] };
 type Read = { k: "loading" } | { k: "failed" } | ({ k: "ready" } & Loaded);
 type Phase = "editing" | "saving" | "failed";
-type Warning = { decks: ShortDeck[]; fresh: ReadonlySet<string>; changed: boolean };
+type Warning = { decks: ShortDeck[]; fresh: ReadonlySet<string>; changed: boolean; choice?: ShortChoice };
 
 const signed = (n: number) => `${n < 0 ? "−" : "+"}${Math.abs(n)}`;
 const GHOST =
@@ -195,7 +196,7 @@ export function EditCopiesSheet({
     setAnnounce(collectionEditCopy.add.announceChoose(card.name, next[0].choices.length));
   }
 
-  async function save(confirmShort?: ShortDeck[]) {
+  async function save(confirmShort?: ShortDeck[], keep?: { oracleId: string; deckId: string } | null) {
     if (!canSave) return;
     setPhase("saving");
     setNotice(null);
@@ -208,7 +209,7 @@ export function EditCopiesSheet({
       const seen = holdings.map((h) => ({
         oracleId: card.oracleId, setCode: h.setCode, collectorNumber: h.collectorNumber, finish: h.finish, quantity: h.quantity, condition: h.condition,
       }));
-      const out = await editCollection(attempt.current.id, rows, confirmShort, seen);
+      const out = keep ? await editCollection(attempt.current.id, rows, confirmShort, seen, keep) : await editCollection(attempt.current.id, rows, confirmShort, seen);
       if ("applied" in out) {
         onClose({ saved: { entryId: out.applied.id, removed: isRemoval, total: sum.total, copiesRemoved: sum.held } });
         return;
@@ -221,6 +222,8 @@ export function EditCopiesSheet({
           // A confirm that comes back with a different answer redraws the same dialog, saying so.
           fresh: new Set(warning ? out.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id)) : []),
           changed: warning !== null,
+          // The removal chooser (#2983): offered only when the server says exactly one copy is left and 2+ committed decks list it.
+          ...(isRemoval && out.choices?.find((x) => x.oracleId === card.oracleId && choosable(x)) ? { choice: out.choices.find((x) => x.oracleId === card.oracleId)! } : {}),
         });
         setPhase("editing");
         return;
@@ -449,18 +452,32 @@ export function EditCopiesSheet({
             aria-labelledby={warnId}
             className="max-h-[88%] w-full overflow-y-auto rounded-t-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[20px] md:w-[400px] md:rounded-[12px]"
           >
-            <ShortDeckWarning
-              titleId={warnId}
-              source={isRemoval ? "remove" : "save"}
-              cardName={card.name}
-              decks={warning.decks}
-              pending={saving}
-              error={phase === "failed" ? c.failed : null}
-              notice={warning.changed}
-              freshDeckIds={warning.fresh}
-              onCancel={() => setWarning(null)}
-              onConfirm={() => void save(warning.decks)}
-            />
+            {warning.choice ? (
+              <ShortDeckChooser
+                key={warning.choice.claimants.map((x) => `${x.deckId}:${x.allocated}`).join(",")}
+                titleId={warnId}
+                cardName={card.name}
+                choice={warning.choice}
+                pending={saving}
+                error={phase === "failed" ? c.failed : null}
+                notice={warning.changed}
+                onCancel={() => setWarning(null)}
+                onConfirm={(short, keep) => void save(short, keep)}
+              />
+            ) : (
+              <ShortDeckWarning
+                titleId={warnId}
+                source={isRemoval ? "remove" : "save"}
+                cardName={card.name}
+                decks={warning.decks}
+                pending={saving}
+                error={phase === "failed" ? c.failed : null}
+                notice={warning.changed}
+                freshDeckIds={warning.fresh}
+                onCancel={() => setWarning(null)}
+                onConfirm={() => void save(warning.decks)}
+              />
+            )}
           </div>
         </div>
       ) : null}

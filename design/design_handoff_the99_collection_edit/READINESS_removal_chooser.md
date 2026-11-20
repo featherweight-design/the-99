@@ -31,7 +31,7 @@ The earlier Orange (one gap) is closed. Hugh ruled on 2026-11-20 that the choose
 - 🟡 Date uses `formatShortDeckDate` (`src/lib/decks/format`), as `contested-card-row` does.
 
 ### ♿ Cross-cutting
-- 🟡 The Warning board draws `aria-pressed` buttons; follow the contested chooser: with one copy left it is a `radiogroup`/`radio` with `aria-checked` (square marks in P3/D3 are single-select in R2, since only one keeper), refusal as `role="status"`, footer `aria-live="polite"`.
+- 🟡 The Warning board draws `aria-pressed` buttons; follow the contested chooser. The player marks the decks that go SHORT (the one unmarked deck keeps the copy): with one deck to mark (two decks list it) the rows are a `radiogroup`/`radio` with `aria-checked` (round mark); with two or more to mark (three or more decks) they are `checkbox`es in a labelled group with the tally `{p} of {n} picked` (square marks) and the full-tap refusal as `aria-live="polite"` footer text (corrected 2026-11-20 with Hugh's ruling that the boards stand).
 - 🟡 Plain rows have no tap target now; several-card rows are a button with `aria-expanded` over the whole row.
 - ✅ No new page-load query; no analytics asked. G4 guard (no internal `href` with `target="_blank"` under `src/components`) must skip external links (Spellbook, ManaPool, Karsten).
 - 🟡 #2982: with the link removed, installed-app navigation cannot leave the app from this warning.
