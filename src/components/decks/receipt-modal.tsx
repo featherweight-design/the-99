@@ -635,39 +635,60 @@ export function ComboBody({
 }) {
   const names = combo.cards.map((c) => art.get(c.oracleId)?.name ?? c.name);
   const siblings = allSiblings ?? combo.cards.map((c) => ({ oracleId: c.oracleId, name: art.get(c.oracleId)?.name ?? c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
+  // A pair leans toward itself (small items 12, call 1: 2.5 degrees); three or more stand flat.
+  const pair = combo.cards.length === 2;
   return (
     <section className="border-b border-b-[color:var(--border)] border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
-      <div className={"flex flex-col md:flex-row gap-[14px] px-[16px] py-[14px] md:px-[18px] md:py-[16px] " + (oneAway ? "md:gap-[18px]" : "md:gap-[16px]")}>
-        <div className={"flex flex-none gap-[7px]" + (oneAway ? " md:self-start" : "")} inert={oneAway?.platesInert || undefined} data-plates>
-          {combo.cards.map((card) => (
-            <ReceiptTile
+      <div className="flex flex-col md:flex-row gap-[16px] px-[16px] py-[16px] md:gap-[20px] md:px-[18px] md:py-[18px]">
+        {/* The pair leads: two plates at card shape, 150 on the phone and 128 from md, a + disc between. */}
+        <div
+          className="flex flex-none flex-wrap items-start justify-center gap-[14px] md:w-[288px] md:self-start"
+          inert={oneAway?.platesInert || undefined}
+          data-plates
+        >
+          {combo.cards.map((card, i) => (
+            <div
               key={card.oracleId}
-              card={card}
-              art={art}
-              siblings={siblings}
-              width={96}
-              where={oneAway?.where(card.oracleId)}
-              missing={oneAway?.missingOracleId !== undefined && oneAway.missingOracleId === card.oracleId}
-              press={oneAway?.stillOracleId !== card.oracleId}
-            />
+              data-plate
+              // The first plate sits above the second: its + disc hangs over the gap into the next plate, and each tilted plate is its own stacking context.
+              className={"relative w-[150px] md:w-[128px]" + (i === 0 ? " z-[1]" : "")}
+              style={pair ? { transform: `rotate(${i === 0 ? 2.5 : -2.5}deg)` } : undefined}
+            >
+              <ReceiptTile
+                card={card}
+                art={art}
+                siblings={siblings}
+                where={oneAway?.where(card.oracleId)}
+                missing={oneAway?.missingOracleId !== undefined && oneAway.missingOracleId === card.oracleId}
+                press={oneAway?.stillOracleId !== card.oracleId}
+              />
+              {i < combo.cards.length - 1 ? (
+                <span
+                  data-plate-plus
+                  aria-hidden
+                  className="absolute left-[calc(100%-8px)] top-[calc(150px*88/63/2-15px)] md:top-[calc(128px*88/63/2-15px)] z-[1] flex h-[30px] w-[30px] items-center justify-center rounded-full border border-[color:var(--border-strong)] font-mono text-[15px] text-[color:var(--accent-text)]"
+                  style={{ backgroundColor: "var(--elevated)" }}
+                >
+                  +
+                </span>
+              ) : null}
+            </div>
           ))}
         </div>
-        <div className="flex min-w-0 flex-1 flex-col gap-[11px]">
+        <div className="flex min-w-0 flex-1 flex-col gap-[12px]">
           <h3
-            className={"m-0 font-display font-bold text-[16px] md:text-[17px] leading-[1.25]" + (oneAway ? " flex flex-wrap items-center gap-x-[8px]" : "")}
+            className="m-0 flex flex-wrap items-center gap-x-[8px] font-display font-bold text-[18px] md:text-[19px] leading-[1.25]"
             style={{ color: "var(--fg)" }}
           >
-            {oneAway ? (
-              <span className="inline-flex items-center gap-[5px]">
-                <ComboGlyph />
-                {/* A combo that loops turns keeps its turn-again mark beside the lemniscate, as on its row. */}
-                {producesInfiniteTurns(combo.produces) ? (
-                  <FactTooltip sentence={combosCloseCopy.sheet.loopMark}>
-                    <CardFactMark fact="extraTurns" />
-                  </FactTooltip>
-                ) : null}
-              </span>
-            ) : null}
+            <span className="inline-flex items-center gap-[5px]">
+              <ComboGlyph />
+              {/* A combo that loops turns keeps its turn-again mark beside the lemniscate, as on its row. */}
+              {producesInfiniteTurns(combo.produces) ? (
+                <FactTooltip sentence={combosCloseCopy.sheet.loopMark}>
+                  <CardFactMark fact="extraTurns" />
+                </FactTooltip>
+              ) : null}
+            </span>
             {names.map((n, i) => (
               <span key={i}>
                 {i > 0 ? <span style={{ color: "var(--fg-faint)", fontWeight: 400 }}> + </span> : null}
@@ -693,8 +714,8 @@ export function ComboBody({
               {combo.produces.map((p) => (
                 <li
                   key={p}
-                  className="font-mono text-[9.5px] uppercase tracking-[0.1em] rounded-[5px] border border-[color:var(--border-strong)] px-[9px] py-[4px]"
-                  style={{ color: "var(--fg-body)" }}
+                  className="font-mono text-[9.5px] uppercase tracking-[0.1em] rounded-[5px] px-[9px] py-[4px]"
+                  style={{ color: "var(--fg-body)", backgroundColor: "var(--elevated)" }}
                 >
                   {p}
                 </li>
@@ -702,29 +723,59 @@ export function ComboBody({
             </ul>
           ) : null}
           {stats}
-          <Field label={copy.receipt.manaNeeded}>
-            <Mana mana={combo.mana} />
-          </Field>
+          {/* The facts: what it costs to execute, and what must be true before step 1. With nothing
+              needed (36% of combos) the card is Mana needed alone. */}
+          <dl
+            data-combo-facts
+            className="m-0 grid grid-cols-[92px_minmax(0,1fr)] items-baseline gap-x-[10px] gap-y-[8px] rounded-[12px] px-[12px] py-[10px]"
+            style={{ backgroundColor: "var(--surface-rail)" }}
+          >
+            <FactLabel>{copy.receipt.manaNeeded}</FactLabel>
+            <dd className="m-0 min-w-0">
+              <Mana mana={combo.mana} />
+            </dd>
+            {combo.prerequisites ? (
+              <>
+                <FactLabel>{copy.receipt.prerequisites}</FactLabel>
+                <dd className="m-0 min-w-0 text-[13px] leading-[1.5]" style={{ color: "var(--fg-body)" }} data-combo-needs>
+                  <ManaText text={combo.prerequisites} />
+                </dd>
+              </>
+            ) : null}
+          </dl>
           {combo.steps.length > 0 ? (
-            <Field label={copy.receipt.steps} gap={6}>
-              <ol
-                className="m-0 pl-[17px] flex flex-col gap-[5px] text-[12.5px] leading-[1.5]"
-                style={{ color: "var(--fg-muted)" }}
-              >
+            <div data-combo-steps className="flex flex-col gap-[8px]">
+              <div className="flex items-baseline gap-[8px]">
+                <h4 className="m-0 font-mono text-[9px] font-normal uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+                  {copy.receipt.steps}
+                </h4>
+                <span className="font-mono text-[9px]" style={{ color: "var(--fg-faint)" }} data-steps-count>
+                  {combo.steps.length}
+                </span>
+              </div>
+              <ol className="m-0 flex list-none flex-col p-0">
                 {combo.steps.map((step, i) => (
-                  <li key={i}>{step}</li>
+                  <li key={i} className="relative grid grid-cols-[22px_minmax(0,1fr)] gap-x-[10px]" data-combo-step>
+                    <span
+                      aria-hidden
+                      className="z-[1] flex h-[22px] w-[22px] items-center justify-center rounded-[6px] border border-[color:var(--border-strong)] font-mono text-[11px] text-[color:var(--accent-text)]"
+                      style={{ backgroundColor: "var(--surface-raised)" }}
+                    >
+                      {i + 1}
+                    </span>
+                    {i < combo.steps.length - 1 ? (
+                      <span aria-hidden className="absolute bottom-0 left-[10.5px] top-[22px] w-px" style={{ backgroundColor: "var(--border)" }} />
+                    ) : null}
+                    <span
+                      className={"pt-[1.5px] text-[13.5px] leading-[1.55] " + (i < combo.steps.length - 1 ? "pb-[12px]" : "")}
+                      style={{ color: "var(--fg-body)" }}
+                    >
+                      <ManaText text={step} />
+                    </span>
+                  </li>
                 ))}
               </ol>
-            </Field>
-          ) : null}
-          {/* Under the steps, and absent rather than empty on the 36% where Spellbook sent
-              nothing — the modal already reads correctly without it. */}
-          {combo.prerequisites ? (
-            <Field label={copy.receipt.prerequisites}>
-              <span className="text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>
-                {combo.prerequisites}
-              </span>
-            </Field>
+            </div>
           ) : null}
         </div>
       </div>
@@ -760,14 +811,35 @@ export function ComboBody({
   );
 }
 
-function Field({ label, gap = 5, children }: { label: string; gap?: 5 | 6; children: React.ReactNode }) {
+/** A run of mana symbols in prose: `{X}`, `{2}{U}`, hybrids. Other braces (`{T}`) stay text. */
+const MANA_RUN = /((?:\{(?:\d+|[XYZWUBRGCS]|[WUBRG2](?:\/[WUBRGP])+)\})+)/;
+
+/**
+ * Spellbook's prose with its mana symbols drawn as the shipped pips, 13px inline (small items 12,
+ * call 5). Text without a symbol is returned as it came.
+ */
+export function ManaText({ text }: { text: string }) {
+  const parts = text.split(MANA_RUN);
   return (
-    <div className={"flex flex-col " + (gap === 6 ? "gap-[6px]" : "gap-[5px]")}>
-      <span className="font-mono text-[9px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
-        {label}
-      </span>
+    <>
+      {parts.map((part, i) =>
+        i % 2 === 1 ? (
+          <span key={i} className="mx-[1px] inline-flex translate-y-[2px] items-center" data-mana-run>
+            <CostPips cost={part} size={13} spoken className="inline-flex gap-[2px]" />
+          </span>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
+function FactLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <dt className="m-0 font-mono text-[9px] uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
       {children}
-    </div>
+    </dt>
   );
 }
 

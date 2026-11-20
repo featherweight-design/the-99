@@ -302,10 +302,11 @@ describe("a row opens its combo inside the sheet", () => {
     draw([SEARING]);
     fireEvent.click(press("Searing Touch"));
     const body = within(shownDetail()!);
+    // The produces chips, then the steps numbered in order.
     expect(body.getAllByRole("listitem").map((li) => li.textContent)).toEqual([
       "Infinite damage",
-      "Cast Searing Touch with buyback.",
-      "It goes back to your hand.",
+      "1Cast Searing Touch with buyback.",
+      "2It goes back to your hand.",
     ]);
     expect(shownDetail()!.querySelector('[data-mana="costs"]')).not.toBeNull();
     expect(body.getByText(deckAnalysisCopy.receipt.prerequisites)).toBeTruthy();
@@ -387,7 +388,7 @@ describe("a row opens its combo inside the sheet", () => {
     expect(foot.textContent).not.toContain(deckAnalysisCopy.receipt.assembled);
   });
 
-  it("leaves the Analysis receipt's foot as it shipped: assembled, the link, no Add and no where-lines", () => {
+  it("leaves the Analysis receipt's foot as it shipped: assembled, the link, no Add and no where-lines, on the shared body", () => {
     render(<ComboBody combo={comboModal({ ...SEARING, cards: SEARING.pieces, bracketTag: "" })} art={new Map()} />);
     const body = screen.getByTestId("receipt-combo");
     expect(body.querySelector("[data-combo-foot]")).toBeNull();
@@ -396,7 +397,8 @@ describe("a row opens its combo inside the sheet", () => {
     expect(within(body).queryByText(detail.add("Searing Touch"))).toBeNull();
     expect(body.querySelector("[data-plate-where]")).toBeNull();
     expect(body.querySelector("[data-missing-piece]")).toBeNull();
-    expect(within(body).getByRole("heading", { level: 3 }).querySelector("svg")).toBeNull();
+    // One body for every way in: the Analysis receipt draws the same title, with the lemniscate.
+    expect(within(body).getByRole("heading", { level: 3 }).querySelector("svg")).not.toBeNull();
   });
 
   it("adds the missing card to this deck, predicts its row, then goes back to the list", async () => {
@@ -567,5 +569,49 @@ describe("a row opens its combo inside the sheet", () => {
     fireEvent.click(opener);
     fireEvent.click(screen.getByRole("button", { name: copy.done }));
     expect(opener).toHaveFocus();
+  });
+});
+
+describe("the refreshed combo body (small items 12)", () => {
+  const drawBody = (over: Partial<NearCombo>) =>
+    render(<ComboBody combo={comboModal({ ...SEARING, ...over, cards: SEARING.pieces, bracketTag: "" })} art={new Map()} />);
+
+  it("numbers the steps in order, with the count beside the group head", () => {
+    drawBody({ steps: "Cast it.\nReturn it.\nRepeat.\n" });
+    const steps = [...screen.getByTestId("receipt-combo").querySelectorAll<HTMLElement>("[data-combo-step]")];
+    expect(steps.map((s) => s.textContent)).toEqual(["1Cast it.", "2Return it.", "3Repeat."]);
+    expect(screen.getByRole("heading", { level: 4 }).textContent).toBe(deckAnalysisCopy.receipt.steps);
+    expect(screen.getByTestId("receipt-combo").querySelector("[data-steps-count]")!.textContent).toBe("3");
+  });
+
+  it("draws {X} in a step and in Needs as pips, and leaves other braces as text", () => {
+    drawBody({ steps: "Pay {X} then tap {T}.", notablePrerequisites: "You control {2}{U} of mana." });
+    const body = screen.getByTestId("receipt-combo");
+    const step = body.querySelector<HTMLElement>("[data-combo-step]")!;
+    expect(step.querySelectorAll("[data-mana-run]")).toHaveLength(1);
+    expect(step.textContent).toContain("{T}");
+    expect(body.querySelector("[data-combo-needs] [data-mana-run]")).not.toBeNull();
+  });
+
+  it("is Mana needed alone when nothing is needed first", () => {
+    drawBody({ notablePrerequisites: null });
+    const facts = screen.getByTestId("receipt-combo").querySelector("[data-combo-facts]")!;
+    expect([...facts.querySelectorAll("dt")].map((d) => d.textContent)).toEqual([deckAnalysisCopy.receipt.manaNeeded]);
+  });
+
+  it("leads with the plates, then the facts, with Needs above the steps", () => {
+    drawBody({});
+    const body = screen.getByTestId("receipt-combo");
+    const facts = body.querySelector("[data-combo-facts]")!;
+    expect([...facts.querySelectorAll("dt")].map((d) => d.textContent)).toEqual([
+      deckAnalysisCopy.receipt.manaNeeded,
+      deckAnalysisCopy.receipt.prerequisites,
+    ]);
+    const plates = body.querySelector("[data-plates]")!;
+    const steps = body.querySelector("[data-combo-steps]")!;
+    const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING;
+    expect(plates.compareDocumentPosition(facts) & FOLLOWING).toBeTruthy();
+    expect(facts.compareDocumentPosition(steps) & FOLLOWING).toBeTruthy();
+    expect(plates.querySelectorAll("[data-plate-plus]")).toHaveLength(1);
   });
 });
