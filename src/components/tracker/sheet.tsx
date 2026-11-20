@@ -6,6 +6,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { PersonName, PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { MANA_COLORS, alive, type Action, type CounterKey, type DayNight, type Game, type GameState, type SeatState } from "../../lib/tracker/engine";
 import type { Cell } from "../../lib/tracker/layouts";
 import { ManaPip } from "../cards/mana-pips";
@@ -108,7 +109,7 @@ export function Sheet({
           <div
             role="tablist"
             aria-label={copy.sheet.tabsAria}
-            className="flex gap-0.5 overflow-x-auto border-b border-[color:var(--border)]"
+            className="flex gap-0.5 overflow-x-auto border-b-[1px] border-[color:var(--border)]"
             onKeyDown={(e) => {
               const at = SHEET_TABS.indexOf(view.tab);
               const next = e.key === "ArrowRight" ? at + 1 : e.key === "ArrowLeft" ? at - 1 : null;
@@ -179,7 +180,10 @@ function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: r
 
 function CountersTab({ seat, focus, onCommit }: { seat: SeatState; focus?: CounterKey; onCommit: (a: Action) => void }) {
   const focused = useRef<HTMLDivElement>(null);
-  useEffect(() => focused.current?.scrollIntoView({ block: "nearest" }), []);
+  useEffect(() => {
+    noteAppScroll();
+    focused.current?.scrollIntoView({ block: "nearest" });
+  }, []);
   return (
     <div className="grid grid-cols-1 gap-2 @[560px]:grid-cols-2 @[900px]:grid-cols-4">
       {COUNTER_ORDER.map((key) => {
