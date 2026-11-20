@@ -1436,6 +1436,19 @@ export function CardDetailProvider({
           modal is keyed per card and remounts empty on every page, so the thing that
           survives a page — the provider — is what owns an announcement that must. */}
       <div aria-live="polite" className="sr-only">{pagingAnnouncement}</div>
+      {/* The feed's own sheet draws BEFORE the live card, so a card opened from a plate paints over it (same layer, later in the tree). */}
+      {feedCombo ? (
+        <CardComboSheet
+          key={feedCombo.combo.variantId}
+          combo={feedCombo.combo}
+          lead={feedCombo.lead}
+          inScope={false}
+          deckId={null}
+          onClose={closeFeedCombo}
+          onAddLanded={NOOP}
+          onAddSettled={NOOP}
+        />
+      ) : null}
       {held ? (
         <CardModal
           // The same slot and key the card was open in, so lifting it under the sheet keeps it
@@ -1570,18 +1583,6 @@ export function CardDetailProvider({
           onClose={closeComboSheet}
           onAddLanded={comboAddLanded}
           onAddSettled={comboAddSettled}
-        />
-      ) : null}
-      {feedCombo ? (
-        <CardComboSheet
-          key={feedCombo.combo.variantId}
-          combo={feedCombo.combo}
-          lead={feedCombo.lead}
-          inScope={false}
-          deckId={null}
-          onClose={closeFeedCombo}
-          onAddLanded={NOOP}
-          onAddSettled={NOOP}
         />
       ) : null}
       {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}
