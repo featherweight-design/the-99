@@ -3767,6 +3767,10 @@ export const preconUpgrades = pgTable("precon_upgrades", {
   listFp: text("list_fp"),
   /** When this run's Overview was claimed (migration 0234): the first Start from the run writes one for its deck at no credit, and no later Start does. */
   overviewAt: timestamp("overview_at"),
+  /** When the player was first shown this run's result (migration 0246): null = landed, not yet shown. */
+  seenAt: timestamp("seen_at"),
+  /** Line ids the player unpicked (`a-<addOracleId>` / `c-<cutOracleId>`); `[]` = every card picked. Written only by `setPick`. */
+  unpicked: jsonb("unpicked").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
 }, (t) => [
   check("precon_upgrades_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),
   uniqueIndex("precon_upgrades_one_pending_idx").on(t.userId, t.preconFile).where(sql`${t.status} = 'pending'`),

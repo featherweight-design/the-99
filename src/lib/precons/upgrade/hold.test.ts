@@ -4,7 +4,7 @@ import { holdBracket, holdOffenders, isBracketTarget, playsAt, shortfall, type B
 import type { UpgradePair } from "./validate";
 
 const ref = (oracleId: string) => ({ oracleId, name: oracleId });
-const pair = (addId: string, position = 0): UpgradePair => ({ cutId: `c-${addId}`, cut: `c-${addId}`, addId, add: addId, addCents: 100, reason: "r", position });
+const pair = (addId: string, position = 0): UpgradePair => ({ cutId: `c-${addId}`, cut: `c-${addId}`, addId, add: addId, addCents: 100, reason: "r", cutReason: null, position });
 const brackets = (o: { gc?: string[]; mld?: string[]; combos?: { cards: string[]; produces?: string[] }[] }) => ({
   gameChangers: (o.gc ?? []).map(ref),
   massLandDenial: (o.mld ?? []).map((id) => ({ ...ref(id), sources: [] })),

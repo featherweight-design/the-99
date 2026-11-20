@@ -10,7 +10,10 @@ import { CARD_CAP_CENTS, MAX_SWAPS } from "./constants";
 export type DeckEntry = { oracleId: string; name: string; isCommander: boolean; /** A basic land: never a cut (nine copies share one id, and a basic is not what an upgrade is for). */ basic?: boolean };
 export type PoolEntry = { oracleId: string; name: string; cents: number | null };
 
-export type RawSwap = { out: string; in: string; reason: string };
+/** The longest cut reason kept (code points): the prompt asks for about 15 words, this caps a reply that runs on. */
+export const CUT_REASON_MAX = 120;
+
+export type RawSwap = { out: string; in: string; reason: string; /** Absent when the model left it out. */ cutReason?: string | null };
 
 export type UpgradePair = {
   cutId: string;
@@ -20,6 +23,8 @@ export type UpgradePair = {
   /** The add's cheapest-printing price; null when unpriced (an unpriced add is dropped, never shown with a guess). */
   addCents: number;
   reason: string;
+  /** Why the cut card goes: null when the model gave none, and on a run stored before the field (`readUpgrades` fills the null in). */
+  cutReason: string | null;
   position: number;
 };
 
@@ -94,9 +99,16 @@ export function validateUpgrade(
     if (kept.length >= room) { overCeiling++; return; }
     cuts.add(cut.oracleId);
     adds.add(add.oracleId);
-    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), position });
+    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), cutReason: cutReasonOf(s.cutReason), position });
   });
   return { kept, drops, overCeiling };
+}
+
+/** The cut reason as stored: trimmed, cut to `CUT_REASON_MAX` code points (never splitting a surrogate pair), null when absent or blank. */
+function cutReasonOf(raw: string | null | undefined): string | null {
+  const t = raw?.trim();
+  if (!t) return null;
+  return Array.from(t).slice(0, CUT_REASON_MAX).join("").trimEnd() || null;
 }
 
 /** The total of the buys, summed from the pairs in code: the model's own `buy_total` was wrong in 4 of 10 measured runs. */

@@ -12,7 +12,7 @@ vi.mock("../../../../app/decks/precon-upgrade-deck-actions", () => ({
   applyPreconUpgradeOnDeck: (...a: unknown[]) => apply(...a),
   undoPreconUpgradeOnDeck: (...a: unknown[]) => undo(...a),
 }));
-vi.mock("../../../../lib/precons/upgrade/actions", () => ({ readUpgradeAction: vi.fn(async () => null), pressUpgradeAction: vi.fn() }));
+vi.mock("../../../../lib/precons/upgrade/actions", () => ({ readUpgradeAction: vi.fn(async () => null), pressUpgradeAction: vi.fn(), markUpgradeSeenAction: vi.fn(async () => ({ ok: true })) }));
 
 const { DeckUpgradeHost } = await import("./deck-upgrade");
 const { readUpgradeAction } = await import("../../../../lib/precons/upgrade/actions");
@@ -27,8 +27,8 @@ const panel: UpgradePanel = {
   ],
   runs: [{
     id: "r1", status: "done", strategyKey: runKey("muddle", 3, "tokens"), strategyLabel: "Tokens", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
-    pairs: [{ cutId: "a", addId: "b", cut: "A", add: "B", addCents: 100, reason: "r", position: 0 }] as never,
-    buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, started: false,
+    pairs: [{ cutId: "a", addId: "b", cut: "A", add: "B", addCents: 100, reason: "r", cutReason: null, position: 0 }] as never,
+    buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, started: false, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
   }],
   listFp: "x", cards: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
 };

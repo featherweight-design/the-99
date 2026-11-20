@@ -7,7 +7,7 @@ const press = vi.hoisted(() => vi.fn());
 const read = vi.hoisted(() => vi.fn());
 const create = vi.hoisted(() => vi.fn());
 const own = vi.hoisted(() => vi.fn());
-vi.mock("../../../../lib/precons/upgrade/actions", () => ({ pressUpgradeAction: press, readUpgradeAction: read }));
+vi.mock("../../../../lib/precons/upgrade/actions", () => ({ pressUpgradeAction: press, readUpgradeAction: read, markUpgradeSeenAction: vi.fn(async () => ({ ok: true })) }));
 vi.mock("../../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: create, startPreconOwned: own }));
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_A" }) }));
 import { UpgradeEntry } from "./upgrade-entry";
@@ -19,8 +19,8 @@ const lead: OfferedCommander = {
 };
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r1", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
-  pairs: [{ cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", position: 1 }], buyTotalCents: 100,
-  bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 1, cents: 100 }, owned: 0, themes: {}, started: false, ...over,
+  pairs: [{ cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", cutReason: null, position: 1 }], buyTotalCents: 100,
+  bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 1, cents: 100 }, owned: 0, themes: {}, deck: null, started: false, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });
 const panel = (runs: PanelRun[] = []): UpgradePanel => ({
   boxBracket: 2, commanders: [lead], runs, listFp: "x", cards: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },

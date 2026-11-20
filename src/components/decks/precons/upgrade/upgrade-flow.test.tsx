@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
+
+const seen = vi.hoisted(() => vi.fn(async (_runId: string) => ({ ok: true })));
+vi.mock("../../../../lib/precons/upgrade/actions", () => ({ markUpgradeSeenAction: seen }));
 import { UpgradeFlow } from "./upgrade-flow";
 
 const strat = (key: string, label: string) => ({ key, label, blurb: `${label} blurb`, source: "edhrec" as const, backingIds: ["c1"], backing: [{ oracleId: "c1", name: "Card One" }] });
@@ -17,7 +20,7 @@ const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
 });
 const run: PanelRun = {
   id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pairs: [],
-  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, started: false,
+  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, started: false, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>
   render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} {...extra} />);
@@ -130,7 +133,7 @@ describe("UpgradeFlow", () => {
 
   describe("after the press", () => {
     const strategyPicks = { commander: "rootha", bracket: 3 as const, strategy: "spellslinger" };
-    const twelve = [0, 1].map((n) => ({ cutId: `c${n}`, cut: `Cut ${n}`, addId: `a${n}`, add: `Add ${n}`, addCents: 100, reason: "r", position: n }));
+    const twelve = [0, 1].map((n) => ({ cutId: `c${n}`, cut: `Cut ${n}`, addId: `a${n}`, add: `Add ${n}`, addCents: 100, reason: "r", cutReason: null, position: n }));
     const done = { ...run, pairs: twelve, themes: {} };
 
     it("draws the wait, with the press off and the credits held", () => {
@@ -225,7 +228,7 @@ describe("UpgradeFlow", () => {
   });
 });
 
-const twelveCards = (n: number) => Array.from({ length: n }, (_, i) => ({ cutId: `c${i}`, cut: `Cut ${i}`, addId: `a${i}`, add: `Add ${i}`, addCents: 100, reason: "r", position: i }));
+const twelveCards = (n: number) => Array.from({ length: n }, (_, i) => ({ cutId: `c${i}`, cut: `Cut ${i}`, addId: `a${i}`, add: `Add ${i}`, addCents: 100, reason: "r", cutReason: null, position: i }));
 
 describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
   const applyOn = (over: Partial<NonNullable<Parameters<typeof UpgradeFlow>[0]["apply"]>> = {}) => ({ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: {}, ...over });
@@ -525,5 +528,52 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     open(panel({ allowance: one }));
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
     spy.mockRestore();
+  });
+});
+
+describe("UpgradeFlow marks a shown result seen (fresh start 1/4)", () => {
+  afterEach(() => { cleanup(); seen.mockClear(); });
+
+  it("marks a done result it shows whose seenAt is null, once, even when the flow comes back to it", () => {
+    const unseen = panel({ runs: [{ ...run, seenAt: null }] });
+    const { rerender } = open(unseen, { view: { kind: "results", runId: "r" }, onConfirm: vi.fn() });
+    expect(seen).toHaveBeenCalledTimes(1);
+    expect(seen).toHaveBeenCalledWith("r");
+    rerender(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={unseen} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r" }} onConfirm={vi.fn()} />);
+    // Leave the result for the picks, then come back to the same run through History in the same mount: the panel still
+    // says unseen (it is not read again), so only the flow's own guard keeps a second call away.
+    press(/Try another strategy/);
+    expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
+    // Strategy, Bracket, Commander, then the intro, where History is offered.
+    press("Back");
+    press("Back");
+    press("Back");
+    press("History");
+    fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(seen).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a later showing mark again when the call was rejected", async () => {
+    seen.mockRejectedValueOnce(new Error("offline"));
+    open(panel({ runs: [{ ...run, seenAt: null }] }), { view: { kind: "results", runId: "r" } });
+    expect(seen).toHaveBeenCalledTimes(1);
+    await act(async () => {});
+    press("History");
+    fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(seen).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves a result already seen alone, and marks nothing on the picks", () => {
+    open(panel({ runs: [run] }), { view: { kind: "results", runId: "r" } });
+    expect(seen).not.toHaveBeenCalled();
+    cleanup();
+    open(panel({ runs: [{ ...run, seenAt: null }] }), { view: { kind: "results", runId: "r" }, onConfirm: vi.fn() });
+    expect(seen).toHaveBeenCalledTimes(1);
+    seen.mockClear();
+    press(/Try another strategy/);
+    expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
+    expect(seen).not.toHaveBeenCalled();
   });
 });

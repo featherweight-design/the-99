@@ -18,7 +18,7 @@ const list = {
     ...["s1", "s2", "c1", "c2", "c3"].map((oracleId) => ({ oracleId, quantity: 1, isCommander: false })),
   ],
 };
-const pair = (cutId: string, addId: string, position: number): UpgradePair => ({ cutId, cut: cutId.toUpperCase(), addId, add: addId.toUpperCase(), addCents: 100, reason: "r", position });
+const pair = (cutId: string, addId: string, position: number): UpgradePair => ({ cutId, cut: cutId.toUpperCase(), addId, add: addId.toUpperCase(), addCents: 100, reason: "r", cutReason: null, position });
 const pairs = [pair("c1", "a1", 1), pair("c2", "a2", 2), pair("c3", "a3", 3)];
 
 /** A two-card variant as `inDeckPairsQuery` returns it: one row per piece. */
