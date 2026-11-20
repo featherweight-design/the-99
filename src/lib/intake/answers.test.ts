@@ -30,7 +30,7 @@ describe("validateCreateAnswers", () => {
 describe("answerColumnsFor", () => {
   it("stores the budget in cents, with no intent written any more (H35)", () => {
     expect(answerColumnsFor(validateCreateAnswers(ok), { oracleId: UUID, name: "Doubling Season" })).toEqual({
-      answerAsked: true, answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false, answerSets: [], answerThemes: [], answerThemeJoin: "all",
+      answerAsked: true, answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false, answerSets: [], answerThemes: ["Dinosaurs"], answerThemeJoin: "all",
     });
   });
 

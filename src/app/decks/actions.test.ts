@@ -2543,7 +2543,7 @@ describe("chooseBulkFill", () => {
   });
 
   it("returns nothing for a deck with no open slots", async () => {
-    stub.state.decks.push({ id: "bulk-0", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.decks.push({ id: "bulk-0", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerThemes: [], answerThemeJoin: "all" });
     stub.state.cards.push(commanderCard());
     const result = await chooseBulkFill("bulk-0", 0);
     expect(result).toEqual({ ok: true, oracleIds: [] });
@@ -2561,7 +2561,7 @@ describe("chooseBulkFill", () => {
   // What belongs at this level is the action's own contract: it caps at the slots asked for,
   // it never repeats an id, and it answers rather than throwing.
   it("never offers more than the open slots, and never twice", async () => {
-    stub.state.decks.push({ id: "bulk-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.decks.push({ id: "bulk-1", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerThemes: [], answerThemeJoin: "all" });
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(
       ...Array.from({ length: 6 }, (_, i) => rampCard(i)),
@@ -2587,7 +2587,7 @@ describe("chooseBulkFill", () => {
   // Observable because the wipes floor is 3: a wipe commander that closed a unit of it would
   // leave two to fill, and the third slot would come back empty.
   it("does not count the commander toward a measured floor", async () => {
-    stub.state.decks.push({ id: "bulk-c", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.decks.push({ id: "bulk-c", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerThemes: [], answerThemeJoin: "all" });
     stub.state.cards.push(commanderCard({ oracleText: "Destroy all creatures." }));
     stub.state.collectionItems.push(...Array.from({ length: 3 }, (_, i) => ({
       oracleId: `wipe-${i.toString().padStart(8, "0")}-aaaa-aaaa-aaaa-aaaaaaaaaaaa`,
@@ -2607,7 +2607,7 @@ describe("chooseBulkFill", () => {
   // free — so a card claimed by another deck closed the floor here and was then stripped
   // client-side, leaving the tick missing and the free card never considered.
   it("plans around a card whose every copy is claimed elsewhere", async () => {
-    stub.state.decks.push({ id: "bulk-a", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.decks.push({ id: "bulk-a", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerThemes: [], answerThemeJoin: "all" });
     stub.state.cards.push(commanderCard());
     const claimed = rampCard(70);
     const free = rampCard(71);
@@ -2642,7 +2642,7 @@ describe("chooseBulkFill", () => {
     // The list is the commander's support list; the plan's pool is the whole collection. A plan
     // free to pick from the collection named cards the list has no row for, and the press ticked
     // nothing (Hugh's deck bug batch, item 10). Six ramp cards owned, two on the list.
-    stub.state.decks.push({ id: "bulk-l", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.decks.push({ id: "bulk-l", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerThemes: [], answerThemeJoin: "all" });
     stub.state.cards.push(commanderCard());
     stub.state.collectionItems.push(...Array.from({ length: 6 }, (_, i) => rampCard(i)));
     const listed = [rampCard(4).oracleId as string, rampCard(5).oracleId as string];
@@ -2662,7 +2662,7 @@ describe("chooseBulkFill", () => {
     // A deck one land short gets one basic, at quantity 1, and the controls answer with ids: past
     // the allow-list that id is a tick the list has no row for. The catalog's basics are not
     // candidates, so they need the allow-list applied to them too.
-    stub.state.decks.push({ id: "bulk-b", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.decks.push({ id: "bulk-b", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerThemes: [], answerThemeJoin: "all" });
     stub.state.cards.push(commanderCard());
     const CAT_FOREST = "cafe0000-0000-4000-8000-000000000f00";
     vi.mocked(loadCatalogBasics).mockResolvedValueOnce([{
@@ -2684,7 +2684,7 @@ describe("chooseBulkFill", () => {
     // was the failure this control exists to end: unmeetable floors meant every open slot
     // went to "whatever ranked next", which is the synergy ordering in a different hat. A
     // residual row must never reach the player from this door.
-    stub.state.decks.push({ id: "bulk-r", userId: "user_1", commanderOracleId: COMMANDER_ORACLE });
+    stub.state.decks.push({ id: "bulk-r", userId: "user_1", commanderOracleId: COMMANDER_ORACLE, answerThemes: [], answerThemeJoin: "all" });
     stub.state.cards.push(commanderCard());
     // Cards that close no floor: vanilla creatures with no ramp, draw, removal or wipe text.
     stub.state.collectionItems.push(...Array.from({ length: 8 }, (_, i) => ({
