@@ -67,7 +67,7 @@ export function FriendsList({
     <section aria-labelledby="friends-head" className={PANEL}>
       <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}>{f.head(friends.length)}</h2>
       {friends.length === 0 ? (
-        <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
+        <div className="m-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:m-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
           <p className="m-0 max-w-[560px] text-[13px] leading-[1.55] md:text-[13.5px] text-[color:var(--fg-muted)]">{emptyBody ?? f.emptyBody}</p>
         </div>

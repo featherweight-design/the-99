@@ -49,13 +49,14 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
           ]}
         />
       </div>
-      <div hidden={tab !== "waiting"}>
-        {waiting}
-        {waitingCount === 0 ? <PanelEmpty title={b.waitingEmpty.title} body={b.waitingEmpty.body} /> : null}
+      <div role="tabpanel" aria-label={b.waiting} hidden={tab !== "waiting"}>
+        <div className="peer">{waiting}</div>
+        {/* An answered last row stays as a receipt in the list (`WaitingOnYou` keeps it), so the empty state yields to it. */}
+        {waitingCount === 0 ? <div className="peer-has-[[data-testid=waiting-on-you]]:hidden"><PanelEmpty title={b.waitingEmpty.title} body={b.waitingEmpty.body} /></div> : null}
       </div>
-      <div hidden={tab !== "mine"}>
-        {mine}
-        {mineCount === 0 ? <PanelEmpty title={b.mineEmpty.title} body={b.mineEmpty.body} /> : null}
+      <div role="tabpanel" aria-label={b.mine} hidden={tab !== "mine"}>
+        <div className="peer">{mine}</div>
+        {mineCount === 0 ? <div className="peer-has-[[data-testid=your-requests]]:hidden"><PanelEmpty title={b.mineEmpty.title} body={b.mineEmpty.body} /></div> : null}
       </div>
       {history ? (
         <div className="flex justify-end pr-[6px] [border-top:1px_solid_var(--border)]">
