@@ -29,7 +29,7 @@ export const LAUNCH_IMAGES = ["launch-fan@2x.png", ...launchEmailCopy.features.m
 const FEATURE_HEIGHT: Record<(typeof launchEmailCopy.features)[number]["image"], number> = {
   "feature-commanders": 317,
   "feature-tune": 141,
-  "feature-written": 227,
+  "feature-written": 271,
   "feature-credits": 155,
 };
 
