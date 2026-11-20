@@ -10,7 +10,7 @@
 // (the dry run prints it), so a URL swapped between the dry run and the paid run is refused.
 //
 // DRY RUN BY DEFAULT. It checks the branch, the fixture (five decks at their totals, the shared card, the Precon Upgrade
-// precon, at least 8 credits: the five single-credit steps' 6 and the upgrade's UPGRADE_UNITS), the live-path env the server will be started with, and prints the steps with each model step's worst case
+// precon, at least 8 credits: the other steps' 6 and the upgrade's UPGRADE_UNITS), the live-path env the server will be started with, and prints the steps with each model step's worst case
 // and the ledger's spent and cap. It presses nothing and starts nothing.
 //
 // `--spend` presses the tools. It starts `next start` ITSELF (a production build must exist: `pnpm build`), on
@@ -69,7 +69,7 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const LEDGER_REL = "docs/superpowers/eval/ledger-landing-demo.jsonl";
 const LEDGER = join(ROOT, LEDGER_REL);
 const CAP_USD = LEDGER_LIMITS["ledger-landing-demo.jsonl"].hardCapUsd;
-/** The five single-credit steps' 6, and the Precon Upgrade run's own price (`UPGRADE_UNITS`, never a typed 2). */
+/** The other steps' 6 (the precheck before this step), and the Precon Upgrade run's own price (`UPGRADE_UNITS`, never a typed 2). */
 const MIN_CREDITS = 6 + UPGRADE_UNITS;
 const PORT = Number(process.env.DEMO_PORT ?? 3391);
 const BASE = `http://localhost:${PORT}`;
@@ -255,7 +255,7 @@ if (!switchRows.some((r) => r.switch === "SUGGESTED_CHANGES_V2_ENABLED" && r.val
   console.log("  note: no app or account row turns SUGGESTED_CHANGES_V2_ENABLED on; unless a group does, the v2 step will stop at its press");
 }
 
-if (STEPS.some((s) => s.id === "upgrade") && !switchRows.some((r) => r.switch === "PRECON_UPGRADE_ENABLED" && r.value === "true" && r.scope !== "group")) {
+if (STEPS.some((s) => s.id === "upgrade") && !switchRows.some((r) => r.switch === "PRECON_UPGRADE_ENABLED" && r.value === "on" && r.scope !== "group")) {
   console.log("  note: no app or account row turns PRECON_UPGRADE_ENABLED on; unless a group does, the upgrade step will find no Upgrade this precon button");
 }
 

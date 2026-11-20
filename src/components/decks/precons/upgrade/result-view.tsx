@@ -181,6 +181,7 @@ const PRESS_OFF: SuggestedChangesPress = { label: () => "", onPress: noop, off: 
 /**
  * The landing demo's line actions (A5b): a pick is held on screen and stored nowhere, and the set bracket is the stored run's
  * own read for the whole set (`seed`), so the tally drops its bracket half once a pick changes. No server call.
+ * It holds the picks itself, so the caller makes it once per run (`useMemo`), never in render.
  */
 export function demoLineActions(run: PanelRun, seed: number[] | null): UpgradeActionDeps {
   const unpicked = new Set(run.unpicked);
