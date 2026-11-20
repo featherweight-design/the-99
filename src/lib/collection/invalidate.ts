@@ -42,6 +42,8 @@ export const COLLECTION_ROUTES: CollectionRoute[] = [
   { path: "/announcements", dynamic: false },
   // /about/[area] (the six visual pages) is listed for the same reason, and is dynamic.
   { path: "/about/[area]", dynamic: true },
+  // /friends/table/[id]/play reaches the collection by import only (the table roster read), like the pages above.
+  { path: "/friends/table/[id]/play", dynamic: true },
   // /report renders nothing out of the collection either: its form is the shared Report a problem body, and the page reaches
   // `db/schema` (the switch read), the same import-reachability answer as /about. Listed for the same reason.
   { path: "/report", dynamic: false },
