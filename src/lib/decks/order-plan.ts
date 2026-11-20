@@ -17,10 +17,18 @@ export type OrderRow = {
  * The positions to write for a reorder, or null when the ids are not a set this player may
  * arrange (C8).
  *
- * `ids` must be the caller's WHOLE deck set, or exactly one shelf's decks (a folder's, or the
- * unfiled ones). A shelf's decks are permuted among the slots they already hold in the current
- * Custom order, so every other deck keeps its place. The result numbers EVERY deck 0..n-1, so
- * a first reorder materializes the order the player was looking at, nulls included.
+ * `ids` is the list Arrange was showing: refused when empty, duplicated, or naming a deck that is not
+ * the caller's. Decks that arrived since Arrange opened (created, or moved onto the shelf) are not in
+ * `ids`, and a reorder must not fail forever over them.
+ *
+ * - Shelf mode: every id shares one folder (null = unfiled) and there are fewer ids than decks. The
+ *   shelf's decks missing from `ids` take that shelf's first slots, then `ids` in order; every other
+ *   deck keeps its slot in the current Custom order.
+ * - Whole-set mode: anything else (including ids that span folders). Decks missing from `ids` go
+ *   first, in the current Custom order, then `ids` in order.
+ *
+ * The result numbers EVERY deck 0..n-1 exactly once, so a first reorder materializes the order the
+ * player was looking at, nulls included.
  */
 export function planReorder(
   rows: readonly OrderRow[],
@@ -36,18 +44,24 @@ export function planReorder(
     "custom",
   ).map((r) => r.id);
 
-  if (ids.length === rows.length) return ids.map((id, position) => ({ id, position }));
-
   const shelf = byId.get(ids[0])!.folderId;
-  // Every id must be the shelf's: a list mixing shelves would write one deck into two slots and drop another.
-  if (ids.some((id) => byId.get(id)!.folderId !== shelf)) return null;
-  const members = rows.filter((r) => r.folderId === shelf);
-  if (members.length !== ids.length) return null;
+  const oneShelf = ids.every((id) => byId.get(id)!.folderId === shelf);
 
-  const next = [...current];
-  let k = 0;
-  current.forEach((id, slot) => {
-    if (byId.get(id)!.folderId === shelf) next[slot] = ids[k++];
-  });
+  if (oneShelf && ids.length < rows.length) {
+    const inIds = new Set(ids);
+    const arranged = [
+      ...current.filter((id) => byId.get(id)!.folderId === shelf && !inIds.has(id)),
+      ...ids,
+    ];
+    const next = [...current];
+    let k = 0;
+    current.forEach((id, slot) => {
+      if (byId.get(id)!.folderId === shelf) next[slot] = arranged[k++];
+    });
+    return next.map((id, position) => ({ id, position }));
+  }
+
+  const inIds = new Set(ids);
+  const next = [...current.filter((id) => !inIds.has(id)), ...ids];
   return next.map((id, position) => ({ id, position }));
 }

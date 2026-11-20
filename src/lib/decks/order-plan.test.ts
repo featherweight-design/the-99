@@ -44,18 +44,45 @@ describe("planReorder", () => {
     expect(ids(planReorder(inFolder, ["old", "new"]))).toEqual(["old", "new", "x"]);
   });
 
-  it("refuses a list mixing shelves even when its length matches the first id's shelf", () => {
-    // Two in folder G and two unfiled: [g1, u1] is two long, as G is, but u1 is not G's.
+  const perm = (plan: ReturnType<typeof planReorder>, all: OrderRow[]) => {
+    expect([...(ids(plan) ?? [])].sort()).toEqual(all.map((r) => r.id).sort());
+    expect(plan?.map((p) => p.position)).toEqual(all.map((_, i) => i));
+  };
+
+  it("treats ids spanning folders as whole-set mode: unlisted decks first, nothing written twice or dropped", () => {
     const mixed = [row("g1", "G", 0), row("u1", null, 1), row("g2", "G", 2), row("u2", null, 3)];
-    expect(planReorder(mixed, ["g1", "u1"])).toBeNull();
-    expect(planReorder(mixed, ["g2", "g1"])).not.toBeNull();
+    const plan = planReorder(mixed, ["g1", "u1"]);
+    expect(ids(plan)).toEqual(["g2", "u2", "g1", "u1"]);
+    perm(plan, mixed);
+    expect(ids(planReorder(mixed, ["g2", "g1"]))).toEqual(["g1", "u1", "g2", "u2"]);
   });
 
-  it("refuses a partial shelf, an id that is not the caller's, a duplicate, and an empty list", () => {
-    expect(planReorder(rows, ["a", "c"])).toBeNull();
+  it("a deck added since Arrange opened goes first (whole set)", () => {
+    const all = [...rows, row("new", null, null, 9)];
+    // Unarranged decks sort first: current order is new a b c d e.
+    const plan = planReorder(all, ["e", "d", "c", "b", "a"]);
+    expect(ids(plan)).toEqual(["new", "e", "d", "c", "b", "a"]);
+    perm(plan, all);
+  });
+
+  it("a deck added to the shelf since goes first among the shelf's slots", () => {
+    const all = [...rows, row("new", "F", null, 9)];
+    // Unarranged decks sort first: current order is new a b c d e. F holds slots 0, 1, 3, 5.
+    const plan = planReorder(all, ["e", "c", "a"]);
+    expect(ids(plan)).toEqual(["new", "e", "b", "c", "d", "a"]);
+    perm(plan, all);
+  });
+
+  it("a deck moved into the shelf since is handled like an added one", () => {
+    const all = [row("a", "F", 0), row("b", null, 1), row("m", "F", 2), row("c", "F", 3)];
+    const plan = planReorder(all, ["c", "a"]);
+    expect(ids(plan)).toEqual(["m", "b", "c", "a"]);
+    perm(plan, all);
+  });
+
+  it("refuses an id that is not the caller's, a duplicate, and an empty list", () => {
     expect(planReorder(rows, ["a", "c", "e", "zzz"])).toBeNull();
     expect(planReorder(rows, ["a", "a", "c"])).toBeNull();
-    expect(planReorder(rows, ["b", "a"])).toBeNull();
     expect(planReorder(rows, [])).toBeNull();
   });
 });
