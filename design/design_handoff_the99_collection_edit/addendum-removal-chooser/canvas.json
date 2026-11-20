@@ -1,0 +1,148 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "D1-Desktop.dc.html": {
+      "h": 900,
+      "title": "D1 \u00b7 desktop dialog",
+      "w": 1300,
+      "x": 0,
+      "y": 964
+    },
+    "Main.dc.html": {
+      "h": 750,
+      "title": "Main \u00b7 calls",
+      "w": 900,
+      "x": 0,
+      "y": 0
+    },
+    "P1-Default.dc.html": {
+      "h": 844,
+      "title": "P1 \u00b7 one copy, two decks (default)",
+      "w": 390,
+      "x": 980,
+      "y": 0
+    },
+    "P2-Picked.dc.html": {
+      "h": 844,
+      "title": "P2 \u00b7 you picked the other deck",
+      "w": 390,
+      "x": 1450,
+      "y": 0
+    },
+    "P3-TwoCopies.dc.html": {
+      "h": 844,
+      "title": "P3 \u00b7 two copies, three decks",
+      "w": 390,
+      "x": 1920,
+      "y": 0
+    },
+    "P4-NoChoice.dc.html": {
+      "h": 844,
+      "title": "P4 \u00b7 one deck, nothing to pick (#2982)",
+      "w": 390,
+      "x": 2390,
+      "y": 0
+    },
+    "Warning.dc.html": {
+      "h": 720,
+      "is_interactive": true,
+      "title": "Warning \u00b7 playable",
+      "w": 390,
+      "x": 1380,
+      "y": 964
+    },
+    "Main-R2.dc.html": {
+      "x": 0,
+      "y": 1984,
+      "w": 900,
+      "h": 1040,
+      "title": "R2 \u00b7 calls and the seven hosts"
+    },
+    "P5-TwoLeft.dc.html": {
+      "x": 980,
+      "y": 1984,
+      "w": 390,
+      "h": 844,
+      "title": "P5 \u00b7 R2 \u00b7 three decks, two copies left: no choice, says why"
+    },
+    "P6-Receipt.dc.html": {
+      "x": 1450,
+      "y": 1984,
+      "w": 390,
+      "h": 844,
+      "title": "P6 \u00b7 R2 \u00b7 I got it's Undo, read-only"
+    },
+    "P7-Replace.dc.html": {
+      "x": 1920,
+      "y": 1984,
+      "w": 390,
+      "h": 844,
+      "title": "P7 \u00b7 R2 \u00b7 several cards, a row opened inline"
+    },
+    "D2-Single.dc.html": {
+      "x": 0,
+      "y": 3144,
+      "w": 1300,
+      "h": 900,
+      "title": "D2 \u00b7 R2 \u00b7 one deck"
+    },
+    "D3-Many.dc.html": {
+      "x": 1380,
+      "y": 3144,
+      "w": 1300,
+      "h": 900,
+      "title": "D3 \u00b7 R2 \u00b7 three decks, one copy left"
+    },
+    "D4-TwoLeft.dc.html": {
+      "x": 2760,
+      "y": 3144,
+      "w": 1300,
+      "h": 900,
+      "title": "D4 \u00b7 R2 \u00b7 two copies left, no choice"
+    },
+    "D5-Receipt.dc.html": {
+      "x": 0,
+      "y": 4164,
+      "w": 1300,
+      "h": 900,
+      "title": "D5 \u00b7 R2 \u00b7 I got it's Undo"
+    },
+    "D6-Replace.dc.html": {
+      "x": 1380,
+      "y": 4164,
+      "w": 1300,
+      "h": 900,
+      "title": "D6 \u00b7 R2 \u00b7 several cards, a row opened inline"
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-18T02:45:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {},
+  "order": [
+    "Main.dc.html",
+    "P1-Default.dc.html",
+    "P2-Picked.dc.html",
+    "P3-TwoCopies.dc.html",
+    "P4-NoChoice.dc.html",
+    "D1-Desktop.dc.html",
+    "Warning.dc.html",
+    "Main-R2.dc.html",
+    "P5-TwoLeft.dc.html",
+    "P6-Receipt.dc.html",
+    "P7-Replace.dc.html",
+    "D2-Single.dc.html",
+    "D3-Many.dc.html",
+    "D4-TwoLeft.dc.html",
+    "D5-Receipt.dc.html",
+    "D6-Replace.dc.html"
+  ],
+  "pages": [],
+  "title": "Removal: pick who goes short R1"
+}

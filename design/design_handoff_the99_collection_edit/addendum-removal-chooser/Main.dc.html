@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Removal chooser · calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&amp;family=IBM+Plex+Sans:wght@400;600&amp;family=IBM+Plex+Mono&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#CF8745}a:hover{color:#DE9757}
+</style>
+</helmet>
+<div style="width: 900px; height: 844px; box-sizing: border-box; padding: 44px 48px; background: #14110E; color: #C0B8A6; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #948B78">Collection edit · short-deck warning · R1 · issues #2983 and #2982</span>
+<h1 style="margin: 0; font-family: Cinzel, serif; font-size: 30px; font-weight: 700; color: #EDE6D8">Pick which deck goes short</h1>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.55; max-width: 760px">Hugh lowered Counterspell by one, the warning named Mutant Menace, and tapping it left the installed app. In R1 the warning's deck rows stop being links, and when more than one deck lists the card, the rows become the choice.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 28px; font-size: 13.5px; line-height: 1.55">
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">1. The rows are the control</b><span>No new button. Each deck that lists the card is a row with a mark, as the contested-copy chooser does it. The marked row is the one that goes short, because that's the question you came with. One copy: round marks. More than one: square marks.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">2. The default is marked before you touch it</b><span>The deck that committed the card last goes short (today's seniority rule). Its mark is neutral. A mark you set is accent, and the footer says what you picked, with Back to first committed. Same four signals as the contested chooser.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">3. No links out, and no tap to learn why (#2982)</b><span>The deck name is plain text in all seven places the warning shows. What you'd open the deck to learn is on the row: how many it lists and when it committed the card. Rows with several cards (Sync, Replace, Revert) still open onto their cards, as shipped.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">4. What a pick writes</b><span>Copies go to the decks that keep the card, in the removal's own transaction. No list or version changes. The deck you picked shows the card short and puts it on its shopping list. Undo puts the copies back where they were.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">5. Two copies, three decks (P3)</b><span>You pick as many decks as copies are going. When that many are already picked, tapping another tells you to untick one first. Nothing is locked, and the reason is said out loud.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">6. Only on removal, only with a real choice</b><span>The chooser shows on Edit copies' removal and lowering when two or more decks list the card. One deck (P4), or Sync, Replace, Revert, Undo and I got it: today's warning, minus the link.</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #2B241B; padding-top: 16px; font-size: 13px; line-height: 1.55">
+<b style="color: #EDE6D8">Open for Hugh</b>
+<span>A. Marked = goes short (drawn) or marked = keeps it, like the contested chooser's gets it. Drawn the first way because it answers your question directly. Say if the two surfaces should agree instead.</span>
+<span>B. A deck that lists 2 copies counts as one row that can take one or both. R1 leaves it as one pick per row and notes the gap.</span>
+<span>C. Backdrops are the shipped Collection page, Low Sun. In the app the warning covers the Edit copies sheet, which covers card details.</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

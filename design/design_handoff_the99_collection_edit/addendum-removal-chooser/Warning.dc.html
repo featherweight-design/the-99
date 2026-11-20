@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Short-deck warning with chooser</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&amp;family=IBM+Plex+Sans:wght@400;600&amp;family=IBM+Plex+Mono&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="box-sizing: border-box; width: 100%; padding: 20px; background: #1A1611; border: 1px solid #3A3229; border-radius: {{radius}}; font-family: 'IBM Plex Sans', sans-serif; color: #C0B8A6; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-family: Cinzel, serif; font-size: 20px; font-weight: 700; line-height: 1.3; color: #EDE6D8">{{title}}</h2>
+<p style="margin: 0; font-size: 13.5px; line-height: 1.55; color: #C0B8A6">{{body}}</p>
+<sc-if value="{{chooser}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: baseline; justify-content: space-between; gap: 10px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: #948B78">{{heading}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #948B78">{{tally}}</span>
+</div>
+</sc-if>
+<ul style="margin: 0; padding: 0; list-style: none; border: 1px solid #2B241B; border-radius: 10px; background: #14110E; overflow: hidden">
+<sc-for list="{{rows}}" as="row" hint-placeholder-count="2">
+<li style="border-bottom: {{row.rule}}">
+<sc-if value="{{chooser}}" hint-placeholder-val="{{ true }}">
+<button type="button" aria-pressed="{{row.picked}}" onClick="{{row.tap}}" style="all: unset; box-sizing: border-box; width: 100%; min-height: 56px; display: flex; align-items: center; gap: 12px; padding: 8px 14px; cursor: pointer; background: {{row.bg}}; box-shadow: {{row.ring}}">
+<span aria-hidden="true" style="flex: none; width: 18px; height: 18px; box-sizing: border-box; border-radius: {{row.markRadius}}; border: 1px solid {{row.markRing}}; display: flex; align-items: center; justify-content: center">
+<span style="display: block; width: 8px; height: 8px; border-radius: {{row.dotRadius}}; background: {{row.dot}}"></span>
+</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; color: #EDE6D8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{row.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #948B78">{{row.sub}}</span>
+</span>
+<span style="flex: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{row.outColor}}">{{row.out}}</span>
+</button>
+</sc-if>
+<sc-if value="{{plain}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{row.flat}}" hint-placeholder-val="{{ true }}">
+<div style="min-height: 56px; box-sizing: border-box; display: flex; align-items: center; gap: 12px; padding: 8px 14px">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; color: #EDE6D8">{{row.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #948B78">{{row.sub}}</span>
+</span>
+<span style="flex: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{row.outColor}}">{{row.out}}</span>
+</div>
+</sc-if>
+<sc-if value="{{row.expandable}}" hint-placeholder-val="{{ false }}">
+<button type="button" aria-expanded="{{row.openAttr}}" onClick="{{row.toggle}}" style="all: unset; box-sizing: border-box; width: 100%; min-height: 56px; display: flex; align-items: center; gap: 12px; padding: 8px 14px; cursor: pointer">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; color: #EDE6D8">{{row.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #948B78">{{row.sub}}</span>
+</span>
+<span style="flex: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #C6533F">{{row.out}}</span>
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14" style="flex: none; transform: {{row.chev}}"><path d="M4 5.5 7 8.5 10 5.5" fill="none" stroke="#948B78" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+</button>
+<sc-if value="{{row.open}}" hint-placeholder-val="{{ false }}">
+<ul style="margin: 0; padding: 0 14px 10px 14px; list-style: none; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{row.cards}}" as="card" hint-placeholder-count="2">
+<li style="display: flex; align-items: center; gap: 12px; padding-left: 10px; border-left: 1px solid #2B241B">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px">
+<span style="font-size: 12.5px; color: #C0B8A6">{{card.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #948B78">{{card.sub}}</span>
+</span>
+<span style="flex: none; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #C6533F">{{card.out}}</span>
+</li>
+</sc-for>
+</ul>
+</sc-if>
+</sc-if>
+</sc-if>
+</li>
+</sc-for>
+</ul>
+<sc-if value="{{reason}}" hint-placeholder-val="{{ false }}">
+<p style="margin: -4px 0 0; font-size: 12px; line-height: 1.5; color: #A59C89">{{reason}}</p>
+</sc-if>
+<sc-if value="{{refusal}}" hint-placeholder-val="{{ false }}">
+<p role="status" style="margin: -4px 0 0; font-size: 12px; line-height: 1.5; color: #EDE6D8; padding-left: 9px; border-left: 2px solid #494037">{{refusal}}</p>
+</sc-if>
+<sc-if value="{{chooser}}" hint-placeholder-val="{{ true }}">
+<div style="margin-top: -4px; display: flex; flex-direction: column; gap: 4px; font-size: 12px; line-height: 1.5; color: #A59C89">
+<span aria-live="polite">{{footer}}</span>
+<sc-if value="{{custom}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{reset}}" style="all: unset; cursor: pointer; align-self: flex-start; min-height: 32px; display: flex; align-items: center; font-size: 12.5px; color: #CF8745; text-decoration: underline; text-underline-offset: 2px">Back to first committed</button>
+</sc-if>
+</div>
+</sc-if>
+<div style="display: flex; flex-direction: {{btnDir}}; justify-content: flex-end; gap: 10px; padding-top: 4px">
+<button type="button" style="height: 44px; padding: 0 18px; border-radius: 8px; border: 1px solid #3A3229; background: transparent; color: #EDE6D8; font: 400 14px 'IBM Plex Sans', sans-serif; outline: 2px solid #CF8745; outline-offset: 2px">Cancel</button>
+<button type="button" style="height: 44px; padding: 0 18px; border-radius: 8px; border: 1px solid #3A3229; background: #29241F; color: #EDE6D8; font: 600 14px 'IBM Plex Sans', sans-serif">{{confirm}}</button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"scene":{"editor":"enum","options":["default","picked","many","single","twoleft","undo","replace"],"default":"default"},"desktop":{"editor":"boolean","default":false},"$preview":{"width":390,"height":640}}'>
+class Component extends DCLogic {
+  scenes() {
+    return {
+      one: {
+        card: 'Counterspell', need: 1, left: 1,
+        decks: [
+          { id: 'atx', name: 'Atraxa Counters', sub: 'lists 1 · committed it Sept 12' },
+          { id: 'mm', name: 'Mutant Menace', sub: 'lists 1 · committed it Oct 30' }
+        ],
+        def: ['mm']
+      },
+      many: {
+        card: 'Counterspell', need: 2, left: 1,
+        decks: [
+          { id: 'atx', name: 'Atraxa Counters', sub: 'lists 1 · committed it Aug 4' },
+          { id: 'knn', name: 'Kinnan Ramp', sub: 'lists 1 · committed it Sept 12' },
+          { id: 'mm', name: 'Mutant Menace', sub: 'lists 1 · committed it Oct 30' }
+        ],
+        def: ['knn', 'mm']
+      },
+      twoleft: {
+        card: 'Counterspell', need: 1, left: 2, noChoice: true,
+        decks: [ { id: 'mm', name: 'Mutant Menace', sub: 'lists 1 · committed it Oct 30' } ],
+        def: ['mm'],
+        reason: 'Atraxa Counters and Kinnan Ramp committed it first, so they keep the 2 copies left. To give one to Mutant Menace instead, tap Change under In your decks on Counterspell afterwards.'
+      },
+      undo: {
+        card: 'Counterspell', need: 1, left: 1, noChoice: true, source: 'undo',
+        decks: [ { id: 'mm', name: 'Mutant Menace', sub: 'lists 1 · committed it Oct 30' } ],
+        def: ['mm'],
+        reason: 'Mutant Menace goes short because it committed Counterspell after Atraxa Counters. To change that, tap Change under In your decks on Counterspell afterwards.'
+      },
+      replace: {
+        card: '', need: 2, left: 0, noChoice: true, source: 'replace',
+        decks: [
+          { id: 'mm', name: 'Mutant Menace', sub: 'committed Oct 30', cards: [
+            { name: 'Counterspell', sub: 'lists 1 · committed it Oct 30', out: 'short 1' },
+            { name: 'Swords to Plowshares', sub: 'lists 1 · committed it Oct 30', out: 'short 1' }
+          ] },
+          { id: 'knn', name: 'Kinnan Ramp', sub: 'committed Sept 12', cards: [
+            { name: 'Counterspell', sub: 'lists 1 · committed it Sept 12', out: 'short 1' }
+          ] }
+        ],
+        def: ['mm', 'knn']
+      },
+      single: {
+        card: 'Counterspell', need: 1, left: 0,
+        decks: [ { id: 'mm', name: 'Mutant Menace', sub: 'lists 1 · committed it Oct 30' } ],
+        def: ['mm']
+      }
+    };
+  }
+  sceneKey() {
+    const s = this.props.scene ?? 'default';
+    return ['many', 'single', 'twoleft', 'undo', 'replace'].includes(s) ? s : 'one';
+  }
+  picks() {
+    const sc = this.scenes()[this.sceneKey()];
+    if (this.state && this.state.picks && this.state.key === this.sceneKey()) return this.state.picks;
+    if ((this.props.scene ?? 'default') === 'picked') return ['atx'];
+    return sc.def;
+  }
+  isOpen(id) {
+    const o = this.state && this.state.key === this.sceneKey() && this.state.openId;
+    return o ? o === id : id === 'mm';
+  }
+  names(list) {
+    if (list.length === 1) return list[0];
+    return list.slice(0, -1).join(', ') + ' and ' + list[list.length - 1];
+  }
+  renderVals() {
+    const key = this.sceneKey();
+    const sc = this.scenes()[key];
+    const picks = this.picks();
+    const chooser = key !== 'single' && !sc.noChoice;
+    const isDefault = picks.length === sc.def.length && sc.def.every((d) => picks.includes(d));
+    const square = sc.need > 1;
+    const refusal = this.state && this.state.key === key ? this.state.refusal || '' : '';
+    const set = (next, msg) => this.setState({ key, picks: next, refusal: msg || '' });
+    const rows = sc.decks.map((d, i) => {
+      const picked = picks.includes(d.id);
+      const accent = picked && !isDefault;
+      return {
+        name: d.name,
+        sub: d.sub,
+        flat: !d.cards,
+        expandable: !!d.cards,
+        open: !!d.cards && this.isOpen(d.id),
+        openAttr: !!d.cards && this.isOpen(d.id) ? 'true' : 'false',
+        chev: !!d.cards && this.isOpen(d.id) ? 'rotate(180deg)' : 'none',
+        cards: d.cards || [],
+        toggle: () => this.setState({ key, picks, refusal: '', openId: this.isOpen(d.id) ? 'none' : d.id }),
+        picked: picked ? 'true' : 'false',
+        rule: i === sc.decks.length - 1 ? '0' : '1px solid #2B241B',
+        bg: accent ? '#211D18' : 'transparent',
+        ring: accent ? 'inset 0 0 0 1px #6B482A' : 'none',
+        markRadius: square ? '4px' : '50%',
+        dotRadius: square ? '2px' : '50%',
+        markRing: picked ? (accent ? '#CF8745' : '#C0B8A6') : '#948B78',
+        dot: picked ? (accent ? '#CF8745' : '#C0B8A6') : 'transparent',
+        out: d.cards ? (d.cards.length === 1 ? '1 card short' : d.cards.length + ' cards short') : (picked || !chooser ? 'short 1' : 'keeps it'),
+        outColor: picked || !chooser ? '#C6533F' : '#948B78',
+        tap: () => {
+          if (sc.need === 1) return set([d.id]);
+          if (picked) return set(picks.filter((p) => p !== d.id));
+          if (picks.length >= sc.need) return set(picks, sc.need + ' decks are already going short. Untick one first.');
+          return set(picks.concat(d.id));
+        }
+      };
+    });
+    const pickedNames = sc.decks.filter((d) => picks.includes(d.id)).map((d) => d.name);
+    const keepNames = sc.decks.filter((d) => !picks.includes(d.id)).map((d) => d.name);
+    const go = pickedNames.length === 1 ? 'goes' : 'go';
+    let footer;
+    if (picks.length < sc.need) footer = 'Pick ' + (sc.need - picks.length) + ' more to go short.';
+    else if (isDefault) footer = this.names(pickedNames) + ' ' + go + ' short because ' + this.names(keepNames) + ' committed it first. Pick another deck to change that.';
+    else footer = 'You picked ' + this.names(pickedNames) + ' to go short. ' + this.names(keepNames) + (keepNames.length === 1 ? ' keeps its copy.' : ' keep their copies.');
+    const many = sc.need > 1;
+    const deckWord = sc.need === 1 ? '1 deck' : sc.need + ' decks';
+    const title = sc.source === 'undo' ? 'Undoing leaves a deck short' : sc.source === 'replace' ? 'Replacing leaves ' + deckWord + ' short' : 'Removing ' + sc.card + ' leaves ' + deckWord + ' short';
+    const confirm = sc.source === 'undo' ? 'Undo anyway' : sc.source === 'replace' ? 'Replace anyway' : 'Remove anyway';
+    const body = sc.source === 'replace' ? 'Nothing about these decks changes. Each will show what it\u2019s short of and put it on its shopping list.' : !chooser
+      ? 'Nothing about this deck changes. It will show ' + sc.card + ' as short and put it on its shopping list.'
+      : sc.decks.length + ' decks list ' + sc.card + ' and ' + (sc.left === 1 ? '1 copy' : sc.left + ' copies') + ' will be left. Pick ' + (many ? 'the ' + sc.need + ' that go' : 'the one that goes') + ' short. ' + (many ? 'Their lists stay the same, and ' + sc.card + ' goes on their shopping lists.' : 'Its list stays the same, and ' + sc.card + ' goes on its shopping list.');
+    return {
+      title, body, chooser, plain: !chooser, rows, footer, refusal, confirm, reason: sc.reason || '',
+      heading: many ? 'Which ' + sc.need + ' decks go short' : 'Which deck goes short',
+      tally: many ? picks.length + ' of ' + sc.need + ' picked' : '',
+      custom: chooser && !isDefault && picks.length === sc.need,
+      reset: () => this.setState({ key, picks: sc.def, refusal: '' }),
+      radius: this.props.desktop ? '12px' : '16px 16px 0 0',
+      btnDir: this.props.desktop ? 'row' : 'column-reverse'
+    };
+  }
+}
+</script>
+</body>
+</html>
