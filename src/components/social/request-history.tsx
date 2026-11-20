@@ -77,8 +77,10 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
                   <CardDetailTrigger
                     oracleId={e.oracleId}
                     name={e.card.name}
-                    className="grid w-full cursor-pointer grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] border-0 bg-transparent px-[14px] py-[12px] text-left md:gap-x-[14px] md:px-[16px]"
+                    className="block w-full text-left"
                   >
+                    {/* The padding lives inside: the trigger's own inline `padding: 0` outranks any class on it. */}
+                    <span className="grid grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] px-[14px] py-[12px] md:gap-x-[14px] md:px-[16px]">
                     <Picture e={e} />
                     <span className="flex min-w-0 flex-col gap-[3px]">
                       <span className="m-0 flex min-w-0 items-center gap-[7px]">
@@ -87,6 +89,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
                       </span>
                       <span className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]"><PersonText text={t.title} /></span>
                       <span className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{t.detail}</span>
+                    </span>
                     </span>
                   </CardDetailTrigger>
                 </li>
