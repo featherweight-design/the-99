@@ -41,7 +41,7 @@ describe("RequestHistory", () => {
     for (const k of [h.kind.yes, h.kind.no, h.kind.withdrawn, h.kind.expired, h.kind.open]) expect(screen.getAllByText(k).length).toBeGreaterThan(0);
     expect(screen.getByRole("heading", { name: /^November 2026/ })).toBeTruthy();
     expect(screen.getByRole("heading", { name: /^October 2026/ })).toBeTruthy();
-    expect(screen.getByText("Nov 12")).toBeTruthy();
+    expect(screen.getAllByText("Nov 12").length).toBeGreaterThan(0);
     expect(screen.getByText("Nov 24")).toBeTruthy();
     expect(screen.getByText(h.asked("Thopter Factory", "Nov 10"))).toBeTruthy();
     expect(screen.getByText(h.openMine(null, 12))).toBeTruthy();
@@ -87,7 +87,7 @@ describe("RequestHistory", () => {
     fireEvent.click(screen.getByRole("button", { name: h.older }));
     await waitFor(() => expect(screen.getByRole("heading", { name: /^September 2026/ })).toBeTruthy());
     expect(more).toHaveBeenCalledWith("asked", { createdAt: "2026-11-10T00:00:00.000000Z", id: "id-1" });
-    expect(screen.getAllByText("Card 1")).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: /Card 1/ })).toHaveLength(1);
     expect(screen.queryByRole("button", { name: h.older })).toBeNull();
   });
 

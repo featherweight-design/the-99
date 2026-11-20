@@ -5,6 +5,7 @@
 // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
 import Link from "next/link";
 import { useState, useTransition } from "react";
+import { PendingReporter } from "../shell/pending-reporter";
 import { loadMoreHistoryAction } from "../../app/friends/request-history-actions";
 import { historyCopy as h } from "../../lib/copy/request-history";
 import { PersonInitials, PersonText, type PersonParts } from "../../lib/person-name";
@@ -77,6 +78,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
                   <CardDetailTrigger
                     oracleId={e.oracleId}
                     name={e.card.name}
+                    preview
                     className="block w-full text-left"
                   >
                     {/* The padding lives inside: the trigger's own inline `padding: 0` outranks any class on it. */}
@@ -136,7 +138,7 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
   const empty = tab === "asked" ? h.emptyAsked : h.emptyOfYou;
   return (
     <div className="mx-auto box-border w-full max-w-[720px] px-[16px] pb-[60px] pt-[22px] md:px-0 md:pt-[36px]">
-      <Link href="/friends" className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">{h.back}</Link>
+      <Link href="/friends" className="text-[14px] text-[color:var(--fg-muted)] no-underline hover:text-[color:var(--fg)]">{h.back}<PendingReporter href="/friends" /></Link>
       <h1 className="m-0 mt-[14px] font-display text-[24px] font-bold text-[color:var(--fg)] md:text-[28px]">{h.title}</h1>
       <p className="m-0 mt-[4px] text-[13px] text-[color:var(--fg-muted)]">{h.line}</p>
       <div className="mt-[18px] flex">
