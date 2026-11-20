@@ -139,7 +139,10 @@ describe("aggregates", () => {
   it("counts the whole month under the filter, newest first", () => {
     const q = historyMonthsQuery(VIEWER, {}).toSQL();
     expect(q.sql).toContain(`to_char(("deck_games"."played_at" at time zone 'UTC') at time zone $`);
-    expect(q.sql).toMatch(/group by to_char\(.*\) order by to_char\(.*\) desc$/);
+    // Grouped by position: a bound zone repeated in `group by` is a different expression to Postgres (42803), which
+    // failed the whole Games view in production.
+    expect(q.sql).toMatch(/ group by 1 order by 1 desc$/);
+    expect(q.sql.match(/at time zone \$/g)).toHaveLength(1);
     // The zone is a bound value, never spliced into the text.
     expect(historyMonthsQuery(VIEWER, {}, "America/Denver").toSQL().params).toContain("America/Denver");
     expect(q.sql).not.toMatch(/limit/);
