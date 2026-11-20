@@ -168,7 +168,7 @@ export const socialCopy = {
       seeDecksOff: "Friends can’t see any of your decks.",
       draftReady: "It’s a draft. Friends see it once you commit it.",
       draftShort: (n: number, size: number) => `It’s a draft with ${n} of ${size} cards. Friends see it once it’s full and committed.`,
-      draftFull: "It’s a draft. Friends see it once it’s resolved and committed.",
+      draftFull: "It’s a draft. Friends see it once it’s ready and committed.",
       empty: "It has no cards yet. Friends see it once it’s full and committed.",
       building: (n: number, size: number) => `It’s short, ${n} of ${size} cards. Friends see it once it’s full again.`,
     },
