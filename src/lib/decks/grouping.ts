@@ -171,6 +171,10 @@ export function cardTypeGroup(typeLine: string): CardTypeGroup {
  * optimistic reducer merges rather than ignores. Those three were testing the
  * type line independently; one definition keeps them from drifting apart.
  */
+/** The six basic land types a mana base can be built from. Snow-covered basics are a different
+ *  card, and are offered only when the player owns them (through the pool). */
+export const BASIC_NAMES = ["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"] as const;
+
 export function isBasicLand(typeLine: string): boolean {
   return /\bBasic\b/.test(typeLine);
 }

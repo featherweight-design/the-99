@@ -2,10 +2,7 @@ import { and, ilike, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
 import type { FillCandidate } from "./fill";
-
-/** The six basic land types a mana base can be built from. Snow-covered basics are a different
- *  card, and are offered only when the player owns them (through the pool). */
-export const BASIC_NAMES = ["Plains", "Island", "Swamp", "Mountain", "Forest", "Wastes"] as const;
+import { BASIC_NAMES } from "./grouping";
 
 /**
  * The catalog's basic lands, one per type, as `planFill`'s `basics` wants them: offered to the
