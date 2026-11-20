@@ -123,6 +123,7 @@ async function run(): Promise<void> {
     delayMs: 0,
   };
   const r = await buildCommanderIndex({
+    themePages: "off",
     ...base,
     loadAlreadyComputedPairs: async () => new Set([resumedKey]),
     fetchPair: async () => { fetched++; return served; },
@@ -139,6 +140,7 @@ async function run(): Promise<void> {
     const limit = Math.floor((loaded.pairs.length * pct) / 100);
     let n = 0;
     const out = await buildCommanderIndex({
+      themePages: "off",
       ...base,
       fetchPair: async () => (n++ < limit ? degraded : served),
     });

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // The spec's module reaches `src/db` through the builder's score clear; nothing here queries it.
 vi.mock("../../src/db", () => ({ db: {} }));
 
-const { indexCopySpec, labelledCards, labelRefusal } = await import("./index-copy");
+const { indexCopySpec, labelledCards, labelRefusal, themeCopyRefusal } = await import("./index-copy");
 type Snapshot = Parameters<typeof indexCopySpec.floors>[0];
 
 const commander = (i: number, derived = true) =>
@@ -14,9 +14,31 @@ const whole = (): Snapshot => ({
   supportCards: [],
   pairs: Array.from({ length: 1_500 }, () => ({}) as Snapshot["pairs"][number]),
   pairCards: [],
+  themes: [],
+  themeCards: [],
   staples: [{} as Snapshot["staples"][number]],
   composition: [],
   labelFingerprint: null,
+});
+
+describe("the index copy's tables", () => {
+  // The copy verifies every table it lists, row count and digest, source against target after the
+  // publish. A table left off this list is neither copied by name nor checked: the theme pages would
+  // stay empty on production with every copy reporting clean (engine plan A3).
+  it("lists the theme pages beside the support lists", () => {
+    expect(indexCopySpec.tables.map((t) => t.name)).toEqual(expect.arrayContaining([
+      "commander_theme_support", "commander_theme_support_cards",
+    ]));
+  });
+});
+
+describe("themeCopyRefusal", () => {
+  it("refuses a source holding under half the target's theme pages, never a first copy", () => {
+    expect(themeCopyRefusal(0, 0)).toBeNull();
+    expect(themeCopyRefusal(4500, 0)).toBeNull();
+    expect(themeCopyRefusal(2300, 4500)).toBeNull();
+    expect(themeCopyRefusal(100, 4500)).toMatch(/100 theme pages against the target's 4500/);
+  });
 });
 
 describe("the index copy's floors", () => {
@@ -118,10 +140,11 @@ describe("the index copy's label preflight, which a dry run also runs", () => {
     expect(t.execute).not.toHaveBeenCalled(); // no listed card, so nothing to read
   });
 
-  it("reads nothing for a build that wrote no label targets", async () => {
+  it("reads no labels for a build that wrote no label targets", async () => {
     const t = target();
     expect(await indexCopySpec.targetRefusal!(t as never, snap(null))).toBeNull();
-    expect(t.execute).not.toHaveBeenCalled();
+    // The one read is the theme count (`targetThemeRefusal`), which every copy makes.
+    expect(t.execute).toHaveBeenCalledTimes(1);
   });
 });
 

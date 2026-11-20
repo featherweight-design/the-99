@@ -153,6 +153,7 @@ const insertScore = (
 // clear the loop reaches afterwards, not the loop.
 const buildWithRealClear = (oracleId: string, name: string) =>
   buildCommanderIndex({
+    themePages: "off",
     // The role pass is injected empty for the same reason the pair pass is: this probe is
     // about the LOCK. Letting the default run would load the whole
     // `commander_support_cards` x `cards` join and UPDATE every `commander_support` row on

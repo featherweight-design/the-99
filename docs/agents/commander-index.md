@@ -177,6 +177,23 @@ What the table shows:
 - **A theme page helps only when the player chooses the build.** Atraxa's `planeswalkers` page (the superfriends primer) goes from 26 to 36. Atraxa's top tag, `infect`, ranks worse than the commander page (22). So a theme page is read only for a build the player picks: the Help me choose themes answer or the strategy focus. It is never read by default. For the other five commanders, the theme page ranks like the commander page.
 - **Synergy weighting adds nothing,** within plus or minus 1 everywhere, so it does not ship. Inclusion stays the ranking (`byInclusion`).
 - **150 of the 428 primer nonland cards (35%) are not listed on the commander page at all.** No ranking of that page reaches them, and with the caveat above, some of these are upgrade or prose mentions. Reaching the rest needs a source other than EDHREC's figures, such as a paid guided read. That gap is the case for one.
+## Theme pages in the index build (engine plan A3)
+
+- **What is fetched.** After each commander is written, the build fetches its theme pages: the top 3 tags with at least 50 decks (`themeSlugsToFetch`), serially, behind the same 250 ms delay and User-Agent as the commander walk. It adds about 4,544 requests to a build (measured 2026-11-20).
+- **Where they go.** `commander_theme_support` (a commander, a slug, the tag's deck count) and `commander_theme_support_cards` (inclusion and synergy within the theme). Migration 0250.
+- **How they are written.** `writeThemes` replaces a commander's themes in one transaction. A theme that left the commander's top tags leaves the table, and an absent commander's themes are cleared.
+- **When EDHREC can't serve a page.** An unreachable theme page (429, 5xx, timeout, a 403 whose HTML page exists) keeps its previous rows. This is the commander page's degraded rule, applied per theme.
+- **When a page stores nothing.** A chosen theme whose page stores nothing (missing, a shape the parser doesn't know, no resolvable card) also keeps its previous rows, counted as `themesEmpty`. Only a theme that left the commander's top tags is deleted. Without this, a month of a changed upstream shape would wipe every theme. A run whose `themesEmpty` nears its `themePages` has read the pages wrongly.
+- **Timeouts.** The build job's timeout is 240 minutes and the build step's is 230. The theme pass adds roughly 40 minutes to a build measured at 92 (2026-11-11).
+- **The stop.** After `THEME_STOP_AFTER` (3) unreachable theme pages in a row, the theme half of the run stops. Every later commander keeps its previous themes, and the commander half carries on.
+- **A theme failure never fails a commander.** A theme write that throws is counted as `themesFailed`. The commander's own write and tallies stand.
+- **A resumed run** (`resumeSince`) refreshes themes only for the commanders it fetches again. A commander it skips keeps the themes its earlier run wrote.
+- **What the run prints.** A `Themes:` line reports pages stored, unreachable pages, failed theme writes, and whether the walk stopped.
+- **The pass is required.** `buildCommanderIndex` takes `themePages`, with no default, for `loadPairs`'s reason. The job passes `THEME_PASS`. Tests and probes pass `"off"`, so none of them reaches live EDHREC.
+- **The copy.** `db:copy:index` carries both tables to production, replaced whole, and verifies both like every other index table.
+  - It refuses (`themeCopyRefusal`) when the source holds under half the target's theme pages, so a stopped or pre-theme staging build can't wipe production's themes. A target with none, the first copy, is never refused.
+  - The copy reads the theme tables on both sides, so staging must have migration 0250 before an index copy runs. The daily Staging sync applies it.
+- **Pairs are not themed.** `commander_pair_support` stores no tags (orchestrator ruling, 2026-11-20).
 
 ## From AGENTS.md (moved 2026-10-28)
 

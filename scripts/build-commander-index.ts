@@ -1,6 +1,6 @@
 import "./lib/env.mjs";
 import {
-  alreadyComputedPairsSince, alreadyComputedSince, buildCommanderIndex, loadPairs, pairRunProblem,
+  alreadyComputedPairsSince, alreadyComputedSince, buildCommanderIndex, loadPairs, pairRunProblem, THEME_PASS,
 } from "../src/lib/edhrec/seed-index";
 import { stampCatalogRefresh } from "../src/lib/cache/stamp-catalog";
 import { db } from "../src/db";
@@ -30,6 +30,8 @@ recordBuild(db, "index", async () => {
     r = await buildCommanderIndex({
       // The one caller that sweeps for real: every legal pair plus every built one.
       loadPairs: () => loadPairs(),
+      // The one caller that fetches theme pages for real (engine plan A3).
+      themePages: THEME_PASS,
       loadAlreadyComputed: resumeSince ? () => alreadyComputedSince(resumeSince) : undefined,
       loadAlreadyComputedPairs: resumeSince ? () => alreadyComputedPairsSince(resumeSince) : undefined,
     });
@@ -68,6 +70,14 @@ recordBuild(db, "index", async () => {
     `${r.pairsDegraded} degraded, ${r.pairsFailed} failed, ${r.pairsSkipped} skipped, ` +
     `${r.legalPairs ?? "?"} legal, ` +
     `${r.pairsUnresolved} unresolved names.`,
+  );
+  // Theme pages report apart too. A stopped theme walk is not a failed run: every commander after
+  // the stop keeps its previous theme rows, and readers fall back to the commander page.
+  console.log(
+    `Themes: ${r.themePages} pages stored (${r.themeCardRows} support cards); ` +
+    `${r.themesDegraded} unreachable, ${r.themesEmpty} stored nothing, ${r.themesUnresolved} unresolved names, ` +
+    `${r.themesFailed} commanders' theme passes failed` +
+    `${r.themesStopped ? ", walk STOPPED after repeated unreachable pages" : ""}.`,
   );
   // A run that wrote nothing while degrading everything is a broken run
   // wearing a green tick — EDHREC was unreachable for the whole window.
