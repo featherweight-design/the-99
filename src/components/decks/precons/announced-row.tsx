@@ -22,6 +22,10 @@ export function namesLine(m: AnnouncedMatch): string {
   const names = m.commanders.map((c) => c.name);
   const named = names.length === 0 ? copy.noneRow : names.length <= 2 ? copy.names(names) : copy.more(names[0], names.length - 1);
   // Once Wizards posts the set's lists, the line counts them before naming the commanders (board `Announced`, rows).
+  if (m.named && !m.early) {
+    const decks = copy.decks(m.named.decks);
+    return names.length === 0 ? decks : copy.listsAndNames(decks, copy.namesRevealed(named));
+  }
   if (!m.early) return named;
   const lists = copy.listsSoFar(m.early.posted, m.early.promised);
   return names.length === 0 ? lists : copy.listsAndNames(lists, named);
@@ -38,7 +42,7 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
   const { set, commanders } = match;
   const lead = commanders[0];
   const when = copy.until(countdown(set.releasesOn, today));
-  const canOpen = commanders.length > 0 || (match.early?.lists.length ?? 0) > 0;
+  const canOpen = commanders.length > 0 || (match.early?.lists.length ?? 0) > 0 || (match.named?.slots.length ?? 0) > 0;
   const regionId = `announced-row-${set.code}`;
 
   const body = (
@@ -104,7 +108,7 @@ export function AnnouncedRow({ match, today, isNew, identity }: {
         // The rule sits inside the row's padding: from 12px and bleeding right at 390 (the strip scrolls to the
         // border), inset 15px each side at 900 (R2 Q3 `rowStrip`).
         <div id={regionId} hidden={!open} className="ml-[12px] border-x-0 border-b-0 border-t-[1px] border-dashed border-t-[color:var(--border-strong)] p-[12px_12px_12px_0] md:mx-[15px] md:p-[12px_0_14px_0]">
-          {match.early ? <EarlyRowList match={match} /> : <RevealedStrip commanders={commanders} />}
+          {match.early || match.named ? <EarlyRowList match={match} /> : <RevealedStrip commanders={commanders} />}
         </div>
       )}
     </li>

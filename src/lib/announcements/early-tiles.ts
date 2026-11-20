@@ -41,6 +41,8 @@ export type EarlySet = {
   released?: string[];
   /** How many posted lists gave way: posted, not drawn, and so neither waiting nor still to come. */
   releasedLists?: number;
+  /** The titles of the lists that gave way, so a named deck (`named-decks.ts`) whose list is on the precon list draws no tile. */
+  releasedNames?: string[];
 };
 
 /**
