@@ -35,6 +35,8 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const repeat = useRef<ReturnType<typeof setInterval> | null>(null);
   const held = useRef(false);
+  /** The half currently pressed: a release only counts for the press that began it, and a second press replaces the first. */
+  const pressed = useRef<1 | -1 | null>(null);
   const commitRef = useRef(commit);
   useEffect(() => {
     commitRef.current = commit;
@@ -64,11 +66,14 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
     if (repeat.current) clearInterval(repeat.current);
     holdTimer.current = null;
     repeat.current = null;
+    pressed.current = null;
   }, []);
 
   const down = useCallback(
     (sign: 1 | -1) => {
       if (disabled) return;
+      stop();
+      pressed.current = sign;
       held.current = false;
       holdTimer.current = setTimeout(() => {
         held.current = true;
@@ -76,12 +81,12 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
         repeat.current = setInterval(() => add(sign * 10), REPEAT_MS);
       }, HOLD_MS);
     },
-    [add, disabled],
+    [add, disabled, stop],
   );
 
   const up = useCallback(
     (sign: 1 | -1) => {
-      if (disabled) return;
+      if (disabled || pressed.current !== sign) return;
       const wasHold = held.current;
       stop();
       held.current = false;

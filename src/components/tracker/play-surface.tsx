@@ -141,6 +141,7 @@ export function PlaySurface({
         <div role="alertdialog" aria-label={copy.over.title} className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[color:color-mix(in_srgb,var(--bg)_82%,transparent)]" data-testid="tracker-over">
           <h2 className="text-[22px] font-semibold text-[color:var(--fg)]">{copy.over.title}</h2>
           <p className="text-[14px] text-[color:var(--fg-body)]">{saved === "saved" ? copy.over.saved : saved === "failed" ? copy.over.notSaved : ""}</p>
+          <button type="button" onClick={undo} className="min-h-[44px] px-6 text-[14px] text-[color:var(--fg)]">{copy.strip.undo}</button>
           <Link href={backHref} className="min-h-[44px] rounded-full bg-[color:var(--accent)] px-6 py-3 text-[14px] font-medium text-[color:var(--bg)]">{copy.over.back}</Link>
         </div>
       ) : null}
