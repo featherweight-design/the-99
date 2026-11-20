@@ -1,0 +1,93 @@
+{
+  "feature": "Precon Upgrade fresh start 3/4 (addendum fresh start): the start screen, Your last upgrade, where each run went",
+  "note": "Scratch-only fixtures for the audit account with PRECON_UPGRADE_ENABLED on for it (a user override). SultaiArisen_TDC holds three kept runs, all seen: the newest went into the deck UPGRADE_DECK_ID (decks.built_from_upgrade_id), one unused, one short (credits back). PrismariArtistry_SOC (phone) and WitherbloomPestilence_SOC (desktop) each hold a newest done run never shown (seen_at null): showing it marks it seen, so each unseen row runs at one width and the fixture resets it before a re-walk. QuandrixUnlimited_SOC holds a pending run (reaped after 5 minutes: insert it right before the walk). LoreholdSpirit_SOC holds none. Nothing here confirms a run or starts a deck, so nothing spends.",
+  "rows": [
+    {
+      "id": "start-applied",
+      "label": "Precon page press → start screen: Your last upgrade over the intro, the row in a deck (F1)",
+      "view": "src/components/decks/precons/upgrade/run-row.tsx",
+      "steps": [
+        { "goto": "/decks/precons/SultaiArisen_TDC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "row-opened",
+      "label": "The row opened → the result with ‹ Back and the dashed note, no tracker, no History link (F1·o)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        { "goto": "/decks/precons/SultaiArisen_TDC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-used-note]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "unused-opened",
+      "label": "An unused run opened from History → the result with ‹ History and no note (F2)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        { "goto": "/decks/precons/SultaiArisen_TDC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "clickRole": "button", "name": "^History$", "wait": "[data-run-row]", "settle": 600 },
+        { "clickRole": "button", "name": "^Tokens.*no deck yet", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "history",
+      "label": "History: every kept run as RunRow, each line saying where it went, the short run wrapping (F4)",
+      "view": "src/components/decks/precons/upgrade/history-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons/SultaiArisen_TDC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "clickRole": "button", "name": "^History$", "wait": "[data-run-row]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "first-time",
+      "label": "No kept runs → the first-time intro, no row, no History link (F4 S0)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        { "goto": "/decks/precons/LoreholdSpirit_SOC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[role=dialog]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "deck-band",
+      "label": "Deck page band press → the same start screen inside the band's flow (call 12)",
+      "view": "src/components/decks/precons/upgrade/deck-upgrade.tsx",
+      "steps": [
+        { "goto": "/decks/${UPGRADE_DECK_ID}", "wait": "text=Upgrade precon", "settle": 2500 },
+        { "clickRole": "button", "name": "^Upgrade precon$", "wait": "[data-last-run]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "pending",
+      "label": "A run pending → the press reads Upgrading toward Tokens and opens on the wait, no row (F3)",
+      "view": "src/components/decks/precons/upgrade/upgrade-entry.tsx",
+      "steps": [
+        { "goto": "/decks/precons/QuandrixUnlimited_SOC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrading toward", "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "unseen-phone",
+      "label": "Newest run landed and never shown → its result, once, with the tracker and History link (F3)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/decks/precons/PrismariArtistry_SOC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "unseen-desktop",
+      "label": "Newest run landed and never shown → its result, once, with the tracker and History link (F3)",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/decks/precons/WitherbloomPestilence_SOC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[role=dialog]", "settle": 1500 }
+      ]
+    }
+  ]
+}
