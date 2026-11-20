@@ -22,7 +22,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
   /** The reader has a request history to open. */
   history: boolean;
 }) {
-  const [tab, setTab] = useState<Tab>(waitingCount > 0 || mineCount === 0 ? "waiting" : "mine");
+  const [tab, setTab] = useState<Tab>(waitingCount > 0 ? "waiting" : "mine");
   const count = (n: number) => <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-faint)]">{n}</span>;
   return (
     <section aria-label={b.label} data-testid="requests-box" className={PANEL}>

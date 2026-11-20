@@ -16,7 +16,7 @@ const box = (o: Partial<Parameters<typeof RequestsBox>[0]> = {}) => (
 afterEach(cleanup);
 
 describe("RequestsBox", () => {
-  it("opens on Waiting on you when anything waits, else on Your requests, else on Waiting on you", () => {
+  it("opens on Waiting on you when anything waits, else on Your requests (also when both are empty)", () => {
     const a = render(box({ waitingCount: 2, mineCount: 1 }));
     expect(screen.getByRole("tab", { name: new RegExp(b.waiting) }).getAttribute("aria-selected")).toBe("true");
     a.unmount();
@@ -24,7 +24,7 @@ describe("RequestsBox", () => {
     expect(screen.getByRole("tab", { name: new RegExp(b.mine) }).getAttribute("aria-selected")).toBe("true");
     c.unmount();
     render(box());
-    expect(screen.getByRole("tab", { name: new RegExp(b.waiting) }).getAttribute("aria-selected")).toBe("true");
+    expect(screen.getByRole("tab", { name: new RegExp(b.mine) }).getAttribute("aria-selected")).toBe("true");
   });
 
   it("keeps both lists mounted and shows only the chosen tab", () => {
@@ -38,7 +38,7 @@ describe("RequestsBox", () => {
 
   it("draws a tab's empty state only when it has no rows, and the foot link only with a history", () => {
     const a = render(box());
-    expect(screen.getByText(b.waitingEmpty.title)).toBeTruthy();
+    expect(screen.getByText(b.mineEmpty.title)).toBeTruthy();
     expect(screen.queryByRole("link", { name: b.history })).toBeNull();
     a.unmount();
     render(box({ waitingCount: 1, history: true }));
