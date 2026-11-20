@@ -85,12 +85,14 @@ export const COMBO_DETECTION = {
  * Whether a combo's outcome wins the game, as the fill's win-condition quota counts one (orchestrator
  * ruling, 2026-11-20): it names a win (`GAME_ENDING_FEATURES`, "Win the game…"), infinite damage to a
  * player, or infinite life loss or mill. Infinite mana or tokens alone is an engine, not a win: it
- * needs an outlet the combo does not name. Infinite damage to CREATURES clears a board and wins nothing.
+ * needs an outlet the combo does not name. Infinite damage to CREATURES clears a board and wins nothing,
+ * and to every player it ends its controller too.
  */
 export function isWinCondition(features: readonly string[]): boolean {
   return features.some((f) =>
     GAME_ENDING_FEATURES.includes(f)
     || /^win the game\b/i.test(f)
-    || (/^infinite damage\b/i.test(f) && !/\bcreatures?\b/i.test(f))
+    // Not "to all players" / "to each player": that damage kills its controller too.
+    || (/^infinite damage\b/i.test(f) && !/\bcreatures?\b|\b(all|each) players?\b/i.test(f))
     || /^infinite (lifeloss|life loss|mill|milling)\b/i.test(f));
 }

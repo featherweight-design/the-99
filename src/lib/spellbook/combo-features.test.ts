@@ -119,5 +119,6 @@ describe("isWinCondition", () => {
     expect(isWin(["Infinite creature tokens with haste", "Infinite death triggers"])).toBe(false);
     expect(isWin(["Infinite damage to creatures"])).toBe(false);
     expect(isWin(["Infinite damage to all creatures"])).toBe(false);
+    expect(isWin(["Infinite damage to all players"])).toBe(false);
   });
 });

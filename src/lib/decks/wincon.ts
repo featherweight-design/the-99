@@ -14,10 +14,9 @@ import type { Bracket } from "../intake/rank";
 import type { FillCandidate } from "./fill";
 import { WINCON_MAX } from "./fill";
 
-/** Combos read per fill, most popular first, before the win filter. */
-const COMBO_READ_LIMIT = 1000;
-/** Sets handed to the step: it stops at `WINCON_MIN` cards, so a short list is plenty. */
-const SETS_KEPT = 12;
+/** A safety cap on the combos one fill reads. Every one is completable from the pool, so a real pool
+    reads a few dozen (3,000 random cards: 56); the win filter runs after, in JS, beside its tests. */
+const COMBO_READ_LIMIT = 5000;
 
 export type WinconCombo = { variantId: string; produces: string[]; popularity: number | null; pieces: string[]; commanderOk: boolean };
 
@@ -29,6 +28,10 @@ export const WINCON_COMBO_BRACKET = 3;
  * finishers. Pure. A combo's pieces leave out the commanders, which are already in the command zone;
  * a combo needing more than `WINCON_MAX` cards, or a piece that must be the commander and is not, is
  * never offered. Each set appears once.
+ *
+ * AT BRACKET 3, TWO-CARD COMBOS ONLY. The bracket gate counts two-card combos (`loadComboEdges`), so
+ * only those can it judge as combos at placement; a longer one would pass it as unrelated cards. At 4
+ * and 5 there is no gate, and any length up to `WINCON_MAX` is offered.
  */
 export function winconSets(args: {
   combos: readonly WinconCombo[];
@@ -48,32 +51,38 @@ export function winconSets(args: {
   if (args.bracket !== null && args.bracket >= WINCON_COMBO_BRACKET) {
     for (const c of args.combos) {
       if (!c.commanderOk || !isWinCondition(c.produces)) continue;
+      if (args.bracket === WINCON_COMBO_BRACKET && c.pieces.length !== 2) continue;
       const pieces = c.pieces.filter((id) => !commanders.has(id));
       if (pieces.length > WINCON_MAX) continue;
       push(pieces);
     }
   }
   for (const id of args.finishers) push([id]);
-  return sets.slice(0, SETS_KEPT);
+  return sets;
 }
 
 /**
- * Reads the combos every piece of which is in `poolIds` or is a commander, and the pool's finishers,
- * and returns the quota's sets. `pool` is in the fill's preference order, which orders the finishers.
+ * Reads the combos every piece of which is in the pool, in the deck already (`heldIds`) or a
+ * commander, and the finishers among the pool and the held cards, and returns the quota's sets.
+ * Held cards are read so a deck that already holds a win is credited for it (`planFill` counts a set
+ * the deck holds). Finishers go best first: owned, then by EDHREC inclusion.
  */
 export async function loadWinconSets(args: {
   pool: readonly FillCandidate[];
+  heldIds: readonly string[];
   commanderIds: readonly string[];
   bracket: Bracket | null;
 }): Promise<string[][]> {
-  const poolIds = [...new Set(args.pool.map((c) => c.oracleId))];
-  if (poolIds.length === 0) return [];
+  const pool = [...args.pool].sort((a, b) =>
+    Number(b.owned) - Number(a.owned) || (b.inclusionPct ?? -1) - (a.inclusionPct ?? -1));
+  const ids = [...new Set([...args.heldIds, ...pool.map((c) => c.oracleId)])];
+  if (ids.length === 0) return [];
   const comboOn = args.bracket !== null && args.bracket >= WINCON_COMBO_BRACKET;
   const [combos, labels] = await Promise.all([
-    comboOn ? readWinningCombos([...poolIds, ...args.commanderIds], args.commanderIds) : Promise.resolve([]),
-    readLabels(poolIds),
+    comboOn ? readWinningCombos([...ids, ...args.commanderIds], args.commanderIds) : Promise.resolve([]),
+    readLabels(ids),
   ]);
-  const finishers = poolIds.filter((id) =>
+  const finishers = ids.filter((id) =>
     (labels.get(id) ?? []).some((j) => j.space === "theme" && j.kind === "finisher"));
   return winconSets({ combos, finishers, commanderIds: args.commanderIds, bracket: args.bracket });
 }

@@ -260,8 +260,8 @@ export const WINCON_MAX = 4;
 
 export type FillGate = {
   admits(candidate: FillCandidate): boolean;
-  /** Whether these cards may be placed TOGETHER: a combo's pieces, weighed as the combo they make.
-      Optional so a gate that judges card by card (the budget gate) need not say. */
+  /** Whether these cards may be placed TOGETHER: a combo's pieces, weighed as the combo they make,
+      or a set's prices totalled. Optional: a gate without one judges each card on its own. */
   admitsAll?(candidates: readonly FillCandidate[]): boolean;
   place(candidate: FillCandidate): void;
 };
@@ -659,7 +659,9 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   }
 
   // THE WIN-CONDITION STEP (engine plan C1): whole sets, best first, until the deck can win.
-  if (args.wincons?.length) {
+  // A FULL BUILD ONLY. A top-off of a few slots fills what the deck lacks, and a win set placed first
+  // would take the slots its missing ramp or removal needed.
+  if (args.wincons?.length && limit >= bodySize / 2) {
     const inPool = new Map(usable.map((c) => [c.oracleId, c]));
     const heldIds = new Set((held ?? []).map((c) => c.oracleId));
     let winCards = 0;

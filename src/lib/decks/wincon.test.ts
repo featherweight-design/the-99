@@ -15,6 +15,7 @@ describe("winconSets", () => {
     combo(["kiki", "conscripts"], ["Infinite creature tokens with haste"]),
     combo(["cmd", "bond"], ["Infinite lifeloss for target opponent"]),
     combo(["a", "b", "c", "d", "e"], WIN),
+    combo(["l", "m", "n"], WIN),
     combo(["x", "y"], WIN, { commanderOk: false }),
   ];
 
@@ -22,6 +23,15 @@ describe("winconSets", () => {
     expect(winconSets({ combos, finishers: ["craterhoof"], commanderIds: ["cmd"], bracket: 3 })).toEqual([
       ["thoracle", "consult"], ["bond"], ["craterhoof"],
     ]);
+    expect(winconSets({ combos, finishers: ["craterhoof"], commanderIds: ["cmd"], bracket: 4 })).toEqual([
+      ["thoracle", "consult"], ["bond"], ["l", "m", "n"], ["craterhoof"],
+    ]);
+  });
+
+  it("offers only two-card combos at bracket 3, which the gate can judge, and longer ones at 4", () => {
+    const three = [combo(["a", "b", "c"], WIN), combo(["d", "e"], WIN)];
+    expect(winconSets({ combos: three, finishers: [], commanderIds: [], bracket: 3 })).toEqual([["d", "e"]]);
+    expect(winconSets({ combos: three, finishers: [], commanderIds: [], bracket: 4 })).toEqual([["a", "b", "c"], ["d", "e"]]);
   });
 
   it("offers finishers alone at bracket 1 and 2, and with no bracket answer", () => {
@@ -43,6 +53,6 @@ describe("winningCombosQuery", () => {
     expect(q.sql).toMatch(/::uuid\[\]\) and v\.card_count <=|::uuid\[\]\)\s+and v\.card_count <=/);
     expect(q.sql).toContain("having count(*) = v.card_count");
     expect(q.sql).toContain("cardinality(v.requires_template_ids) = 0");
-    expect(q.params).toEqual([["cmd"], ["p1"], 4, 1000]);
+    expect(q.params).toEqual([["cmd"], ["p1"], 4, 5000]);
   });
 });

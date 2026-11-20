@@ -427,6 +427,14 @@ export async function buildFillPlan(
   // Hit leaving under a dollar keeps that remainder to spend.
   const budgetRaised = boughtRaisers.length > 0
     && (raisedBudgetCents !== undefined || answers?.budgetRaised === true);
+  // THE WIN-CONDITION SETS (engine plan C1): winning combos at bracket 3 and up, then finishers.
+  // Started here, beside the gate and label reads, and awaited at the plan. Degraded rather than
+  // fatal: a fill without them is today's fill.
+  const wincons = loadWinconSets({
+    pool: scoped,
+    heldIds: [...(fillOptions.held ?? []), ...selected].flatMap((c) => (c.oracleId ? [c.oracleId] : [])),
+    commanderIds, bracket: answers?.bracket ?? null,
+  }).catch((err) => { console.warn("buildFillPlan: no win-condition sets", err); return [] as string[][]; });
   const gate = answers
     ? await loadFillGate({
       userId, commanderIds, answers,
@@ -477,13 +485,9 @@ export async function buildFillPlan(
       skeleton = null;
     }
   }
-  // THE WIN-CONDITION SETS (engine plan C1): winning combos at bracket 3 and up, then finishers.
-  // Degraded rather than fatal: a fill without them is today's fill.
-  const wincons = await loadWinconSets({ pool: scoped, commanderIds, bracket: answers?.bracket ?? null })
-    .catch((err) => { console.warn("buildFillPlan: no win-condition sets", err); return []; });
   const plan = planFill(scoped, {
     hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
-    staples, labelRoles, raisers, boughtRaisers, wincons,
+    staples, labelRoles, raisers, boughtRaisers, wincons: await wincons,
     // Help me choose under "Any cards": ownership alone no longer wins a role slot.
     ...(anyCards ? { anyCards: true } : {}),
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s

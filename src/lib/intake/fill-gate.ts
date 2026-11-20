@@ -208,4 +208,3 @@ export function allGates(gates: readonly (FillGate | null)[]): FillGate | undefi
     place: (c) => live.forEach((g) => g.place(c)),
   };
 }
-
