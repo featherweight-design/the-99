@@ -11,9 +11,10 @@
  * and the winner's CURRENT seat number (`resultFor`, in `rule-zero-log.ts`).
  */
 import { createHash } from "node:crypto";
-import { asc, eq, sql } from "drizzle-orm";
+import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { ruleZeroResultSeats, ruleZeroSeats } from "../../db/schema";
+import { deckGames, ruleZeroResultSeats, ruleZeroSeats, ruleZeroTables } from "../../db/schema";
+import { tableLoggable } from "./rule-zero-open";
 import { isUuid } from "./rules";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
@@ -59,8 +60,8 @@ export async function tableRoster(viewerId: string, tableId: unknown, tx: Tx | t
   if (!isUuid(tableId)) return null;
   const rows = await seatsOf(tx, tableId);
   if (!rows.some((r) => r.userId === viewerId)) return null;
-  const live = await tx.execute(sql`select 1 from rule_zero_tables where id = ${tableId} and expires_at > now()`);
-  return live.rows.length === 0 ? null : rosterHash(tableId, rows);
+  const [live] = await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(and(eq(ruleZeroTables.id, tableId), tableLoggable));
+  return live ? rosterHash(tableId, rows) : null;
 }
 
 export type SaveResult = "saved" | "refused";
@@ -70,8 +71,8 @@ export async function saveTableResult(viewerId: string, tableId: unknown, roster
   if (!isUuid(tableId) || typeof roster !== "string") return "refused";
   return db.transaction(async (tx) => {
     // The table row's lock, `tableLoggable`'s window: a reseat or a purge cannot commit between the roster and the write.
-    const locked = await tx.execute(sql`select id from rule_zero_tables where id = ${tableId} and expires_at > now() for update`);
-    if (locked.rows.length === 0) return "refused";
+    const [locked] = await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(and(eq(ruleZeroTables.id, tableId), tableLoggable)).for("update");
+    if (!locked) return "refused";
     const seats = await seatsOf(tx, tableId);
     if (!seats.some((s) => s.userId === viewerId) || rosterHash(tableId, seats) !== roster) return "refused";
     const rows = placementsFor(seats, placements);
@@ -82,6 +83,31 @@ export async function saveTableResult(viewerId: string, tableId: unknown, roster
   });
 }
 
-/** The stored placements of one table, for the prefill (which applies the table's grant): account and place only. */
-export const resultPlacesQuery = (tableId: string, q: Pick<typeof db, "select"> = db) =>
-  q.select({ userId: ruleZeroResultSeats.userId, place: ruleZeroResultSeats.place }).from(ruleZeroResultSeats).where(eq(ruleZeroResultSeats.tableId, tableId));
+/**
+ * The stored placements of one table for the viewer's prefill (which applies the table's grant): account and place only,
+ * and none once the viewer has logged a game from this table since the result was saved, so a result never prefills
+ * a second log (the next game's save replaces it and is newer again).
+ */
+export const resultPlacesQuery = (tableId: string, viewerId: string, q: Pick<typeof db, "select"> = db) =>
+  q.select({ userId: ruleZeroResultSeats.userId, place: ruleZeroResultSeats.place }).from(ruleZeroResultSeats).where(and(
+    eq(ruleZeroResultSeats.tableId, tableId),
+    sql`not exists (
+      select 1 from ${deckGames} dg
+      where dg.user_id = ${viewerId} and dg.rule_zero_table_id = ${tableId}
+        and (dg.created_at at time zone 'UTC') >= ${ruleZeroResultSeats}.saved_at
+    )`,
+  ));
+
+/**
+ * After a reseat: the stored result stays only when the same players still sit at the same numbers. A different roster
+ * (someone added, removed or moved) would have the result name other players, so it goes.
+ */
+export async function dropResultIfRosterChanged(tx: Tx, tableId: string): Promise<void> {
+  await tx.delete(ruleZeroResultSeats).where(and(
+    eq(ruleZeroResultSeats.tableId, tableId),
+    sql`(select count(*) from ${ruleZeroResultSeats} r where r.table_id = ${tableId})
+        <> (select count(*) from ${ruleZeroSeats} s where s.table_id = ${tableId})
+      or exists (select 1 from ${ruleZeroResultSeats} r where r.table_id = ${tableId}
+        and not exists (select 1 from ${ruleZeroSeats} s where s.table_id = ${tableId} and s.user_id = r.user_id and s.seat = r.seat))`,
+  ));
+}

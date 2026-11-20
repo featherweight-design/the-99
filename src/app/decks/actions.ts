@@ -1303,6 +1303,8 @@ export async function logGame(
           // Blank is null, never an empty string, so the row renders and the
           // reader queries one absence rather than two.
           note: note.length > 0 ? note : null,
+          // Set only past the table's grant check above: a table id nobody verified never lands on a game.
+          ruleZeroTableId: table !== null && tableSeats.length > 0 ? table.id : null,
         })
         .returning({ id: deckGames.id });
 

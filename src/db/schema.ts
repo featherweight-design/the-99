@@ -1098,11 +1098,16 @@ export const deckGames = pgTable("deck_games", {
   // logged is the exception: #9 ships no edit action, so a note added to one
   // afterwards is written by hand, and then this check is all there is.
   note: text("note"),
+  // The Rule 0 table a game was logged from (life tracker PR1), set only when the log's table seats resolved under that
+  // table's grant: "Not logged yet" is true while a seated player has no game with this table. `set null`: a table's
+  // expiry or delete must never delete a game.
+  ruleZeroTableId: uuid("rule_zero_table_id").references(() => ruleZeroTables.id, { onDelete: "set null" }),
 }, (t) => [
   check("deck_games_result_check", sql`${t.result} in ('win', 'loss', 'draw')`),
   check("deck_games_note_length_check", sql`${t.note} is null or char_length(${t.note}) <= 140`),
   check("deck_games_pod_size_check", sql`${t.podSize} between 2 and 8`),
   index("deck_games_deck_played_idx").on(t.deckId, t.playedAt),
+  index("deck_games_rule_zero_table_idx").on(t.ruleZeroTableId).where(sql`${t.ruleZeroTableId} is not null`),
   // The cross-deck history (`loadGameHistory`): one owner's games, newest first, read by keyset on (played_at, id).
   index("deck_games_user_played_idx").on(t.userId, t.playedAt.desc().nullsFirst()),
 ]);

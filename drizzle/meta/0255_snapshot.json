@@ -1,5 +1,5 @@
 {
-  "id": "b647c7d7-839b-4574-95ad-f90c88a73326",
+  "id": "e3aac124-9607-4269-996d-ab5a259eb0ea",
   "prevId": "0f5e58db-0765-48d6-9f2c-2ef43ebfa97c",
   "version": "7",
   "dialect": "postgresql",
@@ -3465,6 +3465,12 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
+        },
+        "rule_zero_table_id": {
+          "name": "rule_zero_table_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
@@ -3485,6 +3491,22 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "deck_games_rule_zero_table_idx": {
+          "name": "deck_games_rule_zero_table_idx",
+          "columns": [
+            {
+              "expression": "rule_zero_table_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"deck_games\".\"rule_zero_table_id\" is not null",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -3531,6 +3553,19 @@
           "tableTo": "deck_versions",
           "columnsFrom": [
             "version_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "deck_games_rule_zero_table_id_rule_zero_tables_id_fk": {
+          "name": "deck_games_rule_zero_table_id_rule_zero_tables_id_fk",
+          "tableFrom": "deck_games",
+          "tableTo": "rule_zero_tables",
+          "columnsFrom": [
+            "rule_zero_table_id"
           ],
           "columnsTo": [
             "id"

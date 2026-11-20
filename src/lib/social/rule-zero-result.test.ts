@@ -67,8 +67,12 @@ describe("resultFor", () => {
 
 describe("resultPlacesQuery", () => {
   it("reads one table's rows, account and place only", () => {
-    const { sql: text } = resultPlacesQuery(TABLE).toSQL();
+    const { sql: text, params } = resultPlacesQuery(TABLE, "user_a").toSQL();
     expect(text).toContain('"rule_zero_result_seats"."table_id" = $1');
-    expect(text).not.toContain('"seat"');
+    expect(text).not.toContain('"rule_zero_result_seats"."seat"');
+    // Qualified in the subquery, and skipped once the viewer logged a game from the table since the result was saved.
+    expect(text).toContain('dg.rule_zero_table_id = $3');
+    expect(text).toContain('"rule_zero_result_seats"."saved_at"');
+    expect(params).toEqual([TABLE, "user_a", TABLE]);
   });
 });

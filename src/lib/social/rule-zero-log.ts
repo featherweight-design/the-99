@@ -171,7 +171,7 @@ export async function tablePrefill(viewerId: string, tableId: unknown, deckId: s
   const { rows, placed } = await db.transaction(
     async (tx) => ({
       rows: await tableSeatsQuery(viewerId, tableId, tx, await ruledSeatOwnersOf(viewerId, tableId, tx)),
-      placed: await resultPlacesQuery(tableId, tx),
+      placed: await resultPlacesQuery(tableId, viewerId, tx),
     }),
     { isolationLevel: "repeatable read" },
   );
