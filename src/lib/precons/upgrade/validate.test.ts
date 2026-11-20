@@ -92,5 +92,6 @@ describe("validateUpgrade: the reason per cut (fresh start 1/4)", () => {
     expect(r.kept[0].cutReason).toBe("off-plan and slow");
     expect(validateUpgrade([swap("weak card", "skullclamp")], { deck, pool }).kept[0].cutReason).toBeNull();
     expect(validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: "   " }], { deck, pool }).kept[0].cutReason).toBeNull();
+    expect(validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: "y".repeat(300) }], { deck, pool }).kept[0].cutReason).toHaveLength(120);
   });
 });

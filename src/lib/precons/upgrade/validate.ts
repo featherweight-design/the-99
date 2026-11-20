@@ -10,6 +10,9 @@ import { CARD_CAP_CENTS, MAX_SWAPS } from "./constants";
 export type DeckEntry = { oracleId: string; name: string; isCommander: boolean; /** A basic land: never a cut (nine copies share one id, and a basic is not what an upgrade is for). */ basic?: boolean };
 export type PoolEntry = { oracleId: string; name: string; cents: number | null };
 
+/** The longest cut reason kept (characters): the prompt asks for about 15 words, this caps a reply that runs on. */
+export const CUT_REASON_MAX = 120;
+
 export type RawSwap = { out: string; in: string; reason: string; /** Absent when the model left it out. */ cutReason?: string | null };
 
 export type UpgradePair = {
@@ -96,7 +99,7 @@ export function validateUpgrade(
     if (kept.length >= room) { overCeiling++; return; }
     cuts.add(cut.oracleId);
     adds.add(add.oracleId);
-    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), cutReason: s.cutReason?.trim() || null, position });
+    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), cutReason: s.cutReason?.trim().slice(0, CUT_REASON_MAX).trim() || null, position });
   });
   return { kept, drops, overCeiling };
 }

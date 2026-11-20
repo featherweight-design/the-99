@@ -36,8 +36,11 @@ export const upgradeReplySchema = z.object({
     out: z.string().min(1).max(200),
     in: z.string().min(1).max(200),
     reason: z.string().min(1).max(240),
-    /** Why the cut card goes. Optional so a reply that leaves it out still parses; the run stores null then. */
-    cutReason: z.string().min(1).max(120).optional(),
+    /**
+     * Why the cut card goes. Optional and unbounded here so a reply that leaves it out, or runs long, still parses: the
+     * swap is the paid result and a cut reason is only its gloss. `validate.ts` trims it to `CUT_REASON_MAX`; blank is null.
+     */
+    cutReason: z.string().optional(),
   })).max(MAX_SWAPS + 12),
 });
 export type UpgradeReply = z.infer<typeof upgradeReplySchema>;
