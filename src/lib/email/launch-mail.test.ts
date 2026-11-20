@@ -1,5 +1,7 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { launchEmailParts, LAUNCH_IMAGES } from "./launch-mail";
+import { FEATURE_HEIGHT, launchEmailParts, LAUNCH_IMAGES } from "./launch-mail";
 
 const UNSUB = "https://staging.the-99.dev/unsubscribe?t=" + "x".repeat(43);
 const parts = (source: "landing" | "flyer") => launchEmailParts({ origin: "https://staging.the-99.dev", source, unsubscribeUrl: UNSUB });
@@ -34,5 +36,24 @@ describe("launchEmailParts", () => {
     expect(text).not.toMatch(/[‘’“”]/);
     expect(text).toContain("99 problems, but your commander ain't one.");
     expect(html).toContain("99 problems, but your commander ain’t one.");
+  });
+});
+
+/** A committed PNG's pixel size, read from its IHDR chunk (width at bytes 16-19, height at 20-23, big-endian). */
+function pngSize(file: string): { width: number; height: number } {
+  const buf = readFileSync(join(process.cwd(), "public/email", file));
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+}
+
+describe("the committed launch images", () => {
+  it("draws each feature at the height its PNG scales to at 320 wide", () => {
+    for (const [name, drawn] of Object.entries(FEATURE_HEIGHT)) {
+      const { width, height } = pngSize(`${name}@2x.png`);
+      expect(Math.round((height * 320) / width), name).toBe(drawn);
+    }
+  });
+
+  it("ships the fan at 1040x560", () => {
+    expect(pngSize("launch-fan@2x.png")).toEqual({ width: 1040, height: 560 });
   });
 });
