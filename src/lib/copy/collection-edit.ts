@@ -305,8 +305,8 @@ export const collectionEditCopy = {
     chooser: {
       body: (card: string, k: number, n: number) =>
         n === 1
-          ? `${k} decks list ${card} and one copy will be left. Pick the one that goes short. Its list stays the same, and ${card} goes on its shopping list.`
-          : `${k} decks list ${card} and one copy will be left. Pick the ${n} that go short. Their lists stay the same, and ${card} goes on their shopping lists.`,
+          ? `${k} decks list ${card} and 1 copy will be left. Pick the one that goes short. Its list stays the same, and ${card} goes on its shopping list.`
+          : `${k} decks list ${card} and 1 copy will be left. Pick the ${n} that go short. Their lists stay the same, and ${card} goes on their shopping lists.`,
       heading: (n: number) => (n === 1 ? "Which deck goes short" : `Which ${n} decks go short`),
       tally: (picked: number, n: number) => `${picked} of ${n} picked`,
       rowSub: (listed: number, date: string) => `lists ${listed} · committed it ${date}`,
@@ -314,7 +314,7 @@ export const collectionEditCopy = {
       keeperRefused: "That deck can’t hold the copy any more. Nothing was saved.",
       short: "short 1",
       keeps: "keeps it",
-      footerDefault: (short: string, keepers: string) => `${short} goes short because ${keepers} committed it first. Pick another deck to change that.`,
+      footerDefault: (short: string, keepers: string, count: number) => `${short} ${count === 1 ? "goes" : "go"} short because ${keepers} committed it first. Pick another deck to change that.`,
       footerPicked: (short: string, keepers: string) => `You picked ${short} to go short. ${keepers} keeps its copy.`,
       footerMore: (m: number) => `Pick ${m} more to go short.`,
       refusal: (n: number) => `${n} decks are already going short. Untick one first.`,

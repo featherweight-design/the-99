@@ -39,9 +39,11 @@ export function keeperOf(choice: ShortChoice, marks: ReadonlySet<string>): Claim
 const joinNames = (names: string[]) => (names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
 
 export function ShortDeckChooser({
-  titleId, cardName, choice, pending, error, notice, onCancel, onConfirm,
+  titleId, cardName, choice, source = "remove", pending, error, notice, onCancel, onConfirm,
 }: {
   titleId: string;
+  /** `remove`: the sheet's Remove from collection; `save`: a lowering (the shipped save wording). */
+  source?: "remove" | "save";
   cardName: string;
   choice: ShortChoice;
   pending: boolean;
@@ -81,18 +83,18 @@ export function ShortDeckChooser({
   const footer = !keeper
     ? c.chooser.footerMore(n - picked)
     : isDefault
-      ? c.chooser.footerDefault(joinNames(defaultShort), joinNames(firstKeepers))
+      ? c.chooser.footerDefault(joinNames(defaultShort), joinNames(firstKeepers), defaultShort.length)
       : c.chooser.footerPicked(joinNames(shortNames), joinNames(keepNames));
 
   return (
     <div className="flex flex-col gap-[14px]">
       <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold leading-[1.3] text-[color:var(--fg)]">
-        {c.titleRemove(cardName, n)}
+        {source === "remove" ? c.titleRemove(cardName, n) : c.titleSave(n)}
       </h2>
       {notice ? <p role="status" className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.changed}</p> : null}
       <p className="m-0 text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.chooser.body(cardName, choice.claimants.length, n)}</p>
       <div className="flex items-baseline justify-between gap-[12px]">
-        <h3 className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{c.chooser.heading(n)}</h3>
+        <h3 className="m-0 font-mono text-[10px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{c.chooser.heading(n)}</h3>
         {radio ? null : <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{c.chooser.tally(picked, n)}</span>}
       </div>
       <ul
@@ -109,17 +111,30 @@ export function ShortDeckChooser({
                 type="button"
                 role={radio ? "radio" : "checkbox"}
                 aria-checked={marked}
+                tabIndex={radio && !(marked || (picked === 0 && x === choice.claimants[0])) ? -1 : undefined}
+                onKeyDown={radio ? (e) => {
+                  const i = choice.claimants.findIndex((y) => y.deckId === x.deckId);
+                  const step = e.key === "ArrowDown" || e.key === "ArrowRight" ? 1 : e.key === "ArrowUp" || e.key === "ArrowLeft" ? -1 : 0;
+                  if (!step) return;
+                  e.preventDefault();
+                  const next = choice.claimants[(i + step + choice.claimants.length) % choice.claimants.length];
+                  setMarks(new Set([next.deckId]));
+                  setRefusal(false);
+                  (e.currentTarget.closest("ul")?.querySelectorAll<HTMLElement>("[role=radio]")[choice.claimants.indexOf(next)])?.focus();
+                } : undefined}
                 disabled={pending}
                 onClick={() => tap(x.deckId)}
-                className={`flex min-h-[56px] w-full items-center gap-[12px] px-[14px] text-left ${authored ? "bg-[color-mix(in_oklab,var(--accent)_10%,transparent)]" : ""}`}
+                className={`flex min-h-[56px] w-full items-center gap-[12px] px-[14px] text-left ${authored ? "bg-[color:var(--elevated)] shadow-[inset_0_0_0_1px_color-mix(in_oklab,var(--accent)_45%,transparent)]" : ""}`}
               >
                 <span
                   aria-hidden
-                  className={`flex h-[18px] w-[18px] flex-none items-center justify-center border ${radio ? "rounded-full" : "rounded-[4px]"} ${marked ? (authored ? "border-[color:var(--accent)] bg-[color:var(--accent)]" : "border-[color:var(--border-strong)] bg-[color:var(--border-strong)]") : "border-[color:var(--border-strong)]"}`}
-                />
+                  className={`flex h-[18px] w-[18px] flex-none items-center justify-center border-[1.5px] ${radio ? "rounded-full" : "rounded-[4px]"} ${marked ? (authored ? "border-[color:var(--accent)]" : "border-[color:var(--fg-muted)]") : "border-[color:var(--fg-faint)]"}`}
+                >
+                  {marked ? <span className={`h-[8px] w-[8px] ${radio ? "rounded-full" : "rounded-[2px]"} ${authored ? "bg-[color:var(--accent)]" : "bg-[color:var(--fg-muted)]"}`} /> : null}
+                </span>
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-[14px] text-[color:var(--fg)]">{x.deckName}</span>
-                  <span className="truncate text-[12px] text-[color:var(--fg-faint)]">
+                  <span className="truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">
                     {x.since === null ? c.chooser.rowSubUndated(x.quantity) : c.chooser.rowSub(x.quantity, formatShortDeckDate(new Date(x.since)))}
                   </span>
                 </span>
@@ -131,11 +146,10 @@ export function ShortDeckChooser({
           );
         })}
       </ul>
-      <p aria-live="polite" className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
-        {refusal ? c.chooser.refusal(n) : footer}
-      </p>
-      {!isDefault && !refusal ? (
-        <button type="button" onClick={() => { setMarks(first); setRefusal(false); }} className="-mt-[6px] self-start font-sans text-[13px] text-[color:var(--accent-text)] underline">
+      {refusal ? <p role="status" className="m-0 border-l-2 border-[color:var(--danger)] pl-[10px] text-[12px] leading-[1.5] text-[color:var(--fg-body)]">{c.chooser.refusal(n)}</p> : null}
+      <p aria-live="polite" className="m-0 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{footer}</p>
+      {!isDefault && keeper ? (
+        <button type="button" onClick={() => { setMarks(first); setRefusal(false); }} className="-mt-[6px] flex min-h-[32px] items-center self-start font-sans text-[12.5px] text-[color:var(--accent-text)] underline">
           {c.chooser.back}
         </button>
       ) : null}
@@ -146,7 +160,7 @@ export function ShortDeckChooser({
           type="button"
           onClick={onCancel}
           disabled={pending}
-          className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] px-[18px] text-[14px] text-[color:var(--fg)] disabled:opacity-60"
+          className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] px-[18px] text-[14px] text-[color:var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] disabled:opacity-60"
         >
           {c.cancel}
         </button>
@@ -162,7 +176,7 @@ export function ShortDeckChooser({
           }}
           className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
         >
-          {pending ? c.saving : c.confirmRemove}
+          {pending ? c.saving : source === "remove" ? c.confirmRemove : c.confirmSave}
         </button>
       </div>
     </div>

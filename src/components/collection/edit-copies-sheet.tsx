@@ -217,7 +217,7 @@ export function EditCopiesSheet({
       if ("unchanged" in out) return onClose({ saved: null });
       if ("wouldShort" in out) {
         const was = new Set(warning?.decks.map((d) => d.deckId) ?? []);
-        const chosen = isRemoval ? out.choices?.find((x) => x.oracleId === card.oracleId && choosable(x)) : undefined;
+        const chosen = out.choices?.find((x) => x.oracleId === card.oracleId && choosable(x));
         setWarning({
           decks: out.wouldShort,
           // A confirm that comes back with a different answer redraws the same dialog, saying so.
@@ -464,6 +464,7 @@ export function EditCopiesSheet({
               <ShortDeckChooser
                 key={JSON.stringify(warning.choice.claimants)}
                 titleId={warnId}
+                source={isRemoval ? "remove" : "save"}
                 cardName={card.name}
                 choice={warning.choice}
                 pending={saving}
