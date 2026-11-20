@@ -55,8 +55,13 @@ export function upgradeLines(panel: UpgradePanel, run: PanelRun): LineItem[] {
   return [...adds, ...cuts];
 }
 
-/** What the box permits before any swap: the bracket the run found it at, else the box's own read; none when neither is known. */
+/**
+ * What the box permits before any swap: every bracket its list permits, as the bar's set read is (a plain precon permits 1 and 2), so
+ * the set's lowest bracket is measured against the box's own. The bracket the run found it at alone when the box could not be read
+ * now; none when neither is known.
+ */
 export function upgradePermits(panel: UpgradePanel, run: PanelRun): number[] {
+  if (panel.boxPermits.length > 0) return panel.boxPermits;
   const b = run.bracketBefore ?? panel.boxBracket;
   return b === null ? [] : [b];
 }

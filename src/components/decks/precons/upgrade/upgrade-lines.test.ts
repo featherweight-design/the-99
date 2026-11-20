@@ -8,7 +8,7 @@ const lead = (key: string, isFace: boolean): OfferedCommander => ({
 });
 const FIG = { typeCounts: { Instants: 9 }, roles: [{ role: "removal", have: 5, target: 8 }] };
 const panel: UpgradePanel = {
-  boxBracket: 2,
+  boxBracket: 2, boxPermits: [],
   commanders: [lead("rootha", true), lead("muddle", false)],
   runs: [],
   listFp: "x",
@@ -81,6 +81,10 @@ describe("upgradeAsk, upgradePermits and figuresOf", () => {
     expect(upgradePermits(panel, run())).toEqual([2]);
     expect(upgradePermits({ ...panel, boxBracket: 3 }, run({ bracketBefore: null }))).toEqual([3]);
     expect(upgradePermits({ ...panel, boxBracket: null }, run({ bracketBefore: null }))).toEqual([]);
+  });
+
+  it("permits every bracket the box permits when it was read, so a set that keeps bracket 1 stays where it was", () => {
+    expect(upgradePermits({ ...panel, boxPermits: [1, 2] }, run())).toEqual([1, 2]);
   });
 
   it("reads the heads' figures for the run's own commander, and none when the panel has none", () => {

@@ -20,7 +20,7 @@ const lead = (key: string, name: string, strategies: ReturnType<typeof strat>[])
   key, isFace: key === "rootha", cards: [{ oracleId: key, name, manaCost: "{2}{U}{R}", cmc: 4, typeLine: "Legendary Creature" }], line: `${name} line`, strategies,
 });
 const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
-  boxBracket: 2, figures: {},
+  boxBracket: 2, boxPermits: [1, 2], figures: {},
   commanders: [lead("rootha", "Rootha", [strat("spellslinger", "Spells")]), lead("muddle", "Muddle", [strat("tokens", "Tokens")])],
   runs: [], listFp: "x", cards: {},
   allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },

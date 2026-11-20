@@ -24,7 +24,7 @@ const lead = (key: string, name: string, isFace: boolean): OfferedCommander => (
   key, isFace, cards: [{ oracleId: key, name, manaCost: "{2}", cmc: 4, typeLine: "Legendary Creature" }], line: null, strategies: [],
 });
 const panel: UpgradePanel = {
-  boxBracket: 2,
+  boxBracket: 2, boxPermits: [1, 2],
   commanders: [lead("rootha", "Rootha", true), lead("muddle", "Muddle", false)],
   runs: [],
   listFp: "x",

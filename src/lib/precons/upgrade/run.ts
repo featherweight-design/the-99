@@ -57,6 +57,8 @@ export type PanelCard = Partial<CardFacts> & { owned: boolean; availability?: Av
 export type UpgradePanel = {
   /** The bracket the box plays at (2, 3 or 4), or null when it could not be read. Only picks at or above it are offered: an upgrade adds cards, it cannot take the box's own off. */
   boxBracket: number | null;
+  /** Every bracket the box as shipped permits (a plain precon permits 1 and 2, and plays 2), or none when it could not be read: where Suggested changes' bar measures a picked set from. */
+  boxPermits: number[];
   /** Step one: who leads. Step two, per commander: the strategies the deck backs under that commander. The player picks both; nothing is preselected. */
   commanders: OfferedCommander[];
   /** The newest pending run and every kept run up to the history cap, newest first (`strategyKey` is `<commander key>/<bracket>/<strategy key>`): what the page shows again, free. */
@@ -79,8 +81,8 @@ type Deps = {
   loadFor: (base: UpgradeBase, option: CommanderOption, bracket: BracketTarget) => Promise<UpgradeLoad>;
   call: (req: Parameters<UpgradeCallModel>[0]) => Promise<ModelOutcome<UpgradeReply>>;
   bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
-  /** The bracket facts of the list with the pairs applied and the bracket it plays at, which the hold and the reach read (`hold.ts`); null when the read fails. */
-  bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketRead | null>;
+  /** The bracket facts of the list with the pairs applied, the bracket it plays at and every bracket it permits, which the hold, the reach and the panel's box read (`hold.ts`); null when the read fails. */
+  bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BoxRead | null>;
   /** The newest deck started from each of these runs, by run id. */
   decks: (userId: string, runIds: readonly string[]) => Promise<Map<string, RunDeck>>;
   /** The mana value, color identity and bracket facts of cards by oracle id. */
@@ -273,9 +275,14 @@ async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Prom
   return (await bracketsOf(load, pairs))?.plays ?? null;
 }
 
-async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BracketRead | null> {
+/** A bracket read with every bracket the list permits: `plays` is one of them, kept to 2 through 4 (`playsAt`). */
+type BoxRead = BracketRead & { permits: number[] };
+
+async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BoxRead | null> {
   const profile = await profileOf(load, pairs);
-  return profile ? { ...profile.brackets, plays: playsAt(slotDeck(profile).permits) } : null;
+  if (!profile) return null;
+  const { permits } = slotDeck(profile);
+  return { ...profile.brackets, plays: playsAt(permits), permits };
 }
 
 /** How long the partner read may take before a run is finished without it: a hung read must not hold a charged run pending. */
@@ -358,8 +365,8 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
     };
   }
   const pairOf = (ids: readonly string[]): CommanderPair => ({ commanderOracleId: ids[0], partnerOracleId: ids[1] ?? null });
-  const [boxBracket, mixes] = await Promise.all([
-    deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []),
+  const [box, mixes] = await Promise.all([
+    deps.bracketsOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []),
     // The targets for the count the heads use: by label, unless the label read failed (as `loadDeckMix`'s callers ask).
     deps.mixes(offeredNow.map((c) => pairOf(c.option.commanderIds)), byCard ? "labels" : "classifier"),
   ]);
@@ -368,7 +375,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
     const mix = mixes.get(mixKey(pairOf(c.option.commanderIds)));
     if (mix) figures[c.key] = upgradeFigures(base.lines, c.option.commanderIds, byCard, mix);
   }
-  return { boxBracket, commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, figures, allowance };
+  return { boxBracket: box?.plays ?? null, boxPermits: box?.permits ?? [], commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, figures, allowance };
 }
 
 /** The panel for one precon: free, never a call. Null when the precon is not found or has no commander. */

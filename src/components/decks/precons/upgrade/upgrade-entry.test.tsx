@@ -35,7 +35,7 @@ const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 1, cents: 100 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });
 const panel = (runs: PanelRun[] = []): UpgradePanel => ({
-  boxBracket: 2, commanders: [lead], runs, listFp: "x", cards: {}, figures: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  boxBracket: 2, boxPermits: [1, 2], commanders: [lead], runs, listFp: "x", cards: {}, figures: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
 });
 
 function toConfirm() {

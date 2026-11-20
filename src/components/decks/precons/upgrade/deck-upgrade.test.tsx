@@ -30,7 +30,7 @@ const { readUpgradeAction } = await import("../../../../lib/precons/upgrade/acti
 const DECK = "22222222-2222-4222-8222-222222222222";
 const strat = { key: "tokens", label: "Tokens", blurb: "b", source: "edhrec" as const, backingIds: [], backing: [] };
 const panel: UpgradePanel = {
-  boxBracket: 2,
+  boxBracket: 2, boxPermits: [1, 2],
   figures: {},
   commanders: [
     { key: "rootha", isFace: true, cards: [{ oracleId: "rootha", name: "Rootha", manaCost: null, cmc: 4, typeLine: "Legendary Creature" }], line: "", strategies: [strat] },

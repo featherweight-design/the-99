@@ -80,7 +80,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), lineBrackets: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> => pairs.map(() => ({ addBracketAfter: null, cutBracketAfter: null }))), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), lineBrackets: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> => pairs.map(() => ({ addBracketAfter: null, cutBracketAfter: null }))), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -286,7 +286,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: async () => [], lineBrackets: async () => [], now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: async () => [], lineBrackets: async () => [], now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });
