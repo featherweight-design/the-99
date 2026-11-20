@@ -1037,3 +1037,63 @@ describe("afterStaged", () => {
     expect(afterStaged(figures, [])).toEqual(figures);
   });
 });
+
+describe("another flow's press in the bar (Precon Upgrade fresh start R2, call 11)", () => {
+  const picks = (over: Partial<Props> = {}) => ({ lines: [...adds(3, () => ({ picked: true })), ...cuts(3, () => ({ picked: true }))], ask: ask(3), ...over });
+  const flowPress = (over: Partial<NonNullable<Props["press"]>> = {}) => ({ label: (n: number) => `Start the deck with these ${n} swaps`, onPress: vi.fn(), ...over });
+
+  it("takes the Apply place with its own words and sends the picked line ids, never the confirmation or the set apply", async () => {
+    const p = flowPress();
+    const t = setup({ ...picks(), press: p });
+    expect(apply()).toHaveTextContent("Start the deck with these 3 swaps");
+    await press(apply());
+    expect(p.onPress).toHaveBeenCalledWith(["a0", "a1", "a2"], ["c0", "c1", "c2"]);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(t.actions.apply).not.toHaveBeenCalled();
+  });
+
+  it("stays off on uneven counts, still in its own words, and never falls back to the confirmation", async () => {
+    const p = flowPress();
+    setup({ ...picks({ lines: [...adds(3, () => ({ picked: true })), ...cuts(3, (i) => ({ picked: i > 0 }))] }), press: p });
+    expect(apply()).toHaveAttribute("aria-disabled", "true");
+    expect(apply()).toHaveTextContent("Start the deck with these 3 swaps");
+    await press(apply());
+    expect(p.onPress).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("an off press says its note in the bar and does nothing; a pending one holds", async () => {
+    const p = flowPress({ off: true, note: "The list changed." });
+    const t = setup({ ...picks(), press: p });
+    expect(within(bar()).getByRole("note")).toHaveTextContent("The list changed.");
+    await press(apply());
+    expect(p.onPress).not.toHaveBeenCalled();
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const q = flowPress({ pending: true });
+    t.rerender({ press: q });
+    expect(apply()).toHaveAttribute("aria-busy", "true");
+    await press(apply());
+    expect(q.onPress).not.toHaveBeenCalled();
+  });
+
+  it("names the cap with none picked", () => {
+    setup({ ...picks({ lines: [...adds(3), ...cuts(3)] }), press: flowPress() });
+    expect(apply()).toHaveTextContent("Start the deck with these 3 swaps");
+    expect(apply()).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it("leaves out You asked when asked to, and draws it otherwise", () => {
+    const { rerender } = setup({ ...picks(), youAsked: false });
+    expect(document.querySelector("[data-sc-asked]")).toBeNull();
+    rerender({ youAsked: true });
+    expect(document.querySelector("[data-sc-asked]")).not.toBeNull();
+  });
+});
+
+describe("a line with no reason (fresh start R2: an Upgrade cut kept before cuts carried one)", () => {
+  it("draws no empty reason paragraph", () => {
+    setup({ lines: [...adds(1), v2Line("c0", "cut", { rationale: "" })], ask: ask(1) });
+    expect(screen.getByRole("article", { name: "Card c0" }).querySelector("p")).toBeNull();
+    expect(screen.getByRole("article", { name: "Card a0" }).querySelector("p")).not.toBeNull();
+  });
+});

@@ -1,0 +1,103 @@
+{
+  "feature": "Precon Upgrade fresh start 4/4 (addendum fresh start R2): the result as Suggested changes' lists, adds and cuts picked separately",
+  "note": "Scratch-only fixtures for the audit account with PRECON_UPGRADE_ENABLED on for it (a user override). One done, seen run per STATES 'Picking adds and cuts' state, on a precon the account has no other run on, so the start screen's Your last upgrade row opens it: AdaptiveEnchantment_C18 every line picked, led by Kestia (the box Overview's alternate) so the commander pair draws above the lists; AhoyMateys_LCC one add and another pair's cut unpicked; ArcaneWizardry_C17 one cut unpicked; BuckleUp_NEC the Mystical Tutor add (the pair carrying addBracketAfter [3], the bracket-moving pick) and one cut unpicked; CavalryCharge_MOC every line unpicked. Every pair carries reason and cutReason; bracket 2 -> 3 at target 3. UPGRADE_DECK_ID is the account's box deck started from SultaiArisen_TDC (still the box, so the band shows), whose run is its Your last upgrade. No row presses Pick, Start or Apply: the picks are the seed's, and nothing spends. The By role row runs last: the grouping is remembered for the rows after it.",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 1700 },
+    { "label": "desktop", "width": 1300, "height": 1500 }
+  ],
+  "rows": [
+    {
+      "id": "as-found",
+      "label": "As found: every add and cut Picked, 14 of 14 each, +14 in -14 out, Start the deck with these 14 swaps; the commander pair above with no Pick; no You asked",
+      "view": "src/components/decks/precons/upgrade/result-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons/AdaptiveEnchantment_C18", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "as-found-foot",
+      "label": "The foot of the lists: Try another strategy after them, the bar pinned to the sheet's foot",
+      "view": "src/components/decks/precons/upgrade/upgrade-flow.tsx",
+      "steps": [
+        { "goto": "/decks/precons/AdaptiveEnchantment_C18", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 3000, "scrollTo": "button:has-text(\"Try another strategy\")" }
+      ]
+    },
+    {
+      "id": "mixed",
+      "label": "Mixed: one add and another pair's cut unpicked, 13 of 14 each, +13 in -13 out, the press counts 13",
+      "view": "src/components/decks/precons/upgrade/result-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons/AhoyMateys_LCC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "counts-differ",
+      "label": "Counts differ: one cut unpicked, 14 in, 13 out. Pick 1 more cut to apply; the press off",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        { "goto": "/decks/precons/ArcaneWizardry_C17", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "bracket-dropped",
+      "label": "Bracket pick dropped: Mystical Tutor unpicked, the shipped warning (You asked for 3 ... None of your picks moves it); the press on",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        { "goto": "/decks/precons/BuckleUp_NEC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "none-picked",
+      "label": "None picked: every line Pick, 0 in 0 out, Pick up to 14 of each; the press off",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        { "goto": "/decks/precons/CavalryCharge_MOC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "phone-cuts",
+      "label": "Phone: the Additions | Cuts switch on Cuts, each cut with its own reason",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/decks/precons/AhoyMateys_LCC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 2500 },
+        { "clickRole": "tab", "name": "^Cuts", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "deck-apply",
+      "label": "Deck page: the band's flow, the run opened from Your last upgrade, Apply these 14 swaps in the bar",
+      "view": "src/components/decks/precons/upgrade/deck-upgrade.tsx",
+      "steps": [
+        { "goto": "/decks/${UPGRADE_DECK_ID}", "wait": "text=Upgrade precon", "settle": 2500 },
+        { "clickRole": "button", "name": "^Upgrade precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "by-role",
+      "label": "The group switch on By role: the role heads with their have-of-target counts",
+      "view": "src/components/decks/suggested-changes-run.tsx",
+      "steps": [
+        { "goto": "/decks/precons/AdaptiveEnchantment_C18", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-sc-bar]", "settle": 2500 },
+        { "clickRole": "radio", "name": "^By role$", "settle": 1500 }
+      ]
+    }
+  ]
+}

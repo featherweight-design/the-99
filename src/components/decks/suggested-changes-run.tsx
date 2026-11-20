@@ -50,6 +50,18 @@ export type SuggestionSetActions = {
   sourceFigures?: (pairs: { deckId: string; oracleId: string }[]) => Promise<[string, SourceDeckFigure][]>;
 };
 
+/** Another flow's press in the bar (`press` on `SuggestedChangesRun`). */
+export type SuggestedChangesPress = {
+  /** The press's words for `n` swaps: the picked adds (the larger side while the counts differ, the cap with none picked). */
+  label: (n: number) => string;
+  /** The picked lines' ids, each side in the lists' order. */
+  onPress: (addIds: string[], cutIds: string[]) => void;
+  pending?: boolean;
+  off?: boolean;
+  /** Why the press is off, said under the bar's line. */
+  note?: string | null;
+};
+
 /** How long the picks rest before the bar asks the server for the set's bracket (a profile build per ask). */
 const SET_BRACKET_DEBOUNCE_MS = 400;
 
@@ -73,6 +85,7 @@ export const SLOWER_NOTE_MS = 120_000;
 export function SuggestedChangesRun({
   runId, ask, lines: readLines, live, startedAt, report, permits, declared = null, newestPriceAsOf, figures, drift, finishedHere = false,
   readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, groupingInMemory = false, credits = null, past = null, deckId,
+  press = null, youAsked = true,
 }: {
   runId: string;
   /** The run's deck, for the confirmation's Pull (Small items 4, item 2). */
@@ -109,6 +122,13 @@ export function SuggestedChangesRun({
   past?: { date: string; stale: boolean; version?: number | null; moved?: number | null } | null;
   /** The reader's free credits now (`freeCount` of the allowance): a refunded short run says how many are left. */
   credits?: { left: number; total: number } | null;
+  /** Another flow's own press in the bar's Apply place (Precon Upgrade fresh start R2, call 11): its words for the picked
+   *  count, and what it does with the picked line ids. Given, the bar never opens this component's confirmation or applies
+   *  the set itself, on or off. `off` holds it with `note` said in the bar (a run over an old list, a refused apply);
+   *  `pending` holds it while the press is in flight. */
+  press?: SuggestedChangesPress | null;
+  /** Draws the You asked box. Precon Upgrade leaves it out: the run's facts already say what it was for (call 11). */
+  youAsked?: boolean;
 }) {
   const n = ask?.requestedCount ?? 3;
   const waiting = live !== null;
@@ -463,7 +483,8 @@ export function SuggestedChangesRun({
   // A set fits the cap the server holds it to (`planPicks`): picks an Undo gave back can sit beside newer ones past it.
   const overCap = t.adds > cap || t.cuts > cap;
   // A failed cut call shows no cuts, so none can be applied, even one picked while the cuts were still arriving.
-  const applyOn = !waiting && !readOnly && t.equal && t.adds > 0 && !overCap && short?.kind !== "noCuts" && drift === null && busy === null;
+  const applyOn = !waiting && !readOnly && t.equal && t.adds > 0 && !overCap && short?.kind !== "noCuts" && drift === null && busy === null
+    && !press?.off && !press?.pending;
   const bracketText = (o: BracketOutcome | null) =>
     o === null ? null : o.kind === "reached"
       ? sc.bar.bracketReached(o.from, o.to, BRACKET_NAMES[o.to as Bracket])
@@ -556,7 +577,7 @@ export function SuggestedChangesRun({
       {past ? (
         // You asked beside the outcome on desktop, stacked on a phone (History B and C, `.sbs`).
         <div data-sc-side-by-side="" className="flex flex-col gap-[16px] md:grid md:grid-cols-2 md:items-start md:gap-[16px]">
-          {ask ? <YouAsked ask={ask} /> : null}
+          {ask && youAsked ? <YouAsked ask={ask} /> : null}
           <div className="flex min-w-0 flex-col gap-[8px]">
             {leadParts ? (
               <p className="m-0 max-w-[760px] text-[13px] leading-[1.6]" style={{ color: "var(--fg-body)", textWrap: "pretty" }} data-sc-lead="">
@@ -572,7 +593,7 @@ export function SuggestedChangesRun({
             {readFrom}
           </div>
         </div>
-      ) : ask ? <YouAsked ask={ask} /> : null}
+      ) : ask && youAsked ? <YouAsked ask={ask} /> : null}
       {/* Once in, the clock stays only for a run that came up short of the ask (Wait E); the Results boards draw none. */}
       {clockFrom && (waiting || ofAsk !== null) ? (
         <Clock startedAt={clockFrom} adds={adds.length} cuts={cuts.length} n={n} done={!waiting} />
@@ -694,6 +715,9 @@ export function SuggestedChangesRun({
                 </>
               ) : sentence}
             </p>
+            {press?.note ? (
+              <p role="note" className="m-0 text-[12px] leading-[1.5]" style={{ color: "var(--fg-body)" }} data-sc-press-note="">{press.note}</p>
+            ) : null}
           </div>
           {appliedSet !== null && !waiting ? (
             <button
@@ -710,17 +734,22 @@ export function SuggestedChangesRun({
               type="button"
               onClick={() => {
                 if (!applyOn) return;
+                if (press) {
+                  press.onPress(pickedAdds.map((l) => l.id), pickedCuts.map((l) => l.id));
+                  return;
+                }
                 setPullFigures(null);
                 setOpened((n) => n + 1);
                 setConfirming(true);
               }}
               aria-disabled={!applyOn || undefined}
+              aria-busy={press?.pending || undefined}
               data-sc-apply=""
               className={`h-[44px] w-full whitespace-nowrap rounded-[8px] px-[16px] text-[13px] font-semibold md:h-[36px] md:w-auto transition-colors ${applyOn
                 ? "bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)]"
                 : "cursor-default bg-transparent text-[color:var(--fg-disabled)] [border:1px_solid_var(--border-strong)]"}`}
             >
-              {applyOn ? sc.bar.apply(t.adds * 2) : sc.run.applyOff}
+              {press ? press.label(Math.max(t.adds, t.cuts) || cap) : applyOn ? sc.bar.apply(t.adds * 2) : sc.run.applyOff}
             </button>
           )}
         </div>

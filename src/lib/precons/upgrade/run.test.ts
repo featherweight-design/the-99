@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
+import { recommendedMix } from "../../decks/mix";
 
 import { assembleDeck, assemblePool, boxFingerprint, optionFor, withCommanders, type CommanderOption, type DeckLine, type PoolRow } from "./inputs";
 import type { UpgradeBase, UpgradeLoad } from "./load";
@@ -79,7 +80,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), lineBrackets: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> => pairs.map(() => ({ addBracketAfter: null, cutBracketAfter: null }))), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), lineBrackets: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> => pairs.map(() => ({ addBracketAfter: null, cutBracketAfter: null }))), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -126,6 +127,25 @@ describe("readUpgrade", () => {
     const panel = await readUpgrade("u1", "boss.json", { ...d, facts }, ENV_VIEW);
     expect(panel!.cards.cmd).toEqual({ cmc: 3, identity: ["U"], facts: ["gameChanger", "tutor"], owned: false });
     expect(Object.values(panel!.cards).filter((c) => c.facts).length).toBe(1);
+  });
+
+  it("carries each card's line facts (type group, shelf role, art) and the heads' figures per commander, never the card text (fresh start R2)", async () => {
+    const { d } = deps(swaps(12));
+    const facts = async (ids: readonly string[]) => new Map(ids.map((i) => [i, { cmc: 1, identity: ["U"], typeLine: "Instant", image: `https://img/${i}`, oracleText: "Destroy target creature.", keywords: [] }]));
+    const labels = vi.fn(async () => null);
+    const mixes = vi.fn(async (pairs: readonly { commanderOracleId: string; partnerOracleId: string | null }[]) =>
+      new Map(pairs.map((p) => [`${p.commanderOracleId}|${p.partnerOracleId ?? ""}`, recommendedMix(null, false, "classifier")])));
+    const panel = await readUpgrade("u1", "boss.json", { ...d, facts, labels, mixes }, ENV_VIEW);
+    expect(panel!.cards.cmd).toMatchObject({ typeLine: "Instant", image: "https://img/cmd", typeGroup: "Instants", role: "removal" });
+    expect(panel!.cards.cmd).not.toHaveProperty("oracleText");
+    expect(panel!.cards.cmd).not.toHaveProperty("keywords");
+    // One label read covers the box's cards (the role heads count them) and the runs' cards; the label read failed, so the targets are the classifier's.
+    expect(labels).toHaveBeenCalledTimes(1);
+    expect((labels.mock.calls[0] as unknown as [{ oracleId: string }[]])[0].map((c) => c.oracleId)).toEqual(expect.arrayContaining(["cmd", "n0", "n19"]));
+    expect(mixes).toHaveBeenCalledWith([{ commanderOracleId: "cmd", partnerOracleId: null }], "classifier");
+    // The 99 under Boss: Sidekick and the twenty natives are creatures; six natives deal damage (removal by the classifier).
+    expect(panel!.figures.cmd.typeCounts).toEqual({ Creatures: 21 });
+    expect(panel!.figures.cmd.roles.find((r) => r.role === "removal")).toEqual({ role: "removal", have: 6, target: recommendedMix(null, false).cells.removal.target });
   });
 
   it("offers the deck's strategies with their backing cards and no call", async () => {
@@ -266,7 +286,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), partners: async () => [], lineBrackets: async () => [], now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: async () => [], lineBrackets: async () => [], now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });

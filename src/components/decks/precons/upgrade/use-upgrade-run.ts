@@ -129,7 +129,13 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
     }
   };
 
-  return { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen };
+  /** A pick stored on a run's result (fresh start R2, G28): the panel holds the run's unpicked lines now, so the run reopened from
+   *  this panel (Back, the start screen, History) shows the picks without a read. */
+  const savePicks = useCallback((runId: string, unpicked: string[]) => {
+    setPanel((p) => ({ ...p, runs: p.runs.map((r) => (r.id === runId ? { ...r, unpicked } : r)) }));
+  }, []);
+
+  return { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen, savePicks };
 }
 
 /** The strategy of a run in flight: the pending run's label, or for one this tab started, its label from the panel's own offer. */

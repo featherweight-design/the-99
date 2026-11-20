@@ -4,7 +4,15 @@ import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/p
 import { runKey } from "../../../../lib/precons/upgrade/targets";
 
 const seen = vi.hoisted(() => vi.fn(async (_runId: string) => ({ ok: true })));
-vi.mock("../../../../lib/precons/upgrade/actions", () => ({ markUpgradeSeenAction: seen }));
+const picked = vi.hoisted(() => vi.fn(async (_runId: string, lineId: string, _p: boolean) => ({ ok: true as const, unpicked: [lineId] })));
+vi.mock("../../../../lib/precons/upgrade/actions", () => ({ markUpgradeSeenAction: seen, pickUpgradeLineAction: picked, upgradeSetBracketAction: vi.fn(async () => null) }));
+// The result's lists are Suggested changes' own (fresh start R2): their lines read the page's card details, which both mounts provide.
+vi.mock("../../../cards/card-detail-context", async (importActual) => ({
+  ...(await importActual<typeof import("../../../cards/card-detail-context")>()),
+  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false, prefetch: () => {} }),
+  useCardIntent: () => ({}),
+}));
+vi.mock("../../../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 import { UpgradeFlow } from "./upgrade-flow";
 
 const strat = (key: string, label: string) => ({ key, label, blurb: `${label} blurb`, source: "edhrec" as const, backingIds: ["c1"], backing: [{ oracleId: "c1", name: "Card One" }] });
@@ -12,7 +20,7 @@ const lead = (key: string, name: string, strategies: ReturnType<typeof strat>[])
   key, isFace: key === "rootha", cards: [{ oracleId: key, name, manaCost: "{2}{U}{R}", cmc: 4, typeLine: "Legendary Creature" }], line: `${name} line`, strategies,
 });
 const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
-  boxBracket: 2,
+  boxBracket: 2, boxPermits: [1, 2], figures: {},
   commanders: [lead("rootha", "Rootha", [strat("spellslinger", "Spells")]), lead("muddle", "Muddle", [strat("tokens", "Tokens")])],
   runs: [], listFp: "x", cards: {},
   allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
@@ -154,7 +162,7 @@ describe("UpgradeFlow", () => {
     it("a result carries the Start press off until it is wired, and Try another strategy returns to the strategy with the commander and bracket kept", () => {
       open(panel({ runs: [done] }), { view: { kind: "results", runId: "r" }, onConfirm: vi.fn() });
       expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "Start the deck with these 2 swaps" })).toBeDisabled();
+      expect(screen.getByRole("button", { name: "Start the deck with these 2 swaps" })).toHaveAttribute("aria-disabled", "true");
       press(/Try another strategy/);
       expect(screen.getByText("Worked out for Rootha at bracket 3, from the deck’s own cards.")).toBeInTheDocument();
       expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
@@ -164,7 +172,30 @@ describe("UpgradeFlow", () => {
       const onStart = vi.fn();
       open(panel({ runs: [done] }), { view: { kind: "results", runId: "r" }, onStart });
       press("Start the deck with these 2 swaps");
-      expect(onStart).toHaveBeenCalledWith("r");
+      expect(onStart).toHaveBeenCalledWith("r", { adds: ["a0", "a1"], cuts: ["c0", "c1"] });
+    });
+
+    it("fresh start R2: the press is in the lists' bar, there is no foot, and Try another strategy follows the lists", () => {
+      open(panel({ runs: [done] }), { view: { kind: "results", runId: "r" }, onStart: vi.fn() });
+      const bar = document.querySelector("[data-sc-bar]") as HTMLElement;
+      expect(within(bar).getByRole("button", { name: "Start the deck with these 2 swaps" })).toBeInTheDocument();
+      expect(screen.getAllByRole("button", { name: /Start the deck/ })).toHaveLength(1);
+      expect(bar.compareDocumentPosition(screen.getByRole("button", { name: /Try another strategy/ })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
+    it("fresh start R2: starts with only the adds and cuts picked, and turns the press off on uneven counts", async () => {
+      const onStart = vi.fn();
+      const onPicked = vi.fn();
+      open(panel({ runs: [done] }), { view: { kind: "results", runId: "r" }, onStart, onPicked });
+      fireEvent.click(screen.getByRole("button", { name: "✓ Picked Add 0" }));
+      await vi.waitFor(() => expect(onPicked).toHaveBeenCalledWith("r", ["a-a0"]));
+      expect(picked).toHaveBeenCalledWith("r", "a-a0", false);
+      // One add out, both cuts in: uneven, so the press is off.
+      press("Start the deck with these 2 swaps");
+      expect(onStart).not.toHaveBeenCalled();
+      fireEvent.click(screen.getByRole("button", { name: "✓ Picked Cut 1" }));
+      press("Start the deck with these 1 swaps");
+      expect(onStart).toHaveBeenCalledWith("r", { adds: ["a1"], cuts: ["c0"] });
     });
 
     it("opens the kept run of the same picks from the ask, free", () => {
@@ -252,7 +283,7 @@ describe("UpgradeFlow", () => {
       expect(screen.getByText("Already in Prismari Artistry. Opening it again uses no credit.")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "‹ History" })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "‹ Back" })).toBeNull();
-      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).not.toHaveAttribute("aria-disabled");
     });
   });
 
@@ -291,7 +322,7 @@ describe("UpgradeFlow", () => {
       expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
       expect(document.querySelector("[data-used-note]")).toBeNull();
       press("Start the deck with these 1 swaps");
-      expect(onStart).toHaveBeenCalledWith("r");
+      expect(onStart).toHaveBeenCalledWith("r", { adds: ["a0"], cuts: ["c0"] });
       press("‹ Back");
       expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
@@ -303,7 +334,7 @@ describe("UpgradeFlow", () => {
       const note = document.querySelector("[data-used-note]")!;
       expect(note.textContent).toBe("Already in Prismari Artistry. Opening it again uses no credit.");
       expect(note.className).toContain("border-dashed");
-      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).not.toHaveAttribute("aria-disabled");
     });
 
     it("a fresh result keeps its History link and tracker, and draws no note even for a run in a deck", () => {
@@ -341,21 +372,21 @@ describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
     const { rerender } = open(p, { view: { kind: "results", runId: "r" }, apply: a });
     expect(screen.queryByRole("button", { name: /Start the deck/ })).toBeNull();
     press("Apply these 1 swaps");
-    expect(a.onApply).toHaveBeenCalledWith("r");
+    expect(a.onApply).toHaveBeenCalledWith("r", { adds: ["a0"], cuts: ["c0"] });
     rerender(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r" }} apply={{ ...a, pending: true }} />);
-    expect(screen.getByRole("button", { name: "Applying…" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Applying…" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("turns the press off with the line saying why when the list moved", () => {
     open(withPairs({ listFp: "old" }), { view: { kind: "results", runId: "r" }, apply: applyOn() });
     expect(screen.getByRole("note")).toHaveTextContent("so its swaps can’t apply to this deck");
-    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toHaveAttribute("aria-disabled", "true");
   });
 
   it("says a refusal only for the run it was about", () => {
     open(withPairs(), { view: { kind: "results", runId: "r" }, apply: applyOn({ refusals: { r: "One of these cuts is locked in this deck. Unlock it to apply the swaps." } }) });
     expect(screen.getByRole("note")).toHaveTextContent("Unlock it to apply the swaps.");
-    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toHaveAttribute("aria-disabled", "true");
     cleanup();
     openAnotherRun();
   });
@@ -365,7 +396,7 @@ function openAnotherRun() {
   // Another run, with no refusal recorded for it: its press is on.
   const other = { ...run, id: "r2", pairs: twelveCards(1) };
   render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={panel({ runs: [other] })} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r2" }} apply={{ nextVersion: 1, onApply: vi.fn(), pending: false, refusals: { r: "x" } }} />);
-  expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
+  expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).not.toHaveAttribute("aria-disabled");
 }
 
 describe("UpgradeFlow's close (fresh start: the next press follows the opening rule, not where the player went)", () => {

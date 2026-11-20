@@ -100,6 +100,14 @@ describe("readCardFacts (G19)", () => {
     expect(recordSoftFailure).toHaveBeenCalledTimes(1);
   });
 
+  it("reads the type line, art and text the result's lists group and draw by (fresh start R2), in the same select", async () => {
+    read.rows = [{ id: "bolt", cmc: 1, identity: ["R"], gameChanger: false, typeLine: "Instant", image: "https://img/bolt.jpg", oracleText: "Deal 3.", keywords: [] }];
+    const out = await readCardFacts(["bolt"]);
+    expect(read.selected).toHaveLength(1);
+    expect(read.selected[0]).toEqual(expect.arrayContaining(["typeLine", "image", "oracleText", "keywords"]));
+    expect(out.get("bolt")).toMatchObject({ typeLine: "Instant", image: "https://img/bolt.jpg", oracleText: "Deal 3.", keywords: [] });
+  });
+
   it("makes no read for no ids", async () => {
     expect(await readCardFacts([])).toEqual(new Map());
     expect(read.selected).toHaveLength(0);
