@@ -377,7 +377,8 @@ export function HistoryEntryItem({
       <button
         type="button"
         aria-expanded={isOpen}
-        onClick={onToggle}
+        // Closing puts the entry back on its first group: the link's tab is one-shot.
+        onClick={() => { if (isOpen) setTab(null); onToggle(); }}
         className="grid min-w-0 flex-1 cursor-pointer grid-cols-[1fr_auto] items-center gap-x-[12px] gap-y-[4px] border-0 bg-transparent p-[12px_14px] text-left text-[color:var(--fg)] md:grid-cols-[150px_1fr_auto]"
       >
         <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={{ color: TAG_INK[kind] }}>
