@@ -671,6 +671,26 @@ describe("loadCardDetail's round trips", () => {
     } finally { done(); }
   });
 
+  // Alternate printings from search (#3002): an owned card lists the catalog printings it holds none of.
+  it("lists the catalog printings an owned card holds none of, with no held-art fallback", async () => {
+    selectCollectionRows.mockResolvedValue([ownedRow]);
+    loadPrintingPrices.mockReset();
+    loadPrintingPrices.mockResolvedValue(null);
+    loadAvailability.mockReset();
+    loadAvailability.mockResolvedValue(new Map());
+    const catalogPrintings = [
+      { scryfallId: "p-held", setCode: "c21", setName: "Commander 2021", collectorNumber: "263", releasedAt: "2021-04-23", imageUri: "https://img/held.jpg", backImageUri: null, flavorName: null },
+      { scryfallId: "p-other", setCode: "eld", setName: "Throne of Eldraine", collectorNumber: "331", releasedAt: "2019-10-04", imageUri: null, backImageUri: null, flavorName: null },
+    ];
+    const { load } = await fresh({ catalog: [catalogRow], printings: Promise.resolve(catalogPrintings) });
+    try {
+      const card = await load("user_1", "o-1", undefined, ENV_VIEW);
+      expect(card?.otherPrintings?.map((x) => `${x.setCode}|${x.collectorNumber}`)).toEqual(["ELD|331"]);
+      // The aggregate's first held image must not dress a printing that has none of its own.
+      expect(card?.otherPrintings?.[0]?.imageUri ?? null).toBeNull();
+    } finally { done(); }
+  });
+
   // Combos one piece away UI-3: ONE combo read per card.
   describe("the combo block's read", () => {
     const line = { variantId: "v1", others: [], produces: [], steps: null, manaNeeded: null, manaValueNeeded: null, notablePrerequisites: null, usesCommander: false };

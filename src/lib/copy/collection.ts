@@ -508,6 +508,15 @@ export const printingBrowseCopy = {
   regionIntro: (n: number) => `${count(n)} printings. Select one to see it here.`,
   /** The tile's meta word for a printing the reader holds none of: the shipped quick-add word. */
   notOwned: preconsCopy.open.tileNotOwned,
+  /** An owned card: the catalog's printings beside the reader's own. */
+  triggerCountOwned: (total: number, owned: number) => `${count(total)} printings · you own ${count(owned)}`,
+  triggerPickedOfTotal: (total: number) => `· ${count(total)} printings`,
+  triggerAriaOwned: (total: number, owned: number, caption: string) =>
+    `Set: ${caption}. ${count(total)} printings, you own ${count(owned)}. Pick one of yours to represent this card, or select any to see it here.`,
+  regionIntroOwned: (total: number) =>
+    `${count(total)} printings. Pick one of yours to represent this card, or select any to see it here.`,
+  groupYours: (n: number) => `In your collection · ${count(n)}`,
+  groupOthers: (n: number) => `Other printings · ${count(n)}`,
   /** One printing in the catalog: the plain Set field says so, with no disclosure. */
   onlyPrinting: "The only printing",
   announceShowing: (setName: string, collectorNumber: string) =>

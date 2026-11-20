@@ -62,9 +62,9 @@ const KEEP = [
 /**
  * Fields the demo never carries. `added`, `since`, `wishlist` and `draftWants` are the account's own history and plans.
  * `commanderLegal`, `hasDecks` and `fitsRead` open Find a deck, whose read is a paid model call: absent reads as closed
- * (`BrowseCard`), so the demo draws no door to it.
+ * (`BrowseCard`), so the demo draws no door to it. `otherPrintings` is card search's alternate printings: the demo has no search.
  */
-const DROP = ["added", "since", "wishlist", "draftWants", "commanderLegal", "hasDecks", "fitsRead"] as const satisfies readonly (keyof BrowseCard)[];
+const DROP = ["added", "since", "wishlist", "draftWants", "commanderLegal", "hasDecks", "fitsRead", "otherPrintings"] as const satisfies readonly (keyof BrowseCard)[];
 type DroppedField = (typeof DROP)[number];
 
 // Every field of `BrowseCard` is in exactly one list: a new field fails to compile here until it is classified.

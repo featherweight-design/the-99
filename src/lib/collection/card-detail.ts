@@ -53,18 +53,15 @@ export type CatalogPrintingRow = {
 };
 
 /**
- * A BrowseCard for a card nobody owns: every printing the catalog knows, at quantity 0.
- *
- * The empty `finishes` is the honest answer rather than `{nonfoil: 0}` — the picker captions
- * a breakdown only when copies exist, and a zeroed finish would caption one that does not.
+ * Every catalog printing as an entry: the printing at quantity 0 with its OWN art, back and name, best first. The card's
+ * own image and back are the fallbacks for a printing ingested without one. `catalogCard` draws a card nobody owns from
+ * these, and an owned card's `otherPrintings` (below) are the ones it holds none of.
  */
-export function catalogCard(
-  card: CatalogCardRow,
+function catalogEntries(
+  fallback: { imageUri: string | null; backImageUri?: string | null },
   printingRows: CatalogPrintingRow[],
-  /** The card's price read, when it arrived: it decides which printing the modal opens on. */
-  prices: PrintingPrices | null = null,
-): BrowseCard {
-  const entries = printingRows
+) {
+  return printingRows
     .map((p) => ({
       scryfallId: p.scryfallId,
       // The printing's OWN picture. `printing.imageUri` below falls back to the oracle's, and a
@@ -84,7 +81,7 @@ export function catalogCard(
         imageUri: resolveImageUri({
           exactImageUri: p.imageUri,
           representativeImageUri: null,
-          cardImageUri: card.imageUri,
+          cardImageUri: fallback.imageUri,
         }),
         // Same shape, one tier shorter: this row IS the exact printing, so the
         // representative tier could only repeat it, and the oracle-level back is the
@@ -94,7 +91,7 @@ export function catalogCard(
           representativeImageUri: null,
           exactBackImageUri: p.backImageUri,
           representativeBackImageUri: null,
-          backImageUri: card.backImageUri,
+          backImageUri: fallback.backImageUri ?? null,
         }),
         // This row IS the exact printing, so its own column answers directly — no need
         // for `backImageIsOwn`'s tiering, which exists for the aggregate's three tiers.
@@ -103,6 +100,21 @@ export function catalogCard(
       } satisfies BrowsePrinting,
     }))
     .sort((a, b) => comparePrintings(a.printing, b.printing));
+}
+
+/**
+ * A BrowseCard for a card nobody owns: every printing the catalog knows, at quantity 0.
+ *
+ * The empty `finishes` is the honest answer rather than `{nonfoil: 0}` — the picker captions
+ * a breakdown only when copies exist, and a zeroed finish would caption one that does not.
+ */
+export function catalogCard(
+  card: CatalogCardRow,
+  printingRows: CatalogPrintingRow[],
+  /** The card's price read, when it arrived: it decides which printing the modal opens on. */
+  prices: PrintingPrices | null = null,
+): BrowseCard {
+  const entries = catalogEntries(card, printingRows);
   const printings: BrowsePrinting[] = entries.map((e) => e.printing);
 
   const result: BrowseCard = {
@@ -407,6 +419,31 @@ export const loadCardDetail = cache(async function loadCardDetail(
     return withCardCombos(faced, () => unsettle(combos));
   };
 
+  // Every catalog printing of the card. Fail-soft like every other stage-2 read: a card with no printings still renders.
+  const readPrintingRows = async (): Promise<CatalogPrintingRow[]> => {
+    try {
+      return await db
+        .select({
+          scryfallId: printings.scryfallId,
+          setCode: printings.setCode,
+          setName: sets.name,
+          collectorNumber: printings.collectorNumber,
+          releasedAt: sets.releasedAt,
+          imageUri: printings.imageUri,
+          backImageUri: printings.backImageUri,
+          flavorName: printings.flavorName,
+        })
+        .from(printings)
+        // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
+        .leftJoin(sets, eq(sets.code, printings.setCode))
+        .where(eq(printings.oracleId, oracleId))
+        // Fail-soft like every other stage-2 read: a card with no printings still renders, from the
+        // catalog row alone, where a rejection here would have lost the card.
+    } catch {
+      return [];
+    }
+  };
+
   if (owned.length > 0) {
     // `availability` only for a card the user owns: the query is driven by the collection, and every
     // reader of that field takes it to mean the card is held. An unowned card reads the same query
@@ -422,30 +459,22 @@ export const loadCardDetail = cache(async function loadCardDetail(
     const draftWants = import("../decks/draft-wants")
       .then(({ loadDraftWants }) => loadDraftWants(userId, oracleId))
       .catch(() => null);
-    const [a, p, pb, g, dw] = await Promise.all([availability, prices, proxiedBy, gate, draftWants]);
-    return assemble({ ...owned[0], availability: a, draftWants: dw, prices: p, proxiedBy: pb, ...g });
+    // Alternate printings from search (#3002): the catalog printings this reader holds none of, read beside the rest
+    // and drawn only where the details were opened from search.
+    const catalogRows = readPrintingRows();
+    const [a, p, pb, g, dw, rows] = await Promise.all([availability, prices, proxiedBy, gate, draftWants, catalogRows]);
+    const base = owned[0];
+    const held = new Set(base.printings.map((x) => `${x.setCode.toUpperCase()}|${x.collectorNumber}`));
+    // No fallback art: `base.imageUri` is the first HELD printing's, which would dress a no-art printing in another's picture.
+    const otherPrintings = catalogEntries({ imageUri: null }, rows)
+      .map((e) => e.printing)
+      .filter((x) => !held.has(`${x.setCode}|${x.collectorNumber}`));
+    return assemble({ ...base, otherPrintings, availability: a, draftWants: dw, prices: p, proxiedBy: pb, ...g });
   }
 
   // `card` is known here: stage 1 returned when the unowned branch found none.
   const found = card!;
-  const printingRows = db
-    .select({
-      scryfallId: printings.scryfallId,
-      setCode: printings.setCode,
-      setName: sets.name,
-      collectorNumber: printings.collectorNumber,
-      releasedAt: sets.releasedAt,
-      imageUri: printings.imageUri,
-      backImageUri: printings.backImageUri,
-      flavorName: printings.flavorName,
-    })
-    .from(printings)
-    // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
-    .leftJoin(sets, eq(sets.code, printings.setCode))
-    .where(eq(printings.oracleId, oracleId))
-    // Fail-soft like every other stage-2 read: a card with no printings still renders, from the
-    // catalog row alone, where a rejection here would have lost the card.
-    .catch(() => []);
+  const printingRows = readPrintingRows();
   // WHO WANTS A CARD THE READER OWNS NONE OF (Hugh, 2026-10-20): the claim read with the card read as
   // owning 0, and the draft wants beside it. Its own field, never `availability`, which every other
   // reader takes to mean the collection holds the card (the Fits picker's counts among them).

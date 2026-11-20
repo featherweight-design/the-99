@@ -330,6 +330,11 @@ export type BrowseCard = {
    */
   prices?: PrintingPrices | null;
   printings: BrowsePrinting[];
+  /**
+   * An OWNED card's catalog printings the reader holds none of, at quantity 0 (alternate printings from search, #3002).
+   * Absent on an unowned card, whose `printings` already ARE the catalog's.
+   */
+  otherPrintings?: BrowsePrinting[];
   setCodes: string[];
   primarySetCode: string;
   /**

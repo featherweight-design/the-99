@@ -498,12 +498,18 @@ export function CardModal({
   const [previewId, setPreviewId] = useState<string | null>(null);
   const browse = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length > 1;
   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
+  // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
+  const others = useMemo(
+    () => (browsePrintings && card.kind !== "token" && !deckScope && card.quantity > 0 ? card.otherPrintings ?? [] : []),
+    [browsePrintings, card.kind, card.quantity, card.otherPrintings, deckScope],
+  );
+  const browseOwned = others.length > 0;
   const previewAt = useMemo(() => {
-    const p = browse && previewId !== null ? card.printings.find((x) => x.scryfallId === previewId) : undefined;
+    const p = previewId === null ? undefined : browse ? card.printings.find((x) => x.scryfallId === previewId) : others.find((x) => x.scryfallId === previewId);
     return p === undefined
       ? null
       : { setCode: p.setCode, collectorNumber: p.collectorNumber, scryfallId: p.scryfallId, imageUri: p.imageUri, backImageUri: p.backImageUri, finish: undefined };
-  }, [browse, previewId, card.printings]);
+  }, [browse, previewId, card.printings, others]);
 
   // A caller can hand this component a re-read of the same card, so the seed above is not
   // the last word: without this, a preference that moved on the server would be ignored for
@@ -571,7 +577,8 @@ export function CardModal({
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
   const preview = useMemo<BrowseCard>(() => {
-    const at = picked ? null : previewAt ?? openAtPrinting;
+    // A preview wins over a pick made in this modal (picking an owned tile clears it), so an other printing can follow a pick.
+    const at = previewAt ?? (picked ? null : openAtPrinting);
     // A finish with no printing (a list card its holder owns none of): the reader's own printing, in the list's finish.
     if (at && at.setCode === undefined) {
       const next = { ...card, preferredPrinting: effective(pick), printings: card.printings.map((p) => ({ ...p, viewedFinish: at.finish })) };
@@ -779,7 +786,7 @@ export function CardModal({
   const isToken = card.kind === "token";
   // A token has no Collection-wide printing preference to write, so its picker is the DECK's alone (token
   // printings TP2): drawn only where a deck can save the pick.
-  const hasPicker = browse || ownedPrintings.length > 1
+  const hasPicker = browse || browseOwned || ownedPrintings.length > 1
     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
   const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
@@ -994,7 +1001,9 @@ export function CardModal({
   // is of what the reader OWNS, so an injected row is art and not a holding.
   const caption = printingCaption(preview, ownedPrintings);
   // A token's details show no card, so the button names the token; in a deck the pick is the deck's.
-  const triggerAria = browse
+  const triggerAria = browseOwned
+    ? printingBrowseCopy.triggerAriaOwned(ownedPrintings.length + others.length, ownedPrintings.length, caption)
+    : browse
     ? printingBrowseCopy.triggerAria(card.printings.length, caption)
     : deckScope
     ? deckPrintingsCopy.picker.triggerAria(ownedPrintings.length, caption, isToken ? card.name : undefined)
@@ -1005,7 +1014,7 @@ export function CardModal({
   // The mobile and desktop meta blocks are parallel trees with one hidden by CSS, so the
   // region is instantiated twice and each instance needs its own id for aria-controls.
   const keyOf = (p: BrowsePrinting | undefined) => (p === undefined ? null : printingKey(p));
-  const renderRegion = (id: string) => hasPicker && expanded ? (
+  const ownedRegion = (id: string) => (
     <PrintingRegion
       id={id}
       printings={browse ? card.printings : ownedPrintings}
@@ -1019,11 +1028,44 @@ export function CardModal({
       notice={deckScope && saveFailed ? deckPrintingsCopy.picker.failed : null}
       cardName={card.name}
       colorIdentity={card.colorIdentity}
-      onPick={browse ? (p) => setPreviewId(p.scryfallId ?? null) : onPick}
-      onReset={onReset}
-      onForget={onClearPick}
+      // Picking one of the reader's own printings ends a preview of another (alternate printings, owned card).
+      onPick={browse ? (p) => setPreviewId(p.scryfallId ?? null) : (p) => { setPreviewId(null); onPick(p); }}
+      onReset={() => { setPreviewId(null); onReset(); }}
+      onForget={() => { setPreviewId(null); onClearPick(); }}
       onAnnounce={setAnnouncement}
+      // Under the modal's own intro and head, with the finish chips stepped aside, when other printings follow.
+      {...(browseOwned ? { intro: null, finishChips: false } : {})}
     />
+  );
+  const renderRegion = (id: string) => hasPicker && expanded ? (
+    browseOwned ? (
+      <div>
+        <p className="mt-[14px] mb-0 text-[13.5px] md:mt-[22px]" style={{ color: "var(--fg-muted)" }}>
+          {printingBrowseCopy.regionIntroOwned(ownedPrintings.length + others.length)}
+        </p>
+        <p className="mt-[14px] mb-0 font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+          {printingBrowseCopy.groupYours(ownedPrintings.length)}
+        </p>
+        {ownedRegion(id)}
+        <p className="mt-[18px] mb-0 font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
+          {printingBrowseCopy.groupOthers(others.length)}
+        </p>
+        <PrintingRegion
+          id={`${id}-other`}
+          scope="browse"
+          intro={null}
+          printings={others}
+          preferred={null}
+          resolvedKey={resolved?.scryfallId ?? null}
+          cardName={card.name}
+          colorIdentity={card.colorIdentity}
+          onPick={(p) => setPreviewId(p.scryfallId ?? null)}
+          onReset={onReset}
+          onForget={onClearPick}
+          onAnnounce={setAnnouncement}
+        />
+      </div>
+    ) : ownedRegion(id)
   ) : null;
 
   // Arrow-key paging (`usePagingKeys`); a covered or dropping card, and one with a view open, attaches no listener.
@@ -1226,7 +1268,7 @@ export function CardModal({
             over the snap until the release, and the top transitions to whichever snap it chose. */}
         <CardModalSheet
           card={card} preview={preview} resolved={resolved} titleId={titleId} caption={caption} ownedPrintings={browse ? card.printings : ownedPrintings}
-          browse={browse} onlyPrinting={onlyPrinting}
+          browse={browse} printingTotal={browseOwned ? ownedPrintings.length + others.length : null} onlyPrinting={onlyPrinting}
           hasPicker={hasPicker} isToken={isToken} tokenNoSet={tokenNoSet} pick={pick} deckScope={deckScope} total={total} position={position}
           deckPage={deckPage} deckName={deckName} buyUrl={buyUrl} buyLabel={buyLabel}
           min={min} full={full} zoomed={zoomed} viewOpen={viewOpen} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
