@@ -148,8 +148,12 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
 
   // A done result on screen is seen: mark it once (only while its `seenAt` is null), so a run that landed is not offered as new again.
   const unseenId = stage === "results" && shown && shown.status === "done" && shown.seenAt === null ? shown.id : null;
+  // Runs already marked while this flow is open: leaving the result and coming back to it does not mark it again.
+  const marked = useRef(new Set<string>());
   useEffect(() => {
-    if (unseenId) void markUpgradeSeenAction(unseenId).catch(() => undefined);
+    if (!unseenId || marked.current.has(unseenId)) return;
+    marked.current.add(unseenId);
+    void markUpgradeSeenAction(unseenId).catch(() => undefined);
   }, [unseenId]);
 
   // The drawn "scrolls on" cue: a fade and a mono label while a pick step has more below the fold. The review of changes draws none.

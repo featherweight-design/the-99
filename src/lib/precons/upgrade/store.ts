@@ -130,14 +130,6 @@ export type StoredUpgrade = {
   unpicked: string[];
 };
 
-/** A result line's id: `a-<addOracleId>` for an add, `c-<cutOracleId>` for a cut. */
-export type UpgradeLineId = `a-${string}` | `c-${string}`;
-
-/** The line ids a run's pairs name: the only ids `setPick` accepts for it. */
-export function lineIdsOf(pairs: readonly Pick<StoredPair, "addId" | "cutId">[]): Set<string> {
-  return new Set(pairs.flatMap((p) => [`a-${p.addId}`, `c-${p.cutId}`]));
-}
-
 /** Done runs one read returns: History lists them all, so the page never holds a count that grows without a bound. */
 const HISTORY_MAX = 30;
 
@@ -184,21 +176,23 @@ export type SetPickResult = { ok: true; unpicked: string[] } | { ok: false; reas
 
 /**
  * Picks or unpicks one line of the reader's own done run: an atomic jsonb remove (picked) or add (unpicked, once) on
- * `unpicked`, so two quick presses on different lines both land. A line id the run's pairs do not name is refused, and
- * so is another reader's run or one not done.
+ * `unpicked`, so two quick presses on different lines both land. One statement: the WHERE requires the run's pairs to
+ * name the line (`a-<id>` an add's `addId`, `c-<id>` a cut's `cutId`), so another reader's run, one not done, and a line
+ * the run does not name all write nothing and read as `notFound` (a malformed id is refused before this, in the action).
  */
 export async function setPick(userId: string, runId: string, lineId: string, picked: boolean): Promise<SetPickResult> {
-  const [run] = await db.select({ pairs: preconUpgrades.pairs })
-    .from(preconUpgrades)
-    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.status, "done")));
-  if (!run) return { ok: false, reason: "notFound" };
-  if (!lineIdsOf(run.pairs).has(lineId)) return { ok: false, reason: "unknownLine" };
+  const field = lineId.startsWith("a-") ? "addId" : lineId.startsWith("c-") ? "cutId" : null;
+  if (!field) return { ok: false, reason: "notFound" };
+  const oracleId = lineId.slice(2);
   const next = picked
     ? sql`${preconUpgrades.unpicked} - ${lineId}::text`
     : sql`case when ${preconUpgrades.unpicked} @> jsonb_build_array(${lineId}::text) then ${preconUpgrades.unpicked} else ${preconUpgrades.unpicked} || jsonb_build_array(${lineId}::text) end`;
   const [row] = await db.update(preconUpgrades)
     .set({ unpicked: next })
-    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.status, "done")))
+    .where(and(
+      eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.status, "done"),
+      sql`${preconUpgrades.pairs} @> jsonb_build_array(jsonb_build_object(${field}::text, ${oracleId}::text))`,
+    ))
     .returning({ unpicked: preconUpgrades.unpicked });
   return row ? { ok: true, unpicked: row.unpicked } : { ok: false, reason: "notFound" };
 }

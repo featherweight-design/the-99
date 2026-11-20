@@ -74,7 +74,12 @@ describe("upgradeReplySchema", () => {
     expect(without.success && without.data.swaps[0].cutReason).toBeUndefined();
     // A blank or long cut reason never fails the paid reply: validate trims it (validate.test.ts).
     expect(upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why", cutReason: "" }] }).success).toBe(true);
-    expect(upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why", cutReason: "x".repeat(400) }] }).success).toBe(true);
+    expect(upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why", cutReason: "x".repeat(400) }] }).success).toBe(true);  });
+
+  it("parses a reply that sends cutReason: null", () => {
+    const r = upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why", cutReason: null }] });
+    expect(r.success).toBe(true);
+    expect(r.success && r.data.swaps[0].cutReason).toBeNull();
   });
 });
 

@@ -546,7 +546,11 @@ describe("UpgradeFlow marks a shown result seen (fresh start 1/4)", () => {
     open(panel({ runs: [run] }), { view: { kind: "results", runId: "r" } });
     expect(seen).not.toHaveBeenCalled();
     cleanup();
-    open(panel({ runs: [{ ...run, seenAt: null }] }));
+    open(panel({ runs: [{ ...run, seenAt: null }] }), { view: { kind: "results", runId: "r" }, onConfirm: vi.fn() });
+    expect(seen).toHaveBeenCalledTimes(1);
+    seen.mockClear();
+    press(/Try another strategy/);
+    expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
     expect(seen).not.toHaveBeenCalled();
   });
 });

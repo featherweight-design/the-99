@@ -99,9 +99,16 @@ export function validateUpgrade(
     if (kept.length >= room) { overCeiling++; return; }
     cuts.add(cut.oracleId);
     adds.add(add.oracleId);
-    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), cutReason: s.cutReason?.trim().slice(0, CUT_REASON_MAX).trim() || null, position });
+    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), cutReason: cutReasonOf(s.cutReason), position });
   });
   return { kept, drops, overCeiling };
+}
+
+/** The cut reason as stored: trimmed, cut to `CUT_REASON_MAX` code points (never splitting a surrogate pair), null when absent or blank. */
+function cutReasonOf(raw: string | null | undefined): string | null {
+  const t = raw?.trim();
+  if (!t) return null;
+  return Array.from(t).slice(0, CUT_REASON_MAX).join("").trimEnd() || null;
 }
 
 /** The total of the buys, summed from the pairs in code: the model's own `buy_total` was wrong in 4 of 10 measured runs. */

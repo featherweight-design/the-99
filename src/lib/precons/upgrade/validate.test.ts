@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { CARD_CAP_CENTS, MAX_SWAPS } from "./constants";
-import { buyTotalCents, validateUpgrade, type DeckEntry, type PoolEntry } from "./validate";
+import { buyTotalCents, CUT_REASON_MAX, validateUpgrade, type DeckEntry, type PoolEntry } from "./validate";
 
 const deck: DeckEntry[] = [
   { oracleId: "c0", name: "Atraxa, Praetors' Voice", isCommander: true },
@@ -92,6 +92,16 @@ describe("validateUpgrade: the reason per cut (fresh start 1/4)", () => {
     expect(r.kept[0].cutReason).toBe("off-plan and slow");
     expect(validateUpgrade([swap("weak card", "skullclamp")], { deck, pool }).kept[0].cutReason).toBeNull();
     expect(validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: "   " }], { deck, pool }).kept[0].cutReason).toBeNull();
-    expect(validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: "y".repeat(300) }], { deck, pool }).kept[0].cutReason).toHaveLength(120);
+    expect(validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: "y".repeat(300) }], { deck, pool }).kept[0].cutReason).toHaveLength(CUT_REASON_MAX);
+    expect(validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: null }], { deck, pool }).kept[0].cutReason).toBeNull();
+  });
+
+  it("cuts a long reason by code points, never leaving a lone surrogate", () => {
+    // The emoji's two UTF-16 units straddle a UTF-16 cut at CUT_REASON_MAX.
+    const raw = "y".repeat(CUT_REASON_MAX - 1) + "\u{1F525}" + "z".repeat(20);
+    const out = validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: raw }], { deck, pool }).kept[0].cutReason ?? "";
+    expect(Array.from(out)).toHaveLength(CUT_REASON_MAX);
+    expect(out.endsWith("\u{1F525}")).toBe(true);
+    expect(out).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
   });
 });
