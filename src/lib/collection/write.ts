@@ -157,7 +157,9 @@ export function placementToUndo(
   entryRows: readonly Pick<HistoryRow, "oracleId" | "placed">[],
 ): { oracleId: string; deckId: string; createdAt: string } | null {
   if (!undo?.deckId) return null;
-  const row = entryRows.find((r) => r.oracleId === undo.oracleId);
+  // The row that recorded THIS pick when the entry has several rows for the card (two printings in one entry).
+  const row = entryRows.find((r) => r.oracleId === undo.oracleId && r.placed?.deckId === undo.deckId)
+    ?? entryRows.find((r) => r.oracleId === undo.oracleId);
   if (!row) return null;
   const own = row.placed?.deckId === undo.deckId ? row.placed.createdAt : undefined;
   const createdAt = own ?? undo.createdAt;
@@ -181,6 +183,28 @@ export function restoreToUndo(
   if (!placed || placed.deckId !== undo.deckId || !was) return null;
   if (was.deckId !== undo.restore.deckId || was.copies !== undo.restore.copies) return null;
   return was;
+}
+
+/**
+ * The picks a reverted entry made on its own, from its own record (`HistoryRow.placed`, written when the entry's `opts.assign`
+ * created a reservation): what an undo that names none (History's Revert, a removal's Put back) drops and puts back, so a
+ * reservation a press made never outlives the copy it went with (#2983). Only rows that recorded an exact `createdAt` name a
+ * pick that can be dropped; the older reservation the press displaced comes back as it stood.
+ */
+export function entryPlacements(entryRows: readonly Pick<HistoryRow, "oracleId" | "placed">[]): UndoPlacement[] {
+  const seen = new Set<string>();
+  const out: UndoPlacement[] = [];
+  for (const r of entryRows) {
+    if (!r.placed?.createdAt || seen.has(`${r.oracleId}|${r.placed.deckId}`)) continue;
+    seen.add(`${r.oracleId}|${r.placed.deckId}`);
+    out.push({
+      oracleId: r.oracleId,
+      deckId: r.placed.deckId,
+      ...(r.placed.displaced ? { restore: { deckId: r.placed.displaced.deckId, copies: r.placed.displaced.copies } } : {}),
+    });
+  }
+  // Card claim locks are taken in one order everywhere (by card), so a multi-card revert cannot deadlock another write.
+  return out.sort((x, y) => (x.oracleId < y.oracleId ? -1 : x.oracleId > y.oracleId ? 1 : 0));
 }
 
 export type ChangeOptions = {
@@ -869,35 +893,39 @@ export async function applyCollectionChange(
         // MOVED an older reservation (A to B) puts A back as it stood, from the entry's own record;
         // a Change on the receipt records nothing, so its move drops B and A stays gone. Under the
         // card's claim lock, which every reservation write takes.
-        const drop = placementToUndo(change.undoPlacement, row.rows);
-        if (drop) {
-          await lockCardClaims(tx, userId, drop.oracleId);
-          const dropped = await tx.delete(cardAssignments).where(and(
-            eq(cardAssignments.userId, userId),
-            eq(cardAssignments.oracleId, drop.oracleId),
-            eq(cardAssignments.deckId, drop.deckId),
-            sql`${cardAssignments.createdAt} = ${drop.createdAt}::timestamp`,
-          )).returning({ deckId: cardAssignments.deckId });
-          const restore = dropped.length > 0 ? restoreToUndo(change.undoPlacement, row.rows) : null;
-          // Only once the press's own pick went, never over a row the restored deck already holds,
-          // and only for a deck the player still has. Another deck's reservation does not block it:
-          // a card can carry older reservations than the one-per-card rule, and the press moved only
-          // the oldest. Under that deck's row lock (after the card's, the order every reservation
-          // write takes), and swept by the deck's own prune: a deck that has since stopped claiming
-          // the card (a commit without it, a proxy) gets no reservation back.
-          if (restore) {
-            await tx.execute(sql`select id from decks where id = ${restore.deckId} and user_id = ${userId} for update`);
-            await tx.execute(sql`
-              insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
-              select ${userId}, ${drop.oracleId}, d.id, ${restore.copies}, ${restore.createdAt}::timestamp
-              from decks d
-              where d.id = ${restore.deckId} and d.user_id = ${userId}
-                and not exists (
-                  select 1 from card_assignments a
-                  where a.user_id = ${userId} and a.oracle_id = ${drop.oracleId} and a.deck_id = ${restore.deckId}
-                )
-            `);
-            await pruneOrphanAssignments(tx, restore.deckId);
+        // The press names its pick (I got it, the cart), or else the entry's own record does: a revert from History and a
+        // removal's Put back name none, and the keeper's reservation still goes with the copy.
+        for (const undo of change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows)) {
+          const drop = placementToUndo(undo, row.rows);
+          if (drop) {
+            await lockCardClaims(tx, userId, drop.oracleId);
+            const dropped = await tx.delete(cardAssignments).where(and(
+              eq(cardAssignments.userId, userId),
+              eq(cardAssignments.oracleId, drop.oracleId),
+              eq(cardAssignments.deckId, drop.deckId),
+              sql`${cardAssignments.createdAt} = ${drop.createdAt}::timestamp`,
+            )).returning({ deckId: cardAssignments.deckId });
+            const restore = dropped.length > 0 ? restoreToUndo(undo, row.rows) : null;
+            // Only once the press's own pick went, never over a row the restored deck already holds,
+            // and only for a deck the player still has. Another deck's reservation does not block it:
+            // a card can carry older reservations than the one-per-card rule, and the press moved only
+            // the oldest. Under that deck's row lock (after the card's, the order every reservation
+            // write takes), and swept by the deck's own prune: a deck that has since stopped claiming
+            // the card (a commit without it, a proxy) gets no reservation back.
+            if (restore) {
+              await tx.execute(sql`select id from decks where id = ${restore.deckId} and user_id = ${userId} for update`);
+              await tx.execute(sql`
+                insert into card_assignments (user_id, oracle_id, deck_id, copies, created_at)
+                select ${userId}, ${drop.oracleId}, d.id, ${restore.copies}, ${restore.createdAt}::timestamp
+                from decks d
+                where d.id = ${restore.deckId} and d.user_id = ${userId}
+                  and not exists (
+                    select 1 from card_assignments a
+                    where a.user_id = ${userId} and a.oracle_id = ${drop.oracleId} and a.deck_id = ${restore.deckId}
+                  )
+              `);
+              await pruneOrphanAssignments(tx, restore.deckId);
+            }
           }
         }
       }
