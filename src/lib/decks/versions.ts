@@ -138,10 +138,11 @@ export async function commitVersion(
   note: string | null,
   tx: Tx | undefined,
   snapshot: CommitSnapshot | undefined,
-  /** The number a FIRST commit takes: 1, or 0 for a precon start, whose list is the precon's v0. Ignored
-   *  once the deck has a version, which every later commit counts on from. */
-  /** `pendingLocked`: the cards whose claims the caller locked (`lockPendingClaims`) BEFORE the deck row, the
-   *  only pending picks this commit may convert (pending-picks.ts, LOCK ORDER). Omitted, every pick lapses. */
+  /** `first`: the number a FIRST commit takes, 1, or 0 for a precon start, whose list is the precon's v0;
+   *  ignored once the deck has a version, which every later commit counts on from. `pendingLocked`: the
+   *  cards whose claims the caller locked (`lockPendingClaims`) BEFORE the deck row, the only pending picks
+   *  this commit may convert (pending-picks.ts, LOCK ORDER); omitted, no pick converts and each stays
+   *  pending until a commit that locked it. */
   opts: { first: 0 | 1; pendingLocked?: ReadonlySet<string> } = { first: 1 },
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   const locked = opts.pendingLocked ?? new Set<string>();

@@ -37,33 +37,35 @@ function fakeTx(results: unknown[]) {
 describe("assignPendingIn", () => {
   const deck = [{ id: D }];
   const newest = [{ id: V, commanderOracleId: "x", partnerOracleId: null }];
+  const inDraft = [{ quantity: 1 }];
 
-  it("refuses a deck that is not the player's, a brew, a deck that lists the card, and a commander", async () => {
+  it("refuses a deck that is not the player's, a brew, a deck that lists the card, a commander, and a card the draft lacks", async () => {
     expect(await assignPendingIn(fakeTx([[]]).tx, U, D, C)).toBe("not-your-deck");
     expect(await assignPendingIn(fakeTx([deck, []]).tx, U, D, C)).toBe("deck-not-committed");
     expect(await assignPendingIn(fakeTx([deck, newest, [{ quantity: 1 }]]).tx, U, D, C)).toBe("deck-already-lists-it");
     expect(await assignPendingIn(fakeTx([deck, [{ ...newest[0], commanderOracleId: C }]]).tx, U, D, C)).toBe("target-is-commander");
+    const t = fakeTx([deck, newest, [], []]);
+    expect(await assignPendingIn(t.tx, U, D, C)).toBe("not-in-draft");
+    expect(t.log.some((l) => l.op === "insert" || l.op === "delete")).toBe(false);
   });
 
   it("refuses when no copy is left to give, writing nothing", async () => {
-    const t = fakeTx([deck, newest, [], { rows: [{ giveable: 0 }] }]);
+    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 0 }] }]);
     expect(await assignPendingIn(t.tx, U, D, C)).toBe("no-supply-left");
     expect(t.log.some((l) => l.op === "insert" || l.op === "delete")).toBe(false);
   });
 
-  it("writes the pick, deleting a sole authored reservation and reporting it displaced", async () => {
-    const t = fakeTx([deck, newest, [], { rows: [{ giveable: 1 }] },
-      [{ deckId: "other", copies: 1, createdAt: "2026-01-01 00:00:00" }], undefined, [], undefined]);
-    const report: PendingReport = {};
-    expect(await assignPendingIn(t.tx, U, D, C, report)).toBeNull();
-    expect(report.displaced).toEqual({ deckId: "other", copies: 1, createdAt: "2026-01-01 00:00:00" });
-    expect(t.log.map((l) => l.op).slice(-3)).toEqual(["delete", "select", "insert"]);
+  it("writes the pick and deletes nothing: the old reservation keeps holding the copy until the commit", async () => {
+    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 1 }] }, [], undefined]);
+    expect(await assignPendingIn(t.tx, U, D, C)).toBeNull();
+    expect(t.log.map((l) => l.op)).toEqual(["select", "select", "select", "select", "execute", "select", "insert"]);
+    expect(t.log.some((l) => l.op === "delete")).toBe(false);
     expect(t.left()).toBe(0);
   });
 
   it("upserts a second pick for another deck, naming the deck it replaced", async () => {
-    const t = fakeTx([deck, newest, [], { rows: [{ giveable: 1 }] }, [], [{ deckId: "older-deck" }], undefined]);
-    const report: { replacedDeckId?: string } = {};
+    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 1 }] }, [{ deckId: "older-deck" }], undefined]);
+    const report: PendingReport = {};
     expect(await assignPendingIn(t.tx, U, D, C, report)).toBeNull();
     expect(report.replacedDeckId).toBe("older-deck");
   });
@@ -72,8 +74,9 @@ describe("assignPendingIn", () => {
 describe("applyPendingPicks", () => {
   it("converts a locked pick whose card the version lists, then deletes the row", async () => {
     assignCopyIn.mockClear();
-    const t = fakeTx([[{ userId: U, oracleId: C }], [{ id: C }], undefined]);
+    const t = fakeTx([[{ userId: U, oracleId: C }], [{ oracleId: C }], undefined]);
     await applyPendingPicks(t.tx, D, V, new Set([C]));
+    // `set` mode is the one whose taken-branch moves the player's old reservation, at conversion time.
     expect(assignCopyIn).toHaveBeenCalledWith(t.tx, U, C, D, "set");
     expect(t.log.map((l) => l.op)).toEqual(["select", "select", "delete"]);
   });
@@ -86,12 +89,29 @@ describe("applyPendingPicks", () => {
     expect(t.log.map((l) => l.op)).toEqual(["select", "select", "delete"]);
   });
 
-  it("never takes a card lock under the deck lock: a pick the caller did not lock lapses", async () => {
+  it("deletes an unlocked pick only when the version does not list its card", async () => {
     assignCopyIn.mockClear();
-    const t = fakeTx([[{ userId: U, oracleId: C }], undefined]);
+    const t = fakeTx([[{ userId: U, oracleId: C }], [], undefined]);
     await applyPendingPicks(t.tx, D, V, new Set());
     expect(assignCopyIn).not.toHaveBeenCalled();
-    expect(t.log.map((l) => l.op)).toEqual(["select", "delete"]);
+    expect(t.log.map((l) => l.op)).toEqual(["select", "select", "delete"]);
+  });
+
+  it("leaves a listed pick pending when the caller did not lock its card, taking no card lock under the deck lock", async () => {
+    assignCopyIn.mockClear();
+    const t = fakeTx([[{ userId: U, oracleId: C }], [{ oracleId: C }]]);
+    await applyPendingPicks(t.tx, D, V, new Set());
+    expect(assignCopyIn).not.toHaveBeenCalled();
+    expect(t.log.map((l) => l.op)).toEqual(["select", "select"]);
+  });
+
+  it("asks for the version's cards once, and not at all when the deck has no pending picks", async () => {
+    const none = fakeTx([[]]);
+    await applyPendingPicks(none.tx, D, V, new Set());
+    expect(none.log.map((l) => l.op)).toEqual(["select"]);
+    const two = fakeTx([[{ userId: U, oracleId: C }, { userId: U, oracleId: "z" }], [{ oracleId: C }, { oracleId: "z" }], undefined, undefined]);
+    await applyPendingPicks(two.tx, D, V, new Set([C, "z"]));
+    expect(two.log.filter((l) => l.op === "select")).toHaveLength(2);
   });
 
   it("deletes every pick of the deck on a discard", async () => {

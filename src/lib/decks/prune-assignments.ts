@@ -1,7 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { db } from "../../db";
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+import type { Tx } from "./assign";
 
 /** Anything that can run one statement — a transaction, or the db singleton. Same shape, and for
  * the same reason, as `prune-proxies`: the statement is a single DELETE either way. */
