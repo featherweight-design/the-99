@@ -54,6 +54,7 @@ export const ROUTE_PATTERNS: readonly string[] = [
   "/api/scan-lab/spike",
   "/api/spare-requests",
   "/api/stripe-webhook",
+  "/api/unsubscribe",
   "/card/[slug]",
   "/collection",
   "/collection/history",
@@ -104,6 +105,7 @@ export const ROUTE_PATTERNS: readonly string[] = [
   "/sign-up",
   "/sso-callback",
   "/terms",
+  "/unsubscribe",
 ];
 
 const SPLIT = ROUTE_PATTERNS.map((p) => ({ pattern: p, parts: p === "/" ? [] : p.slice(1).split("/") }));

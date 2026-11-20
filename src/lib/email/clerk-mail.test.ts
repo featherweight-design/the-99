@@ -34,7 +34,7 @@ describe("clerkEmailParts", () => {
       expect(m.html).toContain(`<re-divider background-color="${BRASS}" height="3px">`);
       expect(m.html).toContain(`border="1px solid ${BRASS}" border-radius="10px"`);
       expect(m.html).toContain("&#9670;&#9670;&#9670;");
-      expect(m.html).toContain("Search your library for a commander.");
+      expect(m.html).toContain("99 problems, but your commander ain’t one.");
       expect(m.html).not.toContain("app_logo");
       expect(clerkEmailParts(kind, "https://staging.example.dev").html).not.toContain("https://the-99.dev");
       expect(m.text).not.toMatch(/[’‘“”]/);

@@ -1723,6 +1723,13 @@
       "when": 1795180508450,
       "tag": "0247_spare_requests_withdrawn_at",
       "breakpoints": true
+    },
+    {
+      "idx": 245,
+      "version": "7",
+      "when": 1795181601390,
+      "tag": "0245_launch_list_sent_at",
+      "breakpoints": true
     }
   ]
 }

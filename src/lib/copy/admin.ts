@@ -913,3 +913,32 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
   SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "Pick how many changes, ask for something, and see each one as it arrives." },
   WELCOME_CREDITS_ENABLED: { label: "Welcome credits", description: "Gives a new sign-up 15 credits that expire after 30 days. Off stops new grants; a lot already given is still spent." },
 };
+
+/**
+ * The launch email's admin card on /admin/invites (launch email R2c G3; eng-drawn admin tooling, orchestrator ruling
+ * 2026-11-20): a dry run first, then Send next N behind a confirm that names the count. Shown whatever the flyer switch says.
+ */
+export const launchEmailAdminCopy = {
+  title: "Launch email",
+  meta: "One email to everyone on the launch list, sent in batches.",
+  check: "Dry run",
+  checking: "Checking…",
+  waiting: (n: number) => (n === 1 ? "1 address waiting." : `${n} addresses waiting.`),
+  none: "Every address has been sent.",
+  countLabel: "How many to send",
+  send: (n: number) => `Send next ${n}`,
+  confirm: (n: number) => (n === 1 ? "Send the launch email to 1 address now? This can't be undone." : `Send the launch email to ${n} addresses now? This can't be undone.`),
+  confirmYes: (n: number) => `Yes, send ${n}`,
+  cancel: "Cancel",
+  sending: "Sending…",
+  result: (sent: number, released: number, uncertain: number, waiting: number) =>
+    `Sent ${sent}. ${released > 0 ? `${released} put back to try again. ` : ""}${uncertain > 0 ? `${uncertain} unconfirmed, not retried. ` : ""}${waiting} still waiting.`,
+  capped: "Today's mail cap is reached. Send the rest tomorrow.",
+  refused: {
+    "no-launch-date": "Set the launch date first.",
+    "before-launch": "The launch date hasn't come yet.",
+    unconfigured: "Email isn't configured on this deployment.",
+    "images-missing": "The email's images aren't on this deployment yet.",
+    failed: "That didn't go through. Try again.",
+  },
+} as const;

@@ -95,7 +95,7 @@ This is `production/sign-in-code.html` (the reset one differs only in its words)
                 <span style="letter-spacing:8px;">&#9670;&#9670;&#9670;</span>
             </re-text>
             <re-text align="center" margin="0px 0px 14px 0px" font-size="15px" font-style="italic" font-weight="normal" line-height="22px" color="#C6B79A">
-                <span style="font-family:Georgia,'Times New Roman',Times,serif;">Search your library for a commander.</span>
+                <span style="font-family:Georgia,'Times New Roman',Times,serif;">99 problems, but your commander ain’t one.</span>
             </re-text>
             <re-text align="center" margin="0px 0px 0px 0px" font-size="13px" font-weight="normal" line-height="21px" color="#A89B84">
                 You’re getting this because someone tried to sign in to The 99 with this address.<br>Replies to this email aren’t read.<br><a href="https://the-99.dev" style="color:#A89B84;text-decoration:underline;">the-99.dev</a>

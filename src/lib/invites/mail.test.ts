@@ -90,6 +90,16 @@ describe("sendMail", () => {
     expect(body(1)).not.toHaveProperty("tags");
   });
 
+  it("sends the one-click unsubscribe headers only for a mail that carries a listUnsubscribe URL", async () => {
+    const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
+    await sendMail(mailConfig(FULL), { ...MAIL, listUnsubscribe: "https://the-99.dev/api/unsubscribe?t=abc" }, fetchImpl as unknown as typeof fetch);
+    await sendMail(mailConfig(FULL), MAIL, fetchImpl as unknown as typeof fetch);
+    const body = (n: number) => JSON.parse((fetchImpl.mock.calls[n] as unknown as [string, RequestInit])[1].body as string);
+    expect(body(0).headers).toEqual({ "List-Unsubscribe": "<https://the-99.dev/api/unsubscribe?t=abc>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" });
+    expect(body(0)).not.toHaveProperty("listUnsubscribe");
+    expect(body(1)).not.toHaveProperty("headers");
+  });
+
   it("sends Resend's Idempotency-Key only for a mail that carries one, never in the body", async () => {
     const fetchImpl = vi.fn(async () => new Response("{}", { status: 200 }));
     await sendMail(mailConfig(FULL), { ...MAIL, idempotencyKey: "invite-email/abc" }, fetchImpl as unknown as typeof fetch);

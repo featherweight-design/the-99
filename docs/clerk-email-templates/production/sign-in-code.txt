@@ -6,6 +6,6 @@ It expires in 10 minutes. If you didn't try to sign in, you can ignore this emai
 
 --
 You're getting this because someone tried to sign in to The 99 with this address.
-Search your library for a commander.
+99 problems, but your commander ain't one.
 Replies to this email aren't read.
 https://the-99.dev

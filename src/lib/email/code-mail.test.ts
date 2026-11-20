@@ -47,7 +47,7 @@ describe("codeEmailParts", () => {
     expect(lines.slice(-5)).toEqual([
       "--",
       "You're getting this because someone asked for a code for this address on The 99.",
-      "Search your library for a commander.",
+      "99 problems, but your commander ain't one.",
       "Replies to this email aren't read.",
       "https://the-99.dev",
     ]);

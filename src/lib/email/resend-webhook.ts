@@ -34,7 +34,7 @@ export type ReportedEvent = (typeof REPORTED_EVENTS)[number];
 export const isReportedEvent = (type: unknown): type is ReportedEvent => (REPORTED_EVENTS as readonly unknown[]).includes(type);
 
 /**
- * The template tag `sendMail` put on the mail (`code`, `flyer-code`, `invite`), or `unknown`. Resend echoes tags as an object
+ * The template tag `sendMail` put on the mail (`code`, `flyer-code`, `invite`, `launch`), or `unknown`. Resend echoes tags as an object
  * (or a list of name/value pairs in older payloads). Only a value of the shape sent is returned, so a tag that somehow carried
  * anything else, an address included, never reaches Sentry.
  */
