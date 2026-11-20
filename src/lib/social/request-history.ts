@@ -16,7 +16,7 @@ type Executor = Pick<typeof db, "execute">;
 
 export const HISTORY_PAGE = 30;
 export type HistoryDirection = "asked" | "received";
-/** Keyset on (created_at, id), newest first: the last row of the page before. `createdAt` is the database's own text for the stamp (microseconds), never a JS Date, so a tie within a millisecond neither repeats nor skips a row. */
+/** Keyset on (created_at, id), newest first: the last row of the page before. `createdAt` is the database's own ISO text for the stamp in UTC with microseconds (`to_char`, so no session DateStyle or zone can change it), never a JS Date, so a tie within a millisecond neither repeats nor skips a row. */
 export type HistoryCursor = { createdAt: string; id: string };
 
 export type HistoryEntry = {
@@ -37,6 +37,13 @@ type Row = {
   commander_oracle_id: string | null; commander_name: string | null; commander_art: string | null;
 };
 
+const CURSOR_AT = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** A cursor comes back from a client: a malformed one reads as no cursor (the first page) rather than a cast error. */
+export function validCursor(c: HistoryCursor): boolean {
+  return CURSOR_AT.test(c.createdAt) && UUID.test(c.id);
+}
+
 /**
  * One page. `asked`: the viewer is the asker and the other side the holder; `received`: the reverse, and `withdrawn` is left out.
  * The friendship join is the viewer's own row (`friend_links.user_id = viewer`). Fetches one row past the page to know a next exists.
@@ -46,8 +53,8 @@ export function requestHistoryQuery(viewerId: string, direction: HistoryDirectio
   const mine = asked ? sql`hsr.asker_user_id` : sql`hsr.holder_user_id`;
   const theirs = asked ? sql`hsr.holder_user_id` : sql`hsr.asker_user_id`;
   const notWithdrawn = asked ? sql`` : sql` and hsr.status <> 'withdrawn'`;
-  const after = cursor ? sql` and (hsr.created_at, hsr.id) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)` : sql``;
-  return sql`select hsr.id, hsr.oracle_id, hsr.status, hsr.created_at, hsr.answered_at, hsr.withdrawn_at, hsr.created_at::text as cursor_at, hsr.copies,
+  const after = cursor && validCursor(cursor) ? sql` and (hsr.created_at, hsr.id) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)` : sql``;
+  return sql`select hsr.id, hsr.oracle_id, hsr.status, hsr.created_at, hsr.answered_at, hsr.withdrawn_at, to_char(hsr.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as cursor_at, hsr.copies,
       hsp.public_id::text as public_id, hsp.display_name, hc.name as card_name, hc.image_uri as card_image, hdk.name as deck_name,
       hcc.oracle_id as commander_oracle_id, hcc.name as commander_name, coalesce(hfp.art_crop_uri, hcc.art_crop_uri) as commander_art
     from ${spareRequests} hsr
@@ -62,10 +69,10 @@ export function requestHistoryQuery(viewerId: string, direction: HistoryDirectio
     limit ${limit + 1}`;
 }
 
-/** How many of the viewer's own requests (either side) name someone who is not a friend now. A count: no names are read (G3). */
+/** How many requests the history would show the viewer (a withdrawn ask never shows on the holder's side) that name someone who is not a friend now. A count: no names are read (G3). */
 export function hiddenHistoryCountQuery(viewerId: string): SQL {
   return sql`select count(*)::int as n from ${spareRequests} hcr
-    where (hcr.asker_user_id = ${viewerId} or hcr.holder_user_id = ${viewerId})
+    where ((hcr.asker_user_id = ${viewerId}) or (hcr.holder_user_id = ${viewerId} and hcr.status <> 'withdrawn'))
       and not exists (
         select 1 from ${friendLinks} hcl
         where hcl.user_id = ${viewerId}

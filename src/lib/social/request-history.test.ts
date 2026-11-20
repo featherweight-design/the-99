@@ -4,13 +4,13 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: { execute: vi.fn() } }));
 
-import { endedAtOf, hiddenHistoryCountQuery, HISTORY_PAGE, loadRequestHistory, requestHistoryQuery } from "./request-history";
+import { endedAtOf, hiddenHistoryCountQuery, validCursor, HISTORY_PAGE, loadRequestHistory, requestHistoryQuery } from "./request-history";
 
 const render = (q: SQL) => {
   const { sql, params } = new PgDialect().sqlToQuery(q);
   return { q: sql.replace(/\s+/g, " "), params };
 };
-const CURSOR = { createdAt: "2026-11-01 10:00:00.123456+00", id: "1b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b" };
+const CURSOR = { createdAt: "2026-11-01T10:00:00.123456Z", id: "1b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b" };
 
 describe("requestHistoryQuery", () => {
   it("You asked: the viewer is the asker, joined to the viewer's own friendship row, and cleared or withdrawn asks stay", () => {
@@ -37,12 +37,25 @@ describe("requestHistoryQuery", () => {
   });
 });
 
+describe("validCursor", () => {
+  it("accepts the reader's own cursor and refuses anything else, which reads as the first page", () => {
+    expect(validCursor(CURSOR)).toBe(true);
+    expect(validCursor({ ...CURSOR, createdAt: "yesterday" })).toBe(false);
+    expect(validCursor({ ...CURSOR, id: "x'; drop table" })).toBe(false);
+    const { q, params } = render(requestHistoryQuery("viewer", "asked", { createdAt: "nope", id: CURSOR.id }));
+    expect(q).not.toContain("hsr.created_at, hsr.id) <");
+    expect(params).toEqual(["viewer", HISTORY_PAGE + 1]);
+  });
+});
+
 describe("hiddenHistoryCountQuery", () => {
   it("counts the viewer's rows whose other side has no friendship row, and reads no name", () => {
     const { q } = render(hiddenHistoryCountQuery("viewer"));
     expect(q).toContain("select count(*)::int as n");
     expect(q).toContain("not exists");
     expect(q).not.toContain("display_name");
+    // The history never shows a withdrawn ask to its holder, so the foot line does not count one.
+    expect(q).toContain("hcr.holder_user_id = $2 and hcr.status <> 'withdrawn'");
   });
 });
 
