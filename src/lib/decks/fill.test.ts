@@ -1511,8 +1511,15 @@ describe("the win-condition step", () => {
     const held = [c({ oracleId: "thoracle", typeLine: "Creature" }), c({ oracleId: "consult", typeLine: "Instant" })];
     const plan = planFill(pool, { ...FLAT, held, wincons: [["thoracle", "consult"], ["hoof"]] });
     expect(wincon(plan)).toEqual([]);
+    // A held set counts wherever it sits: the combo listed before it is not placed.
+    const heldLater = planFill(pool, { ...FLAT, held, wincons: [["hoof", "bond"], ["thoracle", "consult"]] });
+    expect(wincon(heldLater)).toEqual([]);
     const capped = planFill(pool, { ...FLAT, wincons: [["p0", "p1", "p2", "p3", "p4"], ["hoof"]] });
     expect(wincon(capped)).toEqual(["hoof"]);
+  });
+
+  it("does not run on a short fill (a top-off)", () => {
+    expect(wincon(planFill(pool, { ...FLAT, slots: 3, wincons: [["hoof"]] }))).toEqual([]);
   });
 
   it("files a placed card under its role, sourced, so it is never residual", () => {

@@ -257,6 +257,8 @@ function withinInclusionBand(other: FillCandidate, cursor: FillCandidate): boole
 /** How many win-condition cards the fill aims for, and the most it places for them (engine plan C1). */
 export const WINCON_MIN = 2;
 export const WINCON_MAX = 4;
+/** The fewest cards a fill must plan for the step to run: below it, the fill is a top-off. */
+export const WINCON_FILL_MIN = 20;
 
 export type FillGate = {
   admits(candidate: FillCandidate): boolean;
@@ -659,19 +661,21 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
   }
 
   // THE WIN-CONDITION STEP (engine plan C1): whole sets, best first, until the deck can win.
-  // A FULL BUILD ONLY. A top-off of a few slots fills what the deck lacks, and a win set placed first
-  // would take the slots its missing ramp or removal needed.
-  if (args.wincons?.length && limit >= bodySize / 2) {
+  // NOT ON A SHORT FILL. A top-off of a few slots fills what the deck lacks, and a win set placed
+  // first would take the slots its missing ramp or removal needed. A fill planning `WINCON_FILL_MIN`
+  // or more cards (a create, with or without a selection) runs the step.
+  if (args.wincons?.length && limit >= WINCON_FILL_MIN) {
     const inPool = new Map(usable.map((c) => [c.oracleId, c]));
     const heldIds = new Set((held ?? []).map((c) => c.oracleId));
-    let winCards = 0;
+    // Every set the deck already holds (held, or placed by an earlier step) counts first, wherever it
+    // sits in the list: a deck holding two finishers is not handed a combo it does not need.
+    const inDeck = (id: string) => heldIds.has(id) || spent.has(id);
+    let winCards = args.wincons.filter((set) => set.length > 0 && set.every(inDeck)).reduce((n, set) => n + set.length, 0);
     for (const set of args.wincons) {
       if (winCards >= WINCON_MIN) break;
-      if (set.length === 0) continue;
-      // Already in the deck, held or placed by an earlier step: it counts, and costs no slot.
-      if (set.every((id) => heldIds.has(id) || spent.has(id))) { winCards += set.length; continue; }
+      if (set.length === 0 || set.every(inDeck)) continue;
       if (winCards + set.length > WINCON_MAX) continue;
-      const missing = set.filter((id) => !heldIds.has(id) && !spent.has(id));
+      const missing = set.filter((id) => !inDeck(id));
       const cards = missing.map((id) => inPool.get(id));
       if (cards.some((c) => c === undefined)) continue;
       const pieces = cards as FillCandidate[];
