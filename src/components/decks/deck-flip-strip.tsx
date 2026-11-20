@@ -2,9 +2,9 @@
 // the right. One state for both widths (`useDeckFlip`, called once by BuilderSpine), drawn once per width by the spines.
 "use client";
 
-import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { useContext, useEffect, useMemo, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { deckFlipCopy } from "../../lib/copy/deck-flip";
 import { DECK_SORT_KEY } from "../../lib/decks/sort";
 import { FLIP_KEY, parseTrail, resolveFlip, type FlipDeck } from "../../lib/decks/flip";
@@ -42,7 +42,8 @@ export function arrowFlips(e: KeyboardEvent): boolean {
  * hold. `search` is the builder's live view as a query (`?tab=`, `?panel=`), kept on the next deck.
  */
 export function useDeckFlip(decks: readonly FlipDeck[] | undefined, id: string, search: string) {
-  const router = useRouter();
+  // The context, not `useRouter`: the spine draws in places no app router is mounted (its tests), and `useRouter` throws there.
+  const router = useContext(AppRouterContext);
   const mounted = useSyncExternalStore(noop, ready, notReady);
   const flip = useMemo(
     () => (mounted && decks ? resolveFlip(decks, parseTrail(readTrailRaw()), readRaw(DECK_SORT_KEY), id) : null),
@@ -51,12 +52,12 @@ export function useDeckFlip(decks: readonly FlipDeck[] | undefined, id: string, 
   const prevId = flip?.prev.id;
   const nextId = flip?.next.id;
   useEffect(() => {
-    if (!prevId || !nextId) return;
+    if (!router || !prevId || !nextId) return;
     router.prefetch(`/decks/${prevId}${search}`);
     router.prefetch(`/decks/${nextId}${search}`);
   }, [router, prevId, nextId, search]);
   useEffect(() => {
-    if (!prevId || !nextId) return;
+    if (!router || !prevId || !nextId) return;
     const onKey = (e: KeyboardEvent) => {
       if (!window.matchMedia("(min-width: 768px)").matches || !arrowFlips(e)) return;
       e.preventDefault();
