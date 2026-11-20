@@ -37,7 +37,7 @@ export function PushLanding({ visit }: { visit: string }) {
     const landing = readPushLanding(window.location.search);
     const stripped = strippedLanding(window.location.href);
     if (stripped) mirrorUrl(stripped, window.history.state);
-    if (landing && detail) detail.open(landing.card, undefined, undefined, landing.combo ? { combo: true } : undefined);
+    if (landing && detail) detail.open(landing.card, undefined, undefined, landing.combo ? { combo: true, ...(landing.variant ? { comboVariantId: landing.variant } : {}) } : undefined);
     // Mount only: the provider's value changes as a card opens, and the landing is spent by then.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

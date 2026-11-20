@@ -10,7 +10,7 @@ const ask = (key: string, friend = "Peter"): PushItem => ({ kind: "spare-request
 const answer = (key: string, friend: string, said: "yes" | "no"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", image: null, answer: said });
 const post = (key: string, title: string, kind: "secret-lair" | "commander-decklists" | "wizards-news" = "secret-lair", over: Partial<{ excerpt: string | null; image: string | null }> = {}): PushItem =>
   ({ kind, key: `post:${key}`, batch: `${kind}:2026-10-29`, title, excerpt: "A drop of five.", image: "https://images.ctfassets.net/h.jpg", href: `/out/wizards/${key}`, ...over });
-const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
+const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, variantId: "1-2", a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
 
 describe("one item of each kind (the handoff's table)", () => {
   it("new set: the set's page", () => {
@@ -47,7 +47,7 @@ describe("one item of each kind (the handoff's table)", () => {
   });
   it("combo: names its kind, Home with the first piece open for its combo", () => {
     expect(toMessage([combo("c1")])).toMatchObject({
-      title: "You can make a combo", body: "Thassa's Oracle + Demonic Consultation. You added Demonic Consultation.", route: "/", openCard: "o-c1", openCombo: true,
+      title: "You can make a combo", body: "Thassa's Oracle + Demonic Consultation. You added Demonic Consultation.", route: "/", openCard: "o-c1", openCombo: true, openVariant: "1-2",
     });
   });
 });

@@ -79,8 +79,8 @@ export type FeedView = {
   owned: { owned: number; of: number } | null;
   /** A price drop's two figures, in cents. */
   drop: { fromCents: number; toCents: number } | null;
-  /** A combo's two pieces by name, and the piece the reader's write added. */
-  combo: { pieces: [string, string]; added: string } | null;
+  /** A combo's two pieces by name, the piece the reader's write added, and its Spellbook variant (what the press opens the sheet for). */
+  combo: { pieces: [string, string]; added: string; variantId: string | null } | null;
   /**
    * A spare request LEADING Home, while its ask is still open and the holder still offers the card (`loadIncomingAsks`):
    * the request to answer with Yes and No on the story itself (spare requests PR 3d, board `Friend-Side`). Absent on
@@ -294,7 +294,7 @@ export function toViews(
         return { ...base, card, friend, askable: found.askable === true, href: friend ? `/friends/${encodeURIComponent(friend.publicId)}/spares${item.oracleId ? `?spare=${encodeURIComponent(item.oracleId)}` : ""}` : null };
       case "combo": {
         const c = comboPieces(item.data);
-        return { ...base, card, opens: c?.first ?? item.oracleId, combo: c && { pieces: c.pieces, added: c.added } };
+        return { ...base, card, opens: c?.first ?? item.oracleId, combo: c && { pieces: c.pieces, added: c.added, variantId: item.variantId } };
       }
       case "spare-request":
         return item.answer ? { ...base, card, friend, answer: item.answer, href: "/friends" } : { ...base, card, friend };

@@ -378,6 +378,8 @@ export function CardDetailProvider({
   // The card a combo open (`opts.combo`) was for, so only that card starts with its combo block open: another card
   // (a page, a partner) never matches, and a close clears it.
   const [comboFor, setComboFor] = useState<string | null>(null);
+  // A combo open that names its variant (`opts.comboVariantId`): the sheet for it opens over the card on arrival (`openComboFor`).
+  const comboVariantRef = useRef<{ oracleId: string; variantId: string } | null>(null);
   const [held, setHeld] = useState<Held | null>(null);
   // THE WAY BACK FROM A COMBO PARTNER: each card a partner was opened from, oldest first. The
   // partner draws as stacked, `← {that card}` at both widths, and every way out of it (the pill,
@@ -792,7 +794,7 @@ export function CardDetailProvider({
       oracleId: string,
       list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean },
+      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string },
     ) => {
       warmCardModal();
       // The control this open came from, for the modal to hand focus back to. Set on every open, so an opener that
@@ -826,6 +828,8 @@ export function CardDetailProvider({
       // deliberately leaves that card standing. The printing commits in `show`, when the
       // card it describes actually arrives — and only if the read that asked for it is
       // still the current one.
+      // The combo whose sheet opens over this card once it lands (`openComboFor`); every open restates it, so a stale one never survives.
+      comboVariantRef.current = opts?.combo && opts.comboVariantId ? { oracleId, variantId: opts.comboVariantId } : null;
       void load(oracleId, list ?? [], atPrinting ?? null, { door: opts?.door ?? false, combo: opts?.combo ?? false });
     },
     [load, setMinimized],
@@ -1161,6 +1165,15 @@ export function CardDetailProvider({
     comboFocusRef.current = combo.variantId;
     setComboSheet({ card, combo });
   }, []);
+  // The card a combo open named a variant for has landed: its sheet opens over it, straight from the stored variant (a feed
+  // item's or a push's). Spent once, and only on that card; a variant the card's list lacks leaves the block open.
+  useEffect(() => {
+    const want = comboVariantRef.current;
+    if (!want || card?.oracleId !== want.oracleId || comboSheet !== null || held !== null) return;
+    comboVariantRef.current = null;
+    const combo = card.cardCombos?.combos.find((c) => c.variantId === want.variantId);
+    if (combo) openComboSheet(card, combo);
+  }, [card, comboSheet, held, openComboSheet]);
 
   const prefetch = useCallback(
     (oracleId: string, art?: string | null) => {

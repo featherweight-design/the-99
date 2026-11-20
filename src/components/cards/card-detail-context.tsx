@@ -66,8 +66,11 @@ export type CardDetailContextValue = {
      * `combo`: the card is opened FOR its combo (a feed item's See the combo): its combo block starts open, and
      * the phone's sheet opens full so the block is on screen. Spent on that card alone: paging, a partner and a
      * close drop it.
+     *
+     * `comboVariantId`: with `combo`, the combo whose SHEET opens over the card as soon as the card lands (a feed item's or a
+     * push's stored variant). A variant the card's combo list does not carry leaves the block open, as `combo` alone does.
      */
-    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;

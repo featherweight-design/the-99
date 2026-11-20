@@ -21,7 +21,7 @@ export type PushItem =
   | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null }
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; oracleId: string; card: string; image: string | null; askable: boolean }
   | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no" }
-  | { kind: "combo"; key: string; batch: string; oracleId: string; a: string; b: string; added: string; image: string | null }
+  | { kind: "combo"; key: string; batch: string; oracleId: string; variantId: string | null; a: string; b: string; added: string; image: string | null }
   /** A seat notice (Rule 0 revisions, item 6): not a feed kind. `deck` is the reader's own seated deck, null while the seat waits. */
   | { kind: typeof SEAT_PUSH_KIND; key: string; batch: string; tableId: string; host: string; pod: string; deck: string | null }
   /** A Secret Lair drop's sale-time push (`sale.ts`): the post's title and its times as instants, `zone` the store's. The words are the device's (`sale-words.ts`). */
@@ -45,6 +45,8 @@ export type PushMessage = {
   openCard: string | null;
   /** `openCard` is opened for its combo. */
   openCombo: boolean;
+  /** With `openCombo`: the combo (its Spellbook variant) whose sheet Home opens directly. Null: the card's details open with its combo block. */
+  openVariant: string | null;
   /** The card at card shape where the system draws an image; never an art crop. */
   image: string | null;
 };
@@ -64,7 +66,7 @@ export function collapse(items: readonly PushItem[], mode: CollapseMode): PushIt
 }
 
 const home = (tag: string, keys: string[], title: string, body: string, extra: Partial<PushMessage> = {}): PushMessage => ({
-  title, body, route: "/", tag, keys, openCard: null, openCombo: false, image: null, ...extra,
+  title, body, route: "/", tag, keys, openCard: null, openCombo: false, openVariant: null, image: null, ...extra,
 });
 
 const distinct = <T,>(xs: readonly T[]): T[] => [...new Set(xs)];
@@ -117,7 +119,7 @@ export function toMessage(group: readonly PushItem[], device: SaleDevice = NO_DE
       return home(`rule_zero_seat:${first.key}`, keys, title, body, { route: `/friends/table/${first.tableId}` });
     }
     case "combo": {
-      if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, image: first.image });
+      if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, openVariant: first.variantId, image: first.image });
       return home("combo", keys, c.many.combo.title(n), c.many.combo.body);
     }
     case "secret-lair":

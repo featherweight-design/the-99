@@ -266,6 +266,7 @@ async function showPush(event) {
       keys: Array.isArray(data.keys) ? data.keys.filter((k) => typeof k === "string") : [],
       openCard: typeof data.openCard === "string" ? data.openCard : null,
       openCombo: data.openCombo === true,
+      openVariant: typeof data.openVariant === "string" ? data.openVariant : null,
     },
   };
   if (typeof data.image === "string" && data.image.startsWith("https://")) options.image = data.image;
@@ -279,14 +280,17 @@ self.addEventListener("notificationclick", (event) => {
 
 /**
  * Focuses an open window of the app and takes it to the landing, or opens one. What to open there rides in the ADDRESS
- * (`push-card`, `push-combo`), never a message: a message sent at a navigation reaches the page being left, and a window
+ * (`push-card`, `push-combo`, `push-variant`), never a message: a message sent at a navigation reaches the page being left, and a window
  * opened cold has nobody listening yet. The page reads them once and strips them (the landing PR).
  */
 async function openLanding(data) {
   const url = new URL(landing(data.route));
   if (typeof data.openCard === "string" && data.openCard) {
     url.searchParams.set("push-card", data.openCard);
-    if (data.openCombo === true) url.searchParams.set("push-combo", "1");
+    if (data.openCombo === true) {
+      url.searchParams.set("push-combo", "1");
+      if (typeof data.openVariant === "string" && data.openVariant) url.searchParams.set("push-variant", data.openVariant);
+    }
   }
   const href = url.href;
   // A route under /out/ leaves the app by a redirect (a Wizards post on magic.wizards.com). An app window navigated there

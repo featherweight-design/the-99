@@ -32,8 +32,8 @@ describe("a feed view as a push item", () => {
     expect(toPushItem(view({ kind: "spare-request", friend, answer: "no" }), "b")).toMatchObject({ kind: "spare-request", answer: "no" });
   });
   it("combo: the two pieces, the piece added and the piece Home opens", () => {
-    expect(toPushItem(view({ kind: "combo", opens: "o9", combo: { pieces: ["A", "B"], added: "B" } }), "b")).toMatchObject({
-      kind: "combo", oracleId: "o9", a: "A", b: "B", added: "B",
+    expect(toPushItem(view({ kind: "combo", opens: "o9", combo: { pieces: ["A", "B"], added: "B", variantId: "1-2" } }), "b")).toMatchObject({
+      kind: "combo", oracleId: "o9", variantId: "1-2", a: "A", b: "B", added: "B",
     });
   });
   it("is null where a notification would be half-worded", () => {
@@ -42,7 +42,7 @@ describe("a feed view as a push item", () => {
     expect(toPushItem(view({ kind: "trade-match", friend: null }), "b")).toBeNull(); // the friend is gone
     expect(toPushItem(view({ kind: "combo", combo: null }), "b")).toBeNull();
     // Valid combo data and `opens`, but the piece's card is gone from the catalog: dropped like every other stored kind.
-    expect(toPushItem(view({ kind: "combo", card: null, opens: "o9", combo: { pieces: ["A", "B"], added: "B" } }), "b")).toBeNull();
+    expect(toPushItem(view({ kind: "combo", card: null, opens: "o9", combo: { pieces: ["A", "B"], added: "B", variantId: "1-2" } }), "b")).toBeNull();
   });
   it("new set: its name, card count and page (PR 3c)", () => {
     expect(toPushItem(view({ kind: "new-set", key: "set:dsk", name: "Duskmourn", setSize: 286, href: "/collection/sets/dsk" }), "b")).toEqual({

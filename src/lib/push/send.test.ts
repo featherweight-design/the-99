@@ -10,7 +10,7 @@ import { MAX_PAYLOAD_BYTES, SEND_TIMEOUT_MS, TTL_SECONDS, payloadFor, sendWebPus
 const config: PushConfig = { publicKey: "pub", privateKey: "priv", subject: "mailto:a@b.co" };
 const target = { endpoint: "https://fcm.googleapis.com/x", p256dh: "p", auth: "a" };
 const message: PushMessage = {
-  title: "Jace is cheaper", body: "Was $8.40, now $5.10.", route: "/", tag: "price-drop", keys: ["item:1"], openCard: "o1", openCombo: false, image: "https://cards.scryfall.io/x.jpg",
+  title: "Jace is cheaper", body: "Was $8.40, now $5.10.", route: "/", tag: "price-drop", keys: ["item:1"], openCard: "o1", openCombo: false, openVariant: null, image: "https://cards.scryfall.io/x.jpg",
 };
 
 beforeEach(() => vi.clearAllMocks());

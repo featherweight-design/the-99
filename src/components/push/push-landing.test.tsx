@@ -58,6 +58,14 @@ describe("opening the landing's card", () => {
     expect(h.open).toHaveBeenCalledWith(ID, undefined, undefined, { combo: true });
   });
 
+  it("opens the combo's sheet directly when the landing names its variant", () => {
+    delivered(0);
+    window.history.replaceState(null, "", `/?push-card=${ID}&push-combo=1&push-variant=1234-5678`);
+    render(<PushLanding visit={nextVisit()} />);
+    expect(h.open).toHaveBeenCalledWith(ID, undefined, undefined, { combo: true, comboVariantId: "1234-5678" });
+    expect(new URL(h.mirrored[0]).search).toBe("");
+  });
+
   it("opens nothing for a value that is not an oracle id, and still strips it", () => {
     delivered(0);
     window.history.replaceState(null, "", "/?push-card=%3Cscript%3E&push-combo=1");

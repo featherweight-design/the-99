@@ -60,13 +60,13 @@ describe("FeedItemRow", () => {
 
   it("draws a combo with the shipped two-card-combo mark, not a card, and opens the first piece's detail", () => {
     const { container } = list(
-      <FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation" } })} now={NOW} />,
+      <FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation", variantId: "1-2" } })} now={NOW} />,
     );
     expect(container.querySelector("[data-feed-combo] [data-testid=combo-glyph]")).not.toBeNull();
     expect(container.querySelector("[data-commander-thumb]")).toBeNull();
     expect(screen.getByText("Thassa’s Oracle + Demonic Consultation")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "See the combo ›" }));
-    expect(open).toHaveBeenCalledWith("a", undefined, undefined, expect.objectContaining({ art: null }));
+    expect(open).toHaveBeenCalledWith("a", undefined, undefined, expect.objectContaining({ art: null, combo: true, comboVariantId: "1-2" }));
     // The shown card is not the one opened (the write added the second piece): no art hint for a card never opened.
   });
 
@@ -195,7 +195,7 @@ describe("FeedItemRow", () => {
 
   it("opens a combo item for its combo, and no other kind", () => {
     open.mockClear();
-    list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation" } })} now={NOW} />);
+    list(<FeedItemRow item={view({ kind: "combo", opens: "a", combo: { pieces: ["Thassa’s Oracle", "Demonic Consultation"], added: "Demonic Consultation", variantId: "1-2" } })} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: /See the combo/ }));
     expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ combo: true }));
     expect(open).toHaveBeenLastCalledWith("a", undefined, undefined, expect.objectContaining({ art: null }));
