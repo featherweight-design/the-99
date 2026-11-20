@@ -117,12 +117,6 @@ export interface DeckMove {
 }
 
 /**
- * "⋯" overflow menu for a deck card.
- * Opens a popover with "Rename" and "Delete" actions.
- * Rendered as a `relative z-10` sibling to the absolute-inset Link overlay
- * so clicks here do NOT navigate.
- */
-/**
  * A deck the owner's Settings rules hide (draft hidden row, #2988; the shipped row drew a ticked, locked checkbox it would not let
  * the player change). Not a control: a block that says why, then one row per way out the player really has, each a normal menu row.
  * `Commit as v1` only where the deck can commit now; the Settings row lands on the exact box (`/settings#settings-decks-…`).
@@ -175,6 +169,12 @@ function HiddenByRule({ deckId, friends }: { deckId: string; friends: DeckFriend
   );
 }
 
+/**
+ * "⋯" overflow menu for a deck card.
+ * Opens a popover with "Rename" and "Delete" actions.
+ * Rendered as a `relative z-10` sibling to the absolute-inset Link overlay
+ * so clicks here do NOT navigate.
+ */
 export function DeckCardOverflow({
   deckId,
   deckName,

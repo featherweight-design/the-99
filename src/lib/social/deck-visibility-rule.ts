@@ -23,8 +23,8 @@ export function friendCanSeeDeck(deck: { hiddenFromFriends?: boolean; statusPill
 }
 
 /**
- * The owner's Settings rules already hide this deck, whatever its own flag says: the ⋯ row then draws ticked and
- * locked, and its press opens Settings rather than writing (README 4b).
+ * The owner's Settings rules already hide this deck, whatever its own flag says: the ⋯ menu then draws no checkbox but a block that
+ * says why and links to the Settings box (`hiddenWhy`, draft hidden row #2988), and nothing is written from the menu.
  */
 export function settingsHideDeck(statusPill: StatusPill, prefs: FriendDeckPrefs): boolean {
   return !friendCanSeeDeck({ hiddenFromFriends: false, statusPill }, prefs);
