@@ -26,12 +26,12 @@ function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number): { kind: strin
   const ink = e.state === "open" ? "text-[color:var(--accent-text)]" : e.state === "yes" ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]";
   // A withdrawal from before `withdrawn_at` existed has no date to claim: the kicker draws none.
   const on = e.endedAt === null ? null : formatShortDeckDate(e.endedAt);
-  const left = daysLeft(e.createdAt, new Date(nowMs));
+  const left = () => daysLeft(e.createdAt, new Date(nowMs));
   if (tab === "asked") {
-    const detail = e.state === "open" ? h.openMine(e.deckName, left) : h.asked(e.deckName, formatShortDeckDate(e.createdAt));
+    const detail = e.state === "open" ? h.openMine(e.deckName, left()) : h.asked(e.deckName, formatShortDeckDate(e.createdAt));
     return { kind: h.kind[e.state], ink, on, title: h.mine[e.state](e.other.displayName, e.card.name), detail };
   }
-  const detail = e.state === "open" ? h.openTheirs(left) : e.state === "yes" ? h.theirsYes : e.state === "no" ? h.theirsNo : h.theirsExpired;
+  const detail = e.state === "open" ? h.openTheirs(left()) : e.state === "yes" ? h.theirsYes : e.state === "no" ? h.theirsNo : h.theirsExpired;
   return { kind: e.state === "open" ? h.ofYouOpen : h.kind[e.state], ink, on, title: h.theirs(e.other.displayName, e.card.name, e.copies), detail };
 }
 
@@ -63,8 +63,8 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
   }
   return (
     <>
-      {groups.map((g) => (
-        <section key={g.label} className={`${PANEL} mt-[16px]! first:mt-[18px]!`}>
+      {groups.map((g, gi) => (
+        <section key={g.label} className={`${PANEL} ${gi === 0 ? "mt-[18px]!" : "mt-[16px]!"}`}>
           <h2 className={BAND}>
             {g.label}
             <span className="pr-[8px] font-sans text-[12.5px] font-medium normal-case tracking-normal">{g.rows.length}</span>
@@ -107,23 +107,28 @@ type Side = { entries: HistoryEntry[]; next: HistoryCursor | null };
 export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Side; ofYou: Side; hiddenCount: number; nowMs: number }) {
   const [tab, setTab] = useState<HistoryTab>("asked");
   const [sides, setSides] = useState<Record<HistoryTab, Side>>({ asked, ofYou });
-  const [failed, setFailed] = useState(false);
-  const [loading, startLoading] = useTransition();
+  const [failed, setFailed] = useState<Record<HistoryTab, boolean>>({ asked: false, ofYou: false });
+  const [loading, setLoading] = useState<Record<HistoryTab, boolean>>({ asked: false, ofYou: false });
+  const [, startLoading] = useTransition();
   const side = sides[tab];
 
   function older() {
     const cursor = side.next;
-    if (cursor === null) return;
-    setFailed(false);
+    // Per tab, and ignored while that tab's page is out: a second press would fetch the same cursor again.
+    if (cursor === null || loading[tab]) return;
+    const at = tab;
+    setFailed((f) => ({ ...f, [at]: false }));
+    setLoading((l) => ({ ...l, [at]: true }));
     startLoading(async () => {
-      const page = await loadMoreHistoryAction(DIRECTION[tab], cursor).catch(() => null);
+      const page = await loadMoreHistoryAction(DIRECTION[at], cursor).catch(() => null);
+      setLoading((l) => ({ ...l, [at]: false }));
       if (page === null) {
-        setFailed(true);
+        setFailed((f) => ({ ...f, [at]: true }));
         return;
       }
       setSides((now) => {
-        const have = new Set(now[tab].entries.map((x) => x.id));
-        return { ...now, [tab]: { entries: [...now[tab].entries, ...page.entries.filter((x) => !have.has(x.id))], next: page.next } };
+        const have = new Set(now[at].entries.map((x) => x.id));
+        return { ...now, [at]: { entries: [...now[at].entries, ...page.entries.filter((x) => !have.has(x.id))], next: page.next } };
       });
     });
   }
@@ -143,8 +148,10 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
           value={tab}
           onChange={setTab}
           segments={[{ value: "asked", label: h.tabs.asked }, { value: "ofYou", label: h.tabs.ofYou }]}
+          ids={{ tab: (v) => `rh-tab-${v}`, panel: (v) => `rh-panel-${v}` }}
         />
       </div>
+      <div role="tabpanel" id={`rh-panel-${tab}`} aria-labelledby={`rh-tab-${tab}`}>
       {side.entries.length === 0 ? (
         <div className={`${PANEL} mt-[18px]!`}>
           <PanelEmpty size="lg" title={empty.title} body={empty.body} />
@@ -157,16 +164,17 @@ export function RequestHistory({ asked, ofYou, hiddenCount, nowMs }: { asked: Si
               <button
                 type="button"
                 onClick={older}
-                disabled={loading}
+                disabled={loading[tab]}
                 className="flex min-h-[44px] cursor-pointer items-center rounded-[8px] bg-transparent px-[16px] font-sans text-[13px] font-medium text-[color:var(--fg)] [border:1px_solid_var(--border)] md:min-h-[36px]"
               >
                 {h.older}
               </button>
-              {failed && <p role="status" className="m-0 text-[13px] text-[color:var(--warning)]">{h.olderFailed}</p>}
+              {failed[tab] && <p role="status" className="m-0 text-[13px] text-[color:var(--warning)]">{h.olderFailed}</p>}
             </div>
           )}
         </>
       )}
+      </div>
       {hiddenCount > 0 && <p className="m-0 mt-[18px] text-[12.5px] leading-[1.5] text-[color:var(--fg-faint)]">{h.exFriends}</p>}
     </div>
   );

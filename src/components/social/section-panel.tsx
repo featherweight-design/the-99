@@ -1,6 +1,5 @@
-// Request history R1b (Hugh 2026-11-17): a section's heading and its links live INSIDE the box that holds its
-// rows, as the box's header band, never on a bare hairline above it. One shape for Waiting on you, Your requests, Friends
-// and each month of Request history. Empty states get a drawn mark, from the CardFan family's tokens.
+// Request history R1b (Hugh 2026-11-17): a section's heading lives INSIDE the box that holds its
+// rows, as the box's header band, never on a bare hairline above it. One shape, drawn so far by each month of Request history (the Friends page's own sections follow in PR 3). Empty states get a drawn mark, from the CardFan family's tokens.
 import type { ReactNode } from "react";
 import { SpareGlyph } from "./spare-key-item";
 
@@ -11,10 +10,6 @@ export const PANEL =
 /** The header band: the shipped section-head type, on the rail ground, a hairline under it, links at its end. */
 export const BAND =
   "m-0 flex min-h-[48px] items-center justify-between gap-[12px] bg-[color:var(--surface-rail)] pl-[14px] pr-[6px] font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] outline-none [border-bottom:1px_solid_var(--border)] md:min-h-[44px] md:pl-[16px] md:pr-[8px]";
-
-/** A link or press at the band's end: 44px tall at phone, the bar's sans. */
-export const BAND_LINK =
-  "flex min-h-[44px] items-center px-[8px] font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg)] no-underline md:min-h-[36px]";
 
 /**
  * The handover mark: two cards, a friend's (dashed, behind) and the one passed (accent edge, tilted forward), with the
