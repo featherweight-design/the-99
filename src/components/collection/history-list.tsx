@@ -186,11 +186,11 @@ function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
 }) {
   const w = gotItCopy.history.wentTo;
   return (
-    <div className={`${DECK_LINE} flex items-baseline justify-between gap-[10px]`}>
-      <span className="min-w-0">
+    <div className="flex items-baseline justify-between gap-[10px] px-[14px] pb-[10px] md:pl-[176px]">
+      <p className="m-0 min-w-0 text-[12px] text-[color:var(--fg-muted)] md:text-[12.5px]">
         {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
         {single && cardName ? <LiveNow wentDeckIds={single.wentDeckIds} soft={wentTo.soft} live={live?.[single.oracleId]} /> : null}
-      </span>
+      </p>
       {single && cardName ? (
         <LiveChange oracleId={single.oracleId} cardName={cardName} soft={wentTo.soft} live={live?.[single.oracleId]} onWritten={onWritten} />
       ) : null}
