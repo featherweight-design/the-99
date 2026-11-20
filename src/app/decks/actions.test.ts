@@ -460,6 +460,8 @@ vi.mock("../../lib/precons/start-version", () => ({ readDeckOriginAndStart: vi.f
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => stub.state.afters.push(fn) }));
 vi.mock("../../lib/bracket/slot", () => ({ slotDeck: vi.fn(() => ({ permits: [1, 2] })) }));
 
+// The commit takes the deck's pending-pick claim locks first; the stub transaction has no ordered select, and the lock is pinned in pending-picks.test.ts.
+vi.mock("../../lib/decks/pending-picks", () => ({ lockPendingClaims: vi.fn(async () => new Set<string>()) }));
 vi.mock("../../lib/decks/versions", () => ({
   newestVersion: vi.fn(),
   versionLiveAt: vi.fn(),
