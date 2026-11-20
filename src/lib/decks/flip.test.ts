@@ -35,7 +35,10 @@ describe("resolveFlip", () => {
   });
 
   it("reads an unknown stored sort as the default", () => {
-    expect(resolveFlip(decks, null, "nonsense", "a")).not.toBeNull();
+    const played = [deck("a", "Alpha"), deck("b", "Bravo", { lastPlayedAt: 5 }), deck("c", "Charlie", { lastPlayedAt: 9 })];
+    // Last played first, never played last: c, b, a. Name order would read a, b, c.
+    const f = resolveFlip(played, null, "nonsense", "b")!;
+    expect([f.k, f.prev.id, f.next.id]).toEqual([2, "c", "a"]);
   });
 });
 
