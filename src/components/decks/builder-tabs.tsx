@@ -104,10 +104,12 @@ export function BuilderTabs({ tabs, view, onViewChange, children, anchor }: Buil
           exactly the tabs that control this document's panels. */}
       <div className="flex items-baseline md:gap-[22px]">
         {/* ONE LINE, ALWAYS: a label never breaks. Under `md` the tabs share the row's width equally and
-            never scroll (Hugh, 2026-11-15): only "Your deck" carries a count, so five labels fit a phone. From
-            `md` they keep their own width beside the toolbar. */}
+            never scroll at a phone's width (Hugh, 2026-11-15): only "Your deck" carries a count, so five labels fit
+            390. The scroll box and its 4px pad stay as the safety for a narrower window (320), where five labels
+            cannot fit and the row, not the page, scrolls; the pad also keeps the focus ring whole. From `md` they
+            keep their own width beside the toolbar. */}
         <div
-          className="flex min-w-0 flex-1 items-baseline md:flex-none md:gap-[22px]"
+          className="-m-[4px] flex min-w-0 flex-1 items-baseline overflow-x-auto p-[4px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:m-0 md:flex-none md:gap-[22px] md:overflow-visible md:p-0"
           role="tablist"
           // Selection follows focus, which is the pattern's default for panels
           // that are all cheap to render.

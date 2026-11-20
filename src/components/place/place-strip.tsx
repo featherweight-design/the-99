@@ -80,7 +80,7 @@ export function PlaceStrip({
             data-testid={`${testIdPrefix}-${tab.place}`}
             onNavigate={() => setPending(tab.place)}
             className={[
-              `flex min-w-[44px] items-center justify-center ${fill ? "max-md:flex-1 whitespace-nowrap" : ""} ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
+              `flex min-w-[44px] items-center justify-center ${fill ? "max-md:flex-auto whitespace-nowrap" : ""} ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
               "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]",
               on
                 ? "font-semibold text-[color:var(--fg)] shadow-[inset_0_-2px_0_var(--accent)]"

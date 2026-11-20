@@ -2,7 +2,8 @@
 //   - Commanders (`/commanders`): four tabs share the strip's width at 390 (the last tab's right edge reaches the strip's, no tab is
 //     under half the widest), the strip does not scroll, and no tab carries a count (Hidden included).
 //   - Deck Details (a deck's own page): five tabs fill the row at 390 with no sideways scroll, and a count draws on Your deck alone.
-// Windows: phone 390x844 for the fill claims; desktop 1280x800 for the count claims (the tabs keep their own width there).
+// Windows: phone 390x844 for the fill claims; 320x640 for no label overflowing and no sideways page scroll; desktop 1280x800 for the
+// count claims (the tabs keep their own width there). Each tab's own `scrollWidth` is read, so a label wider than its box fails.
 //
 // Run by hand against a dev server on a free port: `PROBE_BASE=http://localhost:3414 node scripts/probe-tab-navs.mjs`.
 // Needs a browser and the audit user (`E2E_AUDIT_USER_*`) with a deck, plus `CLERK_SECRET_KEY`; read-only, never production.
@@ -45,6 +46,8 @@ async function signIn(page) {
 
 const WINDOWS = [
   { label: "phone 390x844", viewport: { width: 390, height: 844 }, touch: true, phone: true },
+  // 320: five Deck Details labels cannot fit, so the row (never the page) scrolls; Commanders' four still fit.
+  { label: "narrow phone 320x640", viewport: { width: 320, height: 640 }, touch: true, phone: false, narrow: true },
   { label: "desktop 1280x800", viewport: { width: 1280, height: 800 }, touch: false, phone: false },
 ];
 
@@ -65,6 +68,7 @@ const MEASURE = (sel) => {
     lastRight: Math.round(Math.max(...tabs.map((t) => t.getBoundingClientRect().right))),
     widths: tabs.map((t) => Math.round(t.getBoundingClientRect().width)),
     labels: tabs.map((t) => t.textContent.trim()),
+    clipped: tabs.filter((t) => t.scrollWidth > t.clientWidth + 1).map((t) => t.textContent.trim()),
     countOn: tabs.filter((t) => /\d/.test(t.textContent)).map((t) => t.textContent.trim()),
   };
 };
@@ -81,6 +85,8 @@ try {
     await page.waitForTimeout(1500);
     const c = await page.evaluate(MEASURE, { strip: "nav:has([data-testid=commanders-tab-hidden])", tabs: "[data-testid^=commanders-tab-]" });
     check(c.countOn.length === 0, `${win.label}: Commanders tabs carry no count`, `tabs ${JSON.stringify(c.labels)}`);
+    check(c.clipped.length === 0, `${win.label}: no Commanders label overflows its tab`, `clipped ${JSON.stringify(c.clipped)} widths ${c.widths}`);
+    if (win.narrow) check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${win.label}: the Commanders page does not scroll sideways`);
     if (win.phone) {
       check(!c.scrolls, `${win.label}: the Commanders strip does not scroll`, `widths ${c.widths}`);
       check(c.stripRight - c.lastRight <= 6, `${win.label}: the Commanders tabs reach the strip's right edge`, `strip ${c.stripRight} last ${c.lastRight}`);
@@ -96,6 +102,8 @@ try {
     await page.waitForTimeout(1500);
     const d = await page.evaluate(MEASURE, { strip: "[role=tablist]:has(#tab-deck)", tabs: "[role=tablist]:has(#tab-deck) > [role=tab]" });
     check(d.countOn.length === 1 && /deck/i.test(d.labels[d.labels.findIndex((l) => /\d/.test(l))] ?? ""), `${win.label}: only Your deck carries a count`, `counts ${JSON.stringify(d.countOn)} tabs ${JSON.stringify(d.labels)}`);
+    check(d.clipped.length === 0, `${win.label}: no Deck Details label overflows its tab`, `clipped ${JSON.stringify(d.clipped)} widths ${d.widths}`);
+    if (win.narrow) check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${win.label}: the Deck Details page does not scroll sideways`);
     if (win.phone) {
       check(!d.scrolls, `${win.label}: the Deck Details tab row does not scroll`, `widths ${d.widths}`);
       check(d.stripRight - d.lastRight <= 6, `${win.label}: the Deck Details tabs fill the row`, `strip ${d.stripRight} last ${d.lastRight}`);
