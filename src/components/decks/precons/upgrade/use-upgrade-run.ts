@@ -8,6 +8,7 @@ import { pressUpgradeAction, readUpgradeAction } from "../../../../lib/precons/u
 import { viewOf, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey, type BracketTarget } from "../../../../lib/precons/upgrade/targets";
+import { lastRun } from "./run-row";
 
 const POLL_MS = 3000;
 const WATCH_MAX_MS = 6 * 60 * 1000;
@@ -16,20 +17,26 @@ export type Picks = { commander: string; bracket: BracketTarget; strategy: strin
 export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   const [panel, setPanel] = useState(initial);
   // A page refresh hands down a new panel (the deck page's band stays mounted across Apply's refresh): take it.
-  const [seen, setSeen] = useState(initial);
-  if (seen !== initial) {
-    setSeen(initial);
+  const [given, setGiven] = useState(initial);
+  if (given !== initial) {
+    setGiven(initial);
     setPanel(initial);
   }
-  // What this tab's press made of the run, until the panel says the same; else the panel's own newest run (a pending one is the wait, a done one the result).
+  // What this tab's press made of the run, until the panel says the same; else the opening rule (addendum fresh start, STATES):
+  // a pending run is the wait; the newest kept run, landed and never shown (`seenAt` null, G25), is its result, once; anything
+  // else is the start screen (`none`), with that run as `Your last upgrade`. An older result never reopens on its own.
   const [local, setLocal] = useState<RunView | null>(null);
   const pending = panel.runs.find((r) => r.status === "pending") ?? null;
-  // The press opens on the newest result until a deck is started from it (`started`), then on the intro, whatever older runs hold; History still lists every run.
-  const newestDone = panel.runs.find((r) => r.status === "done") ?? null;
-  // Closed after going through History: the player backed out of the past runs, so the next press starts a new upgrade
-  // rather than reopening the newest result (Hugh, 2026-11-12, bug d). A run in flight still shows its wait.
-  const [fresh, setFresh] = useState(false);
-  const view: RunView = local ?? viewOf(pending ?? (!fresh && newestDone && !newestDone.started ? newestDone : null));
+  const newestDone = lastRun(panel.runs);
+  // Runs the flow showed while open (`shown`) and while open before (`shownBefore`). The flow marks a shown run seen on the server;
+  // the panel only says so on its next read, and a read landing while the flow is open must not move the view off the result on
+  // screen. So a run shown in this opening keeps its result until the flow closes, and once closed it counts as seen.
+  const [shown, setShown] = useState<ReadonlySet<string>>(() => new Set());
+  const [shownBefore, setShownBefore] = useState<ReadonlySet<string>>(() => new Set());
+  const unseen = newestDone !== null && !shownBefore.has(newestDone.id) && (newestDone.seenAt === null || shown.has(newestDone.id));
+  const view: RunView = local ?? viewOf(pending ?? (unseen ? newestDone : null));
+  /** The flow showed this run's result (and marked it seen). */
+  const onSeen = (runId: string) => setShown((s) => (s.has(runId) ? s : new Set([...s, runId])));
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
   useEffect(() => { openRef.current = open; }, [open]);
@@ -81,7 +88,6 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
   const settle = (v: RunView) => setLocal(openRef.current ? v : null);
 
   async function confirm(picks: Picks) {
-    setFresh(false);
     setLocal({ kind: "wait", picks, startedAt: Date.now() });
     // The runs the panel held before this press: a short run's answer carries no id, so only a run outside these is this press's own.
     const before = new Set(panel.runs.map((r) => r.id));
@@ -112,14 +118,18 @@ export function useUpgradeRun(fileName: string, initial: UpgradePanel) {
     }
   }
 
-  /** The flow closes: what this tab's press made is dropped (the run is in the panel by then), so a run begun elsewhere is read again. */
-  const close = (how?: { afterHistory: boolean }) => {
+  /** The flow closes: what this tab's press made is dropped (the run is in the panel by then), so a run begun elsewhere is read again.
+   *  A result shown while it was open is seen from now on: the next press opens the start screen. */
+  const close = () => {
     setOpen(false);
     setLocal((l) => (l && l.kind !== "wait" ? null : l));
-    if (how?.afterHistory) setFresh(true);
+    if (shown.size > 0) {
+      setShownBefore((b) => new Set([...b, ...shown]));
+      setShown(new Set());
+    }
   };
 
-  return { panel, view, pending, open, setOpen, close, refresh, confirm, landed };
+  return { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen };
 }
 
 /** The strategy of a run in flight: the pending run's label, or for one this tab started, its label from the panel's own offer. */

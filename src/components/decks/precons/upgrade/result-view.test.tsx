@@ -32,7 +32,7 @@ const pair = (n: number, over: Partial<PanelRun["pairs"][number]> = {}) => ({ cu
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
   pairs: [pair(1), pair(2)], buyTotalCents: 120, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
-  toBuy: { cards: 1, cents: 120 }, owned: 1, themes: { cut1: "Artifacts" }, deck: null, started: false, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
+  toBuy: { cards: 1, cents: 120 }, owned: 1, themes: { cut1: "Artifacts" }, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });
 
 describe("groupPairs", () => {

@@ -105,7 +105,7 @@ describe("readUpgrade", () => {
     expect(panel!.runs[0].themes).toEqual({ [backed.oracleId]: first!.commanders[0].strategies[0].label });
     expect(panel!.cards["new-1"]).toEqual({ cmc: 1, identity: ["U"], owned: false });
     expect(panel!.cards["new-2"]).toEqual({ owned: true });
-    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1, started: true, deck: { id: "d1", name: "Rootha Upgraded" } });
+    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1, deck: { id: "d1", name: "Rootha Upgraded" } });
     store.runs = [];
   });
 

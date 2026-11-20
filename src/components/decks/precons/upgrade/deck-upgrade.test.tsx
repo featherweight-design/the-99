@@ -28,7 +28,7 @@ const panel: UpgradePanel = {
   runs: [{
     id: "r1", status: "done", strategyKey: runKey("muddle", 3, "tokens"), strategyLabel: "Tokens", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
     pairs: [{ cutId: "a", addId: "b", cut: "A", add: "B", addCents: 100, reason: "r", cutReason: null, position: 0 }] as never,
-    buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, started: false, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
+    buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
   }],
   listFp: "x", cards: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
 };
@@ -38,6 +38,12 @@ const upgrade = (over: Partial<DeckUpgrade> = {}): DeckUpgrade => ({
 });
 const host = (over: Partial<Parameters<typeof DeckUpgradeHost>[0]> = {}) =>
   render(<DeckUpgradeHost deckId={DECK} upgrade={upgrade()} receipt={null} commanderArt={[]} {...over} />);
+
+/** The band's press opens the start screen (addendum fresh start, call 12); its `Your last upgrade` row opens the run. */
+function openLast() {
+  fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+  fireEvent.click(document.querySelector("[data-last-run] button")!);
+}
 
 beforeEach(() => { refresh.mockReset(); apply.mockReset(); undo.mockReset(); });
 
@@ -74,7 +80,7 @@ describe("DeckUpgradeHost (A2c)", () => {
     apply.mockResolvedValue({ ok: true, swaps: 1, lead: "muddle" });
     undo.mockResolvedValue({ ok: true });
     host();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
     expect(apply).toHaveBeenCalledWith(DECK, "r1");
     expect(screen.getByText("Applied 1 swaps. Muddle leads.")).toBeInTheDocument();
@@ -87,7 +93,7 @@ describe("DeckUpgradeHost (A2c)", () => {
   it("keeps the flow on the result and says a locked cut in its foot", async () => {
     apply.mockResolvedValue({ ok: false, reason: "locked" });
     host();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
     expect(screen.getByRole("note")).toHaveTextContent("Unlock it to apply the swaps.");
     expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeDisabled();
@@ -107,21 +113,29 @@ describe("DeckUpgradeHost (A2c)", () => {
   it("says a failed write in the shared toast, and the flow stays", async () => {
     apply.mockRejectedValue(new Error("network"));
     host();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
     expect(screen.getByText("Those swaps didn’t apply. Your deck hasn’t changed.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
   });
 
-  it("opens on a new upgrade after the player backed out through History (bug d)", () => {
+  it("opens on the start screen with the kept run as Your last upgrade, A2c's intro line under it (call 12)", () => {
     host();
     fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
-    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "History" }));
-    fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
     expect(screen.queryByRole("button", { name: "Apply these 1 swaps" })).toBeNull();
+    expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
+    expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · no deck yet");
     expect(screen.getByText("Nothing changes until you apply the swaps.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+  });
+
+  it("a run applied to another deck reads in that deck, and still applies here under the note", () => {
+    host({ upgrade: upgrade({ panel: { ...panel, runs: [{ ...panel.runs[0], deck: { id: "d9", name: "Muddle Tokens" } }] } }) });
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · in Muddle Tokens");
+    fireEvent.click(document.querySelector("[data-last-run] button")!);
+    expect(screen.getByText("Already in Muddle Tokens. Opening it again uses no credit.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
   });
 });
 
@@ -129,7 +143,7 @@ describe("DeckUpgradeHost's band press pulses when a run lands while closed (add
   afterEach(() => { vi.useRealTimers(); vi.mocked(readUpgradeAction).mockReset(); vi.mocked(readUpgradeAction).mockResolvedValue(null); });
   const bandPress = () => screen.getByRole("button", { name: /^(Upgrade precon|Upgrading toward)/ });
   const pending = { ...panel.runs[0], id: "p1", status: "pending" as const, createdAt: new Date() };
-  const landed = { ...panel.runs[0], id: "p1", createdAt: new Date("2026-11-12T12:00:00Z") };
+  const landed = { ...panel.runs[0], id: "p1", createdAt: new Date("2026-11-12T12:00:00Z"), seenAt: null };
 
   it("replays the pulse when the watched run lands done, and the next open shows it", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -145,7 +159,7 @@ describe("DeckUpgradeHost's band press pulses when a run lands while closed (add
     expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
   });
 
-  it("plays no pulse when the watched run fails, though the press then opens on the older kept result", async () => {
+  it("plays no pulse when the watched run fails, and the press then opens the start screen with the older kept run", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
     vi.mocked(readUpgradeAction).mockResolvedValue({ ...panel, runs: [{ ...pending, status: "failed" as const, refunded: true }, panel.runs[0]] });
     host({ upgrade: upgrade({ panel: { ...panel, runs: [pending, panel.runs[0]] } }) });
@@ -154,6 +168,7 @@ describe("DeckUpgradeHost's band press pulses when a run lands while closed (add
     expect(bandPress()).toHaveTextContent("Upgrade precon");
     expect(bandPress().querySelector(".anim-line-pulse")).toBeNull();
     fireEvent.click(bandPress());
-    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Upgrade Prismari Artistry" })).toBeInTheDocument();
+    expect(document.querySelector("[data-last-run] [data-run-row]")!.getAttribute("data-run-row")).toBe("r1");
   });
 });

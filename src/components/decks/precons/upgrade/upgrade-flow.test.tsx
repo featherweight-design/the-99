@@ -20,7 +20,7 @@ const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
 });
 const run: PanelRun = {
   id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pairs: [],
-  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, started: false, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
+  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>
   render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} {...extra} />);
@@ -191,14 +191,15 @@ describe("UpgradeFlow", () => {
       expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
     });
 
-    it("lists every kept run newest first by month, opens one read-only with a way back, and starts a new upgrade", () => {
+    it("lists every kept run newest first by month, opens one with a way back, and starts a new upgrade", () => {
       open(panel({ runs: [old, run] }));
       press("History");
       expect(screen.getByText("your past upgrades of this precon · newest first")).toBeInTheDocument();
       const rows = screen.getAllByRole("button", { name: /led by/ });
       expect(rows.map((r) => r.textContent)).toEqual([expect.stringContaining("Spells · led by Rootha · bracket 3"), expect.stringContaining("Tokens · led by")]);
       fireEvent.click(rows[0]);
-      expect(screen.getByText("A past upgrade, read-only. Opening it again uses no credit.")).toBeInTheDocument();
+      // An unused run draws no note (addendum fresh start, call 5).
+      expect(document.querySelector("[data-used-note]")).toBeNull();
       expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
       press("‹ History");
       expect(screen.getByText("your past upgrades of this precon · newest first")).toBeInTheDocument();
@@ -223,7 +224,100 @@ describe("UpgradeFlow", () => {
     it("lists a short run with its credits back", () => {
       open(panel({ runs: [{ ...run, refunded: true, pairs: twelveCards(9) }] }));
       press("History");
-      expect(screen.getByText("9 swaps · credits back")).toBeInTheDocument();
+      expect(document.querySelector("[data-run-went]")!.textContent).toBe("9 swaps · credits back · no deck yet");
+    });
+
+    it("says where each run went, with the same row as the start screen (call 4)", () => {
+      open(panel({ runs: [{ ...run, deck: { id: "d1", name: "Prismari Artistry" } }, { ...old, refunded: true, pairs: twelveCards(9) }] }));
+      const startRow = document.querySelector("[data-last-run] [data-run-went]")!;
+      expect(startRow.textContent).toBe("0 swaps · in Prismari Artistry");
+      press("History");
+      const went = [...document.querySelectorAll("[data-run-went]")];
+      expect(went.map((w) => w.textContent)).toEqual(["0 swaps · in Prismari Artistry", "9 swaps · credits back · no deck yet"]);
+      // `no deck yet` alone takes the accent ink; `in <deck>` stays in the line's faint.
+      const notYet = within(went[1] as HTMLElement).getByText("no deck yet");
+      expect(notYet.className).toContain("text-[color:var(--accent-text)]");
+      expect(went[0].querySelector("[class*='accent-text']")).toBeNull();
+      // The line wraps on a phone rather than cutting the deck's name.
+      expect(went[0].className).not.toContain("truncate");
+      // The newest run keeps the stronger edge in both lists.
+      expect(document.querySelectorAll("[data-run-row]")[0].className).toContain("border-[color:var(--border-strong)]");
+      expect(document.querySelectorAll("[data-run-row]")[1].className).toContain("border-[color:var(--border)]");
+    });
+
+    it("a run in a deck opened from History keeps ‹ History, with the note and its press live", () => {
+      open(panel({ runs: [{ ...run, pairs: twelveCards(1), deck: { id: "d1", name: "Prismari Artistry" } }] }), { onStart: vi.fn() });
+      press("History");
+      fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
+      expect(screen.getByText("Already in Prismari Artistry. Opening it again uses no credit.")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "‹ History" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "‹ Back" })).toBeNull();
+      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).toBeEnabled();
+    });
+  });
+
+  describe("the start screen (addendum fresh start)", () => {
+    const old = { ...run, id: "old", strategyLabel: "Tokens", strategyKey: runKey("muddle", 2, "tokens"), bracketTarget: 2, createdAt: new Date("2026-11-09T12:00:00Z") };
+
+    it("draws Your last upgrade over the intro's lead for the newest kept run, with the History link, and the intro as shipped", () => {
+      open(panel({ runs: [old, run] }));
+      const block = document.querySelector("[data-last-run]")!;
+      expect(within(block as HTMLElement).getByText("Your last upgrade").className).toContain("font-mono");
+      expect(block.querySelectorAll("[data-run-row]")).toHaveLength(1);
+      expect(block.querySelector("[data-run-row]")!.getAttribute("data-run-row")).toBe("r");
+      expect(block.querySelector("[data-run-row]")!.className).toContain("border-[color:var(--border-strong)]");
+      // Above the lead: the block comes before the intro's text in the body.
+      const lead = screen.getByText(/We swap 12 to 18 cards/);
+      expect(block.compareDocumentPosition(lead) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Next · Commander" })).toBeInTheDocument();
+    });
+
+    it("draws no block and no History link when no run is kept", () => {
+      open();
+      expect(document.querySelector("[data-last-run]")).toBeNull();
+      expect(screen.queryByText("Your last upgrade")).toBeNull();
+      expect(screen.queryByRole("button", { name: "History" })).toBeNull();
+    });
+
+    it("opens the row's run with ‹ Back to the start screen: no tracker, no History link, and no note for an unused run", () => {
+      const onStart = vi.fn();
+      open(panel({ runs: [{ ...run, pairs: twelveCards(1) }] }), { onStart });
+      fireEvent.click(document.querySelector("[data-last-run] button")!);
+      expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "‹ Back" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "‹ History" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "History" })).toBeNull();
+      expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
+      expect(document.querySelector("[data-used-note]")).toBeNull();
+      press("Start the deck with these 1 swaps");
+      expect(onStart).toHaveBeenCalledWith("r");
+      press("‹ Back");
+      expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+    });
+
+    it("a run already in a deck opens under the dashed note, its press live", () => {
+      open(panel({ runs: [{ ...run, pairs: twelveCards(1), deck: { id: "d1", name: "Prismari Artistry" } }] }), { onStart: vi.fn() });
+      fireEvent.click(document.querySelector("[data-last-run] button")!);
+      const note = document.querySelector("[data-used-note]")!;
+      expect(note.textContent).toBe("Already in Prismari Artistry. Opening it again uses no credit.");
+      expect(note.className).toContain("border-dashed");
+      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).toBeEnabled();
+    });
+
+    it("a fresh result keeps its History link and tracker, and draws no note even for a run in a deck", () => {
+      open(panel({ runs: [{ ...run, pairs: twelveCards(1), deck: { id: "d1", name: "Prismari Artistry" } }] }), { view: { kind: "results", runId: "r" } });
+      expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "‹ Back" })).toBeNull();
+      expect(document.querySelector("[data-used-note]")).toBeNull();
+    });
+
+    it("History's New upgrade returns to the start screen", () => {
+      open(panel({ runs: [run] }), { view: { kind: "results", runId: "r" } });
+      press("History");
+      press("New upgrade");
+      expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
     });
   });
 });
@@ -274,14 +368,15 @@ function openAnotherRun() {
   expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
 }
 
-describe("UpgradeFlow's close says whether the player went through History (bug d)", () => {
-  it("closing from History reports it, and closing from a result does not", () => {
+describe("UpgradeFlow's close (fresh start: the next press follows the opening rule, not where the player went)", () => {
+  it("closing from History closes with nothing to report", () => {
     const onClose = vi.fn();
     const p = panel({ runs: [{ ...run, pairs: twelveCards(1) }] });
     render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={onClose} view={{ kind: "results", runId: "r" }} />);
     fireEvent.click(screen.getByRole("button", { name: "History" }));
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
-    expect(onClose).toHaveBeenLastCalledWith({ afterHistory: true });
+    expect(onClose).toHaveBeenCalledOnce();
+    expect(onClose).toHaveBeenLastCalledWith();
   });
 });
 
@@ -338,7 +433,7 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     expect(screen.getByRole("button", { name: "Next · Commander" }).className).toContain("flex-1");
     fireEvent.click(theClose());
-    expect(onClose).toHaveBeenCalledWith({ afterHistory: false });
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("Commander, Bracket and Strategy: the ✕, and Back stays", () => {
@@ -375,7 +470,7 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     expect(pressOff.className).toContain("flex-1");
     expect(screen.getByText("Running · 2 credits held")).toBeInTheDocument();
     fireEvent.click(theClose());
-    expect(onClose).toHaveBeenCalledWith({ afterHistory: false });
+    expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("the failed run: the ✕, and its Back (to Strategy) stays", () => {
@@ -563,6 +658,13 @@ describe("UpgradeFlow marks a shown result seen (fresh start 1/4)", () => {
     fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
     expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
     expect(seen).toHaveBeenCalledTimes(2);
+  });
+
+  it("tells the caller which run it showed, once", () => {
+    const onSeen = vi.fn();
+    open(panel({ runs: [{ ...run, seenAt: null }] }), { view: { kind: "results", runId: "r" }, onSeen });
+    expect(onSeen).toHaveBeenCalledOnce();
+    expect(onSeen).toHaveBeenCalledWith("r");
   });
 
   it("leaves a result already seen alone, and marks nothing on the picks", () => {
