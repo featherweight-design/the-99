@@ -160,7 +160,7 @@ export function GameLogForm({
   // A table's seats are only drawn where the row is.
   const prefill = opponents ? offered : undefined;
   const [open, setOpen] = useState(initialOpen || prefill !== undefined);
-  const [result, setResult] = useState<GameResult | null>(null);
+  const [result, setResult] = useState<GameResult | null>(() => prefill?.result?.viewer ?? null);
   const [podSize, setPodSize] = useState(() => (prefill ? Math.min(POD_SIZE_MAX, Math.max(POD_SIZE_MIN, prefill.podSize)) : 4));
   // The seats of "Across the table", and whether a pod size below them was just pressed (the line saying why it held).
   const [seats, setSeats] = useState<Seat[]>(() => (prefill ? prefillSeats(prefill, (n) => `table${n}`) : []));

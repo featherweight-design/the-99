@@ -4076,6 +4076,28 @@ export const ruleZeroSeats = pgTable("rule_zero_seats", {
   index("rule_zero_seats_deck_idx").on(t.deckId).where(sql`${t.deckId} is not null`),
 ]);
 
+/**
+ * The result of a table's latest tracked game (life tracker PR1; handoff `design_handoff_the99_life_tracker`): one row
+ * per seat of the game's SNAPSHOT, so a seated player's Log this game finds the winner filled in. Keyed by (table,
+ * user) with the seat the player held when the game was saved; a later reseat renumbers `rule_zero_seats`, and the
+ * prefill maps a result by the account, never by the number. `place` is 1 for a winner; two seats at 1 is a draw.
+ * A new game on the same table replaces every row (`saveTableResult`). The table row's delete cascades these away,
+ * and the account purge clears the player's own.
+ */
+export const ruleZeroResultSeats = pgTable("rule_zero_result_seats", {
+  tableId: uuid("table_id").notNull().references(() => ruleZeroTables.id, { onDelete: "cascade" }),
+  userId: text("user_id").notNull(),
+  seat: smallint("seat").notNull(),
+  place: smallint("place").notNull(),
+  savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.tableId, t.userId] }),
+  unique("rule_zero_result_seats_seat_unique").on(t.tableId, t.seat),
+  check("rule_zero_result_seats_seat_check", sql`${t.seat} between 1 and 8`),
+  check("rule_zero_result_seats_place_check", sql`${t.place} between 1 and 8`),
+  index("rule_zero_result_seats_user_idx").on(t.userId),
+]);
+
 /** A seated player's own last draw of a table: a seat changed after it carries a dot. Home never reads it. */
 export const ruleZeroSeen = pgTable("rule_zero_seen", {
   tableId: uuid("table_id").notNull().references(() => ruleZeroTables.id, { onDelete: "cascade" }),

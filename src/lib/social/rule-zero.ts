@@ -20,7 +20,7 @@
 import { and, asc, eq, inArray, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
+import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroResultSeats, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 import type { ThirdPartyName } from "../person-name/brand";
 import { named } from "../person-name/mint";
 import type { Reader } from "./access";
@@ -700,6 +700,7 @@ export async function purgeRuleZeroIn(tx: Tx, userId: string): Promise<RuleZeroP
     order by t.id for update`);
   const left = await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.userId, userId)).returning({ tableId: ruleZeroSeats.tableId });
   await tx.delete(ruleZeroSeen).where(eq(ruleZeroSeen.userId, userId));
+  await tx.delete(ruleZeroResultSeats).where(eq(ruleZeroResultSeats.userId, userId));
   const set = await tx.delete(ruleZeroTables).where(or(eq(ruleZeroTables.setBy, userId), eq(ruleZeroTables.closedBy, userId))).returning({ id: ruleZeroTables.id });
   const touched = [...new Set(left.map((s) => s.tableId))];
   const short = touched.length === 0 ? [] : await tx

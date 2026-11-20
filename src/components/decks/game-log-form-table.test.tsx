@@ -38,6 +38,7 @@ const SEATING = "a".repeat(64);
 const prefill: TablePrefill = {
   table: { id: "7a0e0000-0000-4000-8000-000000000001", seating: SEATING },
   podName: named("Thursday night"),
+  result: null,
   podSize: 4,
   seats: [
     { seat: 2, name: named("Colin"), deckName: named("Zimone Combo"), commanderName: "Zimone, Quandrix Prodigy", artCropUri: null, friend: true },

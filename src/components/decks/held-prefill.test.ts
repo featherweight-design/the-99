@@ -5,7 +5,7 @@ import type { TablePrefill } from "../../lib/social/rule-zero-log";
 import { useHeldPrefill } from "./held-prefill";
 import { named } from "../../lib/person-name/mint";
 
-const prefill = (id: string): TablePrefill => ({ table: { id, seating: "a".repeat(64) }, podName: named("Thursday night"), podSize: 4, seats: [] });
+const prefill = (id: string): TablePrefill => ({ table: { id, seating: "a".repeat(64) }, podName: named("Thursday night"), podSize: 4, seats: [], result: null });
 
 describe("useHeldPrefill", () => {
   it("keeps an unspent prefill through a refresh drawn without one (a game deleted while the form is open)", () => {
