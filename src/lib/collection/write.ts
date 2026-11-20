@@ -630,16 +630,18 @@ export function shortChoices(
   after: Map<string, Pick<Availability, "owned" | "claims">>,
   short: readonly ShortDeck[],
   names: Map<string, string>,
+  ignored: ReadonlySet<string> = new Set(),
 ): ShortChoice[] {
   const out: ShortChoice[] = [];
   for (const oracleId of new Set(short.map((d) => d.oracleId))) {
     const now = after.get(oracleId);
     if (!now || now.owned !== 1) continue;
-    const claimants = allocateClaims(now).filter((c) => !c.brew);
+    // A deck the change itself leaves out of the warning (`ignoredDecks`) is not offered as a keeper either.
+    const claimants = allocateClaims(now).filter((c) => !c.brew && !ignored.has(c.deckId));
     if (claimants.length < 2) continue;
     out.push({
       oracleId,
-      cardName: names.get(oracleId) ?? "",
+      cardName: names.get(oracleId) ?? short.find((d) => d.oracleId === oracleId)?.cardName ?? "",
       claimants: claimants.map((c) => ({
         deckId: c.deckId, deckName: c.deckName, quantity: c.quantity, since: c.since,
         allocated: c.allocated, commander: c.commanderCopies > 0,
@@ -1101,7 +1103,7 @@ export async function applyCollectionChange(
           .filter((d) => !ignoredDecks.has(d.deckId));
         if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks, ...(syncPreview ? { sync: syncPreview } : {}) });
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
-          const choices = shortChoices(claimsAfter, decks, names);
+          const choices = shortChoices(claimsAfter, decks, names, ignoredDecks);
           throw new Refused({ status: "wouldShort", decks, ...(choices.length > 0 ? { choices } : {}) });
         }
         short = decks;

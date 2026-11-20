@@ -221,6 +221,9 @@ export async function editCollection(
   // The removal chooser's pick (#2983): the one deck that keeps the card's last copy, written as its one authored
   // reservation inside this edit's transaction (`opts.assign`). A malformed pick is a bad request, never a quiet default.
   const pick = keep === undefined || keep === null ? undefined : keepOf(keep);
+  // The pick must name a card THIS edit lowers: a pick for any other card would write a reservation the edit never
+  // asked about.
+  if (pick && !editRows.some((r) => r.quantity < (r.expected ?? r.quantity) && r.oracleId === pick.oracleId)) throw new Error("bad keeper");
   const result = await applyCollectionChange(
     userId, { kind: "edit", rows: editRows, seen: seenIdentities },
     { id: actionId, confirmShort: parseShortDecks(confirmShort), ...(pick ? { assign: pick } : {}) },
