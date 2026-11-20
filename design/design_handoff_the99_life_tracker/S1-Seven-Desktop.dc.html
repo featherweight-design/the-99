@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S1 · 7 seated, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(/_blob/92b49ae8bf36fee523d2c940101a47cd) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(/_blob/28a118a4f1d2d89f048ed8dda083f273) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(/_blob/ab35e14cb6458bb7fa4f3f54f8f02a5f) format("woff2");font-weight:500}
+body{margin:0}
+
+.P{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--fg-disabled:#4A4033;--accent:#CF8745;--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;--danger:#C6533F;--bracket-3:#C9AC62;width:390px;box-sizing:border-box;background:var(--bg);font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg);display:flex;flex-direction:column;position:relative}
+.top{height:56px;display:flex;align-items:center;padding:0 8px 0 18px;border-bottom:1px solid var(--border);gap:4px}
+.wm{display:flex;align-items:baseline;gap:8px;margin-right:auto}
+.wm span{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.3em;color:var(--accent)}
+.wm b{font-family:"Cinzel",serif;font-weight:700;font-size:28px;line-height:1}
+.ib{width:44px;height:44px;border:0;background:none;color:var(--fg-body);display:flex;align-items:center;justify-content:center;font-size:20px;font-family:"IBM Plex Sans",sans-serif}
+.av{width:36px;height:30px;border-radius:9px;box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent);font-family:"IBM Plex Mono",monospace;font-size:12px;display:flex;align-items:center;justify-content:center;margin:0 4px}
+.back{height:44px;display:flex;align-items:center;gap:4px;padding:0 8px;font-size:14px;color:var(--fg-body)}
+.col{padding:0 16px 22px;display:flex;flex-direction:column;gap:14px}
+.hdr{display:grid;grid-template-columns:minmax(0,1fr) auto;column-gap:10px}
+h1{margin:0;font-family:"Cinzel",serif;font-weight:700;font-size:24px;line-height:1.2}
+.meta{grid-column:1;margin:6px 0 0;font-family:"IBM Plex Mono",monospace;font-size:11.5px;line-height:1.55;color:var(--fg-faint)}
+.meta b{font-weight:500;color:var(--fg-body)}
+.seatsb{grid-column:2;grid-row:1;align-self:start;height:36px;padding:0 12px;border-radius:9px;border:0;background:none;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:6px}
+.read{border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);padding:14px 16px}
+.read .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.read p{margin:6px 0 0;font-size:15px;font-weight:600;line-height:1.35}
+.read small{display:block;margin-top:6px;font-size:13px;line-height:1.5;color:var(--fg-muted)}
+.seats{display:flex;flex-direction:column;gap:10px}
+.foot{display:flex;flex-direction:column;gap:10px}
+.go{height:52px;border-radius:10px;border:0;background:var(--accent);color:#14110E;font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;width:100%}
+.go[aria-disabled="true"]{background:var(--elevated);color:var(--fg-disabled);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.sub{margin:0;text-align:center;font-size:12.5px;line-height:1.5;color:var(--fg-muted)}
+.why{margin:0;display:flex;gap:8px;align-items:flex-start;justify-content:center;text-align:left;font-size:13px;line-height:1.5;color:var(--fg-body)}
+.why svg{flex:none;margin-top:2px;color:var(--fg-muted)}
+.why b{font-weight:600;color:var(--fg)}
+.ghost{height:44px;border-radius:10px;border:0;background:none;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;font-size:14.5px;width:100%}
+.close{height:44px;border:0;background:none;color:var(--danger);font-family:"IBM Plex Sans",sans-serif;font-size:14px;font-weight:600;width:100%}
+.tabbar{position:sticky;bottom:0;display:block;width:390px;height:74px;margin-top:auto}
+/* the game on this device */
+.gip{border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--accent);padding:14px 14px 10px;display:flex;flex-direction:column;gap:12px}
+.gip .gh{display:flex;align-items:baseline;gap:10px}
+.gip .gh .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.gip .gh span:last-child{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--fg-faint)}
+.gip .fx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.gip .f{position:relative;height:64px;border-radius:9px;overflow:hidden;background:var(--surface-sunken)}
+.gip .f img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.gip .f b{position:absolute;left:8px;bottom:5px;font-size:12px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.gip .f strong{position:absolute;right:8px;top:4px;font-family:"Cinzel",serif;font-weight:700;font-size:22px;text-shadow:0 2px 8px rgba(0,0,0,.7)}
+.gip .f.out img{filter:grayscale(1);opacity:.3}.gip .f.out strong{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;color:var(--fg-muted);top:8px}
+.gip .f.turn{box-shadow:inset 0 0 0 2px var(--accent)}
+.gip p{margin:0;font-size:13px;line-height:1.5;color:var(--fg-muted)}
+.gip .dis{height:44px;border:0;background:none;color:var(--fg-muted);font-family:"IBM Plex Sans",sans-serif;font-size:14px;font-weight:600}
+/* desktop */
+.D{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--fg-disabled:#4A4033;--accent:#CF8745;--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;--danger:#C6533F;--bracket-3:#C9AC62;width:1300px;box-sizing:border-box;background:var(--bg);font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg);display:grid;grid-template-columns:62px minmax(0,1fr);position:relative}
+.rail{background:#191610 url() no-repeat;box-shadow:inset -1px 0 0 #25211C;position:relative}
+.rail img{display:block;width:62px;height:900px}
+.D .main{min-width:0}
+.D .hdr{padding:22px 34px 16px;border-bottom:1px solid var(--border);column-gap:20px}
+.D .bl{grid-column:1;display:flex;align-items:center;gap:6px;font-size:13px;color:var(--fg-body);margin-bottom:6px}
+.D h1{font-size:30px}
+.D .meta{font-size:12px}
+.D .seatsb{grid-row:1 / 4;align-self:end}
+.D .grid{display:grid;grid-template-columns:minmax(0,1fr) 392px;grid-template-rows:auto 1fr;column-gap:28px;row-gap:14px;align-items:start;padding:22px 34px 28px}
+.D .seats{grid-column:1;grid-row:1 / 3}
+.D .rc{grid-column:2;grid-row:1;display:flex;flex-direction:column;gap:14px}
+.D .foot{grid-column:2;grid-row:2;gap:12px}
+
+.st{position:relative;overflow:hidden;border-radius:12px;background:var(--surface-rail);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.st.you{box-shadow:inset 0 0 0 1px var(--accent),0 0 0 1px var(--accent)}
+.st .wsh{position:absolute;inset:-30px;width:calc(100% + 60px);height:calc(100% + 60px);object-fit:cover;opacity:.22;filter:blur(30px) saturate(1.2)}
+.st .g{position:relative;display:grid;grid-template-columns:84px minmax(0,1fr);column-gap:12px;padding:12px}
+.st .a{width:84px;height:60px;border-radius:9px;overflow:hidden;background:var(--surface-sunken);box-shadow:0 8px 18px rgba(0,0,0,.45),inset 0 0 0 1px rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center}
+.st .a img{width:100%;height:100%;object-fit:cover;display:block}
+.st .a.ini{background:radial-gradient(120px 80px at 50% 40%,var(--elevated),var(--surface));font-family:"Cinzel",serif;font-weight:700;font-size:22px;color:var(--fg-muted)}
+.st .t{display:flex;flex-direction:column;gap:3px;min-width:0}
+.st .nm{display:flex;align-items:baseline;gap:7px;font-size:15px;font-weight:600}
+.st .nm small{font-family:"IBM Plex Mono",monospace;font-size:9.5px;font-weight:500;letter-spacing:.12em;color:var(--accent)}
+.st .nm em{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:10px;font-weight:400;color:var(--fg-muted)}
+.st .dk{font-size:13.5px;color:var(--fg-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st .dk.w{color:var(--fg-muted)}
+.st .cm{font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--fg-faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.st .cl{grid-column:1 / -1;margin-top:10px;display:flex;align-items:center;gap:8px}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;box-shadow:inset 0 0 0 1px var(--border-strong);font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--bracket-3);background:rgba(20,17,14,.4)}
+.cts{display:flex;gap:4px}
+.ct{display:inline-flex;align-items:center;gap:4px;height:26px;padding:0 7px;border-radius:7px;box-shadow:inset 0 0 0 1px var(--border);background:var(--surface-sunken);font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--fact)}
+.ct.z{background:transparent;color:var(--fg-locked);font-weight:400}.ct.z svg{opacity:.5}
+.st .ctw{grid-column:1 / -1;margin-top:12px}
+.wait{position:relative;margin:0 12px 12px;border-radius:9px;border:1.5px dashed var(--border-dashed);padding:10px 12px;font-size:13px;line-height:1.55;color:var(--fg-muted)}
+.ctl{position:relative;margin-top:-6px;display:flex;justify-content:flex-end;padding:0 12px 12px}
+.chg{height:36px;padding:0 14px;border-radius:9px;border:0;background:none;box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;font-weight:600}
+/* desktop rows */
+.D .st .g{grid-template-columns:132px minmax(0,1fr) auto;column-gap:18px;row-gap:4px;align-items:center;padding:12px 16px 12px 12px}
+.D .st .a{width:132px;height:92px;border-radius:10px;grid-row:1 / 3}
+.D .st .a.ini{font-size:26px}
+.D .st .nm{font-size:16px;gap:8px}
+.D .st .dk{font-size:14px}
+.D .st .t{align-self:end;gap:4px}
+.D .st .t.mid{grid-row:1 / 3;align-self:center}
+.D .st .cl{grid-column:2;grid-row:2;margin-top:4px;align-self:start}
+.D .st .ctw{grid-column:3;grid-row:1 / 3;margin-top:0;align-self:center}
+.D .wait{margin:0 16px 14px 162px}
+.D .ctl{margin-top:-8px;padding:0 16px 8px 162px}
+
+</style>
+</helmet>
+<div class="D">
+  <div class="rail"><img src="/_blob/b5ee18c086ab4dcfee419798be689715" alt=""></div>
+  <div class="main">
+    <div class="hdr"><span class="bl"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg> Friends</span><h1>Rule 0 check</h1><p class="meta"><b>Thursday night</b> · set by you · 7 seated · open until 6:00 am tomorrow</p><button class="seatsb"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.2c2.4.2 4 1.8 4.5 4.8"/></svg>Seats</button></div>
+    <div class="grid">
+      <div class="seats"><article class="st you" aria-label="Your seat"><img class="wsh" src="/_blob/019b993ea74dc7eef2d2e5a820befefa" alt=""><div class="g"><span class="a" aria-hidden="true"><img src="/_blob/019b993ea74dc7eef2d2e5a820befefa" alt=""></span><span class="t"><span class="nm"><span>You</span><small>YOU</small></span><span class="dk">Sai Thopters</span><span class="cm">Sai, Master Thopterist</span></span><span class="cl"><span class="chip">Upgraded</span></span><span class="ctw"><span class="cts"><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 9-7 9-7-9z"/></svg>0</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><circle cx="15.5" cy="12" r="4"/></svg>1</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5"/><path d="M14.5 14.5L20 20"/></svg>2</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 12a7 7 0 11-2-4.9"/><path d="M19 4v4h-4"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 3-4 5 8z"/></svg>0</span></span></span></div><div class="ctl"><button class="chg">Change deck</button></div></article><article class="st" aria-label="Colin’s seat"><img class="wsh" src="/_blob/3a9cc48d946086f7a01702d812ad49a7" alt=""><div class="g"><span class="a" aria-hidden="true"><img src="/_blob/3a9cc48d946086f7a01702d812ad49a7" alt=""></span><span class="t"><span class="nm"><span>Colin</span><em>owner</em></span><span class="dk">Ghalta Stompy</span><span class="cm">Ghalta, Primal Hunger</span></span><span class="cl"><span class="chip">Upgraded</span></span><span class="ctw"><span class="cts"><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 9-7 9-7-9z"/></svg>1</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><circle cx="15.5" cy="12" r="4"/></svg>0</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5"/><path d="M14.5 14.5L20 20"/></svg>1</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 12a7 7 0 11-2-4.9"/><path d="M19 4v4h-4"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 3-4 5 8z"/></svg>0</span></span></span></div></article><article class="st" aria-label="Peter’s seat"><img class="wsh" src="/_blob/de887acf2dd3696e7f72d8630ef63661" alt=""><div class="g"><span class="a" aria-hidden="true"><img src="/_blob/de887acf2dd3696e7f72d8630ef63661" alt=""></span><span class="t"><span class="nm"><span>Peter</span></span><span class="dk">Giada Angels</span><span class="cm">Giada, Font of Hope</span></span><span class="cl"><span class="chip">Upgraded</span></span><span class="ctw"><span class="cts"><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 9-7 9-7-9z"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><circle cx="15.5" cy="12" r="4"/></svg>0</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5"/><path d="M14.5 14.5L20 20"/></svg>2</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 12a7 7 0 11-2-4.9"/><path d="M19 4v4h-4"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 3-4 5 8z"/></svg>0</span></span></span></div></article><article class="st" aria-label="Max’s seat"><img class="wsh" src="/_blob/747b6b5b0a287c64fc2a76924491c25e" alt=""><div class="g"><span class="a" aria-hidden="true"><img src="/_blob/747b6b5b0a287c64fc2a76924491c25e" alt=""></span><span class="t"><span class="nm"><span>Max</span></span><span class="dk">Gisa Zombies</span><span class="cm">Gisa, the Hellraiser</span></span><span class="cl"><span class="chip">Upgraded</span></span><span class="ctw"><span class="cts"><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 9-7 9-7-9z"/></svg>1</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><circle cx="15.5" cy="12" r="4"/></svg>1</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5"/><path d="M14.5 14.5L20 20"/></svg>1</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 12a7 7 0 11-2-4.9"/><path d="M19 4v4h-4"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 3-4 5 8z"/></svg>0</span></span></span></div></article><article class="st" aria-label="Chris’s seat"><img class="wsh" src="/_blob/4a0fd5eea277545f56c74cbec6b0a96e" alt=""><div class="g"><span class="a" aria-hidden="true"><img src="/_blob/4a0fd5eea277545f56c74cbec6b0a96e" alt=""></span><span class="t"><span class="nm"><span>Chris</span></span><span class="dk">Killian Pacifist</span><span class="cm">Killian, Ink Duelist</span></span><span class="cl"><span class="chip">Upgraded</span></span><span class="ctw"><span class="cts"><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 9-7 9-7-9z"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><circle cx="15.5" cy="12" r="4"/></svg>0</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5"/><path d="M14.5 14.5L20 20"/></svg>1</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 12a7 7 0 11-2-4.9"/><path d="M19 4v4h-4"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 3-4 5 8z"/></svg>0</span></span></span></div></article><article class="st" aria-label="Riley’s seat"><img class="wsh" src="/_blob/f6a88812ca37544203f26249c2bff155" alt=""><div class="g"><span class="a" aria-hidden="true"><img src="/_blob/f6a88812ca37544203f26249c2bff155" alt=""></span><span class="t"><span class="nm"><span>Riley</span><em>not a friend</em></span><span class="dk">Jace Control</span><span class="cm">Jace, Vryn’s Prodigy</span></span><span class="cl"><span class="chip">Upgraded</span></span><span class="ctw"><span class="cts"><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 9-7 9-7-9z"/></svg>1</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><circle cx="15.5" cy="12" r="4"/></svg>1</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5"/><path d="M14.5 14.5L20 20"/></svg>3</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 12a7 7 0 11-2-4.9"/><path d="M19 4v4h-4"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 3-4 5 8z"/></svg>0</span></span></span></div></article><article class="st" aria-label="Sam’s seat"><img class="wsh" src="/_blob/bb888cc90f29787c182064325351ec87" alt=""><div class="g"><span class="a" aria-hidden="true"><img src="/_blob/bb888cc90f29787c182064325351ec87" alt=""></span><span class="t"><span class="nm"><span>Sam</span></span><span class="dk">Ishai + Bruse</span><span class="cm">Ishai, Ojutai Dragonspeaker + Bruse Tarl, Boorish Herder</span></span><span class="cl"><span class="chip">Upgraded</span></span><span class="ctw"><span class="cts"><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 9-7 9-7-9z"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="8.5" cy="12" r="4"/><circle cx="15.5" cy="12" r="4"/></svg>0</span><span class="ct"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5"/><path d="M14.5 14.5L20 20"/></svg>1</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M19 12a7 7 0 11-2-4.9"/><path d="M19 4v4h-4"/></svg>0</span><span class="ct z"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 19l6-10 4 6 3-4 5 8z"/></svg>0</span></span></span></div></article></div>
+      <div class="rc"><div class="read"><span class="k">The read</span><p>A balanced table.</p><small>Every deck reads Upgraded.</small></div></div>
+      <div class="foot"><button class="go" aria-disabled="true" aria-describedby="why7"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M7 4.5v15l12-7.5z"/></svg>Start the game</button><p class="why" id="why7"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M6 6l12 12"/></svg><span><b>The tracker fits up to 6 players, and 7 are seated.</b> Clear a seat in Seats to start it.</span></p><button class="ghost">Log this game</button><button class="close">Close the table</button></div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1300,"height":1081}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
