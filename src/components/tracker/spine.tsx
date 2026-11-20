@@ -53,8 +53,9 @@ export function Spine({
 }) {
   const column = rect.h > rect.w;
   const [dice, setDice] = useState(false);
-  // Ten stops along the strip (the round counts a little over one); the buttons take what the gap allows, up to 48px.
-  const size = column ? "min(48px, calc((100cqh - 12px) / 9.4))" : "min(48px, calc(100cqh - 12px))";
+  // Down a column: the round (1.04 buttons), six buttons and eight gaps of a quarter button make 9.04 buttons, plus two
+  // 1px rules and 6px clear at each end. The buttons take what that leaves, up to 48px.
+  const size = column ? "min(48px, calc((100cqh - 14px) / 9.04))" : "min(48px, calc(100cqh - 12px))";
   const gap = `calc(${size} / 4)`;
 
   return (
