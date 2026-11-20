@@ -16,7 +16,7 @@ import { isUuid } from "../../lib/uuid";
 import { db } from "../../db";
 import { pendingAssignments } from "../../db/schema";
 import { and, eq } from "drizzle-orm";
-import { loadContestedCard, type ContestedCard } from "../../lib/collection/summary-read";
+import { loadChooserCards, type ContestedCard } from "../../lib/collection/summary-read";
 import { loadOtherDecks, type OtherDecks } from "../../lib/decks/other-decks-read";
 import { addCardToDeckFor, revalidateAdd } from "../../lib/decks/add-card";
 import { assignPendingFor, type PendingRefusal } from "../../lib/decks/pending-picks";
@@ -25,6 +25,15 @@ import { removeOneCopy } from "../../lib/decks/remove-card";
 import { requireDeck } from "../../lib/decks/read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 
+/**
+ * The door's card, read live. `loadContestedCard` stamps `arrived: 0` (a placeholder for a receipt's frozen fact), which
+ * would draw `0 copies` and drop the holder's row here, where no import is behind the card. `loadChooserCards` reads the
+ * collection's own supply as the copy count, with no `isContested` gate; the receipt paths keep `loadContestedCard`.
+ */
+async function loadDoorCard(oracleId: string, userId: string): Promise<ContestedCard | null> {
+  return (await loadChooserCards([oracleId], userId))[0] ?? null;
+}
+
 export type MoveCopyView = { card: ContestedCard | null; other: OtherDecks };
 
 /** The chooser's live read, on open (never with card details): the contested card and the Other decks. */
@@ -32,7 +41,7 @@ export async function openMoveCopy(oracleId: string): Promise<MoveCopyView | nul
   const userId = await requireUserId();
   if (typeof oracleId !== "string" || !isUuid(oracleId)) return null;
   const [card, other] = await Promise.all([
-    loadContestedCard(oracleId, userId).catch(() => null),
+    loadDoorCard(oracleId, userId).catch(() => null),
     loadOtherDecks(userId, oracleId),
   ]);
   return { card, other };
@@ -63,7 +72,7 @@ export async function pickOtherDeck(oracleId: string, deckId: string): Promise<P
     if (cause) {
       if (added) await removeOneCopy(deckId, oracleId);
       revalidateClaims(deckId, userId);
-      return { ok: false, cause, card: await loadContestedCard(oracleId, userId).catch(() => null) };
+      return { ok: false, cause, card: await loadDoorCard(oracleId, userId).catch(() => null) };
     }
   } catch {
     // A write that threw after the draft add leaves the deck as it was, as a refusal does.
@@ -71,7 +80,7 @@ export async function pickOtherDeck(oracleId: string, deckId: string): Promise<P
     return { ok: false, cause: "failed", card: null };
   }
   revalidateClaims(deckId, userId);
-  return { ok: true, added, card: await loadContestedCard(oracleId, userId).catch(() => null) };
+  return { ok: true, added, card: await loadDoorCard(oracleId, userId).catch(() => null) };
 }
 
 /**

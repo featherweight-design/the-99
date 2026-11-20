@@ -17,6 +17,7 @@ import { dropOtherDeckPick, openMoveCopy, pickOtherDeck, type PickOtherResult } 
 import { CopyChooserDialog } from "../decks/copy-chooser-dialog";
 import { OtherDecksDisclosure } from "../decks/other-decks-disclosure";
 import { RECEIPT_LINK_CLASS } from "./card-modal-shared";
+import { useCardDetailIfAny } from "./card-detail-context";
 
 const contested = cardAssignmentsCopy.contested;
 
@@ -48,12 +49,19 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
   const button = useRef<HTMLButtonElement>(null);
   const [loading, startLoad] = useTransition();
   const writes = useRef(0);
+  // Whether anything was written since the chooser opened: card details re-reads on close, so its list shows the DB.
+  const dirty = useRef(false);
+  const evict = useCardDetailIfAny()?.evict;
 
   const close = useCallback(() => {
     setOpen(false);
+    if (dirty.current) {
+      dirty.current = false;
+      evict?.(oracleId);
+    }
     // The button never unmounts, but the dialog's inert hold and focus restore are a frame apart: focus it explicitly.
     requestAnimationFrame(() => button.current?.focus());
-  }, []);
+  }, [evict, oracleId]);
 
   const begin = () => {
     setRefusal(null);
@@ -73,6 +81,7 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
   };
 
   const dropPick = (deckId: string) => {
+    dirty.current = true;
     const remove = added.current.delete(deckId);
     void dropOtherDeckPick(oracleId, deckId, remove);
   };
@@ -93,6 +102,7 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
     const mine = ++writes.current;
     setBusy(true);
     void pickOtherDeck(oracleId, deck.id).then((r) => {
+      dirty.current = true;
       if (r.ok) {
         if (r.added) added.current.add(deck.id);
         if (mine === writes.current) {
@@ -144,8 +154,11 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
             writes.current += 1;
             setBusy(false);
             setPickedId(null);
+            // The pick's announcement no longer holds: say it was withdrawn.
+            setAnnounce(moveCopyCopy.other.announcedUndo(cardName, view.other.decks.find((d) => d.id === pickedId)?.name ?? ""));
             dropPick(id);
           }}
+          onWrite={() => { dirty.current = true; }}
           onCard={(next) => { if (next) setView((v) => (v ? { ...v, card: next } : v)); }}
           below={
             <OtherDecksDisclosure
