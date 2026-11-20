@@ -794,17 +794,15 @@ export function CardDetailProvider({
     getOpener: () => openerRef.current,
     resolveTarget: focusableOpener,
   });
-    // THE FEED'S COMBO, OPENED ON ITS OWN (small items 12 PR 3b): the sheet with no card under it, read by variant. It is
+  // THE FEED'S COMBO, OPENED ON ITS OWN (small items 12 PR 3b): the sheet with no card under it, read by variant. It is
   // not the card's own `comboSheet`: nothing is lifted, and a card opened from a plate stacks over it as over any sheet.
   const [feedCombo, setFeedCombo] = useState<{ combo: CardCombo; lead: string } | null>(null);
   const [feedComboReading, setFeedComboReading] = useState(false);
-  const [feedComboFailed, setFeedComboFailed] = useState(false);
   // Bumped by every open and close, which is what abandons a read still in flight.
   const feedComboRead = useRef(0);
   const reopenAsCard = useRef<((oracleId: string, opts: { opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string }) => void) | null>(null);
   const openFeedCombo = useCallback((oracleId: string, variantId: string, added: string, opener: HTMLElement | null | undefined) => {
     const mine = ++feedComboRead.current;
-    setFeedComboFailed(false);
     setFeedComboReading(true);
     getComboSheet(variantId).then(
       (combo) => {
@@ -817,7 +815,9 @@ export function CardDetailProvider({
       () => {
         if (feedComboRead.current !== mine) return;
         setFeedComboReading(false);
-        setFeedComboFailed(true);
+        // A failed read says nothing to a sighted reader, so it is today's behavior too: the card's details (which
+        // announce their own failure if the read fails again).
+        reopenAsCard.current?.(oracleId, { opener, combo: true, comboVariantId: variantId });
       },
     );
   }, []);
@@ -837,8 +837,7 @@ export function CardDetailProvider({
       // Every open restates what the feed's sheet was: a new open abandons a read of it still running.
       feedComboRead.current++;
       setFeedComboReading(false);
-      setFeedComboFailed(false);
-      if (opts?.combo && opts.comboVariantId && opts.comboOnly) {
+        if (opts?.combo && opts.comboVariantId && opts.comboOnly) {
         const focused = document.activeElement;
         const opener = opts && "opener" in opts ? opts.opener : focused instanceof HTMLElement && focused !== document.body ? focused : null;
         openFeedCombo(oracleId, opts.comboVariantId, opts.comboOnly.added, opener);
@@ -1430,7 +1429,7 @@ export function CardDetailProvider({
       {children}
       {/* The fetch is invisible until the modal mounts, so the wait is announced here. */}
       <div aria-live="polite" className="sr-only">
-        {shownPending || feedComboReading ? cardDetailCopy.loading : failed || feedComboFailed ? cardDetailCopy.unavailable : ""}
+        {shownPending || feedComboReading ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
       </div>
       {/* The carousel's own region (handoff decision 8), separate from the one above: the
           modal is keyed per card and remounts empty on every page, so the thing that
