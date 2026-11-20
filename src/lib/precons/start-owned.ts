@@ -23,13 +23,14 @@ import { isBasicLand } from "../decks/grouping";
 import { preconSource } from "./added";
 import { committedAnswer, preconAddLines, readPreconForAddIn } from "./add";
 import { preparePreconDeckIn, writePreconDeckIn, type PreparedPreconDeck } from "./start";
-import { prepareUpgradeIn, upgradedDeck } from "./upgrade/apply";
+import { prepareUpgradeIn, upgradedDeck, type UpgradePicks } from "./upgrade/apply";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type PreconStartResult =
   | { ok: true; deckId: string; entryId: string }
-  | { ok: false; reason: "notFound" | "failed" | "upgradeUnavailable" };
+  /** `picks`: the picks sent are no longer the run's to make (`prepareUpgradeIn`'s "picks"); the run itself is still startable. */
+  | { ok: false; reason: "notFound" | "failed" | "upgradeUnavailable" | "picks" };
 
 /**
  * The copies to reserve to the new deck, by card: what the box brought, up to what the deck lists. A
@@ -56,6 +57,8 @@ export async function startPreconOwned(
   placements: boolean,
   /** An Upgrade this precon run the deck is started from: v0 the box, v1 its swaps. The box's own copies are what the add brings either way. */
   runId?: string,
+  /** The adds and cuts the player kept from that run; absent, the whole run. */
+  picks?: UpgradePicks,
 ): Promise<PreconStartResult> {
   // A retry: the deck this action made, found through its link. Read before the catalog, so an ingest
   // that replaced the precon since changes nothing.
@@ -74,11 +77,12 @@ export async function startPreconOwned(
     if (!box) return null;
     const plain = await preparePreconDeckIn(tx, fileName);
     if (!runId) return { box, deck: plain };
-    const up = await prepareUpgradeIn(tx, userId, fileName, runId, plain);
-    return typeof up === "string" ? { box, deck: null } : { box, deck: { ...plain, upgrade: up } };
+    const up = await prepareUpgradeIn(tx, userId, fileName, runId, plain, picks);
+    return typeof up === "string" ? { box, deck: null, refusal: up } : { box, deck: { ...plain, upgrade: up }, refusal: null };
   }, { isolationLevel: "repeatable read" });
   if (!read) return { ok: false, reason: "notFound" };
-  if (!read.deck) return { ok: false, reason: "upgradeUnavailable" };
+  // A stale pick is the player's to make again, not the run gone: the dialog keeps the run (`start-precon.tsx`).
+  if (!read.deck) return { ok: false, reason: read.refusal === "picks" ? "picks" : "upgradeUnavailable" };
   const { box, deck } = read;
   // The copies the box brought go to the deck they are in: the swapped list, so a cut card is added to the collection and reserved to nothing.
   const listed = deck.upgrade ? upgradedDeck(deck, deck.upgrade).cards : deck.cards;

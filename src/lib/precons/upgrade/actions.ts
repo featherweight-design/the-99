@@ -2,8 +2,10 @@
 
 import { requireUserId } from "../../auth";
 import { requestFlags } from "../../flags/request";
+import { enforceHit } from "../../rate/observe";
 import { preconUpgradeEnabled } from "./flag";
-import { LIVE_DEPS, pressUpgrade, readUpgrade, type UpgradePanel, type UpgradePress } from "./run";
+import { picksShape } from "./apply";
+import { LIVE_DEPS, pressUpgrade, readSetBracket, readUpgrade, type UpgradePanel, type UpgradePress } from "./run";
 import { markSeen, setPick, type SetPickResult } from "./store";
 
 /**
@@ -52,4 +54,21 @@ export async function pickUpgradeLineAction(runId: string, lineId: string, picke
   if (!isRunId(runId)) return { ok: false, reason: "notFound" };
   if (!isLineId(lineId) || typeof picked !== "boolean") return { ok: false, reason: "unknownLine" };
   return setPick(userId, runId, lineId, picked);
+}
+
+/**
+ * The brackets the reader's own done run permits with these of its adds and cuts picked, and the bracket that plays at (fresh start
+ * R2): the Start dialog's bracket fact on the picked subset. Free: one profile build, no model call. The ids are oracle ids, held to
+ * `picksShape` (arrays of uuids, none repeated, at most `MAX_SWAPS` a side) before anything is read; null on any refusal. Each press
+ * of a pick reads it, so it is rate limited per player (`upgrade-set-bracket`, ENFORCED): over the limit it answers null, and the
+ * bar leaves the fact off.
+ */
+export async function upgradeSetBracketAction(fileName: string, runId: string, addIds: unknown, cutIds: unknown): Promise<{ permits: number[]; bracket: number | null } | null> {
+  const userId = await requireUserId();
+  const env = await requestFlags(userId);
+  if (!preconUpgradeEnabled(env) || !bounded(fileName, 200) || !isRunId(runId)) return null;
+  if ((await enforceHit(userId, "upgrade-set-bracket")) !== null) return null;
+  const picks = picksShape({ adds: addIds, cuts: cutIds });
+  if (!picks || picks.adds.length + picks.cuts.length === 0) return null;
+  return readSetBracket(userId, fileName, runId, picks.adds, picks.cuts);
 }

@@ -4,6 +4,7 @@ import type { Allowance } from "../../model/allowance-rule";
 import { withPayments } from "../../payments/flag";
 import { slotDeck } from "../../bracket/slot";
 import { swapped } from "../../decks/tuning-read";
+import { bracketAfter as lineBracketAfter } from "../../tuning/bracket-shift";
 import { loadDeckProfileFromHead, type ProfileHead } from "../../profile/load";
 import { UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } from "./constants";
 import { detectStrategies, type Strategy } from "./detect";
@@ -17,10 +18,11 @@ import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } fr
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { readCardFacts, readRunDecks, type CardFacts, type RunDeck } from "./facts";
-import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
+import { finishUpgrade, readDoneUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
 import { recordSoftFailure } from "../../cache/soft-failure";
 import { readSwapPartners } from "./swap-partners";
-import type { StoredPair, UpgradePair } from "./validate";
+import { picksInRun } from "./picks";
+import type { LineBrackets, StoredPair, UpgradePair } from "./validate";
 
 /**
  * Upgrade this precon's read and press (research 2026-11-10). SERVER-ONLY. The actions (`actions.ts`) re-apply the switch and
@@ -82,6 +84,8 @@ type Deps = {
   availability: (userId: string, oracleIds: readonly string[]) => Promise<Map<string, Availability>>;
   /** Each swap's combo partner in the list with the pairs applied (`swap-partners.ts`), stored on the run. Its failure is isolated: see the press. */
   partners: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<StoredPair[]>;
+  /** Each pair's per-card bracket lines (`lineBrackets`), in the pairs' order, or null when any read failed. Stored on the run's pairs (`lineBracketsOrNone`). */
+  lineBrackets: (list: BracketList, pairs: readonly UpgradePair[], signal?: AbortSignal) => Promise<LineBrackets[] | null>;
   now: () => Date;
 };
 
@@ -101,6 +105,7 @@ export const LIVE_DEPS: Deps = {
     return new Map<string, Availability>();
   }),
   partners: readSwapPartners,
+  lineBrackets,
   now: () => new Date(),
 };
 
@@ -112,19 +117,143 @@ export const LIVE_DEPS: Deps = {
 /** The cards a bracket is read over: the commander(s) and every other card with its quantity. */
 export type BracketList = { commanderIds: readonly string[]; cards: readonly { oracleId: string; quantity: number; isCommander: boolean }[] };
 
+/** One copy of a card out, one in, or both: what `swapped` applies to a list. */
+type ListEdit = { cutOracleId: string | null; addOracleId: string | null };
+
 /** The profile of the list with the pairs applied, or null when the read fails: a figure the app could not compute is left out, not guessed. */
 async function profileOf(load: BracketList, pairs: readonly UpgradePair[]) {
+  return profileWith(load, pairs.map((p) => ({ cutOracleId: p.cutId, addOracleId: p.addId })));
+}
+
+/** The profile of the list with the edits applied in turn, or null when the read fails. */
+async function profileWith(load: BracketList, edits: readonly ListEdit[]) {
   try {
     const commanders = load.commanderIds;
     const list = load.cards.filter((c) => !c.isCommander).map((c) => ({ oracleId: c.oracleId, quantity: c.quantity }));
     const head: ProfileHead = {
       deckId: "", userId: "", commanderOracleId: commanders[0], partnerOracleId: commanders[1] ?? null, declaredBracket: null, cards: list,
     };
-    const after = pairs.reduce((cards, p) => swapped(cards, { cutOracleId: p.cutId, addOracleId: p.addId }), head.cards);
+    const after = edits.reduce((cards, e) => swapped(cards, e), head.cards);
     return await loadDeckProfileFromHead({ ...head, cards: after }, {} as NodeJS.ProcessEnv);
   } catch {
     return null;
   }
+}
+
+/** How many of `lineBrackets`' profile builds run at once: each is a catalog read, and a full run is 2N + 1 of them. */
+export const LINE_BRACKETS_CONCURRENCY = 4;
+
+/**
+ * `fn` over `items` with at most `limit` running at once, results in the items' order. Once `signal` aborts, no worker takes a new
+ * item (one in flight may finish); the items never started are left undefined, so a caller that aborts discards the result.
+ */
+async function mapLimited<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>, signal?: AbortSignal): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+  const worker = async () => {
+    while (next < items.length && !signal?.aborted) {
+      const i = next++;
+      out[i] = await fn(items[i]);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
+/**
+ * Each pair's per-card bracket lines (fresh start R2): the list with ONLY that add in, and with ONLY that cut out, compared with the
+ * list as it stands through Suggested changes' own `bracketAfter`, so a line flags exactly as a Suggested changes line does. The
+ * player picks adds and cuts apart, so each side carries its own. 2N + 1 profile builds (the "before" read once, shared by every
+ * side), at most `LINE_BRACKETS_CONCURRENCY` at a time, no model call. Null when any read fails: a flag the app could not compute is
+ * left out, never guessed (a missing read must not read as "moves nothing").
+ */
+export async function lineBrackets(load: BracketList, pairs: readonly UpgradePair[], signal?: AbortSignal): Promise<LineBrackets[] | null> {
+  if (pairs.length === 0) return [];
+  const before = await profileWith(load, []);
+  if (!before || signal?.aborted) return null;
+  const edits = pairs.flatMap((p): ListEdit[] => [{ cutOracleId: null, addOracleId: p.addId }, { cutOracleId: p.cutId, addOracleId: null }]);
+  const read = await mapLimited(edits, LINE_BRACKETS_CONCURRENCY, async (edit) => {
+    const after = await profileWith(load, [edit]);
+    return after ? lineBracketAfter({ before, after, declared: null }) : undefined;
+  }, signal);
+  if (signal?.aborted) return null;
+  if (read.some((r) => r === undefined)) return null;
+  return pairs.map((_, i) => ({ addBracketAfter: read[2 * i] as number[] | null, cutBracketAfter: read[2 * i + 1] as number[] | null }));
+}
+
+/**
+ * How long the per-card bracket read may take before a run is finished without it: as `PARTNERS_TIMEOUT_MS`, a hung read must not
+ * hold a charged run pending. A run holds up to 18 pairs, so 2 x 18 + 1 = 37 profile builds; at `LINE_BRACKETS_CONCURRENCY` (4)
+ * that is the shared "before" then ceil(36 / 4) = 9 rounds, about 10 in all, so 8s allows ~800ms a build. It runs on the paid press
+ * before `finishUpgrade`, next to a model call of tens of seconds. On the timeout the workers take no new build (`lineBrackets`' signal).
+ */
+export const LINE_BRACKETS_TIMEOUT_MS = 8000;
+
+/**
+ * Each pair's bracket lines by its add's oracle id (unique within a run), or an empty map when the read failed, threw, gave a
+ * different count or outlasted `LINE_BRACKETS_TIMEOUT_MS`. NEVER throws, for the same reason as `partnersOrBare`: the lines are a
+ * mark on a good run, never a reason to undo it, so on any of these the values are left off and the paid run still finishes.
+ */
+export async function lineBracketsOrNone(
+  read: Deps["lineBrackets"], list: BracketList, pairs: readonly UpgradePair[], ms = LINE_BRACKETS_TIMEOUT_MS,
+): Promise<Map<string, LineBrackets>> {
+  if (pairs.length === 0) return new Map();
+  let lines: LineBrackets[] | null = null;
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  // Aborted on the timeout, so a read that lost the race stops starting builds rather than running on unseen.
+  const stop = new AbortController();
+  try {
+    const timedOut = new Promise<null>((resolve) => { timer = setTimeout(() => { stop.abort(); resolve(null); }, ms); });
+    lines = await Promise.race([read(list, pairs, stop.signal), timedOut]);
+  } catch {
+    lines = null;
+  } finally {
+    clearTimeout(timer);
+  }
+  if (!lines || lines.length !== pairs.length) {
+    recordSoftFailure();
+    return new Map();
+  }
+  const got = lines;
+  return new Map(pairs.map((p, i) => [p.addId, got[i]] as const));
+}
+
+/**
+ * The brackets the list under a run's commander permits with these of its adds and cuts applied (fresh start R2): the Start dialog's
+ * bracket fact on the picked subset, as `readSetPermits` is Suggested changes'. The ids are held to the one picks rule (`picksInRun`)
+ * and nothing more: the counts may differ, on purpose (the bar shows a bracket while the player's adds and cuts are uneven), and the
+ * lead's color identity is not checked. A Start or an Apply refuses both (`picksOfRun`, `prepareUpgradeIn`), so the bar can read a
+ * set the write would refuse. Null when the run's commander is not the box's to lead any
+ * more, an id is not the run's, or the read fails. One profile build, no model call.
+ */
+export async function setPermits(
+  base: UpgradeBase, run: Pick<StoredUpgrade, "strategyKey" | "pairs">, adds: readonly string[], cuts: readonly string[],
+): Promise<number[] | null> {
+  const option = base.options.find((o) => run.strategyKey.startsWith(`${o.key}/`));
+  if (!option) return null;
+  if (!picksInRun(run.pairs, adds, cuts)) return null;
+  const list: BracketList = { commanderIds: option.commanderIds, cards: assembleDeck(withCommanders(base.lines, option.commanderIds), new Map()).cards };
+  const profile = await profileWith(list, [
+    ...cuts.map((id) => ({ cutOracleId: id, addOracleId: null })),
+    ...adds.map((id) => ({ cutOracleId: null, addOracleId: id })),
+  ]);
+  return profile ? slotDeck(profile).permits : null;
+}
+
+/**
+ * `setPermits` for the reader's own done run on this precon, or null when there is none, or when the run was made over another list
+ * than the box's now (the `listFp` check a Start makes, answered `listChanged` there): its swaps no longer apply. Free: reads only.
+ */
+export async function readSetBracket(
+  userId: string, fileName: string, runId: string, adds: readonly string[], cuts: readonly string[], deps: Pick<Deps, "base"> = LIVE_DEPS,
+): Promise<{ permits: number[]; bracket: number | null } | null> {
+  // By id, not through `readUpgrades`' newest `HISTORY_MAX`: an older run a Start can still make has its set bracket too.
+  const run = await readDoneUpgrade(userId, fileName, runId);
+  if (!run) return null;
+  const base = await deps.base(fileName);
+  if (!base || run.listFp === null || run.listFp !== boxFingerprint(base.lines)) return null;
+  const permits = await setPermits(base, run, adds, cuts);
+  return permits ? { permits, bracket: playsAt(permits) } : null;
 }
 
 async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<number | null> {
@@ -269,7 +398,10 @@ export async function pressUpgrade(
       return { ok: false, reason: "failed" };
     }
     // In parallel; the partners never throw (`partnersOrBare`), so only the bracket read can reach this try's catch.
-    const [bracketAfter, pairs] = await Promise.all([deps.bracketOf(list, report.pairs), partnersOrBare(deps.partners, list, report.pairs)]);
+    const [bracketAfter, partnered, lines] = await Promise.all([
+      deps.bracketOf(list, report.pairs), partnersOrBare(deps.partners, list, report.pairs), lineBracketsOrNone(deps.lineBrackets, list, report.pairs),
+    ]);
+    const pairs = partnered.map((p): StoredPair => ({ ...p, ...lines.get(p.addId) }));
     const refunded = report.charge.outcome === "refunded";
     await finishUpgrade(started, {
       status: "done", pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,

@@ -57,6 +57,13 @@ vi.mock("../../lib/decks/versions", () => ({
 vi.mock("../../lib/decks/write-imported-deck", () => ({
   writeImportedDeck: async (_tx: unknown, d: unknown) => { state.written.push(d); return "deck-1"; },
 }));
+// A start from an Upgrade this precon run: the lib's own check of the run is `apply.test.ts`'s; here, only what the action hands it.
+vi.mock("../../lib/precons/upgrade/flag", () => ({ preconUpgradeEnabled: () => true }));
+const upgraded = vi.hoisted(() => ({ calls: [] as unknown[][], result: null as unknown }));
+vi.mock("../../lib/precons/start", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../lib/precons/start")>()),
+  startUpgradedPreconDeck: async (...args: unknown[]) => { upgraded.calls.push(args); return upgraded.result ?? { ok: true, deckId: "deck-up" }; },
+}));
 vi.mock("next/navigation", () => ({ redirect: (u: string) => { throw new Error(`REDIRECT:${u}`); } }));
 
 import { PgDialect } from "drizzle-orm/pg-core";
@@ -74,6 +81,7 @@ beforeEach(() => {
   committed.map = new Map(); committed.decks = new Map(); committed.asked = [];
   state.addResult = null; state.addCalls = []; state.after = []; state.invalidated = []; state.warmed = [];
   state.carried = [];
+  upgraded.calls = [];
 });
 const params = (w: unknown) => new PgDialect().sqlToQuery(w as SQL).params;
 
@@ -309,5 +317,57 @@ describe("addPrecons (no-collection entry S4 to S7)", () => {
       { rowFile: "Temur", ok: true, entryId: "entry-Temur", deckId: "deck-Temur" },
     ]);
     expect(state.revalidated).toEqual(["deck-Abzan", "deck-Temur"]);
+  });
+});
+
+describe("picks (fresh start R2): a subset of a run's adds and cuts", () => {
+  const RUN = "11111111-1111-4111-8111-111111111111";
+  const ACTION = "00000000-0000-4000-8000-000000000001";
+  const ADD = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const CUT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc";
+  const PICKS = { adds: [ADD], cuts: [CUT] };
+
+  it("createDeckFromPrecon hands the picks to the start; absent picks are the whole run", async () => {
+    await expect(createDeckFromPrecon("Box", "Mine", RUN, PICKS)).rejects.toThrow("REDIRECT:/decks/deck-up?from=precon");
+    await expect(createDeckFromPrecon("Box", "Mine", RUN)).rejects.toThrow(/REDIRECT/);
+    expect(upgraded.calls).toEqual([["user_1", "Box", "Mine", RUN, PICKS], ["user_1", "Box", "Mine", RUN, undefined]]);
+  });
+
+  it("createDeckFromPrecon refuses picks with no run before any read, and hands malformed picks to the write that refuses them", async () => {
+    expect(await createDeckFromPrecon("Box", "Mine", undefined, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
+    expect(await createDeckFromPrecon("Box", "Mine", undefined, null as never)).toEqual({ ok: false, reason: "upgradeUnavailable" });
+    expect(upgraded.calls).toEqual([]);
+    expect(state.written).toEqual([]);
+    // Validated once, inside the write (`picksOfRun`, apply.test.ts): the action passes them through untouched.
+    const bad = { adds: ["x"], cuts: [CUT] };
+    await expect(createDeckFromPrecon("Box", "Mine", RUN, bad as never)).rejects.toThrow(/REDIRECT/);
+    expect(upgraded.calls).toEqual([["user_1", "Box", "Mine", RUN, bad]]);
+  });
+
+  it("startPreconOwned hands the picks to the owned start untouched, and refuses picks with no run", async () => {
+    state.addResult = { ok: true, deckId: "deck-9", entryId: "e" };
+    await expect(startPreconOwned("Box", "Mine", ACTION, RUN, PICKS)).rejects.toThrow(/REDIRECT/);
+    expect(state.addCalls.at(-1)).toEqual(["user_1", "Box", "Mine", ACTION, true, RUN, PICKS]);
+    state.addCalls = [];
+    expect(await startPreconOwned("Box", "Mine", ACTION, undefined, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
+    expect(state.addCalls).toEqual([]);
+  });
+
+  it("createDeckFromPrecon answers stale picks as \"picks\", apart from a run that no longer applies", async () => {
+    try {
+      upgraded.result = { ok: false, reason: "picks" };
+      expect(await createDeckFromPrecon("Box", "Mine", RUN, PICKS)).toEqual({ ok: false, reason: "picks" });
+      for (const reason of ["gone", "listChanged"]) {
+        upgraded.result = { ok: false, reason };
+        expect(await createDeckFromPrecon("Box", "Mine", RUN, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
+      }
+    } finally {
+      upgraded.result = null;
+    }
+  });
+
+  it("startPreconOwned passes the owned start's \"picks\" refusal through, not as upgradeUnavailable", async () => {
+    state.addResult = { ok: false, reason: "picks" };
+    expect(await startPreconOwned("Box", "Mine", ACTION, RUN, PICKS)).toEqual({ ok: false, reason: "picks" });
   });
 });

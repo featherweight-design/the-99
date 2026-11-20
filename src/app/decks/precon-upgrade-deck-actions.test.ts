@@ -25,7 +25,7 @@ beforeEach(() => {
 describe("applyPreconUpgradeOnDeck / undoPreconUpgradeOnDeck", () => {
   it("apply and undo the reader's own deck, and revalidate its claim surfaces on success", async () => {
     expect(await applyPreconUpgradeOnDeck(DECK, RUN)).toEqual({ ok: true, swaps: 14, lead: null });
-    expect(applyUpgradeOnDeck).toHaveBeenCalledWith("u1", DECK, RUN);
+    expect(applyUpgradeOnDeck).toHaveBeenCalledWith("u1", DECK, RUN, undefined);
     expect(await undoPreconUpgradeOnDeck(DECK, RUN)).toEqual({ ok: true });
     expect(undoUpgradeOnDeck).toHaveBeenCalledWith("u1", DECK, RUN);
     expect(revalidateClaims).toHaveBeenCalledTimes(2);
@@ -52,6 +52,25 @@ describe("applyPreconUpgradeOnDeck / undoPreconUpgradeOnDeck", () => {
     vi.mocked(undoUpgradeOnDeck).mockResolvedValueOnce({ ok: false });
     expect(await applyPreconUpgradeOnDeck(DECK, RUN)).toEqual({ ok: false, reason: "locked" });
     expect(await undoPreconUpgradeOnDeck(DECK, RUN)).toEqual({ ok: false });
+    expect(revalidateClaims).not.toHaveBeenCalled();
+  });
+});
+
+describe("applyPreconUpgradeOnDeck with picks (fresh start R2)", () => {
+  const PICKS = { adds: ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"], cuts: ["cccccccc-cccc-4ccc-8ccc-cccccccccccc"] };
+
+  it("hands well-formed picks to the apply; absent picks are the whole run", async () => {
+    await applyPreconUpgradeOnDeck(DECK, RUN, PICKS);
+    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN, PICKS);
+    await applyPreconUpgradeOnDeck(DECK, RUN);
+    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN, undefined);
+  });
+
+  it("passes malformed picks through untouched: the one picks rule is the write's (`picksOfRun`, apply.test.ts)", async () => {
+    const bad = { adds: ["x"], cuts: PICKS.cuts };
+    vi.mocked(applyUpgradeOnDeck).mockResolvedValueOnce({ ok: false, reason: "picks" });
+    expect(await applyPreconUpgradeOnDeck(DECK, RUN, bad as never)).toEqual({ ok: false, reason: "picks" });
+    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN, bad);
     expect(revalidateClaims).not.toHaveBeenCalled();
   });
 });

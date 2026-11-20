@@ -10,7 +10,7 @@ import { liveLockedIds, pruneOrphanLocks, reviveDormantLocks } from "../../decks
 import { pruneOrphanProxies } from "../../decks/prune-proxies";
 import { preparePreconDeckIn } from "../start";
 import { isStartVersion } from "../start-version";
-import { insertDeckList, prepareUpgradeIn, upgradedDeck, type UpgradeRefusal } from "./apply";
+import { insertDeckList, prepareUpgradeIn, upgradedDeck, type UpgradePicks, type UpgradeRefusal } from "./apply";
 import { sameHelm, sameList, upgradeGateOpen, type GateBox } from "./deck-gate";
 
 /**
@@ -50,7 +50,12 @@ async function startVersionIn(tx: Tx, deckId: string, deckCreatedAt: Date, box: 
   return isStartVersion(oldest, deckCreatedAt, versionCards, { cards: box.cards, helm: box }) ? oldest.id : null;
 }
 
-export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: string): Promise<DeckApplyResult> {
+/**
+ * `picks`: the adds and cuts the player kept (fresh start R2, #2985), checked against the run inside the write (`prepareUpgradeIn`);
+ * absent, the whole run. Only the picked cuts are checked for locks, and the snapshot holds the list as it was before, so Undo puts
+ * back exactly what this subset changed.
+ */
+export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: string, picks?: UpgradePicks): Promise<DeckApplyResult> {
   try {
     return await db.transaction(async (tx): Promise<DeckApplyResult> => {
       const [deck] = await tx.select({
@@ -71,13 +76,13 @@ export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: 
       const liveDeck = { commanderOracleId: deck.commanderOracleId, partnerOracleId: deck.partnerOracleId, cards: live };
       if (!upgradeGateOpen(box, startVersionId, versions.map((v) => v.id), liveDeck)) return { ok: false, reason: "closed" };
 
-      const up = await prepareUpgradeIn(tx, userId, deck.builtFromPrecon, runId, box);
+      const up = await prepareUpgradeIn(tx, userId, deck.builtFromPrecon, runId, box, picks);
       if (typeof up === "string") return { ok: false, reason: up };
       // A run that changes nothing would leave the gate open over its own snapshot, so a second Apply could bury it.
-      if (up.pairs.length === 0 && up.lead === null) return { ok: false, reason: "listChanged" };
+      if (up.adds.length === 0 && up.cuts.length === 0 && up.lead === null) return { ok: false, reason: "listChanged" };
       // A lock is "never cut this" (D4): the reviewed result would cut it, so the whole Apply refuses rather than skip a pair.
       const locked = await liveLockedIds(tx, deckId);
-      if (up.pairs.some((p) => locked.has(p.cutId))) return { ok: false, reason: "locked" };
+      if (up.cuts.some((id) => locked.has(id))) return { ok: false, reason: "locked" };
 
       const made = upgradedDeck(box, up);
       const kept = new Set(made.cards.map((c) => c.oracleId));
@@ -115,7 +120,7 @@ export async function applyUpgradeOnDeck(userId: string, deckId: string, runId: 
       // The slots that left take the deck's statements about them with them, as every list write does; the snapshot keeps them.
       await pruneOrphanProxies(tx, deckId);
       await pruneOrphanLocks(tx, deckId);
-      return { ok: true, swaps: up.pairs.length, lead: up.lead };
+      return { ok: true, swaps: up.adds.length, lead: up.lead };
     });
   } catch (err) {
     // The run was purged between the check and the link: the foreign key says so, and nothing was written.

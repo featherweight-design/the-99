@@ -6,7 +6,7 @@ const action = vi.hoisted(() => vi.fn());
 const addAction = vi.hoisted(() => vi.fn());
 vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: action, startPreconOwned: addAction }));
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_A" }) }));
-import { StartPrecon } from "./start-precon";
+import { StartPrecon, StartPreconDialog, type UpgradeStart } from "./start-precon";
 
 const row: PreconRow = {
   fileName: "MysticIntellect_C19", name: "Mystic Intellect", setCode: "C19", releaseDate: "2019-08-23", twinName: null,
@@ -137,5 +137,43 @@ describe("StartPrecon's capped column", () => {
     expect(start.parentElement!.className).toContain("flex-none");
     // The form between them is the column's flexing child, or the scroller never meets the cap.
     expect(start.closest("form")!.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "flex-1"]));
+  });
+});
+
+// A Start from an Upgrade run whose picks went stale (fresh start R2): the run is still startable, so the dialog says the picks
+// no longer match and does NOT retire it (`onUnavailable`), as the run-gone refusal does.
+describe("StartPreconDialog, an upgraded start refused", () => {
+  const upgrade: UpgradeStart = {
+    runId: "11111111-1111-4111-8111-111111111111", lead: { name: "Sevinne", art: null, identity: ["U", "R", "W"] }, boxCommander: "Sevinne",
+    changed: false, swaps: 3, strategy: "Spellslinger", bracket: "Core (2)", toBuy: 0,
+  };
+  const dialog = (onUnavailable: () => void) =>
+    render(<StartPreconDialog row={row} cards={100} body={99} illegal={[]} addRef={{ current: { id: null } }} onDismiss={() => {}} upgrade={upgrade} onUnavailable={onUnavailable} />);
+
+  it("on stale picks, says so and keeps the run", async () => {
+    action.mockResolvedValueOnce({ ok: false, reason: "picks" });
+    const onUnavailable = vi.fn();
+    dialog(onUnavailable);
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Your picks no longer match this upgrade. Open it again to pick."));
+    expect(onUnavailable).not.toHaveBeenCalled();
+  });
+
+  it("on stale picks with the box selected, says so and keeps the run", async () => {
+    addAction.mockResolvedValueOnce({ ok: false, reason: "picks" });
+    const onUnavailable = vi.fn();
+    dialog(onUnavailable);
+    fireEvent.click(screen.getByRole("checkbox", { name: /I own this precon/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Your picks no longer match this upgrade. Open it again to pick."));
+    expect(onUnavailable).not.toHaveBeenCalled();
+  });
+
+  it("on a run that is gone, retires it", async () => {
+    action.mockResolvedValueOnce({ ok: false, reason: "upgradeUnavailable" });
+    const onUnavailable = vi.fn();
+    dialog(onUnavailable);
+    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    await waitFor(() => expect(onUnavailable).toHaveBeenCalled());
   });
 });

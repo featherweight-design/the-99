@@ -161,6 +161,18 @@ export async function readUpgrades(userId: string, preconFile: string): Promise<
 }
 
 /**
+ * The reader's own DONE run on this precon, by id, or null: the one row, not `readUpgrades`' newest `HISTORY_MAX`, so an older run
+ * a Start can still make reads as well. Only what the set bracket needs (`readSetBracket`).
+ */
+export async function readDoneUpgrade(userId: string, preconFile: string, runId: string): Promise<Pick<StoredUpgrade, "id" | "strategyKey" | "pairs" | "listFp"> | null> {
+  const [row] = await db.select({ id: preconUpgrades.id, strategyKey: preconUpgrades.strategyKey, pairs: preconUpgrades.pairs, listFp: preconUpgrades.listFp })
+    .from(preconUpgrades)
+    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.preconFile, preconFile), eq(preconUpgrades.status, "done")))
+    .limit(1);
+  return row ? { ...row, pairs: row.pairs as StoredPair[] } : null;
+}
+
+/**
  * Marks the reader's own done run as shown: writes `seen_at` only on a `done` run where it is still null, so the first
  * showing is the one kept. True when this call wrote it; false for another reader's run, a pending or failed run (never
  * shown as a result), or one already seen.

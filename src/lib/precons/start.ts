@@ -17,7 +17,7 @@ import { canPair, partnerAbility } from "../decks/partner";
 import { commitVersion } from "../decks/versions";
 import { writeImportedDeck } from "../decks/write-imported-deck";
 import type { ImportPrintingPick } from "../decks/import-printings";
-import { applyUpgradeIn, prepareUpgradeIn, type PreparedUpgrade, type UpgradeRefusal } from "./upgrade/apply";
+import { applyUpgradeIn, prepareUpgradeIn, type PreparedUpgrade, type UpgradePicks, type UpgradeRefusal } from "./upgrade/apply";
 import { isCommanderCandidate } from "../recs/score";
 import { deckMakesTokenIn, writeDeckTokenPrintingIn } from "../tokens/deck-printings";
 
@@ -171,14 +171,15 @@ export async function startPreconDeck(userId: string, fileName: string, name: st
 /**
  * A deck started from an Upgrade this precon run: the box as v0 and the run's swaps as v1 (`applyUpgradeIn`). The box and the run
  * are read and written in ONE repeatable-read transaction, so a run is judged against the very list it is applied to; a run purged in the instant between the check and the link is the foreign key's refusal, answered `gone`. A refusal writes nothing.
+ * `picks`: the adds and cuts the player kept, so v1 holds exactly those swaps; absent, the whole run.
  */
 export async function startUpgradedPreconDeck(
-  userId: string, fileName: string, name: string, runId: string,
+  userId: string, fileName: string, name: string, runId: string, picks?: UpgradePicks,
 ): Promise<{ ok: true; deckId: string } | { ok: false; reason: UpgradeRefusal }> {
   try {
     return await db.transaction(async (tx) => {
       const deck = await preparePreconDeckIn(tx, fileName);
-      const up = await prepareUpgradeIn(tx, userId, fileName, runId, deck);
+      const up = await prepareUpgradeIn(tx, userId, fileName, runId, deck, picks);
       if (typeof up === "string") return { ok: false as const, reason: up };
       return { ok: true as const, deckId: await writePreconDeckIn(tx, userId, name, { ...deck, upgrade: up }) };
     }, { isolationLevel: "repeatable read" });

@@ -13,7 +13,7 @@ import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { useVisualViewportFrame, VV_FRAME } from "../../ui/visual-viewport";
 import { preconAddedDate, preconsCopy } from "../../../lib/copy/precons";
-import { preconUpgradeCopy } from "../../../lib/copy/precon-upgrade";
+import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../lib/copy/precon-upgrade";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
 import { PrimaryButton } from "../../ui/button";
@@ -137,7 +137,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
   const input = useRef<HTMLInputElement>(null);
   const [name, setName] = useState(row.name.slice(0, DECK_NAME_MAX));
   const [pending, setPending] = useState(false);
-  const [failed, setFailed] = useState<"start" | "add" | "addUnsure" | "upgrade" | false>(false);
+  const [failed, setFailed] = useState<"start" | "add" | "addUnsure" | "upgrade" | "picks" | false>(false);
   // "I own this precon": off unless the reader ticks it, and left off when they have added it before.
   const [own, setOwn] = useState(false);
   const { userId: account } = useAuth();
@@ -181,12 +181,14 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
         try {
           // Redirects to the new deck on success; a refusal is returned, and every refusal reads as nothing saved.
           const refused = await (upgrade ? startPreconOwned(addFile, trimmed, addRef.current.id, upgrade.runId) : startPreconOwned(addFile, trimmed, addRef.current.id));
-          if (refused?.reason === "upgradeUnavailable") {
-            // Nothing was committed: the id is spent, and the run is not startable.
+          if (refused?.reason === "upgradeUnavailable" || refused?.reason === "picks") {
+            // Nothing was committed: the id is spent. "upgradeUnavailable": the run is not startable, so the caller retires it;
+            // "picks": the run still is, only the picks went stale, so the dialog says so and the run stays.
             writeAttempt(account, attemptFile(addFile), null);
             addRef.current.id = null;
             inFlight.current = false;
             setPending(false);
+            if (refused.reason === "picks") { setFailed("picks"); return; }
             setFailed("upgrade");
             onUnavailable?.();
             return;
@@ -211,7 +213,12 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
       try {
         // Redirects to the new deck on success; a refusal or an outage throws.
         const refused = await (upgrade ? createDeckFromPrecon(addFile, trimmed, upgrade.runId) : createDeckFromPrecon(addFile, trimmed));
-        if (refused && refused.reason === "upgradeUnavailable") {
+        if (refused && refused.reason === "picks") {
+          // The run is still startable; only the picks went stale. Said, and the run is not retired.
+          inFlight.current = false;
+          setPending(false);
+          setFailed("picks");
+        } else if (refused && refused.reason === "upgradeUnavailable") {
           inFlight.current = false;
           setPending(false);
           setFailed("upgrade");
@@ -321,7 +328,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
 
               {(failed || !valid) && (
                 <p id={errorId} role="alert" className="m-0 font-mono text-[11px]" style={{ color: "var(--danger)" }}>
-                  {failed === "upgrade" ? preconUpgradeCopy.start.unavailable : failed === "add" ? copy.owned.addFailed : failed === "addUnsure" ? copy.owned.addUnsure : failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
+                  {failed === "upgrade" ? preconUpgradeCopy.start.unavailable : failed === "picks" ? preconUpgradeDeckCopy.picksStale : failed === "add" ? copy.owned.addFailed : failed === "addUnsure" ? copy.owned.addUnsure : failed ? copy.failed : copy.nameInvalid(DECK_NAME_MAX)}
                 </p>
               )}
             </div>

@@ -81,3 +81,10 @@ describe("the account caps", () => {
     expect(RATE_RULES["display-name"]).toEqual({ limit: 20, windowMs: 3_600_000 });
   });
 });
+
+describe("the upgrade caps", () => {
+  // Upgrade this precon's set bracket: free to the player, one profile build a read, so ENFORCED per player.
+  it("caps the picked set's bracket read at 120 a minute", () => {
+    expect(RATE_RULES["upgrade-set-bracket"]).toEqual({ limit: 120, windowMs: 60_000 });
+  });
+});
