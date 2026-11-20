@@ -76,11 +76,11 @@ function RowLine({ row, rowDecks, live, onWritten }: {
     .join(" · ");
   return (
     <li className="flex min-h-[40px] items-center gap-[10px] border-b border-b-[color:var(--border)] py-[6px] last:border-b-0">
-      <span className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1">
         <span className="block truncate text-[13.5px] text-[color:var(--fg)]">{row.name}</span>
         {where ? <span className="block font-mono text-[11px] text-[color:var(--fg-faint)]">{where}</span> : null}
         {rowDecks && row.wentTo ? (
-          <span className="block text-[12px] text-[color:var(--fg-muted)]">
+          <div className="text-[12px] text-[color:var(--fg-muted)]">
             {row.wentTo.soft ? gotItCopy.history.wentTo.leadSoft : gotItCopy.history.wentTo.lead}{" "}
             <DeckNames
               decks={cartDecksOf(row.wentTo.decks.map((d) => d.deckId), new Map(Object.entries(rowDecks)))}
@@ -95,9 +95,9 @@ function RowLine({ row, rowDecks, live, onWritten }: {
               live={live?.[row.oracleId]}
               onWritten={onWritten}
             />
-          </span>
+          </div>
         ) : null}
-      </span>
+      </div>
       <span className="flex-none font-mono text-[12.5px]" style={{ color: d > 0 ? "var(--success)" : "var(--fg-muted)" }}>
         {d === 0 ? c.rowDetails : c.rowDelta(d)}
       </span>
@@ -190,12 +190,12 @@ function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
 }) {
   const w = gotItCopy.history.wentTo;
   return (
-    <p className={DECK_LINE}>
+    <div className={DECK_LINE}>
       {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
       {single && cardName ? (
         <LiveTail oracleId={single.oracleId} cardName={cardName} wentDeckIds={single.wentDeckIds} soft={wentTo.soft} live={live?.[single.oracleId]} onWritten={onWritten} />
       ) : null}
-    </p>
+    </div>
   );
 }
 
@@ -469,7 +469,7 @@ export function HistoryList({
     const ids = entries.flatMap((e) => (e.single && e.wentTo && !e.wentTo.soft && !asked.current.has(e.single.oracleId) ? [e.single.oracleId] : []));
     if (ids.length === 0) return;
     ids.forEach((id) => asked.current.add(id));
-    loadHistoryLiveFor(ids).then((r) => setLive((m) => ({ ...m, ...r }))).catch(() => undefined);
+    loadHistoryLiveFor(ids).then((r) => setLive((m) => ({ ...m, ...r }))).catch(() => { ids.forEach((id) => asked.current.delete(id)); });
   }, [entries]);
 
   // After a move: that card, re-read, so its line draws where the copy is now.
