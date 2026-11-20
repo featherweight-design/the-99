@@ -1967,6 +1967,9 @@ html[data-launch] .launch-loader { display: block; }
      a held translate: while it holds, <main> is the containing block of any fixed layer inside it, so that is only
      ever true under the opaque ground and the last 250 ms of its fade. */
   html[data-launch]:has(.launch-loader) main { animation: ll-page 3000ms linear both; }
+  /* The 10px rise would grow the page's scroll area and flash a vertical scrollbar under the overlay; the root (which
+     propagates to the viewport) is clipped for as long as the loader is mounted. */
+  html[data-launch]:has(.launch-loader) { overflow: hidden; }
 
   .launch-loader { animation-name: ll-root; }
   .ll-ground { animation-name: ll-ground; }
