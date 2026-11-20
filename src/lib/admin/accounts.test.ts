@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@clerk/nextjs/server", () => ({ clerkClient: vi.fn(), auth: vi.fn() }));
 vi.mock("../../db", () => ({ db: {} }));
 
-const { findAccountIdByEmail, listAccounts, orderAccounts, readIdentity } = await import("./accounts");
+const { emailHasAccount, findAccountIdByEmail, listAccounts, orderAccounts, readIdentity } = await import("./accounts");
 
 /** A Clerk user: `name` is split on its first space into first and last name, as Clerk stores them. */
 const user = (id: string, name: string | null, email: string | null = null) => {
@@ -155,6 +155,19 @@ describe("findAccountIdByEmail", () => {
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
     expect(await findAccountIdByEmail("a@b.com", deps([{ id: "u1", addresses: ["a@b.com"] }, { id: "u2", addresses: ["a@b.com"] }]))).toBeNull();
     error.mockRestore();
+  });
+});
+
+describe("emailHasAccount", () => {
+  const deps = (users: { id: string; addresses: string[] }[]) =>
+    ({ getUser: async () => null, findByEmail: async () => users.map((u) => ({ id: u.id, emailAddresses: u.addresses.map((emailAddress) => ({ emailAddress })) })) }) as never;
+
+  it("is yes for one account or two holding the address exactly, no for a near miss, and throws when Clerk fails", async () => {
+    expect(await emailHasAccount("colin@gmail.com", deps([{ id: "u1", addresses: ["Colin@Gmail.com"] }]))).toBe(true);
+    expect(await emailHasAccount("a@b.com", deps([{ id: "u1", addresses: ["a@b.com"] }, { id: "u2", addresses: ["a@b.com"] }]))).toBe(true);
+    expect(await emailHasAccount("colin@gmail.com", deps([{ id: "u1", addresses: ["colin@gmail.co"] }]))).toBe(false);
+    expect(await emailHasAccount("colin@gmail.com", deps([]))).toBe(false);
+    await expect(emailHasAccount("a@b.com", { getUser: async () => null, findByEmail: async () => { throw new Error("down"); } } as never)).rejects.toThrow("down");
   });
 });
 

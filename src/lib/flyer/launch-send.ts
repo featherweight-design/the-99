@@ -33,9 +33,11 @@ import { readLaunchDate } from "./launch-purge";
 import { unsubscribeHash, unsubscribeToken, unsubscribeUrl } from "./launch-unsubscribe";
 
 export { LAUNCH_BATCH_MAX } from "./launch-rule";
-import { LAUNCH_BATCH_MAX } from "./launch-rule";
+import { LAUNCH_BATCH_BUDGET_MS, LAUNCH_BATCH_MAX, LAUNCH_SKIPS_MAX } from "./launch-rule";
 /** Resend allows a few requests a second; one every 600ms stays clear of it. */
 export const LAUNCH_SEND_GAP_MS = 600;
+/** After a skip no mail goes out, so only the next lookup is paced: well under Clerk's Backend API limit. */
+export const LAUNCH_SKIP_GAP_MS = 100;
 
 export type LaunchBatchReport =
   | { ok: false; reason: "no-launch-date" | "before-launch" | "unconfigured" | "images-missing"; missing?: string[] }
@@ -49,6 +51,8 @@ export type LaunchBatchDeps = {
   now?: Date;
   launchRaw?: string | null;
   store?: LaunchStore;
+  /** The clock the batch budget reads, `Date.now` by default. */
+  clock?: () => number;
   /** Whether an account already holds the address, Clerk's by default; throws when it cannot tell. */
   hasAccount?: (email: string) => Promise<boolean>;
 };
@@ -144,14 +148,22 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
   // A released address waits for the NEXT batch: this one skips it, so one address that keeps being refused cannot take every turn.
   const tried: string[] = [];
   const claimedAt = Date.now().toString(36);
-  for (let i = 0; i < cap; i++) {
+  const clock = deps.clock ?? Date.now;
+  const started = clock();
+  // A skip sends nothing, so it does not count toward the batch's mails; `LAUNCH_SKIPS_MAX` and the time budget bound it.
+  while (sent + released + uncertain < cap && skipped < LAUNCH_SKIPS_MAX) {
+    if (clock() - started > LAUNCH_BATCH_BUDGET_MS) break;
     const row = await store.claimNext(tried);
     if (!row) {
       stoppedBy = "done";
       break;
     }
     tried.push(row.email);
-    const held = await hasAccount(row.email.trim().toLocaleLowerCase("en-US")).catch(() => null);
+    const held = await hasAccount(row.email.trim().toLocaleLowerCase("en-US")).catch((error: unknown) => {
+      // The cause only (a bad key, a rate limit, a timeout), never the address.
+      console.error("launch-email: account lookup failed; the batch stops", error instanceof Error ? error.message : error);
+      return null;
+    });
     if (held === null) {
       await store.release(row.email);
       released++;
@@ -161,7 +173,7 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
     if (held) {
       // Claimed and never mailed: an account holder already knows The 99 is open.
       skipped++;
-      await sleep(LAUNCH_SEND_GAP_MS);
+      await sleep(LAUNCH_SKIP_GAP_MS);
       continue;
     }
     const token = unsubscribeToken(secret, row.email);

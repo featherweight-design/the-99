@@ -162,17 +162,22 @@ export async function readIdentity(id: string, deps: IdentityDeps = identityDeps
  * accounts holding it answer null. Throws when Clerk fails or is late.
  */
 export async function findAccountIdByEmail(email: string, deps: IdentityDeps = identityDeps): Promise<string | null> {
-  const users = await withDeadline(() => deps.findByEmail(email), deps.deadlineMs ?? CLERK_DEADLINE_MS);
-  const exact = users.filter((u) => u.emailAddresses.some((e) => e.emailAddress.trim().toLocaleLowerCase("en-US") === email));
+  const exact = await accountsHolding(email, deps);
   if (exact.length > 1) console.error("admin: more than one account holds one email; the lookup answers none");
   return exact.length === 1 ? exact[0].id : null;
 }
 
 /**
  * Whether any account holds exactly `email` (already trimmed and case-folded): the launch email skips those (Q2, Hugh,
- * 2026-11-20). Two accounts holding it still answer yes. Throws when Clerk fails or is late, so the caller decides.
+ * 2026-11-20). Two accounts holding it still answer yes. An exact match only: an account under a dotted or plus alias of
+ * the address is not found, and gets the mail. Throws when Clerk fails or is late, so the caller decides.
  */
 export async function emailHasAccount(email: string, deps: IdentityDeps = identityDeps): Promise<boolean> {
+  return (await accountsHolding(email, deps)).length > 0;
+}
+
+/** The accounts with an address equal to `email` exactly, after trimming and case-folding. Clerk's own filter is not trusted alone. Throws when Clerk fails or is late. */
+async function accountsHolding(email: string, deps: IdentityDeps): Promise<{ id: string }[]> {
   const users = await withDeadline(() => deps.findByEmail(email), deps.deadlineMs ?? CLERK_DEADLINE_MS);
-  return users.some((u) => u.emailAddresses.some((e) => e.emailAddress.trim().toLocaleLowerCase("en-US") === email));
+  return users.filter((u) => u.emailAddresses.some((e) => e.emailAddress.trim().toLocaleLowerCase("en-US") === email));
 }

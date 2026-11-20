@@ -66,11 +66,25 @@ describe("sendLaunchBatch", () => {
     const hasAccount = vi.fn(async () => {
       throw new Error("clerk down");
     });
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
     const { d, send } = deps(store, [], { hasAccount });
     expect(await sendLaunchBatch({ dryRun: false, limit: 5 }, d)).toMatchObject({ ok: true, sent: 0, skipped: 0, released: 1, waiting: 2, stoppedBy: "lookup" });
     expect(send).not.toHaveBeenCalled();
     expect(hasAccount).toHaveBeenCalledTimes(1);
     expect(store.sent.size).toBe(0);
+    expect(error).toHaveBeenCalledWith(expect.stringContaining("account lookup failed"), "clerk down");
+    expect(JSON.stringify(error.mock.calls)).not.toContain("@x.dev");
+    error.mockRestore();
+  });
+
+  it("does not count a skip toward the batch's mails, and stops claiming once the time budget is spent", async () => {
+    const store = memoryStore(["m1@x.dev", "m2@x.dev", "a@x.dev", "b@x.dev"]);
+    const { d, send } = deps(store, [], { hasAccount: async (e: string) => e.startsWith("m") });
+    expect(await sendLaunchBatch({ dryRun: false, limit: 1 }, d)).toMatchObject({ sent: 1, skipped: 2, stoppedBy: "limit" });
+    expect(send).toHaveBeenCalledTimes(1);
+    let t = 0;
+    const late = deps(memoryStore(["c@x.dev", "e@x.dev"]), [], { clock: () => (t += 200_000) });
+    expect(await sendLaunchBatch({ dryRun: false, limit: 5 }, late.d)).toMatchObject({ sent: 1, waiting: 1, stoppedBy: "limit" });
   });
 
   it("refuses with no launch date, or before it", async () => {
