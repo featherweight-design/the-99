@@ -103,7 +103,7 @@ describe("DeckUpgradeHost (A2c)", () => {
   it("says stale picks in the foot, without refreshing the page", async () => {
     apply.mockResolvedValue({ ok: false, reason: "picks" });
     host();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
     expect(screen.getByRole("note")).toHaveTextContent("Your picks no longer match this upgrade. Open it again to pick.");
     expect(refresh).not.toHaveBeenCalled();
