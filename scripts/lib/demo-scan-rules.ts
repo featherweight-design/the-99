@@ -55,6 +55,8 @@ export const MODEL_TEXT: Record<Exclude<keyof Projected | keyof DemoCardData, "f
   topOff: [],
   // Which deck's stored read: its sentences (`parts[].text`, `parts[].quote`).
   fits: ["fits.panel.view"],
+  // Precon Upgrade's stored run: each swap's reason and cut reason (`runs[].pairs[]`). The precon's own name (`upgrade.precon`) is catalog text.
+  upgrade: ["upgrade.panel.runs"],
   // Card details: catalog rows and the fixture's collection, decks and prices; no model writes any of it.
   cardDetails: [],
   deckCombos: [],

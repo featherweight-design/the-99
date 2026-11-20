@@ -22,9 +22,9 @@ describe("the committed projected data", () => {
   const file = committedProjected();
   const data = projected();
 
-  it.skipIf(file === null)("is a format this code reads, and hands the deck steps out only on format 2", () => {
-    expect([1, 2]).toContain(file!.format);
-    if (file!.format === 2) expect(data).toBe(file);
+  it.skipIf(file === null)("is a format this code reads, and hands the deck steps out only on format 2 or 3", () => {
+    expect([1, 2, 3]).toContain(file!.format);
+    if (file!.format === 2 || file!.format === 3) expect(data).toBe(file);
     else expect(data).toBeNull();
   });
 

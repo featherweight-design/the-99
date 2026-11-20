@@ -85,7 +85,7 @@ export const SLOWER_NOTE_MS = 120_000;
 export function SuggestedChangesRun({
   runId, ask, lines: readLines, live, startedAt, report, permits, declared = null, newestPriceAsOf, figures, drift, finishedHere = false,
   readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, groupingInMemory = false, credits = null, past = null, deckId,
-  press = null, youAsked = true,
+  press = null, youAsked = true, demo = false,
 }: {
   runId: string;
   /** The run's deck, for the confirmation's Pull (Small items 4, item 2). */
@@ -129,6 +129,9 @@ export function SuggestedChangesRun({
   press?: SuggestedChangesPress | null;
   /** Draws the You asked box. Precon Upgrade leaves it out: the run's facts already say what it was for (call 11). */
   youAsked?: boolean;
+  /** The landing demo (A5b): no Apply place, the lead keeps only its count sentence, and the bar says a line only to warn.
+   *  "Nothing moves until you apply" would promise an Apply the demo never draws. */
+  demo?: boolean;
 }) {
   const n = ask?.requestedCount ?? 3;
   const waiting = live !== null;
@@ -554,8 +557,9 @@ export function SuggestedChangesRun({
   const leadWide = !waiting && past && !past.stale && appliedSet && past.version != null && lines.some(isOpen)
     ? ` ${h.oldRunRestVersion(lines.filter(isOpen).length, past.version)}` : null;
   // History C's lead is bold up to its ` · ` (`5 to add and 5 to cut · 2 + 2 applied on Oct 19.`); every other at its first stop.
-  const leadParts = lead === null ? null : past?.stale && lead.includes(" · ")
+  const leadFull = lead === null ? null : past?.stale && lead.includes(" · ")
     ? [lead.slice(0, lead.indexOf(" · ")), lead.slice(lead.indexOf(" · "))] as const : leadSentence(lead, ". ");
+  const leadParts = demo && leadFull ? ([leadFull[0], ""] as const) : leadFull;
   const confirmBracket = bracketText(outcome);
 
   return (
@@ -707,14 +711,16 @@ export function SuggestedChangesRun({
                 </>
               )}
             </p>
-            <p className="m-0 text-[12px] leading-[1.5]" style={{ color: warn ? "var(--warning)" : "var(--fg-muted)" }} data-sc-bar-line="">
-              {warn ? (
-                <>
-                  <b className="font-semibold" style={{ color: "var(--fg)" }}>{leadSentence(sentence, ". ")[0]}</b>
-                  {leadSentence(sentence, ". ")[1]}
-                </>
-              ) : sentence}
-            </p>
+            {demo && !warn ? null : (
+              <p className="m-0 text-[12px] leading-[1.5]" style={{ color: warn ? "var(--warning)" : "var(--fg-muted)" }} data-sc-bar-line="">
+                {warn ? (
+                  <>
+                    <b className="font-semibold" style={{ color: "var(--fg)" }}>{leadSentence(sentence, ". ")[0]}</b>
+                    {leadSentence(sentence, ". ")[1]}
+                  </>
+                ) : sentence}
+              </p>
+            )}
             {press?.note ? (
               <p role="note" className="m-0 text-[12px] leading-[1.5]" style={{ color: "var(--fg-body)" }} data-sc-press-note="">{press.note}</p>
             ) : null}
@@ -729,7 +735,7 @@ export function SuggestedChangesRun({
               {busy === "undo" ? sc.undoing : sc.bar.undo(appliedSet.length)}
             </button>
           ) : null}
-          {appliedBar ? null : (
+          {appliedBar || demo ? null : (
             <button
               type="button"
               onClick={() => {
