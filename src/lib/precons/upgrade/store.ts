@@ -1,4 +1,4 @@
-import { and, eq, isNull, lt, ne, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
 import { preconUpgrades } from "../../../db/schema";
@@ -161,13 +161,14 @@ export async function readUpgrades(userId: string, preconFile: string): Promise<
 }
 
 /**
- * Marks the reader's own finished run as shown: writes `seen_at` only where it is still null, so the first showing is the
- * one kept. True when this call wrote it; false for another reader's run, a pending run, or one already seen.
+ * Marks the reader's own done run as shown: writes `seen_at` only on a `done` run where it is still null, so the first
+ * showing is the one kept. True when this call wrote it; false for another reader's run, a pending or failed run (never
+ * shown as a result), or one already seen.
  */
 export async function markSeen(userId: string, runId: string, now = new Date()): Promise<boolean> {
   const written = await db.update(preconUpgrades)
     .set({ seenAt: now })
-    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), ne(preconUpgrades.status, "pending"), isNull(preconUpgrades.seenAt)))
+    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.status, "done"), isNull(preconUpgrades.seenAt)))
     .returning({ id: preconUpgrades.id });
   return written.length > 0;
 }

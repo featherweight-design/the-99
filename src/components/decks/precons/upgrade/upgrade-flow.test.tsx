@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
 
@@ -534,12 +534,35 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
 describe("UpgradeFlow marks a shown result seen (fresh start 1/4)", () => {
   afterEach(() => { cleanup(); seen.mockClear(); });
 
-  it("marks a done result it shows whose seenAt is null, once", () => {
-    const { rerender } = open(panel({ runs: [{ ...run, seenAt: null }] }), { view: { kind: "results", runId: "r" } });
+  it("marks a done result it shows whose seenAt is null, once, even when the flow comes back to it", () => {
+    const unseen = panel({ runs: [{ ...run, seenAt: null }] });
+    const { rerender } = open(unseen, { view: { kind: "results", runId: "r" }, onConfirm: vi.fn() });
     expect(seen).toHaveBeenCalledTimes(1);
     expect(seen).toHaveBeenCalledWith("r");
-    rerender(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={panel({ runs: [{ ...run, seenAt: null }] })} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r" }} />);
+    rerender(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={unseen} art={new Map()} onClose={() => {}} view={{ kind: "results", runId: "r" }} onConfirm={vi.fn()} />);
+    // Leave the result for the picks, then come back to the same run through History in the same mount: the panel still
+    // says unseen (it is not read again), so only the flow's own guard keeps a second call away.
+    press(/Try another strategy/);
+    expect(screen.getAllByRole("radio").length).toBeGreaterThan(0);
+    // Strategy, Bracket, Commander, then the intro, where History is offered.
+    press("Back");
+    press("Back");
+    press("Back");
+    press("History");
+    fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
     expect(seen).toHaveBeenCalledTimes(1);
+  });
+
+  it("lets a later showing mark again when the call was rejected", async () => {
+    seen.mockRejectedValueOnce(new Error("offline"));
+    open(panel({ runs: [{ ...run, seenAt: null }] }), { view: { kind: "results", runId: "r" } });
+    expect(seen).toHaveBeenCalledTimes(1);
+    await act(async () => {});
+    press("History");
+    fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
+    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(seen).toHaveBeenCalledTimes(2);
   });
 
   it("leaves a result already seen alone, and marks nothing on the picks", () => {

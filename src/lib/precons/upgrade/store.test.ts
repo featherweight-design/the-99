@@ -42,7 +42,7 @@ beforeEach(() => {
 });
 
 describe("markSeen (fresh start 1/4)", () => {
-  it("writes seen_at only on the reader's own finished run while it is still null", async () => {
+  it("writes seen_at only on the reader's own done run while it is still null", async () => {
     db.updateRows = [{ id: RUN }];
     expect(await markSeen("u1", RUN, new Date("2026-11-20T00:00:00Z"))).toBe(true);
     const [u] = db.updates;
@@ -50,11 +50,13 @@ describe("markSeen (fresh start 1/4)", () => {
     const where = render(u.where);
     expect(where.sql).toContain('"precon_upgrades"."seen_at" is null');
     expect(where.sql).toContain('"precon_upgrades"."user_id" = $');
-    expect(where.sql).toContain('"precon_upgrades"."status" <> $');
-    expect(where.params).toEqual(expect.arrayContaining([RUN, "u1", "pending"]));
+    expect(where.sql).toContain('"precon_upgrades"."status" = $');
+    expect(where.sql).not.toContain('"precon_upgrades"."status" <> $');
+    expect(where.params).toEqual(expect.arrayContaining([RUN, "u1", "done"]));
+    expect(where.params).not.toContain("pending");
   });
 
-  it("is false when nothing was written (already seen, pending, or another reader's run)", async () => {
+  it("is false when nothing was written (already seen, pending, failed, or another reader's run)", async () => {
     db.updateRows = [];
     expect(await markSeen("u1", RUN)).toBe(false);
   });
