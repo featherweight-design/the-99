@@ -210,6 +210,9 @@ export function toThemeSupportRows(args: {
   // theme stored with no cards would be read in place of the commander page.
   if (synergyStateFrom(result) !== "ok" || !result.data) return null;
   const { cards, unresolved } = supportCardsFrom(commander.oracleId, result.data, nameIndex);
+  // The same rule after resolution: a page whose every name is unresolvable (or the commander) is
+  // no theme page either.
+  if (cards.length === 0) return null;
   return {
     header: { commanderOracleId: commander.oracleId, slug: theme.slug, deckCount: theme.count },
     cards: cards.map((c) => ({ ...c, slug: theme.slug })),

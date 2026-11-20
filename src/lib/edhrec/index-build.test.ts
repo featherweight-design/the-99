@@ -220,6 +220,8 @@ describe("toThemeSupportRows", () => {
     expect(toThemeSupportRows({ commander: GISA, theme, nameIndex, result: { data: null, unreachable: true } })).toBeNull();
     // A payload of an unexpected shape parses to an empty list: that is no theme page either.
     expect(toThemeSupportRows({ commander: GISA, theme, nameIndex, result: { data: data({ topCards: [] }), unreachable: false } })).toBeNull();
+    // Nor is one whose names all fail to resolve, or name only the commander.
+    expect(toThemeSupportRows({ commander: GISA, theme, nameIndex, result: { data: data({ topCards: ["Never Printed", GISA.name] }), unreachable: false } })).toBeNull();
   });
 
   it("stores nothing for a theme the fetch rule would not choose", () => {
