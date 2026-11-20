@@ -49,3 +49,8 @@ export function StatusPillBadge({
     </span>
   );
 }
+
+/** The pill's word, for a surface that prints it as plain text (Arrange mode's row meta). */
+export function statusPillLabel(status: Status): string {
+  return refreshCopy.status[COPY_KEY[status]];
+}

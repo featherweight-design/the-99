@@ -42,6 +42,7 @@ import type { PreconSummary } from "../../lib/precons/summary";
 import {
   DECK_SORT_KEY,
   DEFAULT_DECK_SORT,
+  arrangeSeedSort,
   deckSortFromParams,
   isDeckSort,
   sortDecks,
@@ -73,6 +74,10 @@ import { ShelfSheet } from "./shelf-sheet";
 import { ShelfEmpty, UnfiledEmpty } from "./shelf-empty";
 import { FolderCreateDialog } from "./folder-create-dialog";
 import { createFolderAction, moveDeckAction } from "../../app/decks/folder-actions";
+import { reorderDecksAction } from "../../app/decks/order-actions";
+import { deckOrderCopy } from "../../lib/copy/deck-order";
+import { planReorder } from "../../lib/decks/order-plan";
+import { ArrangeDecks } from "./arrange-decks";
 import { folderCopy } from "../../lib/copy/folders";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import {
@@ -212,6 +217,8 @@ function chipLabels(filters: DeckFilters): { key: string; label: string; without
       : []),
   ];
 }
+
+type DeckMove = { deckId: string; id: string | null; name: string | null };
 
 export function DecksView({
   decks: serverDecks,
@@ -564,10 +571,21 @@ export function DecksView({
    */
   const [decks, fileOptimistic] = useOptimistic(
     serverDecks,
-    (current: DeckListItem[], move: { deckId: string; id: string | null; name: string | null }) =>
-      current.map((deck) =>
+    (current: DeckListItem[], move: DeckMove | { order: string[] }) => {
+      // A saved arrangement: every deck takes the position the server will write.
+      if ("order" in move) {
+        const plan = planReorder(
+          current.map((d) => ({ id: d.id, folderId: d.folderId, createdAt: d.createdAt, sortPosition: d.sortPosition ?? null })),
+          move.order,
+        );
+        if (!plan) return current;
+        const at = new Map(plan.map((p) => [p.id, p.position]));
+        return current.map((d) => ({ ...d, sortPosition: at.get(d.id) ?? d.sortPosition }));
+      }
+      return current.map((deck) =>
         deck.id === move.deckId ? { ...deck, folderId: move.id, folderName: move.name } : deck,
-      ),
+      );
+    },
   );
   const [, startMove] = useTransition();
   /**
@@ -683,6 +701,34 @@ export function DecksView({
     },
     [apply, chooseSort, state.filters, state.shelf],
   );
+
+  // ARRANGE MODE (#2990). `arranging` holds the decks in the order Arrange opens on: the order on
+  // screen now, minus the filters, which step aside and come back with the grid.
+  const [arranging, setArranging] = useState<{ decks: DeckListItem[]; shelf: Shelf } | null>(null);
+  // Arrange edits the Custom order, so it seeds from the saved one whenever any deck has a place,
+  // whatever sort is showing; only with no saved order does it seed from the screen.
+  const openArrange = (shelf: Shelf) =>
+    setArranging({ decks: narrowToShelf(sortDecks(decks, arrangeSeedSort(decks, sort)), shelf), shelf });
+  const saveOrder = (ids: string[]) =>
+    new Promise<boolean>((resolve) => {
+      startMove(async () => {
+        fileOptimistic({ order: ids });
+        resolve(await reorderDecksAction(ids).catch(() => false));
+      });
+    });
+  const onArrangeDone = async (ids: string[]) => {
+    const ok = await saveOrder(ids);
+    if (!ok) return false;
+    setArranging(null);
+    if (sort !== "custom") onSort("custom");
+    return true;
+  };
+  // Picking Custom with no saved order opens Arrange seeded from what is on screen; the sort itself
+  // is set when Arrange is done.
+  const onPickSort = (next: DeckSort) => {
+    if (next === "custom" && decks.every((d) => d.sortPosition == null)) openArrange(state.shelf);
+    else onSort(next);
+  };
 
   // Derived during render, never in an effect: an effect would paint the
   // previous list once before correcting it.
@@ -864,6 +910,14 @@ export function DecksView({
   );
   // An empty SHELF rather than an emptied one: no filter is on, so the state
   // that draws must not offer to clear one (STATES N2/N3 versus N4).
+  const arrangeRow = {
+    label:
+      state.shelf === ALL_DECKS
+        ? deckOrderCopy.arrangeAll
+        : deckOrderCopy.arrangeShelf(selectedShelf.label),
+    count: selectedShelf.count,
+    onSelect: () => openArrange(state.shelf),
+  };
   const shelfEmpty = state.shelf !== ALL_DECKS && narrowed.length === 0;
 
   /**
@@ -971,7 +1025,7 @@ export function DecksView({
 
   return (
     <div className="flex min-w-0 flex-auto flex-col bg-[color:var(--bg)] font-sans text-[color:var(--fg)]">
-      <header className="flex items-center gap-[10px] px-[16px] pt-[16px] pb-0 sm:gap-[12px] sm:border-x-0 sm:border-t-0 sm:border-b sm:border-solid sm:border-b-[color:var(--border)] sm:px-[22px] sm:pb-[16px]">
+      {!arranging && <header className="flex items-center gap-[10px] px-[16px] pt-[16px] pb-0 sm:gap-[12px] sm:border-x-0 sm:border-t-0 sm:border-b sm:border-solid sm:border-b-[color:var(--border)] sm:px-[22px] sm:pb-[16px]">
         <h1 className="m-0 font-display text-[22px] font-bold text-[color:var(--fg)] sm:text-[20px]">
           {refreshCopy.decks.title}
         </h1>
@@ -986,8 +1040,9 @@ export function DecksView({
           <ImportDeckButton />
           <NewDeckButton />
         </div>
-      </header>
+      </header>}
 
+      {!arranging && (<>
       {/* Two equal halves, the grid the head row below draws its pair in: as a flex row each
           button took its label's width, so `Import a deck` stood wider than `New deck`. */}
       <div className="grid grid-cols-2 gap-[8px] px-[16px] pt-[12px] pb-0 sm:hidden">
@@ -1010,6 +1065,7 @@ export function DecksView({
           <CartEntry total={shopping.total} deckCount={shopping.byDeck.size} />
         </div>
       ) : null}
+      </>)}
 
       {zero ? (
         <DecksZero buildable={buildable} cards={cards} />
@@ -1018,7 +1074,14 @@ export function DecksView({
           {/* THE LEVEL, above the chassis and on its own ground. It draws only
               when there is at least one deck: a shelf for nothing is furniture
               (STATES W6/C5), and `zero` above has already taken that case. */}
-          {statsOn ? (
+          {arranging ? (
+            <ArrangeDecks
+              decks={arranging.decks}
+              shelfLabel={arranging.shelf === ALL_DECKS ? null : selectedShelf.label}
+              onDone={onArrangeDone}
+              onCancel={() => setArranging(null)}
+            />
+          ) : statsOn ? (
             <LineupView data={heldStats!} now={nowIso} foldServer={lineup!.foldServer} viewSwitch={viewSwitch} amongDeck={amongDeck} />
           ) : gamesOn ? (
             <GamesView
@@ -1159,10 +1222,10 @@ export function DecksView({
             // rather than preceding sort in the controls.
             sort={
               wide ? (
-                <DeckSortMenu sort={sort} onChange={onSort} />
+                <DeckSortMenu sort={sort} onChange={onPickSort} arrange={arrangeRow} />
               ) : (
                 <div className="flex items-center gap-[8px]">
-                  <DeckSortMenu sort={sort} onChange={onSort} />
+                  <DeckSortMenu sort={sort} onChange={onPickSort} arrange={arrangeRow} />
                 <button
                   type="button"
                   onClick={() => setSheet({ open: true, focusSearch: false })}
