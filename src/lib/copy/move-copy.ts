@@ -22,6 +22,11 @@ export const moveCopyCopy = {
       return `Now ${list} ${decks.length === 1 ? "has" : "have"} it.`;
     },
   },
+  /** A large entry (#2980): the summary line's link, and the last tab it opens. DRAFT, pending /copy-review. */
+  large: {
+    link: (cards: number) => `Change where ${n(cards)} ${cards === 1 ? "card goes" : "cards go"}`,
+    tab: "Can move ·",
+  },
   /** The chooser when card details cannot read it live. */
   loadFailed: "Couldn’t load your decks just now. Try again in a moment.",
   other: {

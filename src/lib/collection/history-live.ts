@@ -2,10 +2,9 @@
 // per entry. Reads only `userId`'s own collection and decks. The record (`wentTo`) is never touched.
 import { loadAvailability } from "../decks/availability-query";
 import { allocateClaims } from "../decks/allocate";
-import type { HistoryLive } from "./history-live-view";
+import { HISTORY_LIVE_MAX, type HistoryLive } from "./history-live-view";
 
-/** The most ids one read takes: a bound on the wire, well past one page of single-card entries. */
-export const HISTORY_LIVE_MAX = 200;
+export { HISTORY_LIVE_MAX };
 
 export async function loadHistoryLive(userId: string, oracleIds: readonly string[]): Promise<Record<string, HistoryLive>> {
   const ids = [...new Set(oracleIds)].slice(0, HISTORY_LIVE_MAX);

@@ -302,6 +302,37 @@ describe("HistoryList", () => {
     expect(screen.getAllByText((_, n) => n?.tagName === "SPAN" && n.textContent === "Went to Gishath.")).toHaveLength(1);
   });
 
+  it("draws Change where N cards go on a multi-card entry and opens it on the last tab, Can move (#2980)", async () => {
+    const decks = { named: [{ id: "d1", name: "A" }, { id: "d2", name: "B" }], more: 0, gone: 0 };
+    const names = Array.from({ length: 10 }, (_, i) => `Card ${i}`);
+    const e = entry({ id: "big", rowCount: 10, wentTo: { decks, soft: false }, multi: { oracleIds: names, capped: false } });
+    const rows = names.map((n) => ({ ...row(n, null, 1), wentTo: { decks: [{ deckId: "d1", copies: 1 }] } }));
+    loadEntry.mockResolvedValue({ ...detail(e, rows, { d1: "A" }), live: {} });
+    const live = Object.fromEntries(names.map((n, i) => [n, { change: i < 2, holders: [] }]));
+    const onToggle = vi.fn();
+    const { rerender } = render(
+      <ul>
+        <HistoryEntryItem e={e} title="Card 0 and 9 more" isOpen={false} detail={undefined} onToggle={onToggle} onRevert={() => {}} onRetry={() => {}} clock={{ nowMs: NOW, zone: "UTC", locale: "en-US" }} live={live} onWritten={() => {}} />
+      </ul>,
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Change where 2 cards go" }));
+    expect(onToggle).toHaveBeenCalledTimes(1);
+    rerender(
+      <ul>
+        <HistoryEntryItem e={e} title="Card 0 and 9 more" isOpen detail={detail(e, rows, { d1: "A" })} onToggle={onToggle} onRevert={() => {}} onRetry={() => {}} clock={{ nowMs: NOW, zone: "UTC", locale: "en-US" }} live={live} onWritten={() => {}} />
+      </ul>,
+    );
+    expect(screen.getByRole("tab", { name: /Can move/ }).getAttribute("aria-selected")).toBe("true");
+    // No choice left: the link and the tab are gone.
+    rerender(
+      <ul>
+        <HistoryEntryItem e={e} title="Card 0 and 9 more" isOpen detail={detail(e, rows, { d1: "A" })} onToggle={onToggle} onRevert={() => {}} onRetry={() => {}} clock={{ nowMs: NOW, zone: "UTC", locale: "en-US" }} live={{}} onWritten={() => {}} />
+      </ul>,
+    );
+    expect(screen.queryByRole("tab", { name: /Can move/ })).toBeNull();
+    expect(screen.queryByTestId("history-change-large")).toBeNull();
+  });
+
   it("names a deleted deck without a link and keeps Revert (§D3)", () => {
     draw([entry({ kind: "edit", source: "shopping:x", firstName: "Swords to Plowshares", shoppingDeck: { id: "x", name: null } })]);
     expect(screen.getByText("From the Shopping list of a deck you’ve since deleted")).toBeTruthy();

@@ -9,7 +9,7 @@
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { loadCollectionHistory, loadCollectionHistoryEntry, loadHistoryLiveFor } from "../../app/collection/history-actions";
-import { nowHolderNames, type HistoryLive } from "../../lib/collection/history-live-view";
+import { HISTORY_LIVE_MAX, cardsWithChoice, nowHolderNames, type HistoryLive } from "../../lib/collection/history-live-view";
 import { moveCopyCopy } from "../../lib/copy/move-copy";
 import { ChangeCopyDoor } from "../cards/change-copy-door";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
@@ -175,7 +175,7 @@ function ShoppingCartLine({ linked, decks }: { linked: boolean; decks: HistoryLi
 }
 
 /** Where an add's or an upload's copies went, kept at arrival: one line under the entry. */
-function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
+function WentToLine({ wentTo, linked, single, cardName, live, onWritten, large }: {
   wentTo: NonNullable<HistoryListEntry["wentTo"]>;
   linked: boolean;
   /** An entry of one card: its summary line takes the live tail (an entry of many cards is Move a copy's PR 4). */
@@ -183,6 +183,8 @@ function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
   cardName: string | null;
   live?: Readonly<Record<string, HistoryLive>>;
   onWritten?: (oracleId: string) => void;
+  /** An entry of many cards: the link that opens it on `Can move · N`. Absent at N of 0 (the record is never rewritten). */
+  large?: { count: number; onOpen: () => void };
 }) {
   const w = gotItCopy.history.wentTo;
   return (
@@ -190,6 +192,19 @@ function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
       <p className="m-0 min-w-0 text-[12px] text-[color:var(--fg-muted)] md:text-[12.5px]">
         {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
         {single && cardName ? <LiveNow wentDeckIds={single.wentDeckIds} soft={wentTo.soft} live={live?.[single.oracleId]} /> : null}
+        {large && large.count > 0 ? (
+          <>
+            {" "}
+            <button
+              type="button"
+              data-testid="history-change-large"
+              onClick={large.onOpen}
+              className="cursor-pointer border-0 bg-transparent p-0 text-left text-[length:inherit] text-[color:var(--accent-text)] underline underline-offset-2"
+            >
+              {moveCopyCopy.large.link(large.count)}
+            </button>
+          </>
+        ) : null}
       </p>
       {single && cardName ? (
         <LiveChange oracleId={single.oracleId} cardName={cardName} soft={wentTo.soft} live={live?.[single.oracleId]} onWritten={onWritten} />
@@ -204,22 +219,33 @@ function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
  * already shows its entry line, which says it: the same sentence an inch apart would be said twice. An entry read
  * before an upload's placement was stamped has no entry line, so its rows speak for themselves.
  */
-function EntryRows({ rows, rowDecks, live, onWritten }: {
+function EntryRows({ rows, rowDecks, live, onWritten, picked, onPick }: {
   rows: HistoryRow[];
+  /** The chosen tab, held by the entry so its summary link can open `Can move`. */
+  picked: RowGroup | "move" | null;
+  onPick: (tab: RowGroup | "move") => void;
   rowDecks: Readonly<Record<string, string>> | null;
   live?: Readonly<Record<string, HistoryLive>>;
   onWritten?: (oracleId: string) => void;
 }) {
   const groups = useMemo(() => groupRows(rows), [rows]);
-  const [picked, setPicked] = useState<RowGroup | null>(null);
   const [shown, setShown] = useState(GROUP_FIRST);
   const groupIds = useId();
   if (rows.length === 0) return <p className="m-0 py-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.noRows}</p>;
   if (rows.length <= SHORT_ENTRY_ROWS) {
-    return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>;
+    // No tabs on a short entry: the `Change where N cards go` link narrows the list to the rows that can move instead.
+    const only = picked === "move" ? rows.filter((r) => r.wentTo && !r.wentTo.soft && live?.[r.oracleId]?.change === true) : rows;
+    const shownRows = only.length > 0 ? only : rows;
+    return <ul className="m-0 list-none p-0">{shownRows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>;
   }
-  const active = groups.find((g) => g.group === picked) ?? groups[0];
-  if (!active) return null;
+  // Move a copy: the rows that still have a choice, as a last tab; it is gone at none, and the view falls back to the first group.
+  const movable = rows.filter((r) => r.wentTo && !r.wentTo.soft && live?.[r.oracleId]?.change === true);
+  const movableCards = cardsWithChoice(movable.map((r) => r.oracleId), live ?? {});
+  const onMove = picked === "move" && movable.length > 0;
+  const group = groups.find((g) => g.group === picked) ?? groups[0];
+  if (!group) return null;
+  const activeValue: RowGroup | "move" = onMove ? "move" : group.group;
+  const activeRows = onMove ? movable : group.rows;
   return (
     <div>
       <div className="mb-[8px]">
@@ -230,14 +256,19 @@ function EntryRows({ rows, rowDecks, live, onWritten }: {
           scroll
           ariaLabel={c.heading}
           ids={{ tab: (g) => `${groupIds}-tab-${g}`, panel: (g) => `${groupIds}-panel-${g}` }}
-          segments={groups.map((g) => ({
-            value: g.group,
-            label: `${c.groups[g.group]} ·`,
-            count: g.rows.length.toLocaleString("en-US"),
-          }))}
-          value={active.group}
+          segments={[
+            ...groups.map((g) => ({
+              value: g.group as RowGroup | "move",
+              label: `${c.groups[g.group]} ·`,
+              count: g.rows.length.toLocaleString("en-US"),
+            })),
+            ...(movable.length > 0
+              ? [{ value: "move" as const, label: moveCopyCopy.large.tab, count: movableCards.length.toLocaleString("en-US"), data: { "data-testid": "history-tab-move" } }]
+              : []),
+          ]}
+          value={activeValue}
           onChange={(g) => {
-            setPicked(g);
+            onPick(g);
             setShown(GROUP_FIRST);
           }}
         />
@@ -247,17 +278,17 @@ function EntryRows({ rows, rowDecks, live, onWritten }: {
       <div
         role="tabpanel"
         tabIndex={0}
-        id={`${groupIds}-panel-${active.group}`}
-        aria-labelledby={`${groupIds}-tab-${active.group}`}
+        id={`${groupIds}-panel-${activeValue}`}
+        aria-labelledby={`${groupIds}-tab-${activeValue}`}
       >
-        <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>
-        {shown < active.rows.length ? (
+        <ul className="m-0 list-none p-0">{activeRows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>
+        {shown < activeRows.length ? (
           <button
             type="button"
             onClick={() => setShown((s) => s + GROUP_STEP)}
             className="mt-[6px] min-h-[44px] cursor-pointer text-[13px] text-[color:var(--accent-text)] underline underline-offset-2"
           >
-            {c.showMore(Math.min(GROUP_STEP, active.rows.length - shown), active.rows.length - shown)}
+            {c.showMore(Math.min(GROUP_STEP, activeRows.length - shown), activeRows.length - shown)}
           </button>
         ) : null}
       </div>
@@ -332,6 +363,11 @@ export function HistoryEntryItem({
 }) {
   const kind = historyKindOf(e);
   const reverted = e.revertedBy !== null;
+  const [tab, setTab] = useState<RowGroup | "move" | null>(null);
+  // Change where N cards go: N from the opened entry's own rows (exact), else from the page payload's placed cards and the page's one live read.
+  const opened = detail && detail !== "loading" && detail !== "failed" ? detail : null;
+  const placedIds = opened ? opened.rows.filter((r) => r.wentTo && !r.wentTo.soft).map((r) => r.oracleId) : e.multi && !e.multi.capped ? e.multi.oracleIds : [];
+  const movableCount = live && onWritten && !e.single ? cardsWithChoice(placedIds, live).length : 0;
   return (
     <li
       id={anchor ? `entry-${e.id}` : undefined}
@@ -341,7 +377,8 @@ export function HistoryEntryItem({
       <button
         type="button"
         aria-expanded={isOpen}
-        onClick={onToggle}
+        // Closing puts the entry back on its first group: the link's tab is one-shot.
+        onClick={() => { if (isOpen) setTab(null); onToggle(); }}
         className="grid min-w-0 flex-1 cursor-pointer grid-cols-[1fr_auto] items-center gap-x-[12px] gap-y-[4px] border-0 bg-transparent p-[12px_14px] text-left text-[color:var(--fg)] md:grid-cols-[150px_1fr_auto]"
       >
         <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={{ color: TAG_INK[kind] }}>
@@ -377,7 +414,7 @@ export function HistoryEntryItem({
       </div>
       {e.shoppingDeck ? <ShoppingDeckLine deck={e.shoppingDeck} linked={anchor} /> : null}
       {e.shoppingCart ? <ShoppingCartLine linked={anchor} decks={e.cartDecks} /> : null}
-      {e.wentTo ? <WentToLine wentTo={e.wentTo} linked={anchor} single={e.single} cardName={e.firstName} live={live} onWritten={onWritten} /> : null}
+      {e.wentTo ? <WentToLine wentTo={e.wentTo} linked={anchor} single={e.single} cardName={e.firstName} live={live} onWritten={onWritten} large={{ count: movableCount, onOpen: () => { setTab("move"); if (!isOpen) onToggle(); } }} /> : null}
       {reverted ? (
         <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
           {c.reverted}
@@ -410,7 +447,7 @@ export function HistoryEntryItem({
                   {c.syncNote(detail.sync.kept, detail.sync.decided, detail.sync.tokens)}
                 </p>
               ) : null}
-              <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} live={live} onWritten={onWritten} />
+              <EntryRows picked={tab} onPick={setTab} rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} live={live} onWritten={onWritten} />
             </>
           ) : detail === "failed" ? (
             <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
@@ -465,7 +502,11 @@ export function HistoryList({
   const groups = useMemo(() => groupByDay(entries, nowMs, zone), [entries, nowMs, zone]);
 
   useEffect(() => {
-    const ids = entries.flatMap((e) => (e.single && e.wentTo && !e.wentTo.soft && !asked.current.has(e.single.oracleId) ? [e.single.oracleId] : []));
+    // ONE read for the page: single-card entries first, then the placed cards of multi-card ones (their `Change where N cards go`).
+    // Past the wire cap the rest waits for the entry's own load.
+    const singles = entries.flatMap((e) => (e.single && e.wentTo && !e.wentTo.soft ? [e.single.oracleId] : []));
+    const multis = entries.flatMap((e) => (e.multi && !e.multi.capped ? e.multi.oracleIds : []));
+    const ids = [...new Set([...singles, ...multis])].filter((id) => !asked.current.has(id)).slice(0, HISTORY_LIVE_MAX);
     if (ids.length === 0) return;
     ids.forEach((id) => asked.current.add(id));
     loadHistoryLiveFor(ids).then((r) => setLive((m) => ({ ...m, ...r }))).catch(() => { ids.forEach((id) => asked.current.delete(id)); });
