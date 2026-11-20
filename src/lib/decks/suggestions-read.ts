@@ -21,6 +21,7 @@ import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
+import { isBasicLand } from "./grouping";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { loadPoolRoleBasis } from "../recs/pool-role-basis";
@@ -118,8 +119,11 @@ export async function unownedTopCards(
       ),
     );
 
+  // Never a basic land: EDHREC lists the basics at 90%+ inclusion, so a ranked list leads with them,
+  // and a player whose collection holds no basics would be offered Forest as a Top pick (#2975). The
+  // fill places basics from the catalog on its own (`loadCatalogBasics`), never from this list.
   const eligible = candidateCards.filter(
-    (c) => !ownedIds.has(c.oracleId) && !excludeIds.has(c.oracleId),
+    (c) => !ownedIds.has(c.oracleId) && !excludeIds.has(c.oracleId) && !isBasicLand(c.typeLine),
   );
 
   const topCardIndex = new Map(lowerTopCards.map((n, i) => [n, i]));

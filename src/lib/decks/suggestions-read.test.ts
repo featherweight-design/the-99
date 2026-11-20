@@ -1,7 +1,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, it } from "vitest";
-import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, topPickNames, unownedAppend } from "./suggestions-read";
+import { describe, expect, it, vi } from "vitest";
+
+const { rowsRef, select } = vi.hoisted(() => {
+  const rowsRef = { rows: [] as unknown[] };
+  return { rowsRef, select: vi.fn(() => ({ from: () => ({ where: async () => rowsRef.rows }) })) };
+});
+vi.mock("../../db", () => ({ db: { select } }));
+
+import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, topPickNames, unownedAppend, unownedTopCards } from "./suggestions-read";
 import { SHELF_CAP } from "./shelf-cap";
 
 /**
@@ -62,5 +69,28 @@ describe("topPickNames", () => {
     const src = readFileSync(join(process.cwd(), "src/lib/decks/suggestions-read.ts"), "utf8");
     const loader = src.slice(src.indexOf("export async function loadDeckSuggestions"));
     expect(loader).toMatch(/unownedTopCards\(commanders, topPickNames\(topCards, inclusionByName\),/);
+  });
+});
+
+// Ranked by inclusion, EDHREC's basics (90%+) lead the list, so Windgrace's shelf offered Forest,
+// Swamp and Mountain to a player whose collection holds no basics (#2975).
+describe("unownedTopCards", () => {
+  const card = (oracleId: string, name: string, typeLine: string) => ({
+    oracleId, name, typeLine, oracleText: null, keywords: [], imageUri: null, manaCost: null, manaValue: 0, layout: "normal",
+  });
+
+  it("never offers a basic land, snow basics included", async () => {
+    rowsRef.rows = [
+      card("forest", "Forest", "Basic Land — Forest"),
+      card("snow", "Snow-Covered Swamp", "Basic Snow Land — Swamp"),
+      card("gitrog", "The Gitrog Monster", "Legendary Creature — Frog Horror"),
+      card("tower", "Command Tower", "Land"),
+    ];
+    const got = await unownedTopCards(
+      [{ oracleId: "windgrace", colorIdentity: ["B", "R", "G"] }],
+      ["Forest", "Snow-Covered Swamp", "Command Tower", "The Gitrog Monster"],
+      new Set(), new Set(),
+    );
+    expect(got.map((c) => c.name)).toEqual(["Command Tower", "The Gitrog Monster"]);
   });
 });
