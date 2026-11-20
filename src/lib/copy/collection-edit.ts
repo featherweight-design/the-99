@@ -298,6 +298,20 @@ export const collectionEditCopy = {
       "This changed while you were deciding. Your collection was edited somewhere else, so here’s the answer as of now. Nothing was saved.",
     newTag: "new",
     /**
+     * The facts beside a short deck and the reason line (removal chooser R2, #2983): nothing links out of the warning (#2982), so the row
+     * says what a tap would have told. DRAFT for /copy-review: the handoff's strings.
+     */
+    facts: {
+      line: (listed: number, date: string) => `lists ${listed} · committed it ${date}`,
+      lineUndated: (listed: number) => `lists ${listed}`,
+      /** Two or more copies are left, so there is no chooser: who keeps them, and where to give one to the short deck instead. */
+      reasonLeft: (keepers: string, left: number, short: string, card: string) =>
+        `${keepers} committed it first, so they keep the ${left} copies left. To give one to ${short} instead, tap Change under In your decks on ${card} afterwards.`,
+      /** I got it's Undo: the short deck committed the card after the keeper. */
+      reasonUndo: (short: string, card: string, keeper: string) =>
+        `${short} goes short because it committed ${card} after ${keeper}. To change that, tap Change under In your decks on ${card} afterwards.`,
+    },
+    /**
      * The removal chooser (#2983, handoff `addendum-removal-chooser`, R1/R2): shown only when exactly one copy is left and
      * two or more committed decks list the card. The player marks the decks that go SHORT; the one unmarked deck keeps the copy
      * (its reservation). DRAFT for /copy-review: the handoff's strings.
