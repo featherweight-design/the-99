@@ -89,11 +89,12 @@ export function OfficialIcon({ kind, size = 20, className }: { kind: keyof typeo
     // eslint-disable-next-line @next/next/no-img-element -- a fixed local SVG; next/image adds nothing
     return <img src={src} alt="" width={size} height={size} aria-hidden="true" className={className} style={{ flex: "none" }} />;
   }
+  const maskValue = `url(${src}) center / contain no-repeat`;
   return (
     <span
       aria-hidden="true"
       className={className}
-      style={{ display: "inline-block", width: size, height: size, flex: "none", backgroundColor: "currentColor", WebkitMask: `url(${src}) center / contain no-repeat`, mask: `url(${src}) center / contain no-repeat` }}
+      style={{ display: "inline-block", width: size, height: size, flex: "none", backgroundColor: "currentColor", WebkitMask: maskValue, mask: maskValue }}
     />
   );
 }

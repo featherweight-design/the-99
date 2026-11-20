@@ -13,6 +13,7 @@ const ALLOWED: Record<string, { count: number; reason: string }> = {
   "ui/art-wash-near.tsx": { count: 1, reason: "the primitive itself: ArrivingArt, which ArtLayer wraps" },
   "cards/card-modal-parts.tsx": { count: 3, reason: "the card details' main faces and zoom (`cardFace`, moved from card-modal.tsx for the demo modal to share): art the reader asked for, left unfaded (PR 1)" },
   "decks/hover-preview.tsx": { count: 1, reason: "the hover preview: art the reader asked for, left unfaded (PR 1)" },
+  "tracker/icons.tsx": { count: 1, reason: "the tracker counters' official symbols drawn as a one-colour mask, not card art" },
   "sets/set-icon.tsx": { count: 2, reason: "a set symbol drawn as a mask, not card art" },
   "public/card-art.tsx": { count: 2, reason: "the public card and commander pages' card, front and back: the art the page exists to show, left unfaded as card details' is" },
   "public/card-page.tsx": {

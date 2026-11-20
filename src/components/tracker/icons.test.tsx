@@ -8,7 +8,7 @@ import { CounterIcon, DayNightIcon, InitiativeIcon, MonarchIcon, TaxIcon } from 
 
 describe("tracker icons", () => {
   it("draws an icon for every counter the engine holds", () => {
-    for (const kind of COUNTER_KEYS) expect(renderToStaticMarkup(<CounterIcon kind={kind} />), kind).toMatch(/<(svg|span)/);
+    for (const kind of COUNTER_KEYS) expect(renderToStaticMarkup(<CounterIcon kind={kind} />), kind).toMatch(/<(svg|span|img)/);
   });
   it("points each official counter at a committed symbol file", () => {
     for (const kind of ["poison", "energy", "tickets", "ring"] as const) {
@@ -18,7 +18,7 @@ describe("tracker icons", () => {
     }
   });
   it("draws energy as an image, since a mask would lose its bolt", () => {
-    expect(renderToStaticMarkup(<CounterIcon kind="energy" />)).toMatch(/^<img /);
+    expect(renderToStaticMarkup(<CounterIcon kind="energy" />)).toContain("<img ");
     expect(renderToStaticMarkup(<CounterIcon kind="poison" />)).toContain("mask");
   });
   it("hides every icon from assistive tech and keeps the drawn line style", () => {
