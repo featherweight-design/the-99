@@ -44,6 +44,8 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
   // Decks whose draft THIS session put the card into: their undo takes it back out.
   const added = useRef(new Set<string>());
   const [busy, setBusy] = useState(false);
+  // The newest Other pick's whole round trip, so a drop never overtakes the pick it takes back.
+  const inflight = useRef<Promise<unknown>>(Promise.resolve());
   const [refusal, setRefusal] = useState<string | null>(null);
   const [announce, setAnnounce] = useState("");
   const button = useRef<HTMLButtonElement>(null);
@@ -82,8 +84,8 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
 
   const dropPick = (deckId: string) => {
     dirty.current = true;
-    const remove = added.current.delete(deckId);
-    void dropOtherDeckPick(oracleId, deckId, remove);
+    // After any pick still in flight has answered, so its `added` is on record before the drop reads it.
+    void inflight.current.then(() => dropOtherDeckPick(oracleId, deckId, added.current.delete(deckId)));
   };
 
   const onPickOther = (deck: { id: string; name: string }) => {
@@ -101,7 +103,7 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
     setPickedId(deck.id);
     const mine = ++writes.current;
     setBusy(true);
-    void pickOtherDeck(oracleId, deck.id).then((r) => {
+    inflight.current = pickOtherDeck(oracleId, deck.id).then((r) => {
       dirty.current = true;
       if (r.ok) {
         if (r.added) added.current.add(deck.id);
