@@ -112,6 +112,12 @@ describe("BuilderTabs — three tabs", () => {
     expect(onViewChange).toHaveBeenCalledWith("games");
   });
 
+  // Hugh, 2026-11-15: under md the tabs share the row's width (`flex-1`), which is measured by `probe:tab-navs` (jsdom has no layout).
+  it("lets each tab grow to share the row on a phone", () => {
+    mount("deck", vi.fn(), three);
+    for (const tab of tabs()) expect(tab.className).toContain("flex-1");
+  });
+
   // Decision 8: the Games tab never disappears, and at zero it is a bare label
   // rather than "Games · 0" — a zero beside a label reads as a failure state.
   it("renders no count element when count is omitted", () => {

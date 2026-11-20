@@ -32,19 +32,25 @@ describe("which tabs the builder draws", () => {
     expect(ids({ versionCount: 0 })).toEqual(["deck", "analysis", "consider", "games"]);
   });
 
-  it("still drops the Games count at zero, and Versions on a brew", () => {
+  it("drops Versions on a brew", () => {
     const specs = builderTabSpecs({ ...base, gameCount: 0, versionCount: 0 });
-    expect(specs.find((t) => t.id === "games")?.count).toBeUndefined();
     expect(specs.map((t) => t.id)).not.toContain("versions");
+  });
+
+  // Hugh, 2026-11-15: only Your deck draws a count; the others say theirs in the accessible name alone.
+  it("draws a count on Your deck alone", () => {
+    const specs = builderTabSpecs({ ...base, built: 99, suggestionCount: 7, gameCount: 4, versionCount: 3 });
+    expect(specs.filter((t) => t.count !== undefined).map((t) => t.id)).toEqual(["deck"]);
+    expect(specs.find((t) => t.id === "deck")?.count).toBe(99);
+    expect(specs.find((t) => t.id === "consider")?.accessibleName).toContain("7");
+    expect(specs.find((t) => t.id === "games")?.accessibleName).toContain("4");
   });
 
   // Precons R3 K14: a brew linked to a precon has v0 in Versions, so the tab is drawn with one row.
   it("draws Versions on a LINKED brew, counting v0, and names v0 apart from committed versions", () => {
     const brew = builderTabSpecs({ ...base, versionCount: 0, hasOrigin: true }).find((t) => t.id === "versions");
-    expect(brew?.count).toBe(1);
     expect(brew?.accessibleName).toBe(historyOriginCopy.tabAria(0));
     const committed = builderTabSpecs({ ...base, versionCount: 2, hasOrigin: true }).find((t) => t.id === "versions");
-    expect(committed?.count).toBe(3);
     expect(committed?.accessibleName).toBe(historyOriginCopy.tabAria(2));
   });
 });

@@ -66,7 +66,7 @@ function Tab({
       onClick={onSelect}
       // The idle border is transparent rather than absent so selecting a tab
       // does not shift the bar by 2px.
-      className={`flex flex-none items-baseline gap-[6px] whitespace-nowrap min-h-[44px] pb-[8px] md:pb-[10px] bg-transparent cursor-pointer border-0 border-b-2 border-solid ${
+      className={`flex flex-1 items-baseline justify-center gap-[6px] whitespace-nowrap min-h-[44px] md:flex-none md:justify-start pb-[8px] md:pb-[10px] bg-transparent cursor-pointer border-0 border-b-2 border-solid ${
         selected ? "border-b-[color:var(--accent)]" : "border-b-transparent"
       }`}
     >
@@ -102,14 +102,14 @@ export function BuilderTabs({ tabs, view, onViewChange, children, anchor }: Buil
       {/* The row, of which the tablist is one part: the version link and the
           toolbar are peers of it rather than children, because a tablist owns
           exactly the tabs that control this document's panels. */}
-      <div className="flex items-baseline gap-[16px] md:gap-[22px]">
-        {/* ONE LINE, ALWAYS: a label never breaks (a deck with versions at 390 pushed "Your deck
-            99" onto two lines). Where five tabs are wider than the phone, the row scrolls
-            sideways instead, its scrollbar hidden, so the page itself never does. A scroll box
-            clips on both axes, so it pads 4px inside and gives it back outside: the focus ring
-            (2px, offset 2px) is drawn whole. */}
+      <div className="flex items-baseline md:gap-[22px]">
+        {/* ONE LINE, ALWAYS: a label never breaks. Under `md` the tabs share the row's width equally and
+            never scroll at a phone's width (Hugh, 2026-11-15): only "Your deck" carries a count, so five labels fit
+            390. The scroll box and its 4px pad stay as the safety for a narrower window (320), where five labels
+            cannot fit and the row, not the page, scrolls; the pad also keeps the focus ring whole. From `md` they
+            keep their own width beside the toolbar. */}
         <div
-          className="-m-[4px] flex min-w-0 items-baseline gap-[16px] overflow-x-auto p-[4px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:m-0 md:gap-[22px] md:overflow-visible md:p-0"
+          className="-m-[4px] flex min-w-0 flex-1 items-baseline overflow-x-auto p-[4px] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:m-0 md:flex-none md:gap-[22px] md:overflow-visible md:p-0"
           role="tablist"
           // Selection follows focus, which is the pattern's default for panels
           // that are all cheap to render.

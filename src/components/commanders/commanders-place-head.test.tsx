@@ -52,21 +52,20 @@ describe("CommandersPlaceHead", () => {
     render(<CommandersPlaceHead counts={{ owned: 1, discover: 2, hidden: 3 }} />);
     expect(screen.getByTestId("commanders-tab-hidden")).toHaveAttribute("aria-current", "page");
   });
-  // The strip's shipped `tab.count`, once something is hidden; none at 0 (the Hidden board's empty state).
-  it("counts the Hidden tab, and draws no count with nothing hidden", () => {
+  // Hugh, 2026-11-15: no tab carries a count, the Hidden one included, whatever is hidden.
+  it("draws no count on any tab, the Hidden tab included", () => {
     path.value = "/commanders";
     render(<CommandersPlaceHead counts={{ owned: 1, discover: 2, hidden: 3 }} />);
-    expect(screen.getByTestId("commanders-tab-hidden-count")).toHaveTextContent("3");
-    cleanup();
-    render(<CommandersPlaceHead counts={{ owned: 1, discover: 2, hidden: 0 }} />);
     expect(screen.queryByTestId("commanders-tab-hidden-count")).toBeNull();
+    expect(document.querySelector("nav em")).toBeNull();
   });
-  // No cards: the title line says nothing, but the Hidden tab still counts what it holds (READINESS Y8).
-  it("keeps the Hidden count for a reader with no collection", () => {
-    path.value = "/commanders/hidden";
-    render(<CommandersPlaceHead counts={{ owned: 0, discover: 0, hidden: 2 }} />);
-    expect(screen.queryByText(/yours|to discover/)).toBeNull();
-    expect(screen.getByTestId("commanders-tab-hidden-count")).toHaveTextContent("2");
+  // On a phone the four tabs share the strip's width.
+  it("lets the four tabs share the strip's width on a phone", () => {
+    path.value = "/commanders";
+    render(<CommandersPlaceHead counts={null} />);
+    for (const place of ["foryou", "discover", "choose", "hidden"]) {
+      expect(screen.getByTestId(`commanders-tab-${place}`).className).toContain("max-md:flex-auto");
+    }
   });
   // Four tabs fit a 390 phone at the strip's own spacing: it closes up only from five.
   it("keeps the strip's full spacing with four tabs", () => {
@@ -75,7 +74,7 @@ describe("CommandersPlaceHead", () => {
     expect(screen.getByTestId("commanders-tab-hidden").className).toContain("px-[11px]");
     expect(screen.getByTestId("commanders-tab-hidden").className).not.toContain("px-[7px]");
   });
-  // A hide or unhide settling anywhere below re-reads the figures, the Hidden count among them.
+  // A hide or unhide settling anywhere below re-reads the figures (the title line's); the tab stays without a count.
   it("re-reads the counts when a list announces them stale", async () => {
     path.value = "/commanders";
     refresh.mockResolvedValueOnce({ owned: 1, discover: 2, hidden: 4 });
@@ -83,7 +82,8 @@ describe("CommandersPlaceHead", () => {
     act(() => {
       window.dispatchEvent(new Event("the99:commander-counts-stale"));
     });
-    await waitFor(() => expect(screen.getByTestId("commanders-tab-hidden-count")).toHaveTextContent("4"));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    expect(screen.queryByTestId("commanders-tab-hidden-count")).toBeNull();
   });
   it("refuses a path outside the place", () => {
     path.value = "/collection";
