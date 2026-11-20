@@ -13,7 +13,7 @@ import { requireEnv } from "./lib/env.mjs";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 
-import { AXIS_FLOOR, BASELINE_FLOOR, BIG_CREATURE_MIN_MV, TYPAL_AXES, baselineShare } from "../src/lib/strategy/axes";
+import { AXIS_FLOOR, BASELINE_FLOOR, BIG_CREATURE_MIN_MV, FIXED_AXES, TYPAL_AXES, baselineShare } from "../src/lib/strategy/axes";
 import { toStrategyCard } from "../src/lib/strategy/load";
 import { MIN_NONLAND, TOP_AXES, catalogBaseline, scoredAxes, type StrategyBaseline, type StrategyCard } from "../src/lib/strategy/score";
 
@@ -143,7 +143,7 @@ async function main() {
 
     console.log(`rules: floor ${AXIS_FLOOR} copies · big creature = creature of MV ≥ ${BIG_CREATURE_MIN_MV} (no power column) · up to ${TYPAL_AXES} typal axes · baseline floor ${BASELINE_FLOOR}`);
     console.log(`catalog baseline: ${catalogBase.axes.total} commander-legal nonland game cards, one copy each`);
-    console.log(`catalog shares: ${["artifacts", "enchantments", "voltron", "vehicles", "bigCreatures"].map((a) => `${a} ${(baselineShare(catalogBase.axes, a as never) * 100).toFixed(1)}%`).join(" · ")}`);
+    console.log(`catalog shares: ${FIXED_AXES.map((a) => `${a} ${(baselineShare(catalogBase.axes, a as never) * 100).toFixed(1)}%`).join(" · ")}`);
     console.log(`commander averages: the ${AVERAGE_SIZE} highest-inclusion nonland cards; ${averages.size} of ${commanders.length} commanders have one\n`);
     console.log(["group", "list", "nonland", "catalog peak (axis copies)", "commander peak (axis copies, base share)"].join(" | "));
 

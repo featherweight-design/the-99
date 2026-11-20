@@ -1,6 +1,6 @@
 // Strategy axes a deck leans on, read off the catalog alone: the card's front-face type line, its mana value and its
 // keywords. No model call and no label. These are the archetypes the 30 label themes have no word for (artifacts,
-// enchantments, equipment and Auras, vehicles, big creatures, one creature type), found missing when the label-theme
+// enchantments, equipment and Auras, vehicles, big creatures, planeswalkers, sagas, the Proliferate keyword, one creature type), found missing when the label-theme
 // score was validated on staging (boards/strategy-focus-research-2026-10-18.md, Validation).
 //
 // A deck's score on an axis is the research's `copies × ln(lift)`, where lift is the deck's share of the axis over a
