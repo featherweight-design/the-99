@@ -17,8 +17,15 @@ export type FlipDeck = {
   sortPosition: number | null;
 };
 
-/** The list the reader pressed a tile from: its ids in order, the word for the shelf, and the URL to return to. */
-export type FlipTrail = { ids: string[]; caption: string; href: string };
+/** How long a trail stays the reader's list: a tab left open overnight is not still looking at that shelf. */
+export const TRAIL_TTL_MS = 30 * 60 * 1000;
+
+/**
+ * The list the reader pressed a tile from: its ids in order, the word for the shelf, the URL to return to, when it was
+ * written, and the decks reached by flipping from it (`seen`). A deck opened any other way is not in `seen`, so it never
+ * inherits a shelf the reader is no longer on.
+ */
+export type FlipTrail = { ids: string[]; caption: string; href: string; at: number; seen: string[] };
 
 export type Flip = {
   /** The deck's place, one-based, and the length of the list it is in. */
@@ -36,11 +43,12 @@ export function parseTrail(raw: string | null): FlipTrail | null {
   try {
     const v: unknown = JSON.parse(raw);
     if (typeof v !== "object" || v === null) return null;
-    const { ids, caption, href } = v as Record<string, unknown>;
+    const { ids, caption, href, at, seen } = v as Record<string, unknown>;
     if (!Array.isArray(ids) || !ids.every((i) => typeof i === "string")) return null;
+    if (typeof at !== "number" || !Array.isArray(seen) || !seen.every((i) => typeof i === "string")) return null;
     // A trail's return link is an in-app path under /decks; anything else is absence, not a redirect.
     if (typeof caption !== "string" || typeof href !== "string" || !/^\/decks(?:[?#]|$)/.test(href)) return null;
-    return { ids, caption, href };
+    return { ids, caption, href, at, seen };
   } catch {
     return null;
   }
@@ -51,7 +59,9 @@ export function parseTrail(raw: string | null): FlipTrail | null {
  * list does not hold). A trail names an order, never a roster: a deck deleted since is dropped and a deck the trail does not
  * hold sends the strip back to All decks, so a stale trail never strands the reader on a list their deck is not in.
  */
-export function resolveFlip(decks: readonly FlipDeck[], trail: FlipTrail | null, sortRaw: string | null, currentId: string): Flip | null {
+export function resolveFlip(decks: readonly FlipDeck[], trail: FlipTrail | null, sortRaw: string | null, currentId: string, now: number): Flip | null {
+  // A trail is this visit's only if it is fresh and the chain from the list reached this deck.
+  if (trail && (now - trail.at > TRAIL_TTL_MS || !trail.seen.includes(currentId))) trail = null;
   const byId = new Map(decks.map((d) => [d.id, d]));
   let ids = trail ? trail.ids.filter((i) => byId.has(i)) : [];
   let caption: string | null = trail?.caption ?? null;

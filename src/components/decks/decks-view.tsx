@@ -1441,7 +1441,9 @@ export function DecksView({
             <ul
               // A press on a tile writes the list the reader sees, in the order they see it, for the deck page's flip strip.
               onClickCapture={(e) => {
-                if (e.target instanceof Element && e.target.closest('a[href^="/decks/"]')) writeFlipTrail(shown, shelfWord, window.location.pathname + window.location.search);
+                // The tile's own link (`/decks/<id>`), not its Shopping or Update links.
+                const id = e.target instanceof Element ? /^\/decks\/([0-9a-f-]{36})$/.exec(e.target.closest("a")?.getAttribute("href") ?? "")?.[1] : undefined;
+                if (id) writeFlipTrail(shown, shelfWord, window.location.pathname + window.location.search, id);
               }}
               className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]"
             >

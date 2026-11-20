@@ -2,12 +2,13 @@
 // the right. One state for both widths (`useDeckFlip`, called once by BuilderSpine), drawn once per width by the spines.
 "use client";
 
-import { useContext, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useContext, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { AppRouterContext } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { deckFlipCopy } from "../../lib/copy/deck-flip";
 import { DECK_SORT_KEY } from "../../lib/decks/sort";
 import { FLIP_KEY, parseTrail, resolveFlip, type FlipDeck } from "../../lib/decks/flip";
+import { extendFlipTrail } from "../../lib/decks/flip-trail";
 import { GhostButton } from "../ui/button";
 import { PendingReporter } from "../shell/pending-reporter";
 import { readRaw } from "../ui/local-store";
@@ -46,14 +47,17 @@ export function useDeckFlip(decks: readonly FlipDeck[] | undefined, id: string, 
   // The context, not `useRouter`: the spine draws in places no app router is mounted (its tests), and `useRouter` throws there.
   const router = useContext(AppRouterContext);
   const mounted = useSyncExternalStore(noop, ready, notReady);
+  // When this page opened: the trail's age is judged against it, so a render never reads the clock.
+  const [openedAt] = useState(Date.now);
   const flip = useMemo(
-    () => (mounted && decks ? resolveFlip(decks, parseTrail(readTrailRaw()), readRaw(DECK_SORT_KEY), id) : null),
-    [mounted, decks, id],
+    () => (mounted && decks ? resolveFlip(decks, parseTrail(readTrailRaw()), readRaw(DECK_SORT_KEY), id, openedAt) : null),
+    [mounted, decks, id, openedAt],
   );
   const prevId = flip?.prev.id;
   const nextId = flip?.next.id;
   useEffect(() => {
     if (!router || !prevId || !nextId) return;
+    extendFlipTrail(readTrailRaw(), [prevId, nextId]);
     router.prefetch(`/decks/${prevId}${search}`);
     router.prefetch(`/decks/${nextId}${search}`);
   }, [router, prevId, nextId, search]);
