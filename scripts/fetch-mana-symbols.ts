@@ -46,10 +46,13 @@ const TRACKER_SYMBOLS = [
 ] as const;
 const TRACKER_DIR = "public/tracker";
 
-async function fetchTrackerSymbols(): Promise<void> {
+async function fetchSymbology(): Promise<CardSymbol[]> {
   const res = await fetch(SYMBOLOGY, { headers: SCRYFALL_HEADERS });
   if (!res.ok) throw new Error(`Symbology ${res.status} ${res.statusText}`);
-  const { data } = (await res.json()) as { data: CardSymbol[] };
+  return ((await res.json()) as { data: CardSymbol[] }).data;
+}
+
+async function fetchTrackerSymbols(data: CardSymbol[]): Promise<void> {
   await mkdir(TRACKER_DIR, { recursive: true });
   for (const entry of TRACKER_SYMBOLS) {
     let uri: string | undefined;
@@ -71,11 +74,9 @@ async function fetchTrackerSymbols(): Promise<void> {
 
 async function main(): Promise<void> {
   const only = process.argv[2];
-  if (only === "tracker") return fetchTrackerSymbols();
+  if (only === "tracker") return fetchTrackerSymbols(await fetchSymbology());
   if (only !== undefined) throw new Error(`Unknown argument "${only}": pass "tracker" or nothing`);
-  const res = await fetch(SYMBOLOGY, { headers: SCRYFALL_HEADERS });
-  if (!res.ok) throw new Error(`Symbology ${res.status} ${res.statusText}`);
-  const { data } = (await res.json()) as { data: CardSymbol[] };
+  const data = await fetchSymbology();
   const symbols = data.filter((s) => s.appears_in_mana_costs);
   if (symbols.length < 50) {
     throw new Error(`Read ${symbols.length} cost symbols, expected at least 50 — shape changed?`);
@@ -128,7 +129,7 @@ async function main(): Promise<void> {
   console.log(`Wrote ${slugs.length} symbols to ${OUT_DIR}/ and ${MANIFEST}.`);
   // The one file the app actually loads, rebuilt from the files just written.
   console.log(`Rebuilt the sprite from ${await writeManaSprite()} symbols.`);
-  await fetchTrackerSymbols();
+  await fetchTrackerSymbols(data);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });

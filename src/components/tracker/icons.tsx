@@ -84,16 +84,16 @@ export const TaxIcon = (props: IconProps) => (
 const OFFICIAL_FILE = { poison: "phyrexian", energy: "energy", tickets: "tickets", ring: "ring" } as const;
 
 export function OfficialIcon({ kind, size = 20, className }: { kind: keyof typeof OFFICIAL_FILE; size?: number; className?: string }) {
-  const url = `url(/tracker/${OFFICIAL_FILE[kind]}.svg)`;
+  const src = `/tracker/${OFFICIAL_FILE[kind]}.svg`;
   if (kind === "energy") {
     // eslint-disable-next-line @next/next/no-img-element -- a fixed local SVG; next/image adds nothing
-    return <img src="/tracker/energy.svg" alt="" width={size} height={size} aria-hidden="true" className={className} style={{ flex: "none" }} />;
+    return <img src={src} alt="" width={size} height={size} aria-hidden="true" className={className} style={{ flex: "none" }} />;
   }
   return (
     <span
       aria-hidden="true"
       className={className}
-      style={{ display: "inline-block", width: size, height: size, flex: "none", backgroundColor: "currentColor", WebkitMask: `${url} center / contain no-repeat`, mask: `${url} center / contain no-repeat` }}
+      style={{ display: "inline-block", width: size, height: size, flex: "none", backgroundColor: "currentColor", WebkitMask: `url(${src}) center / contain no-repeat`, mask: `url(${src}) center / contain no-repeat` }}
     />
   );
 }
