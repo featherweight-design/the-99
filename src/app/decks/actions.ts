@@ -67,6 +67,7 @@ import { pruneOrphanProxies } from "../../lib/decks/prune-proxies";
 import { lockDecksInOrder, pullClaimants, pullInTx } from "../../lib/decks/pull";
 import { notLiveLocked, pruneOrphanLocks } from "../../lib/decks/locks";
 import { pruneOrphanAssignments } from "../../lib/decks/prune-assignments";
+import { lockPendingClaims } from "../../lib/decks/pending-picks";
 import {
   proxiedMembership, proxiedOracleIds,
 } from "../../lib/decks/proxies";
@@ -1469,6 +1470,9 @@ export async function commitDeckVersion(
 
   let pin: CommitPin | null = null;
   const result = await db.transaction<CommitResult>(async (tx) => {
+    // The per-card claim locks of this deck's pending picks come BEFORE the deck row lock: the order
+    // `assignCopyFor` takes them in, so the commit may convert a pick without inverting it (pending-picks.ts).
+    const pendingLocked = await lockPendingClaims(tx, userId, deckId);
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
     // Deleted between the ownership check above and this lock. Left to fall
     // through, it reaches commitVersion, which throws rather than refusing.
@@ -1606,7 +1610,7 @@ export async function commitDeckVersion(
     // deliberate commit. Correctness of the one column the version exists to freeze is worth
     // that on the rare path that reaches it.
     const snapshot = await commitSnapshotFor(deckId, userId, env);
-    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot);
+    const { version, cardCount } = await commitVersion(deckId, note?.trim() || null, tx, snapshot, { first: 1, pendingLocked });
     // The list this version froze, for the pin below, read back from the VERSION'S OWN ROWS:
     // `commitVersion` snapshots `deck_cards` itself, and a card inserted after the `draft` read
     // above (a new row has nothing to lock) would be in the version and absent from `draft`.

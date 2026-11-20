@@ -52,6 +52,7 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   model_calls: ["user_id"],
   owned_support_counts: ["user_id"],
   owned_support_stamps: ["user_id"],
+  pending_assignments: ["user_id"],
   pod_members: ["user_id"],
   pod_spare_shares: ["user_id"],
   pods: ["owner_user_id"],

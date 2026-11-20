@@ -20,7 +20,7 @@
 
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cardAssignments, deckCards, deckVersionCards, deckVersions, decks, pullReleases } from "../../db/schema";
+import { cardAssignments, deckCards, deckVersionCards, deckVersions, decks, pendingAssignments, pullReleases } from "../../db/schema";
 import { isUuid } from "../uuid";
 
 /**
@@ -213,6 +213,12 @@ export async function assignCopyIn(
     if (report) report.displaced = { deckId: oldest.deckId, copies: oldest.copies, createdAt: oldest.createdAt };
   }
 
+  // ONE CHOICE PER CARD ACROSS BOTH GROUPS: a reservation about to be written replaces any pending pick
+  // for the card (`pending-picks.ts`), which would otherwise outlive the choice it contradicts.
+  await tx.delete(pendingAssignments).where(and(
+    eq(pendingAssignments.userId, userId),
+    eq(pendingAssignments.oracleId, oracleId),
+  ));
   const [made] = await tx.insert(cardAssignments).values({ userId, oracleId, deckId })
     .returning({ createdAt: sql<string>`${cardAssignments.createdAt}::text` });
   if (report) {
@@ -222,7 +228,7 @@ export async function assignCopyIn(
   return null;
 }
 
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 /** What a deck asks for: list copies (reservable) and commander copies (never reservable). */
 interface Ask {
