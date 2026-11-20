@@ -85,7 +85,7 @@ describe("upgradeReplySchema", () => {
 
 describe("the system prompt", () => {
   it("asks for a shorter reason per cut, and the reply shape carries it", () => {
-    expect(UPGRADE_SYSTEM).toMatch(/shorter cut reason \(at most about 15 words\)/);
+    expect(UPGRADE_SYSTEM).toMatch(/one cut reason \(at most 25 words\)/);
     expect(buildUpgradePrompt(input).user).toContain('"cutReason": "<short cut reason>"');
   });
 

@@ -10,8 +10,8 @@ import { CARD_CAP_CENTS, MAX_SWAPS } from "./constants";
 export type DeckEntry = { oracleId: string; name: string; isCommander: boolean; /** A basic land: never a cut (nine copies share one id, and a basic is not what an upgrade is for). */ basic?: boolean };
 export type PoolEntry = { oracleId: string; name: string; cents: number | null };
 
-/** The longest cut reason kept (code points): the prompt asks for about 15 words, this caps a reply that runs on. */
-export const CUT_REASON_MAX = 120;
+/** The longest cut reason kept (code points), the add reason's own bound as drawn (Hugh, 2026-11-20): the prompt asks for at most 25 words, this caps a reply that runs on. */
+export const CUT_REASON_MAX = 240;
 
 export type RawSwap = { out: string; in: string; reason: string; /** Absent when the model left it out. */ cutReason?: string | null };
 

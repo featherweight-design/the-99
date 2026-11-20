@@ -31,9 +31,13 @@ export const GC_BLOCK_MAX = 12;
 /** Candidate cards sent, after the cap filter, by EDHREC inclusion. 80 measured at about 16.4k input tokens a call. */
 export const POOL_MAX = 80;
 
-/** Measured 2026-11-10 (single call, claude-sonnet-5-5): 16.4k tokens in on average, 2.05k out; ceilings leave room. */
+/**
+ * Measured 2026-11-10 (single call, claude-sonnet-5-5): 16.4k tokens in on average, 2.05k out, before cut reasons; ceilings
+ * leave room. The reply ceiling is 5k (Hugh, 2026-11-20) so a full run of 14 swaps carries a full cut reason each (up to
+ * 25 words, as the add's reason) with room to spare.
+ */
 export const UPGRADE_INPUT_CEILING_TOKENS = 24_000;
-export const UPGRADE_MAX_TOKENS = 3_500;
+export const UPGRADE_MAX_TOKENS = 5_000;
 /** The repair call answers only the missing swaps, so its reply is smaller. */
 export const REPAIR_MAX_TOKENS = 2_000;
 /** One deadline per call; the run is two calls at most. */
