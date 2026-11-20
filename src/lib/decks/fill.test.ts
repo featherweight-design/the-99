@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   capToBody, dedupeSelectionFromPool, FILL_STAPLE_CAP, isResidual, planFill, reachCandidates,
-  type FillCandidate, type FillPlan,
+  WINCON_MIN, type FillCandidate, type FillGate, type FillPlan,
 } from "./fill";
 import type { CompositionTargets, ProfileSkeleton } from "../profile/types";
 
@@ -1473,5 +1473,59 @@ describe("the asked sets rank owned cards first within the ownership tier", () =
     const marked = pool.map((x) => ({ ...x, inPreferredSets: false }));
     expect(ids(planFill(marked, { ...FLAT, slots: 5 }))).toEqual(ids(planFill(pool, { ...FLAT, slots: 5 })));
     expect(ids(planFill(pool, { ...FLAT, slots: 5 }))).toEqual(["p90", "p50", "p10", "none", "bought"]);
+  });
+});
+
+// Engine plan C1: the win-condition step places whole sets, best first, until the deck holds
+// `WINCON_MIN` win-condition cards, never past `WINCON_MAX`.
+describe("the win-condition step", () => {
+  const pool = [
+    c({ oracleId: "thoracle", typeLine: "Creature" }), c({ oracleId: "consult", typeLine: "Instant" }),
+    c({ oracleId: "hoof", typeLine: "Creature" }), c({ oracleId: "bond", typeLine: "Enchantment" }),
+    ...poolOf(80),
+  ];
+  const wincon = (plan: FillPlan) => plan.rows.filter((r) => r.source === "wincon").map((r) => r.oracleId);
+
+  it("places a combo whole, and stops once the deck holds enough", () => {
+    const plan = planFill(pool, { ...FLAT, wincons: [["thoracle", "consult"], ["hoof"]] });
+    expect(wincon(plan)).toEqual(["thoracle", "consult"]);
+    expect(WINCON_MIN).toBe(2);
+  });
+
+  it("skips a set with a piece outside the pool, and takes the next", () => {
+    const plan = planFill(pool, { ...FLAT, wincons: [["thoracle", "missing"], ["hoof"], ["bond"]] });
+    expect(wincon(plan)).toEqual(["hoof", "bond"]);
+  });
+
+  it("never places one piece of a combo the gate refuses as a pair", () => {
+    const gate: FillGate = {
+      admits: () => true,
+      admitsAll: (cs) => cs.length < 2,
+      place: () => {},
+    };
+    const plan = planFill(pool, { ...FLAT, gate, wincons: [["thoracle", "consult"], ["hoof"]] });
+    expect(wincon(plan)).toEqual(["hoof"]);
+  });
+
+  it("counts a set the deck already holds, and places nothing past the cap", () => {
+    const held = [c({ oracleId: "thoracle", typeLine: "Creature" }), c({ oracleId: "consult", typeLine: "Instant" })];
+    const plan = planFill(pool, { ...FLAT, held, wincons: [["thoracle", "consult"], ["hoof"]] });
+    expect(wincon(plan)).toEqual([]);
+    // A held set counts wherever it sits: the combo listed before it is not placed.
+    const heldLater = planFill(pool, { ...FLAT, held, wincons: [["hoof", "bond"], ["thoracle", "consult"]] });
+    expect(wincon(heldLater)).toEqual([]);
+    const capped = planFill(pool, { ...FLAT, wincons: [["p0", "p1", "p2", "p3", "p4"], ["hoof"]] });
+    expect(wincon(capped)).toEqual(["hoof"]);
+  });
+
+  it("does not run on a short fill (a top-off)", () => {
+    expect(wincon(planFill(pool, { ...FLAT, slots: 3, wincons: [["hoof"]] }))).toEqual([]);
+  });
+
+  it("files a placed card under its role, sourced, so it is never residual", () => {
+    const plan = planFill(pool, { ...FLAT, wincons: [["hoof"]] });
+    const row = plan.rows.find((r) => r.oracleId === "hoof")!;
+    expect(row.source).toBe("wincon");
+    expect(isResidual(row)).toBe(false);
   });
 });

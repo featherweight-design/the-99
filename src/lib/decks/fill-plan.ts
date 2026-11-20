@@ -20,6 +20,7 @@ import { loadSkeletonForCommanders } from "../profile/load";
 import { readLabelRoleSets } from "../labels/read";
 import { dedupeSelectionFromPool, reachCandidates, planFill, type FillCandidate, type FillPlan, type HeldCard, type PlanFillArgs } from "./fill";
 import { gatherFillStaples } from "../staples/fill-staples";
+import { loadWinconSets } from "./wincon";
 import { loadBracketGateFacts, loadBudgetLeftCents, loadFillGate, type DeckAnswers } from "../intake/fill-facts";
 import { permitsOf } from "../intake/fill-gate";
 import { bracketReach, bringsForbidden, reachOverRows, type BracketReach, type ReachFacts } from "../intake/bracket-reach";
@@ -426,6 +427,14 @@ export async function buildFillPlan(
   // Hit leaving under a dollar keeps that remainder to spend.
   const budgetRaised = boughtRaisers.length > 0
     && (raisedBudgetCents !== undefined || answers?.budgetRaised === true);
+  // THE WIN-CONDITION SETS (engine plan C1): winning combos at bracket 3 and up, then finishers.
+  // Started here, beside the gate and label reads, and awaited at the plan. Degraded rather than
+  // fatal: a fill without them is today's fill.
+  const wincons = loadWinconSets({
+    pool: scoped,
+    heldIds: [...(fillOptions.held ?? []), ...selected].flatMap((c) => (c.oracleId ? [c.oracleId] : [])),
+    commanderIds, bracket: answers?.bracket ?? null,
+  }).catch((err) => { console.warn("buildFillPlan: no win-condition sets", err); return [] as string[][]; });
   const gate = answers
     ? await loadFillGate({
       userId, commanderIds, answers,
@@ -478,7 +487,7 @@ export async function buildFillPlan(
   }
   const plan = planFill(scoped, {
     hasPartner, skeleton, synergyRank, ...fillOptions, held, slots, gate, identity, commanderCosts,
-    staples, labelRoles, raisers, boughtRaisers,
+    staples, labelRoles, raisers, boughtRaisers, wincons: await wincons,
     // Help me choose under "Any cards": ownership alone no longer wins a role slot.
     ...(anyCards ? { anyCards: true } : {}),
     // Every identity colour gets a basic even with no collection row behind it (`planFill`'s

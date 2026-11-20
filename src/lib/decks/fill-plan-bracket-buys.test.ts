@@ -28,6 +28,8 @@ vi.mock("../staples/fill-staples", () => ({ gatherFillStaples: vi.fn(async () =>
 vi.mock("./catalog-basics", () => ({ loadCatalogBasics: vi.fn(async () => []) }));
 vi.mock("../../app/commanders/[slug]/synergy-read", () => ({ readSynergyCards: vi.fn(async () => []) }));
 vi.mock("../profile/load", () => ({ loadSkeletonForCommanders: m.skeleton }));
+// The win-condition read (engine plan C1) has its own suite; here it offers nothing.
+vi.mock("./wincon", () => ({ loadWinconSets: async () => [] }));
 vi.mock("../labels/read", () => ({ readLabelRoleSets: m.readLabels }));
 vi.mock("./availability-query", () => ({ loadAvailability: vi.fn(async () => new Map()) }));
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async () => new Map([["rhystic", { liveCents: 3200 }]])) }));

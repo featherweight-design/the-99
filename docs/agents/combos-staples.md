@@ -112,6 +112,33 @@ Plan `docs/superpowers/plans/2026-10-22-near-combos-backend.md`. The switch `NEA
 - **`maxPieces`** on both reads bounds the combo size; the combos-close handoff's surfaces ask for 2 (its G2). The
   `elsewhere` decks carry `committed` and list committed decks first, for G4's "the first committed".
 
+## The fill's win conditions (engine plan C1, 2026-11-20)
+
+The fill places 2 to 4 cards that win (`WINCON_MIN` / `WINCON_MAX`, `src/lib/decks/fill.ts`). This step runs after the bracket raisers and before the staples.
+
+**The candidate sets (`loadWinconSets`, `src/lib/decks/wincon.ts`), best first:**
+
+1. **Winning combos.** These are Spellbook variants with no template prerequisite and at most 4 cards, most popular first. Every piece must be in the fill's pool, already in the deck, or a commander.
+   - "Winning" is `isWinCondition`: `produces` names a win, infinite damage to a player, or infinite life loss or mill.
+   - Infinite mana or tokens alone does not count, and neither does damage to creatures (orchestrator ruling).
+2. **Finishers.** These are cards in the pool with the `finisher` label theme, one card per set.
+
+**The bracket decides which sets are offered.**
+
+- Combos are offered only at bracket 3 and up.
+- At bracket 3, only two-card combos are offered: those are the combos the gate counts, so only those can it judge as combos.
+- With no bracket answer, or at bracket 1 or 2, only finishers are offered.
+
+**How a set is placed.**
+
+- A set goes in whole or not at all.
+- The gate judges a combo's pieces together (`FillGate.admitsAll`), so at bracket 3 a combo the deck could assemble early is refused as the combo it is.
+- Every set the deck already holds counts toward the quota first, wherever it sits in the list.
+- The step runs only when the fill plans at least `WINCON_FILL_MIN` (20) cards, so a top-off keeps its slots for what the deck lacks.
+- Rows are filed `source: "wincon"` under their own role.
+
+**This is not a mix role.** The strip and shelves iterate `ROLE_ORDER` and draw nothing new.
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.

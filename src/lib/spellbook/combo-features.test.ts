@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { isInfiniteOrGameEnding, isMandatoryLoop, producesInfiniteTurns } from "./combo-features";
+import { isInfiniteOrGameEnding, isMandatoryLoop, isWinCondition as isWin, producesInfiniteTurns } from "./combo-features";
 import { GAME_ENDING_FEATURES, INFINITE_TURN_FEATURES } from "./produces-kinds.generated";
 
 describe("isInfiniteOrGameEnding", () => {
@@ -100,5 +100,25 @@ describe("isMandatoryLoop", () => {
     // 2259-3356, Forerunner of the Empire + Polyraptor: a "may" ends it on request.
     expect(isMandatoryLoop(["Infinite creature tokens", "Infinite damage to all creatures"])).toBe(false);
     expect(isMandatoryLoop([])).toBe(false);
+  });
+});
+
+// The fill's win-condition quota (engine plan C1, orchestrator ruling 2026-11-20).
+describe("isWinCondition", () => {
+  it("counts a win, infinite damage to a player, infinite life loss and infinite mill", () => {
+    expect(isWin(["Exile your library", "Win the game"])).toBe(true);
+    expect(isWin(["Win the game at the beginning of your next upkeep"])).toBe(true);
+    expect(isWin(["Each opponent loses the game"])).toBe(true);
+    expect(isWin(["Infinite damage to one opponent"])).toBe(true);
+    expect(isWin(["Infinite lifeloss for target opponent"])).toBe(true);
+    expect(isWin(["Infinite mill for target opponent"])).toBe(true);
+  });
+
+  it("does not count mana, tokens, or damage to creatures alone", () => {
+    expect(isWin(["Infinite colorless mana"])).toBe(false);
+    expect(isWin(["Infinite creature tokens with haste", "Infinite death triggers"])).toBe(false);
+    expect(isWin(["Infinite damage to creatures"])).toBe(false);
+    expect(isWin(["Infinite damage to all creatures"])).toBe(false);
+    expect(isWin(["Infinite damage to all players"])).toBe(false);
   });
 });

@@ -71,7 +71,7 @@ export type FillCandidate = {
  * role), is NOT residual: `isResidual` is the one test for that, so a bulk tick or a create's
  * foundation never mistakes it for an undoable suggestion.
  */
-export type FillRow = { oracleId: string; quantity: number; role: FillRole; source?: "staple" | "bracket" };
+export type FillRow = { oracleId: string; quantity: number; role: FillRole; source?: "staple" | "bracket" | "wincon" };
 
 /** Whether a row is the synergy residual: the suggestions a create files as undoable. */
 export function isResidual(row: Pick<FillRow, "role" | "source">): boolean {
@@ -212,6 +212,16 @@ export type PlanFillArgs = {
    */
   boughtRaisers?: readonly FillCandidate[];
   /**
+   * THE WIN-CONDITION QUOTA (engine plan C1): sets of oracle ids, best first, each one way to win. A
+   * Spellbook combo's non-commander pieces, or a single finisher. The step places whole sets, after
+   * the raisers and before the staples, until the deck holds `WINCON_MIN` win-condition cards, never
+   * past `WINCON_MAX`. A set is placed whole or not at all: every piece must be in the pool, unspent,
+   * not a land, and admitted TOGETHER by the gate (`admitsAll`), so a combo the bracket forbids is
+   * refused as the combo it is. A set the deck already holds counts toward the quota. Filed
+   * `source: "wincon"`. Not a mix role: nothing draws it (the strip's roles are `ROLE_ORDER`).
+   */
+  wincons?: readonly (readonly string[])[];
+  /**
    * HELP ME CHOOSE UNDER "ANY CARDS": an owned card is no longer preferred for being owned alone.
    * Only an owned card EDHREC lists at `ANY_CARDS_LOW_PLAY_PCT` or more keeps its absolute first
    * place; an owned card listed under it, or not listed at all, ranks with the unowned by inclusion
@@ -244,10 +254,24 @@ function withinInclusionBand(other: FillCandidate, cursor: FillCandidate): boole
   return other.inclusionPct >= cursor.inclusionPct - TIE_BREAK_INCLUSION_BAND;
 }
 
+/** How many win-condition cards the fill aims for, and the most it places for them (engine plan C1). */
+export const WINCON_MIN = 2;
+export const WINCON_MAX = 4;
+/** The fewest cards a fill must plan for the step to run: below it, the fill is a top-off. */
+export const WINCON_FILL_MIN = 20;
+
 export type FillGate = {
   admits(candidate: FillCandidate): boolean;
+  /** Whether these cards may be placed TOGETHER: a combo's pieces, weighed as the combo they make,
+      or a set's prices totalled. Optional: a gate without one judges each card on its own. */
+  admitsAll?(candidates: readonly FillCandidate[]): boolean;
   place(candidate: FillCandidate): void;
 };
+
+/** Whether `gate` admits `cs` placed together: its own set rule, or each card on its own when it has none. */
+export function admitsTogether(gate: FillGate, cs: readonly FillCandidate[]): boolean {
+  return gate.admitsAll ? gate.admitsAll(cs) : cs.every((c) => gate.admits(c));
+}
 
 export type FillPlan = {
   rows: FillRow[];
@@ -634,6 +658,43 @@ export function planFill(candidates: FillCandidate[], args: PlanFillArgs): FillP
       oracleId: raiser.oracleId, quantity: 1,
       role: NON_LAND_ROLES.find((r) => roles.includes(r)) ?? "other", source: "bracket",
     });
+  }
+
+  // THE WIN-CONDITION STEP (engine plan C1): whole sets, best first, until the deck can win.
+  // NOT ON A SHORT FILL. A top-off of a few slots fills what the deck lacks, and a win set placed
+  // first would take the slots its missing ramp or removal needed. A fill planning `WINCON_FILL_MIN`
+  // or more cards (a create, with or without a selection) runs the step.
+  if (args.wincons?.length && limit >= WINCON_FILL_MIN) {
+    const inPool = new Map(usable.map((c) => [c.oracleId, c]));
+    const heldIds = new Set((held ?? []).map((c) => c.oracleId));
+    // Every set the deck already holds (held, or placed by an earlier step) counts first, wherever it
+    // sits in the list: a deck holding two finishers is not handed a combo it does not need.
+    const inDeck = (id: string) => heldIds.has(id) || spent.has(id);
+    let winCards = args.wincons.filter((set) => set.length > 0 && set.every(inDeck)).reduce((n, set) => n + set.length, 0);
+    for (const set of args.wincons) {
+      if (winCards >= WINCON_MIN) break;
+      if (set.length === 0 || set.every(inDeck)) continue;
+      if (winCards + set.length > WINCON_MAX) continue;
+      const missing = set.filter((id) => !inDeck(id));
+      const cards = missing.map((id) => inPool.get(id));
+      if (cards.some((c) => c === undefined)) continue;
+      const pieces = cards as FillCandidate[];
+      if (pieces.some((c) => rolesOfCandidate(c).includes("land"))) continue;
+      if (filledSoFar() + pieces.length > limit) continue;
+      if (gate && !admitsTogether(gate, pieces)) continue;
+      for (const c of pieces) {
+        const roles = rolesOfCandidate(c);
+        spent.add(c.oracleId);
+        gate?.place(c);
+        for (const r of NON_LAND_ROLES) if (roles.includes(r)) counts[r]++;
+        placed.push({ typeLine: c.typeLine, quantity: 1 });
+        rows.push({
+          oracleId: c.oracleId, quantity: 1,
+          role: NON_LAND_ROLES.find((r) => roles.includes(r)) ?? "other", source: "wincon",
+        });
+      }
+      winCards += set.length;
+    }
   }
 
   // THE STAPLES STEP (H25), before any floor is weighed. Placed exactly as the role pass places a
