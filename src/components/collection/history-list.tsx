@@ -233,7 +233,10 @@ function EntryRows({ rows, rowDecks, live, onWritten, picked, onPick }: {
   const groupIds = useId();
   if (rows.length === 0) return <p className="m-0 py-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.noRows}</p>;
   if (rows.length <= SHORT_ENTRY_ROWS) {
-    return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>;
+    // No tabs on a short entry: the `Change where N cards go` link narrows the list to the rows that can move instead.
+    const only = picked === "move" ? rows.filter((r) => r.wentTo && !r.wentTo.soft && live?.[r.oracleId]?.change === true) : rows;
+    const shownRows = only.length > 0 ? only : rows;
+    return <ul className="m-0 list-none p-0">{shownRows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>;
   }
   // Move a copy: the rows that still have a choice, as a last tab; it is gone at none, and the view falls back to the first group.
   const movable = rows.filter((r) => r.wentTo && !r.wentTo.soft && live?.[r.oracleId]?.change === true);
