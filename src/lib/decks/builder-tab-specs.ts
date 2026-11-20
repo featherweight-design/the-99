@@ -1,4 +1,5 @@
-// Which tabs the builder draws, and in what order.
+// Which tabs the builder draws, and in what order. Only "Your deck" draws a count (Hugh, 2026-11-15); the others carry theirs
+// in the accessible name alone.
 //
 // A PURE SEAM, extracted from `builder-shell.tsx` when the Analysis tab arrived. Two of the
 // five cells are conditional — Versions is absent on a brew, and Games drops its count at zero
@@ -46,14 +47,11 @@ export function builderTabSpecs({
     {
       id: "consider",
       label: addPanelCopy.tabs.consider,
-      count: suggestionCount,
       accessibleName: addPanelCopy.tabs.considerAria(suggestionCount),
     },
     {
       id: "games",
       label: gameLogCopy.tab.label,
-      // Omitted rather than zero: a tab reading "Games · 0" advertises its own emptiness.
-      count: gameCount > 0 ? gameCount : undefined,
       accessibleName:
         gameCount > 0 ? gameLogCopy.tab.aria(String(gameCount)) : gameLogCopy.tab.ariaNone,
     },
@@ -65,7 +63,6 @@ export function builderTabSpecs({
           {
             id: "versions" as const,
             label: deckVersioningCopy.history.tab,
-            count: rows,
             accessibleName: hasOrigin
               ? historyOriginCopy.tabAria(versionCount)
               : deckVersioningCopy.history.tabAria(versionCount),

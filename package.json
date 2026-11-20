@@ -51,6 +51,7 @@
     "push:keys": "node scripts/push-keys.mjs",
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
     "probe:launch-scrollbar": "node scripts/probe-launch-scrollbar.mjs",
+    "probe:tab-navs": "node scripts/probe-tab-navs.mjs",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",
     "probe:commander-art-press": "node scripts/probe-commander-art-press.mjs",
     "probe:card-sheet-min": "node scripts/probe-card-sheet-min.mjs",

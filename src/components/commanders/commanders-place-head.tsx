@@ -21,15 +21,15 @@ export type CommandersPlace = "foryou" | "discover" | "choose" | "hidden";
 
 /**
  * The strip's four tabs (hide-commander README §3): Hidden sits beside the lists it takes from and is there before
- * anything is hidden, so its empty state is real. It carries the strip's shipped count once something is hidden,
- * and none at 0. Four fit a 390 phone at the strip's own spacing: `PlaceStrip` closes up only from five.
+ * anything is hidden, so its empty state is real. No tab carries a count (Hugh, 2026-11-15), and on a phone the four
+ * share the strip's width (`PlaceStrip`'s `fill`).
  */
-export function commandersTabs(hidden: number): readonly (PlaceTab & { place: CommandersPlace })[] {
+export function commandersTabs(): readonly (PlaceTab & { place: CommandersPlace })[] {
   return [
     { place: "foryou", href: "/commanders", label: commandersPlaceCopy.tabs.foryou },
     { place: "discover", href: "/commanders/discover", label: commandersPlaceCopy.tabs.discover },
     { place: "choose", href: "/commanders/choose", label: commandersPlaceCopy.tabs.choose },
-    { place: "hidden", href: HIDDEN_PATH, label: commandersPlaceCopy.tabs.hidden, count: hidden > 0 ? hidden : undefined },
+    { place: "hidden", href: HIDDEN_PATH, label: commandersPlaceCopy.tabs.hidden },
   ];
 }
 
@@ -100,10 +100,11 @@ export function CommandersPlaceHead({ counts: initialCounts }: { counts: Counts 
         </p>
       </div>
       <PlaceStrip
-        tabs={commandersTabs(counts?.hidden ?? 0)}
+        tabs={commandersTabs()}
         current={current}
         ariaLabel={commandersPlaceCopy.regionAria}
         testIdPrefix="commanders-tab"
+        fill
       />
     </div>
   );

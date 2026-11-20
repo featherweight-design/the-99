@@ -112,6 +112,15 @@ describe("BuilderTabs — three tabs", () => {
     expect(onViewChange).toHaveBeenCalledWith("games");
   });
 
+  // Hugh, 2026-11-15: under md the tabs share the row's width and the row never scrolls.
+  it("shares the row's width between the tabs on a phone, with no sideways scroll", () => {
+    mount("deck", vi.fn(), three);
+    const list = screen.getByRole("tablist");
+    expect(list.className).not.toContain("overflow-x-auto");
+    expect(list.className).toContain("flex-1");
+    for (const tab of tabs()) expect(tab.className).toContain("flex-1");
+  });
+
   // Decision 8: the Games tab never disappears, and at zero it is a bare label
   // rather than "Games · 0" — a zero beside a label reads as a failure state.
   it("renders no count element when count is omitted", () => {
