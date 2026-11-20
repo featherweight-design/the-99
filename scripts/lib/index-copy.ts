@@ -57,13 +57,6 @@ export function labelledCards(s: Pick<IndexSnapshot, "support" | "supportCards" 
 }
 
 /**
- * Why the target's labels may not receive this build's `label_*`, or null. The build recorded the
- * role sets it derived them from; the target's own labels must give the same sets over the same
- * cards, or production's decks would be counted from one label set and measured against targets
- * derived from another. A build with no label fingerprint wrote no `label_*`, so there is nothing
- * to check. Pure.
- */
-/**
  * The copy replaces the theme tables whole, so a source holding far fewer theme pages than the target
  * would wipe the target's: a staging build whose theme walk stopped early, or one built before the
  * theme pass. Refused under half the target's count. A target with none (the first copy) refuses
@@ -80,6 +73,13 @@ async function targetThemeRefusal(target: NonNullable<Parameters<typeof readLabe
   return themeCopyRefusal(s.themes.length, Number((res.rows[0] as { n: number }).n));
 }
 
+/**
+ * Why the target's labels may not receive this build's `label_*`, or null. The build recorded the
+ * role sets it derived them from; the target's own labels must give the same sets over the same
+ * cards, or production's decks would be counted from one label set and measured against targets
+ * derived from another. A build with no label fingerprint wrote no `label_*`, so there is nothing
+ * to check. Pure.
+ */
 async function targetLabelRefusal(
   target: Parameters<typeof readLabelRoleBasis>[1],
   s: IndexSnapshot,
@@ -188,12 +188,13 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     `${s.support.length} commanders · ${s.supportCards.length} support cards · ${s.pairs.length} pairs · ` +
     `${s.pairCards.length} pair cards · ${s.themes.length} theme pages · ${s.themeCards.length} theme cards · ` +
     `${s.staples.length} staples · ${s.composition.length} compositions`,
-  // Before the dry-run return, so `--dry-run` reports a label mismatch the real copy would refuse.
+  // Before the dry-run return, so `--dry-run` reports a label mismatch or a theme wipe the real copy
+  // would refuse. Both are checked again under the lock, in `publish`.
   targetRefusal: async (target, s) => (await targetLabelRefusal(target, s)) ?? (await targetThemeRefusal(target, s)),
   publish: async (tx, s) => {
-    // 0 · The labels again, UNDER the lock: a label copy landing since the preflight is either seen
-    // here or lands after this transaction.
-    const refusal = await targetLabelRefusal(tx, s);
+    // 0 · The labels and the theme count again, UNDER the lock: a copy landing since the preflight is
+    // either seen here or lands after this transaction.
+    const refusal = (await targetLabelRefusal(tx, s)) ?? (await targetThemeRefusal(tx, s));
     if (refusal) throw new CopyRefused(refusal);
 
     // 1 · Scores are scored against the index, so the old ones go in the same transaction.

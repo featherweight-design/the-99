@@ -379,17 +379,17 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
   });
 }
 
-/**
- * Replaces a commander's stored themes with `themes`, in one transaction. Every stored theme not in
- * `keepSlugs` goes (its cards cascade with it), so a theme that left the commander's top tags leaves
- * the table too; a kept slug is one EDHREC could not serve this run, and its previous rows stand.
- */
 /** The rows `writeThemes` deletes: the commander's stored themes, except the kept slugs. */
 export function staleThemesWhere(commanderOracleId: string, keepSlugs: readonly string[]) {
   return sql`${commanderThemeSupport.commanderOracleId} = ${commanderOracleId}
       and not (${commanderThemeSupport.slug} = any(${sql.param([...keepSlugs])}::text[]))`;
 }
 
+/**
+ * Replaces a commander's stored themes with `themes`, in one transaction. Every stored theme not in
+ * `keepSlugs` goes (its cards cascade with it), so a theme that left the commander's top tags leaves
+ * the table too; a kept slug is one EDHREC could not serve this run, and its previous rows stand.
+ */
 async function writeThemes(commanderOracleId: string, themes: ThemeWrite[], keepSlugs: string[]): Promise<void> {
   await db.transaction(async (tx) => {
     await tx.delete(commanderThemeSupport).where(staleThemesWhere(commanderOracleId, keepSlugs));
