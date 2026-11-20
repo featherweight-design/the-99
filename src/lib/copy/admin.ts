@@ -939,6 +939,7 @@ export const launchEmailAdminCopy = {
     "before-launch": "The launch date hasn't come yet.",
     unconfigured: "Email isn't configured on this deployment.",
     "images-missing": "The email's images aren't on this deployment yet.",
+    "copy-open": "The launch email's subject or audience isn't settled yet.",
     failed: "That didn't go through. Try again.",
   },
 } as const;

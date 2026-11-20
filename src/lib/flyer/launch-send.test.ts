@@ -41,10 +41,24 @@ function memoryStore(emails: string[]): LaunchStore & { sent: Set<string>; links
 function deps(store: LaunchStore, results: MailResult[] = [], extra: object = {}) {
   const queue = [...results];
   const send = vi.fn(async () => queue.shift() ?? ({ ok: true } as MailResult));
-  return { send, d: { env: ENV, store, send, fetchImpl: okFetch, sleep: async () => {}, now: NOW, launchRaw: "2026-11-30", ...extra } };
+  return { send, d: { env: ENV, store, send, fetchImpl: okFetch, sleep: async () => {}, now: NOW, launchRaw: "2026-11-30", copyOpen: [], ...extra } };
 }
 
 describe("sendLaunchBatch", () => {
+  it("refuses while a copy question is open, before reading the list, dry run or not, and sends nothing", async () => {
+    const store = memoryStore(["a@x.dev"]);
+    const waiting = vi.spyOn(store, "waiting");
+    const claimNext = vi.spyOn(store, "claimNext");
+    for (const dryRun of [true, false]) {
+      const { d, send } = deps(store, [], { copyOpen: ["subject", "skip-accounts"] });
+      expect(await sendLaunchBatch({ dryRun, limit: 1 }, d)).toEqual({ ok: false, reason: "copy-open", open: ["subject", "skip-accounts"] });
+      expect(send).not.toHaveBeenCalled();
+    }
+    expect(waiting).not.toHaveBeenCalled();
+    expect(claimNext).not.toHaveBeenCalled();
+    expect(store.sent.size).toBe(0);
+  });
+
   it("refuses with no launch date, or before it", async () => {
     const store = memoryStore(["a@x.dev"]);
     expect(await sendLaunchBatch({ dryRun: true, limit: 0 }, { ...deps(store).d, launchRaw: null })).toEqual({ ok: false, reason: "no-launch-date" });

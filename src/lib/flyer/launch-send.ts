@@ -11,13 +11,15 @@
  *
  * BATCHED ACROSS DAYS. A batch sends at most `limit`, and every mail still passes the app's own daily cap
  * (`mailRefusal`), so the launch never spends the day's invites and codes. The next batch picks up where this one
- * stopped. A batch refuses to start while any of the email's images is missing from the deployment.
+ * stopped. A batch refuses to start while any of the email's images is missing from the deployment, and, before anything
+ * else, while any of Hugh's open copy questions (`LAUNCH_COPY_OPEN`) is unanswered.
  *
  * The purge (`launch-purge.ts`) is untouched: it deletes whatever rows are left 30 days after the launch date.
  */
 import { eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { launchList } from "../../db/schema";
+import { LAUNCH_COPY_OPEN } from "../copy/emails";
 import { launchEmailParts, LAUNCH_IMAGES } from "../email/launch-mail";
 import { mailConfig, mailEnv, sendMail, type MailConfig, type MailEnv, type MailResult } from "../invites/mail";
 import { inviteSecret } from "../invites/tokens";
@@ -31,6 +33,7 @@ import { LAUNCH_BATCH_MAX } from "./launch-rule";
 export const LAUNCH_SEND_GAP_MS = 600;
 
 export type LaunchBatchReport =
+  | { ok: false; reason: "copy-open"; open: readonly ("subject" | "skip-accounts")[] }
   | { ok: false; reason: "no-launch-date" | "before-launch" | "unconfigured" | "images-missing"; missing?: string[] }
   | { ok: true; dryRun: boolean; waiting: number; sent: number; released: number; uncertain: number; stoppedBy: "done" | "limit" | "capped" | null };
 
@@ -42,6 +45,8 @@ export type LaunchBatchDeps = {
   now?: Date;
   launchRaw?: string | null;
   store?: LaunchStore;
+  /** The copy questions still open, `LAUNCH_COPY_OPEN` by default (a test hands in its own). */
+  copyOpen?: readonly ("subject" | "skip-accounts")[];
 };
 
 /** The list's three moves, the database's by default (a test hands in its own). */
@@ -111,6 +116,9 @@ const DB_STORE: LaunchStore = { waiting: launchWaiting, claimNext, release, link
  * Sends up to `limit` launch emails, or with `dryRun` only counts what is waiting (and checks the configuration and images).
  */
 export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limit: number }, deps: LaunchBatchDeps = {}): Promise<LaunchBatchReport> {
+  // Hugh's open copy questions come first, dry runs included: nothing is read or sent while any remain.
+  const open = deps.copyOpen ?? LAUNCH_COPY_OPEN;
+  if (open.length > 0) return { ok: false, reason: "copy-open", open: [...open] };
   const env = deps.env ?? mailEnv();
   const config = mailConfig(env);
   const secret = inviteSecret(env);
