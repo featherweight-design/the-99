@@ -172,6 +172,14 @@ export const landingCopy = {
       mana: "Mana Balance",
       shopping: "Shopping list",
       which: "Which deck needs it most?",
+      /** Each tab says what it costs itself (Hugh, 2026-11-15): the step above them carries no chip. */
+      cost: {
+        cuts: { kind: "credit", label: "1 credit" },
+        topOff: { kind: "free", label: "Free" },
+        mana: { kind: "free", label: "Free" },
+        shopping: { kind: "free", label: "Free" },
+        which: { kind: "credit", label: "1 credit" },
+      },
     },
     /** The eight tools, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
     steps: [
@@ -179,10 +187,10 @@ export const landingCopy = {
       { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Select the fit to see why.`, press: "Why it fits" },
       { id: "choose", title: () => "Help me choose", tags: [{ kind: "credit", label: "1 credit" }], line: (p: string) => `${p} described the deck in a few words. The 99 ranked the commanders that fit, owned or not.`, press: "Select a commander" },
       { id: "deck", title: (p: string) => `A deck from what ${p} owns`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Built from ${p}\u2019s cards first. Here are the cards that carry a mark; the key above them says what each mark means.`, press: "Hover a mark" },
-      { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Overview: 1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays, from the first turns to the win.", press: "Select a finding" },
+      { id: "analysis", title: () => "Analysis and Overview", tags: [{ kind: "credit", label: "1 credit" }], line: () => "The verdict is free. The Overview is a written read of how the deck plays, from the first turns to the win.", press: "Select a finding" },
       { id: "suggested", title: () => "Suggested changes", tags: [{ kind: "credit", label: "1\u20132 credits" }], line: (p: string) => `${p} asked for more interaction. The 99 picked a few swaps, a card in and a card out each, and says why.`, press: "Select a card" },
-      { id: "get-to-99", title: () => "Get it to 99", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Proposed cuts: 1 credit" }], line: (p: string) => `Three tools, one tab each. Proposed cuts names the cuts for a deck over 99. Top off fills a deck under 99 from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },
-      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [{ kind: "free", label: "Free" }, { kind: "credit", label: "Which deck: 1 credit" }], line: (p: string) => `Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck ${p} has.`, press: null },
+      { id: "get-to-99", title: () => "Get it to 99", tags: [], line: (p: string) => `Three tools, one tab each. Proposed cuts names the cuts for a deck over 99. Top off fills a deck under 99 from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },
+      { id: "buy", title: () => "Buy only what\u2019s missing", tags: [], line: (p: string) => `Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck ${p} has.`, press: null },
     ],
     end: {
       /** The frame's top row, in the place of "Step N of 8". */

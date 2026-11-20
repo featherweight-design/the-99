@@ -15,15 +15,15 @@ import type { CutItem, CutsPanel } from "../../../lib/tuning/cuts-state";
 import { landingCopy } from "../../../lib/copy/landing";
 import type { Projected } from "../../../lib/demo/projected";
 import { DemoDeckScope } from "./demo-providers";
-import { DemoHead, DemoTabs } from "./demo-tabs";
+import { DemoHead, DemoTabs, type Cost } from "./demo-tabs";
 import { DemoTopOffList } from "./demo-top-off";
 
 const tabs = landingCopy.demo.tabs;
 type Tab = "cuts" | "topOff" | "mana";
-const TABS: readonly { id: Tab; label: string }[] = [
-  { id: "cuts", label: tabs.cuts },
-  { id: "topOff", label: tabs.topOff },
-  { id: "mana", label: tabs.mana },
+const TABS: readonly { id: Tab; label: string; cost: Cost }[] = [
+  { id: "cuts", label: tabs.cuts, cost: tabs.cost.cuts },
+  { id: "topOff", label: tabs.topOff, cost: tabs.cost.topOff },
+  { id: "mana", label: tabs.mana, cost: tabs.cost.mana },
 ];
 
 /** What the cuts drawing is handed for credits: one fixed allowance the demo never draws (`showStanding` is off, and a stored

@@ -142,7 +142,9 @@ describe("Try it's frame", () => {
     expect(screen.getAllByTestId("demo-tag").map((t) => t.textContent)).toEqual(c.steps[2].tags.map((t) => t.label));
     next();
     next();
-    expect(screen.getAllByTestId("demo-tag").map((t) => t.textContent)).toEqual(c.steps[4].tags.map((t) => t.label));
+    // Step 5 carries one label: the Overview costs a credit and the bracket comes with it, so nothing on it reads Free.
+    expect(screen.getAllByTestId("demo-tag").map((t) => t.textContent)).toEqual(["1 credit"]);
+    expect(screen.queryByText("Free")).toBeNull();
   });
 
   it("moves focus to the step's heading on every press that changes the card", async () => {
