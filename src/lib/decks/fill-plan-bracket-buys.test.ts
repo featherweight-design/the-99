@@ -212,7 +212,8 @@ describe("buildFillPlan's Hit bracket N", () => {
 
 // Any cards fill tune #2 (Hugh's Szarel deck, 2026-10-22): `unownedTopCards` keeps the first 100 names it is handed,
 // and EDHREC's list order put the instants and sorceries last, so a 53% wipe at 103 of 241 could never be bought.
-describe("the buy pool's order under Any cards", () => {
+// Every buy pool is cut from the ranked names: Any cards, a plain create, and the reach's buying half (lane 58, 2026-11-15).
+describe("the buy pool's order", () => {
   const LIST = ["Low Creature", "Wipe", "Removal"];
   const PCT: Record<string, number> = { "low creature": 4.6, wipe: 53, removal: 41.4 };
   const edhrec = () =>
@@ -225,10 +226,17 @@ describe("the buy pool's order under Any cards", () => {
     expect(handed()).toEqual(["Wipe", "Removal", "Low Creature"]);
   });
 
-  it("keeps EDHREC's list order with no answers (a plain create)", async () => {
+  it("ranks by inclusion with no answers too (a plain create)", async () => {
     edhrec();
     await buildFillPlan("u", commanders, new Set(), { selected: [], env: ON });
-    expect(handed()).toEqual(LIST);
+    expect(handed()).toEqual(["Wipe", "Removal", "Low Creature"]);
+  });
+
+  it("ranks by inclusion for the reach's buying half under own-only", async () => {
+    edhrec();
+    await call({ own: true });
+    expect(m.topCards).toHaveBeenCalledTimes(1);
+    expect(handed()).toEqual(["Wipe", "Removal", "Low Creature"]);
   });
 
 });

@@ -21,6 +21,7 @@ import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
 import { deckBodySize } from "./deck-size";
 import { cardTypeGroup, primaryRole, requireDeck } from "./read";
+import { BASIC_NAMES, isBasicLand } from "./grouping";
 import { recommendedMix, type RecommendedMix } from "./mix";
 import { loadSkeletonForCommanders } from "../profile/load";
 import { loadPoolRoleBasis } from "../recs/pool-role-basis";
@@ -91,6 +92,21 @@ type UnownedStapleCard = {
   imageUri: string | null; manaCost: string | null; manaValue: number; layout: string;
 };
 
+/**
+ * The names `unownedTopCards` looks up: the first 100 of `topCards`, lowercased, never a basic land.
+ * EDHREC lists the basics at 90%+ inclusion, so a ranked list leads with them: a player whose
+ * collection holds no basics was offered Forest as a Top pick (#2975), and each basic took one of the
+ * 100 slots from a real card. They go BEFORE the cut. The fill places basics from the catalog on its
+ * own (`loadCatalogBasics`), never from this list.
+ */
+export function topCardCut(topCards: readonly string[]): string[] {
+  return topCards
+    .map((n) => n.toLowerCase())
+    .filter((n) => !BASIC_LOWER.has(n.replace(/^snow-covered /, "")))
+    .slice(0, 100);
+}
+const BASIC_LOWER = new Set(BASIC_NAMES.map((n) => n.toLowerCase()));
+
 /** Unowned EDHREC top cards for this commander, in the order of `topCards`, that fit the deck's colour
     identity. Takes every commander for the same reason `ownedColorLegalPool`
     does: a pair's legal identity is the union of both, and a staple legal under
@@ -103,7 +119,7 @@ export async function unownedTopCards(
   excludeIds: Set<string>,
 ): Promise<UnownedStapleCard[]> {
   if (topCards.length === 0) return [];
-  const lowerTopCards = topCards.slice(0, 100).map((n) => n.toLowerCase());
+  const lowerTopCards = topCardCut(topCards);
   const candidateCards = await db
     .select(STAPLE_PROJECTION)
     .from(cards)
@@ -118,8 +134,10 @@ export async function unownedTopCards(
       ),
     );
 
+  // The type-line check backs up `topCardCut`'s name check, for a basic printed under a name it
+  // does not list.
   const eligible = candidateCards.filter(
-    (c) => !ownedIds.has(c.oracleId) && !excludeIds.has(c.oracleId),
+    (c) => !ownedIds.has(c.oracleId) && !excludeIds.has(c.oracleId) && !isBasicLand(c.typeLine),
   );
 
   const topCardIndex = new Map(lowerTopCards.map((n, i) => [n, i]));
@@ -146,7 +164,7 @@ export type DeckSuggestionsPayload = {
  * page lists New Cards first, so list order led Windgrace's shelf with Through the Forest Gate
  * (5.6%) ahead of The Gitrog Monster (78%). Ranked BEFORE `unownedTopCards`, which keeps only
  * the first 100 names: ranking after that cut would still lose a well-played card listed late.
- * The same ranking Help me choose's Any cards uses (`buildFillPlan`).
+ * The same ranking every buy pool in `buildFillPlan` is cut from.
  */
 export function topPickNames(
   topCards: readonly string[],
