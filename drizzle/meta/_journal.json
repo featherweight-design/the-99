@@ -1737,6 +1737,13 @@
       "when": 1795184233943,
       "tag": "0249_precon_upgrade_fresh_start",
       "breakpoints": true
+    },
+    {
+      "idx": 250,
+      "version": "7",
+      "when": 1795185475026,
+      "tag": "0250_commander_theme_support",
+      "breakpoints": true
     }
   ]
 }

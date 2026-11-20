@@ -1692,6 +1692,54 @@ export const commanderSupportCards = pgTable("commander_support_cards", {
 ]);
 
 /**
+ * One commander's EDHREC THEME page (`/pages/commanders/<slug>/<theme>.json`), for the top themes on
+ * its `tags` (`themeSlugsToFetch`: top 3 with at least 50 decks). A theme page is the same shape as
+ * the commander page, with inclusion measured within the theme's decks. It is what a chosen build
+ * reads in place of the commander page: Atraxa's superfriends primer cards in a fill's first 62 rise
+ * from 26 to 36 on the `planeswalkers` page (engine plan A1, docs/agents/commander-index.md).
+ *
+ * Slugs come only from the commander's own `tags`: a guessed slug 403s. Rewritten whole by the
+ * index build, beside `commander_support_cards`; removed with the commander's support row.
+ */
+export const commanderThemeSupport = pgTable("commander_theme_support", {
+  commanderOracleId: uuid("commander_oracle_id").notNull(),
+  /** EDHREC's tag slug, as `commander_support.tags[].slug` carries it. */
+  slug: text("slug").notNull(),
+  /** The theme's deck count from the commander's `tags`: what `all` across several themes weights by. */
+  deckCount: integer("deck_count").notNull(),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.commanderOracleId, t.slug] }),
+  // Named by hand: the generated name runs past Postgres's 63-byte limit (`check:constraints`).
+  foreignKey({
+    name: "commander_theme_support_commander_fk",
+    columns: [t.commanderOracleId],
+    foreignColumns: [commanderSupport.commanderOracleId],
+  }).onDelete("cascade"),
+  check("commander_theme_support_deck_count_check", sql`${t.deckCount} > 0`),
+]);
+
+/** A theme page's cards, normalised as `commander_support_cards` is and for the same reason. */
+export const commanderThemeSupportCards = pgTable("commander_theme_support_cards", {
+  commanderOracleId: uuid("commander_oracle_id").notNull(),
+  slug: text("slug").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  // Within the theme's decks. Null when upstream carried none; never 0.
+  inclusion: real("inclusion"),
+  synergy: real("synergy"),
+}, (t) => [
+  primaryKey({ name: "commander_theme_support_cards_pk", columns: [t.commanderOracleId, t.slug, t.oracleId] }),
+  foreignKey({
+    name: "commander_theme_support_cards_theme_fk",
+    columns: [t.commanderOracleId, t.slug],
+    foreignColumns: [commanderThemeSupport.commanderOracleId, commanderThemeSupport.slug],
+  }).onDelete("cascade"),
+  // The foreign key to `cards` checks this table on every catalog delete; without it that is a
+  // sequential scan of ~450k rows. `commander_support_cards_oracle_idx` exists for the same reason.
+  index("commander_theme_support_cards_oracle_idx").on(t.oracleId),
+]);
+
+/**
  * A reader's owned-support count per indexed commander: how many of the commander's support cards
  * the reader owns within its colour identity (`ownedSupportTable` in `discovery/candidates.ts`).
  *
