@@ -21,8 +21,8 @@ function memoryStore(emails: string[]): LaunchStore & { sent: Set<string> } {
   return {
     sent,
     waiting: async () => emails.filter((e) => !sent.has(e)).length,
-    claimNext: async () => {
-      const next = emails.find((e) => !sent.has(e));
+    claimNext: async (skip) => {
+      const next = emails.find((e) => !sent.has(e) && !skip.includes(e));
       if (!next) return null;
       sent.add(next);
       return { email: next, codeId: null };
@@ -96,7 +96,7 @@ describe("sendLaunchBatch", () => {
     const mail = (send.mock.calls[0] as unknown as [unknown, Record<string, string>])[1];
     expect(mail.template).toBe("launch");
     expect(mail.listUnsubscribe).toMatch(/^https:\/\/the-99\.dev\/api\/unsubscribe\?t=[A-Za-z0-9_-]{43}$/);
-    expect(mail.idempotencyKey).toMatch(/^launch-[A-Za-z0-9_-]{43}$/);
+    expect(mail.idempotencyKey).toMatch(/^launch-[A-Za-z0-9_-]{22}-[0-9a-z]+$/);
     expect(mail.html).toContain("https://the-99.dev/unsubscribe?t=");
   });
 });

@@ -11,6 +11,9 @@ import { adminCopy } from "../../../lib/copy/admin";
 import { flyerTrialEnabled } from "../../../lib/flyer/flag";
 import { requestFlags } from "../../../lib/flags/request";
 
+// The launch email's Send next N runs here as a Server Action: up to 25 sends, each with an 8s timeout (`launch-rule.ts`).
+export const maxDuration = 300;
+
 export const generateMetadata = (): Promise<Metadata> => adminMetadata<Metadata>({ title: adminCopy.tabs.invites });
 
 /**

@@ -4503,7 +4503,7 @@ export const launchList = pgTable("launch_list", {
   email: text("email").primaryKey(),
   codeId: uuid("code_id").references(() => flyerCodes.id, { onDelete: "set null" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  /** When the launch email claimed this address (`scripts/send-launch-email.mts`): set before the send, so a rerun never mails it twice. */
+  /** When the launch email claimed this address (`sendLaunchBatch`, `src/lib/flyer/launch-send.ts`): set before the send, so a rerun never mails it twice. */
   sentAt: timestamp("sent_at"),
 });
 

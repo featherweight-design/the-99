@@ -4,6 +4,7 @@ import { useState } from "react";
 
 import { launchEmailDryRun, sendLaunchEmailBatch, type LaunchEmailActionResult } from "../../app/admin/invites/launch-email-actions";
 import { launchEmailAdminCopy as copy } from "../../lib/copy/admin";
+import { LAUNCH_BATCH_MAX } from "../../lib/flyer/launch-rule";
 
 // The launch email's card on /admin/invites (launch email R2c G3). Eng-drawn admin tooling (orchestrator ruling
 // 2026-11-20), styled as the launch-list card above it: a dry run first, then Send next N behind a confirm that names the
@@ -14,8 +15,7 @@ const TEXT_BUTTON =
   "inline-flex min-h-[44px] cursor-pointer items-center whitespace-nowrap border-0 bg-transparent px-[6px] text-[13px] font-medium text-[color:var(--accent-text)] disabled:cursor-default disabled:opacity-60 md:min-h-[32px]";
 const LINE = "m-0 px-[14px] pb-[12px] text-[12.5px] leading-[1.5] md:px-[16px]";
 
-/** The batch ceiling the server enforces (`LAUNCH_BATCH_MAX`). */
-const MAX = 40;
+const MAX = LAUNCH_BATCH_MAX;
 
 function refusalLine(r: Extract<LaunchEmailActionResult, { ok: false }>): string {
   return copy.refused[r.reason];

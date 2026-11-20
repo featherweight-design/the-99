@@ -87,7 +87,7 @@ export const clerkEmailCopy = {
 
 /**
  * The launch email (launch email R2c, 2026-11-18): one email to everyone on `launch_list`, sent once by
- * `scripts/send-launch-email.mts`. `subject` is Q1, still Hugh's: the recommended option until he rules.
+ * `sendLaunchBatch` (`src/lib/flyer/launch-send.ts`), pressed from /admin/invites. `subject` is Q1, still Hugh's: the recommended option until he rules.
  */
 export const launchEmailCopy = {
   subject: "The 99 is open",

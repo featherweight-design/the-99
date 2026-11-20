@@ -94,6 +94,12 @@ export const RATE_RULES = {
    */
   "launch-unsubscribe": { limit: 20, windowMs: 3_600_000 },
   /**
+   * The one-click POST's bound (`/api/unsubscribe`), across EVERY visitor: a mail provider's servers send one-click
+   * unsubscribes for many recipients from a few addresses, so a per-visitor limit would drop real ones. The token is the
+   * authority; this only bounds how often a stranger can make the list be scanned.
+   */
+  "launch-unsubscribe-all": { limit: 600, windowMs: 3_600_000 },
+  /**
    * Every email the app sends through Resend, per RECIPIENT (`src/lib/invites/mail-limits.ts`: the address folded by `foldEmail`
    * so `+tags` and Gmail dots share one count, then hashed, never stored), ENFORCED: 3 an hour and (the next bucket) 10 a day
    * (Hugh, 2026-11-14). An honest recipient asks for a code, perhaps twice more after a typo; a script that points the code step

@@ -45,6 +45,7 @@ describe("the enforced caps", () => {
     expect(RATE_RULES["launch-list-all"]).toEqual({ limit: 60, windowMs: 3_600_000 });
     expect(RATE_RULES["launch-list-all-day"]).toEqual({ limit: 300, windowMs: 86_400_000 });
     expect(RATE_RULES["launch-unsubscribe"]).toEqual({ limit: 20, windowMs: 3_600_000 });
+    expect(RATE_RULES["launch-unsubscribe-all"]).toEqual({ limit: 600, windowMs: 3_600_000 });
     // Friend links R1 (Hugh: assume abuse): code tries 10 an hour and 30 a day, requests 20 a day, resets 5 a day.
     expect(RATE_RULES["friend-code"]).toEqual({ limit: 10, windowMs: 3_600_000 });
     expect(RATE_RULES["friend-code-day"]).toEqual({ limit: 30, windowMs: 86_400_000 });

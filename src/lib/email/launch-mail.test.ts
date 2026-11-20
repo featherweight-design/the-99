@@ -7,7 +7,8 @@ const parts = (source: "landing" | "flyer") => launchEmailParts({ origin: "https
 describe("launchEmailParts", () => {
   it("draws Sign up free twice to one link, in the html and the text twin", () => {
     const { html, text } = parts("landing");
-    expect(html.match(/href="https:\/\/staging\.the-99\.dev\/sign-up"/g)?.length).toBeGreaterThanOrEqual(3);
+    expect(html.match(/<a href="https:\/\/staging\.the-99\.dev\/sign-up"[^>]*>Sign up free<\/a>/g)?.length).toBe(2);
+    expect(html.match(/<a href="https:\/\/staging\.the-99\.dev\/sign-up"[^>]*>https:\/\/staging\.the-99\.dev\/sign-up<\/a>/g)?.length).toBe(1);
     expect(text.match(/https:\/\/staging\.the-99\.dev\/sign-up/g)?.length).toBe(2);
   });
 

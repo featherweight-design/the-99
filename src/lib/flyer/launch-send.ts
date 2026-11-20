@@ -6,7 +6,8 @@
  * `sent_at` is still null, so two runs, a retried run or a crash midway can never mail one address twice. A definite
  * refusal (Resend answered and sent nothing, or our own cap or limit refused it first) releases the claim, so a later
  * batch tries that address again. An indeterminate answer (no reply in time: the mail may have gone) keeps the claim:
- * a missed address is better than a doubled one. Resend's `Idempotency-Key` is the address's token, a second guard.
+ * a missed address is better than a doubled one. A released address waits for the next batch: the batch that released it
+ * skips it. Resend's `Idempotency-Key` names the address and the batch, a second guard within one batch.
  *
  * BATCHED ACROSS DAYS. A batch sends at most `limit`, and every mail still passes the app's own daily cap
  * (`mailRefusal`), so the launch never spends the day's invites and codes. The next batch picks up where this one
@@ -14,7 +15,7 @@
  *
  * The purge (`launch-purge.ts`) is untouched: it deletes whatever rows are left 30 days after the launch date.
  */
-import { and, asc, eq, isNull, sql } from "drizzle-orm";
+import { eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { launchList } from "../../db/schema";
 import { launchEmailParts, LAUNCH_IMAGES } from "../email/launch-mail";
@@ -24,8 +25,8 @@ import { readStoredLaunchDate } from "./launch-date";
 import { readLaunchDate } from "./launch-purge";
 import { unsubscribeToken, unsubscribeUrl } from "./launch-unsubscribe";
 
-/** The most one batch sends: under the free plan's 100 a day with room for the day's invites and codes. */
-export const LAUNCH_BATCH_MAX = 40;
+export { LAUNCH_BATCH_MAX } from "./launch-rule";
+import { LAUNCH_BATCH_MAX } from "./launch-rule";
 /** Resend allows a few requests a second; one every 600ms stays clear of it. */
 export const LAUNCH_SEND_GAP_MS = 600;
 
@@ -46,7 +47,8 @@ export type LaunchBatchDeps = {
 /** The list's three moves, the database's by default (a test hands in its own). */
 export type LaunchStore = {
   waiting: () => Promise<number>;
-  claimNext: () => Promise<{ email: string; codeId: string | null } | null>;
+  /** The oldest waiting address not in `skip` (the ones this batch already tried), claimed; null when none is left. */
+  claimNext: (skip: readonly string[]) => Promise<{ email: string; codeId: string | null } | null>;
   release: (email: string) => Promise<void>;
 };
 
@@ -69,25 +71,28 @@ async function launchWaiting(): Promise<number> {
 
 /** The images the email points at that the deployment does not serve. */
 async function missingImages(origin: string, fetchImpl: typeof fetch): Promise<string[]> {
-  const missing: string[] = [];
-  for (const file of LAUNCH_IMAGES) {
-    const res = await fetchImpl(`${origin}/email/${file}`, { method: "HEAD" }).catch(() => null);
-    if (!res?.ok) missing.push(file);
-  }
-  return missing;
+  const found = await Promise.all(
+    LAUNCH_IMAGES.map(async (file) => (await fetchImpl(`${origin}/email/${file}`, { method: "HEAD" }).catch(() => null))?.ok === true),
+  );
+  return LAUNCH_IMAGES.filter((_, i) => !found[i]);
 }
 
-/** Claims the oldest waiting address, or null when none is left. */
-async function claimNext(): Promise<{ email: string; codeId: string | null } | null> {
-  const [next] = await db.select({ email: launchList.email }).from(launchList).where(isNull(launchList.sentAt)).orderBy(asc(launchList.createdAt)).limit(1);
-  if (!next) return null;
-  const [claimed] = await db
-    .update(launchList)
-    .set({ sentAt: sql`now()` })
-    .where(and(eq(launchList.email, next.email), isNull(launchList.sentAt)))
-    .returning({ email: launchList.email, codeId: launchList.codeId });
-  // Another run took it between the read and the claim: try the next one.
-  return claimed ?? claimNext();
+/**
+ * Claims the oldest waiting address this batch has not tried yet, or null when none is left. One statement: the inner
+ * select locks the row it picks and skips any row another run holds, so two batches at once never claim one address and
+ * never wait on each other.
+ */
+async function claimNext(skip: readonly string[]): Promise<{ email: string; codeId: string | null } | null> {
+  const notTried = skip.length > 0 ? sql`and email not in (${sql.join(skip.map((e) => sql`${e}`), sql`, `)})` : sql``;
+  const { rows } = await db.execute<{ email: string; code_id: string | null }>(sql`
+    update launch_list set sent_at = now()
+    where email = (
+      select email from launch_list where sent_at is null ${notTried}
+      order by created_at, email limit 1 for update skip locked
+    ) and sent_at is null
+    returning email, code_id`);
+  const row = rows[0];
+  return row ? { email: row.email, codeId: row.code_id } : null;
 }
 
 async function release(email: string): Promise<void> {
@@ -119,12 +124,16 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
   let released = 0;
   let uncertain = 0;
   let stoppedBy: "done" | "limit" | "capped" = "limit";
+  // A released address waits for the NEXT batch: this one skips it, so one address that keeps being refused cannot take every turn.
+  const tried: string[] = [];
+  const claimedAt = Date.now().toString(36);
   for (let i = 0; i < cap; i++) {
-    const row = await store.claimNext();
+    const row = await store.claimNext(tried);
     if (!row) {
       stoppedBy = "done";
       break;
     }
+    tried.push(row.email);
     const unsubscribe = unsubscribeUrl(config.origin, secret, row.email);
     const parts = launchEmailParts({ origin: config.origin, source: row.codeId ? "flyer" : "landing", unsubscribeUrl: unsubscribe });
     const result = await send(config, {
@@ -132,7 +141,8 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
       ...parts,
       template: "launch",
       listUnsubscribe: `${config.origin}/api/unsubscribe?t=${unsubscribeToken(secret, row.email)}`,
-      idempotencyKey: `launch-${unsubscribeToken(secret, row.email)}`,
+      // Per claim, not per address: a released address retried later the same day is a new send, not Resend's cached refusal.
+      idempotencyKey: `launch-${unsubscribeToken(secret, row.email).slice(0, 22)}-${claimedAt}`,
     });
     if (result.ok) sent++;
     else if (result.reason === "indeterminate") uncertain++;
