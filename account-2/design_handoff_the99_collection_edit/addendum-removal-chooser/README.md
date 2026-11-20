@@ -103,5 +103,5 @@ the same canvas; R1's calls stand.
 - reason, Undo: `{short} goes short because it committed {card} after {keeper}. To change that, tap Change under In your decks on {card} afterwards.`
 - several-card row card line: `lists {n} · committed it {date}`; deck row sub `committed {date}`
 
-## Open for Hugh (R2)
-A. Keep the reason line in the no-choice cases, or leave the plain shipped warning.
+## Settled (R2)
+A. The reason line stays in the no-choice cases (Hugh, 2026-11-20: "the better, more clear user experience").
