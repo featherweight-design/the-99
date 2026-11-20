@@ -420,24 +420,29 @@ export const loadCardDetail = cache(async function loadCardDetail(
   };
 
   // Every catalog printing of the card. Fail-soft like every other stage-2 read: a card with no printings still renders.
-  const readPrintingRows = () => db
-    .select({
-      scryfallId: printings.scryfallId,
-      setCode: printings.setCode,
-      setName: sets.name,
-      collectorNumber: printings.collectorNumber,
-      releasedAt: sets.releasedAt,
-      imageUri: printings.imageUri,
-      backImageUri: printings.backImageUri,
-      flavorName: printings.flavorName,
-    })
-    .from(printings)
-    // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
-    .leftJoin(sets, eq(sets.code, printings.setCode))
-    .where(eq(printings.oracleId, oracleId))
-    // Fail-soft like every other stage-2 read: a card with no printings still renders, from the
-    // catalog row alone, where a rejection here would have lost the card.
-    .catch(() => []);
+  const readPrintingRows = async (): Promise<CatalogPrintingRow[]> => {
+    try {
+      return await db
+        .select({
+          scryfallId: printings.scryfallId,
+          setCode: printings.setCode,
+          setName: sets.name,
+          collectorNumber: printings.collectorNumber,
+          releasedAt: sets.releasedAt,
+          imageUri: printings.imageUri,
+          backImageUri: printings.backImageUri,
+          flavorName: printings.flavorName,
+        })
+        .from(printings)
+        // sets.code is the primary key, so this is at most 1:1 and multiplies no rows.
+        .leftJoin(sets, eq(sets.code, printings.setCode))
+        .where(eq(printings.oracleId, oracleId))
+        // Fail-soft like every other stage-2 read: a card with no printings still renders, from the
+        // catalog row alone, where a rejection here would have lost the card.
+    } catch {
+      return [];
+    }
+  };
 
   if (owned.length > 0) {
     // `availability` only for a card the user owns: the query is driven by the collection, and every
