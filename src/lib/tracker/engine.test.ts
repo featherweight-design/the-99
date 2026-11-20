@@ -126,7 +126,14 @@ describe("the end of the game and placements", () => {
   it("ignores an end with no seated winner", () => {
     expect(isOver(play(config(3), { t: "end", winners: [9] }))).toBe(false);
   });
-  it("leaves a started game untouched by startGame's inputs", () => {
-    expect(startGame(config(2)).seats[0].life).toBe(40);
+  it("never changes the state it reduces from", () => {
+    const before = startGame(config(2));
+    const frozen = JSON.stringify(before);
+    reduce(before, { t: "life", seat: 1, delta: -5 });
+    expect(JSON.stringify(before)).toBe(frozen);
+  });
+  it("names the lowest seat's commander when two reach 21 together", () => {
+    const s = play(config(3), { t: "batch", actions: [{ t: "damage", seat: 1, from: 3, cmdr: 0, delta: 21 }, { t: "damage", seat: 1, from: 2, cmdr: 0, delta: 21 }] });
+    expect(seat(s, 1).out?.reason).toEqual({ kind: "commander", from: 2, cmdr: 0 });
   });
 });

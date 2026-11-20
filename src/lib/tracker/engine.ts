@@ -174,11 +174,12 @@ function apply(s: GameState, a: Leaf): void {
 /** Why a seat is out right now, or null. Commander damage names the first commander at 21, in seat order. */
 function lethal(seat: SeatState): OutReason | null {
   if (seat.life <= 0) return { kind: "life" };
-  for (const [key, n] of Object.entries(seat.damage)) {
-    if (n >= COMMANDER_DAMAGE_LETHAL) {
-      const [from, cmdr] = key.split(":").map(Number);
-      return { kind: "commander", from, cmdr };
-    }
+  const lethalHits = Object.entries(seat.damage)
+    .filter(([, n]) => n >= COMMANDER_DAMAGE_LETHAL)
+    .map(([key]) => key.split(":").map(Number));
+  if (lethalHits.length > 0) {
+    const [from, cmdr] = lethalHits.sort((a, b) => a[0] - b[0] || a[1] - b[1])[0];
+    return { kind: "commander", from, cmdr };
   }
   if (seat.counters.poison >= POISON_LETHAL) return { kind: "poison" };
   return null;

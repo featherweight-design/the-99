@@ -13,7 +13,7 @@ describe("layouts", () => {
       }
     }
   });
-  it("has unique ids and offers every seat count 2 to 6 on both devices", () => {
+  it("has unique ids and offers phone 2 to 6 and tablet 4 to 6", () => {
     expect(new Set(LAYOUTS.map((l) => l.id)).size).toBe(LAYOUTS.length);
     for (const device of ["phone", "tablet"] as const) for (const n of [2, 3, 4, 5, 6]) if (!(device === "tablet" && (n === 2 || n === 3))) expect(layoutsFor(device, n).length).toBeGreaterThan(0);
   });
