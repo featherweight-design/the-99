@@ -19,7 +19,7 @@ const THEME_NAMES: Record<LabelTheme, string> = {
 
 const AXIS_NAMES: Record<FixedAxis, string> = {
   artifacts: "Artifacts", enchantments: "Enchantments", voltron: "Equipment and Auras", vehicles: "Vehicles",
-  bigCreatures: "Creatures costing 6+",
+  bigCreatures: "Creatures costing 6+", planeswalkers: "Planeswalkers", sagas: "Sagas", proliferate: "Proliferate",
 };
 
 /** Plurals the endings rules below get wrong. Unchanged in the plural: listed as themselves. */

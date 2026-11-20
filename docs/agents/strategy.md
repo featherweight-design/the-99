@@ -9,7 +9,7 @@ A deck's top strategies, and the FOCUS a player picks among them for Suggested c
 
 - **Axes.** The 30 label themes on `card_labels`, plus the type-line axes in `src/lib/strategy/axes.ts`: artifacts,
   enchantments, voltron (Equipment and Auras), vehicles, big creatures (a creature of mana value 6 or more, a named proxy:
-  `cards` holds no power) and up to three creature types (`typal:Elf`). Changelings join each type a deck picks.
+  `cards` holds no power), planeswalkers (type line), sagas (subtype) and proliferate (the Scryfall keyword), and up to three creature types (`typal:Elf`). Changelings join each type a deck picks.
 - **Per axis:** `copies × ln(lift)`, lift being the deck's nonland share over the CATALOG's (every commander-legal nonland
   game card, one copy each). Under 5 copies (`AXIS_FLOOR`) an axis scores 0, and so does one the deck holds no more of than
   the catalog. Lands and the commanders are never counted.

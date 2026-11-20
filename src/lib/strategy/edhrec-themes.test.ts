@@ -8,7 +8,14 @@ describe("focusThemeSlugs", () => {
     expect(focusThemeSlugs(null)).toEqual([]);
   });
 
+  it("names the slugs of the type-line and keyword strategies, and the mapped themes", () => {
+    expect(focusThemeSlugs("planeswalkers")).toEqual(["planeswalkers"]);
+    expect(focusThemeSlugs("proliferate")).toEqual(["proliferate"]);
+    expect(focusThemeSlugs("sagas")).toEqual(["sagas"]);
+    expect(focusThemeSlugs("evasion")).toEqual(["flying", "unblockable"]);
+  });
+
   it("keeps the commander page for a focus EDHREC has no theme for", () => {
-    expect(focusThemeSlugs("haste")).toEqual([]);
+    expect(focusThemeSlugs("protection")).toEqual([]);
   });
 });

@@ -21,6 +21,13 @@ describe("fixedAxesOf", () => {
     expect(fixedAxesOf(card("Sorcery", 7))).toEqual([]);
   });
 
+  it("files Planeswalkers, Sagas and the Proliferate keyword under their own axes", () => {
+    expect(fixedAxesOf(card("Legendary Planeswalker — Jace"))).toEqual(["planeswalkers"]);
+    expect(fixedAxesOf(card("Enchantment — Saga"))).toEqual(["enchantments", "sagas"]);
+    expect(fixedAxesOf(card("Sorcery", 3, 1, ["Proliferate"]))).toEqual(["proliferate"]);
+    expect(fixedAxesOf(card("Sorcery", 3, 1, ["Scry"]))).toEqual([]);
+  });
+
   it("reads the front face only", () => {
     expect(fixedAxesOf(card("Creature — Human Wizard // Artifact — Equipment"))).toEqual([]);
   });
