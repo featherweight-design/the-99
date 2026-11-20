@@ -149,10 +149,16 @@ export function ArrangeDecks({
     const state = { id, y: e.clientY, timer: 0 };
     // Edge autoscroll: runs while the pointer is held near the top or bottom of the window.
     state.timer = window.setInterval(() => {
+      // Stop the moment this drag is no longer the live one; never act on a stale closure.
+      if (drag.current !== state) {
+        window.clearInterval(state.timer);
+        return;
+      }
+      const { moveTo: move, targetIndex: target } = latest.current;
       if (state.y < EDGE_PX) window.scrollBy(0, -SCROLL_STEP);
       else if (state.y > window.innerHeight - EDGE_PX) window.scrollBy(0, SCROLL_STEP);
       else return;
-      moveTo(id, targetIndex(state.y, id));
+      move(id, target(state.y, id));
     }, 16);
     drag.current = state;
   }
@@ -168,14 +174,31 @@ export function ArrangeDecks({
     window.clearInterval(d.timer);
     drag.current = null;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    finishDrag(id, cancelled);
+  }
+  // Capture lost with no up or cancel (the element left, the browser took the pointer): the drag is over.
+  function onLostCapture(id: string) {
+    const d = drag.current;
+    if (!d || d.id !== id) return;
+    window.clearInterval(d.timer);
+    drag.current = null;
+    finishDrag(id, true);
+  }
+  function finishDrag(id: string, cancelled: boolean) {
     if (cancelled) setOrder(before.current);
     setLifted(null);
     const k = (cancelled ? before.current : order).indexOf(id);
     say(cancelled ? copy.cancelledLift(name(id)) : copy.dropped(name(id), k + 1, order.length));
   }
+  // The interval reads the latest closures, never the render it started in.
+  const latest = useRef({ moveTo, targetIndex });
+  useEffect(() => {
+    latest.current = { moveTo, targetIndex };
+  });
   useEffect(
     () => () => {
       if (drag.current) window.clearInterval(drag.current.timer);
+      drag.current = null;
     },
     [],
   );
@@ -196,7 +219,6 @@ export function ArrangeDecks({
     else onCancel();
   }
 
-  const liftedIndex = lifted === null ? -1 : order.indexOf(lifted);
   const heading = shelfLabel === null ? copy.headingAll : copy.headingShelf(shelfLabel);
   const eyebrow = shelfLabel === null ? copy.eyebrowAll(order.length) : copy.eyebrowShelf(shelfLabel, order.length);
 
@@ -275,7 +297,7 @@ export function ArrangeDecks({
                     : "border border-solid border-[color:var(--border)]"
                 }`}
               >
-              <span aria-hidden className="hidden w-[18px] flex-none text-center font-mono text-[13px] text-[color:var(--fg-faint)] md:block">{i + 1 + (liftedIndex >= 0 && i > liftedIndex ? 1 : 0)}</span>
+              <span aria-hidden className="hidden w-[18px] flex-none text-center font-mono text-[13px] text-[color:var(--fg-faint)] md:block">{i + 1}</span>
               {/* The art crop as a background: decorative, and the tile's own wash draws it the same way. */}
               <span
                 aria-hidden
@@ -302,6 +324,7 @@ export function ArrangeDecks({
                 onPointerMove={(e) => onPointerMove(e, id)}
                 onPointerUp={(e) => endDrag(e, id, false)}
                 onPointerCancel={(e) => endDrag(e, id, true)}
+                onLostPointerCapture={() => onLostCapture(id)}
                 onBlur={() => {
                   if (lifted === id && !drag.current) {
                     setLifted(null);
