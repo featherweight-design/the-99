@@ -52,11 +52,13 @@ function useWashFromHash() {
     };
     run();
     window.addEventListener("hashchange", run);
+    window.addEventListener("pointerdown", mine, { passive: true });
     window.addEventListener("wheel", mine, { passive: true });
     window.addEventListener("touchmove", mine, { passive: true });
     window.addEventListener("keydown", mine);
     return () => {
       window.removeEventListener("hashchange", run);
+      window.removeEventListener("pointerdown", mine);
       window.removeEventListener("wheel", mine);
       window.removeEventListener("touchmove", mine);
       window.removeEventListener("keydown", mine);

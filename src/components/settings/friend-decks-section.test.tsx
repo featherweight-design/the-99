@@ -73,12 +73,14 @@ describe("Your decks", () => {
 describe("the landing from a deck's menu", () => {
   const prefs = { seeDecks: true, seeUnfinished: false };
   const rowOf = (name: "see" | "unfinished") => document.querySelector<HTMLElement>(`[data-friend-decks-row=${name}]`)!;
+  const realScroll = Element.prototype.scrollIntoView;
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
     Element.prototype.scrollIntoView = vi.fn();
   });
   afterEach(() => {
     vi.useRealTimers();
+    Element.prototype.scrollIntoView = realScroll;
     window.location.hash = "";
   });
 
@@ -98,6 +100,40 @@ describe("the landing from a deck's menu", () => {
       vi.advanceTimersByTime(2100);
     });
     expect(rowOf("unfinished").hasAttribute("data-washed")).toBe(false);
+  });
+
+  it("re-centres the row twice more while the wash runs (the page streams in after mount), then stops", () => {
+    window.location.hash = "#settings-decks-unfinished";
+    render(<FriendDecksSection prefs={prefs} />);
+    const scroll = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+    expect(scroll).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(350);
+    });
+    expect(scroll).toHaveBeenCalledTimes(2);
+    act(() => {
+      vi.advanceTimersByTime(600);
+    });
+    expect(scroll).toHaveBeenCalledTimes(3);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(scroll).toHaveBeenCalledTimes(3);
+  });
+
+  it("lets the reader's own scroll (wheel, touch, key, pointer) cancel the re-centring", () => {
+    for (const type of ["wheel", "touchmove", "keydown", "pointerdown"]) {
+      window.location.hash = "#settings-decks-unfinished";
+      const { unmount } = render(<FriendDecksSection prefs={prefs} />);
+      const scroll = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
+      scroll.mockClear();
+      act(() => {
+        window.dispatchEvent(new Event(type));
+        vi.advanceTimersByTime(1000);
+      });
+      expect(scroll, type).not.toHaveBeenCalled();
+      unmount();
+    }
   });
 
   it("washes the master switch's row for #settings-decks-see, and nothing for the bare heading anchor", () => {

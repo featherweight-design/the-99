@@ -51,7 +51,8 @@ export type HiddenWhy = {
 
 /**
  * Why a deck the owner's Settings rules hide is hidden, from the rule's own inputs: the master switch is tested first (it hides every
- * deck whatever its status), then the status. `canCommit` is `firstCommitReady`'s answer. Pure.
+ * deck whatever its status), then the status. `canCommit` is `firstCommitReady`'s answer. Pure. Called only for a deck `settingsHideDeck`
+ * hides, so the status is New, Draft or Building (or any, with `seeDecks` off): anything else would read as a Draft.
  */
 export function hiddenWhy(args: { statusPill: StatusPill; prefs: FriendDeckPrefs; built: number; size: number; canCommit: boolean }): HiddenWhy {
   const { statusPill, prefs, built, size, canCommit } = args;
