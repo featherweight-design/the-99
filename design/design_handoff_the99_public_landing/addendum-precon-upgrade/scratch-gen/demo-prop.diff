@@ -1,0 +1,87 @@
+--- a/src/components/decks/suggested-changes-run.tsx
++++ b/src/components/decks/suggested-changes-run.tsx
+@@ -72,7 +72,7 @@
+  */
+ export function SuggestedChangesRun({
+   runId, ask, lines: readLines, live, startedAt, report, permits, declared = null, newestPriceAsOf, figures, drift, finishedHere = false,
+-  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, groupingInMemory = false, credits = null, past = null, deckId, press = null, beside = null, seedSet = null,
++  readFrom, actions, onChanged, onAnnounce, onNewRun, readOnly = false, groupingInMemory = false, credits = null, past = null, deckId, press = null, beside = null, seedSet = null, demo = false,
+ }: {
+   runId: string;
+   /** The run's deck, for the confirmation's Pull (Small items 4, item 2). */
+@@ -109,6 +109,8 @@
+   /** Upgrade fresh start R2 (scratch): the flow's own press in the bar's Apply place (Start or Apply, no confirm), and the press beside it. */
+   press?: { label: (pairs: number) => string; onPress: () => void } | null;
+   beside?: ReactNode;
++  /** Landing demo A5b (scratch): picks work in local state only, You asked is left out, and the bar has no Apply place. */
++  demo?: boolean;
+   /** Scratch only: the server's set read, seeded for a static frame. */
+   seedSet?: number[] | null;
+   past?: { date: string; stale: boolean; version?: number | null; moved?: number | null } | null;
+@@ -538,8 +540,10 @@
+   const leadWide = !waiting && past && !past.stale && appliedSet && past.version != null && lines.some(isOpen)
+     ? ` ${h.oldRunRestVersion(lines.filter(isOpen).length, past.version)}` : null;
+   // History C's lead is bold up to its ` · ` (`5 to add and 5 to cut · 2 + 2 applied on Oct 19.`); every other at its first stop.
+-  const leadParts = lead === null ? null : past?.stale && lead.includes(" · ")
++  const leadFull = lead === null ? null : past?.stale && lead.includes(" · ")
+     ? [lead.slice(0, lead.indexOf(" · ")), lead.slice(lead.indexOf(" · "))] as const : leadSentence(lead, ". ");
++  // Demo (A5b): only the count sentence; "Nothing moves until you apply" promises an Apply the demo doesn't draw.
++  const leadParts = demo && leadFull ? ([leadFull[0], ""] as const) : leadFull;
+   const confirmBracket = bracketText(outcome);
+ 
+   return (
+@@ -577,7 +581,7 @@
+             {readFrom}
+           </div>
+         </div>
+-      ) : ask && !press ? <YouAsked ask={ask} /> : null}
++      ) : ask && !press && !demo ? <YouAsked ask={ask} /> : null}
+       {/* Once in, the clock stays only for a run that came up short of the ask (Wait E); the Results boards draw none. */}
+       {clockFrom && (waiting || ofAsk !== null) ? (
+         <Clock startedAt={clockFrom} adds={adds.length} cuts={cuts.length} n={n} done={!waiting} />
+@@ -691,14 +695,14 @@
+                 </>
+               )}
+             </p>
+-            <p className="m-0 text-[12px] leading-[1.5]" style={{ color: warn ? "var(--warning)" : "var(--fg-muted)" }} data-sc-bar-line="">
++            {demo && !warn ? null : <p className="m-0 text-[12px] leading-[1.5]" style={{ color: warn ? "var(--warning)" : "var(--fg-muted)" }} data-sc-bar-line="">
+               {warn ? (
+                 <>
+                   <b className="font-semibold" style={{ color: "var(--fg)" }}>{leadSentence(sentence, ". ")[0]}</b>
+                   {leadSentence(sentence, ". ")[1]}
+                 </>
+               ) : sentence}
+-            </p>
++            </p>}
+           </div>
+           {appliedSet !== null && !waiting ? (
+             <button
+@@ -711,7 +715,7 @@
+             </button>
+           ) : null}
+           {beside}
+-          {appliedBar ? null : (
++          {appliedBar || demo ? null : (
+             <button
+               type="button"
+               onClick={() => {
+--- a/src/components/decks/precons/upgrade/result-view.tsx
++++ b/src/components/decks/precons/upgrade/result-view.tsx
+@@ -196,7 +196,7 @@
+   );
+ }
+ 
+-export function ResultView({ panel, run, press = null, beside = null, seedSet = null, apply = false }: { panel: UpgradePanel; run: PanelRun; press?: { label: (n: number) => string; onPress: () => void } | null; beside?: ReactNode; seedSet?: number[] | null; apply?: boolean }) {
++export function ResultView({ panel, run, press = null, beside = null, seedSet = null, apply = false, demo = false }: { panel: UpgradePanel; run: PanelRun; press?: { label: (n: number) => string; onPress: () => void } | null; beside?: ReactNode; seedSet?: number[] | null; apply?: boolean; /** Landing demo A5b: picks in local state only, no You asked, no Apply place (passed to SuggestedChangesRun). */ demo?: boolean }) {
+   const kept = run.pairs;
+   const buyKept = kept.filter((p) => !panel.cards[p.addId]?.owned);
+   const lead = leadOf(panel, run);
+@@ -251,7 +251,7 @@
+         runId={run.id} deckId={apply ? "deck" : ""} ask={askOf(run, panel)} lines={linesOf(run, panel)} live={null} startedAt={null} report={null}
+         permits={[panel.boxBracket]} newestPriceAsOf={ASOF} figures={FIGURES} drift={null} actions={INERT}
+         onChanged={async () => null} onAnnounce={() => {}} onNewRun={() => {}} groupingInMemory
+-        press={press} beside={beside} seedSet={seedSet}
++        press={press} beside={beside} seedSet={seedSet} demo={demo}
+       />
+     </div>
+   );
