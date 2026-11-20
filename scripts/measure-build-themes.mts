@@ -26,7 +26,7 @@ const DELAY_MS = 250;
 const LAND_LISTS = new Set(["lands", "utilitylands", "basics", "nonbasiclands"]);
 
 type Primers = Record<string, { sources: string[]; cards: string[]; notes?: string }>;
-type Page = { names: string[]; inclusionOf: (n: string) => number | null; synergyOf: (n: string) => number | null; lands: Set<string>; tags: { slug: string; count: number }[] };
+type Page = { listed: Set<string>; names: string[]; inclusionOf: (n: string) => number | null; synergyOf: (n: string) => number | null; lands: Set<string>; tags: { slug: string; count: number }[] };
 
 const path = process.argv[2] ?? join(process.cwd(), "scripts/fixtures/build-themes-primers.json");
 const primers = JSON.parse(readFileSync(path, "utf8")) as Primers;
@@ -35,14 +35,22 @@ let requests = 0;
 async function fetchPage(url: string): Promise<Page | null> {
   await new Promise((r) => setTimeout(r, DELAY_MS));
   requests++;
-  const res = await fetch(url, { headers: { "User-Agent": "the-99/1.0" }, signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) { console.warn(`  ${res.status} ${url}`); return null; }
-  const raw = (await res.json()) as {
+  let raw: {
     tag_counts?: { slug?: string; count?: number }[];
     container?: { json_dict?: { cardlists?: { tag?: string; cardviews?: { name?: string }[] }[] } };
   };
+  try {
+    const res = await fetch(url, { headers: { "User-Agent": "the-99/1.0" }, signal: AbortSignal.timeout(10_000) });
+    if (!res.ok) { console.warn(`  ${res.status} ${url}`); return null; }
+    raw = await res.json();
+  } catch (err) {
+    // One timeout or a non-JSON body skips this page, never the rest of the run.
+    console.warn(`  failed ${url}`, err);
+    return null;
+  }
+  // `parseEdhrecPayload` degrades to an empty list on any shape; a page with no card lists is no page.
+  if (!Array.isArray(raw.container?.json_dict?.cardlists)) { console.warn(`  not a page: ${url}`); return null; }
   const data = parseEdhrecPayload(raw);
-  if (!data) return null;
   const lands = new Set<string>();
   for (const list of raw.container?.json_dict?.cardlists ?? []) {
     if (!LAND_LISTS.has(list.tag ?? "")) continue;
@@ -50,6 +58,7 @@ async function fetchPage(url: string): Promise<Page | null> {
   }
   const synergy = inclusionLookup(data.synergyByName ?? {});
   return {
+    listed: new Set(data.topCards.map((n) => n.toLowerCase().split(" // ")[0])),
     names: data.topCards,
     inclusionOf: inclusionLookup(data.inclusionByName),
     synergyOf: synergy,
@@ -80,8 +89,8 @@ function reach(list: string[], primer: Set<string>): number {
 }
 
 async function main() {
-  console.log(`| Commander | Primer nonland | On the page | Commander · inclusion | Commander · score | Best theme | Theme · inclusion | Theme · score |`);
-  console.log(`|---|---|---|---|---|---|---|---|`);
+  console.log(`| Commander | Primer nonland | On the page | Commander · inclusion | Commander · score | Top theme · inclusion | Best theme (upper bound) | Theme · inclusion | Theme · score |`);
+  console.log(`|---|---|---|---|---|---|---|---|---|`);
   for (const [commander, entry] of Object.entries(primers)) {
     const slug = commanderSlug(commander);
     const main = await fetchPage(`https://json.edhrec.com/pages/commanders/${slug}.json`);
@@ -89,7 +98,7 @@ async function main() {
     // EDHREC names a double-faced card by its front face, so the primer is matched on front faces too.
     // The fixture holds nonland cards only (lands removed by type line against the catalog).
     const primer = new Set(entry.cards.map((c) => c.toLowerCase().split(" // ")[0]));
-    const onPage = [...primer].filter((c) => main.inclusionOf(c) !== null).length;
+    const onPage = [...primer].filter((c) => main.listed.has(c)).length;
     const themeRows: { slug: string; inc: number; sc: number; onPage: number }[] = [];
     for (const tag of main.tags.slice(0, THEMES_PER_COMMANDER)) {
       const page = await fetchPage(`https://json.edhrec.com/pages/commanders/${slug}/${tag.slug}.json`);
@@ -98,12 +107,14 @@ async function main() {
         slug: `${tag.slug} (${tag.count})`,
         inc: reach(ranked(page, byInc(page)), primer),
         sc: reach(ranked(page, score(page)), primer),
-        onPage: [...primer].filter((c) => page.inclusionOf(c) !== null).length,
+        onPage: [...primer].filter((c) => page.listed.has(c)).length,
       });
     }
-    const best = themeRows.sort((a, b) => Math.max(b.inc, b.sc) - Math.max(a.inc, a.sc))[0];
-    console.log(`| ${commander} | ${primer.size} | ${onPage} | ${reach(ranked(main, byInc(main)), primer)} | ${reach(ranked(main, score(main)), primer)} | ${best?.slug ?? "none"} | ${best?.inc ?? "-"} | ${best?.sc ?? "-"} |`);
-    for (const t of themeRows) console.log(`|  | | ${t.onPage} | | | ${t.slug} | ${t.inc} | ${t.sc} |`);
+    // The TOP tag is what the app could choose unprompted; the best of the three is an upper bound,
+    // chosen against the primer itself.
+    const top = themeRows[0];
+    const best = [...themeRows].sort((a, b) => Math.max(b.inc, b.sc) - Math.max(a.inc, a.sc))[0];
+    console.log(`| ${commander} | ${primer.size} | ${onPage} | ${reach(ranked(main, byInc(main)), primer)} | ${reach(ranked(main, score(main)), primer)} | ${top ? `${top.slug}: ${top.inc}` : "-"} | ${best?.slug ?? "none"} | ${best?.inc ?? "-"} | ${best?.sc ?? "-"} |`);
   }
   console.log(`\n${requests} EDHREC requests; first ${NONLAND_SLOTS} nonland cards counted.`);
 }

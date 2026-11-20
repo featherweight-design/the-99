@@ -49,7 +49,7 @@
    "Maddening Hex",
    "Midnight Oil",
    "No Mercy",
-   "Oath of Lim-Dûl",
+   "Oath of Lim-D\u00fbl",
    "Torment of Scarabs",
    "Treacherous Blessing",
    "Witch Hunt",
@@ -68,7 +68,7 @@
    "Terminate",
    "Wild Ricochet"
   ],
-  "notes": "Full decklist; page also holds Ragavan, Zedruu and Xanathar lists, which were excluded. Nonbasic lands kept since they are in the list. Lands removed (front-face type line, staging catalog)."
+  "notes": "Full decklist; the page also holds Ragavan, Zedruu and Xanathar lists, which were excluded. Lands removed (front-face type line, staging catalog)."
  },
  "Atraxa, Praetors' Voice": {
   "sources": [
@@ -157,12 +157,10 @@
    "Miirym, Sentinel Wyrm",
    "Roaming Throne",
    "Maskwood Nexus",
-   "Lozhan, Dragons' Legacy",
    "Beluna Grandsquall",
    "Lucky Clover",
    "Storyteller Pixie",
    "Chancellor of Tales",
-   "Sarkhan, Soul Aflame",
    "Rith, Liberated Primeval",
    "Sarkhan's Triumph",
    "Sarkhan's Unsealing",
@@ -171,7 +169,7 @@
    "Dragon Arch",
    "Balefire Dragon"
   ],
-  "notes": "PARTIAL: article is a deck tech naming only ~20 cards, no full decklist found on page. 'Lozhan' and 'Sarkhan' expanded by guess (Lozhan, Dragons' Legacy; Sarkhan, Soul Aflame) - verify. Dropped unrecognized 'Thumberchaud'. Lands removed (front-face type line, staging catalog)."
+  "notes": "PARTIAL: article is a deck tech naming only ~20 cards, no full decklist found on page. 'Lozhan' and 'Sarkhan' expanded by guess (Lozhan, Dragons' Legacy; Sarkhan, Soul Aflame) - verify. Dropped unrecognized 'Thumberchaud'. Lands removed (front-face type line, staging catalog). Two names the extraction guessed (Lozhan, Sarkhan) removed."
  },
  "Lord Windgrace": {
   "sources": [
