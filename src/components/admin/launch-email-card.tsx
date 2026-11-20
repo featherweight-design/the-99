@@ -77,7 +77,7 @@ export function LaunchEmailCard() {
               max={Math.min(MAX, waiting)}
               value={count}
               onChange={(e) => setCount(Math.max(1, Math.min(Number(e.target.value) || 1, MAX, waiting)))}
-              className="min-h-[44px] w-[72px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[10px] text-[13px] text-[color:var(--fg)] md:min-h-[32px]"
+              className="min-h-[44px] w-[72px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[10px] text-[16px] [@media(pointer:fine)]:text-[13px] text-[color:var(--fg)] md:min-h-[32px]"
             />
           </label>
           <button type="button" data-testid="launch-email-send" disabled={pending} onClick={() => setConfirming(true)} className={TEXT_BUTTON}>

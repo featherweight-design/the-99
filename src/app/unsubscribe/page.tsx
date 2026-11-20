@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
-import Link from "next/link";
 import { cache } from "react";
 
+import Link from "next/link";
+
+import { PendingReporter } from "../../components/shell/pending-reporter";
 import { PRIMARY } from "../../components/ui/button";
 import { unsubscribePageCopy } from "../../lib/copy/emails";
 import { tokenShaped, unsubscribeByToken, type UnsubscribeOutcome } from "../../lib/flyer/launch-unsubscribe";
@@ -45,6 +47,7 @@ export default async function UnsubscribePage({ searchParams }: Props) {
           className={`${PRIMARY} inline-flex w-fit min-h-[44px] items-center rounded-lg px-[20px] font-sans text-[14px] font-semibold`}
         >
           {copy.button}
+          <PendingReporter href="/" />
         </Link>
       </div>
     </main>
