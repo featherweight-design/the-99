@@ -10,7 +10,7 @@ import type { Cell } from "../../lib/tracker/layouts";
 import { COUNTER_KEYS, type CounterKey, type SeatState } from "../../lib/tracker/engine";
 import { PersonName, PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
-import { TOUCH_HIT } from "../ui/touch-hit";
+import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { CounterIcon, InitiativeIcon, MonarchIcon } from "./icons";
 import { TurnRing } from "./turn-ring";
 
@@ -294,7 +294,7 @@ function Badge({ label, count, onPress, children }: { label: string; count?: num
   );
   const cls = "inline-flex h-6 items-center gap-1 rounded-full bg-[color:var(--elevated)] px-2 text-[color:var(--fg)]";
   return onPress ? (
-    <button type="button" onClick={onPress} aria-label={copy.badgeAria(label, count ?? 0)} className={cls + " " + TOUCH_HIT}>{body}</button>
+    <button type="button" onClick={onPress} aria-label={copy.badgeAria(label, count ?? 0)} className={cls + " " + TOUCH_HIT_INLINE}>{body}</button>
   ) : (
     <span role="img" aria-label={label} className={cls}>{body}</span>
   );

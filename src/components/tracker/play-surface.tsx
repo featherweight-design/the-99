@@ -53,6 +53,8 @@ export function PlaySurface({
   const fits = !!game && !!saved_layout && saved_layout.cells.length === seats.length && game.config.seats.length === seats.length && game.config.seats.every((c, i) => c.seat === seats[i].seat);
   useEffect(() => (game && !fits ? discard() : undefined), [game, fits, discard]);
   const over = state ? isOver(state) : false;
+  // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
+  if (over && sheet) setSheet(null);
 
   // The result is saved once per finished game, keyed on its length so an undo that reopens the game and a new finish saves again.
   useEffect(() => {

@@ -144,7 +144,7 @@ export function Sheet({
   );
 }
 
-const cmdrName = (p: PlaySeat, cmdr: number) => (cmdr === 1 && p.partner ? p.partner : p.commander);
+const cmdrName = (p: PlaySeat, cmdr: number) => (cmdr === 1 && p.partner ? p.partner : p.commander || copy.sheet.commanderFallback);
 
 function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: readonly PlaySeat[]; state: GameState; onCommit: (a: Action) => void }) {
   const foes = state.seats.filter((s) => s.seat !== seat.seat);
@@ -163,7 +163,7 @@ function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: r
                   <div key={cmdr} className="flex items-center justify-between gap-2">
                     <span className="min-w-0">
                       <b className="block truncate text-[13.5px] font-semibold">{cmdrName(p, cmdr)}</b>
-                      <small className="block truncate text-[12px] text-[color:var(--fg-muted)]"><PersonName n={p.name as ThirdPartyName} /></small>
+                      <small className="block truncate text-[12px] text-[color:var(--fg-muted)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</small>
                     </span>
                     <Stepper count={n} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
                   </div>

@@ -51,6 +51,7 @@ export const trackerCopy = {
     damageHint: "Damage a commander deals you in combat. It comes off your life too, and 21 from one commander puts you out. A partner deck gets one card per commander.",
     noOpponents: "No opponents at this table.",
     taxHint: "Tap + each time you cast your commander from the command zone. A partner deck shows one row per commander.",
+    commanderFallback: "Commander",
     taxCast: "Times cast from the command zone",
     taxNext: "Next cast costs",
     taxAria: (cmdr: string) => `${cmdr} casts`,

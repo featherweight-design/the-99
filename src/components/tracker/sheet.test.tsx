@@ -24,8 +24,8 @@ describe("tracker sheet", () => {
     const html = render("damage", game);
     const order = ["Commander damage", "Counters", "Tax", "Mana", "Table"].map((t) => html.indexOf(`>${t}`));
     expect(order.every((n, i) => n > 0 && (i === 0 || n > order[i - 1]))).toBe(true);
-    expect(html).toContain(">10<");
-    expect(html).toContain("+4");
+    expect(html).toContain(">10</em>");
+    expect(html).toContain(">+4</em>");
   });
   it("gives a partner deck one stepper per commander", () => {
     const html = render("damage", game);
@@ -38,7 +38,9 @@ describe("tracker sheet", () => {
     expect(html).not.toContain("Other");
   });
   it("shows the next cast's tax on the Tax tab", () => {
-    expect(render("tax", game)).toContain("+4");
+    const html = render("tax", game);
+    expect(html).toContain("Next cast costs");
+    expect(html).toMatch(/text-\[16px\][^>]*>\+(<!-- -->)?4</);
   });
   it("renders the six mana colours", () => {
     const html = render("mana", game);
