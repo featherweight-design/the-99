@@ -88,6 +88,15 @@ With a focus set (and the switch on), a Suggested changes run reads it in `tunin
   decks with no focus and with their Nth strategy as the focus, and prints additions on the focus, off-plan cuts and
   cost per run.
 
+## The focus steers Top picks (engine plan A4, 2026-11-20)
+
+With a focus set, the Add panel's Top picks shelf ranks the commander's stored EDHREC theme page for it (`commander_theme_support`, filled by the monthly index build) in place of the commander page (orchestrator ruling 1).
+
+- **The mapping.** `focusThemeSlugs` (`src/lib/strategy/edhrec-themes.ts`) maps a focus key to EDHREC slugs. It's hand-kept, because our vocabulary isn't EDHREC's. A creature type maps to its plural. A slug the commander has no tag for is ignored. A key that maps to nothing keeps the commander page.
+- **What it changes.** Only the shelf's order and which unowned cards reach it. Each tile's figure stays the commander page's, because that is what its copy says.
+- **When it doesn't apply.** Single commanders only (pairs aren't themed). With no stored page, as before the first theme build, or on a failed read, the shelf is today's.
+- **Why never by default.** A theme page is read only for a build the player chose. Atraxa's most-played tag ranks worse than its commander page (docs/agents/commander-index.md).
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.

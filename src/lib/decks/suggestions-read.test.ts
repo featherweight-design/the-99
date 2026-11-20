@@ -68,7 +68,10 @@ describe("topPickNames", () => {
   it("is what the Top picks loader hands unownedTopCards", () => {
     const src = readFileSync(join(process.cwd(), "src/lib/decks/suggestions-read.ts"), "utf8");
     const loader = src.slice(src.indexOf("export async function loadDeckSuggestions"));
-    expect(loader).toMatch(/unownedTopCards\(commanders, topPickNames\(topCards, inclusionByName\),/);
+    const call = loader.slice(loader.indexOf("await unownedTopCards("), loader.indexOf("ownedByOracleId, excludeIds"));
+    // Ranked either way: the chosen build's page (engine plan A4) or the commander page.
+    expect(call).toContain("topPickNames(build.topCards, build.inclusionByName)");
+    expect(call).toContain("topPickNames(topCards, inclusionByName)");
   });
 });
 

@@ -15,6 +15,7 @@ type Row = {
   pairRoles: string | null;
   supportRoleDigest: string | null;
   pairRoleDigest: string | null;
+  themes?: string | null;
 };
 
 const rows = vi.hoisted(() => ({
@@ -143,6 +144,19 @@ describe("readIndexGeneration", () => {
 
     rows.value = [row({ pair: "1758412800000" })];
     expect(await readIndexGeneration()).not.toBe(before);
+  });
+
+  it("moves when only the theme pages change, and reads as before with none", async () => {
+    // A resumed index run or a copy can rewrite theme pages while every commander_support stamp
+    // stands, and the Top picks shelf ranks by them (engine plan A4).
+    rows.throws = false;
+    rows.value = [row()];
+    const none = await readIndexGeneration();
+    expect(none).toBe("1758326400000.1758326400000.1758326400000.777.51234.3279.12.b6bb801b5cb08b41508be0e0af2ae1bb.e7e7e3341d5bbb5276515dc33414b658");
+    rows.value = [row({ themes: "4544-1758326400000" })];
+    const some = await readIndexGeneration();
+    rows.value = [row({ themes: "4543-1758326400000" })];
+    expect(new Set([none, some, await readIndexGeneration()]).size).toBe(3);
   });
 
   it("moves when only the identity composition is rebuilt", async () => {

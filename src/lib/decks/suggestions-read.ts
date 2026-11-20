@@ -16,6 +16,9 @@ import { withinColorIdentity } from "../cards/identity-where";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { getEdhrecData } from "../edhrec/client";
 import { byInclusion, inclusionLookup } from "../edhrec/inclusion-rank";
+import { loadBuildSupport } from "../edhrec/build-support";
+import { focusThemeSlugs } from "../strategy/edhrec-themes";
+import { parseStrategyKey } from "../strategy/focus";
 import { mergeEdhrecData } from "../edhrec/merge";
 import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
@@ -322,7 +325,20 @@ export async function loadDeckSuggestions(
     // unownedTopCards returns the full ranked list; this loader trims it to the
     // Top picks shelf, which draws SHELF_CAP like every other shelf (#391).
     const excludeIds = new Set([...commanders.map((c) => c.oracleId), ...inDeck]);
-    const eligible = await unownedTopCards(commanders, topPickNames(topCards, inclusionByName), ownedByOracleId, excludeIds);
+    // THE BUILD THE PLAYER CHOSE (engine plan A4, ruling 1): with a strategy focus, the shelf ranks the
+    // commander's stored theme page for it in place of the commander page. Order and selection only:
+    // each tile's figure stays the commander page's, which is what its copy says it is. Single
+    // commanders only (pairs are not themed); no focus, no stored page or a failed read is today's shelf.
+    const focusSlugs = hasPartner ? [] : focusThemeSlugs(parseStrategyKey(deck.strategyFocus));
+    const build = focusSlugs.length > 0 && data
+      ? await loadBuildSupport(commander.oracleId, data.tags ?? [], focusSlugs, "any")
+          .catch((err) => { console.warn("loadDeckSuggestions: no chosen build, the commander page ranks the shelf", err); return null; })
+      : null;
+    const eligible = await unownedTopCards(
+      commanders,
+      build ? topPickNames(build.topCards, build.inclusionByName) : topPickNames(topCards, inclusionByName),
+      ownedByOracleId, excludeIds,
+    );
 
     unownedSuggestions = unownedAppend(eligible).map((c) =>
       buildSuggestionPayload(

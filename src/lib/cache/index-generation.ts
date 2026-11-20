@@ -95,6 +95,11 @@ export async function readIndexGeneration(
       support: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_support)`,
       pair: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from commander_pair_support)`,
       identity: sql<string | null>`(select (extract(epoch from max(computed_at)) * 1000)::bigint from identity_composition)`,
+      // Theme pages (engine plan A4): the Top picks shelf ranks by them, and a resumed run or a copy can
+      // rewrite them while every `commander_support.computed_at` stands. Count and newest stamp, so a
+      // copy that only removes pages moves it too.
+      // Null with none, so a database before the first theme build keeps its old token.
+      themes: sql<string | null>`(select case when count(*) = 0 then null else count(*)::text || '-' || ((extract(epoch from max(computed_at)) * 1000)::bigint)::text end from commander_theme_support)`,
       staples: sql<string | null>`(select count(*) from format_staples)`,
       staplesWeight: sql<string | null>`(select coalesce(sum(commanders), 0) from format_staples)`,
       supportRoles: sql<string | null>`(select count(*) from commander_support where avg_ramp is not null)`,
@@ -126,6 +131,8 @@ export async function readIndexGeneration(
       // A digest is not a number, so it skips `generationKey`; an empty table reads null.
       row?.supportRoleDigest ?? UNSTAMPED,
       row?.pairRoleDigest ?? UNSTAMPED,
+      // Last, and only when there are theme pages: a token from before them reads the same.
+      ...(row?.themes ? [row.themes] : []),
     ];
     // All of them unstamped is the same answer the whole token gives when nothing has been
     // built, so it collapses to the constant rather than to "0.0.0.0" — one spelling for
