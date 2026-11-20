@@ -8,7 +8,7 @@ const { rowsRef, select } = vi.hoisted(() => {
 });
 vi.mock("../../db", () => ({ db: { select } }));
 
-import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, topCardCut, topPickNames, unownedAppend, unownedTopCards } from "./suggestions-read";
+import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, readChosenBuild, topCardCut, topPickNames, unownedAppend, unownedTopCards } from "./suggestions-read";
 import { SHELF_CAP } from "./shelf-cap";
 
 /**
@@ -68,7 +68,10 @@ describe("topPickNames", () => {
   it("is what the Top picks loader hands unownedTopCards", () => {
     const src = readFileSync(join(process.cwd(), "src/lib/decks/suggestions-read.ts"), "utf8");
     const loader = src.slice(src.indexOf("export async function loadDeckSuggestions"));
-    expect(loader).toMatch(/unownedTopCards\(commanders, topPickNames\(topCards, inclusionByName\),/);
+    const call = loader.slice(loader.indexOf("await unownedTopCards("), loader.indexOf("ownedByOracleId, excludeIds"));
+    // Ranked either way: the chosen build's page (engine plan A4) or the commander page.
+    expect(call).toContain("topPickNames(build.topCards, build.inclusionByName)");
+    expect(call).toContain("topPickNames(topCards, inclusionByName)");
   });
 });
 
@@ -107,5 +110,32 @@ describe("topCardCut", () => {
 
   it("keeps a nonbasic land whose name holds a basic's", () => {
     expect(topCardCut(["Forest of the Dead", "Snow-Covered Wastes", "Command Tower"])).toEqual(["forest of the dead", "command tower"]);
+  });
+});
+
+// Engine plan A4, ruling 1: the strategy focus chooses the build Top picks ranks.
+describe("readChosenBuild", () => {
+  const tags = [{ slug: "plus-1-plus-1-counters", label: "+1/+1 Counters", count: 900 }];
+  const base = { hasPartner: false, focus: "counters", commanderOracleId: "c", tags };
+  const build = { topCards: ["Hardened Scales"], inclusionByName: { "hardened scales": 60 }, synergyByName: {} };
+
+  it("reads the focus's slugs with the any join", async () => {
+    const load = vi.fn(async () => build);
+    expect(await readChosenBuild(base, load)).toEqual({ build, fellBack: false });
+    expect(load).toHaveBeenCalledWith("c", tags, ["plus-1-plus-1-counters", "counters"], "any");
+  });
+
+  it("reads nothing for a pair, no focus, a focus EDHREC has no theme for, or no tags", async () => {
+    const load = vi.fn(async () => build);
+    for (const over of [{ hasPartner: true }, { focus: null }, { focus: "haste" }, { tags: null }]) {
+      expect(await readChosenBuild({ ...base, ...over }, load)).toEqual({ build: null, fellBack: false });
+    }
+    expect(load).not.toHaveBeenCalled();
+  });
+
+  it("falls back to the commander page on a failed read, and says so", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => {});
+    const load = vi.fn(async () => { throw new Error("down"); });
+    expect(await readChosenBuild(base, load)).toEqual({ build: null, fellBack: true });
   });
 });

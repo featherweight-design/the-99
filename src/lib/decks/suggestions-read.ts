@@ -15,7 +15,11 @@ import { cards, collectionItems, deckCards } from "../../db/schema";
 import { withinColorIdentity } from "../cards/identity-where";
 import { ownedCardsWhere } from "../collection/owned-cards";
 import { getEdhrecData } from "../edhrec/client";
+import type { EdhrecData } from "../edhrec/parse";
 import { byInclusion, inclusionLookup } from "../edhrec/inclusion-rank";
+import { loadBuildSupport } from "../edhrec/build-support";
+import { focusThemeSlugs } from "../strategy/edhrec-themes";
+import { parseStrategyKey } from "../strategy/focus";
 import { mergeEdhrecData } from "../edhrec/merge";
 import { readPairSupport, resolvePairEdhrecData } from "../edhrec/pair-read";
 import { type PoolCard } from "../recs/score";
@@ -151,6 +155,9 @@ export async function unownedTopCards(
 
 export type DeckSuggestionsPayload = {
   suggestions: DeckSuggestion[];
+  /** The chosen build's read failed and the commander page ranked Top picks instead: a fallback the
+      deck page's cache must not store as the focused shelf (`readChosenBuild`). */
+  buildFellBack?: boolean;
   degraded: boolean;
   shoppingFigures: Record<string, number> | null;
   /** What this deck is compared to. Carried on the payload rather than resolved again by the
@@ -171,6 +178,26 @@ export function topPickNames(
   inclusionByName: Readonly<Record<string, number | undefined>>,
 ): string[] {
   return byInclusion(topCards, inclusionLookup(inclusionByName));
+}
+
+/**
+ * The build a deck's strategy focus chose, for the Top picks shelf (engine plan A4, ruling 1): the
+ * commander's stored theme pages for the focus's EDHREC slugs, best figure per card (`any`: the slugs
+ * are synonyms). None for a pair (pairs are not themed), no focus, no tags or no stored page. A failed
+ * read is no build too, and says so (`fellBack`), so the deck page never caches it as the focused shelf.
+ */
+export async function readChosenBuild(
+  args: { hasPartner: boolean; focus: string | null; commanderOracleId: string; tags: EdhrecData["tags"] | null },
+  load: typeof loadBuildSupport = loadBuildSupport,
+): Promise<{ build: Awaited<ReturnType<typeof loadBuildSupport>>; fellBack: boolean }> {
+  const slugs = args.hasPartner || !args.tags ? [] : focusThemeSlugs(parseStrategyKey(args.focus));
+  if (slugs.length === 0) return { build: null, fellBack: false };
+  try {
+    return { build: await load(args.commanderOracleId, args.tags ?? [], slugs, "any"), fellBack: false };
+  } catch (err) {
+    console.warn("loadDeckSuggestions: no chosen build, the commander page ranks the shelf", err);
+    return { build: null, fellBack: true };
+  }
 }
 
 /**
@@ -276,6 +303,11 @@ export async function loadDeckSuggestions(
   // engine reads already has.
   const degraded = stored ? false : results.some((r) => r.unreachable);
   const topCards = data?.topCards ?? null;
+  // THE BUILD THE PLAYER CHOSE (engine plan A4, ruling 1), read beside the owned-pool work below and
+  // awaited at the Top picks shelf.
+  const buildRead = readChosenBuild({
+    hasPartner, focus: deck.strategyFocus, commanderOracleId: commander.oracleId, tags: data?.tags ?? null,
+  });
   // Sparse: EDHREC reports a figure only for the cards it knows.
   const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
   const synergyByName: Record<string, number | undefined> = data?.synergyByName ?? {};
@@ -318,11 +350,22 @@ export async function loadDeckSuggestions(
 
   // Unowned EDHREC staples: one shelf's worth.
   let unownedSuggestions: DeckSuggestion[] = [];
+  let buildFellBack = false;
   if (topCards && topCards.length > 0) {
     // unownedTopCards returns the full ranked list; this loader trims it to the
     // Top picks shelf, which draws SHELF_CAP like every other shelf (#391).
     const excludeIds = new Set([...commanders.map((c) => c.oracleId), ...inDeck]);
-    const eligible = await unownedTopCards(commanders, topPickNames(topCards, inclusionByName), ownedByOracleId, excludeIds);
+    // With a strategy focus, the shelf ranks the commander's stored theme page for it in place of the
+    // commander page. Order and selection only: each tile's figure stays the commander page's, which
+    // is what its copy says it is. Single commanders only (pairs are not themed); no focus or no stored
+    // page is today's shelf.
+    const { build, fellBack } = await buildRead;
+    buildFellBack = fellBack;
+    const eligible = await unownedTopCards(
+      commanders,
+      build ? topPickNames(build.topCards, build.inclusionByName) : topPickNames(topCards, inclusionByName),
+      ownedByOracleId, excludeIds,
+    );
 
     unownedSuggestions = unownedAppend(eligible).map((c) =>
       buildSuggestionPayload(
@@ -381,5 +424,5 @@ export async function loadDeckSuggestions(
     if (figure !== null) shoppingFigures[row.oracleId] = figure;
   }
 
-  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures, mix };
+  return { suggestions, degraded, shoppingFigures: degraded ? null : shoppingFigures, mix, buildFellBack };
 }
