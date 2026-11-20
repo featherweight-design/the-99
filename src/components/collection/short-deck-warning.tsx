@@ -9,7 +9,6 @@
 // scrolling body, or under a 320px cap when embedded). Cancel takes focus, and the confirm is the elevated secondary, never red. The shortage figure is --danger ink, as A·E2 draws it.
 
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import type { ShortDeck } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { gotItCopy } from "../../lib/copy/i-got-it";
@@ -92,7 +91,7 @@ export function ShortDeckWarning({
   const hidden = rows.length - c.namedCount;
   const ownCancelRef = useRef<HTMLButtonElement>(null);
   const cancelRef = hostCancelRef ?? ownCancelRef;
-  const firstRevealed = useRef<HTMLAnchorElement>(null);
+  const firstRevealed = useRef<HTMLSpanElement>(null);
   // The warning replaces the confirm inside one dialog, so nothing moves focus here but this.
   // Again for each answer the server sends back: a changed warning keeps this mounted while the
   // host's pending state moved focus to the dialog itself.
@@ -143,16 +142,15 @@ export function ShortDeckWarning({
             return (
               <li key={row.deckId} className="border-b border-b-[color:var(--border)] last:border-b-0">
                 <div className="flex min-h-[44px] items-center gap-[12px] px-[14px]">
-                  {/* A new tab: the review and this warning are state a navigation would lose. */}
-                  <Link
+                  {/* The deck's name is text, not a link (#2982): a link here left the app (a new tab is the system browser in the
+                      installed app) and a same-tab one would lose the review this warning belongs to. */}
+                  <span
                     ref={showAll && index === c.namedCount ? firstRevealed : undefined}
-                    href={`/decks/${row.deckId}`}
-                    target="_blank"
-                    rel="noopener"
-                    className="min-w-0 flex-1 truncate text-[14px] text-[color:var(--fg)] underline decoration-[color:var(--border-strong)] underline-offset-2"
+                    tabIndex={showAll && index === c.namedCount ? -1 : undefined}
+                    className="min-w-0 flex-1 truncate text-[14px] text-[color:var(--fg)]"
                   >
                     {row.deckName}
-                  </Link>
+                  </span>
                   {freshDeckIds?.has(row.deckId) ? (
                     <span className="flex-none rounded-[4px] border border-[color:var(--border-strong)] px-[5px] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-muted)]">
                       {c.newTag}

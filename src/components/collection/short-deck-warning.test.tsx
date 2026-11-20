@@ -37,13 +37,11 @@ describe("ShortDeckWarning", () => {
     expect(confirm.className).not.toMatch(/accent|danger/);
   });
 
-  it("names each deck with a link that opens in a new tab, apart from the row's expand control", () => {
+  it("names each deck as plain text, never a link out of the app (#2982), apart from the row's expand control", () => {
     draw([line("a", "x", 1), line("a", "y", 2)]);
-    const link = screen.getByRole("link", { name: "Deck a" });
-    expect(link.getAttribute("href")).toBe("/decks/a");
-    expect(link.getAttribute("target")).toBe("_blank");
-    expect(link.getAttribute("rel")).toContain("noopener");
-    expect(screen.getByRole("button", { name: "2 cards short" })).not.toContainElement(link);
+    expect(screen.queryByRole("link", { name: "Deck a" })).toBeNull();
+    expect(screen.getByText("Deck a").closest("a")).toBeNull();
+    expect(screen.getByRole("button", { name: "2 cards short" })).not.toContainElement(screen.getByText("Deck a"));
   });
 
   it("one card: each row reads `short N`", () => {
@@ -94,13 +92,13 @@ describe("ShortDeckWarning", () => {
   it("`and N more` hands focus to the first row it reveals", () => {
     draw(["a", "b", "c", "d", "e"].map((id, i) => line(id, "x", 5 - i)));
     fireEvent.click(screen.getByRole("button", { name: "and 2 more decks" }));
-    expect(document.activeElement).toBe(screen.getByRole("link", { name: "Deck d" }));
+    expect(document.activeElement).toBe(screen.getByText("Deck d"));
   });
 
   it("embedded: the decks under their own heading, with no title, body or buttons", () => {
     render(<ShortDeckWarning variant="embedded" decks={[line("a", "x", 2), line("b", "x", 1)]} pending={false} />);
     expect(screen.getByRole("heading", { name: "Decks that will read short · 2" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "Deck a" })).toBeTruthy();
+    expect(screen.getByText("Deck a")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Replace anyway" })).toBeNull();
     expect(screen.queryByText(/Nothing about these decks changes/)).toBeNull();
