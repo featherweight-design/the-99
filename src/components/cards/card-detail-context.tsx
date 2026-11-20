@@ -69,8 +69,12 @@ export type CardDetailContextValue = {
      *
      * `comboVariantId`: with `combo`, the combo whose SHEET opens over the card as soon as the card lands (a feed item's or a
      * push's stored variant). A variant the card's combo list does not carry leaves the block open, as `combo` alone does.
+     *
+     * `comboOnly`: with `comboVariantId`, the combo's sheet opens ON ITS OWN, with no card details under it (the feed's combo item,
+     * small items 12 PR 3b), headed by `comboOnly.added` (the piece the reader's write added). A combo that can no longer be
+     * read falls back to the card's details, as `combo` alone opens them.
      */
-    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string } },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -203,6 +207,11 @@ export type ViewFinish = {
  */
 export function comboOpenOpts(variantId: string | null | undefined): { combo: true; comboVariantId?: string } {
   return variantId ? { combo: true, comboVariantId: variantId } : { combo: true };
+}
+
+/** `comboOpenOpts`, for the feed: the sheet opens on its own, its lead naming the piece the reader's write added. */
+export function comboSheetOpenOpts(variantId: string | null | undefined, added: string | undefined) {
+  return variantId && added ? { ...comboOpenOpts(variantId), comboOnly: { added } } : comboOpenOpts(variantId);
 }
 
 export function siblingCards(list: readonly Sibling[]): SiblingCard[] {

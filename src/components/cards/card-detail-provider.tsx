@@ -28,10 +28,11 @@ import {
   type ReactNode,
 } from "react";
 import type { BrowseCard, CardArt, PreferredPrinting } from "../../lib/collection/browse";
-import { getCardDetail } from "../../app/card-detail-action";
+import { getCardDetail, getComboSheet } from "../../app/card-detail-action";
 import { fetchCardDetail } from "../../lib/cards/fetch-card-detail";
 import type { FitsViewMemory } from "./fits-view";
 import type { CardCombo } from "../../lib/combos/near-combos";
+import { feedCopy } from "../../lib/copy/feed";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckPrintingScope } from "./card-modal";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
@@ -793,14 +794,56 @@ export function CardDetailProvider({
     getOpener: () => openerRef.current,
     resolveTarget: focusableOpener,
   });
+    // THE FEED'S COMBO, OPENED ON ITS OWN (small items 12 PR 3b): the sheet with no card under it, read by variant. It is
+  // not the card's own `comboSheet`: nothing is lifted, and a card opened from a plate stacks over it as over any sheet.
+  const [feedCombo, setFeedCombo] = useState<{ combo: CardCombo; lead: string } | null>(null);
+  const [feedComboReading, setFeedComboReading] = useState(false);
+  const [feedComboFailed, setFeedComboFailed] = useState(false);
+  // Bumped by every open and close, which is what abandons a read still in flight.
+  const feedComboRead = useRef(0);
+  const reopenAsCard = useRef<((oracleId: string, opts: { opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string }) => void) | null>(null);
+  const openFeedCombo = useCallback((oracleId: string, variantId: string, added: string, opener: HTMLElement | null | undefined) => {
+    const mine = ++feedComboRead.current;
+    setFeedComboFailed(false);
+    setFeedComboReading(true);
+    getComboSheet(variantId).then(
+      (combo) => {
+        if (feedComboRead.current !== mine) return;
+        setFeedComboReading(false);
+        // A combo that cannot be shown (a piece gone, a limit) is today's behavior: the card's details, its combo block open.
+        if (!combo) reopenAsCard.current?.(oracleId, { opener, combo: true, comboVariantId: variantId });
+        else setFeedCombo({ combo, lead: feedCopy.home.line.comboSheet(added) });
+      },
+      () => {
+        if (feedComboRead.current !== mine) return;
+        setFeedComboReading(false);
+        setFeedComboFailed(true);
+      },
+    );
+  }, []);
+  const closeFeedCombo = useCallback(() => {
+    feedComboRead.current++;
+    setFeedCombo(null);
+  }, []);
+
   const open = useCallback(
     (
       oracleId: string,
       list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string },
+      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string } },
     ) => {
       warmCardModal();
+      // Every open restates what the feed's sheet was: a new open abandons a read of it still running.
+      feedComboRead.current++;
+      setFeedComboReading(false);
+      setFeedComboFailed(false);
+      if (opts?.combo && opts.comboVariantId && opts.comboOnly) {
+        const focused = document.activeElement;
+        const opener = opts && "opener" in opts ? opts.opener : focused instanceof HTMLElement && focused !== document.body ? focused : null;
+        openFeedCombo(oracleId, opts.comboVariantId, opts.comboOnly.added, opener);
+        return;
+      }
       // The control this open came from, for the modal to hand focus back to. Set on every open, so an opener that
       // names none never inherits an older one. A caller that leaves the key out falls back to the control holding
       // focus now: the dialog's own capture is taken after the modal mounts and can read the modal's Close button,
@@ -837,8 +880,11 @@ export function CardDetailProvider({
       if (comboVariantRef.current) setComboVariantTick((n) => n + 1);
       void load(oracleId, list ?? [], atPrinting ?? null, { door: opts?.door ?? false, combo: opts?.combo ?? false });
     },
-    [load, setMinimized],
+    [load, setMinimized, openFeedCombo],
   );
+  useEffect(() => {
+    reopenAsCard.current = (oracleId, opts) => open(oracleId, undefined, undefined, opts);
+  }, [open]);
 
   // Fits your decks (swap tools PR 5b): the card the picker is open for, stacked over that card. The
   // door is drawn for a Commander-legal card and a reader with a deck, both off the card's own payload,
@@ -1228,7 +1274,7 @@ export function CardDetailProvider({
   );
 
   const sessionActive =
-    card !== null || shownPending !== null || held !== null || comboSheet !== null || fitsFor !== null || editing !== null;
+    card !== null || shownPending !== null || held !== null || comboSheet !== null || feedCombo !== null || feedComboReading || fitsFor !== null || editing !== null;
   const value = useMemo<CardDetailContextValue>(
     () => ({
       open,
@@ -1384,7 +1430,7 @@ export function CardDetailProvider({
       {children}
       {/* The fetch is invisible until the modal mounts, so the wait is announced here. */}
       <div aria-live="polite" className="sr-only">
-        {shownPending ? cardDetailCopy.loading : failed ? cardDetailCopy.unavailable : ""}
+        {shownPending || feedComboReading ? cardDetailCopy.loading : failed || feedComboFailed ? cardDetailCopy.unavailable : ""}
       </div>
       {/* The carousel's own region (handoff decision 8), separate from the one above: the
           modal is keyed per card and remounts empty on every page, so the thing that
@@ -1524,6 +1570,18 @@ export function CardDetailProvider({
           onClose={closeComboSheet}
           onAddLanded={comboAddLanded}
           onAddSettled={comboAddSettled}
+        />
+      ) : null}
+      {feedCombo ? (
+        <CardComboSheet
+          key={feedCombo.combo.variantId}
+          combo={feedCombo.combo}
+          lead={feedCombo.lead}
+          inScope={false}
+          deckId={null}
+          onClose={closeFeedCombo}
+          onAddLanded={NOOP}
+          onAddSettled={NOOP}
         />
       ) : null}
       {/* A card opened from a sheet that sits over a held card: the third layer (audit F16). */}

@@ -2,6 +2,7 @@
 
 import { sanitizeCommanderScope, sanitizeDeckScope } from "../lib/combos/deck-scope-param";
 import type { BrowseCard } from "../lib/collection/browse";
+import { loadVariantCombo, type CardCombo } from "../lib/combos/near-combos";
 import { loadCardDetail } from "../lib/collection/card-detail";
 import { currentUserId } from "../lib/auth";
 import { perfRoute } from "../lib/perf/timing";
@@ -58,4 +59,20 @@ export async function getCardDetail(
   const commanders = sanitizeCommanderScope(commanderOracleIds);
   const env = await requestFlags(userId);
   return perf.timed("loadCardDetail", () => loadCardDetail(userId, oracleId, scoped, env, commanders));
+}
+
+/**
+ * The combo sheet the feed opens on its own (small items 12 PR 3b): one stored variant, with where each piece is for
+ * the caller. Reads only the public combo index and the caller's own collection, so nothing of another reader is
+ * reachable. Null is a combo that cannot be shown (signed out, over the limit, gone, or a piece the reader no longer owns),
+ * which the provider answers with card details; a throw is a read that failed.
+ */
+export async function getComboSheet(variantId: string): Promise<CardCombo | null> {
+  const userId = await currentUserId();
+  if (userId === null) return null;
+  if (typeof variantId !== "string" || variantId.length === 0 || variantId.length > 80) return null;
+  if ((await enforceHit(userId, "card-detail")) !== null) return null;
+  const combo = await loadVariantCombo({ userId, variantId });
+  // Both halves owned is what the feed item said; a piece no longer held is a combo that is no longer there.
+  return combo && combo.others.length > 0 && combo.others.every((o) => o.state !== "notOwned") ? combo : null;
 }

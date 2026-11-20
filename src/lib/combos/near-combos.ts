@@ -595,3 +595,40 @@ function byCardVariant(rows: readonly CardComboRow[]): Map<string, CardComboRow[
   for (const r of rows) out.set(r.variant_id, [...(out.get(r.variant_id) ?? []), r]);
   return out;
 }
+
+/**
+ * Small items 12 PR 3b: ONE variant's combo with no card and no deck scope, for the sheet the feed opens on its own.
+ * Every piece is listed in `others` (none is "the card"), each with where it is for THIS reader. Reads only the
+ * public combo index and the caller's own collection. Null when the variant is gone, no longer a counted
+ * template-free 2 to 6 piece combo, or a piece is missing from the catalog.
+ */
+export async function loadVariantCombo(args: { userId: string; variantId: string }): Promise<CardCombo | null> {
+  const rows = (await db.execute(sql`
+    select v.variant_id, v.produces, v.card_count, v.mana_value_needed, v.mana_needed, v.steps,
+           v.notable_prerequisites, vc.oracle_id, c.name, vc.must_be_commander, 1 as total, c.image_uri
+    from ${spellbookVariants} v
+    join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
+    join cards c on c.oracle_id = vc.oracle_id
+    where v.variant_id = ${sql.param(args.variantId)}
+      and v.card_count between 2 and ${MAX_COMBO_PIECES}
+      and cardinality(v.requires_template_ids) = 0
+      and ${countedOutcomeSql()}
+  `)).rows as CardComboRow[];
+  if (rows.length === 0) return null;
+  const ids = rows.map((r) => r.oracle_id);
+  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids), loadPrices(ids)]);
+  // An empty card id leaves no piece out, and an empty scope holds none in a deck.
+  const shaped = shapeCardCombos(
+    rows,
+    "",
+    (p) => pieceState(p, { deck: new Set(), commanders: new Set() }, availability.get(p.oracleId)),
+    1,
+    (id) => holdingDecks(availability.get(id) ?? { claims: [] }),
+    new Set(),
+    (id) => {
+      const w = whereIs(undefined, cheapestNow(prices, id), priceState(prices.prices.get(id), prices.newestAsOf) === "soldOut", qualifierOf(prices, id));
+      return w.kind === "buy" ? w : UNPRICED;
+    },
+  );
+  return shaped.combos[0] ?? null;
+}
