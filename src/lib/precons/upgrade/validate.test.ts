@@ -23,7 +23,7 @@ describe("validateUpgrade", () => {
   it("keeps a swap whose cut is in the deck and whose add is a priced, in-cap pool card, with the catalog names", () => {
     const r = validateUpgrade([swap("weak card", "SKULLCLAMP")], { deck, pool });
     expect(r.drops).toEqual([]);
-    expect(r.kept).toEqual([{ cutId: "d2", cut: "Weak Card", addId: "p1", add: "Skullclamp", addCents: 300, reason: "does a thing", position: 0 }]);
+    expect(r.kept).toEqual([{ cutId: "d2", cut: "Weak Card", addId: "p1", add: "Skullclamp", addCents: 300, reason: "does a thing", cutReason: null, position: 0 }]);
   });
 
   it("resolves a double-faced card named by one face, and refuses a basic land as a cut", () => {
@@ -83,5 +83,14 @@ describe("buyTotalCents", () => {
   it("sums the pairs' prices in code", () => {
     expect(buyTotalCents([{ addCents: 300 }, { addCents: 700 }])).toBe(1000);
     expect(buyTotalCents([])).toBe(0);
+  });
+});
+
+describe("validateUpgrade: the reason per cut (fresh start 1/4)", () => {
+  it("carries the cut's reason trimmed, and null when the model left it out or sent only spaces", () => {
+    const r = validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: "  off-plan and slow  " }], { deck, pool });
+    expect(r.kept[0].cutReason).toBe("off-plan and slow");
+    expect(validateUpgrade([swap("weak card", "skullclamp")], { deck, pool }).kept[0].cutReason).toBeNull();
+    expect(validateUpgrade([{ ...swap("weak card", "skullclamp"), cutReason: "   " }], { deck, pool }).kept[0].cutReason).toBeNull();
   });
 });

@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNotNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull } from "drizzle-orm";
 import { db } from "../../../db";
 import { cards, decks } from "../../../db/schema";
 import { factsFor } from "../../bracket/facts";
@@ -34,12 +34,21 @@ export async function readCardFacts(oracleIds: readonly string[]): Promise<Map<s
   }));
 }
 
-/** Which of these runs the reader started a deck from: the runs a press no longer opens on. */
-export async function readStartedRuns(userId: string, runIds: readonly string[]): Promise<Set<string>> {
-  if (runIds.length === 0) return new Set();
+/** A deck the reader started from a run: what the result links to. */
+export type RunDeck = { id: string; name: string };
+
+/**
+ * The deck the reader started from each of these runs, by run id: the newest one when a run started more than one. A run
+ * absent from the map started none, and the press still opens on it.
+ */
+export async function readRunDecks(userId: string, runIds: readonly string[]): Promise<Map<string, RunDeck>> {
+  if (runIds.length === 0) return new Map();
   const rows = await db
-    .select({ run: decks.builtFromUpgradeId })
+    .select({ run: decks.builtFromUpgradeId, id: decks.id, name: decks.name })
     .from(decks)
-    .where(and(eq(decks.userId, userId), isNotNull(decks.builtFromUpgradeId), inArray(decks.builtFromUpgradeId, [...runIds])));
-  return new Set(rows.flatMap((r) => (r.run ? [r.run] : [])));
+    .where(and(eq(decks.userId, userId), isNotNull(decks.builtFromUpgradeId), inArray(decks.builtFromUpgradeId, [...runIds])))
+    .orderBy(desc(decks.createdAt), desc(decks.id));
+  const out = new Map<string, RunDeck>();
+  for (const r of rows) if (r.run && !out.has(r.run)) out.set(r.run, { id: r.id, name: r.name });
+  return out;
 }

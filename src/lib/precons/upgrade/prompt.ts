@@ -36,6 +36,8 @@ export const upgradeReplySchema = z.object({
     out: z.string().min(1).max(200),
     in: z.string().min(1).max(200),
     reason: z.string().min(1).max(240),
+    /** Why the cut card goes. Optional so a reply that leaves it out still parses; the run stores null then. */
+    cutReason: z.string().min(1).max(120).optional(),
   })).max(MAX_SWAPS + 12),
 });
 export type UpgradeReply = z.infer<typeof upgradeReplySchema>;
@@ -64,10 +66,10 @@ Rules:
 - Commit to the chosen strategy. Cut cards that serve the other themes, plus weak, off-plan or redundant cards, and replace them with cards that serve the chosen strategy. Keep a card that serves both.
 - No added card may cost more than ${money(CARD_CAP_CENTS)}; prefer cards at ${money(CARD_PREFER_CENTS)} or less. Use the price shown in the pool.
 - Hold the bracket the player chose (stated with the deck). Within it, better ramp, interaction, card advantage and a faster plan are what each swap should buy.
-- Give each swap one short reason (at most 25 words) naming what the new card does for the chosen strategy.
+- Give each swap one short reason (at most 25 words) naming what the new card does for the chosen strategy, and one shorter cut reason (at most about 15 words) naming why the card that goes out is the one to lose.
 - Reply with one JSON object and nothing else, no code fence.`;
 
-const SHAPE = `{"swaps": [{"out": "<exact deck card name>", "in": "<exact pool card name>", "reason": "<short reason>"}]}`;
+const SHAPE = `{"swaps": [{"out": "<exact deck card name>", "in": "<exact pool card name>", "reason": "<short reason>", "cutReason": "<short cut reason>"}]}`;
 
 function deckBlock(deck: readonly PromptCard[]): string {
   const lines: string[] = [`Commander: ${deck.filter((d) => d.isCommander).map((c) => c.name).join(" + ")}`];

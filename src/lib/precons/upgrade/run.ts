@@ -16,7 +16,7 @@ import type { Availability } from "../../decks/availability";
 import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } from "./inputs";
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
-import { readCardFacts, readStartedRuns, type CardFacts } from "./facts";
+import { readCardFacts, readRunDecks, type CardFacts, type RunDeck } from "./facts";
 import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
 import { recordSoftFailure } from "../../cache/soft-failure";
 import { readSwapPartners } from "./swap-partners";
@@ -36,7 +36,9 @@ export type OfferedCommander = Pick<CommanderOption, "key" | "isFace" | "cards" 
 export type PanelRun = StoredUpgrade & {
   toBuy: { cards: number; cents: number; };
   owned: number;
-  /** A deck was started from this run (`decks.built_from_upgrade_id`): the press stops opening on it, and History still lists it. */
+  /** The newest deck the reader started from this run (`decks.built_from_upgrade_id`), or null when none. */
+  deck: RunDeck | null;
+  /** A deck was started from this run (`deck !== null`): the press stops opening on it, and History still lists it. */
   started: boolean;
   /** The theme each cut came from, by the cut's oracle id: the first strategy the deck backs under this run's commander that the card supports. A cut no strategy backs has none. */
   themes: Record<string, string>;
@@ -70,8 +72,8 @@ type Deps = {
   bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
   /** The bracket facts of the list with the pairs applied and the bracket it plays at, which the hold and the reach read (`hold.ts`); null when the read fails. */
   bracketsOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<BracketRead | null>;
-  /** Which of these runs a deck was started from. */
-  started: (userId: string, runIds: readonly string[]) => Promise<Set<string>>;
+  /** The newest deck started from each of these runs, by run id. */
+  decks: (userId: string, runIds: readonly string[]) => Promise<Map<string, RunDeck>>;
   /** The mana value, color identity and bracket facts of cards by oracle id. */
   facts: (oracleIds: readonly string[]) => Promise<Map<string, CardFacts>>;
   /** Which of these cards the reader owns at all. */
@@ -90,7 +92,7 @@ export const LIVE_DEPS: Deps = {
   bracketOf,
   bracketsOf,
   facts: readCardFacts,
-  started: readStartedRuns,
+  decks: readRunDecks,
   owned: readOwnedOracleIds,
   availability: (userId, oracleIds) => loadAvailability(userId, { oracleIds: [...oracleIds] }).catch((e: unknown) => {
     // Fail-soft: no chip rather than no panel, but the response is marked as having fallen back so it is not kept as if complete.
@@ -184,7 +186,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
   const offeredNow = offered(base);
   // Every card a result row names: the pairs' cuts and adds, and the commanders (the box's and the alternate).
   const named = [...new Set([...stored.flatMap((r) => r.pairs.flatMap((p) => [p.cutId, p.addId])), ...offeredNow.flatMap((c) => c.cards.map((k) => k.oracleId))])];
-  const [owned, facts, started, availability] = await Promise.all([deps.owned(userId, named), deps.facts(named), deps.started(userId, stored.map((r) => r.id)), deps.availability(userId, named)]);
+  const [owned, facts, runDecks, availability] = await Promise.all([deps.owned(userId, named), deps.facts(named), deps.decks(userId, stored.map((r) => r.id)), deps.availability(userId, named)]);
   const runs = stored.map((r): PanelRun => {
     const buy = r.pairs.filter((p) => !owned.has(p.addId));
     const strategies = offeredNow.find((c) => r.strategyKey.startsWith(`${c.key}/`))?.strategies ?? [];
@@ -193,7 +195,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
       const t = strategies.find((st) => st.backingIds.includes(p.cutId));
       if (t) themes[p.cutId] = t.label;
     }
-    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, started: started.has(r.id) };
+    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, deck: runDecks.get(r.id) ?? null, started: runDecks.has(r.id) };
   });
   const cardsOut: Record<string, PanelCard> = {};
   for (const id of named) {

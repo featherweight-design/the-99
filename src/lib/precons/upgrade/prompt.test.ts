@@ -52,7 +52,7 @@ describe("buildUpgradePrompt", () => {
 
 describe("buildRepairPrompt", () => {
   it("names the accepted pairs and each rejected line with its reason, and asks only for the missing swaps within the room left", () => {
-    const kept = Array.from({ length: 10 }, (_, i) => ({ cutId: `c${i}`, cut: `Cut ${i}`, addId: `a${i}`, add: `Add ${i}`, addCents: 100, reason: "r", position: i }));
+    const kept = Array.from({ length: 10 }, (_, i) => ({ cutId: `c${i}`, cut: `Cut ${i}`, addId: `a${i}`, add: `Add ${i}`, addCents: 100, reason: "r", cutReason: null, position: i }));
     const { user } = buildRepairPrompt(input, kept, [{ position: 3, rule: "addInDeck", name: "Sol Ring" }, { position: 4, rule: "overCard", name: "Mana Crypt" }]);
     expect(user).toContain("- OUT Cut 0 / IN Add 0");
     expect(user).toContain('"Sol Ring" is already in the deck');
@@ -66,9 +66,23 @@ describe("upgradeReplySchema", () => {
     expect(upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why" }] }).success).toBe(true);
     expect(upgradeReplySchema.safeParse({ plan: "x" }).success).toBe(false);
   });
+
+  it("parses a reason per cut, and a swap without one (fresh start 1/4)", () => {
+    const withCut = upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why", cutReason: "slow" }] });
+    expect(withCut.success && withCut.data.swaps[0].cutReason).toBe("slow");
+    const without = upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why" }] });
+    expect(without.success && without.data.swaps[0].cutReason).toBeUndefined();
+    expect(upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why", cutReason: "" }] }).success).toBe(false);
+    expect(upgradeReplySchema.safeParse({ swaps: [{ out: "A", in: "B", reason: "why", cutReason: "x".repeat(121) }] }).success).toBe(false);
+  });
 });
 
 describe("the system prompt", () => {
+  it("asks for a shorter reason per cut, and the reply shape carries it", () => {
+    expect(UPGRADE_SYSTEM).toMatch(/shorter cut reason \(at most about 15 words\)/);
+    expect(buildUpgradePrompt(input).user).toContain('"cutReason": "<short cut reason>"');
+  });
+
   it("names no player", () => {
     expect(UPGRADE_SYSTEM).not.toMatch(/\buser\b|\bplayer's name\b|clerk/i);
   });

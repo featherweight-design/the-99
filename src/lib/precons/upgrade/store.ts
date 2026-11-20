@@ -1,4 +1,4 @@
-import { and, eq, lt, sql } from "drizzle-orm";
+import { and, eq, isNull, lt, ne, sql } from "drizzle-orm";
 
 import { db } from "../../../db";
 import { preconUpgrades } from "../../../db/schema";
@@ -124,7 +124,19 @@ export type StoredUpgrade = {
   /** The bracket the player chose; null on a run made before the choice existed. */
   bracketTarget: number | null;
   listFp: string | null;
+  /** When the result was first shown (migration 0246): null = landed, not yet shown. */
+  seenAt: Date | null;
+  /** Line ids the player unpicked (`lineId`); `[]` = every card picked. */
+  unpicked: string[];
 };
+
+/** A result line's id: `a-<addOracleId>` for an add, `c-<cutOracleId>` for a cut. */
+export type UpgradeLineId = `a-${string}` | `c-${string}`;
+
+/** The line ids a run's pairs name: the only ids `setPick` accepts for it. */
+export function lineIdsOf(pairs: readonly Pick<StoredPair, "addId" | "cutId">[]): Set<string> {
+  return new Set(pairs.flatMap((p) => [`a-${p.addId}`, `c-${p.cutId}`]));
+}
 
 /** Done runs one read returns: History lists them all, so the page never holds a count that grows without a bound. */
 const HISTORY_MAX = 30;
@@ -138,6 +150,7 @@ export async function readUpgrades(userId: string, preconFile: string): Promise<
   const { rows } = await db.execute<{
     id: string; status: string; strategy_key: string; strategy_label: string; refunded: boolean; created_at: Date; pairs: StoredPair[];
     buy_total_cents: number | null; bracket_before: number | null; bracket_after: number | null; bracket_target: number | null; list_fp: string | null;
+    seen_at: Date | null; unpicked: string[] | null;
   }>(sql`
     (select * from precon_upgrades where user_id = ${userId} and precon_file = ${preconFile} and status = 'pending' order by created_at desc limit 1)
     union all
@@ -147,7 +160,45 @@ export async function readUpgrades(userId: string, preconFile: string): Promise<
   return rows
     .map((r) => ({
       id: r.id, status: r.status as StoredUpgrade["status"], strategyKey: r.strategy_key, strategyLabel: r.strategy_label, refunded: r.refunded,
-      createdAt: new Date(r.created_at), pairs: r.pairs, buyTotalCents: r.buy_total_cents, bracketBefore: r.bracket_before, bracketAfter: r.bracket_after, bracketTarget: r.bracket_target, listFp: r.list_fp,
+      createdAt: new Date(r.created_at),
+      // A pair stored before the cut reason existed reads with none.
+      pairs: r.pairs.map((p) => ({ ...p, cutReason: p.cutReason ?? null })), buyTotalCents: r.buy_total_cents, bracketBefore: r.bracket_before, bracketAfter: r.bracket_after, bracketTarget: r.bracket_target, listFp: r.list_fp,
+      seenAt: r.seen_at === null ? null : new Date(r.seen_at), unpicked: r.unpicked ?? [],
     }))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+}
+
+/**
+ * Marks the reader's own finished run as shown: writes `seen_at` only where it is still null, so the first showing is the
+ * one kept. True when this call wrote it; false for another reader's run, a pending run, or one already seen.
+ */
+export async function markSeen(userId: string, runId: string, now = new Date()): Promise<boolean> {
+  const written = await db.update(preconUpgrades)
+    .set({ seenAt: now })
+    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), ne(preconUpgrades.status, "pending"), isNull(preconUpgrades.seenAt)))
+    .returning({ id: preconUpgrades.id });
+  return written.length > 0;
+}
+
+export type SetPickResult = { ok: true; unpicked: string[] } | { ok: false; reason: "notFound" | "unknownLine" };
+
+/**
+ * Picks or unpicks one line of the reader's own done run: an atomic jsonb remove (picked) or add (unpicked, once) on
+ * `unpicked`, so two quick presses on different lines both land. A line id the run's pairs do not name is refused, and
+ * so is another reader's run or one not done.
+ */
+export async function setPick(userId: string, runId: string, lineId: string, picked: boolean): Promise<SetPickResult> {
+  const [run] = await db.select({ pairs: preconUpgrades.pairs })
+    .from(preconUpgrades)
+    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.status, "done")));
+  if (!run) return { ok: false, reason: "notFound" };
+  if (!lineIdsOf(run.pairs).has(lineId)) return { ok: false, reason: "unknownLine" };
+  const next = picked
+    ? sql`${preconUpgrades.unpicked} - ${lineId}::text`
+    : sql`case when ${preconUpgrades.unpicked} @> jsonb_build_array(${lineId}::text) then ${preconUpgrades.unpicked} else ${preconUpgrades.unpicked} || jsonb_build_array(${lineId}::text) end`;
+  const [row] = await db.update(preconUpgrades)
+    .set({ unpicked: next })
+    .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.status, "done")))
+    .returning({ unpicked: preconUpgrades.unpicked });
+  return row ? { ok: true, unpicked: row.unpicked } : { ok: false, reason: "notFound" };
 }

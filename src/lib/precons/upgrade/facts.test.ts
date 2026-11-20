@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CardBracketFlags } from "../../bracket/flags-read";
 
 const read = vi.hoisted(() => ({
-  rows: [] as { id: string; cmc: number; identity: string[]; gameChanger: boolean }[],
+  rows: [] as unknown[],
   selected: [] as string[][],
   flags: new Map<string, CardBracketFlags>(),
   flagIds: [] as (readonly string[])[],
@@ -14,7 +14,7 @@ vi.mock("../../../db", () => ({
     select: (fields: Record<string, unknown>) => {
       read.selected.push(Object.keys(fields));
       const b: Record<string, unknown> = {};
-      for (const k of ["from", "where"]) b[k] = () => b;
+      for (const k of ["from", "where", "orderBy"]) b[k] = () => b;
       b.then = (res: (v: unknown) => unknown) => Promise.resolve(read.rows).then(res);
       return b;
     },
@@ -29,7 +29,7 @@ vi.mock("../../bracket/flags-read", () => ({
 }));
 vi.mock("../../cache/soft-failure", () => ({ recordSoftFailure: vi.fn() }));
 
-const { readCardFacts } = await import("./facts");
+const { readCardFacts, readRunDecks } = await import("./facts");
 const { recordSoftFailure } = await import("../../cache/soft-failure");
 
 const flags = (over: Partial<CardBracketFlags>): CardBracketFlags => ({
@@ -80,5 +80,25 @@ describe("readCardFacts (G19)", () => {
     expect(await readCardFacts([])).toEqual(new Map());
     expect(read.selected).toHaveLength(0);
     expect(read.flagIds).toHaveLength(0);
+  });
+});
+
+describe("readRunDecks (fresh start 1/4)", () => {
+  it("maps each run to its newest deck, reading newest first, and leaves a run with none out", async () => {
+    // The read orders newest first, so the first row seen for a run is its newest deck.
+    read.rows = [
+      { run: "r1", id: "d-new", name: "Second try" },
+      { run: "r2", id: "d-two", name: "Other" },
+      { run: "r1", id: "d-old", name: "First try" },
+    ];
+    const out = await readRunDecks("u1", ["r1", "r2", "r3"]);
+    expect(read.selected[0]).toEqual(["run", "id", "name"]);
+    expect(out).toEqual(new Map([["r1", { id: "d-new", name: "Second try" }], ["r2", { id: "d-two", name: "Other" }]]));
+    expect(out.has("r3")).toBe(false);
+  });
+
+  it("makes no read for no runs", async () => {
+    expect(await readRunDecks("u1", [])).toEqual(new Map());
+    expect(read.selected).toHaveLength(0);
   });
 });

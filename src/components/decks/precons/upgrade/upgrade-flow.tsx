@@ -17,6 +17,7 @@ import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
 import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
 import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
+import { markUpgradeSeenAction } from "../../../../lib/precons/upgrade/actions";
 import { CreditsText } from "../../../ui/credits-text";
 import { SheetGrabber } from "../../../ui/sheet-grabber";
 import { IntroStep } from "./intro-step";
@@ -144,6 +145,12 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
     if (reread.current) onReread?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per open: the flow remounts on each press.
   }, []);
+
+  // A done result on screen is seen: mark it once (only while its `seenAt` is null), so a run that landed is not offered as new again.
+  const unseenId = stage === "results" && shown && shown.status === "done" && shown.seenAt === null ? shown.id : null;
+  useEffect(() => {
+    if (unseenId) void markUpgradeSeenAction(unseenId).catch(() => undefined);
+  }, [unseenId]);
 
   // The drawn "scrolls on" cue: a fade and a mono label while a pick step has more below the fold. The review of changes draws none.
   useEffect(() => {

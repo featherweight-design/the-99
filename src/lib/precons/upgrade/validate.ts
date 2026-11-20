@@ -10,7 +10,7 @@ import { CARD_CAP_CENTS, MAX_SWAPS } from "./constants";
 export type DeckEntry = { oracleId: string; name: string; isCommander: boolean; /** A basic land: never a cut (nine copies share one id, and a basic is not what an upgrade is for). */ basic?: boolean };
 export type PoolEntry = { oracleId: string; name: string; cents: number | null };
 
-export type RawSwap = { out: string; in: string; reason: string };
+export type RawSwap = { out: string; in: string; reason: string; /** Absent when the model left it out. */ cutReason?: string | null };
 
 export type UpgradePair = {
   cutId: string;
@@ -20,6 +20,8 @@ export type UpgradePair = {
   /** The add's cheapest-printing price; null when unpriced (an unpriced add is dropped, never shown with a guess). */
   addCents: number;
   reason: string;
+  /** Why the cut card goes: null when the model gave none, and on a run stored before the field (`readUpgrades` fills the null in). */
+  cutReason: string | null;
   position: number;
 };
 
@@ -94,7 +96,7 @@ export function validateUpgrade(
     if (kept.length >= room) { overCeiling++; return; }
     cuts.add(cut.oracleId);
     adds.add(add.oracleId);
-    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), position });
+    kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), cutReason: s.cutReason?.trim() || null, position });
   });
   return { kept, drops, overCeiling };
 }
