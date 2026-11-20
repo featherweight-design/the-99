@@ -29,3 +29,36 @@ export function friendCanSeeDeck(deck: { hiddenFromFriends?: boolean; statusPill
 export function settingsHideDeck(statusPill: StatusPill, prefs: FriendDeckPrefs): boolean {
   return !friendCanSeeDeck({ hiddenFromFriends: false, statusPill }, prefs);
 }
+
+/** The Settings box a hidden-by-rule deck's way out names: the master switch, or the include-unfinished one (Settings' Your decks). */
+export type SettingsTarget = "see" | "unfinished";
+
+/** The ids Settings' Your decks puts on those two rows, so the ⋯ menu's link lands on the exact toggle. */
+export const SETTINGS_TARGET_HASH: Readonly<Record<SettingsTarget, string>> = {
+  see: "settings-decks-see",
+  unfinished: "settings-decks-unfinished",
+};
+
+/** What the ⋯ menu says about a deck Settings' rules hide (draft hidden row, #2988): why, and each way out the player really has. */
+export type HiddenWhy = {
+  why: "seeDecksOff" | "draftReady" | "draftFull" | "draftShort" | "empty" | "building";
+  /** `Commit as v1` is offered only where the deck can commit now. */
+  commit: boolean;
+  settings: SettingsTarget;
+  /** Which sentence of Settings' rule the way out names: drafts, decks being built, or every deck. */
+  label: "drafts" | "building" | "all";
+};
+
+/**
+ * Why a deck the owner's Settings rules hide is hidden, from the rule's own inputs: the master switch is tested first (it hides every
+ * deck whatever its status), then the status. `canCommit` is `firstCommitReady`'s answer. Pure.
+ */
+export function hiddenWhy(args: { statusPill: StatusPill; prefs: FriendDeckPrefs; built: number; size: number; canCommit: boolean }): HiddenWhy {
+  const { statusPill, prefs, built, size, canCommit } = args;
+  if (!prefs.seeDecks) return { why: "seeDecksOff", commit: false, settings: "see", label: "all" };
+  if (statusPill === "New") return { why: "empty", commit: false, settings: "unfinished", label: "drafts" };
+  if (statusPill === "Building") return { why: "building", commit: false, settings: "unfinished", label: "building" };
+  // A Draft: full and resolved can commit; short, over its size or unresolved cannot.
+  if (canCommit) return { why: "draftReady", commit: true, settings: "unfinished", label: "drafts" };
+  return { why: built < size ? "draftShort" : "draftFull", commit: false, settings: "unfinished", label: "drafts" };
+}

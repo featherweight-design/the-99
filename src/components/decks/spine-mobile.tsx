@@ -697,7 +697,7 @@ export function SpineMobile({
             built={built}
             placement="header"
             move={move}
-            friends={friendHide ? { hidden: friendHide.hidden, statusPill: status, prefs: friendHide.prefs } : undefined}
+            friends={friendHide ? { hidden: friendHide.hidden, statusPill: status, prefs: friendHide.prefs, built, size: bodySize, canCommit: Boolean(offerFirstCommit) } : undefined}
           />
         </div>
       )}

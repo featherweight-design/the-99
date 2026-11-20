@@ -160,9 +160,23 @@ export const socialCopy = {
   // tile's glyph and its key. Passed /copy-review.
   hideDeck: {
     row: "Hidden from friends",
-    /** Under a row the owner's Settings rules already tick; the `›` is drawn apart, hidden from a screen reader. */
-    locked: "Set in Settings",
-    lockedAria: "Hidden from friends, set in Settings. Open Settings",
+    /**
+     * A deck the owner's Settings rules already hide (draft hidden row, #2988): the row is not a checkbox it cannot untick but a
+     * block that says why, then one row per way out the player has. DRAFT: copy-review.
+     */
+    why: {
+      seeDecksOff: "Friends can’t see any of your decks.",
+      draftReady: "It’s a draft. Friends see it once you commit it.",
+      draftShort: (n: number, size: number) => `It’s a draft with ${n} of ${size} cards. Friends see it once it’s full and committed.`,
+      draftFull: "It’s a draft. Friends see it once it’s resolved and committed.",
+      empty: "It has no cards yet. Friends see it once it’s full and committed.",
+      building: (n: number, size: number) => `It’s short, ${n} of ${size} cards. Friends see it once it’s full again.`,
+    },
+    commit: "Commit as v1",
+    /** The way out in Settings, by the rule's own sentence; the sub-line says where it lands, the `›` is drawn apart. */
+    settings: { drafts: "Show drafts to friends", building: "Show decks I’m building", all: "Show my decks to friends" },
+    inSettings: "In Settings",
+    settingsAria: (label: string) => `${label}, in Settings`,
     failed: "We couldn’t change that. Your deck is unchanged.", // toast, role alert
     mark: "Hidden from friends",
     /** The /decks key's word, and what the tile's name says after its status. */

@@ -1,9 +1,11 @@
 // The ⋯ menu's Hidden from friends row (friend decks README 4 and 4b): drawn only with the switch on (the prop), above
 // Delete; unticked and ticked write the other value and close the menu; a deck the owner's Settings already hide draws
-// the row ticked and locked, and its press opens Settings without writing; a refusal is the shared toast.
+// the row replaced by a block that says why and one row per way out (draft hidden row, #2988), writing nothing; a refusal is the
+// shared toast.
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { socialCopy } from "../../lib/copy/social";
+import type { DeckFriendsHide } from "./deck-card-overflow";
 import type { StatusPill } from "../../lib/decks/status";
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 
@@ -17,8 +19,11 @@ const { DeckCardOverflow } = await import("./deck-card-overflow");
 const DEFAULTS: FriendDeckPrefs = { seeDecks: true, seeUnfinished: false };
 const w = socialCopy.hideDeck;
 
-function open(friends?: { hidden: boolean; statusPill: StatusPill; prefs: FriendDeckPrefs }, placement: "tile" | "header" = "tile") {
-  render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement={placement} friends={friends} />);
+type Hide = { hidden: boolean; statusPill: StatusPill; prefs: FriendDeckPrefs; built?: number; size?: number; canCommit?: boolean };
+const full = (f?: Hide): DeckFriendsHide | undefined => (f ? { built: 99, size: 99, canCommit: false, ...f } : undefined);
+
+function open(friends?: Hide, placement: "tile" | "header" = "tile") {
+  render(<DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement={placement} friends={full(friends)} />);
   fireEvent.click(screen.getByRole("button", { name: "Actions for Atraxa" }));
 }
 
@@ -39,7 +44,7 @@ describe("DeckCardOverflow — Hidden from friends", () => {
   it("sits directly above Delete, on a tile and in the header", () => {
     for (const placement of ["tile", "header"] as const) {
       const { unmount } = render(
-        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement={placement} friends={{ hidden: false, statusPill: "Complete", prefs: DEFAULTS }} />,
+        <DeckCardOverflow deckId="d1" deckName="Atraxa" built={99} placement={placement} friends={full({ hidden: false, statusPill: "Complete", prefs: DEFAULTS })} />,
       );
       fireEvent.click(screen.getByRole("button", { name: "Actions for Atraxa" }));
       expect(row().nextElementSibling).toBe(screen.getByRole("button", { name: "Delete" }));
@@ -65,40 +70,65 @@ describe("DeckCardOverflow — Hidden from friends", () => {
     expect(setDeckHiddenFromFriendsAction).toHaveBeenCalledWith("d1", false);
   });
 
-  it("locked when the owner's Settings hide every deck: ticked, and the press opens Settings without writing", () => {
+  const noWrite = () => expect(setDeckHiddenFromFriendsAction).not.toHaveBeenCalled();
+
+  it("the owner's Settings hide every deck: says so, no checkbox, one way out, nothing written", () => {
     open({ hidden: false, statusPill: "Complete", prefs: { seeDecks: false, seeUnfinished: false } });
     expect(screen.queryByRole("checkbox", { name: w.row })).toBeNull();
-    const link = screen.getByRole("link", { name: w.lockedAria });
-    expect(link.getAttribute("href")).toBe("/settings");
-    expect(link.textContent).toContain(w.locked);
-    expect(link.querySelector("[data-hide-box]")!.className).toContain("bg-[color:var(--fg-locked)]");
+    expect(document.querySelector("[data-hide-from-friends=why]")!.textContent).toContain(w.why.seeDecksOff);
+    expect(screen.queryByRole("link", { name: new RegExp(w.commit) })).toBeNull();
+    const link = screen.getByRole("link", { name: w.settingsAria(w.settings.all) });
+    expect(link.getAttribute("href")).toBe("/settings#settings-decks-see");
+    expect(link.textContent).toContain(w.inSettings);
     fireEvent.click(link);
-    expect(setDeckHiddenFromFriendsAction).not.toHaveBeenCalled();
+    noWrite();
   });
 
-  it("locked on an unfinished deck while drafts are not included", () => {
-    open({ hidden: false, statusPill: "Draft", prefs: DEFAULTS });
-    expect(screen.getByRole("link", { name: w.lockedAria })).toBeTruthy();
+  // The README table, row by row (draft hidden row #2988).
+  it.each([
+    ["a full, resolved Draft", { statusPill: "Draft", built: 99, size: 99, canCommit: true }, w.why.draftReady, true, "drafts", "unfinished"],
+    ["a short Draft", { statusPill: "Draft", built: 40, size: 99, canCommit: false }, w.why.draftShort(40, 99), false, "drafts", "unfinished"],
+    ["a Draft past its size", { statusPill: "Draft", built: 104, size: 99, canCommit: false }, w.why.draftFull, false, "drafts", "unfinished"],
+    ["a New deck", { statusPill: "New", built: 0, size: 99, canCommit: false }, w.why.empty, false, "drafts", "unfinished"],
+    ["a Building deck", { statusPill: "Building", built: 97, size: 99, canCommit: false }, w.why.building(97, 99), false, "building", "unfinished"],
+  ] as const)("%s: the line, the Commit row only where it can commit, and the exact Settings box", (_name, deck, line, commit, label, target) => {
+    open({ hidden: false, prefs: DEFAULTS, ...deck });
+    expect(screen.queryByRole("checkbox", { name: w.row })).toBeNull();
+    expect(document.querySelector("[data-hide-from-friends=why]")!.textContent).toContain(line);
+    const offer = document.querySelector<HTMLAnchorElement>("[data-hide-from-friends=commit]");
+    expect(offer !== null).toBe(commit);
+    if (offer) expect(offer.getAttribute("href")).toBe("/decks/d1/changes?commit=1");
+    const link = screen.getByRole("link", { name: w.settingsAria(w.settings[label]) });
+    expect(link.getAttribute("href")).toBe(`/settings#settings-decks-${target}`);
+    noWrite();
+  });
+
+  it("every way out is a link and the block is not a control", () => {
+    open({ hidden: false, statusPill: "Draft", prefs: DEFAULTS, canCommit: true });
+    const why = document.querySelector("[data-hide-from-friends=why]")!;
+    expect(why.tagName).toBe("DIV");
+    expect(why.querySelector("a, button, [role=checkbox]")).toBeNull();
+    expect(document.querySelectorAll("[data-hide-from-friends] a, a[data-hide-from-friends]").length).toBe(2);
   });
 
   // Close-out: a deck hidden on its own stays a ticked checkbox whatever Settings says, so its flag can be cleared.
-  it("never locked on a deck hidden on its own, even one Settings also hides: a press clears its flag", () => {
+  it("never explained on a deck hidden on its own, even one Settings also hides: a press clears its flag", () => {
     open({ hidden: true, statusPill: "Draft", prefs: { seeDecks: false, seeUnfinished: false } });
-    expect(screen.queryByRole("link", { name: w.lockedAria })).toBeNull();
+    expect(document.querySelector("[data-hide-from-friends=why]")).toBeNull();
     expect(row().getAttribute("aria-checked")).toBe("true");
     fireEvent.click(row());
     expect(setDeckHiddenFromFriendsAction).toHaveBeenCalledWith("d1", false);
   });
 
-  it("not locked on a finished deck", () => {
+  it("not explained on a finished deck", () => {
     open({ hidden: false, statusPill: "Complete", prefs: DEFAULTS });
-    expect(screen.queryByRole("link", { name: w.lockedAria })).toBeNull();
+    expect(document.querySelector("[data-hide-from-friends=why]")).toBeNull();
     expect(row()).toBeTruthy();
   });
 
-  it("not locked on a draft once drafts are included", () => {
+  it("not explained on a draft once drafts are included", () => {
     open({ hidden: false, statusPill: "Building", prefs: { seeDecks: true, seeUnfinished: true } });
-    expect(screen.queryByRole("link", { name: w.lockedAria })).toBeNull();
+    expect(document.querySelector("[data-hide-from-friends=why]")).toBeNull();
     expect(row()).toBeTruthy();
   });
 

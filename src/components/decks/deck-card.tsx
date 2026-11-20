@@ -3,6 +3,7 @@ import { IntentPrefetchLink } from "../ui/intent-prefetch-link";
 import { PendingReporter } from "../shell/pending-reporter";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
+import { firstCommitReady } from "../../lib/decks/first-commit";
 import { countStatus, type StatusPill } from "../../lib/decks/status";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
@@ -425,7 +426,18 @@ export function DeckCard({
             closeAfterCreate,
           }}
           onAmong={onAmong}
-          friends={friendPrefs ? { hidden: deck.hiddenFromFriends === true, statusPill: deck.statusPill, prefs: friendPrefs } : undefined}
+          friends={
+            friendPrefs
+              ? {
+                  hidden: deck.hiddenFromFriends === true,
+                  statusPill: deck.statusPill,
+                  prefs: friendPrefs,
+                  built: deck.built,
+                  size: bodySize,
+                  canCommit: firstCommitReady({ versionNumber: deck.versionNumber, built: deck.built, bodySize, unresolved: deck.unresolvedCount }),
+                }
+              : undefined
+          }
         />
       </DeckTileArt>
 

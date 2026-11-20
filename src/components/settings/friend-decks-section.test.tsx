@@ -68,3 +68,45 @@ describe("Your decks", () => {
     expect(screen.getByRole("alert").textContent).toContain(C.failed);
   });
 });
+
+// Where a deck's ⋯ menu lands (draft hidden row, #2988): the exact box scrolls into view and is washed for two seconds.
+describe("the landing from a deck's menu", () => {
+  const prefs = { seeDecks: true, seeUnfinished: false };
+  const rowOf = (name: "see" | "unfinished") => document.querySelector<HTMLElement>(`[data-friend-decks-row=${name}]`)!;
+  beforeEach(() => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+    window.location.hash = "";
+  });
+
+  it("gives each row the id the menu links to", () => {
+    render(<FriendDecksSection prefs={prefs} />);
+    expect(rowOf("see").id).toBe("settings-decks-see");
+    expect(rowOf("unfinished").id).toBe("settings-decks-unfinished");
+  });
+
+  it("scrolls the named row into view and washes it for two seconds, then lets it go", () => {
+    window.location.hash = "#settings-decks-unfinished";
+    render(<FriendDecksSection prefs={prefs} />);
+    expect(rowOf("unfinished").hasAttribute("data-washed")).toBe(true);
+    expect(rowOf("see").hasAttribute("data-washed")).toBe(false);
+    expect(Element.prototype.scrollIntoView).toHaveBeenCalledTimes(1);
+    act(() => {
+      vi.advanceTimersByTime(2100);
+    });
+    expect(rowOf("unfinished").hasAttribute("data-washed")).toBe(false);
+  });
+
+  it("washes the master switch's row for #settings-decks-see, and nothing for the bare heading anchor", () => {
+    window.location.hash = "#settings-decks-see";
+    const { unmount } = render(<FriendDecksSection prefs={prefs} />);
+    expect(rowOf("see").hasAttribute("data-washed")).toBe(true);
+    unmount();
+    window.location.hash = "#settings-decks";
+    render(<FriendDecksSection prefs={prefs} />);
+    expect(document.querySelector("[data-washed]")).toBeNull();
+  });
+});
