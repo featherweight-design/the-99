@@ -201,7 +201,7 @@ describe("themeSlugsToFetch", () => {
 describe("toThemeSupportRows", () => {
   const nameIndex = buildNameIndex([
     { oracleId: "sol", name: "Sol Ring" },
-    { oracleId: "gisa", name: GISA.name },
+    { oracleId: GISA.oracleId, name: GISA.name },
   ]);
   const theme = { slug: "zombies", label: "Zombies", count: 567 };
 
