@@ -615,9 +615,12 @@ export function ComboBody({
   stats,
   siblings: allSiblings,
   oneAway,
+  untitled = false,
 }: {
   combo: ComboModal;
   art: FindingArt;
+  /** The sheet's head already names the pair (the feed's `.hd2`, small items 12 PR 3b): the body drops its own title. */
+  untitled?: boolean;
   stats?: React.ReactNode;
   siblings?: readonly Sibling[];
   oneAway?: {
@@ -676,6 +679,7 @@ export function ComboBody({
           ))}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-[12px]">
+          {untitled ? null : (
           <h3
             className="m-0 flex flex-wrap items-center gap-x-[8px] font-display font-bold text-[18px] md:text-[19px] leading-[1.25]"
             style={{ color: "var(--fg)" }}
@@ -709,6 +713,7 @@ export function ComboBody({
               </span>
             ))}
           </h3>
+          )}
           {combo.produces.length > 0 ? (
             <ul className="m-0 p-0 list-none flex flex-wrap gap-[6px]">
               {combo.produces.map((p) => (

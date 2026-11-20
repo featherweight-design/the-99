@@ -17,8 +17,10 @@ import { printedNameOf, resolvedPrinting } from "../../lib/collection/browse";
 import { holdingDecks } from "../../lib/combos/holding-decks";
 import type { CardCombo, CardComboWhere } from "../../lib/combos/near-combos";
 import { combosCloseCopy } from "../../lib/copy/combos-close";
+import { feedCopy } from "../../lib/copy/feed";
 import { DECK_ADD_FALLBACK_MESSAGE } from "../../lib/decks/mutation-result";
 import { priceOf, priceQualifier, priceState } from "../../lib/decks/price";
+import { ComboGlyph } from "./combo-glyph";
 import { MissingPieceWhereLine } from "../decks/combo-where-line";
 import { MutationError } from "../decks/mutation-error";
 import { ComboBody, ModalChrome, type FindingArt } from "../decks/receipt-modal";
@@ -76,6 +78,7 @@ export function offersAdd(combo: CardCombo, inScope: boolean, deckId: string | n
 
 export function CardComboSheet({
   card,
+  lead,
   combo,
   inScope,
   deckId,
@@ -83,8 +86,13 @@ export function CardComboSheet({
   onAddLanded,
   onAddSettled,
 }: {
-  /** The card the combo was opened from, under the sheet. */
-  card: BrowseCard;
+  /**
+   * The card the combo was opened from, under the sheet. Absent for the combo the feed opens on its own (small items 12
+   * PR 3b): the `.hd2` head in place of the way back, both pieces' where-lines from `combo.others`, and no Add.
+   */
+  card?: BrowseCard;
+  /** The `.hd2` head's lead, with no card (the feed item's line). */
+  lead?: string;
   combo: CardCombo;
   /** The deck in scope lists the card (the block's split). */
   inScope: boolean;
@@ -97,16 +105,18 @@ export function CardComboSheet({
   onAddSettled: () => void;
 }) {
   const partner = combo.others[0];
-  const name = printedNameOf(card);
-  // The opened card first, then the partner: the line reads `with {partner}` (OPEN-10).
-  const pieces = [{ oracleId: card.oracleId, name }, ...(partner ? [{ oracleId: partner.oracleId, name: partner.name }] : [])];
+  const name = card ? printedNameOf(card) : "";
+  // The opened card first, then the partner: the line reads `with {partner}` (OPEN-10). With no card, every piece is in `others`.
+  const pieces = card
+    ? [{ oracleId: card.oracleId, name }, ...(partner ? [{ oracleId: partner.oracleId, name: partner.name }] : [])]
+    : combo.others.map((o) => ({ oracleId: o.oracleId, name: o.name }));
   const art: FindingArt = new Map([
-    [card.oracleId, { name, imageUri: resolvedPrinting(card)?.imageUri ?? card.imageUri }],
-    ...(partner ? [[partner.oracleId, { name: partner.name, imageUri: partner.imageUri }] as const] : []),
+    ...(card ? [[card.oracleId, { name, imageUri: resolvedPrinting(card)?.imageUri ?? card.imageUri }] as const] : []),
+    ...(card ? (partner ? [partner] : []) : combo.others).map((o) => [o.oracleId, { name: o.name, imageUri: o.imageUri }] as const),
   ]);
   const title = copy.detail.name(pieces.map((p) => p.name));
-  const back = copy.card.backAria(name);
-  const add = partner && offersAdd(combo, inScope, deckId) ? partner : null;
+  const back = card ? copy.card.backAria(name) : "";
+  const add = card && partner && offersAdd(combo, inScope, deckId) ? partner : null;
 
   const { isPending, error, run } = useDeckMutation(false, DECK_ADD_FALLBACK_MESSAGE);
   // Back to the card only once the action's transition has settled, which for a revalidating action
@@ -124,21 +134,43 @@ export function CardComboSheet({
       onClose={onClose}
       width={760}
       // `.bk2`, as the combo pushed inside the deck's list draws it: `← {card}` and the close, the
-      // title spoken only (the body's own heading names the combo).
-      back={{ label: name, aria: back, onBack: onClose }}
-      // Lifts the card into the held slot under the sheet (its header is `back`'s, which wins).
-      overCard={{ name, backAria: back }}
+      // title spoken only (the body's own heading names the combo). With no card, `.hd2` instead: the feed
+      // kind's name over the pair (with the lemniscate) and the item's line, and a bare close.
+      {...(card
+        ? {
+            back: { label: name, aria: back, onBack: onClose },
+            // Lifts the card into the held slot under the sheet (its header is `back`'s, which wins).
+            overCard: { name, backAria: back },
+          }
+        : {
+            eyebrow: feedCopy.news.kinds.combo.name,
+            lead,
+            titleNode: (
+              <span className="flex flex-wrap items-center gap-x-[8px]">
+                <ComboGlyph />
+                {pieces.map((p, i) => (
+                  <span key={p.oracleId}>
+                    {i > 0 ? <span className="font-normal text-[color:var(--fg-faint)]"> + </span> : null}
+                    {p.name}
+                  </span>
+                ))}
+              </span>
+            ),
+          })}
     >
       <div data-card-combo={combo.variantId}>
         <ComboBody
           combo={nearComboModal({ ...combo, pieces })}
           art={art}
+          untitled={!card}
           oneAway={{
             platesInert: isPending,
             // Outlined only where the deck lacks it: a whole combo has no missing piece.
-            missingOracleId: inScope && partner && partner.state !== "inDeck" ? partner.oracleId : undefined,
-            stillOracleId: card.oracleId,
+            missingOracleId: card && inScope && partner && partner.state !== "inDeck" ? partner.oracleId : undefined,
+            stillOracleId: card?.oracleId,
             where: (oracleId) => {
+              // No card: both plates say where the reader's copy is, from the same decision (`MissingPieceWhere`).
+              if (!card) return <MissingPieceWhereLine where={combo.others.find((o) => o.oracleId === oracleId)?.where ?? { kind: "spare" }} on="plate" />;
               const where = oracleId === card.oracleId ? openedCardWhere(card, inScope) : (partner?.where ?? { kind: "spare" });
               return where ? <MissingPieceWhereLine where={where} on="plate" /> : null;
             },

@@ -199,6 +199,8 @@ export const feedCopy = {
       spareRequest: "Answer in Friends.",
       /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */
       combo: (added: string) => `You added ${added}.`,
+      /** The lead of the combo sheet the feed opens on its own (small items 12 PR 3b); the second sentence is a DRAFT for `/copy-review`. */
+      comboSheet: (added: string) => `You added ${added}. You own both halves now.`,
       /** A Commander decklists post's mono count of lists out, under its summary (board `Row-States` §5). */
       listsSoFar: (n: number, of: number) => `${n} of ${of} ${of === 1 ? "list" : "lists"} so far`,
       /** One list is just "1 list": "All 1 lists" read as a defect. */
