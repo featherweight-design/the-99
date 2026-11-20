@@ -11,8 +11,9 @@ const FOCUS_SLUGS: Readonly<Record<string, readonly string[]>> = {
   tokens: ["tokens"],
   treasure: ["treasure"],
   blink: ["blink", "flicker"],
-  recursion: ["reanimator", "graveyard"],
-  mill: ["mill", "self-mill"],
+  recursion: ["reanimator"],
+  // Milling opponents. Not `self-mill`, whose cards fill your own graveyard.
+  mill: ["mill"],
   sacOutlet: ["aristocrats", "sacrifice"],
   deathTrigger: ["aristocrats"],
   drain: ["aristocrats"],
@@ -25,7 +26,8 @@ const FOCUS_SLUGS: Readonly<Record<string, readonly string[]>> = {
   poison: ["infect", "poison"],
   goad: ["goad"],
   clones: ["clones"],
-  draw: ["card-draw", "wheels"],
+  // Not `wheels`: a wheel's high inclusion among wheel decks would crowd out draw engines.
+  draw: ["card-draw"],
   artifacts: ["artifacts"],
   enchantments: ["enchantments", "enchantress"],
   voltron: ["voltron", "equipment", "auras"],

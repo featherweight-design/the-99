@@ -26,14 +26,14 @@ describe("blendThemePages", () => {
   it("weighs each page by its decks under all, a card a page lacks counting 0 there", () => {
     const r = blendThemePages([a, b], "all")!;
     expect(r.inclusionByName).toEqual({ teferi: 45, "sol ring": 70, "doubling season": 22.5 });
-    expect(r.topCards).toEqual(["Sol Ring", "Teferi", "Doubling Season"]);
+    // First-seen order: the caller ranks.
+    expect(r.topCards).toEqual(["Teferi", "Sol Ring", "Doubling Season"]);
   });
 
   it("takes each card's best page under any", () => {
     const r = blendThemePages([a, b], "any")!;
     expect(r.inclusionByName).toEqual({ teferi: 60, "sol ring": 80, "doubling season": 90 });
     expect(r.synergyByName["doubling season"]).toBe(0.4);
-    expect(r.topCards[0]).toBe("Doubling Season");
   });
 
   it("is one page itself, and nothing for no pages", () => {

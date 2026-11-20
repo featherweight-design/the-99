@@ -38,16 +38,19 @@ export function themeSlugsFor(choices: readonly string[], tags: readonly EdhrecT
  * Several theme pages as one support list. `all` (a build of every chosen theme) weighs each page by
  * its deck count, a card a page does not list counting as 0 there; `any` takes each card's best page.
  * Synergy follows the same rule over the pages that report one. One page is itself under both.
- * `topCards` is in blended-inclusion order, highest first.
+ * `topCards` is in first-seen order: the caller ranks.
  */
 export function blendThemePages(pages: readonly ThemePage[], join: BuildJoin): BuildSupport | null {
   if (pages.length === 0) return null;
   const total = pages.reduce((n, p) => n + p.deckCount, 0);
   const inc = new Map<string, number>();
   const syn = new Map<string, { sum: number; weight: number; best: number }>();
+  // First-seen order. The caller ranks (`topPickNames`, `byInclusion`): one ranking rule, not two.
+  const names = new Map<string, string>();
   for (const page of pages) {
     for (const c of page.cards) {
       const key = c.name.toLowerCase();
+      if (!names.has(key)) names.set(key, c.name);
       if (c.inclusion !== null && Number.isFinite(c.inclusion)) {
         const prior = inc.get(key) ?? 0;
         inc.set(key, join === "all" ? prior + c.inclusion * page.deckCount : Math.max(prior, c.inclusion));
@@ -62,12 +65,7 @@ export function blendThemePages(pages: readonly ThemePage[], join: BuildJoin): B
   for (const [k, v] of inc) inclusionByName[k] = Math.round((join === "all" ? v / total : v) * 10) / 10;
   const synergyByName: Record<string, number> = {};
   for (const [k, s] of syn) synergyByName[k] = join === "all" ? s.sum / s.weight : s.best;
-  const names = new Map<string, string>();
-  for (const page of pages) for (const c of page.cards) if (!names.has(c.name.toLowerCase())) names.set(c.name.toLowerCase(), c.name);
-  const topCards = [...names.entries()]
-    .sort(([a], [b]) => (inclusionByName[b] ?? -1) - (inclusionByName[a] ?? -1))
-    .map(([, name]) => name);
-  return { topCards, inclusionByName, synergyByName };
+  return { topCards: [...names.values()], inclusionByName, synergyByName };
 }
 
 /**
@@ -94,9 +92,12 @@ export async function loadBuildSupport(
       .innerJoin(cards, eq(cards.oracleId, commanderThemeSupportCards.oracleId))
       .where(and(eq(commanderThemeSupportCards.commanderOracleId, commanderOracleId), inArray(commanderThemeSupportCards.slug, slugs))),
   ]);
-  const pages: ThemePage[] = headers.map((h) => ({
-    slug: h.slug, deckCount: h.deckCount,
-    cards: rows.filter((r) => r.slug === h.slug).map((r) => ({ name: r.name, inclusion: r.inclusion, synergy: r.synergy })),
-  }));
+  const bySlug = new Map<string, ThemePage["cards"]>();
+  for (const r of rows) {
+    const list = bySlug.get(r.slug) ?? [];
+    list.push({ name: r.name, inclusion: r.inclusion, synergy: r.synergy });
+    bySlug.set(r.slug, list);
+  }
+  const pages: ThemePage[] = headers.map((h) => ({ slug: h.slug, deckCount: h.deckCount, cards: bySlug.get(h.slug) ?? [] }));
   return blendThemePages(pages.filter((p) => p.cards.length > 0), join);
 }
