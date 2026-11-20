@@ -297,6 +297,30 @@ export const collectionEditCopy = {
     changed:
       "This changed while you were deciding. Your collection was edited somewhere else, so here’s the answer as of now. Nothing was saved.",
     newTag: "new",
+    /**
+     * The removal chooser (#2983, handoff `addendum-removal-chooser`, R1/R2): shown only when exactly one copy is left and
+     * two or more committed decks list the card. The player marks the decks that go SHORT; the one unmarked deck keeps the copy
+     * (its reservation). DRAFT for /copy-review: the handoff's strings.
+     */
+    chooser: {
+      body: (card: string, k: number, n: number) =>
+        n === 1
+          ? `${k} decks list ${card} and 1 copy will be left. Pick the one that goes short. Its list stays the same, and ${card} goes on its shopping list.`
+          : `${k} decks list ${card} and 1 copy will be left. Pick the ${n} that go short. Their lists stay the same, and ${card} goes on their shopping lists.`,
+      heading: (n: number) => (n === 1 ? "Which deck goes short" : `Which ${n} decks go short`),
+      tally: (picked: number, n: number) => `${picked} of ${n} picked`,
+      rowSub: (listed: number, date: string) => `lists ${listed} · committed it ${date}`,
+      rowSubUndated: (listed: number) => `lists ${listed}`,
+      keeperRefused: "That deck can’t hold the copy any more. Nothing was saved.",
+      short: "short 1",
+      keeps: "keeps it",
+      footerDefault: (short: string, keepers: string, count: number) => `${short} ${count === 1 ? "goes" : "go"} short because ${keepers} committed it first. Pick another deck to change that.`,
+      footerPicked: (short: string, keepers: string) => `You picked ${short} to go short. ${keepers} keeps its copy.`,
+      footerMore: (m: number) => `Pick ${m} more to go short.`,
+      refusal: (n: number) => `${n} decks are already going short. Untick one first.`,
+      back: "Back to first committed",
+      groupAria: (card: string) => `Decks that go short on ${card}`,
+    },
     catalogFailure: (names: string[]) =>
       `${names.join(", ")} ${names.length === 1 ? "has" : "have"} been removed from the card catalog since this file was read. Nothing was changed.`,
   },
