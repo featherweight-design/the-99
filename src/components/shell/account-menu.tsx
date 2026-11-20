@@ -679,7 +679,7 @@ export function AccountMenu({
           />
         ))}
       {open && picking && (
-        <SignaturePicker current={face?.commander ?? null} onSave={saveFace} onClose={() => setPicking(false)} returnFocusRef={faceRef} />
+        <SignaturePicker current={face?.commander ?? null} onSave={saveFace} onClose={() => setPicking(false)} returnFocusRef={faceRef} raised />
       )}
     </div>
   );

@@ -55,6 +55,7 @@ export function SignaturePicker({
   returnFocusRef,
   toast,
   clearable = true,
+  raised = false,
 }: {
   /** The face now, with the pick behind it: outlined in the deck row and on its printings screen. */
   current: OwnCommander | null;
@@ -67,6 +68,8 @@ export function SignaturePicker({
   toast?: ReactNode;
   /** "Use initials instead" with a face: /friends' to offer. Home opens the picker to ask for a card, not to clear one. */
   clearable?: boolean;
+  /** Drawn above the account menu's sheet (z-50), which it opens over (small items 12, item 2). */
+  raised?: boolean;
 }) {
   const search = useRef<HTMLInputElement>(null);
   const listId = useId();
@@ -195,6 +198,7 @@ export function SignaturePicker({
 
   return (
     <SocialModal
+      raised={raised}
       title={onPrintings ? cardName : s.title}
       sub={onPrintings ? s.printingsSub(count) : s.sub}
       closeLabel={socialCopy.page.close}
