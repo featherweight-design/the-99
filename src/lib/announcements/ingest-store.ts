@@ -2,13 +2,14 @@
  * The database half of the Announcements ingest (`ingest.ts`): kept thin, every decision is made in the pure half.
  * Catalog family: one row per post, nothing per account. Reads `cards` read-only for name matching.
  */
-import { and, eq, sql, type SQL } from "drizzle-orm";
+import { and, eq, gt, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
+import { cards, sets, wizardsAnnouncementDecklists, wizardsAnnouncements, wizardsCollectingPosts } from "../../db/schema";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { isGameCardWhere } from "../cards/game-card-where";
+import { ANNOUNCED_SET_TYPE, utcDay } from "../precons/upcoming";
 import type { AnnouncementFeedKind } from "../feed/kinds";
-import type { IngestStore, KnownPost, ParseStatus, StoredDecklist } from "./ingest";
+import type { CollectingStore, IngestStore, KnownPost, ParseStatus, StoredDecklist } from "./ingest";
 
 /** A sale column a re-read leaves alone unless it brings an hour or a new day (see `save`). */
 const keepTime = (col: SQL) =>
@@ -115,5 +116,29 @@ export const announcementsStore: IngestStore = {
   async stampCatalog() {
     // Never throws: a failed stamp costs one hour's staleness, never the ingest (`stamp-catalog.ts`).
     await stampCatalogRefresh();
+  },
+};
+
+/** The collecting-post pass's store: the upcoming Commander sets (`upcomingSetsQuery`'s rule) and the posts read so far. */
+export const collectingStore: CollectingStore = {
+  async readUpcomingSetNames(now) {
+    const rows = await db
+      .select({ name: sets.name })
+      .from(sets)
+      .where(and(eq(sets.setType, ANNOUNCED_SET_TYPE), eq(sets.digital, false), gt(sets.releasedAt, utcDay(now))));
+    return rows.map((r) => r.name);
+  },
+  async readKnown() {
+    return db.select({ url: wizardsCollectingPosts.url, lastmod: wizardsCollectingPosts.lastmod }).from(wizardsCollectingPosts);
+  },
+  async save(post) {
+    const values = { ...post, lastFetchedAt: new Date(post.lastFetchedAt) };
+    await db
+      .insert(wizardsCollectingPosts)
+      .values(values)
+      .onConflictDoUpdate({
+        target: wizardsCollectingPosts.url,
+        set: { slug: values.slug, title: values.title, lastmod: values.lastmod, deckNames: values.deckNames, lastFetchedAt: values.lastFetchedAt },
+      });
   },
 };

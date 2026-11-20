@@ -4732,3 +4732,19 @@ export const wizardsAnnouncementDecklists = pgTable("wizards_announcement_deckli
   check("wizards_announcement_decklists_partner_role_check", sql`(${t.partnerRole} is null and ${t.partnerName} is null) or (${t.partnerRole} in ('co-commander', 'alternate') and ${t.partnerName} is not null)`),
   check("wizards_announcement_decklists_position_check", sql`${t.position} >= 0`),
 ]);
+
+/**
+ * A "Collecting <set>" feature post (`magic.wizards.com/en/news/feature/collecting-*`), kept only for the deck NAMES it
+ * lists under its Commander Decks heading (`collecting.ts`). Catalog family, one row per post, nothing per account. Only
+ * posts about a set still upcoming are fetched; a post with no such section is stored with no names so its `lastmod` stops
+ * it being fetched again. Matched to a set by slug at read time (`collectingMatchesSet`): there is no FK, as no set row
+ * need exist for a post to.
+ */
+export const wizardsCollectingPosts = pgTable("wizards_collecting_posts", {
+  url: text("url").primaryKey(),
+  slug: text("slug").notNull(),
+  title: text("title").notNull(),
+  lastmod: text("lastmod"),
+  deckNames: text("deck_names").array().notNull().default(sql`'{}'::text[]`),
+  lastFetchedAt: timestamp("last_fetched_at", { withTimezone: true }).notNull(),
+});

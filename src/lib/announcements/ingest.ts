@@ -23,7 +23,8 @@ import { buildNameIndex, matchCardName } from "./match-names";
 import { secondLineRole, type CommanderFacts } from "./pairing";
 import { parseOnSale } from "./on-sale";
 import { parsePost, type AnnouncementPost } from "./post";
-import { announcementPosts, SITEMAP_URL, type SitemapEntry } from "./sitemap";
+import { announcementPosts, parseSitemap, SITEMAP_URL, type SitemapEntry } from "./sitemap";
+import { collectingMatchesSet, collectingPosts, parseCommanderDeckNames } from "./collecting";
 
 export const USER_AGENT = "The99/1.0 (Commander companion; announcements ingest)";
 
@@ -114,6 +115,17 @@ export type IngestStore = {
   stampCatalog(): Promise<void>;
 };
 
+/** A "Collecting <set>" feature post as stored (`collecting.ts`): its deck names, empty when it lists none yet. */
+export type CollectingRecord = { url: string; slug: string; title: string; lastmod: string | null; deckNames: string[]; lastFetchedAt: string };
+
+/** The database half of the collecting-post pass; optional on `IngestDeps` so a run without it reads announcements alone. */
+export type CollectingStore = {
+  /** The names of the Commander sets still upcoming: the only sets whose collecting posts are worth a fetch. */
+  readUpcomingSetNames(now: Date): Promise<string[]>;
+  readKnown(): Promise<{ url: string; lastmod: string | null }[]>;
+  save(post: CollectingRecord): Promise<void>;
+};
+
 export type IngestAlert =
   | { kind: "sitemap-unreadable"; status: number | null }
   | { kind: "fetch-failed"; url: string; status: number | null }
@@ -124,6 +136,8 @@ export type IngestAlert =
 export type IngestDeps = {
   fetchText(url: string, init: { headers: Record<string, string> }): Promise<{ status: number; text: string }>;
   store: IngestStore;
+  /** Reads the deck names of an upcoming set's collecting post; absent, the pass is skipped. */
+  collecting?: CollectingStore;
   alert(alert: IngestAlert): void;
   now(): Date;
   sleep(ms: number): Promise<void>;
@@ -297,6 +311,21 @@ export function announcementRecord(
   };
 }
 
+/**
+ * The collecting posts due a fetch: those about a set still upcoming (`collectingMatchesSet`) that are new to the store or
+ * edited since. Reads the upcoming sets only when the sitemap lists a collecting post at all.
+ */
+async function collectingDue(store: CollectingStore, entries: SitemapEntry[], at: Date) {
+  const posts = collectingPosts(entries);
+  if (posts.length === 0) return [];
+  const names = await store.readUpcomingSetNames(at);
+  if (names.length === 0) return [];
+  const known = new Map((await store.readKnown()).map((k) => [k.url, k.lastmod]));
+  return posts
+    .filter((p) => names.some((n) => collectingMatchesSet(p.slug, n)))
+    .filter((p) => !known.has(p.url) || known.get(p.url) !== p.lastmod);
+}
+
 export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestReport> {
   const { store, now, sleep } = deps;
   const delayMs = deps.delayMs ?? 1000;
@@ -325,6 +354,38 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
   let saved = 0;
   let failed = 0;
   let fetched = 0;
+  let collected = 0;
+
+  // The collecting posts of upcoming sets lead the run: a handful of fetches at most, and the back catalogue below can
+  // spend the whole budget on the first runs.
+  if (deps.collecting && sitemap) {
+    const wanted = await collectingDue(deps.collecting, parseSitemap(sitemap.text), started);
+    for (const entry of wanted) {
+      if (now().getTime() - started.getTime() >= budgetMs) break;
+      if (fetched > 0) {
+        await sleep(delayMs);
+        if (now().getTime() - started.getTime() >= budgetMs) break;
+      }
+      fetched++;
+      const page = await deps.fetchText(entry.url, { headers }).catch(() => null);
+      if (page?.status !== 200) {
+        failed++;
+        if (!isGone(page?.status ?? null)) alert({ kind: "fetch-failed", url: entry.url, status: page?.status ?? null });
+        continue;
+      }
+      const parsed = parsePost(page.text, entry.url);
+      if (!parsed.ok) {
+        failed++;
+        alert({ kind: "parse-failed", url: entry.url, reason: parsed.reason === "missing-fields" ? `missing ${parsed.missing.join(",")}` : parsed.reason });
+        continue;
+      }
+      await deps.collecting.save({
+        url: entry.url, slug: entry.slug, title: parsed.post.title, lastmod: entry.lastmod,
+        deckNames: parseCommanderDeckNames(parsed.post.bodyHtml), lastFetchedAt: now().toISOString(),
+      });
+      collected++;
+    }
+  }
 
   for (const entry of due) {
     if (now().getTime() - started.getTime() >= budgetMs) break;
@@ -375,7 +436,7 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
 
   // After every write, so a reader who misses the stamp by a moment keeps the old generation rather than meeting a new
   // one over half-written rows. A run that wrote nothing moves nothing: the hourly run must not retire every cache.
-  if (saved > 0 || (rematched ?? 0) > 0) await store.stampCatalog();
+  if (saved > 0 || collected > 0 || (rematched ?? 0) > 0) await store.stampCatalog();
 
   const at = now();
   for (const post of latest.values()) {

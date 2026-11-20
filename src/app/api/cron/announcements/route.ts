@@ -2,7 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import type { NextRequest } from "next/server";
 import { reportIngestAlert } from "../../../../lib/announcements/alert";
 import { runAnnouncementsIngest } from "../../../../lib/announcements/ingest";
-import { announcementsStore } from "../../../../lib/announcements/ingest-store";
+import { announcementsStore, collectingStore } from "../../../../lib/announcements/ingest-store";
 import { sqlState } from "../../../../db/sql-state";
 import { pingHeartbeat } from "../../../../lib/cron/heartbeat";
 import { captureServerError } from "../../../../lib/sentry/capture";
@@ -34,6 +34,7 @@ export async function GET(req: NextRequest) {
         return { status: res.status, text: await res.text() };
       },
       store: announcementsStore,
+      collecting: collectingStore,
       alert: reportIngestAlert,
       now: () => new Date(),
       sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
