@@ -19,7 +19,7 @@ const emptyStore = (): IngestStore => ({
 function collectingStore(upcoming: string[], known: { url: string; lastmod: string | null }[] = []) {
   const saved: CollectingRecord[] = [];
   const store: CollectingStore = {
-    readUpcomingSetNames: async () => upcoming,
+    readUpcomingSets: async () => upcoming.map((name) => ({ name, parentName: null })),
     readKnown: async () => known,
     save: async (p) => void saved.push(p),
   };
@@ -74,6 +74,34 @@ describe("the collecting-post pass", () => {
     const { alerts } = await run(store, { [SITEMAP_URL]: { status: 200, text: sitemap }, [NAUCTIS]: { status: 500, text: "" } });
     expect(alerts).toEqual([{ kind: "fetch-failed", url: NAUCTIS, status: 500 }]);
     expect(saved).toEqual([]);
+  });
+
+  it("keeps a post that cannot be parsed with no names at its lastmod, so it is alerted and tried again only when it changes", async () => {
+    const { store, saved } = collectingStore(["Nauctis: The Sunken Realm Commander"]);
+    const { alerts } = await run(store, { [SITEMAP_URL]: { status: 200, text: sitemap }, [NAUCTIS]: { status: 200, text: "<html></html>" } });
+    expect(alerts).toEqual([{ kind: "parse-failed", url: NAUCTIS, reason: "no-payload" }]);
+    expect(saved).toMatchObject([{ url: NAUCTIS, lastmod: "2026-11-13T00:00:00.000Z", deckNames: [] }]);
+  });
+
+  it("alerts once and still reads the announcements when the pass throws", async () => {
+    const broken: CollectingStore = { readUpcomingSets: async () => { throw new Error("relation does not exist"); }, readKnown: async () => [], save: async () => {} };
+    const store = emptyStore();
+    let saves = 0;
+    store.readKnown = async () => [];
+    store.save = async () => void saves++;
+    const post = fixture("star-trek-welcome-decks.html");
+    const url = "https://magic.wizards.com/en/news/announcements/star-trek-welcome-decks";
+    const alerts: IngestAlert[] = [];
+    const report = await runAnnouncementsIngest({
+      fetchText: async (u) => (u === SITEMAP_URL
+        ? { status: 200, text: `${sitemap.replace("</urlset>", "")}<url><loc>${url}</loc><lastmod>1</lastmod></url></urlset>` }
+        : u === url ? { status: 200, text: post } : { status: 404, text: "" }),
+      store, collecting: broken, alert: (a) => alerts.push(a),
+      now: () => new Date("2026-11-20T12:00:00.000Z"), sleep: async () => {}, delayMs: 0,
+    });
+    expect(alerts.filter((a) => a.kind === "collecting-failed")).toHaveLength(1);
+    expect(report).toMatchObject({ saved: 1, deferred: 0 });
+    expect(saves).toBe(1);
   });
 
   it("is skipped entirely with no collecting store", async () => {

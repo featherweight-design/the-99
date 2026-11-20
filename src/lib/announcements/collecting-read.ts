@@ -3,9 +3,10 @@
  * The names only: the post names no commanders, and Scryfall never says which revealed commander is which box, so a
  * name stands for a deck and the set's revealed commanders stay one list beside it.
  */
+import { inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { wizardsCollectingPosts } from "../../db/schema";
-import { collectingMatchesSet } from "./collecting";
+import { collectingMatchesSet, collectingSlugs, type CollectingSet } from "./collecting";
 
 type Reader = Pick<typeof db, "select">;
 
@@ -15,12 +16,12 @@ type Reader = Pick<typeof db, "select">;
  */
 export function deckNamesBySet(
   posts: readonly { slug: string; deckNames: string[]; lastFetchedAt: Date }[],
-  sets: readonly { code: string; name: string }[],
+  sets: readonly ({ code: string } & CollectingSet)[],
 ): Record<string, string[]> {
   const out: Record<string, string[]> = {};
   for (const set of sets) {
     const match = posts
-      .filter((p) => p.deckNames.length > 0 && collectingMatchesSet(p.slug, set.name))
+      .filter((p) => p.deckNames.length > 0 && collectingMatchesSet(p.slug, set))
       .sort((a, b) => b.lastFetchedAt.getTime() - a.lastFetchedAt.getTime())[0];
     if (match) out[set.code.toLowerCase()] = match.deckNames;
   }
@@ -28,10 +29,11 @@ export function deckNamesBySet(
 }
 
 /** The posts' deck names for these upcoming sets. Throws when the read fails. */
-export async function loadAnnouncedDeckNames(sets: readonly { code: string; name: string }[], q: Reader = db): Promise<Record<string, string[]>> {
+export async function loadAnnouncedDeckNames(sets: readonly ({ code: string } & CollectingSet)[], q: Reader = db): Promise<Record<string, string[]>> {
   if (sets.length === 0) return {};
   const posts = await q
     .select({ slug: wizardsCollectingPosts.slug, deckNames: wizardsCollectingPosts.deckNames, lastFetchedAt: wizardsCollectingPosts.lastFetchedAt })
-    .from(wizardsCollectingPosts);
+    .from(wizardsCollectingPosts)
+    .where(inArray(wizardsCollectingPosts.slug, sets.flatMap(collectingSlugs)));
   return deckNamesBySet(posts, sets);
 }

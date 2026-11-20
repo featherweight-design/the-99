@@ -33,19 +33,29 @@ export function collectingPosts(entries: readonly { url: string; lastmod: string
 const slugify = (s: string) =>
   s.normalize("NFKD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 
-/** A set's name without its trailing "Commander", the product word Wizards' post titles leave off. */
-const bareSetName = (name: string) => name.replace(/\s+Commander$/i, "");
+/** A set as the matcher reads it: its name, and its parent expansion's name when it has one. */
+export type CollectingSet = { name: string; parentName: string | null };
 
 /**
- * Whether a `collecting-<rest>` slug is about this set: the set's name (without a trailing "Commander") and the slug's
- * rest are the same run of words, or one is the other's tail ("collecting-darkhold-destiny" for "Marvel: Darkhold
- * Destiny Commander"). Whole hyphen-separated words only, and at least two words, so a one-word slug names no set.
+ * The slugs a set's collecting post can have: `collecting-` and the slug of the set's name (a trailing "Commander", the
+ * product word Wizards' titles leave off, dropped) or of its parent set's name, each with and without a leading "the".
+ * Equality only: a slug that is merely a tail of a name, or the other way round, names no set.
  */
-export function collectingMatchesSet(slug: string, setName: string): boolean {
-  const rest = slug.replace(/^collecting-/, "");
-  const set = slugify(bareSetName(setName));
-  if (rest.split("-").length < 2 || set.split("-").length < 2) return false;
-  return rest === set || set.endsWith(`-${rest}`) || rest.endsWith(`-${set}`);
+export function collectingSlugs(set: CollectingSet): string[] {
+  const out = new Set<string>();
+  for (const name of [set.name, set.parentName]) {
+    if (!name) continue;
+    const base = slugify(name.replace(/\s+Commander$/i, "")).replace(/^the-/, "");
+    if (base === "") continue;
+    out.add(`collecting-${base}`);
+    out.add(`collecting-the-${base}`);
+  }
+  return [...out];
+}
+
+/** Whether a collecting post's slug is this set's (`collectingSlugs`). */
+export function collectingMatchesSet(slug: string, set: CollectingSet): boolean {
+  return collectingSlugs(set).includes(slug);
 }
 
 const COMMANDER_DECKS_HEADING = /<h3\b[^>]*>\s*Commander Decks\s*<\/h3>/i;

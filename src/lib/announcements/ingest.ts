@@ -23,8 +23,8 @@ import { buildNameIndex, matchCardName } from "./match-names";
 import { secondLineRole, type CommanderFacts } from "./pairing";
 import { parseOnSale } from "./on-sale";
 import { parsePost, type AnnouncementPost } from "./post";
-import { announcementPosts, parseSitemap, SITEMAP_URL, type SitemapEntry } from "./sitemap";
-import { collectingMatchesSet, collectingPosts, parseCommanderDeckNames } from "./collecting";
+import { announcementPostsOf, parseSitemap, SITEMAP_URL, type SitemapEntry } from "./sitemap";
+import { collectingPosts, collectingSlugs, parseCommanderDeckNames, type CollectingSet } from "./collecting";
 
 export const USER_AGENT = "The99/1.0 (Commander companion; announcements ingest)";
 
@@ -120,9 +120,10 @@ export type CollectingRecord = { url: string; slug: string; title: string; lastm
 
 /** The database half of the collecting-post pass; optional on `IngestDeps` so a run without it reads announcements alone. */
 export type CollectingStore = {
-  /** The names of the Commander sets still upcoming: the only sets whose collecting posts are worth a fetch. */
-  readUpcomingSetNames(now: Date): Promise<string[]>;
-  readKnown(): Promise<{ url: string; lastmod: string | null }[]>;
+  /** The Commander sets still upcoming: the only sets whose collecting posts are worth a fetch. */
+  readUpcomingSets(now: Date): Promise<CollectingSet[]>;
+  /** The posts already read, among these slugs. */
+  readKnown(slugs: string[]): Promise<{ url: string; lastmod: string | null }[]>;
   save(post: CollectingRecord): Promise<void>;
 };
 
@@ -131,6 +132,7 @@ export type IngestAlert =
   | { kind: "fetch-failed"; url: string; status: number | null }
   | { kind: "parse-failed"; url: string; reason: string }
   | { kind: "unknown-sections"; url: string; sections: string[] }
+  | { kind: "collecting-failed" }
   | { kind: "decklists-missing"; url: string; title: string; status: Exclude<ParseStatus, "ok"> };
 
 export type IngestDeps = {
@@ -312,18 +314,17 @@ export function announcementRecord(
 }
 
 /**
- * The collecting posts due a fetch: those about a set still upcoming (`collectingMatchesSet`) that are new to the store or
+ * The collecting posts due a fetch: those about a set still upcoming (`collectingSlugs`) that are new to the store or
  * edited since. Reads the upcoming sets only when the sitemap lists a collecting post at all.
  */
-async function collectingDue(store: CollectingStore, entries: SitemapEntry[], at: Date) {
+async function collectingDue(store: CollectingStore, entries: readonly SitemapEntry[], at: Date) {
   const posts = collectingPosts(entries);
   if (posts.length === 0) return [];
-  const names = await store.readUpcomingSetNames(at);
-  if (names.length === 0) return [];
-  const known = new Map((await store.readKnown()).map((k) => [k.url, k.lastmod]));
-  return posts
-    .filter((p) => names.some((n) => collectingMatchesSet(p.slug, n)))
-    .filter((p) => !known.has(p.url) || known.get(p.url) !== p.lastmod);
+  const slugs = new Set((await store.readUpcomingSets(at)).flatMap(collectingSlugs));
+  const mine = posts.filter((p) => slugs.has(p.slug));
+  if (mine.length === 0) return [];
+  const known = new Map((await store.readKnown([...slugs])).map((k) => [k.url, k.lastmod]));
+  return mine.filter((p) => !known.has(p.url) || known.get(p.url) !== p.lastmod);
 }
 
 export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestReport> {
@@ -340,7 +341,8 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
   const report = (r: Omit<IngestReport, "alerts">): IngestReport => ({ ...r, alerts });
 
   const sitemap = await deps.fetchText(SITEMAP_URL, { headers }).catch(() => null);
-  const entries = sitemap?.status === 200 ? announcementPosts(sitemap.text) : [];
+  const sitemapEntries = sitemap?.status === 200 ? parseSitemap(sitemap.text) : [];
+  const entries = announcementPostsOf(sitemapEntries);
   if (entries.length === 0) {
     alert({ kind: "sitemap-unreadable", status: sitemap?.status ?? null });
     return report({ posts: 0, due: 0, saved: 0, failed: 0, deferred: 0, rematched: null });
@@ -354,42 +356,51 @@ export async function runAnnouncementsIngest(deps: IngestDeps): Promise<IngestRe
   let saved = 0;
   let failed = 0;
   let fetched = 0;
+  // Apart from `fetched`, which `deferred` counts against `due`; a politeness delay still follows either kind of fetch.
+  let collectingFetched = 0;
   let collected = 0;
 
   // The collecting posts of upcoming sets lead the run: a handful of fetches at most, and the back catalogue below can
-  // spend the whole budget on the first runs.
-  if (deps.collecting && sitemap) {
-    const wanted = await collectingDue(deps.collecting, parseSitemap(sitemap.text), started);
-    for (const entry of wanted) {
-      if (now().getTime() - started.getTime() >= budgetMs) break;
-      if (fetched > 0) {
-        await sleep(delayMs);
+  // spend the whole budget on the first runs. The whole pass is fenced: a missing table (a migration not yet applied) or a
+  // database blip alerts once and the announcements below still run.
+  if (deps.collecting) {
+    try {
+      const wanted = await collectingDue(deps.collecting, sitemapEntries, started);
+      for (const entry of wanted) {
         if (now().getTime() - started.getTime() >= budgetMs) break;
+        if (collectingFetched > 0) {
+          await sleep(delayMs);
+          if (now().getTime() - started.getTime() >= budgetMs) break;
+        }
+        collectingFetched++;
+        const page = await deps.fetchText(entry.url, { headers }).catch(() => null);
+        if (page?.status !== 200) {
+          failed++;
+          if (!isGone(page?.status ?? null)) alert({ kind: "fetch-failed", url: entry.url, status: page?.status ?? null });
+          continue;
+        }
+        const parsed = parsePost(page.text, entry.url);
+        if (!parsed.ok) {
+          failed++;
+          alert({ kind: "parse-failed", url: entry.url, reason: parsed.reason === "missing-fields" ? `missing ${parsed.missing.join(",")}` : parsed.reason });
+          // Kept with no names at its lastmod, so a page that cannot be read is tried again only when it changes.
+          await deps.collecting.save({ url: entry.url, slug: entry.slug, title: entry.slug, lastmod: entry.lastmod, deckNames: [], lastFetchedAt: now().toISOString() });
+          continue;
+        }
+        await deps.collecting.save({
+          url: entry.url, slug: entry.slug, title: parsed.post.title, lastmod: entry.lastmod,
+          deckNames: parseCommanderDeckNames(parsed.post.bodyHtml), lastFetchedAt: now().toISOString(),
+        });
+        collected++;
       }
-      fetched++;
-      const page = await deps.fetchText(entry.url, { headers }).catch(() => null);
-      if (page?.status !== 200) {
-        failed++;
-        if (!isGone(page?.status ?? null)) alert({ kind: "fetch-failed", url: entry.url, status: page?.status ?? null });
-        continue;
-      }
-      const parsed = parsePost(page.text, entry.url);
-      if (!parsed.ok) {
-        failed++;
-        alert({ kind: "parse-failed", url: entry.url, reason: parsed.reason === "missing-fields" ? `missing ${parsed.missing.join(",")}` : parsed.reason });
-        continue;
-      }
-      await deps.collecting.save({
-        url: entry.url, slug: entry.slug, title: parsed.post.title, lastmod: entry.lastmod,
-        deckNames: parseCommanderDeckNames(parsed.post.bodyHtml), lastFetchedAt: now().toISOString(),
-      });
-      collected++;
+    } catch {
+      alert({ kind: "collecting-failed" });
     }
   }
 
   for (const entry of due) {
     if (now().getTime() - started.getTime() >= budgetMs) break;
-    if (fetched > 0) {
+    if (fetched + collectingFetched > 0) {
       await sleep(delayMs);
       // The budget bounds when a fetch STARTS, so the politeness delay can spend the rest of it.
       if (now().getTime() - started.getTime() >= budgetMs) break;

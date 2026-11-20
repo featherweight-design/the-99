@@ -2,7 +2,8 @@
  * The database half of the Announcements ingest (`ingest.ts`): kept thin, every decision is made in the pure half.
  * Catalog family: one row per post, nothing per account. Reads `cards` read-only for name matching.
  */
-import { and, eq, gt, sql, type SQL } from "drizzle-orm";
+import { and, eq, gt, inArray, sql, type SQL } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, sets, wizardsAnnouncementDecklists, wizardsAnnouncements, wizardsCollectingPosts } from "../../db/schema";
 import { stampCatalogRefresh } from "../cache/stamp-catalog";
@@ -121,15 +122,20 @@ export const announcementsStore: IngestStore = {
 
 /** The collecting-post pass's store: the upcoming Commander sets (`upcomingSetsQuery`'s rule) and the posts read so far. */
 export const collectingStore: CollectingStore = {
-  async readUpcomingSetNames(now) {
-    const rows = await db
-      .select({ name: sets.name })
+  async readUpcomingSets(now) {
+    const parent = alias(sets, "parent");
+    return db
+      .select({ name: sets.name, parentName: parent.name })
       .from(sets)
+      .leftJoin(parent, eq(parent.code, sets.parentSetCode))
       .where(and(eq(sets.setType, ANNOUNCED_SET_TYPE), eq(sets.digital, false), gt(sets.releasedAt, utcDay(now))));
-    return rows.map((r) => r.name);
   },
-  async readKnown() {
-    return db.select({ url: wizardsCollectingPosts.url, lastmod: wizardsCollectingPosts.lastmod }).from(wizardsCollectingPosts);
+  async readKnown(slugs) {
+    if (slugs.length === 0) return [];
+    return db
+      .select({ url: wizardsCollectingPosts.url, lastmod: wizardsCollectingPosts.lastmod })
+      .from(wizardsCollectingPosts)
+      .where(inArray(wizardsCollectingPosts.slug, slugs));
   },
   async save(post) {
     const values = { ...post, lastFetchedAt: new Date(post.lastFetchedAt) };

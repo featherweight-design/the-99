@@ -49,22 +49,31 @@ describe("collectingPosts", () => {
 });
 
 describe("collectingMatchesSet", () => {
-  it("matches a post to its set by whole words, the trailing Commander left off", () => {
-    expect(collectingMatchesSet("collecting-nauctis-the-sunken-realm", "Nauctis: The Sunken Realm Commander")).toBe(true);
-    expect(collectingMatchesSet("collecting-darkhold-destiny", "Darkhold Destiny Commander")).toBe(true);
-    expect(collectingMatchesSet("collecting-marvel-darkhold-destiny", "Darkhold Destiny Commander")).toBe(true);
-    expect(collectingMatchesSet("collecting-darkhold-destiny", "Marvel: Darkhold Destiny Commander")).toBe(true);
+  const set = (name: string, parentName: string | null = null) => ({ name, parentName });
+
+  it("matches a post to its set by the set's name slug, a trailing Commander and a leading The dropped", () => {
+    expect(collectingMatchesSet("collecting-nauctis-the-sunken-realm", set("Nauctis: The Sunken Realm Commander"))).toBe(true);
+    expect(collectingMatchesSet("collecting-star-trek", set("Star Trek Commander"))).toBe(true);
+    expect(collectingMatchesSet("collecting-marvel-super-heroes", set("Marvel Super Heroes Commander"))).toBe(true);
+    expect(collectingMatchesSet("collecting-the-lord-of-the-rings-tales-of-middle-earth", set("The Lord of the Rings: Tales of Middle-earth Commander"))).toBe(true);
+    expect(collectingMatchesSet("collecting-lord-of-the-rings-tales-of-middle-earth", set("The Lord of the Rings: Tales of Middle-earth Commander"))).toBe(true);
   });
 
-  it("does not match another set, a partial word, or a one-word slug", () => {
-    expect(collectingMatchesSet("collecting-nauctis-the-sunken-realm", "Darkhold Destiny Commander")).toBe(false);
-    expect(collectingMatchesSet("collecting-star-trek", "Star Trekking Commander")).toBe(false);
-    expect(collectingMatchesSet("collecting-aetherdrift", "Aetherdrift Commander")).toBe(false);
+  it("matches the set's parent expansion's name as well", () => {
+    expect(collectingMatchesSet("collecting-marvel-darkhold-destiny", set("Darkhold Destiny Commander", "Marvel: Darkhold Destiny"))).toBe(true);
+    expect(collectingMatchesSet("collecting-marvel-darkhold-destiny", set("Darkhold Destiny Commander"))).toBe(false);
+  });
+
+  it("does not match a tail, a longer name, or another set", () => {
+    expect(collectingMatchesSet("collecting-super-heroes", set("Marvel Super Heroes Commander"))).toBe(false);
+    expect(collectingMatchesSet("collecting-darkhold-destiny-extra", set("Darkhold Destiny Commander"))).toBe(false);
+    expect(collectingMatchesSet("collecting-nauctis-the-sunken-realm", set("Darkhold Destiny Commander"))).toBe(false);
+    expect(collectingMatchesSet("collecting-star-trek", set("Star Trekking Commander"))).toBe(false);
   });
 });
 
 describe("deckNamesBySet", () => {
-  const sets = [{ code: "NAC", name: "Nauctis: The Sunken Realm Commander" }, { code: "mdc", name: "Darkhold Destiny Commander" }];
+  const sets = [{ code: "NAC", name: "Nauctis: The Sunken Realm Commander", parentName: null }, { code: "mdc", name: "Darkhold Destiny Commander", parentName: null }];
   const at = (s: string) => new Date(s);
 
   it("gives a set the names of its matching post, and no key to a set whose post names none or is missing", () => {
