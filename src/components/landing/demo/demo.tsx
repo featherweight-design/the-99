@@ -40,6 +40,7 @@ import { LaunchPanel } from "../launch-panel";
 import { Lead, Section } from "../section";
 import { useMinWidth } from "../../ui/use-min-width";
 import { PressRing } from "./demo-ring";
+import { CostChip } from "./demo-tabs";
 import { DemoProviders } from "./demo-providers";
 import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
 import { SEGMENT } from "../../ui/segment";
@@ -61,9 +62,6 @@ const BTN_L = `${BUTTON} border-0 bg-[color:var(--fg)] font-medium text-[color:v
 /** Back and Start over: the quiet one, bordered. */
 const BTN_Q = `${BUTTON} border border-solid border-[color:var(--border-strong)] bg-transparent px-[14px] font-normal text-[color:var(--fg)]`;
 const HEADING = "m-0 font-display font-bold leading-[1.25] text-[color:var(--fg)] focus:outline-none";
-const CHIP = "inline-flex h-[22px] items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-solid px-[8px] font-mono text-[10.5px] font-medium tracking-[0.04em]";
-const CHIP_FREE = `${CHIP} border-[color:color-mix(in_oklab,var(--success)_45%,transparent)] text-[color:var(--success)]`;
-const CHIP_CREDIT = `${CHIP} border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] text-[color:var(--accent-text)]`;
 const LINK = "cursor-pointer border-0 bg-transparent p-0 underline underline-offset-[3px]";
 
 /** The eight-segment bar: a segment is lit through the step shown (all of them on the end). */
@@ -491,14 +489,11 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
         {/* Below 1024px this column is the one scroller (the words, then the app); from 1024px it dissolves and the words and the app are the grid's own cells. */}
         <div ref={columnScroll} className="min-h-0 overflow-y-auto overscroll-contain lg:contents">
           <div className="mx-auto flex w-full max-w-[680px] flex-col gap-[10px] px-[16px] pb-[14px] pt-[16px] lg:col-start-1 lg:row-start-1 lg:mx-0 lg:max-w-none lg:px-[28px] lg:pb-[8px] lg:pt-[28px]">
-            <div className="flex flex-wrap gap-[6px]">
-              {step.tags.map((tag) => (
-                <span key={tag.label} data-testid="demo-tag" className={tag.kind === "free" ? CHIP_FREE : CHIP_CREDIT}>
-                  {tag.kind === "free" ? null : <span aria-hidden className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />}
-                  {tag.label}
-                </span>
-              ))}
-            </div>
+            {step.tags.length > 0 ? (
+              <div className="flex flex-wrap gap-[6px]">
+                {step.tags.map((tag) => <CostChip key={tag.label} cost={tag} />)}
+              </div>
+            ) : null}
             <h3 ref={heading} tabIndex={-1} className={`${HEADING} text-[19px] lg:text-[23px]`}>{title}</h3>
             <p className="m-0 text-[14px] leading-[1.6] text-[color:var(--fg-body)]">{line}</p>
           </div>

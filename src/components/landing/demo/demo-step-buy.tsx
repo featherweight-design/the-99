@@ -24,13 +24,13 @@ import type { DemoDeck } from "../../../lib/demo/project-decks";
 import type { Projected } from "../../../lib/demo/projected";
 import type { DemoDeckRole } from "./demo-detail";
 import { DemoDeckScope, usePressedOpener } from "./demo-providers";
-import { DemoHead, DemoTabs } from "./demo-tabs";
+import { DemoHead, DemoTabs, type Cost } from "./demo-tabs";
 
 const tabs = landingCopy.demo.tabs;
 type Tab = "shopping" | "which";
-const TABS: readonly { id: Tab; label: string }[] = [
-  { id: "shopping", label: tabs.shopping },
-  { id: "which", label: tabs.which },
+const TABS: readonly { id: Tab; label: string; cost: Cost }[] = [
+  { id: "shopping", label: tabs.shopping, cost: tabs.cost.shopping },
+  { id: "which", label: tabs.which, cost: tabs.cost.which },
 ];
 
 /** The credits the read's drawing is handed: one fixed allowance, never drawn over a stored read (no press is offered). */

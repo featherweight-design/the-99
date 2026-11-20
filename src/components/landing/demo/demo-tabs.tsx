@@ -10,8 +10,24 @@ import { nextTab } from "./demo-tab-keys";
 const CHIP =
   "inline-flex items-center rounded-[6px] border border-solid border-[color:var(--border-strong)] px-[7px] py-[2px] font-mono text-[10.5px] text-[color:var(--fg-muted)]";
 
+/** What a step or a tab costs, in the landing's own two chips: free in the success hue, a credit in the accent with its diamond. `onAccent` is the chip drawn inside the active (accent-filled) tab, where those hues would vanish. */
+export type Cost = { kind: "free" | "credit"; label: string };
+const COST_CHIP = "inline-flex h-[22px] items-center gap-[5px] whitespace-nowrap rounded-[6px] border border-solid px-[8px] font-mono text-[10.5px] font-medium tracking-[0.04em]";
+const COST_FREE = `${COST_CHIP} border-[color:color-mix(in_oklab,var(--success)_45%,transparent)] text-[color:var(--success)]`;
+const COST_CREDIT = `${COST_CHIP} border-[color:color-mix(in_oklab,var(--accent)_50%,transparent)] text-[color:var(--accent-text)]`;
+const COST_ON_ACCENT = `${COST_CHIP} border-[color:color-mix(in_oklab,var(--bg)_60%,transparent)] text-[color:var(--bg)]`;
+export function CostChip({ cost, onAccent = false }: { cost: Cost; onAccent?: boolean }) {
+  const credit = cost.kind === "credit";
+  return (
+    <span data-testid="demo-tag" className={onAccent ? COST_ON_ACCENT : credit ? COST_CREDIT : COST_FREE}>
+      {credit ? <span aria-hidden className={`block h-[6px] w-[6px] rotate-45 ${onAccent ? "bg-[color:var(--bg)]" : "bg-[color:var(--accent)]"}`} /> : null}
+      {cost.label}
+    </span>
+  );
+}
+
 /** The tab row and the one panel it controls: the children are the open tab's tool, labelled by the open tab. */
-export function DemoTabs<T extends string>({ tabs, value, onChange, label, children }: { tabs: readonly { id: T; label: string }[]; value: T; onChange: (id: T) => void; label: string; children: ReactNode }) {
+export function DemoTabs<T extends string>({ tabs, value, onChange, label, children }: { tabs: readonly { id: T; label: string; cost?: Cost }[]; value: T; onChange: (id: T) => void; label: string; children: ReactNode }) {
   const base = useId();
   const panelId = `${base}-panel`;
   const ids = tabs.map((t) => t.id);
@@ -39,9 +55,10 @@ export function DemoTabs<T extends string>({ tabs, value, onChange, label, child
               data-testid={`demo-tab-${t.id}`}
               onClick={() => onChange(t.id)}
               onKeyDown={onKey}
-              className={`inline-flex min-h-[44px] cursor-pointer items-center rounded-[8px] border border-solid px-[14px] text-[13px] font-medium md:min-h-[36px] ${on ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--bg)]" : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"}`}
+              className={`inline-flex min-h-[44px] cursor-pointer items-center gap-[8px] rounded-[8px] border border-solid px-[14px] text-[13px] font-medium md:min-h-[36px] ${on ? "border-[color:var(--accent)] bg-[color:var(--accent)] text-[color:var(--bg)]" : "border-[color:var(--border-strong)] bg-transparent text-[color:var(--fg-body)]"}`}
             >
               {t.label}
+              {t.cost ? <CostChip cost={t.cost} onAccent={on} /> : null}
             </button>
           );
         })}
