@@ -61,7 +61,8 @@ function syntheticPrinting(h: CardHolding): PrintingChoice {
   };
 }
 
-export type EditCard = { oracleId: string; name: string; imageUri: string | null };
+/** `printingId`: the catalog printing the reader was previewing when they pressed Add to collection (#3002); the sheet opens with it chosen. */
+export type EditCard = { oracleId: string; name: string; imageUri: string | null; printingId?: string };
 
 /** One line per holding, in the order the catalog lists printings (newest set first). */
 export function linesFromHoldings(card: EditCard, choices: PrintingChoice[], holdings: CardHolding[]): EditLineState[] {

@@ -270,7 +270,7 @@ export function DemoCardModal({
         />
         <CardModalSheet
           card={card} preview={preview} resolved={resolved} titleId={TITLE_ID} caption={caption} ownedPrintings={ownedPrintings}
-          hasPicker={false} isToken={isToken} tokenNoSet={tokenNoSet} pick={card.preferredPrinting} deckScope={false} total={total} position={position}
+          browse={false} onlyPrinting={false} hasPicker={false} isToken={isToken} tokenNoSet={tokenNoSet} pick={card.preferredPrinting} deckScope={false} total={total} position={position}
           deckPage={false} deckName={null} buyUrl={manapoolCardUrl(card.name)} buyLabel={cardLinkOutCopy.card}
           min={min} full={full} zoomed={zoomed} viewOpen={false} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
           teaserHeight={teaserHeight} closeReserve={46} back={null}

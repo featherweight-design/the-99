@@ -223,7 +223,7 @@ import { STACK_DROP_MS } from "./card-modal-shared";
 import { useCollectionEditScope } from "./collection-edit-scope";
 export { STACK_DROP_MS };
 
-type EditCardRef = { oracleId: string; name: string; imageUri: string | null };
+type EditCardRef = { oracleId: string; name: string; imageUri: string | null; printingId?: string };
 type OpenAt = {
   oracleId: string;
   printing: ViewPrinting;
@@ -247,6 +247,7 @@ export function CardDetailProvider({
   deckName = null,
   onWishlistWrite,
   deckPage = false,
+  browsePrintings = false,
   deckOracleIds,
   comboDeckOracleIds,
   comboCommanderOracleIds,
@@ -281,6 +282,8 @@ export function CardDetailProvider({
   deckId?: string | null;
   /** The deck page or its `/changes`: the modal's availability line keeps a bare `short` there. */
   deckPage?: boolean;
+  /** Card search's provider: card details offer an unowned card's catalog printings under the Set field, each a preview (#3002). */
+  browsePrintings?: boolean;
   /** That deck's name, which the control's label and its marked sentence both
    *  spend — a sheet paged through with Prev/Next is easy to lose your place in. */
   deckName?: string | null;
@@ -1148,8 +1151,8 @@ export function CardDetailProvider({
   const [editing, setEditing] = useState<{ card: EditCardRef; siblings: SiblingCard[]; n: number } | null>(null);
   const editCount = useRef(0);
   const startEdit = useCallback(
-    (c: BrowseCard) => {
-      setEditing({ card: { oracleId: c.oracleId, name: c.name, imageUri: c.imageUri }, siblings, n: ++editCount.current });
+    (c: BrowseCard, printingId?: string) => {
+      setEditing({ card: { oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, ...(printingId ? { printingId } : {}) }, siblings, n: ++editCount.current });
       close();
     },
     [siblings, close],
@@ -1541,7 +1544,8 @@ export function CardDetailProvider({
           } : null}
           // Inside the shell, and only on a card nothing is stacked on: a partner opened from a combo block or a card
           // over a sheet is not the reader's own row. A card a Shopping row opened keeps the slot for I got it (O2).
-          onEditCopies={editOn && sheetsBelow === 0 && partnerOf === null && !shoppingSlot ? () => startEdit(card) : null}
+          onEditCopies={editOn && sheetsBelow === 0 && partnerOf === null && !shoppingSlot ? (printingId) => startEdit(card, printingId) : null}
+          browsePrintings={browsePrintings}
           fitsOpen={fitsFor !== null || fitsViewFor === card.oracleId}
           // Only a card the door has something for: a door with nothing in it would still take its room
           // from the art.

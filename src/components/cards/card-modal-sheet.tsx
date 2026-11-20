@@ -9,7 +9,7 @@ import type { BrowseCard, BrowsePrinting, PreferredPrinting } from "../../lib/co
 import { printedNameOf, WUBRG_COLOR } from "../../lib/collection/browse";
 import { ArtLayer } from "../ui/art-layer";
 import { identityGradient } from "../../lib/cards/gradients";
-import { printingPickerCopy } from "../../lib/copy/collection";
+import { printingBrowseCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { printedNameCopy } from "../../lib/copy/card-surfaces";
 import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
@@ -52,6 +52,10 @@ export type CardModalSheetProps = {
   titleId: string;
   caption: string;
   ownedPrintings: BrowsePrinting[];
+  /** Alternate printings from search (#3002): the Set field discloses the catalog's printings, each a preview, for a card the reader owns none of. */
+  browse: boolean;
+  /** The catalog holds one printing of a search-opened card: the plain Set field says so. */
+  onlyPrinting: boolean;
   hasPicker: boolean;
   isToken: boolean;
   tokenNoSet: boolean;
@@ -112,7 +116,7 @@ export type CardModalSheetProps = {
 };
 
 export function CardModalSheet({
-  card, preview, resolved, titleId, caption, ownedPrintings, hasPicker, isToken, tokenNoSet, pick, deckScope, total, position,
+  card, preview, resolved, titleId, caption, ownedPrintings, browse, onlyPrinting, hasPicker, isToken, tokenNoSet, pick, deckScope, total, position,
   deckPage, deckName, buyUrl, buyLabel, min, full, zoomed, viewOpen, cramped, gentle, sheetFull, teaserHeight, closeReserve, back,
   onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
   openCombo, onOpenCombo, onSelectCard, expanded, triggerAria, onToggleExpanded, fitsDoor,
@@ -420,7 +424,7 @@ export function CardModalSheet({
             // Set + collector number of the printing on screen (§Phase 5) — the art is a
             // specific printing now, so the caption names it. A token's details draw this cell
             // alone, across the grid, since a token has no rarity, identity or owned count here.
-            <MetaCell label="Set" value={caption} span={isToken ? 2 : undefined} />
+            <MetaCell label="Set" value={caption} span={isToken ? 2 : undefined} hint={onlyPrinting ? printingBrowseCopy.onlyPrinting : undefined} />
           )}
           {isToken ? null : (
             <>
@@ -444,6 +448,7 @@ export function CardModalSheet({
               controls={REGION_MOBILE}
               caption={caption}
               count={ownedPrintings.length}
+              browse={browse}
               picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
               expanded={expanded}
               expandAria={triggerAria}
@@ -463,13 +468,14 @@ export function CardModalSheet({
               controls={REGION_DESKTOP}
               caption={caption}
               count={ownedPrintings.length}
+              browse={browse}
               picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
               expanded={expanded}
               expandAria={triggerAria}
               onClick={onToggleExpanded}
             />
           ) : tokenNoSet ? null : (
-            <MetaField label="Set" value={caption} />
+            <MetaField label="Set" value={caption} hint={onlyPrinting ? printingBrowseCopy.onlyPrinting : undefined} />
           )}
           {isToken ? null : (
             <>
@@ -569,9 +575,9 @@ export function CardModalSheet({
 }
 
 function MetaCell({
-  label, value, identity, quantity, rarity, span,
+  label, value, identity, quantity, rarity, span, hint,
 }: {
-  label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean;
+  label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean; hint?: string;
   /** 2 when the Set cell has been promoted out and an odd cell would leave a hole. */
   span?: 2;
 }) {
@@ -610,13 +616,14 @@ function MetaCell({
           {value}
         </span>
       </div>
+      {hint ? <div className="mt-[3px] font-mono text-[10.5px]" style={{ color: "var(--fg-faint)" }}>{hint}</div> : null}
     </div>
   );
 }
 
 function MetaField({
-  label, value, identity, quantity, rarity,
-}: { label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean }) {
+  label, value, identity, quantity, rarity, hint,
+}: { label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean; hint?: string }) {
   return (
     <div>
       {/* §Meta Label desktop: mono 10px, letter-spacing 0.14em, uppercase, --fg-faint */}
@@ -646,6 +653,7 @@ function MetaField({
           {value}
         </span>
       </div>
+      {hint ? <div className="mt-[4px] font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>{hint}</div> : null}
     </div>
   );
 }
@@ -654,12 +662,12 @@ function MetaField({
  * The third line both triggers share: `N printings you own ▾` before a pick, and the brand
  * diamond + `Your pick · of N ▾` after one.
  */
-function TriggerHint({ count, picked, expanded }: { count: number; picked: string | null; expanded: boolean }) {
+function TriggerHint({ count, picked, expanded, browse }: { count: number; picked: string | null; expanded: boolean; browse: boolean }) {
   const chevron = <Chevron kind="disclosure" open={expanded} />;
   if (picked === null) {
     return (
       <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent-text)" }}>
-        {pickerCopy.triggerCount(count)} {chevron}
+        {browse ? printingBrowseCopy.triggerCount(count) : pickerCopy.triggerCount(count)} {chevron}
       </div>
     );
   }
@@ -684,12 +692,14 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
  * cancels the padding so the meta row's 26px gap rhythm is unchanged.
  */
 function PickerTrigger({
-  ref, controls, caption, count, picked, expanded, onClick, expandAria,
+  ref, controls, caption, count, browse, picked, expanded, onClick, expandAria,
 }: {
   ref: React.Ref<HTMLButtonElement>;
   controls: string;
   caption: string;
   count: number;
+  /** Alternate printings from search: the count is of the catalog's, not the reader's. */
+  browse: boolean;
   /** The pinned line's label when a pick stands, else null. */
   picked: string | null;
   expanded: boolean;
@@ -706,14 +716,14 @@ function PickerTrigger({
       // The region is unmounted while collapsed, so the reference goes with it — a trigger
       // pointing at a missing element is a broken relationship, not an empty one.
       aria-controls={expanded ? controls : undefined}
-      aria-label={expanded ? pickerCopy.triggerCollapseAria : expandAria}
+      aria-label={expanded ? (browse ? printingBrowseCopy.triggerCollapseAria : pickerCopy.triggerCollapseAria) : expandAria}
       className="cursor-pointer text-left rounded-[8px] p-[8px_12px] m-[-8px_-12px] bg-[color:var(--elevated)] border border-[color:var(--border-dashed)]"
     >
       <div className="font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
         {pickerCopy.triggerLabel}
       </div>
       <div className="mt-[5px] text-[14px]" style={{ color: "var(--fg)" }}>{caption}</div>
-      <TriggerHint count={count} picked={picked} expanded={expanded} />
+      <TriggerHint count={count} picked={picked} expanded={expanded} browse={browse} />
     </button>
   );
 }
@@ -724,12 +734,14 @@ function PickerTrigger({
  * substitute for the art panel.
  */
 function MobileSetRow({
-  ref, controls, caption, count, picked, expanded, imageUri, colorIdentity, onClick, expandAria,
+  ref, controls, caption, count, browse, picked, expanded, imageUri, colorIdentity, onClick, expandAria,
 }: {
   ref: React.Ref<HTMLButtonElement>;
   controls: string;
   caption: string;
   count: number;
+  /** Alternate printings from search: the count is of the catalog's, not the reader's. */
+  browse: boolean;
   /** The pinned line's label when a pick stands, else null. */
   picked: string | null;
   expanded: boolean;
@@ -749,7 +761,7 @@ function MobileSetRow({
       // The region is unmounted while collapsed, so the reference goes with it — a trigger
       // pointing at a missing element is a broken relationship, not an empty one.
       aria-controls={expanded ? controls : undefined}
-      aria-label={expanded ? pickerCopy.triggerCollapseAria : expandAria}
+      aria-label={expanded ? (browse ? printingBrowseCopy.triggerCollapseAria : pickerCopy.triggerCollapseAria) : expandAria}
       className="cursor-pointer w-full text-left flex items-center gap-[12px] p-[11px_14px] bg-[color:var(--elevated)] border border-[color:var(--border-dashed)]"
       style={{
         minHeight: 62,
@@ -772,7 +784,7 @@ function MobileSetRow({
           {pickerCopy.triggerLabel}
         </span>
         <span className="block mt-[3px] text-[13px]" style={{ color: "var(--fg)" }}>{caption}</span>
-        <TriggerHint count={count} picked={picked} expanded={expanded} />
+        <TriggerHint count={count} picked={picked} expanded={expanded} browse={browse} />
       </span>
     </button>
   );

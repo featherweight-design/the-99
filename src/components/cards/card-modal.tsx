@@ -14,7 +14,7 @@ import {
   cardArt,
   type CardArt,
 } from "../../lib/collection/browse";
-import { printingPickerCopy } from "../../lib/copy/collection";
+import { printingBrowseCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import type { CardCombo } from "../../lib/combos/near-combos";
 import { PrintingRegion, printingKey } from "./printing-region";
@@ -97,6 +97,7 @@ export function CardModal({
   footer = null,
   onFindDeck = null,
   onEditCopies = null,
+  browsePrintings = false,
   receiptLink = null,
   fitsOpen = false,
   fitsReading = false,
@@ -170,7 +171,13 @@ export function CardModal({
    * search and History keep the receipt read-only. Null draws no link and no receipt that was not
    * already drawn.
    */
-  onEditCopies?: (() => void) | null;
+  onEditCopies?: ((printingId?: string) => void) | null;
+  /**
+   * Alternate printings from search (#3002): the details were opened from card search, so a card the reader owns
+   * none of offers its catalog printings under the Set field. Selecting one PREVIEWS it (art, caption, price) and
+   * stores nothing; the preview is forgotten with the card (the modal remounts per card).
+   */
+  browsePrintings?: boolean;
   /**
    * I got it's `Bought this card?` (A11), for a card a Shopping row opened: drawn right-aligned on
    * the receipt's label line, in Edit copies' slot, and the receipt draws even with nothing in it.
@@ -487,6 +494,16 @@ export function CardModal({
   // Whether the reader has chosen a printing in THIS modal. Until they do, a card opened at
   // a particular printing shows that one; afterwards their choice wins.
   const [picked, setPicked] = useState(false);
+  // The printing previewed from the catalog list (alternate printings from search), by catalog id; null shows the card's own.
+  const [previewId, setPreviewId] = useState<string | null>(null);
+  const browse = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length > 1;
+  const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
+  const previewAt = useMemo(() => {
+    const p = browse && previewId !== null ? card.printings.find((x) => x.scryfallId === previewId) : undefined;
+    return p === undefined
+      ? null
+      : { setCode: p.setCode, collectorNumber: p.collectorNumber, scryfallId: p.scryfallId, imageUri: p.imageUri, backImageUri: p.backImageUri, finish: undefined };
+  }, [browse, previewId, card.printings]);
 
   // A caller can hand this component a re-read of the same card, so the seed above is not
   // the last word: without this, a preference that moved on the server would be ignored for
@@ -554,7 +571,7 @@ export function CardModal({
   // Everything the modal shows about the current printing — art, caption, shown-now badge —
   // reads from this one object, so an optimistic pick moves all three together or none.
   const preview = useMemo<BrowseCard>(() => {
-    const at = picked ? null : openAtPrinting;
+    const at = picked ? null : previewAt ?? openAtPrinting;
     // A finish with no printing (a list card its holder owns none of): the reader's own printing, in the list's finish.
     if (at && at.setCode === undefined) {
       const next = { ...card, preferredPrinting: effective(pick), printings: card.printings.map((p) => ({ ...p, viewedFinish: at.finish })) };
@@ -731,7 +748,7 @@ export function CardModal({
         ? row.flavorName
         : null;
     return { ...card, printings, preferredPrinting: at, printedName: renamed };
-  }, [card, pick, picked, openAtPrinting, effective, deckScope]);
+  }, [card, pick, picked, previewAt, openAtPrinting, effective, deckScope]);
   const resolved = resolvedPrinting(preview);
   /**
    * The art a list behind this modal should draw once `next` is the card's preference.
@@ -762,7 +779,7 @@ export function CardModal({
   const isToken = card.kind === "token";
   // A token has no Collection-wide printing preference to write, so its picker is the DECK's alone (token
   // printings TP2): drawn only where a deck can save the pick.
-  const hasPicker = ownedPrintings.length > 1
+  const hasPicker = browse || ownedPrintings.length > 1
     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
   const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
@@ -902,7 +919,7 @@ export function CardModal({
   function toggleExpanded() {
     const next = !expanded;
     setExpanded(next);
-    setAnnouncement(next ? pickerCopy.announceOpen(ownedPrintings.length) : "");
+    setAnnouncement(next ? (browse ? printingBrowseCopy.regionIntro(card.printings.length) : pickerCopy.announceOpen(ownedPrintings.length)) : "");
   }
 
   // A write the server refused and a write that never reached it leave the same thing on
@@ -977,7 +994,9 @@ export function CardModal({
   // is of what the reader OWNS, so an injected row is art and not a holding.
   const caption = printingCaption(preview, ownedPrintings);
   // A token's details show no card, so the button names the token; in a deck the pick is the deck's.
-  const triggerAria = deckScope
+  const triggerAria = browse
+    ? printingBrowseCopy.triggerAria(card.printings.length, caption)
+    : deckScope
     ? deckPrintingsCopy.picker.triggerAria(ownedPrintings.length, caption, isToken ? card.name : undefined)
     : pickerCopy.triggerAria(ownedPrintings.length, caption);
   // A token whose printing read failed has no set to name, and so no meta block at all.
@@ -989,18 +1008,18 @@ export function CardModal({
   const renderRegion = (id: string) => hasPicker && expanded ? (
     <PrintingRegion
       id={id}
-      printings={ownedPrintings}
-      preferred={pick}
+      printings={browse ? card.printings : ownedPrintings}
+      preferred={browse ? null : pick}
       // In deck scope `Shown now` names what the deck falls back to without its pick: the
       // Collection's printing (handoff R3, plan call 6), not the art on screen.
       // Once the deck has a pick, no tile is `Shown now` (STATES, "Picked, open"): the badge marks
       // what the deck falls back to, and only while it is falling back.
       resolvedKey={keyOf(deckScope ? (pick === null ? resolvedPrinting(card) : undefined) : resolved)}
-      scope={deckScope ? "deck" : "collection"}
+      scope={browse ? "browse" : deckScope ? "deck" : "collection"}
       notice={deckScope && saveFailed ? deckPrintingsCopy.picker.failed : null}
       cardName={card.name}
       colorIdentity={card.colorIdentity}
-      onPick={onPick}
+      onPick={browse ? (p) => setPreviewId(p.scryfallId ?? null) : onPick}
       onReset={onReset}
       onForget={onClearPick}
       onAnnounce={setAnnouncement}
@@ -1206,7 +1225,8 @@ export function CardModal({
             twice; the phone-only rows inside are `md:hidden`. A drag writes `--sheet-drag-top`
             over the snap until the release, and the top transitions to whichever snap it chose. */}
         <CardModalSheet
-          card={card} preview={preview} resolved={resolved} titleId={titleId} caption={caption} ownedPrintings={ownedPrintings}
+          card={card} preview={preview} resolved={resolved} titleId={titleId} caption={caption} ownedPrintings={browse ? card.printings : ownedPrintings}
+          browse={browse} onlyPrinting={onlyPrinting}
           hasPicker={hasPicker} isToken={isToken} tokenNoSet={tokenNoSet} pick={pick} deckScope={deckScope} total={total} position={position}
           deckPage={deckPage} deckName={deckName} buyUrl={buyUrl} buyLabel={buyLabel}
           min={min} full={full} zoomed={zoomed} viewOpen={viewOpen} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
@@ -1241,7 +1261,7 @@ export function CardModal({
           fitsDoor={onFindDeck ? (layout) => (
             <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} moment={fitsMoment} layout={layout} reading={fitsReading} />
           ) : null}
-          onEditCopies={onEditCopies} receiptLink={receiptLink} onPrev={onPrev} onNext={onNext}
+          onEditCopies={onEditCopies ? () => onEditCopies(previewAt?.scryfallId) : null} receiptLink={receiptLink} onPrev={onPrev} onNext={onNext}
           sheetRef={sheetRef} gripRef={gripRef} doorRef={doorRef} sheetBodyRef={sheetBodyRef}
           mobileTriggerRef={mobileTriggerRef} desktopTriggerRef={desktopTriggerRef}
           prevButtonRef={prevButtonRef} nextButtonRef={nextButtonRef}
