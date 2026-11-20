@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
  * JSON.
  *
  * `email.bounced` and `email.complained` each raise one Sentry warning and one Sentry log line carrying the event type and
- * the template (`code`, `flyer-code`, `invite`) and nothing else: never an address, a subject or a message id. Any other
+ * the template (`code`, `flyer-code`, `invite`, `launch`) and nothing else: never an address, a subject or a message id. Any other
  * event is acknowledged with 200 and ignored, so subscribing to more events in the dashboard cannot break this.
  */
 export async function POST(req: NextRequest) {

@@ -404,3 +404,19 @@ describe("the proxy's matcher", () => {
     }
   });
 });
+
+describe("the launch email's unsubscribe", () => {
+  // The link and the one-click POST are opened with no session: public at their exact paths, either slash form.
+  it("makes /unsubscribe and /api/unsubscribe public at their exact paths, and nothing that only starts with them", async () => {
+    for (const path of ["/unsubscribe", "/unsubscribe/", "/unsubscribe?t=abc", "/api/unsubscribe", "/api/unsubscribe/"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).not.toHaveBeenCalled();
+    }
+    for (const path of ["/unsubscribes", "/unsubscribe/x", "/api/unsubscribe/x"]) {
+      protect.mockClear();
+      await proxy(auth, request(path));
+      expect(protect).toHaveBeenCalled();
+    }
+  });
+});

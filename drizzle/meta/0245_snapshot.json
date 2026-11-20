@@ -1,5 +1,5 @@
 {
-  "id": "3388e357-5595-4830-bc45-aa571039966e",
+  "id": "03ce139c-85f9-4bd4-9d07-6b002fe68fef",
   "prevId": "a74351a8-36b2-4b01-83a5-aca24dd7455c",
   "version": "7",
   "dialect": "postgresql",
@@ -8424,6 +8424,12 @@
           "type": "timestamp",
           "primaryKey": false,
           "notNull": false
+        },
+        "unsubscribe_hash": {
+          "name": "unsubscribe_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -8443,7 +8449,15 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "launch_list_unsubscribe_hash_unique": {
+          "name": "launch_list_unsubscribe_hash_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "unsubscribe_hash"
+          ]
+        }
+      },
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false

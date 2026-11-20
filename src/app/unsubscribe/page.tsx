@@ -11,7 +11,7 @@ import { overAnonymousLimit } from "../../lib/rate/anon";
 // The launch email's unsubscribe link (launch email R2c, boards U1 and U2): the shipped offline page's body, signed out, no
 // shell. Opening the link is the one press: it deletes the address and says so (U1). A missing or malformed link is U2 and
 // deletes nothing. The answer never says whether the address was on the list: an address already gone or purged is U1 too.
-// Public in `src/proxy.ts`; each open counts against the visitor's `launch-unsubscribe` allowance, because it scans the list.
+// Public in `src/proxy.ts`; each open counts against the visitor's `launch-unsubscribe` allowance.
 export const dynamic = "force-dynamic";
 
 type Props = { searchParams: Promise<{ t?: string | string[] }> };
@@ -21,7 +21,7 @@ const outcomeFor = cache(async (t: unknown): Promise<UnsubscribeOutcome> => {
   if (!tokenShaped(t)) return "broken";
   // Over the allowance, nothing is read or deleted, and the link reads as one to open again (U2's words).
   if (await overAnonymousLimit(await headers(), "launch-unsubscribe")) return "broken";
-  return unsubscribeByToken(t);
+  return (await unsubscribeByToken(t)).outcome;
 });
 
 export async function generateMetadata({ searchParams }: Props): Promise<Metadata> {

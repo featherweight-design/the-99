@@ -23,7 +23,7 @@ import { mailConfig, mailEnv, sendMail, type MailConfig, type MailEnv, type Mail
 import { inviteSecret } from "../invites/tokens";
 import { readStoredLaunchDate } from "./launch-date";
 import { readLaunchDate } from "./launch-purge";
-import { unsubscribeToken, unsubscribeUrl } from "./launch-unsubscribe";
+import { unsubscribeHash, unsubscribeToken, unsubscribeUrl } from "./launch-unsubscribe";
 
 export { LAUNCH_BATCH_MAX } from "./launch-rule";
 import { LAUNCH_BATCH_MAX } from "./launch-rule";
@@ -50,6 +50,8 @@ export type LaunchStore = {
   /** The oldest waiting address not in `skip` (the ones this batch already tried), claimed; null when none is left. */
   claimNext: (skip: readonly string[]) => Promise<{ email: string; codeId: string | null } | null>;
   release: (email: string) => Promise<void>;
+  /** Writes the hash of the address's unsubscribe token, before its mail goes out, so the link works the moment it lands. */
+  linkUnsubscribe: (email: string, hash: string) => Promise<void>;
 };
 
 /**
@@ -99,7 +101,11 @@ async function release(email: string): Promise<void> {
   await db.update(launchList).set({ sentAt: null }).where(eq(launchList.email, email));
 }
 
-const DB_STORE: LaunchStore = { waiting: launchWaiting, claimNext, release };
+async function linkUnsubscribe(email: string, hash: string): Promise<void> {
+  await db.update(launchList).set({ unsubscribeHash: hash }).where(eq(launchList.email, email));
+}
+
+const DB_STORE: LaunchStore = { waiting: launchWaiting, claimNext, release, linkUnsubscribe };
 
 /**
  * Sends up to `limit` launch emails, or with `dryRun` only counts what is waiting (and checks the configuration and images).
@@ -134,15 +140,17 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
       break;
     }
     tried.push(row.email);
+    const token = unsubscribeToken(secret, row.email);
+    await store.linkUnsubscribe(row.email, unsubscribeHash(token));
     const unsubscribe = unsubscribeUrl(config.origin, secret, row.email);
     const parts = launchEmailParts({ origin: config.origin, source: row.codeId ? "flyer" : "landing", unsubscribeUrl: unsubscribe });
     const result = await send(config, {
       to: row.email,
       ...parts,
       template: "launch",
-      listUnsubscribe: `${config.origin}/api/unsubscribe?t=${unsubscribeToken(secret, row.email)}`,
+      listUnsubscribe: `${config.origin}/api/unsubscribe?t=${token}`,
       // Per claim, not per address: a released address retried later the same day is a new send, not Resend's cached refusal.
-      idempotencyKey: `launch-${unsubscribeToken(secret, row.email).slice(0, 22)}-${claimedAt}`,
+      idempotencyKey: `launch-${token.slice(0, 22)}-${claimedAt}`,
     });
     if (result.ok) sent++;
     else if (result.reason === "indeterminate") uncertain++;

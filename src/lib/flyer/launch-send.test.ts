@@ -16,10 +16,15 @@ const NOW = new Date("2026-12-01T12:00:00Z");
 const okFetch = (async () => new Response(null, { status: 200 })) as unknown as typeof fetch;
 
 /** An in-memory list whose claim sets `sent` once, like the UPDATE ... WHERE sent_at IS NULL. */
-function memoryStore(emails: string[]): LaunchStore & { sent: Set<string> } {
+function memoryStore(emails: string[]): LaunchStore & { sent: Set<string>; links: Map<string, string> } {
   const sent = new Set<string>();
+  const links = new Map<string, string>();
   return {
     sent,
+    links,
+    linkUnsubscribe: async (e, hash) => {
+      links.set(e, hash);
+    },
     waiting: async () => emails.filter((e) => !sent.has(e)).length,
     claimNext: async (skip) => {
       const next = emails.find((e) => !sent.has(e) && !skip.includes(e));
@@ -75,6 +80,16 @@ describe("sendLaunchBatch", () => {
     expect(to).toEqual(["a@x.dev", "b@x.dev", "c@x.dev"]);
   });
 
+  it("skips an address it released, so the batch moves on to the next one", async () => {
+    const store = memoryStore(["a@x.dev", "b@x.dev", "c@x.dev"]);
+    const { d, send } = deps(store, [{ ok: true }, { ok: false, reason: "failed" }, { ok: true }]);
+    expect(await sendLaunchBatch({ dryRun: false, limit: 3 }, d)).toMatchObject({ sent: 2, released: 1 });
+    const to = send.mock.calls.map((c) => (c as unknown as [unknown, { to: string }])[1].to);
+    expect(to).toEqual(["a@x.dev", "b@x.dev", "c@x.dev"]);
+    // b@ was released and waits for the next batch; it was never sent twice in this one.
+    expect([...store.sent].sort()).toEqual(["a@x.dev", "c@x.dev"]);
+  });
+
   it("caps a batch at LAUNCH_BATCH_MAX whatever is asked", async () => {
     const store = memoryStore(Array.from({ length: LAUNCH_BATCH_MAX + 5 }, (_, i) => `p${i}@x.dev`));
     const { d } = deps(store);
@@ -98,5 +113,19 @@ describe("sendLaunchBatch", () => {
     expect(mail.listUnsubscribe).toMatch(/^https:\/\/the-99\.dev\/api\/unsubscribe\?t=[A-Za-z0-9_-]{43}$/);
     expect(mail.idempotencyKey).toMatch(/^launch-[A-Za-z0-9_-]{22}-[0-9a-z]+$/);
     expect(mail.html).toContain("https://the-99.dev/unsubscribe?t=");
+  });
+
+  it("writes the unsubscribe hash before the mail goes out", async () => {
+    const store = memoryStore(["a@x.dev"]);
+    const order: string[] = [];
+    const linked = store.linkUnsubscribe;
+    store.linkUnsubscribe = async (e, h) => {
+      order.push("link");
+      await linked(e, h);
+    };
+    const { d } = deps(store);
+    await sendLaunchBatch({ dryRun: false, limit: 1 }, { ...d, send: async () => (order.push("send"), { ok: true }) });
+    expect(order).toEqual(["link", "send"]);
+    expect(store.links.get("a@x.dev")).toMatch(/^[0-9a-f]{64}$/);
   });
 });

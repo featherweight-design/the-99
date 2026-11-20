@@ -88,17 +88,16 @@ export const RATE_RULES = {
   "launch-list-all": { limit: 60, windowMs: 3_600_000 },
   "launch-list-all-day": { limit: 300, windowMs: 86_400_000 },
   /**
-   * A press on the launch email's unsubscribe link or its one-click POST (`/unsubscribe`, `/api/unsubscribe`), per VISITOR
-   * (`anon.ts`), ENFORCED: each press scans the launch list's addresses, so a stranger cannot make it scan without limit. An
-   * honest reader presses once; a mail scanner opening the link adds a few.
+   * An open of the launch email's unsubscribe link (`/unsubscribe`), per VISITOR (`anon.ts`), ENFORCED. Each is one indexed
+   * delete; this bounds a stranger's load. An honest reader opens it once; a mail scanner opening the link adds a few.
    */
   "launch-unsubscribe": { limit: 20, windowMs: 3_600_000 },
   /**
-   * The one-click POST's bound (`/api/unsubscribe`), across EVERY visitor: a mail provider's servers send one-click
-   * unsubscribes for many recipients from a few addresses, so a per-visitor limit would drop real ones. The token is the
-   * authority; this only bounds how often a stranger can make the list be scanned.
+   * The one-click POST (`/api/unsubscribe`), per VISITOR, ENFORCED, and high: a mail provider's servers send many recipients'
+   * one-click unsubscribes from a few addresses, so the limit sits far above any launch list's size. Not a ceiling across every
+   * visitor, which one stranger could spend for everyone. Each is one indexed delete.
    */
-  "launch-unsubscribe-all": { limit: 600, windowMs: 3_600_000 },
+  "launch-one-click": { limit: 600, windowMs: 3_600_000 },
   /**
    * Every email the app sends through Resend, per RECIPIENT (`src/lib/invites/mail-limits.ts`: the address folded by `foldEmail`
    * so `+tags` and Gmail dots share one count, then hashed, never stored), ENFORCED: 3 an hour and (the next bucket) 10 a day

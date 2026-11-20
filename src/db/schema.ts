@@ -4505,6 +4505,11 @@ export const launchList = pgTable("launch_list", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /** When the launch email claimed this address (`sendLaunchBatch`, `src/lib/flyer/launch-send.ts`): set before the send, so a rerun never mails it twice. */
   sentAt: timestamp("sent_at"),
+  /**
+   * SHA-256 of the address's unsubscribe token (`launch-unsubscribe.ts`), written with the claim: a press deletes by it in one
+   * indexed statement, and the table never holds the token itself. Null until the address is claimed (no link exists before).
+   */
+  unsubscribeHash: text("unsubscribe_hash").unique(),
 });
 
 /**
