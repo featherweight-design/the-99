@@ -192,7 +192,7 @@ export async function askForSpare(
  * this card, to someone other than the friend now asked. One row back means it was withdrawn.
  */
 export function withdrawForInsteadQuery(askerId: string, requestId: string, oracleId: string, holderId: string, now: Date): SQL {
-  return sql`update ${spareRequests} isr set status = 'withdrawn'
+  return sql`update ${spareRequests} isr set status = 'withdrawn', withdrawn_at = ${now.toISOString()}::timestamptz
     where isr.id = ${requestId} and isr.asker_user_id = ${askerId} and isr.oracle_id = ${oracleId}
       and isr.status = 'open' and isr.created_at > ${openFloor(now).toISOString()}::timestamptz
       and isr.holder_user_id <> ${holderId}
@@ -227,7 +227,7 @@ export async function askInsteadForSpare(
 
 /** ✕ on an OPEN ask (G1): the asker's own, still open and unexpired. Nobody is told. One row back means it landed. */
 export function withdrawQuery(askerId: string, requestId: string, now: Date): SQL {
-  return sql`update ${spareRequests} wdr set status = 'withdrawn'
+  return sql`update ${spareRequests} wdr set status = 'withdrawn', withdrawn_at = ${now.toISOString()}::timestamptz
     where wdr.id = ${requestId} and wdr.asker_user_id = ${askerId}
       and wdr.status = 'open' and wdr.created_at > ${openFloor(now).toISOString()}::timestamptz
     returning wdr.id`;

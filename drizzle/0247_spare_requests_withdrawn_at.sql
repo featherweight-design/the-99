@@ -1,0 +1,2 @@
+-- When the asker withdrew an open ask (request history). Nullable, no backfill: null is any other status, and an ask withdrawn before this column, which has no date to claim.
+ALTER TABLE "spare_requests" ADD COLUMN "withdrawn_at" timestamp with time zone;

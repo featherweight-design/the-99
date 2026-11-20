@@ -178,8 +178,8 @@ describe("loadIncomingAsks (G3: a card the holder no longer offers leaves Waitin
 describe("the asker's ✕ (G1)", () => {
   it("withdraws only the asker's own OPEN, unexpired ask", () => {
     const { q, params } = render(withdrawQuery("a", REQ, NOW));
-    expect(q).toBe(`update "spare_requests" wdr set status = 'withdrawn' where wdr.id = $1 and wdr.asker_user_id = $2 and wdr.status = 'open' and wdr.created_at > $3::timestamptz returning wdr.id`);
-    expect(params).toEqual([REQ, "a", openFloor(NOW).toISOString()]);
+    expect(q).toBe(`update "spare_requests" wdr set status = 'withdrawn', withdrawn_at = $1::timestamptz where wdr.id = $2 and wdr.asker_user_id = $3 and wdr.status = 'open' and wdr.created_at > $4::timestamptz returning wdr.id`);
+    expect(params).toEqual([NOW.toISOString(), REQ, "a", openFloor(NOW).toISOString()]);
   });
 
   it("clears an answered or expired ask from the asker's list, never deleting it, writing an open one past its days expired", () => {
@@ -209,8 +209,8 @@ describe("the asker's ✕ (G1)", () => {
 describe("Ask instead (G1: one transaction)", () => {
   it("withdraws only the asker's own open, unexpired ask for THIS card to ANOTHER friend", () => {
     const { q, params } = render(withdrawForInsteadQuery("a", REQ, CARD, "h2", NOW));
-    expect(q).toBe(`update "spare_requests" isr set status = 'withdrawn' where isr.id = $1 and isr.asker_user_id = $2 and isr.oracle_id = $3 and isr.status = 'open' and isr.created_at > $4::timestamptz and isr.holder_user_id <> $5 returning isr.id`);
-    expect(params).toEqual([REQ, "a", CARD, openFloor(NOW).toISOString(), "h2"]);
+    expect(q).toBe(`update "spare_requests" isr set status = 'withdrawn', withdrawn_at = $1::timestamptz where isr.id = $2 and isr.asker_user_id = $3 and isr.oracle_id = $4 and isr.status = 'open' and isr.created_at > $5::timestamptz and isr.holder_user_id <> $6 returning isr.id`);
+    expect(params).toEqual([NOW.toISOString(), REQ, "a", CARD, openFloor(NOW).toISOString(), "h2"]);
   });
 
   /** A transaction over a script of results, which rolls back (rejects) whenever its body throws. */

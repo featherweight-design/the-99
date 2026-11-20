@@ -4126,6 +4126,12 @@ export const spareRequests = pgTable("spare_requests", {
    * since no deck's Shopping list held it to begin with. Shopping's and the cart's asks are false.
    */
   standalone: boolean("standalone").notNull().default(false),
+  /**
+   * When the asker withdrew an open ask (request history, G2): the date the history page shows. Written by both withdraw
+   * paths (`withdrawQuery`, `withdrawForInsteadQuery`) in the same statement that sets the status. Null for any other
+   * status, and for an ask withdrawn before this column existed (no date is claimed for those).
+   */
+  withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
 }, (t) => [
   uniqueIndex("spare_requests_one_open").on(t.askerUserId, t.oracleId).where(sql`${t.status} = 'open'`),
   index("spare_requests_holder_idx").on(t.holderUserId, t.status),
