@@ -9,18 +9,23 @@
 // scrolling body, or under a 320px cap when embedded). Cancel takes focus, and the confirm is the elevated secondary, never red. The shortage figure is --danger ink, as A·E2 draws it.
 
 import { type RefObject, useEffect, useMemo, useRef, useState } from "react";
-import type { ShortDeck } from "../../lib/collection/write";
+import type { ShortDeck, ShortFacts } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { formatShortDeckDate } from "../../lib/decks/format";
 
-type DeckRow = { deckId: string; deckName: string; cards: { oracleId: string; cardName: string; short: number }[]; short: number };
+type DeckRow = { deckId: string; deckName: string; cards: { oracleId: string; cardName: string; short: number; facts?: ShortFacts }[]; short: number };
+
+const factsLine = (f: ShortFacts) =>
+  f.since === null ? collectionEditCopy.shortWarning.facts.lineUndated(f.listed) : collectionEditCopy.shortWarning.facts.line(f.listed, formatShortDeckDate(new Date(f.since)));
+const joinNames = (names: string[]) => (names.length <= 1 ? (names[0] ?? "") : `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}`);
 
 /** One row per deck, most short first; a tie keeps the order the server sent (stable sort). */
 export function groupShortDecks(decks: ShortDeck[]): DeckRow[] {
   const byDeck = new Map<string, DeckRow>();
   for (const d of decks) {
     const row = byDeck.get(d.deckId) ?? { deckId: d.deckId, deckName: d.deckName, cards: [], short: 0 };
-    row.cards.push({ oracleId: d.oracleId, cardName: d.cardName, short: d.short });
+    row.cards.push({ oracleId: d.oracleId, cardName: d.cardName, short: d.short, ...(d.facts ? { facts: d.facts } : {}) });
     row.short += d.short;
     byDeck.set(d.deckId, row);
   }
@@ -87,6 +92,7 @@ export function ShortDeckWarning({
     : source === "sync" ? c.confirmSync
     : c.confirmReplace;
   const body = (source === "remove" || source === "save") && cardName ? c.bodyCard(cardName) : c.body;
+  const cardName0 = rows[0]?.cards[0]?.cardName;
   const named = showAll ? rows : rows.slice(0, c.namedCount);
   const hidden = rows.length - c.namedCount;
   const ownCancelRef = useRef<HTMLButtonElement>(null);
@@ -150,6 +156,9 @@ export function ShortDeckWarning({
                     className="min-w-0 flex-1 truncate text-[14px] text-[color:var(--fg)]"
                   >
                     {row.deckName}
+                    {oneCard && row.cards[0]?.facts ? (
+                      <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{factsLine(row.cards[0].facts)}</span>
+                    ) : null}
                   </span>
                   {freshDeckIds?.has(row.deckId) ? (
                     <span className="flex-none rounded-[4px] border border-[color:var(--border-strong)] px-[5px] font-mono text-[10px] uppercase tracking-[0.08em] text-[color:var(--fg-muted)]">
@@ -173,7 +182,10 @@ export function ShortDeckWarning({
                   <ul className="m-0 list-none p-[0_14px_10px] text-[12.5px] text-[color:var(--fg-muted)]">
                     {row.cards.map((card) => (
                       <li key={card.oracleId} className="flex justify-between gap-[12px] py-[2px]">
-                        <span className="min-w-0 truncate">{card.cardName}</span>
+                        <span className="min-w-0 truncate">
+                          {card.cardName}
+                          {card.facts ? <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{factsLine(card.facts)}</span> : null}
+                        </span>
                         <span className="flex-none font-mono">{c.figureOne(card.short)}</span>
                       </li>
                     ))}
@@ -194,6 +206,17 @@ export function ShortDeckWarning({
             </li>
           ) : null}
         </ul>
+        {variant === "dialog" ? (() => {
+          // One card, and a row that says who keeps the copies ahead of it (R2 P5/D4, P6/D5): the reason a deck is short and where to change it.
+          const f = oneCard && rows.length === 1 ? rows[0]?.cards[0]?.facts : undefined;
+          const keepers = f?.keepers ?? [];
+          if (!f || keepers.length === 0 || !cardName0) return null;
+          const shortNames = joinNames(rows.map((r) => r.deckName));
+          const text = source === "undo"
+            ? c.facts.reasonUndo(shortNames, cardName0, joinNames(keepers))
+            : f.left >= 2 ? c.facts.reasonLeft(joinNames(keepers), f.left, shortNames, cardName0) : null;
+          return text ? <p className="m-0 flex-none text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{text}</p> : null;
+        })() : null}
         {error ? (
           <p role="alert" className="m-0 flex-none text-[13px] text-[color:var(--danger)]">
             {error}

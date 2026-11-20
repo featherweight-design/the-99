@@ -300,6 +300,14 @@ export type ReceiptSnapshots = {
   owes?: Record<string, number>;
 };
 
+/**
+ * What the warning's rows say beside a short deck (removal chooser R2, #2983): how many copies the deck lists, when it committed
+ * the card (the allocation's `since`), the committed decks that keep a copy ahead of it, and how many copies are left. Read from
+ * the same claims the shortfall is, so the row and the answer cannot disagree. Optional: a client that echoes an older warning
+ * back (`confirmShort`) sends none, and `warningCovers` never reads it.
+ */
+export type ShortFacts = { listed: number; since: number | null; keepers: string[]; left: number };
+
 export type ShortDeck = {
   deckId: string;
   deckName: string;
@@ -307,7 +315,21 @@ export type ShortDeck = {
   cardName: string;
   /** How many more copies this deck is short of than before the change. */
   short: number;
+  facts?: ShortFacts;
 };
+
+/** The facts beside one short deck on one card, from the claims after the change. Null for a deck the allocation does not list. */
+export function shortFacts(a: Pick<Availability, "owned" | "claims">, deckId: string): ShortFacts | null {
+  const claimants = allocateClaims(a).filter((c) => !c.brew);
+  const me = claimants.find((c) => c.deckId === deckId);
+  if (!me) return null;
+  return {
+    listed: me.quantity,
+    since: me.since,
+    keepers: claimants.filter((c) => c.deckId !== deckId && c.allocated > 0).map((c) => c.deckName),
+    left: a.owned,
+  };
+}
 
 /**
  * The removal chooser's data (#2983): a card the change leaves with EXACTLY ONE copy and two or more committed decks
@@ -614,6 +636,11 @@ export function parseShortDecks(value: unknown): ShortDeck[] {
     && Number.isInteger(d.short));
 }
 
+const factsOf = (a: Pick<Availability, "owned" | "claims">, deckId: string): { facts?: ShortFacts } => {
+  const facts = shortFacts(a, deckId);
+  return facts ? { facts } : {};
+};
+
 /** The decks a change leaves shorter on a card than they were, and by how many. */
 export function newlyShort(
   before: Map<string, Pick<Availability, "owned" | "claims">>,
@@ -632,14 +659,14 @@ export function newlyShort(
       for (const [deckId, b] of committedShortfalls(was)) {
         const claim = was.claims.find((c) => c.id === deckId)!;
         const whole = Math.max(claim.quantity, 0);
-        if (whole > b.short) out.push({ deckId, deckName: b.name, oracleId, cardName: names.get(oracleId) ?? "", short: whole - b.short });
+        if (whole > b.short) out.push({ deckId, deckName: b.name, oracleId, cardName: names.get(oracleId) ?? "", short: whole - b.short, ...factsOf({ owned: 0, claims: was.claims }, deckId) });
       }
       continue;
     }
     const prior = was ? committedShortfalls(was) : new Map<string, { short: number }>();
     for (const [deckId, n] of committedShortfalls(now)) {
       const grew = n.short - (prior.get(deckId)?.short ?? 0);
-      if (grew > 0) out.push({ deckId, deckName: n.name, oracleId, cardName: names.get(oracleId) ?? "", short: grew });
+      if (grew > 0) out.push({ deckId, deckName: n.name, oracleId, cardName: names.get(oracleId) ?? "", short: grew, ...factsOf(now, deckId) });
     }
   }
   return out;

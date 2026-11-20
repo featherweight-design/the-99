@@ -104,4 +104,30 @@ describe("ShortDeckWarning", () => {
     expect(screen.queryByText(/Nothing about these decks changes/)).toBeNull();
   });
 
+
+  describe("facts and the reason line (#2983 R2)", () => {
+    const facts = (extra: Partial<NonNullable<ShortDeck["facts"]>> = {}) => ({ listed: 1, since: Date.UTC(2026, 9, 1, 12), keepers: ["Deck k"], left: 2, ...extra });
+    const withFacts = (deckId: string, f = facts()): ShortDeck => ({ ...line(deckId, "x", 1), facts: f });
+
+    it("a one-card row says what the deck lists and when it committed, with nothing to open", () => {
+      draw([withFacts("a")]);
+      expect(screen.getByText("lists 1 · committed it Oct 1")).toBeTruthy();
+    });
+
+    it("with two or more copies left it says who keeps them and where to give one instead", () => {
+      draw([withFacts("a")], { source: "remove", cardName: "Sol Ring" });
+      expect(screen.getByText(/Deck k committed it first, so they keep the 2 copies left\. To give one to Deck a instead, tap Change under In your decks on/)).toBeTruthy();
+    });
+
+    it("an Undo says the short deck committed the card after the keeper", () => {
+      draw([withFacts("a", facts({ left: 1 }))], { source: "undo", cardName: "Sol Ring" });
+      expect(screen.getByText(/Deck a goes short because it committed .* after Deck k\. To change that, tap Change under In your decks on/)).toBeTruthy();
+    });
+
+    it("draws no reason when no deck keeps a copy ahead of it, and an undated deck reads only what it lists", () => {
+      draw([withFacts("a", facts({ keepers: [], since: null }))], { source: "remove", cardName: "Sol Ring" });
+      expect(screen.queryByText(/committed it first/)).toBeNull();
+      expect(screen.getByText("lists 1")).toBeTruthy();
+    });
+  });
 });

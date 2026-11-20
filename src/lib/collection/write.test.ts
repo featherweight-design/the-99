@@ -251,7 +251,15 @@ describe("newlyShort", () => {
     const before = new Map([[A, { owned: 2, claims: [claim("old", 1, 100), claim("young", 1, 200)] }]]);
     const after = new Map([[A, { owned: 1, claims: [claim("old", 1, 100), claim("young", 1, 200)] }]]);
     expect(newlyShort(before, after, [A], names)).toEqual([
-      { deckId: "young", deckName: "deck young", oracleId: A, cardName: "Sol Ring", short: 1 },
+      { deckId: "young", deckName: "deck young", oracleId: A, cardName: "Sol Ring", short: 1, facts: { listed: 1, since: 200, keepers: ["deck old"], left: 1 } },
+    ]);
+  });
+
+  it("carries the facts a warning row draws: what the deck lists, when it committed, who keeps a copy ahead of it, how many are left", () => {
+    const after = new Map([[A, { owned: 2, claims: [claim("a", 1, 100), claim("b", 1, 200), claim("c", 2, 300)] }]]);
+    const before = new Map([[A, { owned: 4, claims: [claim("a", 1, 100), claim("b", 1, 200), claim("c", 2, 300)] }]]);
+    expect(newlyShort(before, after, [A], names)).toEqual([
+      { deckId: "c", deckName: "deck c", oracleId: A, cardName: "Sol Ring", short: 2, facts: { listed: 2, since: 300, keepers: ["deck a", "deck b"], left: 2 } },
     ]);
   });
 
@@ -277,7 +285,7 @@ describe("newlyShort", () => {
     // The claim read is driven by the collection, so a card with no row left is absent after.
     const before = new Map([[A, { owned: 1, claims: [claim("old", 1, 100), claim("brew", 1, null)] }]]);
     expect(newlyShort(before, new Map(), [A], names)).toEqual([
-      { deckId: "old", deckName: "deck old", oracleId: A, cardName: "Sol Ring", short: 1 },
+      { deckId: "old", deckName: "deck old", oracleId: A, cardName: "Sol Ring", short: 1, facts: { listed: 1, since: 100, keepers: [], left: 0 } },
     ]);
   });
 });
