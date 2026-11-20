@@ -15,6 +15,8 @@ import { getRankedList } from "../../lib/recs/ranked-list";
 import { buildableCount } from "../../lib/recs/buildable";
 import { DecksView } from "../../components/decks/decks-view";
 import { cookies } from "next/headers";
+import { ZoneProvider } from "../../components/zone-context";
+import { resolveZone } from "../../lib/zone/server";
 import { readLineupCached } from "../../lib/lineup/cached";
 import { requestFlags } from "../../lib/flags/request";
 import { DECKS_STATS_OPEN_COOKIE } from "../../components/ui/view-cookie";
@@ -153,24 +155,26 @@ export default async function DecksPage({
   return (
     <>
     <ToolLandingMount landing={landing} request={request} />
-    <DecksView
-      decks={data.decks}
-      folders={data.folders}
-      shopping={data.shopping}
-      precons={preconSummary ? { summary: await preconSummary } : null}
-      friendPrefs={friendPrefs}
-      buildable={data.buildable}
-      cards={data.cards}
-      // One clock for the whole page, read on the server. Every relative date
-      // below agrees because they are all measured against this instant.
-      now={new Date().toISOString()}
-      lineup={{
-        data: lineupData ? await lineupData : null,
-        view,
-        foldServer: jar.get(DECKS_STATS_OPEN_COOKIE)?.value ?? null,
-      }}
-      games={{ data: games, failed: gamesFailed }}
-    />
+    <ZoneProvider zone={await resolveZone()}>
+      <DecksView
+        decks={data.decks}
+        folders={data.folders}
+        shopping={data.shopping}
+        precons={preconSummary ? { summary: await preconSummary } : null}
+        friendPrefs={friendPrefs}
+        buildable={data.buildable}
+        cards={data.cards}
+        // One clock for the whole page, read on the server. Every relative date
+        // below agrees because they are all measured against this instant.
+        now={new Date().toISOString()}
+        lineup={{
+          data: lineupData ? await lineupData : null,
+          view,
+          foldServer: jar.get(DECKS_STATS_OPEN_COOKIE)?.value ?? null,
+        }}
+        games={{ data: games, failed: gamesFailed }}
+      />
+    </ZoneProvider>
     </>
   );
 }

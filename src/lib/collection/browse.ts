@@ -3,6 +3,7 @@ import { matchesColors, type JoinMode } from "../commanders/filter";
 import { availabilityState, type Availability, type AvailabilityState, type AvailabilitySummary } from "../decks/availability";
 import { printedFaceName, printedNameOf } from "../cards/printed-name";
 import { frontFace } from "../cards/facet";
+import { wall } from "../time/zoned";
 
 /** Rarity ordering for the "rarity" sort key. */
 const RARITY_ORDER: Record<string, number> = { common: 0, uncommon: 1, rare: 2, mythic: 3 };
@@ -449,14 +450,21 @@ export { cssUrl } from "../cards/css-url";
 export const ART_STRIPES =
   "repeating-linear-gradient(135deg, var(--surface) 0 11px, var(--surface-sunken) 11px 22px), var(--bg)";
 
-/** Subtitle date per design: "today" / "yesterday" / "Jul 12" (year appended when not current). */
-export function formatLastUpdated(date: Date, now: Date = new Date()): string {
-  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+/**
+ * Subtitle date per design: "today" / "yesterday" / "Jul 12" (year appended when not current), by the calendar of `zone`,
+ * the reader's (`resolveZone`); null is UTC.
+ */
+export function formatLastUpdated(date: Date, now: Date = new Date(), zone: string | null = null): string {
+  const z = zone ?? "UTC";
+  const day = (d: Date) => {
+    const w = wall(d, z);
+    return Date.UTC(w.y, w.mo - 1, w.d);
+  };
   const diffDays = Math.round((day(now) - day(date)) / 86_400_000);
   if (diffDays <= 0) return "today";
   if (diffDays === 1) return "yesterday";
-  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric" };
-  if (date.getFullYear() !== now.getFullYear()) opts.year = "numeric";
+  const opts: Intl.DateTimeFormatOptions = { month: "short", day: "numeric", timeZone: z };
+  if (wall(date, z).y !== wall(now, z).y) opts.year = "numeric";
   return date.toLocaleDateString("en-US", opts);
 }
 

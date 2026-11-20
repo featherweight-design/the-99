@@ -17,6 +17,8 @@
 import { requireUserId } from "../../../lib/auth";
 import { getCollectionLastUpdated, getCollectionStats } from "../../../lib/home/summary";
 import { formatLastUpdated } from "../../../lib/collection/browse";
+import { ZoneProvider } from "../../../components/zone-context";
+import { resolveZone } from "../../../lib/zone/server";
 import { collectionHasHistory } from "../../../lib/collection/history";
 import { perfRead } from "../../../lib/perf/timing";
 import { CollectionPlaceHead } from "../../../components/collection/collection-place-head";
@@ -28,6 +30,8 @@ export default async function CollectionListLayout({
   children: React.ReactNode;
 }) {
   const userId = await requireUserId();
+  // The reader's zone (`the99_tz`), read in the body: the head label and the Date added figures count their calendar days.
+  const timeZone = await resolveZone();
   const [stats, lastUpdated, historyHasEntries] = await Promise.all([
     getCollectionStats(userId),
     perfRead("collection.lastUpdated", () => getCollectionLastUpdated(userId)),
@@ -37,11 +41,13 @@ export default async function CollectionListLayout({
   // Formatted here rather than handed down as a raw `Date`: the head is a Client Component
   // and would otherwise recompute the label against the browser's clock and timezone on
   // hydration, which can disagree with what this server render produced.
-  const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated) : null;
+  const lastUpdatedLabel = lastUpdated ? formatLastUpdated(lastUpdated, new Date(), timeZone) : null;
   return (
     <>
       <CollectionPlaceHead stats={stats} lastUpdatedLabel={lastUpdatedLabel} editEnabled historyHasEntries={historyHasEntries} preconPick scan wishlistEnabled />
-      <CollectionContentScope>{children}</CollectionContentScope>
+      <ZoneProvider zone={timeZone}>
+        <CollectionContentScope>{children}</CollectionContentScope>
+      </ZoneProvider>
     </>
   );
 }

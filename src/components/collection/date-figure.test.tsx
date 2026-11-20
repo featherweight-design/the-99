@@ -26,3 +26,12 @@ describe("readCardDate", () => {
     expect(dateSpoken({})).toBeNull();
   });
 });
+
+describe("readCardDate in the reader's zone", () => {
+  it("reads an exact day on the reader's calendar, and a since day as UTC", () => {
+    const added = Date.UTC(2026, 9, 12, 3) / 60_000; // Oct 11 evening in Denver
+    expect(readCardDate({ added }, NOW, "America/Denver")?.text).toBe("Oct 11");
+    expect(readCardDate({ added }, NOW, null)?.text).toBe("Oct 12");
+    expect(readCardDate({ since: Date.UTC(2026, 8, 2) / 86_400_000 }, NOW, "America/Denver")?.text).toBe("since Sep 2");
+  });
+});
