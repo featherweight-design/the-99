@@ -143,6 +143,11 @@ describe("aggregates", () => {
     // failed the whole Games view in production.
     expect(q.sql).toMatch(/ group by 1 order by 1 desc$/);
     expect(q.sql.match(/at time zone \$/g)).toHaveLength(1);
+    // The month is select item 1, the position the group by and order by name.
+    expect(q.sql).toMatch(/^select to_char\(/);
+    const denver = historyMonthsQuery(VIEWER, {}, "America/Denver").toSQL().sql;
+    expect(denver.match(/at time zone \$/g)).toHaveLength(1);
+    expect(denver).toMatch(/ group by 1 order by 1 desc$/);
     // The zone is a bound value, never spliced into the text.
     expect(historyMonthsQuery(VIEWER, {}, "America/Denver").toSQL().params).toContain("America/Denver");
     expect(q.sql).not.toMatch(/limit/);
