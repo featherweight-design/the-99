@@ -7,6 +7,8 @@ import {
   commanderPairSupportCards,
   commanderSupport,
   commanderSupportCards,
+  commanderThemeSupport,
+  commanderThemeSupportCards,
   decks,
   formatStaples,
   identityComposition,
@@ -32,6 +34,9 @@ export type IndexSnapshot = {
   supportCards: (typeof commanderSupportCards.$inferSelect)[];
   pairs: (typeof commanderPairSupport.$inferSelect)[];
   pairCards: (typeof commanderPairSupportCards.$inferSelect)[];
+  /** Theme pages (engine plan A3). Empty is legitimate: a source built before the theme pass. */
+  themes: (typeof commanderThemeSupport.$inferSelect)[];
+  themeCards: (typeof commanderThemeSupportCards.$inferSelect)[];
   staples: (typeof formatStaples.$inferSelect)[];
   composition: (typeof identityComposition.$inferSelect)[];
   /** The newest index build's label fingerprint (`labelsOf`), read in the same snapshot. */
@@ -118,6 +123,8 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     copyTable("commander_support_cards", commanderSupportCards),
     copyTable("commander_pair_support", commanderPairSupport),
     copyTable("commander_pair_support_cards", commanderPairSupportCards),
+    copyTable("commander_theme_support", commanderThemeSupport),
+    copyTable("commander_theme_support_cards", commanderThemeSupportCards),
     copyTable("format_staples", formatStaples),
     copyTable("identity_composition", identityComposition),
   ],
@@ -126,6 +133,8 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     supportCards: await tx.select().from(commanderSupportCards),
     pairs: await tx.select().from(commanderPairSupport),
     pairCards: await tx.select().from(commanderPairSupportCards),
+    themes: await tx.select().from(commanderThemeSupport),
+    themeCards: await tx.select().from(commanderThemeSupportCards),
     staples: await tx.select().from(formatStaples),
     composition: await tx.select().from(identityComposition),
     labelFingerprint: labelsOf((await latestBuild(tx, "index"))?.report ?? null),
@@ -160,7 +169,8 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
   },
   describe: (s) =>
     `${s.support.length} commanders · ${s.supportCards.length} support cards · ${s.pairs.length} pairs · ` +
-    `${s.pairCards.length} pair cards · ${s.staples.length} staples · ${s.composition.length} compositions`,
+    `${s.pairCards.length} pair cards · ${s.themes.length} theme pages · ${s.themeCards.length} theme cards · ` +
+    `${s.staples.length} staples · ${s.composition.length} compositions`,
   // Before the dry-run return, so `--dry-run` reports a label mismatch the real copy would refuse.
   targetRefusal: (target, s) => targetLabelRefusal(target, s),
   publish: async (tx, s) => {
@@ -191,9 +201,13 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
       : `pairs: ${gap.length} pair(s) the target's decks hold are not in the copy: ` +
         gap.map((p) => `${p.commanderOracleId}+${p.partnerOracleId}`).join(", "));
 
-    // 3 · The card lists are replaced whole, so clear them before their parents move.
+    // 3 · The card lists are replaced whole, so clear them before their parents move. Theme pages are
+    // replaced whole too: they carry nothing target-only, and a header upsert would never cascade them
+    // away, so a theme the source dropped would outlive it on the target.
     await tx.delete(commanderPairSupportCards);
     await tx.delete(commanderSupportCards);
+    await tx.delete(commanderThemeSupportCards);
+    await tx.delete(commanderThemeSupport);
 
     // 4 · Headers: delete what the source lacks, upsert the rest, prose left where it is. Exact,
     // because `readIndexGeneration` keys on max(computed_at) and a target-only row could pin it.
@@ -217,6 +231,9 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     // 5 · Refill the card lists, and replace the two derived tables.
     await insertAll(tx, commanderSupportCards, s.supportCards);
     await insertAll(tx, commanderPairSupportCards, s.pairCards);
+    // After the headers they hang from.
+    await insertAll(tx, commanderThemeSupport, s.themes);
+    await insertAll(tx, commanderThemeSupportCards, s.themeCards);
     await tx.delete(formatStaples);
     await insertAll(tx, formatStaples, s.staples);
     await tx.delete(identityComposition);

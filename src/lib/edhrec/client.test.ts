@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
-import { cacheRowRetired, fetchEdhrecUncached, resolveEdhrecData, type EdhrecCacheRow } from "./client";
+import { cacheRowRetired, fetchEdhrecThemeUncached, fetchEdhrecUncached, resolveEdhrecData, type EdhrecCacheRow } from "./client";
 import { parseEdhrecPayload } from "./parse";
 
 function mockFetch(status: number, htmlStatus = 200): ReturnType<typeof vi.fn> {
@@ -17,6 +17,23 @@ function mockFetch(status: number, htmlStatus = 200): ReturnType<typeof vi.fn> {
   vi.stubGlobal("fetch", fn);
   return fn;
 }
+
+describe("fetchEdhrecThemeUncached", () => {
+  it("asks for the commander's theme page, and tells a missing page from a throttle on that page's own HTML", async () => {
+    const fn = mockFetch(403, 404);
+    expect(await fetchEdhrecThemeUncached("Atraxa, Praetors' Voice", "planeswalkers")).toEqual({ data: null, unreachable: false });
+    expect(fn.mock.calls[0][0]).toBe("https://json.edhrec.com/pages/commanders/atraxa-praetors-voice/planeswalkers.json");
+    expect(fn).toHaveBeenLastCalledWith(
+      "https://edhrec.com/commanders/atraxa-praetors-voice/planeswalkers",
+      expect.objectContaining({ method: "HEAD" }),
+    );
+  });
+
+  it("reads a 429 as unreachable, so the previous theme rows stand", async () => {
+    mockFetch(429);
+    expect(await fetchEdhrecThemeUncached("Atraxa, Praetors' Voice", "planeswalkers")).toEqual({ data: null, unreachable: true });
+  });
+});
 
 describe("fetchEdhrecUncached", () => {
   it("returns unreachable: true for a 429 so the previous index row is preserved", async () => {

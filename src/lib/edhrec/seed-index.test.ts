@@ -33,6 +33,7 @@ const okResult = (topCards: string[]) => ({
 it("writes one header per commander and one child row per resolved card", async () => {
   const writes: { header: { synergyState: string; edhrecTotal: number | null }; cards: unknown[] }[] = [];
   const r = await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -64,6 +65,7 @@ it("writes one header per commander and one child row per resolved card", async 
 it("counts an unresolvable name without dropping it from edhrecTotal", async () => {
   let seen: { edhrecTotal: number | null } | undefined;
   const r = await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -90,6 +92,7 @@ it("does not write at all when EDHREC is unreachable", async () => {
   // existing row survive untouched, so the only correct write is no write.
   const writes: unknown[] = [];
   const r = await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -114,6 +117,7 @@ it("writes an absent header when EDHREC genuinely has no page", async () => {
   // and distinct from a failure to ask. It is written.
   let seen: { synergyState: string; edhrecTotal: number | null } | undefined;
   const r = await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -136,6 +140,7 @@ it("writes an absent header when EDHREC genuinely has no page", async () => {
 
 it("does not abort the run when one commander throws", async () => {
   const r = await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -160,6 +165,7 @@ it("does not abort the run when one commander throws", async () => {
 it("skips commanders already computed after the run start when resuming", async () => {
   const fetch = vi.fn(async () => okResult([]));
   const r = await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -182,6 +188,7 @@ it("skips commanders already computed after the run start when resuming", async 
 it("waits delayMs between fetches so EDHREC is not hammered", async () => {
   const sleeps: number[] = [];
   await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -207,6 +214,7 @@ it("waits delayMs between fetches so EDHREC is not hammered", async () => {
 // all-or-nothing and why removing it would otherwise be invisible.
 it("clears persisted scores once, after a run that wrote something", async () => {
   await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -228,6 +236,7 @@ it("clears persisted scores once, after a run that wrote something", async () =>
 // scores for it would be a self-inflicted cold start.
 it("leaves persisted scores alone when the run wrote nothing", async () => {
   await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -253,6 +262,7 @@ it("leaves persisted scores alone when the run wrote nothing", async () => {
 // computed against the previous index if the clear were gated on writes alone.
 it("clears persisted scores on a resume that wrote nothing but skipped work", async () => {
   await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -275,6 +285,7 @@ it("clears persisted scores on a resume that wrote nothing but skipped work", as
 // skipped, everything failed. The index did not move, so the scores stand.
 it("leaves scores alone when every commander failed and none was skipped", async () => {
   await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -319,6 +330,7 @@ it("clears scores under an exclusive index lock, in a transaction", async () => 
   stub.db.transaction = (cb: (t: typeof tx) => Promise<void>) => cb(tx);
 
   await buildCommanderIndex({
+    themePages: "off",
     // The pair pass is injected empty: these cases cover the single-commander walk, and the
     // pair projection has its own suite. A default that reached the database would make every
     // one of these tests need a real Postgres.
@@ -372,6 +384,7 @@ describe("buildCommanderIndex — the pair pass", () => {
     const other = { ...pair, a: `${pair.a}-other`, nameA: "Other" };
     const fetched: string[] = [];
     const r = await buildCommanderIndex({
+    themePages: "off",
       ...noCommanders,
       loadPairs: async () => [pair, other],
       loadAlreadyComputedPairs: async () => new Set([`${pair.a}|${pair.b}`]),
@@ -387,6 +400,7 @@ describe("buildCommanderIndex — the pair pass", () => {
   // the refusal costs the widening, never the pairs the index already carried.
   it("reports a refused legal sweep and still indexes the built pairs", async () => {
     const r = await buildCommanderIndex({
+    themePages: "off",
       ...noCommanders,
       loadPairs: async () => ({ pairs: [pair], legal: 12, refusal: "only 12 legal partner pairs" }),
       fetchPair: async () => okResult,
@@ -400,6 +414,7 @@ describe("buildCommanderIndex — the pair pass", () => {
   it("fetches and writes a pair present in decks", async () => {
     const written: unknown[] = [];
     const r = await buildCommanderIndex({
+    themePages: "off",
       ...noCommanders,
       loadPairs: async () => [pair],
       fetchPair: async () => okResult,
@@ -416,6 +431,7 @@ describe("buildCommanderIndex — the pair pass", () => {
   it("does not write a degraded pair", async () => {
     const written: unknown[] = [];
     const r = await buildCommanderIndex({
+    themePages: "off",
       ...noCommanders,
       loadPairs: async () => [pair],
       fetchPair: async () => ({ data: null, unreachable: true, rawPayload: null }),
@@ -433,6 +449,7 @@ describe("buildCommanderIndex — the pair pass", () => {
   it("counts a failed pair without abandoning the rest of the pass", async () => {
     let calls = 0;
     const r = await buildCommanderIndex({
+    themePages: "off",
       ...noCommanders,
       loadPairs: async () => [pair, { ...pair, a: A, b: "33333333-3333-4333-8333-333333333333" }],
       fetchPair: async () => { if (++calls === 1) throw new Error("boom"); return okResult; },
@@ -470,6 +487,7 @@ describe("the score clear runs before the pair pass", () => {
     let cleared = 0;
     await expect(
       buildCommanderIndex({
+    themePages: "off",
         loadPairs: async () => {
           throw new Error("pair query failed");
         },
@@ -493,6 +511,7 @@ describe("the score clear runs before the pair pass", () => {
   it("does not clear when no commander was written or skipped", async () => {
     let cleared = 0;
     await buildCommanderIndex({
+    themePages: "off",
       loadPairs: async () => [],
       loadCommanders: async () => [],
       loadNameIndex: async () => [],
@@ -515,6 +534,7 @@ describe("buildCommanderIndex — the role-target pass", () => {
   it("runs the pass and reports what it wrote", async () => {
     let ran = 0;
     const r = await buildCommanderIndex({
+    themePages: "off",
       loadCommanders: async () => [],
       loadNameIndex: async () => [],
       loadPairs: async () => [],
@@ -539,6 +559,7 @@ describe("buildCommanderIndex — the role-target pass", () => {
   // swallowing it would publish a partial set silently, which is the worse half.
   it("lets a refusal fail the run rather than swallowing it", async () => {
     await expect(buildCommanderIndex({
+    themePages: "off",
       loadCommanders: async () => [],
       loadNameIndex: async () => [],
       loadPairs: async () => [],
@@ -559,6 +580,7 @@ describe("buildCommanderIndex — the role-target pass", () => {
 it("hands the role pass exactly the commanders it wrote, and no others", async () => {
   let handed: { commanders: readonly string[] } | null = null;
   await buildCommanderIndex({
+    themePages: "off",
     loadPairs: async () => [],
     deriveRoleTargets: async (written) => {
       handed = written;
@@ -592,6 +614,7 @@ describe("pairRunProblem", () => {
     commanders: 0, roleTargets: 0, pairRoleTargets: 0, labelFingerprint: null, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0, pairs: 0, pairCardRows: 0, pairsFailed: 0,
     pairsDegraded: 0, pairsUnresolved: 0, pairsSkipped: 0, legalPairs: 1717, pairRefusal: null,
+    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesStopped: false,
     ...over,
   });
 
@@ -629,6 +652,7 @@ describe("pairRunProblem", () => {
 it("clears again after the role pass writes targets", async () => {
   const order: string[] = [];
   await buildCommanderIndex({
+    themePages: "off",
     loadPairs: async () => [],
     deriveRoleTargets: async () => { order.push("roles"); return { written: 1, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }; },
     loadCommanders: async () => [commander("A", "a")],
@@ -646,6 +670,7 @@ it("clears again after the role pass writes targets", async () => {
 it("clears again when the role pass refuses", async () => {
   const order: string[] = [];
   await expect(buildCommanderIndex({
+    themePages: "off",
     loadPairs: async () => [],
     deriveRoleTargets: async () => { order.push("roles"); throw new Error("role targets REFUSED"); },
     loadCommanders: async () => [commander("A", "a")],
@@ -665,6 +690,7 @@ it("retries the clear on the error path when only the role pass published", asyn
   const order: string[] = [];
   let clears = 0;
   await expect(buildCommanderIndex({
+    themePages: "off",
     loadPairs: async () => [],
     deriveRoleTargets: async () => { order.push("roles"); return { written: 3279, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }; },
     loadCommanders: async () => [],
@@ -711,5 +737,80 @@ describe("labelCoverage", () => {
   it("is 0 with nothing to measure, so the label pass writes nothing", () => {
     expect(labelCoverage([], new Set(["a"]))).toBe(0);
     expect(labelCoverage([], new Set()) >= LABEL_COVERAGE_FLOOR).toBe(false);
+  });
+});
+
+// Engine plan A3: a written commander's top theme pages, fetched behind the same delay and written
+// in one replace per commander.
+describe("the theme pass", () => {
+  const tagged = (tags: { slug: string; count: number }[]) => {
+    const r = okResult(["Sol Ring"]);
+    return { ...r, data: { ...r.data, tags: tags.map((t) => ({ ...t, label: t.slug })) } };
+  };
+  const base = (over: Partial<Parameters<typeof buildCommanderIndex>[0]>) => buildCommanderIndex({
+    themePages: "off",
+    loadPairs: async () => [],
+    deriveRoleTargets: async () => ({ written: 0, pairsWritten: 0, zeroWipes: 0, labelFingerprint: null, labelCoverage: 0 }),
+    loadNameIndex: async () => [{ oracleId: "s", name: "Sol Ring" }],
+    write: async () => {},
+    clearScores: async () => {},
+    delayMs: 0,
+    ...over,
+  });
+
+  it("fetches the top themes of each written commander and writes them in one replace", async () => {
+    const asked: string[] = [];
+    const written: { id: string; slugs: string[]; keep: string[] }[] = [];
+    const r = await base({
+      loadCommanders: async () => [commander("Atraxa, Praetors' Voice", "a")],
+      fetch: async () => tagged([{ slug: "infect", count: 3545 }, { slug: "planeswalkers", count: 1789 }, { slug: "tiny", count: 10 }]),
+      themePages: {
+        fetch: async (name, theme) => { asked.push(`${name}/${theme}`); return okResult(["Sol Ring"]); },
+        write: async (id, themes, keep) => { written.push({ id, slugs: themes.map((t) => t.header.slug), keep }); },
+      },
+    });
+    expect(asked).toEqual(["Atraxa, Praetors' Voice/infect", "Atraxa, Praetors' Voice/planeswalkers"]);
+    expect(written).toEqual([{ id: "a", slugs: ["infect", "planeswalkers"], keep: [] }]);
+    expect(r.themePages).toBe(2);
+    expect(r.themeCardRows).toBe(2);
+  });
+
+  it("clears an absent commander's themes, and fetches none for it", async () => {
+    const written: { id: string; n: number }[] = [];
+    let fetched = 0;
+    await base({
+      loadCommanders: async () => [commander("Gone", "x")],
+      fetch: async () => ({ data: null, unreachable: false }),
+      themePages: { fetch: async () => { fetched++; return okResult([]); }, write: async (id, themes) => { written.push({ id, n: themes.length }); } },
+    });
+    expect(written).toEqual([{ id: "x", n: 0 }]);
+    expect(fetched).toBe(0);
+  });
+
+  it("keeps an unreachable theme's previous rows, and stops the walk after three unreachable in a row", async () => {
+    const keeps: string[][] = [];
+    let fetched = 0;
+    const r = await base({
+      loadCommanders: async () => [commander("A", "a"), commander("B", "b")],
+      fetch: async () => tagged([{ slug: "one", count: 900 }, { slug: "two", count: 800 }, { slug: "three", count: 700 }]),
+      themePages: {
+        fetch: async () => { fetched++; return { data: null, unreachable: true }; },
+        write: async (_id, _themes, keep) => { keeps.push(keep); },
+      },
+    });
+    expect(fetched).toBe(3);
+    expect(r.themesStopped).toBe(true);
+    expect(r.themesDegraded).toBe(3);
+    // The stop returns before the write: A's stored themes stand untouched, and B is never asked.
+    expect(keeps).toEqual([]);
+    expect(r.commanders).toBe(2);
+  });
+
+  it("fetches no theme with the pass off", async () => {
+    const r = await base({
+      loadCommanders: async () => [commander("A", "a")],
+      fetch: async () => tagged([{ slug: "one", count: 900 }]),
+    });
+    expect(r.themePages).toBe(0);
   });
 });

@@ -1,7 +1,7 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
-  cards, commanderSupport, commanderSupportCards,
+  cards, commanderSupport, commanderSupportCards, commanderThemeSupport, commanderThemeSupportCards,
   commanderPairSupport, commanderPairSupportCards, decks, identityComposition,
 } from "../../db/schema";
 import { retirePersistedScoresIn } from "../recs/score-lock";
@@ -12,13 +12,13 @@ import {
 } from "./role-targets";
 import { readLabelRoleBasis } from "../labels/read";
 import { isCommanderCandidate } from "../recs/score";
-import { edhrecInit, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
+import { edhrecInit, fetchEdhrecThemeUncached, fetchEdhrecUncached, type EdhrecFetchResult } from "./client";
 import {
   canonicalPair, fetchPair, toPairRows,
   type PairCardRow, type PairHeaderRow,
 } from "./pair";
 import {
-  buildNameIndex, toSupportRows,
+  buildNameIndex, themeSlugsToFetch, toSupportRows, toThemeSupportRows, type ThemeSupportHeader,
   type IndexCommander, type SupportCard, type SupportHeader,
 } from "./index-build";
 
@@ -58,9 +58,29 @@ export type BuildIndexOptions = {
   loadAlreadyComputedPairs?: () => Promise<Set<string>>;
   fetchPair?: (nameA: string, nameB: string) => Promise<EdhrecFetchResult>;
   writePair?: (header: PairHeaderRow, cards: PairCardRow[]) => Promise<void>;
+  /**
+   * The theme pass (engine plan A3): a commander's theme page, and the write that replaces its
+   * stored themes. REQUIRED, with no default, for `loadPairs`'s reason: a default reaching live
+   * EDHREC and the database would send every test and probe that injects `fetch` to both, about
+   * 4,500 pages. The job passes `THEME_PASS`; anything else passes `"off"` or its own fakes.
+   */
+  themePages: ThemePass | "off";
   delayMs?: number;
   sleep?: (ms: number) => Promise<void>;
 };
+
+export type ThemePass = {
+  fetch: (commanderName: string, theme: string) => Promise<EdhrecFetchResult>;
+  write: (commanderOracleId: string, themes: ThemeWrite[], keepSlugs: string[]) => Promise<void>;
+};
+
+/** One theme page's rows, as `toThemeSupportRows` builds them. */
+export type ThemeWrite = { header: ThemeSupportHeader; cards: (SupportCard & { slug: string })[] };
+
+/** Consecutive unreachable theme pages (a 429, a 5xx, a timeout) that stop the theme half of a run.
+    The commander half never waits on themes: a throttled theme walk stops, and every commander after
+    it keeps its previous theme rows. */
+export const THEME_STOP_AFTER = 3;
 
 /** What the role pass reports back. */
 export type RoleTargetPassResult = {
@@ -119,6 +139,12 @@ export type BuildIndexResult = {
   /** Unresolvable names on PAIR pages, kept apart from the commander total for the same
    *  reason the degraded counts are kept apart. */
   pairsUnresolved: number;
+  /** Theme pages fetched and stored, and their card rows (engine plan A3). */
+  themePages: number; themeCardRows: number;
+  /** Theme pages EDHREC could not serve this run: their previous rows stand. */
+  themesDegraded: number;
+  /** True once `THEME_STOP_AFTER` theme pages in a row were unreachable: no theme was fetched after. */
+  themesStopped: boolean;
 };
 
 /**
@@ -346,6 +372,27 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
 }
 
 /**
+ * Replaces a commander's stored themes with `themes`, in one transaction. Every stored theme not in
+ * `keepSlugs` goes (its cards cascade with it), so a theme that left the commander's top tags leaves
+ * the table too; a kept slug is one EDHREC could not serve this run, and its previous rows stand.
+ */
+async function writeThemes(commanderOracleId: string, themes: ThemeWrite[], keepSlugs: string[]): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.delete(commanderThemeSupport).where(sql`${commanderThemeSupport.commanderOracleId} = ${commanderOracleId}
+      and not (${commanderThemeSupport.slug} = any(${sql.param(keepSlugs)}::text[]))`);
+    if (themes.length === 0) return;
+    await tx.insert(commanderThemeSupport).values(themes.map((t) => ({ ...t.header, computedAt: new Date() })));
+    const rows = themes.flatMap((t) => t.cards);
+    for (let i = 0; i < rows.length; i += CARD_BATCH_SIZE) {
+      await tx.insert(commanderThemeSupportCards).values(rows.slice(i, i + CARD_BATCH_SIZE));
+    }
+  });
+}
+
+/** The job's theme pass: live EDHREC theme pages, written to this database. */
+export const THEME_PASS: ThemePass = { fetch: fetchEdhrecThemeUncached, write: writeThemes };
+
+/**
  * Throws away every persisted commander score.
  *
  * Separate from `writeToDb` because it is not per-commander: it runs once, after
@@ -409,6 +456,7 @@ export async function buildCommanderIndex(
   const clearScores = opts.clearScores ?? clearPersistedScores;
   const loadPairsFn = opts.loadPairs;
   const fetchPairFn = opts.fetchPair ?? fetchPairPage;
+  const themePass = opts.themePages === "off" ? null : opts.themePages;
   const writePairFn = opts.writePair ?? writePair;
   const sleep = opts.sleep ?? defaultSleep;
   const delayMs = opts.delayMs ?? DEFAULT_DELAY_MS;
@@ -433,7 +481,43 @@ export async function buildCommanderIndex(
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
     pairsSkipped: 0, legalPairs: null, pairRefusal: null,
+    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesStopped: false,
   };
+  let themeMisses = 0;
+
+  /**
+   * A written commander's theme pages (engine plan A3): its top tags (`themeSlugsToFetch`), fetched
+   * serially behind the same delay, then written in one replace. An absent commander's themes are
+   * cleared, since the page they came from is gone. An unreachable theme keeps its previous rows
+   * (`keepSlugs`), the commander page's degraded rule applied per theme.
+   */
+  async function themesFor(commander: IndexCommander, header: SupportHeader): Promise<void> {
+    if (!themePass) return;
+    if (header.synergyState === "absent") { await themePass.write(commander.oracleId, [], []); return; }
+    if (r.themesStopped) return;
+    const writes: ThemeWrite[] = [];
+    const keep: string[] = [];
+    for (const theme of themeSlugsToFetch(header.tags)) {
+      await sleep(delayMs);
+      const result = await themePass.fetch(commander.name, theme.slug);
+      if (result.unreachable) {
+        r.themesDegraded++;
+        keep.push(theme.slug);
+        if (++themeMisses >= THEME_STOP_AFTER) {
+          r.themesStopped = true;
+          console.warn(`commander-index: ${THEME_STOP_AFTER} theme pages in a row unreachable; no more theme pages this run`);
+          return;
+        }
+        continue;
+      }
+      themeMisses = 0;
+      const rows = toThemeSupportRows({ commander, theme, result, nameIndex });
+      if (rows) writes.push({ header: rows.header, cards: rows.cards });
+    }
+    await themePass.write(commander.oracleId, writes, keep);
+    r.themePages += writes.length;
+    r.themeCardRows += writes.reduce((n, w) => n + w.cards.length, 0);
+  }
 
   for (const commander of commanders) {
     if (already.has(commander.oracleId)) { r.skipped++; continue; }
@@ -455,6 +539,7 @@ export async function buildCommanderIndex(
       // else is.
       writtenCommanders.push(commander.oracleId);
       r.commanders++;
+      await themesFor(commander, header);
       r.cardRows += cardRows.length;
       r.unresolved += unresolved;
       if (header.synergyState === "absent") r.absent++;

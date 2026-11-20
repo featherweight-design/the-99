@@ -177,8 +177,23 @@ export async function getEdhrecData(
  * verbatim and the index and live paths cannot disagree about what "absent" means.
  */
 export async function fetchEdhrecUncached(commanderName: string): Promise<EdhrecFetchResult> {
+  return fetchEdhrecPage(commanderSlug(commanderName));
+}
+
+/**
+ * One of a commander's THEME pages (`/pages/commanders/<slug>/<theme>.json`), uncached, for the
+ * index build alone. The same shape and the same status rules as the commander page: the theme
+ * slug comes from the commander's own tags (`themeSlugsToFetch`), so a 403 is a throttle or a page
+ * EDHREC does not hold, told apart the same way.
+ */
+export function fetchEdhrecThemeUncached(commanderName: string, theme: string): Promise<EdhrecFetchResult> {
+  return fetchEdhrecPage(`${commanderSlug(commanderName)}/${theme}`);
+}
+
+/** `pageSlug` is a commander slug, or `<commander slug>/<theme slug>`. */
+async function fetchEdhrecPage(pageSlug: string): Promise<EdhrecFetchResult> {
   try {
-    const res = await fetch(edhrecUrl(commanderName), edhrecInit());
+    const res = await fetch(`https://json.edhrec.com/pages/commanders/${pageSlug}.json`, edhrecInit());
     // 429 means the service is throttling the index run, which is temporary and
     // says nothing about whether this commander is indexed. Treating it as absent
     // would overwrite a good row (and delete all its support cards) with an empty
@@ -190,7 +205,7 @@ export async function fetchEdhrecUncached(commanderName: string): Promise<Edhrec
     // HTML page tells them apart, and only its 404 makes this absent — see
     // edhrecPageMissing for why anything else stays unreachable (#712).
     if (res.status === 403) {
-      const missing = await edhrecPageMissing(commanderSlug(commanderName));
+      const missing = await edhrecPageMissing(pageSlug);
       return { data: null, unreachable: !missing };
     }
     // Other 4xx = not indexed on EDHREC. A data-shaped absence, not an outage.

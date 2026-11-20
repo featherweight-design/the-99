@@ -14,9 +14,22 @@ const whole = (): Snapshot => ({
   supportCards: [],
   pairs: Array.from({ length: 1_500 }, () => ({}) as Snapshot["pairs"][number]),
   pairCards: [],
+  themes: [],
+  themeCards: [],
   staples: [{} as Snapshot["staples"][number]],
   composition: [],
   labelFingerprint: null,
+});
+
+describe("the index copy's tables", () => {
+  // The copy verifies every table it lists, row count and digest, source against target after the
+  // publish. A table left off this list is neither copied by name nor checked: the theme pages would
+  // stay empty on production with every copy reporting clean (engine plan A3).
+  it("lists the theme pages beside the support lists", () => {
+    expect(indexCopySpec.tables.map((t) => t.name)).toEqual(expect.arrayContaining([
+      "commander_theme_support", "commander_theme_support_cards",
+    ]));
+  });
 });
 
 describe("the index copy's floors", () => {
