@@ -1014,7 +1014,7 @@ export function CardModal({
       // Collection's printing (handoff R3, plan call 6), not the art on screen.
       // Once the deck has a pick, no tile is `Shown now` (STATES, "Picked, open"): the badge marks
       // what the deck falls back to, and only while it is falling back.
-      resolvedKey={keyOf(deckScope ? (pick === null ? resolvedPrinting(card) : undefined) : resolved)}
+      resolvedKey={browse ? resolved?.scryfallId ?? null : keyOf(deckScope ? (pick === null ? resolvedPrinting(card) : undefined) : resolved)}
       scope={browse ? "browse" : deckScope ? "deck" : "collection"}
       notice={deckScope && saveFailed ? deckPrintingsCopy.picker.failed : null}
       cardName={card.name}

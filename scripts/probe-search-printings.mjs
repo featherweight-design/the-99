@@ -93,8 +93,10 @@ async function run(browser, name, { width, height, touch }) {
     check(name, "the ◇ Shown now mark moves to the selected tile", /shown now/.test(after[target]) && after.filter((a) => /shown now/.test(a)).length === 1, `target=${target}`);
     const caption = (await trigger.innerText()).replace(/\s+/g, " ");
     check(name, "the Set caption follows the preview", caption !== firstCaption, `"${caption}"`);
-    const checked = await tiles.evaluateAll((els) => els.filter((e) => e.getAttribute("aria-checked") === "true").length);
-    check(name, "nothing is picked (a preview stores nothing)", checked === 0, `checked=${checked}`);
+    // A preview is the one radio a reader hears as selected (the shown one); no tile is anyone's pick.
+    const states = await tiles.evaluateAll((els) => els.map((e) => [e.getAttribute("aria-checked"), e.getAttribute("aria-label") ?? ""]));
+    const checkedTiles = states.filter(([c]) => c === "true");
+    check(name, "the previewed tile is the only one selected, and nothing is a pick", checkedTiles.length === 1 && /shown now/.test(checkedTiles[0][1]) && !states.some(([, a]) => /your pick/.test(a)), `checked=${checkedTiles.length}`);
     await shot("previewing");
 
     const add = card(page).getByRole("button", { name: /Add to collection/ }).locator("visible=true").first();

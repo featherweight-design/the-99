@@ -449,7 +449,7 @@ export function CardModalSheet({
               caption={caption}
               count={ownedPrintings.length}
               browse={browse}
-              picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
+              picked={pick === null || browse ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
               expanded={expanded}
               expandAria={triggerAria}
               imageUri={resolved?.imageUri ?? null}
@@ -469,7 +469,7 @@ export function CardModalSheet({
               caption={caption}
               count={ownedPrintings.length}
               browse={browse}
-              picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
+              picked={pick === null || browse ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
               expanded={expanded}
               expandAria={triggerAria}
               onClick={onToggleExpanded}

@@ -170,14 +170,14 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const [showAll, setShowAll] = useState(false);
   // A catalog printing becomes a tile through the same entry shape an owned one has, so the grid,
   // the search and the keyboard are written once. `quantity` is what the player holds of it.
-  // A catalog tile is keyed by its catalog id: (set, collector number) is not unique in the
+  // A catalog tile (and a browse tile, which is a catalog printing too) is keyed by its catalog id: (set, collector number) is not unique in the
   // catalog, since two variants can share it (price-query.ts), and a pair key would check both
   // tiles and hand back either variant. An owned printing (art role) has no id to key on and keeps
   // the pair, which is also what its stored preference names.
   const tileKey = useCallback(
     (p: { setCode: string; collectorNumber: string; scryfallId?: string | null }) =>
-      choose && p.scryfallId ? p.scryfallId : printingKey(p),
-    [choose],
+      (choose || browse) && p.scryfallId ? p.scryfallId : printingKey(p),
+    [choose, browse],
   );
   const catalogByKey = useMemo(
     () => (choose ? new Map((sourcePrintings as PrintingChoice[]).map((c) => [c.scryfallId, c])) : null),
@@ -390,7 +390,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
       ? selectedKey
       : navigable.find((p) => printingKey(p) === preferredKey) !== undefined
       ? preferredKey
-      : navigable.find((p) => printingKey(p) === resolvedKey) !== undefined
+      : navigable.find((p) => tileKey(p) === resolvedKey) !== undefined
         ? resolvedKey
         : navigable.length > 0
           ? tileKey(navigable[0])
@@ -739,7 +739,7 @@ function PrintingTile({
       // The dormant tile is the stored pick — it wears the ✓ badge and "Your pick" label, so
       // reporting it unchecked would tell assistive tech nothing is selected while the screen
       // says otherwise. `picked` stays false because it drives the selectable styling.
-      aria-checked={checked ?? (picked || entry.dormant)}
+      aria-checked={checked ?? (picked || entry.dormant || (browse && shownNow))}
       // Both, and neither is redundant: the focus trap collects `button:not([disabled])`, so
       // only the native attribute keeps the tile out of the Tab cycle — but `role="radio"`
       // overrides the button role that native `disabled` maps from, so AT needs the ARIA one
