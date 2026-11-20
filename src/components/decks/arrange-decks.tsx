@@ -100,6 +100,18 @@ export function ArrangeDecks({
 
   // ── Keyboard ────────────────────────────────────────────────────────────
   function onHandleKey(e: React.KeyboardEvent, id: string) {
+    // A pointer drag holds the DOM order; a key during it would reorder it and lose the pointer's capture. Esc cancels it.
+    if (drag.current || dragging) {
+      if (e.key === "Escape" && drag.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        const d = drag.current;
+        window.clearInterval(d.timer);
+        drag.current = null;
+        finishDrag(d, true);
+      }
+      return;
+    }
     const n = order.length;
     const k = order.indexOf(id);
     if (e.key === " " || e.key === "Enter") {
@@ -140,8 +152,10 @@ export function ArrangeDecks({
   // a node that leaves the document loses its pointer capture: the drag was cancelled and the row snapped back.
   // Positions are read ONCE at pickup, from the undisturbed layout, so nothing the drag does feeds back into where
   // the next target is computed.
-  const drag = useRef<{ id: string; clientY: number; timer: number; geo: DragGeometry } | null>(null);
+  const drag = useRef<{ id: string; clientY: number; timer: number; geo: DragGeometry; to: number } | null>(null);
   const list = useRef<HTMLOListElement | null>(null);
+  /** The pending commit of a drop's settle; Done and Cancel wait it out (below), and leaving clears it. */
+  const settleTimer = useRef(0);
   const [dragging, setDragging] = useState<null | { id: string; dy: number; to: number; settling: boolean; geo: DragGeometry }>(null);
 
   function track(d: NonNullable<typeof drag.current>) {
@@ -149,6 +163,7 @@ export function ArrangeDecks({
     // Clamped to the list, so a drag past either end holds the row in the first or last slot.
     const dy = clampDy(geo, d.clientY + window.scrollY - geo.startPageY);
     const to = slotAt(geo, dy);
+    d.to = to; // read at release: a quick release can beat the render that would carry it in state
     setDragging((cur) => (cur && cur.id === d.id && cur.dy === dy && cur.to === to ? cur : { id: d.id, dy, to, settling: false, geo }));
   }
 
@@ -163,9 +178,10 @@ export function ArrangeDecks({
     const gap = from < ids.length - 1 ? tops[from + 1] - tops[from] - heights[from] : from > 0 ? tops[from] - tops[from - 1] - heights[from - 1] : 0;
     const olTop = (list.current?.getBoundingClientRect().top ?? 0) + window.scrollY;
     e.currentTarget.setPointerCapture(e.pointerId);
+    keepFocus.current = false; // a keyboard lift's focus-keeping must not pull the page at pickup
     before.current = order;
     setLifted(id);
-    const state = { id, clientY: e.clientY, timer: 0, geo: { tops, heights, from, startPageY: e.clientY + window.scrollY, olTop, gap } };
+    const state = { id, clientY: e.clientY, timer: 0, to: from, geo: { tops, heights, from, startPageY: e.clientY + window.scrollY, olTop, gap } };
     // Edge autoscroll: runs while the pointer is held near the top or bottom of the window.
     state.timer = window.setInterval(() => {
       // Stop the moment this drag is no longer the live one; never act on a stale closure.
@@ -209,7 +225,7 @@ export function ArrangeDecks({
   }
   function finishDrag(d: NonNullable<typeof drag.current>, cancelled: boolean) {
     const { id, geo } = d;
-    const to = dragging?.id === id ? dragging.to : geo.from;
+    const to = d.to;
     const n = order.length;
     if (cancelled || to === geo.from) {
       setDragging(null);
@@ -219,7 +235,8 @@ export function ArrangeDecks({
     }
     // Settle: the row slides into the gap, then the order is committed in one step (no frame between).
     setDragging({ id, dy: slotTop(geo, to) - geo.tops[geo.from], to, settling: true, geo });
-    window.setTimeout(() => {
+    settleTimer.current = window.setTimeout(() => {
+      settleTimer.current = 0;
       moveTo(id, to);
       setDragging(null);
       setLifted(null);
@@ -230,6 +247,7 @@ export function ArrangeDecks({
     () => () => {
       if (drag.current) window.clearInterval(drag.current.timer);
       drag.current = null;
+      window.clearTimeout(settleTimer.current);
     },
     [],
   );
@@ -263,7 +281,7 @@ export function ArrangeDecks({
           {shelfLabel === null ? copy.hint : copy.shelfNote}
         </p>
         <div className="hidden flex-none items-center gap-[10px] md:flex">
-          <Actions saving={saving} onCancel={cancel} onDone={done} />
+          <Actions saving={saving} settling={dragging?.settling === true} onCancel={cancel} onDone={done} />
         </div>
       </div>
       <hr className="my-[18px] w-full border-x-0 border-b-0 border-t border-solid border-t-[color:var(--border)]" />
@@ -402,20 +420,20 @@ export function ArrangeDecks({
       {failed && <p role="alert" className="m-0 mb-[10px] text-[13px] text-[color:var(--danger)]">{copy.failed}</p>}
 
       <div className="sticky bottom-[var(--tabbar-h,0px)] z-10 -mx-[16px] flex gap-[12px] bg-[color:var(--bg)] px-[16px] pb-[12px] pt-[12px] [border-top:1px_solid_var(--border)] md:hidden">
-        <Actions saving={saving} onCancel={cancel} onDone={done} phone />
+        <Actions saving={saving} settling={dragging?.settling === true} onCancel={cancel} onDone={done} phone />
       </div>
     </section>
   );
 }
 
-function Actions({ saving, onCancel, onDone, phone = false }: { saving: boolean; onCancel: () => void; onDone: () => void; phone?: boolean }) {
+function Actions({ saving, settling, onCancel, onDone, phone = false }: { saving: boolean; settling: boolean; onCancel: () => void; onDone: () => void; phone?: boolean }) {
   const size = phone ? "min-h-[48px] flex-1" : "h-[40px] px-[20px]";
   return (
     <>
       <button
         type="button"
         onClick={onCancel}
-        disabled={saving}
+        disabled={saving || settling}
         className={`flex ${size} cursor-pointer items-center justify-center rounded-[8px] bg-transparent font-sans text-[14px] text-[color:var(--fg)] disabled:opacity-50 [border:1px_solid_var(--border-strong)]`}
       >
         {copy.cancel}
@@ -423,7 +441,8 @@ function Actions({ saving, onCancel, onDone, phone = false }: { saving: boolean;
       <button
         type="button"
         onClick={onDone}
-        disabled={saving}
+        // A dropped row is still sliding into its slot for a moment: Done would save the order from before it.
+        disabled={saving || settling}
         className={`flex ${size} cursor-pointer items-center justify-center rounded-[8px] border-0 font-sans text-[14px] font-semibold disabled:opacity-50 ${PRIMARY}`}
       >
         {saving ? copy.saving : copy.done}
