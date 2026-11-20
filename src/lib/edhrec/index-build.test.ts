@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildNameIndex, toSupportRows } from "./index-build";
+import { buildNameIndex, themeSlugsToFetch, toSupportRows, toThemeSupportRows } from "./index-build";
 import type { EdhrecData } from "./parse";
 
 const EMPTY_WIDE = {
@@ -170,5 +170,61 @@ describe("toSupportRows", () => {
       nameIndex: idx,
     });
     expect(cards).toHaveLength(1);
+  });
+});
+
+describe("themeSlugsToFetch", () => {
+  const tag = (slug: string, count: number) => ({ slug, label: slug, count });
+
+  it("takes the top three tags by deck count, each with at least 50 decks", () => {
+    const tags = [tag("infect", 3545), tag("proliferate", 1505), tag("plus-1-plus-1-counters", 2165), tag("planeswalkers", 1789), tag("rare", 49)];
+    expect(themeSlugsToFetch(tags).map((t) => t.slug)).toEqual(["infect", "plus-1-plus-1-counters", "planeswalkers"]);
+  });
+
+  it("has no percentage floor: a small share of a big commander still qualifies", () => {
+    expect(themeSlugsToFetch([tag("planeswalkers", 1789)])).toHaveLength(1);
+    expect(themeSlugsToFetch([tag("thin", 49), tag("edge", 50)]).map((t) => t.slug)).toEqual(["edge"]);
+  });
+
+  it("fetches a repeated slug once, never a slug outside EDHREC's shape, never a fractional count", () => {
+    expect(themeSlugsToFetch([tag("zombies", 60), tag("zombies", 80)])).toEqual([tag("zombies", 80)]);
+    expect(themeSlugsToFetch([tag("../other", 900), tag("a?b", 900), tag("Zombies", 900), tag("ok-slug", 60)]).map((t) => t.slug)).toEqual(["ok-slug"]);
+    expect(themeSlugsToFetch([tag("half", 1505.5)])).toEqual([]);
+  });
+
+  it("keeps the tags' own order on a tie, and fetches nothing for no tags", () => {
+    expect(themeSlugsToFetch([tag("a", 60), tag("top", 90), tag("b", 60)]).map((t) => t.slug)).toEqual(["top", "a", "b"]);
+    expect(themeSlugsToFetch([])).toEqual([]);
+  });
+});
+
+describe("toThemeSupportRows", () => {
+  const nameIndex = buildNameIndex([
+    { oracleId: "sol", name: "Sol Ring" },
+    { oracleId: "gisa", name: GISA.name },
+  ]);
+  const theme = { slug: "zombies", label: "Zombies", count: 567 };
+
+  it("stores the theme's deck count and its cards, the commander and unresolvable names left out", () => {
+    const rows = toThemeSupportRows({
+      commander: GISA, theme, nameIndex,
+      result: { data: data({ topCards: ["Sol Ring", GISA.name, "Never Printed"], inclusionByName: { "sol ring": 80 }, synergyByName: { "sol ring": 0.1 } }), unreachable: false },
+    });
+    expect(rows?.header).toEqual({ commanderOracleId: GISA.oracleId, slug: "zombies", deckCount: 567 });
+    expect(rows?.cards).toEqual([{ commanderOracleId: GISA.oracleId, slug: "zombies", oracleId: "sol", inclusion: 80, synergy: 0.1 }]);
+    expect(rows?.unresolved).toBe(1);
+  });
+
+  it("stores nothing for a page that is not a clean read", () => {
+    expect(toThemeSupportRows({ commander: GISA, theme, nameIndex, result: { data: null, unreachable: false } })).toBeNull();
+    expect(toThemeSupportRows({ commander: GISA, theme, nameIndex, result: { data: null, unreachable: true } })).toBeNull();
+    // A payload of an unexpected shape parses to an empty list: that is no theme page either.
+    expect(toThemeSupportRows({ commander: GISA, theme, nameIndex, result: { data: data({ topCards: [] }), unreachable: false } })).toBeNull();
+  });
+
+  it("stores nothing for a theme the fetch rule would not choose", () => {
+    const ok = { data: data({ topCards: ["Sol Ring"] }), unreachable: false };
+    expect(toThemeSupportRows({ commander: GISA, theme: { ...theme, count: 0 }, nameIndex, result: ok })).toBeNull();
+    expect(toThemeSupportRows({ commander: GISA, theme: { ...theme, slug: "../x" }, nameIndex, result: ok })).toBeNull();
   });
 });
