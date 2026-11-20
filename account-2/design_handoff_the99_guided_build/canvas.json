@@ -14,7 +14,7 @@
    "x": 0,
    "y": 260,
    "w": 1600,
-   "h": 1941,
+   "h": 2010,
    "title": "Guided build \u00b7 the calls"
   },
   "E-Entries.dc.html": {
@@ -58,11 +58,19 @@
    "w": 2600,
    "h": 2454,
    "title": "From Help me choose"
+  },
+  "P-Picks.dc.html": {
+   "x": 2040,
+   "y": 2321,
+   "w": 2200,
+   "h": 4006,
+   "title": "Picks carry into every build"
   }
  },
  "order": [
   "Main.dc.html",
   "E-Entries.dc.html",
+  "P-Picks.dc.html",
   "N-Choice.dc.html",
   "N-Credits.dc.html",
   "G-Steps.dc.html",

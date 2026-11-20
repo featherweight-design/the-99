@@ -106,7 +106,7 @@ B["Main"] = ("Guided build · the calls", 1600, head("Guided build: a free or pa
    '<li><b>Phone:</b> the bar loses <code>READY TO BUILD</code> and “We’ll build the whole 99, as far as your collection reaches”. It keeps the synergy picks line, when there are picks, and one button: <code>Start a deck →</code>.</li>'
    '<li><b>Desktop:</b> the button becomes <code>Start a deck →</code> and the seed note under it goes.</li>'
    '<li>The page now reads as a commander’s page with one way to start a deck, close to the public page. How the deck is built is chosen on the next screen.</li>'
-   '<li>Synergy picks still carry over, and the guided build keeps them: the Cards step lists them under <b>It keeps</b>.</li></ul></div>'
+   '<li><b>Role Coverage and EDHREC Synergy stay</b>, with the + picks. The line under the button reads <code>Your 3 go into the new deck.</code></li><li>The picks show on the new-deck screen above the three options, and every option keeps them: Free fills around them, Guided never cuts them, and Just the commander starts with them (board P-Picks).</li></ul></div>'
  + '<div class="sec"><h3>5 · Not enough credits</h3><ul class="li">'
    '<li>The Guided row stays visible but is off. It says why in <code>--warning</code>: “A guided build uses 2 credits, and you have 1.”</li>'
    '<li>With payments on, it shows the shipped <code>Get more credits →</code>. With payments off, it says free credits alone can’t run one, and shows no link.</li>'
@@ -152,6 +152,18 @@ B["E-Entries"] = ("Entry points and the commander page", 1960, head("Entry point
        frame("C1", "Proposed · phone, page end", "gb-cp-g-p", "The label and the promise go. One button: <code>Start a deck →</code>. With synergy picks, the shipped picks line sits to its left."),
        frame("C0d", "Shipped · 1300", "gb-cp-d", "<code>Build this deck →</code> with the seed note under it.", "was", True))
  + row(frame("C1d", "Proposed · 1300", "gb-cp-g-d", "<code>Start a deck →</code>, and the seed note goes. The Hide line moves up under the button.", "now", True)))
+
+B["P-Picks"] = ("Picks carry into every build", 2200, head("Synergy picks: kept on the commander page, carried into every build",
+ "Role Coverage and EDHREC Synergy stay as shipped, with the + picks. The line under the button now says where the picks go, not how the rest is built. The new-deck screen shows the picks above the three options, and each option keeps them. Fixture: Avenger of Zendikar (not owned), Polyraptor and Beorn the Fierce.")
+ + sub("The commander page with 3 picks")
+ + row(frame("P1", "Phone · page end", "gb-cpk-p", "The picks are ticked in EDHREC Synergy. The bar reads <code>Your 3 go into the new deck.</code>, the shipped not-owned line and Clear selection, then <code>Start a deck →</code>."),
+       frame("P1d", "1300 · whole page", "gb-cpk-d", "The same line under <code>Start a deck →</code>. Role Coverage and EDHREC Synergy are unchanged.", "now", True))
+ + sub("The new-deck screen with the picks carried")
+ + row(frame("P2", "Free · phone", "gb-nk-free-p", "<b>Your picks · 3</b> shows the cards at card shape, each one opening card details. A card you don't own says so. <code>Change on Ghalta’s page</code> goes back with the picks kept. Free fills the rest of the 99 around them."),
+       frame("P3", "Guided · phone", "gb-nk-guided-p", "Guided keeps them too: the Cards step lists them under <b>It keeps</b> (board G4), and the run never cuts them."),
+       frame("P4", "Just the commander · phone", "gb-nk-empty-p", "Ghalta, the 3 picks and 96 empty slots."))
+ + row(frame("P2d", "Free · 1300", "gb-nk-free-d", "The picks box sits in the form column above How we build it.", "now", True))
+ + '<p class="cap">After the deck is made, every option opens the shipped deck page, where cards are added and cleared by hand as today.</p>')
 
 B["N-Choice"] = ("New deck · How we build it", 2200, head("New deck: how we build it (calls 1 and 3)",
  "The choice sits inline under the deck name, in Upgrade’s option-row shape, each row led by a line icon on the intro’s medallion. Free is pre-marked. The press names what comes next.")

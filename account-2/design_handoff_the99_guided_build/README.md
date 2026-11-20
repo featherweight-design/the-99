@@ -18,7 +18,7 @@ Every frame is the SHIPPED screen (CreatePreFilled, CommanderDetail, the Upgrade
 1. **Where the choice starts:** inline on the new-deck screen (every route lands there: For you, Discover, commander page, Help me choose, Decks › New deck). One radio group, `How we build it`, under Deck name: Free build (pre-marked), Guided build (2 credits, never pre-marked), Just the commander (free). Press: `Create deck →` / `Next · Strategy`.
 2. **What guided asks:** Strategy › Bracket › Cards in Upgrade's sheet/720 dialog. Strategy: up to 3 commander themes your cards back (`MIN_BACKING`, `MAX_STRATEGIES`). Bracket: 2/3/4, none pre-picked; combos follow the bracket (no separate question). Cards: Only cards I own / Buy some (each under $12) / Buy within $N (from Help me choose). Cards to avoid: not asked (open question). The free build sees none of it, but still takes Help me choose's answers as shipped.
 3. **Start empty:** yes, `Just the commander`.
-4. **Commander page:** stops promising a build. Phone bar drops READY TO BUILD and the promise, keeps the picks line, one button `Start a deck →`. Desktop: `Start a deck →`, seed note removed.
+4. **Commander page:** Role Coverage and EDHREC Synergy stay, with the + picks (board P-Picks). It stops promising a build. Phone bar drops READY TO BUILD and the promise, keeps the picks line, one button `Start a deck →`. Desktop: `Start a deck →`, seed note removed.
 5. **Not enough credits:** Guided row stays, off, with the reason in `--warning`; `Get more credits →` when payments are on, no link when off.
 6. **Help me choose:** the shipped `Built from your answers` block stays; in guided every step is pre-picked and marked `from your answers`; the build-around card is listed under `It keeps` and never cut.
 7. **The run:** deck created at confirm with the free fill; wait shows Filled ✓ / Sharpening (clock) / Writing the plan; ✕ leaves, run continues; tile/page show `Sharpening toward X · 0:05`.
@@ -32,6 +32,7 @@ Every frame is the SHIPPED screen (CreatePreFilled, CommanderDetail, the Upgrade
 - **G5** Kept cards (build-around card, commander-page synergy picks) locked; the validator refuses cutting them.
 - **G6** Run state on the deck (running, short, failed) for the tile and page after leaving.
 - **G7** Refunds as Upgrade.
+- **G9** The new-deck screen reads the ?select= picks (name, image, owned) to draw Your picks; every build kind keeps them (empty = commander + picks). The commander page's picks line becomes `Your N go into the new deck.` (SynergySelection takes a guided flag).
 - **G8** Commander page copy: `stickyLabel`, `stickyPromise`, `seedNote` retire; button `Start a deck →`.
 
 ## Open for Hugh
@@ -40,7 +41,7 @@ Every frame is the SHIPPED screen (CreatePreFilled, CommanderDetail, the Upgrade
 3. Cards to avoid left out of R1. Add it?
 
 ## Boards
-`Main` (calls, gaps) · `E-Entries` (For you, Discover, commander page shipped vs proposed) · `N-Choice` (free, guided, empty, phone + desktop) · `N-Credits` (short, payments off) · `G-Steps` (strategy, bracket, cards, kept picks) · `R-Run` (wait, ready, short, failed) · `H-HelpMeChoose` (answers carried in).
+`Main` (calls, gaps) · `P-Picks` (synergy picks on the commander page and the new-deck screen, every option keeps them) · `E-Entries` (For you, Discover, commander page shipped vs proposed) · `N-Choice` (free, guided, empty, phone + desktop) · `N-Credits` (short, payments off) · `G-Steps` (strategy, bracket, cards, kept picks) · `R-Run` (wait, ready, short, failed) · `H-HelpMeChoose` (answers carried in).
 
 Copy: `guided-build · copy strings.ts` (DRAFT; /copy-review resolves wording). States: `STATES-guided-build.md`.
 

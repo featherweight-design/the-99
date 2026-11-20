@@ -26,20 +26,43 @@ function Radio({ on }: { on: boolean }) {
   );
 }
 
-export function BuildChoice({ value, commander, short, compact = false }: {
+export type Pick = { name: string; img: string; owned: boolean };
+
+export function BuildChoice({ value, commander, short, picks, compact = false }: {
   value: BuildKind;
   commander: string;
   /** Only more credits can fund a guided build: the row is off and says why (call 7). */
   short?: { have: number; payments: boolean };
+  /** The synergy picks carried from the commander page (?select=), drawn so the player sees they came along. */
+  picks?: Pick[];
   compact?: boolean;
 }) {
+  const n = picks?.length ?? 0;
   const rows: { kind: BuildKind; name: string; cost: string; line: string; back?: string }[] = [
-    { kind: "free", ...copy.free },
+    { kind: "free", ...copy.free, line: n ? copy.withPicks.free(n) : copy.free.line },
     { kind: "guided", ...copy.guided },
-    { kind: "empty", name: copy.empty.name, cost: copy.empty.cost, line: copy.empty.line(commander) },
+    { kind: "empty", name: copy.empty.name, cost: copy.empty.cost, line: n ? copy.withPicks.empty(commander, n) : copy.empty.line(commander) },
   ];
   return (
     <div className={compact ? "mb-[20px]" : "mb-[24px] md:mb-[28px]"}>
+      {picks && n > 0 && (
+        <div className="mb-[16px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface)] p-[12px]">
+          <div className="mb-[10px] flex items-baseline gap-[8px]">
+            <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{copy.picks.label(n)}</span>
+            <a href="#" className="ml-auto font-mono text-[11px] text-[color:var(--accent-text)]">{copy.picks.change(commander)}</a>
+          </div>
+          <div className="flex gap-[8px] overflow-x-auto">
+            {picks.map((p) => (
+              <button key={p.name} type="button" aria-label={p.name} className="flex w-[64px] flex-none flex-col gap-[4px] border-0 bg-transparent p-0 text-left">
+                <img src={p.img} alt="" className="block aspect-[63/88] w-[64px] rounded-[4px] object-cover" />
+                <span className="line-clamp-2 font-mono text-[9.5px] leading-[1.35] text-[color:var(--fg-muted)]">{p.name}</span>
+                {!p.owned && <span className="font-mono text-[9.5px] text-[color:var(--warning)]">{copy.picks.buy}</span>}
+              </button>
+            ))}
+          </div>
+          <p className="mb-0 mt-[8px] text-[12px] leading-[1.5] text-[color:var(--fg-body)]">{copy.picks.kept}</p>
+        </div>
+      )}
       <p className="mb-[8px] font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)] md:mb-[9px]">{copy.label}</p>
       <div role="radiogroup" aria-label={copy.label} className="flex flex-col gap-[8px]">
         {rows.map((r) => {

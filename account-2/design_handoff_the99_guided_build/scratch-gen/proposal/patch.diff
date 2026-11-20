@@ -1,10 +1,10 @@
---- a/src/components/decks/create-pre-filled.tsx	2026-11-20 19:39:37.281291405 +0000
-+++ b/src/components/decks/create-pre-filled.tsx	2026-11-20 19:39:37.298315430 +0000
+--- gb/create-pre-filled.orig.tsx	2026-11-20 19:39:37.281291405 +0000
++++ src/components/decks/create-pre-filled.tsx	2026-11-20 20:17:14.030817123 +0000
 @@ -25,6 +25,8 @@
  import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
  import { PendingReporter } from "../shell/pending-reporter";
  import { ArtLayer } from "../ui/art-layer";
-+import { BuildChoice, type BuildKind } from "./guided/build-choice";
++import { BuildChoice, type BuildKind, type Pick } from "./guided/build-choice";
 +import { guidedBuildCopy } from "../../lib/copy/guided-build";
  
  // ---------------------------------------------------------------------------
@@ -14,7 +14,7 @@
      readReach?: boolean;
    };
 +  /** Guided build R1 (proposal): the one choice of how the deck is built. Absent, today's page. */
-+  build?: { kind: BuildKind; short?: { have: number; payments: boolean } };
++  build?: { kind: BuildKind; short?: { have: number; payments: boolean }; picks?: Pick[] };
 +  /** Render only: a typed name. */
 +  typedName?: string;
  }
@@ -37,7 +37,7 @@
                </p>
              ) : null}
  
-+            {build && <BuildChoice value={build.kind} commander={name.split(",")[0]} short={build.short} />}
++            {build && <BuildChoice value={build.kind} commander={name.split(",")[0]} short={build.short} picks={build.picks} />}
 +
              {/* The two CTAs are a flex row (column on mobile) with an explicit
                  gap. They used to be a margin plus the whitespace between two
@@ -51,8 +51,8 @@
                </PrimaryButton>
  
                {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md
---- a/src/components/commanders/detail.tsx	2026-11-20 19:39:57.821276792 +0000
-+++ b/src/components/commanders/detail.tsx	2026-11-20 19:39:57.893194667 +0000
+--- gb/detail.orig.tsx	2026-11-20 19:39:57.821276792 +0000
++++ src/components/commanders/detail.tsx	2026-11-20 20:17:14.031532337 +0000
 @@ -32,6 +32,7 @@
  import type { SynergyCard } from "../../lib/commanders/synergy-cards";
  import { PRIMARY } from "../ui/button";
@@ -77,7 +77,7 @@
        >
 +        {guided ? (
 +          <>
-+            <div className="flex flex-col flex-1 min-w-0"><SelectableSynergySelection cards={synergyCards} width="phone" /></div>
++            <div className="flex flex-col flex-1 min-w-0"><SelectableSynergySelection cards={synergyCards} width="phone" guided /></div>
 +            <a href="#" className={`font-sans font-semibold rounded-lg ${PRIMARY} text-[14px] p-[12px_20px] text-center whitespace-nowrap`}>{guidedBuildCopy.commander.press}</a>
 +          </>
 +        ) : (<>
@@ -103,11 +103,14 @@
            {/* Build this deck button */}
            <SelectableBuildButton
              oracleId={c.oracleId}
-@@ -668,6 +679,7 @@
+@@ -668,8 +679,9 @@
              {recommendationsCopy.build.seedNote}
            </p>
  
 +          </>)}
            {/* Promise line + clear, below seed note — desktop width */}
-           <SelectableSynergySelection cards={synergyCards} width="desktop" />
+-          <SelectableSynergySelection cards={synergyCards} width="desktop" />
++          <SelectableSynergySelection cards={synergyCards} width="desktop" guided={guided} />
  
+           {/* Not hidden: the quiet Hide line, under the build note. */}
+           <HideLine width="desktop" />

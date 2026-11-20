@@ -4,7 +4,11 @@
 
 export const guidedBuildCopy = {
   /** The commander page's one action (call 4): it starts a deck and promises nothing about how it is built. */
-  commander: { press: "Start a deck →" },
+  commander: {
+    press: "Start a deck →",
+    /** Replaces synergyCopy.select.promise under the button when picks are made: it says where the picks go, not how the rest is built. */
+    picks: (n: number) => `Your ${n} go into the new deck.`,
+  },
   choice: {
     label: "How we build it",
     free: { name: "Free build", cost: "free", line: "We fill the 99 from your cards, as far as your collection reaches." },
@@ -15,6 +19,12 @@ export const guidedBuildCopy = {
       back: "Both credits come back if it doesn’t come through or finds fewer than 12.",
     },
     empty: { name: "Just the commander", cost: "free", line: (c: string) => `${c} and 99 empty slots. Build it your way.` },
+    /** With picks carried from the commander page (?select=): each row says what it does with them. */
+    withPicks: {
+      free: (n: number) => `We fill the rest of the 99 around your ${n} picks, as far as your collection reaches.`,
+      empty: (c: string, n: number) => `${c}, your ${n} picks and ${99 - n} empty slots. Build it your way.`,
+    },
+    picks: { label: (n: number) => `Your picks · ${n}`, change: (c: string) => `Change on ${c}’s page`, kept: "Every option keeps them.", buy: "not owned" },
     /** Under the guided row when only more credits can fund it (the Upgrade credits path, call 1), in --warning. */
     shortMore: (have: number) => `A guided build uses 2 credits, and you have ${have}.`,
     shortOff: (have: number) => `A guided build uses 2 credits, and you have ${have}. Free credits alone can’t run one.`,
