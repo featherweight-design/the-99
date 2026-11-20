@@ -46,7 +46,11 @@ const OFF = "border-[color:var(--border-strong)] bg-transparent text-[color:var(
 // Sending (A3/D3): the answers dim to .6 while every control is held.
 const DIM = (phase: string) => `motion-safe:transition-opacity motion-safe:duration-150 ${phase === "sending" ? "opacity-60" : ""}`;
 
-export function CheckInForm({ onClose }: { onClose: () => void }) {
+/**
+ * `preview` is the admin's look at the check-in (Show me the check-in): the form runs its own phases and calls neither action,
+ * so nothing reaches `check_in_state` or the feedback table, as an answer or as a snooze.
+ */
+export function CheckInForm({ onClose, preview = false }: { onClose: () => void; preview?: boolean }) {
   const [rating, setRating] = useState<number | null>(null);
   const [uses, setUses] = useState<CheckInUse[]>([]);
   const [pod, setPod] = useState<CheckInPod | null>(null);
@@ -74,9 +78,13 @@ export function CheckInForm({ onClose }: { onClose: () => void }) {
     let ok = false;
     let limited = false;
     try {
-      const result = await sendCheckIn({ rating, uses, pod, note });
-      ok = result.ok;
-      limited = !result.ok && result.reason === "limited";
+      if (preview) {
+        ok = true;
+      } else {
+        const result = await sendCheckIn({ rating, uses, pod, note });
+        ok = result.ok;
+        limited = !result.ok && result.reason === "limited";
+      }
     } catch {
       ok = false;
     }
@@ -96,7 +104,7 @@ export function CheckInForm({ onClose }: { onClose: () => void }) {
   // Not now and the ✕ close at once; the write follows and a failure of it changes nothing the reader sees.
   function leave(how: "snooze" | "end") {
     if (phase === "sending") return;
-    if (phase !== "sent") void dismissCheckIn(how).catch(() => {});
+    if (phase !== "sent" && !preview) void dismissCheckIn(how).catch(() => {});
     onClose();
   }
 

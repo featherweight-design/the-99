@@ -116,6 +116,29 @@ describe("CheckInForm", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  describe("preview (the admin's Show me the check-in)", () => {
+    it("shows the thanks on Send without calling sendCheckIn", async () => {
+      render(<CheckInForm preview onClose={() => {}} />);
+      fireEvent.click(screen.getByTestId("check-in-rating-4"));
+      fireEvent.click(sendButton());
+      await waitFor(() => expect(screen.getByTestId("check-in-sent")).toBeTruthy());
+      expect(send).not.toHaveBeenCalled();
+      expect(dismiss).not.toHaveBeenCalled();
+    });
+
+    it("closes on Not now and on the ✕ without calling dismissCheckIn", () => {
+      const onClose = vi.fn();
+      const { unmount } = render(<CheckInForm preview onClose={onClose} />);
+      fireEvent.click(screen.getByTestId("check-in-not-now"));
+      unmount();
+      render(<CheckInForm preview onClose={onClose} />);
+      fireEvent.click(screen.getAllByRole("button", { name: reportCopy.close })[0]);
+      expect(onClose).toHaveBeenCalledTimes(2);
+      expect(dismiss).not.toHaveBeenCalled();
+      expect(send).not.toHaveBeenCalled();
+    });
+  });
+
   it("ends on the ✕ and closes", () => {
     const onClose = vi.fn();
     render(<CheckInForm onClose={onClose} />);

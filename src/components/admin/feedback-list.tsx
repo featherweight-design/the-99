@@ -3,6 +3,7 @@
 import { useRef, useState, useTransition, type ReactNode } from "react";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
+import { CheckInForm } from "../feedback/check-in-form";
 import { loadMore, markRead } from "../../app/admin/feedback/actions";
 import type { FeedbackRead } from "../../lib/admin/feedback";
 import {
@@ -167,6 +168,7 @@ export function FeedbackList({ filter, read, nowMs }: { filter: FeedbackFilter; 
   const [moreFailed, setMoreFailed] = useState(false);
   const [opened, setOpened] = useState<ReadonlySet<string>>(new Set());
   const [loading, startLoading] = useTransition();
+  const [previewing, setPreviewing] = useState(false);
   // Ids an open is in flight for, so a press on the dot (which bubbles to the row) sends one write.
   const sent = useRef(new Set<string>());
   const pinRef = useRef<HTMLDivElement>(null);
@@ -242,6 +244,14 @@ export function FeedbackList({ filter, read, nowMs }: { filter: FeedbackFilter; 
             );
           })}
         </nav>
+        <button
+          type="button"
+          onClick={() => setPreviewing(true)}
+          className="relative inline-flex h-[32px] cursor-pointer items-center rounded-full border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[13px] text-[color:var(--fg-body)] before:absolute before:inset-x-0 before:-inset-y-[7px] before:content-['']"
+        >
+          {copy.previewCheckIn}
+        </button>
+        {previewing && <CheckInForm preview onClose={() => setPreviewing(false)} />}
         <span aria-live="polite" data-testid="feedback-summary" className="basis-full font-mono text-[11px] text-[color:var(--fg-faint)] md:ml-auto md:basis-auto">
           {summary}
         </span>

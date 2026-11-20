@@ -34,6 +34,8 @@ export const feedbackAdminCopy = {
   summary: (fresh: number, avg: string) => `${fresh} new · check-ins average ${avg} of 5`,
   fields: { what: "What happened", doing: "What I was doing", rating: "Working for you", uses: "Uses most", pod: "Tell the pod", more: "Anything else" },
   notGiven: "not given",
+  /** The admin's preview of the check-in: it opens the form and records nothing. */
+  previewCheckIn: "Show me the check-in",
   // Placeholders (not in the handoff's strings file):
   off: "Feedback is off here.",
   signedOut: "Signed out",

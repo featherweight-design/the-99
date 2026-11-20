@@ -7,6 +7,9 @@ import type { FeedbackRead } from "../../lib/admin/feedback";
 import type { FeedbackRow } from "../../lib/admin/feedback-rule";
 
 vi.mock("../../app/admin/feedback/actions", () => ({ markRead: (id: unknown) => markRead(id), loadMore: (f: unknown, o: unknown) => loadMore(f, o) }));
+const sendCheckIn = vi.fn();
+const dismissCheckIn = vi.fn();
+vi.mock("../../app/check-in-actions", () => ({ sendCheckIn: (...a: unknown[]) => sendCheckIn(...a), dismissCheckIn: (...a: unknown[]) => dismissCheckIn(...a) }));
 const markRead = vi.fn<(id: unknown) => Promise<{ ok: boolean }>>();
 const loadMore = vi.fn<(f: unknown, o: unknown) => Promise<{ ok: true; rows: FeedbackRow[]; hasMore: boolean } | { ok: false }>>();
 
@@ -37,6 +40,17 @@ beforeEach(() => {
 });
 
 describe("FeedbackList", () => {
+  it("opens the check-in as a preview from Show me the check-in, and closing it records nothing", () => {
+    view(READ([problem()]));
+    fireEvent.click(screen.getByRole("button", { name: "Show me the check-in" }));
+    expect(screen.getByTestId("check-in-send")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("check-in-not-now"));
+    expect(screen.queryByTestId("check-in-send")).toBeNull();
+    expect(sendCheckIn).not.toHaveBeenCalled();
+    expect(dismissCheckIn).not.toHaveBeenCalled();
+  });
+
+
   it("draws the pills with counts, the current one marked, and links that set the filter", () => {
     view(READ([problem()]), "problem");
     const nav = screen.getByRole("navigation", { name: "Filter feedback" });
