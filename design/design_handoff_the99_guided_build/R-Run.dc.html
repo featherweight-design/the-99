@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Guided build · the run</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:650px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:650px;border-radius:12px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font:500 12px 'IBM Plex Mono',monospace;color:#A3A8B8}
+.flow span.n{border:1px solid #343843;border-radius:6px;padding:6px 9px;color:#E6E8F0}
+.flow span.n.hot{border-color:#E39A4F;color:#E39A4F}
+</style>
+</helmet>
+<div class="board" style="width: 2600px; min-height: 3314px">
+<div class="bh"><span class="k">Guided build · R1 · account 2 · 2026-11-20</span><h2>The paid run: progress, ready, short, failed (calls 7 and 8)</h2><p class="cap">The deck exists from the confirm, filled for free. The run sharpens 12 to 18 cards and writes the plan, and both credits come back on a failed or short run.</p></div><div class="row"><div class="fr "><div class="state"><span class="pill now">R1</span><span class="k">Sharpening · 0:04</span></div><img class="shot " src="art/gb-g-wait-p.webp" alt="Sharpening · 0:04"><p class="cap">Filled ✓, then sharpening with v2’s clock and the sweep. ✕ leaves, and the run continues.</p></div><div class="fr "><div class="state"><span class="pill now">R2</span><span class="k">Writing the Overview · 0:09</span></div><img class="shot " src="art/gb-g-wait2-p.webp" alt="Writing the Overview · 0:09"><p class="cap">Sharpening is done, and the deck’s Overview is being written.</p></div><div class="fr "><div class="state"><span class="pill now">R3</span><span class="k">Ready · whole sheet, scrolled</span></div><img class="shot " src="art/gb-g-resultall-p.webp" alt="Ready · whole sheet, scrolled"><p class="cap">Four facts, then the deck’s whole <b>Overview</b>, drawn by the shipped Overview sections: the summary with the commander, Game plan (Early, Mid, Close), Mulligan, Key tips, Key cards and Weaknesses. Then <code>Open Ghalta Stomps</code>.</p></div><div class="fr "><div class="state"><span class="pill err">R4</span><span class="k">Short · 9 sharpened</span></div><img class="shot " src="art/gb-g-short-p.webp" alt="Short · 9 sharpened"><p class="cap">Both credits come back, and the 9 stay in the deck. The Overview is still written.</p></div><div class="fr "><div class="state"><span class="pill err">R5</span><span class="k">Failed</span></div><img class="shot " src="art/gb-g-failed-p.webp" alt="Failed"><p class="cap">Both credits come back, and the deck keeps the free build. Try again (2 credits, same picks) or Open the deck.</p></div></div><div class="row"><div class="fr wide"><div class="state"><span class="pill now">R1d</span><span class="k">Sharpening · 1300</span></div><img class="shot dk" src="art/gb-g-wait-d.webp" alt="Sharpening · 1300"><p class="cap">The dialog over the new-deck page.</p></div><div class="fr wide"><div class="state"><span class="pill now">R3d</span><span class="k">Ready · 1300, whole dialog</span></div><img class="shot dk" src="art/gb-g-resultall-d.webp" alt="Ready · 1300, whole dialog"><p class="cap">The same Overview at md: the stages run across, and Mulligan and Tips sit in two columns.</p></div><div class="fr wide"><div class="state"><span class="pill err">R5d</span><span class="k">Failed · 1300</span></div><img class="shot dk" src="art/gb-g-failed-d.webp" alt="Failed · 1300"><p class="cap">The line on the left, the two presses on the right.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2600,"height":3314}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

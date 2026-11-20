@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Picks carry into every build</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:650px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:650px;border-radius:12px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font:500 12px 'IBM Plex Mono',monospace;color:#A3A8B8}
+.flow span.n{border:1px solid #343843;border-radius:6px;padding:6px 9px;color:#E6E8F0}
+.flow span.n.hot{border-color:#E39A4F;color:#E39A4F}
+</style>
+</helmet>
+<div class="board" style="width: 2200px; min-height: 4006px">
+<div class="bh"><span class="k">Guided build · R1 · account 2 · 2026-11-20</span><h2>Synergy picks: kept on the commander page, carried into every build</h2><p class="cap">Role Coverage and EDHREC Synergy stay as shipped, with the + picks. The line under the button now says where the picks go, not how the rest is built. The new-deck screen shows the picks above the three options, and each option keeps them. Fixture: Avenger of Zendikar (not owned), Polyraptor and Beorn the Fierce.</p></div><p class="sub">The commander page with 3 picks</p><div class="row"><div class="fr "><div class="state"><span class="pill now">P1</span><span class="k">Phone · page end</span></div><img class="shot " src="art/gb-cpk-p.webp" alt="Phone · page end"><p class="cap">The picks are ticked in EDHREC Synergy. The bar reads <code>Your 3 go into the new deck.</code>, the shipped not-owned line and Clear selection, then <code>Start a deck →</code>.</p></div><div class="fr wide"><div class="state"><span class="pill now">P1d</span><span class="k">1300 · whole page</span></div><img class="shot dk" src="art/gb-cpk-d.webp" alt="1300 · whole page"><p class="cap">The same line under <code>Start a deck →</code>. Role Coverage and EDHREC Synergy are unchanged.</p></div></div><p class="sub">The new-deck screen with the picks carried</p><div class="row"><div class="fr "><div class="state"><span class="pill now">P2</span><span class="k">Free · phone</span></div><img class="shot " src="art/gb-nk-free-p.webp" alt="Free · phone"><p class="cap"><b>Your picks · 3</b> shows the cards at card shape, each one opening card details. A card you don't own says so. <code>Change on Ghalta’s page</code> goes back with the picks kept. Free fills the rest of the 99 around them.</p></div><div class="fr "><div class="state"><span class="pill now">P3</span><span class="k">Guided · phone</span></div><img class="shot " src="art/gb-nk-guided-p.webp" alt="Guided · phone"><p class="cap">Guided keeps them too: the Cards step lists them under <b>It keeps</b> (board G4), and the run never cuts them.</p></div><div class="fr "><div class="state"><span class="pill now">P4</span><span class="k">Just the commander · phone</span></div><img class="shot " src="art/gb-nk-empty-p.webp" alt="Just the commander · phone"><p class="cap">Ghalta, the 3 picks and 96 empty slots.</p></div></div><div class="row"><div class="fr wide"><div class="state"><span class="pill now">P2d</span><span class="k">Free · 1300</span></div><img class="shot dk" src="art/gb-nk-free-d.webp" alt="Free · 1300"><p class="cap">The picks box sits in the form column above How we build it.</p></div></div><p class="cap">After the deck is made, every option opens the shipped deck page, where cards are added and cleared by hand as today.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2200,"height":4006}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
