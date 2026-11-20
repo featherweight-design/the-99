@@ -850,6 +850,8 @@ export type DeckListItem = {
   id: string;
   name: string;
   createdAt: Date;
+  /** The Custom order's place (`decks.sort_position`); null or absent is unarranged. */
+  sortPosition?: number | null;
   commanderName: string;
   /**
    * The name printed on the copy the player owns, where it differs from the oracle
@@ -1226,7 +1228,11 @@ export async function listDecksWithStats(
       ? byName
       : sort === "newest"
         ? [desc(decks.createdAt), asc(decks.id)]
-        : // NULLS LAST is explicit: Postgres sorts nulls first under DESC, which
+        : sort === "custom"
+          ? // The player's arrangement: unarranged (null) decks first, newest first, then the
+            // numbered ones. `sortDecks` is the client twin.
+            [sql`${decks.sortPosition} asc nulls first`, desc(decks.createdAt), asc(decks.id)]
+          : // NULLS LAST is explicit: Postgres sorts nulls first under DESC, which
           // would put every never-played deck at the top of "last played".
           [sql`${lastPlayedSql} desc nulls last`, ...byName];
 
@@ -1235,6 +1241,7 @@ export async function listDecksWithStats(
       id: decks.id,
       name: decks.name,
       createdAt: decks.createdAt,
+      sortPosition: decks.sortPosition,
       commanderOracleId: decks.commanderOracleId,
       commanderName: cards.name,
       commanderColorIdentity: cards.colorIdentity,

@@ -611,6 +611,13 @@ export const decks = pgTable("decks", {
    */
   folderId: uuid("folder_id").references(() => deckFolders.id, { onDelete: "set null" }),
   /**
+   * The player's own place for this deck in the Custom order, ascending. NULLABLE and never
+   * backfilled: a deck nobody has arranged (every deck that exists, and every new one) is null
+   * and sorts ABOVE every numbered one, newest first, so a new deck lands at the top with no
+   * write. `reorderDecks` writes 0..n-1 for the whole set in one transaction.
+   */
+  sortPosition: integer("sort_position"),
+  /**
    * The bracket the PLAYER declared for this deck, 1-5.
    *
    * NEVER INFERRED AND NEVER DEFAULTED. `slotDeck` computes which brackets a deck is

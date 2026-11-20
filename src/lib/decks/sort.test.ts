@@ -46,6 +46,7 @@ describe("deck sort", () => {
       lastPlayed: "Last played",
       name: "Name",
       newest: "Newest",
+      custom: "Custom",
     });
   });
 
@@ -69,7 +70,7 @@ describe("deck sort", () => {
   });
 
   it("renders the sheet's chips default-first", () => {
-    expect(DECK_SORT_ORDER).toEqual(["lastPlayed", "name", "newest"]);
+    expect(DECK_SORT_ORDER).toEqual(["lastPlayed", "name", "newest", "custom"]);
     expect(DECK_SORT_ORDER[0]).toBe(DEFAULT_DECK_SORT);
   });
 });
@@ -131,5 +132,27 @@ describe("sortDecks", () => {
     const sorted = sortDecks(decks, "name");
     expect(sorted).not.toBe(decks);
     expect(decks.map((d) => d.id)).toEqual(["b", "a"]);
+  });
+
+  describe("custom", () => {
+    it("puts unarranged decks first (newest first), then numbered ones by position", () => {
+      const decks = [
+        deck({ id: "p2", sortPosition: 2 }),
+        deck({ id: "old", createdAt: new Date("2026-01-01T00:00:00Z"), sortPosition: null }),
+        deck({ id: "p0", sortPosition: 0 }),
+        deck({ id: "new", createdAt: new Date("2026-05-01T00:00:00Z") }),
+      ];
+      expect(sortDecks(decks, "custom").map((d) => d.id)).toEqual(["new", "old", "p0", "p2"]);
+    });
+
+    it("breaks a position tie on newest, then on id by code point", () => {
+      const same = new Date("2026-02-01T00:00:00Z");
+      const decks = [
+        deck({ id: "b", createdAt: same, sortPosition: 1 }),
+        deck({ id: "a", createdAt: same, sortPosition: 1 }),
+        deck({ id: "z", createdAt: new Date("2026-03-01T00:00:00Z"), sortPosition: 1 }),
+      ];
+      expect(sortDecks(decks, "custom").map((d) => d.id)).toEqual(["z", "a", "b"]);
+    });
   });
 });

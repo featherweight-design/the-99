@@ -2,7 +2,7 @@
 // played`) and names no others; these three are the engineering call, and the
 // gap report records them as one.
 
-export type DeckSort = "lastPlayed" | "name" | "newest";
+export type DeckSort = "lastPlayed" | "name" | "newest" | "custom";
 
 export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed";
 
@@ -18,6 +18,7 @@ export const DECK_SORT_LABELS: Record<DeckSort, string> = {
   lastPlayed: "Last played",
   name: "Name",
   newest: "Newest",
+  custom: "Custom",
 };
 
 /** The localStorage key `useStoredView` keeps the chosen order under. */
@@ -29,7 +30,7 @@ export function isDeckSort(value: string): value is DeckSort {
 }
 
 /** Render order for the phone sheet's sort chips. Default first. */
-export const DECK_SORT_ORDER: readonly DeckSort[] = ["lastPlayed", "name", "newest"];
+export const DECK_SORT_ORDER: readonly DeckSort[] = ["lastPlayed", "name", "newest", "custom"];
 
 /**
  * Both absences are accepted because this parameter arrives by two routes: the
@@ -71,6 +72,8 @@ export type SortableDeck = {
   name: string;
   createdAt: Date;
   lastPlayedAt: Date | null;
+  /** The Custom order's place; null or absent is unarranged. */
+  sortPosition?: number | null;
 };
 
 /**
@@ -98,12 +101,25 @@ export function sortDecks<T extends SortableDeck>(decks: T[], sort: DeckSort): T
   const byName = (a: T, b: T) =>
     byCodePoint(a.name.toLowerCase(), b.name.toLowerCase()) || byCodePoint(a.id, b.id);
 
+  const byNewest = (a: T, b: T) =>
+    b.createdAt.getTime() - a.createdAt.getTime() || byCodePoint(a.id, b.id);
+
   const compare =
     sort === "name"
       ? byName
       : sort === "newest"
-        ? (a: T, b: T) =>
-            b.createdAt.getTime() - a.createdAt.getTime() || byCodePoint(a.id, b.id)
+        ? byNewest
+        : sort === "custom"
+          ? // `sort_position` asc, unarranged (null) first, then newest, then id.
+            (a: T, b: T) => {
+              const ap = a.sortPosition ?? null;
+              const bp = b.sortPosition ?? null;
+              if (ap === null || bp === null) {
+                if (ap === bp) return byNewest(a, b);
+                return ap === null ? -1 : 1;
+              }
+              return ap - bp || byNewest(a, b);
+            }
         : (a: T, b: T) => {
             const at = a.lastPlayedAt?.getTime();
             const bt = b.lastPlayedAt?.getTime();

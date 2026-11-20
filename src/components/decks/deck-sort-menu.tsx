@@ -22,9 +22,12 @@ import { DECK_SORT_LABELS, DECK_SORT_ORDER, type DeckSort } from "../../lib/deck
 export function DeckSortMenu({
   sort,
   onChange,
+  arrange,
 }: {
   sort: DeckSort;
   onChange: (next: DeckSort) => void;
+  /** The `Arrange decks…` row under a hairline, with the count of decks it would arrange. */
+  arrange?: OrderMenuAction;
 }) {
   return (
     <OrderMenu
@@ -34,9 +37,13 @@ export function DeckSortMenu({
       triggerLabel={refreshCopy.decks.sort}
       heading={refreshCopy.filters.sortHeading}
       onChange={onChange}
+      action={arrange}
     />
   );
 }
+
+/** One extra `menuitem` after the options, past a hairline (C6). Not a choice: it has no check. */
+export type OrderMenuAction = { label: string; count: number; onSelect: () => void };
 
 const TRIGGER_CHASSIS =
   "flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent p-0 font-sans text-[12.5px] font-medium text-[color:var(--fg-body)] min-[1000px]:h-[32px] min-[1000px]:w-auto min-[1000px]:px-[14px]";
@@ -55,6 +62,7 @@ export function OrderMenu<T extends string>({
   heading,
   onChange,
   wideFrom = "chassis",
+  action,
 }: {
   value: T;
   order: readonly T[];
@@ -65,6 +73,8 @@ export function OrderMenu<T extends string>({
   /** Where the trigger widens to its labelled form: the chassis's 1000px, or `md` on a route whose
    *  chassis goes wide there (the precon list). */
   wideFrom?: "chassis" | "md";
+  /** An optional last row, past a hairline, in the menu's roving focus. */
+  action?: OrderMenuAction;
 }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -107,8 +117,9 @@ export function OrderMenu<T extends string>({
     items.current[selectedIndex]?.focus();
   }, [open, selectedIndex]);
 
+  const rows = order.length + (action ? 1 : 0);
   function move(delta: number) {
-    const next = (active + delta + order.length) % order.length;
+    const next = (active + delta + rows) % rows;
     setActive(next);
     items.current[next]?.focus();
   }
@@ -119,7 +130,7 @@ export function OrderMenu<T extends string>({
     if (to === null) return;
     e.preventDefault();
     if (to === "first") return move(-active);
-    if (to === "last") return move(order.length - 1 - active);
+    if (to === "last") return move(rows - 1 - active);
     move(to);
   }
 
@@ -189,6 +200,27 @@ export function OrderMenu<T extends string>({
               {labels[option]}
             </button>
           ))}
+          {action && (
+            <button
+              ref={(el) => {
+                items.current[order.length] = el;
+              }}
+              type="button"
+              role="menuitem"
+              tabIndex={active === order.length ? 0 : -1}
+              onFocus={() => setActive(order.length)}
+              onKeyDown={onKeyDown}
+              onClick={() => {
+                setOpen(false);
+                action.onSelect();
+              }}
+              // The hairline is the border-top, one step stronger than the rows' own.
+              className="flex h-[38px] pointer-coarse:h-auto pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full cursor-pointer items-center justify-between gap-[8px] border-x-0 border-b-0 border-t border-solid border-t-[color:var(--border-strong)] bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--fg)]"
+            >
+              <span className="truncate">{action.label}</span>
+              <span className="flex-none font-mono text-[11px] text-[color:var(--fg-faint)]">{action.count}</span>
+            </button>
+          )}
         </div>
       )}
     </div>

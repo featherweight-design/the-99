@@ -2,9 +2,9 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { DeckSortMenu } from "./deck-sort-menu";
 
-function open(sort: "lastPlayed" | "name" | "newest" = "lastPlayed") {
+function open(sort: "lastPlayed" | "name" | "newest" | "custom" = "lastPlayed", arrange?: { label: string; count: number; onSelect: () => void }) {
   const onChange = vi.fn();
-  render(<DeckSortMenu sort={sort} onChange={onChange} />);
+  render(<DeckSortMenu sort={sort} onChange={onChange} arrange={arrange} />);
   fireEvent.click(screen.getByRole("button", { name: /^Sort · / }));
   return { onChange, options: () => screen.getAllByRole("menuitemradio") };
 }
@@ -26,21 +26,21 @@ describe("DeckSortMenu", () => {
     fireEvent.keyDown(options()[1], { key: "ArrowUp" });
     expect(options()[0]).toHaveFocus();
     fireEvent.keyDown(options()[0], { key: "ArrowUp" });
-    expect(options()[2]).toHaveFocus();
+    expect(options()[3]).toHaveFocus();
   });
 
   it("jumps to either end on Home and End", () => {
     const { options } = open();
     fireEvent.keyDown(options()[0], { key: "End" });
-    expect(options()[2]).toHaveFocus();
-    fireEvent.keyDown(options()[2], { key: "Home" });
+    expect(options()[3]).toHaveFocus();
+    fireEvent.keyDown(options()[3], { key: "Home" });
     expect(options()[0]).toHaveFocus();
   });
 
   it("keeps exactly one option tabbable", () => {
     const { options } = open();
     fireEvent.keyDown(options()[0], { key: "ArrowDown" });
-    expect(options().map((o) => o.getAttribute("tabindex"))).toEqual(["-1", "0", "-1"]);
+    expect(options().map((o) => o.getAttribute("tabindex"))).toEqual(["-1", "0", "-1", "-1"]);
   });
 
   it("hands focus back to the trigger on a choice", () => {
@@ -48,5 +48,37 @@ describe("DeckSortMenu", () => {
     fireEvent.click(options()[1]);
     expect(onChange).toHaveBeenCalledWith("name");
     expect(screen.getByRole("button", { name: /^Sort · / })).toHaveFocus();
+  });
+
+  it("lists Custom after Newest", () => {
+    const { options } = open("custom");
+    expect(options().map((o) => o.textContent)).toEqual(["Last played", "Name", "Newest", "Custom"]);
+    expect(options()[3]).toHaveAttribute("aria-checked", "true");
+  });
+
+  describe("the Arrange row", () => {
+    it("is absent unless a caller passes one", () => {
+      open();
+      expect(screen.queryByRole("menuitem")).toBeNull();
+    });
+
+    it("is a menuitem past the options, with the count, and runs its action", () => {
+      const onSelect = vi.fn();
+      open("name", { label: "Arrange decks…", count: 5, onSelect });
+      const row = screen.getByRole("menuitem", { name: /Arrange decks…/ });
+      expect(row).toHaveTextContent("5");
+      expect(row).not.toHaveAttribute("aria-checked");
+      fireEvent.click(row);
+      expect(onSelect).toHaveBeenCalledOnce();
+      expect(screen.queryByRole("menu")).toBeNull();
+    });
+
+    it("joins the roving focus as the last stop", () => {
+      const { options } = open("custom", { label: "Arrange decks…", count: 5, onSelect: vi.fn() });
+      fireEvent.keyDown(options()[3], { key: "ArrowDown" });
+      expect(screen.getByRole("menuitem")).toHaveFocus();
+      fireEvent.keyDown(screen.getByRole("menuitem"), { key: "ArrowDown" });
+      expect(options()[0]).toHaveFocus();
+    });
   });
 });
