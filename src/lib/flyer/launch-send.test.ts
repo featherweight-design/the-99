@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./launch-date", () => ({ readStoredLaunchDate: async () => null }));
 
+import { LAUNCH_COPY_OPEN } from "../copy/emails";
 import { LAUNCH_BATCH_MAX, sendLaunchBatch, type LaunchStore } from "./launch-send";
 import type { MailResult } from "../invites/mail";
 
@@ -57,6 +58,15 @@ describe("sendLaunchBatch", () => {
     expect(waiting).not.toHaveBeenCalled();
     expect(claimNext).not.toHaveBeenCalled();
     expect(store.sent.size).toBe(0);
+  });
+
+  it("reads the shipped open-questions list when none is handed in", async () => {
+    const { d } = deps(memoryStore(["a@x.dev"]));
+    const { copyOpen: _ignored, ...withoutList } = d;
+    const report = await sendLaunchBatch({ dryRun: true, limit: 0 }, withoutList);
+    // While Hugh's questions are open the shipped list is non-empty and the send refuses; once he rules, it is [] and the gate opens.
+    if (LAUNCH_COPY_OPEN.length > 0) expect(report).toEqual({ ok: false, reason: "copy-open", open: [...LAUNCH_COPY_OPEN] });
+    else expect(report).not.toMatchObject({ reason: "copy-open" });
   });
 
   it("refuses with no launch date, or before it", async () => {
