@@ -1,6 +1,6 @@
 {
-  "id": "03ce139c-85f9-4bd4-9d07-6b002fe68fef",
-  "prevId": "a74351a8-36b2-4b01-83a5-aca24dd7455c",
+  "id": "8629bb80-0062-4ef6-abf2-9a53b2513ecf",
+  "prevId": "837b91e1-edcc-43df-8a89-10f5ca13d221",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -11868,6 +11868,12 @@
           "primaryKey": false,
           "notNull": true,
           "default": false
+        },
+        "withdrawn_at": {
+          "name": "withdrawn_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {
