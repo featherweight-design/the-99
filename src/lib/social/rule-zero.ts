@@ -274,6 +274,8 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
     // A new seat's stamp, read BEFORE the delete below empties the table it is measured against.
     const { rows: stamp } = await tx.execute<{ ms: string }>(sql`select round(extract(epoch from ${nextChange(tableId)}) * 1000)::bigint::text as ms`);
     const joinedAt = new Date(Number(stamp[0].ms));
+    // A reseat renumbers who sits where, so a stored result would name other players: the next game starts clean.
+    await tx.delete(ruleZeroResultSeats).where(eq(ruleZeroResultSeats.tableId, tableId));
     await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
     await tx.insert(ruleZeroSeats).values(seats.map((s, i) => {
       const stay = kept.get(s.userId);
@@ -700,6 +702,9 @@ export async function purgeRuleZeroIn(tx: Tx, userId: string): Promise<RuleZeroP
     order by t.id for update`);
   const left = await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.userId, userId)).returning({ tableId: ruleZeroSeats.tableId });
   await tx.delete(ruleZeroSeen).where(eq(ruleZeroSeen.userId, userId));
+  // A result without one of its players would read a tie as a win: every result they sat in goes, the others' included.
+  const sat = [...new Set(left.map((s) => s.tableId))];
+  if (sat.length > 0) await tx.delete(ruleZeroResultSeats).where(inArray(ruleZeroResultSeats.tableId, sat));
   await tx.delete(ruleZeroResultSeats).where(eq(ruleZeroResultSeats.userId, userId));
   const set = await tx.delete(ruleZeroTables).where(or(eq(ruleZeroTables.setBy, userId), eq(ruleZeroTables.closedBy, userId))).returning({ id: ruleZeroTables.id });
   const touched = [...new Set(left.map((s) => s.tableId))];
