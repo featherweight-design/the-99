@@ -19,6 +19,7 @@ import { pruneOrphanProxies } from "./prune-proxies";
 import { clearDormantLocks, pruneOrphanLocks, reviveDormantLocks } from "./locks";
 import { pruneOrphanAssignments } from "./prune-assignments";
 import { clearPullReleases } from "./pull-release";
+import { applyPendingPicks, clearPendingPicks } from "./pending-picks";
 import { commanderMoved } from "../commander-change/pending";
 import {
   readDeckOwnedPrintings, readHeldPricePicks, readRecordedPrintingArt, recordedColumns, recordedKey,
@@ -137,13 +138,17 @@ export async function commitVersion(
   note: string | null,
   tx: Tx | undefined,
   snapshot: CommitSnapshot | undefined,
-  /** The number a FIRST commit takes: 1, or 0 for a precon start, whose list is the precon's v0. Ignored
-   *  once the deck has a version, which every later commit counts on from. */
-  opts: { first: 0 | 1 } = { first: 1 },
+  /** `first`: the number a FIRST commit takes, 1, or 0 for a precon start, whose list is the precon's v0;
+   *  ignored once the deck has a version, which every later commit counts on from. `pendingLocked`: the
+   *  cards whose claims the caller locked (`lockPendingClaims`) BEFORE the deck row, the only pending picks
+   *  this commit may convert (pending-picks.ts, LOCK ORDER); omitted, no pick converts and each stays
+   *  pending until a commit that locked it. */
+  opts: { first: 0 | 1; pendingLocked?: ReadonlySet<string> } = { first: 1 },
 ): Promise<{ version: DeckVersion; cardCount: number }> {
+  const locked = opts.pendingLocked ?? new Set<string>();
   return tx
-    ? commitVersionIn(tx, deckId, note, snapshot, opts.first)
-    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot, opts.first));
+    ? commitVersionIn(tx, deckId, note, snapshot, opts.first, locked)
+    : db.transaction((t) => commitVersionIn(t, deckId, note, snapshot, opts.first, locked));
 }
 
 async function commitVersionIn(
@@ -152,6 +157,7 @@ async function commitVersionIn(
   note: string | null,
   snapshot: CommitSnapshot | undefined,
   first: 0 | 1,
+  pendingLocked: ReadonlySet<string>,
 ): Promise<{ version: DeckVersion; cardCount: number }> {
   const [deck] = await tx.select().from(decks)
     .where(eq(decks.id, deckId))
@@ -280,6 +286,9 @@ async function commitVersionIn(
       })),
     );
   }
+  // PENDING PICKS BECOME RESERVATIONS HERE, once the version lists the cards and before the prune below, which
+  // would otherwise take a reservation for a card the version lists only because this very commit added it.
+  await applyPendingPicks(tx, deckId, inserted.id, pendingLocked);
   // A RESERVATION DIES WITH THE CLAIM IT WAS MADE ABOUT — the same reconcile the proxy path
   // runs, and for the same reason. This commit has just decided what the deck claims, so a
   // reservation for a card the new version does not list has nothing left to be about.
@@ -413,6 +422,8 @@ export async function restoreDraftFromVersion(
     // The pulled cards are back in the draft, so their copies are claimed again: a discard undoes the
     // pull, release included (Hugh, 2026-09-27), and the deck they were pulled for buys again.
     const askers = await clearPullReleases(tx, deckId);
+    // Picks waiting on this draft are over with it: the version never listed their cards.
+    await clearPendingPicks(tx, deckId);
     onReleased?.(askers);
     return "restored";
   });

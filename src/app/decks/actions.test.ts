@@ -460,6 +460,9 @@ vi.mock("../../lib/precons/start-version", () => ({ readDeckOriginAndStart: vi.f
 vi.mock("next/server", () => ({ after: (fn: () => unknown) => stub.state.afters.push(fn) }));
 vi.mock("../../lib/bracket/slot", () => ({ slotDeck: vi.fn(() => ({ permits: [1, 2] })) }));
 
+// The commit takes the deck's pending-pick claim locks first; the stub transaction has no ordered select, and the lock is pinned in pending-picks.test.ts.
+const PENDING_OPTS = { first: 1, pendingLocked: new Set<string>() };
+vi.mock("../../lib/decks/pending-picks", () => ({ lockPendingClaims: vi.fn(async () => new Set<string>()) }));
 vi.mock("../../lib/decks/versions", () => ({
   newestVersion: vi.fn(),
   versionLiveAt: vi.fn(),
@@ -1624,7 +1627,7 @@ describe("commitDeckVersion", () => {
     vi.mocked(cachedDeckProfile).mockResolvedValue({ brackets: {} } as never);
     await commitDeckVersion(DECK_ID, null);
     expect(commitVersion).toHaveBeenCalledWith(
-      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] },
+      DECK_ID, null, expect.anything(), { declared: 2, permits: [1, 2] }, PENDING_OPTS,
     );
   });
 
@@ -1678,7 +1681,7 @@ describe("commitDeckVersion", () => {
     });
     await commitDeckVersion(DECK_ID, null);
     expect(cachedDeckProfile).not.toHaveBeenCalled();
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, PENDING_OPTS);
   });
 
   // A Server Action's arguments are wire input, so the signature is a claim about
@@ -1695,7 +1698,7 @@ describe("commitDeckVersion", () => {
     stub.state.decks.push({ id: DECK_ID, userId: USER_ID, commanderOracleId: CMD });
     const result = await commitDeckVersion(DECK_ID, undefined as unknown as string);
     expect(result.ok).toBe(true);
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, PENDING_OPTS);
   });
 
   it("revalidates claim surfaces, because a commit moves every other deck's figures", async () => {
@@ -1859,7 +1862,7 @@ describe("commitDeckVersion", () => {
     await commitDeckVersion(DECK_ID, "   ");
     // The third argument is the caller's transaction: the diff behind the
     // receipt and the snapshot it describes are read under one lock.
-    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined);
+    expect(commitVersion).toHaveBeenCalledWith(DECK_ID, null, expect.anything(), undefined, PENDING_OPTS);
   });
 });
 

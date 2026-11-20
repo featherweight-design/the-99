@@ -1,7 +1,5 @@
 import { sql } from "drizzle-orm";
-import type { db } from "../../db";
-
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+import type { Tx } from "./assign";
 
 /** Anything that can run one statement — a transaction, or the db singleton. Same shape, and for
  * the same reason, as `prune-proxies`: the statement is a single DELETE either way. */
@@ -35,6 +33,15 @@ type Runner = Pick<Tx, "execute">;
  * already inside a transaction holding it.
  */
 export async function pruneOrphanAssignments(tx: Runner, deckId: string): Promise<void> {
+  // A PENDING PICK LIVES AS LONG AS ITS CARD IS IN THE DRAFT (pending-picks.ts): every removal path ends in
+  // this reconcile, so one statement covers them all, `removeOneCopy` included. A card added back is a new add.
+  await tx.execute(sql`
+    delete from pending_assignments p
+    where p.deck_id = ${deckId}
+      and not exists (
+        select 1 from deck_cards dc where dc.deck_id = p.deck_id and dc.oracle_id = p.oracle_id
+      )
+  `);
   await tx.execute(sql`
     delete from card_assignments a
     where a.deck_id = ${deckId}

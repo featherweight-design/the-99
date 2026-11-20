@@ -1517,6 +1517,33 @@ export const pullReleases = pgTable("pull_releases", {
   check("pull_releases_copies_positive", sql`${t.copies} > 0`),
 ]);
 
+/**
+ * A copy the player chose to give a committed deck that does not list the card yet (Move a copy, #2980).
+ *
+ * The card goes into that deck's DRAFT, and a draft add never claims: `reservableAsk` reads a committed
+ * deck's ask from its newest VERSION and refuses a draft-only add, and any `card_assignments` row counts as a
+ * live reservation at once. So the choice waits here instead, and is NEVER read by the claim model
+ * (`availability-query.ts`). It becomes a real reservation only when the deck commits a version that lists the
+ * card (`applyPendingPicks`, through `assignCopyIn`), and lapses silently when the commit does not list it.
+ *
+ * It lives as long as the deck's draft does, as `pull_releases` does: the deck's discard deletes it, and so
+ * does taking the card back out of the draft. One row per player per card (the primary key): the one-choice
+ * rule across both groups, so a later pick for another deck replaces it, and a reservation written for the
+ * card (`assignCopyIn`) deletes it. Cascades with the deck.
+ */
+export const pendingAssignments = pgTable("pending_assignments", {
+  userId: text("user_id").notNull(),
+  oracleId: uuid("oracle_id").notNull().references(() => cards.oracleId),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  copies: integer("copies").notNull().default(1),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.oracleId] }),
+  // The cascade's own lookup, and the commit's read of the deck's pending picks.
+  index("pending_assignments_deck_idx").on(t.deckId),
+  check("pending_assignments_copies_positive", sql`${t.copies} > 0`),
+]);
+
 export const csvUploads = pgTable("csv_uploads", {
   id: uuid("id").primaryKey().defaultRandom(),
   userId: text("user_id").notNull(),
