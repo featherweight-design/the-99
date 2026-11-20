@@ -45,23 +45,23 @@ const TAG_INK: Record<HistoryKind, string> = {
   revert: "var(--fg-muted)",
 };
 
-/** What follows a `Went to …` sentence (Move a copy, #2980): where the copy is NOW when that differs, then Change. The record is not touched. */
-function LiveTail({ oracleId, cardName, wentDeckIds, soft, live, onWritten }: {
+/** Where the copy is NOW when that differs from the record (Move a copy, #2980). The record is not touched. */
+function LiveNow({ wentDeckIds, soft, live }: { wentDeckIds: readonly string[]; soft: boolean; live: HistoryLive | undefined }) {
+  if (soft || !live) return null;
+  const now = nowHolderNames(wentDeckIds, live);
+  return now ? <>{" "}<span data-testid="history-now">{moveCopyCopy.history.now(now)}</span></> : null;
+}
+
+/** Change, at the far end of the `Went to` line as the boards draw it (H1, D1). */
+function LiveChange({ oracleId, cardName, soft, live, onWritten }: {
   oracleId: string;
   cardName: string;
-  wentDeckIds: readonly string[];
   soft: boolean;
   live: HistoryLive | undefined;
   onWritten?: (oracleId: string) => void;
 }) {
-  if (soft || !live) return null;
-  const now = nowHolderNames(wentDeckIds, live);
-  return (
-    <>
-      {now ? <>{" "}<span data-testid="history-now">{moveCopyCopy.history.now(now)}</span></> : null}
-      {live.change && onWritten ? <>{" "}<ChangeCopyDoor oracleId={oracleId} cardName={cardName} owned={1} onWritten={() => onWritten(oracleId)} /></> : null}
-    </>
-  );
+  if (soft || !live || !live.change || !onWritten) return null;
+  return <span className="flex-none"><ChangeCopyDoor oracleId={oracleId} cardName={cardName} owned={1} onWritten={() => onWritten(oracleId)} /></span>;
 }
 
 function RowLine({ row, rowDecks, live, onWritten }: {
@@ -80,21 +80,17 @@ function RowLine({ row, rowDecks, live, onWritten }: {
         <span className="block truncate text-[13.5px] text-[color:var(--fg)]">{row.name}</span>
         {where ? <span className="block font-mono text-[11px] text-[color:var(--fg-faint)]">{where}</span> : null}
         {rowDecks && row.wentTo ? (
-          <div className="text-[12px] text-[color:var(--fg-muted)]">
-            {row.wentTo.soft ? gotItCopy.history.wentTo.leadSoft : gotItCopy.history.wentTo.lead}{" "}
-            <DeckNames
-              decks={cartDecksOf(row.wentTo.decks.map((d) => d.deckId), new Map(Object.entries(rowDecks)))}
-              linked={false}
-            />
-            {"."}
-            <LiveTail
-              oracleId={row.oracleId}
-              cardName={row.name}
-              wentDeckIds={row.wentTo.decks.map((x) => x.deckId)}
-              soft={row.wentTo.soft === true}
-              live={live?.[row.oracleId]}
-              onWritten={onWritten}
-            />
+          <div className="flex items-baseline justify-between gap-[10px] text-[12px] text-[color:var(--fg-muted)]">
+            <span className="min-w-0">
+              {row.wentTo.soft ? gotItCopy.history.wentTo.leadSoft : gotItCopy.history.wentTo.lead}{" "}
+              <DeckNames
+                decks={cartDecksOf(row.wentTo.decks.map((d) => d.deckId), new Map(Object.entries(rowDecks)))}
+                linked={false}
+              />
+              {"."}
+              <LiveNow wentDeckIds={row.wentTo.decks.map((x) => x.deckId)} soft={row.wentTo.soft === true} live={live?.[row.oracleId]} />
+            </span>
+            <LiveChange oracleId={row.oracleId} cardName={row.name} soft={row.wentTo.soft === true} live={live?.[row.oracleId]} onWritten={onWritten} />
           </div>
         ) : null}
       </div>
@@ -190,10 +186,13 @@ function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
 }) {
   const w = gotItCopy.history.wentTo;
   return (
-    <div className={DECK_LINE}>
-      {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
+    <div className={`${DECK_LINE} flex items-baseline justify-between gap-[10px]`}>
+      <span className="min-w-0">
+        {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
+        {single && cardName ? <LiveNow wentDeckIds={single.wentDeckIds} soft={wentTo.soft} live={live?.[single.oracleId]} /> : null}
+      </span>
       {single && cardName ? (
-        <LiveTail oracleId={single.oracleId} cardName={cardName} wentDeckIds={single.wentDeckIds} soft={wentTo.soft} live={live?.[single.oracleId]} onWritten={onWritten} />
+        <LiveChange oracleId={single.oracleId} cardName={cardName} soft={wentTo.soft} live={live?.[single.oracleId]} onWritten={onWritten} />
       ) : null}
     </div>
   );
