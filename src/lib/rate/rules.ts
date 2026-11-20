@@ -88,6 +88,12 @@ export const RATE_RULES = {
   "launch-list-all": { limit: 60, windowMs: 3_600_000 },
   "launch-list-all-day": { limit: 300, windowMs: 86_400_000 },
   /**
+   * A press on the launch email's unsubscribe link or its one-click POST (`/unsubscribe`, `/api/unsubscribe`), per VISITOR
+   * (`anon.ts`), ENFORCED: each press scans the launch list's addresses, so a stranger cannot make it scan without limit. An
+   * honest reader presses once; a mail scanner opening the link adds a few.
+   */
+  "launch-unsubscribe": { limit: 20, windowMs: 3_600_000 },
+  /**
    * Every email the app sends through Resend, per RECIPIENT (`src/lib/invites/mail-limits.ts`: the address folded by `foldEmail`
    * so `+tags` and Gmail dots share one count, then hashed, never stored), ENFORCED: 3 an hour and (the next bucket) 10 a day
    * (Hugh, 2026-11-14). An honest recipient asks for a code, perhaps twice more after a typo; a script that points the code step

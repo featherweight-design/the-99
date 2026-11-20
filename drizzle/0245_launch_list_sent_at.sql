@@ -1,0 +1,1 @@
+ALTER TABLE "launch_list" ADD COLUMN "sent_at" timestamp;

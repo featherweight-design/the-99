@@ -104,10 +104,19 @@ export type ShellInput = {
   panel: string;
   /** Why this mail came, in the footer. */
   reason: string;
+  /** The footer's unsubscribe line, under the reason: `before`, the linked word, `after` (the launch email's). */
+  unsubscribe?: FooterUnsubscribe;
 };
 
+export type FooterUnsubscribe = { url: string; before: string; link: string; after: string };
+
+/** The footer's unsubscribe line, its one word linked, in the footer's own grey. */
+function unsubscribeHtml({ url, before, link, after }: FooterUnsubscribe): string {
+  return `${escapeHtml(before)}<a href="${escapeHtml(url)}" style="color:${FINE};text-decoration:underline;">${escapeHtml(link)}</a>${escapeHtml(after)}<br>`;
+}
+
 /** The whole document. */
-export function renderShell({ origin, title, preheader, panel, reason }: ShellInput): string {
+export function renderShell({ origin, title, preheader, panel, reason, unsubscribe }: ShellInput): string {
   const site = escapeHtml(origin);
   // The footer link reads as the host of the origin it points at (staging says its own).
   const host = escapeHtml(new URL(origin).host);
@@ -128,6 +137,7 @@ export function renderShell({ origin, title, preheader, panel, reason }: ShellIn
     .pad { padding-left:24px !important; padding-right:24px !important; }
     .gut { padding-left:12px !important; padding-right:12px !important; }
     .h1 { font-size:26px !important; }
+    .fbox { padding:22px 18px 20px !important; }
   }
 </style>
 <!--[if mso]><style>table,td,p,a,h1{font-family:Arial,sans-serif !important;}</style><![endif]-->
@@ -147,7 +157,7 @@ ${panel}
 <tr><td align="center" class="pad" style="padding:28px 40px 0;">
   <p aria-hidden="true" style="margin:0 0 10px;font:10px/1 ${SANS};letter-spacing:8px;color:${BRASS};">&#9670;&#9670;&#9670;</p>
   <p style="margin:0 0 14px;font:italic 15px/1.5 ${SERIF};color:${MUTED};">${escapeHtml(emailShellCopy.flavor)}</p>
-  <p style="margin:0;font:13px/1.6 ${SANS};color:${FINE};">${holdName(escapeHtml(reason))}<br>${escapeHtml(emailShellCopy.noReplies)}<br><a href="${site}" style="color:${FINE};text-decoration:underline;">${host}</a></p>
+  <p style="margin:0;font:13px/1.6 ${SANS};color:${FINE};">${holdName(escapeHtml(reason))}<br>${unsubscribe ? unsubscribeHtml(unsubscribe) : ""}${escapeHtml(emailShellCopy.noReplies)}<br><a href="${site}" style="color:${FINE};text-decoration:underline;">${host}</a></p>
 </td></tr>
 </table>
 <!--[if mso]></td></tr></table><![endif]-->
@@ -163,11 +173,14 @@ export type TextInput = {
   /** The message's lines, each its own paragraph (a lone code or link goes on a line of its own). */
   body: string[];
   reason: string;
+  /** The unsubscribe line and its URL on the line under it, after the reason (the launch email's). */
+  unsubscribe?: { line: string; url: string };
 };
 
-/** The plain-text twin: the message, then `--`, the reason, the flavor line, the replies line and the site. */
-export function renderText({ origin, body, reason }: TextInput): string {
-  return `${body.map(straight).join("\n\n")}\n\n--\n${straight(reason)}\n${straight(emailShellCopy.flavor)}\n${straight(emailShellCopy.noReplies)}\n${origin}\n`;
+/** The plain-text twin: the message, then `--`, the reason, any unsubscribe line, the flavor line, the replies line and the site. */
+export function renderText({ origin, body, reason, unsubscribe }: TextInput): string {
+  const unsub = unsubscribe ? `${straight(unsubscribe.line)}\n${unsubscribe.url}\n` : "";
+  return `${body.map(straight).join("\n\n")}\n\n--\n${straight(reason)}\n${unsub}${straight(emailShellCopy.flavor)}\n${straight(emailShellCopy.noReplies)}\n${origin}\n`;
 }
 
 /** A curly apostrophe or quote becomes a straight one: a plain-text part uses straight quotes. */

@@ -28,8 +28,12 @@ export type MailConfig = { apiKey: string; from: string; origin: string };
  * as a Resend tag, so the bounce webhook (`api/resend-webhook`) can say which email bounced without holding an address.
  */
 /** Resend tag values are letters, digits, underscores and dashes, so the names are a closed set. */
-export type MailTemplate = "code" | "flyer-code" | "invite";
-export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string; limitsChecked?: boolean; template?: MailTemplate };
+export type MailTemplate = "code" | "flyer-code" | "invite" | "launch";
+/**
+ * `listUnsubscribe`, when given, is the one-click unsubscribe URL (RFC 8058): sent as `List-Unsubscribe` with
+ * `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, so a mail client can offer its own Unsubscribe (the launch email's).
+ */
+export type Mail = { to: string; subject: string; text: string; html: string; idempotencyKey?: string; limitsChecked?: boolean; template?: MailTemplate; listUnsubscribe?: string };
 /**
  * `failed` is Resend's own refusal (it answered, and sent nothing); `indeterminate` is no answer in time, so the mail
  * may have gone. `limited` and `capped` are OUR refusals before any fetch (`mail-limits.ts`): this recipient is over its
@@ -102,7 +106,17 @@ export async function sendMail(
         "Content-Type": "application/json",
         ...(mail.idempotencyKey ? { "Idempotency-Key": mail.idempotencyKey } : {}),
       },
-      body: JSON.stringify({ from: config.from, to: [mail.to], subject: mail.subject, text: mail.text, html: mail.html, ...(mail.template ? { tags: [{ name: "template", value: mail.template }] } : {}) }),
+      body: JSON.stringify({
+        from: config.from,
+        to: [mail.to],
+        subject: mail.subject,
+        text: mail.text,
+        html: mail.html,
+        ...(mail.template ? { tags: [{ name: "template", value: mail.template }] } : {}),
+        ...(mail.listUnsubscribe
+          ? { headers: { "List-Unsubscribe": `<${mail.listUnsubscribe}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" } }
+          : {}),
+      }),
       signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
     });
     if (res.ok) return { ok: true };

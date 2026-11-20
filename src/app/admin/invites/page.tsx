@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { FlyerCodes } from "../../../components/admin/flyer-codes";
 import { InviteTreeView } from "../../../components/admin/invite-tree";
+import { LaunchEmailCard } from "../../../components/admin/launch-email-card";
 import { adminMetadata, requireAdmin } from "../../../lib/admin/access";
 import { readFlyerCodes } from "../../../lib/admin/flyers";
 import { flyersView } from "../../../lib/admin/flyers-rule";
@@ -23,6 +24,8 @@ export default async function AdminInvitesPage() {
   return (
     <>
       {flyers && <FlyerCodes view={flyersView(flyers, new Date())} groups={groups.map((g) => ({ id: g.id, name: g.name })).sort((a, b) => a.name.localeCompare(b.name))} />}
+      {/* Whatever the flyer switch says: at launch the trial is off and the list is still to be emailed. */}
+      <LaunchEmailCard />
       <InviteTreeView roots={tree.roots} accounts={tree.accounts} invited={tree.invited} waiting={tree.waiting} clerk={tree.clerk} />
     </>
   );
