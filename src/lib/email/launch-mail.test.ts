@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { FEATURE_HEIGHT, launchEmailParts, LAUNCH_IMAGES } from "./launch-mail";
 
@@ -40,7 +41,7 @@ describe("launchEmailParts", () => {
 
 /** A committed PNG's pixel size, read from its IHDR chunk (width at bytes 16-19, height at 20-23, big-endian). */
 function pngSize(file: string): { width: number; height: number } {
-  const buf = readFileSync(new URL(`../../../public/email/${file}`, import.meta.url));
+  const buf = readFileSync(join(process.cwd(), "public/email", file));
   return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
 }
 
