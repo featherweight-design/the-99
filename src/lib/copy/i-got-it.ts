@@ -74,6 +74,8 @@ export const gotItCopy = {
     changeAria: (card: string) => `Change where ${card} goes`,
     changeTitle: "Where this copy goes",
     changeSub: (card: string) => `${card} · added just now`,
+    /** The same sub from card details, where nothing was just added: what the reader owns (Move a copy, #2980). */
+    changeSubOwned: (card: string, owned: number) => `${card} · ×${n(owned)} in your collection`,
     done: "Done",
     history: "History",
     undo: "Undo",

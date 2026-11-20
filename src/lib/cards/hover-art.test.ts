@@ -388,6 +388,7 @@ const NOT_A_ROW = new Set<string>([
   // Opens a notification's card on landing and draws nothing: no row, so nothing to hover.
   "components/push/push-landing.tsx",
   "components/commanders/detail.tsx",
+  "components/cards/change-copy-door.tsx",
   "components/decks/change-commander-door.tsx",
   "components/decks/got-it-door.tsx",
   "components/decks/pull-control.tsx",

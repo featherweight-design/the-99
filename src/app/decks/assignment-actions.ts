@@ -26,10 +26,15 @@ export type AssignResult =
  * `card` comes back on success AND on refusal, because a refusal means the row is out of date and
  * redrawing it from stale props would leave the player looking at the state that just lost.
  */
-export async function assignCopy(oracleId: string, deckId: string): Promise<AssignResult> {
+export async function assignCopy(
+  oracleId: string,
+  deckId: string,
+  /** `set` leaves the copy with the deck whatever is stored (the same deck again is not an undo). Anything else toggles. */
+  mode?: "set",
+): Promise<AssignResult> {
   const userId = await requireUserId();
   const report: AssignReport = { created: false };
-  const cause = await assignCopyFor(userId, oracleId, deckId, report);
+  const cause = await assignCopyFor(userId, oracleId, deckId, report, mode === "set" ? "set" : "toggle");
 
   // A DECK THAT IS NOT THIS PLAYER'S WROTE NOTHING, so nothing is invalidated and nothing is read
   // back. Falling through would let anyone post a valid deck id belonging to somebody else and

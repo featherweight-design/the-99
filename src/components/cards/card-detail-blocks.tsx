@@ -16,6 +16,7 @@ import { CardFactMark } from "./card-fact-mark";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { RECEIPT_LINK_CLASS } from "./card-modal-shared";
+import { ChangeDoorContext } from "./change-door-context";
 
 /**
  * Whether a deck's name in these blocks is a link to its page. True everywhere but the landing's demo, whose decks are made up
@@ -244,6 +245,8 @@ export function AvailabilityDetail({
   const a = card.availability ?? card.unownedAvailability ?? null;
   const c = availabilityCopy.collection;
   const state = a ? availabilityState(a) : "free";
+  // Change (Move a copy, #2980): only where someone buys it or every copy is held, and only in the signed-in app.
+  const renderChange = useContext(ChangeDoorContext);
   // The decks wanting it only in a draft (`loadDraftWants`). Not claims, so no figure below counts
   // them, but they are rows of "In your decks": a card mid-tune is wanted, never by nobody.
   const drafts = card.draftWants ?? [];
@@ -335,12 +338,17 @@ export function AvailabilityDetail({
       </div>
       {(a.claims.length > 0 || drafts.length > 0) && (
         <>
-          <div
-            id="availability-claims-heading"
-            className="mt-[14px] font-mono text-[10px] tracking-[0.1em] uppercase"
-            style={{ color: "var(--fg-faint)" }}
-          >
-            {c.detailClaimsHeading}
+          <div className="mt-[14px] flex items-center justify-between gap-[12px]">
+            <div
+              id="availability-claims-heading"
+              className="font-mono text-[10px] tracking-[0.1em] uppercase"
+              style={{ color: "var(--fg-faint)" }}
+            >
+              {c.detailClaimsHeading}
+            </div>
+            {renderChange && a.owned > 0 && a.free <= 0 && a.claims.length > 0
+              ? renderChange({ oracleId: card.oracleId, name: card.name, owned: a.owned })
+              : null}
           </div>
           <ul
             aria-labelledby="availability-claims-heading"
