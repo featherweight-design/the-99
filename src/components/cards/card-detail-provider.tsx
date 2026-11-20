@@ -380,6 +380,8 @@ export function CardDetailProvider({
   const [comboFor, setComboFor] = useState<string | null>(null);
   // A combo open that names its variant (`opts.comboVariantId`): the sheet for it opens over the card on arrival (`openComboFor`).
   const comboVariantRef = useRef<{ oracleId: string; variantId: string } | null>(null);
+  // Bumped by each such open, so the effect runs even when the card is already the one shown (a cache hit hands back the same object).
+  const [comboVariantTick, setComboVariantTick] = useState(0);
   const [held, setHeld] = useState<Held | null>(null);
   // THE WAY BACK FROM A COMBO PARTNER: each card a partner was opened from, oldest first. The
   // partner draws as stacked, `← {that card}` at both widths, and every way out of it (the pill,
@@ -649,6 +651,8 @@ export function CardDetailProvider({
       leftFace?: string | null,
     ) => {
       const request = ++latest.current;
+      // Only an `open` (which always passes an arrival) may leave a combo variant armed: a page, a partner or a re-read never inherits one.
+      if (!arrival) comboVariantRef.current = null;
       enterTargetId.current = page ? oracleId : null;
       const entered = arrivalOf(page, offset, progress, leftFace);
       setEnterFrom(entered.from);
@@ -830,6 +834,7 @@ export function CardDetailProvider({
       // still the current one.
       // The combo whose sheet opens over this card once it lands (`openComboFor`); every open restates it, so a stale one never survives.
       comboVariantRef.current = opts?.combo && opts.comboVariantId ? { oracleId, variantId: opts.comboVariantId } : null;
+      if (comboVariantRef.current) setComboVariantTick((n) => n + 1);
       void load(oracleId, list ?? [], atPrinting ?? null, { door: opts?.door ?? false, combo: opts?.combo ?? false });
     },
     [load, setMinimized],
@@ -1171,11 +1176,13 @@ export function CardDetailProvider({
   // item's or a push's). Spent once, and only on that card; a variant the card's list lacks leaves the block open.
   useEffect(() => {
     const want = comboVariantRef.current;
-    if (!want || card?.oracleId !== want.oracleId || comboSheet !== null || held !== null) return;
+    if (!want || card?.oracleId !== want.oracleId) return;
+    // Spent the moment its card is live, whether or not a sheet is already up: it never waits to fire later.
     comboVariantRef.current = null;
+    if (comboSheet !== null || held !== null) return;
     const combo = card.cardCombos?.combos.find((c) => c.variantId === want.variantId);
     if (combo) openComboSheet(card, combo);
-  }, [card, comboSheet, held, openComboSheet]);
+  }, [card, comboSheet, held, openComboSheet, comboVariantTick]);
 
   const prefetch = useCallback(
     (oracleId: string, art?: string | null) => {
