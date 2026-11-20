@@ -30,7 +30,9 @@ const { DecksView } = await import("../../components/decks/decks-view");
 // The page draws the landing's mount beside the view (discovery R2·3): the view is the fragment's last child.
 const visit = async (searchParams: Record<string, string> = {}) => {
   const children = ((await DecksPage({ searchParams: Promise.resolve(searchParams) })) as ReactElement<{ children: ReactElement[] }>).props.children;
-  return children[children.length - 1] as ReactElement<{ lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown>; filter?: unknown } | null; failed: boolean } | null }>;
+  // The view sits inside the page's ZoneProvider, the fragment's last child.
+  const provider = children[children.length - 1] as ReactElement<{ children: ReactElement }>;
+  return provider.props.children as ReactElement<{ lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown>; filter?: unknown } | null; failed: boolean } | null }>;
 };
 
 beforeEach(() => {

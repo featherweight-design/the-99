@@ -1069,8 +1069,8 @@ describe("formatLastUpdated", () => {
     expect(formatLastUpdated(new Date(Date.UTC(2025, 11, 3, 12)), now)).toBe("Dec 3, 2025");
   });
   it("counts the reader's calendar days, not UTC's", () => {
-    // 06:40Z on Jul 19 is still Jul 18 in Denver; "now" at 12:00Z is Jul 19 06:00 there.
-    const edit = new Date(Date.UTC(2026, 6, 19, 6, 40));
+    // 03:00Z on Jul 19 is still Jul 18 evening in Denver (MDT, UTC-6); "now" at 12:00Z is Jul 19 06:00 there.
+    const edit = new Date(Date.UTC(2026, 6, 19, 3, 0));
     expect(formatLastUpdated(edit, new Date(Date.UTC(2026, 6, 19, 12, 0)), "America/Denver")).toBe("yesterday");
     expect(formatLastUpdated(edit, new Date(Date.UTC(2026, 6, 19, 12, 0)), null)).toBe("today");
   });
