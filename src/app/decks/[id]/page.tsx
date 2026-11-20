@@ -227,6 +227,8 @@ export default async function DeckBuilderPage({
     // The mix is always counted by label, so no switch decides it and none rides in the key.
     perf.timed("suggestions", () => cacheForUser(userId, [...SUGGESTIONS_KEY, id, indexGen], () =>
       loadDeckSuggestions(id, userId),
+    // A shelf whose chosen-build read failed is a fallback, served but never stored (engine plan A4).
+    { store: (v) => !v.buildFellBack },
     ))));
   // The move-card picker lists every other deck by name, as it always has.
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the

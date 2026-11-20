@@ -1,8 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("../../db", () => ({ db: {} }));
+const { results, select } = vi.hoisted(() => {
+  const results: unknown[][] = [];
+  // Each select answers the next queued result, whatever chain it is built with.
+  const chain = (): unknown => {
+    const value = results.shift() ?? [];
+    const c: Record<string, unknown> = {};
+    for (const m of ["from", "where", "innerJoin"]) c[m] = () => c;
+    c.then = (r: (v: unknown) => unknown) => Promise.resolve(value).then(r);
+    return c;
+  };
+  return { results, select: vi.fn(chain) };
+});
+vi.mock("../../db", () => ({ db: { select } }));
 
-import { blendThemePages, themeSlugsFor, type ThemePage } from "./build-support";
+import { blendThemePages, loadBuildSupport, themeSlugsFor, type ThemePage } from "./build-support";
 
 const tags = [
   { slug: "infect", label: "Infect", count: 3545 },
@@ -39,5 +51,23 @@ describe("blendThemePages", () => {
   it("is one page itself, and nothing for no pages", () => {
     expect(blendThemePages([a], "all")!.inclusionByName).toEqual({ teferi: 60, "sol ring": 80 });
     expect(blendThemePages([], "any")).toBeNull();
+  });
+});
+
+describe("loadBuildSupport", () => {
+  it("reads nothing for a choice the commander has no tag for", async () => {
+    select.mockClear();
+    expect(await loadBuildSupport("c", tags, ["Voltron"], "any")).toBeNull();
+    expect(select).not.toHaveBeenCalled();
+  });
+
+  it("groups cards by their page's slug, and drops a page with no stored cards", async () => {
+    results.push(
+      [{ slug: "planeswalkers", deckCount: 1789 }, { slug: "infect", deckCount: 3545 }],
+      [{ slug: "planeswalkers", name: "Teferi", inclusion: 60, synergy: 0.5 }],
+    );
+    const r = await loadBuildSupport("c", tags, ["Planeswalkers", "Infect"], "all");
+    // `infect` stored no cards: only the planeswalkers page is read, so `all` is that page alone.
+    expect(r).toEqual({ topCards: ["Teferi"], inclusionByName: { teferi: 60 }, synergyByName: { teferi: 0.5 } });
   });
 });

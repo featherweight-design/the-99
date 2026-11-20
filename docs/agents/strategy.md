@@ -94,7 +94,8 @@ With a focus set, the Add panel's Top picks shelf ranks the commander's stored E
 
 - **The mapping.** `focusThemeSlugs` (`src/lib/strategy/edhrec-themes.ts`) maps a focus key to EDHREC slugs. It's hand-kept, because our vocabulary isn't EDHREC's. A creature type maps to its plural. A slug the commander has no tag for is ignored. A key that maps to nothing keeps the commander page.
 - **What it changes.** Only the shelf's order and which unowned cards reach it. Each tile's figure stays the commander page's, because that is what its copy says.
-- **When it doesn't apply.** Single commanders only (pairs aren't themed). With no stored page, as before the first theme build, or on a failed read, the shelf is today's.
+- **When it doesn't apply.** Single commanders only (pairs aren't themed). With no stored page, as before the first theme build, the shelf is today's.
+- **A failed read.** The shelf falls back to the commander page and flags the payload (`buildFellBack`), and the deck page serves it without caching it.
 - **Why never by default.** A theme page is read only for a build the player chose. Atraxa's most-played tag ranks worse than its commander page (docs/agents/commander-index.md).
 
 ## From AGENTS.md (moved 2026-10-28)
