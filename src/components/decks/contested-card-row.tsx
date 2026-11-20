@@ -307,7 +307,7 @@ export function ContestedCardRow({
       // forever behind a write whose outcome nobody knows. Standing the state down is the one
       // thing that must happen on every path out of here.
       try {
-      const result = await assignCopy(card.oracleId, deckId, replacing ? "set" : undefined);
+      const result = replacing ? await assignCopy(card.oracleId, deckId, "set") : await assignCopy(card.oracleId, deckId);
       // THE LIVE READ CARRIES NO RECEIPT. `arrived` and `ownedBefore` are facts about the import
       // this row came from, and `loadContestedCard` has no import to read — it returns nought for
       // both. Taking its object whole would cost the row its cap, its mark shape and its
