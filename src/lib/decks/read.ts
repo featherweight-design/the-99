@@ -1431,6 +1431,7 @@ export async function listDecksWithStats(
       id: row.id,
       name: row.name,
       createdAt: row.createdAt,
+      sortPosition: row.sortPosition,
       commanderName: row.commanderName,
       // The name of whichever printing the art below came from, so a renamed copy
       // is not captioned with the oracle name over its own art.

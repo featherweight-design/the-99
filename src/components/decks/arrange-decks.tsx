@@ -11,7 +11,7 @@
 // `reorderDecks` call) and `onCancel` leaves. Leaving with a changed order asks first, in the box
 // `discard-draft` draws for its own question: the same plate, danger rule and answer geometry.
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { deckOrderCopy as copy } from "../../lib/copy/deck-order";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
@@ -196,22 +196,23 @@ export function ArrangeDecks({
     else onCancel();
   }
 
+  const liftedIndex = lifted === null ? -1 : order.indexOf(lifted);
   const heading = shelfLabel === null ? copy.headingAll : copy.headingShelf(shelfLabel);
   const eyebrow = shelfLabel === null ? copy.eyebrowAll(order.length) : copy.eyebrowShelf(shelfLabel, order.length);
 
   return (
     <section aria-label={heading} className="mx-auto flex w-full max-w-[720px] flex-col px-[16px] pt-[20px] md:px-0 md:pt-[32px]">
       <p className="m-0 font-mono text-[11px] tracking-[0.16em] text-[color:var(--fg-faint)]">{eyebrow}</p>
-      <div className="mt-[8px] flex flex-wrap items-end justify-between gap-x-[16px] gap-y-[8px]">
-        <h1 className="m-0 font-display text-[30px] font-bold leading-[1.1] text-[color:var(--fg)] md:text-[34px]">{heading}</h1>
-        <div className="hidden items-center gap-[10px] md:flex">
+      <h1 className="m-0 mt-[8px] font-display text-[30px] font-bold leading-[1.1] text-[color:var(--fg)] md:text-[34px]">{heading}</h1>
+      <div className="mt-[10px] flex items-end justify-between gap-x-[16px]">
+        {/* In a folder the note is the whole line; on All decks it is the hint. */}
+        <p className="m-0 text-[14px] leading-[1.5] text-[color:var(--fg-muted)]">
+          {shelfLabel === null ? copy.hint : copy.shelfNote}
+        </p>
+        <div className="hidden flex-none items-center gap-[10px] md:flex">
           <Actions saving={saving} onCancel={cancel} onDone={done} />
         </div>
       </div>
-      <p className="m-0 mt-[10px] text-[14px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.hint}</p>
-      {shelfLabel !== null && (
-        <p className="m-0 mt-[6px] text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.shelfNote}</p>
-      )}
       <hr className="my-[18px] w-full border-x-0 border-b-0 border-t border-solid border-t-[color:var(--border)]" />
 
       <p role="status" aria-live="assertive" className="sr-only">{said}</p>
@@ -259,19 +260,22 @@ export function ArrangeDecks({
           const count = `${deck.built} / ${deckBodySize(deck.partnerName !== null)}`;
           const commander = commanderDisplayName({ name: deck.commanderName, printedName: deck.commanderPrintedName });
           return (
+            <Fragment key={id}>
             <li
-              key={id}
               ref={(el) => {
                 if (el) rows.current.set(id, el);
                 else rows.current.delete(id);
               }}
-              className={`flex items-center gap-[12px] rounded-[12px] bg-[color:var(--surface)] py-[8px] pl-[8px] pr-[4px] md:gap-[14px] md:py-[10px] md:pl-[12px] ${
-                isLifted
-                  ? "border border-solid border-[color:var(--accent)] shadow-[0_14px_32px_rgba(0,0,0,0.5)]"
-                  : "border border-solid border-[color:var(--border)]"
-              }`}
+              className="relative"
             >
-              <span aria-hidden className="hidden w-[18px] flex-none text-center font-mono text-[13px] text-[color:var(--fg-faint)] md:block">{i + 1}</span>
+              <div
+                className={`relative flex items-center gap-[12px] rounded-[12px] bg-[color:var(--surface)] py-[8px] pl-[8px] pr-[4px] md:gap-[14px] md:py-[10px] md:pl-[12px] ${
+                  isLifted
+                    ? "border border-solid border-[color:var(--accent)] shadow-[0_18px_40px_rgba(0,0,0,0.65)]"
+                    : "border border-solid border-[color:var(--border)]"
+                }`}
+              >
+              <span aria-hidden className="hidden w-[18px] flex-none text-center font-mono text-[13px] text-[color:var(--fg-faint)] md:block">{i + 1 + (liftedIndex >= 0 && i > liftedIndex ? 1 : 0)}</span>
               {/* The art crop as a background: decorative, and the tile's own wash draws it the same way. */}
               <span
                 aria-hidden
@@ -313,7 +317,17 @@ export function ArrangeDecks({
                   {[3, 11, 19].flatMap((y) => [3, 11].map((x) => <circle key={`${x}-${y}`} cx={x} cy={y} r="1.8" />))}
                 </svg>
               </button>
+              </div>
             </li>
+            {isLifted && (
+              // The empty slot the lifted row left: dashed and the height of a row, per the boards.
+              <li
+                aria-hidden
+                data-testid="drop-slot"
+                className="min-h-[80px] rounded-[12px] border border-dashed border-[color:var(--border-strong)] md:min-h-[78px]"
+              />
+            )}
+            </Fragment>
           );
         })}
       </ol>

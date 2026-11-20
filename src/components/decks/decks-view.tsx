@@ -42,6 +42,7 @@ import type { PreconSummary } from "../../lib/precons/summary";
 import {
   DECK_SORT_KEY,
   DEFAULT_DECK_SORT,
+  arrangeSeedSort,
   deckSortFromParams,
   isDeckSort,
   sortDecks,
@@ -704,8 +705,10 @@ export function DecksView({
   // ARRANGE MODE (#2990). `arranging` holds the decks in the order Arrange opens on: the order on
   // screen now, minus the filters, which step aside and come back with the grid.
   const [arranging, setArranging] = useState<{ decks: DeckListItem[]; shelf: Shelf } | null>(null);
+  // Arrange edits the Custom order, so it seeds from the saved one whenever any deck has a place,
+  // whatever sort is showing; only with no saved order does it seed from the screen.
   const openArrange = (shelf: Shelf) =>
-    setArranging({ decks: narrowToShelf(sortDecks(decks, sort), shelf), shelf });
+    setArranging({ decks: narrowToShelf(sortDecks(decks, arrangeSeedSort(decks, sort)), shelf), shelf });
   const saveOrder = (ids: string[]) =>
     new Promise<boolean>((resolve) => {
       startMove(async () => {

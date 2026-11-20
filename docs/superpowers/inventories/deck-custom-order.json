@@ -6,84 +6,269 @@
       "id": "sort-menu",
       "label": "/decks, the sort menu open: Custom and the Arrange row (O1)",
       "steps": [
-        { "goto": "/decks", "wait": "button[aria-haspopup=\"menu\"]", "settle": 3000 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]", "settle": 800 }
+        {
+          "goto": "/decks",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 3000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]",
+          "settle": 800
+        }
       ]
     },
     {
       "id": "pick-custom-seeds-arrange",
       "label": "/decks, Custom picked with no saved order: Arrange opens seeded from the screen (O2)",
       "steps": [
-        { "goto": "/decks", "wait": "button[aria-haspopup=\"menu\"]", "settle": 2500 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]" },
-        { "clickRole": "menuitemradio", "name": "^Custom", "wait": "section[aria-label=\"Arrange decks\"]", "settle": 1500 }
+        {
+          "goto": "/decks",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]"
+        },
+        {
+          "clickRole": "menuitemradio",
+          "name": "^Custom",
+          "wait": "section[aria-label=\"Arrange decks\"]",
+          "settle": 1500
+        }
       ]
     },
     {
       "id": "arrange-all",
       "label": "/decks, Arrange decks from the menu row, All decks at rest (O2 / RO)",
       "steps": [
-        { "goto": "/decks", "wait": "button[aria-haspopup=\"menu\"]", "settle": 2500 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]" },
-        { "clickRole": "menuitem", "name": "^Arrange decks", "wait": "section[aria-label=\"Arrange decks\"]", "settle": 1500 }
+        {
+          "goto": "/decks",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]"
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Arrange decks",
+          "wait": "section[aria-label=\"Arrange decks\"]",
+          "settle": 1500
+        }
       ]
     },
     {
       "id": "arrange-lifted",
       "label": "/decks, Arrange with a row lifted and moved one place (the lift)",
       "steps": [
-        { "goto": "/decks", "wait": "button[aria-haspopup=\"menu\"]", "settle": 2500 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]" },
-        { "clickRole": "menuitem", "name": "^Arrange decks", "wait": "section[aria-label=\"Arrange decks\"]", "settle": 1000 },
-        { "clickRole": "button", "name": "^Move ", "settle": 300 },
-        { "pressKey": "Space", "settle": 300 },
-        { "pressKey": "ArrowDown", "wait": "button[aria-pressed=\"true\"]", "settle": 600 }
+        {
+          "goto": "/decks",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]"
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Arrange decks",
+          "wait": "section[aria-label=\"Arrange decks\"]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Move ",
+          "settle": 300
+        },
+        {
+          "pressKey": "Space",
+          "settle": 300
+        },
+        {
+          "pressKey": "ArrowDown",
+          "wait": "button[aria-pressed=\"true\"]",
+          "settle": 600
+        }
       ]
     },
     {
       "id": "arrange-folder",
       "label": "/decks?folder, Arrange inside a folder: `Arrange <folder>…` with the shelf note (RO-folder)",
       "steps": [
-        { "goto": "/decks?folder=${DECK_FOLDER_ID}", "wait": "button[aria-haspopup=\"menu\"]", "settle": 2500 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]", "settle": 600 }
+        {
+          "goto": "/decks?folder=${DECK_FOLDER_ID}",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]",
+          "settle": 600
+        }
       ]
     },
     {
       "id": "arrange-folder-open",
       "label": "/decks?folder, the folder's Arrange screen",
       "steps": [
-        { "goto": "/decks?folder=${DECK_FOLDER_ID}", "wait": "button[aria-haspopup=\"menu\"]", "settle": 2500 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]" },
-        { "clickRole": "menuitem", "name": "^Arrange (?!decks)", "wait": "section[aria-label^=\"Arrange \"]", "settle": 1500 }
+        {
+          "goto": "/decks?folder=${DECK_FOLDER_ID}",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]"
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Arrange (?!decks)",
+          "wait": "section[aria-label^=\"Arrange \"]",
+          "settle": 1500
+        }
       ]
     },
     {
       "id": "arrange-leave-guard",
       "label": "/decks, Arrange after a move, Cancel pressed: the leave guard open",
       "steps": [
-        { "goto": "/decks", "wait": "button[aria-haspopup=\"menu\"]", "settle": 2500 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]" },
-        { "clickRole": "menuitem", "name": "^Arrange decks", "wait": "section[aria-label=\"Arrange decks\"]", "settle": 1000 },
-        { "clickRole": "button", "name": "^Move ", "settle": 300 },
-        { "pressKey": "Space", "settle": 300 },
-        { "pressKey": "ArrowDown", "settle": 300 },
-        { "pressKey": "Space", "settle": 300 },
-        { "clickRole": "button", "name": "^Cancel$", "wait": "[role=alertdialog]", "settle": 600 }
+        {
+          "goto": "/decks",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]"
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Arrange decks",
+          "wait": "section[aria-label=\"Arrange decks\"]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Move ",
+          "settle": 300
+        },
+        {
+          "pressKey": "Space",
+          "settle": 300
+        },
+        {
+          "pressKey": "ArrowDown",
+          "settle": 300
+        },
+        {
+          "pressKey": "Space",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Cancel$",
+          "wait": "[role=alertdialog]",
+          "settle": 600
+        }
       ]
     },
     {
       "id": "sorted-custom-after-done",
       "label": "/decks, a deck moved, Done pressed: the list sorted Custom (WRITES the order; scratch branch only)",
       "steps": [
-        { "goto": "/decks", "wait": "button[aria-haspopup=\"menu\"]", "settle": 2500 },
-        { "clickRole": "button", "name": "^Sort · ", "wait": "[role=menu]" },
-        { "clickRole": "menuitem", "name": "^Arrange decks", "wait": "section[aria-label=\"Arrange decks\"]", "settle": 1000 },
-        { "clickRole": "button", "name": "^Move ", "settle": 300 },
-        { "pressKey": "Space", "settle": 300 },
-        { "pressKey": "ArrowDown", "settle": 300 },
-        { "pressKey": "ArrowDown", "settle": 300 },
-        { "pressKey": "Space", "settle": 300 },
-        { "clickRole": "button", "name": "^Done$", "wait": "button[aria-label*=\"Custom\"]", "settle": 2500 }
+        {
+          "goto": "/decks",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]"
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Arrange decks",
+          "wait": "section[aria-label=\"Arrange decks\"]",
+          "settle": 1000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Move ",
+          "settle": 300
+        },
+        {
+          "pressKey": "Space",
+          "settle": 300
+        },
+        {
+          "pressKey": "ArrowDown",
+          "settle": 300
+        },
+        {
+          "pressKey": "ArrowDown",
+          "settle": 300
+        },
+        {
+          "pressKey": "Space",
+          "settle": 300
+        },
+        {
+          "clickRole": "button",
+          "name": "^Done$",
+          "wait": "button[aria-label*=\"Custom\"]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "menu-check-under-custom",
+      "label": "/decks, the sort menu open under a saved Custom order: the ✓ on Custom (O1)",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "arrange-under-name-keeps-saved-order",
+      "label": "/decks, sorted Name, Arrange opened: seeds from the saved Custom order, not Name",
+      "steps": [
+        {
+          "goto": "/decks?sort=name",
+          "wait": "button[aria-haspopup=\"menu\"]",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Sort · ",
+          "wait": "[role=menu]"
+        },
+        {
+          "clickRole": "menuitem",
+          "name": "^Arrange decks",
+          "wait": "section[aria-label=\"Arrange decks\"]",
+          "settle": 1500
+        }
       ]
     }
   ]

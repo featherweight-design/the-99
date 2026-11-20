@@ -197,7 +197,10 @@ export function OrderMenu<T extends string>({
                   : "bg-transparent text-[color:var(--fg)]"
               }`}
             >
-              {labels[option]}
+              <span className="flex-auto">{labels[option]}</span>
+              {sort === option && (
+                <span aria-hidden className="flex-none text-[13px] text-[color:var(--accent)]">✓</span>
+              )}
             </button>
           ))}
           {action && (
@@ -217,7 +220,8 @@ export function OrderMenu<T extends string>({
               // The hairline is the border-top, one step stronger than the rows' own.
               className="flex h-[38px] pointer-coarse:h-auto pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full cursor-pointer items-center justify-between gap-[8px] border-x-0 border-b-0 border-t border-solid border-t-[color:var(--border-strong)] bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--fg)]"
             >
-              <span className="truncate">{action.label}</span>
+              {/* Full name on hover and to assistive tech; the drawn name ellipsizes, the count stays. */}
+              <span className="min-w-0 truncate" title={action.label}>{action.label}</span>
               <span className="flex-none font-mono text-[11px] text-[color:var(--fg-faint)]">{action.count}</span>
             </button>
           )}

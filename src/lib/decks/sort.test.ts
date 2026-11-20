@@ -1,7 +1,9 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   DECK_SORT_LABELS,
   DECK_SORT_ORDER,
+  arrangeSeedSort,
   deckSortFromParams,
   isDeckSort,
   DEFAULT_DECK_SORT,
@@ -154,5 +156,27 @@ describe("sortDecks", () => {
       ];
       expect(sortDecks(decks, "custom").map((d) => d.id)).toEqual(["z", "a", "b"]);
     });
+  });
+});
+
+describe("arrangeSeedSort", () => {
+  it("seeds from the saved Custom order under any sort, so Arrange never overwrites it", () => {
+    const decks = [{ sortPosition: null }, { sortPosition: 2 }];
+    for (const sort of ["name", "newest", "lastPlayed", "custom"] as const) {
+      expect(arrangeSeedSort(decks, sort)).toBe("custom");
+    }
+  });
+  it("seeds from the screen when no deck has a place", () => {
+    expect(arrangeSeedSort([{ sortPosition: null }, {}], "name")).toBe("name");
+  });
+});
+
+describe("listDecksWithStats carries sortPosition to the client", () => {
+  // The mapper needs a database to run; pin the two places that dropped the field once: the
+  // select and the returned item. Without the second, Custom sorted newest-first on the client.
+  const src = readFileSync(new URL("./read.ts", import.meta.url), "utf8");
+  it("selects it and copies it onto the DeckListItem", () => {
+    expect(src).toContain("sortPosition: decks.sortPosition,");
+    expect(src).toMatch(/createdAt: row\.createdAt,\s+sortPosition: row\.sortPosition,/);
   });
 });

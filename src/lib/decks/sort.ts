@@ -132,3 +132,12 @@ export function sortDecks<T extends SortableDeck>(decks: T[], sort: DeckSort): T
 
   return [...decks].sort(compare);
 }
+
+/**
+ * The sort Arrange seeds from. Arrange edits the Custom order, so once any deck has a saved place
+ * it seeds from Custom whatever sort is showing (opening it under Name must never overwrite the
+ * saved order); with none, it seeds from the sort on screen.
+ */
+export function arrangeSeedSort(decks: { sortPosition?: number | null }[], onScreen: DeckSort): DeckSort {
+  return decks.some((d) => d.sortPosition != null) ? "custom" : onScreen;
+}
