@@ -91,6 +91,13 @@ type ArtRegionProps = {
    * so no reset, no dormant tile and no finish chips, and a tile says `not owned` where the reader holds none.
    */
   scope?: "collection" | "deck" | "browse";
+  /**
+   * Alternate printings from search, an owned card: this region is the first of two groups under one intro that the
+   * modal draws, so the intro is its own (`string`) or none (`null`); absent, the scope's own.
+   */
+  intro?: string | null;
+  /** False where other printings are listed beside this region: the finish chips step aside (default true). */
+  finishChips?: boolean;
   /** A save the server refused, said under the intro (deck scope). Null when there is none. */
   notice?: string | null;
   /** Matches the trigger's aria-controls. Two instances would collide, so the modal owns it. */
@@ -484,10 +491,12 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             "md:mt-[24px] md:rounded-none md:border-0 md:border-t md:border-solid md:border-[color:var(--border)] md:p-0 md:pt-[22px]"
       }
     >
-      {(props.role !== "choose" || props.intro !== undefined) && <div className="flex items-start justify-between gap-[12px]">
+      {(props.role === "choose" ? props.intro !== undefined : props.intro !== null) && <div className="flex items-start justify-between gap-[12px]">
         <p className="text-[13.5px] m-0" style={{ color: "var(--fg-muted)" }}>
           {props.role === "choose"
             ? props.intro
+            : props.intro !== undefined
+              ? props.intro
             : deckScope
               ? preferred === null ? deckCopy.regionIntro(printings.length) : deckCopy.regionIntroPicked
               : browse ? printingBrowseCopy.regionIntro(printings.length)
@@ -551,7 +560,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           />
           {/* The chip geometry, not a chip component: single-select, no dismiss ✕. A catalog
               printing's finishes are not held counts, so the choose role has no finish chips. */}
-          {!choose && !browse && <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
+          {!choose && !browse && props.finishChips !== false && <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
             <FinishChip label={copy.filterAll(counts.all)} active={finish === "all"} onClick={() => setFinish("all")} />
             <FinishChip label={copy.filterFoil(counts.foil)} active={finish === "foil"} onClick={() => setFinish("foil")} />
             <FinishChip label={copy.filterNonFoil(counts.nonfoil)} active={finish === "nonfoil"} onClick={() => setFinish("nonfoil")} />

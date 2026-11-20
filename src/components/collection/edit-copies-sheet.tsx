@@ -111,7 +111,17 @@ export function EditCopiesSheet({
           setLines(preset ? editChoosePrinting(opened, id, preset).lines : opened);
           setPickerFor(preset ? null : id);
         } else {
-          setLines(held);
+          // Opened from a previewed printing the player holds none of: it joins as a new line, already chosen.
+          const named = card.printingId ? out.choices.find((c) => c.scryfallId === card.printingId) : undefined;
+          const preset = named && !out.holdings.some((h) => h.setCode === named.setCode && h.collectorNumber === named.collectorNumber)
+            ? named
+            : undefined;
+          if (preset) {
+            const id = crypto.randomUUID();
+            setLines(editChoosePrinting(openNewLine(held, id, card, out.choices, out.holdings), id, preset).lines);
+          } else {
+            setLines(held);
+          }
           setPickerFor(null);
         }
         setRemoving(false);
