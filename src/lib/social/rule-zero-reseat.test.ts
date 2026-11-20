@@ -17,7 +17,7 @@ vi.mock("../../db", async (orig) => ({
 }));
 vi.mock("../push/kick", () => ({ kickPush: (user: string) => m.kicked.push({ user, afterCommit: m.state.committed }) }));
 
-import { ruleZeroSeats, ruleZeroSeen, ruleZeroTables } from "../../db/schema";
+import { ruleZeroResultSeats, ruleZeroSeats, ruleZeroSeen, ruleZeroTables } from "../../db/schema";
 import { reseatTable, setTable } from "./rule-zero";
 
 const dialect = new PgDialect();
