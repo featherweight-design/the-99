@@ -1,0 +1,24 @@
+// Move a copy (#2980): History's live half, ONE batched read over the oracle ids a page (or an opened entry) names, never one
+// per entry. Reads only `userId`'s own collection and decks. The record (`wentTo`) is never touched.
+import { loadAvailability } from "../decks/availability-query";
+import { allocateClaims } from "../decks/allocate";
+import type { HistoryLive } from "./history-live-view";
+
+/** The most ids one read takes: a bound on the wire, well past one page of single-card entries. */
+export const HISTORY_LIVE_MAX = 200;
+
+export async function loadHistoryLive(userId: string, oracleIds: readonly string[]): Promise<Record<string, HistoryLive>> {
+  const ids = [...new Set(oracleIds)].slice(0, HISTORY_LIVE_MAX);
+  if (ids.length === 0) return {};
+  const availability = await loadAvailability(userId, { oracleIds: ids });
+  const out: Record<string, HistoryLive> = {};
+  for (const id of ids) {
+    const a = availability.get(id);
+    if (!a) continue;
+    // The door's own rule (card details): every copy spoken for, and some deck claims it. `free` is the query's, never recomputed.
+    const change = a.owned > 0 && a.free <= 0 && a.claims.length > 0;
+    const holders = allocateClaims(a).filter((c) => c.allocated > 0).map((c) => ({ id: c.deckId, name: c.deckName }));
+    out[id] = { change, holders };
+  }
+  return out;
+}

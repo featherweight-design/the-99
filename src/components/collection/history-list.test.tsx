@@ -17,7 +17,9 @@ vi.mock("../../app/collection/history-actions", () => ({
   revertCollectionEntry: vi.fn(),
   loadCollectionHistoryEntry: (...a: unknown[]) => loadEntry(...a),
   loadCollectionHistory: (...a: unknown[]) => loadPage(...a),
+  loadHistoryLiveFor: vi.fn(async () => ({})),
 }));
+vi.mock("../cards/change-copy-door", () => ({ ChangeCopyDoor: () => null }));
 
 const { HistoryList, HistoryEntryItem } = await import("./history-list");
 

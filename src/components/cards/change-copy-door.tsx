@@ -37,7 +37,13 @@ function refusalFor(r: Extract<PickOtherResult, { ok: false }>, deck: string, ca
   }
 }
 
-export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string; cardName: string; owned: number }) {
+export function ChangeCopyDoor({ oracleId, cardName, owned, onWritten }: {
+  oracleId: string;
+  cardName: string;
+  owned: number;
+  /** Called when the chooser closes after anything was written: History redraws its live line from it. */
+  onWritten?: () => void;
+}) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<View | null>(null);
   const [pickedId, setPickedId] = useState<string | null>(null);
@@ -60,10 +66,11 @@ export function ChangeCopyDoor({ oracleId, cardName, owned }: { oracleId: string
     if (dirty.current) {
       dirty.current = false;
       evict?.(oracleId);
+      onWritten?.();
     }
     // The button never unmounts, but the dialog's inert hold and focus restore are a frame apart: focus it explicitly.
     requestAnimationFrame(() => button.current?.focus());
-  }, [evict, oracleId]);
+  }, [evict, oracleId, onWritten]);
 
   const begin = () => {
     setRefusal(null);

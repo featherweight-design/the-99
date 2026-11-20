@@ -211,10 +211,15 @@ export type HistoryListEntry = {
    * Where-a-copy-goes off.
    */
   wentTo: { decks: CartDecks; soft: boolean } | null;
+  /**
+   * Move a copy (#2980): for an entry of exactly ONE row, that row's card and the deck ids its `wentTo` named, so the summary
+   * line can ask the live read and compare. Absent on every entry of more than one row (their rows carry their own).
+   */
+  single?: { oracleId: string; wentDeckIds: string[] };
 };
 
 /** An entry as read, with the deck ids its source and its rows name still to be resolved to names. */
-type Listed = { entry: HistoryListEntry; wentIds: string[]; wentSoft: boolean };
+type Listed = { entry: HistoryListEntry; wentIds: string[]; wentSoft: boolean; firstOracleId: string | null };
 
 /** The player's own decks among `ids`, as id to name: ONE read, and none for an empty list. */
 async function livingDecks(userId: string, ids: string[]): Promise<Map<string, string>> {
@@ -237,12 +242,14 @@ async function withDeckLines(
     ...listed.flatMap((l) => [...(cartSourceDecks(l.entry.source) ?? []), ...l.wentIds]),
     ...extraIds,
   ]);
-  const entries = listed.map(({ entry, wentIds, wentSoft }) => {
+  const entries = listed.map(({ entry, wentIds, wentSoft, firstOracleId }) => {
     const cart = cartSourceDecks(entry.source);
     return {
       ...entry,
       ...(cart ? { cartDecks: cartDecksOf(cart, living) } : {}),
       ...(wentIds.length > 0 ? { wentTo: { decks: cartDecksOf(wentIds, living), soft: wentSoft } } : {}),
+      // One row: its ids ARE the entry's `went_decks`.
+      ...(entry.rowCount === 1 && firstOracleId ? { single: { oracleId: firstOracleId, wentDeckIds: wentIds } } : {}),
     };
   });
   return { entries, living };
@@ -271,6 +278,7 @@ type ListRow = {
   deck_add_id: string | null; deck_add_name: string | null;
   // The deck ids the rows' `wentTo` name, first appearance first, and whether EVERY placed row is a brew's read (one held row makes it false).
   went_decks: string[] | null; went_soft: boolean;
+  first_oracle_id: string | null;
   rows?: HistoryRow[];
   sync_summary?: unknown;
 };
@@ -364,7 +372,8 @@ export const listColumns = sql`
     select coalesce(bool_and(coalesce(r.v -> 'wentTo' ->> 'soft', '') = 'true'), false)
     from jsonb_array_elements(h.rows) as r(v) where r.v -> 'wentTo' is not null
   ) as went_soft,
-  h.rows -> 0 ->> 'name' as first_name
+  h.rows -> 0 ->> 'name' as first_name,
+  h.rows -> 0 ->> 'oracleId' as first_oracle_id
 `;
 
 /**
@@ -386,7 +395,7 @@ const inWindow = (userId: string) => sql`
 `;
 
 function listedOf(r: ListRow): Listed {
-  return { entry: toListEntry(r), wentIds: r.went_decks ?? [], wentSoft: r.went_soft === true };
+  return { entry: toListEntry(r), wentIds: r.went_decks ?? [], wentSoft: r.went_soft === true, firstOracleId: r.first_oracle_id };
 }
 
 function toListEntry(r: ListRow): HistoryListEntry {
