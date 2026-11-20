@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>3 · The game starts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(art/cinzel-variable.woff2) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(art/ibm-plex-sans-variable.woff2) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(art/ibm-plex-mono-500.woff2) format("woff2");font-weight:500}
+body{margin:0}
+.scr{--bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--warning:#DEAA29;width:390px;height:844px;box-sizing:border-box;padding:6px;background:var(--bg);display:grid;grid-template-columns:155px 56px 155px;grid-template-rows:413px 413px;gap:6px;position:relative;font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg)}
+.cell{position:relative;overflow:hidden;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
+.rot{position:absolute;width:413px;height:155px;left:-129px;top:129px}
+.r90{transform:rotate(90deg)}.r270{transform:rotate(-90deg)}
+.art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6}
+.wash{position:absolute;inset:0;background:rgba(20,17,14,.5)}
+.pane{position:absolute;inset:0;box-sizing:border-box;padding:6px 8px 8px 14px;display:flex;flex-direction:column}
+.who{display:flex;align-items:center;gap:6px;height:44px;white-space:nowrap}
+.who b{font-weight:600;font-size:16px;margin-right:4px}
+.bd{display:flex;align-items:center;gap:5px;height:24px;padding:0 9px 0 4px;border-radius:999px;background:rgba(20,17,14,.82);box-shadow:inset 0 0 0 1px var(--border-strong);font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--fg-body)}
+.bd img{width:18px;height:18px;border-radius:50%;object-fit:cover}
+.bd svg{margin-left:3px}
+.bd.acc{color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.mk{margin-left:auto;flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(20,17,14,.85);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);display:flex;align-items:center;justify-content:center}
+.life{position:relative;flex:1;display:flex;align-items:center;justify-content:center}
+.half{position:absolute;top:0;bottom:0;width:50%;background:none;border:0;color:var(--fg-muted);font-size:30px;font-family:"IBM Plex Sans",sans-serif;padding:0 4px;display:flex;align-items:center}
+.minus{left:0;justify-content:flex-start}.plus{right:0;justify-content:flex-end}
+.num{position:relative;font-family:"Cinzel",serif;font-weight:700;font-size:88px;line-height:1;pointer-events:none;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.delta{position:absolute;left:100%;top:8px;margin-left:6px;font-family:"IBM Plex Mono",monospace;font-size:18px;color:var(--accent)}
+.press{background:rgba(207,135,69,.18)!important;color:var(--accent)!important}
+.turn{box-shadow:inset 0 0 0 2px var(--accent)}
+.out .art{opacity:.22;filter:grayscale(1)}
+.out .wash{background:rgba(20,17,14,.78)}
+.gone{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center}
+.gone strong{font-family:"Cinzel",serif;font-weight:700;font-size:26px}
+.gone span{font-size:12.5px;color:var(--fg-body)}
+.undo{height:44px;padding:0 20px;border-radius:10px;border:0;background:rgba(20,17,14,.8);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;font-size:14px;margin-top:4px}
+.pick .art{opacity:.35}
+.pick .wash{background:rgba(20,17,14,.6)}
+.crown{flex:1;margin:0 6px 2px 0;border-radius:12px;border:0;background:rgba(20,17,14,.7);box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent);font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:16px;display:flex;align-items:center;justify-content:center;gap:10px}
+.crown.now{background:rgba(107,72,42,.75);color:var(--fg);box-shadow:inset 0 0 0 2px var(--accent)}
+.spine{grid-column:2;grid-row:1 / span 2;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.sb{position:relative;width:48px;height:48px;border-radius:50%;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:flex;align-items:center;justify-content:center;font-family:"Cinzel",serif;font-weight:700;font-size:22px}
+.sb.t{width:50px;height:50px;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.sb.on{color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.sb.off{color:var(--fg-faint)}
+.sb.act{background:var(--accent);color:#14110E;box-shadow:none}
+.sb img{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--surface)}
+.rule{width:26px;height:1px;background:var(--border-strong)}
+.dim{opacity:.4}
+button.bd{border:0;position:relative;cursor:pointer}
+button.bd::after{content:"";position:absolute;inset:-10px -3px}
+.art.pl{right:50%;width:50%}.art.pr{left:50%;width:50%}
+.seam{position:absolute;top:0;bottom:0;left:50%;width:2px;margin-left:-1px;background:var(--bg);opacity:.8}
+.endt{height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--accent);color:#14110E;font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}
+.tn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);font-family:"Cinzel",serif;font-weight:700;font-size:22px}
+</style>
+</helmet>
+<div class="scr">
+  <div class="cell " style="grid-column:1;grid-row:1">
+    <div class="rot r90">
+      <img class="art" src="art/ghalta.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>Colin</b><button class="mk" aria-label="Colin's sheet: commander damage, counters, tax, mana, table"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
+        <div class="life"><button class="half minus" aria-label="Colin loses 1 life">−</button><span class="num">40</span><button class="half plus" aria-label="Colin gains 1 life">+</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="cell turn" style="grid-column:3;grid-row:1">
+    <div class="rot r270">
+      <img class="art" src="art/giada.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>Peter</b><button class="endt">End turn<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h12M13 6l6 6-6 6"/></svg></button><button class="mk" aria-label="Peter's sheet: commander damage, counters, tax, mana, table"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
+        <div class="life"><button class="half minus" aria-label="Peter loses 1 life">−</button><span class="num">40</span><button class="half plus" aria-label="Peter gains 1 life">+</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="cell " style="grid-column:1;grid-row:2">
+    <div class="rot r90">
+      <img class="art" src="art/sai.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>You</b><button class="mk" aria-label="Your sheet: commander damage, counters, tax, mana, table"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
+        <div class="life"><button class="half minus" aria-label="You lose 1 life">−</button><span class="num">40</span><button class="half plus" aria-label="You gain 1 life">+</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="cell " style="grid-column:3;grid-row:2">
+    <div class="rot r270">
+      <img class="art" src="art/gisa.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>Max</b><button class="mk" aria-label="Max's sheet: commander damage, counters, tax, mana, table"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div>
+        <div class="life"><button class="half minus" aria-label="Max loses 1 life">−</button><span class="num">40</span><button class="half plus" aria-label="Max gains 1 life">+</button></div>
+      </div>
+    </div>
+  </div>
+  <div class="spine">
+    <div class="tn" aria-label="Round 1, Peter's turn">1</div>
+    <div class="rule"></div>
+    <button class="sb off" aria-label="Monarch: nobody. Tap to pass it"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg></button>
+    <button class="sb off" aria-label="Initiative: nobody. Tap to pass it"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></button>
+    <button class="sb off" aria-label="Day and night: not started. Tap to make it day"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></button>
+    <button class="sb" aria-label="Roll dice or flip a coin"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></button>
+    <div class="rule"></div>
+    <button class="sb" aria-label="Undo the last change"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 010 10h-2"/></svg></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>B1 · Shared spine, mid-game</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(art/cinzel-variable.woff2) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(art/ibm-plex-sans-variable.woff2) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(art/ibm-plex-mono-500.woff2) format("woff2");font-weight:500}
+body{margin:0}
+.scr{--bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--warning:#DEAA29;--fact:#8FA6BE;width:390px;height:844px;box-sizing:border-box;padding:6px;background:var(--bg);display:grid;grid-template-columns:148px 70px 148px;grid-template-rows:413px 413px;gap:6px;position:relative;font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg)}
+.cell{position:relative;overflow:hidden;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
+.rot{position:absolute;width:413px;height:148px;left:-132.5px;top:132.5px}
+.r90{transform:rotate(90deg)}.r270{transform:rotate(-90deg)}
+.art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.6}
+.wash{position:absolute;inset:0;background:rgba(20,17,14,.5)}
+.pane{position:absolute;inset:0;box-sizing:border-box;padding:10px 14px;display:flex;flex-direction:column}
+.who{display:flex;align-items:baseline;gap:8px;height:20px;white-space:nowrap}
+.who b{font-weight:600;font-size:15px}
+.who i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-body)}
+.life{position:relative;flex:1;display:flex;align-items:center;justify-content:center}
+.half{position:absolute;top:0;bottom:0;width:50%;background:none;border:0;color:var(--fg-muted);font-size:30px;font-family:"IBM Plex Sans",sans-serif;padding:0 4px;display:flex;align-items:center}
+.minus{left:0;justify-content:flex-start}.plus{right:0;justify-content:flex-end}
+.num{position:relative;font-family:"Cinzel",serif;font-weight:700;font-size:88px;line-height:1;pointer-events:none;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.delta{position:absolute;left:100%;top:6px;margin-left:6px;font-family:"IBM Plex Mono",monospace;font-size:16px;color:var(--accent)}
+.badges{display:flex;gap:6px;height:24px;justify-content:center}
+.bd{display:flex;align-items:center;gap:5px;height:24px;padding:0 9px 0 4px;border-radius:999px;background:rgba(20,17,14,.82);box-shadow:inset 0 0 0 1px var(--border-strong);font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--fg-body)}
+.bd img{width:18px;height:18px;border-radius:50%;object-fit:cover}
+.bd svg{margin-left:3px}
+.bd.acc{color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.turn{box-shadow:inset 0 0 0 2px var(--accent)}
+.spine{grid-column:2;grid-row:1 / span 2;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px}
+.sb{position:relative;width:54px;height:54px;border-radius:50%;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:flex;align-items:center;justify-content:center;font-family:"Cinzel",serif;font-weight:700;font-size:20px}
+.sb.on{color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent)}
+.sb.off{color:var(--fg-faint)}
+.sb img{position:absolute;right:-4px;bottom:-4px;width:22px;height:22px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--surface)}
+.rule{width:28px;height:1px;background:var(--border-strong)}
+</style>
+</helmet>
+<div class="scr">
+  <div class="cell turn" style="grid-column:1;grid-row:1">
+    <div class="rot r90">
+      <img class="art" src="art/ghalta.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>Colin</b><i>Ghalta Stompy</i></div>
+        <div class="life"><button class="half minus" aria-label="Colin loses 1 life">−</button><span class="num">24</span><button class="half plus" aria-label="Colin gains 1 life">+</button></div>
+        <div class="badges"><span class="bd acc"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M5 12h12M13 6l6 6-6 6"/></svg>Turn 7</span><span class="bd"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v16M5 11l7-7 7 7"/></svg>Tax 2</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="cell" style="grid-column:3;grid-row:1">
+    <div class="rot r270">
+      <img class="art" src="art/giada.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>Peter</b><i>Giada Angels</i></div>
+        <div class="life"><button class="half minus" aria-label="Peter loses 1 life">−</button><span class="num">18</span><button class="half plus" aria-label="Peter gains 1 life">+</button></div>
+        <div class="badges"><span class="bd"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="7"/><path d="M12 3v18"/></svg>Poison 3</span><span class="bd"><img src="art/ghalta.jpg" alt="">Ghalta 14</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="cell" style="grid-column:1;grid-row:2">
+    <div class="rot r90">
+      <img class="art" src="art/sai.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>You</b><i>Sai Thopters</i></div>
+        <div class="life"><button class="half minus" aria-label="You lose 1 life">−</button><span class="num">31<span class="delta">−3</span></span><button class="half plus" aria-label="You gain 1 life">+</button></div>
+        <div class="badges"></div>
+      </div>
+    </div>
+  </div>
+  <div class="cell" style="grid-column:3;grid-row:2">
+    <div class="rot r270">
+      <img class="art" src="art/gisa.jpg" alt="">
+      <div class="wash"></div>
+      <div class="pane">
+        <div class="who"><b>Max</b><i>Gisa Zombies</i></div>
+        <div class="life"><button class="half minus" aria-label="Max loses 1 life">−</button><span class="num">36</span><button class="half plus" aria-label="Max gains 1 life">+</button></div>
+        <div class="badges"><span class="bd acc"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg>Monarch</span><span class="bd"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v16M5 11l7-7 7 7"/></svg>Tax 2</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="spine">
+    <button class="sb on" aria-label="Turn 7, Colin's turn. Pass the turn">7</button>
+    <button class="sb" aria-label="Combat: log commander damage"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 4l11 11M15 15l2 2M14 19l5-5M4 4v3M4 4h3"/><path d="M20 4L9 15M9 15l-2 2M10 19l-5-5M20 4v3M20 4h-3"/></svg></button>
+    <div class="rule"></div>
+    <button class="sb on" aria-label="Monarch: Max. Pass the crown"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg><img src="art/gisa.jpg" alt=""></button>
+    <button class="sb off" aria-label="Initiative: nobody yet"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l3-3 3 3-3 3z"/></svg></button>
+    <button class="sb off" aria-label="Day and night: not started"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></button>
+    <div class="rule"></div>
+    <button class="sb" aria-label="Dice and coin"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M12 2.5l8.2 4.75v9.5L12 21.5l-8.2-4.75v-9.5z"/><path d="M12 2.5l-4.6 8.2h9.2zM7.4 10.7L3.8 16.75M16.6 10.7l3.6 6.05M7.4 10.7L12 21.5l4.6-10.8"/></svg></button>
+    <button class="sb" aria-label="Undo the last change"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a6 6 0 010 12"/></svg></button>
+    <button class="sb" aria-label="Game menu: history, end game"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="6" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="18" cy="12" r="1.8"/></svg></button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
