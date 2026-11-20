@@ -184,7 +184,9 @@ What the table shows:
 - **How they are written.** `writeThemes` replaces a commander's themes in one transaction. A theme that left the commander's top tags leaves the table, and an absent commander's themes are cleared.
 - **When EDHREC can't serve a page.** An unreachable theme page (429, 5xx, timeout, a 403 whose HTML page exists) keeps its previous rows. This is the commander page's degraded rule, applied per theme.
 - **The stop.** After `THEME_STOP_AFTER` (3) unreachable theme pages in a row, the theme half of the run stops. Every later commander keeps its previous themes, and the commander half carries on.
-- **What the run prints.** A `Themes:` line reports pages stored, unreachable pages, and whether the walk stopped.
+- **A theme failure never fails a commander.** A theme write that throws is counted as `themesFailed`. The commander's own write and tallies stand.
+- **A resumed run** (`resumeSince`) refreshes themes only for the commanders it fetches again. A commander it skips keeps the themes its earlier run wrote.
+- **What the run prints.** A `Themes:` line reports pages stored, unreachable pages, failed theme writes, and whether the walk stopped.
 - **The pass is required.** `buildCommanderIndex` takes `themePages`, with no default, for `loadPairs`'s reason. The job passes `THEME_PASS`. Tests and probes pass `"off"`, so none of them reaches live EDHREC.
 - **The copy.** `db:copy:index` carries both tables to production, replaced whole, and verifies both like every other index table.
 - **Pairs are not themed.** `commander_pair_support` stores no tags (orchestrator ruling, 2026-11-20).

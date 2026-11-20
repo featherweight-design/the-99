@@ -143,6 +143,8 @@ export type BuildIndexResult = {
   themePages: number; themeCardRows: number;
   /** Theme pages EDHREC could not serve this run: their previous rows stand. */
   themesDegraded: number;
+  /** Commanders whose theme write threw: their commander rows stand, their previous themes too. */
+  themesFailed: number;
   /** True once `THEME_STOP_AFTER` theme pages in a row were unreachable: no theme was fetched after. */
   themesStopped: boolean;
 };
@@ -481,7 +483,7 @@ export async function buildCommanderIndex(
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
     pairsSkipped: 0, legalPairs: null, pairRefusal: null,
-    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesStopped: false,
+    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesFailed: 0, themesStopped: false,
   };
   let themeMisses = 0;
 
@@ -497,7 +499,8 @@ export async function buildCommanderIndex(
     if (r.themesStopped) return;
     const writes: ThemeWrite[] = [];
     const keep: string[] = [];
-    for (const theme of themeSlugsToFetch(header.tags)) {
+    const chosen = themeSlugsToFetch(header.tags);
+    for (const [i, theme] of chosen.entries()) {
       await sleep(delayMs);
       const result = await themePass.fetch(commander.name, theme.slug);
       if (result.unreachable) {
@@ -506,7 +509,10 @@ export async function buildCommanderIndex(
         if (++themeMisses >= THEME_STOP_AFTER) {
           r.themesStopped = true;
           console.warn(`commander-index: ${THEME_STOP_AFTER} theme pages in a row unreachable; no more theme pages this run`);
-          return;
+          // What this commander fetched cleanly before the stop is still written; the themes it did
+          // not reach keep their previous rows.
+          keep.push(...chosen.slice(i + 1).map((t) => t.slug));
+          break;
         }
         continue;
       }
@@ -539,7 +545,14 @@ export async function buildCommanderIndex(
       // else is.
       writtenCommanders.push(commander.oracleId);
       r.commanders++;
-      await themesFor(commander, header);
+      // The theme half never fails the commander it follows: a throw here is a theme failure,
+      // counted apart, and the commander's own write and tallies stand.
+      try {
+        await themesFor(commander, header);
+      } catch (err) {
+        r.themesFailed++;
+        console.error(`commander-index: ${commander.name} themes failed`, err);
+      }
       r.cardRows += cardRows.length;
       r.unresolved += unresolved;
       if (header.synergyState === "absent") r.absent++;

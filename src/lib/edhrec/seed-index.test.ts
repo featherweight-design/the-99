@@ -614,7 +614,7 @@ describe("pairRunProblem", () => {
     commanders: 0, roleTargets: 0, pairRoleTargets: 0, labelFingerprint: null, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0, pairs: 0, pairCardRows: 0, pairsFailed: 0,
     pairsDegraded: 0, pairsUnresolved: 0, pairsSkipped: 0, legalPairs: 1717, pairRefusal: null,
-    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesStopped: false,
+    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesFailed: 0, themesStopped: false,
     ...over,
   });
 
@@ -801,9 +801,35 @@ describe("the theme pass", () => {
     expect(fetched).toBe(3);
     expect(r.themesStopped).toBe(true);
     expect(r.themesDegraded).toBe(3);
-    // The stop returns before the write: A's stored themes stand untouched, and B is never asked.
-    expect(keeps).toEqual([]);
+    // A keeps all three themes' previous rows, and B is never asked.
+    expect(keeps).toEqual([["one", "two", "three"]]);
     expect(r.commanders).toBe(2);
+  });
+
+  it("writes what a commander fetched cleanly before the stop, keeping the rest", async () => {
+    const written: { slugs: string[]; keep: string[] }[] = [];
+    let n = 0;
+    await base({
+      loadCommanders: async () => [commander("A", "a")],
+      fetch: async () => tagged([1, 2, 3].map((i) => ({ slug: `t${i}`, count: 900 - i })).concat([{ slug: "t4", count: 100 }])),
+      themePages: {
+        fetch: async () => (++n === 1 ? okResult(["Sol Ring"]) : { data: null, unreachable: true }),
+        write: async (_id, themes, keep) => { written.push({ slugs: themes.map((t) => t.header.slug), keep }); },
+      },
+    });
+    // Three themes chosen (top 3): t1 clean, t2 and t3 unreachable. The run is not stopped (two misses).
+    expect(written).toEqual([{ slugs: ["t1"], keep: ["t2", "t3"] }]);
+  });
+
+  it("counts a theme write that throws apart, and keeps the commander written", async () => {
+    const r = await base({
+      loadCommanders: async () => [commander("A", "a")],
+      fetch: async () => tagged([{ slug: "one", count: 900 }]),
+      themePages: { fetch: async () => okResult(["Sol Ring"]), write: async () => { throw new Error("deadlock"); } },
+    });
+    expect(r.commanders).toBe(1);
+    expect(r.failed).toBe(0);
+    expect(r.themesFailed).toBe(1);
   });
 
   it("fetches no theme with the pass off", async () => {
