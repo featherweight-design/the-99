@@ -56,13 +56,25 @@ describe("ResultView", () => {
     expect(screen.getByRole("heading", { name: /Cuts from the rest of the deck/ })).toBeInTheDocument();
   });
 
-  it("says an add you own is yours and prices the rest", () => {
-    render(<ResultView panel={panel} run={run()} />);
+  it("draws the allocation chip on an owned add held elsewhere, nothing on a free one, and prices the rest", () => {
+    const held: UpgradePanel = { ...panel, cards: { ...panel.cards, add2: { ...panel.cards.add2, availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d1", name: "Other deck", quantity: 1, mature: true, pending: false, commander: false, senior: true }] } } } };
+    render(<ResultView panel={held} run={run()} />);
     const rows = screen.getAllByRole("listitem");
     const owned = rows.find((r) => within(r).queryByText("Add 2"))!;
     const buy = rows.find((r) => within(r).queryByText("Add 1"))!;
-    expect(within(owned).getByText("you own it")).toBeInTheDocument();
+    expect(within(owned).queryByText("you own it")).toBeNull();
+    // Count-only, as every row-sized chip: a deck name would crush the card name beside it.
+    expect(within(owned).queryByText(/Other deck/)).toBeNull();
+    expect(within(owned).getByText(/none free/)).toBeInTheDocument();
     expect(within(buy).getByText("$1.20")).toBeInTheDocument();
+  });
+
+  it("draws no chip on an owned add nothing holds", () => {
+    const free: UpgradePanel = { ...panel, cards: { ...panel.cards, add2: { ...panel.cards.add2, availability: { owned: 1, hard: 0, soft: 0, free: 1, claims: [] } } } };
+    render(<ResultView panel={free} run={run()} />);
+    const owned = screen.getAllByRole("listitem").find((r) => within(r).queryByText("Add 2"))!;
+    expect(within(owned).queryByText("you own it")).toBeNull();
+    expect(within(owned).queryByText("$1.20")).toBeNull();
   });
 
   it("draws no Commander group when the box's own commander still leads", () => {

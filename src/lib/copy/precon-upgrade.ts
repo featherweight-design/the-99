@@ -115,7 +115,6 @@ export const preconUpgradeCopy = {
     buy: (n: number, total: string) => `${n} to buy · ${total}`,
     cap: "each under $12",
     owned: (n: number) => `${n} you own`,
-    youOwnIt: "you own it",
     commanderGroup: "Commander",
     commanderAside: "your pick · not one of the swaps",
     toThe99: "to the 99",
