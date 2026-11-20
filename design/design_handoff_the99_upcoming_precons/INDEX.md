@@ -29,3 +29,5 @@ Source of truth: `docs/superpowers/design-briefs/2026-10-14-upcoming-precons.md`
 ## The answer in one line
 
 *Coming sets get their own group, drawn dashed so they can't be taken for precons, and Home says it once.*
+
+| A2 | Announced lists every named deck (#2981) | `addendum-named-decks/` | Approved 2026-11-20 |
