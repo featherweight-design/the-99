@@ -2,8 +2,8 @@
  * The launch email (launch email R2c), built from the shell (`shell.ts`) and `launchEmailCopy`. PURE: the sender
  * (`sendLaunchBatch`, `src/lib/flyer/launch-send.ts`) hands in the origin, which list the address came from, and its unsubscribe URL;
  * nothing here reads, fetches or draws. The images are static files in `public/email/`, so the email never points at
- * Scryfall. They are not in the repository yet (the handoff's G4, the next PR); until they are, every batch refuses with
- * `images-missing`.
+ * Scryfall. They are committed in `public/email/` (made by `pnpm gen:email-images`); a batch refuses with `images-missing` only
+ * if the deployment does not serve one of them.
  *
  * One action, drawn twice: Sign up free under the lead, and again after the four features with the fine line and the raw
  * link. The text twin carries the link at both places too.
@@ -26,7 +26,7 @@ export type LaunchMailInput = {
 export const LAUNCH_IMAGES = ["launch-fan@2x.png", ...launchEmailCopy.features.map((f) => `${f.image}@2x.png`)] as const;
 
 /** Each feature capture's drawn size (320 wide), as the handoff's templates draw it (`templates/launch.html`). */
-const FEATURE_HEIGHT: Record<(typeof launchEmailCopy.features)[number]["image"], number> = {
+export const FEATURE_HEIGHT: Record<(typeof launchEmailCopy.features)[number]["image"], number> = {
   "feature-commanders": 317,
   "feature-tune": 141,
   "feature-written": 271,

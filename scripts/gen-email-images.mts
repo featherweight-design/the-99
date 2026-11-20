@@ -108,8 +108,11 @@ const fontFace = (family: string, file: string, weight: string) =>
 
 async function fanHtml(): Promise<string> {
   const cards: string[] = [];
-  // One at a time: Scryfall asks for a short gap between calls, and four sequential round trips give it.
-  for (const c of FAN) cards.push(`<img class="c" src="${await cardImage(c.name, c.print)}" style="transform:${c.transform}">`);
+  // One at a time with a 120ms pause between cards: Scryfall asks for a 50 to 100ms gap between API calls.
+  for (const [i, c] of FAN.entries()) {
+    if (i > 0) await new Promise((r) => setTimeout(r, 120));
+    cards.push(`<img class="c" src="${await cardImage(c.name, c.print)}" style="transform:${c.transform}">`);
+  }
   return `<!doctype html><html><head><meta charset="utf-8"><style>
 ${fontFace("Cinzel", "cinzel-variable.woff2", "400 900")}
 ${fontFace("IBM Plex Mono", "ibm-plex-mono-500.woff2", "500")}
@@ -130,7 +133,7 @@ ${cards.join("\n")}
 }
 
 /** Each capture is drawn at 2x and then scaled to the email's 480 wide, its height the reference's (`art/feature-*@2x.png`). */
-const FEATURE = { commanders: 475, tune: 211, written: 340, credits: 233 } as const;
+const FEATURE = { commanders: 475, tune: 211, written: 407, credits: 233 } as const;
 const FEATURE_W = 480;
 
 /** Every ancestor of the marked element made see-through and unclipped, so the capture carries only the element itself. */
