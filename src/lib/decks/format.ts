@@ -2,6 +2,8 @@
 // Shared deck formatting helpers
 // ---------------------------------------------------------------------------
 
+import { wall } from "../time/zoned";
+
 const COLOR_NAMES: Record<string, string> = {
   W: "White", U: "Blue", B: "Black", R: "Red", G: "Green",
 };
@@ -83,6 +85,12 @@ export function colorLabel(identity: string[]): string {
   return "Multi";
 }
 
+/** The calendar day of an instant in a zone (UTC when none): the day a stamp prints, in en-US month names. */
+function dayIn(date: Date, zone: string | null): { month: string; day: number; year: number } {
+  const w = wall(date, zone ?? "UTC");
+  return { month: new Date(Date.UTC(2000, w.mo - 1, 1)).toLocaleDateString("en-US", { month: "short", timeZone: "UTC" }), day: w.d, year: w.y };
+}
+
 /**
  * A committed date, as a version line and the history list print it: `Sep 1, 2026`.
  *
@@ -93,40 +101,39 @@ export function colorLabel(identity: string[]): string {
  *
  * Composed rather than handed whole to Intl, and `en-US` rather than `en-GB`,
  * for the reason the game log gives: en-GB abbreviates September as `Sept`.
- * UTC, because `committed_at` is stamped by the database in UTC and a local
- * boundary would render one day on the server and another in the browser.
+ * The day is the reader's (`zone`, from `useZone` or `resolveZone`), UTC when none is known. A date that is not an
+ * instant (a day written down, like the bracket rules' last-checked date) is passed no zone.
  */
-export function formatDeckDate(date: Date): string {
-  const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
+export function formatDeckDate(date: Date, zone: string | null = null): string {
+  const d = dayIn(date, zone);
   // US order, month first (Hugh, 2026-10-30): `Sep 1, 2026`.
-  return `${month} ${date.getUTCDate()}, ${date.getUTCFullYear()}`;
+  return `${d.month} ${d.day}, ${d.year}`;
 }
 
 /**
  * The same date without its year, for a stamp that sits beside a version number in a fixed
  * slot — `v7 · Aug 2`.
  *
- * Shares the rules above rather than restating them, and both of them matter here too: en-US
- * months because en-GB writes `Sept`, and UTC because `deck_version_cards.since` is a
- * `timestamp` WITHOUT time zone written by the database's clock. That second one is not a
- * nicety on this stamp — it is the evidence behind `first committed wins`, so a reader west of
- * UTC seeing `Aug 1` for a card committed on the 2nd is a wrong answer to the only question
- * the stamp exists to answer.
+ * en-US months because en-GB writes `Sept`. Pass `zone` for an instant (`committed_at`, `analyzed_at`). Never pass it for
+ * `deck_version_cards.since`, a `timestamp` WITHOUT time zone written by the database's clock: it is a UTC day, the
+ * evidence behind `first committed wins`, and a reader west of UTC seeing `Aug 1` for a card committed on the 2nd is a
+ * wrong answer to the only question that stamp exists to answer.
  */
-export function formatShortDeckDate(date: Date): string {
-  const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
-  return `${month} ${date.getUTCDate()}`;
+export function formatShortDeckDate(date: Date, zone: string | null = null): string {
+  const d = dayIn(date, zone);
+  return `${d.month} ${d.day}`;
 }
 
 // "Aug 12" — the design's locator, month first (US order, 2026-10-30). The year appears only when it is not the
 // current one, so a log read in the same season stays short.
 // Composed rather than handed whole to Intl: en-GB abbreviates September as
 // "Sept", which is correct but a character wider than the fixed meta slot was
-// drawn for.
-export function formatPlayed(date: Date, now: Date = new Date()): string {
-  const month = date.toLocaleDateString("en-US", { month: "short" });
-  const stem = `${month} ${date.getDate()}`;
-  return date.getFullYear() === now.getFullYear() ? stem : `${stem}, ${date.getFullYear()}`;
+// drawn for. In the reader's zone (UTC when none is known), never the server's own: the server and the browser then
+// print the same day.
+export function formatPlayed(date: Date, now: Date = new Date(), zone: string | null = null): string {
+  const d = dayIn(date, zone);
+  const stem = `${d.month} ${d.day}`;
+  return d.year === dayIn(now, zone).year ? stem : `${stem}, ${d.year}`;
 }
 
 /**

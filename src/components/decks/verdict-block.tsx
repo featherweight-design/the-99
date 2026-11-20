@@ -18,6 +18,7 @@ import { versionComparison } from "../../lib/bracket/version-reading";
 import { declarationCopy } from "../../lib/copy/declaration";
 import { BracketMark, DIM_OPACITY, bracketInk } from "./bracket-mark";
 import { DeclarationSection, type DeclarationControl } from "./declaration";
+import { useZone } from "../zone-context";
 
 /**
  * The verdict block — the bracket, its mark, one sentence saying why, and what other players say.
@@ -70,6 +71,7 @@ export function VerdictBlock({
    */
   lean?: ReactNode;
 }) {
+  const zone = useZone();
   // THE DECLARATION'S READING, from its rule. It is handed the verdict's own range, never a
   // range this component works out, and everything below that turns on it reads `ask`.
   //
@@ -125,7 +127,7 @@ export function VerdictBlock({
             {head.face}
           </span>
           <span className="font-mono text-[10px] text-[color:var(--fg-faint)]" data-testid="verdict-analyzed">
-            {analyzedLine(new Date(analyzedAt), new Date(), fresh, versionNumber)}
+            {analyzedLine(new Date(analyzedAt), new Date(), fresh, versionNumber, zone)}
           </span>
         </span>
       </div>
@@ -302,12 +304,12 @@ function Population({
  * press on the unchanged list also pins to v0 and reads the same: it IS of the precon's list (d9's ruling 2,
  * 2026-10-28).
  */
-export function analyzedLine(at: Date, now: Date, fresh: boolean, versionNumber: number | null): string {
+export function analyzedLine(at: Date, now: Date, fresh: boolean, versionNumber: number | null, zone: string | null = null): string {
   const copy = deckAnalysisCopy.panel;
-  if (versionNumber === 0) return fresh ? copy.analyzedPrecon(formatShortDeckDate(at)) : copy.analyzedPreconStale(formatShortDeckDate(at));
-  if (!fresh) return copy.analyzedStale(formatShortDeckDate(at));
-  if (versionNumber !== null) return copy.analyzedCommitted(versionNumber, formatShortDeckDate(at));
-  return copy.analyzed(analyzedWhen(at, now));
+  if (versionNumber === 0) return fresh ? copy.analyzedPrecon(formatShortDeckDate(at, zone)) : copy.analyzedPreconStale(formatShortDeckDate(at, zone));
+  if (!fresh) return copy.analyzedStale(formatShortDeckDate(at, zone));
+  if (versionNumber !== null) return copy.analyzedCommitted(versionNumber, formatShortDeckDate(at, zone));
+  return copy.analyzed(analyzedWhen(at, now, zone));
 }
 
 /**
@@ -315,9 +317,9 @@ export function analyzedLine(at: Date, now: Date, fresh: boolean, versionNumber:
  * every deck date here is: readiness finding 14). Drawn once per render; a reading left open for an
  * hour keeps the minutes it was drawn with, which is the cost of not ticking.
  */
-export function analyzedWhen(at: Date, now: Date): string {
+export function analyzedWhen(at: Date, now: Date, zone: string | null = null): string {
   const minutes = Math.floor((now.getTime() - at.getTime()) / 60_000);
   if (minutes < 1) return deckAnalysisCopy.panel.justNow;
   if (minutes < 60) return deckAnalysisCopy.panel.minutesAgo(minutes);
-  return formatShortDeckDate(at);
+  return formatShortDeckDate(at, zone);
 }

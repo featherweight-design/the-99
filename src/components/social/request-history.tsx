@@ -9,6 +9,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { loadMoreHistoryAction } from "../../app/friends/request-history-actions";
 import { historyCopy as h } from "../../lib/copy/request-history";
 import { PersonInitials, PersonText, type PersonParts } from "../../lib/person-name";
+import { useZone } from "../zone-context";
 import { formatShortDeckDate } from "../../lib/decks/format";
 import type { HistoryCursor, HistoryDirection, HistoryEntry } from "../../lib/social/request-history";
 import { daysLeft } from "../../lib/social/spare-request-rules";
@@ -23,13 +24,13 @@ const DIRECTION: Record<HistoryTab, HistoryDirection> = { asked: "asked", ofYou:
 
 const monthOf = (d: Date) => `${d.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" })} ${d.getUTCFullYear()}`;
 
-function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number): { kind: string; ink: string; on: string | null; title: PersonParts; detail: string } {
+function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number, zone: string | null): { kind: string; ink: string; on: string | null; title: PersonParts; detail: string } {
   const ink = e.state === "open" ? "text-[color:var(--accent-text)]" : e.state === "yes" ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]";
   // A withdrawal from before `withdrawn_at` existed has no date to claim: the kicker draws none.
-  const on = e.endedAt === null ? null : formatShortDeckDate(e.endedAt);
+  const on = e.endedAt === null ? null : formatShortDeckDate(e.endedAt, zone);
   const left = () => daysLeft(e.createdAt, new Date(nowMs));
   if (tab === "asked") {
-    const detail = e.state === "open" ? h.openMine(e.deckName, left()) : h.asked(e.deckName, formatShortDeckDate(e.createdAt));
+    const detail = e.state === "open" ? h.openMine(e.deckName, left()) : h.asked(e.deckName, formatShortDeckDate(e.createdAt, zone));
     return { kind: h.kind[e.state], ink, on, title: h.mine[e.state](e.other.displayName, e.card.name), detail };
   }
   const detail = e.state === "open" ? h.openTheirs(left()) : e.state === "yes" ? h.theirsYes : e.state === "no" ? h.theirsNo : h.theirsExpired;
@@ -56,6 +57,7 @@ function Picture({ e }: { e: HistoryEntry }) {
 }
 
 function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: HistoryTab; nowMs: number }) {
+  const zone = useZone();
   const groups: { label: string; rows: HistoryEntry[] }[] = [];
   for (const e of entries) {
     const label = monthOf(e.createdAt);
@@ -72,7 +74,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
           </h2>
           <ul className="m-0 flex list-none flex-col p-0">
             {g.rows.map((e) => {
-              const t = rowText(e, tab, nowMs);
+              const t = rowText(e, tab, nowMs, zone);
               return (
                 <li key={e.id} className="[&+&]:[border-top:1px_solid_var(--border)]">
                   <CardDetailTrigger

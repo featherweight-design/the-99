@@ -7,6 +7,7 @@ import type { Step } from "../../lib/benchmarks/types";
 import { deckBenchmarksCopy as copy } from "../../lib/copy/deck-benchmarks";
 import { formatShortDeckDate } from "../../lib/decks/format";
 import { InfoTip } from "../ui/info-tip";
+import { useZone } from "../zone-context";
 
 /** Which ledger an opener asks for: a graded benchmark, or one dependency row. */
 export type LedgerKey = "velocity" | "flow" | "interaction" | "win" | DependencyWire["row"];
@@ -89,6 +90,7 @@ export function BenchmarksBlock({
   layout?: "auto" | "rows";
   onOpen?: (key: LedgerKey) => void;
 }) {
+  const zone = useZone();
   const rows = layout === "rows";
   const tipId = useId();
   const w = (tile: string, row: string) => (rows ? row : `${row} ${tile}`);
@@ -99,7 +101,7 @@ export function BenchmarksBlock({
           {copy.heading}
         </h3>
         <span className={w("md:text-[10.5px] md:leading-normal", "font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-faint)] [text-wrap:pretty]")}>
-          {stale ? copy.captionStale(formatShortDeckDate(new Date(analyzedAt))) : copy.caption}
+          {stale ? copy.captionStale(formatShortDeckDate(new Date(analyzedAt), zone)) : copy.caption}
         </span>
       </div>
 

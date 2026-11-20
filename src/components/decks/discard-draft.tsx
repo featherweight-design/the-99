@@ -31,6 +31,7 @@ import { MutationError } from "./mutation-error";
 import { useFlushBasicCounts } from "./basic-counts";
 import { commanderBackClause } from "./change-commander-banner";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
+import { useZone } from "../zone-context";
 
 const copy = deckVersioningCopy.discard;
 
@@ -187,6 +188,7 @@ export function DiscardConfirm({
   disabled = false,
   onWriteState,
 }: DiscardConfirmProps) {
+  const zone = useZone();
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const router = useRouter();
@@ -245,13 +247,13 @@ export function DiscardConfirm({
   // on. Split on the clause this component already holds the parts of, rather
   // than on the sentence's words: a re-worded consequence finds no match and
   // renders whole, which is a lost emphasis and never a mangled sentence.
-  const stamp = `v${version.number} as committed on ${formatDeckDate(version.committedAt)}`;
+  const stamp = `v${version.number} as committed on ${formatDeckDate(version.committedAt, zone)}`;
   // A commander-only draft moved no card, so the card clause has nothing to name (change commander).
   const sentence = state.commander && state.adds.length === 0 && state.removes.length === 0
-    ? changeCommanderCopy.discard.commanderOnly(version.number, formatDeckDate(version.committedAt), versionCards)
+    ? changeCommanderCopy.discard.commanderOnly(version.number, formatDeckDate(version.committedAt, zone), versionCards)
     : copy.consequence(
       version.number,
-      formatDeckDate(version.committedAt),
+      formatDeckDate(version.committedAt, zone),
       versionCards,
       state.adds.length,
       state.removes.length,

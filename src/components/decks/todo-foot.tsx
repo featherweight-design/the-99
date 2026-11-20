@@ -21,6 +21,7 @@ import { mirrorUrl } from "../../lib/url/mirror";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { COMMIT_RECEIPT_HASH, DISCARD_RECEIPT_HASH } from "./draft-announcer";
+import { useZone } from "../zone-context";
 
 const copy = deckVersioningCopy.todoCard;
 
@@ -58,6 +59,7 @@ function hasNearCombos(f: TodoFootFacts): f is TodoFootFacts & { nearCombos: { c
 }
 
 export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolean }) {
+  const zone = useZone();
   const [open, setOpen] = useState(false);
   const ids = useId();
   // A segment that leaves while open (the last auto card kept) takes its disclosure with it, so it
@@ -100,7 +102,7 @@ export function TodoFoot({ facts, quiet }: { facts: TodoFootFacts; quiet: boolea
   if (facts.version) {
     segments.push({
       key: "version",
-      node: <VersionSegment className={cell} text={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt))} />,
+      node: <VersionSegment className={cell} text={deckVersioningCopy.pending.versionLine(facts.version.number, formatDeckDate(facts.version.committedAt, zone))} />,
     });
   }
   else if (facts.noVersion && !quiet) segments.push({ key: "version", node: <span className={cell}>{copy.noVersion}</span> });

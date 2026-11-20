@@ -16,6 +16,7 @@ import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { GameMarks, GameNote } from "./game-row-parts";
 import { GameVsLine } from "./game-vs-line";
+import { useZone } from "../zone-context";
 
 export interface GameHistoryRowProps {
   deckId: string;
@@ -36,6 +37,7 @@ const RESULT_GLYPH = {
 } as const;
 
 export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, ringed = false }: GameHistoryRowProps) {
+  const zone = useZone();
   const rowRef = useRef<HTMLLIElement>(null);
   // On arrival only: the ring clearing is not a reason to move the page again.
   useEffect(() => {
@@ -127,7 +129,7 @@ export function GameHistoryRow({ deckId, game, isLast, onDeleted, opponents, rin
       {/* 156 on desktop (Small items 7, addendum 5): the slot holds the longest month-first meta,
           `4-player · Dec 31, 2025`, on one line at 11px mono. The phone sizes to its text, unchanged. */}
       <span className="flex-none md:w-[156px] font-mono text-[11px] tabular-nums text-fg-faint">
-        {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt))}
+        {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt, undefined, zone))}
       </span>
 
       {/* The version that was on the table. A fixed slot, drawn even when the

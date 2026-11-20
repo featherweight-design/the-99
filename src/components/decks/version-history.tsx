@@ -30,6 +30,7 @@ import type { DeckOrigin } from "../../lib/precons/origin";
 import { PendingReporter } from "../shell/pending-reporter";
 import { UnlinkDialog } from "./precons/precon-link-dialogs";
 import { diffCacheKey, VersionDiff, type VersionDiffPayload } from "./version-diff";
+import { useZone } from "../zone-context";
 
 const copy = deckVersioningCopy.history;
 
@@ -105,10 +106,11 @@ function MetaLine({
   version: VersionSummary & { current: boolean };
   phone: boolean;
 }) {
+  const zone = useZone();
   const parts = [
     phone
-      ? `${formatDeckDate(version.committedAt)} · ${copy.cardCount(version.cardCount)}`
-      : copy.committed(formatDeckDate(version.committedAt), version.cardCount),
+      ? `${formatDeckDate(version.committedAt, zone)} · ${copy.cardCount(version.cardCount)}`
+      : copy.committed(formatDeckDate(version.committedAt, zone), version.cardCount),
   ];
   if (version.manaValue !== null) parts.push(copy.manaValue(version.manaValue.toFixed(2)));
   // Never on the current version: it is still accumulating games, so a tally

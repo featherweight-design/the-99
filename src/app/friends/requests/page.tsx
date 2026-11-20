@@ -1,6 +1,8 @@
 // /friends/requests: Request history (#2984, R1d). A static segment beside the friend routes (a friend's id is a uuid, so the
 // two cannot collide). The two first pages and the ex-friend count are read together; "Show older requests" pages from there.
 // A read that throws is the app's error boundary, as on /friends.
+import { ZoneProvider } from "../../../components/zone-context";
+import { resolveZone } from "../../../lib/zone/server";
 import type { Metadata } from "next";
 import { requireUserId } from "../../../lib/auth";
 import { CardDetailProvider } from "../../../components/cards/card-detail-provider";
@@ -20,7 +22,7 @@ export default async function RequestHistoryPage() {
   ]);
   return (
     <CardDetailProvider>
-      <RequestHistory asked={asked} ofYou={ofYou} hiddenCount={hidden} nowMs={now.getTime()} />
+      <ZoneProvider zone={await resolveZone()}><RequestHistory asked={asked} ofYou={ofYou} hiddenCount={hidden} nowMs={now.getTime()} /></ZoneProvider>
     </CardDetailProvider>
   );
 }

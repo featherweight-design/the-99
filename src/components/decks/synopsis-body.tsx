@@ -16,6 +16,7 @@ import { bySeverity, usesStagesShape } from "../../lib/synopsis/stages-view";
 import { formatDeckDate } from "../../lib/decks/format";
 import { analyzedWhen } from "./verdict-block";
 import { CreditsText } from "../ui/credits-text";
+import { useZone } from "../zone-context";
 
 /**
  * The full overview, `ModalChrome`'s fourth body (`SYNOPSIS-modal.md`; the `Synopsis Sheet`
@@ -56,8 +57,9 @@ export function SynopsisModal({
   spent: boolean;
   onClose: () => void;
 }) {
+  const zone = useZone();
   const noteId = useId();
-  const aside = synopsisCopy.modal.aside(deckName, analyzedWhen(new Date(synopsis.createdAt), new Date()));
+  const aside = synopsisCopy.modal.aside(deckName, analyzedWhen(new Date(synopsis.createdAt), new Date(), zone));
   return (
     <ModalChrome
       title={synopsisCopy.modal.title}
@@ -131,7 +133,8 @@ export function VersionSynopsisModal({
   evidenceNames: Record<string, string>;
   onClose: () => void;
 }) {
-  const aside = synopsisCopy.version.aside(versionNumber, formatDeckDate(committedAt));
+  const zone = useZone();
+  const aside = synopsisCopy.version.aside(versionNumber, formatDeckDate(committedAt, zone));
   return (
     <ModalChrome
       title={synopsisCopy.modal.title}

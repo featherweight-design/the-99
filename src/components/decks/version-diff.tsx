@@ -39,6 +39,7 @@ import { DecklistGroupHeader } from "./decklist-group-header";
 import { HoverPreviewProvider, usePreviewRow } from "./hover-preview";
 import { VersionOverviewLink } from "./synopsis-version";
 import { ROW_PLATE_HOVER, useRowOpen } from "./update-diff-row";
+import { useZone } from "../zone-context";
 
 const copy = deckVersioningCopy.history;
 
@@ -326,6 +327,7 @@ export function VersionDiff({
    *  flips between". */
   cache: Map<string, VersionDiffPayload>;
 }) {
+  const zone = useZone();
   const before: Before | null = previous ?? origin;
   const initial = before === null;
   const key = diffCacheKey(version, previous, origin);
@@ -416,7 +418,7 @@ export function VersionDiff({
       >
         <div>
           <h3 className="hidden md:block m-0 font-display font-bold text-[18px] text-[color:var(--fg)]">
-            {`v${version.number} · ${formatDeckDate(version.committedAt)}`}
+            {`v${version.number} · ${formatDeckDate(version.committedAt, zone)}`}
           </h3>
           <p
             className={`hidden md:block m-0 mt-[5px] text-[13px] ${
