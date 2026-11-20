@@ -8,9 +8,10 @@ const read = vi.hoisted(() => vi.fn());
 const create = vi.hoisted(() => vi.fn());
 const own = vi.hoisted(() => vi.fn());
 const picked = vi.hoisted(() => vi.fn(async (_r: string, lineId: string) => ({ ok: true as const, unpicked: [lineId] })));
+const setBracket = vi.hoisted(() => vi.fn(async (..._a: unknown[]): Promise<{ permits: number[]; bracket: number | null } | null> => null));
 vi.mock("../../../../lib/precons/upgrade/actions", () => ({
   pressUpgradeAction: press, readUpgradeAction: read, markUpgradeSeenAction: vi.fn(async () => ({ ok: true })),
-  pickUpgradeLineAction: picked, upgradeSetBracketAction: vi.fn(async () => null),
+  pickUpgradeLineAction: picked, upgradeSetBracketAction: setBracket,
 }));
 // The result's lists are Suggested changes' own (fresh start R2): their lines read the precon page's card details.
 vi.mock("../../../cards/card-detail-context", async (importActual) => ({
@@ -60,7 +61,7 @@ function openLast() {
 const mount = (p: UpgradePanel) => render(<UpgradeEntry fileName="f" precon="Prismari" panel={p} art={new Map()} start={startProps} />);
 
 describe("UpgradeEntry", () => {
-  beforeEach(() => { press.mockReset(); read.mockReset(); read.mockResolvedValue(null); create.mockReset(); own.mockReset(); });
+  beforeEach(() => { press.mockReset(); read.mockReset(); read.mockResolvedValue(null); create.mockReset(); own.mockReset(); setBracket.mockReset(); setBracket.mockResolvedValue(null); });
 
   it("presses the run with the three picks, shows the wait, then the result", async () => {
     let finish!: (v: unknown) => void;
@@ -202,6 +203,25 @@ describe("UpgradeEntry", () => {
       expect(screen.getByText(/with the 1 swap toward Spells\./)).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
       await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1", { adds: ["a"], cuts: ["c2"] }));
+    });
+
+    it("unpicking the bracket-raising add shows the picked set's bracket, not the run's, and none while it is read", async () => {
+      let land!: (v: { permits: number[]; bracket: number | null }) => void;
+      const setRead = new Promise<{ permits: number[]; bracket: number | null }>((r) => { land = r; });
+      setBracket.mockImplementation(async (_f, _r, adds) => ((adds as string[]).includes("a2") ? null : setRead));
+      mount(panel([run({ pairs: [
+        { cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", cutReason: null, position: 1 },
+        { cutId: "c2", cut: "Cut 2", addId: "a2", add: "Add 2", addCents: 100, reason: "r", cutReason: null, position: 2 },
+      ], unpicked: ["a-a2", "c-c2"] })]));
+      openLast();
+      fireEvent.click(screen.getByRole("button", { name: "Start the deck with these 1 swaps" }));
+      expect(screen.getByText(/with the 1 swap toward Spells\./)).toBeInTheDocument();
+      await waitFor(() => expect(setBracket).toHaveBeenCalledWith("f", "r1", ["a"], ["c"]));
+      // Pending: the fact is off, never the whole run's 2 → 3.
+      expect(screen.queryByText("2 → 3 · Upgraded, as chosen")).toBeNull();
+      await act(async () => { land({ permits: [2], bracket: 2 }); });
+      expect(await screen.findByText("2 · Core, as chosen")).toBeInTheDocument();
+      expect(screen.queryByText("2 → 3 · Upgraded, as chosen")).toBeNull();
     });
 
     it("keeps a stored pick when the result is opened again in the same visit", async () => {

@@ -10,6 +10,7 @@ import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import type { UpgradePicks } from "../../../../lib/precons/upgrade/apply";
 import { StartPreconDialog, type StartPreconProps, type UpgradeStart } from "../start-precon";
 import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
+import { upgradeSetBracketAction } from "../../../../lib/precons/upgrade/actions";
 import { UpgradeFlow } from "./upgrade-flow";
 import { leadOf } from "./result-view";
 import type { UpgradeArt } from "./pick-steps";
@@ -29,7 +30,22 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
   const [starting, setStarting] = useState<{ runId: string; picks: UpgradePicks } | null>(null);
   // A plain map held in state (never replaced), one slot per run: a retry of one run lands on its deck, and another run never inherits its id.
   const [adds] = useState(() => new Map<string, { id: string | null }>());
-  const startingUpgrade = starting ? startFor(panel, starting.runId, art, starting.picks) : null;
+  // The picked set's bracket (fresh start R2), the read the result's bar makes: keyed on the run and picks it was read for, so a read
+  // for another start never lands on this one. While it is read, or when it cannot be, the fact stays off.
+  const [setRead, setSetRead] = useState<{ key: string; bracket: number | null } | null>(null);
+  const startKey = starting ? readKey(starting.runId, starting.picks) : null;
+  const full = starting ? allPicked(panel, starting.runId, starting.picks) : undefined;
+  const setBracket = full !== undefined ? full : setRead !== null && setRead.key === startKey ? setRead.bracket : null;
+  const startingUpgrade = starting ? startFor(panel, starting.runId, art, starting.picks, setBracket) : null;
+
+  const onStart = (runId: string, picks: UpgradePicks) => {
+    setStarting({ runId, picks });
+    // Every swap picked plays at the run's own bracket, so there is nothing to read.
+    if (allPicked(panel, runId, picks) !== undefined) return;
+    const key = readKey(runId, picks);
+    void upgradeSetBracketAction(fileName, runId, picks.adds, picks.cuts)
+      .then((r) => setSetRead({ key, bracket: r?.bracket ?? null }), () => setSetRead({ key, bracket: null }));
+  };
 
   const button = useRef<HTMLButtonElement>(null);
   const pulse = useLinePulse(button, landed);
@@ -61,7 +77,7 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
           onSeen={onSeen}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
-          onStart={(id, picks) => setStarting({ runId: id, picks })}
+          onStart={onStart}
           onPicked={savePicks}
         />
       )}
@@ -81,15 +97,26 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
   );
 }
 
-/** The Start dialog's view of a run: who leads, the swaps picked, the bracket in the player's words, and what is left to buy of the
- *  picked adds. The picks go to the start, which makes exactly those (fresh start R2). */
-function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt, picks: UpgradePicks): UpgradeStart | null {
+const readKey = (runId: string, picks: UpgradePicks) => `${runId}|${picks.adds.join(",")}|${picks.cuts.join(",")}`;
+
+/** The run's own bracket when every one of its adds and cuts is picked; undefined when only some are (the set's bracket is read). */
+function allPicked(panel: UpgradePanel, runId: string, picks: UpgradePicks): number | null | undefined {
+  const run = panel.runs.find((r) => r.id === runId);
+  if (!run) return undefined;
+  const adds = new Set(run.pairs.map((p) => p.addId));
+  const cuts = new Set(run.pairs.map((p) => p.cutId));
+  const all = adds.size === picks.adds.length && cuts.size === picks.cuts.length
+    && picks.adds.every((id) => adds.has(id)) && picks.cuts.every((id) => cuts.has(id));
+  return all ? (run.bracketAfter ?? run.bracketTarget) : undefined;
+}
+
+/** The Start dialog's view of a run: who leads, the swaps picked, the picked set's bracket in the player's words (`after`, null
+ *  leaves the fact off), and what is left to buy of the picked adds. The picks go to the start, which makes exactly those (fresh start R2). */
+function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt, picks: UpgradePicks, after: number | null): UpgradeStart | null {
   const run = panel.runs.find((r) => r.id === runId);
   const lead = run ? leadOf(panel, run) : null;
   const box = panel.commanders.find((c) => c.isFace);
   if (!run || !lead || !box) return null;
-  const after = run.bracketAfter ?? run.bracketTarget;
-  if (after === null || !(after in BRACKET_NAMES)) return null;
   const names = (c: typeof lead) => c.cards.map((k) => k.name).join(" + ");
   return {
     runId: run.id,
@@ -102,7 +129,7 @@ function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt, picks: Up
     changed: !lead.isFace,
     swaps: picks.adds.length,
     strategy: run.strategyLabel,
-    bracket: preconUpgradeCopy.start.bracketFact(run.bracketBefore, after, BRACKET_NAMES[after as 1 | 2 | 3 | 4 | 5]),
+    bracket: after !== null && after in BRACKET_NAMES ? preconUpgradeCopy.start.bracketFact(run.bracketBefore, after, BRACKET_NAMES[after as 1 | 2 | 3 | 4 | 5]) : null,
     toBuy: picks.adds.filter((id) => !panel.cards[id]?.owned).length,
     picks,
   };

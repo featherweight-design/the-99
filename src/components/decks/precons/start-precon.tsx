@@ -76,8 +76,8 @@ export type UpgradeStart = {
   changed: boolean;
   swaps: number;
   strategy: string;
-  /** The Bracket fact's words, from the run (`bracketFact`). */
-  bracket: string;
+  /** The Bracket fact's words for the picked set (`bracketFact`); null leaves the fact off while it is read, or when it cannot be. */
+  bracket: string | null;
   /** The adds the reader does not own: "I own this precon" adds only what came in the box, so these are not added. */
   toBuy: number;
   /** The adds and cuts picked on the result (fresh start R2): the start makes these, a subset of the run, checked again on the server. */
@@ -323,7 +323,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
               <div className="flex flex-col">
                 {upgrade?.changed && fact(preconUpgradeCopy.start.facts.commander, preconUpgradeCopy.start.commanderFact(upgrade.lead.name, upgrade.boxCommander))}
                 {fact(copy.facts.cards, upgrade ? preconUpgradeCopy.start.cardsValue(upgrade.swaps) : copy.facts.cardsValue(cards, row.unmapped))}
-                {upgrade && fact(preconUpgradeCopy.start.facts.bracket, upgrade.bracket)}
+                {upgrade?.bracket && fact(preconUpgradeCopy.start.facts.bracket, upgrade.bracket)}
                 {fact(copy.facts.own, copy.facts.ownValue(row.owned, row.of))}
                 {upgrade && fact(preconUpgradeCopy.start.facts.overview, preconUpgradeCopy.start.overviewFact)}
                 {fact(copy.facts.printings, upgrade ? preconUpgradeCopy.start.printingsValue(upgrade.swaps) : copy.facts.printingsValue)}
