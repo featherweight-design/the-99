@@ -136,6 +136,42 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   bare error, so it reads as a failed row of no phase and refuses. Its recovery is still the full build
   (`db:build:index`, then staples). The retry covers staples failures from this deploy on.
 
+## Theme pages, measured (engine plan A1, 2026-11-20)
+
+EDHREC serves a page per theme of a commander: `json.edhrec.com/pages/commanders/<slug>/<theme>.json`. It has the same shape as the commander page (`container.json_dict.cardlists`). Each cardview's `potential_decks` is the theme's deck count. A page is about 140 KB.
+
+**Theme slugs come only from the commander page's `tag_counts`.** A guessed slug returns 403: Atraxa's `superfriends` does, while `planeswalkers` is the real slug.
+
+**Request volume (staging, `commander_support.tags`, 3,727 commanders):**
+
+| Rule | Commanders with a theme page | Extra requests per build |
+|---|---|---|
+| Top 3 tags, at least 50 decks | 1,858 | 4,544 |
+| Top 3 tags, at least 100 decks | 1,410 | 3,211 |
+| Top 3 tags, at least 200 decks | 991 | 2,064 |
+
+- A percentage floor is wrong. Atraxa's `planeswalkers`, the build the plan exists for, is 1,789 of 46,230 decks (3.9%), so a 5% floor drops it.
+- `commander_pair_support` stores no tags, so pairs have no theme list to fetch from.
+
+**Do theme pages reach the primers' cards?** `pnpm measure:build-themes`, read-only, 24 EDHREC requests. It ranks each page's nonland cards and counts how many of the primer's nonland cards land in the first 62. The primer lists and their sources are in `scripts/fixtures/build-themes-primers.json`.
+
+| Commander | Primer nonland | Commander page, inclusion | Commander page, score | Best theme | Theme, inclusion | Theme, score |
+|---|---|---|---|---|---|---|
+| Atraxa, Praetors' Voice | 78 | 26 | 25 | planeswalkers | 36 | 37 |
+| Lord Windgrace | 71 | 33 | 34 | lands-matter | 34 | 34 |
+| Talrand, Sky Summoner | 94 | 45 | 44 | spellslinger | 44 | 45 |
+| Blim, Comedic Genius | 67 | 25 | 25 | donate | 25 | 25 |
+| Zedruu the Greathearted | 124 | 23 | 22 | donate | 23 | 22 |
+| The Ur-Dragon (partial list, 19) | 19 | 8 | 8 | dragons | 8 | 8 |
+
+Score = inclusion × (1 + max(0, synergy)).
+
+What the table shows:
+
+- **A theme page helps where the chosen build is a minority of the commander's decks and differs from the average.** Atraxa's superfriends goes from 26 to 36. Where the theme is what most decks already play, the theme page ranks like the commander page, and nothing changes.
+- **Synergy weighting adds nothing,** within plus or minus 1 everywhere, so it does not ship. Inclusion stays the ranking (`byInclusion`).
+- **172 of the 453 primer cards (38%) are not on the commander page at all.** No ranking of that page reaches them.
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.

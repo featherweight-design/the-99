@@ -231,6 +231,7 @@
     "probe:history-went-to": "tsx scripts/probe-history-went-to.ts",
     "measure:collection-revert": "tsx scripts/measure-collection-revert.ts",
     "measure:any-cards-fill": "tsx scripts/measure-any-cards-fill.mts",
+    "measure:build-themes": "tsx scripts/measure-build-themes.mts",
     "probe:list-stamp": "tsx scripts/probe-list-stamp.ts",
     "list-stamp:triggers": "tsx scripts/list-stamp-triggers.ts",
     "probe:about": "node scripts/probe-about.mjs",
