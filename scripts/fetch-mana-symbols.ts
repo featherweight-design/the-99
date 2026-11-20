@@ -19,8 +19,13 @@
  * Re-run after a set with a new symbol:
  *
  *   pnpm fetch:mana
+ *
+ * The life tracker's counters use four official symbols that no cost can contain (energy, tickets, the Phyrexian
+ * glyph for poison, the Lord of the Rings set symbol for The Ring). They are a fixed list, written to
+ * `public/tracker/` and NOT into the cost sprite or manifest above, so `pnpm fetch:mana tracker` fetches only them
+ * (no sprite rebuild, no cost symbols touched) and a plain `pnpm fetch:mana` fetches both.
  */
-import { readdir, unlink, writeFile } from "node:fs/promises";
+import { mkdir, readdir, unlink, writeFile } from "node:fs/promises";
 import { writeManaSprite } from "./build-mana-sprite";
 
 import { manaSymbolSlug } from "../src/lib/cards/mana-symbols";
@@ -32,10 +37,46 @@ const MANIFEST = "src/lib/cards/mana-symbol-slugs.ts";
 
 type CardSymbol = { symbol: string; svg_uri: string; appears_in_mana_costs: boolean };
 
-async function main(): Promise<void> {
+/** Tracker counter art: file name, and where Scryfall keeps it (`symbol` is a symbology entry, `set` a set icon). */
+const TRACKER_SYMBOLS = [
+  { file: "energy", symbol: "{E}" },
+  { file: "tickets", symbol: "{TK}" },
+  { file: "phyrexian", symbol: "{H}" },
+  { file: "ring", set: "ltr" },
+] as const;
+const TRACKER_DIR = "public/tracker";
+
+async function fetchSymbology(): Promise<CardSymbol[]> {
   const res = await fetch(SYMBOLOGY, { headers: SCRYFALL_HEADERS });
   if (!res.ok) throw new Error(`Symbology ${res.status} ${res.statusText}`);
-  const { data } = (await res.json()) as { data: CardSymbol[] };
+  return ((await res.json()) as { data: CardSymbol[] }).data;
+}
+
+async function fetchTrackerSymbols(data: CardSymbol[]): Promise<void> {
+  await mkdir(TRACKER_DIR, { recursive: true });
+  for (const entry of TRACKER_SYMBOLS) {
+    let uri: string | undefined;
+    if ("symbol" in entry) uri = data.find((s) => s.symbol === entry.symbol)?.svg_uri;
+    else {
+      const set = await fetch(`https://api.scryfall.com/sets/${entry.set}`, { headers: SCRYFALL_HEADERS });
+      if (!set.ok) throw new Error(`Set ${entry.set} ${set.status} ${set.statusText}`);
+      uri = ((await set.json()) as { icon_svg_uri?: string }).icon_svg_uri;
+    }
+    if (!uri) throw new Error(`${entry.file}: Scryfall no longer lists it`);
+    const svg = await fetch(uri, { headers: { "User-Agent": SCRYFALL_HEADERS["User-Agent"] } });
+    if (!svg.ok) throw new Error(`${entry.file}: ${svg.status} ${svg.statusText}`);
+    const body = await svg.text();
+    if (!body.includes("<svg")) throw new Error(`${entry.file}: not an SVG`);
+    await writeFile(`${TRACKER_DIR}/${entry.file}.svg`, body);
+  }
+  console.log(`Wrote ${TRACKER_SYMBOLS.length} tracker symbols to ${TRACKER_DIR}/.`);
+}
+
+async function main(): Promise<void> {
+  const only = process.argv[2];
+  if (only === "tracker") return fetchTrackerSymbols(await fetchSymbology());
+  if (only !== undefined) throw new Error(`Unknown argument "${only}": pass "tracker" or nothing`);
+  const data = await fetchSymbology();
   const symbols = data.filter((s) => s.appears_in_mana_costs);
   if (symbols.length < 50) {
     throw new Error(`Read ${symbols.length} cost symbols, expected at least 50 — shape changed?`);
@@ -88,6 +129,7 @@ async function main(): Promise<void> {
   console.log(`Wrote ${slugs.length} symbols to ${OUT_DIR}/ and ${MANIFEST}.`);
   // The one file the app actually loads, rebuilt from the files just written.
   console.log(`Rebuilt the sprite from ${await writeManaSprite()} symbols.`);
+  await fetchTrackerSymbols(data);
 }
 
 main().catch((err) => { console.error(err); process.exit(1); });
