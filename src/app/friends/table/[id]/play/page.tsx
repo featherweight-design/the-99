@@ -30,6 +30,8 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
     name: s.displayName,
     art: s.deck?.commander.artCropUri ?? null,
     partnerArt: s.deck?.partner?.artCropUri ?? null,
+    commander: s.deck?.commander.name ?? "",
+    partner: s.deck?.partner?.name ?? null,
   }));
 
   return (

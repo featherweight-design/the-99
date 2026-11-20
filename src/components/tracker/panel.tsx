@@ -7,9 +7,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import type { Cell } from "../../lib/tracker/layouts";
-import type { SeatState } from "../../lib/tracker/engine";
+import { COUNTER_KEYS, type CounterKey, type SeatState } from "../../lib/tracker/engine";
 import { PersonName, PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
+import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
+import { CounterIcon, InitiativeIcon, MonarchIcon } from "./icons";
 import { TurnRing } from "./turn-ring";
 
 export type PlaySeat = {
@@ -18,6 +20,9 @@ export type PlaySeat = {
   name: string | ThirdPartyName;
   art: string | null;
   partnerArt: string | null;
+  /** The commanders' card names (public card text), for the sheet's damage and tax rows. */
+  commander: string;
+  partner: string | null;
 };
 
 /** Hold a half this long and it repeats by ten; the delta commits once nothing has been pressed for the window. */
@@ -115,7 +120,10 @@ export function Panel({
   active,
   round,
   outFrom,
+  monarch,
+  initiative,
   disabled,
+  onSheet,
   onLife,
   onEndTurn,
   onUndo,
@@ -128,12 +136,22 @@ export function Panel({
   round: number;
   /** The seat whose commander put this one out, with its name, when that is why. */
   outFrom: { you: boolean; name: string | ThirdPartyName } | null;
+  monarch: boolean;
+  initiative: boolean;
   disabled: boolean;
+  onSheet: (focus?: CounterKey) => void;
   onLife: (delta: number) => void;
   onEndTurn: () => void;
   onUndo: () => void;
 }) {
   const out = state.out !== null;
+  // A committed life change ticks the number and tints the panel (F04 motion). Keyed on the change, so a repeat re-runs it.
+  const [seenLife, setSeenLife] = useState(state.life);
+  const [pulse, setPulse] = useState<{ k: number; gain: boolean } | null>(null);
+  if (state.life !== seenLife) {
+    setSeenLife(state.life);
+    setPulse({ k: (pulse?.k ?? 0) + 1, gain: state.life > seenLife });
+  }
   const { pending, down, up, cancel } = usePendingLife(onLife, disabled || out);
   const sideways = cell.rot === 90 || cell.rot === -90;
   /** A small panel (the phone's 5 and 6 seat sides) has no room for End turn beside a centred number, so the number steps aside. */
@@ -175,12 +193,26 @@ export function Panel({
               {seat.partnerArt ? <FadingImg src={seat.partnerArt} alt="" className="h-full w-1/2 object-cover opacity-45" /> : null}
             </span>
           ) : null}
+          {pulse ? <span key={pulse.k} aria-hidden className={"pointer-events-none absolute inset-0 opacity-0 motion-safe:animate-[life-pulse_.6s_ease-out] " + (pulse.gain ? "bg-[color:var(--success)]" : "bg-[color:var(--danger)]")} /> : null}
           {active && !out ? <TurnRing key={round + ":" + seat.seat} /> : null}
 
           <div className="relative flex h-full w-full flex-col items-center justify-center">
-            <span className="absolute left-3 top-2 max-w-[55%] truncate text-[13px] text-[color:var(--fg-body)]" data-testid="panel-name">
-              {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
-            </span>
+            <div className="absolute left-3 top-2 z-10 max-w-[55%]">
+              <button type="button" onClick={() => onSheet()} className={"block max-w-full truncate text-left text-[13px] text-[color:var(--fg-body)] " + TOUCH_HIT} data-testid="panel-name">
+                {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
+              </button>
+            </div>
+            {monarch || initiative || COUNTER_KEYS.some((k) => state.counters[k] > 0) ? (
+              <div className="absolute left-3 top-8 z-10 flex max-w-[60%] flex-wrap gap-1" data-testid="panel-badges">
+                {monarch ? <Badge label={copy.monarch}><MonarchIcon size={14} /></Badge> : null}
+                {initiative ? <Badge label={copy.initiative}><InitiativeIcon size={14} /></Badge> : null}
+                {COUNTER_KEYS.filter((k) => state.counters[k] > 0).map((k) => (
+                  <Badge key={k} label={trackerCopy.counters[k].name} count={state.counters[k]} onPress={() => onSheet(k)}>
+                    <CounterIcon kind={k} size={14} />
+                  </Badge>
+                ))}
+              </div>
+            ) : null}
 
             {out ? (
               <div className="flex flex-col items-center gap-1 px-3 pt-7 text-center" data-testid="panel-out">
@@ -199,7 +231,7 @@ export function Panel({
               <>
                 <div className={"relative flex items-baseline gap-2 " + (tight && active ? "-translate-x-8" : "")} aria-live="polite" aria-atomic="true" data-testid="panel-life">
                   <span className="sr-only">{copy.lifeLabel}</span>
-                  <span className="font-semibold tabular-nums text-[color:var(--fg)] [font-size:min(26cqmin,72px)] [line-height:1]" data-testid="life-number">
+                  <span key={state.life} className="font-semibold tabular-nums text-[color:var(--fg)] [font-size:min(26cqmin,72px)] [line-height:1] motion-safe:animate-[life-tick_.12s_ease-out]" data-testid="life-number">
                     {state.life + pending}
                   </span>
                   {pending !== 0 ? (
@@ -249,5 +281,21 @@ export function Panel({
         </div>
       </div>
     </div>
+  );
+}
+
+/** A counter or holder badge under the name. A counter's opens the sheet on it; the monarch and initiative marks only show. */
+function Badge({ label, count, onPress, children }: { label: string; count?: number; onPress?: () => void; children: React.ReactNode }) {
+  const body = (
+    <>
+      {children}
+      {count !== undefined ? <span className="font-mono text-[11px] tabular-nums">{count}</span> : null}
+    </>
+  );
+  const cls = "inline-flex h-6 items-center gap-1 rounded-full bg-[color:var(--elevated)] px-2 text-[color:var(--fg)]";
+  return onPress ? (
+    <button type="button" onClick={onPress} aria-label={copy.badgeAria(label, count ?? 0)} className={cls + " " + TOUCH_HIT_INLINE}>{body}</button>
+  ) : (
+    <span role="img" aria-label={label} className={cls}>{body}</span>
   );
 }

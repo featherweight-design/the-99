@@ -13,6 +13,7 @@ import { isOver, placements, replay, type Game, type GameConfig } from "../../li
 import { layoutById, layoutsFor, type Device } from "../../lib/tracker/layouts";
 import { Panel, type PlaySeat } from "./panel";
 import { Setup } from "./setup";
+import { Sheet, type SheetView } from "./sheet";
 import { useGame } from "./use-game";
 
 const copy = trackerCopy;
@@ -42,6 +43,7 @@ export function PlaySurface({
   const device = useDevice();
   const { ready, game, start, commit, undo, discard } = useGame(tableId, expiresAt);
   const [menu, setMenu] = useState(false);
+  const [sheet, setSheet] = useState<SheetView | null>(null);
   const [saved, setSaved] = useState<"saving" | "saved" | "failed" | null>(null);
   const savedFor = useRef<string | null>(null);
 
@@ -51,6 +53,8 @@ export function PlaySurface({
   const fits = !!game && !!saved_layout && saved_layout.cells.length === seats.length && game.config.seats.length === seats.length && game.config.seats.every((c, i) => c.seat === seats[i].seat);
   useEffect(() => (game && !fits ? discard() : undefined), [game, fits, discard]);
   const over = state ? isOver(state) : false;
+  // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
+  if (over && sheet) setSheet(null);
 
   // The result is saved once per finished game, keyed on its length so an undo that reopens the game and a new finish saves again.
   useEffect(() => {
@@ -114,6 +118,9 @@ export function PlaySurface({
               active={state.active === seat.seat}
               round={state.round}
               outFrom={from ? { you: from.you, name: from.name } : null}
+              monarch={state.monarch === seat.seat}
+              initiative={state.initiative === seat.seat}
+              onSheet={(focus) => setSheet({ seat: seat.seat, tab: focus ? "counters" : "damage", focus })}
               disabled={over}
               onLife={(delta) => commit({ t: "life", seat: seat.seat, delta })}
               onEndTurn={() => commit({ t: "endTurn" })}
@@ -130,6 +137,20 @@ export function PlaySurface({
           </div>
         </div>
       </div>
+
+      {sheet && !over ? (
+        <Sheet
+          view={sheet}
+          seats={seats}
+          state={state}
+          game={game}
+          rot={layout.cells[seats.findIndex((s) => s.seat === sheet.seat)].rot}
+          onView={setSheet}
+          onClose={() => setSheet(null)}
+          onCommit={commit}
+          onUndo={undo}
+        />
+      ) : null}
 
       <p className="sr-only" aria-live="polite" role="status">
         {activeName ? (activeName.you ? copy.panel.yourTurn : <PersonName n={activeName.name} />) : null}
