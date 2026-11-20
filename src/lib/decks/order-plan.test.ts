@@ -44,6 +44,13 @@ describe("planReorder", () => {
     expect(ids(planReorder(inFolder, ["old", "new"]))).toEqual(["old", "new", "x"]);
   });
 
+  it("refuses a list mixing shelves even when its length matches the first id's shelf", () => {
+    // Two in folder G and two unfiled: [g1, u1] is two long, as G is, but u1 is not G's.
+    const mixed = [row("g1", "G", 0), row("u1", null, 1), row("g2", "G", 2), row("u2", null, 3)];
+    expect(planReorder(mixed, ["g1", "u1"])).toBeNull();
+    expect(planReorder(mixed, ["g2", "g1"])).not.toBeNull();
+  });
+
   it("refuses a partial shelf, an id that is not the caller's, a duplicate, and an empty list", () => {
     expect(planReorder(rows, ["a", "c"])).toBeNull();
     expect(planReorder(rows, ["a", "c", "e", "zzz"])).toBeNull();

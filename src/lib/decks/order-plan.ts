@@ -39,6 +39,8 @@ export function planReorder(
   if (ids.length === rows.length) return ids.map((id, position) => ({ id, position }));
 
   const shelf = byId.get(ids[0])!.folderId;
+  // Every id must be the shelf's: a list mixing shelves would write one deck into two slots and drop another.
+  if (ids.some((id) => byId.get(id)!.folderId !== shelf)) return null;
   const members = rows.filter((r) => r.folderId === shelf);
   if (members.length !== ids.length) return null;
 
