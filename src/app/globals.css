@@ -734,6 +734,20 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   to { stroke-dashoffset: 0; }
 }
 
+/* Life tracker (PR 5): the sheet slides up, the life number ticks, and a committed life change tints its panel. */
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes life-tick {
+  from { opacity: 0.7; }
+  to { opacity: 1; }
+}
+@keyframes life-pulse {
+  from { opacity: 0.3; }
+  to { opacity: 0; }
+}
+
 /* ------------------------------------------------------------------
  * Character-layer motion — richness pass.
  * Keyframes follow the v2 mocks except for bob and breathe, whose amplitudes

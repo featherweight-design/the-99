@@ -83,7 +83,7 @@ export function ManaCost({ cost }: { cost: string | null }) {
 
 const BOX = "inline-flex items-center justify-center rounded-full w-[22px] h-[22px] md:w-[26px] md:h-[26px]";
 
-function ManaPip({ symbol }: { symbol: string }) {
+export function ManaPip({ symbol }: { symbol: string }) {
   const background = manaSymbolBackground(symbol);
   if (background) {
     // A background rather than an `<img>`, matching `ColourPips`: the symbol is
