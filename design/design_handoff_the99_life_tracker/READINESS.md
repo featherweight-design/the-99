@@ -158,3 +158,51 @@ surface on a shipped page). New player-facing copy is DRAFT for `/copy-review`.
 ## Open
 - Copy review for all new strings.
 - Library choice for dice (bundle size budget).
+
+---
+
+## Addendum audit: undrawn states (PR #3044, `ADDENDUM-undrawn-states.md`, S1 to S6)
+
+**Addendum verdict:** 🟡 Yellow (no Orange or Red gaps; the five undrawn states are all drawn)
+**Audited:** 2026-11-20 (cold read, rebased onto origin/main)
+
+### Summary
+
+All five states the first audit listed are now drawn. Viewports follow the surface: the tracker runs at phone and tablet only, the table page at phone and desktop, so every state has each viewport its surface uses. No Design round-trip is needed. The plan PR records the clarifications below.
+
+### Per state
+
+1. **Start disabled at 7 to 8 seated: ✅** S1 phone and desktop, `aria-disabled` plus `aria-describedby`, reason line written. `SEATS_MAX=8` in `client-rules.ts` matches. Eight seated reuses the S1 copy (plural-safe).
+2. **Seat waiting for its deck: ✅** S2 table page (phone, desktop) and S2-WaitingPlay (phone, tablet). It does not block Start, and the plain panel is distinct from the grey out art. `artCropUri` is nullable in the table view.
+3. **Resume after reload: ✅** S3 game card (phone, desktop) with Back and Discard (undo toast). The tracker reopens straight into play.
+4. **Table closing or reseating mid-game: ✅** S4 closed card (phone, desktop) and S4-ClosedResult (phone, tablet). `how.logOpen` exists in `src/lib/rule-zero/live.ts`.
+5. **Draws: ✅** S5 End game sheet, draw finish screen and Log prefill (phone, tablet). `deck_games_result_check` already allows `draw`.
+
+S6 ("next game") is extra but stays inside the tracker.
+
+### Per-dimension findings
+
+- 🗺️ Scope: ✅ clear; S6 is the only addition beyond the five states.
+- 🎭 State coverage: 🟡 the lapsed-window closed result line is written but not drawn.
+- 🔌 Data contract: 🟡 `rule_zero_tables` has only `closedAt` and `closedBy`, so the "everyone seated" prefill ruling needs a migration (result and winner, plus the snapshot seats) and a prefill read in `rule-zero-log.ts`. This is backend work and may proceed without a handoff.
+- 🧱 Codebase fit: ✅ every token used exists in `globals.css`; `.guest` now uses `radial-gradient(--elevated, --surface)`. `art/rail.png` and `art/tabbar.png` are reference only, never imported.
+- ♿ Cross-cutting: ✅ aria-disabled, describedby and labels present; reduced motion covered earlier.
+- ⏰ Drift: ✅ none found.
+- 📝 Decision log: ✅ Hugh's 2026-11-20 rulings are recorded.
+
+### Eng-side clarifications (Yellow)
+
+- "This table stopped logging at 6 am. Log it from your deck's Games tab." is undrawn: use the closed-note slot from S4.
+- S6 "Not logged yet": nothing ties a `deck_games` row to a table. Either keep a local logged flag set when the log link is pressed, or drop the claim.
+- S6 placements after a reload come from device storage, so the store keeps finished games as well as running ones. The plan sets retention (clear at close or 6 am).
+- The server-stored result must store the snapshot seats, not the live ones; the prefill maps by seat number.
+- Draw detection when the last players go out in the same change depends on the 2-second pending window; the plan needs a test for it.
+- End game has no desktop board, correct since the tracker has no desktop layout.
+
+### Gaps requiring a Design round-trip
+
+None.
+
+### Decisions inherited
+
+No feature switch; "everyone seated" prefilled through a server-stored table result (Hugh, 2026-11-20). Game state on device only; 6-seat tracker cap and 8-seat table cap; the original placement mapping, service-worker offline rule and accessibility names stand.
