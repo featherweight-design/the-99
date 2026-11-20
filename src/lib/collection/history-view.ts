@@ -90,7 +90,7 @@ export type DayGroup = { key: string; label: string; entries: HistoryListEntry[]
 
 /**
  * Entries newest first, grouped by the reader's calendar day: `Today · Nov 18`, `Yesterday · Nov 17`, a weekday and date for the
- * four days before (`Monday · Nov 16`), then the date alone (`Nov 8`, `Dec 30, 2025` outside this year).
+ * five days before that, two to six days ago (`Monday · Nov 16`), then the date alone (`Nov 8`, `Dec 30, 2025` outside this year).
  * A day is one group however the entries arrive: `createdAt` is not guaranteed monotonic down the
  * list, and a day that came back after another would otherwise repeat its key.
  */
