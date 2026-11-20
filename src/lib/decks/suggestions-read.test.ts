@@ -127,7 +127,7 @@ describe("readChosenBuild", () => {
 
   it("reads nothing for a pair, no focus, a focus EDHREC has no theme for, or no tags", async () => {
     const load = vi.fn(async () => build);
-    for (const over of [{ hasPartner: true }, { focus: null }, { focus: "haste" }, { tags: null }]) {
+    for (const over of [{ hasPartner: true }, { focus: null }, { focus: "protection" }, { tags: null }]) {
       expect(await readChosenBuild({ ...base, ...over }, load)).toEqual({ build: null, fellBack: false });
     }
     expect(load).not.toHaveBeenCalled();

@@ -32,6 +32,14 @@ const FOCUS_SLUGS: Readonly<Record<string, readonly string[]>> = {
   enchantments: ["enchantments", "enchantress"],
   voltron: ["voltron", "equipment", "auras"],
   vehicles: ["vehicles"],
+  planeswalkers: ["planeswalkers"],
+  sagas: ["sagas"],
+  proliferate: ["proliferate"],
+  haste: ["haste"],
+  evasion: ["flying", "unblockable"],
+  bigCreatures: ["stompy"],
+  pump: ["anthems"],
+  castFree: ["cascade"],
 };
 
 /** The EDHREC slugs a focus key names: the map's, or a creature type's plural (`typal:Dragon` → `dragons`). */

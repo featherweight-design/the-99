@@ -1,6 +1,6 @@
 // Strategy axes a deck leans on, read off the catalog alone: the card's front-face type line, its mana value and its
 // keywords. No model call and no label. These are the archetypes the 30 label themes have no word for (artifacts,
-// enchantments, equipment and Auras, vehicles, big creatures, one creature type), found missing when the label-theme
+// enchantments, equipment and Auras, vehicles, big creatures, planeswalkers, sagas, the Proliferate keyword, one creature type), found missing when the label-theme
 // score was validated on staging (boards/strategy-focus-research-2026-10-18.md, Validation).
 //
 // A deck's score on an axis is the research's `copies × ln(lift)`, where lift is the deck's share of the axis over a
@@ -17,7 +17,7 @@ export const TYPAL_AXES = 3;
 /** A baseline share under this is raised to it, so an axis a baseline never holds has a finite lift. */
 export const BASELINE_FLOOR = 0.005;
 
-export const FIXED_AXES = ["artifacts", "enchantments", "voltron", "vehicles", "bigCreatures"] as const;
+export const FIXED_AXES = ["artifacts", "enchantments", "voltron", "vehicles", "bigCreatures", "planeswalkers", "sagas", "proliferate"] as const;
 export type FixedAxis = (typeof FIXED_AXES)[number];
 /** `typal:<Type>`, the type as the type line spells it (`typal:Elf`). */
 export type AxisKey = FixedAxis | `typal:${string}`;
@@ -60,7 +60,8 @@ export function creatureTypesIn(subtypes: readonly string[]): string[] {
 const isCreature = (p: Parsed) => /\bcreature\b/.test(p.types);
 /** A creature, or a Kindred (formerly Tribal) card, carries creature types. */
 const bearsCreatureTypes = (p: Parsed) => isCreature(p) || /\b(kindred|tribal)\b/.test(p.types);
-const isChangeling = (c: AxisCard) => c.keywords.some((k) => k.toLowerCase() === "changeling");
+const hasKeyword = (c: AxisCard, keyword: string) => c.keywords.some((k) => k.toLowerCase() === keyword);
+const isChangeling = (c: AxisCard) => hasKeyword(c, "changeling");
 
 /** The fixed axes one card counts toward. */
 export function fixedAxesOf(card: AxisCard): FixedAxis[] {
@@ -71,6 +72,9 @@ export function fixedAxesOf(card: AxisCard): FixedAxis[] {
   if (p.subtypes.includes("Equipment") || p.subtypes.includes("Aura")) out.push("voltron");
   if (p.subtypes.includes("Vehicle")) out.push("vehicles");
   if (isCreature(p) && card.manaValue >= BIG_CREATURE_MIN_MV) out.push("bigCreatures");
+  if (/\bplaneswalker\b/.test(p.types)) out.push("planeswalkers");
+  if (p.subtypes.includes("Saga")) out.push("sagas");
+  if (hasKeyword(card, "proliferate")) out.push("proliferate");
   return out;
 }
 
