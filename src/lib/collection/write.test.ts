@@ -285,7 +285,7 @@ describe("newlyShort", () => {
     // The claim read is driven by the collection, so a card with no row left is absent after.
     const before = new Map([[A, { owned: 1, claims: [claim("old", 1, 100), claim("brew", 1, null)] }]]);
     expect(newlyShort(before, new Map(), [A], names)).toEqual([
-      { deckId: "old", deckName: "deck old", oracleId: A, cardName: "Sol Ring", short: 1, facts: { listed: 1, since: 100, keepers: [], left: 1 } },
+      { deckId: "old", deckName: "deck old", oracleId: A, cardName: "Sol Ring", short: 1, facts: { listed: 1, since: 100, keepers: [], left: 0 } },
     ]);
   });
 });

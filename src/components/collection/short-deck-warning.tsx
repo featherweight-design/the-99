@@ -92,7 +92,7 @@ export function ShortDeckWarning({
     : source === "sync" ? c.confirmSync
     : c.confirmReplace;
   const body = (source === "remove" || source === "save") && cardName ? c.bodyCard(cardName) : c.body;
-  const cardName0 = cardName ?? rows[0]?.cards[0]?.cardName;
+  const cardName0 = rows[0]?.cards[0]?.cardName;
   const named = showAll ? rows : rows.slice(0, c.namedCount);
   const hidden = rows.length - c.namedCount;
   const ownCancelRef = useRef<HTMLButtonElement>(null);
@@ -208,7 +208,7 @@ export function ShortDeckWarning({
         </ul>
         {variant === "dialog" ? (() => {
           // One card, and a row that says who keeps the copies ahead of it (R2 P5/D4, P6/D5): the reason a deck is short and where to change it.
-          const f = oneCard ? rows[0]?.cards[0]?.facts : undefined;
+          const f = oneCard && rows.length === 1 ? rows[0]?.cards[0]?.facts : undefined;
           const keepers = f?.keepers ?? [];
           if (!f || keepers.length === 0 || !cardName0) return null;
           const shortNames = joinNames(rows.map((r) => r.deckName));

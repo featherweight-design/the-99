@@ -659,7 +659,7 @@ export function newlyShort(
       for (const [deckId, b] of committedShortfalls(was)) {
         const claim = was.claims.find((c) => c.id === deckId)!;
         const whole = Math.max(claim.quantity, 0);
-        if (whole > b.short) out.push({ deckId, deckName: b.name, oracleId, cardName: names.get(oracleId) ?? "", short: whole - b.short, ...factsOf(was, deckId) });
+        if (whole > b.short) out.push({ deckId, deckName: b.name, oracleId, cardName: names.get(oracleId) ?? "", short: whole - b.short, ...factsOf({ owned: 0, claims: was.claims }, deckId) });
       }
       continue;
     }
