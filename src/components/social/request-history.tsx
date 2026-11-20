@@ -78,7 +78,6 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
                   <CardDetailTrigger
                     oracleId={e.oracleId}
                     name={e.card.name}
-                    preview
                     className="block w-full text-left"
                   >
                     {/* The padding lives inside: the trigger's own inline `padding: 0` outranks any class on it. */}

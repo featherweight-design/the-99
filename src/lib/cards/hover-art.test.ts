@@ -394,6 +394,9 @@ const NOT_A_ROW = new Set<string>([
   "components/decks/spine-desktop.tsx",
   "components/decks/spine-mobile.tsx",
   "components/decks/stand-in-door.tsx",
+  // Request history rows press into card details and draw no hover, as Your requests does not: their picture is the catalog's
+  // image, and a preview of it would show a printing other than the one details opens (#2984).
+  "components/social/request-history.tsx",
   // A file with a row or a name that previews AND a tile that does not: the tile half is held by the `*Tile` guard below.
   "components/decks/precons/announced-parts.tsx",
   "components/decks/receipt-modal.tsx",
