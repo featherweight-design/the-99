@@ -895,7 +895,7 @@ export async function applyCollectionChange(
         // card's claim lock, which every reservation write takes.
         // The press names its pick (I got it, the cart), or else the entry's own record does: a revert from History and a
         // removal's Put back name none, and the keeper's reservation still goes with the copy.
-        for (const undo of change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows)) {
+        for (const undo of change.undoPlacement ? [change.undoPlacement] : []) {
           const drop = placementToUndo(undo, row.rows);
           if (drop) {
             await lockCardClaims(tx, userId, drop.oracleId);
