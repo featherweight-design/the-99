@@ -1,7 +1,8 @@
 import { writeFileSync } from "node:fs";
 import { R } from "./base";
 import { CreatePreFilled } from "../src/components/decks/create-pre-filled";
-import { GuidedFlow, type Strategy, type Plan } from "../src/components/decks/guided/guided-flow";
+import { GuidedFlow, type Strategy } from "../src/components/decks/guided/guided-flow";
+import { overview } from "./ov";
 
 const A = (n: string) => `art/c-${n}.jpg`;
 const strategies: Strategy[] = [
@@ -10,7 +11,7 @@ const strategies: Strategy[] = [
   { key: "counters", label: "+1/+1 Counters", count: 17, blurb: "Counters grow the board’s power fast, so Ghalta comes down sooner and hits harder.", more: 15,
     examples: [{ name: "Avabruck Caretaker", img: A("avabruck-caretaker") }, { name: "Avenger of Zendikar", img: A("avenger-of-zendikar") }] },
 ];
-const plan: Plan = [
+const plan = [
   { name: "Beorn the Fierce", img: A("beorn"), line: "and the other early bodies put power on the board, so Ghalta costs two or three by turn four." },
   { name: "Ghalta", img: A("ghalta"), line: "lands for almost nothing and swings at once: trample makes every blocker a speed bump." },
   { name: "Avenger of Zendikar", img: A("avenger-of-zendikar"), line: "fills the board with Plants, and one big landfall turn tramples through for the win." },
@@ -28,7 +29,7 @@ out["g-cards"] = page() + flow({ stage: { kind: "pick", step: "cards" }, picks: 
 out["g-wait"] = page() + flow({ stage: { kind: "wait", clock: "0:04", phase: "sharpen" }, picks: P("bigCreatures", 3, "own") });
 out["g-wait2"] = page() + flow({ stage: { kind: "wait", clock: "0:09", phase: "plan" }, picks: P("bigCreatures", 3, "own") });
 out["g-failed"] = page() + flow({ stage: { kind: "failed" }, picks: P("bigCreatures", 3, "own") });
-const result = { sharpened: 14, toBuy: null, plan };
+const result = { sharpened: 14, toBuy: null, overview };
 out["g-result"] = page() + flow({ stage: { kind: "result" }, picks: P("bigCreatures", 3, "own"), result });
 out["g-short"] = page() + flow({ stage: { kind: "result", short: 9 }, picks: P("bigCreatures", 3, "own"), result });
 

@@ -1,90 +1,92 @@
 {
- "v": 3,
- "createdOnFiles": {
-  "v": 1,
-  "at": "2026-11-20T19:47:29Z"
- },
- "title": "The 99 \u00b7 Guided build R1",
- "launch": {
-  "view": "canvas"
- },
- "pages": [],
- "boards": {
-  "Main.dc.html": {
-   "x": 0,
-   "y": 260,
-   "w": 1600,
-   "h": 2010,
-   "title": "Guided build \u00b7 the calls"
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "E-Entries.dc.html": {
+      "h": 2634,
+      "title": "Entry points and the commander page",
+      "w": 1960,
+      "x": 0,
+      "y": 2321
+    },
+    "G-Steps.dc.html": {
+      "h": 1734,
+      "title": "Guided build \u00b7 the steps",
+      "w": 2600,
+      "x": 0,
+      "y": 8799
+    },
+    "H-HelpMeChoose.dc.html": {
+      "h": 2815,
+      "title": "From Help me choose",
+      "w": 2600,
+      "x": 0,
+      "y": 14087
+    },
+    "Main.dc.html": {
+      "h": 2010,
+      "title": "Guided build \u00b7 the calls",
+      "w": 1600,
+      "x": 0,
+      "y": 260
+    },
+    "N-Choice.dc.html": {
+      "h": 2015,
+      "title": "New deck \u00b7 How we build it",
+      "w": 2200,
+      "x": -240,
+      "y": 5075
+    },
+    "N-Credits.dc.html": {
+      "h": 1469,
+      "title": "New deck \u00b7 not enough credits",
+      "w": 1200,
+      "x": 0,
+      "y": 7210
+    },
+    "P-Picks.dc.html": {
+      "h": 4006,
+      "title": "Picks carry into every build",
+      "w": 2200,
+      "x": 2040,
+      "y": 2321
+    },
+    "R-Run.dc.html": {
+      "h": 3314,
+      "title": "Guided build \u00b7 the run",
+      "w": 2600,
+      "x": 0,
+      "y": 10653
+    }
   },
-  "E-Entries.dc.html": {
-   "x": 0,
-   "y": 2321,
-   "w": 1960,
-   "h": 2634,
-   "title": "Entry points and the commander page"
+  "createdOnFiles": {
+    "at": "2026-11-20T19:47:29Z",
+    "v": 1
   },
-  "N-Choice.dc.html": {
-   "x": 0,
-   "y": 5075,
-   "w": 2200,
-   "h": 2015,
-   "title": "New deck \u00b7 How we build it"
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
   },
-  "N-Credits.dc.html": {
-   "x": 0,
-   "y": 7210,
-   "w": 1200,
-   "h": 1469,
-   "title": "New deck \u00b7 not enough credits"
+  "notes": {
+    "t": {
+      "kind": "title1",
+      "maxW": 1600,
+      "text": "Guided build \u00b7 R1",
+      "w": 240,
+      "x": 0,
+      "y": 0
+    }
   },
-  "G-Steps.dc.html": {
-   "x": 0,
-   "y": 8799,
-   "w": 2600,
-   "h": 1734,
-   "title": "Guided build \u00b7 the steps"
-  },
-  "R-Run.dc.html": {
-   "x": 0,
-   "y": 10653,
-   "w": 2600,
-   "h": 1734,
-   "title": "Guided build \u00b7 the run"
-  },
-  "H-HelpMeChoose.dc.html": {
-   "x": 0,
-   "y": 12507,
-   "w": 2600,
-   "h": 2454,
-   "title": "From Help me choose"
-  },
-  "P-Picks.dc.html": {
-   "x": 2040,
-   "y": 2321,
-   "w": 2200,
-   "h": 4006,
-   "title": "Picks carry into every build"
-  }
- },
- "order": [
-  "Main.dc.html",
-  "E-Entries.dc.html",
-  "P-Picks.dc.html",
-  "N-Choice.dc.html",
-  "N-Credits.dc.html",
-  "G-Steps.dc.html",
-  "R-Run.dc.html",
-  "H-HelpMeChoose.dc.html"
- ],
- "notes": {
-  "t": {
-   "x": 0,
-   "y": 0,
-   "text": "Guided build \u00b7 R1",
-   "kind": "title1",
-   "maxW": 1600
-  }
- },
- "designSystems": []
+  "order": [
+    "Main.dc.html",
+    "E-Entries.dc.html",
+    "P-Picks.dc.html",
+    "N-Choice.dc.html",
+    "N-Credits.dc.html",
+    "G-Steps.dc.html",
+    "R-Run.dc.html",
+    "H-HelpMeChoose.dc.html"
+  ],
+  "pages": [],
+  "title": "The 99 \u00b7 Guided build R1"
 }

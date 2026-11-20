@@ -11,7 +11,7 @@ Every frame is the SHIPPED screen (CreatePreFilled, CommanderDetail, the Upgrade
 ## Locked (the brief)
 - Every new deck from For you and Discover offers a free build (today's fill) or a paid guided build.
 - Guided costs 2 credits, refunded on a failed or short run (fewer than 12), as Upgrade.
-- Upgrade's engine: sharpens 12 to 18 cards and writes a short plan; the plan IS the deck's Overview.
+- Upgrade's engine: sharpens 12 to 18 cards and writes the deck's whole Overview (Hugh, 2026-11-20).
 - Help me choose stays the way to find a commander; its answers carry into the build visibly.
 
 ## Design's calls
@@ -21,13 +21,13 @@ Every frame is the SHIPPED screen (CreatePreFilled, CommanderDetail, the Upgrade
 4. **Commander page:** Role Coverage and EDHREC Synergy stay, with the + picks (board P-Picks). It stops promising a build. Phone bar drops READY TO BUILD and the promise, keeps the picks line, one button `Start a deck →`. Desktop: `Start a deck →`, seed note removed.
 5. **Not enough credits:** Guided row stays, off, with the reason in `--warning`; `Get more credits →` when payments are on, no link when off.
 6. **Help me choose:** the shipped `Built from your answers` block stays; in guided every step is pre-picked and marked `from your answers`; the build-around card is listed under `It keeps` and never cut.
-7. **The run:** deck created at confirm with the free fill; wait shows Filled ✓ / Sharpening (clock) / Writing the plan; ✕ leaves, run continues; tile/page show `Sharpening toward X · 0:05`.
-8. **Ready / short / failed:** Ready shows Strategy, Bracket, Sharpened, To buy and The plan (Early/Mid/Close), then `Open X`; no swap review. Short: both credits back, found cards stay. Failed: both credits back, deck keeps the free build; Try again / Open the deck.
+7. **The run:** deck created at confirm with the free fill; wait shows Filled ✓ / Sharpening (clock) / Writing the deck's Overview; ✕ leaves, run continues; tile/page show `Sharpening toward X · 0:05`.
+8. **Ready / short / failed:** Ready shows Strategy, Bracket, Sharpened, To buy and the deck's whole Overview (shipped SynopsisSections: summary, Game plan, Mulligan, Key tips, Key cards, Weaknesses), then `Open X`; no swap review. Short: both credits back, found cards stay. Failed: both credits back, deck keeps the free build; Try again / Open the deck.
 
 ## Gaps for engineering
 - **G1** `createDeck` takes a build kind (free | guided | empty); empty skips `planFill`.
 - **G2** Guided run = Upgrade's engine over the new deck's free fill; strategies from the commander's themes backed by owned cards; runs keyed per deck.
-- **G3** The run writes the plan and stores it as the deck's Overview (stages shape), inside the 2 credits.
+- **G3** The run writes the deck's whole Overview (contract 13, stages shape) via Upgrade's `writeUpgradedOverviewFor` path, inside the 2 credits, once per run; Ready waits for it and draws it with `SynopsisSections`.
 - **G4** Pool input: owned only, per-card cap $12, or a total budget (new).
 - **G5** Kept cards (build-around card, commander-page synergy picks) locked; the validator refuses cutting them.
 - **G6** Run state on the deck (running, short, failed) for the tile and page after leaving.
@@ -37,7 +37,7 @@ Every frame is the SHIPPED screen (CreatePreFilled, CommanderDetail, the Upgrade
 
 ## Open for Hugh
 1. Free pre-marked (drawn), or nothing marked?
-2. Ready shows facts + plan, not the list of sharpened cards (drawn). List them?
+2. Ready shows facts + the whole Overview, not the list of sharpened cards (drawn). List them?
 3. Cards to avoid left out of R1. Add it?
 
 ## Boards

@@ -12,6 +12,10 @@ import { StrategyIcon } from "../strategy-icon";
 import type { StrategyKey } from "@/lib/strategy/score";
 import { SheetGrabber } from "../../ui/sheet-grabber";
 import { CreditsText } from "../../ui/credits-text";
+import { SynopsisSections } from "../synopsis-body";
+import { SYNOPSIS_CONTRACT_VERSION_STAGES } from "../../../lib/precons/synopsis-contract";
+import type { CheckedSynopsis } from "../../../lib/synopsis/types";
+import type { FindingArt } from "../../../lib/decks/builder-figures";
 
 const copy = guidedBuildCopy;
 const ACCENT_PRESS = "h-[46px] cursor-pointer rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] md:h-[40px]";
@@ -218,7 +222,7 @@ function Wait({ parts, strategy, clock, phase }: { parts: string[]; strategy: st
       <ol className="m-0 flex list-none flex-col gap-[10px] p-0 pl-[2px]">
         <Row state="done">{copy.wait.filled(99)}</Row>
         <Row state={phase === "sharpen" ? "now" : "done"}>Sharpening 12 to 18 cards toward {strategy}</Row>
-        <Row state={phase === "plan" ? "now" : "next"}>Writing the plan</Row>
+        <Row state={phase === "plan" ? "now" : "next"}>{copy.wait.overview}</Row>
       </ol>
     </div>
   );
@@ -235,8 +239,10 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 
 export type Plan = { line: string; img: string; name: string }[];
 
-function Result({ strategy, strategyLabel, bracket, sharpened, toBuy, plan, short }: {
-  strategy: string; strategyLabel: string; bracket: 2 | 3 | 4; sharpened: number; toBuy: { n: number; dollars: string } | null; plan: Plan; short?: number;
+export type GuidedOverview = { content: CheckedSynopsis; commanderId: string; art: FindingArt };
+
+function Result({ strategy, strategyLabel, bracket, sharpened, toBuy, overview, short }: {
+  strategy: string; strategyLabel: string; bracket: 2 | 3 | 4; sharpened: number; toBuy: { n: number; dollars: string } | null; overview: GuidedOverview; short?: number;
 }) {
   return (
     <div className="flex flex-col gap-[16px]">
@@ -247,32 +253,14 @@ function Result({ strategy, strategyLabel, bracket, sharpened, toBuy, plan, shor
         <Fact label={copy.result.facts.toBuy}>{toBuy ? <>{toBuy.n} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{toBuy.dollars}</span></> : "none"}</Fact>
       </div>
       {short !== undefined && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.result.short(short, bracket)}</p>}
-      <div className="flex flex-col gap-[10px] rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-raised)] p-[14px] md:p-[16px]">
+      {/* The deck's whole Overview, written by the run (Upgrade's writeUpgradedOverviewFor, inside the 2 credits), drawn by the
+          shipped SynopsisSections in the stages shape: Overview, Game plan, Mulligan, Tips, Key cards, Weaknesses. */}
+      <div className="flex flex-col gap-[4px] rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-raised)] p-[14px] md:p-[18px]">
         <div className="flex items-baseline gap-[10px]">
-          <h3 className="m-0 font-display text-[16px] font-normal text-[color:var(--fg)]">{copy.result.plan}</h3>
-          <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">the deck’s Overview</span>
+          <h3 className="m-0 font-display text-[16px] font-normal text-[color:var(--fg)]">{copy.result.overview}</h3>
+          <span className="ml-auto font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.result.overviewNote}</span>
         </div>
-        <div className="relative mt-[4px] flex flex-col gap-[12px] md:grid md:grid-cols-3 md:gap-[16px] md:pt-[6px]">
-          <span aria-hidden className="absolute bottom-[8px] left-[4.5px] top-[8px] w-px bg-[var(--fg-faint)] opacity-[0.55] md:hidden" />
-          {plan.map((p, i) => {
-            const last = i === plan.length - 1;
-            return (
-              <div key={i} className="relative pl-[22px] md:flex md:flex-col md:pl-0 md:pt-[23px]">
-                <i aria-hidden className={`absolute left-0 top-[4px] block h-[10px] w-[10px] rotate-45 shadow-[0_0_0_4px_var(--surface-raised)] md:top-[1.5px] ${last ? "bg-[var(--accent)]" : "bg-[var(--fg-faint)]"}`} />
-                <div className="relative grid min-w-0 flex-1 grid-cols-[52px_minmax(0,1fr)] gap-[12px] rounded-[10px] border border-[var(--border)] bg-[var(--surface-sunken)] px-[12px] py-[11px] md:flex md:flex-col md:gap-[10px] md:p-[12px]">
-                  <img src={p.img} alt="" className="block h-[72px] w-[52px] flex-none rounded-[4.5%/3.2%] object-cover shadow-[0_3px_10px_rgba(0,0,0,0.5)] md:h-[100px] md:w-[72px]" />
-                  <div className="min-w-0">
-                    <div className="md:absolute md:left-[18px] md:right-[-14px] md:top-[-24px] md:flex md:items-center md:gap-[8px]">
-                      <span className="mb-[5px] block font-mono text-[10px] font-medium uppercase leading-[13px] tracking-[0.14em] text-[var(--fg-body)] md:relative md:z-[1] md:mb-0 md:bg-[var(--surface-raised)] md:pr-[8px]">{copy.result.stages[i]}</span>
-                      {last ? null : <span aria-hidden className="hidden h-px min-w-0 flex-1 bg-[var(--fg-faint)] opacity-[0.55] md:block" />}
-                    </div>
-                    <p className="m-0 text-[13px] leading-[1.55] text-[var(--fg-body)] [text-wrap:pretty]"><b className="font-semibold text-[color:var(--fg)]">{p.name}</b> {p.line}</p>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <SynopsisSections content={overview.content} contractVersion={SYNOPSIS_CONTRACT_VERSION_STAGES} commanderId={overview.commanderId} art={overview.art} evidenceNames={{}} onRetry={null} busy={false} />
       </div>
     </div>
   );
@@ -281,7 +269,7 @@ function Result({ strategy, strategyLabel, bracket, sharpened, toBuy, plan, shor
 export function GuidedFlow({ deck, commander, stage, picks, strategies, lot, fromAnswers, budget, keeps, result, failedParts }: {
   deck: string; commander: string; stage: Stage; picks: Picks; strategies: Strategy[]; lot: string;
   fromAnswers?: boolean; budget?: number; keeps?: { name: string; img: string; line: string }[];
-  result?: { sharpened: number; toBuy: { n: number; dollars: string } | null; plan: Plan };
+  result?: { sharpened: number; toBuy: { n: number; dollars: string } | null; overview: GuidedOverview };
   failedParts?: string[];
 }) {
   const s = strategies.find((x) => x.key === picks.strategy) ?? null;
@@ -320,7 +308,7 @@ export function GuidedFlow({ deck, commander, stage, picks, strategies, lot, fro
               </div>
             )}
             {stage.kind === "result" && result && picks.bracket && s && (
-              <Result strategy={s.key} strategyLabel={s.label} bracket={picks.bracket} sharpened={stage.short ?? result.sharpened} toBuy={result.toBuy} plan={result.plan} short={stage.short} />
+              <Result strategy={s.key} strategyLabel={s.label} bracket={picks.bracket} sharpened={stage.short ?? result.sharpened} toBuy={result.toBuy} overview={result.overview} short={stage.short} />
             )}
           </div>
         </div>

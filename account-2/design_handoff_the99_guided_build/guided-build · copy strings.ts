@@ -15,7 +15,7 @@ export const guidedBuildCopy = {
     guided: {
       name: "Guided build",
       cost: "2 credits",
-      line: "You pick a strategy, a bracket and which cards it can use. We fill the 99, sharpen 12 to 18 cards toward the strategy and write the deck’s plan.",
+      line: "You pick a strategy, a bracket and which cards it can use. We fill the 99, sharpen 12 to 18 cards toward the strategy and write the deck’s Overview.",
       back: "Both credits come back if it doesn’t come through or finds fewer than 12.",
     },
     empty: { name: "Just the commander", cost: "free", line: (c: string) => `${c} and 99 empty slots. Build it your way.` },
@@ -65,6 +65,7 @@ export const guidedBuildCopy = {
     usual: "usually about 8 seconds",
     leave: "Leave whenever you like: the deck is already in Decks with the free build, and the guided picks land in it when they’re done.",
     held: "Running · 2 credits held",
+    overview: "Writing the deck’s Overview",
     filled: (n: number) => `Filled · ${n} of 99 from your cards`,
   },
   failed: {
@@ -77,8 +78,8 @@ export const guidedBuildCopy = {
   result: {
     title: (deck: string) => `${deck} is ready`,
     facts: { strategy: "Strategy", bracket: "Bracket", sharpened: "Sharpened", toBuy: "To buy" },
-    plan: "The plan",
-    planNote: "It’s the deck’s Overview, so it’s there whenever you open the deck.",
+    overview: "Overview",
+    overviewNote: "written with the build",
     short: (n: number, b: number) => `Only ${n} cards could be sharpened at bracket ${b}, so both credits are back. The ${n} are in the deck.`,
     open: (deck: string) => `Open ${deck}`,
     stages: ["Early", "Mid", "Close"],

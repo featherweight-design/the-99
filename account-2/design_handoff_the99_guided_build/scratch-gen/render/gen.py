@@ -118,10 +118,10 @@ B["Main"] = ("Guided build · the calls", 1600, head("Guided build: a free or pa
  + '<div class="sec"><h3>7 · The paid run</h3><ul class="li">'
    '<li>The confirm is <code>Build toward Big creatures</code>, with <code>uses 2 · 15 welcome credits</code> beside it, as in Upgrade.</li>'
    '<li><b>The deck is created at the confirm</b>, with the free fill, so nothing can be lost. The engine then sharpens 12 to 18 cards and writes the plan.</li>'
-   '<li>The wait has three steps: Filled ✓, Sharpening (with v2’s clock) and Writing the plan.</li>'
+   '<li>The wait has three steps: Filled ✓, Sharpening (with v2’s clock) and Writing the deck’s Overview.</li>'
    '<li>✕ leaves while the run goes on. Until it is done, the deck’s tile and page show Upgrade’s running line, <code>Sharpening toward Big creatures · 0:05</code>.</li></ul></div>'
  + '<div class="sec"><h3>8 · Ready, short, failed</h3><ul class="li">'
-   '<li><b>Ready:</b> four facts (Strategy, Bracket, Sharpened, To buy), then <b>The plan</b> in the Overview’s Early, Mid and Close shape, with a lead card for each, then <code>Open Ghalta Stomps</code>. The plan is the deck’s Overview, so there is no separate write.</li>'
+   '<li><b>Ready:</b> four facts (Strategy, Bracket, Sharpened, To buy), then the deck’s <b>whole Overview</b>, drawn by the shipped Overview sections: summary, Game plan, Mulligan, Key tips, Key cards and Weaknesses. Then <code>Open Ghalta Stomps</code>. The run writes it inside the 2 credits, as Upgrade writes an upgraded deck’s, so there is no separate write.</li>'
    '<li>There is no swap review. You never saw the free fill, so a list of cuts from it means nothing. The sharpened cards are in the deck, and you can clear any of them.</li>'
    '<li><b>Short</b> (fewer than 12): both credits come back, and the cards it found stay in the deck.</li>'
    '<li><b>Failed:</b> both credits come back and the deck keeps the free build. The presses are Try again (2 credits, same picks) and Open the deck.</li></ul></div>'
@@ -129,7 +129,7 @@ B["Main"] = ("Guided build · the calls", 1600, head("Guided build: a free or pa
  + '<div class="rec"><span class="k">Gaps for engineering</span><table><tr><th>#</th><th>Gap</th></tr>'
    '<tr><td><b>G1</b></td><td><code>createDeck</code> takes a build kind (free, guided or empty). Empty skips <code>planFill</code>, and the deck starts at the commander alone.</td></tr>'
    '<tr><td><b>G2</b></td><td>The guided run is Upgrade’s engine over the new deck’s free fill (a deck list in place of a precon list). Strategies come from the commander’s themes, backed by owned cards (<code>MIN_BACKING</code>, <code>MAX_STRATEGIES</code>). Runs are keyed per deck.</td></tr>'
-   '<tr><td><b>G3</b></td><td>The run writes the plan and stores it as the deck’s Overview in the stages shape. It goes inside the 2 credits, replacing the separate Overview write.</td></tr>'
+   '<tr><td><b>G3</b></td><td>The run writes the deck’s whole Overview (contract 13, stages shape) through Upgrade’s <code>writeUpgradedOverviewFor</code> path, inside the 2 credits and claimed once per run. The Ready screen waits for it and draws it with <code>SynopsisSections</code>.</td></tr>'
    '<tr><td><b>G4</b></td><td>The pool input: owned only, the $12 per-card cap, or Help me choose’s total budget. Today the engine has only the per-card cap.</td></tr>'
    '<tr><td><b>G5</b></td><td>Kept cards (the build-around card and the commander page’s synergy picks) go in as locked. The validator refuses a cut of any of them.</td></tr>'
    '<tr><td><b>G6</b></td><td>The run’s state on the deck (running, short or failed), for the tile and the page after the player leaves the flow.</td></tr>'
@@ -137,7 +137,7 @@ B["Main"] = ("Guided build · the calls", 1600, head("Guided build: a free or pa
    '<tr><td><b>G8</b></td><td>The commander page’s copy: <code>stickyLabel</code>, <code>stickyPromise</code> and <code>seedNote</code> retire, and the button reads <code>Start a deck →</code>.</td></tr></table></div>'
  + '<div class="rec"><span class="k">For Hugh</span><ul class="li">'
    '<li>Free build pre-marked (drawn), or nothing marked so the player always chooses?</li>'
-   '<li>The Ready screen shows the facts and the plan, not the list of sharpened cards (drawn). Should it list the cards?</li>'
+   '<li>The Ready screen shows the facts and the whole Overview, not the list of sharpened cards (drawn). Should it list the cards?</li>'
    '<li>Cards to avoid is left out of R1. Should it be in?</li></ul></div>'
  + '<p class="cap">Art: Ghalta, Polyraptor, Beorn the Fierce, Cemetery Prowler, Avabruck Caretaker and Avenger of Zendikar are cut from earlier rounds’ card images (Scryfall is blocked). The +1/+1 Counters card shows only the two examples with clean art.</p>')
 
@@ -192,12 +192,12 @@ B["G-Steps"] = ("Guided build · the steps", 2600, head("The guided steps: Strat
 B["R-Run"] = ("Guided build · the run", 2600, head("The paid run: progress, ready, short, failed (calls 7 and 8)",
  "The deck exists from the confirm, filled for free. The run sharpens 12 to 18 cards and writes the plan, and both credits come back on a failed or short run.")
  + row(frame("R1", "Sharpening · 0:04", "gb-g-wait-p", "Filled ✓, then sharpening with v2’s clock and the sweep. ✕ leaves, and the run continues."),
-       frame("R2", "Writing the plan · 0:09", "gb-g-wait2-p", "The second step is done, and the plan is being written."),
-       frame("R3", "Ready", "gb-g-result-p", "Four facts, then the plan in the Overview’s stages shape, then <code>Open Ghalta Stomps</code>."),
-       frame("R4", "Short · 9 sharpened", "gb-g-short-p", "Both credits come back, and the 9 stay in the deck. The plan is still written.", "err"),
+       frame("R2", "Writing the Overview · 0:09", "gb-g-wait2-p", "Sharpening is done, and the deck’s Overview is being written."),
+       frame("R3", "Ready · whole sheet, scrolled", "gb-g-resultall-p", "Four facts, then the deck’s whole <b>Overview</b>, drawn by the shipped Overview sections: the summary with the commander, Game plan (Early, Mid, Close), Mulligan, Key tips, Key cards and Weaknesses. Then <code>Open Ghalta Stomps</code>."),
+       frame("R4", "Short · 9 sharpened", "gb-g-short-p", "Both credits come back, and the 9 stay in the deck. The Overview is still written.", "err"),
        frame("R5", "Failed", "gb-g-failed-p", "Both credits come back, and the deck keeps the free build. Try again (2 credits, same picks) or Open the deck.", "err"))
  + row(frame("R1d", "Sharpening · 1300", "gb-g-wait-d", "The dialog over the new-deck page.", "now", True),
-       frame("R3d", "Ready · 1300", "gb-g-result-d", "The stages run across, as the Overview draws them at md.", "now", True),
+       frame("R3d", "Ready · 1300, whole dialog", "gb-g-resultall-d", "The same Overview at md: the stages run across, and Mulligan and Tips sit in two columns.", "now", True),
        frame("R5d", "Failed · 1300", "gb-g-failed-d", "The line on the left, the two presses on the right.", "err", True)))
 
 B["H-HelpMeChoose"] = ("From Help me choose", 2600, head("From Help me choose: the answers carry in, visibly (call 6)",
@@ -206,7 +206,7 @@ B["H-HelpMeChoose"] = ("From Help me choose", 2600, head("From Help me choose: t
        frame("H2", "Strategy · from your answers", "gb-h-strategy-p", "The theme is picked and marked. Every cell in the tracker is already done."),
        frame("H3", "Bracket · from your answers", "gb-h-bracket-p", "3 · Upgraded is picked and marked."),
        frame("H4", "Cards · budget and kept card", "gb-h-cards-p", "<code>Buy within $60</code>, and Avenger of Zendikar is listed under <b>It keeps</b>."),
-       frame("H5", "Ready · with buys", "gb-h-result-p", "To buy: 5 · $41.80, inside the $60."))
+       frame("H5", "Ready · with buys, whole sheet", "gb-h-resultall-p", "To buy: 5 · $41.80, inside the $60, then the whole Overview."))
  + row(frame("H1d", "New deck from results · 1300", "gb-h-page-d", "The block sits above the name in the form column, as shipped.", "now", True),
        frame("H4d", "Cards · 1300", "gb-h-cards-d", "The same step at desktop.", "now", True)))
 
