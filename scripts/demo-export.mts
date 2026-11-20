@@ -3,8 +3,9 @@
 // drawing halves take as props into `src/lib/demo/projected.generated.ts`, a committed file the demo reads instead of any
 // table. Steps here: 1 collection, 2 commanders, 3 Help me choose (the stored read), 4 the three decks (Ashling, Giada,
 // Zimone), 5 Analysis (the stored reading) and the Overview (the stored synopsis), 6 Suggested changes (the stored v2 run),
-// 7 Giada's Proposed cuts and Zimone's Mana Balance and Top off, 8 Which deck needs it most?. Shopping is still to come.
-// Steps 3, the Overview, 6, 7's cuts and 8 read or check the rows the paid run (`demo:generate`) stored, found by the ids its
+// 7 Giada's Proposed cuts and Zimone's Mana Balance and Top off, 8 Which deck needs it most?, and the Precon Upgrade step (the
+// stored run on Prismari Artistry, format 3; addendum A5). Shopping is still to come.
+// Steps 3, the Overview, 6, 7's cuts, 8 and the Precon Upgrade run read or check the rows the paid run (`demo:generate`) stored, found by the ids its
 // summary JSON names, so they need `--run`. The name scan also holds every deck name the source database has (`withSourceDeckNames`).
 //
 // NO MODEL CALL AND NO CREDIT: never `pressFitsReadAction`, never a run. But some reads here WRITE on the scratch branch, as
@@ -16,6 +17,7 @@
 //     History's count row (`recordToolCount`, `deck_tool_counts`).
 //   - `loadManaPanel` (`readManaBalance`'s read): records History's count row (`recordToolCount`).
 //   - `readFitsRead` (`readFitsReadAction`'s read): reaps the reader's stale reads of the card (`reapFitsReads`).
+//   - `readUpgrade` (the Precon Upgrade panel's read): reaps the reader's abandoned runs on the precon (`reapUpgrades`).
 // It needs a database, and takes it from THE SHELL ONLY, as `demo:generate` does:
 //
 // Run it through `pnpm demo:export`: the script preloads `scripts/lib/no-next-cache.cjs`, because reads it shares with the
@@ -612,8 +614,35 @@ const fits = projectFits({
   read: fitsList,
 });
 
+// --- The Precon Upgrade step (addendum A5): the paid run's stored result on the fixture account. ----------------------------------
+// The panel as the precon page reads it (`readUpgrade`, which WRITES: see the header), restricted to the run `demo:generate`'s
+// upgrade step stored, found by its `precon_upgrades` id; and the whole run's set bracket (`readSetBracket` over every add and cut,
+// the real read behind the result's bar), the seed the demo's tally measures a picked subset from (C4). Never a press.
+const { LIVE_DEPS, readUpgrade, readSetBracket } = await import("../src/lib/precons/upgrade/run");
+const { projectUpgrade } = await import("../src/lib/demo/project-upgrade");
+let upgrade: ReturnType<typeof projectUpgrade> | undefined;
+const upgradeRunId = storedId("upgrade", "precon_upgrades");
+const upgradeFile = storedId("upgrade", "precon_file");
+if (!upgradeRunId || !upgradeFile) skipped.push("upgrade (needs --run)");
+else {
+  const [precon] = (await sql`select name from precons where file_name = ${upgradeFile}`) as { name: string }[];
+  const panel = precon ? await readUpgrade(userId, upgradeFile, LIVE_DEPS, env) : null;
+  const stored = panel?.runs.find((r) => r.id === upgradeRunId);
+  if (!precon) failures.push(`Precon Upgrade: the catalog holds no precon ${upgradeFile}`);
+  else if (!panel || !stored) failures.push(`Precon Upgrade: the panel does not hold the stored run ${upgradeRunId}`);
+  else {
+    const read = await readSetBracket(userId, upgradeFile, upgradeRunId, stored.pairs.map((p) => p.addId), stored.pairs.map((p) => p.cutId));
+    if (!read) failures.push("Precon Upgrade: the set bracket read nothing (the run's list is no longer the box's, or the read failed)");
+    try {
+      upgrade = projectUpgrade({ precon: precon.name, panel, runId: upgradeRunId, setPermits: read?.permits ?? null });
+    } catch (e) {
+      failures.push((e as Error).message);
+    }
+  }
+}
+
 const steps = {
-  format: 2 as const,
+  format: 3 as const,
   collection: projectCollection({ cards, availability, stats, window: COLLECTION_WINDOW }),
   commanders: projectCommanders({ rankings, window: COMMANDER_WINDOW }),
   choose,
@@ -625,6 +654,7 @@ const steps = {
   mana,
   topOff,
   fits,
+  ...(upgrade ? { upgrade } : {}),
 };
 
 const cardDetails = await readCardDetails(demoCardIds(steps));
@@ -639,5 +669,6 @@ await finish(projected, [
   `mana: ${mana.balance.colors.length} colors counted`,
   `top off: ${topOff.candidates.length} candidates for ${topOff.openSlots} open slots`,
   `fits: ${fits.list.read?.fits.length ?? 0} decks it fits, ${fits.panel?.view.stored ? "a stored read" : "no stored read"}`,
+  `upgrade: ${upgrade ? `${upgrade.precon}, ${upgrade.panel.runs[0].pairs.length} swaps, set permits ${upgrade.setPermits?.join("/") ?? "unread"}` : "none"}`,
 ]);
 

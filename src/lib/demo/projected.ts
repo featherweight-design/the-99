@@ -4,11 +4,13 @@
 import type { DemoAnalysis, DemoChoose, DemoCollection, DemoCommanders, DemoOverview, DemoSuggested } from "./project";
 import type { DemoCuts, DemoDeck, DemoFits, DemoMana, DemoPlayedDeck, DemoTopOff } from "./project-decks";
 import { projectedJson } from "./projected.generated";
+import type { DemoUpgrade } from "./project-upgrade";
 import { decodeDemo } from "./wire";
 
 export type Projected = {
-  /** 2 since the decks, cuts, Mana Balance, Top off and Which deck steps joined (PR 6b). */
-  format: 2;
+  /** 2 since the decks, cuts, Mana Balance, Top off and Which deck steps joined (PR 6b); 3 since the Precon Upgrade step (`upgrade`,
+   *  below). A format-2 file still reads, with no `upgrade`: the step is then left out (addendum A5, C3). */
+  format: 2 | 3;
   collection: DemoCollection;
   commanders: DemoCommanders;
   /** Step 3: null only in a file exported without the paid run (never committed). */
@@ -27,6 +29,9 @@ export type Projected = {
   topOff: DemoTopOff;
   /** Step 8: Which deck needs it most?, on the card the fixture shares between decks. */
   fits: DemoFits;
+  /** The Precon Upgrade step (addendum A5): the precon's stored run on the fixture account. Absent on a format-2 file, or a format-3
+   *  one exported without the paid run: the step is then left out and the demo counts eight. */
+  upgrade?: DemoUpgrade;
   // Step 5l-c's card details are not here: they are their own chunk (`card-details.ts`), fetched on the first press.
 };
 
@@ -47,10 +52,11 @@ export function committedProjected(): CommittedProjected | null {
 
 /**
  * The decoded data, built once: a caller that memoises on it keeps one identity across renders. Null until the file is
- * format 2: an older file has no deck, cuts, Mana Balance, Top off or Which deck step, and a caller handed it as
- * `Projected` would read `undefined` there.
+ * format 2 or 3: an older file has no deck, cuts, Mana Balance, Top off or Which deck step, and a caller handed it as
+ * `Projected` would read `undefined` there. A format-2 file has no `upgrade` (the optional field), which is how a caller leaves
+ * the Precon Upgrade step out.
  */
 export function projected(): Projected | null {
   const file = committedProjected();
-  return file?.format === 2 ? file : null;
+  return file?.format === 2 || file?.format === 3 ? file : null;
 }

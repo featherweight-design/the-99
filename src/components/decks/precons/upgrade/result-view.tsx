@@ -178,7 +178,27 @@ const noop = () => {};
 /** No press handed in: the bar's place stays, off. */
 const PRESS_OFF: SuggestedChangesPress = { label: () => "", onPress: noop, off: true };
 
-export function ResultView({ panel, run, fileName = "", press = null, after = null, onPicked, lineActions = LIVE_LINE_ACTIONS }: {
+/**
+ * The landing demo's line actions (A5b): a pick is held on screen and stored nowhere, and the set bracket is the stored run's
+ * own read for the whole set (`seed`), so the tally drops its bracket half once a pick changes. No server call.
+ * It holds the picks itself, so the caller makes it once per run (`useMemo`), never in render.
+ */
+export function demoLineActions(run: PanelRun, seed: number[] | null): UpgradeActionDeps {
+  const unpicked = new Set(run.unpicked);
+  const adds = new Set(run.pairs.map((p) => p.addId));
+  const cuts = new Set(run.pairs.map((p) => p.cutId));
+  const isWhole = (ids: string[], all: Set<string>) => ids.length === all.size && ids.every((id) => all.has(id));
+  return {
+    pick: async (_runId, lineId, picked) => {
+      if (picked) unpicked.delete(lineId);
+      else unpicked.add(lineId);
+      return { ok: true, unpicked: [...unpicked] };
+    },
+    setBracket: async (_file, _runId, addIds, cutIds) => (seed && isWhole(addIds, adds) && isWhole(cutIds, cuts) ? { permits: seed } : null),
+  };
+}
+
+export function ResultView({ panel, run, fileName = "", press = null, after = null, onPicked, lineActions = LIVE_LINE_ACTIONS, demo = false }: {
   panel: UpgradePanel;
   run: PanelRun;
   /** The precon file the run belongs to: the set bracket read is keyed by it. */
@@ -190,6 +210,8 @@ export function ResultView({ panel, run, fileName = "", press = null, after = nu
   /** A pick was stored: the run's unpicked lines now, so the run reopened shows them (G28). */
   onPicked?: (runId: string, unpicked: string[]) => void;
   lineActions?: UpgradeActionDeps;
+  /** The landing demo (A5b): no You asked, no Apply place, and picks through `lineActions` (`demoLineActions`), stored nowhere. */
+  demo?: boolean;
 }) {
   const lead = leadOf(panel, run);
   const leadName = lead ? lead.cards.map((c) => c.name).join(" + ") : "";
@@ -260,8 +282,9 @@ export function ResultView({ panel, run, fileName = "", press = null, after = nu
         onChanged={async () => null}
         onAnnounce={noop}
         onNewRun={noop}
-        press={press ?? PRESS_OFF}
+        press={demo ? null : (press ?? PRESS_OFF)}
         youAsked={false}
+        demo={demo}
       />
       {after}
     </div>

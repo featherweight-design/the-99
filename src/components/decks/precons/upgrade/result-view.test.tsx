@@ -15,7 +15,7 @@ vi.mock("../../../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 vi.mock("../../../../lib/precons/upgrade/actions", () => ({ pickUpgradeLineAction: vi.fn(), upgradeSetBracketAction: vi.fn(async () => null) }));
 import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { suggestedChangesV2Copy } from "../../../../lib/copy/suggested-changes-v2";
-import { combined, ResultView } from "./result-view";
+import { combined, demoLineActions, ResultView } from "./result-view";
 import type { UpgradeActionDeps } from "./upgrade-lines";
 
 const sc = suggestedChangesV2Copy;
@@ -215,5 +215,30 @@ describe("ResultView's commander marks (A3 calls 7 to 11)", () => {
     unmount();
     render(<ResultView panel={marked} run={run({ strategyKey: "rootha/3/spellslinger" })} lineActions={quiet()} />);
     expect(screen.queryByRole("group", { name: "What the marks on these cards mean" })).toBeNull();
+  });
+});
+
+describe("ResultView in the landing demo (A5b)", () => {
+  it("draws no Apply place and no apply line where the same run outside the demo draws both, and a pick still flips on screen", async () => {
+    const { unmount } = render(<ResultView panel={panel} run={run()} lineActions={demoLineActions(run(), [3])} />);
+    expect(apply()).not.toBeNull();
+    expect(document.querySelector("[data-sc-bar-line]")).not.toBeNull();
+    unmount();
+    render(<ResultView panel={panel} run={run()} demo lineActions={demoLineActions(run(), [3])} />);
+    expect(apply()).toBeNull();
+    expect(document.querySelector("[data-sc-bar-line]")).toBeNull();
+    fireEvent.click(within(screen.getByRole("article", { name: "Cut 1" })).getByRole("button", { name: /Picked/ }));
+    await vi.waitFor(() => expect(within(screen.getByRole("article", { name: "Cut 1" })).queryByRole("button", { name: /^✓ Picked/ })).toBeNull());
+  });
+
+  it("answers the set bracket from the stored seed for the whole set only", async () => {
+    const a = demoLineActions(run(), [2, 3]);
+    expect(await a.setBracket("", "r", ["add2", "add1"], ["cut1", "cut2"])).toEqual({ permits: [2, 3] });
+    expect(await a.setBracket("", "r", ["add1"], ["cut1", "cut2"])).toBeNull();
+    // As many ids as the run holds, but not the run's: no seed.
+    expect(await a.setBracket("", "r", ["add1", "x"], ["cut1", "cut2"])).toBeNull();
+    expect(await demoLineActions(run(), null).setBracket("", "r", ["add1", "add2"], ["cut1", "cut2"])).toBeNull();
+    expect(await a.pick("r", "c-cut1", false)).toEqual({ ok: true, unpicked: ["c-cut1"] });
+    expect(await a.pick("r", "c-cut1", true)).toEqual({ ok: true, unpicked: [] });
   });
 });

@@ -9,6 +9,7 @@
 import type { BrowseCard } from "../collection/browse";
 import { isLine } from "../tuning/state";
 import type { Projected } from "./projected";
+import { upgradeCardIds } from "./project-upgrade";
 import { TOP_OFF_OPENABLE } from "./top-off-openable";
 
 /** One card's details as the demo opens them: `BrowseCard` less the account's own fields and the paid doors. */
@@ -20,10 +21,11 @@ export type DemoCardDetails = Record<string, DemoCardDetail>;
 /**
  * The card details' chunks (orchestrator's ruling 2026-11-09): every played-deck row opens its card, and the 164 cards come
  * to 749 KB, about 185 KB gzipped, together. So a press on a step loads only that step's cards: `binder` (the collection
- * window, Help me choose, and Which deck's card and the cards its panel names), one chunk per deck step, and `shared` for a card more than one step opens (a
+ * window, Help me choose, and Which deck's card and the cards its panel names), one chunk per deck step, `upgrade` (the Precon Upgrade
+ * step's swaps and commanders, addendum A5), and `shared` for a card more than one step opens (a
  * played-deck row that is also a named cut, say), fetched once beside whichever step's chunk is pressed first.
  */
-export const CARD_CHUNKS = ["binder", "played", "over", "under", "shared"] as const;
+export const CARD_CHUNKS = ["binder", "played", "over", "under", "upgrade", "shared"] as const;
 export type DemoCardChunk = (typeof CARD_CHUNKS)[number];
 /** A chunk a press loads, beside `shared`. */
 export type DemoCardStep = Exclude<DemoCardChunk, "shared">;
@@ -40,6 +42,9 @@ export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
   played: 482_600, // 459,601, 117,019 (74 cards; the basic Mountain's printings are 62 KB of it)
   over: 24_100, // 22,897, 4,673 (4 cards)
   under: 84_000, // 79,987, 17,025 (19 cards)
+  // PROVISIONAL (the chunk is empty until `demo:export` first writes it with the paid upgrade run): about 28 cards at the played chunk's
+  // per-card average (about 6.5 KB). The PR that exports the run replaces it with the measured figure plus about 5%.
+  upgrade: 190_000,
   shared: 8_900, // 8,402, 3,126 (3 cards; Which deck's card and the cards its panel names)
 };
 
@@ -159,7 +164,7 @@ export function projectCardDetails(ids: readonly string[], read: ReadonlyMap<str
   return out;
 }
 
-type CardIdSteps = Pick<Projected, "collection" | "choose" | "decks" | "suggested" | "cuts" | "topOff" | "mana" | "fits">;
+type CardIdSteps = Pick<Projected, "collection" | "choose" | "decks" | "suggested" | "cuts" | "topOff" | "mana" | "fits"> & Partial<Pick<Projected, "upgrade">>;
 
 /** How many of Top off's ranked candidates the demo draws and opens (`top-off-openable.ts`, shared with the drawing). */
 export { TOP_OFF_OPENABLE };
@@ -171,6 +176,7 @@ export { TOP_OFF_OPENABLE };
  *   - step 3: Help me choose's rows (step 2's commander rows open their public page instead, so none here);
  *   - step 4: each deck's commander and partner, the shopping rows that bill them, and every row of the played deck, in
  *     the decklist's own order: step 4 draws the whole list, and every row's View details opens its card (lane 21, 5l-d);
+ *   - the Precon Upgrade step (addendum A5, after Suggested changes): every swap's add and cut, and the commanders it offers (`upgradeCardIds`);
  *   - the cards a step's line names: Suggested changes' adds and cuts (6), Giada's named cuts, Top off's first
  *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card and the cards its panel names (8).
  */
@@ -193,6 +199,7 @@ export function demoCardIds(steps: CardIdSteps): string[] {
   for (const id of Object.values(steps.mana.ids)) ids.add(id);
   ids.add(steps.fits.card.oracleId);
   for (const id of fitsPanelIds(steps.fits)) ids.add(id);
+  for (const id of upgradeCardIds(steps.upgrade)) ids.add(id);
   return [...ids];
 }
 
@@ -246,7 +253,7 @@ export function demoStepCardIds(steps: CardIdSteps): Record<DemoCardStep, string
     steps.fits.card.oracleId,
     ...fitsPanelIds(steps.fits),
   ])];
-  return { binder, ...demoDeckCardIds(steps) };
+  return { binder, ...demoDeckCardIds(steps), upgrade: upgradeCardIds(steps.upgrade) };
 }
 
 /** Each chunk's cards: a card one step opens goes in that step's chunk, a card two or more steps open goes in `shared`. */

@@ -8,5 +8,6 @@ import { cardDetailsJson as over } from "./over.generated";
 import { cardDetailsJson as played } from "./played.generated";
 import { cardDetailsJson as shared } from "./shared.generated";
 import { cardDetailsJson as under } from "./under.generated";
+import { cardDetailsJson as upgrade } from "./upgrade.generated";
 
-export const committedCardChunks: Record<DemoCardChunk, unknown> = { binder, played, over, under, shared };
+export const committedCardChunks: Record<DemoCardChunk, unknown> = { binder, played, over, under, upgrade, shared };

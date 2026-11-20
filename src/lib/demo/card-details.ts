@@ -26,6 +26,7 @@ const CHUNK_FILES: Record<DemoCardChunk, () => Promise<{ cardDetailsJson: unknow
   played: () => import("./card-details/played.generated"),
   over: () => import("./card-details/over.generated"),
   under: () => import("./card-details/under.generated"),
+  upgrade: () => import("./card-details/upgrade.generated"),
   shared: () => import("./card-details/shared.generated"),
 };
 

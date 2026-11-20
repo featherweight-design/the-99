@@ -9,8 +9,8 @@
 // never production, staging or local-dev). With `--spend` it also requires `DEMO_DB_BRANCH` to equal that branch id
 // (the dry run prints it), so a URL swapped between the dry run and the paid run is refused.
 //
-// DRY RUN BY DEFAULT. It checks the branch, the fixture (five decks at their totals, the shared card, at least 6
-// credits), the live-path env the server will be started with, and prints the steps with each model step's worst case
+// DRY RUN BY DEFAULT. It checks the branch, the fixture (five decks at their totals, the shared card, the Precon Upgrade
+// precon, at least 8 credits: the other steps' 6 and the upgrade's UPGRADE_UNITS), the live-path env the server will be started with, and prints the steps with each model step's worst case
 // and the ledger's spent and cap. It presses nothing and starts nothing.
 //
 // `--spend` presses the tools. It starts `next start` ITSELF (a production build must exist: `pnpm build`), on
@@ -22,10 +22,10 @@
 // at a time (`acquireRunLock`). Before each model press the feature's worst case (`featureWorstCaseMicroUsd`) is
 // written as a pending entry, and the press is refused if `spent + worst` would cross the cap; after the result lands
 // the entry is settled at the new `model_calls` row's recorded cost, or at the worst case when no cost was recorded.
-// Credits are spent through the app's real reservation (the fixture's gift lot): 5 of its 10.
+// Credits are spent through the app's real reservation (the fixture's gift lot): 5 of its 10, and UPGRADE_UNITS more for the upgrade step.
 //
 // WRITES (all on the scratch branch, through the app): one Overview, one Suggested changes v2 run at 3, one Look
-// deeper run, one Help me choose read, one fits read, their `model_calls` rows, and whatever opening analysis, Top off
+// deeper run, one Help me choose read, one fits read, one Precon Upgrade run (Prismari Artistry, Muddle, bracket 3, Spells), their `model_calls` rows, and whatever opening analysis, Top off
 // and Mana balance store. Nothing is deleted: the stored rows are the point. Top off is opened, not committed (the
 // demo shows the proposal; a commit would change the under deck the capture pass shoots). A summary JSON goes to
 // `scripts/out/demo-generate-<timestamp>.json`: each step, the ids of the rows it stored and its settled cost. No
@@ -36,7 +36,9 @@
 //
 //   ... pnpm demo:generate --only=suggested-changes,look-deeper   # just these steps (dry run or --spend)
 //   ... pnpm demo:generate --skip=help-me-choose,overview         # all but these
-// Step ids: help-me-choose, overview, suggested-changes, look-deeper, which-deck, analysis, top-off, mana-balance.
+// Step ids: help-me-choose, overview, suggested-changes, look-deeper, which-deck, upgrade, analysis, top-off, mana-balance.
+// The upgrade step needs PRECON_UPGRADE_ENABLED on for the fixture account (a `flag_overrides` row; the dry run says what it finds)
+// and the precon catalog on the scratch branch. `pnpm demo:generate --only=upgrade` runs just it.
 // The script does NOT check whether a step's output is already stored: a rerun must name its steps (--only) or
 // leave out the finished ones (--skip), or each is pressed, and paid for, again.
 //
@@ -50,6 +52,8 @@ import { parseArgs } from "node:util";
 import { neon } from "@neondatabase/serverless";
 import { LEDGER_LIMITS } from "../src/lib/eval/ledger-limits.ts";
 import { remaining } from "../src/lib/model/credit-rule.ts";
+import { preconUpgradeCopy } from "../src/lib/copy/precon-upgrade.ts";
+import { UPGRADE_UNITS } from "../src/lib/precons/upgrade/constants.ts";
 import { featureWorstCaseMicroUsd } from "../src/lib/model/prices.ts";
 import { anthropicAuth } from "../src/lib/model/auth.ts";
 import { standInReport } from "../src/lib/model/stand-in-report.ts";
@@ -65,7 +69,8 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const LEDGER_REL = "docs/superpowers/eval/ledger-landing-demo.jsonl";
 const LEDGER = join(ROOT, LEDGER_REL);
 const CAP_USD = LEDGER_LIMITS["ledger-landing-demo.jsonl"].hardCapUsd;
-const MIN_CREDITS = 6;
+/** The other steps' 6 (the precheck before the upgrade step); the upgrade step adds its own price (`UPGRADE_UNITS`, never a typed 2). */
+const OTHER_STEPS_CREDITS = 6;
 const PORT = Number(process.env.DEMO_PORT ?? 3391);
 const BASE = `http://localhost:${PORT}`;
 /** Help me choose's "Anything else?" wish: fixed, so a rerun asks the same thing. Fictional, names no one. */
@@ -74,6 +79,11 @@ const WISH = "A lantern-lit artifact deck that builds a little army and wins slo
 const SHARED_CARD = "Swords to Plowshares";
 /** Suggested changes v2's count. */
 const V2_COUNT = 3;
+/** The Precon Upgrade step's picks (addendum A5, C2): the Upgrade handoff's own fixture. The precon is found by NAME in the catalog (its file name is not typed here). */
+const UPGRADE_PRECON = "Prismari Artistry";
+const UPGRADE_COMMANDER = "Muddle, the Ever-Changing";
+const UPGRADE_BRACKET = 3;
+const UPGRADE_STRATEGY = "Spells";
 
 const { values: args } = parseArgs({
   options: {
@@ -177,8 +187,11 @@ async function creditsLeft() {
     return n + remaining(grant, usage, now);
   }, 0);
 }
+/** The catalog precon's file name (a plain edition, never a Collector's twin): found once, used by the step and its checks. */
+// Ordered, so a catalog with two plain editions of the name always picks the same one, run after run.
+const [upgradePrecon] = await sql`select file_name from precons where name = ${UPGRADE_PRECON} and twin_of is null order by file_name limit 1`;
+const UPGRADE_FILE = upgradePrecon?.file_name ?? null;
 const credits = await creditsLeft();
-if (credits < MIN_CREDITS) fixtureProblems.push(`the fixture account holds ${credits} credits; at least ${MIN_CREDITS} are needed`);
 const [shared] = OWNER ? await sql`select c.oracle_id::text from collection_items ci join cards c on c.oracle_id = ci.oracle_id
   where ci.user_id = ${OWNER} and c.name = ${SHARED_CARD} limit 1` : [];
 if (!shared) fixtureProblems.push(`the fixture account does not own ${SHARED_CARD}`);
@@ -192,6 +205,7 @@ const STEPS = [
   { id: "suggested-changes", tool: `Suggested changes v2 (N=${V2_COUNT})`, deck: "played", feature: "suggested_changes_v2", run: suggestedChanges },
   { id: "look-deeper", tool: "Look deeper", deck: "over", feature: "proposed_cuts", run: lookDeeper },
   { id: "which-deck", tool: `Which deck needs it most? (${SHARED_CARD})`, deck: null, feature: "fits_read", run: whichDeck },
+  { id: "upgrade", tool: `Precon Upgrade (${UPGRADE_PRECON}, ${UPGRADE_COMMANDER}, bracket ${UPGRADE_BRACKET}, ${UPGRADE_STRATEGY})`, deck: null, feature: "precon_upgrade", run: upgrade },
   { id: "analysis", tool: "Analysis", deck: "played", feature: null, run: analysis },
   { id: "top-off", tool: "Top off (opened, not committed)", deck: "under", feature: null, run: topOff },
   { id: "mana-balance", tool: "Mana balance", deck: "under", feature: null, run: manaBalance },
@@ -206,6 +220,13 @@ const STEPS = [
   const keep = (s) => (args.only ? asked.includes(s.id) : !asked.includes(s.id));
   for (let i = STEPS.length - 1; i >= 0; i -= 1) if (!keep(STEPS[i])) STEPS.splice(i, 1);
   if (STEPS.length === 0) throw new Error("demo:generate: the selection leaves no step");
+}
+// The checks the selected steps need, and only those: a run that leaves out the upgrade needs neither its credits nor its precon.
+{
+  const upgrading = STEPS.some((s) => s.id === "upgrade");
+  const need = (STEPS.some((s) => s.id !== "upgrade") ? OTHER_STEPS_CREDITS : 0) + (upgrading ? UPGRADE_UNITS : 0);
+  if (credits < need) fixtureProblems.push(`the fixture account holds ${credits} credits; at least ${need} are needed`);
+  if (upgrading && !UPGRADE_FILE) fixtureProblems.push(`the catalog holds no ${UPGRADE_PRECON} precon on this branch`);
 }
 const worstUsd = (feature) => (feature ? featureWorstCaseMicroUsd(feature) / 1e6 : 0);
 
@@ -232,12 +253,16 @@ console.log(`server paths: synopsis ${live.report.synopsis}, intake ${live.repor
 // The switches the database decides: the app-wide model-call row (killed or off stops every press), and the model
 // line the steps assume (Suggested changes v2), reported as rows so the operator can see what the fixture account resolves.
 const switchRows = await sql`select switch, scope, value, (user_id = ${OWNER}) as own from flag_overrides
-  where switch in ('MODEL_CALLS_ENABLED', 'SUGGESTED_CHANGES_V2_ENABLED') and (scope <> 'user' or user_id = ${OWNER})`;
+  where switch in ('MODEL_CALLS_ENABLED', 'SUGGESTED_CHANGES_V2_ENABLED', 'PRECON_UPGRADE_ENABLED') and (scope <> 'user' or user_id = ${OWNER})`;
 for (const r of switchRows) console.log(`switch row: ${r.switch} ${r.scope}${r.own ? " (fixture account)" : ""} = ${r.value}`);
 const modelCallsRow = switchRows.find((r) => r.switch === "MODEL_CALLS_ENABLED" && r.scope === "app");
 if (modelCallsRow && ["off", "killed"].includes(modelCallsRow.value)) live.problems.push(`MODEL_CALLS_ENABLED's app row is ${modelCallsRow.value}`);
 if (!switchRows.some((r) => r.switch === "SUGGESTED_CHANGES_V2_ENABLED" && r.value === "on" && r.scope !== "group")) {
   console.log("  note: no app or account row turns SUGGESTED_CHANGES_V2_ENABLED on; unless a group does, the v2 step will stop at its press");
+}
+
+if (STEPS.some((s) => s.id === "upgrade") && !switchRows.some((r) => r.switch === "PRECON_UPGRADE_ENABLED" && r.value === "on" && r.scope !== "group")) {
+  console.log("  note: no app or account row turns PRECON_UPGRADE_ENABLED on; unless a group does, the upgrade step will find no Upgrade this precon button");
 }
 
 const blockers = [...fixtureProblems, ...live.problems];
@@ -533,6 +558,34 @@ async function whichDeck(page) {
 }
 whichDeck.rows = async (callId) => ({ fits_reads: (await sql`select id::text from fits_reads where model_call_id = ${callId}::uuid`)[0]?.id ?? null });
 
+async function upgrade(page) {
+  // The real flow, button by button: the precon page's press, then Commander, Bracket and Strategy, as a player makes them.
+  const copy = preconUpgradeCopy.flow;
+  await page.goto(`${BASE}/decks/precons/${encodeURIComponent(UPGRADE_FILE)}`, { waitUntil: "domcontentloaded" });
+  await onPageRole(page, "button", preconUpgradeCopy.entry.press).first().click({ timeout: 60_000 });
+  const dialog = page.getByRole("dialog", { name: copy.title(UPGRADE_PRECON) });
+  await dialog.waitFor({ timeout: 30_000 });
+  await dialog.getByRole("button", { name: copy.next(copy.steps.commander) }).click();
+  await dialog.getByRole("radio", { name: new RegExp(UPGRADE_COMMANDER) }).first().click({ timeout: 30_000 });
+  await dialog.getByRole("button", { name: copy.next(copy.steps.bracket) }).click();
+  await dialog.locator(`[role="radio"][data-bracket="${UPGRADE_BRACKET}"]`).click({ timeout: 30_000 });
+  await dialog.getByRole("button", { name: copy.next(copy.steps.strategy) }).click();
+  await dialog.getByRole("radio", { name: new RegExp(`^${UPGRADE_STRATEGY}\\b`) }).first().click({ timeout: 30_000 });
+  await dialog.getByRole("button", { name: preconUpgradeCopy.strategy.press(UPGRADE_STRATEGY) }).click();
+  // The result view's title: the run came back (the row is read, and its picks checked, in `upgrade.rows`).
+  await dialog.getByText(copy.resultTitle, { exact: true }).first().waitFor({ timeout: MODEL_WAIT_MS });
+  return { precon_file: UPGRADE_FILE };
+}
+upgrade.rows = async (callId) => {
+  const [run] = await sql`select id::text, status, strategy_key, strategy_label, bracket_target, refunded, jsonb_array_length(pairs)::int as swaps from precon_upgrades where model_call_id = ${callId}::uuid`;
+  if (run && (run.status !== "done" || run.refunded)) throw new Error(`Precon Upgrade: the run is ${run.status}${run.refunded ? " and refunded" : ""}; nothing usable was stored`);
+  if (run && run.bracket_target !== UPGRADE_BRACKET) throw new Error(`Precon Upgrade: the run is at bracket ${run.bracket_target}, not ${UPGRADE_BRACKET}`);
+  if (run && run.strategy_label !== UPGRADE_STRATEGY) throw new Error(`Precon Upgrade: the run is toward ${run.strategy_label}, not ${UPGRADE_STRATEGY}`);
+  // A paid press that stored no run is a failure here, not a missing `--run` later in the export.
+  if (!run) throw new Error("Precon Upgrade: the press was charged but no run was stored for its model call");
+  return { precon_upgrades: run.id, run_status: run.status, swaps: run.swaps };
+};
+
 // The free tools: no reservation of their own, so `freeStep` checks, after each press, that no model call appeared.
 async function analysis(page) {
   await openAnalysis(page, "played");
@@ -577,7 +630,7 @@ async function manaBalance(page) {
 }
 
 /** The dearest any model feature can be: what a stray row of an unpriced feature is held at. */
-const STRAY_FALLBACK_USD = Math.max(...["intake", "synopsis", "suggested_changes_v2", "proposed_cuts", "fits_read"].map(worstUsd));
+const STRAY_FALLBACK_USD = Math.max(...["intake", "synopsis", "suggested_changes_v2", "proposed_cuts", "fits_read", "precon_upgrade"].map(worstUsd));
 
 /**
  * A free tool reserves nothing. After the press (and after a press that threw), any model_calls row of the owner's
