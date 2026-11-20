@@ -82,7 +82,7 @@ export function SearchLayer(props: SearchLayerProps) {
     if (pathname === WISHLIST_PATH) router.refresh();
   }, [pathname, router]);
   return (
-    <CardDetailProvider key={pathname} onDismiss={props.onCardDismissed} onWishlistWrite={onWishlistWrite}>
+    <CardDetailProvider key={pathname} browsePrintings onDismiss={props.onCardDismissed} onWishlistWrite={onWishlistWrite}>
       <Bridge openCardRef={props.openCardRef} onCardFailed={props.onCardFailed} onCardShown={props.onCardShown} />
       {props.bodyEl ? createPortal(<SearchBody {...props} />, props.bodyEl) : null}
     </CardDetailProvider>

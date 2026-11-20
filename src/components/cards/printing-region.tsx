@@ -12,7 +12,7 @@ import { heldOf } from "../../lib/collection/add-lines";
 import type { BrowsePrinting, PreferredPrinting } from "../../lib/collection/browse";
 import { comparePrintings, matchesPreference } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/cards/gradients";
-import { printingPickerCopy } from "../../lib/copy/collection";
+import { printingBrowseCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { SearchField } from "../ui/text-field";
@@ -87,8 +87,10 @@ type ArtRegionProps = {
    * `deck` (deck printings): opened from a deck, the pick is that deck's. The intro speaks of this
    * deck rather than the Collection, there is no reset (picking another tile is the way back) and
    * no dormant tile (a deck's pick is always a printing the player holds). `collection` is today's.
+   * `browse` (alternate printings from search): the catalog's printings, each a preview; nothing is a pick,
+   * so no reset, no dormant tile and no finish chips, and a tile says `not owned` where the reader holds none.
    */
-  scope?: "collection" | "deck";
+  scope?: "collection" | "deck" | "browse";
   /** A save the server refused, said under the intro (deck scope). Null when there is none. */
   notice?: string | null;
   /** Matches the trigger's aria-controls. Two instances would collide, so the modal owns it. */
@@ -161,20 +163,21 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
   const { id, cardName, colorIdentity } = props;
   const preferred = props.role === "choose" ? null : props.preferred;
   const deckScope = props.role !== "choose" && props.scope === "deck";
+  const browse = props.role !== "choose" && props.scope === "browse";
   const resolvedKey = props.role === "choose" ? null : props.resolvedKey;
   const sourcePrintings = props.printings;
   const shortList = props.role === "choose" && props.shortList && props.shortList.length > 0 ? props.shortList : null;
   const [showAll, setShowAll] = useState(false);
   // A catalog printing becomes a tile through the same entry shape an owned one has, so the grid,
   // the search and the keyboard are written once. `quantity` is what the player holds of it.
-  // A catalog tile is keyed by its catalog id: (set, collector number) is not unique in the
+  // A catalog tile (and a browse tile, which is a catalog printing too) is keyed by its catalog id: (set, collector number) is not unique in the
   // catalog, since two variants can share it (price-query.ts), and a pair key would check both
   // tiles and hand back either variant. An owned printing (art role) has no id to key on and keeps
   // the pair, which is also what its stored preference names.
   const tileKey = useCallback(
     (p: { setCode: string; collectorNumber: string; scryfallId?: string | null }) =>
-      choose && p.scryfallId ? p.scryfallId : printingKey(p),
-    [choose],
+      (choose || browse) && p.scryfallId ? p.scryfallId : printingKey(p),
+    [choose, browse],
   );
   const catalogByKey = useMemo(
     () => (choose ? new Map((sourcePrintings as PrintingChoice[]).map((c) => [c.scryfallId, c])) : null),
@@ -387,7 +390,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
       ? selectedKey
       : navigable.find((p) => printingKey(p) === preferredKey) !== undefined
       ? preferredKey
-      : navigable.find((p) => printingKey(p) === resolvedKey) !== undefined
+      : navigable.find((p) => tileKey(p) === resolvedKey) !== undefined
         ? resolvedKey
         : navigable.length > 0
           ? tileKey(navigable[0])
@@ -435,7 +438,9 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
     }
     props.onPick(p);
     props.onAnnounce(
-      deckScope
+      browse
+        ? printingBrowseCopy.announceShowing(p.setName ?? p.setCode, p.collectorNumber)
+        : deckScope
         ? deckCopy.announcePicked(p.setName ?? p.setCode, p.collectorNumber)
         : copy.announcePicked(p.setName ?? p.setCode, p.collectorNumber),
     );
@@ -485,6 +490,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
             ? props.intro
             : deckScope
               ? preferred === null ? deckCopy.regionIntro(printings.length) : deckCopy.regionIntroPicked
+              : browse ? printingBrowseCopy.regionIntro(printings.length)
               : preferred === null ? copy.regionIntro(printings.length) : copy.regionIntroPicked}
         </p>
         {props.role !== "choose" && !deckScope && preferred !== null && (
@@ -545,7 +551,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           />
           {/* The chip geometry, not a chip component: single-select, no dismiss ✕. A catalog
               printing's finishes are not held counts, so the choose role has no finish chips. */}
-          {!choose && <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
+          {!choose && !browse && <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
             <FinishChip label={copy.filterAll(counts.all)} active={finish === "all"} onClick={() => setFinish("all")} />
             <FinishChip label={copy.filterFoil(counts.foil)} active={finish === "foil"} onClick={() => setFinish("foil")} />
             <FinishChip label={copy.filterNonFoil(counts.nonfoil)} active={finish === "nonfoil"} onClick={() => setFinish("nonfoil")} />
@@ -575,7 +581,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
           they are not radios. */}
       {/* One reading order for every tile, across the groups (`ArrivalOrder`). */}
       <ArrivalOrder>
-      <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 || (selectMode && !overflow) ? "" : selectMode ? "mt-[12px]" : "mt-[16px]"}>
+      <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : browse ? printingBrowseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 || (selectMode && !overflow) ? "" : selectMode ? "mt-[12px]" : "mt-[16px]"}>
         {groups.map((g) => (
             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
               {grouped && (
@@ -613,6 +619,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
                       checked={selectMode ? key === selectedKey : undefined}
                       confirmTiles={confirmTiles}
                       deckScope={deckScope}
+                      browse={browse}
                       colorIdentity={colorIdentity}
                       tabStop={key === tabStopKey}
                       onSelect={() => pick(p)}
@@ -685,6 +692,7 @@ function PrintingTile({
   checked,
   confirmTiles = false,
   deckScope = false,
+  browse = false,
   colorIdentity,
   tabStop,
   onSelect,
@@ -702,6 +710,8 @@ function PrintingTile({
   confirmTiles?: boolean;
   /** Deck scope names the pick `For this deck`, the Set field's own phrase, not `Your pick`. */
   deckScope?: boolean;
+  /** Alternate printings from search: a printing held in none says `not owned`. */
+  browse?: boolean;
   colorIdentity: string[];
   tabStop: boolean;
   onSelect: () => void;
@@ -716,7 +726,7 @@ function PrintingTile({
   const setHint = entry.setName ? entry.setCode.toUpperCase() : undefined;
   const setAria = setHint ? `${setLabel} (${setHint})` : setLabel;
   // The choose role says what the player holds of the printing, or nothing at all.
-  const qty = choose ? (entry.quantity > 0 ? chooseCopy.tileOwned(entry.quantity) : "") : quantityLabel(entry);
+  const qty = choose ? (entry.quantity > 0 ? chooseCopy.tileOwned(entry.quantity) : "") : browse && entry.quantity === 0 ? printingBrowseCopy.notOwned : quantityLabel(entry);
   const state = picked ? (deckScope ? "pinned" : "picked") : shownNow ? "shown-now" : "plain";
   // The identity is the ground; the printing's art, when it has one, fades in over it (`ArtLayer`).
   const artStyle: React.CSSProperties = { background: identityGradient(colorIdentity) };
@@ -729,7 +739,7 @@ function PrintingTile({
       // The dormant tile is the stored pick — it wears the ✓ badge and "Your pick" label, so
       // reporting it unchecked would tell assistive tech nothing is selected while the screen
       // says otherwise. `picked` stays false because it drives the selectable styling.
-      aria-checked={checked ?? (picked || entry.dormant)}
+      aria-checked={checked ?? (picked || entry.dormant || (browse && shownNow))}
       // Both, and neither is redundant: the focus trap collects `button:not([disabled])`, so
       // only the native attribute keeps the tile out of the Tab cycle — but `role="radio"`
       // overrides the button role that native `disabled` maps from, so AT needs the ARIA one

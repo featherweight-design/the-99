@@ -12,6 +12,7 @@
 // sentence pluralises on cannot be read back out of its own formatting, which
 // was always true of the option aria labels; it is true of all of them.
 
+import { preconsCopy } from "./precons";
 import { availabilityCopy } from "./availability";
 
 /**
@@ -494,6 +495,24 @@ export type FilterPanelCopy = {
 // The dormant-pick strings below are a RATIFIED EXCEPTION to decision 5's
 // "fall back silently" — kept at review's direction. Amend decision 5 rather
 // than deleting these.
+
+/**
+ * Card details opened from search (#3002): the catalog's printings of a card the reader may not own,
+ * selected to preview and never stored. The Set field's disclosure, region and live line speak here.
+ */
+export const printingBrowseCopy = {
+  triggerCount: (n: number) => `${count(n)} printings`,
+  triggerAria: (n: number, caption: string) => `Set: ${caption}. ${count(n)} printings. Select one to see it here.`,
+  triggerCollapseAria: "Hide the printings",
+  regionLabel: "Printings",
+  regionIntro: (n: number) => `${count(n)} printings. Select one to see it here.`,
+  /** The tile's meta word for a printing the reader holds none of: the shipped quick-add word. */
+  notOwned: preconsCopy.open.tileNotOwned,
+  /** One printing in the catalog: the plain Set field says so, with no disclosure. */
+  onlyPrinting: "The only printing",
+  announceShowing: (setName: string, collectorNumber: string) =>
+    `Showing ${setName}, number ${collectorNumber}. Not in your collection.`,
+} as const;
 
 export const printingPickerCopy = {
   printing: {

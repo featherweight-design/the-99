@@ -104,8 +104,11 @@ export function EditCopiesSheet({
         if (out.holdings.length === 0) {
           // A card the player does not own: the sheet opens on the required printing step.
           const id = crypto.randomUUID();
-          setLines(openNewLine([], id, card, out.choices, out.holdings));
-          setPickerFor(id);
+          const opened = openNewLine([], id, card, out.choices, out.holdings);
+          // Opened from a previewed printing (alternate printings from search): that one is already chosen, so the step is skipped.
+          const preset = card.printingId ? out.choices.find((c) => c.scryfallId === card.printingId) : undefined;
+          setLines(preset ? editChoosePrinting(opened, id, preset).lines : opened);
+          setPickerFor(preset ? null : id);
         } else {
           setLines(held);
           setPickerFor(null);
