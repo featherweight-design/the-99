@@ -183,6 +183,20 @@ export function restoreToUndo(
   return was;
 }
 
+/**
+ * The picks a reverted entry made on its own, from its own record (`HistoryRow.placed`, written when the entry's `opts.assign`
+ * created a reservation): what an undo that names none (History's Revert, a removal's Put back) drops and puts back, so a
+ * reservation a press made never outlives the copy it went with (#2983). Only rows that recorded an exact `createdAt` name a
+ * pick that can be dropped; the older reservation the press displaced comes back as it stood.
+ */
+export function entryPlacements(entryRows: readonly Pick<HistoryRow, "oracleId" | "placed">[]): UndoPlacement[] {
+  return entryRows.flatMap((r) => !r.placed?.createdAt ? [] : [{
+    oracleId: r.oracleId,
+    deckId: r.placed.deckId,
+    ...(r.placed.displaced ? { restore: { deckId: r.placed.displaced.deckId, copies: r.placed.displaced.copies } } : {}),
+  }]);
+}
+
 export type ChangeOptions = {
   /** The caller's idempotency id, minted once per action and reused on every retry. */
   id: string;
@@ -869,7 +883,10 @@ export async function applyCollectionChange(
         // MOVED an older reservation (A to B) puts A back as it stood, from the entry's own record;
         // a Change on the receipt records nothing, so its move drops B and A stays gone. Under the
         // card's claim lock, which every reservation write takes.
-        const drop = placementToUndo(change.undoPlacement, row.rows);
+        // The press names its pick (I got it, the cart), or else the entry's own record does: a revert from History and a
+        // removal's Put back name none, and the keeper's reservation still goes with the copy.
+        for (const undo of change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows)) {
+        const drop = placementToUndo(undo, row.rows);
         if (drop) {
           await lockCardClaims(tx, userId, drop.oracleId);
           const dropped = await tx.delete(cardAssignments).where(and(
@@ -878,7 +895,7 @@ export async function applyCollectionChange(
             eq(cardAssignments.deckId, drop.deckId),
             sql`${cardAssignments.createdAt} = ${drop.createdAt}::timestamp`,
           )).returning({ deckId: cardAssignments.deckId });
-          const restore = dropped.length > 0 ? restoreToUndo(change.undoPlacement, row.rows) : null;
+          const restore = dropped.length > 0 ? restoreToUndo(undo, row.rows) : null;
           // Only once the press's own pick went, never over a row the restored deck already holds,
           // and only for a deck the player still has. Another deck's reservation does not block it:
           // a card can carry older reservations than the one-per-card rule, and the press moved only
@@ -899,6 +916,7 @@ export async function applyCollectionChange(
             `);
             await pruneOrphanAssignments(tx, restore.deckId);
           }
+        }
         }
       }
 

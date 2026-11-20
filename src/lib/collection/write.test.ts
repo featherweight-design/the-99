@@ -5,7 +5,7 @@ import type { DeckClaim } from "../decks/availability";
 import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  committedShortfalls, countMoves, newlyShort, shortChoices, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
+  committedShortfalls, countMoves, entryPlacements, newlyShort, shortChoices, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
   planDigest, planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
 
@@ -447,5 +447,25 @@ describe("the sync write, in the source", () => {
     const guard = at("if (!opts.dryRun) {\n            if (merged.counts.undecided > 0)");
     expect(guard).toBeLessThan(at("if (change.expectedPlan !== digest)"));
     expect(at("if (change.expectedPlan !== digest)")).toBeLessThan(at('throw new Refused({ status: "nothingToSync" })'));
+  });
+});
+
+
+describe("entryPlacements (a revert undoes the pick its own entry made, #2983)", () => {
+  const made = "2026-11-20 09:00:00.5";
+  const was = { deckId: "a", copies: 1, createdAt: "2026-10-01 08:00:00" };
+
+  it("names the pick an entry recorded, with the reservation it displaced, so a revert that names none still drops and restores it", () => {
+    const rows = [{ oracleId: A, placed: { deckId: "b", createdAt: made, displaced: was } }];
+    const [undo] = entryPlacements(rows);
+    expect(undo).toEqual({ oracleId: A, deckId: "b", restore: { deckId: "a", copies: 1 } });
+    // Through the same two gates an explicit undo passes: the exact row to drop, and the older one to put back.
+    expect(placementToUndo(undo, rows)).toEqual({ oracleId: A, deckId: "b", createdAt: made });
+    expect(restoreToUndo(undo, rows)).toEqual(was);
+  });
+
+  it("names a pick that displaced nothing, and nothing for a row that made no pick or recorded no instant", () => {
+    expect(entryPlacements([{ oracleId: A, placed: { deckId: "b", createdAt: made } }])).toEqual([{ oracleId: A, deckId: "b" }]);
+    expect(entryPlacements([{ oracleId: A }, { oracleId: B, placed: { deckId: "b" } }])).toEqual([]);
   });
 });
