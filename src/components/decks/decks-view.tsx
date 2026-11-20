@@ -79,6 +79,7 @@ import { deckOrderCopy } from "../../lib/copy/deck-order";
 import { planReorder } from "../../lib/decks/order-plan";
 import { ArrangeDecks } from "./arrange-decks";
 import { folderCopy } from "../../lib/copy/folders";
+import { writeFlipTrail } from "../../lib/decks/flip-trail";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import {
   ALL_DECKS,
@@ -743,6 +744,9 @@ export function DecksView({
     () => filterDecks(narrowed, state.filters, now),
     [narrowed, state.filters, now],
   );
+  // The word the deck page's left link reads: the shelf the reader is standing on.
+  const shelfWord =
+    state.shelf === ALL_DECKS ? folderCopy.shelves.all : state.shelf === UNFILED ? folderCopy.shelves.unfiled : (serverFolders.find((f) => f.id === state.shelf)?.name ?? folderCopy.shelves.all);
   // A phone prefetches the first two tiles it shows, and a visit spends at most two prefetches:
   // each is a full deck render on the server. The budget is spent when a prefetch STARTS, not when
   // a tile is drawn, because the first draw is not the reader's order: a stored sort lands on the
@@ -1434,7 +1438,15 @@ export function DecksView({
             </div>
           ) : (
             <ArrivalOrder>
-            <ul className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]">
+            <ul
+              // A press on a tile writes the list the reader sees, in the order they see it, for the deck page's flip strip.
+              onClickCapture={(e) => {
+                // The tile's own link (`/decks/<id>`), not its Shopping or Update links.
+                const id = e.target instanceof Element ? /^\/decks\/([0-9a-f-]{36})$/.exec(e.target.closest("a")?.getAttribute("href") ?? "")?.[1] : undefined;
+                if (id) writeFlipTrail(shown, shelfWord, window.location.pathname + window.location.search, id);
+              }}
+              className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]"
+            >
               <DecksMarkKey decks={shown} friends={friendPrefs !== null} />
               {shown.map((deck, i) => (
                 // `sm:h-full` so the tile fills the GRID row rather than

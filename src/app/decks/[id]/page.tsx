@@ -649,6 +649,7 @@ export default async function DeckBuilderPage({
       labelQueried={labelQueried}
       deck={{ ...detail, cards, commander, partner }}
       shelf={shelf}
+      flipDecks={allDecks.map((d) => ({ id: d.id, name: d.name, createdAt: d.createdAt.getTime(), lastPlayedAt: d.lastPlayedAt?.getTime() ?? null, sortPosition: d.sortPosition ?? null }))}
       friendHide={friendHide}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}

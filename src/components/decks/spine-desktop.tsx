@@ -8,6 +8,7 @@
 
 import { useRef, useState } from "react";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
+import type { DeckFlip } from "./deck-flip-strip";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { useCommanderSiblings } from "./deck-siblings";
 import { IdentityPips } from "../commanders/commander-art";
@@ -114,6 +115,8 @@ export interface SpineBandProps {
    * owner's two Settings rules. Absent while the switch is off: no menu row, no mark.
    */
   friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };
+  /** The flip strip's state (deck flip order), drawn by the phone band; the desktop row is BuilderSpine's. Absent: nothing to flip to. */
+  flipStrip?: DeckFlip | null;
 }
 
 // §B16's single-field box is retired: editing now draws name and description at one width,

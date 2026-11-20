@@ -75,7 +75,8 @@ import { TokensGroup } from "./tokens-group";
 import { firstCommitReady } from "../../lib/decks/first-commit";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
-import { initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
+import { deckViewSearch, initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
+import type { FlipDeck } from "../../lib/decks/flip";
 import { DeckPanelContext } from "./deck-panel";
 import { deckViewOf, usePublishBuilderScreen } from "./builder-screen";
 import { EmptyDeckNotes } from "./notes/empty-deck-notes";
@@ -187,6 +188,8 @@ interface BuilderShellProps {
   /** The deck's shelf and the reader's shelves, for the header menu's Move. The route always reads
    *  it; the shell's tests, which draw no menu, leave it out. */
   shelf?: DeckShelf;
+  /** The player's decks, for the flip strip's order (deck flip order). The route reads them for the shelf anyway. */
+  flipDecks?: FlipDeck[];
   /** Hidden from friends (`SOCIAL_FRIENDS_ENABLED` for the reader): the header menu's row and mark. Absent while off. */
   friendHide?: { hidden: boolean; prefs: FriendDeckPrefs };
   /** "Kept for this deck"'s Set picker (H35, PR 2) — every set that printed a commander. */
@@ -338,6 +341,7 @@ export function BuilderShell({
   mix,
   deck,
   shelf,
+  flipDecks,
   friendHide,
   printedInSets = [],
   suggestions,
@@ -1671,6 +1675,7 @@ export function BuilderShell({
               deck={deck}
               shelf={shelf}
               friendHide={friendHide}
+              flip={flipDecks ? { decks: flipDecks, search: deckViewSearch("", deckViewOf(view, filter, deckPanel[0]), view) } : undefined}
               counts={counts}
               onExport={openExport}
               // The server status, the same one the tab strip names. Passed
