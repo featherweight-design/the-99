@@ -9,6 +9,7 @@ const stub = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({ notFound: () => { throw new Error("notFound"); } }));
 vi.mock("../../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../../../../lib/zone/server", () => ({ resolveZone: async () => null }));
 vi.mock("../../../../../lib/collection/summary-read", () => ({ loadSummaryView: stub.view }));
 
 const { default: ImportSummaryPage } = await import("./page");

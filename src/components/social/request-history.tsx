@@ -9,6 +9,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { loadMoreHistoryAction } from "../../app/friends/request-history-actions";
 import { historyCopy as h } from "../../lib/copy/request-history";
 import { PersonInitials, PersonText, type PersonParts } from "../../lib/person-name";
+import { wall } from "../../lib/time/zoned";
 import { useZone } from "../zone-context";
 import { formatShortDeckDate } from "../../lib/decks/format";
 import type { HistoryCursor, HistoryDirection, HistoryEntry } from "../../lib/social/request-history";
@@ -22,7 +23,11 @@ import { BAND, PANEL, PanelEmpty } from "./section-panel";
 export type HistoryTab = "asked" | "ofYou";
 const DIRECTION: Record<HistoryTab, HistoryDirection> = { asked: "asked", ofYou: "received" };
 
-const monthOf = (d: Date) => `${d.toLocaleDateString("en-US", { month: "long", timeZone: "UTC" })} ${d.getUTCFullYear()}`;
+// The month head is the reader's month, the same day the row stamps print.
+const monthOf = (d: Date, zone: string | null) => {
+  const w = wall(d, zone ?? "UTC");
+  return `${new Date(Date.UTC(2000, w.mo - 1, 1)).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" })} ${w.y}`;
+};
 
 function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number, zone: string | null): { kind: string; ink: string; on: string | null; title: PersonParts; detail: string } {
   const ink = e.state === "open" ? "text-[color:var(--accent-text)]" : e.state === "yes" ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]";
@@ -60,7 +65,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
   const zone = useZone();
   const groups: { label: string; rows: HistoryEntry[] }[] = [];
   for (const e of entries) {
-    const label = monthOf(e.createdAt);
+    const label = monthOf(e.createdAt, zone);
     if (groups.at(-1)?.label !== label) groups.push({ label, rows: [] });
     groups.at(-1)!.rows.push(e);
   }

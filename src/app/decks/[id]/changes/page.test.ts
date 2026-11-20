@@ -25,6 +25,7 @@ vi.mock("../../../../lib/decks/draft-state", () => ({
   loadDraftShape: async () => [],
   loadVersionShape: async () => [],
 }));
+vi.mock("../../../../lib/zone/server", () => ({ resolveZone: async () => null }));
 vi.mock("./admits-review", () => ({ admitsReview: () => true }));
 vi.mock("../../../../lib/collection/summary-read", () => ({ countContestedCards: stub.count }));
 
