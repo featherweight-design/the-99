@@ -145,7 +145,7 @@ describe("the end of the game and placements", () => {
     expect(JSON.stringify(before)).toBe(frozen);
   });
   it("names the lowest seat's commander when two reach 21 together", () => {
-    const s = play(config(3), { t: "batch", actions: [{ t: "damage", seat: 1, from: 3, cmdr: 0, delta: 21 }, { t: "damage", seat: 1, from: 2, cmdr: 0, delta: 21 }] });
+    const s = play(config(3, { startingLife: 100 }), { t: "batch", actions: [{ t: "damage", seat: 1, from: 3, cmdr: 0, delta: 21 }, { t: "damage", seat: 1, from: 2, cmdr: 0, delta: 21 }] });
     expect(seat(s, 1).out?.reason).toEqual({ kind: "commander", from: 2, cmdr: 0 });
   });
 });
