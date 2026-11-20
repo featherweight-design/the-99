@@ -255,6 +255,15 @@ describe("a row opens its combo inside the sheet", () => {
     expect(screen.getByRole("button", { name: copy.closeAria })).toBeTruthy();
   });
 
+  it("leans the card art only: no plate text sits inside a rotated element", () => {
+    draw();
+    fireEvent.click(press("Searing Touch"));
+    const tilted = [...document.querySelectorAll<HTMLElement>("[data-plate] [style*='rotate']")];
+    expect(tilted.length).toBe(2);
+    for (const t of tilted) expect(t.textContent).toBe("");
+    expect(plateWhere("Searing Touch")!.className).not.toContain("flex-wrap");
+  });
+
   it("pushes it from a press anywhere else on the row too", () => {
     draw();
     fireEvent.click(within(row("Exquisite Blood")).getByText("Exquisite Blood"));

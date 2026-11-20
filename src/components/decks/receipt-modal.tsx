@@ -519,6 +519,7 @@ export function ReceiptTile({
   where,
   missing = false,
   press = true,
+  tilt,
 }: {
   card: CardRef;
   art: FindingArt;
@@ -537,6 +538,8 @@ export function ReceiptTile({
    * OPEN-10): it is the card under the sheet, and opening it again would stack it on itself.
    */
   press?: boolean;
+  /** Degrees the card art leans (a combo pair). Only the art turns: the name and where-line under it stay level. */
+  tilt?: number;
 }) {
   const drawn = art.get(card.oracleId);
   const name = drawn?.name ?? card.name;
@@ -556,6 +559,7 @@ export function ReceiptTile({
         style={{
           aspectRatio: "63 / 88",
           backgroundColor: "var(--elevated)",
+          ...(tilt ? { transform: `rotate(${tilt}deg)` } : null),
         }}
       >
         {drawn?.imageUri ? <ArtLayer src={drawn.imageUri} /> : null}
@@ -566,7 +570,7 @@ export function ReceiptTile({
         {name}
       </span>
       {where != null ? (
-        <span id={whereId} data-plate-where className="flex flex-wrap items-center gap-[6px] font-mono text-[10px] text-[color:var(--fg-body)]">
+        <span id={whereId} data-plate-where className="flex items-start gap-[6px] font-mono text-[10px] leading-[14px] text-[color:var(--fg-body)] [&>[data-dot]]:mt-[3px]">
           {where}
         </span>
       ) : null}
@@ -653,9 +657,8 @@ export function ComboBody({
             <div
               key={card.oracleId}
               data-plate
-              // The first plate sits above the second: its + disc hangs over the gap into the next plate, and each tilted plate is its own stacking context.
+              // The first plate sits above the second: its + disc hangs over the gap into the next plate. Only the card art leans (ReceiptTile `tilt`); text never tilts.
               className={"relative w-[150px] md:w-[128px]" + (i === 0 ? " z-[1]" : "")}
-              style={pair ? { transform: `rotate(${i === 0 ? 2.5 : -2.5}deg)` } : undefined}
             >
               <ReceiptTile
                 card={card}
@@ -664,6 +667,7 @@ export function ComboBody({
                 where={oneAway?.where(card.oracleId)}
                 missing={oneAway?.missingOracleId !== undefined && oneAway.missingOracleId === card.oracleId}
                 press={oneAway?.stillOracleId !== card.oracleId}
+                tilt={pair ? (i === 0 ? 2.5 : -2.5) : undefined}
               />
               {i < combo.cards.length - 1 ? (
                 <span
