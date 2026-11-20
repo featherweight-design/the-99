@@ -59,7 +59,8 @@ eng-side clarifications the drawn patterns settle: the route, desktop/tablet fra
 
 - [✅] Colours are Low Sun tokens (`#14110E`, `#CF8745`, `#EDE6D8`, `#DEAA29` and the panel greys all exist in
   `src/app/globals.css`). The off-theme values (`#E9B57E`, `#E3A066`, `#9C6330`, `#191510`) are the prototype's faked
-  dice, which production replaces with a library; `#1A2230` / `#2A2119` are art-placeholder fills on F12/F18/F19/F15.
+  dice, which production replaces with a library. Two off-theme fills remain: `.guest{background:#1A2230}` on the
+  tablet boards (F12/F18/F19) and the focused counter's `#2A2119` (F15). The plan maps each to the nearest theme token.
 - [🟡] Icons: `scripts/fetch-mana-symbols.ts` takes only `appears_in_mana_costs` symbols, so {E}, {TK} and Phyrexian
   need the filter widened, and the LTR set symbol is a separate Scryfall `sets` fetch. DFC sun/moon is not a Scryfall
   symbology entry as far as this audit can tell: verify at build, and if absent draw it with the I1/I2 icon set.
@@ -104,6 +105,7 @@ None. The "everyone seated" result is a product call on a migration (see Flags),
   has none.
 - Offline: keep the service worker's no-documents rule; local storage carries the game.
 - Accessibility: names for the tap halves, keyboard repeat, live life announcements.
+- Tokens: map `.guest` `#1A2230` and the focused counter's `#2A2119` to the nearest theme tokens.
 
 ## Flags (product calls, not gaps)
 
