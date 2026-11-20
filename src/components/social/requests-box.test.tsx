@@ -7,6 +7,7 @@ import { historyCopy } from "../../lib/copy/request-history";
 import { RequestsBox } from "./requests-box";
 
 vi.mock("next/link", () => ({ default: ({ href, children, ...rest }: { href: string; children: ReactNode }) => <a href={href} {...rest}>{children}</a> }));
+vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 
 const b = historyCopy.box;
 const box = (o: Partial<Parameters<typeof RequestsBox>[0]> = {}) => (
