@@ -1,7 +1,7 @@
 # Life tracker addendum: the undrawn states (account 2, 2026-11-20)
 
-Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 19), page "Flow · direction C", rows under the icons.
-Status: **DRAFT, awaiting Hugh's review.** Everything in the approved handoff stays locked; this only draws the states
+Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 21), page "Flow · direction C", rows under the icons.
+Status: **APPROVED by Hugh 2026-11-20.** Everything in the approved handoff stays locked; this only draws the states
 READINESS.md listed as 🟡 not drawn.
 
 Table-page boards are drawn over the shipped Rule 0 table (`table-body.tsx`, `table-seat.tsx`, `table-closed.tsx`)
@@ -19,6 +19,7 @@ in Low Sun, with the shipped phone tab bar and desktop rail cut from the About c
 | S4-ClosedResult-Phone / -Tablet | The result after the close | A note above Log: "You closed the table at 10:12 pm. This game still logs from it until 6 am." Back to the table becomes Back to Friends. After a reseat, the log fills from the snapshotted seats, not the table's new seats. |
 | S5-EndGame-Phone / -Tablet | Ending a game by hand | Table tab › End game asks "How did it end?": one art tile per player still in ("Colin won") plus **A draw**. One tap goes to the result. On the tablet the sheet covers the holder's half. |
 | S5-Draw-Phone / -Tablet | The draw finish screen | Split hero art of the drawn players with an equals mark, "A draw", how and when. "Out, last first" lists the rest. Log this game prefills `result: draw` with no `won` seat; earlier outs log a loss. The tablet result is the phone column, centred (READINESS). |
+| S6-Again-Phone / -Desktop | After a game: the next one | A finished game never closes the table. Rematch on the result starts the next game at once; or close the result and the table page shows a "Last game" card (who won, placements, "Not logged yet: Log this game fills it in.") where the game card was, with **Start the game** back. Start again with the same seats or after Seats / Change deck; setup opens on last time's layout and life. Only Close the table or 6 am closes the table. |
 
 ## Rules for engineering
 

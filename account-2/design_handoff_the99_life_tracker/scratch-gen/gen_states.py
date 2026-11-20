@@ -418,6 +418,34 @@ s = s.replace('</style>', TSHEET + '\n</style>', 1)
 assert 'tsheet' in s and 'How did it end?' in s
 files['S5-EndGame-Tablet'] = ('S5a · End game asks how it ended, tablet', 1180, 820, None, retitle(s, 'S5a · End game, tablet'))
 
+# ---- S6 · after a game ends: the table stays open, Start is back ----
+LAST_CSS = """
+.last{border-radius:14px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border-strong);padding:14px 14px 14px;display:flex;flex-direction:column;gap:12px}
+.last .gh{display:flex;align-items:baseline;gap:10px}
+.last .gh .k{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--fg-muted)}
+.last .gh span:last-child{margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--fg-faint)}
+.last h2{margin:0;font-family:"Cinzel",serif;font-weight:700;font-size:20px}
+.last .fx{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.last .f{position:relative;height:56px;border-radius:9px;overflow:hidden;background:var(--surface-sunken)}
+.last .f img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4;filter:grayscale(.6)}
+.last .f.w{box-shadow:inset 0 0 0 2px var(--accent)}.last .f.w img{opacity:.6;filter:none}
+.last .f b{position:absolute;left:8px;bottom:5px;font-size:12px;font-weight:600;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.last .f em{position:absolute;right:7px;top:4px;font-style:normal;font-family:"Cinzel",serif;font-weight:700;font-size:13px;color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.last .f.w em{color:var(--accent)}
+.last p{margin:0;font-size:13px;line-height:1.5;color:var(--fg-muted)}
+"""
+def last_card():
+    fx = ''
+    for nm, a, pl, w in [('Colin','ghalta','1st',True),('You','sai','2nd',False),('Max','gisa','3rd',False),('Peter','giada','4th',False)]:
+        fx += f'<div class="f{" w" if w else ""}"><img src="{B(a)}" alt=""><b>{nm}</b><em>{pl}</em></div>'
+    return (f'<section class="last" aria-label="The last game"><div class="gh"><span class="k">Last game</span><span>4 rounds · 1 h 14 min</span></div>'
+            f'<h2>Colin won</h2><div class="fx">{fx}</div><p>Not logged yet: Log this game fills it in.</p></section>')
+again_sub = '<p class="sub">Same seats, layout and starting life as last time; change any of it at setup.</p>'
+files['S6-Again-Phone'] = ('S6 · After a game: the table stays open, Start is back', 390, None, PAGE_CSS + SEAT_CSS + LAST_CSS,
+                           phone_page(four, START + again_sub + LOG + CLOSE, top_card=last_card()))
+files['S6-Again-Desktop'] = ('S6 · After a game, desktop', 1300, None, PAGE_CSS + SEAT_CSS + LAST_CSS,
+                             desk_page(four, START + again_sub + LOG + CLOSE, top_card=last_card()))
+
 import json
 meta = {}
 for k, (title, w, h, css, body) in files.items():
