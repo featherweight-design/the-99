@@ -27,8 +27,6 @@ const EXEMPT: Record<string, string> = {
     "its press closes the sheet, which unmounts the row, so the navigation runs through usePendingPush and the provider reports it",
   "components/shell/credit-chip.tsx :: \"/credits\"":
     "its press closes the menu, which unmounts the chip, so the navigation runs through usePendingPush and the provider reports it",
-  "components/collection/short-deck-warning.tsx :: `/decks/${row.deckId}`":
-    "opens in a new tab, so this page and its warning stay where they are",
   "components/decks/deck-card-overflow.tsx :: `/decks/${deckId}/import`": KEPT,
   "components/decks/deck-card.tsx :: `/decks/${deck.id}`": KEPT,
   "components/decks/lineup/deck-link.tsx :: `/decks/${id}`": KEPT,
