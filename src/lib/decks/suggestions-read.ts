@@ -17,7 +17,7 @@ import { ownedCardsWhere } from "../collection/owned-cards";
 import { getEdhrecData } from "../edhrec/client";
 import type { EdhrecData } from "../edhrec/parse";
 import { byInclusion, inclusionLookup } from "../edhrec/inclusion-rank";
-import { loadBuildSupport } from "../edhrec/build-support";
+import { loadBuildSupport, readBuild } from "../edhrec/build-support";
 import { focusThemeSlugs } from "../strategy/edhrec-themes";
 import { parseStrategyKey } from "../strategy/focus";
 import { mergeEdhrecData } from "../edhrec/merge";
@@ -186,18 +186,14 @@ export function topPickNames(
  * are synonyms). None for a pair (pairs are not themed), no focus, no tags or no stored page. A failed
  * read is no build too, and says so (`fellBack`), so the deck page never caches it as the focused shelf.
  */
-export async function readChosenBuild(
+export function readChosenBuild(
   args: { hasPartner: boolean; focus: string | null; commanderOracleId: string; tags: EdhrecData["tags"] | null },
   load: typeof loadBuildSupport = loadBuildSupport,
-): Promise<{ build: Awaited<ReturnType<typeof loadBuildSupport>>; fellBack: boolean }> {
-  const slugs = args.hasPartner || !args.tags ? [] : focusThemeSlugs(parseStrategyKey(args.focus));
-  if (slugs.length === 0) return { build: null, fellBack: false };
-  try {
-    return { build: await load(args.commanderOracleId, args.tags ?? [], slugs, "any"), fellBack: false };
-  } catch (err) {
-    console.warn("loadDeckSuggestions: no chosen build, the commander page ranks the shelf", err);
-    return { build: null, fellBack: true };
-  }
+): ReturnType<typeof readBuild> {
+  return readBuild({
+    pair: args.hasPartner, commanderOracleId: args.commanderOracleId, tags: args.tags,
+    choices: focusThemeSlugs(parseStrategyKey(args.focus)), join: "any",
+  }, load);
 }
 
 /**

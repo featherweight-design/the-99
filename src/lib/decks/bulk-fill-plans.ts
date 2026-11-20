@@ -119,6 +119,8 @@ export async function planFromPool(
         // Nothing is placed beside this plan: the excluded ids are the deck's own rows, and they
         // reach the plan through `held`, so listing them here would count them twice.
         selected: [],
+        // The build the deck was made from (engine plan A4b): a top-off fills it the same way.
+        ...topOffBuild(deck),
         // So this deck's own claims are not counted as competition for itself when the pool
         // is narrowed to cards with a free copy.
         excludeDeckId: deckId,
@@ -190,4 +192,11 @@ export async function readBulkPlans(
     collection: { oracleIds: sleeveableIds(collection), shortfalls: collection.shortfalls, measuredTypes: collection.measuredTypes },
     best: { oracleIds: sleeveableIds(best), shortfalls: best.shortfalls, measuredTypes: best.measuredTypes },
   };
+}
+
+/** The build a deck was made from, as the top-off hands it to the plan (engine plan A4b): its stored
+    themes and join, or nothing for a deck that asked none. */
+export function topOffBuild(deck: { answerThemes: string[]; answerThemeJoin: "all" | "any" }):
+  { build?: { themes: string[]; join: "all" | "any" } } {
+  return deck.answerThemes.length > 0 ? { build: { themes: deck.answerThemes, join: deck.answerThemeJoin } } : {};
 }

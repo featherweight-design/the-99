@@ -11,9 +11,10 @@ import type { Bracket } from "./rank";
  * here, and a bad one refuses the create rather than being coerced.
  */
 export type CreateAnswers = {
-  /** Theme labels, for the brief only: they chose the commander and steer nothing after. */
+  /** Theme labels: they write the brief, and the fill builds from the commander's theme pages for
+   *  them (engine plan A4b). */
   themes: string[];
-  /** How the themes were joined, for the brief's wording alone. Absent is all of. */
+  /** How the themes were joined: the brief's wording, and how the fill blends their pages. Absent is all of. */
   themeJoin?: "all" | "any";
   /** Set codes: they word the brief, and the fill ranks the owned cards printed in them first. */
   sets?: string[];
@@ -41,7 +42,7 @@ export type ValidAnswers = {
 
 /** Whole dollars, as the column's check requires, and no more than any real budget. */
 export const MAX_BUDGET_DOLLARS = 100_000;
-/** The most theme labels a create takes: they write the brief, and the fill reads none of them. */
+/** The most theme labels a create takes: they write the brief and choose the fill's build. */
 export const MAX_THEMES = 8;
 /** The most set codes a create takes, for the brief and the fill's preference. */
 export const MAX_SETS = 8;
@@ -93,6 +94,8 @@ export type AnswerColumns = {
   answerBracketBuys?: boolean;
   answerBudgetRaised?: boolean;
   answerSets?: string[];
+  answerThemes?: string[];
+  answerThemeJoin?: "all" | "any";
 };
 
 /**
@@ -115,6 +118,8 @@ export function answerColumnsFor(
     // The ask as validated; `createDeck` writes what it honored on the filled path.
     answerBracketBuys: asked.bracketBuys,
     answerSets: asked.sets,
+    answerThemes: asked.themes,
+    answerThemeJoin: asked.themeJoin,
   };
 }
 
@@ -128,6 +133,9 @@ export type StoredAnswers = {
   answerBudgetRaised: boolean;
   /** Absent on a row read before the column existed, or a fixture that predates it. */
   answerSets?: string[];
+  /** The same, for the themes and their join (engine plan A4b). */
+  answerThemes?: string[];
+  answerThemeJoin?: "all" | "any";
 };
 
 /**
@@ -149,5 +157,8 @@ export function retryAnswersOf(deck: StoredAnswers): DeckAnswers | null {
     budgetRaised: deck.answerBudgetRaised === true,
     // The sets asked, so the retry leads with the same owned cards the create would have.
     ...(deck.answerSets && deck.answerSets.length > 0 ? { sets: deck.answerSets } : {}),
+    // The themes asked, so the retry builds from the same theme pages the create did (engine plan A4b).
+    ...(deck.answerThemes && deck.answerThemes.length > 0
+      ? { themes: deck.answerThemes, themeJoin: deck.answerThemeJoin ?? "all" } : {}),
   };
 }

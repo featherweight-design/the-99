@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   topCards: vi.fn(),
   skeleton: vi.fn(),
   readLabels: vi.fn(),
+  build: vi.fn(),
   loops: {} as Record<string, { variantId: string; partner: string; loop: boolean; partnerMustBeCommander: boolean }[]>,
 }));
 
@@ -30,6 +31,11 @@ vi.mock("../../app/commanders/[slug]/synergy-read", () => ({ readSynergyCards: v
 vi.mock("../profile/load", () => ({ loadSkeletonForCommanders: m.skeleton }));
 // The win-condition read (engine plan C1) has its own suite; here it offers nothing.
 vi.mock("./wincon", () => ({ loadWinconSets: async () => [] }));
+// The real rule (`readBuild`, `overlayBuild`), with the stored-page read replaced.
+vi.mock("../edhrec/build-support", async (importActual) => {
+  const actual = await importActual<typeof import("../edhrec/build-support")>();
+  return { ...actual, readBuild: (args: Parameters<typeof actual.readBuild>[0]) => actual.readBuild(args, m.build) };
+});
 vi.mock("../labels/read", () => ({ readLabelRoleSets: m.readLabels }));
 vi.mock("./availability-query", () => ({ loadAvailability: vi.fn(async () => new Map()) }));
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async () => new Map([["rhystic", { liveCents: 3200 }]])) }));
@@ -241,4 +247,47 @@ describe("the buy pool's order", () => {
     expect(handed()).toEqual(["Wipe", "Removal", "Low Creature"]);
   });
 
+});
+
+// Engine plan A4b: the themes Help me choose asked for choose the build the fill reads.
+const TAGS = [{ slug: "planeswalkers", label: "Planeswalkers", count: 1789 }];
+describe("the chosen build", () => {
+  beforeEach(() => {
+    vi.mocked(getEdhrecData).mockResolvedValue({ data: { inclusionByName: {}, topCards: ["Rhystic Study"], tags: TAGS } } as never);
+  });
+
+  const ask = (themes?: string[]) => buildFillPlan("u", commanders, new Set(), {
+    selected: [], env: ON,
+    answers: { budgetCents: null, bracket: null, cardOracleId: null, ...(themes ? { themes, themeJoin: "any" as const } : {}) },
+  });
+
+  it("fills from the theme pages asked for, laid over the commander page", async () => {
+    m.build.mockResolvedValueOnce({ topCards: ["Doubling Season"], inclusionByName: { "doubling season": 70 }, synergyByName: {} });
+    await ask(["Planeswalkers"]);
+    expect(m.build).toHaveBeenCalledWith(commanders[0].oracleId, TAGS, ["Planeswalkers"], "any");
+    // Laid over the commander page: the build's cards, then the page's, ranked together.
+    expect(m.topCards.mock.calls[0][1]).toEqual(["Doubling Season", "Rhystic Study"]);
+  });
+
+  it("lets the themes asked win over a stored build, and reads a stored build for a path with no answers", async () => {
+    m.build.mockResolvedValue(null);
+    await buildFillPlan("u", commanders, new Set(), {
+      selected: [], env: ON, build: { themes: ["Stored"], join: "all" },
+      answers: { budgetCents: null, bracket: null, cardOracleId: null, themes: ["Asked"], themeJoin: "any" },
+    });
+    expect(m.build).toHaveBeenLastCalledWith(commanders[0].oracleId, TAGS, ["Asked"], "any");
+    await buildFillPlan("u", commanders, new Set(), { selected: [], env: ON, build: { themes: ["Stored"], join: "all" } });
+    expect(m.build).toHaveBeenLastCalledWith(commanders[0].oracleId, TAGS, ["Stored"], "all");
+  });
+
+  it("reads no build with no theme asked, and keeps the commander page when the read fails", async () => {
+    m.build.mockClear();
+    await ask();
+    expect(m.build).not.toHaveBeenCalled();
+    expect(m.topCards.mock.calls[0][1]).toEqual(["Rhystic Study"]);
+    m.topCards.mockClear();
+    m.build.mockRejectedValueOnce(new Error("down"));
+    await ask(["Planeswalkers"]);
+    expect(m.topCards.mock.calls[0][1]).toEqual(["Rhystic Study"]);
+  });
 });

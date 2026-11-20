@@ -700,6 +700,12 @@ export const decks = pgTable("decks", {
   /** The sets Help me choose asked for (the picked ones, or named in the words), as lowercase codes: owned cards printed
    *  in them lead the fill, at the create and again by a retry. Empty for a deck asking none and for every other deck. */
   answerSets: text("answer_sets").array().notNull().default(sql`'{}'::text[]`),
+  /** The themes Help me choose asked for, as the tag labels the player picked: the fill builds from the
+   *  commander's stored EDHREC theme pages for them (engine plan A4b), at the create and again by every
+   *  retry, so a deck refills the way it was built. Empty for a deck asking none and for every other deck. */
+  answerThemes: text("answer_themes").array().notNull().default(sql`'{}'::text[]`),
+  /** How `answer_themes` were joined: `all` (one build of every theme) or `any` (the best of them). */
+  answerThemeJoin: text("answer_theme_join", { enum: ["all", "any"] }).notNull().default("all"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   /**
    * When this deck's contents last changed — a card added or removed, basics
@@ -758,6 +764,7 @@ export const decks = pgTable("decks", {
     // Code points, as Postgres's char_length counts them — the app's cap counts the same way.
     // 240, up from 120 (H35): the description is read by two model readers now, not one.
     check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 240`),
+    check("decks_answer_theme_join_check", sql`${t.answerThemeJoin} in ('all', 'any')`),
     check("decks_answer_budget_check", sql`${t.answerBudgetCents} is null or (${t.answerBudgetCents} >= 100 and ${t.answerBudgetCents} % 100 = 0)`),
     check("decks_answer_bracket_range", sql`${t.answerBracket} is null or ${t.answerBracket} between 1 and 5`),
     check(

@@ -253,6 +253,9 @@ export async function createDeck(
             // The sets asked (picked, or named in the words): owned cards printed in them lead
             // the fill. Soft; stored as `answer_sets`, so a retry (`retryAnswersOf`) leads with them too.
             ...(asked.sets.length > 0 ? { sets: asked.sets } : {}),
+            // The themes asked: the fill builds from the commander's theme pages for them (engine
+            // plan A4b). Stored as `answer_themes`, so a retry builds the same way.
+            ...(asked.themes.length > 0 ? { themes: asked.themes, themeJoin: asked.themeJoin } : {}),
           },
           // Only cards I own (three answers §3): the 99 from what the collection can supply.
           // Nothing is bought for it, so the budget has only the placed card to charge.

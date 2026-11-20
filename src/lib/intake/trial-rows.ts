@@ -1,6 +1,7 @@
 // The ownership figures for a slice of the results screen's rows: the deck each commander would be built into, filled
 // (`trialFill`). The server action `trialFillRows` signs the reader in and checks its arguments, then calls this; the
 // landing demo's exporter (`scripts/demo-export.mts`) calls it with the fixture owner, so both count a row the same way.
+import { MAX_THEMES } from "./answers";
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
@@ -42,6 +43,9 @@ export async function trialFigureRows(
     bracket: p.bracket,
     // No card: the results rank by none any more (F1), so the figures count none.
     cardOracleId: null,
+    // The themes the create builds from (engine plan A4b), so each row's figures predict that build.
+    // The first `MAX_THEMES`, as the create takes them.
+    ...(p.themes.length > 0 ? { themes: p.themes.slice(0, MAX_THEMES), themeJoin: p.themeJoin } : {}),
     // The sets the create fills toward (picked plus those the words name, `handOffSets`), so each
     // row's figures predict the deck its press builds (review round 1). A failed catalog read is the
     // picked sets alone, as at the create.
