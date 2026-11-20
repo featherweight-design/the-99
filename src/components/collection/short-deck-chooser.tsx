@@ -146,7 +146,7 @@ export function ShortDeckChooser({
           );
         })}
       </ul>
-      {refusal ? <p role="status" className="m-0 border-l-2 border-[color:var(--danger)] pl-[10px] text-[12px] leading-[1.5] text-[color:var(--fg-body)]">{c.chooser.refusal(n)}</p> : null}
+      {refusal ? <p role="status" className="m-0 border-l-2 border-[color:var(--border-strong)] pl-[9px] text-[12px] leading-[1.5] text-[color:var(--fg)]">{c.chooser.refusal(n)}</p> : null}
       <p aria-live="polite" className="m-0 text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">{footer}</p>
       {!isDefault && keeper ? (
         <button type="button" onClick={() => { setMarks(first); setRefusal(false); }} className="-mt-[6px] flex min-h-[32px] items-center self-start font-sans text-[12.5px] text-[color:var(--accent-text)] underline">
