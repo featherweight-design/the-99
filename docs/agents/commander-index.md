@@ -202,7 +202,10 @@ The themes a player picks in Help me choose are stored on the deck: `decks.answe
 - **Where they're read.** `buildFillPlan` reads them through `retryAnswersOf` / `DeckAnswers.themes`, so the create and every retry fill from the same build.
 - **What they replace.** With themes, a single commander's fill lays its stored theme pages over the commander page (`overlayBuild`). The candidate list leads with the theme pages' cards, and a theme page's inclusion figure wins for the cards it lists. Every other card keeps the commander page's figure, so a staple the theme rows omit isn't dropped.
 - **What they don't change.** The residual's synergy rank (`readSynergyCards`) still reads the commander page; the fill reads no synergy from `data`.
-- **Who reads them.** The create, every retry, the top-off (`build`, from the deck's stored columns), and the Help me choose previews (`trialFill` rows, the hand-off's Bracket row), so each one predicts the deck its press builds.
+- **Who reads them.**
+  - The create and every retry.
+  - The Help me choose previews (`trialFill` rows, the hand-off's Bracket row), so each one predicts the deck its press builds.
+  - The top-off (`build`, from the deck's stored columns). It ranks within its own allow-list, the rows the list on screen draws, so a card only a theme page lists can't be added there.
 - **When they don't apply.** A pair, no stored page (as before the first theme build), or a failed read fills from the commander page.
 
 ## From AGENTS.md (moved 2026-10-28)

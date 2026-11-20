@@ -30,7 +30,7 @@ export type DeckAnswers = {
    *  Absent or empty: today's order. Stored as `decks.answer_sets`, so a retry leads with them too. */
   sets?: readonly string[];
   /** Theme labels Help me choose asked for, and their join (engine plan A4b): the fill reads the
-   *  commander's stored theme pages for them in place of the commander page (`loadBuildSupport`).
+   *  commander's stored theme pages for them laid over the commander page (`readBuild`, `overlayBuild`).
    *  Absent, empty, a pair, or no stored page: the commander page. Stored as `decks.answer_themes`. */
   themes?: readonly string[];
   themeJoin?: "all" | "any";

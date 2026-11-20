@@ -46,8 +46,8 @@ export default async function NewDeckPage({
       const handOff = asked && answers ? {
         answers,
         create: {
-          // The first eight: themes only write the brief, which `createDeck` bounds at that; the
-          // block still lists every theme the player asked for.
+          // The first eight, which `createDeck` bounds at: they write the brief and choose the fill's
+          // build (engine plan A4b). The block still lists every theme the player asked for.
           themes: answers.themes.slice(0, MAX_THEMES).map((t) => t.label),
           themeJoin: answers.themeJoin,
           // The picked sets and those the words name, at most eight (`handOffSets`): they word the

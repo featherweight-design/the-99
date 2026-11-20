@@ -201,6 +201,19 @@ describe("fillDeck: a Help me choose deck with no gated answer", () => {
     expect(planAnswers()).toEqual({ budgetCents: null, bracket: null, cardOracleId: null, bracketBuys: false, budgetRaised: false });
   });
 
+  // Engine plan A4b: the themes asked choose the fill's build, at the create and at its retry.
+  it("hands the themes asked to the plan, at the create and at the retry", async () => {
+    await run(unanswered);
+    expect(planAnswers()).toMatchObject({ themes: ["Artifacts"], themeJoin: "all" });
+    m.plan.mockClear();
+    m.deck = { id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER, partnerOracleId: null,
+      answerAsked: true, answerBudgetCents: null, answerBracket: null, answerCardOracleId: null,
+      answerOwnedOnly: false, answerBracketBuys: false, answerBudgetRaised: false,
+      answerThemes: ["Artifacts"], answerThemeJoin: "all" };
+    await fillDeck("deck-1");
+    expect(planAnswers()).toMatchObject({ themes: ["Artifacts"], themeJoin: "all" });
+  });
+
   it("fills a deck started any other way as the plain build", async () => {
     m.deck = { id: "deck-1", userId: "user_1", commanderOracleId: COMMANDER, partnerOracleId: null,
       answerAsked: false, answerBudgetCents: null, answerBracket: null, answerCardOracleId: null,

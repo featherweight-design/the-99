@@ -31,7 +31,11 @@ vi.mock("../../app/commanders/[slug]/synergy-read", () => ({ readSynergyCards: v
 vi.mock("../profile/load", () => ({ loadSkeletonForCommanders: m.skeleton }));
 // The win-condition read (engine plan C1) has its own suite; here it offers nothing.
 vi.mock("./wincon", () => ({ loadWinconSets: async () => [] }));
-vi.mock("../edhrec/build-support", () => ({ loadBuildSupport: m.build }));
+// The real rule (`readBuild`, `overlayBuild`), with the stored-page read replaced.
+vi.mock("../edhrec/build-support", async (importActual) => {
+  const actual = await importActual<typeof import("../edhrec/build-support")>();
+  return { ...actual, readBuild: (args: Parameters<typeof actual.readBuild>[0]) => actual.readBuild(args, m.build) };
+});
 vi.mock("../labels/read", () => ({ readLabelRoleSets: m.readLabels }));
 vi.mock("./availability-query", () => ({ loadAvailability: vi.fn(async () => new Map()) }));
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async () => new Map([["rhystic", { liveCents: 3200 }]])) }));
@@ -263,6 +267,17 @@ describe("the chosen build", () => {
     expect(m.build).toHaveBeenCalledWith(commanders[0].oracleId, TAGS, ["Planeswalkers"], "any");
     // Laid over the commander page: the build's cards, then the page's, ranked together.
     expect(m.topCards.mock.calls[0][1]).toEqual(["Doubling Season", "Rhystic Study"]);
+  });
+
+  it("lets the themes asked win over a stored build, and reads a stored build for a path with no answers", async () => {
+    m.build.mockResolvedValue(null);
+    await buildFillPlan("u", commanders, new Set(), {
+      selected: [], env: ON, build: { themes: ["Stored"], join: "all" },
+      answers: { budgetCents: null, bracket: null, cardOracleId: null, themes: ["Asked"], themeJoin: "any" },
+    });
+    expect(m.build).toHaveBeenLastCalledWith(commanders[0].oracleId, TAGS, ["Asked"], "any");
+    await buildFillPlan("u", commanders, new Set(), { selected: [], env: ON, build: { themes: ["Stored"], join: "all" } });
+    expect(m.build).toHaveBeenLastCalledWith(commanders[0].oracleId, TAGS, ["Stored"], "all");
   });
 
   it("reads no build with no theme asked, and keeps the commander page when the read fails", async () => {
