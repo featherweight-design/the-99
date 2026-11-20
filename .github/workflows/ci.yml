@@ -147,6 +147,13 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:constraints
 
+      # drizzle-kit generate diffs from the snapshot that sorts last; the migrator applies in
+      # journal order. When the two disagree nothing else fails until a later generate diffs
+      # against the wrong base (0245 written after 0247, 2026-11-20).
+      - name: Migration journal order and snapshot chain
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:migrations
+
       # A route that renders a figure out of collection_items and is not invalidated
       # by the collection replace serves a stale count until its cache expires. The
       # list it checks against was built by reading and was wrong three rounds running.
