@@ -40,7 +40,7 @@ describe("purgeRuleZeroIn", () => {
   });
 
   it("also deletes a table the account's seat leaves with fewer than two seats, and counts both", async () => {
-    const { tx, deleted } = fakeTx([[{ tableId: "t1" }, { tableId: "t1" }, { tableId: "t2" }], [], [{ id: "a" }], [{ id: "t2" }]]);
+    const { tx, deleted } = fakeTx([[{ tableId: "t1" }, { tableId: "t1" }, { tableId: "t2" }], [], [], [{ id: "a" }], [{ id: "t2" }]]);
     const out = await purgeRuleZeroIn(tx as never, "user_gone");
     expect(deleted).toHaveLength(5);
     expect(deleted[4]).toContain("select count(*) from");
