@@ -8,6 +8,7 @@
 import { useEffect, useRef, useState } from "react";
 import { setFriendDeckPrefsAction } from "../../app/settings/actions";
 import { settingsCopy } from "../../lib/copy/settings";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { SETTINGS_TARGET_HASH, type FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { SECTION_HEAD } from "../social/friends-list";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -45,9 +46,14 @@ function useWashFromHash() {
       washed?.removeAttribute("data-washed");
       washed = el;
       moved = false;
-      el.scrollIntoView({ block: "center" });
+      // The app's own scroll, marked as such so quick return never reads it as the reader's (`app-scroll-marks.test.ts`).
+      const center = () => {
+        noteAppScroll();
+        el.scrollIntoView({ block: "center" });
+      };
+      center();
       el.setAttribute("data-washed", "");
-      for (const ms of [300, 900]) timers.push(window.setTimeout(() => (moved ? undefined : el.scrollIntoView({ block: "center" })), ms));
+      for (const ms of [300, 900]) timers.push(window.setTimeout(() => (moved ? undefined : center()), ms));
       timers.push(window.setTimeout(() => el.removeAttribute("data-washed"), WASH_MS));
     };
     run();
