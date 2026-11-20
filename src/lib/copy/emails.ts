@@ -86,6 +86,14 @@ export const clerkEmailCopy = {
 } as const;
 
 /**
+ * The launch email's open copy questions. Each entry is a question Hugh has not ruled: "subject" (Q1, whether
+ * `launchEmailCopy.subject` stays the recommended placeholder) and "skip-accounts" (Q2, whether to skip addresses that
+ * already have an account; not built). Remove an entry when he rules it, and build skip-accounts if he says yes.
+ * `sendLaunchBatch` refuses to send, dry runs included, while any remain.
+ */
+export const LAUNCH_COPY_OPEN: readonly ("subject" | "skip-accounts")[] = ["subject", "skip-accounts"];
+
+/**
  * The launch email (launch email R2c, 2026-11-18): one email to everyone on `launch_list`, sent once by
  * `sendLaunchBatch` (`src/lib/flyer/launch-send.ts`), pressed from /admin/invites. `subject` is Q1, still Hugh's: the recommended option until he rules.
  */
