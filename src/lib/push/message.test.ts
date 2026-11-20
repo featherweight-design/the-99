@@ -56,7 +56,7 @@ describe("a Wizards post (Announcements UI 3b)", () => {
   it("one post: its title and summary, the hero, tagged by its kind, landing on its out route", () => {
     expect(toMessage([post("abc", "Secret Lair x Jaws")])).toEqual({
       title: "Secret Lair x Jaws", body: "A drop of five.", route: "/out/wizards/abc", tag: "secret-lair", keys: ["post:abc"],
-      openCard: null, openCombo: false, image: "https://images.ctfassets.net/h.jpg",
+      openCard: null, openCombo: false, openVariant: null, image: "https://images.ctfassets.net/h.jpg",
     });
   });
   it("a post with no summary says where a tap goes; a hero not on https is never sent", () => {
@@ -134,7 +134,7 @@ describe("a seat notice (Rule 0 revisions, item 6)", () => {
   it("says who seated you, lands on the table, and carries no image", () => {
     expect(toMessage([seat(T1)])).toEqual({
       title: "Colin seated you", body: "At Thursday night’s table. Pick your deck there.", route: `/friends/table/${T1}`,
-      tag: `rule_zero_seat:table:${T1}`, keys: [`table:${T1}`], openCard: null, openCombo: false, image: null,
+      tag: `rule_zero_seat:table:${T1}`, keys: [`table:${T1}`], openCard: null, openCombo: false, openVariant: null, image: null,
     });
   });
   it("names the deck the seat already holds", () => {
