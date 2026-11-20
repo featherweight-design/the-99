@@ -26,6 +26,7 @@ import {
 } from "../../app/friends/actions";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { PodCard } from "./pod-card";
+import { BAND, PANEL } from "./section-panel";
 import { PodAddFriends } from "./pod-add-friends";
 import { compareNames, type ThirdPartyName } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "./social-toast";
@@ -226,8 +227,8 @@ export function PodsPane({
     : [];
 
   return (
-    <section aria-labelledby="pods-head" className="mt-[24px] md:mt-[34px]" data-testid="pods-pane">
-      <div className="flex min-h-[44px] items-center justify-between [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]">
+    <section aria-labelledby="pods-head" className={PANEL} data-testid="pods-pane">
+      <div className={BAND}>
         <h2 id="pods-head" className="m-0 font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)]">{copy.head(shown.length)}</h2>
         <button
           ref={newPodRef}
@@ -243,6 +244,7 @@ export function PodsPane({
           {copy.newPod}
         </button>
       </div>
+      <div className="flex flex-col gap-[12px] p-[12px] md:p-[14px] [&>*]:mt-0!">
       {creating ? (
         <form
           className="mt-[12px] flex flex-col gap-[8px] rounded-[12px] bg-[color:var(--surface-rail)] p-[14px] [border:1px_solid_var(--border-strong)] md:mt-[14px] md:px-[18px] md:py-[16px]"
@@ -341,6 +343,7 @@ export function PodsPane({
         />
       ) : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
+    </div>
     </section>
   );
 }

@@ -18,6 +18,7 @@ import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
 import { Face } from "./face";
+import { BAND, PANEL } from "./section-panel";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useMomentHold } from "../../lib/moments/hold";
 
@@ -63,15 +64,15 @@ export function FriendsList({
     if (shrank && (document.activeElement === null || document.activeElement === document.body)) head.current?.focus();
   }, [friends.length]);
   return (
-    <section aria-labelledby="friends-head" className="mt-[26px] md:mt-[34px]">
-      <h2 id="friends-head" ref={head} tabIndex={-1} className={`${SECTION_HEAD} outline-none`}>{f.head(friends.length)}</h2>
+    <section aria-labelledby="friends-head" className={PANEL}>
+      <h2 id="friends-head" ref={head} tabIndex={-1} className={BAND}>{f.head(friends.length)}</h2>
       {friends.length === 0 ? (
         <div className="mt-[12px] flex flex-col gap-[6px] rounded-[12px] px-[18px] py-[20px] md:mt-[14px] md:px-[28px] md:py-[26px] [border:1px_dashed_var(--border-strong)]">
           <p className="m-0 font-display text-[16px] font-bold text-[color:var(--fg)] md:text-[17px]">{f.emptyTitle}</p>
           <p className="m-0 max-w-[560px] text-[13px] leading-[1.55] md:text-[13.5px] text-[color:var(--fg-muted)]">{emptyBody ?? f.emptyBody}</p>
         </div>
       ) : (
-        <ul className="m-0 list-none p-0">
+        <ul className="m-0 list-none p-0 [&>li:last-child]:[border-bottom:0]">
           {friends.map((friend) => (
             <FriendRow
               key={friend.publicId}
@@ -105,7 +106,7 @@ function FriendRow({
   linkable: boolean;
 }) {
   return (
-    <li className="relative flex h-[60px] items-center gap-[12px] [border-bottom:1px_solid_var(--border)]" data-friend-row="">
+    <li className="relative flex h-[60px] items-center gap-[12px] pl-[14px] pr-[4px] [border-bottom:1px_solid_var(--border)] md:pl-[16px]" data-friend-row="">
       <Face name={friend.displayName} commander={friend.commander} size={40} />
       <div className="flex min-w-0 flex-1 flex-col gap-[1px]">
         {linkable ? (

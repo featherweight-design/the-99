@@ -454,7 +454,7 @@ export function FriendsView({
           inviteCount={invites && !friendLinks ? <InviteCountLine count={invites} className="md:text-right" /> : undefined}
           decksSeen={decksSeen}
         />
-        <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_420px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
+        <div data-friends-cols className="min-[73.75rem]:grid min-[73.75rem]:grid-cols-[minmax(0,1fr)_448px] min-[73.75rem]:items-start min-[73.75rem]:gap-x-[44px]">
           <div data-friends-col="left" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">
             {waiting}
             <FriendsList

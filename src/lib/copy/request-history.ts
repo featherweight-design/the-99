@@ -28,4 +28,13 @@ export const historyCopy = {
   exFriends: "Requests with people you’re no longer friends with don’t show here. Add them back and they return.",
   emptyAsked: { title: "You haven’t asked for a spare yet", body: "Ask a friend from a card’s spares in Shopping or on their Spares tab." },
   emptyOfYou: { title: "Nobody has asked you for a spare yet", body: "When a friend asks for one of your spares, it waits on you on Friends." },
+  /** The Friends page's one Requests box (R1d): its tabs, the foot link and a tab's empty state. DRAFT for /copy-review. */
+  box: {
+    label: "Requests",
+    waiting: "Waiting on you",
+    mine: "Your requests",
+    history: "Request history ›",
+    waitingEmpty: { title: "Nothing waiting on you", body: "Friend requests, and friends asking for your spares, land here." },
+    mineEmpty: { title: "Nothing open right now", body: "Ask a friend for a spare from Shopping or their Spares tab." },
+  },
 } as const;
