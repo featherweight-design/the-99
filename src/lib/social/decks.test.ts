@@ -62,7 +62,7 @@ describe("loadFriendDecks", () => {
   it("reads the FRIEND's decks, newest first", async () => {
     await loadFriendDecks("user_viewer", "00000000-0000-4000-8000-000000000002");
     expect(m.resolveFriend).toHaveBeenCalledWith("user_viewer", "00000000-0000-4000-8000-000000000002");
-    expect(m.listDecksWithStats).toHaveBeenCalledWith("user_friend", "newest", expect.objectContaining({ includeProxyStats: true }));
+    expect(m.listDecksWithStats).toHaveBeenCalledWith("user_friend", "newest", expect.objectContaining({ includeProxyStats: true, includeCommanderArt: true }));
   });
 
   it("returns the id, name, commander and count, and nothing else of a deck", async () => {

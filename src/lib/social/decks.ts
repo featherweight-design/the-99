@@ -81,7 +81,9 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown): Prom
  */
 async function visibleDecks(ownerId: string): Promise<DeckListItem[]> {
   const [rows, prefs] = await Promise.all([
-    listDecksWithStats(ownerId, "newest", { includeProxyStats: true }),
+    // `includeCommanderArt`: the tile draws the printing the OWNER'S own /decks tile draws (the deck's pick, else a copy they own),
+    // not the catalog's one arbitrary crop, which also disagreed with this deck's own page.
+    listDecksWithStats(ownerId, "newest", { includeProxyStats: true, includeCommanderArt: true }),
     loadFriendDeckPrefs(ownerId),
   ]);
   return rows.filter((d) => friendCanSeeDeck(d, prefs));
