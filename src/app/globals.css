@@ -743,6 +743,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
    which a display can render it as continuous. 10px/3s peaks at 0.098px/frame,
    about a pixel every 10 frames, which is the slowest that still reads smooth.
    A deviation from the mock, so it is flagged for Design ratification on #148. */
+/* Life tracker (PR 4): the turn ring's four borders trace from the middle of the long edges to the corners. */
+@keyframes ring-trace {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
 @keyframes bob {
   0%, 100% { transform: translate3d(0, 0, 0); }
   50% { transform: translate3d(0, -10px, 0); }
