@@ -1,0 +1,433 @@
+diff --git a/src/components/card-search/search-row.tsx b/src/components/card-search/search-row.tsx
+index e16c9d7..4635741 100644
+--- a/src/components/card-search/search-row.tsx
++++ b/src/components/card-search/search-row.tsx
+@@ -59,7 +59,12 @@ export function SearchRow({
+   onAdd,
+   onKey,
+   rowRef,
++  printingsCount,
++  onPrintings,
+ }: {
++  /** Option R-B (#3002): the card's printing count; 2+ draws the printings press before the +. */
++  printingsCount?: number;
++  onPrintings?: () => void;
+   row: CardSearchRow;
+   /** The query the row answered; empty for a recent card, which draws no match. */
+   query: string;
+@@ -141,6 +146,21 @@ export function SearchRow({
+       >
+         <Bookmark />
+       </span>
++      {onPrintings ? (
++        <button
++          type="button"
++          aria-hidden
++          tabIndex={-1}
++          data-card-search-printings=""
++          onClick={(e) => { e.stopPropagation(); onPrintings(); }}
++          className={`flex h-11 w-11 flex-none cursor-pointer items-center justify-center rounded-[10px] border border-solid border-[color:var(--border-strong)] text-[color:var(--fg)] md:h-[34px] md:w-[34px] md:rounded-[8px] ${(printingsCount ?? 0) > 1 ? "" : "invisible"}`}
++        >
++          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" className="h-[18px] w-[18px] md:h-4 md:w-4">
++            <rect x="7" y="2.8" width="9" height="12.6" rx="1.6" />
++            <path d="M4.4 5.6v10.2a1.6 1.6 0 0 0 1.6 1.6h7.4" />
++          </svg>
++        </button>
++      ) : null}
+       {onAdd ? (
+         <button
+           type="button"
+diff --git a/src/components/cards/card-modal-sheet.tsx b/src/components/cards/card-modal-sheet.tsx
+index fe8b50d..ce70abc 100644
+--- a/src/components/cards/card-modal-sheet.tsx
++++ b/src/components/cards/card-modal-sheet.tsx
+@@ -53,6 +53,8 @@ export type CardModalSheetProps = {
+   caption: string;
+   ownedPrintings: BrowsePrinting[];
+   hasPicker: boolean;
++  /** #3002: the card's catalog printings, from search; null elsewhere. */
++  catalogCount?: number | null;
+   isToken: boolean;
+   tokenNoSet: boolean;
+   pick: PreferredPrinting | null;
+@@ -112,7 +114,7 @@ export type CardModalSheetProps = {
+ };
+ 
+ export function CardModalSheet({
+-  card, preview, resolved, titleId, caption, ownedPrintings, hasPicker, isToken, tokenNoSet, pick, deckScope, total, position,
++  card, preview, resolved, titleId, caption, ownedPrintings, hasPicker, catalogCount = null, isToken, tokenNoSet, pick, deckScope, total, position,
+   deckPage, deckName, buyUrl, buyLabel, min, full, zoomed, viewOpen, cramped, gentle, sheetFull, teaserHeight, closeReserve, back,
+   onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
+   openCombo, onOpenCombo, onSelectCard, expanded, triggerAria, onToggleExpanded, fitsDoor,
+@@ -420,7 +422,7 @@ export function CardModalSheet({
+             // Set + collector number of the printing on screen (§Phase 5) — the art is a
+             // specific printing now, so the caption names it. A token's details draw this cell
+             // alone, across the grid, since a token has no rarity, identity or owned count here.
+-            <MetaCell label="Set" value={caption} span={isToken ? 2 : undefined} />
++            <MetaCell label="Set" value={caption} span={isToken ? 2 : undefined} hint={catalogCount === 1 ? "The only printing" : undefined} />
+           )}
+           {isToken ? null : (
+             <>
+@@ -443,7 +445,7 @@ export function CardModalSheet({
+               ref={mobileTriggerRef}
+               controls={REGION_MOBILE}
+               caption={caption}
+-              count={ownedPrintings.length}
++              count={ownedPrintings.length} all={catalogCount}
+               picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
+               expanded={expanded}
+               expandAria={triggerAria}
+@@ -462,14 +464,14 @@ export function CardModalSheet({
+               ref={desktopTriggerRef}
+               controls={REGION_DESKTOP}
+               caption={caption}
+-              count={ownedPrintings.length}
++              count={ownedPrintings.length} all={catalogCount}
+               picked={pick === null ? null : deckScope ? deckPrintingsCopy.picker.pinned : pickerCopy.triggerPicked}
+               expanded={expanded}
+               expandAria={triggerAria}
+               onClick={onToggleExpanded}
+             />
+           ) : tokenNoSet ? null : (
+-            <MetaField label="Set" value={caption} />
++            <MetaField label="Set" value={caption} hint={catalogCount === 1 ? "The only printing" : undefined} />
+           )}
+           {isToken ? null : (
+             <>
+@@ -569,9 +571,9 @@ export function CardModalSheet({
+ }
+ 
+ function MetaCell({
+-  label, value, identity, quantity, rarity, span,
++  label, value, identity, quantity, rarity, span, hint,
+ }: {
+-  label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean;
++  label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean; hint?: string;
+   /** 2 when the Set cell has been promoted out and an odd cell would leave a hole. */
+   span?: 2;
+ }) {
+@@ -610,13 +612,14 @@ function MetaCell({
+           {value}
+         </span>
+       </div>
++      {hint ? <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--fg-faint)" }}>{hint}</div> : null}
+     </div>
+   );
+ }
+ 
+ function MetaField({
+-  label, value, identity, quantity, rarity,
+-}: { label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean }) {
++  label, value, identity, quantity, rarity, hint,
++}: { label: string; value: string; identity?: string[]; quantity?: boolean; rarity?: boolean; hint?: string }) {
+   return (
+     <div>
+       {/* §Meta Label desktop: mono 10px, letter-spacing 0.14em, uppercase, --fg-faint */}
+@@ -646,6 +649,7 @@ function MetaField({
+           {value}
+         </span>
+       </div>
++      {hint ? <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--fg-faint)" }}>{hint}</div> : null}
+     </div>
+   );
+ }
+@@ -654,12 +658,12 @@ function MetaField({
+  * The third line both triggers share: `N printings you own ▾` before a pick, and the brand
+  * diamond + `Your pick · of N ▾` after one.
+  */
+-function TriggerHint({ count, picked, expanded }: { count: number; picked: string | null; expanded: boolean }) {
++function TriggerHint({ count, picked, expanded, all = null }: { count: number; picked: string | null; expanded: boolean; all?: number | null }) {
+   const chevron = <Chevron kind="disclosure" open={expanded} />;
+   if (picked === null) {
+     return (
+       <div className="font-mono text-[11px] mt-[4px]" style={{ color: "var(--accent-text)" }}>
+-        {pickerCopy.triggerCount(count)} {chevron}
++        {all === null ? pickerCopy.triggerCount(count) : count > 0 ? `${all} printings · you own ${count}` : `${all} printings`} {chevron}
+       </div>
+     );
+   }
+@@ -673,7 +677,7 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
+         {picked}
+       </span>
+       <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
+-        {pickerCopy.triggerPickedOf(count)} {chevron}
++        {all === null ? pickerCopy.triggerPickedOf(count) : `· ${all} printings`} {chevron}
+       </span>
+     </div>
+   );
+@@ -684,8 +688,9 @@ function TriggerHint({ count, picked, expanded }: { count: number; picked: strin
+  * cancels the padding so the meta row's 26px gap rhythm is unchanged.
+  */
+ function PickerTrigger({
+-  ref, controls, caption, count, picked, expanded, onClick, expandAria,
++  ref, controls, caption, count, picked, expanded, onClick, expandAria, all = null,
+ }: {
++  all?: number | null;
+   ref: React.Ref<HTMLButtonElement>;
+   controls: string;
+   caption: string;
+@@ -713,7 +718,7 @@ function PickerTrigger({
+         {pickerCopy.triggerLabel}
+       </div>
+       <div className="mt-[5px] text-[14px]" style={{ color: "var(--fg)" }}>{caption}</div>
+-      <TriggerHint count={count} picked={picked} expanded={expanded} />
++      <TriggerHint count={count} picked={picked} expanded={expanded} all={all} />
+     </button>
+   );
+ }
+@@ -724,8 +729,9 @@ function PickerTrigger({
+  * substitute for the art panel.
+  */
+ function MobileSetRow({
+-  ref, controls, caption, count, picked, expanded, imageUri, colorIdentity, onClick, expandAria,
++  ref, controls, caption, count, picked, expanded, imageUri, colorIdentity, onClick, expandAria, all = null,
+ }: {
++  all?: number | null;
+   ref: React.Ref<HTMLButtonElement>;
+   controls: string;
+   caption: string;
+@@ -772,7 +778,7 @@ function MobileSetRow({
+           {pickerCopy.triggerLabel}
+         </span>
+         <span className="block mt-[3px] text-[13px]" style={{ color: "var(--fg)" }}>{caption}</span>
+-        <TriggerHint count={count} picked={picked} expanded={expanded} />
++        <TriggerHint count={count} picked={picked} expanded={expanded} all={all} />
+       </span>
+     </button>
+   );
+diff --git a/src/components/cards/card-modal.tsx b/src/components/cards/card-modal.tsx
+index b4bb6f2..422610d 100644
+--- a/src/components/cards/card-modal.tsx
++++ b/src/components/cards/card-modal.tsx
+@@ -107,7 +107,10 @@ export function CardModal({
+   rise = false,
+   dropping = false,
+   returnFocusRef,
++  catalogPrintings = null,
+ }: {
++  /** #3002: every catalog printing of the card, from search. Null elsewhere (today's picker). */
++  catalogPrintings?: BrowsePrinting[] | null;
+   card: BrowseCard;
+   /**
+    * The swap tools' door (addendum §2): drawn under the price tag in the desktop art column, and as
+@@ -335,7 +338,8 @@ export function CardModal({
+   // display:none one is a no-op, so Escape hands focus to whichever is actually on screen.
+   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
+   const desktopTriggerRef = useRef<HTMLButtonElement>(null);
+-  const [expanded, setExpanded] = useState(false);
++  const [expanded, setExpanded] = useState<boolean>((globalThis as any).__EXPANDED ?? false);
++  const [previewAt, setPreviewAt] = useState<PreferredPrinting | null>((globalThis as any).__PREVIEW ?? null);
+   // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
+   const [zoomed, setZoomed] = useState(false);
+   // The neighbor plates' own threshold: see `NEIGHBOR_MIN_WIDTH`.
+@@ -397,7 +401,7 @@ export function CardModal({
+     if (landsFull) targets?.takeFull("find-a-deck");
+   }, [landsFull, targets]);
+   // A combo open has the phone's sheet at the full details column, where the combo block draws.
+-  const [startsFull] = useState(() => narrow && openCombo);
++  const [startsFull] = useState(() => (globalThis as any).__FULL ?? (narrow && openCombo));
+ 
+   // THE DOOR STRIP'S HEIGHT, added to the teaser's fixed 280 (`useSheetSnap`): the stand-ins door's strip at the sheet's
+   // head where a card carries one, MEASURED: a renderer can draw nothing for a card (the door does for a locked one), and a
+@@ -554,7 +558,7 @@ export function CardModal({
+   // Everything the modal shows about the current printing — art, caption, shown-now badge —
+   // reads from this one object, so an optimistic pick moves all three together or none.
+   const preview = useMemo<BrowseCard>(() => {
+-    const at = picked ? null : openAtPrinting;
++    const at = previewAt ?? (picked ? null : openAtPrinting);
+     // A finish with no printing (a list card its holder owns none of): the reader's own printing, in the list's finish.
+     if (at && at.setCode === undefined) {
+       const next = { ...card, preferredPrinting: effective(pick), printings: card.printings.map((p) => ({ ...p, viewedFinish: at.finish })) };
+@@ -731,7 +735,7 @@ export function CardModal({
+         ? row.flavorName
+         : null;
+     return { ...card, printings, preferredPrinting: at, printedName: renamed };
+-  }, [card, pick, picked, openAtPrinting, effective, deckScope]);
++  }, [card, pick, picked, openAtPrinting, previewAt, effective, deckScope]);
+   const resolved = resolvedPrinting(preview);
+   /**
+    * The art a list behind this modal should draw once `next` is the card's preference.
+@@ -762,7 +766,10 @@ export function CardModal({
+   const isToken = card.kind === "token";
+   // A token has no Collection-wide printing preference to write, so its picker is the DECK's alone (token
+   // printings TP2): drawn only where a deck can save the pick.
+-  const hasPicker = ownedPrintings.length > 1
++  const ownedKeys = new Set(ownedPrintings.map((p) => printingKey(p)));
++  const others = catalogPrintings ? catalogPrintings.filter((p) => !ownedKeys.has(printingKey(p))) : null;
++  const catalogCount = catalogPrintings ? catalogPrintings.length : null;
++  const hasPicker = (catalogCount !== null && catalogCount > 1) || ownedPrintings.length > 1
+     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
+   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
+   const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
+@@ -975,7 +982,9 @@ export function CardModal({
+ 
+   // The base resolves off `preview`, so it names the printing actually on screen; the count
+   // is of what the reader OWNS, so an injected row is art and not a holding.
+-  const caption = printingCaption(preview, ownedPrintings);
++  // #3002: a previewed printing you don't own is named alone (no `+N more`, which counts what you hold).
++  const previewOther = previewAt !== null && !ownedPrintings.some((p) => printingKey(p) === printingKey(previewAt));
++  const caption = previewOther ? `${previewAt!.setCode.toUpperCase()} · ${previewAt!.collectorNumber}` : printingCaption(preview, ownedPrintings);
+   // A token's details show no card, so the button names the token; in a deck the pick is the deck's.
+   const triggerAria = deckScope
+     ? deckPrintingsCopy.picker.triggerAria(ownedPrintings.length, caption, isToken ? card.name : undefined)
+@@ -1000,7 +1009,9 @@ export function CardModal({
+       notice={deckScope && saveFailed ? deckPrintingsCopy.picker.failed : null}
+       cardName={card.name}
+       colorIdentity={card.colorIdentity}
+-      onPick={onPick}
++      onPick={(p) => { setPreviewAt(null); onPick(p); }}
++      others={others ?? undefined}
++      onPreview={(p) => setPreviewAt({ setCode: p.setCode, collectorNumber: p.collectorNumber, imageUri: p.imageUri, setName: p.setName } as any)}
+       onReset={onReset}
+       onForget={onClearPick}
+       onAnnounce={setAnnouncement}
+@@ -1207,7 +1218,7 @@ export function CardModal({
+             over the snap until the release, and the top transitions to whichever snap it chose. */}
+         <CardModalSheet
+           card={card} preview={preview} resolved={resolved} titleId={titleId} caption={caption} ownedPrintings={ownedPrintings}
+-          hasPicker={hasPicker} isToken={isToken} tokenNoSet={tokenNoSet} pick={pick} deckScope={deckScope} total={total} position={position}
++          hasPicker={hasPicker} catalogCount={catalogCount} isToken={isToken} tokenNoSet={tokenNoSet} pick={pick} deckScope={deckScope} total={total} position={position}
+           deckPage={deckPage} deckName={deckName} buyUrl={buyUrl} buyLabel={buyLabel}
+           min={min} full={full} zoomed={zoomed} viewOpen={viewOpen} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
+           teaserHeight={teaserHeight} closeReserve={closeReserve} back={back}
+diff --git a/src/components/cards/printing-region.tsx b/src/components/cards/printing-region.tsx
+index ab9a7db..debb5cc 100644
+--- a/src/components/cards/printing-region.tsx
++++ b/src/components/cards/printing-region.tsx
+@@ -41,7 +41,7 @@ export function printingKey(p: { setCode: string; collectorNumber: string }): st
+ type FinishFilter = "all" | "foil" | "nonfoil";
+ 
+ /** A printing entry, plus the pick the user no longer owns (quantity 0, not selectable). */
+-type Entry = BrowsePrinting & { dormant: boolean };
++type Entry = BrowsePrinting & { dormant: boolean; other?: boolean };
+ 
+ /**
+  * Etched is a foil treatment, so the chips count it as foil. Splitting it out would give a
+@@ -53,6 +53,7 @@ function foilCount(p: BrowsePrinting): number {
+ 
+ /** Decision 9: a plain nonfoil printing produces no finish string at all. */
+ function quantityLabel(p: Entry): string {
++  if (p.other) return "not owned";
+   if (p.dormant) return copy.dormantQty;
+   const foil = foilCount(p);
+   const nonfoil = p.finishes.nonfoil ?? 0;
+@@ -103,6 +104,12 @@ type ArtRegionProps = {
+   cardName: string;
+   colorIdentity: string[];
+   onPick: (p: BrowsePrinting) => void;
++  /**
++   * Alternate printings (#3002): the catalog's printings of this card the reader does NOT own, drawn after the
++   * owned ones. Selecting one previews it (art, Set field, price) and stores nothing. Absent, the region is today's.
++   */
++  others?: BrowsePrinting[];
++  onPreview?: (p: BrowsePrinting) => void;
+   onReset: () => void;
+   onForget: () => void;
+   onAnnounce: (message: string) => void;
+@@ -247,16 +254,19 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+         .sort((a, b) => rank.get(a.scryfallId!)! - rank.get(b.scryfallId!)!),
+       ...loaded.filter((p) => p.scryfallId == null || !rank.has(p.scryfallId)),
+     ];
+-    if (dormantPick === null) return owned;
++    const rest: Entry[] = props.role === "choose" ? [] : (props.others ?? []).map((p) => ({ ...p, dormant: false, other: true }));
++    if (dormantPick === null) return [...owned, ...rest];
+     // The same comparator the list is already sorted by, so re-acquiring the printing puts
+     // a real tile exactly where the dormant one stood — comparing set codes alone would drop
+     // it after every other printing from the same set.
+     const at = owned.findIndex((p) => comparePrintings(p, dormantPick) > 0);
+     const out = [...owned];
+     out.splice(at === -1 ? owned.length : at, 0, dormantPick);
+-    return out;
+-  }, [printings, dormantPick, shortList]);
++    return [...out, ...(props.role === "choose" ? [] : (props.others ?? []).map((p) => ({ ...p, dormant: false, other: true })))];
++    // eslint-disable-next-line react-hooks/exhaustive-deps
++  }, [printings, dormantPick, shortList, props.role === "choose" ? null : props.others]);
+ 
++  const hasOthers = props.role !== "choose" && (props.others?.length ?? 0) > 0;
+   const overflow = entries.length > OVERFLOW_THRESHOLD;
+   // The phone's row is one run of tiles; set headers only make sense in the grid.
+   // A short list is one ordered run: set headers would re-sort its tiles and move them on Show all.
+@@ -346,6 +356,26 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+   // Past the threshold the tiles are grouped under set headers; below it they are one flat
+   // grid in the order aggregateCollection produced.
+   const groups = useMemo(() => {
++    if (hasOthers) {
++      // #3002: yours first, as one group; then every other printing, by set past the threshold.
++      const mine = visible.filter((p) => !p.other);
++      const rest = visible.filter((p) => p.other);
++      const out: { key: string; label: string; code: string; releasedAt: string | null; items: Entry[]; head?: string }[] = [];
++      if (mine.length > 0) out.push({ key: "yours", label: "", code: "", releasedAt: null, items: mine, head: `In your collection · ${mine.length}` });
++      if (!grouped || rest.length <= OVERFLOW_THRESHOLD) {
++        if (rest.length > 0) out.push({ key: "other", label: "", code: "", releasedAt: null, items: rest, head: mine.length > 0 ? `Other printings · ${rest.length}` : undefined });
++        return out;
++      }
++      const by = new Map<string, { key: string; label: string; code: string; releasedAt: string | null; items: Entry[] }>();
++      for (const p of rest) {
++        const g = by.get(p.setCode);
++        if (g) g.items.push(p);
++        else by.set(p.setCode, { key: "o-" + p.setCode, label: p.setName ?? p.setCode, code: p.setCode, releasedAt: p.releasedAt, items: [p] });
++      }
++      const sets = [...by.values()].sort(compareSetGroups);
++      if (mine.length > 0 && sets[0]) (sets[0] as any).lead = `Other printings · ${rest.length}`;
++      return [...out, ...sets];
++    }
+     if (!grouped) return [{ key: "", label: "", code: "", releasedAt: null as string | null, items: visible }];
+     const byCode = new Map<string, { key: string; label: string; code: string; releasedAt: string | null; items: Entry[] }>();
+     for (const p of visible) {
+@@ -365,7 +395,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+       });
+     }
+     return [...byCode.values()].sort(compareSetGroups);
+-  }, [visible, grouped]);
++  }, [visible, grouped, hasOthers]);
+ 
+   /** Selectable entries in render order — the roving-tabindex sequence. Dormant is excluded. */
+   const navigable = useMemo(
+@@ -433,6 +463,11 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+       if (chosen) props.onPick(chosen);
+       return;
+     }
++    if ((p as Entry).other) {
++      props.onPreview?.(p);
++      props.onAnnounce(`Showing ${p.setName ?? p.setCode}, number ${p.collectorNumber}. Not in your collection.`);
++      return;
++    }
+     props.onPick(p);
+     props.onAnnounce(
+       deckScope
+@@ -485,6 +520,12 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+             ? props.intro
+             : deckScope
+               ? preferred === null ? deckCopy.regionIntro(printings.length) : deckCopy.regionIntroPicked
++              : hasOthers
++                ? printings.length === 0
++                  ? `${entries.length} printings. Select one to see it here.`
++                  : preferred === null
++                    ? `${entries.length} printings. Pick one of yours to represent this card, or select any to see it here.`
++                    : copy.regionIntroPicked
+               : preferred === null ? copy.regionIntro(printings.length) : copy.regionIntroPicked}
+         </p>
+         {props.role !== "choose" && !deckScope && preferred !== null && (
+@@ -545,7 +586,7 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+           />
+           {/* The chip geometry, not a chip component: single-select, no dismiss ✕. A catalog
+               printing's finishes are not held counts, so the choose role has no finish chips. */}
+-          {!choose && <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
++          {!choose && !hasOthers && <div className="flex flex-wrap items-center gap-[6px] md:gap-[8px]">
+             <FinishChip label={copy.filterAll(counts.all)} active={finish === "all"} onClick={() => setFinish("all")} />
+             <FinishChip label={copy.filterFoil(counts.foil)} active={finish === "foil"} onClick={() => setFinish("foil")} />
+             <FinishChip label={copy.filterNonFoil(counts.nonfoil)} active={finish === "nonfoil"} onClick={() => setFinish("nonfoil")} />
+@@ -578,7 +619,12 @@ export function PrintingRegion(props: ArtRegionProps | ChooseRegionProps) {
+       <div id={id} role="radiogroup" aria-label={choose ? chooseCopy.regionLabel : copy.regionLabel} className={visible.length === 0 || (selectMode && !overflow) ? "" : selectMode ? "mt-[12px]" : "mt-[16px]"}>
+         {groups.map((g) => (
+             <div key={g.key} className={g.key === "" ? "" : "mt-[16px] first:mt-0"}>
+-              {grouped && (
++              {(g as any).lead ? (
++                <div className="mb-[12px] font-mono uppercase text-[10px] md:text-[10.5px] tracking-[0.14em]" style={{ color: "var(--fg-muted)" }}>{(g as any).lead}</div>
++              ) : null}
++              {(g as any).head ? (
++                <div className="mb-[10px] font-mono uppercase text-[10px] md:text-[10.5px] tracking-[0.14em]" style={{ color: "var(--fg-muted)" }}>{(g as any).head}</div>
++              ) : grouped && g.label !== "" && (
+                 <div
+                   className="mb-[8px] font-mono uppercase text-[9.5px] md:text-[10px] tracking-[0.16em]"
+                   style={{ color: "var(--fg-faint)" }}

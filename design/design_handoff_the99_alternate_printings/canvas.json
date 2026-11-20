@@ -1,0 +1,58 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-20T19:26:50Z"
+ },
+ "title": "Alternate printings R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1500,
+   "h": 1680,
+   "title": "Main"
+  },
+  "Search.dc.html": {
+   "x": 1620,
+   "y": 0,
+   "w": 1348,
+   "h": 1156,
+   "title": "Search"
+  },
+  "Unowned.dc.html": {
+   "x": 3088,
+   "y": 0,
+   "w": 1764,
+   "h": 1620,
+   "title": "Unowned"
+  },
+  "Owned.dc.html": {
+   "x": 4972,
+   "y": 0,
+   "w": 1764,
+   "h": 1600,
+   "title": "Owned"
+  },
+  "Single.dc.html": {
+   "x": 6856,
+   "y": 0,
+   "w": 1250,
+   "h": 994,
+   "title": "Single"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Search.dc.html",
+  "Unowned.dc.html",
+  "Owned.dc.html",
+  "Single.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
