@@ -76,11 +76,19 @@ export const TaxIcon = (props: IconProps) => (
   </Icon>
 );
 
-/** The counters with official art: a file in `public/tracker/`, painted in the surrounding text colour through a mask. */
+/**
+ * The counters with official art: a file in `public/tracker/`. Poison, tickets and The Ring are one-colour art, so they
+ * are painted in the surrounding text colour through a mask. Energy is a black badge with a white bolt, which a mask
+ * would flatten to a silhouette, so it is drawn as the image it is.
+ */
 const OFFICIAL_FILE = { poison: "phyrexian", energy: "energy", tickets: "tickets", ring: "ring" } as const;
 
 export function OfficialIcon({ kind, size = 20, className }: { kind: keyof typeof OFFICIAL_FILE; size?: number; className?: string }) {
   const url = `url(/tracker/${OFFICIAL_FILE[kind]}.svg)`;
+  if (kind === "energy") {
+    // eslint-disable-next-line @next/next/no-img-element -- a fixed local SVG; next/image adds nothing
+    return <img src="/tracker/energy.svg" alt="" width={size} height={size} aria-hidden="true" className={className} style={{ flex: "none" }} />;
+  }
   return (
     <span
       aria-hidden="true"
