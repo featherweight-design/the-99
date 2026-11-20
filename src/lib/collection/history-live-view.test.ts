@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { nowHolderNames, type HistoryLive } from "./history-live-view";
+import { cardsWithChoice, nowHolderNames, type HistoryLive } from "./history-live-view";
 
 const live = (...ids: string[]): HistoryLive => ({ change: true, holders: ids.map((id) => ({ id, name: `Deck ${id}` })) });
 
@@ -20,5 +20,14 @@ describe("nowHolderNames", () => {
 
   it("names them when a holder was added beside the one the record named", () => {
     expect(nowHolderNames(["a"], live("a", "b"))).toEqual(["Deck a", "Deck b"]);
+  });
+});
+
+describe("cardsWithChoice", () => {
+  const noChoice: HistoryLive = { change: false, holders: [] };
+  it("counts distinct cards whose live read says Change applies, and skips unread ones", () => {
+    const l = { a: live("x"), b: noChoice, c: live("y") };
+    expect(cardsWithChoice(["a", "a", "b", "c", "d"], l)).toEqual(["a", "c"]);
+    expect(cardsWithChoice(["a"], {})).toEqual([]);
   });
 });

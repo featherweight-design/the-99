@@ -14,3 +14,17 @@ export function nowHolderNames(wentDeckIds: readonly string[], live: HistoryLive
   if (live.holders.length === went.size && live.holders.every((h) => went.has(h.id))) return null;
   return live.holders.map((h) => h.name);
 }
+
+/**
+ * Move a copy (#2980), large entries: the cards of an entry that still have a choice, from its placed card ids and the live read.
+ * Distinct, in the order given; a card with no live read yet is not counted (the link waits for it).
+ */
+export function cardsWithChoice(oracleIds: readonly string[], live: Readonly<Record<string, HistoryLive>>): string[] {
+  return [...new Set(oracleIds)].filter((id) => live[id]?.change === true);
+}
+
+/**
+ * The most ids one read takes: a bound on the wire. One page is up to 50 entries: single-card ones plus the placed cards of
+ * multi-card ones (each listed up to HISTORY_MULTI_IDS_MAX). Ids past it are left for the entry's own load when it opens.
+ */
+export const HISTORY_LIVE_MAX = 500;

@@ -216,10 +216,19 @@ export type HistoryListEntry = {
    * line can ask the live read and compare. Absent on every entry of more than one row (their rows carry their own).
    */
   single?: { oracleId: string; wentDeckIds: string[] };
+  /**
+   * Move a copy (#2980): for an entry of MORE than one row, the distinct cards that kept a held placement (a brew's read has no
+   * Change), at most `HISTORY_MULTI_IDS_MAX`, so the page's one live read can count how many still have a choice. `capped` when
+   * more were placed than listed: the count is then drawn only once the entry is opened and its rows are read.
+   */
+  multi?: { oracleIds: string[]; capped: boolean };
 };
 
+/** The most placed cards one multi-card entry lists on the page payload (the rest is read when the entry opens). */
+export const HISTORY_MULTI_IDS_MAX = 100;
+
 /** An entry as read, with the deck ids its source and its rows name still to be resolved to names. */
-type Listed = { entry: HistoryListEntry; wentIds: string[]; wentSoft: boolean; firstOracleId: string | null };
+type Listed = { entry: HistoryListEntry; wentIds: string[]; wentSoft: boolean; firstOracleId: string | null; placedIds: string[] };
 
 /** The player's own decks among `ids`, as id to name: ONE read, and none for an empty list. */
 async function livingDecks(userId: string, ids: string[]): Promise<Map<string, string>> {
@@ -242,7 +251,7 @@ async function withDeckLines(
     ...listed.flatMap((l) => [...(cartSourceDecks(l.entry.source) ?? []), ...l.wentIds]),
     ...extraIds,
   ]);
-  const entries = listed.map(({ entry, wentIds, wentSoft, firstOracleId }) => {
+  const entries = listed.map(({ entry, wentIds, wentSoft, firstOracleId, placedIds }) => {
     const cart = cartSourceDecks(entry.source);
     return {
       ...entry,
@@ -250,6 +259,9 @@ async function withDeckLines(
       ...(wentIds.length > 0 ? { wentTo: { decks: cartDecksOf(wentIds, living), soft: wentSoft } } : {}),
       // One row: its ids ARE the entry's `went_decks`.
       ...(entry.rowCount === 1 && firstOracleId ? { single: { oracleId: firstOracleId, wentDeckIds: wentIds } } : {}),
+      ...(entry.rowCount > 1 && placedIds.length > 0
+        ? { multi: { oracleIds: placedIds.slice(0, HISTORY_MULTI_IDS_MAX), capped: placedIds.length > HISTORY_MULTI_IDS_MAX } }
+        : {}),
     };
   });
   return { entries, living };
@@ -279,6 +291,7 @@ type ListRow = {
   // The deck ids the rows' `wentTo` name, first appearance first, and whether EVERY placed row is a brew's read (one held row makes it false).
   went_decks: string[] | null; went_soft: boolean;
   first_oracle_id: string | null;
+  placed_oracle_ids: string[] | null;
   rows?: HistoryRow[];
   sync_summary?: unknown;
 };
@@ -373,7 +386,16 @@ export const listColumns = sql`
     from jsonb_array_elements(h.rows) as r(v) where r.v -> 'wentTo' is not null
   ) as went_soft,
   h.rows -> 0 ->> 'name' as first_name,
-  h.rows -> 0 ->> 'oracleId' as first_oracle_id
+  h.rows -> 0 ->> 'oracleId' as first_oracle_id,
+  -- Move a copy: the distinct cards of a multi-row entry that kept a HELD placement, one more than the cap so the list can say it was cut.
+  case when jsonb_array_length(h.rows) > 1 then (
+    select coalesce(jsonb_agg(p.oid), '[]'::jsonb) from (
+      select distinct r.v ->> 'oracleId' as oid
+      from jsonb_array_elements(h.rows) as r(v)
+      where r.v -> 'wentTo' is not null and coalesce(r.v -> 'wentTo' ->> 'soft', '') <> 'true'
+      order by 1 limit ${sql.raw(String(HISTORY_MULTI_IDS_MAX + 1))}
+    ) p
+  ) end as placed_oracle_ids
 `;
 
 /**
@@ -395,7 +417,7 @@ const inWindow = (userId: string) => sql`
 `;
 
 function listedOf(r: ListRow): Listed {
-  return { entry: toListEntry(r), wentIds: r.went_decks ?? [], wentSoft: r.went_soft === true, firstOracleId: r.first_oracle_id };
+  return { entry: toListEntry(r), wentIds: r.went_decks ?? [], wentSoft: r.went_soft === true, firstOracleId: r.first_oracle_id, placedIds: (r.placed_oracle_ids ?? []).filter((x) => UUID_RE.test(x)) };
 }
 
 function toListEntry(r: ListRow): HistoryListEntry {
