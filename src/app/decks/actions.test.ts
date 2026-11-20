@@ -1458,7 +1458,7 @@ describe("logGame", () => {
         logGame("deck_1", { result: "loss", podSize: 4, worked: [], hurt: [], opponents, table, ...over });
       const seatsWritten = () => stub.state.insertCalls.filter((c) => c.table === "deck_game_opponents")[0]?.values as Record<string, unknown>[] | undefined;
 
-      it("records the table on the game row only when table seats were logged", async () => {
+      it("records the table on the game row when a table seat is logged", async () => {
         const gameRow = () => stub.state.insertCalls.find((c) => c.table === "deck_games")?.values as Record<string, unknown> | undefined;
         expect(await log([{ tableSeat: 2 }])).toEqual({ ok: true });
         expect(gameRow()).toEqual(expect.objectContaining({ ruleZeroTableId: TABLE_ID }));
