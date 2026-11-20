@@ -378,6 +378,21 @@ describe("the order a precon start's readouts are read in", () => {
   });
 });
 
+// A revert that names no pick (History's Revert, a removal's Put back) undoes the pick its own entry made. The rules above hold
+// either way; WHAT DECIDES the outcome is the revert reading the entry's own record, and before the deck check reads its
+// "before". Pinned in the source, as the precon readouts above are, so taking the wiring out fails here.
+describe("a revert undoes its entry's own pick, in the source (#2983)", () => {
+  const src = readFileSync(join(process.cwd(), "src/lib/collection/write.ts"), "utf8");
+
+  it("falls back to the entry's own placements when the press names none, before the deck check's before", () => {
+    const wired = src.indexOf("change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows)");
+    expect(wired).toBeGreaterThanOrEqual(0);
+    expect(src.indexOf("change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows)", wired + 1)).toBe(-1);
+    expect(wired).toBeLessThan(src.indexOf("const claimsBefore = lowered.length > 0"));
+    expect(src.indexOf("restoreToUndo(undo, row.rows)")).toBeGreaterThan(wired);
+  });
+});
+
 describe("planDigest", () => {
   const row = (oracleId: string, before: number | null, after: number | null) => ({
     ...id(oracleId),
