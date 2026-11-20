@@ -7,6 +7,7 @@
  * the visit's `after()` write adds a key, and the page keys the entry on the UTC day, which moves the windows.
  */
 import { announcementsEnabled } from "../announcements/flag";
+import { recordSoftFailure } from "../cache/soft-failure";
 import { loadAnnouncedDeckNames } from "../announcements/collecting-read";
 import { loadEarlyListsBySet, loadEarlySeen } from "../announcements/early-tiles-read";
 import type { UpcomingPayload } from "./announced";
@@ -25,8 +26,14 @@ export async function loadUpcomingPayload(userId: string, now: Date, env: NodeJS
     loadRevealedCommanders(sets.map((s) => s.code)),
     early ? loadEarlyListsBySet(userId, sets, now) : {},
     early ? loadEarlySeen(userId) : [],
-    // A failing names read costs the named tiles only: the set falls back to the none plate and the shipped counts (A2).
-    early ? loadAnnouncedDeckNames(sets).catch((): Record<string, string[]> => ({})) : {},
+    // A failing names read costs the named tiles only: the set falls back to the none plate and the shipped counts (A2),
+    // and the payload is not stored, so the next read retries.
+    early
+      ? loadAnnouncedDeckNames(sets).catch((): Record<string, string[]> => {
+          recordSoftFailure();
+          return {};
+        })
+      : {},
   ]);
   return { sets, commanders, arrivals, early: earlyBySet, earlySeen, names };
 }

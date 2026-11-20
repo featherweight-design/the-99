@@ -238,6 +238,6 @@ export function mergeEarlySet(held: EarlySet | undefined, next: EarlySet): Early
     promised: held.promised === null ? next.promised : next.promised === null ? held.promised : Math.max(held.promised, next.promised),
     released: [...new Set([...(held.released ?? []), ...(next.released ?? [])])],
     releasedLists: (held.releasedLists ?? 0) + (next.releasedLists ?? 0),
-    releasedNames: [...(held.releasedNames ?? []), ...(next.releasedNames ?? [])],
+    ...(held.releasedNames || next.releasedNames ? { releasedNames: [...(held.releasedNames ?? []), ...(next.releasedNames ?? [])] } : {}),
   };
 }
