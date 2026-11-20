@@ -54,9 +54,14 @@ export function parseSitemap(xml: string): SitemapEntry[] {
 
 /** The Announcements posts in a sitemap, each URL once (the first entry wins). */
 export function announcementPosts(xml: string): SitemapEntry[] {
+  return announcementPostsOf(parseSitemap(xml));
+}
+
+/** The same, over entries already parsed (the ingest parses the sitemap once and shares it). */
+export function announcementPostsOf(entries: readonly SitemapEntry[]): SitemapEntry[] {
   const seen = new Set<string>();
   const posts: SitemapEntry[] = [];
-  for (const entry of parseSitemap(xml)) {
+  for (const entry of entries) {
     const url = entry.url.replace(/\/$/, "");
     if (!isAnnouncementPostUrl(url) || seen.has(url)) continue;
     seen.add(url);

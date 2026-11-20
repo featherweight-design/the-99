@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const run = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/announcements/ingest", () => ({ runAnnouncementsIngest: run }));
-vi.mock("../../../../lib/announcements/ingest-store", () => ({ announcementsStore: {} }));
+vi.mock("../../../../lib/announcements/ingest-store", () => ({ announcementsStore: {}, collectingStore: {} }));
 const ping = vi.hoisted(() => vi.fn());
 vi.mock("../../../../lib/cron/heartbeat", () => ({ pingHeartbeat: ping }));
 const { GET } = await import("./route");

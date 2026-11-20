@@ -1765,6 +1765,13 @@
       "when": 1795193515892,
       "tag": "0253_eager_barracuda",
       "breakpoints": true
+    },
+    {
+      "idx": 254,
+      "version": "7",
+      "when": 1795203219276,
+      "tag": "0254_wizards_collecting_posts",
+      "breakpoints": true
     }
   ]
 }
