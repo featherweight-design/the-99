@@ -189,8 +189,11 @@ describe("every model-written text is scanned for a source deck name inside it",
     expect(isModelText("cuts.total")).toBe(false);
     expect(isModelText("cuts.itemsX")).toBe(false);
     expect(isModelText("decks.played.cards[0].name")).toBe(false);
+    expect(isModelText("upgrade.panel.runs[0].pairs[1].cutReason")).toBe(true);
+    expect(isModelText("upgrade.panel.commanders[0].strategies[2].blurb")).toBe(true);
+    expect(isModelText("upgrade.precon")).toBe(false);
     expect(Object.keys(MODEL_TEXT).sort()).toEqual(
-      ["analysis", "cardDetails", "choose", "collection", "commanders", "cuts", "deckCombos", "decks", "fits", "mana", "overview", "suggested", "topOff"],
+      ["analysis", "cardDetails", "choose", "collection", "commanders", "cuts", "deckCombos", "decks", "fits", "mana", "overview", "suggested", "topOff", "upgrade"],
     );
   });
 });
