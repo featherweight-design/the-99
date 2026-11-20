@@ -101,6 +101,9 @@ export function startGame(config: GameConfig): GameState {
   };
 }
 
+/** Leaf types a batch may not carry, checked at runtime because a stored log is not trusted to match the type. */
+const PLAY_MOVES: ReadonlySet<string> = new Set(["endTurn", "end"]);
+
 const seatOf = (s: GameState, seat: number) => s.seats.find((x) => x.seat === seat);
 const finite = (n: number) => Number.isFinite(n) && Number.isInteger(n);
 
@@ -192,7 +195,7 @@ export function reduce(prev: GameState, action: Action): GameState {
   if (isOver(prev)) return prev;
   const s: GameState = structuredClone(prev);
   const entry = s.entries;
-  const leaves: readonly Leaf[] = action.t === "batch" ? action.actions.filter((l) => l.t !== "endTurn" && l.t !== "end") : [action];
+  const leaves: readonly Leaf[] = action.t === "batch" ? action.actions.filter((l) => !PLAY_MOVES.has(l.t)) : [action];
   for (const leaf of leaves) apply(s, leaf);
   s.rounds.push(s.round);
   s.entries += 1;
