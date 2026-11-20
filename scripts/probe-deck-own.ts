@@ -128,7 +128,7 @@ async function run() {
   const titleOf = async () => {
     const { entries } = await listHistory(USER);
     const e = entries.find((x) => x.id === actionId)!;
-    return [historyKindOf(e), entryTitle(e, new Map(entries.map((x) => [x.id, x])), new Date(0)), e.source];
+    return [historyKindOf(e), entryTitle(e, new Map(entries.map((x) => [x.id, x])), new Date(0), "UTC"), e.source];
   };
   check("c · History lists a Deck add titled by the deck", await titleOf(), ["deckAdd", "Added from Probe deck", `deck:${deckId}`]);
   await rows(sql`update decks set name = 'Renamed deck' where id = ${deckId}::uuid`);

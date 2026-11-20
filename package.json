@@ -52,6 +52,7 @@
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
     "probe:launch-scrollbar": "node scripts/probe-launch-scrollbar.mjs",
     "probe:tab-navs": "node scripts/probe-tab-navs.mjs",
+    "probe:history-local-time": "node scripts/probe-history-local-time.mjs",
     "probe:card-swipe-stacking": "node scripts/probe-card-swipe-stacking.mjs",
     "probe:combo-landing": "node scripts/probe-combo-landing.mjs",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",

@@ -337,7 +337,7 @@ export const collectionEditCopy = {
     close: "Close",
   },
   // §F, the history list. The handoff's strings; lines marked (new) have no key there and go to
-  // /copy-review. Dates and times are UTC, spelled by the caller.
+  // /copy-review. Dates and times are the reader's wall clock, spelled by the caller (`history-view.ts`).
   history: {
     heading: "Changes to your collection",
     lede: "Every upload and edit from the last 90 days is listed here. A revert takes a change back as of today.",
@@ -376,8 +376,8 @@ export const collectionEditCopy = {
     /** (new) An opened entry that recorded no rows: a Replace that matched the collection exactly. */
     noRows: "This change didn’t move anything. Your collection already matched.",
     reverted: "Reverted",
-    /** Reads after `reverted` and a separator: "Reverted · by the revert at 15:30". */
-    revertedBy: (when: string) => `by the revert at ${when}`,
+    /** Reads after `reverted` and a separator: "Reverted · by the revert today at 9:30 AM"; `when` is a `whenPhrase`, which carries its own "at". */
+    revertedBy: (when: string) => `by the revert ${when}`,
     undid: (title: string) => `Reverted “${title}”`,
     /** (new) A revert whose own entry is not on this page, so it cannot be titled. */
     undidOlder: "Reverted an earlier change",
@@ -385,6 +385,16 @@ export const collectionEditCopy = {
     agedNote: "That change has aged out of history.",
     today: (date: string) => `Today · ${date}`,
     yesterday: (date: string) => `Yesterday · ${date}`,
+    /** The two to six days before today: "Monday · Nov 16". */
+    weekday: (day: string, date: string) => `${day} · ${date}`,
+    /** An entry's time slot under an hour old. */
+    justNow: "Just now",
+    minAgo: (k: number) => `${k} min ago`,
+    /** The same moments inside a sentence ("by the revert today at 9:30 AM", "From yesterday at 3:15 PM"). */
+    justNowLower: "just now",
+    todayAt: (clock: string) => `today at ${clock}`,
+    yesterdayAt: (clock: string) => `yesterday at ${clock}`,
+    dateAt: (date: string, clock: string) => `${date} at ${clock}`,
     /** `details` is (new): a row whose printing or condition changed with its copies unchanged. */
     groups: { left: "Left", down: "Went down", up: "Went up", new: "New", details: "Details" },
     /** (new) The delta slot of a row whose copies did not move. */

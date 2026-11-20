@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
 import type { HistoryRow } from "../../db/schema";
 import { reveal } from "../../lib/ui/reveal";
@@ -21,6 +21,20 @@ vi.mock("../../app/collection/history-actions", () => ({
 
 const { HistoryList, HistoryEntryItem } = await import("./history-list");
 
+// The browser's zone, which the list adopts once hydrated: pinned, so a run on any machine reads the same clock. Locale is node's (en-US).
+let browserZone = "UTC";
+const realResolved = Intl.DateTimeFormat.prototype.resolvedOptions;
+beforeEach(() => {
+  browserZone = "UTC";
+  vi.spyOn(Intl.DateTimeFormat.prototype, "resolvedOptions").mockImplementation(function (this: Intl.DateTimeFormat) {
+    return { ...realResolved.call(this), timeZone: browserZone };
+  });
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.useRealTimers();
+});
+
 const NOW = Date.parse("2026-10-09T20:00:00Z");
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e1", seq: 5, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
@@ -41,8 +55,8 @@ function draw(entries: HistoryListEntry[], over: Partial<React.ComponentProps<ty
       nextBefore={null}
       nowMs={NOW}
       reachesBack={new Date("2026-10-01T00:00:00Z")}
-      reachesBackLabel="Oct 1"
-      shipLabel="Oct 1"
+      ship={new Date("2026-10-01T00:00:00Z")}
+      timeZone="UTC"
       {...over}
     />,
   );
@@ -62,12 +76,12 @@ describe("HistoryList", () => {
     expect(screen.getByText("+2 copies across 1 card")).toBeTruthy();
     expect(screen.getByText("+64 · −150 copies across 412 cards")).toBeTruthy();
     expect(screen.getByText("manabox-oct.csv", { exact: false })).toBeTruthy();
-    expect(screen.getByText("14:02")).toBeTruthy();
+    expect(screen.getByText("2:02 PM")).toBeTruthy();
     expect(screen.getByText(/Changes from before Oct 1 have aged out/)).toBeTruthy();
   });
 
   it("draws the empty state dated from the ship date, with the foot under it", () => {
-    draw([], { shipLabel: "Oct 9" });
+    draw([], { ship: new Date("2026-10-09T00:00:00Z") });
     expect(screen.getByText("Nothing’s changed yet")).toBeTruthy();
     expect(screen.getByText(/Uploads and edits since Oct 9 show up here/)).toBeTruthy();
     expect(screen.getByText(/History keeps 90 days/)).toBeTruthy();
@@ -199,10 +213,10 @@ describe("HistoryList", () => {
       entry({ id: "e1", revertedBy: "rv", revertedByVisible: true }),
     ]);
     expect(screen.getAllByText(/Reverted/).length).toBeGreaterThan(0);
-    const link = screen.getByRole("link", { name: "by the revert at 15:30" });
+    const link = screen.getByRole("link", { name: "by the revert today at 3:30 PM" });
     expect(link.getAttribute("href")).toBe("#entry-rv");
     // The composed line says "Reverted" once: the status, a separator, then the link.
-    expect(link.parentElement?.textContent).toBe("Reverted · by the revert at 15:30");
+    expect(link.parentElement?.textContent).toBe("Reverted · by the revert today at 3:30 PM");
     expect(screen.getByText("Reverted “Sol Ring”")).toBeTruthy();
   });
 
@@ -298,7 +312,7 @@ describe("HistoryList", () => {
       entry({ id: "rv", kind: "revert", revertsId: "e1", revertsVisible: true, createdAt: new Date("2026-10-09T15:30:00Z"), firstName: null }),
       entry({ id: "e1", kind: "edit", source: "shopping:d1", revertedBy: "rv", revertedByVisible: true, shoppingDeck: { id: "d1", name: "Goblins" } }),
     ]);
-    expect(screen.getByRole("link", { name: "by the revert at 15:30" }).getAttribute("href")).toBe("#entry-rv");
+    expect(screen.getByRole("link", { name: "by the revert today at 3:30 PM" }).getAttribute("href")).toBe("#entry-rv");
     expect(screen.getByText("Reverted “Sol Ring”")).toBeTruthy();
     expect(screen.getByRole("link", { name: "Goblins" })).toBeTruthy();
     // Reverted, so no Revert control of its own; the revert entry keeps one.
@@ -309,7 +323,7 @@ describe("HistoryList", () => {
     const e = entry({ kind: "edit", source: "shopping:d1", shoppingDeck: { id: "d1", name: "Goblins" } });
     render(
       <ul>
-        <HistoryEntryItem e={e} title="Sol Ring" isOpen={false} detail={undefined} onToggle={() => {}} onRevert={() => {}} onRetry={() => {}} anchor={false} />
+        <HistoryEntryItem e={e} title="Sol Ring" isOpen={false} detail={undefined} onToggle={() => {}} onRevert={() => {}} onRetry={() => {}} clock={{ nowMs: NOW, zone: "UTC", locale: "en-US" }} anchor={false} />
       </ul>,
     );
     expect(screen.queryByRole("link")).toBeNull();
@@ -346,5 +360,85 @@ describe("HistoryList", () => {
     expect(scroll).toHaveBeenCalledTimes(1);
     expect(scroll).toHaveBeenCalledWith(document.getElementById("entry-e1"), "center");
     expect(screen.getByRole("button", { expanded: true })).toBeTruthy();
+  });
+});
+
+// The reader's zone, not the store's (#2986): Wed Nov 18 2026, 2:14 PM MST (21:14Z), America/Denver.
+describe("HistoryList in the reader's zone", () => {
+  const DEN_NOW = Date.parse("2026-11-18T21:14:00Z");
+  const ship = new Date("2026-10-01T00:00:00Z");
+  const drawDenver = (entries: HistoryListEntry[], over: Partial<React.ComponentProps<typeof HistoryList>> = {}) => {
+    browserZone = "America/Denver";
+    return render(<HistoryList initial={entries} nextBefore={null} nowMs={DEN_NOW} reachesBack={ship} ship={ship} timeZone="America/Denver" {...over} />);
+  };
+
+  it("files the 11:40 PM entry (06:40Z) under Yesterday, with the clock in Denver", () => {
+    drawDenver([entry({ id: "m", createdAt: new Date("2026-11-18T06:40:00Z") })]);
+    expect(screen.getByRole("heading", { name: "Yesterday · Nov 17" })).toBeTruthy();
+    expect(screen.getByText("11:40 PM")).toBeTruthy();
+    expect(screen.queryByText("Today · Nov 18")).toBeNull();
+  });
+
+  it("reads Just now and N min ago under an hour, and the clock after", () => {
+    drawDenver([
+      entry({ id: "a", createdAt: new Date("2026-11-18T21:13:40Z") }),
+      entry({ id: "b", createdAt: new Date("2026-11-18T21:02:00Z") }),
+      entry({ id: "c", createdAt: new Date("2026-11-18T20:13:00Z") }),
+    ]);
+    expect(screen.getByText("Just now")).toBeTruthy();
+    expect(screen.getByText("12 min ago")).toBeTruthy();
+    expect(screen.getByText("1:13 PM")).toBeTruthy();
+  });
+
+  it("draws a <time> with its instant and the full stamp as the title", () => {
+    drawDenver([entry({ id: "a", createdAt: new Date("2026-11-18T21:13:00Z") })]);
+    const time = document.querySelector("time");
+    expect(time?.getAttribute("datetime")).toBe("2026-11-18T21:13:00.000Z");
+    expect(time?.getAttribute("title")).toBe("Wednesday, November 18, 2026 at 2:13 PM MST");
+  });
+
+  it("says when the revert happened, with its day: by the revert yesterday at 3:15 PM", () => {
+    drawDenver([
+      entry({ id: "rv", kind: "revert", revertsId: "e1", revertsVisible: true, createdAt: new Date("2026-11-17T22:15:00Z"), firstName: null, rowCount: 1 }),
+      entry({ id: "e1", revertedBy: "rv", revertedByVisible: true, createdAt: new Date("2026-11-16T17:00:00Z") }),
+    ]);
+    expect(screen.getByRole("link", { name: "by the revert yesterday at 3:15 PM" })).toBeTruthy();
+  });
+
+  it("dates the foot and the empty state in the reader's day", () => {
+    drawDenver([], { ship: new Date("2026-10-09T03:00:00Z") });
+    // 03:00Z Oct 9 is 9:00 PM Oct 8 in Denver (MDT).
+    expect(screen.getByText(/Uploads and edits since Oct 8 show up here/)).toBeTruthy();
+  });
+
+  it("adopts the browser's zone over the cookie's once mounted", () => {
+    browserZone = "America/Denver";
+    render(<HistoryList initial={[entry({ id: "m", createdAt: new Date("2026-11-18T06:40:00Z") })]} nextBefore={null} nowMs={DEN_NOW} reachesBack={ship} ship={ship} timeZone="Asia/Tokyo" />);
+    // Hydrated at once in jsdom: the browser's zone wins over the cookie's.
+    expect(screen.getByRole("heading", { name: "Yesterday · Nov 17" })).toBeTruthy();
+  });
+
+  it("moves Today to Yesterday at the reader's local midnight, with no entry under an hour old", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    // 11:59:30 PM Nov 18 in Denver (06:59:30Z Nov 19).
+    const now = Date.parse("2026-11-19T06:59:30Z");
+    vi.setSystemTime(now);
+    drawDenver([entry({ id: "a", createdAt: new Date("2026-11-18T20:00:00Z") })], { nowMs: now });
+    expect(screen.getByRole("heading", { name: "Today · Nov 18" })).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(31_000);
+    });
+    expect(screen.getByRole("heading", { name: "Yesterday · Nov 18" })).toBeTruthy();
+  });
+
+  it("ticks once a minute while an entry is under an hour old", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    vi.setSystemTime(DEN_NOW);
+    drawDenver([entry({ id: "a", createdAt: new Date("2026-11-18T21:09:00Z") })]);
+    expect(screen.getByText("5 min ago")).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(60_100);
+    });
+    expect(screen.getByText("6 min ago")).toBeTruthy();
   });
 });
