@@ -197,7 +197,7 @@ describe("UpgradeEntry", () => {
         { cutId: "c2", cut: "Cut 2", addId: "a2", add: "Add 2", addCents: 100, reason: "r", cutReason: null, position: 2 },
       ], unpicked: ["a-a2", "c-c"] });
       mount(panel([two]));
-      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      openLast();
       fireEvent.click(screen.getByRole("button", { name: "Start the deck with these 1 swaps" }));
       expect(screen.getByText(/with the 1 swap toward Spells\./)).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
@@ -209,7 +209,7 @@ describe("UpgradeEntry", () => {
         { cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", cutReason: null, position: 1 },
         { cutId: "c2", cut: "Cut 2", addId: "a2", add: "Add 2", addCents: 100, reason: "r", cutReason: null, position: 2 },
       ] })]));
-      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      openLast();
       fireEvent.click(screen.getByRole("button", { name: "✓ Picked Add 2" }));
       await waitFor(() => expect(picked).toHaveBeenCalledWith("r1", "a-a2", false));
       fireEvent.click(screen.getByRole("button", { name: "Close" }));
@@ -256,7 +256,7 @@ describe("UpgradeEntry", () => {
       expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · in Prismari Artistry");
       fireEvent.click(document.querySelector("[data-last-run] button")!);
       expect(screen.getByText("Already in Prismari Artistry. Opening it again uses no credit.")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Start the deck with these/ })).toBeEnabled();
+      expect(screen.getByRole("button", { name: /Start the deck with these/ })).not.toHaveAttribute("aria-disabled");
       fireEvent.click(screen.getByRole("button", { name: "‹ Back" }));
       expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
     });

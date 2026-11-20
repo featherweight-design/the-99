@@ -283,7 +283,7 @@ describe("UpgradeFlow", () => {
       expect(screen.getByText("Already in Prismari Artistry. Opening it again uses no credit.")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "‹ History" })).toBeInTheDocument();
       expect(screen.queryByRole("button", { name: "‹ Back" })).toBeNull();
-      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).not.toHaveAttribute("aria-disabled");
     });
   });
 
@@ -322,7 +322,7 @@ describe("UpgradeFlow", () => {
       expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
       expect(document.querySelector("[data-used-note]")).toBeNull();
       press("Start the deck with these 1 swaps");
-      expect(onStart).toHaveBeenCalledWith("r");
+      expect(onStart).toHaveBeenCalledWith("r", { adds: ["a0"], cuts: ["c0"] });
       press("‹ Back");
       expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
@@ -334,7 +334,7 @@ describe("UpgradeFlow", () => {
       const note = document.querySelector("[data-used-note]")!;
       expect(note.textContent).toBe("Already in Prismari Artistry. Opening it again uses no credit.");
       expect(note.className).toContain("border-dashed");
-      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).toBeEnabled();
+      expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).not.toHaveAttribute("aria-disabled");
     });
 
     it("a fresh result keeps its History link and tracker, and draws no note even for a run in a deck", () => {

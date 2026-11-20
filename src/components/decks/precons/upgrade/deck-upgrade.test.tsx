@@ -147,7 +147,7 @@ describe("DeckUpgradeHost (A2c)", () => {
     expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · in Muddle Tokens");
     fireEvent.click(document.querySelector("[data-last-run] button")!);
     expect(screen.getByText("Already in Muddle Tokens. Opening it again uses no credit.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).not.toHaveAttribute("aria-disabled");
   });
 });
 
