@@ -6,7 +6,8 @@
 import { requireUserId } from "../../../../lib/auth";
 import { listHistory } from "../../../../lib/collection/history";
 import { historyShipDate } from "../../../../lib/collection/history-ship";
-import { dayLabel, historyReachesBack } from "../../../../lib/collection/history-view";
+import { historyReachesBack } from "../../../../lib/collection/history-view";
+import { resolveZone } from "../../../../lib/zone/server";
 import { isUuid } from "../../../../lib/uuid";
 import { HistoryList } from "../../../../components/collection/history-list";
 
@@ -21,6 +22,8 @@ export default async function CollectionHistoryPage({ searchParams }: { searchPa
   const { entry } = await searchParams;
   const focusId = typeof entry === "string" && isUuid(entry) ? entry : undefined;
   const { entries, nextBefore } = await listHistory(userId);
+  // The reader's zone from their `the99_tz` cookie (written by the root layout's `ZoneCookie`), read in the page body, never in a cached function.
+  const timeZone = await resolveZone();
   // One clock for the whole render, so "Today" and the 90-day edge cannot disagree.
   const nowMs = await readClock();
   const ship = historyShipDate();
@@ -35,8 +38,8 @@ export default async function CollectionHistoryPage({ searchParams }: { searchPa
         nextBefore={nextBefore}
         nowMs={nowMs}
         reachesBack={reachesBack}
-        reachesBackLabel={dayLabel(reachesBack)}
-        shipLabel={dayLabel(ship)}
+        ship={ship}
+        timeZone={timeZone}
         focusId={focusId}
       />
     </div>

@@ -12,16 +12,19 @@ import { loadCollectionHistory, loadCollectionHistoryEntry } from "../../app/col
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
 import { historyKindOf, type HistoryKind } from "../../lib/collection/history-kind";
 import {
-  GROUP_FIRST, GROUP_STEP, SHORT_ENTRY_ROWS, dayLabel, entryTitle, groupByDay, groupRows, rowDelta, timeLabel, type RowGroup,
+  GROUP_FIRST, GROUP_STEP, SHORT_ENTRY_ROWS, dayLabel, entryTitle, fullStamp, groupByDay, groupRows, hasRecent, msToLocalMidnight, rowDelta,
+  timeSlot, whenPhrase, type RowGroup,
 } from "../../lib/collection/history-view";
 import type { HistoryRow } from "../../db/schema";
 import { cartDecksOf, type CartDecks } from "../../lib/collection/deck-line";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { validTimeZone } from "../../lib/time/zoned";
 import { PendingReporter } from "../shell/pending-reporter";
 import { ReplaceIcon } from "./replace-icon";
 import { RevertConfirm } from "./revert-confirm";
 import { Chevron } from "../ui/chevron";
+import { useHydrated } from "../ui/hydrated-art";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { reveal } from "../../lib/ui/reveal";
 
@@ -212,6 +215,36 @@ function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<
   );
 }
 
+/** What every time on the list is read against: now, the reader's zone and the locale their clock follows (undefined: the browser's). */
+export type HistoryClock = { nowMs: number; zone: string; locale: string | undefined };
+
+/**
+ * The list's clock. The server and the first client render use the cookie's zone (UTC with none yet) and "en-US", so they agree;
+ * once hydrated the browser's own zone and locale take over. `now` re-reads once a minute while an entry is under an hour old (its
+ * "12 min ago" moves) and at the reader's next local midnight (Today becomes Yesterday), each seeded from the server's `nowMs`.
+ */
+function useHistoryClock(serverNowMs: number, timeZone: string | null, entries: readonly HistoryListEntry[]): HistoryClock {
+  const hydrated = useHydrated();
+  const browser = hydrated ? Intl.DateTimeFormat().resolvedOptions().timeZone : null;
+  const zone = browser && validTimeZone(browser) ? browser : (timeZone ?? "UTC");
+  const [nowMs, setNowMs] = useState(serverNowMs);
+  const recent = hasRecent(entries, nowMs);
+  useEffect(() => {
+    let timer = 0;
+    const schedule = (from: number) => {
+      const toMinute = recent ? 60_000 - (from % 60_000) : Infinity;
+      timer = window.setTimeout(() => {
+        const t = Date.now();
+        setNowMs(t);
+        schedule(t);
+      }, Math.min(msToLocalMidnight(from, zone), toMinute) + 50);
+    };
+    schedule(Date.now());
+    return () => window.clearTimeout(timer);
+  }, [zone, recent]);
+  return { nowMs, zone, locale: hydrated ? undefined : "en-US" };
+}
+
 /**
  * One entry of the list: its disclosure, its Revert, the reverted and aged notes and, when open,
  * its rows. Exported so /about draws the same row with fixture props rather than a copy of it.
@@ -225,6 +258,7 @@ export function HistoryEntryItem({
   onToggle,
   onRevert,
   onRetry,
+  clock,
   anchor = true,
 }: {
   e: HistoryListEntry;
@@ -235,6 +269,8 @@ export function HistoryEntryItem({
   onToggle: () => void;
   onRevert: (title: string, sync: boolean) => void;
   onRetry: () => void;
+  /** The reader's now and zone: every time on the row is their wall clock. */
+  clock: HistoryClock;
   /** The row carries `id="entry-…"` for the Add sheet's link. /about draws it without: a page of its own ids. */
   anchor?: boolean;
 }) {
@@ -255,7 +291,13 @@ export function HistoryEntryItem({
         <span className="font-mono text-[11px] uppercase tracking-[0.06em]" style={{ color: TAG_INK[kind] }}>
           {c.kinds[kind]}
         </span>
-        <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)] md:order-last">{timeLabel(e.createdAt)}</span>
+        <time
+          dateTime={e.createdAt.toISOString()}
+          title={fullStamp(e.createdAt, clock.zone, clock.locale)}
+          className="font-mono text-[11.5px] text-[color:var(--fg-faint)] md:order-last"
+        >
+          {timeSlot(e.createdAt, clock.nowMs, clock.zone, clock.locale)}
+        </time>
         <span className="col-span-2 flex min-w-0 flex-col gap-[3px] md:col-span-1">
           <span className="truncate text-[14px]" style={{ color: reverted ? "var(--fg-muted)" : "var(--fg)" }}>
             {title} <Chevron kind="disclosure" open={isOpen} className="text-[color:var(--fg-faint)]" />
@@ -288,11 +330,11 @@ export function HistoryEntryItem({
               {" · "}
               {anchor ? (
                 <a href={`#entry-${revertedByEntry.id}`} className="text-[color:var(--accent-text)] underline underline-offset-2">
-                  {c.revertedBy(timeLabel(revertedByEntry.createdAt))}
+                  {c.revertedBy(whenPhrase(revertedByEntry.createdAt, clock.nowMs, clock.zone, clock.locale))}
                 </a>
               ) : (
                 // Drawn without row anchors (/about's figure): a link to nothing would be a dead end.
-                <span>{c.revertedBy(timeLabel(revertedByEntry.createdAt))}</span>
+                <span>{c.revertedBy(whenPhrase(revertedByEntry.createdAt, clock.nowMs, clock.zone, clock.locale))}</span>
               )}
             </>
           ) : null}
@@ -333,18 +375,20 @@ export function HistoryEntryItem({
 export function HistoryList({
   initial,
   nextBefore: initialNext,
-  nowMs,
-  reachesBackLabel,
+  nowMs: serverNowMs,
   reachesBack,
-  shipLabel,
+  ship,
+  timeZone,
   focusId,
 }: {
   initial: HistoryListEntry[];
   nextBefore: number | null;
   nowMs: number;
-  reachesBackLabel: string;
   reachesBack: Date;
-  shipLabel: string;
+  /** The day the ledger shipped. */
+  ship: Date;
+  /** The reader's zone from their `the99_tz` cookie, null on a first visit (the browser's takes over once hydrated). */
+  timeZone: string | null;
   /** An entry to open and bring into view on arrival (`?entry=`, the Add sheet's link). */
   focusId?: string;
 }) {
@@ -356,7 +400,9 @@ export function HistoryList({
   // The entry whose revert is being decided, with the words the dialog quotes.
   const [reverting, setReverting] = useState<{ id: string; title: string; when: string; sync: boolean } | null>(null);
   const byId = useMemo(() => new Map(entries.map((e) => [e.id, e])), [entries]);
-  const groups = useMemo(() => groupByDay(entries, nowMs), [entries, nowMs]);
+  const { nowMs, zone, locale } = useHistoryClock(serverNowMs, timeZone, entries);
+  const clock = useMemo(() => ({ nowMs, zone, locale }), [nowMs, zone, locale]);
+  const groups = useMemo(() => groupByDay(entries, nowMs, zone), [entries, nowMs, zone]);
 
   async function fetchDetail(id: string) {
     setDetails((m) => new Map(m).set(id, "loading"));
@@ -414,7 +460,7 @@ export function HistoryList({
             <ReplaceIcon size={20} className="" />
           </span>
           <p className="m-0 font-display text-[17px] font-semibold">{c.emptyTitle}</p>
-          <p className="m-0 max-w-[420px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.emptyBody(shipLabel)}</p>
+          <p className="m-0 max-w-[420px] text-[13.5px] leading-[1.55] text-[color:var(--fg-body)]">{c.emptyBody(dayLabel(ship, zone))}</p>
         </div>
       ) : (
         groups.map((g) => (
@@ -425,12 +471,13 @@ export function HistoryList({
                 <HistoryEntryItem
                   key={e.id}
                   e={e}
-                  title={entryTitle(e, byId, reachesBack)}
+                  title={entryTitle(e, byId, reachesBack, zone)}
                   revertedByEntry={e.revertedBy ? byId.get(e.revertedBy) : undefined}
                   isOpen={open.has(e.id)}
                   detail={details.get(e.id)}
                   onToggle={() => toggle(e.id)}
-                  onRevert={(title, sync) => setReverting({ id: e.id, title, when: `${dayLabel(e.createdAt)}, ${timeLabel(e.createdAt)}`, sync })}
+                  onRevert={(title, sync) => setReverting({ id: e.id, title, when: whenPhrase(e.createdAt, nowMs, zone, locale), sync })}
+                  clock={clock}
                   onRetry={() => void fetchDetail(e.id)}
                 />
               ))}
@@ -464,7 +511,7 @@ export function HistoryList({
         />
       ) : null}
 
-      <p className="m-0 mt-[28px] max-w-[560px] text-[12.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot(reachesBackLabel)}</p>
+      <p className="m-0 mt-[28px] max-w-[560px] text-[12.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot(dayLabel(reachesBack, zone))}</p>
     </section>
   );
 }
