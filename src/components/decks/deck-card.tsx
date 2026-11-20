@@ -13,6 +13,7 @@ import type { DeckShopping } from "../../lib/decks/shopping-rollup";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { formatWhen } from "../../lib/format/when";
+import { useZone } from "../zone-context";
 import { DeckTileArt } from "./deck-tile-art";
 import { DeckCardOverflow } from "./deck-card-overflow";
 import { StatusPillBadge } from "./status-pill";
@@ -80,6 +81,7 @@ function detailFor(
   deck: DeckListItem,
   shopping: DeckShopping | undefined,
   now: Date,
+  zone: string | null,
 ): { text: string; color: string; cart?: true } | null {
   const c = refreshCopy.decks;
   const figureFor = countStatusFor(deck, shopping);
@@ -100,7 +102,7 @@ function detailFor(
       color: "var(--fg-faint)",
     };
   }
-  const statusDetail = statusDetailFor(deck, shopping, now, figureFor);
+  const statusDetail = statusDetailFor(deck, shopping, now, zone, figureFor);
   // Fills the slot only where the status has nothing to say in it. The clause is
   // a fact about the collection, and `4 over` or `3 lines unresolved` is a fact
   // about the deck the reader opened the tile for — the narrower reading of the
@@ -152,6 +154,7 @@ function statusDetailFor(
   deck: DeckListItem,
   shopping: DeckShopping | undefined,
   now: Date,
+  zone: string | null,
   /** The value whose FIGURE this row draws — see `countStatusFor`. */
   figureFor: Exclude<StatusPill, "Draft">,
 ): string | null {
@@ -162,7 +165,7 @@ function statusDetailFor(
       // day of creation. An older Draft draws no figure rather than being told
       // a date it does not have — a Draft deck older than a day is a real state
       // the copy file does not cover, and the gap report says so.
-      return formatWhen(deck.createdAt, now) === "today" ? c.detailDraft : null;
+      return formatWhen(deck.createdAt, now, zone) === "today" ? c.detailDraft : null;
     case "Building":
       // No figure. Building's count IS its explanation, and the count already
       // has its own slot in the same row — a second copy of `87 / 99` beside
@@ -295,7 +298,8 @@ const YIELD_HIDDEN = { faced: "@min-[330px]:@max-[360px]:hidden", marks: "hidden
 export function DeckCard({
   deck, shopping, now, folders, onCreateFolder, onMove, keepsFocus, closeAfterCreate, eager = false, deferArt = false, claimPrefetch, onAmong, friendPrefs = null,
 }: DeckCardProps) {
-  const detail = detailFor(deck, shopping, now);
+  const zone = useZone();
+  const detail = detailFor(deck, shopping, now, zone);
   // A pair takes two of the hundred, so its body is 98 and its tile says so.
   const bodySize = deckBodySize(deck.partnerName !== null);
   const count = `${deck.built} / ${bodySize}`;
@@ -303,7 +307,7 @@ export function DeckCard({
   // answering a question, and if last-played matters it belongs in the overflow
   // menu or on the deck's own page. A deck that has never been played draws
   // nothing here now.
-  const lastPlayed = deck.lastPlayedAt ? formatWhen(deck.lastPlayedAt, now) : null;
+  const lastPlayed = deck.lastPlayedAt ? formatWhen(deck.lastPlayedAt, now, zone) : null;
   // ONE figure for whether the desktop row has a right-hand cell, because the
   // grid template and the render have to agree. A `New` deck never draws last
   // played — its detail row carries `created today` alone — and a `New` deck

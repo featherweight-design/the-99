@@ -8,6 +8,7 @@ export function validTimeZone(timeZone: string): boolean {
     new Intl.DateTimeFormat("en-US", { timeZone });
     return true;
   } catch {
+    // not a fallback: an unknown zone name answers false, a pure check that stores nothing.
     return false;
   }
 }

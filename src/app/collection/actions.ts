@@ -9,6 +9,7 @@ import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
 import { getCollectionLastUpdated, getCollectionStats } from "../../lib/home/summary";
 import { formatLastUpdated } from "../../lib/collection/browse";
+import { resolveZone } from "../../lib/zone/server";
 import { revalidateUserLists } from "../../lib/cache/user-lists";
 import { parseCollectionCsv, type CollectionRow, type ParseError } from "../../lib/manabox/parse";
 import { parsePasteList } from "../../lib/manabox/paste";
@@ -632,7 +633,7 @@ export async function refreshCollectionHeader(): Promise<{
   // head that renders this is a Client Component and would otherwise recompute the label
   // against the browser's own clock and timezone on hydration, which can disagree with the
   // server's render.
-  return { stats, lastUpdatedLabel: lastUpdated ? formatLastUpdated(lastUpdated) : null, historyHasEntries };
+  return { stats, lastUpdatedLabel: lastUpdated ? formatLastUpdated(lastUpdated, new Date(), await resolveZone()) : null, historyHasEntries };
 }
 
 /** Forget the pick, returning the card to the resolver's choice. */

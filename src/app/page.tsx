@@ -419,6 +419,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     <Dashboard
       stats={data.stats}
       lastUpdated={data.lastUpdated}
+      timeZone={await resolveZone()}
       ready={data.ready}
       inUse={data.inUse}
       decks={data.decks}

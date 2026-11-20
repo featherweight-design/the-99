@@ -52,3 +52,13 @@ describe("formatWhen", () => {
     expect(formatWhen(null, now)).toBe("never");
   });
 });
+
+describe("formatWhen in the reader's zone", () => {
+  it("counts midnights of the zone, not of UTC", () => {
+    // 05:30Z is 23:30 the evening before in Denver (MDT); 13:00Z is 07:00 the next morning.
+    const then = new Date("2026-09-07T05:30:00Z");
+    const later = new Date("2026-09-07T13:00:00Z");
+    expect(formatWhen(then, later, null)).toBe("today");
+    expect(formatWhen(then, later, "America/Denver")).toBe("yesterday");
+  });
+});

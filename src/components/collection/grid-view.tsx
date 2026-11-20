@@ -15,6 +15,7 @@
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { readCardPrice } from "../../lib/cards/copy-price";
+import { useZone } from "../zone-context";
 import { DateFigure, dateSpoken, readCardDate } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
 import { printedFaceName, printedNameOf } from "../../lib/cards/printed-name";
@@ -96,6 +97,7 @@ export function GridView({
    */
   mayBeHidden?: boolean;
 }) {
+  const zone = useZone();
   return (
     /* §Grid Container. The desktop track is a TILE FLOOR rather than a column
        count (card-captions readiness, erratum 5): `md:grid-cols-6` would begin
@@ -118,7 +120,7 @@ export function GridView({
       {cards.map((c, i) => {
         const reveal = revealOf(i, revealFrom);
         const state = c.availability ? availabilityState(c.availability) : "free";
-        const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c) : null;
+        const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c, zone) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
         // and nothing else.
         const border =
@@ -309,7 +311,7 @@ export function GridView({
                     <DateFigure card={c} className="font-semibold" />
                   )}
                   <span className="min-w-0 truncate">
-                    {(showPrice ? readCardPrice(c.price) === null : readCardDate(c) === null) ? "" : "\u00a0· "}
+                    {(showPrice ? readCardPrice(c.price) === null : readCardDate(c, undefined, zone) === null) ? "" : "\u00a0· "}
                     {c.primarySetCode}
                     <span className="hidden md:inline"> · {c.rarity}</span>
                   </span>

@@ -25,6 +25,7 @@ import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { GhostButton } from "../ui/button";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { ROW_SHELL_GRID } from "../ui/row-shell";
+import { useZone } from "../zone-context";
 import { DateFigure, dateSpoken } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
 import { PreviewButton } from "../ui/preview-button";
@@ -63,6 +64,7 @@ export function RowsView({
   /** The row whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
 }) {
+  const zone = useZone();
   // The rows a `Show more` just added fade in one after another (E9); a filter or a new sort reveals nothing.
   return (
     // §Rows Scroll Container: flex-1, padding 2px 12px 12px mobile / 12px 34px 34px desktop, flex column, gap 6/7px
@@ -84,7 +86,7 @@ export function RowsView({
         const overRing =
           state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
         const pending = pendingOracleId === c.oracleId;
-        const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c) : null;
+        const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c, zone) : null;
         return (
         <PreviewButton
           key={c.oracleId}

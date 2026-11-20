@@ -42,6 +42,8 @@ export type DashboardProps = {
   stats: { totalCards: number; uniqueCards: number };
   /** Null until a collection has been read — `formatWhen` names that state. */
   lastUpdated: Date | null;
+  /** The reader's zone (`resolveZone`), so `formatWhen` counts their calendar days; null is UTC. */
+  timeZone?: string | null;
   /** Null with the Home feed on: Ready to build leaves Home in direction B ("its job is For you's"), unread. */
   ready: ReadySlice<CommanderListItem> | null;
   /**
@@ -132,7 +134,7 @@ export function Dashboard(props: DashboardProps) {
   // Rule 0's cards lead the body (revisions Home), in the order the loader gave (soonest closing first), and nothing at all,
   // no wrapper and no gap, without one.
   const tables = props.tables ?? [];
-  const when = formatWhen(props.lastUpdated, new Date(props.now));
+  const when = formatWhen(props.lastUpdated, new Date(props.now), props.timeZone ?? null);
   const kicker = refreshCopy.home.kicker(props.stats.totalCards.toLocaleString("en-US"), when);
   const noCards = props.noCards === true;
   // Direction B, or null for Home as shipped. The lead leaves the list it heads (`splitLead`).

@@ -8,6 +8,7 @@ vi.mock("../../../lib/home/summary", () => ({
   getCollectionStats: async () => ({ uniqueCards: 4, totalCards: 4 }),
   getCollectionLastUpdated: async () => null,
 }));
+vi.mock("../../../lib/zone/server", () => ({ resolveZone: async () => null }));
 vi.mock("../../../lib/collection/history", () => ({ collectionHasHistory: async () => false }));
 vi.mock("../../../components/collection/collection-place-head", () => ({ CollectionPlaceHead: () => null }));
 vi.mock("../../../components/collection/collection-content-scope", () => ({ CollectionContentScope: () => null }));
