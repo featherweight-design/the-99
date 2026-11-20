@@ -1,6 +1,6 @@
 import type { HistoryRow } from "../../db/schema";
 import { collectionEditCopy } from "../copy/collection-edit";
-import { wall, zonedToInstant } from "../time/zoned";
+import { wall } from "../time/zoned";
 import { HISTORY_RETENTION_DAYS } from "./retention";
 import type { HistoryListEntry } from "./history";
 
@@ -38,13 +38,18 @@ export function dateLabel(d: Date, now: Date, zone: string): string {
  * and the first client render pass "en-US", so they agree, and the browser's follows once hydrated.
  */
 export const clockLabel = (d: Date, zone: string, locale?: string) =>
-  new Intl.DateTimeFormat(locale, { timeZone: zone, hour: "numeric", minute: "2-digit" }).format(d);
+  spaced(new Intl.DateTimeFormat(locale, { timeZone: zone, hour: "numeric", minute: "2-digit" }).format(d));
+
+/** ICU 72+ puts a narrow no-break space (U+202F) before AM/PM, older builds a plain space: one spelling, so a server and a browser built apart agree. */
+const spaced = (s: string) => s.replace(/\u202f/g, " ");
 
 /** "Wednesday, November 18, 2026 at 2:13 PM MST": the `<time>`'s title. */
 export const fullStamp = (d: Date, zone: string, locale?: string) =>
-  new Intl.DateTimeFormat(locale, {
-    timeZone: zone, weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short",
-  }).format(d);
+  spaced(
+    new Intl.DateTimeFormat(locale, {
+      timeZone: zone, weekday: "long", year: "numeric", month: "long", day: "numeric", hour: "numeric", minute: "2-digit", timeZoneName: "short",
+    }).format(d),
+  );
 
 /** Whole minutes between an instant and now, floored; a stamp from the future (clock skew) is "just now". */
 const minutesAgo = (d: Date, nowMs: number) => Math.max(0, Math.floor((nowMs - d.getTime()) / MINUTE_MS));
@@ -79,11 +84,21 @@ export function whenPhrase(d: Date, nowMs: number, zone: string, locale?: string
 export const hasRecent = (entries: readonly HistoryListEntry[], nowMs: number) =>
   entries.some((e) => nowMs - e.createdAt.getTime() < 60 * MINUTE_MS);
 
-/** Milliseconds from `nowMs` to the next local midnight in the zone (when "Today" becomes "Yesterday"). */
+/**
+ * Milliseconds from `nowMs` to the start of the reader's next calendar day in the zone (when "Today" becomes "Yesterday"): the first
+ * instant whose wall-clock day is later, found by bisection. Not "00:00 tomorrow", which a zone that skips midnight on a DST night
+ * (America/Santiago springs forward from 24:00 to 01:00) never has. Always at least 1 ms.
+ */
 export function msToLocalMidnight(nowMs: number, zone: string): number {
-  const w = wall(new Date(nowMs), zone);
-  const next = zonedToInstant({ y: w.y, mo: w.mo, d: w.d + 1, h: 0, mi: 0, s: 0 }, zone);
-  return Math.max(1, next.getTime() - nowMs);
+  const today = dayNumber(new Date(nowMs), zone);
+  let lo = nowMs;
+  let hi = nowMs + 26 * 60 * MINUTE_MS;
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (dayNumber(new Date(mid), zone) > today) hi = mid;
+    else lo = mid;
+  }
+  return Math.max(1, hi - nowMs);
 }
 
 export type DayGroup = { key: string; label: string; entries: HistoryListEntry[] };

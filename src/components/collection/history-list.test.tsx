@@ -411,11 +411,24 @@ describe("HistoryList in the reader's zone", () => {
     expect(screen.getByText(/Uploads and edits since Oct 8 show up here/)).toBeTruthy();
   });
 
-  it("starts from the cookie's zone before it is hydrated, and from the browser's after", () => {
+  it("adopts the browser's zone over the cookie's once mounted", () => {
     browserZone = "America/Denver";
     render(<HistoryList initial={[entry({ id: "m", createdAt: new Date("2026-11-18T06:40:00Z") })]} nextBefore={null} nowMs={DEN_NOW} reachesBack={ship} ship={ship} timeZone="Asia/Tokyo" />);
     // Hydrated at once in jsdom: the browser's zone wins over the cookie's.
     expect(screen.getByRole("heading", { name: "Yesterday · Nov 17" })).toBeTruthy();
+  });
+
+  it("moves Today to Yesterday at the reader's local midnight, with no entry under an hour old", () => {
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "Date"] });
+    // 11:59:30 PM Nov 18 in Denver (06:59:30Z Nov 19).
+    const now = Date.parse("2026-11-19T06:59:30Z");
+    vi.setSystemTime(now);
+    drawDenver([entry({ id: "a", createdAt: new Date("2026-11-18T20:00:00Z") })], { nowMs: now });
+    expect(screen.getByRole("heading", { name: "Today · Nov 18" })).toBeTruthy();
+    act(() => {
+      vi.advanceTimersByTime(31_000);
+    });
+    expect(screen.getByRole("heading", { name: "Yesterday · Nov 18" })).toBeTruthy();
   });
 
   it("ticks once a minute while an entry is under an hour old", () => {

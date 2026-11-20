@@ -29,7 +29,7 @@ describe("groupByDay", () => {
       NOW,
       "UTC",
     );
-    expect(g.map((x) => x.label)).toEqual(["Today · Oct 9", "Yesterday · Oct 8", "Oct 3"]);
+    expect(g.map((x) => x.label)).toEqual(["Today · Oct 9", "Yesterday · Oct 8", "Saturday · Oct 3"]);
     expect(g[0].entries.map((e) => e.id)).toEqual(["a", "b"]);
   });
 
@@ -91,7 +91,7 @@ describe("groupByDay in the reader's zone", () => {
       DENVER,
     );
     // 08:30Z Nov 2 is 1:30 AM MST Nov 2 (today); 07:30Z Nov 1 is 12:30 AM MST Nov 1 and 05:30Z is 11:30 PM MDT Oct 31.
-    expect(g.map((x) => [x.label, x.entries.map((y) => y.id)])).toEqual([["Today · Nov 2", ["a"]], ["Yesterday · Nov 1", ["b"]], ["Sunday · Oct 31", ["c"]]]);
+    expect(g.map((x) => [x.label, x.entries.map((y) => y.id)])).toEqual([["Today · Nov 2", ["a"]], ["Yesterday · Nov 1", ["b"]], ["Saturday · Oct 31", ["c"]]]);
   });
 });
 
@@ -152,6 +152,18 @@ describe("the clock's schedule", () => {
     // 12:00Z Oct 31 is 6:00 AM MDT; midnight Nov 1 MDT is 06:00Z Nov 1, 18 h away. The next, midnight Nov 2 MST, is 07:00Z Nov 2.
     expect(msToLocalMidnight(Date.parse("2026-10-31T12:00:00Z"), DENVER)).toBe(18 * 3_600_000);
     expect(msToLocalMidnight(Date.parse("2026-11-01T08:00:00Z"), DENVER)).toBe(23 * 3_600_000);
+  });
+
+  it("does not spin where a zone skips midnight on a DST night (Santiago springs forward 24:00 to 01:00 on Sep 6, 2026)", () => {
+    // 00:00Z Sep 6 is 8 PM Sep 5 in Santiago; there is no 00:00 on Sep 6, the day begins at 01:00 (04:00Z): 4 h away, never 0.
+    expect(msToLocalMidnight(Date.parse("2026-09-06T00:00:00Z"), "America/Santiago")).toBe(4 * 3_600_000);
+    // Just past the skipped hour, the next day start is a full day on.
+    expect(msToLocalMidnight(Date.parse("2026-09-06T05:00:00Z"), "America/Santiago")).toBeGreaterThan(20 * 3_600_000);
+  });
+
+  it("spells the clock with a plain space before AM/PM on any ICU", () => {
+    expect(clockLabel(at("2026-11-18T21:02:00Z"), DENVER, "en-US")).toBe("2:02 PM");
+    expect(fullStamp(at("2026-11-18T21:13:00Z"), DENVER, "en-US")).not.toContain("\u202f");
   });
 });
 
