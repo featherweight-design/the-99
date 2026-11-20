@@ -106,9 +106,8 @@ const PhonePeek = React.forwardRef<
       style={{
         ...enter,
         // The stacking is explicit, never DOM order (the previous peek sits under the card and the next peek over it, so a swipe
-        // left drew the next peek over the arriving card and a swipe right did not): the far peek is under the card, and the card
-        // just left stays above the card arriving until its shrink lands.
-        zIndex: enter && !landed ? 2 : 0,
+        // left drew the next peek over the arriving card and a swipe right did not): both peeks are under the card.
+        zIndex: 0,
         left,
         // (447 - 330) / 2 at the drawn size: the gap between the two heights, halved, as a share
         // of the card's width (88/63 x 0.2625 / 2). From the card's own top, which the min snap
@@ -286,7 +285,7 @@ export function CardModalArtSide({
           className={"card-grow swipe-out absolute rounded-[14px]" + (phoneEnterX !== null ? " anim-phone-card-enter" : "")}
           style={{
             top: "var(--card-top)",
-            // Above the far peek (0), below the card just left while it shrinks away (2): see `PhonePeek`.
+            // Above both peeks (0): see `PhonePeek`.
             zIndex: 1,
             left: "calc(50% - var(--card-w) / 2)",
             width: "var(--card-w)",

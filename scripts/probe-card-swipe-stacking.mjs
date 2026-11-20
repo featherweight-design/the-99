@@ -6,6 +6,7 @@
 // swap, wherever the two overlap the topmost element at the overlap's centre must be the card left, in both directions. A probe that
 // never sees an overlap fails (it would be measuring nothing).
 //
+// The card left and the card arriving keep a 12px gap through the swap, so they never overlap and nothing is asserted between them.
 // What it found: the card arriving enters from the far peek's side, over that peek's rest position. The next peek is later in DOM order, so
 // swiping LEFT drew it over the arriving card (a translucent strip across it); swiping right drew the previous peek under it, correctly.
 //
@@ -108,20 +109,18 @@ try {
     await hold(page, [from, y], dir === "left" ? from - pitch * 0.7 : from + pitch * 0.7);
     await page.mouse.up();
     await page.waitForFunction(() => document.getAnimations().some((a) => a.animationName?.includes("phone")), null, { timeout: 5000 }).catch(() => {});
-    // The card left shrinks into the peek on the side it came from: the previous peek after a swipe left, the next after a swipe right.
-    // The other peek (the far one) is the arriving card's own neighbor, which the card enters over.
-    const gone = dir === "left" ? "prev" : "next";
-    const far = dir === "left" ? "next" : "prev";
-    const over = { far: { seen: 0, wrong: 0, at: [] }, gone: { seen: 0, wrong: 0, at: [] } };
+    // The far peek is the arriving card's own neighbor, which the card enters over.
+        const far = dir === "left" ? "next" : "prev";
+    const over = { far: { seen: 0, wrong: 0, at: [] } };
     for (const t of [0, 20, 40, 60, 100, 140, 180]) {
-      const box = await page.evaluate(([time, g, f]) => {
+      const box = await page.evaluate(([time, f]) => {
         for (const a of document.getAnimations()) { a.pause(); a.currentTime = time; }
         const r = (sel) => { const b = document.querySelector(sel)?.getBoundingClientRect(); return b ? { l: b.left, r: b.right, t: b.top, b: b.bottom } : null; };
-        return { card: r("[data-testid=modal-art-mobile]"), gone: r(`[data-testid=phone-peek-${g}]`), far: r(`[data-testid=phone-peek-${f}]`) };
-      }, [t, gone, far]);
+        return { card: r("[data-testid=modal-art-mobile]"), far: r(`[data-testid=phone-peek-${f}]`) };
+      }, [t, far]);
       if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/stack-${dir}-${t}.png` });
       if (!box.card) continue;
-      for (const [which, peek, want] of [["far", box.far, (id) => id?.startsWith("modal-art-mobile")], ["gone", box.gone, (id) => id === `phone-peek-${gone}`]]) {
+      for (const [which, peek, want] of [["far", box.far, (id) => id?.startsWith("modal-art-mobile")]]) {
         if (!peek) continue;
         const l = Math.max(box.card.l, peek.l, 0);
         const rr = Math.min(box.card.r, peek.r, 390);
@@ -138,9 +137,6 @@ try {
     if (over.far.seen === 0) fail(`swiping ${dir}: the arriving card never overlapped the far ${far} peek in the sampled frames (the probe measured nothing)`);
     else if (over.far.wrong > 0) fail(`swiping ${dir}: in ${over.far.wrong} of ${over.far.seen} frames the far ${far} peek is drawn OVER the arriving card (${over.far.at.join(" ")})`);
     else ok(`swiping ${dir}: the arriving card is over the far ${far} peek in all ${over.far.seen} overlapping frames (${over.far.at.join(" ")})`);
-    // The card left stays above the card arriving wherever the two meet (they may never meet: the swap keeps a 12px gap).
-    if (over.gone.wrong > 0) fail(`swiping ${dir}: in ${over.gone.wrong} of ${over.gone.seen} frames the arriving card is on top of the card left (${over.gone.at.join(" ")})`);
-    else ok(`swiping ${dir}: the card left is never under the arriving card (${over.gone.seen} overlapping frames)`);
     await context.close();
   }
 } finally {
