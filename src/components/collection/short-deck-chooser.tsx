@@ -20,7 +20,9 @@ type Claimant = ShortChoice["claimants"][number];
  * else is today's warning, unchanged.
  */
 export function choosable(choice: ShortChoice | undefined): choice is ShortChoice {
-  return !!choice && choice.claimants.length >= 2 && choice.claimants.every((c) => c.quantity === 1 && !c.commander);
+  return !!choice && choice.claimants.length >= 2 && choice.claimants.every((c) => c.quantity === 1 && !c.commander)
+    // Exactly one listed deck holds the copy now: a brew or an ignored deck holding it would leave every listed deck marked.
+    && choice.claimants.filter((c) => c.allocated > 0).length === 1;
 }
 
 /** The decks the server's allocation leaves short (no copy): the default marks. */
@@ -118,7 +120,7 @@ export function ShortDeckChooser({
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="truncate text-[14px] text-[color:var(--fg)]">{x.deckName}</span>
                   <span className="truncate text-[12px] text-[color:var(--fg-faint)]">
-                    {c.chooser.rowSub(x.quantity, x.since === null ? "" : formatShortDeckDate(new Date(x.since)))}
+                    {x.since === null ? c.chooser.rowSubUndated(x.quantity) : c.chooser.rowSub(x.quantity, formatShortDeckDate(new Date(x.since)))}
                   </span>
                 </span>
                 <span className={`flex-none font-mono text-[12px] ${marked ? "text-[color:var(--danger)]" : "text-[color:var(--fg-faint)]"}`}>
@@ -131,15 +133,12 @@ export function ShortDeckChooser({
       </ul>
       <p aria-live="polite" className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">
         {refusal ? c.chooser.refusal(n) : footer}
-        {!isDefault && !refusal ? (
-          <>
-            {" "}
-            <button type="button" onClick={() => { setMarks(first); setRefusal(false); }} className="font-sans text-[13px] text-[color:var(--accent-text)] underline">
-              {c.chooser.back}
-            </button>
-          </>
-        ) : null}
       </p>
+      {!isDefault && !refusal ? (
+        <button type="button" onClick={() => { setMarks(first); setRefusal(false); }} className="-mt-[6px] self-start font-sans text-[13px] text-[color:var(--accent-text)] underline">
+          {c.chooser.back}
+        </button>
+      ) : null}
       {error ? <p role="alert" className="m-0 text-[13px] text-[color:var(--danger)]">{error}</p> : null}
       <div className="mt-auto flex flex-none flex-col-reverse gap-[10px] pt-[4px] md:flex-row md:justify-end">
         <button

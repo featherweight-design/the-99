@@ -217,15 +217,23 @@ export function EditCopiesSheet({
       if ("unchanged" in out) return onClose({ saved: null });
       if ("wouldShort" in out) {
         const was = new Set(warning?.decks.map((d) => d.deckId) ?? []);
+        const chosen = isRemoval ? out.choices?.find((x) => x.oracleId === card.oracleId && choosable(x)) : undefined;
         setWarning({
           decks: out.wouldShort,
           // A confirm that comes back with a different answer redraws the same dialog, saying so.
           fresh: new Set(warning ? out.wouldShort.map((d) => d.deckId).filter((id) => !was.has(id)) : []),
           changed: warning !== null,
           // The removal chooser (#2983): offered only when the server says exactly one copy is left and 2+ committed decks list it.
-          ...(isRemoval && out.choices?.find((x) => x.oracleId === card.oracleId && choosable(x)) ? { choice: out.choices.find((x) => x.oracleId === card.oracleId)! } : {}),
+          ...(chosen ? { choice: chosen } : {}),
         });
         setPhase("editing");
+        return;
+      }
+      if ("assignRefused" in out) {
+        // The keeper cannot hold the copy any more (its list or the claims changed): nothing was saved, the answer is read afresh.
+        setWarning(null);
+        setPhase("editing");
+        setNotice({ text: collectionEditCopy.shortWarning.chooser.keeperRefused, kind: "alert" });
         return;
       }
       if ("stale" in out) {
@@ -454,7 +462,7 @@ export function EditCopiesSheet({
           >
             {warning.choice ? (
               <ShortDeckChooser
-                key={warning.choice.claimants.map((x) => `${x.deckId}:${x.allocated}`).join(",")}
+                key={JSON.stringify(warning.choice.claimants)}
                 titleId={warnId}
                 cardName={card.name}
                 choice={warning.choice}

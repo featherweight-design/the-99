@@ -310,6 +310,8 @@ export const collectionEditCopy = {
       heading: (n: number) => (n === 1 ? "Which deck goes short" : `Which ${n} decks go short`),
       tally: (picked: number, n: number) => `${picked} of ${n} picked`,
       rowSub: (listed: number, date: string) => `lists ${listed} · committed it ${date}`,
+      rowSubUndated: (listed: number) => `lists ${listed}`,
+      keeperRefused: "That deck can’t hold the copy any more. Nothing was saved.",
       short: "short 1",
       keeps: "keeps it",
       footerDefault: (short: string, keepers: string) => `${short} goes short because ${keepers} committed it first. Pick another deck to change that.`,
