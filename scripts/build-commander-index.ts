@@ -75,7 +75,8 @@ recordBuild(db, "index", async () => {
   // the stop keeps its previous theme rows, and readers fall back to the commander page.
   console.log(
     `Themes: ${r.themePages} pages stored (${r.themeCardRows} support cards); ` +
-    `${r.themesDegraded} unreachable, ${r.themesFailed} commanders' theme writes failed` +
+    `${r.themesDegraded} unreachable, ${r.themesEmpty} stored nothing, ${r.themesUnresolved} unresolved names, ` +
+    `${r.themesFailed} commanders' theme passes failed` +
     `${r.themesStopped ? ", walk STOPPED after repeated unreachable pages" : ""}.`,
   );
   // A run that wrote nothing while degrading everything is a broken run

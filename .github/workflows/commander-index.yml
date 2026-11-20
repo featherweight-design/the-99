@@ -103,7 +103,9 @@ jobs:
     needs: gate
     if: needs.gate.outputs.due == 'true' && github.event.inputs.mode != 'copy-only'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # 240 since the theme pass (engine plan A3): about 4,544 more serial pages, roughly 40 minutes, on
+    # a build measured at 92 minutes (2026-11-11).
+    timeout-minutes: 240
     environment: catalog-staging
     defaults:
       run:
@@ -134,10 +136,10 @@ jobs:
       # newest and a copy refuses a build whose derivation failed.
       - name: Build the commander index
         id: index
-        # Bounded below the job's 180 minutes, so a run that overstays is stopped HERE and the
+        # Bounded below the job's 240 minutes, so a run that overstays is stopped HERE and the
         # stamp step below still has time to run. A job-level timeout kills the whole job, and
         # no later step, not even an `always()` one, is guaranteed to run after it.
-        timeout-minutes: 170
+        timeout-minutes: 230
         run: |
           {
             echo "## Commander index"

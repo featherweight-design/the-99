@@ -7,8 +7,9 @@ import { parseEdhrecPayload, type EdhrecData } from "./parse";
 
 const TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
-const edhrecUrl = (commanderName: string) =>
-  `https://json.edhrec.com/pages/commanders/${commanderSlug(commanderName)}.json`;
+/** A commander page's JSON URL. `pageSlug` is a commander slug, or `<commander slug>/<theme slug>`. */
+const edhrecPageUrl = (pageSlug: string) => `https://json.edhrec.com/pages/commanders/${pageSlug}.json`;
+const edhrecUrl = (commanderName: string) => edhrecPageUrl(commanderSlug(commanderName));
 
 // Timeout so a hung EDHREC request falls through to stale/degraded handling
 // instead of stalling the recommendations page.
@@ -193,7 +194,7 @@ export function fetchEdhrecThemeUncached(commanderName: string, theme: string): 
 /** `pageSlug` is a commander slug, or `<commander slug>/<theme slug>`. */
 async function fetchEdhrecPage(pageSlug: string): Promise<EdhrecFetchResult> {
   try {
-    const res = await fetch(`https://json.edhrec.com/pages/commanders/${pageSlug}.json`, edhrecInit());
+    const res = await fetch(edhrecPageUrl(pageSlug), edhrecInit());
     // 429 means the service is throttling the index run, which is temporary and
     // says nothing about whether this commander is indexed. Treating it as absent
     // would overwrite a good row (and delete all its support cards) with an empty

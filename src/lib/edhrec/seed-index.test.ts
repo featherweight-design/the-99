@@ -9,7 +9,7 @@ beforeEach(() => { cleared = 0; });
 const stub = vi.hoisted(() => ({ db: {} as Record<string, unknown> }));
 vi.mock("../../db", () => ({ db: stub.db }));
 
-import { buildCommanderIndex, labelCoverage, LABEL_COVERAGE_FLOOR,
+import { buildCommanderIndex, labelCoverage, LABEL_COVERAGE_FLOOR, staleThemesWhere,
   pairNameFilter, pairRunProblem, replaceCompositionIn, type BuildIndexResult,
 } from "./seed-index";
 import { commanderScores, identityComposition } from "../../db/schema";
@@ -614,7 +614,7 @@ describe("pairRunProblem", () => {
     commanders: 0, roleTargets: 0, pairRoleTargets: 0, labelFingerprint: null, cardRows: 0, degraded: 0, absent: 0,
     unresolved: 0, skipped: 0, failed: 0, pairs: 0, pairCardRows: 0, pairsFailed: 0,
     pairsDegraded: 0, pairsUnresolved: 0, pairsSkipped: 0, legalPairs: 1717, pairRefusal: null,
-    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesFailed: 0, themesStopped: false,
+    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesFailed: 0, themesEmpty: 0, themesUnresolved: 0, themesStopped: false,
     ...over,
   });
 
@@ -819,6 +819,28 @@ describe("the theme pass", () => {
     });
     // Three themes chosen (top 3): t1 clean, t2 and t3 unreachable. The run is not stopped (two misses).
     expect(written).toEqual([{ slugs: ["t1"], keep: ["t2", "t3"] }]);
+  });
+
+  it("keeps a chosen theme whose page stores nothing, never deleting it", async () => {
+    const written: { slugs: string[]; keep: string[] }[] = [];
+    const r = await base({
+      loadCommanders: async () => [commander("A", "a")],
+      fetch: async () => tagged([{ slug: "one", count: 900 }, { slug: "two", count: 800 }]),
+      themePages: {
+        // "two" parses to no cards: the shape a changed upstream page reads as.
+        fetch: async (_n, theme) => okResult(theme === "one" ? ["Sol Ring"] : []),
+        write: async (_id, themes, keep) => { written.push({ slugs: themes.map((t) => t.header.slug), keep }); },
+      },
+    });
+    expect(written).toEqual([{ slugs: ["one"], keep: ["two"] }]);
+    expect(r.themesEmpty).toBe(1);
+  });
+
+  it("deletes only the commander's themes outside the kept slugs", () => {
+    const q = new PgDialect().sqlToQuery(staleThemesWhere("a", ["two"]));
+    expect(q.sql).toContain('"commander_theme_support"."commander_oracle_id" = $1');
+    expect(q.sql).toContain('and not ("commander_theme_support"."slug" = any($2::text[]))');
+    expect(q.params).toEqual(["a", ["two"]]);
   });
 
   it("counts a theme write that throws apart, and keeps the commander written", async () => {

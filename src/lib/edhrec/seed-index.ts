@@ -143,8 +143,14 @@ export type BuildIndexResult = {
   themePages: number; themeCardRows: number;
   /** Theme pages EDHREC could not serve this run: their previous rows stand. */
   themesDegraded: number;
-  /** Commanders whose theme write threw: their commander rows stand, their previous themes too. */
+  /** Commanders whose theme pass threw (a fetch or the write): their commander rows stand, their
+      previous themes too. */
   themesFailed: number;
+  /** Chosen themes whose page stored nothing (missing, an unknown shape, no resolvable card): their
+      previous rows stand. A run where this nears `themePages` read EDHREC's theme pages wrongly. */
+  themesEmpty: number;
+  /** Unresolvable names on theme pages, kept apart from the commander total. */
+  themesUnresolved: number;
   /** True once `THEME_STOP_AFTER` theme pages in a row were unreachable: no theme was fetched after. */
   themesStopped: boolean;
 };
@@ -378,10 +384,15 @@ async function writeToDb(header: SupportHeader, cardRows: SupportCard[]): Promis
  * `keepSlugs` goes (its cards cascade with it), so a theme that left the commander's top tags leaves
  * the table too; a kept slug is one EDHREC could not serve this run, and its previous rows stand.
  */
+/** The rows `writeThemes` deletes: the commander's stored themes, except the kept slugs. */
+export function staleThemesWhere(commanderOracleId: string, keepSlugs: readonly string[]) {
+  return sql`${commanderThemeSupport.commanderOracleId} = ${commanderOracleId}
+      and not (${commanderThemeSupport.slug} = any(${sql.param([...keepSlugs])}::text[]))`;
+}
+
 async function writeThemes(commanderOracleId: string, themes: ThemeWrite[], keepSlugs: string[]): Promise<void> {
   await db.transaction(async (tx) => {
-    await tx.delete(commanderThemeSupport).where(sql`${commanderThemeSupport.commanderOracleId} = ${commanderOracleId}
-      and not (${commanderThemeSupport.slug} = any(${sql.param(keepSlugs)}::text[]))`);
+    await tx.delete(commanderThemeSupport).where(staleThemesWhere(commanderOracleId, keepSlugs));
     if (themes.length === 0) return;
     await tx.insert(commanderThemeSupport).values(themes.map((t) => ({ ...t.header, computedAt: new Date() })));
     const rows = themes.flatMap((t) => t.cards);
@@ -483,7 +494,7 @@ export async function buildCommanderIndex(
     unresolved: 0, skipped: 0, failed: 0,
     pairs: 0, pairCardRows: 0, pairsFailed: 0, pairsDegraded: 0, pairsUnresolved: 0,
     pairsSkipped: 0, legalPairs: null, pairRefusal: null,
-    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesFailed: 0, themesStopped: false,
+    themePages: 0, themeCardRows: 0, themesDegraded: 0, themesFailed: 0, themesEmpty: 0, themesUnresolved: 0, themesStopped: false,
   };
   let themeMisses = 0;
 
@@ -518,9 +529,20 @@ export async function buildCommanderIndex(
       }
       themeMisses = 0;
       const rows = toThemeSupportRows({ commander, theme, result, nameIndex });
-      if (rows) writes.push({ header: rows.header, cards: rows.cards });
+      // A chosen theme that stores nothing (a missing page, a shape this parser does not know, no
+      // resolvable card) keeps its previous rows: only a theme that LEFT the commander's top tags is
+      // deleted. Otherwise one month of a changed upstream shape would wipe every stored theme.
+      if (!rows) { r.themesEmpty++; keep.push(theme.slug); continue; }
+      writes.push({ header: rows.header, cards: rows.cards });
+      r.themesUnresolved += rows.unresolved;
+      if (rows.unresolved > 0) console.warn(`commander-index: ${commander.name}/${theme.slug} — ${rows.unresolved} EDHREC names unresolved`);
     }
-    await themePass.write(commander.oracleId, writes, keep);
+    try {
+      await themePass.write(commander.oracleId, writes, keep);
+    } catch (err) {
+      console.error(`commander-index: ${commander.name} — ${writes.length} fetched theme pages not written`);
+      throw err;
+    }
     r.themePages += writes.length;
     r.themeCardRows += writes.reduce((n, w) => n + w.cards.length, 0);
   }

@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 // The spec's module reaches `src/db` through the builder's score clear; nothing here queries it.
 vi.mock("../../src/db", () => ({ db: {} }));
 
-const { indexCopySpec, labelledCards, labelRefusal } = await import("./index-copy");
+const { indexCopySpec, labelledCards, labelRefusal, themeCopyRefusal } = await import("./index-copy");
 type Snapshot = Parameters<typeof indexCopySpec.floors>[0];
 
 const commander = (i: number, derived = true) =>
@@ -29,6 +29,15 @@ describe("the index copy's tables", () => {
     expect(indexCopySpec.tables.map((t) => t.name)).toEqual(expect.arrayContaining([
       "commander_theme_support", "commander_theme_support_cards",
     ]));
+  });
+});
+
+describe("themeCopyRefusal", () => {
+  it("refuses a source holding under half the target's theme pages, never a first copy", () => {
+    expect(themeCopyRefusal(0, 0)).toBeNull();
+    expect(themeCopyRefusal(4500, 0)).toBeNull();
+    expect(themeCopyRefusal(2300, 4500)).toBeNull();
+    expect(themeCopyRefusal(100, 4500)).toMatch(/100 theme pages against the target's 4500/);
   });
 });
 

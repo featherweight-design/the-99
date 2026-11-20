@@ -140,7 +140,7 @@ async function run(): Promise<void> {
     const limit = Math.floor((loaded.pairs.length * pct) / 100);
     let n = 0;
     const out = await buildCommanderIndex({
-    themePages: "off",
+      themePages: "off",
       ...base,
       fetchPair: async () => (n++ < limit ? degraded : served),
     });

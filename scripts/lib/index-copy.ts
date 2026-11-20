@@ -63,6 +63,23 @@ export function labelledCards(s: Pick<IndexSnapshot, "support" | "supportCards" 
  * derived from another. A build with no label fingerprint wrote no `label_*`, so there is nothing
  * to check. Pure.
  */
+/**
+ * The copy replaces the theme tables whole, so a source holding far fewer theme pages than the target
+ * would wipe the target's: a staging build whose theme walk stopped early, or one built before the
+ * theme pass. Refused under half the target's count. A target with none (the first copy) refuses
+ * nothing. Pure on its counts; `targetThemeRefusal` reads the target's.
+ */
+export function themeCopyRefusal(sourceThemes: number, targetThemes: number): string | null {
+  if (targetThemes === 0 || sourceThemes * 2 >= targetThemes) return null;
+  return `the source holds ${sourceThemes} theme pages against the target's ${targetThemes}; ` +
+    "a whole-table replace would drop most of them (a stopped or pre-theme build?)";
+}
+
+async function targetThemeRefusal(target: NonNullable<Parameters<typeof readLabelRoleBasis>[1]>, s: IndexSnapshot): Promise<string | null> {
+  const res = await target.execute(sql`select count(*)::int as n from ${commanderThemeSupport}`);
+  return themeCopyRefusal(s.themes.length, Number((res.rows[0] as { n: number }).n));
+}
+
 async function targetLabelRefusal(
   target: Parameters<typeof readLabelRoleBasis>[1],
   s: IndexSnapshot,
@@ -172,7 +189,7 @@ export const indexCopySpec: CopySpec<IndexSnapshot> = {
     `${s.pairCards.length} pair cards · ${s.themes.length} theme pages · ${s.themeCards.length} theme cards · ` +
     `${s.staples.length} staples · ${s.composition.length} compositions`,
   // Before the dry-run return, so `--dry-run` reports a label mismatch the real copy would refuse.
-  targetRefusal: (target, s) => targetLabelRefusal(target, s),
+  targetRefusal: async (target, s) => (await targetLabelRefusal(target, s)) ?? (await targetThemeRefusal(target, s)),
   publish: async (tx, s) => {
     // 0 · The labels again, UNDER the lock: a label copy landing since the preflight is either seen
     // here or lands after this transaction.
