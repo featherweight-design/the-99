@@ -10,6 +10,7 @@ import { normalizeSetCodes } from "../sets/printed-in";
 import { isBasicLand } from "./grouping";
 import { loadCatalogBasics } from "./catalog-basics";
 import { getEdhrecData } from "../edhrec/client";
+import { loadBuildSupport } from "../edhrec/build-support";
 import { byInclusion, inclusionLookup } from "../edhrec/inclusion-rank";
 import { loadAvailability } from "./availability-query";
 import { ownedColorLegalPool, unownedTopCards } from "./suggestions-read";
@@ -127,7 +128,17 @@ export async function buildFillPlan(
     await ownedColorLegalPool(userId, commanders),
     excludeOracleIds,
   );
-  const { data } = await getEdhrecData(commander.oracleId, commander.name);
+  const { data: commanderPage } = await getEdhrecData(commander.oracleId, commander.name);
+  // THE BUILD HELP ME CHOOSE ASKED FOR (engine plan A4b): the commander's stored theme pages for the
+  // themes asked, in place of the commander page, for this fill and every retry of the deck (stored as
+  // `answer_themes`). A pair, no theme, no stored page or a failed read is the commander page. Never by
+  // default: a commander's most-played theme can rank worse than its commander page (A1).
+  const asked = options.answers?.themes ?? [];
+  const chosen = asked.length > 0 && commanders.length === 1 && commanderPage
+    ? await loadBuildSupport(commander.oracleId, commanderPage.tags, asked, options.answers?.themeJoin ?? "all")
+        .catch((err) => { console.warn("buildFillPlan: no chosen build, filling from the commander page", err); return null; })
+    : null;
+  const data = chosen && commanderPage ? { ...commanderPage, ...chosen } : commanderPage;
   // Sparse: EDHREC reports a figure only for the cards it knows.
   const inclusionByName: Record<string, number | undefined> = data?.inclusionByName ?? {};
   const inclusionOf = inclusionLookup(inclusionByName);

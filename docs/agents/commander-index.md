@@ -195,6 +195,15 @@ What the table shows:
   - The copy reads the theme tables on both sides, so staging must have migration 0250 before an index copy runs. The daily Staging sync applies it.
 - **Pairs are not themed.** `commander_pair_support` stores no tags (orchestrator ruling, 2026-11-20).
 
+## Help me choose's themes choose the fill's build (engine plan A4b)
+
+The themes a player picks in Help me choose are stored on the deck: `decks.answer_themes` (the tag labels picked) and `answer_theme_join` (`all` or `any`).
+
+- **Where they're read.** `buildFillPlan` reads them through `retryAnswersOf` / `DeckAnswers.themes`, so the create and every retry fill from the same build.
+- **What they replace.** With themes, a single commander's fill reads its stored theme pages (`loadBuildSupport`) in place of the commander page: the candidate list, inclusion and synergy figures.
+- **What they don't change.** The residual's synergy rank (`readSynergyCards`) still reads the commander page.
+- **When they don't apply.** A pair, no stored page (as before the first theme build), or a failed read fills from the commander page.
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.

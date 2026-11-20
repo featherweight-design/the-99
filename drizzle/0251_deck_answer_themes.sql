@@ -1,0 +1,3 @@
+-- The themes Help me choose asked for, and their join, stored on the deck so every fill of it builds from the same EDHREC theme pages (engine plan A4b, orchestrator ruling 2026-11-20). Defaults (empty, all) on add: every existing deck asked none, which is the commander page it was built from. No backfill.
+ALTER TABLE "decks" ADD COLUMN "answer_themes" text[] DEFAULT '{}'::text[] NOT NULL;--> statement-breakpoint
+ALTER TABLE "decks" ADD COLUMN "answer_theme_join" text DEFAULT 'all' NOT NULL;

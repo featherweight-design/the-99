@@ -30,7 +30,7 @@ describe("validateCreateAnswers", () => {
 describe("answerColumnsFor", () => {
   it("stores the budget in cents, with no intent written any more (H35)", () => {
     expect(answerColumnsFor(validateCreateAnswers(ok), { oracleId: UUID, name: "Doubling Season" })).toEqual({
-      answerAsked: true, answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false, answerSets: [],
+      answerAsked: true, answerBudgetCents: 15_000, answerBracket: 3, answerCardOracleId: UUID, answerOwnedOnly: false, answerBracketBuys: false, answerSets: [], answerThemes: [], answerThemeJoin: "all",
     });
   });
 
@@ -80,6 +80,17 @@ describe("retryAnswersOf", () => {
     expect(retryAnswersOf({ ...none, answerCardOracleId: UUID })).toMatchObject({ cardOracleId: UUID });
     expect(retryAnswersOf({ ...none, answerBudgetCents: 5_000, answerBracketBuys: true, answerBudgetRaised: true }))
       .toEqual({ budgetCents: 5_000, bracket: null, cardOracleId: null, bracketBuys: true, budgetRaised: true });
+  });
+
+  // Engine plan A4b: a deck refills the way it was built, from the same theme pages.
+  it("hands the themes asked and their join back to the retry", () => {
+    const asked = validateCreateAnswers({ ...ok, themes: ["Planeswalkers"], themeJoin: "any" });
+    const cols = answerColumnsFor(asked, null);
+    expect(cols).toMatchObject({ answerThemes: ["Planeswalkers"], answerThemeJoin: "any" });
+    expect(retryAnswersOf({ ...none, ...cols })).toMatchObject({ themes: ["Planeswalkers"], themeJoin: "any" });
+    // None asked, and a row from before the column: no themes key, so the plan fills from the commander page.
+    expect(retryAnswersOf({ ...none, answerAsked: true, answerThemes: [] })).not.toHaveProperty("themes");
+    expect(retryAnswersOf({ ...none, answerAsked: true })).not.toHaveProperty("themes");
   });
 
   it("hands the sets asked back to the retry, as the create gave them to the plan", () => {

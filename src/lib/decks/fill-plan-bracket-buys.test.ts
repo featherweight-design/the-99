@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   topCards: vi.fn(),
   skeleton: vi.fn(),
   readLabels: vi.fn(),
+  build: vi.fn(),
   loops: {} as Record<string, { variantId: string; partner: string; loop: boolean; partnerMustBeCommander: boolean }[]>,
 }));
 
@@ -30,6 +31,7 @@ vi.mock("../../app/commanders/[slug]/synergy-read", () => ({ readSynergyCards: v
 vi.mock("../profile/load", () => ({ loadSkeletonForCommanders: m.skeleton }));
 // The win-condition read (engine plan C1) has its own suite; here it offers nothing.
 vi.mock("./wincon", () => ({ loadWinconSets: async () => [] }));
+vi.mock("../edhrec/build-support", () => ({ loadBuildSupport: m.build }));
 vi.mock("../labels/read", () => ({ readLabelRoleSets: m.readLabels }));
 vi.mock("./availability-query", () => ({ loadAvailability: vi.fn(async () => new Map()) }));
 vi.mock("../discovery/price", () => ({ loadPrices: vi.fn(async () => new Map([["rhystic", { liveCents: 3200 }]])) }));
@@ -241,4 +243,30 @@ describe("the buy pool's order", () => {
     expect(handed()).toEqual(["Wipe", "Removal", "Low Creature"]);
   });
 
+});
+
+// Engine plan A4b: the themes Help me choose asked for choose the build the fill reads.
+describe("the chosen build", () => {
+  const ask = (themes?: string[]) => buildFillPlan("u", commanders, new Set(), {
+    selected: [], env: ON,
+    answers: { budgetCents: null, bracket: null, cardOracleId: null, ...(themes ? { themes, themeJoin: "any" as const } : {}) },
+  });
+
+  it("fills from the theme pages asked for, in place of the commander page", async () => {
+    m.build.mockResolvedValueOnce({ topCards: ["Doubling Season"], inclusionByName: { "doubling season": 70 }, synergyByName: {} });
+    await ask(["Planeswalkers"]);
+    expect(m.build).toHaveBeenCalledWith(commanders[0].oracleId, undefined, ["Planeswalkers"], "any");
+    expect(m.topCards.mock.calls[0][1]).toEqual(["Doubling Season"]);
+  });
+
+  it("reads no build with no theme asked, and keeps the commander page when the read fails", async () => {
+    m.build.mockClear();
+    await ask();
+    expect(m.build).not.toHaveBeenCalled();
+    expect(m.topCards.mock.calls[0][1]).toEqual(["Rhystic Study"]);
+    m.topCards.mockClear();
+    m.build.mockRejectedValueOnce(new Error("down"));
+    await ask(["Planeswalkers"]);
+    expect(m.topCards.mock.calls[0][1]).toEqual(["Rhystic Study"]);
+  });
 });
