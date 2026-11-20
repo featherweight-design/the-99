@@ -38,7 +38,9 @@ type Leaf =
   | { t: "endTurn" }
   /** Ends the game by hand: `winners` take first place (several is a draw). */
   | { t: "end"; winners: readonly number[] };
-export type Action = Leaf | { t: "batch"; actions: readonly Leaf[] };
+/** A batch holds changes only: passing the turn or ending the game is its own entry, so one commit never moves play twice. */
+export type Change = Exclude<Leaf, { t: "endTurn" } | { t: "end" }>;
+export type Action = Leaf | { t: "batch"; actions: readonly Change[] };
 
 export type OutReason =
   | { kind: "life" }
@@ -154,7 +156,7 @@ function apply(s: GameState, a: Leaf): void {
     }
     case "damage": {
       const from = seatOf(s, a.from);
-      if (!from || a.cmdr < 0 || a.cmdr >= from.commanders) return;
+      if (!from || !Number.isInteger(a.cmdr) || a.cmdr < 0 || a.cmdr >= from.commanders) return;
       const key = `${a.from}:${a.cmdr}`;
       const next = Math.max(0, (seat.damage[key] ?? 0) + a.delta);
       seat.life -= next - (seat.damage[key] ?? 0);
@@ -162,7 +164,7 @@ function apply(s: GameState, a: Leaf): void {
       return;
     }
     case "tax":
-      if (a.cmdr < 0 || a.cmdr >= seat.commanders) return;
+      if (!Number.isInteger(a.cmdr) || a.cmdr < 0 || a.cmdr >= seat.commanders) return;
       seat.tax[a.cmdr] = Math.max(0, seat.tax[a.cmdr] + a.delta);
       return;
     case "mana":
@@ -190,7 +192,8 @@ export function reduce(prev: GameState, action: Action): GameState {
   if (isOver(prev)) return prev;
   const s: GameState = structuredClone(prev);
   const entry = s.entries;
-  for (const leaf of action.t === "batch" ? action.actions : [action]) apply(s, leaf);
+  const leaves: readonly Leaf[] = action.t === "batch" ? action.actions.filter((l) => l.t !== "endTurn" && l.t !== "end") : [action];
+  for (const leaf of leaves) apply(s, leaf);
   s.rounds.push(s.round);
   s.entries += 1;
 

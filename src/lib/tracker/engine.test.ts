@@ -33,6 +33,18 @@ describe("life, counters, tax, mana", () => {
   });
 });
 
+describe("a batch and bad commander indexes", () => {
+  it("never moves play: a stored batch's endTurn or end is dropped", () => {
+    const stored = { t: "batch", actions: [{ t: "endTurn" }, { t: "end", winners: [1] }, { t: "life", seat: 1, delta: -1 }] } as unknown as Action;
+    const s = play(config(3), stored);
+    expect([s.active, s.round, s.winners, seat(s, 1).life]).toEqual([1, 1, null, 39]);
+  });
+  it("ignores a fractional commander index", () => {
+    const s = play(config(2), { t: "tax", seat: 1, cmdr: 0.5, delta: 2 }, { t: "damage", seat: 2, from: 1, cmdr: 0.5, delta: 3 });
+    expect([seat(s, 1).tax, seat(s, 2).life, seat(s, 2).damage]).toEqual([[0, 0], 40, {}]);
+  });
+});
+
 describe("commander damage", () => {
   it("comes off life and puts the seat out at 21 from one commander", () => {
     const s = play(config(3), { t: "damage", seat: 2, from: 1, cmdr: 0, delta: 21 });
