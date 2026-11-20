@@ -50,7 +50,7 @@ function stampDate(since: number | null): string {
  * A commander's mark is dimmed: that copy cannot be moved, so a mark drawn at full strength
  * would invite a press the next PR will have to refuse.
  */
-function AllocationMark({
+export function AllocationMark({
   allocated,
   copies,
   commander,
@@ -148,6 +148,8 @@ export function ContestedCardRow({
   onWrite,
   onPending,
   onUnknown,
+  externalPick = false,
+  onBeforePick,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
@@ -195,6 +197,15 @@ export function ContestedCardRow({
    * own action depends on the pick (the receipt's Undo) holds until a later write lands.
    */
   onUnknown?: () => void;
+  /**
+   * One choice spans both groups (Move a copy, #2980): the player has picked a deck in the Other decks group, so
+   * the copy is spoken for there. The listed decks draw as if it were out of the supply (they buy it), none is
+   * checked, and the pick counts toward the cap. A tap here then SETS the pick rather than toggling it: a stored
+   * reservation that the Other pick left standing must not be undone by the very tap that replaces the Other pick.
+   */
+  externalPick?: boolean;
+  /** Fired on a tap while `externalPick` stands, before the write, so the caller can drop its own pick first. */
+  onBeforePick?: () => void;
 }) {
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
@@ -255,7 +266,7 @@ export function ContestedCardRow({
   // is exactly when the player looks for confirmation that their tap landed.
   const chosenIds = chooser
     ? new Set(chooser.picked ? [chooser.picked] : [])
-    : picked ?? new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId));
+    : picked ?? (externalPick ? new Set<string>() : new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId)));
 
   const pick = (deckId: string, deckName: string) => {
     const wasChosen = chosenIds.has(deckId);
@@ -275,6 +286,8 @@ export function ContestedCardRow({
     }
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
+    const replacing = externalPick;
+    if (replacing) onBeforePick?.();
     // THE OPTIMISTIC SET SAYS WHERE THE GRANT WENT, and nothing else. The allocation that
     // follows from it is not guessed: `previewAllocation` runs the model's own `allocate` over
     // these claimants with the grant moved, so the marks can move on the tap. What is still
@@ -294,7 +307,7 @@ export function ContestedCardRow({
       // forever behind a write whose outcome nobody knows. Standing the state down is the one
       // thing that must happen on every path out of here.
       try {
-      const result = await assignCopy(card.oracleId, deckId);
+      const result = await assignCopy(card.oracleId, deckId, replacing ? "set" : undefined);
       // THE LIVE READ CARRIES NO RECEIPT. `arrived` and `ownedBefore` are facts about the import
       // this row came from, and `loadContestedCard` has no import to read — it returns nought for
       // both. Taking its object whole would cost the row its cap, its mark shape and its
@@ -414,12 +427,17 @@ export function ContestedCardRow({
     ? previewAllocation(card.claimants, card.owned, chooser.picked)
     : picked
       ? previewAllocation(card.claimants, card.owned, [...picked][0] ?? null)
-      : card.claimants;
+      // The Other decks pick holds one copy the listed decks cannot have: the model's own allocation over the rest.
+      : externalPick
+        ? previewAllocation(card.claimants, Math.max(card.owned - 1, 0), null)
+        : card.claimants;
   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
   // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
     // A brew holds only the copy it was given; its soft share of the leftover is not given out.
-    claimants.reduce((n, c) => n + (c.brew ? c.granted : Math.max(c.allocated - c.commanderCopies, 0)), 0),
+    claimants.reduce((n, c) => n + (c.brew ? c.granted : Math.max(c.allocated - c.commanderCopies, 0)), 0)
+      // The Other decks pick is a copy given out too (not while a listed tap is in flight: that tap replaces it).
+      + (externalPick && !picked ? 1 : 0),
     inPlay,
   );
   // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the

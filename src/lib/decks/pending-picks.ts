@@ -21,6 +21,10 @@
  * lock, or a caller that never looked) is left pending, never locked under the deck lock, and converts at
  * the deck's next commit; it is deleted only when the version does not list its card. Ids are locked in sorted order, so two commits sharing cards
  * cannot deadlock each other, and a pick waits at most one commit.
+ *
+ * THE CARD DETAILS DOOR (`src/app/decks/move-copy-actions.ts`) writes a pick as two SEQUENTIAL transactions, never nested:
+ * `addCardToDeckFor` (deck row lock alone), then `assignPendingFor` (card lock, then deck row lock). Having ended before the
+ * next begins, neither can invert the order above, so no single combined transaction is needed.
  */
 
 import { and, asc, eq, inArray, sql } from "drizzle-orm";

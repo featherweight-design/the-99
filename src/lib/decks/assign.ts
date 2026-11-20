@@ -57,6 +57,7 @@ export async function assignCopyFor(
   oracleId: string,
   deckId: string,
   report?: AssignReport,
+  mode: "toggle" | "set" = "toggle",
 ): Promise<AssignRefusal | null> {
   if (!isUuid(oracleId) || !isUuid(deckId)) return "not-your-deck";
   return db.transaction<AssignRefusal | null>(async (tx) => {
@@ -72,7 +73,7 @@ export async function assignCopyFor(
     // taking a weaker lock, which is how the probe caught it. `hashtextextended` for the reason
     // `replaceCollection` uses it: the ids are text of arbitrary length.
     await lockCardClaims(tx, userId, oracleId);
-    return assignCopyIn(tx, userId, oracleId, deckId, "toggle", report);
+    return assignCopyIn(tx, userId, oracleId, deckId, mode, report);
   });
 }
 

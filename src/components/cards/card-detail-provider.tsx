@@ -35,6 +35,8 @@ import type { CardCombo } from "../../lib/combos/near-combos";
 import { feedCopy } from "../../lib/copy/feed";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
 import type { DeckPrintingScope } from "./card-modal";
+import { ChangeDoorContext, type ChangeDoorRender } from "./change-door-context";
+import { ChangeCopyDoor } from "./change-copy-door";
 import { setDeckPrinting } from "../../app/decks/printing-actions";
 import { setDeckTokenPrinting } from "../../app/decks/token-actions";
 import { useDeckTokens } from "../decks/deck-tokens-context";
@@ -193,6 +195,11 @@ function preloadCardArt(imageUri: string) {
 
 /** Stable, so the context value's identity does not change every render. */
 const EMPTY_IDS: ReadonlySet<string> = new Set();
+
+/** The Change door on card details (Move a copy, #2980): module-level so its identity never changes a render. */
+const renderChangeDoor: ChangeDoorRender = (card) => (
+  <ChangeCopyDoor key={card.oracleId} oracleId={card.oracleId} cardName={card.name} owned={card.owned} />
+);
 
 type DeckPicks = Readonly<Record<string, PreferredPrinting>> | null;
 
@@ -1426,6 +1433,7 @@ export function CardDetailProvider({
 
   return (
     <CardDetailContext.Provider value={value}>
+     <ChangeDoorContext.Provider value={renderChangeDoor}>
       {children}
       {/* The fetch is invisible until the modal mounts, so the wait is announced here. */}
       <div aria-live="polite" className="sr-only">
@@ -1650,6 +1658,7 @@ export function CardDetailProvider({
           <EditCopiesHost key={editing.n} card={editing.card} onReopen={reopenEdited} onDone={doneEditing} />
         </Suspense>
       ) : null}
+     </ChangeDoorContext.Provider>
     </CardDetailContext.Provider>
   );
 }

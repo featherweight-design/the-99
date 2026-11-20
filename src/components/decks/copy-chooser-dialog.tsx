@@ -8,7 +8,7 @@
 // card each write read back to the receipt, which redraws its sentence from it and remembers the
 // pick its Undo has to drop.
 
-import { useId, useMemo, useRef } from "react";
+import { useId, useMemo, useRef, type ReactNode } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import type { ContestedCard } from "../../lib/collection/summary-read";
@@ -20,12 +20,21 @@ import { SheetGrabber } from "../ui/sheet-grabber";
 const c = gotItCopy.receipt;
 
 export function CopyChooserDialog({
-  card, cardName, thisDeckId, onCard, onWrite, onPending, onUnknown, onClose,
+  card, cardName, thisDeckId, sub, title, below, externalPick, onBeforePick, onCard, onWrite, onPending, onUnknown, onClose,
 }: {
   card: ContestedCard;
   cardName: string;
   /** The deck the copy was bought for: tagged `this deck` in the chooser, never promoted. */
-  thisDeckId: string;
+  thisDeckId?: string;
+  /** The line under the title. Default: the receipt's `<card> · added just now`; card details passes `×N in your collection`. */
+  sub?: string;
+  /** The title. Default: the receipt's `Where this copy goes`. */
+  title?: string;
+  /** Under the row, inside the scroller: card details' Other decks group (Move a copy, #2980). */
+  below?: ReactNode;
+  /** The row's one-choice-across-both-groups state (see `ContestedCardRow`). */
+  externalPick?: boolean;
+  onBeforePick?: () => void;
   /** The card a write read back; null when it settled with none (the last copy went elsewhere). */
   onCard: (card: ContestedCard | null) => void;
   /** A write that landed: whether it left a pick on `deckId` (the row's `onWrite`). */
@@ -62,13 +71,14 @@ export function CopyChooserDialog({
       >
         <SheetGrabber className="pt-0" barClassName="mb-[16px]" />
         <h2 id={titleId} className="m-0 flex-none font-display text-[20px] font-bold" style={{ color: "var(--fg)" }}>
-          {c.changeTitle}
+          {title ?? c.changeTitle}
         </h2>
-        <p className="mt-[4px] mb-[14px] flex-none text-[14px]" style={{ color: "var(--fg-body)" }}>{c.changeSub(cardName)}</p>
+        <p className="mt-[4px] mb-[14px] flex-none text-[14px]" style={{ color: "var(--fg-body)" }}>{sub ?? c.changeSub(cardName)}</p>
         {/* The row is the body: it scrolls inside the cap, so the title and Done stay in view. The 6px pad and
             its negative margin keep a focus ring inside the scroller's clip. */}
         <div className="-m-[6px] min-h-0 flex-1 overflow-y-auto overscroll-contain p-[6px]">
-          <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} />
+          <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} externalPick={externalPick} onBeforePick={onBeforePick} />
+          {below}
         </div>
         <div className="mt-[16px] flex flex-none justify-end">
           <GhostButton onClick={onClose} className="px-[18px] py-[9px] text-[13.5px]">{c.done}</GhostButton>
