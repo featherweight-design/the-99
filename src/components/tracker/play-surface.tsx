@@ -40,16 +40,21 @@ export function PlaySurface({
   backHref: string;
 }) {
   const device = useDevice();
-  const { ready, game, start, commit, undo } = useGame(tableId, expiresAt);
+  const { ready, game, start, commit, undo, discard } = useGame(tableId, expiresAt);
   const [menu, setMenu] = useState(false);
   const [saved, setSaved] = useState<"saving" | "saved" | "failed" | null>(null);
   const savedFor = useRef<string | null>(null);
 
   const state = useMemo(() => (game ? replay(game) : null), [game]);
+  const saved_layout = game ? layoutById(game.config.layout) : undefined;
+  // A saved game that no longer fits this table (another seat count, or seats that changed) is not resumed.
+  const fits = !!game && !!saved_layout && saved_layout.cells.length === seats.length && game.config.seats.length === seats.length && game.config.seats.every((c, i) => c.seat === seats[i].seat);
+  useEffect(() => (game && !fits ? discard() : undefined), [game, fits, discard]);
   const over = state ? isOver(state) : false;
 
   // The result is saved once per finished game, keyed on its length so an undo that reopens the game and a new finish saves again.
   useEffect(() => {
+    if (!over) savedFor.current = null;
     if (!state || !over) return;
     const key = `${tableId}:${state.entries}`;
     if (savedFor.current === key) return;
@@ -64,6 +69,7 @@ export function PlaySurface({
 
   if (!ready) return <div className="flex-1" aria-busy="true" />;
 
+  if (game && !fits) return null;
   if (!game || !state) {
     const layouts = layoutsFor(device, seats.length);
     return (
@@ -84,8 +90,7 @@ export function PlaySurface({
     );
   }
 
-  const layout = layoutById(game.config.layout);
-  if (!layout) return null;
+  const layout = saved_layout!;
   const bySeat = new Map(seats.map((s) => [s.seat, s]));
   const activeName = bySeat.get(state.active);
 

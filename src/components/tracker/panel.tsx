@@ -221,7 +221,10 @@ export function Panel({
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
                           e.preventDefault();
-                          if (!e.repeat) up(sign);
+                          if (!e.repeat) {
+            down(sign);
+            up(sign);
+          }
                         }
                       }}
                       className="h-full w-1/2 touch-manipulation select-none outline-none [-webkit-touch-callout:none] focus-visible:bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)]"
