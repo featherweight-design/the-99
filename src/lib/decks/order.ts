@@ -38,6 +38,7 @@ export async function reorderDecksFor(userId: string, ids: readonly string[]): P
       update decks set sort_position = v.pos
       from unnest(array[${idList}], array[${posList}]) as v(id, pos)
       where decks.id = v.id and decks.user_id = ${userId}
+        and decks.sort_position is distinct from v.pos
     `);
     return true;
   });
