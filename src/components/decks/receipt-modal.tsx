@@ -650,7 +650,8 @@ export function ComboBody({
             <div
               key={card.oracleId}
               data-plate
-              className="relative w-[150px] md:w-[128px]"
+              // The first plate sits above the second: its + disc hangs over the gap into the next plate, and each tilted plate is its own stacking context.
+              className={"relative w-[150px] md:w-[128px]" + (i === 0 ? " z-[1]" : "")}
               style={pair ? { transform: `rotate(${i === 0 ? 2.5 : -2.5}deg)` } : undefined}
             >
               <ReceiptTile
