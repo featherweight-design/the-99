@@ -7,6 +7,7 @@
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { historyCopy } from "../../lib/copy/request-history";
+import { PendingReporter } from "../shell/pending-reporter";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { PANEL, PanelEmpty } from "./section-panel";
 
@@ -60,7 +61,7 @@ export function RequestsBox({ waiting, mine, waitingCount, mineCount, unseenAnsw
       </div>
       {history ? (
         <div className="flex justify-end pr-[6px] [border-top:1px_solid_var(--border)]">
-          <Link href="/friends/requests" className="flex min-h-[44px] items-center px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] no-underline md:min-h-[36px]">{b.history}</Link>
+          <Link href="/friends/requests" className="flex min-h-[44px] items-center px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] no-underline md:min-h-[36px]">{b.history}<PendingReporter href="/friends/requests" /></Link>
         </div>
       ) : null}
     </section>
