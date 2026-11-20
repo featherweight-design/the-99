@@ -62,10 +62,10 @@ describe("withOwnFace", () => {
   });
 
   it("names the display name and its initials, keeping Clerk's email", () => {
-    expect(withOwnFace(clerk, { name: "Wren Calloway", art: null })).toEqual({ name: "Wren Calloway", email: "ana@example.com", initials: "WC" });
+    expect(withOwnFace(clerk, { name: "Wren Calloway", art: null, commander: null })).toEqual({ name: "Wren Calloway", email: "ana@example.com", initials: "WC" });
   });
 
   it("keeps Clerk's initials when the display name yields no letter", () => {
-    expect(withOwnFace(clerk, { name: "!!", art: null }).initials).toBe("AR");
+    expect(withOwnFace(clerk, { name: "!!", art: null, commander: null }).initials).toBe("AR");
   });
 });

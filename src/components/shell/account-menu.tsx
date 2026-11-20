@@ -11,7 +11,8 @@
 
 import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { forgetThisDevice } from "../../lib/push/forget-device";
-import { useEffect, useId, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState, type RefObject } from "react";
+import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
 import { useClerk, useUser } from "@clerk/nextjs";
 import { clearRecent } from "../../lib/card-search/recent";
@@ -25,6 +26,10 @@ import { adminCopy } from "../../lib/copy/admin";
 import { TOUR_HREF, tourAgainCopy } from "../../lib/copy/discovery";
 import { accountIdentity, withOwnFace, type AccountIdentity, type OwnHeaderFace } from "../../lib/shell/identity";
 import { FaceArt } from "../social/face";
+import { SignaturePicker, type SignaturePick } from "../social/signature-picker";
+import { setCommanderAction } from "../../app/friends/actions";
+import { socialCopy } from "../../lib/copy/social";
+import type { OwnCommander } from "../../lib/social/friends";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { ThemePicker } from "./theme-picker";
 import type { ThemeKey } from "../../lib/theme/themes";
@@ -210,6 +215,10 @@ type PanelProps = MenuItemsProps & {
   nameId: string;
   theme: ThemeKey;
   onClose: () => void;
+  /** The face is the press that opens the signature picker (small items 12, item 2): the card behind it, and the opener. */
+  commander: OwnCommander | null;
+  onPickFace: () => void;
+  faceRef: RefObject<HTMLButtonElement | null>;
 };
 
 /** Desktop popover (S5). No backdrop and no scroll lock — a menu, not a modal. */
@@ -238,7 +247,9 @@ function AccountPopover(props: PanelProps) {
         className="flex items-center gap-3"
         style={{ padding: "12px 12px 14px", borderBottom: "1px solid var(--border)" }}
       >
-        <Avatar identity={props.identity} art={props.art} size={44} radius={12} fontSize={14} />
+        <FaceButton commander={props.commander} onPick={props.onPickFace} faceRef={props.faceRef}>
+          <Avatar identity={props.identity} art={props.art} size={44} radius={12} fontSize={14} />
+        </FaceButton>
         <div className="min-w-0">
           <div
             id={props.nameId}
@@ -329,7 +340,9 @@ function AccountSheet(props: PanelProps) {
           className="flex items-center gap-[14px]"
           style={{ paddingBottom: 18, borderBottom: "1px solid var(--border)" }}
         >
-          <Avatar identity={props.identity} art={props.art} size={48} radius={14} fontSize={15} />
+          <FaceButton commander={props.commander} onPick={props.onPickFace} faceRef={props.faceRef}>
+            <Avatar identity={props.identity} art={props.art} size={48} radius={14} fontSize={15} />
+          </FaceButton>
           <div className="min-w-0">
             <div
               id={props.nameId}
@@ -411,6 +424,29 @@ function Avatar({
   );
 }
 
+/**
+ * The head's face as a press (small items 12, item 2): the Avatar in a button with Friends' head badge, a dashed 22px round
+ * `✎` with a card or `+` without one. It names the same strings Friends' face does. Not a menu row: the menu gains none.
+ */
+function FaceButton({ commander, onPick, faceRef, children }: { commander: OwnCommander | null; onPick: () => void; faceRef: RefObject<HTMLButtonElement | null>; children: React.ReactNode }) {
+  const c = socialCopy.signature;
+  return (
+    <button
+      ref={faceRef}
+      type="button"
+      onClick={onPick}
+      aria-label={commander ? c.changeAria(commander.name) : c.choose}
+      data-face-button=""
+      className="relative flex flex-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 focus-visible:outline-2 focus-visible:outline-offset-[3px] focus-visible:outline-[color:var(--accent)]"
+    >
+      {children}
+      <span aria-hidden className="absolute -bottom-[5px] -right-[5px] flex h-[22px] w-[22px] items-center justify-center rounded-full bg-[color:var(--elevated)] text-[11px] leading-none text-[color:var(--fg)] [border:1px_dashed_var(--border-dashed)]">
+        {commander ? "\u270E" : "+"}
+      </span>
+    </button>
+  );
+}
+
 export function AccountMenu({
   panel,
   theme,
@@ -444,6 +480,18 @@ export function AccountMenu({
     email: user?.primaryEmailAddress?.emailAddress,
   }), face);
   const art = face?.art ?? null;
+  // The signature picker, opened over the menu from the head's face (small items 12, item 2). Save or ✕ returns to the menu
+  // with focus on the face. A save closes the picker once the write lands; the shell redraws the head and the trigger.
+  const router = useRouter();
+  const [picking, setPicking] = useState(false);
+  const faceRef = useRef<HTMLButtonElement>(null);
+  async function saveFace(pick: SignaturePick | null): Promise<boolean> {
+    const out = await setCommanderAction(pick?.oracleId ?? null, pick?.printingId ?? null).catch(() => null);
+    if (!out?.ok) return false;
+    setPicking(false);
+    router.refresh();
+    return true;
+  }
 
   function close() {
     setOpen(false);
@@ -518,11 +566,13 @@ export function AccountMenu({
   useEffect(() => {
     if (!isPopover || !open) return;
     function onPointerDown(e: PointerEvent) {
+      // The picker is its own dialog over the page: a press inside it is not an outside press of the menu.
+      if (picking) return;
       if (!wrapperRef.current?.contains(e.target as Node)) setOpen(false);
     }
     window.addEventListener("pointerdown", onPointerDown);
     return () => window.removeEventListener("pointerdown", onPointerDown);
-  }, [isPopover, open]);
+  }, [isPopover, open, picking]);
 
   return (
     <div className="relative" ref={wrapperRef}>
@@ -601,6 +651,9 @@ export function AccountMenu({
             onAdmin={onAdmin}
             chip={chip}
             onCredits={onCredits}
+            commander={face?.commander ?? null}
+            onPickFace={() => setPicking(true)}
+            faceRef={faceRef}
           />
         ) : (
           <AccountSheet
@@ -620,8 +673,14 @@ export function AccountMenu({
             onAdmin={onAdmin}
             chip={chip}
             onCredits={onCredits}
+            commander={face?.commander ?? null}
+            onPickFace={() => setPicking(true)}
+            faceRef={faceRef}
           />
         ))}
+      {open && picking && (
+        <SignaturePicker current={face?.commander ?? null} onSave={saveFace} onClose={() => setPicking(false)} returnFocusRef={faceRef} raised />
+      )}
     </div>
   );
 }
