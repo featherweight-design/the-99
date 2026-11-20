@@ -70,6 +70,35 @@ describe("a combo line opened from card details", () => {
     expect(screen.getByRole("button", { name: /Two-card combos/ }).getAttribute("aria-expanded")).toBe("true");
   });
 
+  describe("opened for a stored variant (a feed item's or a push's See the combo)", () => {
+    function VariantOpener({ variantId }: { variantId: string }) {
+      const { open } = useCardDetail();
+      return <button type="button" onClick={() => open("o-poly", undefined, undefined, { combo: true, comboVariantId: variantId })}>see the combo</button>;
+    }
+    const mountVariant = (variantId: string) =>
+      render(
+        <CardDetailProvider fetchCard={vi.fn(async () => POLY)}>
+          <VariantOpener variantId={variantId} />
+        </CardDetailProvider>,
+      );
+
+    it("opens that combo's sheet over the card with no further press, and its way back is the card", async () => {
+      mountVariant("v-1");
+      await click(screen.getByText("see the combo"));
+      await waitFor(() => expect(document.querySelector("[data-card-combo=v-1]")).not.toBeNull());
+      await click(screen.getByRole("button", { name: combosCloseCopy.card.backAria("Polyraptor") }));
+      expect(document.querySelector("[data-card-combo=v-1]")).toBeNull();
+      expect(document.getElementById("card-modal-title")).toHaveTextContent("Polyraptor");
+    });
+
+    it("a variant the card's list lacks leaves the card with its combo block open, and no sheet", async () => {
+      mountVariant("v-gone");
+      await click(screen.getByText("see the combo"));
+      await waitFor(() => expect(screen.getByRole("button", { name: /Two-card combos/ })).toHaveAttribute("aria-expanded", "true"));
+      expect(document.querySelector("[data-card-combo]")).toBeNull();
+    });
+  });
+
   it("a partner opened from its plate is the deepest layer: its own combo lines open nothing (OPEN-9)", async () => {
     const back: CardCombo = { ...COMBO, variantId: "v-back", others: [{ ...COMBO.others[0], oracleId: "o-poly", name: "Polyraptor" }] };
     mount(vi.fn(async (id: string) => (id === "o-surge" ? card("o-surge", "Warstorm Surge", { cardCombos: { combos: [back], inScope: false } }) : POLY)));

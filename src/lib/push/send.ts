@@ -31,6 +31,7 @@ export function payloadFor(message: PushMessage): string {
     keys: message.keys.slice(0, 20),
     openCard: message.openCard,
     openCombo: message.openCombo,
+    openVariant: message.openVariant,
     image: message.image,
   });
   for (let n = 400; n >= 0; n -= 50) {

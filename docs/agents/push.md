@@ -151,9 +151,10 @@ This file holds what a reader of the code needs and the plan's decisions in one 
   exactly as before and no browser API is called.
 - **The landing** (`src/components/push/push-landing.tsx`, rules in `src/lib/push/landing.ts`). Home mounts `PushLanding`
   inside the feed's `CardDetailProvider`, only when the visit marks the feed seen (the switch on and the feed read; never
-  after a failed read). On mount it reads `push-card` (exactly one, a uuid, lowercased) and `push-combo` (exactly `1`) from
-  the live address, opens that card through the feed's own opener (`useCardDetailIfAny().open(id, …, { combo: true })`,
-  the call `FeedPress` makes for a price drop or a combo), and strips both parameters, valid or not, through `mirrorUrl`
+  after a failed read). On mount it reads `push-card` (exactly one, a uuid, lowercased), `push-combo` (exactly `1`) and, with a combo, `push-variant` (one Spellbook variant id: letters and digits joined by single dashes, at most 64) from
+  the live address, opens that card through the feed's own opener (`useCardDetailIfAny().open(id, …, { combo: true, comboVariantId })`,
+  the call `FeedPress` makes for a price drop or a combo: with a variant, the provider opens that combo's sheet over the card once it
+  lands, and a variant the card's list lacks leaves its combo block open), and strips every parameter, valid or not, through `mirrorUrl`
   (with `history.state` kept). A first-run Home has no provider: it opens nothing and still strips. A landing marks nothing
   seen (D4); Home's own `after()` does, as shipped.
 - **Closing what was delivered** (D4, G5): the same mount closes every notification the worker has shown, ONCE per

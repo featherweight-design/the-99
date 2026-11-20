@@ -10,7 +10,7 @@ const ask = (key: string, friend = "Peter"): PushItem => ({ kind: "spare-request
 const answer = (key: string, friend: string, said: "yes" | "no"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card: "Lathliss, Dragon Queen", image: null, answer: said });
 const post = (key: string, title: string, kind: "secret-lair" | "commander-decklists" | "wizards-news" = "secret-lair", over: Partial<{ excerpt: string | null; image: string | null }> = {}): PushItem =>
   ({ kind, key: `post:${key}`, batch: `${kind}:2026-10-29`, title, excerpt: "A drop of five.", image: "https://images.ctfassets.net/h.jpg", href: `/out/wizards/${key}`, ...over });
-const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
+const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, variantId: "1-2", a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
 
 describe("one item of each kind (the handoff's table)", () => {
   it("new set: the set's page", () => {
@@ -47,7 +47,7 @@ describe("one item of each kind (the handoff's table)", () => {
   });
   it("combo: names its kind, Home with the first piece open for its combo", () => {
     expect(toMessage([combo("c1")])).toMatchObject({
-      title: "You can make a combo", body: "Thassa's Oracle + Demonic Consultation. You added Demonic Consultation.", route: "/", openCard: "o-c1", openCombo: true,
+      title: "You can make a combo", body: "Thassa's Oracle + Demonic Consultation. You added Demonic Consultation.", route: "/", openCard: "o-c1", openCombo: true, openVariant: "1-2",
     });
   });
 });
@@ -56,7 +56,7 @@ describe("a Wizards post (Announcements UI 3b)", () => {
   it("one post: its title and summary, the hero, tagged by its kind, landing on its out route", () => {
     expect(toMessage([post("abc", "Secret Lair x Jaws")])).toEqual({
       title: "Secret Lair x Jaws", body: "A drop of five.", route: "/out/wizards/abc", tag: "secret-lair", keys: ["post:abc"],
-      openCard: null, openCombo: false, image: "https://images.ctfassets.net/h.jpg",
+      openCard: null, openCombo: false, openVariant: null, image: "https://images.ctfassets.net/h.jpg",
     });
   });
   it("a post with no summary says where a tap goes; a hero not on https is never sent", () => {
@@ -134,7 +134,7 @@ describe("a seat notice (Rule 0 revisions, item 6)", () => {
   it("says who seated you, lands on the table, and carries no image", () => {
     expect(toMessage([seat(T1)])).toEqual({
       title: "Colin seated you", body: "At Thursday night’s table. Pick your deck there.", route: `/friends/table/${T1}`,
-      tag: `rule_zero_seat:table:${T1}`, keys: [`table:${T1}`], openCard: null, openCombo: false, image: null,
+      tag: `rule_zero_seat:table:${T1}`, keys: [`table:${T1}`], openCard: null, openCombo: false, openVariant: null, image: null,
     });
   });
   it("names the deck the seat already holds", () => {

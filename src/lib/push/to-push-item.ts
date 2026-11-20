@@ -38,7 +38,7 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
       return { ...base, kind: "spare-request", friend: reveal(view.friend.displayName), card: card.name, image: card.image, ...(view.answer ? { answer: view.answer } : {}) };
     case "combo":
       if (!card || !view.combo || !view.opens) return null;
-      return { ...base, kind: "combo", oracleId: view.opens, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };
+      return { ...base, kind: "combo", oracleId: view.opens, variantId: view.combo.variantId, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };
     case "secret-lair":
     case "commander-decklists":
     case "wizards-news":

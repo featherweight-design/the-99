@@ -5,17 +5,31 @@ const ID = "2d8a1a3c-5b0e-4f5e-9a51-0d7c6b3e9f10";
 
 describe("readPushLanding: what a landing's address asks Home to open", () => {
   it("reads the worker's card, and its combo only when push-combo is exactly 1", () => {
-    expect(readPushLanding(`?push-card=${ID}`)).toEqual({ card: ID, combo: false });
-    expect(readPushLanding(`?push-card=${ID}&push-combo=1`)).toEqual({ card: ID, combo: true });
-    expect(readPushLanding(`push-card=${ID}&other=x`)).toEqual({ card: ID, combo: false });
+    expect(readPushLanding(`?push-card=${ID}`)).toEqual({ card: ID, combo: false, variant: null });
+    expect(readPushLanding(`?push-card=${ID}&push-combo=1`)).toEqual({ card: ID, combo: true, variant: null });
+    expect(readPushLanding(`push-card=${ID}&other=x`)).toEqual({ card: ID, combo: false, variant: null });
     for (const flag of ["0", "true", "yes", "", "1 ", "11"]) {
-      expect(readPushLanding(`?push-card=${ID}&push-combo=${encodeURIComponent(flag)}`)).toEqual({ card: ID, combo: false });
+      expect(readPushLanding(`?push-card=${ID}&push-combo=${encodeURIComponent(flag)}`)).toEqual({ card: ID, combo: false, variant: null });
     }
-    expect(readPushLanding(`?push-card=${ID}&push-combo=1&push-combo=1`)).toEqual({ card: ID, combo: false });
+    expect(readPushLanding(`?push-card=${ID}&push-combo=1&push-combo=1`)).toEqual({ card: ID, combo: false, variant: null });
   });
 
   it("lowercases the id, since the catalog's oracle ids are lowercase", () => {
-    expect(readPushLanding(`?push-card=${ID.toUpperCase()}`)).toEqual({ card: ID, combo: false });
+    expect(readPushLanding(`?push-card=${ID.toUpperCase()}`)).toEqual({ card: ID, combo: false, variant: null });
+  });
+
+  it("reads the combo's variant only with push-combo=1 and only in a variant id's shape", () => {
+    expect(readPushLanding(`?push-card=${ID}&push-combo=1&push-variant=1234-5678`)).toEqual({ card: ID, combo: true, variant: "1234-5678" });
+    expect(readPushLanding(`?push-card=${ID}&push-variant=1234-5678`)).toEqual({ card: ID, combo: false, variant: null });
+    for (const bad of ["", "%3Cscript%3E", "a--b", "-1", "a%20b", "x".repeat(65)]) {
+      expect(readPushLanding(`?push-card=${ID}&push-combo=1&push-variant=${bad}`)).toEqual({ card: ID, combo: true, variant: null });
+    }
+    expect(readPushLanding(`?push-card=${ID}&push-combo=1&push-variant=1-2&push-variant=3-4`)).toEqual({ card: ID, combo: true, variant: null });
+  });
+
+  it("strips the variant with the rest", () => {
+    expect(strippedLanding(`https://the-99.dev/?push-card=${ID}&push-combo=1&push-variant=1-2&tour=1`)?.href).toBe("https://the-99.dev/?tour=1");
+    expect(strippedLanding("https://the-99.dev/?push-variant=1-2")?.href).toBe("https://the-99.dev/");
   });
 
   it("opens nothing without a card, for a combo flag alone, or for anything not shaped like an oracle id", () => {

@@ -8,7 +8,7 @@ const at = (iso: string) => new Date(iso);
 const device: Device = { id: "d1", createdAt: at("2026-10-01T00:00:00Z"), timeZone: "America/New_York" };
 const row = (id: string, created: string): OutboxRow => ({ id, itemKey: `item:${id}`, createdAt: at(created) });
 const drop = (id: string, batch = "b1"): PushItem => ({ kind: "price-drop", key: `item:${id}`, batch, oracleId: `o-${id}`, card: `Card ${id}`, wasCents: 800, nowCents: 500, image: null });
-const combo = (id: string, batch = "b1"): PushItem => ({ kind: "combo", key: `item:${id}`, batch, oracleId: `o-${id}`, a: "A", b: "B", added: "B", image: null });
+const combo = (id: string, batch = "b1"): PushItem => ({ kind: "combo", key: `item:${id}`, batch, oracleId: `o-${id}`, variantId: null, a: "A", b: "B", added: "B", image: null });
 const ask = (id: string): PushItem => ({ kind: "spare-request", key: `item:${id}`, batch: id, friend: "Peter", card: "Lathliss", image: null });
 const items = (...xs: PushItem[]) => new Map(xs.map((x) => [x.key.slice(5), x]));
 const NOON = at("2026-10-22T16:00:00Z"); // 12:00 in New York

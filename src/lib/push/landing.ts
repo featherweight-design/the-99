@@ -1,6 +1,6 @@
 /**
  * The landing half of a push (plan `2026-10-22-push.md`, PR 5), pure. A tap on a price drop or a combo lands on Home with
- * what to open in the ADDRESS (`public/sw.js`'s `openLanding`): `push-card=<oracle id>` and, for a combo, `push-combo=1`.
+ * what to open in the ADDRESS (`public/sw.js`'s `openLanding`): `push-card=<oracle id>` and, for a combo, `push-combo=1` and the combo's `push-variant=<variant id>`.
  * Home reads them once, opens that card's details through the feed's own opener, and strips both through `mirrorUrl`.
  *
  * The address is anyone's to type, so the card must be an oracle id's shape (a uuid, lowercased: the catalog's ids are
@@ -10,8 +10,12 @@ import { isUuid } from "../uuid";
 
 export const PUSH_CARD_PARAM = "push-card";
 export const PUSH_COMBO_PARAM = "push-combo";
+export const PUSH_VARIANT_PARAM = "push-variant";
 
-export type PushLanding = { card: string; combo: boolean };
+/** A Spellbook variant id as the catalog stores it: digits and letters joined by dashes. Anything else is not one. */
+const VARIANT_SHAPE = /^[0-9A-Za-z]+(?:-[0-9A-Za-z]+)*$/;
+
+export type PushLanding = { card: string; combo: boolean; /** With `combo`: the variant whose sheet opens directly. */ variant: string | null };
 
 /** What a landing's address asks Home to open, or null: no card, a repeated card, or one not shaped like an oracle id. */
 export function readPushLanding(search: string): PushLanding | null {
@@ -20,18 +24,22 @@ export function readPushLanding(search: string): PushLanding | null {
   // One card or none: a repeated parameter is not what the worker writes, so it is not a landing.
   if (cards.length !== 1 || !isUuid(cards[0])) return null;
   const combos = params.getAll(PUSH_COMBO_PARAM);
-  return { card: cards[0].toLowerCase(), combo: combos.length === 1 && combos[0] === "1" };
+  const combo = combos.length === 1 && combos[0] === "1";
+  const variants = params.getAll(PUSH_VARIANT_PARAM);
+  const variant = combo && variants.length === 1 && variants[0].length <= 64 && VARIANT_SHAPE.test(variants[0]) ? variants[0] : null;
+  return { card: cards[0].toLowerCase(), combo, variant };
 }
 
 /**
- * The address with both landing parameters removed (valid or not), or null when it carries neither, so a Home visit that
+ * The address with every landing parameter removed (valid or not), or null when it carries neither, so a Home visit that
  * did not come from a push writes nothing.
  */
 export function strippedLanding(href: string): URL | null {
   const url = new URL(href);
-  if (!url.searchParams.has(PUSH_CARD_PARAM) && !url.searchParams.has(PUSH_COMBO_PARAM)) return null;
+  if (!url.searchParams.has(PUSH_CARD_PARAM) && !url.searchParams.has(PUSH_COMBO_PARAM) && !url.searchParams.has(PUSH_VARIANT_PARAM)) return null;
   url.searchParams.delete(PUSH_CARD_PARAM);
   url.searchParams.delete(PUSH_COMBO_PARAM);
+  url.searchParams.delete(PUSH_VARIANT_PARAM);
   return url;
 }
 

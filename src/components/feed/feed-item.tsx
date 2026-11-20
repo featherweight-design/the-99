@@ -22,6 +22,7 @@ import { formatCents } from "../../lib/decks/price";
 import type { FeedView } from "../../lib/feed/home";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { ComboGlyph } from "../cards/combo-glyph";
+import { comboOpenOpts } from "../cards/card-detail-context";
 import { useCardDetailIfAny } from "../cards/card-detail-provider";
 import { usePreviewRow } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -271,7 +272,7 @@ export function FeedPress({
     <button
       type="button"
       data-feed-press
-      onClick={(e) => detail.open(opens, undefined, undefined, { art: item.card?.oracleId === opens ? item.card.image : null, opener: e.currentTarget, ...(item.kind === "combo" ? { combo: true } : {}) })}
+      onClick={(e) => detail.open(opens, undefined, undefined, { art: item.card?.oracleId === opens ? item.card.image : null, opener: e.currentTarget, ...(item.kind === "combo" ? comboOpenOpts(item.combo?.variantId) : {}) })}
       className={twMerge("cursor-pointer border-0 bg-transparent p-0 text-left", className, stretch)}
       aria-describedby={describedBy}
     >

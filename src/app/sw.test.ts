@@ -441,7 +441,7 @@ describe("push", () => {
     await push(payload);
     expect(showNotification).toHaveBeenCalledWith("Jace is cheaper", {
       body: "Was $8.40, now $5.10.", tag: "price-drop", icon: ICON_192, image: "https://cards.scryfall.io/x.jpg",
-      data: { route: `${ORIGIN}/`, keys: ["item:1"], openCard: "o1", openCombo: false },
+      data: { route: `${ORIGIN}/`, keys: ["item:1"], openCard: "o1", openCombo: false, openVariant: null },
     });
   });
 
@@ -550,6 +550,17 @@ describe("push", () => {
       await push(payload);
       expect(showNotification, who).not.toHaveBeenCalled();
     }
+  });
+
+  it("a combo tap carries its variant in the address, and a variant without push-combo is not written", async () => {
+    const w = win();
+    windows = [w];
+    await click({ route: "/", keys: ["item:1"], openCard: "o1", openCombo: true, openVariant: "1-2" });
+    expect(w.navigate).toHaveBeenCalledWith(`${ORIGIN}/?push-card=o1&push-combo=1&push-variant=1-2`);
+    const x = win();
+    windows = [x];
+    await click({ route: "/", keys: ["item:1"], openCard: "o1", openCombo: false, openVariant: "1-2" });
+    expect(x.navigate).toHaveBeenCalledWith(`${ORIGIN}/?push-card=o1`);
   });
 
   it("a tap closes the notification and focuses an open window, taking it to the landing with what to open IN the address", async () => {

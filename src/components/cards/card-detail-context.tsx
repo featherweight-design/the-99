@@ -66,8 +66,11 @@ export type CardDetailContextValue = {
      * `combo`: the card is opened FOR its combo (a feed item's See the combo): its combo block starts open, and
      * the phone's sheet opens full so the block is on screen. Spent on that card alone: paging, a partner and a
      * close drop it.
+     *
+     * `comboVariantId`: with `combo`, the combo whose SHEET opens over the card as soon as the card lands (a feed item's or a
+     * push's stored variant). A variant the card's combo list does not carry leaves the block open, as `combo` alone does.
      */
-    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;
@@ -194,6 +197,14 @@ export type ViewFinish = {
 };
 
 /** A list in the one shape the provider holds. */
+/**
+ * The options of an open FOR A COMBO (a feed item's See the combo, a push's landing): `combo`, and the combo's own sheet when the
+ * stored variant is known. One definition, so the two openers cannot drift.
+ */
+export function comboOpenOpts(variantId: string | null | undefined): { combo: true; comboVariantId?: string } {
+  return variantId ? { combo: true, comboVariantId: variantId } : { combo: true };
+}
+
 export function siblingCards(list: readonly Sibling[]): SiblingCard[] {
   return list.map((s) => (typeof s === "string" ? { oracleId: s } : s));
 }
