@@ -1,5 +1,5 @@
 import { comboLandsEarly, permitsFor, violationsFor } from "../bracket/rules";
-import { admitsTogether, type FillCandidate, type FillGate } from "../decks/fill";
+import type { FillCandidate, FillGate } from "../decks/fill";
 import type { Bracket, BracketFacts } from "./rank";
 
 /**
@@ -204,7 +204,9 @@ export function allGates(gates: readonly (FillGate | null)[]): FillGate | undefi
   if (live.length === 0) return undefined;
   return {
     admits: (c) => live.every((g) => g.admits(c)),
-    admitsAll: (cs) => live.every((g) => admitsTogether(g, cs)),
+    // Each gate's own set rule, or each card on its own (fill.ts's `admitsTogether`, restated: this
+    // module imports `../decks/fill` for types only, which keeps the planner off the public surface).
+    admitsAll: (cs) => live.every((g) => (g.admitsAll ? g.admitsAll(cs) : cs.every((c) => g.admits(c)))),
     place: (c) => live.forEach((g) => g.place(c)),
   };
 }
