@@ -61,7 +61,7 @@ export type FriendDeck = FriendDeckBase & { id: string };
 export async function loadFriendDecks(viewerId: string, publicId: unknown): Promise<FriendDeck[] | null> {
   const friendId = await resolveFriend(viewerId, publicId);
   if (friendId === null) return null;
-  const rows = await visibleDecks(friendId);
+  const rows = await visibleDecks(friendId, { commanderArt: true });
   if ((await resolveFriend(viewerId, publicId)) !== friendId) return null;
   return rows.map((d): FriendDeck => ({
     id: d.id,
@@ -79,11 +79,11 @@ export async function loadFriendDecks(viewerId: string, publicId: unknown): Prom
 /**
  * The owner's decks a friend may see, by the owner's own rules, read once for both friend reads.
  */
-async function visibleDecks(ownerId: string): Promise<DeckListItem[]> {
+async function visibleDecks(ownerId: string, opts: { commanderArt?: boolean } = {}): Promise<DeckListItem[]> {
   const [rows, prefs] = await Promise.all([
-    // `includeCommanderArt`: the tile draws the printing the OWNER'S own /decks tile draws (the deck's pick, else a copy they own),
-    // not the catalog's one arbitrary crop, which also disagreed with this deck's own page.
-    listDecksWithStats(ownerId, "newest", { includeProxyStats: true, includeCommanderArt: true }),
+    // `includeCommanderArt` is the tab's alone (it draws the art): the printing the OWNER's own /decks tile draws (the deck's
+    // pick, else a copy they own), not the catalog's one arbitrary crop. The page's visibility check reads no art.
+    listDecksWithStats(ownerId, "newest", { includeProxyStats: true, ...(opts.commanderArt ? { includeCommanderArt: true } : {}) }),
     loadFriendDeckPrefs(ownerId),
   ]);
   return rows.filter((d) => friendCanSeeDeck(d, prefs));
@@ -197,7 +197,7 @@ export async function loadFriendDeck(viewerId: string, publicId: unknown, deckId
     commanders,
     cards: detail.cards.map((c) => ({ ...friendCard(c, owned), ...printed(c) })),
     colorIdentity: deckIdentity(detail.commander.colorIdentity, detail.partner?.colorIdentity ?? null),
-    // The resolved printing's crop, as the commander's own image is: the tab's list reads the catalog's.
+    // The resolved printing's crop, as the commander's own image is; the tab's list resolves the owner's printing the same way (`includeCommanderArt`).
     artCropUri: detail.commander.artCropUri,
     built: detail.built,
     bodySize: deckBodySize(detail.partner !== null),

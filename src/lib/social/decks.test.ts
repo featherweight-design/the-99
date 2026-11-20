@@ -65,6 +65,15 @@ describe("loadFriendDecks", () => {
     expect(m.listDecksWithStats).toHaveBeenCalledWith("user_friend", "newest", expect.objectContaining({ includeProxyStats: true, includeCommanderArt: true }));
   });
 
+  it("draws the resolved commander art on the tile, and the page's own check does not ask for it", async () => {
+    m.listDecksWithStats.mockResolvedValue([{ ...ROW, commanderArtCropUri: "https://crop/resolved.jpg" }]);
+    const decks = await loadFriendDecks("user_viewer", "00000000-0000-4000-8000-000000000002");
+    expect(decks![0].artCropUri).toBe("https://crop/resolved.jpg");
+    m.listDecksWithStats.mockClear().mockResolvedValue([{ ...ROW, id: DECK }]);
+    await loadFriendDeck("user_viewer", "00000000-0000-4000-8000-000000000002", DECK).catch(() => null);
+    expect(m.listDecksWithStats.mock.calls[0]?.[2]).not.toHaveProperty("includeCommanderArt");
+  });
+
   it("returns the id, name, commander and count, and nothing else of a deck", async () => {
     const [deck] = (await loadFriendDecks("user_viewer", "x"))!;
     expect(deck).toEqual({
