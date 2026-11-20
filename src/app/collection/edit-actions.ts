@@ -11,8 +11,9 @@ import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { isFinish, type CollectionItemIdentity } from "../../lib/collection/key";
 import type { PendingItem } from "../../lib/collection/pending";
 import {
-  applyCollectionChange, parseShortDecks, type ChangeResult, type EditRow, type ShortDeck,
+  applyCollectionChange, parseShortDecks, type ChangeResult, type EditRow, type ShortChoice, type ShortDeck,
 } from "../../lib/collection/write";
+import type { AssignRefusal } from "../../lib/decks/assign";
 import { warmCommanderScores } from "../../lib/recs/warm";
 import { isUuid } from "../../lib/uuid";
 import { placedOf, type AddedPlacement } from "../../lib/collection/add-placements";
@@ -148,8 +149,10 @@ export type EditOutcome =
   | { applied: { id: string } }
   | { unchanged: true }
   | { stale: (CollectionItemIdentity & { quantity: number })[] }
-  | { wouldShort: ShortDeck[] }
-  | { missingCard: string[] };
+  | { wouldShort: ShortDeck[]; choices?: ShortChoice[] }
+  | { missingCard: string[] }
+  /** The keeper the player picked cannot hold the copy (`assignRefused`), by reason. Nothing was written. */
+  | { assignRefused: AssignRefusal };
 
 /**
  * Sets each named holding to a new count, as one `edit` entry: an edit-mode save, a printing
@@ -169,6 +172,7 @@ export async function editCollection(
   rows: unknown,
   confirmShort?: unknown,
   seen?: unknown,
+  keep?: unknown,
 ): Promise<EditOutcome> {
   const { userId, env } = await signedInEditorEnv();
   if (!isUuid(actionId)) throw new Error("bad action id");
@@ -214,18 +218,33 @@ export async function editCollection(
     }
     return { ...r, scryfallId: printing?.scryfallId ?? null, condition: r.condition ?? null };
   });
+  // The removal chooser's pick (#2983): the one deck that keeps the card's last copy, written as its one authored
+  // reservation inside this edit's transaction (`opts.assign`). A malformed pick is a bad request, never a quiet default.
+  const pick = keep === undefined || keep === null ? undefined : keepOf(keep);
+  // The pick must name a card THIS edit lowers: a pick for any other card would write a reservation the edit never
+  // asked about.
+  if (pick && !editRows.some((r) => r.quantity < (r.expected ?? r.quantity) && r.oracleId === pick.oracleId)) throw new Error("bad keeper");
   const result = await applyCollectionChange(
-    userId, { kind: "edit", rows: editRows, seen: seenIdentities }, { id: actionId, confirmShort: parseShortDecks(confirmShort) },
+    userId, { kind: "edit", rows: editRows, seen: seenIdentities },
+    { id: actionId, confirmShort: parseShortDecks(confirmShort), ...(pick ? { assign: pick } : {}) },
   );
   const done = settled(userId, env, result);
   if (done) return done;
   switch (result.status) {
     case "unchanged": return { unchanged: true };
     case "stale": return { stale: result.current };
-    case "wouldShort": return { wouldShort: result.decks };
+    case "wouldShort": return { wouldShort: result.decks, ...(result.choices ? { choices: result.choices } : {}) };
     case "missingCard": return { missingCard: result.names };
+    case "assignRefused": return { assignRefused: result.reason };
     default: throw new Error(`collection edit refused: ${result.status}`);
   }
+}
+
+/** A removal pick off the wire: a card and the deck that keeps its last copy, both ids. */
+function keepOf(value: unknown): { oracleId: string; deckId: string } {
+  const v = value as { oracleId?: unknown; deckId?: unknown } | null;
+  if (typeof v !== "object" || v === null || !isUuid(v.oracleId) || !isUuid(v.deckId)) throw new Error("bad keeper");
+  return { oracleId: v.oracleId as string, deckId: v.deckId as string };
 }
 
 /** The sheet's search: every game card whose name matches, with what the player owns of each. */

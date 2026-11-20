@@ -285,6 +285,18 @@ export type ShortDeck = {
   short: number;
 };
 
+/**
+ * The removal chooser's data (#2983): a card the change leaves with EXACTLY ONE copy and two or more committed decks
+ * asking for it, so one authored reservation can say which deck keeps it. Every committed claimant, in the
+ * allocation's order (reservations first, then `since`), with what it asks for and what it would hold now.
+ * A claimant whose copy is its commander is flagged: a commander claim cannot be reserved.
+ */
+export type ShortChoice = {
+  oracleId: string;
+  cardName: string;
+  claimants: { deckId: string; deckName: string; quantity: number; since: number | null; allocated: number; commander: boolean }[];
+};
+
 export type AppliedEntry = {
   id: string;
   seq: number;
@@ -333,7 +345,7 @@ export type ChangeResult =
   /** The collection moved since the player looked. `current` is each named row now. */
   | { status: "stale"; current: (CollectionItemIdentity & { quantity: number })[] }
   /** Committed decks the change would leave short. Resend with these as `confirmShort` to save anyway. */
-  | { status: "wouldShort"; decks: ShortDeck[] }
+  | { status: "wouldShort"; decks: ShortDeck[]; choices?: ShortChoice[] }
   /** Cards the catalog no longer holds, by the name stored when they were written. */
   | { status: "missingCard"; names: string[] }
   /** The revert target is not the player's, aged out, or pruned. */
@@ -605,6 +617,36 @@ export function newlyShort(
       const grew = n.short - (prior.get(deckId)?.short ?? 0);
       if (grew > 0) out.push({ deckId, deckName: n.name, oracleId, cardName: names.get(oracleId) ?? "", short: grew });
     }
+  }
+  return out;
+}
+
+/**
+ * The cards among `short` that leave exactly one copy and two or more committed claimants, with the claimants the
+ * chooser draws (see `ShortChoice`). Brews are never named. Empty for a change that leaves no such card: the chooser
+ * is offered only when the server says so, and the client never re-derives it (Hugh, 2026-11-20).
+ */
+export function shortChoices(
+  after: Map<string, Pick<Availability, "owned" | "claims">>,
+  short: readonly ShortDeck[],
+  names: Map<string, string>,
+  ignored: ReadonlySet<string> = new Set(),
+): ShortChoice[] {
+  const out: ShortChoice[] = [];
+  for (const oracleId of new Set(short.map((d) => d.oracleId))) {
+    const now = after.get(oracleId);
+    if (!now || now.owned !== 1) continue;
+    // A deck the change itself leaves out of the warning (`ignoredDecks`) is not offered as a keeper either.
+    const claimants = allocateClaims(now).filter((c) => !c.brew && !ignored.has(c.deckId));
+    if (claimants.length < 2) continue;
+    out.push({
+      oracleId,
+      cardName: names.get(oracleId) ?? short.find((d) => d.oracleId === oracleId)?.cardName ?? "",
+      claimants: claimants.map((c) => ({
+        deckId: c.deckId, deckName: c.deckName, quantity: c.quantity, since: c.since,
+        allocated: c.allocated, commander: c.commanderCopies > 0,
+      })),
+    });
   }
   return out;
 }
@@ -1061,7 +1103,8 @@ export async function applyCollectionChange(
           .filter((d) => !ignoredDecks.has(d.deckId));
         if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks, ...(syncPreview ? { sync: syncPreview } : {}) });
         if (decks.length > 0 && !warningCovers(opts.confirmShort ?? [], decks)) {
-          throw new Refused({ status: "wouldShort", decks });
+          const choices = shortChoices(claimsAfter, decks, names, ignoredDecks);
+          throw new Refused({ status: "wouldShort", decks, ...(choices.length > 0 ? { choices } : {}) });
         }
         short = decks;
       }

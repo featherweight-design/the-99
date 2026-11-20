@@ -5,7 +5,7 @@ import type { DeckClaim } from "../decks/availability";
 import type { HistoryRow } from "../../db/schema";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import {
-  committedShortfalls, countMoves, newlyShort, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
+  committedShortfalls, countMoves, newlyShort, shortChoices, normalizeItems, placementToUndo, restoreToUndo, planAdd, planEdit, planReplace,
   planDigest, planRevert, staleEdits, unseenHoldings, staleRevert, warningCovers, type ShortDeck,
 } from "./write";
 
@@ -212,6 +212,35 @@ describe("committedShortfalls", () => {
     });
     expect(short.get("picked")?.short).toBe(0);
     expect(short.get("old")?.short).toBe(1);
+  });
+});
+
+describe("shortChoices (the removal chooser's data, #2983)", () => {
+  const names = new Map([[A, "Sol Ring"]]);
+  const short = (deckId: string): ShortDeck => ({ deckId, deckName: `deck ${deckId}`, oracleId: A, cardName: "Sol Ring", short: 1 });
+
+  it("lists every committed claimant, oldest first, when exactly one copy is left", () => {
+    const after = new Map([[A, { owned: 1, claims: [claim("young", 1, 200), claim("old", 1, 100), claim("brew", 1, null)] }]]);
+    expect(shortChoices(after, [short("young")], names)).toEqual([{
+      oracleId: A, cardName: "Sol Ring",
+      claimants: [
+        { deckId: "old", deckName: "deck old", quantity: 1, since: 100, allocated: 1, commander: false },
+        { deckId: "young", deckName: "deck young", quantity: 1, since: 200, allocated: 0, commander: false },
+      ],
+    }]);
+  });
+
+  it("offers nothing when two or more copies are left, or only one committed deck asks", () => {
+    const two = new Map([[A, { owned: 2, claims: [claim("old", 2, 100), claim("young", 1, 200)] }]]);
+    expect(shortChoices(two, [short("young")], names)).toEqual([]);
+    const one = new Map([[A, { owned: 1, claims: [claim("old", 1, 100), claim("brew", 1, null)] }]]);
+    expect(shortChoices(one, [short("old")], names)).toEqual([]);
+  });
+
+  it("offers nothing for a card the change leaves unowned, or for a card no deck goes short on", () => {
+    expect(shortChoices(new Map(), [short("old")], names)).toEqual([]);
+    const after = new Map([[A, { owned: 1, claims: [claim("old", 1, 100), claim("young", 1, 200)] }]]);
+    expect(shortChoices(after, [], names)).toEqual([]);
   });
 });
 
