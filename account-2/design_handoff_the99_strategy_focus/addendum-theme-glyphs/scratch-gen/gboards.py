@@ -1,4 +1,4 @@
-"""Strategy focus glyphs addendum R1 boards (account 2, 2026-11-20).
+"""Strategy focus glyphs addendum R1–R2 boards (account 2, 2026-11-20).
 
 The strategy block is redrawn from the shipped src/components/decks/strategy-block.tsx and strategy-ring.ts (RING sizes,
 arc geometry, RANK_MIX inks, the Medallion, the Legend), so every glyph sits at the exact size it ships at:
@@ -212,9 +212,9 @@ CALLS = [
     ("2", "Read at 14", "The smallest size any glyph ships at is the precon upgrade run row (14px); the focus picker’s legend is 16. Every glyph is drawn so "
      "its outline alone names it at 14: the Pairs board checks the risky neighbours at 14 and 16."),
     ("3", "One mark per mechanic", "Storm and Monarch already have shipped icons, as life tracker counters. They are reused here at this family’s 1.6 stroke, so "
-     "the same mechanic wears the same mark on the tracker and on the ring. Monarch’s is a plain drawn crown, not the card frame’s. A throne (B) is drawn if Hugh wants no crown at all."),
+     "the same mechanic wears the same mark on the tracker and on the ring. Monarch’s is a plain drawn crown, not the card frame’s (R2: the throne is dropped, Hugh)."),
     ("4", "Nothing from Wizards", "No mana symbols, set symbols, the planeswalker symbol, loyalty shields, Saga chapter numerals or the Monarch card’s crown. "
-     "Big mana is stacked mana rocks; Planeswalkers is a figure with its spark; Sagas is a book."),
+     "Big mana is a ramp; Planeswalkers is a figure with its spark; Sagas is a book."),
     ("5", "Three stand-ins retire", "Planeswalkers stops drawing the dashed fallback, Sagas stops borrowing Enchantments’ moon, Proliferate stops borrowing +1/+1 counters’ square."),
 ]
 
@@ -233,9 +233,9 @@ def bdk(blk, cut):
 
 def main():
     shipped = "".join(card(k, True) for k in ("tokens", "spellslinger", "counters"))
-    new = "".join(card(k) for k in NEW) + card("monarchThrone", tag="option B")
+    new = "".join(card(k) for k in NEW)
     cut = "Analysis tab · past How it plays"
-    body = (board_head("Strategy focus · glyphs addendum · R1 · account 2 · 2026-11-20", "Thirteen glyphs for the theme set",
+    body = (board_head("Strategy focus · glyphs addendum · R2 · account 2 · 2026-11-20", "Thirteen glyphs for the theme set",
                        "The focus flow, ring and graph are locked (R2g, approved 2026-10-22). This round only adds glyphs: the three that draw a stand-in today "
                        "(Planeswalkers, Sagas, Proliferate) and ten for the new themes engineering is building (Storm, Monarch, Extra turns, Extra combats, "
                        "−1/−1 counters, Burn, Group hug, Pillow fort, Big mana, Politics). Drawn in the shipped family from "
@@ -245,7 +245,7 @@ def main():
             + sec("Shipped, for scale", "Three of the shipped set in the same frame: the new glyphs match their weight, size inside the grid and corner rounding.",
                   f'<div class="gset">{shipped}</div>')
             + sec("The thirteen", "Each at 14 (precon upgrade run row), 16 (focus picker legend), 18 (precon upgrade pick and result), 16 picked, and on the "
-                  "ring centre’s medallion at both widths. Monarch B is an option, not a fourteenth glyph.", f'<div class="gset">{new}</div>')
+                  "ring centre’s medallion at both widths.", f'<div class="gset">{new}</div>')
             + sec("In place, on the shipped block", "Three fixture decks so every new glyph lands in a real legend and most on a real medallion. Counts are fixtures.",
                   '<div class="frames">'
                   + frame("<b>390</b> · a Storm deck", bph(block(STORM, "storm", "phone"), cut))
@@ -271,7 +271,7 @@ def themes():
                   f'<div class="mg"><span class="ml">Ring centre · phone · 60 on 92 · the last three are shipped</span><div class="mrow">{meds_ph}</div>'
                   f'<span class="ml">Ring centre · desktop · 77 on 118</span><div class="mrow">{meds_dk}</div>'
                   f'</div></div>')
-    body = (board_head("Strategy focus · glyphs addendum · R1", "Every theme",
+    body = (board_head("Strategy focus · glyphs addendum · R2", "Every theme",
                        "The six shipped themes, tokens from <code>globals.css</code>. Left: the focus picker’s legend at 16px with all thirteen and three shipped "
                        "glyphs for comparison, Storm picked. Right: every new glyph on the ring centre’s medallion at both widths. The glyphs carry no colour of "
                        "their own, so each theme only re-inks them; Oil Haze’s low-chroma accent is the faintest medallion and still reads.")
@@ -289,11 +289,12 @@ PAIRS = [
     ("Burn and Drain", ["burn", "drain"], [0],
      "Both are tall rounded shapes. <b>Drain</b>’s drop is symmetric with a bar inside; <b>Burn</b>’s flame is lopsided with a second tongue and nothing inside."),
     ("−1/−1 counters, +1/+1 counters and Proliferate", ["minusCounters", "counters", "proliferate"], [0, 2],
-     "+1/+1 keeps its rounded square. <b>−1/−1</b> takes a circle: at 14 the plus’s upright is under 2px, so the frame’s corners carry the difference, "
-     "not the sign. <b>Proliferate</b> drops the frame and repeats the plus three times."),
-    ("Monarch and Landfall", ["monarch", "landfall", "monarchThrone"], [0, 2],
+     "<b>−1/−1</b> is drawn as +1/+1’s sibling (R2, Hugh: the R1 circle’s minus was too big and didn’t read): the same rounded square and 1, a minus "
+     "exactly as wide as the plus’s arm. They share a frame on purpose, so the sign is the difference; at 14 the plus’s cross still shows. "
+     "<b>Proliferate</b> drops the frame and repeats the plus three times."),
+    ("Monarch and Landfall", ["monarch", "landfall"], [0],
      "Both zigzag on top. The <b>crown</b> has three even points over a separate base bar; <b>Landfall</b>’s mountains are two uneven peaks on their own "
-     "baseline, no bar. If that is still too close for Hugh, <b>B, the throne</b> has no zigzag at all."),
+     "baseline, no bar."),
     ("Pillow fort, Protection and Stax", ["pillowFort", "protection", "stax"], [0],
      "Three ways of keeping things out. <b>Pillow fort</b> is a flat-topped wall with crenellations and a gate; <b>Protection</b>’s shield comes to a point; "
      "<b>Stax</b>’s padlock is an arch over a box. Square, pointed, arched."),
@@ -303,8 +304,9 @@ PAIRS = [
      "Both have rays. <b>Blink</b> is eight rays around nothing; <b>Planeswalkers</b> is a figure (head and shoulders) with three rays above."),
     ("Sagas and Card draw", ["sagas", "draw", "etbDraw"], [0],
      "Pages against cards. <b>Sagas</b> is a book open flat, wider than tall; the draw glyphs are upright cards with rounded corners."),
-    ("Big mana, Treasure and Artifacts", ["bigMana", "treasure", "artifacts"], [0],
-     "Mana without mana symbols. <b>Big mana</b> is three stacked rounded rocks, a pyramid of pills; Treasure keeps the gem and Artifacts the gear."),
+    ("Big mana, Pump and Landfall", ["bigMana", "pump", "landfall"], [0],
+     "Mana without mana symbols. <b>Big mana</b> is a ramp, a wedge with an arrow climbing it on the diagonal (R2, Hugh: the R1 stacked rocks read as a pile). "
+     "<b>Pump</b>’s arrow goes straight up off a line; <b>Landfall</b> is mountains with no arrow."),
 ]
 
 
@@ -322,7 +324,7 @@ def pairs():
     allk = order + list(NEW)
     wall16 = "".join(f'<span class="{"nw" if k in NEW else ""}">{g(k, 16)}{NAME[k]}</span>' for k in allk)
     wall14 = "".join(f'<span class="{"nw" if k in NEW else ""}">{g(k, 14)}{NAME[k]}</span>' for k in allk)
-    body = (board_head("Strategy focus · glyphs addendum · R1", "Pairs at risk, and the whole set",
+    body = (board_head("Strategy focus · glyphs addendum · R2", "Pairs at risk, and the whole set",
                        "Each pair at 14, 16 and 24, on the phone medallion, and as two legend rows, new glyphs named in accent. Then the whole set, 35 shipped and "
                        "13 new, at 16 and at 14, to check the family holds together and no two outlines collide.")
             + sec("Pairs at risk of confusion", "", f'<div class="pairs">{cards}</div>')
@@ -331,6 +333,6 @@ def pairs():
     return doc("Pairs", body, 1900)
 
 
-BOARDS = [("Main", main, "Main · R1 · thirteen glyphs, the calls, in place"),
+BOARDS = [("Main", main, "Main · R2 · thirteen glyphs, the calls, in place"),
           ("Themes", themes, "Themes · every theme, picker and ring centre"),
           ("Pairs", pairs, "Pairs · risky neighbours, the whole set at 16 and 14")]

@@ -21,7 +21,7 @@ NEW = {
         "A twister. The life tracker’s shipped Storm counter, at this family’s 1.6 stroke."),
     "monarch": ("Monarch",
         '<path d="M3.5 18l2-10 4.3 4L12 5l2.2 7 4.3-4 2 10z"/><path d="M5 21h14"/>',
-        "A plain drawn crown: the life tracker’s shipped Monarch counter, at 1.6. Not the card frame’s crown."),
+        "A plain drawn crown: the life tracker’s shipped Monarch counter, at 1.6. Not the card frame’s crown (R2: kept, Hugh)."),
     "extraTurns": ("Extra turns",
         '<path d="M6.5 3.5h11M6.5 20.5h11"/><path d="M8 3.5v2c0 3.5 4 4.5 4 6.5s-4 3-4 6.5v2M16 3.5v2c0 3.5-4 4.5-4 6.5s4 3 4 6.5v2"/>',
         "An hourglass: more time. Upright and mirrored top to bottom."),
@@ -29,8 +29,8 @@ NEW = {
         '<path d="M4 4l11 11M13 17.5l4.5-4.5M15 15l4.5 4.5"/><path d="M20 4L9 15M11 17.5L6.5 13M9 15l-4.5 4.5"/>',
         "Two swords crossed: another fight. An X, mirrored left to right."),
     "minusCounters": ("−1/−1 counters",
-        '<circle cx="12" cy="12" r="9"/><path d="M6.5 12h5M15.5 9v6"/>',
-        "−1 on a round counter. The round frame is the cue against +1/+1’s square."),
+        '<rect x="3.5" y="3.5" width="17" height="17" rx="4"/><path d="M7 12h4M15 9v6"/>',
+        "+1/+1’s own counter with a minus: the same frame and the same 1, the minus as wide as the plus’s arm, so it reads as its sibling at once."),
     "burn": ("Burn",
         '<path d="M12 21.5a6.5 6.5 0 0 0 6.5-6.5c0-4.5-3.5-6.5-4-12-2.5 2-3.5 4.5-3.5 7-1.2-.8-2-2.2-2.2-3.8C6.6 8 5.5 11.5 5.5 15a6.5 6.5 0 0 0 6.5 6.5z"/>',
         "A flame with two tongues. Closed, no inner mark."),
@@ -41,17 +41,14 @@ NEW = {
         '<path d="M4.5 21V8h3v2.5h3V8h3v2.5h3V8h3v13z"/><path d="M10 21v-4a2 2 0 0 1 4 0v4"/>',
         "A fort wall with a gate: attackers stay out. Flat top, crenellated."),
     "bigMana": ("Big mana",
-        '<rect x="3.5" y="16" width="17" height="4.5" rx="2.25"/><rect x="5.5" y="10.5" width="12" height="4.5" rx="2.25"/><rect x="8.5" y="5" width="8" height="4.5" rx="2.25"/>',
-        "Mana rocks, stacked high. No mana symbol, no gem (Treasure has the gem)."),
+        '<path d="M3 19.5h18V8.5z"/><path d="M4.5 12L13 4.5M9 4.5h4v4"/>',
+        "A ramp with an arrow climbing it: the deck ramps. No mana symbol, no gem (Treasure has the gem)."),
     "politics": ("Politics",
         '<path d="M4 3.5h9.5A1.5 1.5 0 0 1 15 5v5a1.5 1.5 0 0 1-1.5 1.5H9l-3.5 3v-3H4A1.5 1.5 0 0 1 2.5 10V5A1.5 1.5 0 0 1 4 3.5z"/><path d="M18 8.5h2A1.5 1.5 0 0 1 21.5 10v5a1.5 1.5 0 0 1-1.5 1.5h-1v3l-3.5-3H11a1.5 1.5 0 0 1-1.5-1.5v-1"/>',
         "Two speech bubbles: deals across the table."),
 }
 
-ALT = {
-    "monarchThrone": ("Monarch · B", '<path d="M7.5 12.5V7.5a4.5 4.5 0 0 1 9 0v5"/><path d="M5 12.5h14V16H5z"/><path d="M6.5 16v4.5M17.5 16v4.5"/>',
-                      "A throne, if no crown at all is wanted. Breaks with the tracker’s Monarch."),
-}
+ALT = {}
 
 # The stand-ins the three missing glyphs draw today (strategy-icon.tsx).
 STANDIN = {"planeswalkers": "fallback", "sagas": "enchantments", "proliferate": "counters"}
