@@ -8,6 +8,7 @@
 
 import { useRef, useState } from "react";
 import { GhostButton } from "@/components/ui/button";
+import { DeckFlipStrip } from "./deck-flip-strip";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { BandTapTarget } from "../commanders/full-card-trigger";
 import { useCommanderSiblings } from "./deck-siblings";
@@ -72,6 +73,7 @@ export function SpineMobile({
   onOpenNotices,
   move,
   friendHide,
+  flipStrip,
 }: SpineBandProps) {
   const [renaming, setRenaming] = useState(false);
   // No measurement, and no clamp. `-webkit-line-clamp` requires
@@ -529,6 +531,7 @@ export function SpineMobile({
           gap: 8,
         }}
       >
+        {flipStrip && !renaming ? <DeckFlipStrip flipState={flipStrip} width="phone" /> : null}
         {renaming ? (
           <>
             {metaRow(false)}

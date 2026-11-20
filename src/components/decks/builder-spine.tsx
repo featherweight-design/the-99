@@ -12,6 +12,8 @@ import { useDeckShelfMove, type DeckShelf } from "./deck-shelf-move";
 import type { DeckMove } from "./deck-card-overflow";
 import type { StatusPill } from "../../lib/decks/status";
 import type { HeaderNotice } from "./notice-tag";
+import type { FlipDeck } from "../../lib/decks/flip";
+import { DeckFlipStrip, useDeckFlip } from "./deck-flip-strip";
 
 interface BuilderSpineProps {
   deck: DeckDetail;
@@ -44,6 +46,8 @@ interface BuilderSpineProps {
   shelf?: DeckShelf;
   /** Hidden from friends' row and mark, passed to both widths. See `SpineBandProps`. */
   friendHide?: SpineBandProps["friendHide"];
+  /** The player's decks and the builder's live view as a query, for the flip strip. Absent: no strip. */
+  flip?: { decks: FlipDeck[]; search: string };
 }
 
 export function BuilderSpine({
@@ -58,7 +62,11 @@ export function BuilderSpine({
   onOpenNotices,
   shelf,
   friendHide,
+  flip,
 }: BuilderSpineProps) {
+  // One state for both widths: one listener, one prefetch. A list of one deck has nothing to flip to.
+  const flipState = useDeckFlip(flip && flip.decks.length > 1 ? flip.decks : undefined, deck.id, flip?.search ?? "");
+  const flipStrip = flip && flip.decks.length > 1 ? flipState : null;
   // One drawing of both spines, with the deck menu's Move when the page read the shelves.
   const spines = (move?: DeckMove) => (
     <>
@@ -75,6 +83,12 @@ export function BuilderSpine({
         move={move}
         friendHide={friendHide}
       />
+      {/* A row of its own under the band, not inside it: the band's corner buttons are anchored to its bottom edge. */}
+      {flipStrip && (
+        <div data-flip-row className="hidden md:flex" style={{ borderBottom: "1px solid var(--border)", padding: "6px 24px" }}>
+          <DeckFlipStrip flipState={flipStrip} width="desktop" />
+        </div>
+      )}
       <SpineMobile
         deck={deck}
         counts={counts}
@@ -87,6 +101,7 @@ export function BuilderSpine({
         onOpenNotices={onOpenNotices}
         move={move}
         friendHide={friendHide}
+        flipStrip={flipStrip}
       />
     </>
   );
