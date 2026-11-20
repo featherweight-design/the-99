@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Friends full layout with pods</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+.fold{position:absolute;left:-8px;right:-8px;top:450px;border-top:2px dashed #CF8745}
+.fold span{position:absolute;right:0;top:-22px;font:600 10.5px 'IBM Plex Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:#CF8745;background:#0D0B09;padding:0 6px}
+</style>
+</helmet>
+<div style="width: 1892px; min-height: 1990px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1500px">
+<p class="lab"><b>R1c</b> · Friends with pods · 1440 and 390</p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Your requests moves to the right column, so Friends stays above the fold</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The shipped page already splits into two columns from 1180: Waiting on you, Your requests and Friends on the left, Pods and open links on a 420 right column. With three of each, Friends falls to a 900px fold. Moving Your requests to the top of the right column puts Friends right under the inbox. The right column grows to 448 so a pod’s three seats still fit inside the new box.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 720px; flex: none">
+<p class="lab"><b>D1</b> · today’s split, boxed</p>
+<div style="position: relative"><img class="shot" src="art/D1-wide.png" alt="Friends at 1440 with the shipped split: Friends starts below the fold"><div class="fold"><span>900px fold</span></div></div>
+<p class="cap">Waiting on you (3) and Your requests (3) fill the left column. <b>Friends’ heading lands right at the fold (about 880px) with every row below it</b>.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 720px; flex: none">
+<p class="lab"><b>D2</b> · recommended: Your requests on the right</p>
+<div style="position: relative"><img class="shot" src="art/D2-wide.png" alt="Friends at 1440 with Your requests in the right column"><div class="fold"><span>900px fold</span></div></div>
+<p class="cap">Left column: what <b>needs you</b> (Waiting on you), then <b>who you know</b> (Friends), starting about 520px down, well above the fold. Right column: what <b>you’re waiting on</b> (Your requests, with History ›), then Pods.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 260px; flex: none">
+<p class="lab"><b>P1</b> · phone order</p>
+<img class="shot" src="art/P1-phone.png" alt="Friends on a phone with pods, full page">
+<p class="cap">Phone keeps one column. Its order follows the page: Waiting on you, <b>Friends</b>, Your requests, Pods. Friends moves up here too, and reading order still matches what’s on screen.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1892,"height":1990}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
