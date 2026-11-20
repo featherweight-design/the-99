@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Entry points and the commander page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:650px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:650px;border-radius:12px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font:500 12px 'IBM Plex Mono',monospace;color:#A3A8B8}
+.flow span.n{border:1px solid #343843;border-radius:6px;padding:6px 9px;color:#E6E8F0}
+.flow span.n.hot{border-color:#E39A4F;color:#E39A4F}
+</style>
+</helmet>
+<div class="board" style="width: 1960px; min-height: 2634px">
+<div class="bh"><span class="k">Guided build · R1 · account 2 · 2026-11-20</span><h2>Entry points, and the commander page (call 4)</h2><p class="cap">For you and Discover rows open the commander page, as shipped. On the page, the only change is the build promise: the page has one way to start a deck and makes no claim about how it will be built.</p></div><p class="sub">For you and Discover, shipped (rows open the commander page)</p><div class="row"><div class="fr "><div class="state"><span class="pill was">E1</span><span class="k">For you · phone</span></div><img class="shot " src="art/e-foryou-p.webp" alt="For you · phone"><p class="cap">Select a row to open its commander page.</p></div><div class="fr "><div class="state"><span class="pill was">E2</span><span class="k">Discover · phone</span></div><img class="shot " src="art/e-discover-p.webp" alt="Discover · phone"><p class="cap">The same page, from Discover.</p></div><div class="fr wide"><div class="state"><span class="pill was">E1d</span><span class="k">For you · 1300</span></div><img class="shot dk" src="art/e-foryou-d.webp" alt="For you · 1300"><p class="cap">Desktop rows open the same page.</p></div></div><p class="sub">The phone bar at the end of the commander page: shipped, then proposed</p><div class="row"><div class="fr "><div class="state"><span class="pill was">C0</span><span class="k">Shipped · phone, page end</span></div><img class="shot " src="art/gb-cp-p.webp" alt="Shipped · phone, page end"><p class="cap"><code>READY TO BUILD</code> and “We’ll build the whole 99…”, then <code>Build this deck →</code>.</p></div><div class="fr "><div class="state"><span class="pill now">C1</span><span class="k">Proposed · phone, page end</span></div><img class="shot " src="art/gb-cp-g-p.webp" alt="Proposed · phone, page end"><p class="cap">The label and the promise go. One button: <code>Start a deck →</code>. With synergy picks, the shipped picks line sits to its left.</p></div><div class="fr wide"><div class="state"><span class="pill was">C0d</span><span class="k">Shipped · 1300</span></div><img class="shot dk" src="art/gb-cp-d.webp" alt="Shipped · 1300"><p class="cap"><code>Build this deck →</code> with the seed note under it.</p></div></div><div class="row"><div class="fr wide"><div class="state"><span class="pill now">C1d</span><span class="k">Proposed · 1300</span></div><img class="shot dk" src="art/gb-cp-g-d.webp" alt="Proposed · 1300"><p class="cap"><code>Start a deck →</code>, and the seed note goes. The Hide line moves up under the button.</p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1960,"height":2634}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

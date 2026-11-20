@@ -1,0 +1,113 @@
+--- a/src/components/decks/create-pre-filled.tsx	2026-11-20 19:39:37.281291405 +0000
++++ b/src/components/decks/create-pre-filled.tsx	2026-11-20 19:39:37.298315430 +0000
+@@ -25,6 +25,8 @@
+ import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
+ import { PendingReporter } from "../shell/pending-reporter";
+ import { ArtLayer } from "../ui/art-layer";
++import { BuildChoice, type BuildKind } from "./guided/build-choice";
++import { guidedBuildCopy } from "../../lib/copy/guided-build";
+ 
+ // ---------------------------------------------------------------------------
+ // Props
+@@ -58,6 +60,10 @@
+      *  asked. False draws the ceiling line. */
+     readReach?: boolean;
+   };
++  /** Guided build R1 (proposal): the one choice of how the deck is built. Absent, today's page. */
++  build?: { kind: BuildKind; short?: { have: number; payments: boolean } };
++  /** Render only: a typed name. */
++  typedName?: string;
+ }
+ 
+ const handOffCopy = helpMeChooseCopy.handOff;
+@@ -74,9 +80,11 @@
+   imageUri,
+   selectedOracleIds,
+   handOff,
++  build,
++  typedName,
+ }: CreatePreFilledProps) {
+   const backHref = handOff?.resultsHref ?? "/decks/new";
+-  const [deckName, setDeckName] = useState("");
++  const [deckName, setDeckName] = useState(typedName ?? "");
+   const [error, setError] = useState<string | null>(null);
+   const [isPending, startTransition] = useTransition();
+   const inputRef = useRef<HTMLInputElement>(null);
+@@ -381,6 +389,8 @@
+               </p>
+             ) : null}
+ 
++            {build && <BuildChoice value={build.kind} commander={name.split(",")[0]} short={build.short} />}
++
+             {/* The two CTAs are a flex row (column on mobile) with an explicit
+                 gap. They used to be a margin plus the whitespace between two
+                 inline-blocks, which collapsed to nothing on desktop (#125). */}
+@@ -391,7 +401,7 @@
+                 disabled={isPending || deckName.trim().length === 0 || waiting}
+                 className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-[26px]"
+               >
+-                {isPending ? "Creating…" : "Create deck →"}
++                {isPending ? "Creating…" : build ? guidedBuildCopy.press[build.kind] : "Create deck →"}
+               </PrimaryButton>
+ 
+               {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md
+--- a/src/components/commanders/detail.tsx	2026-11-20 19:39:57.821276792 +0000
++++ b/src/components/commanders/detail.tsx	2026-11-20 19:39:57.893194667 +0000
+@@ -32,6 +32,7 @@
+ import type { SynergyCard } from "../../lib/commanders/synergy-cards";
+ import { PRIMARY } from "../ui/button";
+ import { ArtLayer } from "../ui/art-layer";
++import { guidedBuildCopy } from "../../lib/copy/guided-build";
+ import { BandKicker, CommanderHideProvider, HeroRankClause, HiddenNote, HideLine } from "./hide-commander";
+ 
+ // ─── Fit Hero (right column top section) ─────────────────────────────────────
+@@ -247,7 +248,8 @@
+   synergyCards,
+   newestAsOf,
+   prose = null,
+-}: CommanderDetailProps) {
++  guided = false,
++}: CommanderDetailProps & { guided?: boolean }) {
+   // THE PAGE-LEVEL ANSWER, computed once over every card either panel draws.
+   //
+   // The dot key asserts "Owned and available." — a claim about the commander,
+@@ -542,6 +544,12 @@
+           padding: "12px 16px 24px",
+         }}
+       >
++        {guided ? (
++          <>
++            <div className="flex flex-col flex-1 min-w-0"><SelectableSynergySelection cards={synergyCards} width="phone" /></div>
++            <a href="#" className={`font-sans font-semibold rounded-lg ${PRIMARY} text-[14px] p-[12px_20px] text-center whitespace-nowrap`}>{guidedBuildCopy.commander.press}</a>
++          </>
++        ) : (<>
+         <div className="flex flex-col flex-1">
+           <span
+             className="font-mono"
+@@ -558,7 +566,7 @@
+           oracleId={c.oracleId}
+           // brand focus-visible outline treatment inherited from globals.css
+           className={`font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default ${PRIMARY} text-[14px] p-[12px_20px] text-center whitespace-nowrap`}
+-        />
++        /></>)}
+       </div>
+ 
+       {/* ── Desktop: two-column layout ──────────────────────────────── */}
+@@ -648,6 +656,9 @@
+             </div>
+           )}
+ 
++          {guided ? (
++            <a href="#" className={`font-sans font-semibold rounded-lg ${PRIMARY} text-[15px] p-[14px_0] text-center block w-full`}>{guidedBuildCopy.commander.press}</a>
++          ) : (<>
+           {/* Build this deck button */}
+           <SelectableBuildButton
+             oracleId={c.oracleId}
+@@ -668,6 +679,7 @@
+             {recommendationsCopy.build.seedNote}
+           </p>
+ 
++          </>)}
+           {/* Promise line + clear, below seed note — desktop width */}
+           <SelectableSynergySelection cards={synergyCards} width="desktop" />
+ 
