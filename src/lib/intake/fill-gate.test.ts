@@ -61,6 +61,17 @@ describe("bracketGate", () => {
     expect(g.admits(card("g3"))).toBe(false);
   });
 
+  it("judges a combo's pieces TOGETHER: each alone is admitted, the pair is not at 2", () => {
+    const f = facts({ combos: { a: [edge("v", "b")], b: [edge("v", "a")] } });
+    const g = bracketGate({ bracket: 2, commanderIds: ["cmd"], fixedIds: ["cmd"], facts: f })!;
+    expect(g.admits(card("a"))).toBe(true);
+    expect(g.admits(card("b"))).toBe(true);
+    expect(g.admitsAll!([card("a"), card("b")])).toBe(false);
+    // At 3 a single counted combo is within the limits.
+    const g3 = bracketGate({ bracket: 3, commanderIds: ["cmd"], fixedIds: ["cmd"], facts: f })!;
+    expect(g3.admitsAll!([card("a"), card("b")])).toBe(true);
+  });
+
   it("at 1 and 2 refuses the second half of a combo, never the first", () => {
     const f = facts({ combos: { a: [edge("v", "b")], b: [edge("v", "a")] } });
     const g = bracketGate({ bracket: 2, commanderIds: ["cmd"], fixedIds: ["cmd"], facts: f })!;

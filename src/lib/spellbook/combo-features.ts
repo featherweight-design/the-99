@@ -80,3 +80,17 @@ export const COMBO_DETECTION = {
   methods: ["Commander Spellbook's combo index"],
   basis: "Spellbook's index, excluding template-gated variants",
 } as const;
+
+/**
+ * Whether a combo's outcome wins the game, as the fill's win-condition quota counts one (orchestrator
+ * ruling, 2026-11-20): it names a win (`GAME_ENDING_FEATURES`, "Win the game…"), infinite damage to a
+ * player, or infinite life loss or mill. Infinite mana or tokens alone is an engine, not a win: it
+ * needs an outlet the combo does not name. Infinite damage to CREATURES clears a board and wins nothing.
+ */
+export function isWinCondition(features: readonly string[]): boolean {
+  return features.some((f) =>
+    GAME_ENDING_FEATURES.includes(f)
+    || /^win the game\b/i.test(f)
+    || (/^infinite damage\b/i.test(f) && !/\bcreatures?\b/i.test(f))
+    || /^infinite (lifeloss|life loss|mill|milling)\b/i.test(f));
+}

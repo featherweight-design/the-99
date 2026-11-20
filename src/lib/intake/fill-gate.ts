@@ -1,5 +1,5 @@
 import { comboLandsEarly, permitsFor, violationsFor } from "../bracket/rules";
-import type { FillCandidate, FillGate } from "../decks/fill";
+import { admitsTogether, type FillCandidate, type FillGate } from "../decks/fill";
 import type { Bracket, BracketFacts } from "./rank";
 
 /**
@@ -56,6 +56,16 @@ export function budgetGate(args: {
       if (!args.buys(c)) return true;
       const price = args.priceOf(c.oracleId);
       return price !== null && price <= remaining;
+    },
+    admitsAll(cs) {
+      let total = 0;
+      for (const c of cs) {
+        if (!args.buys(c)) continue;
+        const price = args.priceOf(c.oracleId);
+        if (price === null) return false;
+        total += price;
+      }
+      return total <= remaining;
     },
     place(c) {
       if (args.buys(c)) remaining -= args.priceOf(c.oracleId) ?? 0;
@@ -136,19 +146,30 @@ export function bracketGate(args: {
   const reachesOf = (allSearchers: Iterable<string>, allCombos: Iterable<Combo>) =>
     reachesAmong(facts, inCommandZone, allSearchers, allCombos);
 
-  /** The lowest bracket the placed cards, plus `id` when one is given, permit. */
-  const lowestPermitted = (id: string | null): number => {
-    const f = id === null ? { gameChanger: false, massLandDenial: false, extraTurn: false } : facts.flagsOf(id);
-    const next = id === null ? [] : completes(id, placed);
-    const allCombos = [...combos.values(), ...next];
+  /** The lowest bracket the placed cards, plus `ids` placed together, permit. Each added card's
+      combos are counted against the placed cards AND the added cards before it, so a set that
+      completes a combo between its own pieces is weighed as the whole combo it is. */
+  const lowestPermitted = (ids: readonly string[]): number => {
+    const among = new Set(placed);
+    const next = new Map<string, Combo>();
+    const add = { gameChangers: 0, massLandDenial: 0, extraTurns: 0 };
+    for (const id of ids) {
+      for (const c of completes(id, among)) if (!combos.has(c.variantId)) next.set(c.variantId, c);
+      among.add(id);
+      const f = facts.flagsOf(id);
+      if (f.gameChanger) add.gameChangers += 1;
+      if (f.massLandDenial) add.massLandDenial += 1;
+      if (f.extraTurn) add.extraTurns += 1;
+    }
+    const allCombos = [...combos.values(), ...next.values()];
     const v = violationsFor({
-      gameChangers: counts.gameChangers + (f.gameChanger ? 1 : 0),
-      massLandDenial: counts.massLandDenial + (f.massLandDenial ? 1 : 0),
-      extraTurns: counts.extraTurns + (f.extraTurn ? 1 : 0),
+      gameChangers: counts.gameChangers + add.gameChangers,
+      massLandDenial: counts.massLandDenial + add.massLandDenial,
+      extraTurns: counts.extraTurns + add.extraTurns,
       combos: allCombos.length,
       loops: allCombos.filter((c) => c.loop).length,
     });
-    const allSearchers = id !== null && facts.searches(id) ? [...searchers, id] : [...searchers];
+    const allSearchers = [...searchers, ...ids.filter((id) => facts.searches(id))];
     const assemblesCombo = bracket === 3 && comboLandsEarly(allCombos, reachesOf(allSearchers, allCombos), args.commanderIds);
     return Math.min(...permitsFor({ ...v, assemblesCombo }));
   };
@@ -168,10 +189,11 @@ export function bracketGate(args: {
   // answer then, the gate would refuse every card, basics included, and the fill would come back
   // short. So the ceiling is the answer or the lowest bracket the fixed cards permit, whichever is
   // higher: the deck is whole, and no card placed around them raises it further.
-  const ceiling = Math.max(bracket, lowestPermitted(null));
+  const ceiling = Math.max(bracket, lowestPermitted([]));
 
   return {
-    admits: (c) => lowestPermitted(c.oracleId) <= ceiling,
+    admits: (c) => lowestPermitted([c.oracleId]) <= ceiling,
+    admitsAll: (cs) => lowestPermitted(cs.map((c) => c.oracleId)) <= ceiling,
     place: (c) => record(c.oracleId),
   };
 }
@@ -182,6 +204,8 @@ export function allGates(gates: readonly (FillGate | null)[]): FillGate | undefi
   if (live.length === 0) return undefined;
   return {
     admits: (c) => live.every((g) => g.admits(c)),
+    admitsAll: (cs) => live.every((g) => admitsTogether(g, cs)),
     place: (c) => live.forEach((g) => g.place(c)),
   };
 }
+
