@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Light and dark clients</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+.cap{font-size:12.5px;line-height:1.55;color:#A89B84}
+.cap b{color:#EDE6D8}
+.fm{display:block;border-radius:14px;border:1px solid #3A3229}
+</style>
+</helmet>
+<div style="width: 2300px; height: 3600px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">D · light and dark clients, images off</p>
+<h2 style="margin: 0; font: 700 26px 'Cinzel', serif">The shipped dark shell, inverted and bare</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 2180px">Dark as sent everywhere that honors <code>color-scheme: dark</code> (board L is that view: Apple Mail, iOS Mail, Outlook, Gmail Android and web). Gmail on iOS inverts every email to a parchment light version, simulated in D1 and D2 as on the branded-emails board: every line stays legible and the images (mark tile, card fan, feature captures) are never inverted. With images off (D3, D4), the tile’s box reads “The 99” in brass and each image box carries its alt; every feature title and sentence, the button and the unsubscribe line are live text.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 375px">
+<img class="fm" src="art/launch-375-invert.png" alt="The launch email at 375 with Gmail iOS inversion simulated: parchment ground, dark heading, brass button in a deeper brass" style="width: 375px; height: 2770px">
+<p class="k">D1 · light · Gmail iOS · 375</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 648px">
+<img class="fm" src="art/launch-648-invert.png" alt="The launch email at desktop width with the inversion simulated" style="width: 648px; height: 2857px">
+<p class="k">D2 · light · inverted · desktop</p>
+<p class="cap">The feature captures stay dark on parchment, framed by their 1px line: they read as pictures of the app, which they are.</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 375px">
+<img class="fm" src="art/launch-375-noimg.png" alt="The launch email at 375 with images blocked: an empty box where the hand was, alt text inside" style="width: 375px; height: 2770px">
+<p class="k">D3 · dark · images off · 375</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 648px">
+<img class="fm" src="art/launch-648-noimg.png" alt="The launch email at desktop width with images blocked" style="width: 648px; height: 2857px">
+<p class="k">D4 · dark · images off · desktop</p>
+<p class="cap">Fan alt: <b>“A fan of commander cards around The 99’s card back, which reads Now open”</b>; each feature image names what it shows. Every image keeps its box so nothing jumps when images load.</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2300,"height":3600}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

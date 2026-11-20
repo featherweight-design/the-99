@@ -20,3 +20,4 @@ Open the `.dc.html` files with `support.js` beside them; frames are PNGs in `art
 | `emails · copy strings.ts` | Every string, for /copy-review. |
 | `art/` | The frames, the two hand-of-cards references and the mark PNG. |
 | `scratch-gen/` | The template builder and the render scripts the frames came from. |
+| `addendum-launch/` | Addendum (2026-11-18): the one-time launch email to `launch_list` and its `/unsubscribe` page. Start at its `README.md`. |

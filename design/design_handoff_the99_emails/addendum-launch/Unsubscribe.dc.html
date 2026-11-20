@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Unsubscribed page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+code{font:12px 'IBM Plex Mono',monospace;color:#C9A24B}
+.k{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:#8E8269}
+.cap{font-size:12.5px;line-height:1.55;color:#A89B84}
+.cap b{color:#EDE6D8}
+.fm{display:block;border-radius:14px;border:1px solid #3A3229}
+.ph{display:block;border-radius:34px;border:1px solid #3A3229}
+.box{background:#1E1A15;border:1px solid #3A3229;border-radius:12px;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.li{font-size:13px;line-height:1.6;color:#C6B79A}
+.li b{color:#EDE6D8}
+</style>
+</helmet>
+<div style="width: 2300px; height: 2000px; box-sizing: border-box; padding: 44px 48px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 26px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<p class="k">U · /unsubscribe · signed out · no app shell</p>
+<h2 style="margin: 0; font: 700 26px 'Cinzel', serif">One sentence, one way back in</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C6B79A; max-width: 2180px">The shipped offline page’s body, word for word in layout: a 560 column centered on the page, the mono eyebrow, the display title, one sentence in <code>--fg-muted</code>, one <code>PrimaryButton</code> at 44 tall. Default theme (Table Candlelight), since nobody is signed in. No top bar, no tab bar, no footer: nothing to sign in to and nothing to explore from here. The button is the reader’s choice to come back; it goes to <code>/</code>, the landing.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px">
+<img class="ph" src="art/unsub-done-390.png" alt="Phone: eyebrow Launch list, title You’re off the list, sentence and a Visit The 99 button" style="width: 390px; height: 844px">
+<p class="k">U1 · done · 390</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px">
+<img class="ph" src="art/unsub-broken-390.png" alt="Phone: eyebrow Launch list, title This link is incomplete, sentence and a Visit The 99 button" style="width: 390px; height: 844px">
+<p class="k">U2 · broken link · 390</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 1300px">
+<img class="fm" src="art/unsub-done-1300.png" alt="Desktop: the same unsubscribed page centered in a 560 column" style="width: 1300px; height: 800px">
+<p class="k">U1 · done · desktop 1300</p>
+</div>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 1300px">
+<img class="fm" src="art/unsub-broken-1300.png" alt="Desktop: the broken-link page" style="width: 1300px; height: 800px">
+<p class="k">U2 · broken link · desktop 1300</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 16px; width: 820px">
+<div class="box">
+<p class="k">States</p>
+<p class="li"><b>U1 · done.</b> The token is good: the row is deleted and this shows. Opened again, or after the list’s purge, the same page: it never says whether an address was listed. Tab title <b>Unsubscribed · The 99</b>.</p>
+<p class="li"><b>U2 · broken link.</b> The token fails its check (cut short by a mail client, or edited). <b>“This link is incomplete.”</b> / “Open it again from the email, or paste the whole link into your browser.” Nothing is deleted. Tab title <b>Link incomplete · The 99</b>.</p>
+<p class="li"><b>One-click POST</b> from Gmail or Yahoo (G1) does the same delete and draws nothing: those clients show their own confirmation.</p>
+<p class="li"><b>No confirm step and no undo.</b> The list sends one email, so an accidental press (or a scanner’s) costs nothing that would come again; the button is the way back.</p>
+</div>
+<div class="box">
+<p class="k">Copy (DRAFT, /copy-review)</p>
+<p class="li">Eyebrow <b>Launch list</b> · U1 <b>You’re off the list.</b> / <b>We’ve deleted this address from the launch list, so The 99 won’t email it again.</b> · U2 <b>This link is incomplete.</b> / <b>Open it again from the email, or paste the whole link into your browser.</b> · button <b>Visit The 99</b></p>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2300,"height":2000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
