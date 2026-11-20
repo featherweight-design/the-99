@@ -9,6 +9,7 @@ import { deckFlipCopy } from "../../lib/copy/deck-flip";
 import { DECK_SORT_KEY } from "../../lib/decks/sort";
 import { FLIP_KEY, parseTrail, resolveFlip, type FlipDeck } from "../../lib/decks/flip";
 import { GhostButton } from "../ui/button";
+import { PendingReporter } from "../shell/pending-reporter";
 import { readRaw } from "../ui/local-store";
 
 const noop = () => () => {};
@@ -89,6 +90,7 @@ export function DeckFlipStrip({ flipState, width }: { flipState: DeckFlip; width
   if (mounted && !flip) return null;
   const phone = width === "phone";
   const square = phone ? "h-[44px] w-[44px]" : "h-[36px] w-[36px]";
+  const backHref = flip?.href ?? "/decks";
   return (
     <nav
       aria-label={deckFlipCopy.region}
@@ -96,11 +98,13 @@ export function DeckFlipStrip({ flipState, width }: { flipState: DeckFlip; width
       className={`flex w-full items-center justify-between ${phone ? "min-h-[44px]" : "min-h-[36px]"}`}
     >
       <Link
-        href={flip?.href ?? "/decks"}
+        href={backHref}
         className={`flex min-h-[44px] items-center gap-[6px] text-[color:var(--fg-body)] ${phone ? "text-[15px]" : "text-[14px]"}`}
       >
         <Arrow dir="prev" />
         <span>{flip?.caption ?? deckFlipCopy.allDecks}</span>
+        {/* The way back is a list route with no screen of its own that commits at press: a slow press reports. */}
+        <PendingReporter href={backHref} />
       </Link>
       {flip && (
         <div className="flex items-center gap-[8px]">
