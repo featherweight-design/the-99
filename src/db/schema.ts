@@ -764,6 +764,7 @@ export const decks = pgTable("decks", {
     // Code points, as Postgres's char_length counts them — the app's cap counts the same way.
     // 240, up from 120 (H35): the description is read by two model readers now, not one.
     check("decks_intent_length_check", sql`${t.intent} is null or char_length(${t.intent}) <= 240`),
+    check("decks_answer_theme_join_check", sql`${t.answerThemeJoin} in ('all', 'any')`),
     check("decks_answer_budget_check", sql`${t.answerBudgetCents} is null or (${t.answerBudgetCents} >= 100 and ${t.answerBudgetCents} % 100 = 0)`),
     check("decks_answer_bracket_range", sql`${t.answerBracket} is null or ${t.answerBracket} between 1 and 5`),
     check(

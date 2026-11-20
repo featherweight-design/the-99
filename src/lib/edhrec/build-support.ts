@@ -101,3 +101,33 @@ export async function loadBuildSupport(
   const pages: ThemePage[] = headers.map((h) => ({ slug: h.slug, deckCount: h.deckCount, cards: bySlug.get(h.slug) ?? [] }));
   return blendThemePages(pages.filter((p) => p.cards.length > 0), join);
 }
+
+/**
+ * A chosen build for one commander, or none, and whether a failed read is why (`fellBack`): the one
+ * rule every reader of a chosen build follows. None for a pair (pairs are not themed), no choice or
+ * no tags; a failed read is none too, said so, so a cached reader never stores it as the build.
+ */
+export async function readBuild(
+  args: { pair: boolean; commanderOracleId: string; tags: readonly EdhrecTag[] | null; choices: readonly string[]; join: BuildJoin },
+  load: typeof loadBuildSupport = loadBuildSupport,
+): Promise<{ build: BuildSupport | null; fellBack: boolean }> {
+  if (args.pair || !args.tags || args.choices.length === 0) return { build: null, fellBack: false };
+  try {
+    return { build: await load(args.commanderOracleId, args.tags, args.choices, args.join), fellBack: false };
+  } catch (err) {
+    console.warn("no chosen build: reading the commander page", err);
+    return { build: null, fellBack: true };
+  }
+}
+
+/** A chosen build laid over the commander page: the build's figures win for the cards it lists, every
+    other card keeps the commander page's, and the candidates are both lists, the build's first. */
+export function overlayBuild<T extends BuildSupport>(page: T, build: BuildSupport): T {
+  const seen = new Set(build.topCards.map((n) => n.toLowerCase()));
+  return {
+    ...page,
+    topCards: [...build.topCards, ...page.topCards.filter((n) => !seen.has(n.toLowerCase()))],
+    inclusionByName: { ...page.inclusionByName, ...build.inclusionByName },
+    synergyByName: { ...page.synergyByName, ...build.synergyByName },
+  };
+}

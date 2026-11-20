@@ -68,7 +68,11 @@ export async function handOffBracketReach(
   const trial = await handOffTrial(
     userId,
     { oracleId: commander.oracleId, name: commander.name, colorIdentity: commander.colorIdentity, manaCost: commander.manaCost },
-    { budgetCents, bracket: asked.bracket, cardOracleId, ...(asked.sets.length > 0 ? { sets: asked.sets } : {}) },
+    {
+      budgetCents, bracket: asked.bracket, cardOracleId, ...(asked.sets.length > 0 ? { sets: asked.sets } : {}),
+      // The build the create fills from (engine plan A4b): the trial is the one deck it would build.
+      ...(asked.themes.length > 0 ? { themes: asked.themes, themeJoin: asked.themeJoin } : {}),
+    },
     env,
     asked.pool === "own",
     placedIds,

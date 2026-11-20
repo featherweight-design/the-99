@@ -14,7 +14,7 @@ const { results, select } = vi.hoisted(() => {
 });
 vi.mock("../../db", () => ({ db: { select } }));
 
-import { blendThemePages, loadBuildSupport, themeSlugsFor, type ThemePage } from "./build-support";
+import { blendThemePages, loadBuildSupport, overlayBuild, themeSlugsFor, type ThemePage } from "./build-support";
 
 const tags = [
   { slug: "infect", label: "Infect", count: 3545 },
@@ -69,5 +69,16 @@ describe("loadBuildSupport", () => {
     const r = await loadBuildSupport("c", tags, ["Planeswalkers", "Infect"], "all");
     // `infect` stored no cards: only the planeswalkers page is read, so `all` is that page alone.
     expect(r).toEqual({ topCards: ["Teferi"], inclusionByName: { teferi: 60 }, synergyByName: { teferi: 0.5 } });
+  });
+});
+
+describe("overlayBuild", () => {
+  it("keeps the commander page's figure for a card the build does not list, the build's first", () => {
+    const page = { topCards: ["Sol Ring", "Teferi"], inclusionByName: { "sol ring": 90, teferi: 20 }, synergyByName: {}, tags: [] };
+    const build = { topCards: ["Teferi", "Doubling Season"], inclusionByName: { teferi: 60, "doubling season": 70 }, synergyByName: {} };
+    const r = overlayBuild(page, build);
+    expect(r.topCards).toEqual(["Teferi", "Doubling Season", "Sol Ring"]);
+    expect(r.inclusionByName).toEqual({ "sol ring": 90, teferi: 60, "doubling season": 70 });
+    expect(r.tags).toEqual([]);
   });
 });

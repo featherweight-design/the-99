@@ -42,6 +42,8 @@ export async function trialFigureRows(
     bracket: p.bracket,
     // No card: the results rank by none any more (F1), so the figures count none.
     cardOracleId: null,
+    // The themes the create builds from (engine plan A4b), so each row's figures predict that build.
+    ...(p.themes.length > 0 ? { themes: p.themes, themeJoin: p.themeJoin } : {}),
     // The sets the create fills toward (picked plus those the words name, `handOffSets`), so each
     // row's figures predict the deck its press builds (review round 1). A failed catalog read is the
     // picked sets alone, as at the create.

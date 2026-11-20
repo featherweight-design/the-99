@@ -246,17 +246,23 @@ describe("the buy pool's order", () => {
 });
 
 // Engine plan A4b: the themes Help me choose asked for choose the build the fill reads.
+const TAGS = [{ slug: "planeswalkers", label: "Planeswalkers", count: 1789 }];
 describe("the chosen build", () => {
+  beforeEach(() => {
+    vi.mocked(getEdhrecData).mockResolvedValue({ data: { inclusionByName: {}, topCards: ["Rhystic Study"], tags: TAGS } } as never);
+  });
+
   const ask = (themes?: string[]) => buildFillPlan("u", commanders, new Set(), {
     selected: [], env: ON,
     answers: { budgetCents: null, bracket: null, cardOracleId: null, ...(themes ? { themes, themeJoin: "any" as const } : {}) },
   });
 
-  it("fills from the theme pages asked for, in place of the commander page", async () => {
+  it("fills from the theme pages asked for, laid over the commander page", async () => {
     m.build.mockResolvedValueOnce({ topCards: ["Doubling Season"], inclusionByName: { "doubling season": 70 }, synergyByName: {} });
     await ask(["Planeswalkers"]);
-    expect(m.build).toHaveBeenCalledWith(commanders[0].oracleId, undefined, ["Planeswalkers"], "any");
-    expect(m.topCards.mock.calls[0][1]).toEqual(["Doubling Season"]);
+    expect(m.build).toHaveBeenCalledWith(commanders[0].oracleId, TAGS, ["Planeswalkers"], "any");
+    // Laid over the commander page: the build's cards, then the page's, ranked together.
+    expect(m.topCards.mock.calls[0][1]).toEqual(["Doubling Season", "Rhystic Study"]);
   });
 
   it("reads no build with no theme asked, and keeps the commander page when the read fails", async () => {

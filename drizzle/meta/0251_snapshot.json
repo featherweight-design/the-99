@@ -1,5 +1,5 @@
 {
-  "id": "c4473291-8b80-4ccd-883c-cf38e009aeea",
+  "id": "75108fa2-05dc-4f54-abe8-adc425ca89cf",
   "prevId": "662f3542-2ffc-4b4a-a963-16dbed8c2fdb",
   "version": "7",
   "dialect": "postgresql",
@@ -6060,6 +6060,10 @@
         "decks_intent_length_check": {
           "name": "decks_intent_length_check",
           "value": "\"decks\".\"intent\" is null or char_length(\"decks\".\"intent\") <= 240"
+        },
+        "decks_answer_theme_join_check": {
+          "name": "decks_answer_theme_join_check",
+          "value": "\"decks\".\"answer_theme_join\" in ('all', 'any')"
         },
         "decks_answer_budget_check": {
           "name": "decks_answer_budget_check",
