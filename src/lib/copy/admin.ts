@@ -931,15 +931,15 @@ export const launchEmailAdminCopy = {
   confirmYes: (n: number) => `Yes, send ${n}`,
   cancel: "Cancel",
   sending: "Sending…",
-  result: (sent: number, released: number, uncertain: number, waiting: number) =>
-    `Sent ${sent}. ${released > 0 ? `${released} put back to try again. ` : ""}${uncertain > 0 ? `${uncertain} unconfirmed, not retried. ` : ""}${waiting} still waiting.`,
+  result: (sent: number, released: number, uncertain: number, skipped: number, waiting: number) =>
+    `Sent ${sent}. ${skipped > 0 ? `${skipped} skipped, already signed up. ` : ""}${released > 0 ? `${released} put back to try again. ` : ""}${uncertain > 0 ? `${uncertain} unconfirmed, not retried. ` : ""}${waiting} still waiting.`,
   capped: "Today's mail cap is reached. Send the rest tomorrow.",
+  lookup: "Couldn't check for existing accounts, so sending stopped. Try again later.",
   refused: {
     "no-launch-date": "Set the launch date first.",
     "before-launch": "The launch date hasn't come yet.",
     unconfigured: "Email isn't configured on this deployment.",
     "images-missing": "The email's images aren't on this deployment yet.",
-    "copy-open": "The launch email's subject or audience isn't settled yet.",
     failed: "That didn't go through. Try again.",
   },
 } as const;

@@ -23,7 +23,7 @@ describe("launchEmailParts", () => {
   it("carries the address's unsubscribe link in the footer and the text twin", () => {
     const { html, text } = parts("landing");
     expect(html).toContain(`href="${UNSUB}"`);
-    expect(text).toContain(`we'll delete this address now:\n${UNSUB}\n`);
+    expect(text).toContain(`we'll delete this address:\n${UNSUB}\n`);
   });
 
   it("says where the address came from", () => {

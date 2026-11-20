@@ -9,17 +9,22 @@
  * a missed address is better than a doubled one. A released address waits for the next batch: the batch that released it
  * skips it. Resend's `Idempotency-Key` names the address and the batch, a second guard within one batch.
  *
+ * SKIPS ADDRESSES WITH AN ACCOUNT (Q2, Hugh, 2026-11-20). After its claim, each address is looked up in Clerk. One that
+ * already has an account keeps its claim and gets no mail, so no later batch mails it either. A lookup that fails or is
+ * late sends nothing: the claim is released for the next batch and this batch stops, since Clerk is likely down for the
+ * rest too. Fail-closed: a person who already signed up must not get the "we're open" mail because Clerk blinked. The
+ * lookups ride the 600ms send gap, far under Clerk's Backend API limit.
+ *
  * BATCHED ACROSS DAYS. A batch sends at most `limit`, and every mail still passes the app's own daily cap
  * (`mailRefusal`), so the launch never spends the day's invites and codes. The next batch picks up where this one
- * stopped. A batch refuses to start while any of the email's images is missing from the deployment, and, before anything
- * else, while any of Hugh's open copy questions (`LAUNCH_COPY_OPEN`) is unanswered.
+ * stopped. A batch refuses to start while any of the email's images is missing from the deployment.
  *
  * The purge (`launch-purge.ts`) is untouched: it deletes whatever rows are left 30 days after the launch date.
  */
 import { eq, isNull, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { launchList } from "../../db/schema";
-import { LAUNCH_COPY_OPEN } from "../copy/emails";
+import { emailHasAccount } from "../admin/accounts";
 import { launchEmailParts, LAUNCH_IMAGES } from "../email/launch-mail";
 import { mailConfig, mailEnv, sendMail, type MailConfig, type MailEnv, type MailResult } from "../invites/mail";
 import { inviteSecret } from "../invites/tokens";
@@ -28,14 +33,15 @@ import { readLaunchDate } from "./launch-purge";
 import { unsubscribeHash, unsubscribeToken, unsubscribeUrl } from "./launch-unsubscribe";
 
 export { LAUNCH_BATCH_MAX } from "./launch-rule";
-import { LAUNCH_BATCH_MAX } from "./launch-rule";
+import { LAUNCH_BATCH_BUDGET_MS, LAUNCH_BATCH_MAX, LAUNCH_SKIPS_MAX } from "./launch-rule";
 /** Resend allows a few requests a second; one every 600ms stays clear of it. */
 export const LAUNCH_SEND_GAP_MS = 600;
+/** After a skip no mail goes out, so only the next lookup is paced: well under Clerk's Backend API limit. */
+export const LAUNCH_SKIP_GAP_MS = 100;
 
 export type LaunchBatchReport =
-  | { ok: false; reason: "copy-open"; open: readonly ("subject" | "skip-accounts")[] }
   | { ok: false; reason: "no-launch-date" | "before-launch" | "unconfigured" | "images-missing"; missing?: string[] }
-  | { ok: true; dryRun: boolean; waiting: number; sent: number; released: number; uncertain: number; stoppedBy: "done" | "limit" | "capped" | null };
+  | { ok: true; dryRun: boolean; waiting: number; sent: number; released: number; uncertain: number; skipped: number; stoppedBy: "done" | "limit" | "capped" | "lookup" | null };
 
 export type LaunchBatchDeps = {
   env?: MailEnv;
@@ -45,8 +51,10 @@ export type LaunchBatchDeps = {
   now?: Date;
   launchRaw?: string | null;
   store?: LaunchStore;
-  /** The copy questions still open, `LAUNCH_COPY_OPEN` by default (a test hands in its own). */
-  copyOpen?: readonly ("subject" | "skip-accounts")[];
+  /** The clock the batch budget reads, `Date.now` by default. */
+  clock?: () => number;
+  /** Whether an account already holds the address, Clerk's by default; throws when it cannot tell. */
+  hasAccount?: (email: string) => Promise<boolean>;
 };
 
 /** The list's three moves, the database's by default (a test hands in its own). */
@@ -116,9 +124,6 @@ const DB_STORE: LaunchStore = { waiting: launchWaiting, claimNext, release, link
  * Sends up to `limit` launch emails, or with `dryRun` only counts what is waiting (and checks the configuration and images).
  */
 export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limit: number }, deps: LaunchBatchDeps = {}): Promise<LaunchBatchReport> {
-  // Hugh's open copy questions come first, dry runs included: nothing is read or sent while any remain.
-  const open = deps.copyOpen ?? LAUNCH_COPY_OPEN;
-  if (open.length > 0) return { ok: false, reason: "copy-open", open: [...open] };
   const env = deps.env ?? mailEnv();
   const config = mailConfig(env);
   const secret = inviteSecret(env);
@@ -129,25 +134,48 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
   if (missing.length > 0) return { ok: false, reason: "images-missing", missing };
   const store = deps.store ?? DB_STORE;
   const waiting = await store.waiting();
-  if (dryRun) return { ok: true, dryRun, waiting, sent: 0, released: 0, uncertain: 0, stoppedBy: null };
+  if (dryRun) return { ok: true, dryRun, waiting, sent: 0, released: 0, uncertain: 0, skipped: 0, stoppedBy: null };
 
   const send = deps.send ?? ((c, m) => sendMail(c, m));
+  const hasAccount = deps.hasAccount ?? emailHasAccount;
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const cap = Math.max(0, Math.min(Math.floor(limit), LAUNCH_BATCH_MAX));
   let sent = 0;
   let released = 0;
   let uncertain = 0;
-  let stoppedBy: "done" | "limit" | "capped" = "limit";
+  let skipped = 0;
+  let stoppedBy: "done" | "limit" | "capped" | "lookup" = "limit";
   // A released address waits for the NEXT batch: this one skips it, so one address that keeps being refused cannot take every turn.
   const tried: string[] = [];
   const claimedAt = Date.now().toString(36);
-  for (let i = 0; i < cap; i++) {
+  const clock = deps.clock ?? Date.now;
+  const started = clock();
+  // A skip sends nothing, so it does not count toward the batch's mails; `LAUNCH_SKIPS_MAX` and the time budget bound it.
+  while (sent + released + uncertain < cap && skipped < LAUNCH_SKIPS_MAX) {
+    if (clock() - started > LAUNCH_BATCH_BUDGET_MS) break;
     const row = await store.claimNext(tried);
     if (!row) {
       stoppedBy = "done";
       break;
     }
     tried.push(row.email);
+    const held = await hasAccount(row.email.trim().toLocaleLowerCase("en-US")).catch((error: unknown) => {
+      // The cause only (a bad key, a rate limit, a timeout), never the address.
+      console.error("launch-email: account lookup failed; the batch stops", error instanceof Error ? error.message : error);
+      return null;
+    });
+    if (held === null) {
+      await store.release(row.email);
+      released++;
+      stoppedBy = "lookup";
+      break;
+    }
+    if (held) {
+      // Claimed and never mailed: an account holder already knows The 99 is open.
+      skipped++;
+      await sleep(LAUNCH_SKIP_GAP_MS);
+      continue;
+    }
     const token = unsubscribeToken(secret, row.email);
     await store.linkUnsubscribe(row.email, unsubscribeHash(token));
     const unsubscribe = unsubscribeUrl(config.origin, secret, row.email);
@@ -175,5 +203,5 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
   }
   const left = await store.waiting();
   if (stoppedBy === "limit" && left === 0) stoppedBy = "done";
-  return { ok: true, dryRun, waiting: left, sent, released, uncertain, stoppedBy };
+  return { ok: true, dryRun, waiting: left, sent, released, uncertain, skipped, stoppedBy };
 }
