@@ -2,8 +2,8 @@
 // in the accessible name alone.
 //
 // A PURE SEAM, extracted from `builder-shell.tsx` when the Analysis tab arrived. Two of the
-// five cells are conditional — Versions is absent on a brew, and Games drops its count at zero
-// (Analysis was a third until its switch retired, always on) — and the shell is far too heavy to
+// five cells are conditional — Versions is absent on a brew (Analysis was conditional too until its
+// switch retired, always on) — and the shell is far too heavy to
 // mount in jsdom to find out which ones drew. The rules live here so a test can ask them
 // directly, exactly as `buildMarkKeyEntries` does for the mark key.
 
@@ -57,7 +57,7 @@ export function builderTabSpecs({
     },
     // Absent on a brew rather than empty: a deck with no version has no history, and a tab
     // saying so advertises its own emptiness (§Decisions 4). A LINKED brew has v0, so it is drawn
-    // with a count of 1 (precons R3 K14) and the deck stays a brew. The count is the rail's rows.
+    // (precons R3 K14) and the deck stays a brew. `rows` (the rail's rows) decides whether the tab is drawn.
     ...(rows > 0
       ? [
           {

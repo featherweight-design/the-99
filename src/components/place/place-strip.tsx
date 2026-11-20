@@ -93,7 +93,7 @@ export function PlaceStrip({
                 data-testid={`${testIdPrefix}-${tab.place}-count`}
                 className={`ml-[6px] font-mono text-[11px] font-normal not-italic ${on ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}
               >
-                {/* Pinned to en-US as the count lines are: the Hidden tab's figure can pass a thousand. */}
+                {/* Pinned to en-US as the count lines are: a friend's figure can pass a thousand. */}
                 {tab.count.toLocaleString("en-US")}
               </em>
             )}
