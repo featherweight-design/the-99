@@ -460,7 +460,8 @@ export const loadCardDetail = cache(async function loadCardDetail(
     const [a, p, pb, g, dw, rows] = await Promise.all([availability, prices, proxiedBy, gate, draftWants, catalogRows]);
     const base = owned[0];
     const held = new Set(base.printings.map((x) => `${x.setCode.toUpperCase()}|${x.collectorNumber}`));
-    const otherPrintings = catalogEntries(base, rows)
+    // No fallback art: `base.imageUri` is the first HELD printing's, which would dress a no-art printing in another's picture.
+    const otherPrintings = catalogEntries({ imageUri: null }, rows)
       .map((e) => e.printing)
       .filter((x) => !held.has(`${x.setCode}|${x.collectorNumber}`));
     return assemble({ ...base, otherPrintings, availability: a, draftWants: dw, prices: p, proxiedBy: pb, ...g });

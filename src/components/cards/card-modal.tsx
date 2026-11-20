@@ -499,15 +499,17 @@ export function CardModal({
   const browse = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length > 1;
   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
   // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
-  const others = browsePrintings && card.kind !== "token" && !deckScope && card.quantity > 0 ? card.otherPrintings ?? [] : [];
+  const others = useMemo(
+    () => (browsePrintings && card.kind !== "token" && !deckScope && card.quantity > 0 ? card.otherPrintings ?? [] : []),
+    [browsePrintings, card.kind, card.quantity, card.otherPrintings, deckScope],
+  );
   const browseOwned = others.length > 0;
   const previewAt = useMemo(() => {
     const p = previewId === null ? undefined : browse ? card.printings.find((x) => x.scryfallId === previewId) : others.find((x) => x.scryfallId === previewId);
     return p === undefined
       ? null
       : { setCode: p.setCode, collectorNumber: p.collectorNumber, scryfallId: p.scryfallId, imageUri: p.imageUri, backImageUri: p.backImageUri, finish: undefined };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- `others` is derived from `card` and the flags below
-  }, [browse, previewId, card.printings, card.otherPrintings, browseOwned]);
+  }, [browse, previewId, card.printings, others]);
 
   // A caller can hand this component a re-read of the same card, so the seed above is not
   // the last word: without this, a preference that moved on the server would be ignored for
@@ -1029,7 +1031,7 @@ export function CardModal({
       // Picking one of the reader's own printings ends a preview of another (alternate printings, owned card).
       onPick={browse ? (p) => setPreviewId(p.scryfallId ?? null) : (p) => { setPreviewId(null); onPick(p); }}
       onReset={() => { setPreviewId(null); onReset(); }}
-      onForget={onClearPick}
+      onForget={() => { setPreviewId(null); onClearPick(); }}
       onAnnounce={setAnnouncement}
       // Under the modal's own intro and head, with the finish chips stepped aside, when other printings follow.
       {...(browseOwned ? { intro: null, finishChips: false } : {})}
