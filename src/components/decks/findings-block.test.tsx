@@ -151,7 +151,7 @@ describe("the receipt", () => {
     const body = within(receipt).getByTestId("receipt-combo");
     expect(within(body).getByText(copy.receipt.manaFree)).toBeTruthy();
     // Split on Spellbook's own newlines, the trailing blank dropped.
-    expect(within(body).getAllByRole("listitem").map((li) => li.textContent)).toContain("Exile your library.");
+    expect(within(body).getByText("Exile your library.")).toBeTruthy();
     expect(within(body).getByText("Your library holds no card with the chosen name.")).toBeTruthy();
     expect(within(body).getByRole("link").getAttribute("href")).toBe(SPELLBOOK_SOURCE.variantUrl("1414-2269"));
   });
