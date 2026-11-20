@@ -12,6 +12,7 @@
 import { useEffect } from "react";
 import { readPushLanding, strippedLanding } from "../../lib/push/landing";
 import { mirrorUrl } from "../../lib/url/mirror";
+import { comboOpenOpts } from "../cards/card-detail-context";
 import { useCardDetailIfAny } from "../cards/card-detail-provider";
 
 /** Close every notification this origin's worker has delivered. Never throws, never waits on the page. */
@@ -37,7 +38,7 @@ export function PushLanding({ visit }: { visit: string }) {
     const landing = readPushLanding(window.location.search);
     const stripped = strippedLanding(window.location.href);
     if (stripped) mirrorUrl(stripped, window.history.state);
-    if (landing && detail) detail.open(landing.card, undefined, undefined, landing.combo ? { combo: true, ...(landing.variant ? { comboVariantId: landing.variant } : {}) } : undefined);
+    if (landing && detail) detail.open(landing.card, undefined, undefined, landing.combo ? comboOpenOpts(landing.variant) : undefined);
     // Mount only: the provider's value changes as a card opens, and the landing is spent by then.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

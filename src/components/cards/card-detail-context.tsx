@@ -197,6 +197,14 @@ export type ViewFinish = {
 };
 
 /** A list in the one shape the provider holds. */
+/**
+ * The options of an open FOR A COMBO (a feed item's See the combo, a push's landing): `combo`, and the combo's own sheet when the
+ * stored variant is known. One definition, so the two openers cannot drift.
+ */
+export function comboOpenOpts(variantId: string | null | undefined): { combo: true; comboVariantId?: string } {
+  return variantId ? { combo: true, comboVariantId: variantId } : { combo: true };
+}
+
 export function siblingCards(list: readonly Sibling[]): SiblingCard[] {
   return list.map((s) => (typeof s === "string" ? { oracleId: s } : s));
 }
