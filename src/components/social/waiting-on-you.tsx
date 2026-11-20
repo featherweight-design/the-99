@@ -28,6 +28,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { KICKER_AGE } from "../feed/kicker-age";
+import { BAND, PANEL } from "./section-panel";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "./trade-ask";
 import { AnswerPresses, receiptText, useLandFocus, useSpareAnswer, type Answer } from "./spare-answer";
 
@@ -66,7 +67,7 @@ const KIND = "truncate font-mono text-[9.5px] font-medium uppercase tracking-[.1
 const TITLE = "m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]";
 const DETAIL = "m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]";
 
-export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: Date }) {
+export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly WaitingRow[]; now: Date; bare?: boolean }) {
   const [receipts, setReceipts] = useState<ReadonlyMap<string, Receipt>>(() => new Map());
   const { expanded, root, expand } = useShowAll();
   const listRef = useRef<HTMLUListElement | null>(null);
@@ -131,15 +132,15 @@ export function WaitingOnYou({ rows, now }: { rows: readonly WaitingRow[]; now: 
     land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
   }
   return (
-    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className="mt-[26px] md:mt-[34px]">
+    <section aria-labelledby="waiting-on-you" data-dismiss-scope data-testid="waiting-on-you" className={bare ? "" : PANEL}>
       <h2
         id="waiting-on-you"
         tabIndex={-1}
-        className="m-0 flex outline-none min-h-[44px] items-center font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
+        className={bare ? "sr-only" : `${BAND} text-[color:var(--accent-text)]!`}
       >
         {w.head(waiting.length)}
       </h2>
-      <div ref={root} className="mt-[12px] flex flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] [border:1px_solid_var(--border)]">
+      <div ref={root} className="flex flex-col">
       <ul ref={listRef} className="m-0 flex list-none flex-col p-0">
         {shown.map((item, index) =>
           item.kind === "receipt" ? (

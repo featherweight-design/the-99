@@ -616,7 +616,7 @@ describe("from 1180px, two columns (small items item 6, board `Friends-Desktop`)
   it("splits the inbox and friends from pods and links, in the phone's DOM order", () => {
     const { container } = draw({ waiting: <section data-testid="w">w</section>, pods: <section data-testid="p">p</section> });
     const cols = container.querySelector("[data-friends-cols]")!;
-    for (const c of ["min-[73.75rem]:grid", "min-[73.75rem]:grid-cols-[minmax(0,1fr)_420px]", "min-[73.75rem]:gap-x-[44px]", "min-[73.75rem]:items-start"]) {
+    for (const c of ["min-[73.75rem]:grid", "min-[73.75rem]:grid-cols-[minmax(0,1fr)_448px]", "min-[73.75rem]:gap-x-[44px]", "min-[73.75rem]:items-start"]) {
       expect(cols.className.split(/\s+/)).toContain(c);
     }
     const left = cols.querySelector('[data-friends-col="left"]')!;

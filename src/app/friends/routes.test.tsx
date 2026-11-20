@@ -71,6 +71,8 @@ vi.mock("../../lib/social/rule-zero", async (orig) => ({ ...(await orig<typeof i
 // Waiting on you and its after() work have their own tests (`waiting.test.ts`, `waiting-on-you.test.tsx`).
 vi.mock("../../lib/social/waiting", () => ({ loadWaitingOnYou: m.loadWaitingOnYou }));
 vi.mock("../../lib/social/your-requests", () => ({ loadYourRequests: m.loadYourRequests }));
+// The Requests box's foot link asks whether a history exists; `request-history.test.ts` covers the read.
+vi.mock("../../lib/social/request-history", () => ({ hasRequestHistory: vi.fn(async () => false) }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: m.noticeTradeMatches }));
 vi.mock("../../lib/feed/prefs", () => ({ markFriendsSeen: m.markFriendsSeen }));
 vi.mock("next/server", () => ({ after: m.after }));

@@ -124,3 +124,12 @@ export async function hiddenHistoryCount(viewerId: string, q: Executor = db): Pr
   const rows = (await q.execute<{ n: number }>(hiddenHistoryCountQuery(viewerId))).rows as { n: number }[];
   return Number(rows[0]?.n ?? 0);
 }
+
+/** Whether the viewer has any request to show on `/friends/requests` (either side), for the Requests box's foot link. One row each, the same grant join. */
+export async function hasRequestHistory(viewerId: string, q: Executor = db): Promise<boolean> {
+  const [asked, received] = await Promise.all([
+    q.execute(requestHistoryQuery(viewerId, "asked", null, 1)),
+    q.execute(requestHistoryQuery(viewerId, "received", null, 1)),
+  ]);
+  return asked.rows.length > 0 || received.rows.length > 0;
+}

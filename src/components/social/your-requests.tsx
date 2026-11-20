@@ -10,6 +10,7 @@
 // its row leaves with the action's redraw; Ask again revalidates nothing (it is Shopping's write), so the list refreshes
 // itself. Focus follows the press (`useLandFocus`): to the next row's ✕ after a ✕, to the new Requested after Ask again.
 import { useRouter } from "next/navigation";
+import { BAND, PANEL } from "./section-panel";
 import { useEffect, useRef, useState } from "react";
 import { askSpareAction, closeSpareAction } from "../../app/friends/spare-actions";
 import { feedAge } from "../../lib/feed/age";
@@ -105,7 +106,7 @@ export function RequestText({ a, text, now, className = "" }: { a: YourRequest; 
   );
 }
 
-export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now: Date }) {
+export function YourRequests({ rows, now, bare = false }: { rows: readonly YourRequest[]; now: Date; bare?: boolean }) {
   const router = useRouter();
   const root = useRef<HTMLElement | null>(null);
   const land = useLandFocus(root);
@@ -176,16 +177,16 @@ export function YourRequests({ rows, now }: { rows: readonly YourRequest[]; now:
   }
 
   return (
-    <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className="mt-[26px] md:mt-[34px]">
+    <section ref={root} aria-labelledby="your-requests" data-testid="your-requests" className={bare ? "" : PANEL}>
       <h2
         id="your-requests"
         tabIndex={-1}
-        className="m-0 flex min-h-[44px] items-center justify-between gap-[12px] font-mono text-[10.5px] font-medium uppercase tracking-[.14em] text-[color:var(--fg-faint)] [border-bottom:1px_solid_var(--border)] md:min-h-[32px] md:pb-[8px]"
+        className={bare ? "sr-only" : BAND}
       >
         {m.head(rows.length)}
-        <span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span>
+        <span className="flex items-center gap-[4px]"><span className="font-sans text-[12.5px] font-medium normal-case tracking-normal text-[color:var(--fg-faint)]">{m.order}</span></span>
       </h2>
-      <ul className="m-0 mt-[12px] flex list-none flex-col overflow-hidden rounded-[14px] bg-[color:var(--surface-inset)] p-0 [border:1px_solid_var(--border)]">
+      <ul className="m-0 flex list-none flex-col p-0">
         {rows.map((a, index) => {
           const text = requestText(a, now);
           // Offered only when the server would take it (`canAskAgain`: no open ask for the card, no No from this friend
