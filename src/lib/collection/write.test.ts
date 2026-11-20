@@ -450,7 +450,6 @@ describe("the sync write, in the source", () => {
   });
 });
 
-
 describe("entryPlacements (a revert undoes the pick its own entry made, #2983)", () => {
   const made = "2026-11-20 09:00:00.5";
   const was = { deckId: "a", copies: 1, createdAt: "2026-10-01 08:00:00" };
@@ -462,6 +461,17 @@ describe("entryPlacements (a revert undoes the pick its own entry made, #2983)",
     // Through the same two gates an explicit undo passes: the exact row to drop, and the older one to put back.
     expect(placementToUndo(undo, rows)).toEqual({ oracleId: A, deckId: "b", createdAt: made });
     expect(restoreToUndo(undo, rows)).toEqual(was);
+  });
+
+  it("finds the row that recorded the pick when an entry has two rows for the card, and names the pick once", () => {
+    const rows = [{ oracleId: A }, { oracleId: A, placed: { deckId: "b", createdAt: made } }, { oracleId: A, placed: { deckId: "b", createdAt: made } }];
+    expect(entryPlacements(rows)).toHaveLength(1);
+    expect(placementToUndo(entryPlacements(rows)[0], rows)).toEqual({ oracleId: A, deckId: "b", createdAt: made });
+  });
+
+  it("lists picks in card order, the order every reservation write takes the card locks in", () => {
+    const rows = [{ oracleId: B, placed: { deckId: "b", createdAt: made } }, { oracleId: A, placed: { deckId: "b", createdAt: made } }];
+    expect(entryPlacements(rows).map((u) => u.oracleId)).toEqual([A, B]);
   });
 
   it("names a pick that displaced nothing, and nothing for a row that made no pick or recorded no instant", () => {
