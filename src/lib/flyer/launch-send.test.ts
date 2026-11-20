@@ -2,8 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./launch-date", () => ({ readStoredLaunchDate: async () => null }));
+vi.mock("../admin/accounts", () => ({ emailHasAccount: async () => { throw new Error("tests hand in hasAccount"); } }));
 
-import { LAUNCH_COPY_OPEN } from "../copy/emails";
 import { LAUNCH_BATCH_MAX, sendLaunchBatch, type LaunchStore } from "./launch-send";
 import type { MailResult } from "../invites/mail";
 
@@ -42,31 +42,35 @@ function memoryStore(emails: string[]): LaunchStore & { sent: Set<string>; links
 function deps(store: LaunchStore, results: MailResult[] = [], extra: object = {}) {
   const queue = [...results];
   const send = vi.fn(async () => queue.shift() ?? ({ ok: true } as MailResult));
-  return { send, d: { env: ENV, store, send, fetchImpl: okFetch, sleep: async () => {}, now: NOW, launchRaw: "2026-11-30", copyOpen: [], ...extra } };
+  return { send, d: { env: ENV, store, send, fetchImpl: okFetch, sleep: async () => {}, now: NOW, launchRaw: "2026-11-30", hasAccount: async () => false, ...extra } };
 }
 
 describe("sendLaunchBatch", () => {
-  it("refuses while a copy question is open, before reading the list, dry run or not, and sends nothing", async () => {
-    const store = memoryStore(["a@x.dev"]);
-    const waiting = vi.spyOn(store, "waiting");
-    const claimNext = vi.spyOn(store, "claimNext");
-    for (const dryRun of [true, false]) {
-      const { d, send } = deps(store, [], { copyOpen: ["subject", "skip-accounts"] });
-      expect(await sendLaunchBatch({ dryRun, limit: 1 }, d)).toEqual({ ok: false, reason: "copy-open", open: ["subject", "skip-accounts"] });
-      expect(send).not.toHaveBeenCalled();
-    }
-    expect(waiting).not.toHaveBeenCalled();
-    expect(claimNext).not.toHaveBeenCalled();
-    expect(store.sent.size).toBe(0);
+  it("skips an address that already has an account: claimed, never mailed, never retried", async () => {
+    const store = memoryStore(["Held@x.dev", "b@x.dev"]);
+    const hasAccount = vi.fn(async (e: string) => e === "held@x.dev");
+    const { d, send } = deps(store, [], { hasAccount });
+    const report = await sendLaunchBatch({ dryRun: false, limit: 5 }, d);
+    expect(report).toMatchObject({ ok: true, sent: 1, skipped: 1, released: 0, waiting: 0, stoppedBy: "done" });
+    // The lookup gets the address case-folded, as Clerk's exact match compares it.
+    expect(hasAccount).toHaveBeenCalledWith("held@x.dev");
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(send.mock.calls[0]).toEqual([expect.anything(), expect.objectContaining({ to: "b@x.dev" })]);
+    expect(store.links.has("Held@x.dev")).toBe(false);
+    expect(await sendLaunchBatch({ dryRun: false, limit: 5 }, d)).toMatchObject({ sent: 0, skipped: 0, stoppedBy: "done" });
+    expect(send).toHaveBeenCalledTimes(1);
   });
 
-  it("reads the shipped open-questions list when none is handed in", async () => {
-    const { d } = deps(memoryStore(["a@x.dev"]));
-    const { copyOpen: _ignored, ...withoutList } = d;
-    const report = await sendLaunchBatch({ dryRun: true, limit: 0 }, withoutList);
-    // While Hugh's questions are open the shipped list is non-empty and the send refuses; once he rules, it is [] and the gate opens.
-    if (LAUNCH_COPY_OPEN.length > 0) expect(report).toEqual({ ok: false, reason: "copy-open", open: [...LAUNCH_COPY_OPEN] });
-    else expect(report).not.toMatchObject({ reason: "copy-open" });
+  it("sends nothing when the account lookup fails: releases the address and stops the batch", async () => {
+    const store = memoryStore(["a@x.dev", "b@x.dev"]);
+    const hasAccount = vi.fn(async () => {
+      throw new Error("clerk down");
+    });
+    const { d, send } = deps(store, [], { hasAccount });
+    expect(await sendLaunchBatch({ dryRun: false, limit: 5 }, d)).toMatchObject({ ok: true, sent: 0, skipped: 0, released: 1, waiting: 2, stoppedBy: "lookup" });
+    expect(send).not.toHaveBeenCalled();
+    expect(hasAccount).toHaveBeenCalledTimes(1);
+    expect(store.sent.size).toBe(0);
   });
 
   it("refuses with no launch date, or before it", async () => {

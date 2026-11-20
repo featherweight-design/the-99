@@ -28,7 +28,7 @@ export async function sendLaunchEmailBatch(count: unknown): Promise<LaunchEmailA
   try {
     const report = await sendLaunchBatch({ dryRun: false, limit: count });
     if (report.ok) {
-      console.info(`[launch-email] batch by=${userId} asked=${count} sent=${report.sent} released=${report.released} uncertain=${report.uncertain} waiting=${report.waiting} stopped=${report.stoppedBy}`);
+      console.info(`[launch-email] batch by=${userId} asked=${count} sent=${report.sent} released=${report.released} uncertain=${report.uncertain} skipped=${report.skipped} waiting=${report.waiting} stopped=${report.stoppedBy}`);
     } else {
       console.info(`[launch-email] batch refused by=${userId} reason=${report.reason}`);
     }

@@ -86,16 +86,8 @@ export const clerkEmailCopy = {
 } as const;
 
 /**
- * The launch email's open copy questions. Each entry is a question Hugh has not ruled: "subject" (Q1, whether
- * `launchEmailCopy.subject` stays the recommended placeholder) and "skip-accounts" (Q2, whether to skip addresses that
- * already have an account; not built). Remove an entry when he rules it, and build skip-accounts if he says yes.
- * `sendLaunchBatch` refuses to send, dry runs included, while any remain.
- */
-export const LAUNCH_COPY_OPEN: readonly ("subject" | "skip-accounts")[] = ["subject", "skip-accounts"];
-
-/**
  * The launch email (launch email R2c, 2026-11-18): one email to everyone on `launch_list`, sent once by
- * `sendLaunchBatch` (`src/lib/flyer/launch-send.ts`), pressed from /admin/invites. `subject` is Q1, still Hugh's: the recommended option until he rules.
+ * `sendLaunchBatch` (`src/lib/flyer/launch-send.ts`), pressed from /admin/invites. `subject` is Hugh's ruling of 2026-11-20 (Q1).
  */
 export const launchEmailCopy = {
   subject: "The 99 is open",
@@ -118,7 +110,7 @@ export const launchEmailCopy = {
     {
       image: "feature-tune",
       title: "Change a deck by describing it",
-      body: "Say what you want from the deck. It suggests cards to add and cut, starting with ones you own, and says why for each.",
+      body: "Say what you want from a deck, and it suggests cards to add and cut, yours first, with a reason for each.",
       alt: "For “More interaction”: add Chaos Warp and Abrade, cut Smokebraider",
     },
     {
@@ -130,24 +122,24 @@ export const launchEmailCopy = {
     {
       image: "feature-credits",
       title: "Try the writing tools free",
-      body: "Your welcome credits are enough to try every writing tool three times before you pay anything.",
+      body: "Your welcome credits cover every writing tool at least twice (Suggested changes, up to 10 changes) before you pay anything.",
       /** The text twin has no image, so it says what the picture shows. */
       textBody:
-        "You start with 15 welcome credits, enough to try every writing tool three times before you pay anything, and get 1 free credit every day.",
+        "You start with 15 welcome credits, enough for every writing tool at least twice (Suggested changes, up to 10 changes) before you pay anything, and get 1 free credit every day.",
       alt: "15 welcome credits when you join, plus 1 free credit every day",
     },
   ],
   /** Drawn twice: under the lead, and after the features with `buttonFine`. One action, one word, one link. */
   button: "Sign up free",
   textLinkLabel: "Sign up free:",
-  buttonFine: "Free to join. No card details.",
+  buttonFine: "No card details needed.",
   reason: {
     landing: "You’re getting this because this address was left on The 99’s launch list at the-99.dev.",
     flyer: "You’re getting this because this address was left on The 99’s launch list from a flyer.",
   },
   /** `link` is the word Unsubscribe, linked to the address's `/unsubscribe?t=` URL. */
-  unsubscribe: { before: "This is the only email the launch list sends. ", link: "Unsubscribe", after: " and we’ll delete this address now." },
-  textUnsubscribe: "This is the only email the launch list sends. Unsubscribe and we’ll delete this address now:",
+  unsubscribe: { before: "This is the only email the launch list sends. ", link: "Unsubscribe", after: " and we’ll delete this address." },
+  textUnsubscribe: "This is the only email the launch list sends. Unsubscribe and we’ll delete this address:",
 } as const;
 
 /** `/unsubscribe` (launch email R2c, board U1 and U2): the shipped offline page's body, signed out. */

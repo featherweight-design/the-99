@@ -8,7 +8,7 @@ import { launchEmailDryRun, sendLaunchEmailBatch } from "./launch-email-actions"
 
 beforeEach(() => {
   m.admin.mockReset().mockResolvedValue({ userId: "user_admin" });
-  m.send.mockReset().mockResolvedValue({ ok: true, dryRun: false, waiting: 0, sent: 1, released: 0, uncertain: 0, stoppedBy: "done" });
+  m.send.mockReset().mockResolvedValue({ ok: true, dryRun: false, waiting: 0, sent: 1, released: 0, uncertain: 0, skipped: 0, stoppedBy: "done" });
 });
 
 describe("sendLaunchEmailBatch", () => {

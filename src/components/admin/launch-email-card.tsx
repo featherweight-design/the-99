@@ -39,7 +39,11 @@ export function LaunchEmailCard() {
       setWaiting(r.waiting);
       setCount((c) => Math.max(1, Math.min(c, r.waiting, MAX)));
       if (r.dryRun) setLine({ text: r.waiting === 0 ? copy.none : copy.waiting(r.waiting), danger: false });
-      else setLine({ text: r.stoppedBy === "capped" ? `${copy.result(r.sent, r.released, r.uncertain, r.waiting)} ${copy.capped}` : copy.result(r.sent, r.released, r.uncertain, r.waiting), danger: false });
+      else {
+        const result = copy.result(r.sent, r.released, r.uncertain, r.skipped, r.waiting);
+        const stop = r.stoppedBy === "capped" ? copy.capped : r.stoppedBy === "lookup" ? copy.lookup : null;
+        setLine({ text: stop ? `${result} ${stop}` : result, danger: r.stoppedBy === "lookup" });
+      }
     } catch {
       setLine({ text: copy.refused.failed, danger: true });
     } finally {

@@ -167,3 +167,12 @@ export async function findAccountIdByEmail(email: string, deps: IdentityDeps = i
   if (exact.length > 1) console.error("admin: more than one account holds one email; the lookup answers none");
   return exact.length === 1 ? exact[0].id : null;
 }
+
+/**
+ * Whether any account holds exactly `email` (already trimmed and case-folded): the launch email skips those (Q2, Hugh,
+ * 2026-11-20). Two accounts holding it still answer yes. Throws when Clerk fails or is late, so the caller decides.
+ */
+export async function emailHasAccount(email: string, deps: IdentityDeps = identityDeps): Promise<boolean> {
+  const users = await withDeadline(() => deps.findByEmail(email), deps.deadlineMs ?? CLERK_DEADLINE_MS);
+  return users.some((u) => u.emailAddresses.some((e) => e.emailAddress.trim().toLocaleLowerCase("en-US") === email));
+}
