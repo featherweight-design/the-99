@@ -197,16 +197,13 @@ export function Panel({
           {active && !out ? <TurnRing key={round + ":" + seat.seat} /> : null}
 
           <div className="relative flex h-full w-full flex-col items-center justify-center">
-            <button
-              type="button"
-              onClick={() => onSheet()}
-              className={"absolute left-3 top-2 max-w-[55%] truncate text-left text-[13px] text-[color:var(--fg-body)] " + TOUCH_HIT}
-              data-testid="panel-name"
-            >
-              {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
-            </button>
+            <div className="absolute left-3 top-2 z-10 max-w-[55%]">
+              <button type="button" onClick={() => onSheet()} className={"block max-w-full truncate text-left text-[13px] text-[color:var(--fg-body)] " + TOUCH_HIT} data-testid="panel-name">
+                {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
+              </button>
+            </div>
             {monarch || initiative || COUNTER_KEYS.some((k) => state.counters[k] > 0) ? (
-              <div className="absolute left-3 top-8 flex max-w-[60%] flex-wrap gap-1" data-testid="panel-badges">
+              <div className="absolute left-3 top-8 z-10 flex max-w-[60%] flex-wrap gap-1" data-testid="panel-badges">
                 {monarch ? <Badge label={copy.monarch}><MonarchIcon size={14} /></Badge> : null}
                 {initiative ? <Badge label={copy.initiative}><InitiativeIcon size={14} /></Badge> : null}
                 {COUNTER_KEYS.filter((k) => state.counters[k] > 0).map((k) => (

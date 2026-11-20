@@ -152,7 +152,7 @@ function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: r
     <div className="flex flex-col gap-2">
       <p className="text-[13px] text-[color:var(--fg-body)]">{copy.sheet.damageHint}</p>
       {foes.length === 0 ? <p className="text-[13px] text-[color:var(--fg-muted)]">{copy.sheet.noOpponents}</p> : null}
-      <div className="grid grid-cols-2 gap-2 @[600px]:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2 @[560px]:grid-cols-2 @[900px]:grid-cols-4">
         {foes.map((foe) => {
           const p = seats.find((x) => x.seat === foe.seat)!;
           return (
@@ -181,7 +181,7 @@ function CountersTab({ seat, focus, onCommit }: { seat: SeatState; focus?: Count
   const focused = useRef<HTMLDivElement>(null);
   useEffect(() => focused.current?.scrollIntoView({ block: "nearest" }), []);
   return (
-    <div className="grid grid-cols-2 gap-2 @[600px]:grid-cols-4">
+    <div className="grid grid-cols-1 gap-2 @[560px]:grid-cols-2 @[900px]:grid-cols-4">
       {COUNTER_ORDER.map((key) => {
         const meta = copy.counters[key];
         const hint = key === "ring" ? copy.counters.ring.hint(seat.counters.ring) : (meta as { hint: string }).hint;
@@ -358,7 +358,7 @@ function EndTab({ state, seats, onCommit, onBack }: { state: GameState; seats: r
   return (
     <div className="flex flex-col gap-2">
       <h2 className="text-[16px] font-semibold">{copy.sheet.endTitle}</h2>
-      <div className="grid grid-cols-2 gap-2 @[600px]:grid-cols-4">
+      <div className="grid grid-cols-1 gap-2 @[560px]:grid-cols-2 @[900px]:grid-cols-4">
         {standing.map((s) => {
           const p = seats.find((x) => x.seat === s.seat)!;
           return (
