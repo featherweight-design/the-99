@@ -25,6 +25,7 @@ import { BracketStep, CommanderStep, StrategyStep, type UpgradeArt } from "./pic
 import { StepTracker } from "./step-tracker";
 import { ResultView, leadOf, runDay } from "./result-view";
 import { HistoryView } from "./history-view";
+import { LastRun, lastRun } from "./run-row";
 import { FailedView, WaitView } from "./wait-view";
 
 const copy = preconUpgradeCopy;
@@ -37,14 +38,13 @@ const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
 /** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
 export type FlowApply = { nextVersion: number; onApply: (runId: string) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
 
-export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread }: {
+export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, onSeen }: {
   /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
   fileName: string;
   precon: string;
   panel: UpgradePanel;
   art: UpgradeArt;
-  /** `afterHistory`: the flow closed after the player went through History, so the next press starts a new upgrade (Hugh's bug d). */
-  onClose: (how?: { afterHistory: boolean }) => void;
+  onClose: () => void;
   /** The run's press; absent draws the confirm off. */
   onConfirm?: (picks: { commander: string; bracket: number; strategy: string }) => void;
   /** Try again after a failed run: the same picks, a new run. */
@@ -58,6 +58,8 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
   /** Reads the panel again. Asked once as the flow opens when it may be back from Credits (G22): picks were kept, or only more
    *  credits fund a run, so a lot bought there turns the press on even when the page came back from the browser's cache. */
   onReread?: () => void;
+  /** A done result was shown and marked seen (G25): the caller's next press opens the start screen rather than this result. */
+  onSeen?: (runId: string) => void;
 }) {
   const dialog = useRef<HTMLDivElement>(null);
   const titleId = useId();
@@ -72,10 +74,15 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
   const [left, setLeft] = useState(kept !== null);
   // A kept run opened from the same-picks ask shows as a result, free.
   const [opened, setOpened] = useState<string | null>(null);
-  // History is a list of every kept run; a row opened from it is read-only, with a way back to the list.
+  // History is a list of every kept run; a row opened from it shows the run with a way back to the list (`‹ History`).
   const [history, setHistory] = useState(false);
   const [fromHistory, setFromHistory] = useState(false);
-  const hasRuns = panel.runs.some((r) => r.status === "done");
+  // A run opened from the start screen's `Your last upgrade` (addendum fresh start, call 2): `‹ Back` returns to the start screen.
+  const [fromStart, setFromStart] = useState(false);
+  // Opened from either list: no tracker and no History link, and the dashed note when the run is already in a deck (call 5).
+  const fromList = fromHistory || fromStart;
+  const newest = lastRun(panel.runs);
+  const hasRuns = newest !== null;
   const resultId = opened ?? (view.kind === "results" ? view.runId : null);
   const shown = resultId ? panel.runs.find((r) => r.id === resultId) ?? null : null;
   // A result the panel does not hold (it moved on) falls back to the picks rather than drawing an empty result.
@@ -90,7 +97,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
   const leave = () => {
     // Closed from the intro: forget picks a press of Get more credits kept without leaving the tab (G22).
     if (step === "intro") dropPicks(fileName);
-    onClose({ afterHistory: history || fromHistory });
+    onClose();
   };
   const run = (p: { commander: string; bracket: number; strategy: string }) => {
     dropPicks(fileName);
@@ -155,8 +162,9 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
     if (!unseenId || marked.current.has(unseenId)) return;
     const id = unseenId;
     marked.current.add(id);
+    onSeen?.(id);
     markUpgradeSeenAction(id).catch(() => { marked.current.delete(id); });
-  }, [unseenId]);
+  }, [unseenId, onSeen]);
 
   // The drawn "scrolls on" cue: a fade and a mono label while a pick step has more below the fold. The review of changes draws none.
   useEffect(() => {
@@ -220,9 +228,10 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
           <div className="flex min-w-0 flex-1 flex-col gap-[6px]">
             {stage === "history" && <button type="button" onClick={() => setHistory(false)} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.backLink}</button>}
             {stage === "results" && fromHistory && <button type="button" onClick={() => { setOpened(null); setFromHistory(false); setHistory(true); }} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.back}</button>}
+            {stage === "results" && fromStart && <button type="button" onClick={() => { setOpened(null); setFromStart(false); }} className="min-h-[44px] w-fit cursor-pointer border-0 bg-transparent p-0 text-left font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">{copy.history.backLink}</button>}
             <h2 id={titleId} className="m-0 font-display text-[20px] font-normal text-[color:var(--fg)]">{stage === "results" ? copy.flow.resultTitle : copy.flow.title(precon)}</h2>
           </div>
-          {hasRuns && ((stage === "pick" && step === "intro") || (stage === "results" && !fromHistory)) && (
+          {hasRuns && ((stage === "pick" && step === "intro") || (stage === "results" && !fromList)) && (
             <button type="button" onClick={() => setHistory(true)} className="flex min-h-[44px] flex-none cursor-pointer items-center gap-[6px] border-0 bg-transparent px-[2px] font-sans text-[12.5px] font-medium text-[color:var(--accent-text)] md:min-h-0">
               <svg width="14" height="14" viewBox="0 0 16 16" aria-hidden="true" className="flex-none">
                 <path d="M8 2.2a5.8 5.8 0 1 1-5.6 4.3" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
@@ -244,7 +253,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
           </button>
         </div>
         {stage === "pick" && here !== null && <StepTracker cells={cells} current={here} onGo={(s) => setStep(s)} />}
-        {stage !== "pick" && stage !== "history" && !(stage === "results" && fromHistory) && (
+        {stage !== "pick" && stage !== "history" && !(stage === "results" && fromList) && (
           <StepTracker
             cells={runCells}
             current={null}
@@ -253,6 +262,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
               else if (view.kind === "failed" || view.kind === "wait") setPicks({ commander: view.picks.commander, bracket: view.picks.bracket, strategy: view.picks.strategy });
               setOpened(null);
               setFromHistory(false);
+              setFromStart(false);
               setStep(s);
               setLeft(true);
             }}
@@ -262,9 +272,12 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
         <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
           {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
           {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
-          {stage === "results" && shown && fromHistory && <p className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.past}</p>}
+          {/* A run already in a deck, opened from a list: free to open, and its press stays live (a second deck from the same swaps is allowed). An unused run draws no note. */}
+          {stage === "results" && shown && fromList && shown.deck && <p data-used-note className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.usedNote(shown.deck.name)}</p>}
           {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
-          {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setHistory(false); }} />}
+          {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setFromStart(false); setHistory(false); }} />}
+          {/* The start screen (call 2): the newest kept run above the intro's lead, when one is kept; the intro below is unchanged. */}
+          {stage === "pick" && step === "intro" && newest && <LastRun panel={panel} art={art} run={newest} onOpen={() => { setOpened(newest.id); setFromStart(true); setFromHistory(false); }} />}
           {stage === "pick" && step === "intro" && <IntroStep versions={apply ? preconUpgradeDeckCopy.introVersions(apply.nextVersion) : undefined} short={short ? { payments } : undefined} onMore={toCredits} />}
           {stage === "pick" && step === "commander" && <CommanderStep options={panel.commanders} art={art} picked={picks.commander} onPick={(k) => pick("commander", k)} />}
           {stage === "pick" && step === "bracket" && <BracketStep boxBracket={panel.boxBracket} picked={picks.bracket} onPick={(b) => pick("bracket", b)} />}
@@ -281,7 +294,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
         {stage === "history" ? (
           <div className="flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]">
             <div className="flex gap-[8px] md:order-2 md:flex-row-reverse">
-              <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.history.newUpgrade}</button>
+              <button type="button" onClick={() => { setHistory(false); setOpened(null); setFromHistory(false); setFromStart(false); setPicks(impliedPicks(panel)); setLeft(true); setStep("intro"); }} className={`${ACCENT_PRESS} flex-1 md:flex-none`}>{copy.history.newUpgrade}</button>
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1"><CreditsText text={copy.history.cost(creditCount(panel.allowance))} /></p>
           </div>
@@ -321,6 +334,7 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
                 if (shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: null });
                 setOpened(null);
                 setFromHistory(false);
+                setFromStart(false);
                 setStep("strategy");
                 setLeft(true);
               }}

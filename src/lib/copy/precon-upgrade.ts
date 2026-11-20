@@ -158,7 +158,13 @@ export const preconUpgradeCopy = {
     backLink: "‹ Back",
     newUpgrade: "New upgrade",
     cost: (lot: string) => `2 credits a run · ${lot}`,
-    past: "A past upgrade, read-only. Opening it again uses no credit.",
+    /** The start screen's kicker over the newest kept run, in the month heads' style (addendum fresh start, call 2). */
+    kicker: "Your last upgrade",
+    /** The row's second line, after the swaps: where the run went (call 4). */
+    inDeck: (deck: string) => `in ${deck}`,
+    notYet: "no deck yet",
+    /** The dashed note over a run already in a deck, opened from the start screen or History (call 5). */
+    usedNote: (deck: string) => `Already in ${deck}. Opening it again uses no credit.`,
   },
   ownNote: (n: number) => (n === 0 ? "Only what came in the box." : `Only what came in the box. The ${n} ${n === 1 ? "card to buy isn’t" : "cards to buy aren’t"} added.`),
   arrival: { body: (n: number, s: string) => `Started with ${n} swaps toward ${s}. Versions shows the box as v0.` },

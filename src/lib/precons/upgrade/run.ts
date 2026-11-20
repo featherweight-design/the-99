@@ -38,10 +38,8 @@ export type OfferedCommander = Pick<CommanderOption, "key" | "isFace" | "cards" 
 export type PanelRun = StoredUpgrade & {
   toBuy: { cards: number; cents: number; };
   owned: number;
-  /** The newest deck the reader started from this run (`decks.built_from_upgrade_id`), or null when none. */
+  /** The newest deck the reader started from this run or applied it to (`decks.built_from_upgrade_id`), or null when none: the run's row names it. */
   deck: RunDeck | null;
-  /** A deck was started from this run (`deck !== null`): the press stops opening on it, and History still lists it. */
-  started: boolean;
   /** The theme each cut came from, by the cut's oracle id: the first strategy the deck backs under this run's commander that the card supports. A cut no strategy backs has none. */
   themes: Record<string, string>;
 };
@@ -324,7 +322,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
       const t = strategies.find((st) => st.backingIds.includes(p.cutId));
       if (t) themes[p.cutId] = t.label;
     }
-    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, deck: runDecks.get(r.id) ?? null, started: runDecks.has(r.id) };
+    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, deck: runDecks.get(r.id) ?? null };
   });
   const cardsOut: Record<string, PanelCard> = {};
   for (const id of named) {

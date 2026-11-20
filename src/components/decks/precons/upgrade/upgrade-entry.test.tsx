@@ -20,7 +20,7 @@ const lead: OfferedCommander = {
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r1", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
   pairs: [{ cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", cutReason: null, position: 1 }], buyTotalCents: 100,
-  bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 1, cents: 100 }, owned: 0, themes: {}, deck: null, started: false, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
+  bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 1, cents: 100 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });
 const panel = (runs: PanelRun[] = []): UpgradePanel => ({
   boxBracket: 2, commanders: [lead], runs, listFp: "x", cards: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
@@ -41,6 +41,11 @@ const startProps = {
   },
   cards: 100, body: 99, illegal: [] as string[],
 };
+/** The press, then the start screen's `Your last upgrade` row: the newest kept run's result, free (addendum fresh start, call 2). */
+function openLast() {
+  fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+  fireEvent.click(document.querySelector("[data-last-run] button")!);
+}
 const mount = (p: UpgradePanel) => render(<UpgradeEntry fileName="f" precon="Prismari" panel={p} art={new Map()} start={startProps} />);
 
 describe("UpgradeEntry", () => {
@@ -89,10 +94,39 @@ describe("UpgradeEntry", () => {
     expect(await screen.findByText("That upgrade didn’t come through. Both credits are back.")).toBeInTheDocument();
   });
 
-  it("opens on the newest result, and the row reads the run while one is pending", () => {
-    mount(panel([run()]));
+  it("opens on the start screen when every kept run was seen, the newest as Your last upgrade (fresh start, state 3)", () => {
+    mount(panel([run(), run({ id: "older", strategyLabel: "Older", createdAt: new Date("2026-11-09T12:00:00Z") })]));
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    expect(screen.getByRole("dialog", { name: "Upgrade Prismari" })).toBeInTheDocument();
+    expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
+    expect(document.querySelectorAll("[data-last-run] [data-run-row]")).toHaveLength(1);
+    expect(document.querySelector("[data-last-run] [data-run-row]")!.getAttribute("data-run-row")).toBe("r1");
+    expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+  });
+
+  it("opens on the newest result once when it landed unseen, then on the start screen (state 2)", () => {
+    mount(panel([run({ seenAt: null })]));
     fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
     expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Close" }));
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    expect(screen.getByRole("dialog", { name: "Upgrade Prismari" })).toBeInTheDocument();
+    expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
+  });
+
+  it("an unseen older run never opens on its own: only the newest one does", () => {
+    mount(panel([run(), run({ id: "older", seenAt: null, createdAt: new Date("2026-11-09T12:00:00Z") })]));
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    expect(screen.getByRole("dialog", { name: "Upgrade Prismari" })).toBeInTheDocument();
+  });
+
+  it("opens on the plain intro with no row and no History link when no run is kept (state 4)", () => {
+    mount(panel());
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
+    expect(screen.queryByText("Your last upgrade")).toBeNull();
+    expect(screen.queryByRole("button", { name: "History" })).toBeNull();
   });
 
   it("the row names a pending run and its flow opens on the wait", () => {
@@ -110,8 +144,8 @@ describe("UpgradeEntry", () => {
     fireEvent.click(screen.getByRole("button", { name: "Upgrade toward Spells" }));
     await screen.findByText("Finding swaps toward Spells");
     fireEvent.keyDown(document, { key: "Escape" });
-    finish({ ok: true, panel: panel([run()]), run: run() });
-    // The row is back to the press, and opening it shows the panel's own newest result.
+    finish({ ok: true, panel: panel([run({ seenAt: null })]), run: run({ seenAt: null }) });
+    // The row is back to the press, and opening it shows the panel's own newest result, landed and not yet seen.
     await waitFor(() => expect(screen.getByRole("button", { name: "Upgrade this precon" })).toBeInTheDocument());
     fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
     expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
@@ -130,7 +164,7 @@ describe("UpgradeEntry", () => {
     const withRun = () => panel([run()]);
     const openStart = () => {
       mount(withRun());
-      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      openLast();
       fireEvent.click(screen.getByRole("button", { name: /Start the deck with these/ }));
     };
 
@@ -162,7 +196,7 @@ describe("UpgradeEntry", () => {
       create.mockResolvedValue({ ok: false, reason: "upgradeUnavailable" });
       read.mockResolvedValue(panel([run({ listFp: "moved" })]));
       render(<UpgradeEntry fileName="f" precon="Prismari" panel={panel([run()])} art={new Map()} start={{ ...startProps, addFileName: "f-collector" }} />);
-      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      openLast();
       fireEvent.click(screen.getByRole("button", { name: /Start the deck with these/ }));
       fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
       await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1"));
@@ -171,16 +205,20 @@ describe("UpgradeEntry", () => {
 
     it("keeps the Start press off for a run made over another list, and says why", () => {
       mount(panel([run({ listFp: "old" })]));
-      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      openLast();
       expect(screen.getByText(/The precon’s list changed after this upgrade/)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: /Start the deck with these/ })).toBeDisabled();
     });
 
-    it("opens on the intro, not the result, once a deck was started from the newest run, whatever older runs hold", () => {
-      mount(panel([run({ started: true }), run({ id: "older", createdAt: new Date("2026-11-09T12:00:00Z"), strategyKey: runKey("rootha", 4, "spellslinger"), bracketTarget: 4 })]));
+    it("a run already in a deck opens from the start screen with ‹ Back, the note and its press live", () => {
+      mount(panel([run({ deck: { id: "d1", name: "Prismari Artistry" } })]));
       fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
-      expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
+      expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · in Prismari Artistry");
+      fireEvent.click(document.querySelector("[data-last-run] button")!);
+      expect(screen.getByText("Already in Prismari Artistry. Opening it again uses no credit.")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: /Start the deck with these/ })).toBeEnabled();
+      fireEvent.click(screen.getByRole("button", { name: "‹ Back" }));
+      expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
     });
   });
 });
@@ -201,7 +239,7 @@ describe("UpgradeEntry's pulse when a run lands while the window is closed (adde
     closeIt();
     expect(screen.getByRole("button", { name: /^Upgrading toward Spells/ })).toBeInTheDocument();
     expect(pulse()).toBeNull();
-    finish({ ok: true, panel: panel([run()]), run: run() });
+    finish({ ok: true, panel: panel([run({ seenAt: null })]), run: run({ seenAt: null }) });
     await waitFor(() => expect(pulse()).not.toBeNull());
     fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
     expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
@@ -226,7 +264,7 @@ describe("UpgradeEntry's pulse when a run lands while the window is closed (adde
     // The read comes back without the new short row: only the older run of these picks is in it.
     read.mockResolvedValue(panel([older]));
     mount(panel([older]));
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    openLast();
     press.mockReturnValue(new Promise((r) => { finish = r; }));
     fireEvent.click(screen.getByRole("button", { name: /Try another strategy/ }));
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
@@ -239,13 +277,13 @@ describe("UpgradeEntry's pulse when a run lands while the window is closed (adde
     expect(pulse()).toBeNull();
   });
 
-  it("a failed run that lands while closed, with an older result kept, plays no pulse and opens on that older result", async () => {
+  it("a failed run that lands while closed, with an older result kept, plays no pulse and opens on the start screen", async () => {
     let finish!: (v: unknown) => void;
-    // The older kept result is not started, so the view moves from the wait to it when the run fails: that is not a landing.
+    // The view moves from the wait to the start screen when the run fails: that is not a landing.
     const older = run({ id: "older", strategyKey: runKey("rootha", 4, "spellslinger"), bracketTarget: 4, strategyLabel: "Older", createdAt: new Date("2026-11-09T12:00:00Z") });
     read.mockResolvedValue(panel([older]));
     mount(panel([older]));
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+    openLast();
     press.mockReturnValue(new Promise((r) => { finish = r; }));
     fireEvent.click(screen.getByRole("button", { name: /Try another strategy/ }));
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
@@ -258,7 +296,8 @@ describe("UpgradeEntry's pulse when a run lands while the window is closed (adde
     await act(async () => { await new Promise((r) => setTimeout(r, 700)); });
     expect(pulse()).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
-    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: "Upgrade Prismari" })).toBeInTheDocument();
+    expect(document.querySelector("[data-last-run] [data-run-row]")!.getAttribute("data-run-row")).toBe("older");
   });
 
   it("a confirm that lands with the window still open shows the result and plays no pulse behind it", async () => {

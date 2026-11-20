@@ -65,7 +65,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
   onFailed: (text: string) => void;
 }) {
   const router = useRouter();
-  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed } = useUpgradeRun(upgrade.fileName, upgrade.panel);
+  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen } = useUpgradeRun(upgrade.fileName, upgrade.panel);
   const art = useMemo(() => new Map([...upgrade.art, ...commanderArt]), [upgrade.art, commanderArt]);
   const [applying, setApplying] = useState(false);
   // Applied, and the page's refresh (which takes the band away) not yet landed: the press stays off, or a second Apply of
@@ -149,8 +149,9 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
           art={art}
           view={view}
           // A refusal is about the deck as it was: closing clears it, so an unlock or a refresh is read again on the next press.
-          onClose={(how) => { setRefusals({}); close(how); }}
+          onClose={() => { setRefusals({}); close(); }}
           onReread={() => void refresh(true)}
+          onSeen={onSeen}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
           apply={{ nextVersion: upgrade.nextVersion, onApply: (id) => void apply(id), pending: applying, refusals }}
