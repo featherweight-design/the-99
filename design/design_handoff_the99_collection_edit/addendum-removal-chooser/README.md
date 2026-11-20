@@ -26,7 +26,7 @@ carries authorship, `Back to first committed`).
 3. **No links out (#2982).** Deck name is plain text in all seven hosts. The row carries `lists N · committed it <date>` (the date `contested-card-row` already stamps) so there is nothing to open. Multi-card rows (Sync, Replace, Revert) still expand onto their cards as shipped; the whole row toggles, not a link.
 4. **What a pick writes.** Reservations for the keeping decks (`assignCopyFor`), inside the removal's transaction, then `revalidateClaims`. No list or version change. Undo restores the previous reservations.
 5. **Count = copies going.** Pick exactly as many decks as copies leave. Full + tap another = an inline reason, never a disabled row.
-6. **Where it shows.** Edit copies removal and lowering, with 2+ committed decks listing the card **and exactly one copy left after the removal** (one keeper, so one reservation stores the pick; readiness Gap 1, option a, pending Hugh's ruling). Two or more copies left, or anywhere else: today's warning minus the link.
+6. **Where it shows.** Edit copies removal and lowering, with 2+ committed decks listing the card **and exactly one copy left after the removal** (one keeper, so one reservation stores the pick; readiness Gap 1, option a, ruled by Hugh 2026-11-20). Two or more copies left, or anywhere else: today's warning minus the link.
 
 Outcome words: `short 1` (shipped figure, `--danger`) on picked rows, `keeps it` (`--fg-faint`) on the rest.
 
