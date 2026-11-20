@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>F2 not applied</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Chakra+Petch:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0A0B0F}
+*{box-sizing:border-box}
+a{color:#E39A4F}a:hover{color:#F0B57A}
+.board{padding:44px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:30px}
+.bh{display:flex;flex-direction:column;gap:8px;max-width:1500px}
+.bh h2{margin:0;font:700 28px 'Chakra Petch',sans-serif}
+.k{font-family:'IBM Plex Mono',monospace;font-size:10.5px;font-weight:500;letter-spacing:.14em;text-transform:uppercase;color:#8A8FA0}
+.cap{font-size:13px;line-height:1.55;color:#A3A8B8;margin:0;text-wrap:pretty}
+.cap b,.li b{color:#E6E8F0;font-weight:600}
+code{font-family:'IBM Plex Mono',monospace;font-size:12px;color:#E6E8F0;background:#171922;border:1px solid #262A35;border-radius:4px;padding:0 4px}
+.row{display:flex;gap:40px;align-items:flex-start}
+.fr{display:flex;flex-direction:column;gap:12px;flex:none;width:390px}
+.fr.wide{width:650px}
+.state{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pill{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.14em;text-transform:uppercase;padding:3px 7px;border-radius:4px}
+.pill.now{color:#0E0F14;background:#E39A4F}
+.pill.was{color:#A3A8B8;border:1px solid #343843}
+.pill.err{color:#0E0F14;background:#E06C5A}
+.shot{display:block;width:390px;border-radius:28px;border:1px solid #262A35}
+.shot.dk{width:650px;border-radius:12px}
+.shot.crop{border-radius:10px}
+.sub{font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0;margin:0}
+.cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px 44px}
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h3{margin:0;font:600 17px 'Chakra Petch',sans-serif;color:#E6E8F0}
+ol.li,ul.li{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:1.55;color:#A3A8B8}
+table{border-collapse:collapse;font-size:12.5px;color:#A3A8B8;width:100%}
+th,td{border-top:1px solid #262A35;padding:7px 10px 7px 0;text-align:left;vertical-align:top}
+th{font:600 10px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8A8FA0}
+td b{color:#E6E8F0}
+.rec{border:1px solid rgba(227,154,79,.55);border-radius:12px;padding:16px 18px;background:#13110E;display:flex;flex-direction:column;gap:10px}
+.tl{display:grid;grid-template-columns:150px repeat(5,390px);gap:16px 24px;align-items:center}
+</style>
+</helmet>
+<div class="board" style="width: 2742px; min-height: 1200px">
+<div class="bh"><span class="k">Precon Upgrade · addendum fresh start · R2 · account 2 · 2026-11-18</span><h2>F2 · A finished run with no deck yet: still yours to apply</h2><p class="cap">The reader ran an upgrade and left without starting a deck or applying it. The row says <i>no deck yet</i> in accent ink. Opened, its press is live. On the deck page it's the same screen in the band's flow, with A2c's last intro line and <b>Apply these 14 swaps</b>.</p></div><p class="sub">On the precon page</p><div class="row"><div class="fr "><div class="state"><span class="pill now">F2</span><span class="k">Start screen · 390</span></div><img class="shot " src="art/fs-open-p.webp" alt="Start screen · 390"><p class="cap"><i>no deck yet</i> in <code>--accent-text</code>: the one word on the row that says it can still be used.</p></div><div class="fr "><div class="state"><span class="pill now">F2·o</span><span class="k">Opened · 390</span></div><img class="shot " src="art/fs-open-open-p.webp" alt="Opened · 390"><p class="cap">The result as shipped, with <b>‹ Back</b>. No note: nothing about it is read-only.</p></div><div class="fr "><div class="state"><span class="pill now">F2·o</span><span class="k">The lists · 390</span></div><img class="shot " src="art/fs-open-open-p-900.webp" alt="The lists · 390"><p class="cap">Suggested changes' pick lines, every one <b>✓ Picked</b>, grouped by type with the shipped heads (<i>Instants 7 · 9 in the deck · 15 with your picks</i>). Buy tag and allocation marker as Suggested changes draws them.</p></div><div class="fr wide"><div class="state"><span class="pill now">F2</span><span class="k">Start screen · 1300</span></div><img class="shot dk" src="art/fs-open-d.webp" alt="Start screen · 1300"><p class="cap"></p></div><div class="fr wide"><div class="state"><span class="pill now">F2·o</span><span class="k">Opened · 1300</span></div><img class="shot dk" src="art/fs-open-open-d.webp" alt="Opened · 1300"><p class="cap">The run's head, then Suggested changes' lead and the pinned bar: <i>+14 in −14 out · bracket 2 → 3 · Upgraded, as asked</i>, with <b>Start the deck with these 14 swaps</b>.</p></div></div><p class="sub">Picking adds and cuts separately (R2, #2985): keep Sai, still cut Wizard's Staff for Counterspell</p><div class="row"><div class="fr "><div class="state"><span class="pill now">F2·m</span><span class="k">Additions · 390</span></div><img class="shot " src="art/fs-mixed-p-900.webp" alt="Additions · 390"><p class="cap">Searing Touch unpicked (<b>Pick</b>, empty box), the rest <b>✓ Picked</b>. The tab reads <i>Additions 13 of 14</i>.</p></div><div class="fr "><div class="state"><span class="pill now">F2·m</span><span class="k">Cuts · 390</span></div><img class="shot " src="art/fs-mixed-p-1700-cut.webp" alt="Cuts · 390"><p class="cap">Sai, Master Thopterist unpicked, so it stays; Wizard's Staff still goes. The bar: <i>+13 in −13 out</i>, <b>Start the deck with these 13 swaps</b>.</p></div><div class="fr "><div class="state"><span class="pill now">F2·u</span><span class="k">Counts don't match · 390</span></div><img class="shot " src="art/fs-uneven-p-900.webp" alt="Counts don't match · 390"><p class="cap">Only a cut unpicked: <i>14 in, 13 out. Pick 1 more cut to apply, so the deck stays at 99.</i> The press is off until they match.</p></div><div class="fr wide"><div class="state"><span class="pill now">F2·m</span><span class="k">Both lists · 1300</span></div><img class="shot dk" src="art/fs-mixed-d-1500.webp" alt="Both lists · 1300"><p class="cap">Side by side, each <i>13 of 14 chosen</i>. Mystical Tutor carries the shipped bracket line: it's the pick that moves the deck to 3.</p></div><div class="fr wide"><div class="state"><span class="pill now">F2·b</span><span class="k">Bracket not reached · 1300</span></div><img class="shot dk" src="art/fs-missed-d-520.webp" alt="Bracket not reached · 1300"><p class="cap">Mystical Tutor and Mind Stone unpicked: the shipped warning <i>You asked for 3 · Upgraded. None of your picks moves it…</i> The press stays on.</p></div></div><p class="sub">On the deck page (band's flow, A2c)</p><div class="row"><div class="fr "><div class="state"><span class="pill now">F2d</span><span class="k">Start screen · 390</span></div><img class="shot " src="art/fs-deck-open-p.webp" alt="Start screen · 390"><p class="cap">A2c's last intro line: <i>Nothing changes until you apply the swaps.</i></p></div><div class="fr "><div class="state"><span class="pill now">F2d·o</span><span class="k">Opened · 390</span></div><img class="shot " src="art/fs-deck-open-open-p.webp" alt="Opened · 390"><p class="cap">The same result; the bar's press reads <b>Apply these 14 swaps</b>, with A2c's one Undo after.</p></div><div class="fr wide"><div class="state"><span class="pill now">F2d·m</span><span class="k">Mixed picks · 1300</span></div><img class="shot dk" src="art/fs-deck-mixed-d-520.webp" alt="Mixed picks · 1300"><p class="cap"><b>Apply these 13 swaps</b>: Sai stays in this deck, Searing Touch stays out.</p></div><div class="fr wide"><div class="state"><span class="pill now">F2d·o</span><span class="k">Opened · 1300</span></div><img class="shot dk" src="art/fs-deck-open-open-d.webp" alt="Opened · 1300"><p class="cap"></p></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2742,"height":1200}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
