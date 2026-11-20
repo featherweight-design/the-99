@@ -13,7 +13,7 @@ export const SOCIAL_BINDINGS = ["socialProfiles", "friendLinks", "friendInvites"
 /** The tables' SQL names. `pods` is matched only where SQL would name a table, never as a word in copy. */
 const RAW = [
   // Case-insensitive: Postgres folds an unquoted identifier, so `FROM FRIEND_LINKS` names the same table.
-  /\b(?:social_profiles|friend_links|friend_invites|pod_members|pod_spare_shares|rule_zero_tables|rule_zero_seats|rule_zero_seen|feed_items|spare_requests|friend_link_keys|friend_requests)\b/i,
+  /\b(?:social_profiles|friend_links|friend_invites|pod_members|pod_spare_shares|rule_zero_tables|rule_zero_seats|rule_zero_seen|rule_zero_result_seats|feed_items|spare_requests|friend_link_keys|friend_requests)\b/i,
   /\b(?:from|join|into|update|table)\s+"?pods\b"?/i,
 ];
 

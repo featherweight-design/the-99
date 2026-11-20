@@ -132,14 +132,15 @@ export const seatName = (s: Seat) => s.table?.name ?? s.friend?.name ?? (cleanLa
  * The seats a table's prefill fills, in seat order: every other seat, a waiting one too. Each draws the table's name
  * and deck and carries nothing but its number to send. `key` names each seat, as a picker press does.
  */
-export function prefillSeats(prefill: Pick<TablePrefill, "seats">, key: (seat: number) => string): Seat[] {
+export function prefillSeats(prefill: Pick<TablePrefill, "seats"> & Partial<Pick<TablePrefill, "result">>, key: (seat: number) => string): Seat[] {
   return prefill.seats.map((t) => ({
     key: key(t.seat),
     commander: null,
     friend: null,
     deck: null,
     label: "",
-    won: false,
+    // The tracked game's winner, when it beat the viewer and still sits at the table.
+    won: prefill.result?.viewer === "loss" && prefill.result.winnerSeat === t.seat,
     table: { seat: t.seat, name: t.name, deckName: t.deckName, artCropUri: t.artCropUri, mark: !t.friend },
   }));
 }

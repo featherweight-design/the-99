@@ -20,7 +20,7 @@
 import { and, asc, eq, inArray, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
+import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroResultSeats, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 import type { ThirdPartyName } from "../person-name/brand";
 import { named } from "../person-name/mint";
 import type { Reader } from "./access";
@@ -29,6 +29,7 @@ import { friendDecksIn, pickerSeesDeck } from "./games";
 import { tableClosesAt } from "../rule-zero/rules";
 import { isUuid } from "./rules";
 import { tableOpen, tableOpenAs } from "./rule-zero-open";
+import { dropResultIfRosterChanged } from "./rule-zero-result";
 import { ownedDeckArt, type DeckArt } from "./rule-zero-art";
 import { enqueueSeatPushQuery } from "../push/seat";
 import { kickPush } from "../push/kick";
@@ -281,6 +282,7 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
         ? { tableId, userId: s.userId, seat: i + 1, deckId: stay.deckId, changedAt: stay.changedAt, noticeSeenAt: stay.noticeSeenAt }
         : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt, noticeSeenAt: null };
     }));
+    await dropResultIfRosterChanged(tx, tableId);
     // Only a NEW seat is news: a player who stays, changes seat or is removed is told nothing (brief state 12).
     notified.push(...await queueSeatPushes(tx, tableId, viewerId, seats.filter((s) => !kept.has(s.userId)).map((s) => s.userId), new Date()));
     const gone = before.map((s) => s.userId).filter((u) => !seats.some((s) => s.userId === u));
@@ -700,8 +702,12 @@ export async function purgeRuleZeroIn(tx: Tx, userId: string): Promise<RuleZeroP
     order by t.id for update`);
   const left = await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.userId, userId)).returning({ tableId: ruleZeroSeats.tableId });
   await tx.delete(ruleZeroSeen).where(eq(ruleZeroSeen.userId, userId));
-  const set = await tx.delete(ruleZeroTables).where(or(eq(ruleZeroTables.setBy, userId), eq(ruleZeroTables.closedBy, userId))).returning({ id: ruleZeroTables.id });
+  // A result without one of its players would read a tie as a win: every result they sat in goes, the others' included.
   const touched = [...new Set(left.map((s) => s.tableId))];
+  await tx.delete(ruleZeroResultSeats).where(touched.length > 0
+    ? or(inArray(ruleZeroResultSeats.tableId, touched), eq(ruleZeroResultSeats.userId, userId))
+    : eq(ruleZeroResultSeats.userId, userId));
+  const set = await tx.delete(ruleZeroTables).where(or(eq(ruleZeroTables.setBy, userId), eq(ruleZeroTables.closedBy, userId))).returning({ id: ruleZeroTables.id });
   const short = touched.length === 0 ? [] : await tx
     .delete(ruleZeroTables)
     .where(and(

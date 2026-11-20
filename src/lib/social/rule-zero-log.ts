@@ -23,6 +23,7 @@ import { SEAT_LABEL_MAX } from "../decks/game-seats";
 import { ruledSeatOwnersOf, seatDeckVisible } from "./rule-zero";
 import { cleanName, isUuid } from "./rules";
 import { ownedDeckArt } from "./rule-zero-art";
+import { resultPlacesQuery } from "./rule-zero-result";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -46,7 +47,12 @@ export type TablePrefill = {
   podSize: number;
   /** Every seat but the viewer's, in seat order. */
   seats: TablePrefillSeat[];
+  /** The tracked game's result for the viewer, or null while the table has none (`resultFor`). */
+  result: TablePrefillResult | null;
 };
+
+/** The viewer's own result and who beat them: `winnerSeat` is a CURRENT seat number, null for a win, a draw or a winner no longer seated. */
+export type TablePrefillResult = { viewer: "win" | "loss" | "draw"; winnerSeat: number | null };
 
 const viewerSeat = alias(ruleZeroSeats, "viewer_seat");
 const viewerIn = alias(podMembers, "viewer_in");
@@ -111,14 +117,39 @@ export function seatingHash(
   return createHash("sha256").update(`${tableId}|${seats}`).digest("hex");
 }
 
+/**
+ * Pure: the tracked result as the viewer logs it. First place alone wins; a tie for first is a draw for a player in
+ * it. Beaten by one winner, the winner's seat is where that player sits NOW (a reseat renumbers), else none. Null when
+ * the viewer is not in the stored result.
+ */
+export function resultFor(
+  rows: readonly Pick<TableSeatRow, "seat" | "userId">[],
+  placed: readonly { userId: string; place: number }[],
+  viewerId: string,
+): TablePrefillResult | null {
+  const mine = placed.find((p) => p.userId === viewerId);
+  if (!mine) return null;
+  const first = placed.filter((p) => p.place === 1);
+  if (mine.place === 1) return { viewer: first.length > 1 ? "draw" : "win", winnerSeat: null };
+  const winner = first.length === 1 ? rows.find((r) => r.userId === first[0].userId) : undefined;
+  return { viewer: "loss", winnerSeat: winner?.seat ?? null };
+}
+
 /** Pure: the prefill from the granted rows, or null when the viewer is not seated at the table with `deckId`. */
-export function prefillFrom(rows: readonly TableSeatRow[], viewerId: string, tableId: string, deckId: string): TablePrefill | null {
+export function prefillFrom(
+  rows: readonly TableSeatRow[],
+  viewerId: string,
+  tableId: string,
+  deckId: string,
+  placed: readonly { userId: string; place: number }[] = [],
+): TablePrefill | null {
   const mine = rows.find((r) => r.userId === viewerId);
   if (!mine || mine.deckId !== deckId) return null;
   return {
     table: { id: tableId, seating: seatingHash(tableId, rows) },
     podName: named(mine.podName),
     podSize: rows.length,
+    result: resultFor(rows, placed, viewerId),
     seats: rows.filter((r) => r.userId !== viewerId).map((r) => ({
       seat: r.seat,
       name: named(r.displayName),
@@ -137,11 +168,14 @@ export function prefillFrom(rows: readonly TableSeatRow[], viewerId: string, tab
 export async function tablePrefill(viewerId: string, tableId: unknown, deckId: string): Promise<TablePrefill | null> {
   if (!isUuid(tableId) || !isUuid(deckId)) return null;
   // One snapshot for the owners and the seats, so a reseat between the two reads cannot draw a deck its owner's rules hide.
-  const rows = await db.transaction(
-    async (tx) => tableSeatsQuery(viewerId, tableId, tx, await ruledSeatOwnersOf(viewerId, tableId, tx)),
+  const { rows, placed } = await db.transaction(
+    async (tx) => ({
+      rows: await tableSeatsQuery(viewerId, tableId, tx, await ruledSeatOwnersOf(viewerId, tableId, tx)),
+      placed: await resultPlacesQuery(tableId, viewerId, tx),
+    }),
     { isolationLevel: "repeatable read" },
   );
-  const prefill = prefillFrom(rows, viewerId, tableId, deckId);
+  const prefill = prefillFrom(rows, viewerId, tableId, deckId, placed);
   if (!prefill) return null;
   // Each seat's art from the copy its deck's owner holds, as the table draws it (`ownedDeckArt`), else the oracle art.
   const deckOf = new Map(rows.flatMap((r) => (r.deckId !== null ? [[r.seat, r.deckId] as const] : [])));
