@@ -734,6 +734,18 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   to { stroke-dashoffset: 0; }
 }
 
+/* Life tracker (PR 6): the crown or the initiative flies from the centre strip to the seat that took it, rising as it goes. */
+@keyframes holder-fly {
+  0% { left: var(--fx, 50%); top: var(--fy, 50%); transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  55% {
+    left: calc(var(--fx, 50%) + (var(--tx, 50%) - var(--fx, 50%)) * 0.55);
+    top: calc(var(--fy, 50%) + (var(--ty, 50%) - var(--fy, 50%)) * 0.55 - 30px);
+    transform: translate(-50%, -50%) scale(1.35);
+    opacity: 1;
+  }
+  100% { left: var(--tx, 50%); top: var(--ty, 50%); transform: translate(-50%, -50%) scale(0.6); opacity: 0; }
+}
+
 /* Life tracker (PR 5): the sheet slides up, the life number ticks, and a committed life change tints its panel. */
 @keyframes sheet-in {
   from { opacity: 0; transform: translateY(12px); }

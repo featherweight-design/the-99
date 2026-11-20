@@ -13,6 +13,17 @@ describe("layouts", () => {
       }
     }
   });
+  it("puts every layout's centre strip inside its canvas and over no seat", () => {
+    for (const l of LAYOUTS) {
+      const r = l.spine;
+      expect(r.x >= 0 && r.y >= 0 && r.x + r.w <= l.canvas.w && r.y + r.h <= l.canvas.h, l.id).toBe(true);
+      for (const c of l.cells) {
+        const overlaps = r.x < c.x + c.w && c.x < r.x + r.w && r.y < c.y + c.h && c.y < r.y + r.h;
+        expect(overlaps, `${l.id} spine over a seat`).toBe(false);
+      }
+    }
+  });
+
   it("has unique ids and offers phone 2 to 6 and tablet 4 to 6", () => {
     expect(new Set(LAYOUTS.map((l) => l.id)).size).toBe(LAYOUTS.length);
     for (const device of ["phone", "tablet"] as const) for (const n of [2, 3, 4, 5, 6]) if (!(device === "tablet" && (n === 2 || n === 3))) expect(layoutsFor(device, n).length).toBeGreaterThan(0);

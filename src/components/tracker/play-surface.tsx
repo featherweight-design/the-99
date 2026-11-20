@@ -11,10 +11,15 @@ import { trackerCopy } from "../../lib/copy/tracker";
 import { PersonName } from "../../lib/person-name";
 import { isOver, placements, replay, type Game, type GameConfig } from "../../lib/tracker/engine";
 import { layoutById, layoutsFor, type Device } from "../../lib/tracker/layouts";
-import { Panel, type PlaySeat } from "./panel";
+import { rollFair, SIDES, type DieKind } from "./dice";
+import { DiceResult, DiceRoll, type Roll } from "./dice-roll";
+import { MonarchIcon, InitiativeIcon } from "./icons";
+import { Panel, type PlaySeat, type SeatPick } from "./panel";
 import { Setup } from "./setup";
 import { Sheet, type SheetView } from "./sheet";
+import { Spine } from "./spine";
 import { useGame } from "./use-game";
+import { useWakeLock } from "./use-wake-lock";
 
 const copy = trackerCopy;
 
@@ -45,6 +50,9 @@ export function PlaySurface({
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<SheetView | null>(null);
   const [saved, setSaved] = useState<"saving" | "saved" | "failed" | null>(null);
+  const [pick, setPick] = useState<"monarch" | "initiative" | null>(null);
+  const [fly, setFly] = useState<{ kind: "monarch" | "initiative"; k: number; from: [number, number]; to: [number, number] } | null>(null);
+  const [roll, setRoll] = useState<Roll | null>(null);
   const savedFor = useRef<string | null>(null);
 
   const state = useMemo(() => (game ? replay(game) : null), [game]);
@@ -53,8 +61,10 @@ export function PlaySurface({
   const fits = !!game && !!saved_layout && saved_layout.cells.length === seats.length && game.config.seats.length === seats.length && game.config.seats.every((c, i) => c.seat === seats[i].seat);
   useEffect(() => (game && !fits ? discard() : undefined), [game, fits, discard]);
   const over = state ? isOver(state) : false;
+  useWakeLock(!!state && !over);
   // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
   if (over && sheet) setSheet(null);
+  if (over && pick) setPick(null);
 
   // The result is saved once per finished game, keyed on its length so an undo that reopens the game and a new finish saves again.
   useEffect(() => {
@@ -97,6 +107,37 @@ export function PlaySurface({
   const layout = saved_layout!;
   const bySeat = new Map(seats.map((s) => [s.seat, s]));
   const activeName = bySeat.get(state.active);
+  const pct = (x: number, y: number): [number, number] => [(x / layout.canvas.w) * 100, (y / layout.canvas.h) * 100];
+  const spine = layout.spine;
+  const holder = (kind: "monarch" | "initiative") => {
+    const held = state[kind] === null ? undefined : bySeat.get(state[kind]!);
+    const name = held ? held.name : null;
+    return {
+      held: !!held,
+      art: held?.art ?? null,
+      label: kind === "monarch" ? copy.strip.monarchAria(name) : copy.strip.initiativeAria(name),
+    };
+  };
+  const seatPick = (seat: PlaySeat, cellIndex: number, out: boolean): SeatPick | null => {
+    if (!pick || out) return null;
+    const now = state[pick] === seat.seat;
+    const label = pick === "monarch"
+      ? now ? copy.pick.monarchNow : seat.you ? copy.pick.takeCrown : copy.pick.crown(seat.name)
+      : now ? copy.pick.initiativeNow : seat.you ? copy.pick.takeInitiative : copy.pick.giveInitiative(seat.name);
+    return {
+      kind: pick,
+      now,
+      label,
+      onPick: () => {
+        setPick(null);
+        if (now) return;
+        commit({ t: pick, seat: seat.seat });
+        const c = layout.cells[cellIndex];
+        setFly({ kind: pick, k: (fly?.k ?? 0) + 1, from: pct(spine.x + spine.w / 2, spine.y + spine.h / 2), to: pct(c.x + c.w / 2, c.y + c.h / 2) });
+      },
+    };
+  };
+  const rollDie = (kind: DieKind) => setRoll({ kind, values: [rollFair(SIDES[kind])], k: (roll?.k ?? 0) + 1 });
 
   return (
     <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden" data-testid="tracker-play">
@@ -122,6 +163,7 @@ export function PlaySurface({
               initiative={state.initiative === seat.seat}
               onSheet={(focus) => setSheet({ seat: seat.seat, tab: focus ? "counters" : "damage", focus })}
               disabled={over}
+              pick={seatPick(seat, i, s.out !== null)}
               onLife={(delta) => commit({ t: "life", seat: seat.seat, delta })}
               onEndTurn={() => commit({ t: "endTurn" })}
               onUndo={undo}
@@ -129,13 +171,42 @@ export function PlaySurface({
           );
         })}
 
-        <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-          <div role="group" className="pointer-events-auto flex items-center gap-2 rounded-full border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-3 py-1 text-[13px] text-[color:var(--fg-body)]">
-            <span data-testid="strip-round">{copy.strip.round(state.round)}</span>
-            <button type="button" onClick={undo} disabled={state.entries === 0} className="min-h-[44px] px-2 disabled:opacity-40">{copy.strip.undo}</button>
-            <button type="button" onClick={() => setMenu((m) => !m)} aria-expanded={menu} className="min-h-[44px] px-2">{copy.strip.menu}</button>
-          </div>
-        </div>
+        <div
+          aria-hidden
+          className={"pointer-events-none absolute inset-0 z-10 bg-[rgba(14,20,40,.22)] motion-safe:transition-opacity motion-safe:duration-[.6s] " + (state.day === "night" ? "opacity-100" : "opacity-0")}
+          data-testid="night-tint"
+        />
+
+        <Spine
+          rect={spine}
+          canvas={layout.canvas}
+          round={state.round}
+          roundLabel={activeName?.you ? copy.strip.roundAriaYou(state.round) : copy.strip.roundAria(state.round, activeName?.name ?? "")}
+          monarch={holder("monarch")}
+          initiative={holder("initiative")}
+          day={state.day}
+          pick={pick}
+          canUndo={state.entries > 0}
+          menu={menu}
+          onPick={(kind) => setPick((p) => (p === kind ? null : kind))}
+          onDay={() => commit({ t: "day", value: state.day === "day" ? "night" : "day" })}
+          onDice={rollDie}
+          onUndo={undo}
+          onMenu={() => setMenu((m) => !m)}
+        />
+
+        {fly ? (
+          <span
+            key={fly.k}
+            aria-hidden
+            onAnimationEnd={() => setFly(null)}
+            className="pointer-events-none absolute z-40 grid size-9 place-items-center rounded-full bg-[color:var(--accent)] text-[color:var(--bg)] opacity-0 motion-reduce:hidden motion-safe:animate-[holder-fly_.55s_cubic-bezier(.5,0,.3,1)_both]"
+            style={{ "--fx": `${fly.from[0]}%`, "--fy": `${fly.from[1]}%`, "--tx": `${fly.to[0]}%`, "--ty": `${fly.to[1]}%` } as React.CSSProperties}
+            data-testid="holder-fly"
+          >
+            {fly.kind === "monarch" ? <MonarchIcon size={18} /> : <InitiativeIcon size={18} />}
+          </span>
+        ) : null}
       </div>
 
       {sheet && !over ? (
@@ -161,6 +232,22 @@ export function PlaySurface({
           <Link href={backHref} className="min-h-[44px] px-3 py-3 text-[14px] text-[color:var(--fg)]">{copy.strip.back}</Link>
           <button type="button" onClick={() => setMenu(false)} className="min-h-[44px] px-3 text-[14px] text-[color:var(--fg-body)]">{copy.strip.close}</button>
         </div>
+      ) : null}
+
+      {roll ? (
+        <DiceRoll roll={roll} onClose={() => setRoll(null)}>
+          <DiceResult value={roll.kind === "coin" ? (roll.values[0] === 1 ? copy.dice.heads : copy.dice.tails) : String(roll.values[0])} />
+          <button
+            type="button"
+            onClick={() => rollDie(roll.kind)}
+            className="min-h-[48px] rounded-full bg-[color:var(--elevated)] px-5 text-[15px] font-semibold text-[color:var(--fg)]"
+            data-testid="dice-again"
+          >
+            {roll.kind === "coin"
+              ? copy.dice.flipAgain(roll.values[0] === 1 ? copy.dice.heads : copy.dice.tails)
+              : copy.dice.rollAgain(copy.dice.rolled(roll.values[0]))}
+          </button>
+        </DiceRoll>
       ) : null}
 
       {over ? (

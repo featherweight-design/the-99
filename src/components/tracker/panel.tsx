@@ -8,11 +8,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import type { Cell } from "../../lib/tracker/layouts";
 import { COUNTER_KEYS, type CounterKey, type SeatState } from "../../lib/tracker/engine";
-import { PersonName, PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
+import { PersonName, PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
 import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { CounterIcon, InitiativeIcon, MonarchIcon } from "./icons";
 import { TurnRing } from "./turn-ring";
+
+/** Picking who gets the crown or the initiative (F13): the seat's button over its panel, and what it says. */
+export type SeatPick = { kind: "monarch" | "initiative"; now: boolean; label: string | PersonParts; onPick: () => void };
 
 export type PlaySeat = {
   seat: number;
@@ -123,6 +126,7 @@ export function Panel({
   monarch,
   initiative,
   disabled,
+  pick,
   onSheet,
   onLife,
   onEndTurn,
@@ -139,6 +143,7 @@ export function Panel({
   monarch: boolean;
   initiative: boolean;
   disabled: boolean;
+  pick?: SeatPick | null;
   onSheet: (focus?: CounterKey) => void;
   onLife: (delta: number) => void;
   onEndTurn: () => void;
@@ -278,6 +283,23 @@ export function Panel({
               </>
             )}
           </div>
+          {pick ? (
+            <button
+              type="button"
+              onClick={pick.onPick}
+              data-testid="seat-pick"
+              {...personAttrs(
+                { "aria-label": pick.label },
+                "absolute inset-[50px_8px_8px_14px] z-30 flex items-center justify-center gap-2 rounded-[12px] px-3 text-center text-[16px] font-semibold "
+                  + (pick.now
+                    ? "bg-[color:var(--accent-dim)] text-[color:var(--fg)] shadow-[inset_0_0_0_2px_var(--accent)]"
+                    : "bg-[color:color-mix(in_srgb,var(--bg)_86%,transparent)] text-[color:var(--accent-text)] shadow-[inset_0_0_0_1.5px_var(--accent)]"),
+              )}
+            >
+              {pick.kind === "monarch" ? <MonarchIcon size={20} /> : <InitiativeIcon size={20} />}
+              <span aria-hidden><PersonText text={pick.label} /></span>
+            </button>
+          ) : null}
         </div>
       </div>
     </div>
