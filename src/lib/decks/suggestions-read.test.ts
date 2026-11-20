@@ -8,7 +8,7 @@ const { rowsRef, select } = vi.hoisted(() => {
 });
 vi.mock("../../db", () => ({ db: { select } }));
 
-import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, topPickNames, unownedAppend, unownedTopCards } from "./suggestions-read";
+import { OWNED_POOL_PROJECTION, STAPLE_PROJECTION, topCardCut, topPickNames, unownedAppend, unownedTopCards } from "./suggestions-read";
 import { SHELF_CAP } from "./shelf-cap";
 
 /**
@@ -92,5 +92,20 @@ describe("unownedTopCards", () => {
       new Set(), new Set(),
     );
     expect(got.map((c) => c.name)).toEqual(["Command Tower", "The Gitrog Monster"]);
+  });
+});
+
+describe("topCardCut", () => {
+  it("drops the basics before the 100-name cut, so none takes a real card's slot", () => {
+    const basics = ["Forest", "Swamp", "Mountain", "Snow-Covered Island", "Wastes"];
+    const real = Array.from({ length: 100 }, (_, i) => `Card ${i}`);
+    const cut = topCardCut([...basics, ...real]);
+    expect(cut).toHaveLength(100);
+    expect(cut).toContain("card 99");
+    expect(cut.some((n) => basics.map((b) => b.toLowerCase()).includes(n))).toBe(false);
+  });
+
+  it("keeps a nonbasic land whose name holds a basic's", () => {
+    expect(topCardCut(["Forest of the Dead", "Snow-Covered Wastes", "Command Tower"])).toEqual(["forest of the dead", "command tower"]);
   });
 });
