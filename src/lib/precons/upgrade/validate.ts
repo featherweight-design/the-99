@@ -38,7 +38,14 @@ export type SwapCombo = { oracleId: string; name: string; otherPartners?: number
  * A pair as a run stores it (`precon_upgrades.pairs`): the model's pair plus the combo partners computed in code at finish
  * (`swap-partners.ts`). Both keys are absent on a run stored before them, or when that read failed: no combo mark, never a guess.
  */
-export type StoredPair = UpgradePair & { cutCombo?: SwapCombo | null; addCombo?: SwapCombo | null };
+export type StoredPair = UpgradePair & { cutCombo?: SwapCombo | null; addCombo?: SwapCombo | null } & Partial<LineBrackets>;
+
+/**
+ * Each side's own bracket line (fresh start R2): the brackets the list under the run's commander permits with ONLY that card changed,
+ * the add one copy in or the cut one copy out, as Suggested changes v2 flags a line (`bracketAfter`, `bracket-shift.ts`). Null when
+ * that card alone moves nothing. Computed at finish (`run.ts`, `lineBrackets`); absent on a run stored before it, or when the read failed.
+ */
+export type LineBrackets = { addBracketAfter: number[] | null; cutBracketAfter: number[] | null };
 
 export type UpgradeDropRule =
   | "cutNotInDeck"

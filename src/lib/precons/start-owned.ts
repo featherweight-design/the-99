@@ -23,7 +23,7 @@ import { isBasicLand } from "../decks/grouping";
 import { preconSource } from "./added";
 import { committedAnswer, preconAddLines, readPreconForAddIn } from "./add";
 import { preparePreconDeckIn, writePreconDeckIn, type PreparedPreconDeck } from "./start";
-import { prepareUpgradeIn, upgradedDeck } from "./upgrade/apply";
+import { prepareUpgradeIn, upgradedDeck, type UpgradePicks } from "./upgrade/apply";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -56,6 +56,8 @@ export async function startPreconOwned(
   placements: boolean,
   /** An Upgrade this precon run the deck is started from: v0 the box, v1 its swaps. The box's own copies are what the add brings either way. */
   runId?: string,
+  /** The adds and cuts the player kept from that run; absent, the whole run. */
+  picks?: UpgradePicks,
 ): Promise<PreconStartResult> {
   // A retry: the deck this action made, found through its link. Read before the catalog, so an ingest
   // that replaced the precon since changes nothing.
@@ -74,7 +76,7 @@ export async function startPreconOwned(
     if (!box) return null;
     const plain = await preparePreconDeckIn(tx, fileName);
     if (!runId) return { box, deck: plain };
-    const up = await prepareUpgradeIn(tx, userId, fileName, runId, plain);
+    const up = await prepareUpgradeIn(tx, userId, fileName, runId, plain, picks);
     return typeof up === "string" ? { box, deck: null } : { box, deck: { ...plain, upgrade: up } };
   }, { isolationLevel: "repeatable read" });
   if (!read) return { ok: false, reason: "notFound" };

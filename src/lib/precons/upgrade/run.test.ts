@@ -4,7 +4,7 @@ import { ENV_VIEW } from "@/test/env-view";
 import { assembleDeck, assemblePool, optionFor, withCommanders, type CommanderOption, type DeckLine, type PoolRow } from "./inputs";
 import type { UpgradeBase, UpgradeLoad } from "./load";
 import type { UpgradeReply } from "./prompt";
-import type { StoredPair, UpgradePair } from "./validate";
+import type { LineBrackets, StoredPair, UpgradePair } from "./validate";
 
 vi.mock("../../../db", () => ({ db: {} }));
 // The live `bracketOf` is exercised with these stand-ins: what it hands the verdict is what is asserted, the verdict itself is `slotDeck`'s.
@@ -35,7 +35,7 @@ vi.mock("../../model/allowance", () => ({
 
 vi.mock("../../cache/soft-failure", () => ({ recordSoftFailure: vi.fn() }));
 
-const { LIVE_DEPS, PARTNERS_TIMEOUT_MS, partnersOrBare, pressUpgrade, readUpgrade } = await import("./run");
+const { LIVE_DEPS, PARTNERS_TIMEOUT_MS, lineBracketsOrNone, partnersOrBare, pressUpgrade, readSetBracket, readUpgrade, setPermits } = await import("./run");
 const { recordSoftFailure } = await import("../../cache/soft-failure");
 const { loadDeckProfileFromHead } = await import("../../profile/load");
 
@@ -77,7 +77,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), lineBrackets: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> => pairs.map(() => ({ addBracketAfter: null, cutBracketAfter: null }))), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -264,7 +264,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), partners: async () => [], now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), partners: async () => [], lineBrackets: async () => [], now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });
@@ -344,5 +344,100 @@ describe("partnersOrBare", () => {
     ] as const;
     for (const read of reads) expect(await partnersOrBare(read as never, list, pairs, 10)).toBe(pairs);
     expect(recordSoftFailure).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe("per-card bracket lines (fresh start R2)", () => {
+  const pair = (cutId: string, addId: string, position = 0): UpgradePair => ({ cutId, cut: cutId, addId, add: addId, addCents: 300, reason: "x", cutReason: null, position });
+
+  it("the live read flags each side alone against the list as it stands, as a Suggested changes line: null when it moves nothing", async () => {
+    const l = await load();
+    const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
+    // The stand-in verdict permits [3] only with p0 in the list, else [1, 2].
+    expect(await LIVE_DEPS.lineBrackets(list, [pair("n6", "p0"), pair("n7", "p1", 1)])).toEqual([
+      { addBracketAfter: [3], cutBracketAfter: null },
+      { addBracketAfter: null, cutBracketAfter: null },
+    ]);
+    // Bounded: the list once, then each add and each cut alone (2N + 1).
+    vi.mocked(loadDeckProfileFromHead).mockClear();
+    await LIVE_DEPS.lineBrackets(list, [pair("n6", "p0"), pair("n7", "p1", 1)]);
+    expect(vi.mocked(loadDeckProfileFromHead).mock.calls).toHaveLength(5);
+    // Each read changes exactly one card: the add's list holds the cut too.
+    const heads = vi.mocked(loadDeckProfileFromHead).mock.calls.map((c) => c[0].cards.map((x) => x.oracleId));
+    expect(heads.some((ids) => ids.includes("p0") && ids.includes("n6"))).toBe(true);
+    expect(heads.some((ids) => !ids.includes("n6") && !ids.includes("p0"))).toBe(true);
+  });
+
+  it("the live read is null when any profile read fails, never a line that reads as moving nothing", async () => {
+    const l = await load();
+    const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
+    vi.mocked(loadDeckProfileFromHead).mockRejectedValueOnce(new Error("db down"));
+    expect(await LIVE_DEPS.lineBrackets(list, [pair("n6", "p0")])).toBeNull();
+  });
+
+  it("are stored on the done write, keyed to each pair's add", async () => {
+    const { d } = deps(swaps(12));
+    d.lineBrackets.mockImplementation(async (_l, pairs) => pairs.map((p) => ({ addBracketAfter: p.addId === "p0" ? [3] : null, cutBracketAfter: null })));
+    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+    store.finished.length = 0;
+    expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).ok).toBe(true);
+    const written = store.finished[0].write.pairs as StoredPair[];
+    expect(written.find((p) => p.addId === "p0")).toMatchObject({ addBracketAfter: [3], cutBracketAfter: null, cutCombo: null });
+    expect(written.find((p) => p.addId === "p1")).toMatchObject({ addBracketAfter: null, cutBracketAfter: null });
+  });
+
+  it("a read that fails, throws or miscounts stores the pairs without them and never fails the run", async () => {
+    for (const fail of [async () => null, async () => { throw new Error("down"); }, () => { throw new Error("sync"); }, async () => []] as const) {
+      store.finished.length = 0;
+      const { d } = deps(swaps(12));
+      d.lineBrackets.mockImplementation(fail as never);
+      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).ok).toBe(true);
+      const write = store.finished[0].write;
+      expect(write.status).toBe("done");
+      expect((write.pairs as StoredPair[]).every((p) => !("addBracketAfter" in p) && !("cutBracketAfter" in p))).toBe(true);
+    }
+  });
+
+  it("lineBracketsOrNone keys the lines by add and records a fallback", async () => {
+    vi.mocked(recordSoftFailure).mockClear();
+    const l = await load();
+    const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
+    const got = await lineBracketsOrNone(async () => [{ addBracketAfter: [3], cutBracketAfter: null }], list, [pair("n6", "p0")]);
+    expect(got.get("p0")).toEqual({ addBracketAfter: [3], cutBracketAfter: null });
+    expect(recordSoftFailure).not.toHaveBeenCalled();
+    expect((await lineBracketsOrNone(async () => null, list, [pair("n6", "p0")])).size).toBe(0);
+    expect(recordSoftFailure).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("the set's bracket (fresh start R2)", () => {
+  const run = { strategyKey: "cmd/3/overview:0", pairs: [{ cutId: "n6", addId: "p0" }, { cutId: "n7", addId: "p1" }] as StoredPair[] };
+
+  it("reads the list under the run's commander with exactly the picked adds and cuts", async () => {
+    expect(await setPermits(base(), run, ["p0"], ["n6"])).toEqual([3]);
+    expect(await setPermits(base(), run, ["p1"], ["n6"])).toEqual([1, 2]);
+    // Uneven still reads: the bar shows the bracket while the counts differ.
+    expect(await setPermits(base(), run, ["p0", "p1"], ["n6"])).toEqual([3]);
+    const head = vi.mocked(loadDeckProfileFromHead).mock.calls.at(-1)![0];
+    expect(head.cards.map((c) => c.oracleId)).toEqual(expect.arrayContaining(["p0", "p1", "n7"]));
+    expect(head.cards.some((c) => c.oracleId === "n6" || c.oracleId === "cmd")).toBe(false);
+  });
+
+  it("refuses ids outside the run, on the wrong side, or repeated, and a commander the box no longer offers", async () => {
+    expect(await setPermits(base(), run, ["p9"], [])).toBeNull();
+    expect(await setPermits(base(), run, ["n6"], [])).toBeNull();
+    expect(await setPermits(base(), run, ["p0", "p0"], [])).toBeNull();
+    expect(await setPermits(base(), { ...run, strategyKey: "stranger/3/x" }, ["p0"], [])).toBeNull();
+  });
+
+  it("readSetBracket answers only for the reader's own done run, with the bracket the set plays at", async () => {
+    store.runs = [{ id: "run-1", status: "done", ...run }, { id: "run-2", status: "pending", ...run }];
+    const d = { base: async () => base() };
+    expect(await readSetBracket("u1", "boss.json", "run-1", ["p0"], ["n6"], d)).toEqual({ permits: [3], bracket: 3 });
+    expect(await readSetBracket("u1", "boss.json", "run-1", [], ["n6"], d)).toEqual({ permits: [1, 2], bracket: 2 });
+    expect(await readSetBracket("u1", "boss.json", "run-2", ["p0"], ["n6"], d)).toBeNull();
+    expect(await readSetBracket("u1", "boss.json", "nope", ["p0"], ["n6"], d)).toBeNull();
+    expect(await readSetBracket("u1", "boss.json", "run-1", ["p0"], ["n6"], { base: async () => null })).toBeNull();
   });
 });

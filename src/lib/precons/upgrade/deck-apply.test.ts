@@ -77,7 +77,7 @@ beforeEach(() => {
   log.length = 0;
   wheres.length = 0;
   locked.now = new Set();
-  prepared.up = { runId: RUN, lead: "muddle", pairs: [{ cutId: "a", addId: "x" }] };
+  prepared.up = { runId: RUN, lead: "muddle", adds: ["x"], cuts: ["a"] };
 });
 
 /** Apply on a started deck at v0, a Muddle-led run cutting `a` for `x`; `a` is proxied, pinned and reserved. */
@@ -124,7 +124,7 @@ describe("applyUpgradeOnDeck (G17)", () => {
   });
 
   it("refuses a run that changes nothing, so a second Apply can never bury the first one's snapshot", async () => {
-    prepared.up = { runId: RUN, lead: null, pairs: [] };
+    prepared.up = { runId: RUN, lead: null, adds: [], cuts: [] };
     fakeTx([deckRow()], liveBox, [v0], BOX.cards);
     expect(await applyUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: false, reason: "listChanged" });
     expect(log).toEqual([]);
@@ -138,7 +138,7 @@ describe("applyUpgradeOnDeck (G17)", () => {
   });
 
   it("applies to a linked brew with no version, which stays a brew", async () => {
-    prepared.up = { runId: RUN, lead: null, pairs: [{ cutId: "a", addId: "x" }] };
+    prepared.up = { runId: RUN, lead: null, adds: ["x"], cuts: ["a"] };
     fakeTx([deckRow()], liveBox, [], [], [], []);
     expect((await applyUpgradeOnDeck("u1", DECK, RUN)).ok).toBe(true);
     const deck = writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: { versionId: string | null } };
@@ -204,7 +204,7 @@ describe("Apply then Undo puts back everything Apply took", () => {
   });
 
   it("on a brew, refuses when a cut card's copy was reserved for another deck after Apply freed it", async () => {
-    prepared.up = { runId: RUN, lead: null, pairs: [{ cutId: "a", addId: "x" }] };
+    prepared.up = { runId: RUN, lead: null, adds: ["x"], cuts: ["a"] };
     fakeTx([deckRow()], liveBox, [], [], [], [reservation]);
     await applyUpgradeOnDeck("u1", DECK, RUN);
     const snap = JSON.parse(JSON.stringify((writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: unknown }).preconUpgradeUndo));
@@ -225,5 +225,52 @@ describe("Apply then Undo puts back everything Apply took", () => {
     log.length = 0;
     fakeTx([{ commanderOracleId: "muddle", partnerOracleId: null, builtFromUpgradeId: null, undo: snap }], [{ id: "v0" }], snap.after.cards, [], [], []);
     expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: true });
+  });
+});
+
+describe("a subset of the run (fresh start R2)", () => {
+  const PICKS = { adds: ["y"], cuts: ["b"] };
+
+  it("hands the picks to the run's check, applies only them, and counts the adds", async () => {
+    const { prepareUpgradeIn } = await import("./apply");
+    // The run cut a for x and b for y; the player kept only y in and b out.
+    prepared.up = { runId: RUN, lead: null, ...PICKS };
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards, [], [], []);
+    expect(await applyUpgradeOnDeck("u1", DECK, RUN, PICKS)).toEqual({ ok: true, swaps: 1, lead: null });
+    expect(vi.mocked(prepareUpgradeIn).mock.calls.at(-1)!.at(-1)).toEqual(PICKS);
+    const inserted = writesTo(schema.deckCards).find((w) => w.op === "insert")!.values as { oracleId: string; quantity: number }[];
+    expect(sorted(inserted).map((c) => `${c.oracleId}:${c.quantity}`)).toEqual(["a:1", "island:9", "muddle:1", "y:1"]);
+  });
+
+  it("checks locks on the picked cuts only: a lock on a cut left out does not refuse", async () => {
+    prepared.up = { runId: RUN, lead: null, ...PICKS };
+    locked.now = new Set(["a"]);
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards, [], [], []);
+    expect((await applyUpgradeOnDeck("u1", DECK, RUN, PICKS)).ok).toBe(true);
+    log.length = 0;
+    locked.now = new Set(["b"]);
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards);
+    expect(await applyUpgradeOnDeck("u1", DECK, RUN, PICKS)).toEqual({ ok: false, reason: "locked" });
+    expect(log.filter((w) => w.op !== "revive")).toEqual([]);
+  });
+
+  it("passes on a picks refusal and writes nothing", async () => {
+    prepared.up = "picks";
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards);
+    expect(await applyUpgradeOnDeck("u1", DECK, RUN, { adds: ["y"], cuts: [] })).toEqual({ ok: false, reason: "picks" });
+    expect(log).toEqual([]);
+  });
+
+  it("Undo after a subset Apply restores the deck exactly as it was", async () => {
+    prepared.up = { runId: RUN, lead: null, ...PICKS };
+    fakeTx([deckRow()], liveBox, [v0], BOX.cards, [], [], []);
+    await applyUpgradeOnDeck("u1", DECK, RUN, PICKS);
+    const snap = JSON.parse(JSON.stringify((writesTo(schema.decks).find((w) => w.op === "update")!.values as { preconUpgradeUndo: { after: { cards: unknown[] } } }).preconUpgradeUndo));
+    expect(snap.before.cards).toEqual(liveBox);
+    log.length = 0;
+    fakeTx([{ commanderOracleId: "rootha", partnerOracleId: null, builtFromUpgradeId: RUN, undo: snap }], [{ id: "v0" }], snap.after.cards, [], [], []);
+    expect(await undoUpgradeOnDeck("u1", DECK, RUN)).toEqual({ ok: true });
+    expect(writesTo(schema.deckCards).find((w) => w.op === "insert")!.values).toEqual(liveBox.map((c) => ({ deckId: DECK, ...c })));
+    expect(log.find((w) => w.op === "revive")!.values).toEqual(["b"]);
   });
 });

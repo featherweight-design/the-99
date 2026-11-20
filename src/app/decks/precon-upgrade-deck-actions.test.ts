@@ -55,3 +55,21 @@ describe("applyPreconUpgradeOnDeck / undoPreconUpgradeOnDeck", () => {
     expect(revalidateClaims).not.toHaveBeenCalled();
   });
 });
+
+describe("applyPreconUpgradeOnDeck with picks (fresh start R2)", () => {
+  const PICKS = { adds: ["aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"], cuts: ["cccccccc-cccc-4ccc-8ccc-cccccccccccc"] };
+
+  it("hands well-formed picks to the apply; absent picks are the whole run", async () => {
+    await applyPreconUpgradeOnDeck(DECK, RUN, PICKS);
+    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN, PICKS);
+    await applyPreconUpgradeOnDeck(DECK, RUN);
+    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN);
+  });
+
+  it("refuses malformed picks before any read", async () => {
+    for (const bad of [{ adds: PICKS.adds }, { adds: ["x"], cuts: PICKS.cuts }, { adds: [PICKS.adds[0], PICKS.adds[0]], cuts: PICKS.cuts }, null, "x"]) {
+      expect(await applyPreconUpgradeOnDeck(DECK, RUN, bad as never)).toEqual({ ok: false, reason: "picks" });
+    }
+    expect(applyUpgradeOnDeck).not.toHaveBeenCalled();
+  });
+});

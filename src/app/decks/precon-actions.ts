@@ -23,15 +23,24 @@ import { after } from "next/server";
 import { preconUpgradeEnabled } from "../../lib/precons/upgrade/flag";
 import { carryOverAfterStart } from "../../lib/precons/carry-over";
 import { overviewAfterUpgradedStart } from "../../lib/precons/upgrade/overview";
+import { picksShape, type UpgradePicks } from "../../lib/precons/upgrade/apply";
 
-export async function createDeckFromPrecon(fileName: string, rawName: string, runId?: string): Promise<void | { ok: false; reason: "upgradeUnavailable" }> {
+/** Picks from the client, held to their shape (`picksShape`); `undefined` when none were sent (the whole run), null when malformed. */
+function picksIn(raw: unknown): UpgradePicks | undefined | null {
+  return raw === undefined ? undefined : picksShape(raw);
+}
+
+/** `picks`: the adds and cuts the player kept from the run (fresh start R2); absent, the whole run. Picks without a run are refused. */
+export async function createDeckFromPrecon(fileName: string, rawName: string, runId?: string, picks?: UpgradePicks): Promise<void | { ok: false; reason: "upgradeUnavailable" }> {
   const userId = await requireUserId();
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
+  const picked = picksIn(picks);
+  if (picked === null || (picked !== undefined && runId === undefined)) return { ok: false, reason: "upgradeUnavailable" };
 
   // A start from an Upgrade this precon run: the box as v0 and the run's swaps as v1. The run is the reader's own and is judged against the box in one snapshot.
   const env = runId === undefined ? null : await requestFlags(userId);
-  const upgraded = env === null || runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId, env);
+  const upgraded = env === null || runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId, env, picked);
   if (upgraded && !upgraded.ok) return { ok: false, reason: "upgradeUnavailable" };
   const deckId = upgraded ? upgraded.deckId : await startPreconDeck(userId, fileName, name);
   revalidateClaims(deckId, userId);
@@ -42,9 +51,9 @@ export async function createDeckFromPrecon(fileName: string, rawName: string, ru
   redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
 }
 
-async function startUpgradeFrom(userId: string, fileName: string, name: string, runId: string, env: NodeJS.ProcessEnv) {
+async function startUpgradeFrom(userId: string, fileName: string, name: string, runId: string, env: NodeJS.ProcessEnv, picks: UpgradePicks | undefined) {
   if (!preconUpgradeEnabled(env) || !isUuid(runId)) return { ok: false as const };
-  const made = await startUpgradedPreconDeck(userId, fileName, name, runId);
+  const made = await startUpgradedPreconDeck(userId, fileName, name, runId, picks);
   return made.ok ? made : { ok: false as const };
 }
 
@@ -52,16 +61,18 @@ async function startUpgradeFrom(userId: string, fileName: string, name: string, 
  * "Start with this precon" with "I own this precon" selected: the box goes into the collection and the
  * deck starts, as ONE transaction (`startPreconOwned`), the copies reserved to the new deck so History's
  * "Went to" names it. `actionId` is a fresh uuid per press; a retry with it lands on the deck it made.
- * Redirects to the deck on success; a refusal is returned for the dialog to say so.
+ * Redirects to the deck on success; a refusal is returned for the dialog to say so. `picks`: as `createDeckFromPrecon`'s.
  */
-export async function startPreconOwned(fileName: string, rawName: string, actionId: string, runId?: string): Promise<Extract<PreconStartResult, { ok: false }>> {
+export async function startPreconOwned(fileName: string, rawName: string, actionId: string, runId?: string, picks?: UpgradePicks): Promise<Extract<PreconStartResult, { ok: false }>> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
   if (runId !== undefined && (!preconUpgradeEnabled(env) || !isUuid(runId))) return { ok: false, reason: "upgradeUnavailable" };
-  const result = await startOwned(userId, fileName, name, actionId, true, runId);
+  const picked = picksIn(picks);
+  if (picked === null || (picked !== undefined && runId === undefined)) return { ok: false, reason: "upgradeUnavailable" };
+  const result = await startOwned(userId, fileName, name, actionId, true, runId, picked);
   if (!result.ok) return result;
   revalidateClaims(result.deckId, userId);
   if (runId !== undefined) after(() => overviewAfterUpgradedStart(result.deckId, userId, env));
