@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   DECK_SORT_LABELS,
@@ -174,7 +175,7 @@ describe("arrangeSeedSort", () => {
 describe("listDecksWithStats carries sortPosition to the client", () => {
   // The mapper needs a database to run; pin the two places that dropped the field once: the
   // select and the returned item. Without the second, Custom sorted newest-first on the client.
-  const src = readFileSync(new URL("./read.ts", import.meta.url), "utf8");
+  const src = readFileSync(join(process.cwd(), "src/lib/decks/read.ts"), "utf8");
   it("selects it and copies it onto the DeckListItem", () => {
     expect(src).toContain("sortPosition: decks.sortPosition,");
     expect(src).toMatch(/createdAt: row\.createdAt,\s+sortPosition: row\.sortPosition,/);

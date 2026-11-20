@@ -17,6 +17,8 @@ import { deckOrderCopy as copy } from "../../lib/copy/deck-order";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import type { DeckListItem } from "../../lib/decks/read";
 import { deckBodySize } from "../../lib/decks/deck-size";
+import { noteAppScroll } from "../../lib/ui/reveal";
+import { ArtLayer } from "../ui/art-layer";
 import { PRIMARY } from "../ui/button";
 import { statusPillLabel } from "./status-pill";
 
@@ -155,9 +157,13 @@ export function ArrangeDecks({
         return;
       }
       const { moveTo: move, targetIndex: target } = latest.current;
-      if (state.y < EDGE_PX) window.scrollBy(0, -SCROLL_STEP);
-      else if (state.y > window.innerHeight - EDGE_PX) window.scrollBy(0, SCROLL_STEP);
-      else return;
+      if (state.y < EDGE_PX) {
+        noteAppScroll();
+        window.scrollBy(0, -SCROLL_STEP);
+      } else if (state.y > window.innerHeight - EDGE_PX) {
+        noteAppScroll();
+        window.scrollBy(0, SCROLL_STEP);
+      } else return;
       move(id, target(state.y, id));
     }, 16);
     drag.current = state;
@@ -298,12 +304,13 @@ export function ArrangeDecks({
                 }`}
               >
               <span aria-hidden className="hidden w-[18px] flex-none text-center font-mono text-[13px] text-[color:var(--fg-faint)] md:block">{i + 1}</span>
-              {/* The art crop as a background: decorative, and the tile's own wash draws it the same way. */}
+              {/* The art crop, decorative, through ArtLayer so it fades in like every other art. */}
               <span
                 aria-hidden
-                style={deck.commanderArtCropUri ? { backgroundImage: `url(${deck.commanderArtCropUri})` } : undefined}
-                className="h-[64px] w-[86px] flex-none rounded-[8px] bg-[color:var(--elevated)] bg-cover bg-center md:h-[56px] md:w-[84px]"
-              />
+                className="relative h-[64px] w-[86px] flex-none overflow-hidden rounded-[8px] bg-[color:var(--elevated)] md:h-[56px] md:w-[84px]"
+              >
+                {deck.commanderArtCropUri ? <ArtLayer src={deck.commanderArtCropUri} /> : null}
+              </span>
               <span className="flex min-w-0 flex-auto flex-col gap-[4px]">
                 <span className="truncate font-display text-[17px] font-semibold text-[color:var(--fg)] md:text-[19px]">{deck.name}</span>
                 <span className="truncate font-mono text-[12px] text-[color:var(--fg-muted)]">

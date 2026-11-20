@@ -54,7 +54,8 @@ describe("planReorder", () => {
     const plan = planReorder(mixed, ["g1", "u1"]);
     expect(ids(plan)).toEqual(["g2", "u2", "g1", "u1"]);
     perm(plan, mixed);
-    expect(ids(planReorder(mixed, ["g2", "g1"]))).toEqual(["g1", "u1", "g2", "u2"]);
+    // One folder, fewer ids than decks: shelf mode swaps G's two slots and leaves the unfiled ones.
+    expect(ids(planReorder(mixed, ["g2", "g1"]))).toEqual(["g2", "u1", "g1", "u2"]);
   });
 
   it("a deck added since Arrange opened goes first (whole set)", () => {

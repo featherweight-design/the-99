@@ -115,7 +115,7 @@ describe("ArrangeDecks", () => {
   it("keeps the draft up and says so when the save is refused", async () => {
     setup({ onDone: vi.fn(async () => false) });
     press("Done");
-    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn't save the order");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t save the order");
     expect(screen.getAllByRole("button", { name: "Done" })[0]).not.toBeDisabled();
   });
 

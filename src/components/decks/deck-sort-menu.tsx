@@ -198,8 +198,9 @@ export function OrderMenu<T extends string>({
               }`}
             >
               <span className="flex-auto">{labels[option]}</span>
+              {/* Drawn from CSS content so no caller's option text (or test) reads a stray glyph. */}
               {sort === option && (
-                <span aria-hidden className="flex-none text-[13px] text-[color:var(--accent)]">✓</span>
+                <span aria-hidden className="flex-none text-[13px] text-[color:var(--accent-text)] after:content-['✓']" />
               )}
             </button>
           ))}
