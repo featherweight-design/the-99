@@ -59,3 +59,49 @@ Outcome words: `short 1` (shipped figure, `--danger`) on picked rows, `keeps it`
 ## Open for Hugh
 A. Marked = goes short (drawn) vs marked = keeps it (matches contested chooser's `gets it`).
 B. Multi-copy decks (G1).
+
+---
+
+# R2: every case of the chooser (#2983 + #2982 re-issued, 2026-11-20)
+
+Hugh's call, 2026-11-20 (decision card): **keep the one-copy-left rule** (a card holds one authored
+reservation, `assignCopyFor` in `src/lib/decks/assign.ts`). R2 draws the rest of the state matrix on
+the same canvas; R1's calls stand.
+
+## Boards (R2)
+| Board | What it shows |
+|---|---|
+| Main-R2 | R2 calls and the seven hosts |
+| P5 / D4 | Lowering 3 to 2, three decks list it. Two copies left, so no chooser: Mutant Menace goes short, and a reason line names the keepers and points to Change under In your decks (shipped Move a copy) |
+| P6 / D5 | I got it receipt's Undo (`source="undo"`), read-only: the short deck with its facts line and the reason line. Backdrop: shipped deck Shopping |
+| P7 / D6 | Replace confirm with several cards: the whole deck row opens inline (chevron), each card carries `lists N · committed it <date>` |
+| D2 | One deck, desktop (P4's pair) |
+| D3 | Three decks, one copy left, desktop (P3's pair) |
+| Warning | Playable; new scenes `twoleft`, `undo`, `replace` |
+
+## Calls (R2)
+1. Rule kept: chooser only on Edit copies removal or lowering, 2+ committed decks, exactly one copy left. No per-deck count steppers.
+2. Row tap never navigates (#2982 option b): one-card rows show their facts with no tap; in the chooser a tap picks; several-card rows expand inline, whole row the toggle, per-card facts.
+3. Three or more decks: one copy left = square-mark chooser (P3, D3); two or more left = no chooser + reason line (P5, D4).
+4. Counts: the row figure (`short N`, capped by what the deck lists) is the count. G1 unchanged.
+5. Receipt: read-only, reason line (P6, D5).
+6. Undo of the removal restores prior `card_assignments` rows; no new UI.
+
+## Hosts
+| Host | Reads as |
+|---|---|
+| Edit copies, removal or lowering | Chooser when call 1 holds, else plain rows + reason line |
+| Edit copies, saving | Plain rows with facts |
+| Confirm modal (Replace) | Plain rows, several-card rows open inline |
+| Replace review detail | Same rows, embedded |
+| Sync review | Same rows, embedded |
+| Revert confirm | Same rows |
+| I got it receipt, Undo | Read-only rows + reason line |
+
+## Copy (new, for /copy-review)
+- reason, two or more left: `{keepers} committed it first, so they keep the {left} copies left. To give one to {short} instead, tap Change under In your decks on {card} afterwards.`
+- reason, Undo: `{short} goes short because it committed {card} after {keeper}. To change that, tap Change under In your decks on {card} afterwards.`
+- several-card row card line: `lists {n} · committed it {date}`; deck row sub `committed {date}`
+
+## Open for Hugh (R2)
+A. Keep the reason line in the no-choice cases, or leave the plain shipped warning.

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Removal chooser · R2 calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&amp;family=IBM+Plex+Sans:wght@400;600&amp;family=IBM+Plex+Mono&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#CF8745}a:hover{color:#DE9757}
+</style>
+</helmet>
+<div style="width: 900px; height: 1040px; box-sizing: border-box; padding: 44px 48px; background: #14110E; color: #C0B8A6; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: #948B78">Collection edit · short-deck warning · R2 · issues #2983 and #2982</span>
+<h1 style="margin: 0; font-family: Cinzel, serif; font-size: 30px; font-weight: 700; color: #EDE6D8">Choose which deck takes the loss, every case</h1>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.55; max-width: 760px">R2 keeps R1's chooser and your one-copy-left rule, and draws the rest of the matrix: one deck, two, three or more, several copies, and the read-only receipt, at phone and desktop. The Warning board plays every scene.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 28px; font-size: 13.5px; line-height: 1.55">
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">1. Your rule stands</b><span>The chooser shows only on an Edit copies removal or lowering, when two or more decks list the card and exactly one copy is left. A card holds one reservation, so one keeper is all a pick can store. No per-deck count steppers.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">2. Tapping a deck row never leaves the app (#2982)</b><span>A one-card row carries what you'd open the deck to learn: lists N · committed it &lt;date&gt;. In the chooser, a tap picks. Rows with several cards (Replace, Sync, Revert) open inline, the whole row with a chevron, and each card shows its own facts (P7, D6). No navigation anywhere.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">3. Three or more decks</b><span>One copy left: square marks, pick the ones going short (P3, D3). Two or more left: no chooser. The warning names who keeps the copies and why, and points to Change on the card (the shipped Move a copy), so you're never locked in (P5, D4).</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">4. Several copies, counts per deck</b><span>The figure on the row is the count, capped by what that deck lists (short 1, short 2). A deck listing 2 is still one row, as R1's gap G1 notes.</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">5. The I got it receipt is read-only</b><span>Its Undo is a whole-action revert, so no chooser. The short deck shows its facts line, and one line says why it's that deck and where to change it (P6, D5).</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #EDE6D8">6. Undo of a removal</b><span>Puts the previous reservations back. No new UI: the shipped Undo toast, and the deck that went short is whole again.</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px; border-top: 1px solid #2B241B; padding-top: 16px">
+<b style="color: #EDE6D8; font-size: 13.5px">The seven hosts</b>
+<table style="border-collapse: collapse; font-size: 13px; line-height: 1.45">
+<tbody>
+<tr><td style="padding: 6px 12px 6px 0; color: #EDE6D8; border-top: 1px solid #2B241B">Edit copies, removal or lowering</td><td style="padding: 6px 0; border-top: 1px solid #2B241B">Chooser when rule 1 holds, else plain rows and the reason line</td></tr>
+<tr><td style="padding: 6px 12px 6px 0; color: #EDE6D8; border-top: 1px solid #2B241B">Edit copies, saving</td><td style="padding: 6px 0; border-top: 1px solid #2B241B">Plain rows with facts</td></tr>
+<tr><td style="padding: 6px 12px 6px 0; color: #EDE6D8; border-top: 1px solid #2B241B">Confirm modal (Replace)</td><td style="padding: 6px 0; border-top: 1px solid #2B241B">Plain rows, several-card rows open inline</td></tr>
+<tr><td style="padding: 6px 12px 6px 0; color: #EDE6D8; border-top: 1px solid #2B241B">Replace review detail</td><td style="padding: 6px 0; border-top: 1px solid #2B241B">Same rows, embedded under its heading</td></tr>
+<tr><td style="padding: 6px 12px 6px 0; color: #EDE6D8; border-top: 1px solid #2B241B">Sync review</td><td style="padding: 6px 0; border-top: 1px solid #2B241B">Same rows, embedded</td></tr>
+<tr><td style="padding: 6px 12px 6px 0; color: #EDE6D8; border-top: 1px solid #2B241B">Revert confirm</td><td style="padding: 6px 0; border-top: 1px solid #2B241B">Same rows, in its dialog</td></tr>
+<tr><td style="padding: 6px 12px 6px 0; color: #EDE6D8; border-top: 1px solid #2B241B">I got it receipt, Undo</td><td style="padding: 6px 0; border-top: 1px solid #2B241B">Read-only rows and the reason line</td></tr>
+</tbody>
+</table>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; line-height: 1.55">
+<b style="color: #EDE6D8">Open for Hugh</b>
+<span>A. The reason line in the no-choice cases (P5, P6) names who keeps the copy and points to Change. Keep it, or drop it and leave the plain shipped warning?</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":900,"height":1040}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
