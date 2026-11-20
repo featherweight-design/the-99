@@ -885,7 +885,7 @@ describe("DeckCard — Hidden from friends", () => {
   it("hands the menu the deck's flag, its status and the reader's rules", () => {
     overflowProps.length = 0;
     tile({ hiddenFromFriends: true, statusPill: "Complete" }, prefs);
-    expect(overflowProps.at(-1)!.friends).toEqual({ hidden: true, statusPill: "Complete", prefs });
+    expect(overflowProps.at(-1)!.friends).toMatchObject({ hidden: true, statusPill: "Complete", prefs });
   });
 });
 

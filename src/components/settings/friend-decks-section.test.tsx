@@ -81,7 +81,7 @@ describe("the landing from a deck's menu", () => {
   afterEach(() => {
     vi.useRealTimers();
     Element.prototype.scrollIntoView = realScroll;
-    window.location.hash = "";
+    window.history.replaceState(null, "", "/");
   });
 
   it("gives each row the id the menu links to", () => {
@@ -91,7 +91,7 @@ describe("the landing from a deck's menu", () => {
   });
 
   it("scrolls the named row into view and washes it for two seconds, then lets it go", () => {
-    window.location.hash = "#settings-decks-unfinished";
+    window.history.replaceState(null, "", "#settings-decks-unfinished");
     render(<FriendDecksSection prefs={prefs} />);
     expect(rowOf("unfinished").hasAttribute("data-washed")).toBe(true);
     expect(rowOf("see").hasAttribute("data-washed")).toBe(false);
@@ -103,7 +103,7 @@ describe("the landing from a deck's menu", () => {
   });
 
   it("re-centres the row twice more while the wash runs (the page streams in after mount), then stops", () => {
-    window.location.hash = "#settings-decks-unfinished";
+    window.history.replaceState(null, "", "#settings-decks-unfinished");
     render(<FriendDecksSection prefs={prefs} />);
     const scroll = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
     expect(scroll).toHaveBeenCalledTimes(1);
@@ -123,7 +123,7 @@ describe("the landing from a deck's menu", () => {
 
   it("lets the reader's own scroll (wheel, touch, key, pointer) cancel the re-centring", () => {
     for (const type of ["wheel", "touchmove", "keydown", "pointerdown"]) {
-      window.location.hash = "#settings-decks-unfinished";
+      window.history.replaceState(null, "", "#settings-decks-unfinished");
       const { unmount } = render(<FriendDecksSection prefs={prefs} />);
       const scroll = Element.prototype.scrollIntoView as ReturnType<typeof vi.fn>;
       scroll.mockClear();
@@ -137,11 +137,11 @@ describe("the landing from a deck's menu", () => {
   });
 
   it("washes the master switch's row for #settings-decks-see, and nothing for the bare heading anchor", () => {
-    window.location.hash = "#settings-decks-see";
+    window.history.replaceState(null, "", "#settings-decks-see");
     const { unmount } = render(<FriendDecksSection prefs={prefs} />);
     expect(rowOf("see").hasAttribute("data-washed")).toBe(true);
     unmount();
-    window.location.hash = "#settings-decks";
+    window.history.replaceState(null, "", "#settings-decks");
     render(<FriendDecksSection prefs={prefs} />);
     expect(document.querySelector("[data-washed]")).toBeNull();
   });
