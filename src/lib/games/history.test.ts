@@ -37,7 +37,6 @@ describe("owner scoping", () => {
     const owned = /\("deck_games"\."user_id" = \$1 and "decks"\."user_id" = \$2\)/;
     for (const q of [
       historyPageQuery(VIEWER, {}, null),
-      historyMonthsQuery(VIEWER, {}),
       historySummaryQuery(VIEWER, {}),
       historyTopDecksQuery(VIEWER, {}),
       historyTotalQuery(VIEWER),
@@ -46,6 +45,10 @@ describe("owner scoping", () => {
       expect(sql).toMatch(owned);
       expect(params.slice(0, 2)).toEqual([VIEWER, VIEWER]);
     }
+    // The months statement binds the reader's zone first, so its viewer ids follow it.
+    const m = historyMonthsQuery(VIEWER, {}, "America/Denver").toSQL();
+    expect(m.sql).toMatch(/\("deck_games"."user_id" = \$2 and "decks"."user_id" = \$3\)/);
+    expect(m.params.slice(0, 3)).toEqual(["America/Denver", VIEWER, VIEWER]);
     const c = playedAgainstCommandersQuery(VIEWER).toSQL();
     expect(c.sql).toMatch(owned);
   });
