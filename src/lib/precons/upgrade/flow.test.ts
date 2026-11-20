@@ -6,7 +6,7 @@ import type { OfferedCommander, PanelRun, UpgradePanel } from "./run";
 const strat = (key: string) => ({ key, label: key, blurb: "b", source: "edhrec" as const, backingIds: [], backing: [] });
 const lead = (key: string, strategies = ["spells", "tokens"]): OfferedCommander => ({ key, isFace: true, cards: [], line: null, strategies: strategies.map(strat) });
 const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
-  boxBracket: 2, commanders: [lead("a"), lead("b", ["tokens"])], runs: [], listFp: "x", cards: {},
+  boxBracket: 2, commanders: [lead("a"), lead("b", ["tokens"])], runs: [], listFp: "x", cards: {}, figures: {},
   allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
   ...over,
 });

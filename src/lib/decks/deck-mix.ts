@@ -88,7 +88,11 @@ export const mixKey = (p: CommanderPair) => `${p.commanderOracleId}|${p.partnerO
  * identities come from one read, and the chains run in parallel. Never throws; a pair whose chain
  * fails gets the asserted baseline, exactly as `loadDeckMix` does.
  */
-export async function loadMixesForCommanders(pairs: readonly CommanderPair[]): Promise<Map<string, RecommendedMix>> {
+export async function loadMixesForCommanders(
+  pairs: readonly CommanderPair[],
+  /** As `loadDeckMix`'s: the count the targets are for. Precon Upgrade's result counts by label (fresh start R2). */
+  basis: RoleBasis = "classifier",
+): Promise<Map<string, RecommendedMix>> {
   const distinct = [...new Map(pairs.map((p) => [mixKey(p), p])).values()];
   const out = new Map<string, RecommendedMix>();
   if (distinct.length === 0) return out;
@@ -104,7 +108,7 @@ export async function loadMixesForCommanders(pairs: readonly CommanderPair[]): P
     identityOf = new Map(rows.map((r) => [r.oracleId, r.colorIdentity ?? []]));
   } catch (err) {
     console.warn("loadMixesForCommanders: no identities — every pair quotes the asserted targets", err);
-    for (const p of distinct) out.set(mixKey(p), recommendedMix(null, p.partnerOracleId !== null));
+    for (const p of distinct) out.set(mixKey(p), recommendedMix(null, p.partnerOracleId !== null, basis));
     return out;
   }
   await Promise.all(distinct.map(async (p) => {
@@ -114,11 +118,13 @@ export async function loadMixesForCommanders(pairs: readonly CommanderPair[]): P
         ...(identityOf.get(p.commanderOracleId) ?? []),
         ...(p.partnerOracleId ? identityOf.get(p.partnerOracleId) ?? [] : []),
       ]);
-      const { skeleton } = await loadSkeletonForCommanders(p.commanderOracleId, p.partnerOracleId, [...identity]);
-      out.set(mixKey(p), recommendedMix(skeleton, hasPartner));
+      const { skeleton } = basis === "classifier"
+        ? await loadSkeletonForCommanders(p.commanderOracleId, p.partnerOracleId, [...identity])
+        : await loadSkeletonForCommanders(p.commanderOracleId, p.partnerOracleId, [...identity], undefined, { roleBasis: basis });
+      out.set(mixKey(p), recommendedMix(skeleton, hasPartner, basis));
     } catch (err) {
       console.warn("loadMixesForCommanders: no skeleton for a pair — it quotes the asserted targets", err);
-      out.set(mixKey(p), recommendedMix(null, hasPartner));
+      out.set(mixKey(p), recommendedMix(null, hasPartner, basis));
     }
   }));
   return out;

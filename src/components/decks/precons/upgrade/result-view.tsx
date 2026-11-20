@@ -1,15 +1,18 @@
 "use client";
 
-// Results (handoff Results.dc, R1 and R2): the run as four facts, then the commander when the run changed who leads, then the swaps grouped by the
-// theme each cut came from. The date sits on the title line. A short run (under 12 at the chosen bracket) is counted, refunded and still startable.
-// A3 (calls 7 to 11): each side of a swap carries the deck row's bracket marks right after its name, and the key under the facts
-// glosses only the marks this result draws.
-import type { ReactNode } from "react";
+// Results (handoff Results.dc, R1 and R2): the run as four facts, then the commander when the run changed who leads, then the swaps. The date
+// sits on the title line. A short run (under 12 at the chosen bracket) is counted, refunded and still startable.
+// A3 (calls 7 to 11): the commander pair carries the deck row's bracket marks right after each name, and the key under the facts glosses only
+// the marks this result draws.
+// Fresh start R2 (#2985, calls 9 to 11): the swaps are the shipped Suggested changes results (`SuggestedChangesRun`), adds and cuts picked
+// separately, with the flow's own press in its bar; the commander pair stays above them with no Pick, because who leads is a step.
+import { useMemo, type ReactNode } from "react";
+import type { Bracket } from "../../../../lib/profile/types";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import { dollars } from "../../../../lib/copy/credits-page";
 import { WUBRG_COLOR, inWubrgOrder } from "../../../../lib/cards/colors";
 import type { OfferedCommander, PanelCard, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
-import type { StoredPair, SwapCombo } from "../../../../lib/precons/upgrade/validate";
+import type { SwapCombo } from "../../../../lib/precons/upgrade/validate";
 import { CARD_FACTS, cardMarkCopy } from "../../../../lib/copy/card-mark";
 import { comboAwarenessCopy } from "../../../../lib/copy/combo-awareness";
 import { ComboGlyph } from "../../../cards/combo-glyph";
@@ -19,13 +22,12 @@ import { MarkKey } from "../../mark-key";
 import { factComboEntries } from "../../mark-key-entries";
 import { StrategyIcon } from "../../strategy-icon";
 import { CardDetailTrigger, useCardDetailIfAny } from "../../../cards/card-detail-context";
-import { AvailabilityMarker } from "../../../ui/availability-marker";
 import type { StrategyKey } from "@/lib/strategy/score";
+import { pickUpgradeLineAction, upgradeSetBracketAction } from "../../../../lib/precons/upgrade/actions";
+import { SuggestedChangesRun, type SuggestedChangesPress } from "../../suggested-changes-run";
+import { figuresOf, upgradeActions, upgradeAsk, upgradeLines, upgradePermits, type UpgradeActionDeps } from "./upgrade-lines";
 
 const copy = preconUpgradeCopy.results;
-
-/** A cut no strategy the deck backs claims has no theme in the handoff: those are grouped last, under one heading. */
-const REST = "";
 
 /** The day as `Nov 10`, in the reader's own zone (this draws only after the reader opens the flow). */
 export const runDay = (d: Date) => new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric" });
@@ -33,18 +35,6 @@ export const runDay = (d: Date) => new Date(d).toLocaleDateString("en-US", { mon
 /** The commander option a run was made under: its key leads the run's stored key. */
 export function leadOf(panel: UpgradePanel, run: PanelRun): OfferedCommander | null {
   return panel.commanders.find((c) => run.strategyKey.startsWith(`${c.key}/`)) ?? null;
-}
-
-/** The pairs by cut theme, in the order the themes first appear, with the cuts no theme claims last. */
-export function groupPairs(run: PanelRun): { theme: string; pairs: StoredPair[] }[] {
-  const groups = new Map<string, StoredPair[]>();
-  for (const p of run.pairs) {
-    const t = run.themes[p.cutId] ?? REST;
-    groups.set(t, [...(groups.get(t) ?? []), p]);
-  }
-  const rest = groups.get(REST);
-  groups.delete(REST);
-  return [...groups.entries(), ...(rest ? [[REST, rest] as const] : [])].map(([theme, pairs]) => ({ theme, pairs }));
 }
 
 /** One card's facts for a commander option: a partner pair draws the union of its colors and owns only what the reader owns of both; its mana value is no one number, so none is drawn.
@@ -179,22 +169,47 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun }) {
+/** The run's own pick store and set bracket read; a test hands in its own. Read at the call, so a result never picked reaches no pick. */
+const LIVE_LINE_ACTIONS: UpgradeActionDeps = {
+  pick: (runId, lineId, picked) => pickUpgradeLineAction(runId, lineId, picked),
+  setBracket: (fileName, runId, adds, cuts) => upgradeSetBracketAction(fileName, runId, adds, cuts),
+};
+const noop = () => {};
+/** No press handed in: the bar's place stays, off. */
+const PRESS_OFF: SuggestedChangesPress = { label: () => "", onPress: noop, off: true };
+
+export function ResultView({ panel, run, fileName = "", press = null, after = null, onPicked, lineActions = LIVE_LINE_ACTIONS }: {
+  panel: UpgradePanel;
+  run: PanelRun;
+  /** The precon file the run belongs to: the set bracket read is keyed by it. */
+  fileName?: string;
+  /** The flow's Start or Apply, in the lists' bar (call 11). Absent, the bar's press is off. */
+  press?: SuggestedChangesPress | null;
+  /** What follows the lists: Try another strategy (call 6). */
+  after?: ReactNode;
+  /** A pick was stored: the run's unpicked lines now, so the run reopened shows them (G28). */
+  onPicked?: (runId: string, unpicked: string[]) => void;
+  lineActions?: UpgradeActionDeps;
+}) {
   const lead = leadOf(panel, run);
   const leadName = lead ? lead.cards.map((c) => c.name).join(" + ") : "";
   const box = panel.commanders.find((c) => c.isFace) ?? null;
   const changed = lead !== null && box !== null && lead.key !== box.key;
   const key = run.strategyKey.split("/")[2] ?? "";
-  const groups = groupPairs(run);
   const boxCard = box ? combined(box.cards.map((c) => c.oracleId), panel.cards) : undefined;
   const leadCard = lead ? combined(lead.cards.map((c) => c.oracleId), panel.cards) : undefined;
-  // The key is the result's closed set (A3 call 9): the sides this view draws, the commander pair only when its group shows.
+  // The key is the result's closed set (A3 call 9): the pick lines draw no bracket marks, so only the commander pair's are
+  // glossed, and only when its group shows.
   const keyEntries = factComboEntries(
-    [...(changed ? [boxCard, leadCard] : []), ...run.pairs.flatMap((p) => [panel.cards[p.cutId], panel.cards[p.addId]])].filter((c): c is PanelCard => c !== undefined),
-    { combo: run.pairs.some((p) => p.cutCombo || p.addCombo) },
+    (changed ? [boxCard, leadCard] : []).filter((c): c is PanelCard => c !== undefined),
+    { combo: false },
   );
+  // Read once per run and panel: the component holds the picks made on screen over these.
+  const lines = useMemo(() => upgradeLines(panel, run), [panel, run]);
+  const actions = useMemo(() => upgradeActions(fileName, run.id, lineActions, onPicked ?? noop), [fileName, run.id, lineActions, onPicked]);
   return (
-    <div className="flex flex-col gap-[16px]">
+    // The lists' bar pins to the sheet's own foot, never lifted over the app's tab bar or the deck page's dock (fresh start R2).
+    <div className="flex flex-col gap-[16px]" style={{ ["--tabbar-h" as string]: "0px", ["--deck-foot-h" as string]: "0px" }}>
       <div className="flex items-center gap-[10px]">
         <span className="flex h-[32px] w-[32px] flex-none items-center justify-center rounded-full border border-solid border-[color:var(--accent)] text-[color:var(--accent-text)]">
           <StrategyIcon strategy={key as StrategyKey} size={18} />
@@ -202,6 +217,7 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
         <h3 className="m-0 min-w-0 flex-1 font-display text-[16px] font-normal uppercase text-[color:var(--fg)]">{copy.title(run.pairs.length, run.strategyLabel)}</h3>
         <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{runDay(run.createdAt)}</span>
       </div>
+      {/* The four facts as the run found them (call 9): the picks below move the bar's tally, not these. */}
       <div className="grid grid-cols-2 gap-[2px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[3px] md:grid-cols-4">
         <Fact label={copy.facts.ledBy}>{leadName}</Fact>
         <Fact label={copy.facts.bracket}>
@@ -227,27 +243,27 @@ export function ResultView({ panel, run }: { panel: UpgradePanel; run: PanelRun 
           </ul>
         </section>
       )}
-      {groups.map((g) => (
-        <section key={g.theme || "rest"} className="flex flex-col gap-[8px]">
-          <h4 className="m-0 flex items-baseline gap-[8px] text-[14px] font-semibold text-[color:var(--fg)]">
-            {g.theme === REST ? copy.cutsFromRest : copy.cutsFrom(g.theme)} <span className="font-mono text-[10.5px] font-normal text-[color:var(--fg-faint)]">{g.pairs.length}</span>
-          </h4>
-          <ul className="m-0 flex list-none flex-col p-0">
-            {g.pairs.map((p) => {
-              const add = panel.cards[p.addId];
-              const cut = panel.cards[p.cutId];
-              return (
-                <Swap
-                  key={p.position}
-                  cutName={p.cut} cutId={p.cutId} cutCard={cut} cutMarks={marksOf(cut, { side: "cut", partner: p.cutCombo })}
-                  addName={p.add} addId={p.addId} addCard={add} addMarks={marksOf(add, { side: "add", partner: p.addCombo })} reason={p.reason}
-                  aside={[null, <span key="p" className="font-mono text-[11px] text-[color:var(--fg-body)]">{add?.owned ? (add.availability ? <AvailabilityMarker availability={add.availability} nameless spoken foldWord="@max-[480px]:hidden" seam="var(--surface-sunken)" /> : null) : dollars(p.addCents)}</span>]}
-                />
-              );
-            })}
-          </ul>
-        </section>
-      ))}
+      {/* One component, one pick line, one bar (must-not): the shipped results, with the flow's press and no You asked (call 11). */}
+      <SuggestedChangesRun
+        runId={run.id}
+        ask={upgradeAsk(panel, run)}
+        lines={lines}
+        live={null}
+        startedAt={null}
+        report={null}
+        permits={upgradePermits(panel, run) as Bracket[]}
+        newestPriceAsOf={new Date(run.createdAt)}
+        figures={figuresOf(panel, run)}
+        drift={null}
+        actions={actions}
+        // Picks are saved as they are made (`actions.pick`); nothing here applies, so there is nothing to read again.
+        onChanged={async () => null}
+        onAnnounce={noop}
+        onNewRun={noop}
+        press={press ?? PRESS_OFF}
+        youAsked={false}
+      />
+      {after}
     </div>
   );
 }

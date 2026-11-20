@@ -130,9 +130,13 @@ export function SuggestedChangesPickLine({
         {toggle}
       </div>
       {addMark ? <div className="flex items-center gap-[8px] md:hidden">{addMark}</div> : null}
-      <p className="max-w-[980px] text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
-        {item.rationale}
-      </p>
+      {/* A line with no reason draws none: an Upgrade run kept before cuts carried their own reason (fresh start R2,
+       *  readiness clarification 2) never borrows the add's, and an empty <p> would leave a gap. */}
+      {item.rationale ? (
+        <p className="max-w-[980px] text-[12.5px] leading-[1.55]" style={{ color: "var(--fg-body)" }}>
+          {item.rationale}
+        </p>
+      ) : null}
       {shift && item.bracketAfter ? (
         <div data-testid="bracket-flag" className="flex flex-wrap items-center gap-[8px]">
           <span className="text-[12.5px]" style={{ color: "var(--fg-body)" }}>

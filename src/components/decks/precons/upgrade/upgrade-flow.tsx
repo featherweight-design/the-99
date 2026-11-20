@@ -17,6 +17,9 @@ import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
 import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
 import { complete, choose, commanderOf, impliedPicks, pickSteps, sameRun, strategiesFor, type FlowStep, type PickStep, type Picks, type RunView } from "../../../../lib/precons/upgrade/flow";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
+import type { UpgradePicks } from "../../../../lib/precons/upgrade/apply";
+import type { SuggestedChangesPress } from "../../suggested-changes-run";
+import { picksOf } from "./upgrade-lines";
 import { markUpgradeSeenAction } from "../../../../lib/precons/upgrade/actions";
 import { CreditsText } from "../../../ui/credits-text";
 import { SheetGrabber } from "../../../ui/sheet-grabber";
@@ -36,9 +39,9 @@ const GHOST_PRESS = "h-[46px] cursor-pointer rounded-[8px] border border-solid b
 const bracketName = (b: 2 | 3 | 4) => BRACKET_NAMES[b];
 
 /** The deck page's Apply (addendum A2c): the version the swaps' commit makes, the press, and whether one is in flight. */
-export type FlowApply = { nextVersion: number; onApply: (runId: string) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
+export type FlowApply = { nextVersion: number; onApply: (runId: string, picks: UpgradePicks) => void; pending: boolean; /** Per run: why its swaps can't apply (it no longer fits, a cut is locked). */ refusals: Record<string, string> };
 
-export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, onSeen }: {
+export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, onRetry, view = { kind: "none" }, onStart, apply, onReread, onSeen, onPicked }: {
   /** The precon file the run belongs to: the key the picks are kept under while the player is at Credits (G22). */
   fileName: string;
   precon: string;
@@ -51,8 +54,10 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
   onRetry?: () => void;
   /** The run the flow shows: the picks (none), the wait, the failed run or a kept result. The caller remounts the flow (a key) when it moves. */
   view?: RunView;
-  /** Starts a deck from the shown result; absent draws the press off. */
-  onStart?: (runId: string) => void;
+  /** Starts a deck from the shown result with the adds and cuts picked (fresh start R2); absent draws the press off. */
+  onStart?: (runId: string, picks: UpgradePicks) => void;
+  /** A pick on the result was stored: the run's unpicked lines now, for the panel the flow reopens on (G28). */
+  onPicked?: (runId: string, unpicked: string[]) => void;
   /** The deck page's mode: the result's press applies the swaps to the deck instead of starting one. */
   apply?: FlowApply;
   /** Reads the panel again. Asked once as the flow opens when it may be back from Credits (G22): picks were kept, or only more
@@ -212,6 +217,34 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
     };
   })();
 
+  // The result's press, in the lists' bar (fresh start R2, call 11): Start (precon page, no confirm) or Apply (deck page) with
+  // the picked adds and cuts. Off, with its line said in the bar, over an old list or a refusal that holds; held while applying.
+  const resultPress: SuggestedChangesPress | null = shown ? {
+    label: (n) => (apply ? (apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(n)) : copy.results.start(n)),
+    onPress: (adds, cuts) => (apply ? apply.onApply(shown.id, picksOf(adds, cuts)) : onStart?.(shown.id, picksOf(adds, cuts))),
+    pending: apply?.pending ?? false,
+    off: stale || refused !== null || (apply ? false : !onStart),
+    note: stale ? (apply ? preconUpgradeDeckCopy.listChanged : copy.results.listChanged) : refused,
+  } : null;
+  // Try another strategy, after the lists (call 6): Strategy with the run's commander and bracket, as shipped.
+  const another = shown ? (
+    <button
+      type="button"
+      onClick={() => {
+        if (shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: null });
+        setOpened(null);
+        setFromHistory(false);
+        setFromStart(false);
+        setStep("strategy");
+        setLeft(true);
+      }}
+      className={`${GHOST_PRESS} flex w-full flex-none items-center justify-center gap-[10px] md:w-fit md:self-end`}
+    >
+      {copy.results.another}
+      <span className="border-y-0 border-r-0 border-l border-solid border-l-[color:var(--border-strong)] pl-[10px] font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">{copy.results.anotherCost}</span>
+    </button>
+  ) : null;
+
   return (
     <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-end md:justify-center md:px-[16px]`} style={visible}>
       <div aria-hidden="true" onClick={leave} className="absolute inset-0 bg-[rgba(16,13,10,0.74)]" />
@@ -269,12 +302,13 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
           />
         )}
         <div className="relative flex min-h-0 flex-1 flex-col">
-        <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overscroll-contain p-[6px]">
+        {/* `overflow-x-hidden`: the result's pinned bar runs to the body's edge on a phone, as the board draws it, and never scrolls it sideways. */}
+        <div ref={body} className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overflow-x-hidden overscroll-contain p-[6px]">
           {stage === "wait" && view.kind === "wait" && <WaitView lead={runLead} bracket={bracketLabel} strategy={runStrategy} startedAt={view.startedAt} />}
           {stage === "failed" && <FailedView lead={runLead} bracket={bracketLabel} strategy={runStrategy} />}
           {/* A run already in a deck, opened from a list: free to open, and its press stays live (a second deck from the same swaps is allowed). An unused run draws no note. */}
           {stage === "results" && shown && fromList && shown.deck && <p data-used-note className="m-0 rounded-[8px] border border-dashed border-[color:var(--border-strong)] p-[10px_12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.history.usedNote(shown.deck.name)}</p>}
-          {stage === "results" && shown && <ResultView panel={panel} run={shown} />}
+          {stage === "results" && shown && <ResultView panel={panel} run={shown} fileName={fileName} press={resultPress} after={another} onPicked={onPicked} />}
           {stage === "history" && <HistoryView panel={panel} art={art} onOpen={(id) => { setOpened(id); setFromHistory(true); setFromStart(false); setHistory(false); }} />}
           {/* The start screen (call 2): the newest kept run above the intro's lead, when one is kept; the intro below is unchanged. */}
           {stage === "pick" && step === "intro" && newest && <LastRun panel={panel} art={art} run={newest} onOpen={() => { setOpened(newest.id); setFromStart(true); setFromHistory(false); }} />}
@@ -313,37 +347,9 @@ export function UpgradeFlow({ fileName, precon, panel, art, onClose, onConfirm, 
             </div>
             <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)] md:order-1 md:flex-1">{copy.failed.retryLine}</p>
           </div>
-        ) : stage === "results" && shown ? (
-          <div className="flex flex-none flex-col gap-[8px] md:flex-row md:flex-wrap md:items-center md:justify-end md:gap-[10px]">
-            {/* In the foot, beside the press it explains, so it is read whatever the body has scrolled to. */}
-            {(stale || refused) && (
-              <p role="note" className="m-0 w-full text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">
-                {stale ? (apply ? preconUpgradeDeckCopy.listChanged : copy.results.listChanged) : refused}
-              </p>
-            )}
-            {apply ? (
-              <button type="button" disabled={stale || apply.pending || refused !== null} aria-busy={apply.pending || undefined} onClick={() => apply.onApply(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>
-                {apply.pending ? preconUpgradeDeckCopy.applying : preconUpgradeDeckCopy.apply(shown.pairs.length)}
-              </button>
-            ) : (
-              <button type="button" disabled={!onStart || stale} onClick={() => onStart?.(shown.id)} className={`${ACCENT_PRESS} md:order-2`}>{copy.results.start(shown.pairs.length)}</button>
-            )}
-            <button
-              type="button"
-              onClick={() => {
-                if (shownLead) setPicks({ commander: shownLead.key, bracket: shown.bracketTarget as Picks["bracket"], strategy: null });
-                setOpened(null);
-                setFromHistory(false);
-                setFromStart(false);
-                setStep("strategy");
-                setLeft(true);
-              }}
-              className={`${GHOST_PRESS} flex items-center justify-center gap-[10px] md:order-1`}
-            >
-              {copy.results.another}
-              <span className="border-y-0 border-r-0 border-l border-solid border-l-[color:var(--border-strong)] pl-[10px] font-mono text-[11px] font-normal text-[color:var(--fg-muted)]">{copy.results.anotherCost}</span>
-            </button>
-          </div>
+        ) : stage === "results" ? (
+          // The result's one press is in the lists' bar (call 11), and Try another strategy follows the lists: no foot.
+          null
         ) : step === "strategy" && same && complete(picks) && !blocked ? (
           <div className="flex flex-none flex-col gap-[10px]">
             <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">

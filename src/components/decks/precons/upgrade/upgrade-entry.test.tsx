@@ -7,7 +7,18 @@ const press = vi.hoisted(() => vi.fn());
 const read = vi.hoisted(() => vi.fn());
 const create = vi.hoisted(() => vi.fn());
 const own = vi.hoisted(() => vi.fn());
-vi.mock("../../../../lib/precons/upgrade/actions", () => ({ pressUpgradeAction: press, readUpgradeAction: read, markUpgradeSeenAction: vi.fn(async () => ({ ok: true })) }));
+const picked = vi.hoisted(() => vi.fn(async (_r: string, lineId: string) => ({ ok: true as const, unpicked: [lineId] })));
+vi.mock("../../../../lib/precons/upgrade/actions", () => ({
+  pressUpgradeAction: press, readUpgradeAction: read, markUpgradeSeenAction: vi.fn(async () => ({ ok: true })),
+  pickUpgradeLineAction: picked, upgradeSetBracketAction: vi.fn(async () => null),
+}));
+// The result's lists are Suggested changes' own (fresh start R2): their lines read the precon page's card details.
+vi.mock("../../../cards/card-detail-context", async (importActual) => ({
+  ...(await importActual<typeof import("../../../cards/card-detail-context")>()),
+  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false, prefetch: () => {} }),
+  useCardIntent: () => ({}),
+}));
+vi.mock("../../../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 vi.mock("../../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: create, startPreconOwned: own }));
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_A" }) }));
 import { UpgradeEntry } from "./upgrade-entry";
@@ -23,7 +34,7 @@ const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 1, cents: 100 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });
 const panel = (runs: PanelRun[] = []): UpgradePanel => ({
-  boxBracket: 2, commanders: [lead], runs, listFp: "x", cards: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  boxBracket: 2, commanders: [lead], runs, listFp: "x", cards: {}, figures: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
 });
 
 function toConfirm() {
@@ -176,7 +187,36 @@ describe("UpgradeEntry", () => {
       expect(screen.getByText("2 → 3 · Upgraded, as chosen")).toBeInTheDocument();
       expect(screen.getByText("written for this list as it starts")).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
-      await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1"));
+      await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1", { adds: ["a"], cuts: ["c"] }));
+    });
+
+    it("starts with only the picks (fresh start R2): the dialog counts them, and an unpicked pair stays out", async () => {
+      create.mockResolvedValue(undefined);
+      const two = run({ pairs: [
+        { cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", cutReason: null, position: 1 },
+        { cutId: "c2", cut: "Cut 2", addId: "a2", add: "Add 2", addCents: 100, reason: "r", cutReason: null, position: 2 },
+      ], unpicked: ["a-a2", "c-c"] });
+      mount(panel([two]));
+      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      fireEvent.click(screen.getByRole("button", { name: "Start the deck with these 1 swaps" }));
+      expect(screen.getByText(/with the 1 swap toward Spells\./)).toBeInTheDocument();
+      fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+      await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1", { adds: ["a"], cuts: ["c2"] }));
+    });
+
+    it("keeps a stored pick when the result is opened again in the same visit", async () => {
+      mount(panel([run({ pairs: [
+        { cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", cutReason: null, position: 1 },
+        { cutId: "c2", cut: "Cut 2", addId: "a2", add: "Add 2", addCents: 100, reason: "r", cutReason: null, position: 2 },
+      ] })]));
+      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      fireEvent.click(screen.getByRole("button", { name: "✓ Picked Add 2" }));
+      await waitFor(() => expect(picked).toHaveBeenCalledWith("r1", "a-a2", false));
+      fireEvent.click(screen.getByRole("button", { name: "Close" }));
+      fireEvent.click(screen.getByRole("button", { name: "Upgrade this precon" }));
+      fireEvent.click(screen.getByRole("button", { name: "History" }));
+      fireEvent.click(screen.getAllByRole("button", { name: /Spells/ })[0]);
+      expect(screen.getByRole("button", { name: "Pick Add 2" })).toBeInTheDocument();
     });
 
     it("names the cards it will not add when the box is added", () => {
@@ -199,7 +239,7 @@ describe("UpgradeEntry", () => {
       openLast();
       fireEvent.click(screen.getByRole("button", { name: /Start the deck with these/ }));
       fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
-      await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1"));
+      await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1", { adds: ["a"], cuts: ["c"] }));
       await waitFor(() => expect(read).toHaveBeenCalled());
     });
 
@@ -207,7 +247,7 @@ describe("UpgradeEntry", () => {
       mount(panel([run({ listFp: "old" })]));
       openLast();
       expect(screen.getByText(/The precon’s list changed after this upgrade/)).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: /Start the deck with these/ })).toBeDisabled();
+      expect(screen.getByRole("button", { name: /Start the deck with these/ })).toHaveAttribute("aria-disabled", "true");
     });
 
     it("a run already in a deck opens from the start screen with ‹ Back, the note and its press live", () => {

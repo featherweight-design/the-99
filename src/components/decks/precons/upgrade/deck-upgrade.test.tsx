@@ -12,7 +12,17 @@ vi.mock("../../../../app/decks/precon-upgrade-deck-actions", () => ({
   applyPreconUpgradeOnDeck: (...a: unknown[]) => apply(...a),
   undoPreconUpgradeOnDeck: (...a: unknown[]) => undo(...a),
 }));
-vi.mock("../../../../lib/precons/upgrade/actions", () => ({ readUpgradeAction: vi.fn(async () => null), pressUpgradeAction: vi.fn(), markUpgradeSeenAction: vi.fn(async () => ({ ok: true })) }));
+vi.mock("../../../../lib/precons/upgrade/actions", () => ({
+  readUpgradeAction: vi.fn(async () => null), pressUpgradeAction: vi.fn(), markUpgradeSeenAction: vi.fn(async () => ({ ok: true })),
+  pickUpgradeLineAction: vi.fn(async () => ({ ok: true, unpicked: [] })), upgradeSetBracketAction: vi.fn(async () => null),
+}));
+// The result's lists are Suggested changes' own (fresh start R2): their lines read the deck page's card details.
+vi.mock("../../../cards/card-detail-context", async (importActual) => ({
+  ...(await importActual<typeof import("../../../cards/card-detail-context")>()),
+  useCardDetail: () => ({ open: vi.fn(), registerSheet: () => () => {}, openOracleId: null, revealing: false, prefetch: () => {} }),
+  useCardIntent: () => ({}),
+}));
+vi.mock("../../../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 
 const { DeckUpgradeHost } = await import("./deck-upgrade");
 const { readUpgradeAction } = await import("../../../../lib/precons/upgrade/actions");
@@ -21,6 +31,7 @@ const DECK = "22222222-2222-4222-8222-222222222222";
 const strat = { key: "tokens", label: "Tokens", blurb: "b", source: "edhrec" as const, backingIds: [], backing: [] };
 const panel: UpgradePanel = {
   boxBracket: 2,
+  figures: {},
   commanders: [
     { key: "rootha", isFace: true, cards: [{ oracleId: "rootha", name: "Rootha", manaCost: null, cmc: 4, typeLine: "Legendary Creature" }], line: "", strategies: [strat] },
     { key: "muddle", isFace: false, cards: [{ oracleId: "muddle", name: "Muddle", manaCost: null, cmc: 4, typeLine: "Legendary Creature" }], line: "", strategies: [strat] },
@@ -82,7 +93,8 @@ describe("DeckUpgradeHost (A2c)", () => {
     host();
     openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
-    expect(apply).toHaveBeenCalledWith(DECK, "r1");
+    // The picks go with it (fresh start R2): every add and cut, as none was unpicked.
+    expect(apply).toHaveBeenCalledWith(DECK, "r1", { adds: ["b"], cuts: ["a"] });
     expect(screen.getByText("Applied 1 swaps. Muddle leads.")).toBeInTheDocument();
     expect(refresh).toHaveBeenCalledTimes(1);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Undo" })); });
@@ -96,7 +108,7 @@ describe("DeckUpgradeHost (A2c)", () => {
     openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
     expect(screen.getByRole("note")).toHaveTextContent("Unlock it to apply the swaps.");
-    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toHaveAttribute("aria-disabled", "true");
     expect(refresh).not.toHaveBeenCalled();
   });
 
@@ -116,7 +128,7 @@ describe("DeckUpgradeHost (A2c)", () => {
     openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
     expect(screen.getByText("Those swaps didn’t apply. Your deck hasn’t changed.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).not.toHaveAttribute("aria-disabled");
   });
 
   it("opens on the start screen with the kept run as Your last upgrade, A2c's intro line under it (call 12)", () => {

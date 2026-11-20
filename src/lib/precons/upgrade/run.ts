@@ -17,11 +17,18 @@ import type { Availability } from "../../decks/availability";
 import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } from "./inputs";
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
-import { readCardFacts, readRunDecks, type CardFacts, type RunDeck } from "./facts";
+import { readCardFacts, readRunDecks, type CardFacts, type CardText, type RunDeck } from "./facts";
 import { finishUpgrade, readDoneUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
 import { recordSoftFailure } from "../../cache/soft-failure";
 import { readSwapPartners } from "./swap-partners";
 import { picksInRun } from "./picks";
+import { panelLineFacts, upgradeFigures, type PanelLineFacts } from "./line-figures";
+import type { RunFigures } from "../../decks/builder-figures";
+import type { JobRowsByCard } from "../../decks/job-tally";
+import { loadJobRows } from "../../decks/job-rows";
+import { loadMixesForCommanders, mixKey, type CommanderPair } from "../../decks/deck-mix";
+import type { RecommendedMix } from "../../decks/mix";
+import type { RoleBasis } from "../../profile/build";
 import type { LineBrackets, StoredPair, UpgradePair } from "./validate";
 
 /**
@@ -45,7 +52,7 @@ export type PanelRun = StoredUpgrade & {
 };
 
 /** A card as a result row draws it, besides its name: its facts, and whether the reader owns a copy. `availability` is the claim picture of an owned card (what the allocation chips draw): absent for a card not owned or when the read could not reach. */
-export type PanelCard = Partial<CardFacts> & { owned: boolean; availability?: Availability };
+export type PanelCard = Partial<CardFacts> & { owned: boolean; availability?: Availability } & Partial<PanelLineFacts>;
 
 export type UpgradePanel = {
   /** The bracket the box plays at (2, 3 or 4), or null when it could not be read. Only picks at or above it are offered: an upgrade adds cards, it cannot take the box's own off. */
@@ -58,6 +65,8 @@ export type UpgradePanel = {
   listFp: string;
   /** Every card the runs and the commanders name, by oracle id, with what a row draws of it. */
   cards: Record<string, PanelCard>;
+  /** The result lists' group heads per commander option, by its key (fresh start R2): the box's 99 under that lead. */
+  figures: Record<string, RunFigures>;
   allowance: Allowance;
 };
 
@@ -75,7 +84,11 @@ type Deps = {
   /** The newest deck started from each of these runs, by run id. */
   decks: (userId: string, runIds: readonly string[]) => Promise<Map<string, RunDeck>>;
   /** The mana value, color identity and bracket facts of cards by oracle id. */
-  facts: (oracleIds: readonly string[]) => Promise<Map<string, CardFacts>>;
+  facts: (oracleIds: readonly string[]) => Promise<Map<string, CardFacts & Partial<CardText>>>;
+  /** The Jobs labels of these cards as row keys, the strip's role read (`loadJobRows`); null when it failed (the classifier then). */
+  labels: (cards: readonly { oracleId: string; typeLine: string }[]) => Promise<JobRowsByCard | null>;
+  /** Each commander option's recommended mix, by `mixKey` (never throws; a failed chain is the asserted baseline). */
+  mixes: (pairs: readonly CommanderPair[], basis: RoleBasis) => Promise<Map<string, RecommendedMix>>;
   /** Which of these cards the reader owns at all. */
   owned: (userId: string, oracleIds: readonly string[]) => Promise<Set<string>>;
   /** The claim picture of these cards across the reader's decks. Fail-soft: a read that cannot reach draws no chip. */
@@ -94,6 +107,8 @@ export const LIVE_DEPS: Deps = {
   bracketOf,
   bracketsOf,
   facts: readCardFacts,
+  labels: (cards) => loadJobRows(cards).catch(() => null),
+  mixes: loadMixesForCommanders,
   decks: readRunDecks,
   owned: readOwnedOracleIds,
   availability: (userId, oracleIds) => loadAvailability(userId, { oracleIds: [...oracleIds] }).catch((e: unknown) => {
@@ -314,6 +329,13 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
   // Every card a result row names: the pairs' cuts and adds, and the commanders (the box's and the alternate).
   const named = [...new Set([...stored.flatMap((r) => r.pairs.flatMap((p) => [p.cutId, p.addId])), ...offeredNow.flatMap((c) => c.cards.map((k) => k.oracleId))])];
   const [owned, facts, runDecks, availability] = await Promise.all([deps.owned(userId, named), deps.facts(named), deps.decks(userId, stored.map((r) => r.id)), deps.availability(userId, named)]);
+  // One label read for the result's lists (fresh start R2): every card the runs name, for its shelf role, and the box's own
+  // cards, which the role heads count. After the facts, which hold an add's type line.
+  const inBox = new Set(base.lines.map((l) => l.oracleId));
+  const byCard = await deps.labels([
+    ...base.lines.map((l) => ({ oracleId: l.oracleId, typeLine: l.typeLine })),
+    ...named.filter((id) => !inBox.has(id)).map((id) => ({ oracleId: id, typeLine: facts.get(id)?.typeLine ?? "" })),
+  ]);
   const runs = stored.map((r): PanelRun => {
     const buy = r.pairs.filter((p) => !owned.has(p.addId));
     const strategies = offeredNow.find((c) => r.strategyKey.startsWith(`${c.key}/`))?.strategies ?? [];
@@ -327,10 +349,26 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
   const cardsOut: Record<string, PanelCard> = {};
   for (const id of named) {
     const a = owned.has(id) ? availability.get(id) : undefined;
-    cardsOut[id] = { ...facts.get(id), owned: owned.has(id), ...(a ? { availability: a } : {}) };
+    const f = facts.get(id);
+    // The catalog text stays on the server: the panel carries the line facts it decides (type group, shelf role).
+    const { typeLine, image, oracleText, keywords, ...drawn } = f ?? {};
+    cardsOut[id] = {
+      ...drawn, owned: owned.has(id), ...(a ? { availability: a } : {}),
+      ...(typeLine !== undefined ? panelLineFacts(id, { typeLine, image: image ?? null, oracleText: oracleText ?? null, keywords: keywords ?? [] }, byCard) : {}),
+    };
   }
-  const boxBracket = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
-  return { boxBracket, commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, allowance };
+  const pairOf = (ids: readonly string[]): CommanderPair => ({ commanderOracleId: ids[0], partnerOracleId: ids[1] ?? null });
+  const [boxBracket, mixes] = await Promise.all([
+    deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []),
+    // The targets for the count the heads use: by label, unless the label read failed (as `loadDeckMix`'s callers ask).
+    deps.mixes(offeredNow.map((c) => pairOf(c.option.commanderIds)), byCard ? "labels" : "classifier"),
+  ]);
+  const figures: Record<string, RunFigures> = {};
+  for (const c of offeredNow) {
+    const mix = mixes.get(mixKey(pairOf(c.option.commanderIds)));
+    if (mix) figures[c.key] = upgradeFigures(base.lines, c.option.commanderIds, byCard, mix);
+  }
+  return { boxBracket, commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, figures, allowance };
 }
 
 /** The panel for one precon: free, never a call. Null when the precon is not found or has no commander. */

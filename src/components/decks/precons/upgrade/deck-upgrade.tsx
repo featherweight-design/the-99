@@ -19,6 +19,7 @@ import { preconsCopy } from "../../../../lib/copy/precons";
 import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
 import type { PreconArrival } from "../../../../lib/precons/arrival-read";
 import type { DeckUpgrade } from "../../../../lib/precons/upgrade/deck-read";
+import type { UpgradePicks } from "../../../../lib/precons/upgrade/apply";
 import { DECK_TOAST_CLAIM, ToastFrame, useToastClock } from "../../../collection/edit-toast-frame";
 import { ArrivalBandShell, PreconArrivalBand } from "../../arrival-strip";
 import { DeckRefusalToast } from "../../token-refusal-toast";
@@ -65,7 +66,7 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
   onFailed: (text: string) => void;
 }) {
   const router = useRouter();
-  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen } = useUpgradeRun(upgrade.fileName, upgrade.panel);
+  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen, savePicks } = useUpgradeRun(upgrade.fileName, upgrade.panel);
   const art = useMemo(() => new Map([...upgrade.art, ...commanderArt]), [upgrade.art, commanderArt]);
   const [applying, setApplying] = useState(false);
   // Applied, and the page's refresh (which takes the band away) not yet landed: the press stays off, or a second Apply of
@@ -74,10 +75,11 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
   // A refusal that holds for one run (it no longer fits, or a cut is locked): said in the foot, its press off.
   const [refusals, setRefusals] = useState<Record<string, string>>({});
 
-  async function apply(runId: string) {
+  async function apply(runId: string, picks: UpgradePicks) {
     setApplying(true);
     try {
-      const r = await applyPreconUpgradeOnDeck(deckId, runId);
+      // The adds and cuts picked on the result (fresh start R2): exactly those are applied, and Undo restores exactly those.
+      const r = await applyPreconUpgradeOnDeck(deckId, runId, picks);
       if (r.ok) {
         const run = panel.runs.find((x) => x.id === runId);
         const lead = run ? leadOf(panel, run) : null;
@@ -154,7 +156,8 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
           onSeen={onSeen}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
-          apply={{ nextVersion: upgrade.nextVersion, onApply: (id) => void apply(id), pending: applying, refusals }}
+          apply={{ nextVersion: upgrade.nextVersion, onApply: (id, picks) => void apply(id, picks), pending: applying, refusals }}
+          onPicked={savePicks}
         />
       )}
     </>

@@ -7,6 +7,7 @@
 import { useRef, useState } from "react";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
+import type { UpgradePicks } from "../../../../lib/precons/upgrade/apply";
 import { StartPreconDialog, type StartPreconProps, type UpgradeStart } from "../start-precon";
 import { BRACKET_NAMES } from "../../../../lib/copy/deck-analysis";
 import { UpgradeFlow } from "./upgrade-flow";
@@ -22,12 +23,13 @@ function Running({ strategy, startedAt }: { strategy: string; startedAt: number 
 }
 
 export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: { fileName: string; precon: string; panel: UpgradePanel; art: UpgradeArt; start: StartPreconProps }) {
-  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen } = useUpgradeRun(fileName, initial);
-  // The run a deck is being started from (the Start dialog over the flow), and its add-attempt slot, kept past the dialog so a retry lands on the deck it made.
-  const [starting, setStarting] = useState<string | null>(null);
+  const { panel, view, pending, open, setOpen, close, refresh, confirm, landed, onSeen, savePicks } = useUpgradeRun(fileName, initial);
+  // The run a deck is being started from (the Start dialog over the flow) with the adds and cuts picked on its result, and its
+  // add-attempt slot, kept past the dialog so a retry lands on the deck it made.
+  const [starting, setStarting] = useState<{ runId: string; picks: UpgradePicks } | null>(null);
   // A plain map held in state (never replaced), one slot per run: a retry of one run lands on its deck, and another run never inherits its id.
   const [adds] = useState(() => new Map<string, { id: string | null }>());
-  const startingUpgrade = starting ? startFor(panel, starting, art) : null;
+  const startingUpgrade = starting ? startFor(panel, starting.runId, art, starting.picks) : null;
 
   const button = useRef<HTMLButtonElement>(null);
   const pulse = useLinePulse(button, landed);
@@ -59,7 +61,8 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
           onSeen={onSeen}
           onConfirm={(p) => void confirm(p as Picks)}
           onRetry={view.kind === "failed" ? () => void confirm(view.picks) : undefined}
-          onStart={(id) => setStarting(id)}
+          onStart={(id, picks) => setStarting({ runId: id, picks })}
+          onPicked={savePicks}
         />
       )}
       {startingUpgrade && (
@@ -78,8 +81,9 @@ export function UpgradeEntry({ fileName, precon, panel: initial, art, start }: {
   );
 }
 
-/** The Start dialog's view of a run: who leads, the swaps, the bracket in the player's words, and what is left to buy. */
-function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt): UpgradeStart | null {
+/** The Start dialog's view of a run: who leads, the swaps picked, the bracket in the player's words, and what is left to buy of the
+ *  picked adds. The picks go to the start, which makes exactly those (fresh start R2). */
+function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt, picks: UpgradePicks): UpgradeStart | null {
   const run = panel.runs.find((r) => r.id === runId);
   const lead = run ? leadOf(panel, run) : null;
   const box = panel.commanders.find((c) => c.isFace);
@@ -96,10 +100,11 @@ function startFor(panel: UpgradePanel, runId: string, art: UpgradeArt): UpgradeS
     },
     boxCommander: names(box),
     changed: !lead.isFace,
-    swaps: run.pairs.length,
+    swaps: picks.adds.length,
     strategy: run.strategyLabel,
     bracket: preconUpgradeCopy.start.bracketFact(run.bracketBefore, after, BRACKET_NAMES[after as 1 | 2 | 3 | 4 | 5]),
-    toBuy: run.toBuy.cards,
+    toBuy: picks.adds.filter((id) => !panel.cards[id]?.owned).length,
+    picks,
   };
 }
 

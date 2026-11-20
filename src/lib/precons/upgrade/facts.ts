@@ -13,12 +13,19 @@ import type { CardFact } from "../../copy/card-mark";
  */
 export type CardFacts = { cmc: number; identity: string[]; facts?: CardFact[] };
 
+/** What the result's lists also read of a card (fresh start R2): its type line and art for the pick line, and the text its
+ *  shelf role is classified from (`lineFacts`). Server-side only: the panel carries the type group and role, never the text. */
+export type CardText = { typeLine: string; image: string | null; oracleText: string | null; keywords: string[] };
+
 /** The facts of these cards by oracle id: a card the catalog does not hold has none, and its row draws without them. */
-export async function readCardFacts(oracleIds: readonly string[]): Promise<Map<string, CardFacts>> {
+export async function readCardFacts(oracleIds: readonly string[]): Promise<Map<string, CardFacts & Partial<CardText>>> {
   if (oracleIds.length === 0) return new Map();
   const [rows, flags] = await Promise.all([
     db
-      .select({ id: cards.oracleId, cmc: cards.cmc, identity: cards.colorIdentity, gameChanger: cards.gameChanger })
+      .select({
+        id: cards.oracleId, cmc: cards.cmc, identity: cards.colorIdentity, gameChanger: cards.gameChanger,
+        typeLine: cards.typeLine, image: cards.imageUri, oracleText: cards.oracleText, keywords: cards.keywords,
+      })
       .from(cards)
       .where(inArray(cards.oracleId, [...oracleIds])),
     // A failed flags read draws every card without facts (mana value and identity still draw) rather than failing the panel,
@@ -30,7 +37,10 @@ export async function readCardFacts(oracleIds: readonly string[]): Promise<Map<s
   ]);
   return new Map(rows.map((r) => {
     const facts = flags ? factsFor(r.gameChanger, flags.get(r.id)) : undefined;
-    return [r.id, { cmc: r.cmc, identity: r.identity, ...(facts ? { facts } : {}) }];
+    return [r.id, {
+      cmc: r.cmc, identity: r.identity, ...(facts ? { facts } : {}),
+      typeLine: r.typeLine, image: r.image, oracleText: r.oracleText, keywords: r.keywords,
+    }];
   }));
 }
 

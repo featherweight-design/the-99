@@ -16,6 +16,7 @@ import { preconAddedDate, preconsCopy } from "../../../lib/copy/precons";
 import { preconUpgradeCopy, preconUpgradeDeckCopy } from "../../../lib/copy/precon-upgrade";
 import { DECK_NAME_MAX, hasControlChars } from "../../../lib/decks/deck-name";
 import type { PreconRow } from "../../../lib/precons/list";
+import type { UpgradePicks } from "../../../lib/precons/upgrade/apply";
 import { PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { TextField } from "../../ui/text-field";
@@ -79,6 +80,8 @@ export type UpgradeStart = {
   bracket: string;
   /** The adds the reader does not own: "I own this precon" adds only what came in the box, so these are not added. */
   toBuy: number;
+  /** The adds and cuts picked on the result (fresh start R2): the start makes these, a subset of the run, checked again on the server. */
+  picks?: UpgradePicks;
 };
 
 export function StartPrecon(props: StartPreconProps) {
@@ -180,7 +183,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
         writeAttempt(account, attemptFile(addFile), addRef.current.id);
         try {
           // Redirects to the new deck on success; a refusal is returned, and every refusal reads as nothing saved.
-          const refused = await (upgrade ? startPreconOwned(addFile, trimmed, addRef.current.id, upgrade.runId) : startPreconOwned(addFile, trimmed, addRef.current.id));
+          const refused = await (upgrade ? startPreconOwned(addFile, trimmed, addRef.current.id, upgrade.runId, upgrade.picks) : startPreconOwned(addFile, trimmed, addRef.current.id));
           if (refused?.reason === "upgradeUnavailable" || refused?.reason === "picks") {
             // Nothing was committed: the id is spent. "upgradeUnavailable": the run is not startable, so the caller retires it;
             // "picks": the run still is, only the picks went stale, so the dialog says so and the run stays.
@@ -212,7 +215,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
       }
       try {
         // Redirects to the new deck on success; a refusal or an outage throws.
-        const refused = await (upgrade ? createDeckFromPrecon(addFile, trimmed, upgrade.runId) : createDeckFromPrecon(addFile, trimmed));
+        const refused = await (upgrade ? createDeckFromPrecon(addFile, trimmed, upgrade.runId, upgrade.picks) : createDeckFromPrecon(addFile, trimmed));
         if (refused && refused.reason === "picks") {
           // The run is still startable; only the picks went stale. Said, and the run is not retired.
           inFlight.current = false;
