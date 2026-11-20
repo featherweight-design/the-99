@@ -136,6 +136,8 @@ export function Panel({
   const out = state.out !== null;
   const { pending, down, up, cancel } = usePendingLife(onLife, disabled || out);
   const sideways = cell.rot === 90 || cell.rot === -90;
+  /** A small panel (the phone's 5 and 6 seat sides) has no room for End turn beside a centred number, so the number steps aside. */
+  const tight = Math.max(cell.w, cell.h) < 260 && Math.min(cell.w, cell.h) < 200;
   const label = seat.you ? copy.ariaYou : copy.aria(seat.name);
 
   return (
@@ -176,13 +178,13 @@ export function Panel({
           {active && !out ? <TurnRing key={round + ":" + seat.seat} /> : null}
 
           <div className="relative flex h-full w-full flex-col items-center justify-center">
-            <span className="absolute left-3 top-2 max-w-[70%] truncate text-[13px] text-[color:var(--fg-body)]" data-testid="panel-name">
+            <span className="absolute left-3 top-2 max-w-[55%] truncate text-[13px] text-[color:var(--fg-body)]" data-testid="panel-name">
               {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
             </span>
 
             {out ? (
-              <div className="flex flex-col items-center gap-2 px-3 text-center" data-testid="panel-out">
-                <span className="text-[13px] text-[color:var(--fg)]">
+              <div className="flex flex-col items-center gap-1 px-3 pt-7 text-center" data-testid="panel-out">
+                <span className="text-[max(10px,min(13px,6cqmin))] leading-tight text-[color:var(--fg)]">
                   {state.out!.reason.kind === "life" ? copy.outLife(state.out!.round) : null}
                   {state.out!.reason.kind === "poison" ? copy.outPoison(state.out!.round) : null}
                   {state.out!.reason.kind === "commander" ? (
@@ -195,9 +197,9 @@ export function Panel({
               </div>
             ) : (
               <>
-                <div className="relative flex items-baseline gap-2" aria-live="polite" aria-atomic="true" data-testid="panel-life">
+                <div className={"relative flex items-baseline gap-2 " + (tight && active ? "-translate-x-8" : "")} aria-live="polite" aria-atomic="true" data-testid="panel-life">
                   <span className="sr-only">{copy.lifeLabel}</span>
-                  <span className="font-semibold tabular-nums text-[color:var(--fg)] [font-size:min(30cqmin,72px)] [line-height:1]" data-testid="life-number">
+                  <span className="font-semibold tabular-nums text-[color:var(--fg)] [font-size:min(26cqmin,72px)] [line-height:1]" data-testid="life-number">
                     {state.life + pending}
                   </span>
                   {pending !== 0 ? (
@@ -236,7 +238,7 @@ export function Panel({
                     type="button"
                     onClick={onEndTurn}
                     disabled={disabled}
-                    className="absolute bottom-2 left-1/2 min-h-[44px] -translate-x-1/2 rounded-full bg-[color:var(--accent)] px-5 text-[14px] font-medium text-[color:var(--bg)]"
+                    className="absolute right-2 top-1 min-h-[44px] rounded-full bg-[color:var(--accent)] px-3 text-[13px] font-medium text-[color:var(--bg)]"
                   >
                     {copy.endTurn}
                   </button>
