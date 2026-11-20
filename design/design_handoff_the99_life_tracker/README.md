@@ -1,6 +1,6 @@
 # The 99 · Life tracker (account 2, 2026-11-18)
 
-Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 18)
+Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 21; v18 was the approved round, v19–v21 add the undrawn-states addendum)
 Research brief: https://claude.ai/artifact/8ATRY8gc8mTc3fgnd1ZS2B
 Status: **APPROVED by Hugh 2026-11-18** ("I think this LGTM… we can safely open a PR with the design handoff").
 
@@ -12,6 +12,12 @@ To view a board, open any `*.dc.html` with `support.js` and `art/` beside it. `P
 ("Try it"): tap and hold life, end turns, pass the monarch, roll dice, open the sheet. `scratch-gen/` holds the
 generators (`gen_phone.py` for the F boards, `gen_layouts.py` for L1–L5, `gen_icons.py` for I1–I2), `emu.js` (a
 Playwright mini runtime used to click through the prototype) and `map.json` (blob id → `art/` file).
+
+## Addendum (2026-11-20)
+
+The states READINESS.md listed as 🟡 not drawn are now drawn: boards S1–S6, approved by Hugh 2026-11-20. See
+[ADDENDUM-undrawn-states.md](ADDENDUM-undrawn-states.md): Start off at 7–8 seated, a seat still picking its deck,
+resuming a saved game, the table closing or reseating mid-game, a draw, and starting the next game without closing the table.
 
 ## Boards
 

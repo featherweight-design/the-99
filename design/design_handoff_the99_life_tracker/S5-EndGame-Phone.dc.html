@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>S5a · End game: how did it end?</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(/_blob/92b49ae8bf36fee523d2c940101a47cd) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(/_blob/28a118a4f1d2d89f048ed8dda083f273) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(/_blob/ab35e14cb6458bb7fa4f3f54f8f02a5f) format("woff2");font-weight:500}
+body{margin:0}
+.scr{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--warning:#DEAA29;--danger:#C6533F;width:390px;height:844px;background:var(--bg);position:relative;overflow:hidden;font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg)}
+.sheet{position:absolute;width:844px;height:390px;left:-227px;top:227px;transform:rotate(90deg);box-sizing:border-box;padding:12px 20px 14px;display:flex;flex-direction:column;gap:10px;background:var(--surface-raised)}
+.hd{display:flex;align-items:center;gap:12px;height:44px}
+.hd img{width:40px;height:40px;border-radius:50%;object-fit:cover}
+.hd b{font-family:"Cinzel",serif;font-weight:700;font-size:21px}
+.hd i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--fg-muted)}
+.x{margin-left:auto;width:44px;height:44px;background:none;border:0;color:var(--fg);font-size:22px;font-family:"IBM Plex Sans",sans-serif}
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--border)}
+.tabs button{height:44px;padding:0 16px;background:none;border:0;border-bottom:2px solid transparent;color:var(--fg-muted);font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;margin-bottom:-1px}
+.tabs button.on{color:var(--fg);border-bottom-color:var(--accent)}
+.tabs button em{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--accent);margin-left:5px}
+.tabs .sep{margin-left:auto}
+.body{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+.des{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.tg{height:50px;border-radius:10px;border:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);font-family:"IBM Plex Sans",sans-serif;text-align:left;padding:0 12px;display:flex;align-items:center;gap:10px}
+.tg svg{flex:none}
+.tg b{display:block;font-size:13.5px;font-weight:600;color:var(--fg)}
+.tg small{display:block;font-size:11px;color:var(--fg-muted);line-height:1.3}
+.tg.on{box-shadow:inset 0 0 0 2px var(--accent);color:var(--accent)}
+.cnt{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.c{height:54px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;align-items:center;gap:8px;padding:0 6px 0 12px}
+.c div{flex:1;min-width:0}
+.c b{display:block;font-size:13.5px;font-weight:600}
+.c small{display:block;font-size:11px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c button{width:44px;height:44px;border-radius:9px;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-size:20px;font-family:"IBM Plex Sans",sans-serif}
+.c .v{font-family:"Cinzel",serif;font-weight:700;font-size:22px;min-width:30px;text-align:center}
+.c.set{box-shadow:inset 0 0 0 1px var(--accent)}
+.c.set .v{color:var(--accent)}
+.tbl{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;flex:1}
+.colm{display:flex;flex-direction:column;gap:8px}
+.r{min-height:54px;border-radius:10px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;align-items:center;gap:10px;padding:0 6px 0 14px}
+.r .k{flex:1;min-width:0}
+.r b{display:block;font-size:13.5px;font-weight:600}
+.r small{display:block;font-size:11.5px;color:var(--fg-muted)}
+.btn{height:44px;padding:0 16px;border-radius:9px;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:13.5px;white-space:nowrap}
+.seg{display:flex;border-radius:9px;box-shadow:inset 0 0 0 1px var(--border-strong);padding:3px}
+.seg button{height:38px;padding:0 13px;border-radius:7px;border:0;background:none;color:var(--fg-muted);font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:13px}
+.seg button.on{background:var(--elevated);color:var(--fg);box-shadow:inset 0 0 0 1px var(--accent)}
+.dice{display:flex;gap:6px}
+.dice .btn{padding:0 12px}
+.res{font-family:"Cinzel",serif;font-weight:700;font-size:22px;color:var(--accent);min-width:34px;text-align:center}
+.end{color:var(--danger)}
+.endq{display:flex;align-items:baseline;gap:12px}
+.endq b{font-size:15px;font-weight:600}.endq small{font-size:12px;color:var(--fg-muted)}
+.endq .bk{margin-left:auto;height:36px;padding:0 12px;border-radius:9px;border:0;background:none;color:var(--fg-body);font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;font-weight:600}
+.pick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;flex:1;min-height:0}
+.pk{position:relative;overflow:hidden;border-radius:12px;border:0;padding:0;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;text-align:left}
+.pk img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.pk span{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 10px;background:linear-gradient(transparent,rgba(20,17,14,.9))}
+.pk b{display:block;font-family:"Cinzel",serif;font-weight:700;font-size:19px}
+.pk small{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-body)}
+.pk.dr{background:var(--elevated);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.pk.dr b{font-size:19px;color:var(--fg)}.pk.dr small{color:var(--fg-muted);font-family:"IBM Plex Sans",sans-serif;font-size:12px;padding:0 10px}
+</style>
+</helmet>
+<div class="scr">
+  <div class="sheet" role="dialog" aria-label="Your sheet">
+    <div class="hd"><img src="/_blob/019b993ea74dc7eef2d2e5a820befefa" alt=""><b>You</b><i>Sai Thopters · 4 life</i><button class="x" aria-label="Close">✕</button></div>
+    <div class="tabs"><button>Commander damage<em>6</em></button><button>Counters<em>1</em></button><button>Tax<em>+4</em></button><button>Mana</button><button class="on sep">Table</button></div>
+    <div class="body"><div class="endq"><b>How did it end?</b><small>3 players still in</small><button class="bk">Back</button></div><div class="pick" role="group" aria-label="How the game ended"><button class="pk"><img src="/_blob/3a9cc48d946086f7a01702d812ad49a7" alt=""><span><b>Colin won</b><small>22 life</small></span></button><button class="pk"><img src="/_blob/019b993ea74dc7eef2d2e5a820befefa" alt=""><span><b>You won</b><small>4 life</small></span></button><button class="pk"><img src="/_blob/747b6b5b0a287c64fc2a76924491c25e" alt=""><span><b>Max won</b><small>9 life</small></span></button><button class="pk dr"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M5 9h14M5 15h14"/></svg><b>A draw</b><small>Everyone still in shares it</small></button></div></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
