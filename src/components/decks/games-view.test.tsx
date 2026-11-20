@@ -59,6 +59,12 @@ describe("GamesView: the list", () => {
     expect(groups.map((g) => [g.key, g.games.map((x) => x.id)])).toEqual([["2026-10", ["a", "b"]], ["2026-09", ["c"]]]);
   });
 
+  it("groups by the reader's month: a game at 9pm Denver on the 31st stays in its own month", () => {
+    const groups = groupByMonth([game("a", "2026-11-01T03:00:00Z")], "America/Denver");
+    expect(groups.map((g) => g.key)).toEqual(["2026-10"]);
+    expect(groupByMonth([game("a", "2026-11-01T03:00:00Z")]).map((g) => g.key)).toEqual(["2026-11"]);
+  });
+
   it("prints a row's day by the UTC calendar, the way the month heads group, whatever the browser's zone", () => {
     // 23:30 UTC on Oct 31 and 00:30 UTC on Oct 1 sit in October; a local reading in a zone ahead of or behind UTC would
     // print Nov 1 and Sep 30 under the October head.

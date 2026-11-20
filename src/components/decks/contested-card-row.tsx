@@ -23,6 +23,7 @@ import { foldCount } from "../../lib/decks/placements";
 import { assignCopy, type AssignRefusal } from "../../app/decks/assignment-actions";
 import type { ContestedCard } from "../../lib/collection/summary-read";
 import { formatShortDeckDate } from "../../lib/decks/format";
+import { useZone } from "../zone-context";
 
 
 /**
@@ -32,8 +33,8 @@ import { formatShortDeckDate } from "../../lib/decks/format";
  * names because en-GB writes `Sept`, and UTC because the column carries no zone. A second
  * formatter here would drift from the version rail's.
  */
-function stampDate(since: number | null): string {
-  return since === null ? "" : formatShortDeckDate(new Date(since));
+function stampDate(since: number | null, zone: string | null): string {
+  return since === null ? "" : formatShortDeckDate(new Date(since), zone);
 }
 
 /**
@@ -207,6 +208,7 @@ export function ContestedCardRow({
   /** Fired on a tap while `externalPick` stands, before the write, so the caller can drop its own pick first. */
   onBeforePick?: () => void;
 }) {
+  const zone = useZone();
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
   // tap — there is no in-flight state, because a spinner on a control whose whole promise is
   // "one tap back" reads as heavier than the act. When the server refuses, its own fresh reading
@@ -682,7 +684,7 @@ export function ContestedCardRow({
               <span className="flex items-center gap-[8px] md:flex-none pl-[27px] md:pl-0">
                 {c.versionNumber !== null ? (
                   <span className="font-mono text-[10.5px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
-                    {copy.contested.stamp(c.versionNumber, stampDate(c.since))}
+                    {copy.contested.stamp(c.versionNumber, stampDate(c.since, zone))}
                   </span>
                 ) : null}
                 <span

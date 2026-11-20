@@ -135,14 +135,3 @@ export function formatPlayed(date: Date, now: Date = new Date(), zone: string | 
   const stem = `${d.month} ${d.day}`;
   return d.year === dayIn(now, zone).year ? stem : `${stem}, ${d.year}`;
 }
-
-/**
- * `formatPlayed` by the UTC calendar day. The cross-deck Games view groups its rows into months by UTC (the read's
- * `to_char(played_at, 'YYYY-MM')`), so a row's day is read the same way or a game logged near midnight would sit under
- * the month head of a different day than the one it prints.
- */
-export function formatPlayedUtc(date: Date, now: Date = new Date()): string {
-  const month = date.toLocaleDateString("en-US", { month: "short", timeZone: "UTC" });
-  const stem = `${month} ${date.getUTCDate()}`;
-  return date.getUTCFullYear() === now.getUTCFullYear() ? stem : `${stem}, ${date.getUTCFullYear()}`;
-}

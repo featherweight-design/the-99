@@ -34,6 +34,7 @@ import { draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
 import { Chevron } from "../ui/chevron";
 import { useMomentHold } from "../../lib/moments/hold";
+import { useZone } from "../zone-context";
 
 const copy = deckVersioningCopy.review;
 const sourceCopy = copy.source;
@@ -77,9 +78,9 @@ function rowTrigger(from: HTMLElement | null, cardName: string): HTMLElement | n
 
 /** `since` as the picker's own rows draw it — same stamp `contested-card-row.tsx`
  *  uses, through the same formatter: a second one here would drift from it. */
-function stamp(claim: DeckClaim): string {
+function stamp(claim: DeckClaim, zone: string | null): string {
   if (claim.since == null || claim.versionNumber == null) return "";
-  return cardAssignmentsCopy.contested.stamp(claim.versionNumber, formatShortDeckDate(new Date(claim.since)));
+  return cardAssignmentsCopy.contested.stamp(claim.versionNumber, formatShortDeckDate(new Date(claim.since), zone));
 }
 
 export type PullControlProps = {
@@ -696,6 +697,7 @@ function SourcePickerBody({
   onCancel: () => void;
   onConfirm: () => void;
 }) {
+  const zone = useZone();
   function onKeyDown(e: React.KeyboardEvent) {
     const delta = e.key === "ArrowDown" ? 1 : e.key === "ArrowUp" ? -1 : 0;
     if (!delta || pending) return;
@@ -753,7 +755,7 @@ function SourcePickerBody({
                   ? copy.commanderGuardA11y(claim.name, card.name)
                   : claim.locked
                     ? lockedCardsCopy.pull.a11y(claim.name, card.name)
-                    : sourceCopy.optionA11y(claim.name, stamp(claim), leaves, claim.pending)
+                    : sourceCopy.optionA11y(claim.name, stamp(claim, zone), leaves, claim.pending)
               }
               className={`flex items-center justify-between gap-[10px] rounded-[8px] px-[10px] py-[8px] text-left font-sans text-[12.5px] ${
                 disabled
@@ -766,7 +768,7 @@ function SourcePickerBody({
               <span className="flex min-w-0 flex-col gap-[2px]">
                 <span className="truncate font-medium text-[color:var(--fg)]">{claim.name}</span>
                 <span className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
-                  {stamp(claim)}
+                  {stamp(claim, zone)}
                   {leaves !== null && ` · ${sourceCopy.leaves(leaves)}`}
                   {!disabled && (claim.pending ? ` · ${sourceCopy.joinsDraft}` : ` · ${sourceCopy.newDraft}`)}
                 </span>

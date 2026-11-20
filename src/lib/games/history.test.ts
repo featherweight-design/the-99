@@ -135,8 +135,10 @@ describe("filters", () => {
 describe("aggregates", () => {
   it("counts the whole month under the filter, newest first", () => {
     const q = historyMonthsQuery(VIEWER, {}).toSQL();
-    expect(q.sql).toContain(`to_char("deck_games"."played_at", 'YYYY-MM')`);
-    expect(q.sql).toMatch(/group by to_char\([^)]*\) order by to_char\([^)]*\) desc$/);
+    expect(q.sql).toContain(`to_char(("deck_games"."played_at" at time zone 'UTC') at time zone $`);
+    expect(q.sql).toMatch(/group by to_char\(.*\) order by to_char\(.*\) desc$/);
+    // The zone is a bound value, never spliced into the text.
+    expect(historyMonthsQuery(VIEWER, {}, "America/Denver").toSQL().params).toContain("America/Denver");
     expect(q.sql).not.toMatch(/limit/);
   });
 
