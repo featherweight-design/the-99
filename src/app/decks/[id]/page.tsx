@@ -1,5 +1,7 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
+import { ZoneProvider } from "../../../components/zone-context";
+import { resolveZone } from "../../../lib/zone/server";
 import { perfRoute } from "../../../lib/perf/timing";
 import { notFound, redirect } from "next/navigation";
 import { preload } from "react-dom";
@@ -761,7 +763,7 @@ export default async function DeckBuilderPage({
       provenance={combinedAsOf ? provenanceForm(combinedAsOf, new Date()) : null}
       ownProvenance={tokenNewest ? provenanceForm(tokenNewest, new Date()) : null}
     >
-      {landed}
+      <ZoneProvider zone={await resolveZone()}>{landed}</ZoneProvider>
     </DeckTokensProvider>
   );
 }

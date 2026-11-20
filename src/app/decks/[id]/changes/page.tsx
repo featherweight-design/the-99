@@ -1,5 +1,7 @@
 // /decks/[id]/changes — §Surfaces 2, the review page. What the draft is about to
 // commit: what comes in, what goes out, and what it costs.
+import { ZoneProvider } from "../../../../components/zone-context";
+import { resolveZone } from "../../../../lib/zone/server";
 import { readModalPicks } from "../../../../lib/decks/printings";
 import { notFound, redirect } from "next/navigation";
 import { requireUserId } from "../../../../lib/auth";
@@ -200,6 +202,7 @@ export default async function ChangesPage({
   const shownMix = settled.classifierTargets ? await loadDeckMix(id, userId, "classifier") : mix;
 
   return (
+    <ZoneProvider zone={await resolveZone()}>
     <ReviewChanges
       mix={shownMix}
       labelRows={labelRows}
@@ -218,5 +221,6 @@ export default async function ChangesPage({
       // adds the unresolved lines no version can freeze.
       cardCount={detail.built}
     />
+    </ZoneProvider>
   );
 }

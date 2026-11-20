@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { colorLabel, deckIdentity, formatDeckDate, formatShortDeckDate } from "./format";
+import { colorLabel, deckIdentity, formatDeckDate, formatPlayed, formatShortDeckDate } from "./format";
 
 describe("deckIdentity", () => {
   it("orders a lone primary WUBRG, so its pips match a pair's", () => {
@@ -150,5 +150,21 @@ describe("formatDeckDate", () => {
   it("keeps day, month and year on the same side of a year boundary", () => {
     expect(formatDeckDate(new Date("2026-01-01T00:00:00Z"))).toBe("Jan 1, 2026");
     expect(formatDeckDate(new Date("2025-12-31T23:59:59Z"))).toBe("Dec 31, 2025");
+  });
+});
+
+describe("dates in the reader's zone", () => {
+  // 03:00Z on Sep 1 is still Aug 31 in Denver and already Sep 1 in Tokyo.
+  const d = new Date("2026-09-01T03:00:00Z");
+  it("prints the reader's day, UTC with no zone", () => {
+    expect(formatDeckDate(d)).toBe("Sep 1, 2026");
+    expect(formatDeckDate(d, "America/Denver")).toBe("Aug 31, 2026");
+    expect(formatShortDeckDate(d, "America/Denver")).toBe("Aug 31");
+    expect(formatShortDeckDate(d, "Asia/Tokyo")).toBe("Sep 1");
+  });
+  it("drops the year by the reader's year, not the server's", () => {
+    const now = new Date("2026-06-01T12:00:00Z");
+    expect(formatPlayed(new Date("2026-01-01T03:00:00Z"), now, "America/Denver")).toBe("Dec 31, 2025");
+    expect(formatPlayed(new Date("2026-01-01T03:00:00Z"), now)).toBe("Jan 1");
   });
 });

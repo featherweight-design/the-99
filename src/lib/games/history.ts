@@ -166,8 +166,10 @@ export function historyPageQuery(viewerId: string, filter: GameHistoryFilter, cu
 }
 
 /** Games per month under the filter. */
-export function historyMonthsQuery(viewerId: string, filter: GameHistoryFilter, q: Reader = db) {
-  const month = sql<string>`to_char(${deckGames.playedAt}, 'YYYY-MM')`;
+export function historyMonthsQuery(viewerId: string, filter: GameHistoryFilter, zone: string | null = null, q: Reader = db) {
+  // `played_at` is a timestamp without a zone holding UTC: read it as UTC, then as the reader's wall clock, so a game
+  // logged at 9pm local on the 31st sits in its own month (the list groups rows by the same zone).
+  const month = sql<string>`to_char((${deckGames.playedAt} at time zone 'UTC') at time zone ${zone ?? "UTC"}, 'YYYY-MM')`;
   return q
     .select({ month, games: sql<number>`count(*)::int` })
     .from(deckGames)
@@ -248,10 +250,10 @@ export function historyTotalQuery(viewerId: string, q: Reader = db) {
 
 const asDate = (text: string | null): Date | null => (text === null ? null : new Date(`${text.replace(" ", "T")}Z`));
 
-async function readAggregates(viewerId: string, filter: GameHistoryFilter): Promise<HistoryAggregates> {
+async function readAggregates(viewerId: string, filter: GameHistoryFilter, zone: string | null): Promise<HistoryAggregates> {
   const [[total], months, [sum], top, friends, commanders, byDeck, [others]] = await Promise.all([
     historyTotalQuery(viewerId),
-    historyMonthsQuery(viewerId, filter),
+    historyMonthsQuery(viewerId, filter, zone),
     historySummaryQuery(viewerId, filter),
     historyTopDecksQuery(viewerId, filter),
     listPlayedAgainstFriends(viewerId),
@@ -308,13 +310,13 @@ async function readMarks(gameIds: string[]): Promise<Map<string, { worked: GameA
  */
 export async function loadGameHistory(
   viewerId: string,
-  opts: { filter?: GameHistoryFilter; cursor?: string | null } = {},
+  opts: { filter?: GameHistoryFilter; cursor?: string | null; zone?: string | null } = {},
 ): Promise<GameHistory> {
   const filter = opts.filter ?? {};
   const cursor = decodeCursor(opts.cursor);
   const [rows, aggregates] = await Promise.all([
     historyPageQuery(viewerId, filter, cursor),
-    cursor ? Promise.resolve(null) : readAggregates(viewerId, filter),
+    cursor ? Promise.resolve(null) : readAggregates(viewerId, filter, opts.zone ?? null),
   ]);
   const page = rows.slice(0, GAME_HISTORY_WINDOW);
   const last = page[page.length - 1];

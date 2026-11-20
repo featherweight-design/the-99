@@ -6,6 +6,7 @@ import { formatPlayed, formatShortDeckDate } from "../../lib/decks/format";
 import { recordText, type ResultsStats } from "../../lib/decks/stats-results";
 import type { GameResult } from "../../lib/decks/stats";
 import { Shell } from "./deck-stats-shell";
+import { useZone } from "../zone-context";
 
 // Win is the canvas brass, loss an outline, draw a half fill; the letter is what carries it in greyscale.
 const BEAD: Record<GameResult, { bg: string; border: string; ink: string }> = {
@@ -33,6 +34,7 @@ const MIN_BEADS_FOR_ENDS = 5;
 const LINK = "border-b border-b-[color:color-mix(in_oklab,var(--accent)_45%,transparent)] font-mono text-[11px] text-[color:var(--accent-text)]";
 
 export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onLogGame?: () => void }) {
+  const zone = useZone();
   const copy = deckStatsCopy.results;
   const title = deckStatsCopy.cards.results;
   const empty = results.games === 0;
@@ -62,7 +64,7 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
             <div className="flex flex-col gap-[2px] pb-[2px]">
               <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.recordKey}</span>
               <span className="text-[12.5px] text-[color:var(--fg-body)]">
-                {span ? copy.span(results.games, formatPlayed(span.from), formatPlayed(span.to)) : null}
+                {span ? copy.span(results.games, formatPlayed(span.from, undefined, zone), formatPlayed(span.to, undefined, zone)) : null}
               </span>
             </div>
           </div>
@@ -77,11 +79,11 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
                 {beads.map((b, i) => (
                   <li key={i} data-result-last-five={b.lastFive ? "true" : undefined} className="flex flex-col items-center gap-[4px]">
                     <FactTooltip
-                      sentence={copy.beadTip(copy.letters[b.result], formatPlayed(b.playedAt))}
-                      focusLabel={copy.bead(copy.words[b.result], formatPlayed(b.playedAt))}
+                      sentence={copy.beadTip(copy.letters[b.result], formatPlayed(b.playedAt, undefined, zone))}
+                      focusLabel={copy.bead(copy.words[b.result], formatPlayed(b.playedAt, undefined, zone))}
                     >
                       <Bead result={b.result} className="size-[30px] rounded-[5px] text-[11.5px] md:size-[28px]" />
-                      <span className="sr-only">{copy.bead(copy.words[b.result], formatPlayed(b.playedAt))}</span>
+                      <span className="sr-only">{copy.bead(copy.words[b.result], formatPlayed(b.playedAt, undefined, zone))}</span>
                     </FactTooltip>
                     <span aria-hidden="true" className="h-[2px] w-full" style={{ background: b.lastFive ? "var(--fg-muted)" : "transparent" }} />
                   </li>
@@ -90,8 +92,8 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
               {/* Under five beads the span line beside the record already names the first and last game (Small items 8, item 4). */}
               {beads.length >= MIN_BEADS_FOR_ENDS ? (
                 <div aria-hidden="true" data-results-ends className="flex justify-between gap-[8px] whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-muted)]">
-                  <span>{formatPlayed(beads[0].playedAt)}</span>
-                  <span>{formatPlayed(beads[beads.length - 1].playedAt)}</span>
+                  <span>{formatPlayed(beads[0].playedAt, undefined, zone)}</span>
+                  <span>{formatPlayed(beads[beads.length - 1].playedAt, undefined, zone)}</span>
                 </div>
               ) : null}
             </div>
@@ -105,7 +107,7 @@ export function ResultsCard({ results, onLogGame }: { results: ResultsStats; onL
               <ul>
                 {versions.map((v) => {
                   const name = v.number === null ? copy.unrecorded : `v${v.number}`;
-                  const sub = v.committedAt ? formatShortDeckDate(v.committedAt) : "";
+                  const sub = v.committedAt ? formatShortDeckDate(v.committedAt, zone) : "";
                   return (
                     <li
                       key={v.key}

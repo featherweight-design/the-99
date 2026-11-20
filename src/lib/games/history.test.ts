@@ -37,7 +37,6 @@ describe("owner scoping", () => {
     const owned = /\("deck_games"\."user_id" = \$1 and "decks"\."user_id" = \$2\)/;
     for (const q of [
       historyPageQuery(VIEWER, {}, null),
-      historyMonthsQuery(VIEWER, {}),
       historySummaryQuery(VIEWER, {}),
       historyTopDecksQuery(VIEWER, {}),
       historyTotalQuery(VIEWER),
@@ -46,6 +45,10 @@ describe("owner scoping", () => {
       expect(sql).toMatch(owned);
       expect(params.slice(0, 2)).toEqual([VIEWER, VIEWER]);
     }
+    // The months statement binds the reader's zone first, so its viewer ids follow it.
+    const m = historyMonthsQuery(VIEWER, {}, "America/Denver").toSQL();
+    expect(m.sql).toMatch(/\("deck_games"."user_id" = \$2 and "decks"."user_id" = \$3\)/);
+    expect(m.params.slice(0, 3)).toEqual(["America/Denver", VIEWER, VIEWER]);
     const c = playedAgainstCommandersQuery(VIEWER).toSQL();
     expect(c.sql).toMatch(owned);
   });
@@ -135,8 +138,10 @@ describe("filters", () => {
 describe("aggregates", () => {
   it("counts the whole month under the filter, newest first", () => {
     const q = historyMonthsQuery(VIEWER, {}).toSQL();
-    expect(q.sql).toContain(`to_char("deck_games"."played_at", 'YYYY-MM')`);
-    expect(q.sql).toMatch(/group by to_char\([^)]*\) order by to_char\([^)]*\) desc$/);
+    expect(q.sql).toContain(`to_char(("deck_games"."played_at" at time zone 'UTC') at time zone $`);
+    expect(q.sql).toMatch(/group by to_char\(.*\) order by to_char\(.*\) desc$/);
+    // The zone is a bound value, never spliced into the text.
+    expect(historyMonthsQuery(VIEWER, {}, "America/Denver").toSQL().params).toContain("America/Denver");
     expect(q.sql).not.toMatch(/limit/);
   });
 

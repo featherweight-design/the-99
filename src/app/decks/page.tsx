@@ -143,7 +143,7 @@ export default async function DecksPage({
   const gamesFilter = gamesFilterFromParams((key) => params[key as keyof typeof params]);
   if (asked === "games") {
     try {
-      games = toGamesPayload(await loadGameHistory(userId, { filter: gamesFilter }), gamesFilter);
+      games = toGamesPayload(await loadGameHistory(userId, { filter: gamesFilter, zone: await resolveZone() }), gamesFilter);
       // A read with no aggregates cannot draw the view: it is a failed read like a throw, never a silent Decks.
       if (games === null) gamesFailed = true;
     } catch {

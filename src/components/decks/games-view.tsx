@@ -32,18 +32,23 @@ import { spanText } from "./lineup/recency-card";
 import { viewPanelId, viewTabId } from "./lineup/stats-view-switch";
 import { GameEntry } from "./game-entry";
 import { GamesFailedToast } from "./games-failed-toast";
+import { wall } from "../../lib/time/zoned";
+import { useZone } from "../zone-context";
 
 const MONTH = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
 
-/** `2026-10`, the way the read groups (`to_char(played_at, 'YYYY-MM')` on a timestamp without a zone, read as UTC). */
-export const monthKey = (d: Date) => d.toISOString().slice(0, 7);
+/** `2026-10`, the way the read groups: the reader's month of `played_at` (a UTC timestamp), in the zone both sides read. */
+export const monthKey = (d: Date, zone: string | null = null) => {
+  const w = wall(d, zone ?? "UTC");
+  return `${w.y}-${String(w.mo).padStart(2, "0")}`;
+};
 const monthLabel = (key: string) => MONTH.format(new Date(`${key}-01T00:00:00Z`));
 
 /** The rows in order, cut at each change of month. */
-export function groupByMonth(games: readonly HistoryGame[]): { key: string; games: HistoryGame[] }[] {
+export function groupByMonth(games: readonly HistoryGame[], zone: string | null = null): { key: string; games: HistoryGame[] }[] {
   const out: { key: string; games: HistoryGame[] }[] = [];
   for (const g of games) {
-    const key = monthKey(g.playedAt);
+    const key = monthKey(g.playedAt, zone);
     const last = out[out.length - 1];
     if (last?.key === key) last.games.push(g);
     else out.push({ key, games: [g] });
@@ -67,6 +72,7 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
   /** Kept by the parent beside the first window; absent, the view keeps its own (a fresh payload replaces it either way). */
   hold?: GamesHold;
 }) {
+  const zone = useZone();
   const [local, setLocal] = useState<GamesHeld | null>(null);
   // A fresh first window from the server replaces what grew from the old one, adjusted in render so the old never paints.
   if (!hold && local?.seen !== data) setLocal(freshGames(data));
@@ -123,7 +129,7 @@ export function GamesView({ data, viewSwitch, decks, hold, onData }: {
 
   const { summary, months, total } = data.aggregates;
   const monthCounts = useMemo(() => new Map(months.map((m) => [m.month, m.games])), [months]);
-  const groups = useMemo(() => groupByMonth(games), [games]);
+  const groups = useMemo(() => groupByMonth(games, zone), [games, zone]);
 
   // The filters draw from PATTERN_MIN games of history on: under it the view is a count and a line on where games come from.
   const filtersOn = total >= PATTERN_MIN;

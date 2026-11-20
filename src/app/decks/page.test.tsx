@@ -22,6 +22,7 @@ const lineup = vi.hoisted(() => ({ read: vi.fn(async (): Promise<unknown> => nul
 vi.mock("../../lib/lineup/cached", () => ({ readLineupCached: lineup.read }));
 const history = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => null) }));
 vi.mock("../../lib/games/history", () => ({ loadGameHistory: history.load }));
+vi.mock("../../lib/zone/server", () => ({ resolveZone: async () => "America/Denver" }));
 vi.mock("next/headers", () => ({ cookies: async () => ({ get: () => undefined }) }));
 
 const { default: DecksPage } = await import("./page");
@@ -104,7 +105,7 @@ describe("/decks' games prop", () => {
     history.load.mockResolvedValueOnce(FIRST);
     const page = await visit({ view: "games" });
     expect(history.load).toHaveBeenCalledTimes(1);
-    expect(history.load).toHaveBeenCalledWith("user_1", { filter: {} });
+    expect(history.load).toHaveBeenCalledWith("user_1", { filter: {}, zone: "America/Denver" });
     expect(page.props.games?.failed).toBe(false);
     expect(page.props.games?.data?.games).toEqual(FIRST.games);
     expect(page.props.games?.data?.next).toBe(FIRST.next);
@@ -121,7 +122,7 @@ describe("/decks' games prop", () => {
     const page = await visit({ view: "games", deck: "d1", result: "win", friend: "f1", against: "c1" });
     // Played against is one choice: the friend wins over a commander the address also names.
     const filter = { deckId: "d1", result: "win", friend: "f1" };
-    expect(history.load).toHaveBeenCalledWith("user_1", { filter });
+    expect(history.load).toHaveBeenCalledWith("user_1", { filter, zone: "America/Denver" });
     expect(page.props.games?.data?.filter).toEqual(filter);
   });
 

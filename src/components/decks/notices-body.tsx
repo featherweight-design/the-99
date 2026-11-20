@@ -28,6 +28,7 @@ import type { FindingId } from "../../lib/bracket/findings";
 import { FindingMark } from "./finding-mark";
 import { HoverPreviewProvider } from "./hover-preview";
 import { ModalChrome } from "./receipt-modal";
+import { useZone } from "../zone-context";
 
 export type NoticesFoot =
   | { kind: "none" }
@@ -60,6 +61,7 @@ export function NoticesBody({
   foot: NoticesFoot;
   onClose: () => void;
 }) {
+  const zone = useZone();
   const siblings = notices.groups.flatMap((g) =>
     g.items.flatMap((i) => (i.kind === "data" ? i.cards.map((c) => c.oracleId) : [i.card.oracleId])),
   );
@@ -70,7 +72,7 @@ export function NoticesBody({
     <ModalChrome
       width={560}
       title={copy.sheet.title}
-      aside={notices.analyzedAt ? copy.sheet.since(formatShortDeckDate(new Date(notices.analyzedAt))) : deckName}
+      aside={notices.analyzedAt ? copy.sheet.since(formatShortDeckDate(new Date(notices.analyzedAt), zone)) : deckName}
       closeLabel={copy.sheet.closeAria}
       onClose={onClose}
     >
@@ -128,6 +130,7 @@ function CardName({ oracleId, name, imageUri, siblings }: { oracleId: string; na
 }
 
 function DataRow({ item, siblings }: { item: DataNotice; siblings: string[] }) {
+  const zone = useZone();
   const rule = item.group === "rules";
   return (
     <li data-notice-row className="flex min-h-[36px] items-start gap-[10px] py-[7px] md:gap-[12px]">
@@ -159,7 +162,7 @@ function DataRow({ item, siblings }: { item: DataNotice; siblings: string[] }) {
         )}
       </span>
       <span className="flex-none whitespace-nowrap text-right font-mono text-[10.5px] leading-[20px]" style={{ color: "var(--fg-faint)" }}>
-        {formatShortDeckDate(new Date(item.publishedAt))}
+        {formatShortDeckDate(new Date(item.publishedAt), zone)}
       </span>
     </li>
   );

@@ -10,7 +10,7 @@ import Link from "next/link";
 import { memo } from "react";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { formatPlayedUtc } from "../../lib/decks/format";
+import { formatPlayed } from "../../lib/decks/format";
 import { gameHref } from "../../lib/games/landing";
 import type { HistoryGame } from "../../lib/games/history";
 import { ArtLayer } from "../ui/art-layer";
@@ -19,6 +19,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { GameMarks, GameNote } from "./game-row-parts";
 import { GameVsLine } from "./game-vs-line";
 import { IdentityMark } from "./lineup/identity-mark";
+import { useZone } from "../zone-context";
 
 const RESULT_GLYPH = { win: gameLogCopy.history.won, loss: gameLogCopy.history.lost, draw: gameLogCopy.history.drawn } as const;
 
@@ -46,6 +47,7 @@ function Chevron({ className }: { className: string }) {
 
 /** Memoized: the list grows by windows and the rows already drawn are the same objects, so they do not draw again. */
 export const GameEntry = memo(function GameEntry({ game }: { game: HistoryGame }) {
+  const zone = useZone();
   const href = gameHref(game.deck.id, game.id);
   const note = game.note?.trim() ? game.note : null;
   return (
@@ -73,7 +75,7 @@ export const GameEntry = memo(function GameEntry({ game }: { game: HistoryGame }
             {RESULT_GLYPH[game.result]}
           </span>
           <span className="flex-none font-mono text-[11px] leading-[normal] tabular-nums text-fg-faint md:w-[156px]">
-            {gameLogCopy.history.meta(String(game.podSize), formatPlayedUtc(game.playedAt))}
+            {gameLogCopy.history.meta(String(game.podSize), formatPlayed(game.playedAt, undefined, zone))}
           </span>
           <span className={"w-[44px] flex-none font-mono text-[10.5px] leading-[normal] tabular-nums " + (game.versionNumber === null ? "text-fg-locked" : "text-fg-faint")}>
             {game.versionNumber === null ? deckVersioningCopy.stamp.absent : deckVersioningCopy.stamp.value(game.versionNumber)}

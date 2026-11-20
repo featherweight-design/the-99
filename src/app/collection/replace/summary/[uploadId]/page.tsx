@@ -13,6 +13,7 @@ import { requireUserId } from "../../../../../lib/auth";
 import { loadSummaryView } from "../../../../../lib/collection/summary-read";
 import { ArrivalsSummary } from "../../../../../components/collection/arrivals-summary";
 import { isUuid } from "../../../../../lib/uuid";
+import { resolveZone } from "../../../../../lib/zone/server";
 import { formatDeckDate } from "../../../../../lib/decks/format";
 import { Suspense } from "react";
 import { CommandersLine } from "../../../../../components/collection/commanders-line";
@@ -59,14 +60,13 @@ export default async function ImportSummaryPage({
         mode={view.mode}
         preview={preview}
         filename={view.filename}
-        // Through the app's own formatter, which owns both rules this stamp needs: en-US month
+        // Through the app's own formatter, which owns the two rules this stamp needs: en-US month
         // names, because en-GB writes `Sept` where every other date in the app writes `Sep`, and
-        // UTC, because the column is a timestamp without a zone and a local boundary would render
-        // one day on the server and another in the browser. Which column follows the stamp's
+        // the reader's own zone (their cookie), the one every other date in the app reads in. Which column follows the stamp's
         // word: a Replace or an Add says "uploaded", so `created_at`, the day the file arrived; a
         // Sync says "synced", so `confirmed_at`, the day the merge was written and the day its
         // History entry is dated. A review left open overnight confirms on a different day.
-        stampDate={formatDeckDate(view.sync ? view.confirmedAt : view.createdAt)}
+        stampDate={formatDeckDate(view.sync ? view.confirmedAt : view.createdAt, await resolveZone())}
       />
     </section>
   );
