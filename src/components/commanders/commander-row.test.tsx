@@ -264,6 +264,16 @@ describe("CommanderRow · state 5, unpriced", () => {
     expect(screen.getByText(priceCopy.source)).toBeInTheDocument();
   });
 
+  it("draws the stamp in the figure's own item, after the figure, not pushed to the line's end", () => {
+    row({ priceOk: true, price: { kind: "priced", cents: 1840 } });
+
+    const stamp = screen.getByText(priceCopy.source);
+    const figure = screen.getByText("$18.40");
+    expect(stamp.parentElement).toBe(figure.parentElement);
+    expect(figure.compareDocumentPosition(stamp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(stamp.className).not.toContain("ml-auto");
+  });
+
   it("takes the source stamp with the figure when there is none", () => {
     row({ price: { kind: "absent" } });
 

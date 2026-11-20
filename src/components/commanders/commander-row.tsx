@@ -240,6 +240,12 @@ function PriceFigure({ price, priceOk }: { price: PriceSlotValue; priceOk: boole
       >
         {formatted}
       </span>
+      {/* THE SOURCE STAMP SITS BESIDE THE FIGURE (small items 12, item 3), in the figure's own flex item: it wraps with the
+          price and never ends a line alone. The 6px is this row's gap. It was at the line's end (`ml-auto`) as the R1 canvas drew
+          it, far from the price it names. The shipped `manapool` string, still decorative: the sr-only sentence below carries it. */}
+      <span aria-hidden="true" className="font-mono" style={{ fontSize: 10, color: "var(--fg-locked)" }}>
+        {priceCopy.source}
+      </span>
       <span className="sr-only">
         {priced ? priceCopy.aria(formatted) : priceCopy.notStockedAria}
       </span>
@@ -477,35 +483,6 @@ export function CommanderRow({
               {figure.node}
             </span>
           ))}
-
-          {/* THE SOURCE STAMP SITS AT THE LINE'S END — `ml-auto`, which is what
-              the R1 canvas draws (`margin-left:auto`, 10px, `--fg-locked`) and
-              what `rec-card.tsx` did before it.
-
-              It is drawn HERE rather than inside `PriceFigure`, and that is the
-              whole reason this is a separate node: an `auto` margin resolves
-              against the nearest flex container, and inside the figure it
-              resolved against the separator wrapper — a 6px nudge that reads as
-              the rule not working at all. Found by looking at the sheet.
-
-              Still the price's own label in every other sense: it draws on
-              exactly `priceDrawn`, so it unmounts with the figure and never
-              stands alone. And it keeps the shipped `manapool` string — the
-              canvas letters it `Mana Pool`, but §C names `PriceSlot` unchanged
-              ("its dot, its source label, its absent rule"), so the lettering
-              is a drawing of the slot and not a new string. Erratum, recorded
-              in the property table.
-
-              Decorative: `PriceFigure`'s sr-only sentence carries the reading. */}
-          {priceDrawn && (
-            <span
-              aria-hidden="true"
-              className="font-mono ml-auto"
-              style={{ fontSize: 10, color: "var(--fg-locked)" }}
-            >
-              {priceCopy.source}
-            </span>
-          )}
         </div>
 
         {/* THE FIT BAR, BELOW THE FIGURES AT BOTH WIDTHS — the figure above,
