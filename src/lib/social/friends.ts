@@ -79,8 +79,13 @@ export async function ownDisplayName(viewerId: string): Promise<string | null> {
  * read only: the shell never creates a profile.
  */
 export async function ownHeaderFace(viewerId: string): Promise<OwnHeaderFace | null> {
-  const row = await faceRow(viewerId);
-  return row ? { name: row.displayName, art: toCommander(row)?.artCropUri ?? null } : null;
+  const [row] = await db
+    .select({ displayName: socialProfiles.displayName, ...commanderColumns, ...ownPickColumns })
+    .from(socialProfiles)
+    .leftJoin(commanderCard, eq(commanderCard.oracleId, socialProfiles.commanderOracleId))
+    .leftJoin(facePrinting, faceJoin)
+    .where(eq(socialProfiles.userId, viewerId));
+  return row ? { name: row.displayName, art: toCommander(row)?.artCropUri ?? null, commander: toOwnCommander(row) } : null;
 }
 
 /** One profile's name and face columns: the statement the own header face and an invite's sender share. */

@@ -13,7 +13,18 @@ vi.mock("../../app/credits/actions", () => ({ chipAction }));
 vi.mock("../../lib/push/forget-device", () => ({ forgetThisDevice }));
 
 const push = vi.fn();
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
+const refresh = vi.fn();
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push, refresh }) }));
+const setCommanderAction = vi.hoisted(() => vi.fn());
+vi.mock("../../app/friends/actions", () => ({ setCommanderAction }));
+vi.mock("../social/signature-picker", () => ({
+  SignaturePicker: ({ onSave, onClose }: { onSave: (p: { oracleId: string; printingId: null } | null) => Promise<boolean>; onClose: () => void }) => (
+    <div role="dialog" aria-label="picker">
+      <button type="button" onClick={() => void onSave({ oracleId: "o1", printingId: null })}>save pick</button>
+      <button type="button" onClick={onClose}>close picker</button>
+    </div>
+  ),
+}));
 
 vi.mock("@clerk/nextjs", () => ({
   useUser: () => ({
@@ -95,7 +106,7 @@ describe("AccountMenu trigger", () => {
 
   // Friends link G9: the player's own display name and signature card, when the shell hands them over.
   it("draws the signature card's art in both frames and names the display name", () => {
-    const face = { name: "Wren Calloway", art: "https://cards.scryfall.io/art_crop/w.jpg" };
+    const face = { name: "Wren Calloway", art: "https://cards.scryfall.io/art_crop/w.jpg", commander: null };
     for (const panel of ["popover", "sheet"] as const) {
       const { unmount } = render(<AccountMenu panel={panel} theme="amonkhet" face={face} />);
       const button = screen.getByRole("button", { name: "Account: Wren Calloway" });
@@ -117,8 +128,32 @@ describe("AccountMenu trigger", () => {
     }
   });
 
+  it("makes the head's face the press that opens the signature picker over the menu, with no new menu row", async () => {
+    setCommanderAction.mockResolvedValue({ ok: true });
+    for (const panel of ["popover", "sheet"] as const) {
+      const { unmount } = render(<AccountMenu panel={panel} theme="amonkhet" face={{ name: "Wren Calloway", art: null, commander: null }} />);
+      fireEvent.click(screen.getByRole("button", { name: "Account: Wren Calloway" }));
+      const rows = screen.getAllByRole("menuitem").length;
+      const face = document.querySelector<HTMLElement>("[data-face-button]")!;
+      expect(face.getAttribute("aria-label")).toBeTruthy();
+      fireEvent.click(face);
+      expect(screen.getByRole("dialog", { name: "picker" })).toBeTruthy();
+      // The menu is still up beneath it, and a press inside the picker did not dismiss it.
+      expect(screen.getAllByRole("menuitem").length).toBe(rows);
+      fireEvent.click(screen.getByText("close picker"));
+      expect(screen.queryByRole("dialog", { name: "picker" })).toBeNull();
+      expect(document.querySelector("[data-face-button]")).toBeTruthy();
+      fireEvent.click(face);
+      fireEvent.click(screen.getByText("save pick"));
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "picker" })).toBeNull());
+      expect(setCommanderAction).toHaveBeenLastCalledWith("o1", null);
+      expect(refresh).toHaveBeenCalled();
+      unmount();
+    }
+  });
+
   it("draws the display name's initials when no signature card is chosen", () => {
-    render(<AccountMenu panel="sheet" theme="amonkhet" face={{ name: "Wren Calloway", art: null }} />);
+    render(<AccountMenu panel="sheet" theme="amonkhet" face={{ name: "Wren Calloway", art: null, commander: null }} />);
     const button = screen.getByRole("button", { name: "Account: Wren Calloway" });
     expect(button.firstElementChild).toHaveAttribute("data-face", "initials");
     expect(button.textContent).toBe("WC");
