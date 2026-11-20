@@ -56,7 +56,6 @@ export const trackerCopy = {
     taxAria: (cmdr: string) => `${cmdr} casts`,
     manaHint: "Mana you have floating right now.",
     manaClear: "Clear all",
-    manaAria: (color: string) => `${color} mana`,
     historyTitle: "History",
     historyHint: "Every change this game, by round",
     historyOpen: "Open",
