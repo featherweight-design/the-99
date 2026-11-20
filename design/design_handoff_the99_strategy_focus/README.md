@@ -21,6 +21,7 @@ Analysis tab and Suggested changes (two lists) on Hugh's HD - Avatar Aang, in Lo
 | Ring-Centre | What sits in the ring: A commander, B count, C top card, **D an icon per strategy (picked)**, E nothing; D's emphasis, **larger on a medallion (picked)**; the icon count |
 | Graph-Options | History of the graph's form: A card piles, **B the ring (picked)**, C strip, D bars; names |
 | About | New entry "Giving a deck a focus" (chapter 04) |
+| Glyphs-Main, Glyphs-Themes, Glyphs-Pairs | Addendum (2026-11-20): 13 theme glyphs, see `ADDENDUM-theme-glyphs.md` |
 
 ## Calls
 
