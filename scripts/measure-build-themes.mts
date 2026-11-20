@@ -13,7 +13,7 @@
 //
 // For each ranking it counts how many of the primer's nonland cards land in the first NONLAND_SLOTS,
 // the room a 99-card deck has for spells. The primer lists are public decklists and articles,
-// recorded with their sources in `scripts/fixtures/build-themes-primers.json`.
+// recorded with their sources in `scripts/fixtures/build-themes-primers.json`, nonland cards only.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseEdhrecPayload } from "../src/lib/edhrec/parse";
@@ -76,7 +76,7 @@ function ranked(p: Page, key: (n: string) => number): string[] {
 }
 
 function reach(list: string[], primer: Set<string>): number {
-  return list.slice(0, NONLAND_SLOTS).filter((n) => primer.has(n) || primer.has(n.split(" // ")[0])).length;
+  return list.slice(0, NONLAND_SLOTS).filter((n) => primer.has(n.split(" // ")[0])).length;
 }
 
 async function main() {
@@ -86,7 +86,9 @@ async function main() {
     const slug = commanderSlug(commander);
     const main = await fetchPage(`https://json.edhrec.com/pages/commanders/${slug}.json`);
     if (!main) { console.log(`| ${commander} | no commander page |`); continue; }
-    const primer = new Set(entry.cards.map((c) => c.toLowerCase()).filter((c) => !main.lands.has(c)));
+    // EDHREC names a double-faced card by its front face, so the primer is matched on front faces too.
+    // The fixture holds nonland cards only (lands removed by type line against the catalog).
+    const primer = new Set(entry.cards.map((c) => c.toLowerCase().split(" // ")[0]));
     const onPage = [...primer].filter((c) => main.inclusionOf(c) !== null).length;
     const themeRows: { slug: string; inc: number; sc: number; onPage: number }[] = [];
     for (const tag of main.tags.slice(0, THEMES_PER_COMMANDER)) {

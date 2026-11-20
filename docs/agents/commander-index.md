@@ -157,20 +157,20 @@ EDHREC serves a page per theme of a commander: `json.edhrec.com/pages/commanders
 
 | Commander | Primer nonland | Commander page, inclusion | Commander page, score | Best theme | Theme, inclusion | Theme, score |
 |---|---|---|---|---|---|---|
-| Atraxa, Praetors' Voice | 78 | 26 | 25 | planeswalkers | 36 | 37 |
-| Lord Windgrace | 71 | 33 | 34 | lands-matter | 34 | 34 |
-| Talrand, Sky Summoner | 94 | 45 | 44 | spellslinger | 44 | 45 |
-| Blim, Comedic Genius | 67 | 25 | 25 | donate | 25 | 25 |
-| Zedruu the Greathearted | 124 | 23 | 22 | donate | 23 | 22 |
+| Atraxa, Praetors' Voice | 68 | 26 | 25 | planeswalkers | 36 | 37 |
+| Lord Windgrace | 68 | 33 | 34 | lands-matter | 34 | 34 |
+| Talrand, Sky Summoner | 91 | 45 | 44 | spellslinger | 44 | 45 |
+| Blim, Comedic Genius | 63 | 25 | 25 | donate | 25 | 25 |
+| Zedruu the Greathearted | 121 | 23 | 22 | donate | 23 | 22 |
 | The Ur-Dragon (partial list, 19) | 19 | 8 | 8 | dragons | 8 | 8 |
 
-Score = inclusion × (1 + max(0, synergy)).
+Score = inclusion × (1 + max(0, synergy)). The primer lists hold nonland cards only, matched by front face.
 
 What the table shows:
 
 - **A theme page helps where the chosen build is a minority of the commander's decks and differs from the average.** Atraxa's superfriends goes from 26 to 36. Where the theme is what most decks already play, the theme page ranks like the commander page, and nothing changes.
 - **Synergy weighting adds nothing,** within plus or minus 1 everywhere, so it does not ship. Inclusion stays the ranking (`byInclusion`).
-- **172 of the 453 primer cards (38%) are not on the commander page at all.** No ranking of that page reaches them.
+- **151 of the 430 primer nonland cards (35%) are not on the commander page at all.** No ranking of that page reaches them. Reaching them needs a source other than EDHREC's figures, such as a paid guided read. That gap is the case for one.
 
 ## From AGENTS.md (moved 2026-10-28)
 
