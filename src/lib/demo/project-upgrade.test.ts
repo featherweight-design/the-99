@@ -25,6 +25,11 @@ describe("projectUpgrade", () => {
     expect(out).toMatchObject({ precon: "Prismari Artistry", runId: "run-1", setPermits: [3, 4] });
   });
 
+  it("opens with every line picked, whatever picks the fixture account left stored", () => {
+    const out = projectUpgrade({ precon: "Prismari Artistry", panel: panel([run({ unpicked: ["c-x"] })]), runId: "run-1", setPermits: null });
+    expect(out.panel.runs[0].unpicked).toEqual([]);
+  });
+
   it("keeps an unread set bracket as null", () => {
     expect(projectUpgrade({ precon: "P", panel: panel([run()]), runId: "run-1", setPermits: null }).setPermits).toBeNull();
   });

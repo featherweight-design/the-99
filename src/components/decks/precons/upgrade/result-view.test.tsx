@@ -233,9 +233,11 @@ describe("ResultView in the landing demo (A5b)", () => {
 
   it("answers the set bracket from the stored seed for the whole set only", async () => {
     const a = demoLineActions(run(), [2, 3]);
-    expect(await a.setBracket("", "r", ["x", "y"], ["p", "q"])).toEqual({ permits: [2, 3] });
-    expect(await a.setBracket("", "r", ["x"], ["p", "q"])).toBeNull();
-    expect(await demoLineActions(run(), null).setBracket("", "r", ["x", "y"], ["p", "q"])).toBeNull();
+    expect(await a.setBracket("", "r", ["add2", "add1"], ["cut1", "cut2"])).toEqual({ permits: [2, 3] });
+    expect(await a.setBracket("", "r", ["add1"], ["cut1", "cut2"])).toBeNull();
+    // As many ids as the run holds, but not the run's: no seed.
+    expect(await a.setBracket("", "r", ["add1", "x"], ["cut1", "cut2"])).toBeNull();
+    expect(await demoLineActions(run(), null).setBracket("", "r", ["add1", "add2"], ["cut1", "cut2"])).toBeNull();
     expect(await a.pick("r", "c-cut1", false)).toEqual({ ok: true, unpicked: ["c-cut1"] });
     expect(await a.pick("r", "c-cut1", true)).toEqual({ ok: true, unpicked: [] });
   });

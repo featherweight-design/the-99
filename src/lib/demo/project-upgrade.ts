@@ -29,7 +29,8 @@ export function projectUpgrade(input: { precon: string; panel: UpgradePanel; run
   if (run.pairs.length === 0) throw new Error(`projectUpgrade: run ${input.runId} holds no swaps`);
   return {
     precon: input.precon,
-    panel: { ...input.panel, runs: [{ ...run, deck: null }] },
+    // Every line starts picked (the demo's opening state), whatever the fixture account left stored.
+    panel: { ...input.panel, runs: [{ ...run, deck: null, unpicked: [] }] },
     runId: input.runId,
     setPermits: input.setPermits === null ? null : [...input.setPermits],
   };

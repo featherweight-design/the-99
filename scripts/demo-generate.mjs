@@ -69,8 +69,8 @@ const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const LEDGER_REL = "docs/superpowers/eval/ledger-landing-demo.jsonl";
 const LEDGER = join(ROOT, LEDGER_REL);
 const CAP_USD = LEDGER_LIMITS["ledger-landing-demo.jsonl"].hardCapUsd;
-/** The other steps' 6 (the precheck before this step), and the Precon Upgrade run's own price (`UPGRADE_UNITS`, never a typed 2). */
-const MIN_CREDITS = 6 + UPGRADE_UNITS;
+/** The other steps' 6 (the precheck before the upgrade step); the upgrade step adds its own price (`UPGRADE_UNITS`, never a typed 2). */
+const OTHER_STEPS_CREDITS = 6;
 const PORT = Number(process.env.DEMO_PORT ?? 3391);
 const BASE = `http://localhost:${PORT}`;
 /** Help me choose's "Anything else?" wish: fixed, so a rerun asks the same thing. Fictional, names no one. */
@@ -188,13 +188,12 @@ async function creditsLeft() {
   }, 0);
 }
 /** The catalog precon's file name (a plain edition, never a Collector's twin): found once, used by the step and its checks. */
-const [upgradePrecon] = await sql`select file_name from precons where name = ${UPGRADE_PRECON} and twin_of is null limit 1`;
+// Ordered, so a catalog with two plain editions of the name always picks the same one, run after run.
+const [upgradePrecon] = await sql`select file_name from precons where name = ${UPGRADE_PRECON} and twin_of is null order by file_name limit 1`;
 const UPGRADE_FILE = upgradePrecon?.file_name ?? null;
 const credits = await creditsLeft();
-if (credits < MIN_CREDITS) fixtureProblems.push(`the fixture account holds ${credits} credits; at least ${MIN_CREDITS} are needed`);
 const [shared] = OWNER ? await sql`select c.oracle_id::text from collection_items ci join cards c on c.oracle_id = ci.oracle_id
   where ci.user_id = ${OWNER} and c.name = ${SHARED_CARD} limit 1` : [];
-if (!UPGRADE_FILE) fixtureProblems.push(`the catalog holds no ${UPGRADE_PRECON} precon on this branch`);
 if (!shared) fixtureProblems.push(`the fixture account does not own ${SHARED_CARD}`);
 
 // --- The steps. -----------------------------------------------------------------------------------------------------
@@ -221,6 +220,13 @@ const STEPS = [
   const keep = (s) => (args.only ? asked.includes(s.id) : !asked.includes(s.id));
   for (let i = STEPS.length - 1; i >= 0; i -= 1) if (!keep(STEPS[i])) STEPS.splice(i, 1);
   if (STEPS.length === 0) throw new Error("demo:generate: the selection leaves no step");
+}
+// The checks the selected steps need, and only those: a run that leaves out the upgrade needs neither its credits nor its precon.
+{
+  const upgrading = STEPS.some((s) => s.id === "upgrade");
+  const need = (STEPS.some((s) => s.id !== "upgrade") ? OTHER_STEPS_CREDITS : 0) + (upgrading ? UPGRADE_UNITS : 0);
+  if (credits < need) fixtureProblems.push(`the fixture account holds ${credits} credits; at least ${need} are needed`);
+  if (upgrading && !UPGRADE_FILE) fixtureProblems.push(`the catalog holds no ${UPGRADE_PRECON} precon on this branch`);
 }
 const worstUsd = (feature) => (feature ? featureWorstCaseMicroUsd(feature) / 1e6 : 0);
 
@@ -575,7 +581,9 @@ upgrade.rows = async (callId) => {
   if (run && (run.status !== "done" || run.refunded)) throw new Error(`Precon Upgrade: the run is ${run.status}${run.refunded ? " and refunded" : ""}; nothing usable was stored`);
   if (run && run.bracket_target !== UPGRADE_BRACKET) throw new Error(`Precon Upgrade: the run is at bracket ${run.bracket_target}, not ${UPGRADE_BRACKET}`);
   if (run && run.strategy_label !== UPGRADE_STRATEGY) throw new Error(`Precon Upgrade: the run is toward ${run.strategy_label}, not ${UPGRADE_STRATEGY}`);
-  return { precon_upgrades: run?.id ?? null, run_status: run?.status ?? null, swaps: run?.swaps ?? null };
+  // A paid press that stored no run is a failure here, not a missing `--run` later in the export.
+  if (!run) throw new Error("Precon Upgrade: the press was charged but no run was stored for its model call");
+  return { precon_upgrades: run.id, run_status: run.status, swaps: run.swaps };
 };
 
 // The free tools: no reservation of their own, so `freeStep` checks, after each press, that no model call appeared.

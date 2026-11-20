@@ -185,14 +185,16 @@ const PRESS_OFF: SuggestedChangesPress = { label: () => "", onPress: noop, off: 
  */
 export function demoLineActions(run: PanelRun, seed: number[] | null): UpgradeActionDeps {
   const unpicked = new Set(run.unpicked);
-  const whole = run.pairs.length;
+  const adds = new Set(run.pairs.map((p) => p.addId));
+  const cuts = new Set(run.pairs.map((p) => p.cutId));
+  const isWhole = (ids: string[], all: Set<string>) => ids.length === all.size && ids.every((id) => all.has(id));
   return {
     pick: async (_runId, lineId, picked) => {
       if (picked) unpicked.delete(lineId);
       else unpicked.add(lineId);
       return { ok: true, unpicked: [...unpicked] };
     },
-    setBracket: async (_file, _runId, adds, cuts) => (seed && adds.length === whole && cuts.length === whole ? { permits: seed } : null),
+    setBracket: async (_file, _runId, addIds, cutIds) => (seed && isWhole(addIds, adds) && isWhole(cutIds, cuts) ? { permits: seed } : null),
   };
 }
 

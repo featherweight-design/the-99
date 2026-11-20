@@ -43,8 +43,8 @@ export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
   over: 24_100, // 22,897, 4,673 (4 cards)
   under: 84_000, // 79,987, 17,025 (19 cards)
   // PROVISIONAL (the chunk is empty until `demo:export` first writes it with the paid upgrade run): about 28 cards at the played chunk's
-  // per-card average. The PR that exports the run replaces it with the measured figure plus about 5%.
-  upgrade: 150_000,
+  // per-card average (about 6.5 KB). The PR that exports the run replaces it with the measured figure plus about 5%.
+  upgrade: 190_000,
   shared: 8_900, // 8,402, 3,126 (3 cards; Which deck's card and the cards its panel names)
 };
 
@@ -176,7 +176,7 @@ export { TOP_OFF_OPENABLE };
  *   - step 3: Help me choose's rows (step 2's commander rows open their public page instead, so none here);
  *   - step 4: each deck's commander and partner, the shopping rows that bill them, and every row of the played deck, in
  *     the decklist's own order: step 4 draws the whole list, and every row's View details opens its card (lane 21, 5l-d);
- *   - step 7, Precon Upgrade (addendum A5): every swap's add and cut, and the commanders it offers (`upgradeCardIds`);
+ *   - the Precon Upgrade step (addendum A5, after Suggested changes): every swap's add and cut, and the commanders it offers (`upgradeCardIds`);
  *   - the cards a step's line names: Suggested changes' adds and cuts (6), Giada's named cuts, Top off's first
  *     `TOP_OFF_OPENABLE` candidates and Mana Balance's named cards (7), and Which deck's card and the cards its panel names (8).
  */
