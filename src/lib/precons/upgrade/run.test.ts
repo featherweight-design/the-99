@@ -26,6 +26,7 @@ const store = vi.hoisted(() => ({
 vi.mock("./store", () => ({
   reapUpgrades: vi.fn(async () => 0),
   readUpgrades: vi.fn(async () => store.runs),
+  readDoneUpgrade: vi.fn(async (_u: string, _f: string, id: string) => (store.runs as { id: string; status: string }[]).find((r) => r.id === id && r.status === "done") ?? null),
   startUpgrade: store.start,
   finishUpgrade: vi.fn(async (_h: unknown, write: Record<string, unknown>, billed: unknown) => { store.finished.push({ write, billed }); return true; }),
 }));
@@ -37,6 +38,7 @@ vi.mock("../../cache/soft-failure", () => ({ recordSoftFailure: vi.fn() }));
 
 const { LIVE_DEPS, LINE_BRACKETS_TIMEOUT_MS, PARTNERS_TIMEOUT_MS, lineBracketsOrNone, partnersOrBare, pressUpgrade, readSetBracket, readUpgrade, setPermits } = await import("./run");
 const { recordSoftFailure } = await import("../../cache/soft-failure");
+const { readDoneUpgrade, readUpgrades } = await import("./store");
 const { loadDeckProfileFromHead } = await import("../../profile/load");
 
 const NOW = new Date(Date.UTC(2026, 10, 10, 7));
@@ -434,6 +436,33 @@ describe("per-card bracket lines (fresh start R2)", () => {
       vi.useRealTimers();
     }
   });
+
+  it("stops the live read on the timeout: the builds in flight may finish, but no further build starts", async () => {
+    const l = await load();
+    const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
+    const profile = vi.mocked(loadDeckProfileFromHead);
+    const held: (() => void)[] = [];
+    profile.mockReset();
+    // The shared "before" answers at once; every edit's build hangs until released.
+    profile.mockImplementation(async (head: unknown) => {
+      if (profile.mock.calls.length === 1) return { head } as never;
+      await new Promise<void>((resolve) => held.push(resolve));
+      return { head } as never;
+    });
+    try {
+      // 3 pairs: 6 edit builds, 4 at once.
+      const pairs = [pair("n6", "p0"), pair("n7", "p1", 1), pair("n8", "p2", 2)];
+      expect((await lineBracketsOrNone(LIVE_DEPS.lineBrackets, list, pairs, 10)).size).toBe(0);
+      expect(profile.mock.calls).toHaveLength(5);
+      for (const release of held.splice(0)) release();
+      for (let i = 0; i < 10; i++) await Promise.resolve();
+      await new Promise((r) => setTimeout(r, 0));
+      expect(profile.mock.calls).toHaveLength(5);
+    } finally {
+      profile.mockReset();
+      profile.mockImplementation(async (head: unknown) => ({ head }) as never);
+    }
+  });
 });
 
 describe("the set's bracket (fresh start R2)", () => {
@@ -465,6 +494,15 @@ describe("the set's bracket (fresh start R2)", () => {
     expect(await readSetBracket("u1", "boss.json", "run-2", ["p0"], ["n6"], d)).toBeNull();
     expect(await readSetBracket("u1", "boss.json", "nope", ["p0"], ["n6"], d)).toBeNull();
     expect(await readSetBracket("u1", "boss.json", "run-1", ["p0"], ["n6"], { base: async () => null })).toBeNull();
+  });
+
+  it("readSetBracket reads the run by id, so a run older than History's newest still has its set bracket", async () => {
+    store.runs = [{ id: "old-run", status: "done", listFp: boxFingerprint(base().lines), ...run }];
+    vi.mocked(readUpgrades).mockClear();
+    vi.mocked(readDoneUpgrade).mockClear();
+    expect(await readSetBracket("u1", "boss.json", "old-run", ["p0"], ["n6"], { base: async () => base() })).toEqual({ permits: [3], bracket: 3 });
+    expect(readDoneUpgrade).toHaveBeenCalledWith("u1", "boss.json", "old-run");
+    expect(readUpgrades).not.toHaveBeenCalled();
   });
 
   it("readSetBracket answers null for a run made over another list than the box's now, as a Start answers listChanged", async () => {

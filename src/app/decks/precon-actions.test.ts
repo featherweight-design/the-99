@@ -59,10 +59,10 @@ vi.mock("../../lib/decks/write-imported-deck", () => ({
 }));
 // A start from an Upgrade this precon run: the lib's own check of the run is `apply.test.ts`'s; here, only what the action hands it.
 vi.mock("../../lib/precons/upgrade/flag", () => ({ preconUpgradeEnabled: () => true }));
-const upgraded = vi.hoisted(() => ({ calls: [] as unknown[][] }));
+const upgraded = vi.hoisted(() => ({ calls: [] as unknown[][], result: null as unknown }));
 vi.mock("../../lib/precons/start", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/precons/start")>()),
-  startUpgradedPreconDeck: async (...args: unknown[]) => { upgraded.calls.push(args); return { ok: true, deckId: "deck-up" }; },
+  startUpgradedPreconDeck: async (...args: unknown[]) => { upgraded.calls.push(args); return upgraded.result ?? { ok: true, deckId: "deck-up" }; },
 }));
 vi.mock("next/navigation", () => ({ redirect: (u: string) => { throw new Error(`REDIRECT:${u}`); } }));
 
@@ -351,5 +351,23 @@ describe("picks (fresh start R2): a subset of a run's adds and cuts", () => {
     state.addCalls = [];
     expect(await startPreconOwned("Box", "Mine", ACTION, undefined, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
     expect(state.addCalls).toEqual([]);
+  });
+
+  it("createDeckFromPrecon answers stale picks as \"picks\", apart from a run that no longer applies", async () => {
+    try {
+      upgraded.result = { ok: false, reason: "picks" };
+      expect(await createDeckFromPrecon("Box", "Mine", RUN, PICKS)).toEqual({ ok: false, reason: "picks" });
+      for (const reason of ["gone", "listChanged"]) {
+        upgraded.result = { ok: false, reason };
+        expect(await createDeckFromPrecon("Box", "Mine", RUN, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
+      }
+    } finally {
+      upgraded.result = null;
+    }
+  });
+
+  it("startPreconOwned passes the owned start's \"picks\" refusal through, not as upgradeUnavailable", async () => {
+    state.addResult = { ok: false, reason: "picks" };
+    expect(await startPreconOwned("Box", "Mine", ACTION, RUN, PICKS)).toEqual({ ok: false, reason: "picks" });
   });
 });

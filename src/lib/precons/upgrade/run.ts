@@ -18,7 +18,7 @@ import { assembleDeck, boxFingerprint, withCommanders, type CommanderOption } fr
 import { loadUpgradeBase, loadUpgradeFor, type UpgradeBase, type UpgradeLoad } from "./load";
 import { buildUpgradePrompt, upgradeReplySchema, type UpgradeInput, type UpgradeReply } from "./prompt";
 import { readCardFacts, readRunDecks, type CardFacts, type RunDeck } from "./facts";
-import { finishUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
+import { finishUpgrade, readDoneUpgrade, readUpgrades, reapUpgrades, startUpgrade, type StoredUpgrade } from "./store";
 import { recordSoftFailure } from "../../cache/soft-failure";
 import { readSwapPartners } from "./swap-partners";
 import { picksInRun } from "./picks";
@@ -85,7 +85,7 @@ type Deps = {
   /** Each swap's combo partner in the list with the pairs applied (`swap-partners.ts`), stored on the run. Its failure is isolated: see the press. */
   partners: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<StoredPair[]>;
   /** Each pair's per-card bracket lines (`lineBrackets`), in the pairs' order, or null when any read failed. Stored on the run's pairs (`lineBracketsOrNone`). */
-  lineBrackets: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<LineBrackets[] | null>;
+  lineBrackets: (list: BracketList, pairs: readonly UpgradePair[], signal?: AbortSignal) => Promise<LineBrackets[] | null>;
   now: () => Date;
 };
 
@@ -143,12 +143,15 @@ async function profileWith(load: BracketList, edits: readonly ListEdit[]) {
 /** How many of `lineBrackets`' profile builds run at once: each is a catalog read, and a full run is 2N + 1 of them. */
 export const LINE_BRACKETS_CONCURRENCY = 4;
 
-/** `fn` over `items` with at most `limit` running at once, results in the items' order. */
-async function mapLimited<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+/**
+ * `fn` over `items` with at most `limit` running at once, results in the items' order. Once `signal` aborts, no worker takes a new
+ * item (one in flight may finish); the items never started are left undefined, so a caller that aborts discards the result.
+ */
+async function mapLimited<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>, signal?: AbortSignal): Promise<R[]> {
   const out = new Array<R>(items.length);
   let next = 0;
   const worker = async () => {
-    while (next < items.length) {
+    while (next < items.length && !signal?.aborted) {
       const i = next++;
       out[i] = await fn(items[i]);
     }
@@ -164,21 +167,27 @@ async function mapLimited<T, R>(items: readonly T[], limit: number, fn: (item: T
  * side), at most `LINE_BRACKETS_CONCURRENCY` at a time, no model call. Null when any read fails: a flag the app could not compute is
  * left out, never guessed (a missing read must not read as "moves nothing").
  */
-export async function lineBrackets(load: BracketList, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> {
+export async function lineBrackets(load: BracketList, pairs: readonly UpgradePair[], signal?: AbortSignal): Promise<LineBrackets[] | null> {
   if (pairs.length === 0) return [];
   const before = await profileWith(load, []);
-  if (!before) return null;
+  if (!before || signal?.aborted) return null;
   const edits = pairs.flatMap((p): ListEdit[] => [{ cutOracleId: null, addOracleId: p.addId }, { cutOracleId: p.cutId, addOracleId: null }]);
   const read = await mapLimited(edits, LINE_BRACKETS_CONCURRENCY, async (edit) => {
     const after = await profileWith(load, [edit]);
     return after ? lineBracketAfter({ before, after, declared: null }) : undefined;
-  });
+  }, signal);
+  if (signal?.aborted) return null;
   if (read.some((r) => r === undefined)) return null;
   return pairs.map((_, i) => ({ addBracketAfter: read[2 * i] as number[] | null, cutBracketAfter: read[2 * i + 1] as number[] | null }));
 }
 
-/** How long the per-card bracket read may take before a run is finished without it: as `PARTNERS_TIMEOUT_MS`, a hung read must not hold a charged run pending. */
-export const LINE_BRACKETS_TIMEOUT_MS = 3000;
+/**
+ * How long the per-card bracket read may take before a run is finished without it: as `PARTNERS_TIMEOUT_MS`, a hung read must not
+ * hold a charged run pending. A run holds up to 18 pairs, so 2 x 18 + 1 = 37 profile builds; at `LINE_BRACKETS_CONCURRENCY` (4)
+ * that is the shared "before" then ceil(36 / 4) = 9 rounds, about 10 in all, so 8s allows ~800ms a build. It runs on the paid press
+ * before `finishUpgrade`, next to a model call of tens of seconds. On the timeout the workers take no new build (`lineBrackets`' signal).
+ */
+export const LINE_BRACKETS_TIMEOUT_MS = 8000;
 
 /**
  * Each pair's bracket lines by its add's oracle id (unique within a run), or an empty map when the read failed, threw, gave a
@@ -191,9 +200,11 @@ export async function lineBracketsOrNone(
   if (pairs.length === 0) return new Map();
   let lines: LineBrackets[] | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Aborted on the timeout, so a read that lost the race stops starting builds rather than running on unseen.
+  const stop = new AbortController();
   try {
-    const timedOut = new Promise<null>((resolve) => { timer = setTimeout(() => resolve(null), ms); });
-    lines = await Promise.race([read(list, pairs), timedOut]);
+    const timedOut = new Promise<null>((resolve) => { timer = setTimeout(() => { stop.abort(); resolve(null); }, ms); });
+    lines = await Promise.race([read(list, pairs, stop.signal), timedOut]);
   } catch {
     lines = null;
   } finally {
@@ -209,8 +220,10 @@ export async function lineBracketsOrNone(
 
 /**
  * The brackets the list under a run's commander permits with these of its adds and cuts applied (fresh start R2): the Start dialog's
- * bracket fact on the picked subset, as `readSetPermits` is Suggested changes'. The ids are held to the one picks rule a start or an
- * apply holds them to (`picksInRun`); the counts may differ (the bar still reads an uneven pick). Null when the run's commander is not the box's to lead any
+ * bracket fact on the picked subset, as `readSetPermits` is Suggested changes'. The ids are held to the one picks rule (`picksInRun`)
+ * and nothing more: the counts may differ, on purpose (the bar shows a bracket while the player's adds and cuts are uneven), and the
+ * lead's color identity is not checked. A Start or an Apply refuses both (`picksOfRun`, `prepareUpgradeIn`), so the bar can read a
+ * set the write would refuse. Null when the run's commander is not the box's to lead any
  * more, an id is not the run's, or the read fails. One profile build, no model call.
  */
 export async function setPermits(
@@ -234,7 +247,8 @@ export async function setPermits(
 export async function readSetBracket(
   userId: string, fileName: string, runId: string, adds: readonly string[], cuts: readonly string[], deps: Pick<Deps, "base"> = LIVE_DEPS,
 ): Promise<{ permits: number[]; bracket: number | null } | null> {
-  const run = (await readUpgrades(userId, fileName)).find((r) => r.id === runId && r.status === "done");
+  // By id, not through `readUpgrades`' newest `HISTORY_MAX`: an older run a Start can still make has its set bracket too.
+  const run = await readDoneUpgrade(userId, fileName, runId);
   if (!run) return null;
   const base = await deps.base(fileName);
   if (!base || run.listFp === null || run.listFp !== boxFingerprint(base.lines)) return null;

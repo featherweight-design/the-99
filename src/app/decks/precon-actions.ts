@@ -29,7 +29,7 @@ import type { UpgradePicks } from "../../lib/precons/upgrade/apply";
  * `picks`: the adds and cuts the player kept from the run (fresh start R2); absent, the whole run. Picks without a run are refused.
  * They are untrusted and validated once, inside the write (`picksOfRun`), never here.
  */
-export async function createDeckFromPrecon(fileName: string, rawName: string, runId?: string, picks?: UpgradePicks): Promise<void | { ok: false; reason: "upgradeUnavailable" }> {
+export async function createDeckFromPrecon(fileName: string, rawName: string, runId?: string, picks?: UpgradePicks): Promise<void | { ok: false; reason: "upgradeUnavailable" | "picks" }> {
   const userId = await requireUserId();
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
@@ -38,7 +38,8 @@ export async function createDeckFromPrecon(fileName: string, rawName: string, ru
   // A start from an Upgrade this precon run: the box as v0 and the run's swaps as v1. The run is the reader's own and is judged against the box in one snapshot.
   const env = runId === undefined ? null : await requestFlags(userId);
   const upgraded = env === null || runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId, env, picks);
-  if (upgraded && !upgraded.ok) return { ok: false, reason: "upgradeUnavailable" };
+  // A stale pick is refused apart: the run is still startable, so the dialog says so without retiring it.
+  if (upgraded && !upgraded.ok) return { ok: false, reason: upgraded.reason === "picks" ? "picks" : "upgradeUnavailable" };
   const deckId = upgraded ? upgraded.deckId : await startPreconDeck(userId, fileName, name);
   revalidateClaims(deckId, userId);
   // An upgraded deck's list is not the precon's, so no Overview is carried; the run's own pays for one, written after the response.
@@ -49,9 +50,8 @@ export async function createDeckFromPrecon(fileName: string, rawName: string, ru
 }
 
 async function startUpgradeFrom(userId: string, fileName: string, name: string, runId: string, env: NodeJS.ProcessEnv, picks: UpgradePicks | undefined) {
-  if (!preconUpgradeEnabled(env) || !isUuid(runId)) return { ok: false as const };
-  const made = await startUpgradedPreconDeck(userId, fileName, name, runId, picks);
-  return made.ok ? made : { ok: false as const };
+  if (!preconUpgradeEnabled(env) || !isUuid(runId)) return { ok: false as const, reason: null };
+  return startUpgradedPreconDeck(userId, fileName, name, runId, picks);
 }
 
 /**
