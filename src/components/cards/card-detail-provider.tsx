@@ -902,6 +902,7 @@ export function CardDetailProvider({
     setFailed(false);
     setDoor(false);
     setComboFor(null);
+    comboVariantRef.current = null;
     setMinimized(false);
     // The picker sits over a HELD card, and a card opened from the picker stacks over both. Closing
     // that top card is a step back to the picker, the stand-ins sheet's rule, so only a close with
@@ -1016,6 +1017,7 @@ export function CardDetailProvider({
       setFailed(false);
       setDoor(false);
       setComboFor(null);
+      comboVariantRef.current = null;
     }
     return () => {
       setSheets((list) => list.filter((entry) => entry.token !== token));
