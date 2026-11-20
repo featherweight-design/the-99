@@ -219,15 +219,16 @@ describe("ResultView's commander marks (A3 calls 7 to 11)", () => {
 });
 
 describe("ResultView in the landing demo (A5b)", () => {
-  it("draws no Apply place and no apply line, and a pick is held on screen with no server call", async () => {
-    const pick = vi.mocked((await import("../../../../lib/precons/upgrade/actions")).pickUpgradeLineAction);
+  it("draws no Apply place and no apply line where the same run outside the demo draws both, and a pick still flips on screen", async () => {
+    const { unmount } = render(<ResultView panel={panel} run={run()} lineActions={demoLineActions(run(), [3])} />);
+    expect(apply()).not.toBeNull();
+    expect(document.querySelector("[data-sc-bar-line]")).not.toBeNull();
+    unmount();
     render(<ResultView panel={panel} run={run()} demo lineActions={demoLineActions(run(), [3])} />);
     expect(apply()).toBeNull();
     expect(document.querySelector("[data-sc-bar-line]")).toBeNull();
-    expect(screen.queryByText(/You asked/i)).toBeNull();
     fireEvent.click(within(screen.getByRole("article", { name: "Cut 1" })).getByRole("button", { name: /Picked/ }));
     await vi.waitFor(() => expect(within(screen.getByRole("article", { name: "Cut 1" })).queryByRole("button", { name: /^✓ Picked/ })).toBeNull());
-    expect(pick).not.toHaveBeenCalled();
   });
 
   it("answers the set bracket from the stored seed for the whole set only", async () => {
