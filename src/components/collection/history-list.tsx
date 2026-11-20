@@ -8,7 +8,10 @@
 
 import Link from "next/link";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { loadCollectionHistory, loadCollectionHistoryEntry } from "../../app/collection/history-actions";
+import { loadCollectionHistory, loadCollectionHistoryEntry, loadHistoryLiveFor } from "../../app/collection/history-actions";
+import { nowHolderNames, type HistoryLive } from "../../lib/collection/history-live-view";
+import { moveCopyCopy } from "../../lib/copy/move-copy";
+import { ChangeCopyDoor } from "../cards/change-copy-door";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
 import { historyKindOf, type HistoryKind } from "../../lib/collection/history-kind";
 import {
@@ -42,7 +45,31 @@ const TAG_INK: Record<HistoryKind, string> = {
   revert: "var(--fg-muted)",
 };
 
-function RowLine({ row, rowDecks }: { row: HistoryRow; rowDecks: Readonly<Record<string, string>> | null }) {
+/** What follows a `Went to …` sentence (Move a copy, #2980): where the copy is NOW when that differs, then Change. The record is not touched. */
+function LiveTail({ oracleId, cardName, wentDeckIds, soft, live, onWritten }: {
+  oracleId: string;
+  cardName: string;
+  wentDeckIds: readonly string[];
+  soft: boolean;
+  live: HistoryLive | undefined;
+  onWritten?: (oracleId: string) => void;
+}) {
+  if (soft || !live) return null;
+  const now = nowHolderNames(wentDeckIds, live);
+  return (
+    <>
+      {now ? <>{" "}<span data-testid="history-now">{moveCopyCopy.history.now(now)}</span></> : null}
+      {live.change && onWritten ? <>{" "}<ChangeCopyDoor oracleId={oracleId} cardName={cardName} owned={1} onWritten={() => onWritten(oracleId)} /></> : null}
+    </>
+  );
+}
+
+function RowLine({ row, rowDecks, live, onWritten }: {
+  row: HistoryRow;
+  rowDecks: Readonly<Record<string, string>> | null;
+  live?: Readonly<Record<string, HistoryLive>>;
+  onWritten?: (oracleId: string) => void;
+}) {
   const d = rowDelta(row);
   const where = [row.setCode ? row.setCode.toUpperCase() : "", row.collectorNumber ? `#${row.collectorNumber}` : "", row.finish === "nonfoil" ? "" : row.finish]
     .filter(Boolean)
@@ -60,6 +87,14 @@ function RowLine({ row, rowDecks }: { row: HistoryRow; rowDecks: Readonly<Record
               linked={false}
             />
             {"."}
+            <LiveTail
+              oracleId={row.oracleId}
+              cardName={row.name}
+              wentDeckIds={row.wentTo.decks.map((x) => x.deckId)}
+              soft={row.wentTo.soft === true}
+              live={live?.[row.oracleId]}
+              onWritten={onWritten}
+            />
           </span>
         ) : null}
       </span>
@@ -144,11 +179,22 @@ function ShoppingCartLine({ linked, decks }: { linked: boolean; decks: HistoryLi
 }
 
 /** Where an add's or an upload's copies went, kept at arrival: one line under the entry. */
-function WentToLine({ wentTo, linked }: { wentTo: NonNullable<HistoryListEntry["wentTo"]>; linked: boolean }) {
+function WentToLine({ wentTo, linked, single, cardName, live, onWritten }: {
+  wentTo: NonNullable<HistoryListEntry["wentTo"]>;
+  linked: boolean;
+  /** An entry of one card: its summary line takes the live tail (an entry of many cards is Move a copy's PR 4). */
+  single?: HistoryListEntry["single"];
+  cardName: string | null;
+  live?: Readonly<Record<string, HistoryLive>>;
+  onWritten?: (oracleId: string) => void;
+}) {
   const w = gotItCopy.history.wentTo;
   return (
     <p className={DECK_LINE}>
       {wentTo.soft ? w.leadSoft : w.lead} <DeckNames decks={wentTo.decks} linked={linked} />{"."}
+      {single && cardName ? (
+        <LiveTail oracleId={single.oracleId} cardName={cardName} wentDeckIds={single.wentDeckIds} soft={wentTo.soft} live={live?.[single.oracleId]} onWritten={onWritten} />
+      ) : null}
     </p>
   );
 }
@@ -159,14 +205,19 @@ function WentToLine({ wentTo, linked }: { wentTo: NonNullable<HistoryListEntry["
  * already shows its entry line, which says it: the same sentence an inch apart would be said twice. An entry read
  * before an upload's placement was stamped has no entry line, so its rows speak for themselves.
  */
-function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<Record<string, string>> | null }) {
+function EntryRows({ rows, rowDecks, live, onWritten }: {
+  rows: HistoryRow[];
+  rowDecks: Readonly<Record<string, string>> | null;
+  live?: Readonly<Record<string, HistoryLive>>;
+  onWritten?: (oracleId: string) => void;
+}) {
   const groups = useMemo(() => groupRows(rows), [rows]);
   const [picked, setPicked] = useState<RowGroup | null>(null);
   const [shown, setShown] = useState(GROUP_FIRST);
   const groupIds = useId();
   if (rows.length === 0) return <p className="m-0 py-[6px] text-[13px] text-[color:var(--fg-muted)]">{c.noRows}</p>;
   if (rows.length <= SHORT_ENTRY_ROWS) {
-    return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>;
+    return <ul className="m-0 list-none p-0">{rows.map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>;
   }
   const active = groups.find((g) => g.group === picked) ?? groups[0];
   if (!active) return null;
@@ -200,7 +251,7 @@ function EntryRows({ rows, rowDecks }: { rows: HistoryRow[]; rowDecks: Readonly<
         id={`${groupIds}-panel-${active.group}`}
         aria-labelledby={`${groupIds}-tab-${active.group}`}
       >
-        <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} />)}</ul>
+        <ul className="m-0 list-none p-0">{active.rows.slice(0, shown).map((r, i) => <RowLine key={i} row={r} rowDecks={rowDecks} live={live} onWritten={onWritten} />)}</ul>
         {shown < active.rows.length ? (
           <button
             type="button"
@@ -260,6 +311,8 @@ export function HistoryEntryItem({
   onRetry,
   clock,
   anchor = true,
+  live,
+  onWritten,
 }: {
   e: HistoryListEntry;
   title: string;
@@ -273,6 +326,10 @@ export function HistoryEntryItem({
   clock: HistoryClock;
   /** The row carries `id="entry-…"` for the Add sheet's link. /about draws it without: a page of its own ids. */
   anchor?: boolean;
+  /** Move a copy (#2980): the live read by oracle id; absent where none was made (/about's figure), which draws no Change. */
+  live?: Readonly<Record<string, HistoryLive>>;
+  /** A move was written from this entry's Change: the list re-reads that card. */
+  onWritten?: (oracleId: string) => void;
 }) {
   const kind = historyKindOf(e);
   const reverted = e.revertedBy !== null;
@@ -321,7 +378,7 @@ export function HistoryEntryItem({
       </div>
       {e.shoppingDeck ? <ShoppingDeckLine deck={e.shoppingDeck} linked={anchor} /> : null}
       {e.shoppingCart ? <ShoppingCartLine linked={anchor} decks={e.cartDecks} /> : null}
-      {e.wentTo ? <WentToLine wentTo={e.wentTo} linked={anchor} /> : null}
+      {e.wentTo ? <WentToLine wentTo={e.wentTo} linked={anchor} single={e.single} cardName={e.firstName} live={live} onWritten={onWritten} /> : null}
       {reverted ? (
         <p className="m-0 px-[14px] pb-[10px] text-[12.5px] text-[color:var(--fg-faint)] md:pl-[176px]">
           {c.reverted}
@@ -354,7 +411,7 @@ export function HistoryEntryItem({
                   {c.syncNote(detail.sync.kept, detail.sync.decided, detail.sync.tokens)}
                 </p>
               ) : null}
-              <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} />
+              <EntryRows rows={detail.rows} rowDecks={detail.rows.length > 1 || !e.wentTo ? detail.rowDecks : null} live={live} onWritten={onWritten} />
             </>
           ) : detail === "failed" ? (
             <p role="alert" className="m-0 text-[13px] text-[color:var(--fg-body)]">
@@ -396,6 +453,10 @@ export function HistoryList({
   const [next, setNext] = useState(initialNext);
   const [open, setOpen] = useState<ReadonlySet<string>>(() => new Set(focusId && initial.some((e) => e.id === focusId) ? [focusId] : []));
   const [details, setDetails] = useState<ReadonlyMap<string, HistoryEntry | "loading" | "failed">>(new Map());
+  // Move a copy (#2980): the live half by oracle id. A page's single-card entries ask ONCE, as one batch; an opened entry's
+  // rows ride its own load. `asked` keeps a card from being read twice.
+  const [live, setLive] = useState<Readonly<Record<string, HistoryLive>>>({});
+  const asked = useRef(new Set<string>());
   const [pager, setPager] = useState<"idle" | "loading" | "failed">("idle");
   // The entry whose revert is being decided, with the words the dialog quotes.
   const [reverting, setReverting] = useState<{ id: string; title: string; when: string; sync: boolean } | null>(null);
@@ -404,10 +465,23 @@ export function HistoryList({
   const clock = useMemo(() => ({ nowMs, zone, locale }), [nowMs, zone, locale]);
   const groups = useMemo(() => groupByDay(entries, nowMs, zone), [entries, nowMs, zone]);
 
+  useEffect(() => {
+    const ids = entries.flatMap((e) => (e.single && e.wentTo && !e.wentTo.soft && !asked.current.has(e.single.oracleId) ? [e.single.oracleId] : []));
+    if (ids.length === 0) return;
+    ids.forEach((id) => asked.current.add(id));
+    loadHistoryLiveFor(ids).then((r) => setLive((m) => ({ ...m, ...r }))).catch(() => undefined);
+  }, [entries]);
+
+  // After a move: that card, re-read, so its line draws where the copy is now.
+  function reread(oracleId: string) {
+    loadHistoryLiveFor([oracleId]).then((r) => setLive((m) => ({ ...m, ...r }))).catch(() => undefined);
+  }
+
   async function fetchDetail(id: string) {
     setDetails((m) => new Map(m).set(id, "loading"));
     try {
       const d = await loadCollectionHistoryEntry(id);
+      if (d?.live) setLive((m) => ({ ...m, ...d.live }));
       setDetails((m) => new Map(m).set(id, d ?? "failed"));
     } catch {
       setDetails((m) => new Map(m).set(id, "failed"));
@@ -478,6 +552,8 @@ export function HistoryList({
                   onToggle={() => toggle(e.id)}
                   onRevert={(title, sync) => setReverting({ id: e.id, title, when: whenPhrase(e.createdAt, nowMs, zone, locale), sync })}
                   clock={clock}
+                  live={live}
+                  onWritten={reread}
                   onRetry={() => void fetchDetail(e.id)}
                 />
               ))}

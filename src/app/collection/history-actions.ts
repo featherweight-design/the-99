@@ -5,6 +5,8 @@ import { requestFlags } from "../../lib/flags/request";
 import {
   getHistoryEntry, listHistory, revertDiffers, type HistoryEntry, type HistoryListEntry,
 } from "../../lib/collection/history";
+import { loadHistoryLive, HISTORY_LIVE_MAX } from "../../lib/collection/history-live";
+import type { HistoryLive } from "../../lib/collection/history-live-view";
 import { invalidateCollectionReaders } from "../../lib/collection/invalidate";
 import { collectionItemKey, type CollectionItemIdentity } from "../../lib/collection/key";
 import { applyCollectionChange, parseShortDecks, type ShortDeck, type UndoPlacement } from "../../lib/collection/write";
@@ -40,11 +42,25 @@ export async function loadCollectionHistory(
   return listHistory(userId, { before });
 }
 
-/** One entry with its rows, or null when it is not the player's or has aged out. */
-export async function loadCollectionHistoryEntry(id: string): Promise<HistoryEntry | null> {
+/**
+ * One entry with its rows, or null when it is not the player's or has aged out. `live` is the Move a copy half (#2980),
+ * read in ONE batch over the rows that kept a placement; a read that fails leaves it empty and the entry still opens.
+ */
+export async function loadCollectionHistoryEntry(id: string): Promise<(HistoryEntry & { live: Record<string, HistoryLive> }) | null> {
   const userId = await signedInEditor();
   if (!isUuid(id)) return null;
-  return getHistoryEntry(userId, id);
+  const entry = await getHistoryEntry(userId, id);
+  if (!entry) return null;
+  const ids = entry.rows.filter((r) => r.wentTo).map((r) => r.oracleId);
+  const live = await loadHistoryLive(userId, ids).catch(() => ({}));
+  return { ...entry, live };
+}
+
+/** The live half for a page of single-card entries (one batched read, never one per entry); the caller's own cards only. */
+export async function loadHistoryLiveFor(oracleIds: string[]): Promise<Record<string, HistoryLive>> {
+  const userId = await signedInEditor();
+  if (!Array.isArray(oracleIds) || oracleIds.length > HISTORY_LIVE_MAX || !oracleIds.every((o) => typeof o === "string" && isUuid(o))) return {};
+  return loadHistoryLive(userId, oracleIds.map((o) => o.toLowerCase()));
 }
 
 export type RevertPreview = {

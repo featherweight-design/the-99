@@ -15,6 +15,13 @@ export const moveCopyCopy = {
     label: "Change",
     aria: (card: string) => `Change where ${card} goes`,
   },
+  /** History: after a move, the line keeps the record and adds where the copy is now (`Went to A. Now B has it.`). */
+  history: {
+    now: (decks: readonly string[]) => {
+      const list = decks.length <= 1 ? (decks[0] ?? "") : `${decks.slice(0, -1).join(", ")} and ${decks[decks.length - 1]}`;
+      return `Now ${list} ${decks.length === 1 ? "has" : "have"} it.`;
+    },
+  },
   /** The chooser when card details cannot read it live. */
   loadFailed: "Couldn’t load your decks just now. Try again in a moment.",
   other: {
