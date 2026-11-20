@@ -72,6 +72,7 @@ import {
 import { saveDeckDescription } from "../../app/decks/tuning-actions";
 import { Decklist } from "./decklist";
 import { TokensGroup } from "./tokens-group";
+import { firstCommitReady } from "../../lib/decks/first-commit";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
 import { initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
@@ -1718,9 +1719,8 @@ export function BuilderShell({
               // cut over it would silently drop it.
               offerFirstCommit={
                 draft?.version === null &&
-                deck.built === bodySize &&
-                built === bodySize &&
-                unresolvedCount === 0
+                firstCommitReady({ versionNumber: null, built: deck.built, bodySize, unresolved: unresolvedCount }) &&
+                built === bodySize
               }
             />
 

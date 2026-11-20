@@ -15,7 +15,7 @@ import { DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { setDeckHiddenFromFriendsAction } from "../../app/decks/hide-actions";
 import { socialCopy } from "../../lib/copy/social";
 import type { StatusPill } from "../../lib/decks/status";
-import { settingsHideDeck, type FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
+import { SETTINGS_TARGET_HASH, hiddenWhy, settingsHideDeck, type FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { PendingReporter } from "../shell/pending-reporter";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
@@ -59,14 +59,19 @@ interface DeckCardOverflowProps {
   friends?: DeckFriendsHide;
 }
 
-/** What the Hidden from friends row needs: the deck's own flag, its status and the owner's two Settings rules. */
+/** What the Hidden from friends row needs: the deck's own flag, its status and the owner's two Settings rules, and what the why-it-is-hidden block says. */
 export interface DeckFriendsHide {
   hidden: boolean;
   statusPill: StatusPill;
   prefs: FriendDeckPrefs;
+  /** Cards in the deck and its body size (99, or 98 with a partner): the block's `{n} of {size}`. */
+  built: number;
+  size: number;
+  /** `firstCommitReady`: the deck can take `Commit as v1` now. */
+  canCommit: boolean;
 }
 
-/** ITEM for the locked row, which carries a sub-line: its height follows its two lines, padded 8px (README 4b). */
+/** ITEM for the Settings way out, which carries a sub-line: its height follows its two lines, padded 8px (draft hidden row). */
 const LOCKED_ITEM =
   "flex min-h-[38px] pointer-coarse:min-h-[44px] pointer-coarse:text-[14px] w-full items-center gap-[10px] border-x-0 border-b-0 border-t border-solid border-t-[color:var(--elevated)] px-[13px] py-[8px] text-left font-sans text-[13px] transition-colors hover:bg-[color:var(--elevated)]";
 
@@ -109,6 +114,59 @@ export interface DeckMove {
    * every other card.
    */
   closeAfterCreate: { seq: number } | null;
+}
+
+/**
+ * A deck the owner's Settings rules hide (draft hidden row, #2988; the shipped row drew a ticked, locked checkbox it would not let
+ * the player change). Not a control: a block that says why, then one row per way out the player really has, each a normal menu row.
+ * `Commit as v1` only where the deck can commit now; the Settings row lands on the exact box (`/settings#settings-decks-…`).
+ * Nothing flips from here: Settings stays the one place for account rules.
+ */
+function HiddenByRule({ deckId, friends }: { deckId: string; friends: DeckFriendsHide }) {
+  const w = socialCopy.hideDeck;
+  const r = hiddenWhy({ statusPill: friends.statusPill, prefs: friends.prefs, built: friends.built, size: friends.size, canCommit: friends.canCommit });
+  const line =
+    r.why === "draftShort" ? w.why.draftShort(friends.built, friends.size)
+    : r.why === "building" ? w.why.building(friends.built, friends.size)
+    : w.why[r.why];
+  const settingsHref = `/settings#${SETTINGS_TARGET_HASH[r.settings]}`;
+  const settingsLabel = w.settings[r.label];
+  const commitHref = `/decks/${deckId}/changes?commit=1`;
+  return (
+    <>
+      <div
+        data-hide-from-friends="why"
+        className="flex w-full flex-col gap-[2px] border-x-0 border-b-0 border-t border-solid border-t-[color:var(--elevated)] px-[13px] pb-[11px] pt-[10px] text-left font-sans first:border-t-0"
+      >
+        <span className="text-[13px] pointer-coarse:text-[14px] text-[color:var(--fg)]">{w.row}</span>
+        <span className="text-[12px] pointer-coarse:text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{line}</span>
+      </div>
+      {r.commit ? (
+        <Link
+          href={commitHref}
+          data-hide-from-friends="commit"
+          className={`${ITEM} cursor-pointer bg-transparent text-[color:var(--accent-text)] font-medium no-underline`}
+        >
+          <PendingReporter href={commitHref} />
+          {w.commit} <span aria-hidden className="ml-[4px]">›</span>
+        </Link>
+      ) : null}
+      <Link
+        href={settingsHref}
+        data-hide-from-friends="settings"
+        aria-label={w.settingsAria(settingsLabel)}
+        className={`${LOCKED_ITEM} text-[color:var(--fg)] no-underline`}
+      >
+        <PendingReporter href={settingsHref} />
+        <span className="flex min-w-0 flex-col gap-[2px]">
+          <span>{settingsLabel}</span>
+          <small className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
+            {w.inSettings} <span aria-hidden>›</span>
+          </small>
+        </span>
+      </Link>
+    </>
+  );
 }
 
 /**
@@ -453,21 +511,7 @@ export function DeckCardOverflow({
               {/* Hidden from friends, directly above Delete (friend decks README 4). */}
               {friends ? (
                 hideLocked ? (
-                  <Link
-                    href="/settings"
-                    data-hide-from-friends="locked"
-                    aria-label={socialCopy.hideDeck.lockedAria}
-                    className={`${LOCKED_ITEM} first:border-t-0 text-[color:var(--fg)] no-underline`}
-                  >
-                    <PendingReporter href="/settings" />
-                    <span className="flex min-w-0 flex-col gap-[2px]">
-                      <span>{socialCopy.hideDeck.row}</span>
-                      <small className="font-mono text-[10.5px] text-[color:var(--fg-muted)]">
-                        {socialCopy.hideDeck.locked} <span aria-hidden>›</span>
-                      </small>
-                    </span>
-                    <span aria-hidden data-hide-box className={`${HIDE_BOX} border-[color:var(--fg-locked)] bg-[color:var(--fg-locked)]`}>✓</span>
-                  </Link>
+                  <HiddenByRule deckId={deckId} friends={friends} />
                 ) : (
                   <button
                     type="button"

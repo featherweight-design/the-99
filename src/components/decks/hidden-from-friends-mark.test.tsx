@@ -52,10 +52,10 @@ describe.each(spines)("the %s header", (_, Spine) => {
     expect(off.container.querySelector("[data-hidden-from-friends]")).toBeNull();
   });
 
-  it("hands the menu the deck's status: a Building deck under the default rules is locked", () => {
+  it("hands the menu the deck's status: a Building deck under the default rules is explained, not a checkbox", () => {
     const { unmount } = draw(Spine, { hidden: false, prefs: DEFAULTS });
     fireEvent.click(screen.getByRole("button", { name: "Actions for Atraxa Superfriends" }));
-    expect(screen.getByRole("link", { name: w.lockedAria }).getAttribute("href")).toBe("/settings");
+    expect(screen.getByRole("link", { name: w.settingsAria(w.settings.building) }).getAttribute("href")).toBe("/settings#settings-decks-unfinished");
     unmount();
     draw(Spine, { hidden: false, prefs: { seeDecks: true, seeUnfinished: true } });
     fireEvent.click(screen.getByRole("button", { name: "Actions for Atraxa Superfriends" }));

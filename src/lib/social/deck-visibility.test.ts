@@ -2,6 +2,7 @@
 import { describe, expect, it } from "vitest";
 import type { StatusPill } from "../decks/status";
 import { DEFAULT_FRIEND_DECK_PREFS, friendCanSeeDeck, hideDeckUpdate, settingsHideDeck } from "./deck-visibility";
+import { hiddenWhy } from "./deck-visibility-rule";
 
 const PILLS: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"];
 const seen = (prefs: { seeDecks: boolean; seeUnfinished: boolean }, hiddenFromFriends = false) =>
@@ -55,5 +56,25 @@ describe("hideDeckUpdate", () => {
     expect(q.sql).toContain('"decks"."user_id" = ');
     expect(q.sql).toContain('"decks"."hidden_from_friends" <> ');
     expect(q.params).toEqual([true, "11111111-1111-4111-8111-111111111111", "user_1", true]);
+  });
+});
+
+describe("hiddenWhy (draft hidden row, #2988)", () => {
+  const prefs = { seeDecks: true, seeUnfinished: false };
+  const base = { built: 99, size: 99, canCommit: false };
+  it("tests the master switch first: it hides every deck, whatever its status, and offers only Settings", () => {
+    for (const statusPill of ["New", "Draft", "Building"] as const) {
+      expect(hiddenWhy({ ...base, statusPill, prefs: { seeDecks: false, seeUnfinished: true }, canCommit: true })).toEqual({ why: "seeDecksOff", commit: false, settings: "see", label: "all" });
+    }
+  });
+  it("a Draft that can commit offers the commit; a short one, one past its size and an unresolved one do not", () => {
+    expect(hiddenWhy({ ...base, statusPill: "Draft", prefs, canCommit: true })).toEqual({ why: "draftReady", commit: true, settings: "unfinished", label: "drafts" });
+    expect(hiddenWhy({ ...base, statusPill: "Draft", prefs, built: 40 }).why).toBe("draftShort");
+    expect(hiddenWhy({ ...base, statusPill: "Draft", prefs, built: 104 }).why).toBe("draftFull");
+    expect(hiddenWhy({ ...base, statusPill: "Draft", prefs, built: 99 }).why).toBe("draftFull");
+  });
+  it("a New deck and a Building deck never offer the commit, and name their own Settings sentence", () => {
+    expect(hiddenWhy({ ...base, statusPill: "New", prefs, built: 0, canCommit: true })).toEqual({ why: "empty", commit: false, settings: "unfinished", label: "drafts" });
+    expect(hiddenWhy({ ...base, statusPill: "Building", prefs, built: 97, canCommit: true })).toEqual({ why: "building", commit: false, settings: "unfinished", label: "building" });
   });
 });

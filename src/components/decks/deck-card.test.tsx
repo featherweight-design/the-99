@@ -841,6 +841,22 @@ describe("DeckCard — Hidden from friends", () => {
     expect(container.querySelector("a.absolute")!.getAttribute("aria-label")).not.toContain(socialCopy.hideDeck.key);
   });
 
+  // Draft hidden row (#2988): the menu's why block reads the deck's counts, its body size and whether it can commit now.
+  it("hands the menu the deck's counts, its body size and whether it can commit (`firstCommitReady`)", () => {
+    const handed = (over: Partial<DeckListItem>) => {
+      overflowProps.length = 0;
+      tile({ statusPill: "Draft", ...over }, prefs).unmount();
+      return overflowProps.at(-1)!.friends;
+    };
+    expect(handed({ built: 99, unresolvedCount: 0, versionNumber: null })).toMatchObject({ built: 99, size: 99, canCommit: true });
+    expect(handed({ built: 40 })).toMatchObject({ built: 40, size: 99, canCommit: false });
+    expect(handed({ built: 99, unresolvedCount: 2 })).toMatchObject({ canCommit: false });
+    expect(handed({ built: 99, versionNumber: 1 })).toMatchObject({ canCommit: false });
+    // A partner pair's body is 98: 98 cards commit, 99 do not.
+    expect(handed({ partnerName: "Tymna", built: 98 })).toMatchObject({ size: 98, canCommit: true });
+    expect(handed({ partnerName: "Tymna", built: 99 })).toMatchObject({ size: 98, canCommit: false });
+  });
+
   it("draws nothing, and hands the menu nothing, with the switch off", () => {
     overflowProps.length = 0;
     const { container } = tile({ hiddenFromFriends: true }, null);
@@ -869,7 +885,7 @@ describe("DeckCard — Hidden from friends", () => {
   it("hands the menu the deck's flag, its status and the reader's rules", () => {
     overflowProps.length = 0;
     tile({ hiddenFromFriends: true, statusPill: "Complete" }, prefs);
-    expect(overflowProps.at(-1)!.friends).toEqual({ hidden: true, statusPill: "Complete", prefs });
+    expect(overflowProps.at(-1)!.friends).toMatchObject({ hidden: true, statusPill: "Complete", prefs });
   });
 });
 
