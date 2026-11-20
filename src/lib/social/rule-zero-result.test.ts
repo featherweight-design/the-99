@@ -72,7 +72,7 @@ describe("resultPlacesQuery", () => {
     expect(text).not.toContain('"rule_zero_result_seats"."seat"');
     // Qualified in the subquery, and skipped once the viewer logged a game from the table since the result was saved.
     expect(text).toContain('dg.rule_zero_table_id = $3');
-    expect(text).toContain('"rule_zero_result_seats"."saved_at"');
+    expect(text).toContain('>= "rule_zero_result_seats".saved_at');
     expect(params).toEqual([TABLE, "user_a", TABLE]);
   });
 });

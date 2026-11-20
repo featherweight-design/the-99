@@ -111,7 +111,7 @@ describe("reseatTable and the seat notice", () => {
     expect(await reseatTable("setter", TABLE, asks(P_SETTER, P_STAY))).toEqual({ kind: "reseated" });
     expect(f.outbox).toEqual([]);
     expect(m.kicked).toEqual([]);
-    expect(f.deletes.map((d) => d.table)).toEqual([ruleZeroSeats, ruleZeroSeen]);
+    expect(f.deletes.map((d) => d.table)).toEqual([ruleZeroSeats, ruleZeroResultSeats, ruleZeroSeen]);
   });
 });
 
