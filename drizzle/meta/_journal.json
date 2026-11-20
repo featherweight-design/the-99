@@ -1730,6 +1730,13 @@
       "when": 1795181601390,
       "tag": "0248_launch_list_sent_at",
       "breakpoints": true
+    },
+    {
+      "idx": 249,
+      "version": "7",
+      "when": 1795184233943,
+      "tag": "0249_precon_upgrade_fresh_start",
+      "breakpoints": true
     }
   ]
 }
