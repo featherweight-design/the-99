@@ -25,7 +25,7 @@ beforeEach(() => {
 describe("applyPreconUpgradeOnDeck / undoPreconUpgradeOnDeck", () => {
   it("apply and undo the reader's own deck, and revalidate its claim surfaces on success", async () => {
     expect(await applyPreconUpgradeOnDeck(DECK, RUN)).toEqual({ ok: true, swaps: 14, lead: null });
-    expect(applyUpgradeOnDeck).toHaveBeenCalledWith("u1", DECK, RUN);
+    expect(applyUpgradeOnDeck).toHaveBeenCalledWith("u1", DECK, RUN, undefined);
     expect(await undoPreconUpgradeOnDeck(DECK, RUN)).toEqual({ ok: true });
     expect(undoUpgradeOnDeck).toHaveBeenCalledWith("u1", DECK, RUN);
     expect(revalidateClaims).toHaveBeenCalledTimes(2);
@@ -63,13 +63,14 @@ describe("applyPreconUpgradeOnDeck with picks (fresh start R2)", () => {
     await applyPreconUpgradeOnDeck(DECK, RUN, PICKS);
     expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN, PICKS);
     await applyPreconUpgradeOnDeck(DECK, RUN);
-    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN);
+    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN, undefined);
   });
 
-  it("refuses malformed picks before any read", async () => {
-    for (const bad of [{ adds: PICKS.adds }, { adds: ["x"], cuts: PICKS.cuts }, { adds: [PICKS.adds[0], PICKS.adds[0]], cuts: PICKS.cuts }, null, "x"]) {
-      expect(await applyPreconUpgradeOnDeck(DECK, RUN, bad as never)).toEqual({ ok: false, reason: "picks" });
-    }
-    expect(applyUpgradeOnDeck).not.toHaveBeenCalled();
+  it("passes malformed picks through untouched: the one picks rule is the write's (`picksOfRun`, apply.test.ts)", async () => {
+    const bad = { adds: ["x"], cuts: PICKS.cuts };
+    vi.mocked(applyUpgradeOnDeck).mockResolvedValueOnce({ ok: false, reason: "picks" });
+    expect(await applyPreconUpgradeOnDeck(DECK, RUN, bad as never)).toEqual({ ok: false, reason: "picks" });
+    expect(applyUpgradeOnDeck).toHaveBeenLastCalledWith("u1", DECK, RUN, bad);
+    expect(revalidateClaims).not.toHaveBeenCalled();
   });
 });

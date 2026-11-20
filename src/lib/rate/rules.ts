@@ -163,6 +163,12 @@ export const RATE_RULES = {
   "device-sign-out": { limit: 30, windowMs: 3_600_000 },
   /** Your name, from `/friends` or Settings, which also writes Clerk's `firstName`: a few edits, never dozens, in an hour. */
   "display-name": { limit: 20, windowMs: 3_600_000 },
+  /**
+   * The Start dialog's bracket fact on an Upgrade this precon run's picked subset (`upgradeSetBracketAction`), per player, ENFORCED.
+   * Free to the player but one profile build each, read on every pick toggled: a player ticking through a 15-swap run's 30 lines
+   * quickly is tens a minute, so 120 a minute leaves room for that and bounds a scripted loop. Over the limit the fact is left off.
+   */
+  "upgrade-set-bracket": { limit: 120, windowMs: 60_000 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateBucket = keyof typeof RATE_RULES;

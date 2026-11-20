@@ -9,6 +9,7 @@ import { commitVersion } from "../../decks/versions";
 import { isUuid } from "../../uuid";
 import { MAX_SWAPS } from "./constants";
 import { boxFingerprint } from "./inputs";
+import { picksInRun } from "./picks";
 import type { UpgradePair } from "./validate";
 
 /**
@@ -35,7 +36,7 @@ export type PreparedUpgrade = {
  */
 export type UpgradePicks = { adds: string[]; cuts: string[] };
 
-/** `picks`: the picks sent are not a subset of the run, uneven, empty or malformed. */
+/** `picks`: the picks sent are not a subset of the run, uneven, empty or malformed, or leave a card the lead can't hold. */
 export type UpgradeRefusal = "gone" | "listChanged" | "picks";
 
 /**
@@ -51,16 +52,19 @@ export function picksShape(v: unknown): UpgradePicks | null {
 }
 
 /**
- * The picks a start or an apply makes of this run, or null when they are not its to make: absent picks are the whole run (the shipped
- * UI's press); sent picks must pass `picksShape`, be the run's own adds and cuts, match in count and not be empty. Pure.
+ * The picks a start or an apply makes of this run, or null when they are not its to make. Sent picks are validated HERE, once (the
+ * actions pass them through untouched): `picksShape`, the one picks rule (`picksInRun`: the run's own adds and cuts, none repeated),
+ * the same count each side and not empty. Absent picks are the whole run (the shipped UI's press), held to the same rule: a stored
+ * run that repeats a cut or an add (validation drops both, so only a corrupt or older run can) would end the deck at 100. Pure.
  */
 export function picksOfRun(pairs: readonly Pick<UpgradePair, "cutId" | "addId">[], picks: UpgradePicks | undefined): UpgradePicks | null {
-  if (picks === undefined) return { adds: pairs.map((p) => p.addId), cuts: pairs.map((p) => p.cutId) };
+  if (picks === undefined) {
+    const whole = { adds: pairs.map((p) => p.addId), cuts: pairs.map((p) => p.cutId) };
+    return picksInRun(pairs, whole.adds, whole.cuts) ? whole : null;
+  }
   const shaped = picksShape(picks);
   if (!shaped || shaped.adds.length === 0 || shaped.adds.length !== shaped.cuts.length) return null;
-  const adds = new Set(pairs.map((p) => p.addId));
-  const cuts = new Set(pairs.map((p) => p.cutId));
-  return shaped.adds.every((id) => adds.has(id)) && shaped.cuts.every((id) => cuts.has(id)) ? shaped : null;
+  return picksInRun(pairs, shaped.adds, shaped.cuts) ? shaped : null;
 }
 
 type BoxDeck = { commanderOracleId: string; partnerOracleId: string | null; cards: readonly { oracleId: string; quantity: number }[] };
@@ -97,7 +101,9 @@ export async function prepareUpgradeIn(tx: Tx, userId: string, fileName: string,
     .where(and(eq(preconUpgrades.id, runId), eq(preconUpgrades.userId, userId), eq(preconUpgrades.preconFile, fileName), eq(preconUpgrades.status, "done")));
   if (!run) return "gone";
   const picked = picksOfRun(run.pairs as UpgradePair[], picks);
-  if (!picked) return "picks";
+  // No picks sent and still none to make: the stored run itself repeats an id, so it no longer applies as it stands ("listChanged",
+  // which re-reads the panel), not a stale pick of the player's ("picks", which would tell them to pick again when they picked nothing).
+  if (!picked) return picks === undefined ? "listChanged" : "picks";
   if (run.listFp === null || run.listFp !== boxFingerprint(box.cards.map((c) => ({ ...c, isCommander: false })))) return "listChanged";
 
   const ids = run.strategyKey.split("/")[0].split("+");
@@ -118,7 +124,9 @@ export async function prepareUpgradeIn(tx: Tx, userId: string, fileName: string,
   const leadIds = [made.commanderOracleId, ...(made.partnerOracleId ? [made.partnerOracleId] : [])];
   const rows = await tx.select({ id: cards.oracleId, identity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, [...new Set([...leadIds, ...made.cards.map((c) => c.oracleId)])]));
   const allowed = new Set(rows.filter((r) => leadIds.includes(r.id)).flatMap((r) => r.identity));
-  if (rows.some((r) => !r.identity.every((c) => allowed.has(c)))) return "listChanged";
+  // A subset the lead can't hold (a cut of an off-color card left out) is the player's pick, refused as "picks"; the whole run
+  // failing it means the list or the lead moved under it.
+  if (rows.some((r) => !r.identity.every((c) => allowed.has(c)))) return picks === undefined ? "listChanged" : "picks";
 
   // Every cut is still a card of the list the swaps run over, and no add already is.
   const held = new Set(upgradedDeck(box, { lead, adds: [], cuts: [] }).cards.map((c) => c.oracleId));

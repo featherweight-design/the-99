@@ -23,24 +23,21 @@ import { after } from "next/server";
 import { preconUpgradeEnabled } from "../../lib/precons/upgrade/flag";
 import { carryOverAfterStart } from "../../lib/precons/carry-over";
 import { overviewAfterUpgradedStart } from "../../lib/precons/upgrade/overview";
-import { picksShape, type UpgradePicks } from "../../lib/precons/upgrade/apply";
+import type { UpgradePicks } from "../../lib/precons/upgrade/apply";
 
-/** Picks from the client, held to their shape (`picksShape`); `undefined` when none were sent (the whole run), null when malformed. */
-function picksIn(raw: unknown): UpgradePicks | undefined | null {
-  return raw === undefined ? undefined : picksShape(raw);
-}
-
-/** `picks`: the adds and cuts the player kept from the run (fresh start R2); absent, the whole run. Picks without a run are refused. */
+/**
+ * `picks`: the adds and cuts the player kept from the run (fresh start R2); absent, the whole run. Picks without a run are refused.
+ * They are untrusted and validated once, inside the write (`picksOfRun`), never here.
+ */
 export async function createDeckFromPrecon(fileName: string, rawName: string, runId?: string, picks?: UpgradePicks): Promise<void | { ok: false; reason: "upgradeUnavailable" }> {
   const userId = await requireUserId();
   const name = validateDeckName(rawName);
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) throw new Error("precon not found");
-  const picked = picksIn(picks);
-  if (picked === null || (picked !== undefined && runId === undefined)) return { ok: false, reason: "upgradeUnavailable" };
+  if (picks !== undefined && runId === undefined) return { ok: false, reason: "upgradeUnavailable" };
 
   // A start from an Upgrade this precon run: the box as v0 and the run's swaps as v1. The run is the reader's own and is judged against the box in one snapshot.
   const env = runId === undefined ? null : await requestFlags(userId);
-  const upgraded = env === null || runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId, env, picked);
+  const upgraded = env === null || runId === undefined ? null : await startUpgradeFrom(userId, fileName, name, runId, env, picks);
   if (upgraded && !upgraded.ok) return { ok: false, reason: "upgradeUnavailable" };
   const deckId = upgraded ? upgraded.deckId : await startPreconDeck(userId, fileName, name);
   revalidateClaims(deckId, userId);
@@ -70,9 +67,8 @@ export async function startPreconOwned(fileName: string, rawName: string, action
   if (typeof fileName !== "string" || fileName.length === 0 || fileName.length > 200) return { ok: false, reason: "notFound" };
   if (!isUuid(actionId)) throw new Error("bad action id");
   if (runId !== undefined && (!preconUpgradeEnabled(env) || !isUuid(runId))) return { ok: false, reason: "upgradeUnavailable" };
-  const picked = picksIn(picks);
-  if (picked === null || (picked !== undefined && runId === undefined)) return { ok: false, reason: "upgradeUnavailable" };
-  const result = await startOwned(userId, fileName, name, actionId, true, runId, picked);
+  if (picks !== undefined && runId === undefined) return { ok: false, reason: "upgradeUnavailable" };
+  const result = await startOwned(userId, fileName, name, actionId, true, runId, picks);
   if (!result.ok) return result;
   revalidateClaims(result.deckId, userId);
   if (runId !== undefined) after(() => overviewAfterUpgradedStart(result.deckId, userId, env));

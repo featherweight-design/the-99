@@ -25,6 +25,8 @@ export const preconUpgradeDeckCopy = {
   listChanged: "The precon’s list changed after this upgrade, so its swaps can’t apply to this deck.",
   /** A cut is a card the player locked (lock D4): the whole Apply refuses. */
   locked: "One of these cuts is locked in this deck. Unlock it to apply the swaps.",
+  /** The picks sent are no longer this run's to apply (the "picks" refusal): the page is not refreshed; the player opens it again. */
+  picksStale: "Your picks no longer match this upgrade. Open it again to pick.",
 } as const;
 
 export const preconUpgradeCopy = {

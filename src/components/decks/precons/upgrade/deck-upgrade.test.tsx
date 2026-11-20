@@ -94,6 +94,16 @@ describe("DeckUpgradeHost (A2c)", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 
+  it("says stale picks in the foot, without refreshing the page", async () => {
+    apply.mockResolvedValue({ ok: false, reason: "picks" });
+    host();
+    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
+    expect(screen.getByRole("note")).toHaveTextContent("Your picks no longer match this upgrade. Open it again to pick.");
+    expect(refresh).not.toHaveBeenCalled();
+    expect(screen.queryByText("Those swaps didn’t apply. Your deck hasn’t changed.")).toBeNull();
+  });
+
   it("says a failed write in the shared toast, and the flow stays", async () => {
     apply.mockRejectedValue(new Error("network"));
     host();

@@ -333,21 +333,22 @@ describe("picks (fresh start R2): a subset of a run's adds and cuts", () => {
     expect(upgraded.calls).toEqual([["user_1", "Box", "Mine", RUN, PICKS], ["user_1", "Box", "Mine", RUN, undefined]]);
   });
 
-  it("createDeckFromPrecon refuses malformed picks, and picks with no run, before any read", async () => {
-    for (const bad of [{ adds: [ADD] }, { adds: ["x"], cuts: [CUT] }, { adds: [ADD, ADD], cuts: [CUT, CUT] }, "picks", null]) {
-      expect(await createDeckFromPrecon("Box", "Mine", RUN, bad as never)).toEqual({ ok: false, reason: "upgradeUnavailable" });
-    }
+  it("createDeckFromPrecon refuses picks with no run before any read, and hands malformed picks to the write that refuses them", async () => {
     expect(await createDeckFromPrecon("Box", "Mine", undefined, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
+    expect(await createDeckFromPrecon("Box", "Mine", undefined, null as never)).toEqual({ ok: false, reason: "upgradeUnavailable" });
     expect(upgraded.calls).toEqual([]);
     expect(state.written).toEqual([]);
+    // Validated once, inside the write (`picksOfRun`, apply.test.ts): the action passes them through untouched.
+    const bad = { adds: ["x"], cuts: [CUT] };
+    await expect(createDeckFromPrecon("Box", "Mine", RUN, bad as never)).rejects.toThrow(/REDIRECT/);
+    expect(upgraded.calls).toEqual([["user_1", "Box", "Mine", RUN, bad]]);
   });
 
-  it("startPreconOwned hands the picks to the owned start, and refuses malformed ones", async () => {
+  it("startPreconOwned hands the picks to the owned start untouched, and refuses picks with no run", async () => {
     state.addResult = { ok: true, deckId: "deck-9", entryId: "e" };
     await expect(startPreconOwned("Box", "Mine", ACTION, RUN, PICKS)).rejects.toThrow(/REDIRECT/);
     expect(state.addCalls.at(-1)).toEqual(["user_1", "Box", "Mine", ACTION, true, RUN, PICKS]);
     state.addCalls = [];
-    expect(await startPreconOwned("Box", "Mine", ACTION, RUN, { adds: [ADD], cuts: "x" } as never)).toEqual({ ok: false, reason: "upgradeUnavailable" });
     expect(await startPreconOwned("Box", "Mine", ACTION, undefined, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
     expect(state.addCalls).toEqual([]);
   });

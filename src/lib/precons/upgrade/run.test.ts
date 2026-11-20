@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ENV_VIEW } from "@/test/env-view";
 
-import { assembleDeck, assemblePool, optionFor, withCommanders, type CommanderOption, type DeckLine, type PoolRow } from "./inputs";
+import { assembleDeck, assemblePool, boxFingerprint, optionFor, withCommanders, type CommanderOption, type DeckLine, type PoolRow } from "./inputs";
 import type { UpgradeBase, UpgradeLoad } from "./load";
 import type { UpgradeReply } from "./prompt";
 import type { LineBrackets, StoredPair, UpgradePair } from "./validate";
@@ -35,7 +35,7 @@ vi.mock("../../model/allowance", () => ({
 
 vi.mock("../../cache/soft-failure", () => ({ recordSoftFailure: vi.fn() }));
 
-const { LIVE_DEPS, PARTNERS_TIMEOUT_MS, lineBracketsOrNone, partnersOrBare, pressUpgrade, readSetBracket, readUpgrade, setPermits } = await import("./run");
+const { LIVE_DEPS, LINE_BRACKETS_TIMEOUT_MS, PARTNERS_TIMEOUT_MS, lineBracketsOrNone, partnersOrBare, pressUpgrade, readSetBracket, readUpgrade, setPermits } = await import("./run");
 const { recordSoftFailure } = await import("../../cache/soft-failure");
 const { loadDeckProfileFromHead } = await import("../../profile/load");
 
@@ -409,6 +409,31 @@ describe("per-card bracket lines (fresh start R2)", () => {
     expect((await lineBracketsOrNone(async () => null, list, [pair("n6", "p0")])).size).toBe(0);
     expect(recordSoftFailure).toHaveBeenCalledTimes(1);
   });
+
+  it("lineBracketsOrNone leaves the values off when the read outlasts its timeout, and the paid run still finishes", async () => {
+    vi.mocked(recordSoftFailure).mockClear();
+    const l = await load();
+    const list = { commanderIds: l.commanderIds, cards: l.deck.cards };
+    const hung = () => new Promise<LineBrackets[] | null>(() => {});
+    expect((await lineBracketsOrNone(hung, list, [pair("n6", "p0")], 10)).size).toBe(0);
+    expect(recordSoftFailure).toHaveBeenCalledTimes(1);
+    // Through the press, at the default bound: the run is written done, its pairs with no lines.
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      store.finished.length = 0;
+      const { d } = deps(swaps(12));
+      d.lineBrackets.mockImplementation(hung);
+      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      const pressed = pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
+      await vi.advanceTimersByTimeAsync(LINE_BRACKETS_TIMEOUT_MS + 1);
+      expect((await pressed).ok).toBe(true);
+      const write = store.finished[0].write;
+      expect(write.status).toBe("done");
+      expect((write.pairs as StoredPair[]).every((p) => !("addBracketAfter" in p))).toBe(true);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
 
 describe("the set's bracket (fresh start R2)", () => {
@@ -432,12 +457,21 @@ describe("the set's bracket (fresh start R2)", () => {
   });
 
   it("readSetBracket answers only for the reader's own done run, with the bracket the set plays at", async () => {
-    store.runs = [{ id: "run-1", status: "done", ...run }, { id: "run-2", status: "pending", ...run }];
+    const listFp = boxFingerprint(base().lines);
+    store.runs = [{ id: "run-1", status: "done", listFp, ...run }, { id: "run-2", status: "pending", listFp, ...run }];
     const d = { base: async () => base() };
     expect(await readSetBracket("u1", "boss.json", "run-1", ["p0"], ["n6"], d)).toEqual({ permits: [3], bracket: 3 });
     expect(await readSetBracket("u1", "boss.json", "run-1", [], ["n6"], d)).toEqual({ permits: [1, 2], bracket: 2 });
     expect(await readSetBracket("u1", "boss.json", "run-2", ["p0"], ["n6"], d)).toBeNull();
     expect(await readSetBracket("u1", "boss.json", "nope", ["p0"], ["n6"], d)).toBeNull();
     expect(await readSetBracket("u1", "boss.json", "run-1", ["p0"], ["n6"], { base: async () => null })).toBeNull();
+  });
+
+  it("readSetBracket answers null for a run made over another list than the box's now, as a Start answers listChanged", async () => {
+    const d = { base: async () => base() };
+    store.runs = [{ id: "run-1", status: "done", listFp: "another-list", ...run }];
+    expect(await readSetBracket("u1", "boss.json", "run-1", ["p0"], ["n6"], d)).toBeNull();
+    store.runs = [{ id: "run-1", status: "done", listFp: null, ...run }];
+    expect(await readSetBracket("u1", "boss.json", "run-1", ["p0"], ["n6"], d)).toBeNull();
   });
 });

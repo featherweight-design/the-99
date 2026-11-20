@@ -8,14 +8,17 @@ const m = vi.hoisted(() => ({
   preconUpgradeEnabled: vi.fn(),
   markSeen: vi.fn(),
   setPick: vi.fn(),
+  enforceHit: vi.fn(),
+  readSetBracket: vi.fn(),
 }));
 vi.mock("../../auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../flags/request", () => ({ requestFlags: m.requestFlags }));
 vi.mock("./flag", () => ({ preconUpgradeEnabled: m.preconUpgradeEnabled }));
 vi.mock("./store", () => ({ markSeen: m.markSeen, setPick: m.setPick }));
-vi.mock("./run", () => ({ LIVE_DEPS: {}, pressUpgrade: vi.fn(), readUpgrade: vi.fn() }));
+vi.mock("./run", () => ({ LIVE_DEPS: {}, pressUpgrade: vi.fn(), readUpgrade: vi.fn(), readSetBracket: m.readSetBracket }));
+vi.mock("../../rate/observe", () => ({ enforceHit: m.enforceHit }));
 
-import { markUpgradeSeenAction, pickUpgradeLineAction } from "./actions";
+import { markUpgradeSeenAction, pickUpgradeLineAction, upgradeSetBracketAction } from "./actions";
 
 const RUN = "11111111-1111-4111-8111-111111111111";
 const ORACLE = "22222222-2222-4222-8222-222222222222";
@@ -28,6 +31,8 @@ beforeEach(() => {
   m.preconUpgradeEnabled.mockReturnValue(true);
   m.markSeen.mockResolvedValue(true);
   m.setPick.mockResolvedValue({ ok: true, unpicked: [] });
+  m.enforceHit.mockResolvedValue(null);
+  m.readSetBracket.mockResolvedValue({ permits: [3], bracket: 3 });
 });
 
 describe("markUpgradeSeenAction", () => {
@@ -87,5 +92,27 @@ describe("pickUpgradeLineAction", () => {
     m.setPick.mockResolvedValue({ ok: true, unpicked: [`c-${ORACLE}`] });
     expect(await pickUpgradeLineAction(RUN, `c-${ORACLE}`, false)).toEqual({ ok: true, unpicked: [`c-${ORACLE}`] });
     expect(m.setPick).toHaveBeenCalledWith("user_session", RUN, `c-${ORACLE}`, false);
+  });
+});
+
+describe("upgradeSetBracketAction", () => {
+  it("reads the picked set's bracket for the session's user, counted against its rate bucket", async () => {
+    expect(await upgradeSetBracketAction("box.json", RUN, [ORACLE], [])).toEqual({ permits: [3], bracket: 3 });
+    expect(m.enforceHit).toHaveBeenCalledWith("user_session", "upgrade-set-bracket");
+    expect(m.readSetBracket).toHaveBeenCalledWith("user_session", "box.json", RUN, [ORACLE], []);
+  });
+
+  it("answers null over the limit, and reads nothing", async () => {
+    m.enforceHit.mockResolvedValue(30);
+    expect(await upgradeSetBracketAction("box.json", RUN, [ORACLE], [])).toBeNull();
+    expect(m.readSetBracket).not.toHaveBeenCalled();
+  });
+
+  it("is refused with the switch off or a malformed run, before a hit is counted", async () => {
+    expect(await upgradeSetBracketAction("box.json", "r", [ORACLE], [])).toBeNull();
+    m.preconUpgradeEnabled.mockReturnValue(false);
+    expect(await upgradeSetBracketAction("box.json", RUN, [ORACLE], [])).toBeNull();
+    expect(m.enforceHit).not.toHaveBeenCalled();
+    expect(m.readSetBracket).not.toHaveBeenCalled();
   });
 });

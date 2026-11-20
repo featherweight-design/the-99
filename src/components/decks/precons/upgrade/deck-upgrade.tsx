@@ -89,9 +89,10 @@ function DeckUpgradeBand({ deckId, upgrade, receipt, commanderArt, onApplied, on
         router.refresh();
         return;
       }
-      if (r.reason === "locked" || r.reason === "listChanged") {
-        setRefusals((m) => ({ ...m, [runId]: r.reason === "locked" ? copy.locked : copy.listChanged }));
+      if (r.reason === "locked" || r.reason === "listChanged" || r.reason === "picks") {
+        setRefusals((m) => ({ ...m, [runId]: r.reason === "locked" ? copy.locked : r.reason === "picks" ? copy.picksStale : copy.listChanged }));
         if (r.reason === "listChanged") void refresh(true);
+        // "picks" is the player's stale pick, not a moved deck: no page refresh, the line says to open it again.
         return;
       }
       // Shut since the page drew (the deck changed in another tab) or the run is gone: the flow stays, and the page reads again.

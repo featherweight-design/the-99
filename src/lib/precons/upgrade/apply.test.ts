@@ -114,6 +114,10 @@ describe("picksOfRun", () => {
   it("absent picks are the whole run", () => {
     expect(picksOfRun(uPairs, undefined)).toEqual({ adds: [AX, AY, AZ], cuts: [CA, CB, CC] });
   });
+  it("refuses a whole run whose stored pairs repeat a cut or an add, which would end the deck at 100", () => {
+    expect(picksOfRun([{ cutId: CA, addId: AX }, { cutId: CA, addId: AY }], undefined)).toBeNull();
+    expect(picksOfRun([{ cutId: CA, addId: AX }, { cutId: CB, addId: AX }], undefined)).toBeNull();
+  });
   it("keeps a subset of either side, picked apart from its pair", () => {
     expect(picksOfRun(uPairs, { adds: [AX, AZ], cuts: [CB, CC] })).toEqual({ adds: [AX, AZ], cuts: [CB, CC] });
   });
@@ -127,6 +131,10 @@ describe("picksOfRun", () => {
 });
 
 describe("prepareUpgradeIn with picks", () => {
+  it("refuses a stored run that repeats a cut as listChanged when no picks were sent", async () => {
+    const corrupt = { ...uRun, pairs: [{ cutId: CA, addId: AX }, { cutId: CA, addId: AY }] };
+    expect(await prepareUpgradeIn(fakeTx([corrupt], uIdentities()), "u1", "box.json", "r1", uBox)).toBe("listChanged");
+  });
   it("prepares exactly the picked adds and cuts", async () => {
     const up = await prepareUpgradeIn(fakeTx([uRun], uIdentities()), "u1", "box.json", "r1", uBox, { adds: [AY], cuts: [CA] });
     expect(up).toEqual({ runId: "r1", lead: null, adds: [AY], cuts: [CA] });
@@ -144,6 +152,14 @@ describe("prepareUpgradeIn with picks", () => {
     ]) {
       expect(await prepareUpgradeIn(fakeTx([uRun]), "u1", "box.json", "r1", uBox, picks)).toBe("picks");
     }
+  });
+  it("answers picks, not listChanged, for a subset that leaves a card the lead can't hold", async () => {
+    // CB is off-color for the lead; the run cuts it, the picked subset keeps it.
+    const ids = () => uIdentities().map((r) => (r.id === CB ? { ...r, identity: ["G"] } : r));
+    expect(await prepareUpgradeIn(fakeTx([uRun], ids()), "u1", "box.json", "r1", uBox, { adds: [AX], cuts: [CA] })).toBe("picks");
+    // The whole run cuts it, so it passes; the same failure with no picks sent stays listChanged.
+    expect(await prepareUpgradeIn(fakeTx([uRun], ids().filter((r) => r.id !== CB)), "u1", "box.json", "r1", uBox)).toEqual({ runId: "r1", lead: null, adds: [AX, AY, AZ], cuts: [CA, CB, CC] });
+    expect(await prepareUpgradeIn(fakeTx([uRun], ids()), "u1", "box.json", "r1", uBox)).toBe("listChanged");
   });
   it("still answers gone first for a run that is not the reader's", async () => {
     expect(await prepareUpgradeIn(fakeTx([]), "u1", "box.json", "r1", uBox, { adds: [AX], cuts: [CA] })).toBe("gone");
