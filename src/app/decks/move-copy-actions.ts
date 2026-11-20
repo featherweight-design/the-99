@@ -66,6 +66,8 @@ export async function pickOtherDeck(oracleId: string, deckId: string): Promise<P
       return { ok: false, cause, card: await loadContestedCard(oracleId, userId).catch(() => null) };
     }
   } catch {
+    // A write that threw after the draft add leaves the deck as it was, as a refusal does.
+    if (added) await removeOneCopy(deckId, oracleId).catch(() => undefined);
     return { ok: false, cause: "failed", card: null };
   }
   revalidateClaims(deckId, userId);

@@ -15,8 +15,7 @@ export const moveCopyCopy = {
     label: "Change",
     aria: (card: string) => `Change where ${card} goes`,
   },
-  /** The chooser while card details reads it live. */
-  loading: "Checking decks…",
+  /** The chooser when card details cannot read it live. */
   loadFailed: "Couldn’t load your decks just now. Try again in a moment.",
   other: {
     heading: (decks: number) => `Other decks · ${n(decks)}`,
