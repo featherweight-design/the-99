@@ -156,11 +156,13 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
     // list still early never draws that revealed commander as "list to come".
     const gaveWay: string[] = [];
     let gaveWayLists = 0;
+    const gaveWayNames: string[] = [];
     for (const l of lists) {
       if (l.commanderCardId && hasGivenWay(l, code, candidatesByCommander)) {
         // The commanders its tile drew (`assembleEarlyList`): an alternate never was one, so it keeps its waiting row.
         gaveWay.push(...earlyListCommanderIds(l));
         gaveWayLists++;
+        if (l.title) gaveWayNames.push(l.title);
         continue;
       }
       const page = assembleEarlyList({
@@ -177,7 +179,7 @@ export async function loadEarlyListsBySet(userId: string, sets: readonly Upcomin
     }
     // A set whose lists have all given way still carries its promise and its released lists; with no tiles at all it
     // reads as none (`lists` empty).
-    out[code] = mergeEarlySet(undefined, { lists: tiles, promised, released: gaveWay, releasedLists: gaveWayLists });
+    out[code] = mergeEarlySet(undefined, { lists: tiles, promised, released: gaveWay, releasedLists: gaveWayLists, releasedNames: gaveWayNames });
   }
   return out;
 }
@@ -236,5 +238,6 @@ export function mergeEarlySet(held: EarlySet | undefined, next: EarlySet): Early
     promised: held.promised === null ? next.promised : next.promised === null ? held.promised : Math.max(held.promised, next.promised),
     released: [...new Set([...(held.released ?? []), ...(next.released ?? [])])],
     releasedLists: (held.releasedLists ?? 0) + (next.releasedLists ?? 0),
+    releasedNames: [...(held.releasedNames ?? []), ...(next.releasedNames ?? [])],
   };
 }

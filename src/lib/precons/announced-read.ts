@@ -7,6 +7,7 @@
  * the visit's `after()` write adds a key, and the page keys the entry on the UTC day, which moves the windows.
  */
 import { announcementsEnabled } from "../announcements/flag";
+import { loadAnnouncedDeckNames } from "../announcements/collecting-read";
 import { loadEarlyListsBySet, loadEarlySeen } from "../announcements/early-tiles-read";
 import type { UpcomingPayload } from "./announced";
 import { loadPreconArrivals } from "./arrivals-read";
@@ -20,10 +21,12 @@ import { loadUpcomingSets } from "./upcoming";
 export async function loadUpcomingPayload(userId: string, now: Date, env: NodeJS.ProcessEnv): Promise<UpcomingPayload> {
   const [sets, arrivals] = await Promise.all([loadUpcomingSets(userId, now), loadPreconArrivals(userId, now)]);
   const early = announcementsEnabled(env);
-  const [commanders, earlyBySet, earlySeen] = await Promise.all([
+  const [commanders, earlyBySet, earlySeen, names] = await Promise.all([
     loadRevealedCommanders(sets.map((s) => s.code)),
     early ? loadEarlyListsBySet(userId, sets, now) : {},
     early ? loadEarlySeen(userId) : [],
+    // A failing names read costs the named tiles only: the set falls back to the none plate and the shipped counts (A2).
+    early ? loadAnnouncedDeckNames(sets).catch((): Record<string, string[]> => ({})) : {},
   ]);
-  return { sets, commanders, arrivals, early: earlyBySet, earlySeen };
+  return { sets, commanders, arrivals, early: earlyBySet, earlySeen, names };
 }

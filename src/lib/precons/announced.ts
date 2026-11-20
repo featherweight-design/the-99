@@ -21,6 +21,8 @@ export type UpcomingPayload = {
   early?: Record<string, EarlySet>;
   /** The early seen keys the reader holds (`early:<code>:<count>`, G2). */
   earlySeen?: string[];
+  /** Each set's deck names from its Collecting post (addendum A2), lowercase set code to names; absent reads as none. */
+  names?: Record<string, string[]>;
 };
 
 export type AnnouncedProps = {
@@ -35,6 +37,8 @@ export type AnnouncedProps = {
   newCodes: string[];
   /** Each set's posted early lists, by code (announcements UI 5); absent reads as none. */
   early?: Record<string, EarlySet>;
+  /** Each set's deck names from its Collecting post (A2), by code; absent reads as none. */
+  names?: Record<string, string[]>;
   /** The group holds news, so it opens by itself (the `#announced` half is the browser's). */
   opensByItself: boolean;
 };
@@ -50,6 +54,7 @@ export function announcedProps(upcoming: UpcomingPayload, now: Date): AnnouncedP
     today: utcDay(now),
     newCodes,
     early,
+    names: upcoming.names,
     // Early lists the reader has not been shown are news, so they open the group as a new set does; the visit
     // acknowledges them (`earlySeenKeys`), so it never stays open on its own.
     opensByItself: announcedOpensByItself(upcoming.sets, "", now) || newCodes.length > 0,

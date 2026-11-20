@@ -9,6 +9,7 @@
  */
 import { allListsPosted, earlyPosted, filterEarly, listedCommanderIds, listsToCome, type EarlySet, type EarlyTile } from "../announcements/early-tiles";
 import { nameKey } from "../announcements/match-names";
+import { deckSlots, filterSlots, type DeckSlot } from "../announcements/named-decks";
 import { fold } from "./list";
 import type { PreconArrival } from "./arrivals-read";
 import type { RevealedCommander } from "./revealed";
@@ -141,6 +142,13 @@ export type AnnouncedMatch = {
    * commander, all read unfiltered. Absent while the set has none.
    */
   early?: { lists: EarlyTile[]; posted: number; promised: number | null; listed: string[]; toCome: number };
+  /**
+   * The set's Collecting post names its decks (addendum A2): `slots` the deck tiles the filters keep, a posted list or a
+   * name whose list is to come, in the post's order; `decks` the decks the set is known to have, the names or the posted
+   * lists when more. `early.promised` then reads the larger of the post's promise and `decks`, and `early.toCome` only
+   * the lists a decklist post promises beyond the decks known. Absent for a set with no names.
+   */
+  named?: { slots: DeckSlot[]; decks: number };
 };
 
 /**
@@ -173,6 +181,7 @@ export function filterAnnounced(
   commandersByCode: Readonly<Record<string, readonly RevealedCommander[]>>,
   { q, colours }: AnnouncedFilter,
   earlyByCode: Readonly<Record<string, EarlySet>> = {},
+  namesByCode: Readonly<Record<string, readonly string[]>> = {},
 ): AnnouncedMatch[] {
   const needle = fold(q.trim());
   const active = needle !== "" || colours.length > 0;
@@ -188,26 +197,35 @@ export function filterAnnounced(
     // The empty-set exception is for a set with nothing posted at all: `lists` is already filtered, so a set whose
     // lists the filters all drop is not one, and leaves as a set whose commanders all fail would.
     const hasEarly = posted !== undefined && posted.lists.length > 0;
-    const nothing = all.length === 0 && !hasEarly;
+    const names = namesByCode[set.code] ?? [];
+    const deckSet = names.length > 0 ? deckSlots(names, posted) : null;
+    const slots = deckSet ? filterSlots(deckSet.slots, new Set(lists), { q, colours }, setMatches) : [];
+    const nothing = all.length === 0 && !hasEarly && !deckSet;
     // A list that gave way to its release list still stands for its commander: not waiting, and not to come.
     const listed = hasEarly ? resolveUnmatched(listedCommanderIds(posted.lists, posted.released), all) : new Set<string>();
     // Only a commander the row will draw keeps the set: with posted lists that is one still waiting for its list
     // (`waitingCommanders`). A commander stood for by a list is kept by that list matching, or not at all, so a search
     // that matches only a released list's commander never keeps a row with nothing to show.
     // Once every promised list is posted, none is waiting (`allListsPosted`), so none is drawn.
-    const complete = hasEarly && allListsPosted(earlyPosted(posted), posted.promised);
+    const complete = hasEarly && allListsPosted(earlyPosted(posted), deckSet ? deckSet.decks : posted.promised);
     const drawn = complete ? 0 : commanders.filter((c) => !listed.has(c.oracleId)).length;
-    const stays = nothing ? !active || setMatches : !active || drawn > 0 || lists.length > 0;
+    const stays = nothing ? !active || setMatches : !active || drawn > 0 || lists.length > 0 || slots.length > 0;
     if (!stays) continue;
     const match: AnnouncedMatch = { set, commanders, matched: commanders.length, revealed: all.length };
     if (hasEarly) {
       const waiting = all.filter((c) => !listed.has(c.oracleId)).length;
       // Posted counts the lists that gave way too (`earlyPosted`): the same count the seen key and the news check read.
       const count = earlyPosted(posted);
+      // With names the revealed commanders are not counted as lists to come (they sit in the strip), and the note names
+      // only the lists a decklist post promises beyond the decks the names give.
       match.early = {
-        lists, posted: count, promised: posted.promised, listed: [...listed],
-        toCome: listsToCome(count, posted.promised, waiting),
+        lists, posted: count, listed: [...listed],
+        promised: deckSet ? Math.max(posted.promised ?? 0, deckSet.decks) : posted.promised,
+        toCome: deckSet ? Math.max(0, (posted.promised ?? 0) - deckSet.decks) : listsToCome(count, posted.promised, waiting),
       };
+    }
+    if (deckSet) {
+      match.named = { slots, decks: deckSet.decks };
     }
     out.push(match);
   }

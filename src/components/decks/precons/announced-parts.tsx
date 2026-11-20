@@ -27,6 +27,7 @@ import { collapsible, firstPaintCss } from "../../../lib/precons/announced-colla
 import { noteAppScroll } from "../../../lib/ui/reveal";
 import { announcedSetAnchor } from "../../../lib/announcements/early-list";
 import { allListsPosted, type EarlyTile } from "../../../lib/announcements/early-tiles";
+import type { DeckSlot } from "../../../lib/announcements/named-decks";
 import type { PreconRow } from "../../../lib/precons/list";
 import Link from "next/link";
 import { PreconTile } from "./precon-tile";
@@ -230,7 +231,7 @@ export function EarlyRow({ tile }: { tile: EarlyTile }) {
 }
 
 /** A revealed commander still waiting for its list, in the opened set row: dashed (nothing to open but its card). */
-function WaitingRow({ card, siblings }: { card: RevealedCommander; siblings: readonly string[] }) {
+function WaitingRow({ card, siblings, label = copy.waiting }: { card: RevealedCommander; siblings: readonly string[]; label?: string }) {
   return (
     <li className={`${SUB_ROW} border-dashed border-[color:var(--border-dashed)] bg-transparent`} data-testid="waiting-row">
       <CommanderPress
@@ -247,8 +248,65 @@ function WaitingRow({ card, siblings }: { card: RevealedCommander; siblings: rea
         <span aria-hidden className="truncate text-[13.5px] font-semibold text-[color:var(--fg)]">{card.name}</span>
         <span className={SUB_META}>
           <Dots identity={card.colorIdentity} size="h-[9px] w-[9px]" />
-          {copy.waiting}
+          {label}
         </span>
+      </span>
+    </li>
+  );
+}
+
+/** The brand's three diamonds, the middle one larger: the mark a deck with no commander yet carries where the art goes. */
+function Diamonds() {
+  const d = (size: string) => <i className={`block rotate-45 bg-[color:var(--fg-locked)] ${size}`} />;
+  return (
+    <span aria-hidden className="flex items-center gap-[4px] opacity-90">
+      {d("h-[6px] w-[6px]")}
+      {d("h-[9px] w-[9px]")}
+      {d("h-[6px] w-[6px]")}
+    </span>
+  );
+}
+
+/**
+ * A deck Wizards has named whose list is not posted (addendum A2): the precon tile's shell and size, dashed with nothing to
+ * open, so no press, hover or tab stop. A sunken art box holds the diamonds and `commander not revealed yet`; the caption
+ * says `list to come` and the deck's name. It is one spoken phrase.
+ */
+function NamedDeckTile({ name, hidden = false }: { name: string; hidden?: boolean }) {
+  return (
+    <li
+      aria-label={copy.namedAria(name)}
+      className={`${TILE_SHELL} relative min-w-0 border border-dashed border-[color:var(--border-dashed)] bg-transparent`}
+      data-testid="named-deck-tile"
+      hidden={hidden || undefined}
+      style={hidden ? { display: "none" } : undefined}
+    >
+      <div
+        aria-hidden
+        className={`flex w-full flex-col items-center justify-center gap-[12px] bg-[color:var(--surface-sunken)] ${TILE_ART_CLIP}`}
+        style={{ aspectRatio: TILE_ART_RATIO }}
+      >
+        <Diamonds />
+        <small className="px-[14px] text-center font-mono text-[9.5px] leading-[1.45] text-[color:var(--fg-faint)] md:text-[10px]">{copy.namedArt}</small>
+      </div>
+      <CardTileCaption
+        meta={<span className="text-[color:var(--fg-faint)]">{copy.listToCome}</span>}
+        name={name}
+      />
+    </li>
+  );
+}
+
+/** A named deck in the opened set row (rows view): a dashed row, a plate thumb with the mark, `list to come`. */
+function NamedDeckRow({ name }: { name: string }) {
+  return (
+    <li aria-label={copy.namedAria(name)} className={`${SUB_ROW} border-dashed border-[color:var(--border-dashed)] bg-transparent`} data-testid="named-deck-row">
+      <span aria-hidden className="flex h-[48px] w-[34px] flex-none items-center justify-center rounded-[3px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]">
+        <i className="block h-[6px] w-[6px] rotate-45 bg-[color:var(--fg-locked)]" />
+      </span>
+      <span aria-hidden className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <span className="truncate text-[13.5px] font-semibold text-[color:var(--fg)]">{name}</span>
+        <span className={SUB_META}>{copy.listToCome}</span>
       </span>
     </li>
   );
@@ -265,8 +323,10 @@ export function EarlyRowList({ match }: { match: AnnouncedMatch }) {
   return (
     <div className="flex flex-col gap-[8px]" data-testid="early-rows">
       <ul className="m-0 flex list-none flex-col gap-[8px] p-0">
-        {match.early?.lists.map((t) => <EarlyRow key={t.href} tile={t} />)}
-        {waiting.map((c) => <WaitingRow key={c.oracleId} card={c} siblings={siblings} />)}
+        {match.named
+          ? match.named.slots.map((slot) => slot.kind === "list" ? <EarlyRow key={slot.tile.href} tile={slot.tile} /> : <NamedDeckRow key={`name:${slot.name}`} name={slot.name} />)
+          : match.early?.lists.map((t) => <EarlyRow key={t.href} tile={t} />)}
+        {waiting.map((c) => <WaitingRow key={c.oracleId} card={c} siblings={siblings} label={match.named ? copy.waitingUnmatched : copy.waiting} />)}
       </ul>
       {toCome > 0 && <p className="m-0 p-[4px_2px] font-mono text-[10.5px] text-[color:var(--fg-locked)]" data-testid="to-come">{copy.toCome(toCome)}</p>}
     </div>
@@ -412,12 +472,17 @@ function useGridColumns(ref: React.RefObject<HTMLElement | null>, watch: boolean
  * visit. Hidden tiles are `display: none`, so they leave the tab and reading order; card details still page every
  * commander of the set (`siblings`).
  */
-function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filtering, expanded, onToggleExpanded }: {
+function RevealedTiles({ commanders, early = [], slots, toCome = 0, setName, code, filtering, expanded, onToggleExpanded }: {
   /** The revealed commanders to draw: with posted lists, only those still waiting for theirs (`waitingCommanders`). */
   commanders: readonly RevealedCommander[];
   /** The set's posted early lists, first in the grid as precon tiles (announcements STATES 3.1). */
   early?: readonly EarlyTile[];
-  /** Promised lists not posted yet: the none plate's note, last in the grid (STATES 3.2). */
+  /**
+   * The set's deck tiles when its decks are named (addendum A2), in the Collecting post's order: they replace `early`,
+   * and `commanders` is then empty (the waiting commanders sit in a strip under the grid, never on a deck).
+   */
+  slots?: readonly DeckSlot[];
+  /** Promised lists not posted yet: the none plate's note, last in the grid (STATES 3.2); under the grid for named decks. */
   toCome?: number;
   setName: string;
   code: string;
@@ -429,7 +494,8 @@ function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filt
   const gridRef = useRef<HTMLUListElement>(null);
   const toggleRef = useRef<HTMLDivElement>(null);
   // Lists and commanders are one grid, and fold together: the fold counts every tile.
-  const tiles = early.length + commanders.length;
+  const decks: readonly DeckSlot[] = slots ?? early.map((tile): DeckSlot => ({ kind: "list", tile }));
+  const tiles = decks.length + commanders.length;
   const columns = useGridColumns(gridRef, tiles > 4 && !filtering);
   const folds = columns !== null && collapsible(tiles, columns, filtering);
   const collapsed = folds && !expanded;
@@ -462,14 +528,17 @@ function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filt
           data-collapse={guess ? code : undefined}
           data-measured={columns !== null ? "" : undefined}
         >
-          {early.map((t, i) => (
-            <PreconTile key={t.href} row={earlyRow(t)} href={t.href} early identityKnown={t.identityKnown} hidden={collapsed && i >= shown} />
+          {decks.map((d, i) => d.kind === "list" ? (
+            <PreconTile key={d.tile.href} row={earlyRow(d.tile)} href={d.tile.href} early identityKnown={d.tile.identityKnown} hidden={collapsed && i >= shown} />
+          ) : (
+            <NamedDeckTile key={`name:${d.name}`} name={d.name} hidden={collapsed && i >= shown} />
           ))}
           {commanders.map((c, i) => (
-            <RevealedTile key={c.oracleId} card={c} siblings={siblings} hidden={collapsed && early.length + i >= shown} />
+            <RevealedTile key={c.oracleId} card={c} siblings={siblings} hidden={collapsed && decks.length + i >= shown} />
           ))}
-          {toCome > 0 && <NonePlate label={copy.toCome(toCome)} className="self-start" hidden={collapsed} />}
+          {!slots && toCome > 0 && <NonePlate label={copy.toCome(toCome)} className="self-start" hidden={collapsed} />}
         </ul>
+        {slots && toCome > 0 && <p className="m-0 pt-[8px] font-mono text-[10.5px] text-[color:var(--fg-locked)]" data-testid="to-come">{copy.toCome(toCome)}</p>}
       </div>
       {folds && (
         <div ref={toggleRef}>
@@ -478,7 +547,7 @@ function RevealedTiles({ commanders, early = [], toCome = 0, setName, code, filt
             onToggle={onToggleExpanded}
             label={copy.showAll(tiles)}
             fewer={copy.showFewer}
-            ariaLabel={early.length > 0
+            ariaLabel={decks.some((d) => d.kind === "list")
               ? (expanded ? copy.showFewerEarlyAria(setName) : copy.showAllEarlyAria(tiles, setName))
               : (expanded ? copy.showFewerAria(setName) : copy.showAllAria(tiles, setName))}
             controls={gridId}
@@ -503,7 +572,8 @@ export function countLine(m: AnnouncedMatch): string {
 
 /** The meta's count half: once Wizards posts the set's lists, how many of those promised (STATES 3.2); else the revealed count. */
 export function countHalf(m: AnnouncedMatch): string {
-  return m.early ? copy.listsSoFar(m.early.posted, m.early.promised) : countLine(m);
+  if (m.early) return copy.listsSoFar(m.early.posted, m.early.promised);
+  return m.named ? copy.decks(m.named.decks) : countLine(m);
 }
 
 export type ListedJump = { count: number; year: string };
@@ -562,8 +632,9 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false, fil
       </div>
       {compact ? <RevealedStrip commanders={match.commanders} /> : (
         <RevealedTiles
-          commanders={waitingCommanders(match)}
+          commanders={match.named ? [] : waitingCommanders(match)}
           early={match.early?.lists}
+          slots={match.named?.slots}
           toCome={match.early?.toCome}
           setName={set.name}
           code={set.code}
@@ -571,6 +642,14 @@ export function AnnouncedSet({ match, today, isNew, listed, compact = false, fil
           expanded={expanded}
           onToggleExpanded={onToggleExpanded}
         />
+      )}
+      {!compact && match.named && waitingCommanders(match).length > 0 && (
+        // The commanders no posted list names yet, never matched to a deck by guess (A2): the shipped strip cards, under
+        // the decks in the same dashed block, and never folded.
+        <div className="flex flex-col gap-[8px] border-x-0 border-b-0 border-t-[1px] border-dashed border-t-[color:var(--border-strong)] pt-[10px]" data-testid="unmatched-strip">
+          <p className="m-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.unmatchedHeading}</p>
+          <RevealedStrip commanders={waitingCommanders(match)} />
+        </div>
       )}
     </li>
   );

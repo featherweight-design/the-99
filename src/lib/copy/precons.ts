@@ -372,6 +372,21 @@ export const preconsCopy = {
       promised === null ? `${plural(posted, "list", "lists")} so far` : posted >= promised ? (posted === 1 ? plural(1, "list", "lists") : `All ${n(posted)} lists`) : `${n(posted)} of ${plural(promised, "list", "lists")} so far`,
     /** The none plate's note for promised lists not yet posted (STATES 3.2). */
     toCome: (count: number) => `${plural(count, "more list", "more lists")} to come`,
+    // Drafts for /copy-review (addendum A2, #2981): a deck Wizards has named whose list is not posted yet.
+    /** In the dashed art box of a named deck's tile, under the brand's diamonds. */
+    namedArt: "commander not revealed yet",
+    /** The named deck tile's meta line, and its row's line 2: where `you own N of M` goes once the list posts. */
+    listToCome: "list to come",
+    /** Spoken for a named deck's tile or row: the tile's words in one phrase. */
+    namedAria: (name: string) => `${name}, list to come`,
+    /** The strip's heading under the decks: revealed commanders no posted list names yet, never matched to a deck by guess. */
+    unmatchedHeading: "Revealed so far · not matched to a deck yet",
+    /** The set's count half while its decks are named and no list is posted. */
+    decks: (count: number) => plural(count, "deck", "decks"),
+    /** Rows view, line 2 of a named set: the revealed commanders after the deck count (`4 decks · Jace and Sai revealed`). */
+    namesRevealed: (names: string) => `${names} revealed`,
+    /** A revealed commander not matched to a deck, in the rows view of a set whose decks are named. */
+    waitingUnmatched: "revealed · deck not known yet",
     /** A revealed commander whose list is still to come, in the rows view. */
     waiting: "revealed · list to come",
     /** Rows view, line 2 once lists are posted: the lists count, then the names. */
