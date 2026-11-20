@@ -136,6 +136,48 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   bare error, so it reads as a failed row of no phase and refuses. Its recovery is still the full build
   (`db:build:index`, then staples). The retry covers staples failures from this deploy on.
 
+## Theme pages, measured (engine plan A1, 2026-11-20)
+
+EDHREC serves a page per theme of a commander: `json.edhrec.com/pages/commanders/<slug>/<theme>.json`. It has the same shape as the commander page (`container.json_dict.cardlists`). Each cardview's `potential_decks` is the theme's deck count. A page is about 140 KB.
+
+**Theme slugs come only from the commander page's `tag_counts`.** A guessed slug returns 403: Atraxa's `superfriends` does, while `planeswalkers` is the real slug.
+
+**Request volume (staging, `commander_support.tags`, 3,727 commanders):**
+
+| Rule | Commanders with a theme page | Extra requests per build |
+|---|---|---|
+| Top 3 tags, at least 50 decks | 1,858 | 4,544 |
+| Top 3 tags, at least 100 decks | 1,410 | 3,211 |
+| Top 3 tags, at least 200 decks | 991 | 2,064 |
+
+- A percentage floor is wrong. Atraxa's `planeswalkers`, the build the plan exists for, is 1,789 of 46,230 decks (3.9%), so a 5% floor drops it.
+- `commander_pair_support` stores no tags, so pairs have no theme list to fetch from.
+
+**Do theme pages reach the primers' cards?** `pnpm measure:build-themes`, read-only, 24 EDHREC requests. It ranks each page's nonland cards and counts how many of the primer's nonland cards land in the first 62. The primer lists and their sources are in `scripts/fixtures/build-themes-primers.json`.
+
+The primer lists come from public decklists and articles, read through a summarizing fetch. Some include upgrade suggestions (Zedruu) or prose mentions, so treat them as "cards a primer names", not as one exact deck. Every name was checked against the catalog, and lands were removed by type line.
+
+| Commander | Primer nonland | Listed on the commander page | Commander page, inclusion | Commander page, score | Top theme, inclusion | Best theme (upper bound) | Best theme, inclusion | Best theme, score |
+|---|---|---|---|---|---|---|---|---|
+| Atraxa, Praetors' Voice | 68 | 54 | 26 | 25 | infect: 22 | planeswalkers | 36 | 37 |
+| Lord Windgrace | 68 | 53 | 33 | 34 | lands-matter: 34 | lands-matter | 34 | 34 |
+| Talrand, Sky Summoner | 91 | 68 | 45 | 44 | spellslinger: 44 | spellslinger | 44 | 45 |
+| Blim, Comedic Genius | 63 | 39 | 25 | 25 | donate: 25 | donate | 25 | 25 |
+| Zedruu the Greathearted | 121 | 53 | 23 | 22 | donate: 23 | donate | 23 | 22 |
+| The Ur-Dragon (partial, 17) | 17 | 11 | 7 | 7 | dragons: 7 | dragons | 7 | 7 |
+
+Notes on the table:
+
+- Score = inclusion × (1 + max(0, synergy)).
+- "Top theme" is the commander's most-played tag, which the app could choose unprompted.
+- "Best theme" is chosen against the primer itself, so it is an upper bound.
+
+What the table shows:
+
+- **A theme page helps only when the player chooses the build.** Atraxa's `planeswalkers` page (the superfriends primer) goes from 26 to 36. Atraxa's top tag, `infect`, ranks worse than the commander page (22). So a theme page is read only for a build the player picks: the Help me choose themes answer or the strategy focus. It is never read by default. For the other five commanders, the theme page ranks like the commander page.
+- **Synergy weighting adds nothing,** within plus or minus 1 everywhere, so it does not ship. Inclusion stays the ranking (`byInclusion`).
+- **150 of the 428 primer nonland cards (35%) are not listed on the commander page at all.** No ranking of that page reaches them, and with the caveat above, some of these are upgrade or prose mentions. Reaching the rest needs a source other than EDHREC's figures, such as a paid guided read. That gap is the case for one.
+
 ## From AGENTS.md (moved 2026-10-28)
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
