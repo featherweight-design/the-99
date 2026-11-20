@@ -70,7 +70,7 @@ export function themeCopyRefusal(sourceThemes: number, targetThemes: number): st
 
 async function targetThemeRefusal(target: NonNullable<Parameters<typeof readLabelRoleBasis>[1]>, s: IndexSnapshot): Promise<string | null> {
   const res = await target.execute(sql`select count(*)::int as n from ${commanderThemeSupport}`);
-  return themeCopyRefusal(s.themes.length, Number((res.rows[0] as { n: number }).n));
+  return themeCopyRefusal(s.themes.length, Number((res.rows[0] as { n?: number } | undefined)?.n ?? 0));
 }
 
 /**

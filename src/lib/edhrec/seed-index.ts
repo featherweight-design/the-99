@@ -544,7 +544,7 @@ export async function buildCommanderIndex(
       throw err;
     }
     r.themePages += writes.length;
-    r.themeCardRows += writes.reduce((n, w) => n + w.cards.length, 0);
+    for (const { cards: rows } of writes) r.themeCardRows += rows.length;
   }
 
   for (const commander of commanders) {

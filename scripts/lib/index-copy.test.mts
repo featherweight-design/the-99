@@ -140,10 +140,11 @@ describe("the index copy's label preflight, which a dry run also runs", () => {
     expect(t.execute).not.toHaveBeenCalled(); // no listed card, so nothing to read
   });
 
-  it("reads nothing for a build that wrote no label targets", async () => {
+  it("reads no labels for a build that wrote no label targets", async () => {
     const t = target();
     expect(await indexCopySpec.targetRefusal!(t as never, snap(null))).toBeNull();
-    expect(t.execute).not.toHaveBeenCalled();
+    // The one read is the theme count (`targetThemeRefusal`), which every copy makes.
+    expect(t.execute).toHaveBeenCalledTimes(1);
   });
 });
 
