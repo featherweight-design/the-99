@@ -405,7 +405,7 @@ export function ModalPanel({
             onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
-            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)]"
+            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)] rounded-[10px]"
           >
             ×
           </button>
@@ -434,7 +434,7 @@ export function ModalPanel({
             onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
-            className="aria-disabled:cursor-default aria-disabled:opacity-60 flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)]"
+            className="aria-disabled:cursor-default aria-disabled:opacity-60 flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)] rounded-[10px]"
           >
             ×
           </button>
@@ -482,7 +482,7 @@ export function ModalPanel({
             onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
-            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)]"
+            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)] rounded-[10px]"
           >
             ×
           </button>

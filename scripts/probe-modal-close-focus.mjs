@@ -5,15 +5,23 @@
 //   1. focus at open is NOT the ✕ (it is the sheet's heading);
 //   2. Tab from there puts keyboard focus on the ✕, and its ring's box (the button's box moved by outline-offset and
 //      outline-width) lies inside the panel's visible box, corner arc included.
-// It writes nothing: About's index records no visit (only `/about/[area]` does), and the form is closed unsent.
-// The server must run with FEEDBACK_ENABLED=true, or About draws no Report row.
+// Its one write: About draws the Report row only with FEEDBACK_ENABLED on for the reader, so the run adds a per-user
+// `flag_overrides` row for the signed-in account (marked `updated_by = probe:modal-close-focus`, and only when that
+// account has no row of its own) and deletes exactly that row in `finally`, counted back as a check. Production and
+// staging are refused by `neon.branch_id` first. About's index records no visit (only `/about/[area]` does), and the
+// form closes unsent. DATABASE_URL must be the database the dev server reads.
 //
 //   PROBE_BASE=http://localhost:3291 node scripts/probe-modal-close-focus.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
+const sql = neon(DATABASE_URL);
+const MARK = "probe:modal-close-focus";
+const SWITCH = "FEEDBACK_ENABLED";
 if (!EMAIL.includes("+clerk_test")) throw new Error("Use a +clerk_test account (see the local-auth note).");
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) throw new Error("This probe runs against a local dev server only.");
@@ -32,7 +40,7 @@ function report(label, ok, detail = "") {
 
 async function signIn(page) {
   await setupClerkTestingToken({ page });
-  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+  await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 180_000 });
   await page.waitForFunction(() => window.Clerk?.loaded, null, { timeout: 60_000 });
   const failure = await page.evaluate(async (email) => {
     try {
@@ -50,6 +58,19 @@ async function signIn(page) {
     }
   }, EMAIL);
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
+  return page.evaluate(() => window.Clerk.user.id);
+}
+
+/** Switch Report on for this account, unless it already has a row of its own. The server memoizes the switch
+ *  overrides for 30s (`SNAPSHOT_TTL_MS`), and the sign-in just read them, so a new row waits that out. */
+let switched = false;
+async function switchOn(userId, page) {
+  if (switched) return;
+  const [own] = await sql`select 1 from flag_overrides where "switch" = ${SWITCH} and scope = 'user' and user_id = ${userId}`;
+  switched = true;
+  if (own) return;
+  await sql`insert into flag_overrides ("switch", scope, user_id, value, updated_by) values (${SWITCH}, 'user', ${userId}, 'on', ${MARK})`;
+  await page.waitForTimeout(31_000);
 }
 
 async function walk(browser, width) {
@@ -57,13 +78,17 @@ async function walk(browser, width) {
   const page = await context.newPage();
   const L = (s) => `${width.label}: ${s}`;
   try {
-    await signIn(page);
-    await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded" });
+    await switchOn(await signIn(page), page);
+    await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded", timeout: 180_000 });
     const press = page.locator("[data-about-report] button");
-    await press.waitFor({ timeout: 30_000 });
-    await press.click();
+    await press.waitFor({ timeout: 30_000 }).catch(async (e) => { throw new Error(`no Report row at ${page.url()} (${(await page.locator("main").innerText().catch(() => "")).slice(0, 160).replace(/\s+/g, " ")}): ${e.message.split("\n")[0]}`); });
+    // A press before hydration does nothing (the server-drawn button has no handler yet), so press until it opens.
     const dialog = page.locator('[data-testid="receipt-modal"]');
-    await dialog.waitFor({ timeout: 15_000 });
+    for (let i = 0; ; i += 1) {
+      await press.click();
+      if (await dialog.waitFor({ timeout: 5_000 }).then(() => true, () => false)) break;
+      if (i === 11) throw new Error("Report a problem never opened");
+    }
     // The open's focus effect runs after the paint; let it.
     await page.waitForTimeout(300);
 
@@ -94,7 +119,9 @@ async function walk(browser, width) {
       const grow = (parseFloat(cs.outlineOffset) || 0) + (parseFloat(cs.outlineWidth) || 0);
       const r = { left: b.left - grow, top: b.top - grow, right: b.right + grow, bottom: b.bottom + grow };
       const radius = parseFloat(pc.borderTopRightRadius) || 0;
-      return { visible, grow, r, p: { left: p.left, top: p.top, right: p.right, bottom: p.bottom }, radius, offset: cs.outlineOffset, width: cs.outlineWidth };
+      // The outline follows the button's own radius, grown (or shrunk) by the same amount as its box.
+      const ringRadius = Math.max(0, (parseFloat(cs.borderTopRightRadius) || 0) + grow);
+      return { visible, grow, r, ringRadius, p: { left: p.left, top: p.top, right: p.right, bottom: p.bottom }, radius, offset: cs.outlineOffset, width: cs.outlineWidth };
     });
     report(L("the ✕ draws a focus ring"), ring.visible, `offset ${ring.offset}, width ${ring.width}`);
     const E = 0.5;
@@ -102,17 +129,22 @@ async function walk(browser, width) {
     // The ring's top-right corner against the panel's rounded top-right corner (overflow-hidden clips outside the arc).
     const cx = ring.p.right - ring.radius;
     const cy = ring.p.top + ring.radius;
-    const inCorner = ring.r.right <= cx || ring.r.top >= cy || Math.hypot(ring.r.right - cx, ring.r.top - cy) <= ring.radius + E;
+    // The ring's own top-right corner is an arc of `ringRadius`; it is inside when that arc's far edge is within the panel's.
+    const rx = ring.r.right - ring.ringRadius;
+    const ry = ring.r.top + ring.ringRadius;
+    const inCorner = ring.r.right <= cx || ring.r.top >= cy || Math.hypot(Math.max(0, rx - cx), Math.max(0, cy - ry)) + ring.ringRadius <= ring.radius + E;
     report(
       L("the ✕'s ring sits inside the visible panel"),
       inBox && inCorner,
-      `ring ${[ring.r.left, ring.r.top, ring.r.right, ring.r.bottom].map((n) => n.toFixed(1)).join(",")} panel ${[ring.p.left, ring.p.top, ring.p.right, ring.p.bottom].map((n) => n.toFixed(1)).join(",")} radius ${ring.radius}`,
+      `ring ${[ring.r.left, ring.r.top, ring.r.right, ring.r.bottom].map((n) => n.toFixed(1)).join(",")} panel ${[ring.p.left, ring.p.top, ring.p.right, ring.p.bottom].map((n) => n.toFixed(1)).join(",")} radius ${ring.radius}, ring radius ${ring.ringRadius}`,
     );
   } finally {
     await context.close();
   }
 }
 
+const [{ branch } = {}] = await sql`select current_setting('neon.branch_id', true) as branch`;
+assertNotSharedBranch(branch, "probe:modal-close-focus");
 await clerkSetup();
 const browser = await chromium.launch();
 try {
@@ -125,6 +157,13 @@ try {
   }
 } finally {
   await browser.close();
+  try {
+    await sql`delete from flag_overrides where "switch" = ${SWITCH} and updated_by = ${MARK}`;
+    const [{ n }] = await sql`select count(*)::int as n from flag_overrides where updated_by = ${MARK}`;
+    report("the probe's switch row is removed", n === 0, `${n} left`);
+  } catch (error) {
+    report("the probe's switch row is removed", false, String(error?.message ?? error));
+  }
 }
 console.log(failures ? `\n${failures} check(s) failed.` : "\nAll checks passed.");
 process.exitCode = failures ? 1 : 0;
