@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>URL and copy</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8FB4F0}a:hover{color:#B7CFF7}
+</style>
+</helmet>
+<div style="width:1400px;height:1180px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:26px">
+<h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif">URL round-trip and final copy</h2>
+<div style="display:flex;flex-direction:column;gap:10px">
+<p style="margin:0;font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8FB4F0">URL</p>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 24px;font-size:13px;line-height:1.5;color:#B1B6C7">
+<span style="font-family:'IBM Plex Mono',monospace;color:#E6E8F0">/commanders/discover?t=tokens</span><span>One theme. EDHREC slug, as the index stores it.</span>
+<span style="font-family:'IBM Plex Mono',monospace;color:#E6E8F0">?t=aristocrats,tokens</span><span>Several: lower-cased, de-duplicated, sorted, so a link reads the same however it was picked. Any is implied.</span>
+<span style="font-family:'IBM Plex Mono',monospace;color:#E6E8F0">?t=aristocrats,lifegain&amp;tm=all</span><span>All. <span style="font-family:'IBM Plex Mono',monospace">tm</span> is written only with two or more themes; over one it is the same list and is dropped.</span>
+<span style="font-family:'IBM Plex Mono',monospace;color:#E6E8F0">?c=u&amp;t=tokens&amp;o=new</span><span>Keys join the lane's existing ones in serialize order (q, c, m, o, p, t, tm); foreign keys are kept.</span>
+<span style="font-family:'IBM Plex Mono',monospace;color:#E6E8F0">?t=old-theme</span><span>An unknown slug is kept, not dropped (like set codes): it matches nothing and the empty state names the control.</span>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px">
+<p style="margin:0;font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8FB4F0">Copy (final)</p>
+<div style="display:grid;grid-template-columns:260px minmax(0,1fr);gap:8px 24px;font-size:13px;line-height:1.5;color:#B1B6C7">
+<span>Trigger</span><span style="color:#E6E8F0">Themes · Themes 2</span>
+<span>Panel / sheet title, search</span><span style="color:#E6E8F0">Themes · Search themes</span>
+<span>List order label</span><span style="color:#E6E8F0">Most commanders first</span>
+<span>Typal hint</span><span style="color:#E6E8F0">typal</span>
+<span>Head line, pips lit</span><span style="color:#E6E8F0">Counted within the colors you picked.</span>
+<span>Match legend · options</span><span style="color:#E6E8F0">Theme match · Any / All (desktop) · Any of these / All of these (phone)</span>
+<span>Match, under two</span><span style="color:#E6E8F0">Pick two to combine (desktop) · Pick two themes to choose how they combine. (phone)</span>
+<span>Phone list row</span><span style="color:#E6E8F0">All 394 themes ›</span>
+<span>Chips</span><span style="color:#E6E8F0">Tokens · Aristocrats, Tokens · 3 themes · All themes</span>
+<span>Footer</span><span style="color:#E6E8F0">394 themes · 2 of 394 selected · Back to filters (layer)</span>
+<span>Row sentence, picked</span><span style="color:#E6E8F0">This commander’s play styles include <b style="color:#8FB4F0">Tokens</b>, Dragons and Treasure.</span>
+<span>Zero, All</span><span style="color:#E6E8F0">No commander plays all of those · Aristocrats, Landfall and Lifegain together leave nothing in the 2,948 you don’t own. · Match any theme</span>
+<span>Zero, theme alone</span><span style="color:#E6E8F0">No commander for that theme here · Rad Counters leaves nothing in the 2,948 you don’t own. The ones you own are on your commanders. · Clear the theme filter</span>
+<span>Zero, color + theme</span><span style="color:#E6E8F0">No commander fits both · None of the 2,948 you don’t own is white and plays Rad Counters. · Clear the color filter / Clear the theme filter</span>
+<span>Empty search in list</span><span style="color:#E6E8F0">No theme by that name · No theme matches “…”.</span>
+</div>
+</div>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD;max-width:1250px">Not in this round: Themes on For you (the rack is lane-blind, so it can follow with no new design) and grouping the list into mechanics and typal. Counts on these frames are illustrative; the shipped list counts the rows the other controls leave.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
