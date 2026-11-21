@@ -388,7 +388,7 @@ export function ModalPanel({
           className="flex flex-none items-center gap-[8px] min-h-[52px] pl-[16px] pr-[8px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
           style={{ opacity: behind ? 0.55 : undefined }}
         >
-          <h2 ref={headingRef} id={titleId} tabIndex={-1} className="sr-only">{title}</h2>
+          <h2 ref={headingRef} id={titleId} tabIndex={-1} className="sr-only outline-none">{title}</h2>
           <button
             type="button"
             onClick={back.onBack}
