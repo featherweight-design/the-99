@@ -88,6 +88,8 @@ import { readShoppingLimit } from "../../../lib/swaps/read";
 import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestFlags } from "../../../lib/flags/request";
+import { preconUpgradeEnabled } from "../../../lib/precons/upgrade/flag";
+import { GuidedRunLine } from "../../../components/decks/guided/guided-run-line";
 import { SWITCH_FLAGS } from "../../../lib/flags/flags";
 import { TOOL_PARAM, deckToolLanding } from "../../../lib/discovery/tools";
 
@@ -764,6 +766,8 @@ export default async function DeckBuilderPage({
       provenance={combinedAsOf ? provenanceForm(combinedAsOf, new Date()) : null}
       ownProvenance={tokenNewest ? provenanceForm(tokenNewest, new Date()) : null}
     >
+      {/* The guided build's line (G6): drawn from its own read, so the cached payload above never carries a run. */}
+      {preconUpgradeEnabled(env) && <GuidedRunLine deckId={id} deckName={detail.name} commanderId={detail.commander.oracleId} />}
       <ZoneProvider zone={await resolveZone()}>{landed}</ZoneProvider>
     </DeckTokensProvider>
   );

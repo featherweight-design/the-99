@@ -201,7 +201,7 @@ describe("finishGuided and reapGuided", () => {
 describe("readGuidedState", () => {
   const row = (over: Record<string, unknown>) => ({
     id: "run-1", status: "done", refunded: false, strategyKey: "tokens", strategyLabel: "Tokens", createdAt: NOW, pairs: [], buyTotalCents: 100,
-    bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, poolMode: "owned", kept: ["o1"], errorClass: null, ...over,
+    bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, poolMode: "owned", budgetCents: null, kept: ["o1"], errorClass: null, ...over,
   });
 
   it("is null for a deck with no run, and reads only the reader's own run on the reader's own deck", async () => {

@@ -1,0 +1,59 @@
+{
+  "feature": "Guided build PR C: the run window (R1, R4, R5) opened from the deck page's guided line (G6 page line).",
+  "clearAbout": true,
+  "note": "Needs `node scripts/probe-guided-run.mjs seed` first (and `clear` after): three fixture decks on local-dev with a running, a failed and a short guided run, and PRECON_UPGRADE_ENABLED on for the fixture account. Nothing is pressed that spends.",
+  "out": "contact-sheets/guided-build-run",
+  "rows": [
+    {
+      "id": "deck-running",
+      "label": "a run going: the line on the deck's page, then the window (R1)",
+      "view": "src/components/decks/guided/guided-run-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/9a000000-0000-4000-8000-0000000000a1",
+          "wait": "[data-testid=guided-run-line]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "See the build",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "deck-failed",
+      "label": "a failed run: the alert line, then the window with Try again (R5)",
+      "view": "src/components/decks/guided/guided-run-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/9a000000-0000-4000-8000-0000000000a2",
+          "wait": "[data-testid=guided-run-line]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "See the build",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "deck-short",
+      "label": "a short run: the line, then the window's result (R4)",
+      "view": "src/components/decks/guided/guided-run-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/9a000000-0000-4000-8000-0000000000a3",
+          "wait": "[data-testid=guided-run-line]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "See the build",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}
