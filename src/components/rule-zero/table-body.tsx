@@ -78,7 +78,7 @@ export function TableBody({
           {/* The device's game sits over the read (S3, S6): first in the phone's column, atop desktop's right column. */}
           <div className="flex flex-col gap-[14px] xl:col-start-2 xl:row-start-1">
             {seated && tracker.running ? <GameInProgress tableId={view.tableId} kept={tracker.running} onDiscard={tracker.discard} /> : null}
-            {seated && tracker.finished ? <LastGame kept={tracker.finished} loggedAt={view.loggedAt} /> : null}
+            {seated && tracker.finished ? <LastGame tableId={view.tableId} kept={tracker.finished} loggedAt={view.loggedAt} /> : null}
             <ReadCard draw={draw} updated={updated} />
           </div>
           <div className="flex flex-col gap-[10px] xl:col-start-1 xl:row-start-1 xl:row-end-3" data-testid="table-seats">

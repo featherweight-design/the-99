@@ -8,11 +8,15 @@
 //   Undo, no confirm). The closed page draws the same card above Log this game.
 // - S6 `Last game`: the device holds a finished game. `Not logged yet` reads the server's link (ruling 4): the viewer
 //   has logged no game from this table since this one ended (`loggedAt`). Start returns under it.
+//   U5: the Result's Undo row sits under the places, sunken, and opens /play?undo=1; once anyone seated has logged
+//   the game, U3's note takes its slot.
 // - S1/S2: Start, `aria-disabled` with its reason over six seated; a seat still picking its deck says so under it.
 
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { gameLoggedAction } from "../../app/friends/table/result-actions";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { PersonName, PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { isOver, MAX_SEATS, placements, replay, type Game, type GameState } from "../../lib/tracker/engine";
@@ -20,6 +24,9 @@ import { gameLength, ordinal } from "../../lib/tracker/result";
 import type { PlaySeat } from "../../lib/tracker/seat";
 import { discardGame, loadKept, saveGame } from "../../lib/tracker/storage";
 import { FadingImg } from "../ui/hydrated-art";
+import { loggedNoteText, Note, UndoRow } from "../tracker/result";
+import { endingLine } from "../../lib/tracker/ending";
+import type { GameLogged } from "../../lib/social/rule-zero-result";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { local } from "../tracker/use-game";
 
@@ -146,8 +153,32 @@ export function GameInProgress({ tableId, kept, onDiscard, className = "" }: { t
 const CLOCK_SKEW = 120_000;
 
 /** S6: the finished game this device holds, best place first. */
-export function LastGame({ kept, loggedAt }: { kept: Kept; loggedAt: Date | null }) {
+export function LastGame({ tableId, kept, loggedAt }: { tableId: string; kept: Kept; loggedAt: Date | null }) {
   const { state, players, game } = kept;
+  const router = useRouter();
+  const line = useMemo(() => endingLine(game, players), [game, players]);
+  const roster = game.config.snapshot?.roster ?? null;
+  // U5: the Result's Undo, for a mistake spotted after it closed. Whether anyone seated has logged the game is the
+  // server's (U3, clarification 6), read when the card opens and whenever the page comes back into view; until the first
+  // read lands the row waits, as the Result's waits for its save. Pressing it opens /play, which runs the Undo there.
+  const [anyLogged, setAnyLogged] = useState<GameLogged | null | undefined>(undefined);
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (!roster) return;
+    let live = true;
+    const read = () =>
+      gameLoggedAction(tableId, roster).then(
+        (l) => (live ? setAnyLogged(l) : undefined),
+        () => (live ? setAnyLogged((was) => (was === undefined ? null : was)) : undefined),
+      );
+    read();
+    const onShow = () => (document.visibilityState === "visible" ? read() : undefined);
+    document.addEventListener("visibilitychange", onShow);
+    return () => {
+      live = false;
+      document.removeEventListener("visibilitychange", onShow);
+    };
+  }, [tableId, roster]);
   const place = new Map(placements(state).map((p) => [p.seat, p.place]));
   const ranked = [...players].sort((a, b) => (place.get(a.seat) ?? 99) - (place.get(b.seat) ?? 99));
   const winners = ranked.filter((p) => place.get(p.seat) === 1);
@@ -183,6 +214,19 @@ export function LastGame({ kept, loggedAt }: { kept: Kept; loggedAt: Date | null
           );
         })}
       </div>
+      {anyLogged ? (
+        <Note icon="check" text={loggedNoteText(anyLogged)} testId="last-logged-note" />
+      ) : line && roster ? (
+        <UndoRow
+          line={line}
+          busy={anyLogged === undefined || leaving}
+          sunken
+          onUndo={() => {
+            setLeaving(true);
+            router.push(`${playHref(tableId)}?undo=1`);
+          }}
+        />
+      ) : null}
       {logged ? null : <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{copy.notLogged}</p>}
     </section>
   );

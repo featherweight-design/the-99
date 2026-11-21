@@ -6,6 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const nav = vi.hoisted(() => ({ refresh: vi.fn(), push: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => nav }));
+vi.mock("../../app/friends/table/result-actions", () => ({ gameLoggedAction: vi.fn(async () => null) }));
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn(), closeTableAction: vi.fn() }));
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";

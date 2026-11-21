@@ -8,7 +8,6 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { mirrorUrl } from "../../lib/url/mirror";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { gameLoggedAction, saveTableResultAction, undoTableResultAction } from "../../app/friends/table/result-actions";
 import { trackerCopy } from "../../lib/copy/tracker";

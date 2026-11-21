@@ -12,7 +12,10 @@ import { named } from "../../lib/person-name/mint";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
 
-vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {}, refresh: () => {} }), usePathname: () => "/friends/table/table-1" }));
+const nav = vi.hoisted(() => ({ push: vi.fn(), refresh: vi.fn() }));
+const gameLoggedAction = vi.hoisted(() => vi.fn(async (): Promise<unknown> => null));
+vi.mock("next/navigation", () => ({ useRouter: () => nav, usePathname: () => "/friends/table/table-1" }));
+vi.mock("../../app/friends/table/result-actions", () => ({ gameLoggedAction }));
 
 const copy = trackerCopy.table;
 const NOW = new Date("2026-11-20T20:00:00Z");
@@ -96,6 +99,29 @@ describe("the game this device holds", () => {
     // A phone clock a minute ahead of the server: a log seconds after the end still counts.
     await draw({ ...TABLES.T1, loggedAt: new Date(ENDED - 60_000) });
     expect(screen.getByRole("region", { name: copy.lastAria }).textContent).not.toContain(copy.notLogged);
+  });
+
+  it("offers the Result's Undo on the last game, and opens the tracker to run it (U5)", async () => {
+    keep(finished);
+    await draw({ ...TABLES.T1, loggedAt: null });
+    const card = screen.getByRole("region", { name: copy.lastAria });
+    const row = card.querySelector('[data-testid="result-undo"]') as HTMLButtonElement;
+    expect(row.getAttribute("aria-label")).toBe("Undo the last change: Colin −40 life, to 0 · round 1");
+    expect(row.hasAttribute("aria-disabled")).toBe(false);
+    expect(gameLoggedAction).toHaveBeenCalledWith("table-1", "r");
+    fireEvent.click(row);
+    expect(nav.push).toHaveBeenCalledWith("/friends/table/table-1/play?undo=1");
+  });
+
+  it("puts U3's note in Undo's place once anyone seated has logged the game (clarification 6)", async () => {
+    gameLoggedAction.mockResolvedValueOnce({ seat: 2, at: new Date(ENDED + 60_000), you: false, publicId: "p2", name: named("Colin") });
+    keep(finished);
+    await draw({ ...TABLES.T1, loggedAt: null });
+    const card = screen.getByRole("region", { name: copy.lastAria });
+    expect(card.querySelector('[data-testid="result-undo"]')).toBeNull();
+    expect(card.querySelector('[data-testid="last-logged-note"]')?.textContent).toContain("logged this game at");
+    // The viewer has not logged it, so the card still says so.
+    expect(card.textContent).toContain(copy.notLogged);
   });
 
   it("still plays on a table its host closed (S4)", async () => {
