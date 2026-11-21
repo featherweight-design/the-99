@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const m = vi.hoisted(() => ({ refresh: vi.fn(), seen: vi.fn(async () => true), close: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: m.refresh }) }));
 vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen, markSeatNoticeSeenAction: async () => true, swapSeatDeckAction: vi.fn() }));
+vi.mock("../../app/friends/table/result-actions", () => ({ gameLoggedAction: vi.fn(async () => null) }));
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn(), closeTableAction: m.close }));
 
 import { ruleZeroCopy as copy } from "../../lib/copy/rule-zero";
@@ -164,6 +165,7 @@ describe("TableLive's close", () => {
     setBy: null,
     how: { kind: "host", byYou: true, by: null, at: new Date("2026-10-16T23:52:00Z"), logOpen: true },
     faces: [{ name: "Hugh", artCropUri: null }],
+    loggedAt: null,
   };
   let closedNow = false;
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -279,6 +281,7 @@ describe("the closed table's sentence (C3 to C5)", () => {
     setBy: named("Colin"),
     how,
     faces: [{ name: "Hugh", artCropUri: null }],
+    loggedAt: null,
   });
 
   it("says the viewer closed it, with the time", () => {

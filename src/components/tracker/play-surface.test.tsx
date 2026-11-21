@@ -139,6 +139,17 @@ describe("PlaySurface on a closed table (S4)", () => {
     await act(async () => {});
     expect(replace).toHaveBeenCalledWith("/friends");
   });
+
+  it("opens setup on the finished game's life when Start comes from the Last game, and takes ?again off the address bar (S6)", async () => {
+    const done: Game = { ...game, config: { ...game.config, startingLife: 30 }, log: [{ t: "life", seat: 0, delta: -30 }], endedAt: 1 };
+    window.localStorage.setItem("the99.tracker.t1", JSON.stringify({ v: 1, game: done, expiresAt: Date.now() + 3_600_000 }));
+    window.history.replaceState(null, "", "/friends/table/t1/play?again=1");
+    render(<PlaySurface tableId="t1" roster="r" expiresAt={Date.now() + 3_600_000} seats={seats} again backHref="/friends/table/t1" logHref={null} podName="Thursday night" />);
+    await act(async () => {});
+    expect(within(screen.getByTestId("tracker-setup")).getByText("30")).toBeTruthy();
+    expect(window.localStorage.getItem("the99.tracker.t1")).toBeNull();
+    expect(window.location.search).toBe("");
+  });
 });
 
 describe("PlaySurface Undo the last change", () => {

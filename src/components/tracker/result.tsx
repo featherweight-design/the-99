@@ -92,8 +92,6 @@ export function Result({
     const t = setTimeout(() => setStopped(true), Math.max(0, closesAt - Date.now()));
     return () => clearTimeout(t);
   }, [stopped, closesAt]);
-  // "6 am", not "6:00 am": the tracker runs in the reader's browser, so the times are the reader's own zone.
-  const clock = (ms: number) => closesWhen(new Date(ms), new Date(ms)).replace(":00 ", " ");
   const until = clock(closesAt);
   const closedNote =
     closed === null
@@ -103,14 +101,7 @@ export function Result({
         : closed.by === null
           ? trackerCopy.over.closedByUnknown(clock(closed.at), until)
           : trackerCopy.over.closedBy(closed.by, clock(closed.at), until);
-  const loggedNote =
-    logged === null
-      ? null
-      : logged.you
-        ? trackerCopy.undo.loggedYou(clock(logged.at.getTime()))
-        : logged.name === null
-          ? trackerCopy.undo.loggedUnknown(clock(logged.at.getTime()))
-          : trackerCopy.undo.loggedBy(logged.name, clock(logged.at.getTime()));
+  const loggedNote = logged === null ? null : loggedNoteText(logged);
   // Past 6 am one note stands in the slot (U4); before it, a logged game's note takes Undo's place (U3), and a table its
   // host closed keeps its note under either (clarification 7).
   const notes: { icon: "clock" | "check" | "table"; text: string | PersonParts; id: string }[] = stopped
@@ -232,6 +223,15 @@ export function Result({
       </div>
     </div>
   );
+}
+
+// "6 am", not "6:00 am": the tracker runs in the reader's browser, so the times are the reader's own zone.
+const clock = (ms: number) => closesWhen(new Date(ms), new Date(ms)).replace(":00 ", " ");
+
+/** U3's note: who logged the game first, so its ending stays. The Result and the Last game card (U5) both draw it. */
+export function loggedNoteText(logged: GameLogged): string | PersonParts {
+  const at = clock(logged.at.getTime());
+  return logged.you ? trackerCopy.undo.loggedYou(at) : logged.name === null ? trackerCopy.undo.loggedUnknown(at) : trackerCopy.undo.loggedBy(logged.name, at);
 }
 
 /** Undo the last change (U1): a full-width row, the arrow in its circle, the label over the line naming the change. While

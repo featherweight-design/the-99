@@ -208,4 +208,40 @@ export const trackerCopy = {
     loggedBy: (who: Name, at: string): PersonParts => personText`${who} logged this game at ${at}, so this ending stays.`,
     loggedUnknown: (at: string) => `This game was logged at ${at}, so this ending stays.`,
   },
+  // The table page's tracker (addendum S1 to S6), above the read and at the head of the foot.
+  table: {
+    start: "Start the game",
+    // S1: Start stays put, unavailable, with the reason under it.
+    tooManyLead: (seated: number) => `The tracker fits up to 6 players, and ${seated} are seated.`,
+    tooManyFix: " Clear a seat in Seats to start it.",
+    // S2: a seat still picking its deck.
+    waiting: (name: Name): PersonParts => personText`${name} hasn’t picked a deck yet. Start now and ${name} plays on a plain panel, or wait and their art comes with them.`,
+    waitingYou: "You haven’t picked a deck yet. Start now and you play on a plain panel, or pick one first and your art comes with you.",
+    waitingMany: (names: PersonParts): PersonParts => personText`${names} haven’t picked decks yet. Start now and they play on plain panels, or wait and their art comes with them.`,
+    // S6: Start returns under the last game.
+    again: "Same seats, layout and starting life as last time; change any of it at setup.",
+    // S3 and S4: the game this device holds.
+    inProgress: "Game in progress",
+    inProgressAria: "A game in progress",
+    meta: (round: number, length: string) => `Round ${round} · ${length}`,
+    out: "Out",
+    you: "You",
+    youInList: "you",
+    savedPhone: (turn: Name): PersonParts => personText`Saved on this phone, right where you left it: ${turn}’s turn.`,
+    savedPhoneYou: "Saved on this phone, right where you left it: your turn.",
+    savedDevice: (turn: Name): PersonParts => personText`Saved on this device, right where you left it: ${turn}’s turn.`,
+    savedDeviceYou: "Saved on this device, right where you left it: your turn.",
+    resume: "Back to the game",
+    discard: "Discard this game",
+    discarded: "Game discarded.", // shared toast, with the shipped "Undo"
+    undo: "Undo",
+    // S6: the last game, from this device.
+    last: "Last game",
+    lastAria: "The last game",
+    lastMeta: (rounds: number, length: string | null) => `${rounds === 1 ? "1 round" : `${rounds} rounds`}${length ? ` · ${length}` : ""}`,
+    won: (name: Name): PersonParts => personText`${name} won`,
+    wonYou: "You won",
+    draw: "A draw",
+    notLogged: "Not logged yet: Log this game fills it in.",
+  },
 };

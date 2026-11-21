@@ -8,7 +8,9 @@
 //   - the result rows exist on the server once the save lands,
 //   - pressing Undo closes the Result, raises "Game back on" with "Undid …", and moves focus to Colin's name,
 //   - the result rows are gone from the server, and the device's game is running again.
-// On main there is no Undo row, so the first check fails.
+//   - then (U5) it ends the game again, leaves for the table page, and presses the Last game card's Undo: the tracker
+//     opens with the game back on and the result rows are gone.
+// On main there is no Undo row, so the first check fails; before the go-live PR there is no Last game card, so U5 fails.
 //
 // It WRITES (a table result, then its removal), so it refuses staging, production and local-dev by `neon.branch_id`
 // (`assertScratchBranch`). Run it against a dev server whose DATABASE_URL is a scratch branch made from local-dev,
@@ -112,7 +114,10 @@ try {
       continue;
     }
     // The row waits for the save (clarification 3): pressable once aria-disabled clears.
-    await page.waitForFunction(() => !document.querySelector('[data-testid="result-undo"]')?.hasAttribute("aria-disabled"), null, { timeout: 20_000 });
+    await page.waitForFunction(() => {
+        const row = document.querySelector('[data-testid="result-undo"]');
+        return !!row && !row.hasAttribute("aria-disabled");
+      }, null, { timeout: 20_000 });
     const text = (await undo.textContent()) ?? "";
     check("U1: the row names the change that ended the game", text.endsWith("Colin −40 life, to 0 · round 1"), text);
     const order = await page.evaluate(() => {
@@ -143,6 +148,46 @@ try {
       return held?.game?.log?.length === 0;
     }, TABLE);
     check("the device's game is running again, without the lethal change", running);
+
+    // U5: end it again, leave the Result for the table page, and press the Last game card's Undo there.
+    await page.evaluate((id) => {
+      const key = `the99.tracker.${id}`;
+      const held = JSON.parse(window.localStorage.getItem(key));
+      const colin = held.game.config.snapshot.players.find((p) => !p.you);
+      held.game.log.push({ t: "life", seat: colin.seat, delta: -40 });
+      window.localStorage.setItem(key, JSON.stringify(held));
+    }, TABLE);
+    await page.reload({ waitUntil: "networkidle" });
+    await result.waitFor({ timeout: 15_000 });
+    await page.waitForFunction(() => {
+        const row = document.querySelector('[data-testid="result-undo"]');
+        return !!row && !row.hasAttribute("aria-disabled");
+      }, null, { timeout: 20_000 });
+    // The table page keeps its own reads open, so it never goes network-idle: wait for the card instead.
+    await page.goto(`${BASE}/friends/table/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 90_000 });
+    const card = page.getByRole("region", { name: "The last game" });
+    await card.waitFor({ timeout: 60_000 }).catch(() => undefined);
+    const cardUndo = card.getByTestId("result-undo");
+    const onCard = await cardUndo.count();
+    check("U5: the Last game card offers Undo", onCard === 1);
+    if (onCard) {
+      await page.waitForFunction(() => {
+        const row = document.querySelector('section[aria-label="The last game"] [data-testid="result-undo"]');
+        return row && !row.hasAttribute("aria-disabled");
+      }, null, { timeout: 20_000 });
+      const cardText = (await cardUndo.textContent()) ?? "";
+      check("U5: the card's row names the change that ended the game", cardText.endsWith("Colin −40 life, to 0 · round 1"), cardText);
+      check("U5: the table result is saved before the card's Undo", (await resultRows()) > 0);
+      await shot(page, `${width}-u5`);
+      await cardUndo.click();
+      await page.waitForURL((u) => u.pathname.endsWith("/play") && !u.search.includes("undo"), { timeout: 20_000 });
+      const cardToast = page.getByRole("status").filter({ hasText: "Game back on" });
+      await cardToast.waitFor({ timeout: 15_000 });
+      check("U5: the tracker opens with the game back on", ((await cardToast.textContent()) ?? "").includes("Undid Colin −40 life, to 0 · round 1"));
+      await shot(page, `${width}-u5-after`);
+      const gone = await resultRows();
+      check("U5: the table result is gone from the server", gone === 0, `${gone} rows`);
+    }
     await context.close();
   }
 } finally {
