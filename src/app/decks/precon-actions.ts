@@ -22,7 +22,6 @@ import { committedPreconAdds, preconAddDecks } from "../../lib/precons/added";
 import { after } from "next/server";
 import { preconUpgradeEnabled } from "../../lib/precons/upgrade/flag";
 import { carryOverAfterStart } from "../../lib/precons/carry-over";
-import { overviewAfterUpgradedStart } from "../../lib/precons/upgrade/overview";
 import type { UpgradePicks } from "../../lib/precons/upgrade/apply";
 
 /**
@@ -42,8 +41,8 @@ export async function createDeckFromPrecon(fileName: string, rawName: string, ru
   if (upgraded && !upgraded.ok) return { ok: false, reason: upgraded.reason === "picks" ? "picks" : "upgradeUnavailable" };
   const deckId = upgraded ? upgraded.deckId : await startPreconDeck(userId, fileName, name);
   revalidateClaims(deckId, userId);
-  // An upgraded deck's list is not the precon's, so no Overview is carried; the run's own pays for one, written after the response.
-  if (upgraded && env) after(() => overviewAfterUpgradedStart(deckId, userId, env));
+  // An upgraded deck's list is not the precon's, so no Overview is carried, and none is written for it (Hugh, 2026-11-21): the player
+  // writes it with the Overview button once the list is the one they want, so an edit after the run never pays for a second one.
   // The precon's pre-written Overview and reading are carried over by the landing this redirect makes,
   // inline in its render (`carryOnArrival`, small items 5), so the deck opens with them at once.
   redirect(`/decks/${deckId}?${PRECON_ARRIVAL_PARAM}=${PRECON_ARRIVAL_VALUE}`);
@@ -71,7 +70,6 @@ export async function startPreconOwned(fileName: string, rawName: string, action
   const result = await startOwned(userId, fileName, name, actionId, true, runId, picks);
   if (!result.ok) return result;
   revalidateClaims(result.deckId, userId);
-  if (runId !== undefined) after(() => overviewAfterUpgradedStart(result.deckId, userId, env));
   // The add's entry rides the redirect so the deck page can draw its receipt; it is only a claim there (`readPreconAddReceipt`).
   // After the response, as every collection write does (`edit-actions.ts`, `settled`).
   // The carry-over is the landing's, inline in its render (`carryOnArrival`), as the plain start's is.

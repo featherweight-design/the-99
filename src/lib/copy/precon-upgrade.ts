@@ -87,7 +87,6 @@ export const preconUpgradeCopy = {
     sub: (c: string, b: number) => `Worked out for ${c} at bracket ${b}, from the deck’s own cards.`,
     count: (n: number) => `${n} of its cards`,
     more: (n: number) => `and ${n} more`,
-    overviewSource: "the Overview’s read",
     none: "Choose a strategy.",
     press: (s: string) => `Upgrade toward ${s}`,
     // One line at any credit standing (Hugh, 2026-11-12: it wrapped at 100 credits). The swap range is the intro's and the
@@ -140,8 +139,7 @@ export const preconUpgradeCopy = {
     /** A refusal: the run no longer fits the precon (its list moved, the run is gone, or the switch is off). */
     unavailable: "This upgrade no longer fits the precon’s list. Run a new one to start from it.",
     commanderFact: (c: string, box: string) => `${c} · ${box} moves into the 99`,
-    overviewFact: "written for this list as it starts", // G13, ruled yes
-    facts: { commander: "Commander", bracket: "Bracket", overview: "Overview" },
+    facts: { commander: "Commander", bracket: "Bracket" },
     cardsValue: (n: number) => `all 100 · ${n} swapped`,
     printingsValue: (n: number) => `this precon’s copies; yours for the ${n} added`,
   },

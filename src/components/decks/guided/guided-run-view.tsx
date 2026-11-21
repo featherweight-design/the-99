@@ -4,7 +4,7 @@
 // the wait, the failed run or the result. It is the engine's view only: the picks steps are PR D's. The window reads the run through
 // `useGuidedRun`; closing it leaves the run going (the deck holds it, and its page says so).
 import Link from "next/link";
-import { useId, useMemo, useRef, type ReactNode } from "react";
+import { useId, useRef, type ReactNode } from "react";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
 import { BRACKET_NAMES } from "../../../lib/copy/deck-analysis";
@@ -17,11 +17,8 @@ import { SheetGrabber } from "../../ui/sheet-grabber";
 import { useAiSweepRef } from "../../ui/use-ai-sweep";
 import { useVisualViewportFrame, VV_FRAME } from "../../ui/visual-viewport";
 import { PendingReporter } from "../../shell/pending-reporter";
-import { SYNOPSIS_CONTRACT_VERSION_STAGES } from "../../../lib/precons/synopsis-contract";
 import { StrategyIcon } from "../strategy-icon";
-import { SynopsisSections } from "../synopsis-body";
 import { useClock } from "../precons/upgrade/wait-view";
-import type { FindingArt } from "../../../lib/decks/builder-figures";
 import type { GuidedRun } from "./use-guided-run";
 
 const copy = guidedBuildCopy.run;
@@ -89,8 +86,8 @@ function Row({ state, children }: { state: RowState; children: ReactNode }) {
   );
 }
 
-/** R1 while the sharpening is out, R2 once it has finished and the Overview is being written. */
-function WaitView({ run, phase }: { run: GuidedState; phase: "sharpen" | "plan" }) {
+/** R1: the sharpening is out. */
+function WaitView({ run }: { run: GuidedState }) {
   const clock = useClock(run.createdAt.getTime());
   const sweepRef = useAiSweepRef();
   const s = run.strategyLabel;
@@ -101,16 +98,15 @@ function WaitView({ run, phase }: { run: GuidedState; phase: "sharpen" | "plan" 
       <div ref={sweepRef} role="status" className="ai-sweep flex flex-col gap-[8px] rounded-[10px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] p-[12px_14px]">
         <p className="m-0 flex flex-wrap items-baseline gap-x-[10px] text-[13px] text-[color:var(--fg-body)]">
           <span aria-hidden className="font-mono text-[13px] font-semibold text-[color:var(--fg)]">{clock}</span>
-          <span>{phase === "plan" ? copy.wait.overview : copy.wait.building(s)}</span>
+          <span>{copy.wait.building(s)}</span>
           <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{copy.wait.usual}</span>
         </p>
         <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{copy.wait.leave}</p>
-        <span aria-hidden className="mt-[4px] block h-[2px] rounded-full bg-[color:var(--accent)]" style={{ width: phase === "plan" ? "78%" : "40%" }} />
+        <span aria-hidden className="mt-[4px] block h-[2px] rounded-full bg-[color:var(--accent)]" style={{ width: "40%" }} />
       </div>
       <ol className="m-0 flex list-none flex-col gap-[10px] p-0 pl-[2px]">
         <Row state="done">{copy.wait.filled}</Row>
-        <Row state={phase === "sharpen" ? "now" : "done"}>{copy.wait.sharpening(s)}</Row>
-        <Row state={phase === "plan" ? "now" : "next"}>{copy.wait.overview}</Row>
+        <Row state="now">{copy.wait.sharpening(s)}</Row>
       </ol>
     </div>
   );
@@ -136,10 +132,9 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 }
 const SUB = "font-mono text-[12px] font-normal text-[color:var(--fg-body)]";
 
-function ResultView({ run, overview, commanderId, art }: { run: GuidedState; overview: GuidedRun; commanderId: string | null; art: FindingArt }) {
+function ResultView({ run }: { run: GuidedState }) {
   const p = runPicks(run);
   const short = run.state === "short";
-  const row = overview.synopsis?.synopsis ?? null;
   const buy = run.buyTotalCents ? dollars(run.buyTotalCents) : null;
   return (
     <div className="flex flex-col gap-[16px]">
@@ -150,25 +145,13 @@ function ResultView({ run, overview, commanderId, art }: { run: GuidedState; ove
         <Fact label={copy.result.facts.toBuy}>{buy ? <span className={SUB + " text-[14px] font-semibold text-[color:var(--fg)]"}>{buy}</span> : copy.result.none}</Fact>
       </div>
       {short && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.result.short(run.pairs.length, p.bracket)}</p>}
-      {!short && overview.overview === "absent" && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.result.overviewMissing}</p>}
-      {row && (
-        <div className="flex flex-col gap-[4px] rounded-[12px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-raised)] p-[14px] md:p-[18px]">
-          <div className="flex items-baseline gap-[10px]">
-            <h3 className="m-0 font-display text-[16px] font-normal text-[color:var(--fg)]">{copy.result.overview}</h3>
-            <span className="ml-auto font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.result.overviewNote}</span>
-          </div>
-          <SynopsisSections content={row.content} contractVersion={row.contractVersion ?? SYNOPSIS_CONTRACT_VERSION_STAGES} commanderId={commanderId} art={art} evidenceNames={overview.synopsis?.evidenceNames ?? {}} onRetry={null} busy={false} />
-        </div>
-      )}
     </div>
   );
 }
 
-export function GuidedRunDialog({ deckId, deckName, commanderId, g, onClose }: {
+export function GuidedRunDialog({ deckId, deckName, g, onClose }: {
   deckId: string;
   deckName: string;
-  /** The commander's oracle id: the Overview draws its image beside the first paragraph. */
-  commanderId: string | null;
   /** The run as the caller reads it (`useGuidedRun`): the page's line and this window share one read. */
   g: GuidedRun;
   onClose: () => void;
@@ -180,13 +163,11 @@ export function GuidedRunDialog({ deckId, deckName, commanderId, g, onClose }: {
   useDialogA11y(dialog, onClose, { initialFocusRef: closeRef });
   const inertRef = useInertWhileOpen(true);
   const visible = useVisualViewportFrame();
-  const art = useMemo<FindingArt>(() => new Map(Object.entries(g.synopsis?.art ?? {}).map(([id, imageUri]) => [id, { name: "", imageUri }])), [g.synopsis]);
 
-  // The window's stage: a run out is a wait (its second phase once the sharpening finished and the Overview is being written); a run that
-  // kept its charge is the result as soon as its Overview arrives or is called absent; a short run has no Overview to wait for.
-  const stage: "wait" | "plan" | "failed" | "result" =
-    run.state === "running" ? "wait" : run.state === "failed" ? "failed" : run.state === "short" || g.overview !== "waiting" ? "result" : "plan";
-  const heldLine = stage === "wait" || stage === "plan";
+  // The window's stage: a run out is a wait; a run that finished (kept its charge or short) is the result. No Overview is written for it
+  // (Hugh, 2026-11-21), so there is no stage between.
+  const stage: "wait" | "failed" | "result" = run.state === "running" ? "wait" : run.state === "failed" ? "failed" : "result";
+  const heldLine = stage === "wait";
   const openHref = `/decks/${deckId}`;
 
   return (
@@ -201,9 +182,9 @@ export function GuidedRunDialog({ deckId, deckName, commanderId, g, onClose }: {
         {stage !== "result" && <RunTracker run={run} />}
         <div className="relative flex min-h-0 flex-1 flex-col">
           <div className="-m-[6px] flex min-h-0 flex-1 flex-col gap-[16px] overflow-y-auto overflow-x-hidden p-[6px]">
-            {(stage === "wait" || stage === "plan") && <WaitView run={run} phase={stage === "plan" ? "plan" : "sharpen"} />}
+            {stage === "wait" && <WaitView run={run} />}
             {stage === "failed" && <FailedView run={run} deckName={deckName} />}
-            {stage === "result" && <ResultView run={run} overview={g} commanderId={commanderId} art={art} />}
+            {stage === "result" && <ResultView run={run} />}
           </div>
         </div>
         {heldLine && (

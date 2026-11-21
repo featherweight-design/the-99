@@ -21,17 +21,17 @@ export function lineShows(run: GuidedState, now: number): boolean {
   return now - run.createdAt.getTime() < GUIDED_LINE_HOURS * 3_600_000;
 }
 
-export function GuidedRunLine({ deckId, deckName, commanderId }: { deckId: string; deckName: string; commanderId: string | null }) {
+export function GuidedRunLine({ deckId, deckName }: { deckId: string; deckName: string }) {
   const [initial, setInitial] = useState<GuidedState | null>(null);
   useEffect(() => {
     let live = true;
     readGuidedStateAction(deckId).then((r) => { if (live && r) setInitial(r); }, () => {});
     return () => { live = false; };
   }, [deckId]);
-  return initial ? <Line key={initial.id} deckId={deckId} deckName={deckName} commanderId={commanderId} initial={initial} /> : null;
+  return initial ? <Line key={initial.id} deckId={deckId} deckName={deckName} initial={initial} /> : null;
 }
 
-function Line({ deckId, deckName, commanderId, initial }: { deckId: string; deckName: string; commanderId: string | null; initial: GuidedState }) {
+function Line({ deckId, deckName, initial }: { deckId: string; deckName: string; initial: GuidedState }) {
   const g = useGuidedRun(deckId, initial);
   const [open, setOpen] = useState(false);
   const [now] = useState(() => Date.now());
@@ -41,7 +41,7 @@ function Line({ deckId, deckName, commanderId, initial }: { deckId: string; deck
   return (
     <>
       {lineShows(run, now) && <LineRow run={run} onOpen={() => setOpen(true)} />}
-      {open && <GuidedRunDialog deckId={deckId} deckName={deckName} commanderId={commanderId} g={g} onClose={() => setOpen(false)} />}
+      {open && <GuidedRunDialog deckId={deckId} deckName={deckName} g={g} onClose={() => setOpen(false)} />}
     </>
   );
 }

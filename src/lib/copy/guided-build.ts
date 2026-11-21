@@ -42,7 +42,6 @@ export const guidedBuildCopy = {
       leave: "Leave whenever you like: the deck is already in Decks with the free build, and the guided picks land in it when they’re done.",
       held: "Running · 2 credits held",
       sharpening: (s: string) => `Sharpening 12 to 18 cards toward ${s}`,
-      overview: "Writing the deck’s Overview",
       filled: "Filled · the 99 from your cards",
       pressing: (s: string) => `Build toward ${s}`,
     },
@@ -60,10 +59,6 @@ export const guidedBuildCopy = {
       facts: { strategy: "Strategy", bracket: "Bracket", sharpened: "Sharpened", toBuy: "To buy" },
       cards: "cards",
       none: "none",
-      overview: "Overview",
-      overviewNote: "written with the build",
-      /** The run kept its charge but the Overview did not arrive: the deck is built, and the Overview tab writes it. */
-      overviewMissing: "The Overview didn’t come through. You can write it from the deck’s Overview tab.",
       short: (n: number, b: number) => (n === 0
       ? `No cards could be sharpened at bracket ${b}, so both credits are back.`
       : `Only ${n} ${n === 1 ? "card" : "cards"} could be sharpened at bracket ${b}, so both credits are back. ${n === 1 ? "It is" : `The ${n} are`} in the deck.`),

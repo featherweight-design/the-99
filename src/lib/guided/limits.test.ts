@@ -5,7 +5,6 @@ import { describe, expect, it } from "vitest";
 
 import { RESERVATION_TTL_MS } from "../model/allowance-rule";
 import { UPGRADE_CALL_DEADLINE_MS, UPGRADE_REAP_MS } from "../precons/upgrade/constants";
-import { SYNOPSIS_DEADLINE_MS } from "../synopsis/limits";
 
 /** A page's `maxDuration`, in ms, read from its source: Next requires the export to be a literal. */
 function pageLimitMs(route: string): number {
@@ -16,8 +15,8 @@ function pageLimitMs(route: string): number {
 }
 
 // A guided run is createDeck's `after()` on /decks/new (and a retry's on /decks/[id]): the page's limit bounds it. Worst case is
-// the sharpening's two model calls plus the Overview's deadline; the reads and writes around them need room.
-const WORST_CASE_MS = 2 * UPGRADE_CALL_DEADLINE_MS + SYNOPSIS_DEADLINE_MS;
+// the sharpening's two model calls (no Overview is written, Hugh 2026-11-21); the reads and writes around them need room.
+const WORST_CASE_MS = 2 * UPGRADE_CALL_DEADLINE_MS;
 
 describe.each(["decks/new", "decks/[id]"])("guided run under %s's maxDuration", (route) => {
   it("fits the worst case with 20s to spare", () => {

@@ -326,7 +326,6 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
                 {fact(copy.facts.cards, upgrade ? preconUpgradeCopy.start.cardsValue(upgrade.swaps) : copy.facts.cardsValue(cards, row.unmapped))}
                 {upgrade?.bracket && fact(preconUpgradeCopy.start.facts.bracket, upgrade.bracket)}
                 {fact(copy.facts.own, copy.facts.ownValue(row.owned, row.of))}
-                {upgrade && fact(preconUpgradeCopy.start.facts.overview, preconUpgradeCopy.start.overviewFact)}
                 {fact(copy.facts.printings, upgrade ? preconUpgradeCopy.start.printingsValue(upgrade.swaps) : copy.facts.printingsValue)}
               </div>
 

@@ -12,7 +12,6 @@ import { readSwapPartners } from "../precons/upgrade/swap-partners";
 import type { StoredPair } from "../precons/upgrade/validate";
 import { BUDGET_MAX_CENTS, BUDGET_MIN_CENTS, POOL_MODES, type PoolMode } from "./constants";
 import { guidedStrategies, loadGuidedDeck, loadGuidedPool } from "./inputs";
-import { overviewAfterGuidedRun } from "./overview";
 import { finishGuided, reapGuided, startGuided, type GuidedHandle } from "./store";
 
 /**
@@ -118,10 +117,9 @@ export async function beginGuided(userId: string, deckId: string, picks: GuidedP
         status: "done", pairs, drops: report.drops, buyTotalCents: report.buyTotalCents, bracketBefore, bracketAfter,
         calls: report.calls, refunded, errorClass: report.failed ?? undefined,
       }, bill(), new Date());
-      // The Overview rides the credits the run kept: a refunded run writes none, and a superseded one (reaped) neither.
+      // No Overview is written (Hugh, 2026-11-21): the player writes it with the Overview button once the list is the one they want.
       // The swaps landed after the start's revalidation: the deck and its lists are stale until this one.
       if (written) revalidateClaims(deckId, userId);
-      if (written && !refunded) await overviewAfterGuidedRun(handle.runId, deckId, userId, deps?.env ?? env);
     } catch (err) {
       await finishGuided(handle, { status: "failed", errorClass: "upstream_busy" }, bill(), new Date()).catch(() => false);
       console.warn("guided run failed", err);
