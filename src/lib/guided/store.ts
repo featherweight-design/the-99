@@ -40,7 +40,7 @@ class DeckNotFoundError extends Error {}
  * ONE transaction: reserve the run's credits and insert the pending row. Starts for one deck are SERIALIZED by an advisory lock,
  * and inside it the press is re-checked: a pending run is `in_flight`, a run already done that kept its charge is `current`
  * (a second press that lost the race to a first that has since finished; nothing is reserved). The partial unique index on
- * `(deck_id) where status = 'pending'` stays as the floor under the lock. The deck must be the reader's own: the id is never
+ * `(deck_id) where status = 'pending'` stays as the floor under the lock. The caller reaps a dead pending run first (`reapGuided`), or it reads as in flight. The deck must be the reader's own: the id is never
  * trusted, and another reader's deck reads as `notFound`.
  */
 export async function startGuided(userId: string, deckId: string, params: GuidedParams, model: string, now = new Date()): Promise<StartedGuided> {
