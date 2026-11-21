@@ -275,7 +275,17 @@ describe("createDeck with a selection", () => {
 
   it("refuses a build kind it does not know", async () => {
     stub.state.cards.push(commanderRow());
-    await expect(createDeck(CMDR, "Nope", [], null, null, "guided" as never)).rejects.toThrow("unknown build kind");
+    await expect(createDeck(CMDR, "Nope", [], null, null, "bogus" as never)).rejects.toThrow("unknown build kind");
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
+  it("refuses a guided build without its picks, or with the switch off, before anything is written", async () => {
+    stub.state.cards.push(commanderRow());
+    const picks = { strategyKey: "s", bracket: 3, poolMode: "owned", budgetCents: null, kept: [] };
+    // No picks.
+    await expect(createDeck(CMDR, "G", [], null, null, "guided")).rejects.toThrow("guided build is not available");
+    // Picks, but the test environment has PRECON_UPGRADE_ENABLED unset.
+    await expect(createDeck(CMDR, "G", [], null, null, "guided", picks)).rejects.toThrow("guided build is not available");
     expect(stub.state.insertCalls).toHaveLength(0);
   });
 
