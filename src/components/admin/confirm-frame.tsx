@@ -53,7 +53,7 @@ export function ConfirmFrame({
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-lead`}
         tabIndex={-1}
-        className="flex max-h-[100dvh] max-md:max-h-[min(100dvh,var(--vv-h,100dvh))] w-full flex-col gap-[14px] overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:max-h-[calc(100dvh-110px-24px)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
+        className="anim-sheet-in-phone flex max-h-[100dvh] max-md:max-h-[min(100dvh,var(--vv-h,100dvh))] w-full flex-col gap-[14px] overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface)] p-[12px_18px_22px] outline-none [border-top:1px_solid_var(--border-strong)] md:max-h-[calc(100dvh-110px-24px)] md:w-[540px] md:rounded-[14px] md:p-[24px_24px_20px] md:shadow-[var(--modal-shadow)] md:[border:1px_solid_var(--border-strong)]"
       >
         <SheetGrabber className="pt-0" barClassName="mb-0" />
         <h2 id={`${id}-title`} className="m-0 flex-none font-display text-[20px] font-normal leading-[1.3] text-[color:var(--fg)]">

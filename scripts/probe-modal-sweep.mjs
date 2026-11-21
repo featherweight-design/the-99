@@ -92,6 +92,24 @@ async function openCheck(page, check, name, selector, open, tries = 4) {
   check(name, { found: true, css: await page.evaluate(() => window.__seen) });
 }
 
+/** The landing's "What credits cost" sheet (CostSheet), signed out: a phone slide, instant on desktop. */
+async function landing(browser, width) {
+  const context = await browser.newContext({ viewport: width.viewport });
+  const page = await context.newPage();
+  const phone = width.label === 390;
+  try {
+    await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded", timeout: 180_000 });
+    const link = page.getByRole("button", { name: "What credits cost" }).first();
+    await link.waitFor({ timeout: 30_000 });
+    await openCheck(page, (name, info) => {
+      const sheetIn = info.css === "filter-sheet-in";
+      report(`${width.label}: ${name} ${phone ? "slides in" : "is instant"}`, info.found && sheetIn === phone, `animationName ${info.css}`);
+    }, "landing > What credits cost", '[data-testid="cost-sheet"]', () => link.click());
+  } finally {
+    await context.close();
+  }
+}
+
 async function walk(browser, width) {
   const context = await browser.newContext({ viewport: width.viewport });
   const page = await context.newPage();
@@ -137,6 +155,12 @@ async function walk(browser, width) {
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/modal-sweep-social-${width.label}.png` });
     await page.keyboard.press("Escape");
 
+    // PR C: the set page's phone filter sheet (FilterSheet, phone only: it is not drawn from 768, so only 390 is checked).
+    await page.goto(`${BASE}/collection/sets/lea`, { waitUntil: "domcontentloaded", timeout: 180_000 });
+    if (phone) {
+      await openCheck(page, check, "set page > Filters (FilterSheet)", "[role=dialog]", () => page.getByRole("button", { name: /^Filters/ }).first().click());
+      await page.keyboard.press("Escape");
+    }
   } finally {
     await context.close();
   }
@@ -149,6 +173,7 @@ const browser = await chromium.launch();
 try {
   for (const width of WIDTHS) {
     try {
+      await landing(browser, width);
       await walk(browser, width);
     } catch (error) {
       report(`${width.label}: the walk stopped`, false, String(error?.message ?? error).split("\n")[0]);

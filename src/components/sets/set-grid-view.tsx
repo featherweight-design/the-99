@@ -1741,7 +1741,7 @@ function FilterSheet({ onClose, children }: { onClose: () => void; children: Rea
         aria-modal="true"
         aria-label={setFilterCopy.label}
         tabIndex={-1}
-        className="relative z-10 rounded-t-[14px] px-[16px] pt-[14px] pb-[20px]"
+        className="anim-sheet-in-phone relative z-10 rounded-t-[14px] px-[16px] pt-[14px] pb-[20px]"
         style={{ background: "var(--surface)", borderTop: "1px solid var(--border)" }}
       >
         {children}
