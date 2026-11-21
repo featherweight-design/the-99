@@ -1,0 +1,24 @@
+156a157
+>   headExtra,
+182a184,188
+>   /**
+>    * A control in the panel's head, under the note: `Themes ▾`'s Any / All match. It changes how
+>    * the chosen rows combine, so it lives with them rather than on the rack.
+>    */
+>   headExtra?: ReactNode;
+276c282
+<   const [open, setOpen] = useState(false);
+---
+>   const [open, setOpen] = useState(() => (globalThis as any).__OPEN === copy.panelAriaLabel);
+282c288
+<   const [query, setQuery] = useState("");
+---
+>   const [query, setQuery] = useState(() => ((globalThis as any).__OPEN === copy.panelAriaLabel ? (globalThis as any).__QUERY ?? "" : ""));
+293c299
+<   const [pinned, setPinned] = useState<string[]>([]);
+---
+>   const [pinned, setPinned] = useState<string[]>(() => ((globalThis as any).__OPEN === copy.panelAriaLabel ? selected : []));
+1015a1022,1024
+>         )}
+>         {headExtra && (
+>           <div className={bp("mx-[12px] mb-[8px]", "mx-[16px] mb-[10px]")}>{headExtra}</div>

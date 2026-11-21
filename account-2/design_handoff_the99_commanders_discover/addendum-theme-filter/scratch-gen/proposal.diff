@@ -1,0 +1,714 @@
+diff --git a/src/components/commanders/commander-row.tsx b/src/components/commanders/commander-row.tsx
+index a7db6d6..eb1c62b 100644
+--- a/src/components/commanders/commander-row.tsx
++++ b/src/components/commanders/commander-row.tsx
+@@ -153,7 +153,25 @@ const FIT_CHIP_STYLE = {
+  * note and never `allPlayed`, which would assert something about a commander
+  * with nothing on file.
+  */
+-function GapLine({ slot }: { slot: GapSlot }) {
++function GapLine({ slot, picked }: { slot: GapSlot; picked?: string[] }) {
++  // Themes ▾ on: the picked themes lead, in accent ink, so the reason this row survived the filter
++  // is on the row itself.
++  if (picked && picked.length > 0 && slot.kind !== "noMechanics") {
++    const parts = commanderRowCopy.pickedStylesParts(picked, slot.labels);
++    return (
++      <p data-testid="row-gap" className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}>
++        {parts.map((part, i) =>
++          typeof part === "string" ? (
++            part
++          ) : (
++            <b key={i} style={{ color: part.picked ? "var(--accent-text)" : "var(--fg)", fontWeight: 600 }}>
++              {part.label}
++            </b>
++          ),
++        )}
++      </p>
++    );
++  }
+   if (slot.kind === "noMechanics") {
+     return (
+       <p
+@@ -262,7 +280,10 @@ export function CommanderRow({
+   position = 0,
+   onHide,
+   hideRef,
++  pickedThemes,
+ }: {
++  /** `Themes ▾`'s picked labels this commander carries (#159). Absent or empty: the shipped sentence. */
++  pickedThemes?: string[];
+   item: CommanderRowView;
+   position?: number;
+   /** Hide this commander (README §1). Absent, the row draws no glyph and its foot is as it shipped. */
+@@ -447,7 +468,7 @@ export function CommanderRow({
+           </p>
+         )}
+ 
+-        <GapLine slot={item.gapSlot} />
++        <GapLine slot={item.gapSlot} picked={pickedThemes} />
+ 
+         {/* ONE LIST, JOINED — never a separator whose condition is spelled
+             beside the figure's. The previous form rendered the price's separator
+diff --git a/src/components/commanders/rack/chip-line.tsx b/src/components/commanders/rack/chip-line.tsx
+index 27e16de..046aa5b 100644
+--- a/src/components/commanders/rack/chip-line.tsx
++++ b/src/components/commanders/rack/chip-line.tsx
+@@ -43,7 +43,16 @@ export function printedInLabel(codes: readonly string[]): string {
+ 
+ // Control order, and search first: the row reads in the order the rack above it
+ // is laid out, so a chip and the control that made it are on the same sight line.
+-export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
++/** A slug's label where the lane has no option list to read one from: `rad-counters` → `Rad Counters`. */
++export function themeLabelFromSlug(slug: string): string {
++  return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
++}
++
++export function chipsFor(
++  params: LaneParams,
++  lane: Lane,
++  themeLabel: (slug: string) => string = themeLabelFromSlug,
++): ChipSpec[] {
+   const chips: ChipSpec[] = [];
+ 
+   if (params.q !== "") {
+@@ -90,6 +99,28 @@ export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
+     }
+   }
+ 
++  // Themes sit between colour and Printed in, as the rack draws them. One chip for the pick, and
++  // the All modifier as its own chip, the way Exactly follows the colours.
++  if (params.themes.length > 0) {
++    const labels = params.themes.map(themeLabel);
++    const label = filterCopy.themes.chip(labels);
++    chips.push({
++      key: "themes",
++      label,
++      spoken: labels.length > 2 ? labels.join(", ") : undefined,
++      removeAria: filterCopy.themes.removeAria,
++      next: { themes: [], themeMatch: "any" },
++    });
++    if (params.themes.length > 1 && params.themeMatch === "all") {
++      chips.push({
++        key: "themeMatch",
++        label: filterCopy.themes.match.chip,
++        removeAria: filterCopy.themes.match.removeAria,
++        next: { themeMatch: "any" },
++      });
++    }
++  }
++
+   // One chip for the whole selection, like the colours: past two sets the codes collapse to a count,
+   // and the spoken form still names every one.
+   if (params.printedIn.length > 0) {
+diff --git a/src/components/commanders/rack/filter-rack.tsx b/src/components/commanders/rack/filter-rack.tsx
+index 88df3b9..7c1883a 100644
+--- a/src/components/commanders/rack/filter-rack.tsx
++++ b/src/components/commanders/rack/filter-rack.tsx
+@@ -35,6 +35,7 @@ import { ColourControl } from "./colour-control";
+ import { FilterSheet } from "./filter-sheet";
+ import { OrderControl } from "./order-control";
+ import { PrintedInControl } from "./printed-in-control";
++import { ThemeControl, type ThemeOption } from "./theme-control";
+ import type { PrintedInOption } from "../../../lib/commanders/printed-in-lane";
+ import { ORDER_OPTIONS } from "./order-options";
+ import { resultLineWithAside } from "./result-line";
+@@ -52,7 +53,11 @@ export function FilterRack({
+   forceWide,
+   chooseLink = false,
+   printedInOptions,
++  themeOptions,
+ }: {
++  /** `Themes ▾`'s rows, most commanders first, counted under the other controls. Discover only;
++      absent, the control is not drawn. */
++  themeOptions?: ThemeOption[];
+   /** `Printed in ▾`'s rows: the sets this lane's rows were printed in, counted under the other
+       controls. Absent where the lane shipped no index (`/about`'s specimens), and then the
+       control is not drawn at all rather than drawn empty. */
+@@ -175,7 +180,7 @@ export function FilterRack({
+   // `chipsFor` already knows every dimension and how to unset one; the chassis
+   // needs only a label and a callback, so this is a shape change rather than a
+   // second source of truth about what is on.
+-  const chassisChips: FilterChip[] = chipsFor(params, lane).map((chip) => ({
++  const chassisChips: FilterChip[] = chipsFor(params, lane, (slug) => themeOptions?.find((o) => o.code === slug)?.label ?? slug).map((chip) => ({
+     key: chip.key,
+     label: chip.label,
+     // The colour chip collapses its values to a count, so the swatches are the
+@@ -242,6 +247,19 @@ export function FilterRack({
+             onMatchChange={(match) => onChange({ ...params, match })}
+             wide
+           />
++          {themeOptions && (
++            <ThemeControl
++              form="wide"
++              options={themeOptions}
++              selected={params.themes}
++              match={params.themeMatch}
++              onChange={(themes) => onChange({ ...params, themes })}
++              onMatchChange={(themeMatch) => onChange({ ...params, themeMatch })}
++              coloursLit={params.colors.length > 0}
++              shown={shown}
++              total={total}
++            />
++          )}
+           {/* Before score-against: the owned lane reads search · colour · printed-in ·
+               score-against (STATES, the dimension list per route). */}
+           {printedInOptions && (
+@@ -291,6 +309,7 @@ export function FilterRack({
+               total={total}
+               resultLine={resultLine}
+               printedInOptions={printedInOptions}
++              themeOptions={themeOptions}
+             />
+           )}
+         </>
+diff --git a/src/components/commanders/rack/filter-sheet.tsx b/src/components/commanders/rack/filter-sheet.tsx
+index f085792..a578307 100644
+--- a/src/components/commanders/rack/filter-sheet.tsx
++++ b/src/components/commanders/rack/filter-sheet.tsx
+@@ -35,6 +35,7 @@ import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
+ import { PrimaryButton } from "../../ui/button";
+ import { AvailabilityControl } from "./availability-control";
+ import { PrintedInControl } from "./printed-in-control";
++import { ThemeControl, type ThemeOption } from "./theme-control";
+ import type { PrintedInOption } from "../../../lib/commanders/printed-in-lane";
+ import { ColourControl } from "./colour-control";
+ 
+@@ -52,7 +53,9 @@ export function FilterSheet({
+   total,
+   resultLine,
+   printedInOptions,
++  themeOptions,
+ }: {
++  themeOptions?: ThemeOption[];
+   /** The lane's whole list, for the set layer's announcement. Defaults to `shown`. */
+   total?: number;
+   /** `Printed in ▾`'s rows; absent where the lane shipped no index. */
+@@ -266,6 +269,20 @@ export function FilterSheet({
+           {colour}
+           {/* Before Build from, whose explainer is a hint line: sheet order rule 4 puts a
+               control carrying a hint last, and Printed in's hint lives in its own layer. */}
++          {themeOptions && (
++            <ThemeControl
++              form="sheet"
++              options={themeOptions}
++              selected={params.themes}
++              match={params.themeMatch}
++              onChange={(themes) => onChange({ ...params, themes })}
++              onMatchChange={(themeMatch) => onChange({ ...params, themeMatch })}
++              coloursLit={params.colors.length > 0}
++              shown={shown}
++              total={total ?? shown}
++              onLayerChange={setLayered}
++            />
++          )}
+           {printedInOptions && (
+             <PrintedInControl
+               form="sheet"
+diff --git a/src/components/commanders/rack/theme-control.tsx b/src/components/commanders/rack/theme-control.tsx
+new file mode 100644
+index 0000000..a3da4c7
+--- /dev/null
++++ b/src/components/commanders/rack/theme-control.tsx
+@@ -0,0 +1,267 @@
++"use client";
++
++// `Themes ▾` (#159): narrow Discover by the EDHREC themes a commander is built around. The same
++// tags the row's play-style sentence names, so a picked theme always has a word on the row to
++// point at.
++//
++// Built from the rack's two existing multi-select shapes, never a third:
++//
++// - WIDE: the shipped `FilterPanel`, searchable, ordered by how many commanders each theme has
++//   under the OTHER controls, with the Any / All match in the panel's head.
++// - SHEET: the most-played themes inline as 44px pills (one tap, no second layer), then a 44px
++//   row that opens the whole list as the shared `SetListSheet` layer, exactly as `Printed in`
++//   nests (decision 23).
++
++import { useRef, useState } from "react";
++import { createPortal } from "react-dom";
++import { COVERED_WITH_MAIN } from "../../shell/covered-layer";
++import type { ThemeMatch } from "../../../lib/commanders/lane-params";
++import { filterCopy, themesPanelCopy } from "../../../lib/copy/lanes";
++import { FilterPanel } from "../../ui/filter-panel";
++import { SetListSheet, type SetListSheetCopy } from "../../ui/set-list-sheet";
++
++const copy = filterCopy.themes;
++
++export type ThemeOption = {
++  /** EDHREC's slug, lower-case: what `LaneParams.themes` and `?t=` hold. */
++  code: string;
++  /** EDHREC's label, as the row's sentence prints it. */
++  label: string;
++  /** `typal` for a creature-type theme; absent for a mechanic. */
++  hint?: string;
++  /** Commanders on this lane with the theme, under the other controls. */
++  count: number;
++  disabled: boolean;
++};
++
++/** How many themes the sheet draws inline before the `All N themes` row. */
++export const SHEET_INLINE = 6;
++
++const LIST_COPY: SetListSheetCopy = {
++  panelAriaLabel: themesPanelCopy.panelAriaLabel,
++  sheetTitle: themesPanelCopy.sheetTitle,
++  footerSelected: themesPanelCopy.footerSelected,
++  searchPlaceholder: themesPanelCopy.searchPlaceholder,
++  searchAriaLabel: themesPanelCopy.searchAriaLabel,
++  none: copy.listNone,
++  empty: copy.listEmpty,
++  optionAriaUnavailable: themesPanelCopy.optionAriaUnavailable,
++  announceMatches: themesPanelCopy.announceMatches,
++  announceResult: copy.listShown,
++  done: "Back to filters",
++};
++
++function toggle(list: readonly string[], code: string): string[] {
++  return list.includes(code) ? list.filter((c) => c !== code) : [...list, code];
++}
++
++/** Any / All. Live only at two or more themes; below that it is greyed in place and says why. */
++function MatchControl({
++  form,
++  selected,
++  match,
++  onMatchChange,
++}: {
++  form: "wide" | "sheet";
++  selected: number;
++  match: ThemeMatch;
++  onMatchChange: (next: ThemeMatch) => void;
++}) {
++  const live = selected > 1;
++  const wide = form === "wide";
++  const segments = [
++    { mode: "any" as const, label: wide ? copy.match.anyShort : copy.match.any },
++    { mode: "all" as const, label: wide ? copy.match.allShort : copy.match.all },
++  ];
++  const group = (
++    <div
++      role="radiogroup"
++      aria-label={copy.match.legend}
++      aria-disabled={live ? undefined : true}
++      className={wide ? "flex items-center gap-[2px] shrink-0" : "flex gap-[8px]"}
++    >
++      {segments.map((s) => {
++        const on = s.mode === match;
++        return (
++          <button
++            key={s.mode}
++            type="button"
++            role="radio"
++            aria-checked={on}
++            tabIndex={on ? 0 : -1}
++            onClick={() => live && onMatchChange(s.mode)}
++            className={[
++              "flex items-center justify-center border border-solid",
++              live ? "cursor-pointer" : "cursor-default",
++              wide
++                ? "relative font-mono rounded-[6px] px-[8px] h-[22px] text-[10.5px] after:absolute after:-inset-x-px after:-inset-y-[2px] after:content-['']"
++                : "rounded-full h-[44px] px-[16px] text-[13.5px]",
++              !live
++                ? [
++                    "bg-[color:var(--surface-sunken)] text-[color:var(--fg-locked)]",
++                    on ? "border-[color:var(--border-strong)]" : "border-[color:var(--border)]",
++                  ].join(" ")
++                : on
++                  ? wide
++                    ? "bg-[color:var(--elevated)] border-[color:var(--border-strong)] text-[color:var(--fg)]"
++                    : "bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] border-[color:var(--accent)] text-[color:var(--fg)]"
++                  : wide
++                    ? "bg-transparent border-transparent text-[color:var(--fg-muted)]"
++                    : "bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-body)]",
++            ].join(" ")}
++          >
++            {s.label}
++          </button>
++        );
++      })}
++    </div>
++  );
++
++  if (wide) {
++    return (
++      <div className="flex items-center justify-between gap-[12px] rounded-lg border border-solid border-[color:var(--border)] px-[10px] py-[6px]">
++        <span
++          className={`font-sans text-[12px] ${live ? "text-[color:var(--fg-body)]" : "text-[color:var(--fg-faint)]"}`}
++        >
++          {live ? copy.match.legend : copy.match.idleShort}
++        </span>
++        {group}
++      </div>
++    );
++  }
++  return (
++    <div className="flex flex-col gap-[8px]">
++      <p className="font-mono m-0 text-[10px] tracking-[0.12em] uppercase text-[color:var(--fg-faint)]">
++        {copy.match.legend}
++      </p>
++      {group}
++      {!live && <p className="m-0 font-sans text-[12px] text-[color:var(--fg-faint)]">{copy.match.idle}</p>}
++    </div>
++  );
++}
++
++export function ThemeControl({
++  form,
++  options,
++  selected,
++  match,
++  onChange,
++  onMatchChange,
++  coloursLit,
++  shown,
++  total,
++  onLayerChange,
++}: {
++  form: "wide" | "sheet";
++  /** Most commanders first; ties alphabetical. */
++  options: ThemeOption[];
++  selected: readonly string[];
++  match: ThemeMatch;
++  onChange: (next: string[]) => void;
++  onMatchChange: (next: ThemeMatch) => void;
++  /** Pips lit: the counts are inside those colors, and the head says so. */
++  coloursLit: boolean;
++  shown: number;
++  total: number;
++  onLayerChange?: (open: boolean) => void;
++}) {
++  const [layerOpen, setLayerOpen] = useState(false);
++  const row = useRef<HTMLButtonElement>(null);
++  const note = coloursLit ? copy.countedInColors : undefined;
++
++  if (form === "wide") {
++    return (
++      <span data-testid="themes" className="contents">
++        <FilterPanel
++          key="wide"
++          compact={false}
++          copy={themesPanelCopy}
++          options={options}
++          selected={[...selected]}
++          searchable
++          desktopTriggerHeightPx={34}
++          desktopRowMinPx={44}
++          note={note}
++          headExtra={
++            <MatchControl form="wide" selected={selected.length} match={match} onMatchChange={onMatchChange} />
++          }
++          onToggle={(code) => onChange(toggle(selected, code))}
++          onClear={() => onChange([])}
++        />
++      </span>
++    );
++  }
++
++  const open = (next: boolean) => {
++    setLayerOpen(next);
++    onLayerChange?.(next);
++  };
++  // Picked themes lead, so a pick made in the full list is never off-screen here.
++  const picked = options.filter((o) => selected.includes(o.code));
++  const top = options.filter((o) => !selected.includes(o.code)).slice(0, Math.max(0, SHEET_INLINE - picked.length));
++  const inline = [...picked, ...top];
++
++  return (
++    <div role="group" aria-label={copy.legend} className="flex flex-col gap-[10px]">
++      <p className="font-mono m-0 text-[10px] tracking-[0.12em] uppercase text-[color:var(--fg-faint)]">
++        {copy.legend}
++      </p>
++      <div className="flex flex-wrap gap-[8px]">
++        {inline.map((o) => {
++          const on = selected.includes(o.code);
++          return (
++            <button
++              key={o.code}
++              type="button"
++              aria-pressed={on}
++              aria-disabled={o.disabled && !on ? true : undefined}
++              onClick={() => (!o.disabled || on) && onChange(toggle(selected, o.code))}
++              className={[
++                "flex h-[44px] items-center gap-[8px] rounded-full border border-solid px-[14px] text-[13.5px]",
++                on
++                  ? "bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] border-[color:var(--accent)] text-[color:var(--fg)]"
++                  : o.disabled
++                    ? "bg-[color:var(--surface-sunken)] border-[color:var(--border)] text-[color:var(--fg-locked)]"
++                    : "bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-body)]",
++              ].join(" ")}
++            >
++              <span>{o.label}</span>
++              <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{o.count.toLocaleString("en-US")}</span>
++            </button>
++          );
++        })}
++      </div>
++      <button
++        ref={row}
++        type="button"
++        data-testid="themes-row"
++        onClick={() => open(true)}
++        aria-haspopup="dialog"
++        aria-expanded={layerOpen}
++        className="flex h-[44px] w-full cursor-pointer items-center justify-between gap-[10px] rounded-lg border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--fg-body)]"
++      >
++        <span className="truncate">{copy.rowAll(options.length)}</span>
++        <span aria-hidden className="shrink-0 text-[color:var(--fg-faint)]">›</span>
++      </button>
++      {note && <p className="m-0 font-sans text-[12px] text-[color:var(--fg-faint)]">{note}</p>}
++      <MatchControl form="sheet" selected={selected.length} match={match} onMatchChange={onMatchChange} />
++      {layerOpen &&
++        createPortal(
++          <div onKeyDown={(e) => e.stopPropagation()} {...{ [COVERED_WITH_MAIN]: "" }}>
++            <SetListSheet
++              copy={LIST_COPY}
++              note={note}
++              onDismiss={() => open(false)}
++              options={options}
++              selected={selected}
++              onToggle={(code) => onChange(toggle(selected, code))}
++              shown={shown}
++              total={total}
++              returnFocusTo={row}
++            />
++          </div>,
++          document.body,
++        )}
++    </div>
++  );
++}
+diff --git a/src/components/ui/filter-panel.tsx b/src/components/ui/filter-panel.tsx
+index d7eb094..788d91b 100644
+--- a/src/components/ui/filter-panel.tsx
++++ b/src/components/ui/filter-panel.tsx
+@@ -154,6 +154,7 @@ export function FilterPanel({
+   onAnnounce,
+   portalSheet = false,
+   note,
++  headExtra,
+   desktopTriggerHeightPx,
+   compactTriggerHeightPx,
+   triggerLook = "chip",
+@@ -180,6 +181,11 @@ export function FilterPanel({
+    * `/collection`'s `Set ▾` does one route away.
+    */
+   note?: string;
++  /**
++   * A control in the panel's head, under the note: `Themes ▾`'s Any / All match. It changes how
++   * the chosen rows combine, so it lives with them rather than on the rack.
++   */
++  headExtra?: ReactNode;
+   copy: FilterPanelCopy;
+   options: FilterPanelPersonOption[];
+   selected: string[];
+@@ -1014,6 +1020,9 @@ export function FilterPanel({
+             {note}
+           </p>
+         )}
++        {headExtra && (
++          <div className={bp("mx-[12px] mb-[8px]", "mx-[16px] mb-[10px]")}>{headExtra}</div>
++        )}
+         {noResults ? renderEmptyState() : renderList()}
+         {/* Desktop drops the footer entirely in the no-results state — a
+             "254 sets owned" bar under "no matches" contradicts itself. The sheet
+diff --git a/src/lib/commanders/lane-params.ts b/src/lib/commanders/lane-params.ts
+index 0eaa26f..f47fc19 100644
+--- a/src/lib/commanders/lane-params.ts
++++ b/src/lib/commanders/lane-params.ts
+@@ -26,8 +26,16 @@ export type LaneParams = {
+   order: LaneOrder;
+   /** `Printed in`: set codes, lower-cased and sorted. Any printing counts (decision 9). */
+   printedIn: string[];
++  /** `Themes`: EDHREC theme slugs, lower-cased and sorted. A commander matches a theme EDHREC
++      lists for it (the same tags the row's play-style sentence names). */
++  themes: string[];
++  /** How two or more themes combine. `any` (the default) keeps a commander with any one of
++      them; `all` keeps only commanders EDHREC lists under every one. */
++  themeMatch: ThemeMatch;
+ };
+ 
++export type ThemeMatch = "any" | "all";
++
+ const WUBRG = ["w", "u", "b", "r", "g"] as const;
+ 
+ const ORDERS: Record<Lane, readonly LaneOrder[]> = {
+@@ -52,6 +60,8 @@ export function defaultParams(lane: Lane): LaneParams {
+     avail: "all",
+     order: ORDERS[lane][0],
+     printedIn: [],
++    themes: [],
++    themeMatch: "any",
+   };
+ }
+ 
+@@ -96,6 +106,10 @@ export function parseLaneParams(
+     // Unknown codes are kept rather than validated: a set that stops existing matches nothing,
+     // and the empty state names the control to drop.
+     printedIn: normalizeSetCodes((sp.get("p") ?? "").split(",")),
++    // Unknown slugs are kept, like set codes: a theme EDHREC retires matches nothing, and the
++    // empty state names the control to drop.
++    themes: normalizeThemeSlugs((sp.get("t") ?? "").split(",")),
++    themeMatch: sp.get("tm") === "all" ? "all" : "any",
+   };
+ }
+ 
+@@ -115,6 +129,9 @@ export function serializeLaneParams(p: LaneParams, lane: Lane, saved: Avail = "a
+   if (lane === "owned" && p.avail !== saved) sp.set("a", p.avail);
+   if (p.order !== ORDERS[lane][0]) sp.set("o", p.order);
+   if (p.printedIn.length > 0) sp.set("p", normalizeSetCodes(p.printedIn).join(","));
++  if (p.themes.length > 0) sp.set("t", normalizeThemeSlugs(p.themes).join(","));
++  // Written only where it changes the list: `all` over one theme is the same list as `any`.
++  if (p.themes.length > 1 && p.themeMatch === "all") sp.set("tm", "all");
+   const qs = sp.toString();
+   return qs ? `?${qs}` : "";
+ }
+@@ -123,7 +140,7 @@ export function serializeLaneParams(p: LaneParams, lane: Lane, saved: Avail = "a
+ // belong to neither lane — a campaign tag, something another surface left — and
+ // a write rebuilt from `LaneParams` alone would drop them. This is the list a
+ // write is allowed to clear; everything else on the live URL is copied across.
+-const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s", "p"];
++const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s", "p", "t", "tm"];
+ 
+ /**
+  * The query string to write for `p`, keeping every parameter the lane does not
+@@ -156,5 +173,14 @@ export function activeControlCount(p: LaneParams, lane: Lane): number {
+   if (p.colors.length > 0 && p.match === "exactly") n += 1;
+   if (lane === "owned" && p.avail === "free") n += 1;
+   if (p.printedIn.length > 0) n += 1;
++  if (p.themes.length > 0) n += 1;
++  if (p.themes.length > 1 && p.themeMatch === "all") n += 1;
+   return n;
+ }
++
++/** EDHREC's slug shape, lower-cased, de-duplicated and sorted, so a link reads the same however
++    the themes were picked. */
++export function normalizeThemeSlugs(raw: readonly string[]): string[] {
++  const slugs = raw.map((r) => r.trim().toLowerCase()).filter((r) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(r));
++  return [...new Set(slugs)].sort();
++}
+diff --git a/src/lib/copy/commander-discovery.ts b/src/lib/copy/commander-discovery.ts
+index 39bf0b0..f0841b1 100644
+--- a/src/lib/copy/commander-discovery.ts
++++ b/src/lib/copy/commander-discovery.ts
+@@ -237,6 +237,20 @@ export const discoveryCopy = {
+     filteredTogetherBody: (colors: string, sets: string, candidates: number) =>
+       `None of the ${n(candidates)} you don’t own is ${colors} and ${sets.charAt(0).toLowerCase()}${sets.slice(1)}.`,
+     filteredBothCta: "Clear both filters",
++    // Themes ▾ (#159). With All on, the pick itself can empty the list, and the one-tap fix keeps
++    // every theme the reader picked: it loosens how they combine instead of dropping one.
++    filteredThemesAllHeading: "No commander plays all of those",
++    filteredThemesAllBody: (themes: string, candidates: number) =>
++      `${themes} together leave nothing in the ${n(candidates)} you don’t own.`,
++    filteredThemesAllCta: "Match any theme",
++    // Any (or one theme): every commander with it is one the reader owns already.
++    filteredThemesHeading: "No commander for that theme here",
++    filteredThemesBody: (themes: string, candidates: number) =>
++      `${themes} leaves nothing in the ${n(candidates)} you don’t own. The ones you own are on your commanders.`,
++    filteredThemesCta: "Clear the theme filter",
++    // Colors and themes together: the shipped `filteredTogetherHeading` ("No commander fits both").
++    filteredColorsThemesBody: (colors: string, themes: string, candidates: number) =>
++      `None of the ${n(candidates)} you don’t own is ${colors} and plays ${themes}.`,
+     // Names the lane, the way `discoverCopy.otherLane` names it. The old wording
+     // was the deleted scope control's option label, and it opened on "or", which
+     // read as a trailing clause of the button beside it rather than a link.
+diff --git a/src/lib/copy/commander-row.ts b/src/lib/copy/commander-row.ts
+index 716cb0a..71a760f 100644
+--- a/src/lib/copy/commander-row.ts
++++ b/src/lib/copy/commander-row.ts
+@@ -70,7 +70,20 @@ function topStylesParts(labels: string[], capped: boolean): GapPart[] {
+   ];
+ }
+ 
++/**
++ * The sentence while `Themes ▾` is on (#159): the picked themes this commander has lead, then its
++ * own top themes fill to three. "include", never "top three": the picked ones are named because
++ * they were picked, not because they rank first. Picked names carry `picked`, drawn in accent ink.
++ */
++function pickedStylesParts(picked: string[], rest: string[]): (string | { label: string; picked?: boolean })[] {
++  const names = [...picked.map((label) => ({ label, picked: true })), ...rest.filter((r) => !picked.includes(r)).map((label) => ({ label }))].slice(0, 3);
++  if (names.length === 1) return ["This commander’s play styles include ", names[0]!, "."];
++  if (names.length === 2) return ["This commander’s play styles include ", names[0]!, " and ", names[1]!, "."];
++  return ["This commander’s play styles include ", names[0]!, ", ", names[1]!, " and ", names[2]!, "."];
++}
++
+ export const commanderRowCopy = {
++  pickedStylesParts,
+   /**
+    * The gap line. TEMPLATED, never generated: per-player generation was priced
+    * at ~3,300 model calls per collection change and rejected in the spec.
+diff --git a/src/lib/copy/lanes.ts b/src/lib/copy/lanes.ts
+index 5a0e548..e5aec3d 100644
+--- a/src/lib/copy/lanes.ts
++++ b/src/lib/copy/lanes.ts
+@@ -71,6 +71,36 @@ export const filterCopy = {
+     listEmpty: (query: string) => `No set matches “${query}”.`,
+     listShown: (shown: number) => `${n(shown)} ${shown === 1 ? "commander" : "commanders"} shown`,
+   },
++  // Themes ▾ (#159): EDHREC's theme tags, the same names the row's play-style sentence prints.
++  themes: {
++    legend: "Themes",
++    // One chip for the whole pick: one or two by name, more by a count.
++    chip: (labels: readonly string[]) =>
++      labels.length <= 2 ? labels.join(", ") : `${labels.length} themes`,
++    removeAria: "Clear the theme filter",
++    // The modifier, which is a filter only at two or more themes (as Exactly is only with pips lit).
++    match: {
++      legend: "Theme match",
++      any: "Any of these",
++      all: "All of these",
++      anyShort: "Any",
++      allShort: "All",
++      chip: "All themes",
++      removeAria: "Match any theme",
++      // Greyed in place with one theme or none, and the reason said once in the sheet.
++      idle: "Pick two themes to choose how they combine.",
++      // The wide panel's head has one line for it.
++      idleShort: "Pick two to combine",
++    },
++    // Shown in the panel head only while colors are lit, because that is when rows go to 0.
++    countedInColors: "Counted within the colors you picked.",
++    // The phone sheet: the most-played themes inline, then the whole list one layer up.
++    rowAll: (total: number) => `All ${n(total)} themes`,
++    typal: "typal",
++    listNone: "No themes to filter by.",
++    listEmpty: (query: string) => `No theme matches “${query}”.`,
++    listShown: (shown: number) => `${n(shown)} ${shown === 1 ? "commander" : "commanders"} shown`,
++  },
+ } as const;
+ 
+ const commanders = (v: number) => `${n(v)} ${v === 1 ? "commander" : "commanders"}`;
+@@ -122,6 +152,34 @@ export const printedInPanelCopy: FilterPanelCopy = {
+   announceCleared: (shown: number) => `Printed-in filter cleared. ${commanders(shown)} shown.`,
+ };
+ 
++/** `Themes ▾` as `FilterPanel` and the shared list sheet read it. Counts are commanders. */
++export const themesPanelCopy: FilterPanelCopy = {
++  ...printedInPanelCopy,
++  triggerLabel: "Themes",
++  triggerCount: (count: number) => (count === 0 ? "Themes" : `Themes ${count}`),
++  triggerAriaCollapsed: "Filter by theme, collapsed",
++  triggerAriaWithSelection: (count: number) => `Filter by theme, ${n(count)} selected, collapsed`,
++  panelAriaLabel: "Filter by theme",
++  sheetTitle: "Themes",
++  searchPlaceholder: "Search themes",
++  searchAriaLabel: "Search themes",
++  groupDefault: "Most commanders first",
++  optionAria: (theme: string, count: number) => `${theme}, ${commanders(count)}`,
++  optionAriaUnavailable: (theme: string) => `${theme}, no commanders match your other filters`,
++  footerTotal: (total: number) => `${n(total)} ${total === 1 ? "theme" : "themes"}`,
++  emptyTitle: "No theme by that name",
++  emptyBody: (query: string) => ({ before: "No theme matches ", query: `“${query}”`, after: "." }),
++  announceMatches: (count: number, query: string) =>
++    count === 0 ? `No themes match ${query}` : `${n(count)} ${count === 1 ? "theme matches" : "themes match"} ${query}`,
++  announceAdded: (theme: string, themes: number, shown: number, total: number) =>
++    `${theme} added. ${n(themes)} ${themes === 1 ? "theme" : "themes"}, ${n(shown)} of ${commanders(total)} shown.`,
++  announceRemoved: (theme: string, themes: number, shown: number, total: number) =>
++    themes === 0
++      ? `${theme} removed. No theme filter, ${commanders(shown)} shown.`
++      : `${theme} removed. ${n(themes)} ${themes === 1 ? "theme" : "themes"}, ${n(shown)} of ${commanders(total)} shown.`,
++  announceCleared: (shown: number) => `Theme filter cleared. ${commanders(shown)} shown.`,
++};
++
+ export const commandersCopy = {
+   title: "Commanders",
+   subtitle: "yours, not yet built",
