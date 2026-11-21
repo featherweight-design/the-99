@@ -54,14 +54,14 @@ const seatsOf = (tx: Pick<typeof db, "select">, tableId: string) =>
 
 /**
  * The roster the tracker starts from, read per request: null unless the id is a uuid, the viewer is seated at the
- * table and the table is inside its night.
+ * table and the table is inside its night. With it, the instant that night ends (the 6 am logging stops).
  */
-export async function tableRoster(viewerId: string, tableId: unknown, tx: Tx | typeof db = db): Promise<string | null> {
+export async function tableRoster(viewerId: string, tableId: unknown, tx: Tx | typeof db = db): Promise<{ roster: string; closesAt: Date } | null> {
   if (!isUuid(tableId)) return null;
   const rows = await seatsOf(tx, tableId);
   if (!rows.some((r) => r.userId === viewerId)) return null;
-  const [live] = await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(and(eq(ruleZeroTables.id, tableId), tableLoggable));
-  return live ? rosterHash(tableId, rows) : null;
+  const [live] = await tx.select({ closesAt: ruleZeroTables.expiresAt }).from(ruleZeroTables).where(and(eq(ruleZeroTables.id, tableId), tableLoggable));
+  return live ? { roster: rosterHash(tableId, rows), closesAt: live.closesAt } : null;
 }
 
 export type SaveResult = "saved" | "refused";

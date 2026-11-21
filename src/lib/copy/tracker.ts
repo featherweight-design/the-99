@@ -38,6 +38,8 @@ export const trackerCopy = {
     monarch: "Monarch",
     initiative: "Initiative",
     outCommanderYou: (round: number) => `Out · 21 commander damage from your commander · round ${round}`,
+    noDeck: "no deck",
+    noDeckTablet: "no deck picked",
   },
   sheet: {
     aria: (name: Name): PersonParts => personText`${name}’s sheet`,
@@ -146,6 +148,13 @@ export const trackerCopy = {
     title: "Game over",
     notSaved: "The result didn’t save, so Log this game starts blank.",
     back: "Back to the table",
+    // S4: the table closed while the game ran. The note sits above Log this game, and Back goes to Friends.
+    closedByYou: (at: string, until: string) => `You closed the table at ${at}. This game still logs from it until ${until}.`,
+    closedBy: (closer: Name, at: string, until: string): PersonParts => personText`${closer} closed the table at ${at}. This game still logs from it until ${until}.`,
+    closedByUnknown: (at: string, until: string) => `The table was closed at ${at}. This game still logs from it until ${until}.`,
+    // The table's logging ended while the result was open: the line takes Log this game's place.
+    stopped: (at: string) => `This table stopped logging at ${at}. Log it from your deck’s Games tab.`,
+    backFriends: "Back to Friends",
   },
   // The result (F11, S5). "Thursday night · 4 rounds · 1 h 14 min": the pod's name is drawn before it.
   result: {
@@ -154,6 +163,7 @@ export const trackerCopy = {
     wins: (name: Name): PersonParts => personText`${name} wins`,
     youWin: "You win",
     winSub: (deck: Name, life: number): PersonParts => personText`${deck} · ${life} life left`,
+    winSubNoDeck: (life: number) => `${life} life left`,
     draw: "A draw",
     // "Colin and you went out together · round 6"; a draw from End game: "Colin and you drew · round 6"
     drawOut: (who: PersonParts, round: number): PersonParts => personText`${who} went out together · round ${round}`,

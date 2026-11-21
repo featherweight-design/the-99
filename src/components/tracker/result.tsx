@@ -5,11 +5,12 @@
 // and Rematch, same seats. Drawn at 390 only: the tablet shows the same column, centred (READINESS).
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { joinNames, PersonName, PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import type { GameState } from "../../lib/tracker/engine";
 import { gameLength, ordinal, resultOf } from "../../lib/tracker/result";
+import { closesWhen } from "../../lib/social/when";
 import { FadingImg } from "../ui/hydrated-art";
 import type { PlaySeat } from "./panel";
 
@@ -42,6 +43,8 @@ export function Result({
   logHref,
   backHref,
   tablet,
+  closed,
+  closesAt,
   onRematch,
 }: {
   state: GameState;
@@ -54,6 +57,10 @@ export function Result({
   logHref: string | null;
   backHref: string;
   tablet: boolean;
+  /** The table closed by its host while the game ran (S4): who closed it ("you", their name, or null when unknown) and when. */
+  closed: { by: Who | null; at: number } | null;
+  /** The table's 6 am, when it stops logging. */
+  closesAt: number;
   onRematch: () => void;
 }) {
   const r = resultOf(state);
@@ -68,6 +75,27 @@ export function Result({
   // The dialog takes focus when it opens, so a keyboard is not left on a panel behind it.
   const dialog = useRef<HTMLDivElement>(null);
   useEffect(() => dialog.current?.focus(), []);
+
+  // Past the table's 6 am nothing logs from it, so Log this game gives way to a line saying where to log instead.
+  const [stopped, setStopped] = useState(() => Date.now() >= closesAt);
+  useEffect(() => {
+    if (stopped) return;
+    const t = setTimeout(() => setStopped(true), Math.max(0, closesAt - Date.now()));
+    return () => clearTimeout(t);
+  }, [stopped, closesAt]);
+  // "6 am", not "6:00 am": the tracker runs in the reader's browser, so the times are the reader's own zone.
+  const clock = (ms: number) => closesWhen(new Date(ms), new Date(ms)).replace(":00 ", " ");
+  const until = clock(closesAt);
+  const note = stopped
+    ? trackerCopy.over.stopped(until)
+    : closed === null
+      ? null
+      : closed.by === "you"
+        ? trackerCopy.over.closedByYou(clock(closed.at), until)
+        : closed.by === null
+          ? trackerCopy.over.closedByUnknown(clock(closed.at), until)
+          : trackerCopy.over.closedBy(closed.by, clock(closed.at), until);
+  const live = logHref !== null && !stopped;
 
   const logCls = "grid min-h-[52px] place-items-center rounded-[10px] bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]";
   const ghost = "min-h-[44px] rounded-[10px] text-[14.5px] text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border-strong)]";
@@ -102,7 +130,7 @@ export function Result({
               {draw ? copy.draw : win.you ? copy.youWin : <PersonText text={copy.wins(win.name)} />}
             </strong>
             <small className="block font-mono text-[11.5px] text-[color:var(--fg-body)]">
-              <PersonText text={draw ? (r.byHand ? copy.drawHand : copy.drawOut)(andList(winners), r.round) : copy.winSub(win.deck, winLife)} />
+              <PersonText text={draw ? (r.byHand ? copy.drawHand : copy.drawOut)(andList(winners), r.round) : win.deck === null ? copy.winSubNoDeck(winLife) : copy.winSub(win.deck, winLife)} />
             </small>
           </div>
         </div>
@@ -120,7 +148,7 @@ export function Result({
                     ? copy.outLife(o.round)
                     : o.reason.kind === "poison"
                       ? copy.outPoison(o.round)
-                      : copy.outCommander(o.round, (o.reason.cmdr === 1 ? from?.partner : from?.commander) ?? "");
+                      : copy.outCommander(o.round, (o.reason.cmdr === 1 ? from?.partner : from?.commander) || trackerCopy.sheet.commanderFallback);
                 return (
                   <li key={o.seat} className={"flex items-center gap-3 px-3 py-[10px] " + (i ? "border-t border-[color:var(--border)]" : "")}>
                     <Art src={s.art} className="h-[38px] w-14 shrink-0 rounded-[7px] grayscale-[.7]" />
@@ -137,17 +165,26 @@ export function Result({
         ) : null}
 
         <div className="mt-auto flex flex-col gap-[10px]">
-          {logHref && saved === "saving" ? (
+          {note ? (
+            <div className="flex items-start gap-[10px] rounded-[10px] bg-[color:var(--surface-sunken)] px-3 py-[10px] text-[13px] leading-[1.5] text-[color:var(--fg-body)] shadow-[inset_0_0_0_1px_var(--border)]" data-testid="result-closed-note">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true" className="mt-[2px] flex-none text-[color:var(--fg-muted)]">
+                <ellipse cx="12" cy="12" rx="9" ry="5" />
+                <path d="M8 20l1-3M16 20l-1-3" />
+              </svg>
+              <span>{typeof note === "string" ? note : <PersonText text={note} />}</span>
+            </div>
+          ) : null}
+          {live && saved === "saving" ? (
             // Until the result is saved, the Games tab would open blank, so the button waits.
             <span aria-disabled="true" className={logCls + " opacity-60"} data-testid="result-log">
               {copy.log}
             </span>
-          ) : logHref ? (
+          ) : live ? (
             <Link href={logHref} className={logCls} data-testid="result-log">
               {copy.log}
             </Link>
           ) : null}
-          <p className="m-0 text-center text-[12.5px] text-[color:var(--fg-muted)]" data-testid="result-log-sub">
+          {live ? <p className="m-0 text-center text-[12.5px] text-[color:var(--fg-muted)]" data-testid="result-log-sub">
             {saved === "failed" ? (
               trackerCopy.over.notSaved
             ) : draw ? (
@@ -157,12 +194,12 @@ export function Result({
             ) : (
               <PersonText text={copy.logWin(win.name)} />
             )}
-          </p>
+          </p> : null}
           <button type="button" onClick={onRematch} className={ghost} data-testid="result-rematch">
             {copy.rematch}
           </button>
           <Link href={backHref} className={ghost + " grid place-items-center"}>
-            {trackerCopy.over.back}
+            {closed ? trackerCopy.over.backFriends : trackerCopy.over.back}
           </Link>
         </div>
       </div>

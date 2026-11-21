@@ -7,6 +7,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import type { Cell } from "../../lib/tracker/layouts";
+import type { PlaySeat } from "../../lib/tracker/seat";
 import { COUNTER_KEYS, type CounterKey, type SeatState } from "../../lib/tracker/engine";
 import { PersonName, PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
@@ -17,18 +18,7 @@ import { TurnRing } from "./turn-ring";
 /** Picking who gets the crown or the initiative (F13): the seat's button over its panel, and what it says. */
 export type SeatPick = { kind: "monarch" | "initiative"; now: boolean; label: string | PersonParts; onPick: () => void };
 
-export type PlaySeat = {
-  seat: number;
-  you: boolean;
-  name: string | ThirdPartyName;
-  art: string | null;
-  partnerArt: string | null;
-  /** The commanders' card names (public card text), for the sheet's damage and tax rows. */
-  commander: string;
-  partner: string | null;
-  /** The deck's name, as the table draws it (branded on every seat but the viewer's own), for the result. */
-  deck: string | ThirdPartyName;
-};
+export type { PlaySeat } from "../../lib/tracker/seat";
 
 /** Hold a half this long and it repeats by ten; the delta commits once nothing has been pressed for the window. */
 const HOLD_MS = 450;
@@ -145,6 +135,7 @@ export function Panel({
   onEndTurn,
   onUndo,
   pendingFrom,
+  tablet = false,
 }: {
   cell: Cell;
   canvas: { w: number; h: number };
@@ -164,6 +155,8 @@ export function Panel({
   onUndo: () => void;
   /** Where the surface reaches every panel's pending change (`take`), keyed by seat. */
   pendingFrom?: RefObject<Map<number, () => number>>;
+  /** The tablet's seat with no deck says "no deck picked"; the phone's narrower name row says "no deck" (S2). */
+  tablet?: boolean;
 }) {
   const out = state.out !== null;
   // A committed life change ticks the number and tints the panel (F04 motion). Keyed on the change, so a repeat re-runs it.
@@ -208,7 +201,9 @@ export function Panel({
           data-out={out ? "" : undefined}
           {...personAttrs(
             { "aria-label": label },
-            "relative h-full w-full overflow-hidden rounded-[14px] border bg-[color:var(--surface-rail)] "
+            "relative h-full w-full overflow-hidden rounded-[14px] border "
+              // A seat with no art plays on the plain ground (S2), never the grey of an out seat.
+              + (seat.art ? "bg-[color:var(--surface-rail)] " : "bg-[radial-gradient(var(--elevated),var(--surface))] ")
               + (active ? "border-[color:var(--accent)] " : "border-[color:var(--border-strong)] ")
               + (out ? "[filter:grayscale(1)] opacity-80" : ""),
           )}
@@ -225,8 +220,9 @@ export function Panel({
 
           <div className="relative flex h-full w-full flex-col items-center justify-center">
             <div className="absolute left-3 top-2 z-10 max-w-[55%]">
-              <button type="button" onClick={() => onSheet()} className={"block max-w-full truncate text-left text-[13px] text-[color:var(--fg-body)] " + TOUCH_HIT} data-testid="panel-name">
-                {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
+              <button type="button" onClick={() => onSheet()} className={"flex max-w-full items-baseline text-left text-[13px] text-[color:var(--fg-body)] " + TOUCH_HIT} data-testid="panel-name">
+                <span className="min-w-0 truncate">{seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}</span>
+                {seat.deck === null ? <span className="ml-[6px] shrink-0 whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-muted)]" data-testid="panel-no-deck">{tablet ? copy.noDeckTablet : copy.noDeck}</span> : null}
               </button>
             </div>
             {monarch || initiative || COUNTER_KEYS.some((k) => state.counters[k] > 0) ? (

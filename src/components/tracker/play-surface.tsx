@@ -2,9 +2,11 @@
 
 // The play surface (F03 to F12): the seats' panels laid out for this screen, the centre strip, and the game's life from
 // setup to the last player standing. Game state is this device's (`useGame`); the one server write is the result, saved
-// once when the game ends (`saveTableResultAction`).
+// once when the game ends (`saveTableResultAction`). A running game draws the table it kept at Start (`TableSnapshot`),
+// never the live one, so a reseat, a deck change or a close does not touch it (addendum, Snapshot rule).
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { saveTableResultAction } from "../../app/friends/table/result-actions";
 import { trackerCopy } from "../../lib/copy/tracker";
@@ -15,7 +17,8 @@ import { layoutById, layoutsFor, type Device } from "../../lib/tracker/layouts";
 import { rollFair, SIDES, type DieKind } from "./dice";
 import { DiceResult, DiceRoll, type Roll } from "./dice-roll";
 import { MonarchIcon, InitiativeIcon } from "./icons";
-import { Panel, type PlaySeat, type SeatPick } from "./panel";
+import type { PlaySeat } from "../../lib/tracker/seat";
+import { Panel, type SeatPick } from "./panel";
 import { Result } from "./result";
 import { Setup } from "./setup";
 import { Sheet, type SheetView } from "./sheet";
@@ -40,24 +43,28 @@ export function PlaySurface({
   backHref,
   logHref,
   podName,
+  closed = null,
 }: {
   tableId: string;
-  /** The server's hash of who sat where, handed back with the result. */
+  /** The server's hash of who sat where at load. A game keeps the one from its Start and hands that back with the result. */
   roster: string;
   expiresAt: number;
-  /** In turn order, starting with the viewer's own seat. */
-  seats: readonly PlaySeat[];
+  /** The live seats in turn order, starting with the viewer's own; null on a closed table, where no game starts. */
+  seats: readonly PlaySeat[] | null;
   backHref: string;
   /** The viewer's deck's Games tab for this table (`logGameHref`). */
   logHref: string | null;
   podName: string | ThirdPartyName;
+  /** The table's host closed it (S4): who ("you", a name, or null when unknown) and when. */
+  closed?: { by: string | ThirdPartyName | null; at: number } | null;
 }) {
   const device = useDevice();
+  const router = useRouter();
   const { ready, game, start, commit, undo, discard, finish } = useGame(tableId, expiresAt);
   /** Every panel's pending life change, so a change that ends the game lands the others with it (S5). */
   const pendingFrom = useRef(new Map<number, () => number>());
-  /** A rematch opens setup on the finished game's table and life. */
-  const [rematch, setRematch] = useState<{ layout: string; life: number } | null>(null);
+  /** A rematch opens setup on the finished game's table and life, and keeps its players for a table that has closed. */
+  const [rematch, setRematch] = useState<{ layout: string; life: number; players: readonly PlaySeat[] } | null>(null);
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<SheetView | null>(null);
   const [saved, setSaved] = useState<"saving" | "saved" | "failed" | null>(null);
@@ -69,9 +76,15 @@ export function PlaySurface({
 
   const state = useMemo(() => (game ? replay(game) : null), [game]);
   const saved_layout = game ? layoutById(game.config.layout) : undefined;
-  // A saved game that no longer fits this table (another seat count, or seats that changed) is not resumed.
-  const fits = !!game && !!saved_layout && saved_layout.cells.length === seats.length && game.config.seats.length === seats.length && game.config.seats.every((c, i) => c.seat === seats[i].seat);
+  // The game's own table, from its Start. A saved game without one, or one that does not fit its layout, is not resumed.
+  const snapshot = game?.config.snapshot;
+  const players = snapshot?.players ?? [];
+  const fits = !!snapshot && !!saved_layout && saved_layout.cells.length === players.length && game!.config.seats.length === players.length && game!.config.seats.every((c, i) => c.seat === players[i].seat);
   useEffect(() => (game && !fits ? discard() : undefined), [game, fits, discard]);
+  // Setup draws the live seats; on a closed table only a rematch has seats to start from, and with none it goes back.
+  const setupSeats = seats ?? rematch?.players ?? null;
+  const nowhere = ready && !game && setupSeats === null;
+  useEffect(() => (nowhere ? router.replace(backHref) : undefined), [nowhere, router, backHref]);
   const over = state ? isOver(state) : false;
   useWakeLock(!!state && !over);
   // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
@@ -93,31 +106,33 @@ export function PlaySurface({
     const mine = ++saveSeq.current;
     const settle = (v: "saved" | "failed") => (saveSeq.current === mine ? setSaved(v) : undefined);
     setSaved("saving");
-    saveTableResultAction(tableId, roster, placements(state)).then(
+    saveTableResultAction(tableId, snapshot?.roster ?? roster, placements(state)).then(
       (r) => settle(r.ok ? "saved" : "failed"),
       () => settle("failed"),
     );
-  }, [state, over, tableId, roster]);
+  }, [state, over, tableId, roster, snapshot]);
 
   if (!ready) return <div className="flex-1" aria-busy="true" />;
 
   if (game && !fits) return null;
   if (!game || !state) {
-    const layouts = layoutsFor(device, seats.length);
+    if (setupSeats === null) return null;
+    const layouts = layoutsFor(device, setupSeats.length);
     return (
       <Setup
-        seats={seats}
-        layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", seats.length)}
+        seats={setupSeats}
+        layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", setupSeats.length)}
         initial={rematch ?? undefined}
         onStart={({ layout, life, first }) => {
           setRematch(null);
           const config: GameConfig = {
             tableId,
             startingLife: life,
-            seats: seats.map((s) => ({ seat: s.seat, commanders: s.partnerArt ? 2 : 1 })),
+            seats: setupSeats.map((s) => ({ seat: s.seat, commanders: s.partnerArt ? 2 : 1 })),
             first,
             layout,
             startedAt: Date.now(),
+            snapshot: { players: setupSeats, roster },
           };
           start({ config, log: [] } satisfies Game);
         }}
@@ -126,7 +141,8 @@ export function PlaySurface({
   }
 
   const layout = saved_layout!;
-  const bySeat = new Map(seats.map((s) => [s.seat, s]));
+  const seatsInPlay = players;
+  const bySeat = new Map(seatsInPlay.map((s) => [s.seat, s]));
   const activeName = bySeat.get(state.active);
   const pct = (x: number, y: number): [number, number] => [(x / layout.canvas.w) * 100, (y / layout.canvas.h) * 100];
   const spine = layout.spine;
@@ -167,7 +183,7 @@ export function PlaySurface({
         style={{ aspectRatio: `${layout.canvas.w} / ${layout.canvas.h}`, width: `min(100%, calc(100dvh * ${layout.canvas.w} / ${layout.canvas.h}))` }}
       >
         {layout.cells.map((cell, i) => {
-          const seat = seats[i];
+          const seat = seatsInPlay[i];
           const s = state.seats.find((x) => x.seat === seat.seat)!;
           const from = s.out?.reason.kind === "commander" ? bySeat.get(s.out.reason.from) : undefined;
           return (
@@ -189,6 +205,7 @@ export function PlaySurface({
                 commit(landLife(state, seat.seat, delta, () => [...pendingFrom.current].filter(([n]) => n !== seat.seat).map(([n, take]) => ({ seat: n, delta: take() }))))
               }
               pendingFrom={pendingFrom}
+              tablet={device === "tablet"}
               onEndTurn={() => commit({ t: "endTurn" })}
               onUndo={undo}
             />
@@ -236,10 +253,10 @@ export function PlaySurface({
       {sheet && !over ? (
         <Sheet
           view={sheet}
-          seats={seats}
+          seats={seatsInPlay}
           state={state}
           game={game}
-          rot={layout.cells[seats.findIndex((s) => s.seat === sheet.seat)].rot}
+          rot={layout.cells[seatsInPlay.findIndex((s) => s.seat === sheet.seat)].rot}
           onView={setSheet}
           onClose={() => setSheet(null)}
           onCommit={commit}
@@ -277,7 +294,7 @@ export function PlaySurface({
       {over ? (
         <Result
           state={state}
-          seats={seats}
+          seats={seatsInPlay}
           podName={podName}
           startedAt={game.config.startedAt}
           endedAt={game.endedAt}
@@ -285,8 +302,10 @@ export function PlaySurface({
           logHref={logHref}
           backHref={backHref}
           tablet={device === "tablet"}
+          closed={closed}
+          closesAt={expiresAt}
           onRematch={() => {
-            setRematch({ layout: game.config.layout, life: game.config.startingLife });
+            setRematch({ layout: game.config.layout, life: game.config.startingLife, players: seatsInPlay });
             setSaved(null);
             saveSeq.current++;
             discard();
