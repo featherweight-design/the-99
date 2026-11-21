@@ -20,7 +20,7 @@ export type JudgedTheme = (typeof JUDGED_THEMES)[number];
  * `JUDGED_SYSTEM` edited, together: a stored row also records the SYSTEM hash, so an edit without a
  * bump still stales the rows it describes, and nothing here needs a registry.
  */
-export const JUDGED_PROMPT_VERSION = "j2";
+export const JUDGED_PROMPT_VERSION = "j3";
 
 export const JUDGED_SYSTEM = `You decide which of four STRATEGY THEMES a Magic: the Gathering card serves in a Commander deck.
 You are given cards, each under a "Key:" number. Reply with ONE JSON object and nothing else: each key
@@ -33,33 +33,47 @@ Most cards serve NO theme, and most cards that look like they might serve one do
 whole deck strategy the card is built for, not a word the card happens to contain. Mark a theme only
 when you could name the deck that plays this card BECAUSE of that theme.
 
-THEMES (use these exact names):
-  groupHug   — the card is a gift: it deliberately gives EVERY player, opponents included, something
-               good (extra cards, mana, life, lands, creatures) so the table likes you or the table
-               is all ahead. Examples: Howling Mine, Rites of Flourishing, Dictate of Kruphix.
-               NOT groupHug: "each player" or "each opponent" on its own; a symmetric cost or
-               punishment (each player discards, sacrifices, loses life, takes damage); a wheel or
-               symmetric draw that refills the caster; a one-sided effect (only opponents, or only
-               you, benefit); a drawback only the controller escapes; a creature, vehicle or token
-               that merely mentions players; an ordinary card-advantage spell.
-  pillowFort — the card makes you a poor target for the whole table: it stops attacks against you
-               (Ghostly Prison, Propaganda, Sphere of Safety), blocks attackers, or shields you and
-               your permanents from interaction. NOT pillowFort: protection on one creature or on
-               itself (hexproof, shroud, "can't be blocked"); one trick or one counterspell; fog
-               that is only a one-shot combat trick; a creature that is simply a good blocker.
-  bigMana    — the card produces or multiplies mana far beyond one land drop, or is a payoff that
-               needs a huge amount of it: doubling or tripling mana (Nyxbloom Ancient, Mana
-               Reflection), untapping most of your mana (Seedborn Muse), mana from a count of
-               permanents, or a card whose whole point is spending enormous mana. NOT bigMana: a
-               single spell, ritual or creature that adds some mana once, a rock or land adding one
-               to three mana, a cost reducer, a counterspell that returns mana, a card with an X
-               cost or the word "mana" in passing, or a spell that is simply expensive.
-  politics   — the card's value comes from OTHER players choosing, voting, bargaining or being swayed:
-               votes, council's dilemma, will of the council, "an opponent of your choice", a deal
-               an opponent may accept or refuse. Examples: Expropriate, Coercive Portal. NOT
-               politics: an effect nobody chooses (random or symmetric); "each player" or "target
-               player" alone; goad or monarch alone; you choosing the target yourself; a payoff
-               that only counts votes with no vote of its own; an opponent merely suffering a cost.
+THEMES (use these exact names). Judge from what the card text DOES.
+  groupHug   — a repeatable or standing effect that gives EVERY player a resource counts, even if you
+               also profit or a minor rider exists. One-shot wheels and punishments do not.
+               IN: Howling Mine; Rites of Flourishing; Winter, Misanthropic Guide (each player draws
+               two each upkeep); Innocuous Researcher (each player draws on attack); Yurlok of Scorch
+               Thrash (each player adds BRG).
+               OUT: Windfall (one-shot wheel); Syphon Mind; Rhystic Study; Heroes' Reunion.
+  pillowFort — a STANDING effect that stops, taxes or redirects attacks or damage aimed at you, or
+               keeps you or your permanents from being targeted. An effect on a single creature, or a
+               one-time "prevent combat damage" you pay for each turn, does not count.
+               IN: Ghostly Prison; Propaganda; Dense Foliage (creatures can't be targeted by spells,
+               even though it is symmetric); Enduring Angel (you have hexproof); Empyrial Archangel
+               (all damage to you goes to it); Sandwurm Convergence (fliers can't attack you);
+               Promise of Loyalty (lasting "can't attack you" counters).
+               OUT: activated Fogs (Dawnstrider, Spike Weaver, Sunstone); a creature's own shroud or
+               hexproof (Deft Duelist); a single soft counter (Mana Tithe).
+  bigMana    — judge by the amount the TEXT guarantees, never by a count that depends on the deck. IN
+               when one tap, trigger or cast adds 5 or more mana (restrictions do not matter), when the
+               card doubles or adds extra mana whenever a land or permanent taps, or when it untaps all
+               your lands or most of your permanents. OUT when the amount scales with a variable
+               (devotion, power, counters, allies, colors, life gained, creature types), however large
+               it can get.
+               IN: Nyxbloom Ancient; Mana Reflection; Seedborn Muse; Timeless Lotus (five per tap);
+               Savage Ventmaw (six on attack); Avatar Roku (six on attack); Irencrag Feat (seven);
+               Geosurge (seven, restricted); Su-Chi Cave Guard (eight); Overgrowth (two extra per land
+               tap); Extraplanar Lens; Rude Awakening (untap all lands); Bear Umbra (untap all lands on
+               attack).
+               OUT: Karametra's Acolyte, Topiary Lecturer, Harabaz Druid, Heronblade Elite, Mona Lisa,
+               Marwyn, Cradle Clearcutter, Rainveil Rejuvenator (X = power, devotion or a count); Arbor
+               Adherent, Faeburrow Elder, Bloom Tender, White Lotus Tile, Immortus, Accomplished
+               Alchemist, Redshift, Seance Board, Rotating Fireplace, The Eternity Elevator (X mana from
+               a count); Somberwald Sage (three, restricted); Master of Dark Rites.
+  politics   — another player's DECISION is the value, and that decision is an accept or decline, a
+               vote, or a deal. A forced pick between piles or cards, with nothing offered, is not
+               politics. Monarch alone is not politics.
+               IN: Expropriate; Coercive Portal; Tivit; Combustible Gearhulk and Palantir of Orthanc
+               (the opponent may have you draw or take the penalty); Rootweaver Druid (each opponent
+               may take lands from the offer); Tenuous Truce (a truce that ends when anyone attacks).
+               OUT: pile or card picks with nothing to decline (Intuition, Epiphany at the Drownyard,
+               Ecological Appreciation, Realms Uncharted, Forgotten Lore, Choice of Damnations, Truth or
+               Tale); monarch cards (Crown-Hunter Hireling, Champions of Minas Tirith); Knight Rampager.
 
 A card may serve several themes, or none. Decide from what the card DOES, never from its name or its
 flavour. When it is a close call, leave the theme out: a missed card costs little, a wrong one costs more.`;

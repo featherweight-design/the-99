@@ -9,6 +9,8 @@ import Anthropic from "@anthropic-ai/sdk";
 import { Pool, neonConfig } from "@neondatabase/serverless";
 import ws from "ws";
 
+import { requireBranch } from "./lib/require-branch.mjs";
+
 import { JUDGED_SYSTEM, JUDGED_THEMES, type JudgedTheme } from "../src/lib/labels/judged";
 import { renderCard } from "../src/lib/labels/prompt";
 
@@ -33,12 +35,7 @@ A first pass was loose on purpose and is often wrong. You are the strict second 
 meets the definition below and you could name the deck that plays it BECAUSE of that theme. Any close call is "no".
 
 ${defs}
-Strict reminders, each a reason to answer "no":
-  groupHug   — a one-sided or single effect (only you, only opponents, or one player) is not group hug; the gift must reach every player.
-  pillowFort — it needs a table-wide deterrent or shield for you; protecting one creature, itself, or a one-shot trick is not enough.
-  bigMana    — one ritual, one rock, one land or one spell that adds mana once is not big mana; it must multiply or scale mana.
-  politics   — an opponent merely choosing which pile or card goes where, a symmetric or random effect, or you choosing the target
-               yourself is not politics; other players must make a real choice, vote or deal that matters to you.
+Apply the definitions above exactly, including their IN and OUT examples and split rules.
 
 Reply with ONE JSON object and nothing else: {"verdict": "yes" or "no", "reason": "<one short line>"}`;
 
@@ -47,12 +44,12 @@ type Pair = { n: number; theme: JudgedTheme; card: Card };
 const SAMPLE = process.env.SAMPLE ?? "2";
 const key: { n: number; name: string }[] = JSON.parse(readFileSync(join(DIR, `sample${SAMPLE}-key.json`), "utf8"));
 const grades = new Set(readFileSync(join(DIR, `judged-grades${SAMPLE}.txt`), "utf8").split("\n").map((l) => l.trim()).filter(Boolean));
-const pool = new Pool({ connectionString: readFileSync(DB_FILE, "utf8").trim(), max: 2 });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL ?? readFileSync(DB_FILE, "utf8").trim(), max: 2 });
 
 async function loadPairs(): Promise<Pair[]> {
   const rows = (await pool.query(
     `select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout, j.themes
-       from cards c join judged_labels j on j.oracle_id = c.oracle_id and j.prompt_version = 'j2'
+       from cards c join judged_labels j on j.oracle_id = c.oracle_id and j.prompt_version = 'j3'
       where c.name = any($1::text[]) and jsonb_array_length(j.themes) > 0`, [key.map((k) => k.name)])).rows;
   const pairs: Pair[] = [];
   for (const r of rows) {
@@ -79,6 +76,7 @@ const readLedger = (): Ledger => (existsSync(LEDGER) ? JSON.parse(readFileSync(L
 const booked = (l: Ledger) => Object.values(l).reduce((s, e) => s + (e.actualUsd ?? e.worstUsd), 0);
 
 async function main() {
+  await requireBranch(process.env.DATABASE_URL, "judged-verify-test");
   const pairs = await loadPairs();
   console.log(`pass-1 pairs ${pairs.length}`);
   if (SCORE) return score(pairs);

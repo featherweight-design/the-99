@@ -22,6 +22,7 @@ import { boundedNumber } from "../src/lib/labels/plan";
 import { JUDGED_THEMES, type JudgedTheme } from "../src/lib/labels/judged";
 import { runJudgedBuild } from "./lib/judged-labels-build";
 import { readModelCalls } from "./lib/model-calls-gate.mjs";
+import { requireBranch } from "./lib/require-branch.mjs";
 
 /** The whole programme's ceiling across every judged run; $15 covers the sample and the full run with a retry wave. */
 const CAP_USD = boundedNumber("JUDGED_CAP_USD", process.env.JUDGED_CAP_USD, 15, 0, 65);
@@ -40,7 +41,8 @@ function parseDeep(arg: string | undefined): Partial<Record<JudgedTheme, number>
 // The REAL endpoint: `.env` may point ANTHROPIC_BASE_URL at the local proxy, which has no batches route.
 const client = new Anthropic({ baseURL: "https://api.anthropic.com", ...(dry ? { apiKey: "dry-run" } : {}) });
 
-runJudgedBuild({
+// --branch=<br-id> is required and must be the branch DATABASE_URL really reaches (a worktree .env overrides an exported URL).
+requireBranch(process.env.DATABASE_URL, "build-judged-labels").then(() => runJudgedBuild({
   client: client.messages.batches,
   runId: process.env.JUDGED_RUN_ID ?? `judged-${new Date().toISOString().slice(0, 10)}`,
   capUsd: CAP_USD,
@@ -51,7 +53,7 @@ runJudgedBuild({
   deep: parseDeep(process.argv.find((a) => a.startsWith("--deep="))?.slice(7)),
   sample: process.argv.includes("--sample"),
   modelCalls: () => readModelCalls(),
-}).then(
+})).then(
   (code) => { process.exitCode = code; },
   (err) => { console.error(err); process.exit(1); },
 );
