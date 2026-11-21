@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R1 · Phone, 6 players: three and three</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(/_blob/92b49ae8bf36fee523d2c940101a47cd) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(/_blob/28a118a4f1d2d89f048ed8dda083f273) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(/_blob/ab35e14cb6458bb7fa4f3f54f8f02a5f) format("woff2");font-weight:500}
+body{margin:0}
+.scr{--bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;position:relative;overflow:hidden;background:var(--bg);font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg)}
+.cell{position:absolute;border-radius:16px;overflow:hidden;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
+.cell.turn{box-shadow:inset 0 0 0 2px var(--accent)}
+.rot{position:absolute}
+.art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.turn .art{opacity:.72}
+.wash{position:absolute;inset:0;background:rgba(20,17,14,.5)}
+.pane{position:absolute;inset:0;box-sizing:border-box;padding:6px 8px 8px 14px;display:flex;flex-direction:column}
+.who{position:relative;z-index:2;display:flex;align-items:center;gap:8px;height:44px;white-space:nowrap}
+.who b{font-weight:600;font-size:16px}
+.who i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--fg-body)}
+.endt{height:40px;padding:0 14px;border-radius:999px;border:0;background:var(--accent);color:#14110E;font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px}
+.mk{margin-left:auto;flex:none;width:44px;height:44px;border-radius:50%;border:0;background:rgba(20,17,14,.85);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);display:flex;align-items:center;justify-content:center}
+.life{position:relative;flex:1;display:flex;align-items:center;justify-content:center}
+.half{position:absolute;top:0;bottom:0;width:50%;background:none;border:0;color:var(--fg-muted);font-size:30px;font-family:"IBM Plex Sans",sans-serif;padding:0 4px;display:flex;align-items:center}
+.minus{left:0;justify-content:flex-start}.plus{right:0;justify-content:flex-end}
+.num{font-family:"Cinzel",serif;font-weight:700;line-height:1;pointer-events:none;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+.spine{position:absolute;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;align-items:center;justify-content:center;gap:12px}
+.spine.v{flex-direction:column}
+.sb{position:relative;width:48px;height:48px;border-radius:50%;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:flex;align-items:center;justify-content:center}
+.sb.on{color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.sb.off{color:var(--fg-faint)}
+.sb img{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--surface)}
+.tn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);font-family:"Cinzel",serif;font-weight:700;font-size:22px}
+.rule{background:var(--border-strong)}.v .rule{width:26px;height:1px}.h .rule{width:1px;height:26px}
+.spine.v{flex-direction:column}
+.spine.h{flex-direction:row;gap:16px}
+.v .rule{width:26px;height:1px}.h .rule{width:1px;height:26px}
+.scr{display:block!important;padding:0!important}
+.cell{position:absolute}
+.rot{position:absolute;inset:auto}
+.plain{background:radial-gradient(var(--elevated),var(--surface))}
+.spine{position:absolute}
+.who i{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.who b{flex:none}
+.num{position:relative}
+.delta{position:absolute;left:100%;top:8px;margin-left:6px;font-family:"IBM Plex Mono",monospace;font-size:18px;font-weight:500;color:var(--accent);text-shadow:none}
+.press{background:rgba(207,135,69,.18)!important;color:var(--accent)!important}
+.press.loss{background:rgba(198,83,63,.16)!important;color:#E07A66!important}
+.press.gain{background:rgba(111,163,104,.16)!important;color:#8CC284!important}
+.delta.loss{color:#E07A66}.delta.gain{color:#8CC284}
+.sb.open{background:var(--accent);color:var(--bg);box-shadow:none}
+.endt.sq{flex:none;width:44px;height:44px;padding:0;justify-content:center}
+</style>
+</helmet>
+<div class="scr" style="width:390px;height:844px">
+  <div class="cell" style="left:6px;top:565px;width:155px;height:273px"><div class="rot" style="width:273px;height:155px;left:-59px;top:59px;transform:rotate(90deg)"><img class="art" src="/_blob/019b993ea74dc7eef2d2e5a820befefa" alt=""><div class="wash"></div><div class="pane"><div class="who"><b>You</b><i>Sai Thopters</i><button class="mk" aria-label="Your sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="life"><button class="half minus" aria-label="You lose 1 life">−</button><span class="num" style="font-size:86px">31</span><button class="half plus" aria-label="You gain 1 life">+</button></div></div></div></div>
+  <div class="cell turn" style="left:6px;top:285px;width:155px;height:274px"><div class="rot" style="width:274px;height:155px;left:-59.5px;top:59.5px;transform:rotate(90deg)"><img class="art" src="/_blob/3a9cc48d946086f7a01702d812ad49a7" alt=""><div class="wash"></div><div class="pane"><div class="who"><b>Colin</b><i>Ghalta Stompy</i><button class="endt">End turn<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h12M13 6l6 6-6 6"/></svg></button><button class="mk" aria-label="Colin's sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="life"><button class="half minus" aria-label="Colin loses 1 life">−</button><span class="num" style="font-size:86px">27</span><button class="half plus" aria-label="Colin gains 1 life">+</button></div></div></div></div>
+  <div class="cell" style="left:6px;top:6px;width:155px;height:273px"><div class="rot" style="width:273px;height:155px;left:-59px;top:59px;transform:rotate(90deg)"><img class="art" src="/_blob/de887acf2dd3696e7f72d8630ef63661" alt=""><div class="wash"></div><div class="pane"><div class="who"><b>Peter</b><i>Giada Angels</i><button class="mk" aria-label="Peter's sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="life"><button class="half minus" aria-label="Peter loses 1 life">−</button><span class="num" style="font-size:86px">34</span><button class="half plus" aria-label="Peter gains 1 life">+</button></div></div></div></div>
+  <div class="cell" style="left:229px;top:6px;width:155px;height:273px"><div class="rot" style="width:273px;height:155px;left:-59px;top:59px;transform:rotate(-90deg)"><img class="art" src="/_blob/4a0fd5eea277545f56c74cbec6b0a96e" alt=""><div class="wash"></div><div class="pane"><div class="who"><b>Chris</b><i>Killian</i><button class="mk" aria-label="Chris's sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="life"><button class="half minus" aria-label="Chris loses 1 life">−</button><span class="num" style="font-size:86px">40</span><button class="half plus" aria-label="Chris gains 1 life">+</button></div></div></div></div>
+  <div class="cell plain" style="left:229px;top:285px;width:155px;height:274px"><div class="rot" style="width:274px;height:155px;left:-59.5px;top:59.5px;transform:rotate(-90deg)"><div class="pane"><div class="who"><b>Sam</b><i>guest · no deck</i><button class="mk" aria-label="Sam's sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="life"><button class="half minus" aria-label="Sam loses 1 life">−</button><span class="num" style="font-size:86px">40</span><button class="half plus" aria-label="Sam gains 1 life">+</button></div></div></div></div>
+  <div class="cell" style="left:229px;top:565px;width:155px;height:273px"><div class="rot" style="width:273px;height:155px;left:-59px;top:59px;transform:rotate(-90deg)"><img class="art" src="/_blob/747b6b5b0a287c64fc2a76924491c25e" alt=""><div class="wash"></div><div class="pane"><div class="who"><b>Max</b><i>Gisa Zombies</i><button class="mk" aria-label="Max's sheet"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></button></div><div class="life"><button class="half minus" aria-label="Max loses 1 life">−</button><span class="num" style="font-size:86px">38</span><button class="half plus" aria-label="Max gains 1 life">+</button></div></div></div></div>
+  <div class="spine v" style="left:167px;top:6px;width:56px;height:832px;"><div class="tn" aria-label="Round 2, Colin's turn">2</div><div class="rule"></div><button class="sb on" aria-label="Monarch: Max. Tap to pass it"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg><img src="/_blob/747b6b5b0a287c64fc2a76924491c25e" alt=""></button><button class="sb off" aria-label="Initiative: nobody. Tap to pass it"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></button><button class="sb on" aria-label="It is day. Tap to make it night"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></button><button class="sb" aria-label="Roll dice or flip a coin"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></button><div class="rule"></div><button class="sb" aria-label="Undo the last change"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 010 10h-2"/></svg></button><button class="sb" aria-label="Menu" aria-haspopup="menu" aria-expanded="false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg></button></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 390, "height": 844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
