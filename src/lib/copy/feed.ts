@@ -236,6 +236,19 @@ export const feedCopy = {
       aria: (title: string | PersonParts) => personText`Hide “${title}”`,
       failed: "We couldn’t hide that. Try again.", // toast, role alert
     },
+    /**
+     * Clear all of What's new (clear-all handoff, R1): the foot's press, its accessible name, the receipt's toast
+     * (role status, with Undo) and the failure's (role alert). `cleared` counts what was cleared, not what was drawn.
+     */
+    clearAll: {
+      label: "Clear all",
+      aria: "Clear all of What’s new",
+      cleared: (n: number) => `Cleared ${n} from What’s new.`,
+      undo: "Undo",
+      failed: "We couldn’t clear those. Try again.",
+      /** Undo's own refusal (not drawn in the handoff): the items stay cleared, so it says what did not happen. */
+      undoFailed: "We couldn’t undo that. Try again.",
+    },
   },
   /**
    * The Announcements archive, `/announcements` (small items 11, item 3; board `Archive`). Copy-reviewed (apply pass). The sub line is computed from the stored posts, never a drawn figure (the board's "Jan 2023" was a

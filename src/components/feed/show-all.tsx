@@ -15,20 +15,24 @@ const c = feedCopy.home;
  * `aside` stands in the small text's place (What's new's Past announcements entry, small items 11 item 3), which then
  * keeps the footer with or without the press.
  */
-export function ShowAllFooter({ hidden, total, onExpand, aside }: { hidden: number; total: number; onExpand: () => void; aside?: ReactNode }) {
-  if (hidden <= 0 && !aside) return null;
+export function ShowAllFooter({ hidden, total, onExpand, aside, clear }: { hidden: number; total: number; onExpand: () => void; aside?: ReactNode; clear?: ReactNode }) {
+  if (hidden <= 0 && !aside && !clear) return null;
   return (
     <div data-feed-footer className="flex items-center justify-between gap-[10px] [border-top:1px_solid_var(--border)] py-[4px] pr-[6px] pl-[14px]">
-      {aside ?? <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.more(hidden)}</small>}
-      {hidden > 0 && (
-        <button
-          type="button"
-          onClick={onExpand}
-          className="flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] md:min-h-[36px]"
-        >
-          {c.showAll(total)}
-        </button>
-      )}
+      {aside ?? (hidden > 0 ? <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{c.more(hidden)}</small> : null)}
+      {/* Clear all (What's new only) sits before Show all, in muted ink so Show all stays the foot's main press; alone it ends the foot. */}
+      <div className="ml-auto flex items-center">
+        {clear}
+        {hidden > 0 && (
+          <button
+            type="button"
+            onClick={onExpand}
+            className="flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] md:min-h-[36px]"
+          >
+            {c.showAll(total)}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

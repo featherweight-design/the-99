@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../lib/auth";
-import { dismissFeedTarget, parseDismissKey } from "../lib/social/feed-dismiss";
+import { clearFeedKeys, dismissFeedTarget, parseClearKeys, parseDismissKey, restoreFeedKeys } from "../lib/social/feed-dismiss";
 
 export type DismissResult = { ok: true } | { ok: false; reason: "off" | "invalid" };
 
@@ -16,6 +16,32 @@ export async function dismissFeedItemAction(key: unknown): Promise<DismissResult
   const target = parseDismissKey(key);
   if (!target) return { ok: false, reason: "invalid" };
   await dismissFeedTarget(userId, target);
+  revalidatePath("/");
+  revalidatePath("/friends");
+  return { ok: true };
+}
+
+/**
+ * Clear all of What's new: the ✕'s dismissal for every key Home counts, in one statement (all or nothing, matching the
+ * restore-everything failure). Keys come from the client, so each is checked and the count capped; a stored item is
+ * written only from the reader's own row. Revalidates what the ✕ does.
+ */
+export async function clearFeedItemsAction(keys: unknown): Promise<DismissResult> {
+  const userId = await requireUserId();
+  const parsed = parseClearKeys(keys);
+  if (!parsed) return { ok: false, reason: "invalid" };
+  await clearFeedKeys(userId, parsed);
+  revalidatePath("/");
+  revalidatePath("/friends");
+  return { ok: true };
+}
+
+/** Undo for Clear all: lifts the reader's own dismissals for the keys it just wrote. */
+export async function restoreFeedItemsAction(keys: unknown): Promise<DismissResult> {
+  const userId = await requireUserId();
+  const parsed = parseClearKeys(keys);
+  if (!parsed) return { ok: false, reason: "invalid" };
+  await restoreFeedKeys(userId, parsed);
   revalidatePath("/");
   revalidatePath("/friends");
   return { ok: true };

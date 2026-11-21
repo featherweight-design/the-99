@@ -3,7 +3,8 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
-import { dismissQuery, parseDismissKey } from "./feed-dismiss";
+import { clearQuery, dismissQuery, parseClearKeys, parseDismissKey } from "./feed-dismiss";
+import { CLEAR_ALL_MAX } from "./feed-dismiss-limits";
 import { incomingAsksQuery, waitingAsksCountQuery } from "./spare-requests";
 import { storedFeedBranch, storedItemsByKeyQuery } from "./feed-items";
 import { catalogBranch } from "../feed/read";
@@ -70,5 +71,22 @@ describe("every read leaves a dismissed key out", () => {
       expect(sql).toContain(`join "feed_dismissals" dfd on dfd.user_id = dfi.user_id and dfd.key = 'item:' || dfi.id::text`);
       expect(sql).toContain(`where dfi.user_id = ${a}.holder_user_id and dfi.kind = 'spare-request' and dfi.dedupe_key = ${a}.id::text`);
     }
+  });
+});
+
+describe("Clear all's keys and its one statement", () => {
+  it("splits Home's keys, drops duplicates and refuses an ask, a bad key, nothing, or too many", () => {
+    expect(parseClearKeys([`item:${ID}`, `item:${ID.toUpperCase()}`, "set:dsk", "post:abc"])).toEqual({ items: [ID], catalog: ["set:dsk", "post:abc"] });
+    expect(parseClearKeys([`ask:${ID}`])).toBeNull();
+    expect(parseClearKeys(["set:dsk", "nope"])).toBeNull();
+    expect(parseClearKeys([])).toBeNull();
+    expect(parseClearKeys("set:dsk")).toBeNull();
+    expect(parseClearKeys(Array.from({ length: CLEAR_ALL_MAX + 1 }, (_, i) => `set:s${i}`))).toBeNull();
+    expect(parseClearKeys(Array.from({ length: CLEAR_ALL_MAX }, (_, i) => `set:s${i}`))).not.toBeNull();
+  });
+  it("writes items only from the reader's own rows and catalog keys as given, in one statement", () => {
+    const { sql, params } = render(clearQuery("u1", { items: [ID], catalog: ["set:dsk"] }));
+    expect(sql).toMatch(/^insert into "feed_dismissals" \(user_id, key\) select dfi\.user_id, 'item:' \|\| dfi\.id::text from "feed_items" dfi where dfi\.user_id = \$1 and dfi\.id in \(\$2::uuid\) union all select \$3::text, ck from \(values \(\$4\)\) as c\(ck\) on conflict do nothing$/);
+    expect(params).toEqual(["u1", ID, "u1", "set:dsk"]);
   });
 });
