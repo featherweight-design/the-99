@@ -769,6 +769,8 @@ export function NavRail({
 
   return (
     <aside
+      // `data-shell-nav`: set aside on a full-screen route (`html:has([data-full-screen])`, globals.css).
+      data-shell-nav=""
       // `sticky` makes this a stacking context, so the account popover's own
       // z-index cannot lift it past the main column — the rail as a whole has
       // to outrank that column, or content with any positive z-index (the
@@ -935,6 +937,7 @@ export function TabBar({
       // Hidden while a Deck note's field has focus on a phone (`html[data-note-focus]`, `note-field.tsx`):
       // the keyboard is up and the field needs the room (Deck notes A1).
       data-hide-on-note-focus=""
+      data-shell-nav=""
       // A bar pinned over the window's foot: an open `[[` list keeps clear of it (card-tag-picker.tsx).
       data-foot-bar=""
       // Held to --tabbar-h rather than sized by its contents: the bar is fixed,
@@ -984,10 +987,11 @@ export function MobileHeader({
   return (
     <>
     {/* Holds the header's room in the page, since the header itself is out of flow at every scroll. */}
-    <div aria-hidden className="md:hidden h-[var(--header-h,79px)] shrink-0" />
+    <div aria-hidden data-shell-nav="" className="md:hidden h-[var(--header-h,79px)] shrink-0" />
     <header
       ref={ref}
       data-quick-return={mode}
+      data-shell-nav=""
       className={`${QUICK_RETURN[mode]} ${slides ? QUICK_RETURN_SLIDE[mode] : ""} md:hidden inset-x-0 top-0 ${under ? "z-[1]" : "z-30"} flex items-center justify-between bg-[color:var(--bg)] px-5 pt-5 pb-[14px] motion-reduce:transition-none`}
       style={{ borderBottom: "1px solid var(--border)" }}
     >
