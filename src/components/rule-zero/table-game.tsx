@@ -44,6 +44,14 @@ export function useKeptGame(tableId: string) {
     setKept(k && players ? { ...k, state: replay(k.game), players, readAt: now } : null);
   }, [tableId]);
 
+  // A running game's length keeps counting while its card is open: re-read the clock each minute.
+  const ticking = kept !== null && !isOver(kept.state);
+  useEffect(() => {
+    if (!ticking) return;
+    const id = window.setInterval(() => setKept((k) => (k ? { ...k, readAt: Date.now() } : k)), 60_000);
+    return () => window.clearInterval(id);
+  }, [ticking]);
+
   const discard = useCallback(() => {
     if (!kept) return;
     const s = local();
