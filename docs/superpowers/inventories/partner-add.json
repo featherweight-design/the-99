@@ -1,0 +1,49 @@
+{
+  "feature": "Add a partner to an existing deck (#491, PR 3): the Add a partner section on the Change commander sheet, its confirm with the card that leaves, and the Replace groups under their own heading",
+  "note": "PA_DECK is a single-commander deck of the signed-in account whose commander has a partner ability and whose 99 is full. PA_ROOM is the same with fewer than 98 cards (nothing leaves).",
+  "rows": [
+    {
+      "id": "section",
+      "label": "/decks/[id] sheet: Add a partner section above the Replace groups",
+      "view": "src/components/decks/partner-add-section.tsx",
+      "steps": [
+        { "goto": "/decks/${PA_DECK}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "Change commander", "settle": 600 },
+        { "wait": "[data-partner-section]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "figure",
+      "label": "/decks/[id] sheet: a partner's figure opened full width",
+      "view": "src/components/decks/partner-add-section.tsx",
+      "steps": [
+        { "goto": "/decks/${PA_DECK}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "Change commander", "settle": 600 },
+        { "wait": "[data-partner-section]", "settle": 600 },
+        { "click": "[data-partner-row] button[aria-expanded='false']", "settle": 500 }
+      ]
+    },
+    {
+      "id": "confirm-cut",
+      "label": "/decks/[id] sheet: the add confirm with the card that leaves",
+      "view": "src/components/decks/partner-add-confirm.tsx",
+      "steps": [
+        { "goto": "/decks/${PA_DECK}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "Change commander", "settle": 600 },
+        { "wait": "[data-partner-section]", "settle": 600 },
+        { "click": "[data-partner-row] [data-choose]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "confirm-room",
+      "label": "/decks/[id] sheet: the add confirm when the deck has room (nothing leaves)",
+      "view": "src/components/decks/partner-add-confirm.tsx",
+      "steps": [
+        { "goto": "/decks/${PA_ROOM}", "wait": "[data-testid='change-commander-door']:visible", "settle": 1500 },
+        { "clickRole": "button", "name": "Change commander", "settle": 600 },
+        { "wait": "[data-partner-section]", "settle": 600 },
+        { "click": "[data-partner-row] [data-choose]", "settle": 1200 }
+      ]
+    }
+  ]
+}
