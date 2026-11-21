@@ -5,7 +5,7 @@
 // before the server answers, and the sentence the live region reads out.
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckCounts, type DeckDetailCard, type DeckUnresolvedRow } from "../../lib/decks/grouping";
@@ -19,7 +19,12 @@ const TEST_MIX = recommendedMix(null, false);
 // reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
 const searchCards = vi.fn<(...args: unknown[]) => Promise<SearchResult[]>>();
 const resolveUnresolvedRow = vi.fn(async () => ({ ok: true as const }));
-const deleteUnresolvedRow = vi.fn(async () => ({ ok: true as const }));
+// The harness stands in for the revalidation a real delete triggers: the server's rows lose the line when the action answers.
+let serverDeleted: ((rowId: string) => void) | null = null;
+const deleteUnresolvedRow = vi.fn<(deckId: string, rowId: string) => Promise<{ ok: true } | { ok: false; message: string }>>(async (_deckId, rowId) => {
+  serverDeleted?.(rowId);
+  return { ok: true };
+});
 
 vi.mock("../../app/decks/[id]/search-action", () => ({ searchCards }));
 vi.mock("../../app/decks/import-actions", () => ({
@@ -91,7 +96,12 @@ function Harness({
   cards?: DeckDetailCard[];
   rows?: DeckUnresolvedRow[];
 }) {
-  const deck = useOptimisticDeckCards(cards, rows);
+  const [serverRows, setServerRows] = useState(rows);
+  useEffect(() => {
+    serverDeleted = (rowId) => setServerRows((r) => r.filter((x) => x.id !== rowId));
+    return () => { serverDeleted = null; };
+  }, []);
+  const deck = useOptimisticDeckCards(cards, serverRows);
   const [, setExpanded] = useState(false);
   const counts = deckCounts(deck.cards, deck.unresolvedCount);
   return (
@@ -391,6 +401,38 @@ describe("resolving a line to the deck's own commander", () => {
       expect(screen.getByText(copy.resolvedMobile("Muldrotha", "1"))).toBeInTheDocument(),
     );
     expect(resolveUnresolvedRow).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("a refused delete", () => {
+  const spies = () => ({ onCollapse: vi.fn(), onResolved: vi.fn(), onDeleted: vi.fn() });
+
+  it("keeps the line open, says so, tells the group nothing, and lets the player try again", async () => {
+    const s = spies();
+    deleteUnresolvedRow.mockResolvedValueOnce({ ok: false, message: "Could not remove that line." });
+    render(<ResolutionExpander id="x" deckId="deck-1" row={line()} deckOracleIds={[]} {...s} />);
+
+    fireEvent.click(screen.getByRole("button", { name: copy.delete }));
+
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(s.onDeleted).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: copy.delete })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: copy.delete }));
+
+    await waitFor(() => expect(s.onDeleted).toHaveBeenCalledTimes(1));
+    expect(deleteUnresolvedRow).toHaveBeenCalledTimes(2);
+  });
+
+  it("leaves the line in the list and the deck's total alone", async () => {
+    deleteUnresolvedRow.mockResolvedValueOnce({ ok: false, message: "Could not remove that line." });
+    render(<Harness rows={[line({ quantity: 3 })]} />);
+    fireEvent.click(rowButton("Rystic Studie", 3));
+
+    fireEvent.click(screen.getByRole("button", { name: copy.delete }));
+
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(screen.getByText("built 1 total 4")).toBeInTheDocument();
   });
 });
 
