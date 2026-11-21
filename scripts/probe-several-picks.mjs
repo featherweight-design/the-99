@@ -10,7 +10,8 @@
 // It seeds its own fixture for the signed-in account (three `probe` copies of a card the account owns
 // none of, four decks named `Probe several N`) and deletes all of it in a finally. It adds rows to a
 // shared account, so it runs on a scratch branch made from local-dev only (assertScratchBranch), and
-// never production.
+// never production. PROBE_KEEP=1 keeps the desktop pass's fixture for a contact sheet; delete it after
+// (decks named `Probe several %`, the card's `probe` copies, its card_assignments rows).
 //
 //   PROBE_BASE=http://localhost:<port> node scripts/probe-several-picks.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -200,7 +201,12 @@ try {
     report(overflow <= 0, `${tag}: no sideways scroll`, `overflow=${overflow}`);
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/several-picks-${tag}.png` });
 
-    await cleanup(userId, card);
+    // PROBE_KEEP=1 leaves the last width's fixture standing (two picks) for the contact sheet, and prints it.
+    if (process.env.PROBE_KEEP && tag === "desktop") {
+      console.log(`kept: card "${card.name}" (${card.oracle_id}), decks ${decks.map((d) => `${d.name}=${d.id}`).join(" ")}`);
+    } else {
+      await cleanup(userId, card);
+    }
     fixture = null;
     await ctx.close();
   }
