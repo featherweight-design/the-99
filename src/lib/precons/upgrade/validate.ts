@@ -59,7 +59,7 @@ export type UpgradeDropRule =
   | "unpriced"
   /** A swap that cuts a card the player kept (guided build, G5): never cut. */
   | "kept"
-  /** An add that would take the run's total past the player's budget (guided build, G4): the later pairs fall. */
+  /** An add that would take the run's total past the player's budget (guided build, G4): an add that does not fit falls, a later cheaper one may still fit. */
   | "budget"
   /** Held back by the chosen bracket (`hold.ts`): a game changer over the limit, mass land denial or a forbidden combo. */
   | "bracket";
