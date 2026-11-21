@@ -20,7 +20,7 @@ export type JudgedTheme = (typeof JUDGED_THEMES)[number];
  * `JUDGED_SYSTEM` edited, together: a stored row also records the SYSTEM hash, so an edit without a
  * bump still stales the rows it describes, and nothing here needs a registry.
  */
-export const JUDGED_PROMPT_VERSION = "j1";
+export const JUDGED_PROMPT_VERSION = "j2";
 
 export const JUDGED_SYSTEM = `You decide which of four STRATEGY THEMES a Magic: the Gathering card serves in a Commander deck.
 You are given cards, each under a "Key:" number. Reply with ONE JSON object and nothing else: each key
@@ -29,29 +29,40 @@ were given must appear.
 
 Example reply to three cards: {"1": ["groupHug"], "2": [], "3": ["bigMana", "politics"]}
 
-THEMES (use these exact names):
-  groupHug   — a deck that gives EVERY player, opponents included, resources: cards, mana, life,
-               lands, creatures. The card helps opponents on purpose, to build goodwill or to cash in
-               on a table that is all ahead. NOT groupHug: a symmetric effect that is a cost or a
-               punishment (each player discards or sacrifices), a wheel that exists to refill
-               your own hand, or a drawback that only the card's controller escapes.
-  pillowFort — makes you a poor target: stops attacks against you, taxes or blocks the attackers,
-               or protects you and your permanents from interaction. Examples: "creatures can't
-               attack you unless their controller pays", "prevent all combat damage". NOT pillowFort:
-               a creature with its own protection or hexproof, or a single protective trick on one
-               creature.
-  bigMana    — produces or multiplies mana well beyond one land drop, or spends an enormous amount:
-               "add X mana", doubling mana, untapping every land, mana from a count of permanents,
-               and the payoffs that need a huge amount of it. NOT bigMana: a mana rock or land that
-               adds one to three mana, a cost reducer, or a spell that is simply expensive.
-  politics   — the card's value comes from other players choosing, voting, bargaining or being
-               swayed: votes, a council's dilemma, "an opponent of your choice", a deal an opponent
-               may accept or refuse, a choice that makes players negotiate. NOT politics: a
-               symmetric effect nobody chooses, and goad or monarch alone (those are their own
-               strategy themes).
+Most cards serve NO theme, and most cards that look like they might serve one do not. A theme is a
+whole deck strategy the card is built for, not a word the card happens to contain. Mark a theme only
+when you could name the deck that plays this card BECAUSE of that theme.
 
-A card may serve several themes, or none. Decide from what the card DOES, never from its name or
-its flavour. When it is a close call, leave the theme out.`;
+THEMES (use these exact names):
+  groupHug   — the card is a gift: it deliberately gives EVERY player, opponents included, something
+               good (extra cards, mana, life, lands, creatures) so the table likes you or the table
+               is all ahead. Examples: Howling Mine, Rites of Flourishing, Dictate of Kruphix.
+               NOT groupHug: "each player" or "each opponent" on its own; a symmetric cost or
+               punishment (each player discards, sacrifices, loses life, takes damage); a wheel or
+               symmetric draw that refills the caster; a one-sided effect (only opponents, or only
+               you, benefit); a drawback only the controller escapes; a creature, vehicle or token
+               that merely mentions players; an ordinary card-advantage spell.
+  pillowFort — the card makes you a poor target for the whole table: it stops attacks against you
+               (Ghostly Prison, Propaganda, Sphere of Safety), blocks attackers, or shields you and
+               your permanents from interaction. NOT pillowFort: protection on one creature or on
+               itself (hexproof, shroud, "can't be blocked"); one trick or one counterspell; fog
+               that is only a one-shot combat trick; a creature that is simply a good blocker.
+  bigMana    — the card produces or multiplies mana far beyond one land drop, or is a payoff that
+               needs a huge amount of it: doubling or tripling mana (Nyxbloom Ancient, Mana
+               Reflection), untapping most of your mana (Seedborn Muse), mana from a count of
+               permanents, or a card whose whole point is spending enormous mana. NOT bigMana: a
+               single spell, ritual or creature that adds some mana once, a rock or land adding one
+               to three mana, a cost reducer, a counterspell that returns mana, a card with an X
+               cost or the word "mana" in passing, or a spell that is simply expensive.
+  politics   — the card's value comes from OTHER players choosing, voting, bargaining or being swayed:
+               votes, council's dilemma, will of the council, "an opponent of your choice", a deal
+               an opponent may accept or refuse. Examples: Expropriate, Coercive Portal. NOT
+               politics: an effect nobody chooses (random or symmetric); "each player" or "target
+               player" alone; goad or monarch alone; you choosing the target yourself; a payoff
+               that only counts votes with no vote of its own; an opponent merely suffering a cost.
+
+A card may serve several themes, or none. Decide from what the card DOES, never from its name or its
+flavour. When it is a close call, leave the theme out: a missed card costs little, a wrong one costs more.`;
 
 /** sha256 of the SYSTEM text: the instruction a stored answer was written against. */
 export const judgedSystemHash = (system: string = JUDGED_SYSTEM): string =>

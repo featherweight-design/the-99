@@ -11,7 +11,7 @@ Adding the themes to the card-label SYSTEM edits it, so it needs a version bump 
 `pnpm db:build:judged` is a **dry run**: it reads, plans and prices, writes nothing and calls no model. **Nothing is submitted without `--spend`**, and Hugh approves the spend before anyone passes it. `--sample` selects the ~200-card grading sample (40 pre-filter hits per theme plus 40 cards no pattern matched, picked by `md5(oracle_id)`, so it is reproducible). `--spend` also collects an ended batch; run it again until it reports nothing pending. **Never loop `--spend`.** A request that errored, was canceled or expired is reported and its cards are left out of the next plan (`withoutFailed`); `--retry-failed` asks them again, once the cause is fixed. `--model=<id>` overrides the model; Sonnet 5.5 takes no `temperature` and wants `thinking: {type: "between_tools"}`, not `disabled` (`thinkingOff` in `prompt.ts`).
 
 - The cap is `JUDGED_CAP_USD` (default $15, ceiling $65) and binds on the worst case plus all spend by any `judged-*` run: one budget, so a new run id cannot reset it.
-- The ledger is `card_label_batches`, `prompt_version` `j1`, run ids `judged-*`: the Costs page sees the spend. A judged batch that is open blocks a card-label build only for cards both ask about.
+- The ledger is `card_label_batches`, `prompt_version` `j2`, run ids `judged-*`: the Costs page sees the spend. A judged batch that is open blocks a card-label build only for cards both ask about.
 - An intent with no batch id (a crash between `create` and the id write) stops the next run until resolved by hand.
 - The model is `DEFAULT_LABEL_MODEL`. Changing it goes to Hugh first.
 
