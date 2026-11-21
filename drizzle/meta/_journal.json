@@ -1807,6 +1807,13 @@
       "when": 1795275509695,
       "tag": "0259_guided_builds_stamp",
       "breakpoints": true
+    },
+    {
+      "idx": 260,
+      "version": "7",
+      "when": 1795283460700,
+      "tag": "0260_welcome_email_claims",
+      "breakpoints": true
     }
   ]
 }
