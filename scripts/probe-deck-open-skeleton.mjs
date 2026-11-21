@@ -16,7 +16,7 @@ const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD } = requi
 ]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 const RUNS = Number(process.env.PROBE_RUNS ?? 3);
-// One profile for before and after: Slow 4G (latency 400ms, 400 kbps down, 400 kbps up).
+// Slow 4G, the one throttle profile for every run (latency 400ms, 400 kbps down, 400 kbps up).
 const SLOW = { offline: false, latency: 400, downloadThroughput: (400 * 1024) / 8, uploadThroughput: (400 * 1024) / 8 };
 const FAST = { offline: false, latency: 0, downloadThroughput: -1, uploadThroughput: -1 };
 let failed = 0;
@@ -86,7 +86,7 @@ async function run(browser, name, { width, height, touch }) {
   try {
     await signIn(page);
     await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
-    const tiles = page.locator('main a[href^="/decks/"][aria-label]:visible').filter({ hasNot: page.locator('[href="/decks/new"]') });
+    const tiles = page.locator('main a[href^="/decks/"][aria-label]:not([href="/decks/new"]):visible');
     await tiles.first().waitFor({ timeout: 30_000 });
     const hrefs = await tiles.evaluateAll((els) => els.map((e) => e.getAttribute("href")).filter((h) => /^\/decks\/[0-9a-f-]{36}$/.test(h)));
     check(name, "the list has 3+ decks", hrefs.length >= 3, `n=${hrefs.length}`);
