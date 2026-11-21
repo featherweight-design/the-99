@@ -2,7 +2,7 @@
 // line, the game this device holds in Start's place (Back, and Discard with the shared toast's Undo), the Last game with
 // the server's logged link (ruling 4), and the closed page's running game (S4).
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { TABLES } from "../../lib/social/rule-zero-fixtures";
 import type { TableView } from "../../lib/rule-zero/table-view";
@@ -19,6 +19,9 @@ vi.mock("../../app/friends/table/result-actions", () => ({ gameLoggedAction }));
 
 const copy = trackerCopy.table;
 const NOW = new Date("2026-11-20T20:00:00Z");
+// The wall clock is pinned to NOW for every test: the kept game's expiry, its ended time and the reader's reads are all
+// measured against it, so a slow run cannot cross an expiry between the save and the draw.
+const CLOCK = NOW.getTime();
 const KEY = "the99.tracker.table-1";
 
 const players: PlaySeat[] = [
@@ -26,12 +29,12 @@ const players: PlaySeat[] = [
   { seat: 2, you: false, name: "Colin", art: null, partnerArt: null, commander: "Sai", partner: null, deck: "Sai" },
 ];
 const base: Game = {
-  config: { tableId: "table-1", startingLife: 40, seats: [{ seat: 1, commanders: 1 }, { seat: 2, commanders: 1 }], first: 1, layout: "phone-2", startedAt: Date.now() - 600_000, snapshot: { players, roster: "r" } },
+  config: { tableId: "table-1", startingLife: 40, seats: [{ seat: 1, commanders: 1 }, { seat: 2, commanders: 1 }], first: 1, layout: "phone-2", startedAt: CLOCK - 600_000, snapshot: { players, roster: "r" } },
   log: [{ t: "life", seat: 2, delta: -5 }],
 };
-const ENDED = Date.now() - 60_000;
+const ENDED = CLOCK - 60_000;
 const finished: Game = { ...base, log: [{ t: "life", seat: 2, delta: -40 }], endedAt: ENDED };
-const keep = (game: Game) => window.localStorage.setItem(KEY, JSON.stringify({ v: 1, game, expiresAt: Date.now() + 3_600_000 }));
+const keep = (game: Game) => window.localStorage.setItem(KEY, JSON.stringify({ v: 1, game, expiresAt: CLOCK + 3_600_000 }));
 
 async function draw(view: TableView) {
   render(<TableBody view={view} now={NOW} />);
@@ -39,7 +42,14 @@ async function draw(view: TableView) {
 }
 const start = () => screen.queryByRole("link", { name: copy.start });
 
+beforeEach(() => {
+  // Only Date: the timers stay real, as Testing Library's act and findBy waits run on them.
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(NOW);
+});
+
 afterEach(() => {
+  vi.useRealTimers();
   cleanup();
   vi.clearAllMocks();
   window.localStorage.clear();
@@ -126,10 +136,10 @@ describe("the game this device holds", () => {
   });
 
   it("drops the row once the kept game is past its 6 am (U5)", async () => {
-    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, game: finished, expiresAt: Date.now() + 50 }));
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, game: finished, expiresAt: CLOCK + 50 }));
     await draw({ ...TABLES.T1, loggedAt: null });
     expect(screen.getByRole("region", { name: copy.lastAria }).querySelector('[data-testid="result-undo"]')).not.toBeNull();
-    await new Promise((r) => setTimeout(r, 80));
+    vi.setSystemTime(CLOCK + 80);
     await act(async () => {
       document.dispatchEvent(new Event("visibilitychange"));
     });
