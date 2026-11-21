@@ -134,10 +134,18 @@ export function ModalChrome({
   cap = false,
   stand = false,
   back,
+  initialFocusRef,
   children,
 }: {
   mark?: React.ReactNode;
   title: string;
+  /**
+   * Where focus lands when the sheet opens. Unset, it is the sheet's heading (focusable by script, never by Tab, and
+   * drawn with no ring), so the reader hears the sheet's name and no control is lit at open. Never the ✕, which is
+   * the first control in DOM order and where focus used to fall (Hugh, 2026-11-21). A sheet whose first job is
+   * typing passes its field.
+   */
+  initialFocusRef?: React.RefObject<HTMLElement | null>;
   /** The dialog's name while `title` is empty (a sheet whose title waits on its reads): read, never drawn. */
   pendingName?: string;
   /** The eyebrow header's title when it names another reader (a `PersonText`): drawn in place of `title`, which is then empty. */
@@ -202,13 +210,14 @@ export function ModalChrome({
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
   // Outside a CardDetailProvider (the admin's Revoke confirm) no card ever stacks on the sheet.
   const detail = useCardDetailIfAny();
   const registerSheet = detail?.registerSheet;
   const openOracleId = detail?.openOracleId ?? null;
   const revealing = detail?.revealing ?? false;
-  useDialogA11y(ref, onClose);
+  useDialogA11y(ref, onClose, { initialFocusRef: initialFocusRef ?? headingRef });
   const inertRef = useInertWhileOpen(true);
   // The footer is read through a ref, so a sheet whose state moves does not re-register itself (and
   // flicker the stacked card's way back) on every render.
@@ -295,6 +304,7 @@ export function ModalChrome({
       >
         <ModalPanel
           titleId={titleId}
+          headingRef={headingRef}
           title={title}
           pendingName={pendingName}
           titleNode={titleNode}
@@ -327,6 +337,7 @@ export function ModalChrome({
  */
 export function ModalPanel({
   titleId,
+  headingRef,
   title,
   pendingName,
   titleNode,
@@ -346,6 +357,8 @@ export function ModalPanel({
   children,
 }: {
   titleId?: string;
+  /** The heading `ModalChrome` sends focus to at open. */
+  headingRef?: React.Ref<HTMLHeadingElement>;
   title: string;
   pendingName?: string;
   titleNode?: React.ReactNode;
@@ -375,7 +388,7 @@ export function ModalPanel({
           className="flex flex-none items-center gap-[8px] min-h-[52px] pl-[16px] pr-[8px] border-b border-b-[color:var(--border)] border-[color:var(--border)]"
           style={{ opacity: behind ? 0.55 : undefined }}
         >
-          <h2 id={titleId} tabIndex={-1} className="sr-only">{title}</h2>
+          <h2 ref={headingRef} id={titleId} tabIndex={-1} className="sr-only outline-none">{title}</h2>
           <button
             type="button"
             onClick={back.onBack}
@@ -392,7 +405,7 @@ export function ModalPanel({
             onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
-            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)]"
+            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)] rounded-[10px]"
           >
             ×
           </button>
@@ -406,6 +419,7 @@ export function ModalPanel({
           <div className="flex min-w-0 flex-1 flex-col">
             <p className="m-0 font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--accent-text)]">{eyebrow}</p>
             <h2
+              ref={headingRef}
               id={titleId}
               tabIndex={-1}
               className="m-0 mt-[4px] font-display text-[17px] font-bold leading-tight outline-none"
@@ -420,7 +434,7 @@ export function ModalPanel({
             onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
-            className="aria-disabled:cursor-default aria-disabled:opacity-60 flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)]"
+            className="aria-disabled:cursor-default aria-disabled:opacity-60 flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[15px] cursor-pointer text-[color:var(--fg-muted)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)] rounded-[10px]"
           >
             ×
           </button>
@@ -432,6 +446,7 @@ export function ModalPanel({
       >
         {mark}
         <h2
+          ref={headingRef}
           id={titleId}
           // Focusable by script, never by Tab: where the control a reader was on is gone (a
           // stand-in's Take replaces its own row), focus lands on the sheet's name.
@@ -467,7 +482,7 @@ export function ModalPanel({
             onClick={closeHeld ? undefined : onClose}
             aria-label={closeLabel}
             aria-disabled={closeHeld || undefined}
-            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)]"
+            className="aria-disabled:cursor-default aria-disabled:opacity-60 ml-auto -mr-[10px] md:-my-[14px] flex flex-none h-[44px] w-[44px] items-center justify-center bg-transparent border-0 font-mono text-[14px] cursor-pointer text-[color:var(--fg-faint)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)] rounded-[10px]"
           >
             ×
           </button>
