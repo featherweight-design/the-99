@@ -91,6 +91,11 @@ describe("FEATURE_CALLS", () => {
       Array.from({ length: 2 }, () => ({ model: FEATURE_CALLS.synopsis.model, inputCeilingTokens: 24_000, maxTokens: FEATURE_CALLS.synopsis.maxTokens })),
     );
     expect(featureWorstCaseMicroUsd("precon_upgrade")).toBe(2 * (48_000 + 50_000) + 2 * (48_000 + 20_000) + featureWorstCaseMicroUsd("synopsis"));
+    // Guided build runs the same steps over a deck of the player's own, the Overview inside the same 2 credits (Y5): written out in
+    // FEATURE_CALLS, so this holds it to Upgrade's figure rather than an alias.
+    expect(FEATURE_CALLS.guided_build.steps).toEqual(FEATURE_CALLS.precon_upgrade.steps);
+    expect(featureWorstCaseMicroUsd("guided_build")).toBe(featureWorstCaseMicroUsd("precon_upgrade"));
+    expect(featureWorstCaseMicroUsd("guided_build", STUB_MODEL)).toBe(0);
     // The read: two steps under one reservation (rework plan, 2026-10-11). The shortlist on Haiku
     // 5.5's >100K card, its 175,000-token ceiling all at the cache-write rate, both attempts:
     // 2 x (175,000 x 1.25 x $0.50 + 4,000 x $2.50) = $0.239. The judgement on Sonnet 5.5:

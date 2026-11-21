@@ -133,6 +133,13 @@ describe("the account purge's coverage", () => {
     }
   });
 
+  it("purges a deleted account's guided runs, before the decks they cascade from and the ledger rows they point at", () => {
+    const order = PURGE_ORDER as readonly string[];
+    expect(order).toContain("guided_builds");
+    expect(order.indexOf("guided_builds")).toBeLessThan(order.indexOf("decks"));
+    expect(order.indexOf("guided_builds")).toBeLessThan(order.indexOf("model_calls"));
+  });
+
   it("names every table only once", () => {
     const social = Object.keys(SOCIAL_PURGED);
     expect(new Set([...PURGE_ORDER, ...social]).size).toBe(PURGE_ORDER.length + social.length);

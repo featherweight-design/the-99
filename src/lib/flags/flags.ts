@@ -50,6 +50,8 @@ export const MODEL_CAPABILITIES: readonly { key: ModelCapabilityKey; on: (env: N
   { key: "suggested_changes_v2", on: suggestedChangesV2Enabled },
   { key: "proposed_cuts", on: () => true },
   { key: "precon_upgrade", on: preconUpgradeEnabled },
+  // Guided build rides Upgrade this precon's switch (READINESS Y2): one flip moves both.
+  { key: "guided_build", on: preconUpgradeEnabled },
   // Help me choose's read followed its own switch, which is retired (always on): only the model-call kill switch stops it.
   { key: "intake", on: () => true },
   // Find a deck's read followed swap tools, whose switch is retired (always on): only the model-call kill switch stops it.

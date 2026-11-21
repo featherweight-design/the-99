@@ -2782,7 +2782,7 @@ export const modelCalls = pgTable("model_calls", {
   units: smallint("units").notNull().default(1),
 }, (t) => [
   check("model_calls_units_check", sql`${t.units} between 0 and 2`),
-  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview', 'suggested_changes_v2', 'precon_upgrade')`),
+  check("model_calls_feature_check", sql`${t.feature} in ('tuning', 'synopsis', 'intake', 'proposed_cuts', 'fits_read', 'labels', 'prose', 'precon_overview', 'suggested_changes_v2', 'precon_upgrade', 'guided_build')`),
   check("model_calls_origin_check", sql`${t.origin} in ('player', 'system')`),
   check("model_calls_status_check", sql`${t.status} in ('reserved', 'spent', 'refunded')`),
   // WHY a call was refunded, and only a refunded call has a reason. Written by `settleModelCall`; null
@@ -3886,6 +3886,54 @@ export const preconUpgrades = pgTable("precon_upgrades", {
   check("precon_upgrades_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),
   uniqueIndex("precon_upgrades_one_pending_idx").on(t.userId, t.preconFile).where(sql`${t.status} = 'pending'`),
   index("precon_upgrades_user_precon_idx").on(t.userId, t.preconFile, t.createdAt),
+]);
+
+/**
+ * Guided build (handoff `design/design_handoff_the99_guided_build`, plan 2026-11-21): one row per sharpening run on ONE DECK,
+ * over Upgrade this precon's engine. It is its own table, not `precon_upgrades`: that one is keyed on a catalog precon file and
+ * its `decks.built_from_upgrade_id` gates the Upgrade-precon Apply/Undo, neither of which a guided deck has. The run state a
+ * deck shows (running, short, failed, done) is DERIVED from the newest row (`readGuidedState`), never a column on `decks`.
+ * Credits reserve with the pending row and settle in the outcome's own transaction, exactly as `precon_upgrades`. The partial
+ * unique index keeps a double press to one run in flight per deck; the deck's delete cascades the run (the `model_calls` row it
+ * points at stays, as for every ledger row, and leaves with the account's own purge).
+ */
+export const guidedBuilds = pgTable("guided_builds", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  userId: text("user_id").notNull(),
+  deckId: uuid("deck_id").notNull().references(() => decks.id, { onDelete: "cascade" }),
+  /** The picked strategy's key and label (`precons/upgrade/detect.ts`), as the player saw it. */
+  strategyKey: text("strategy_key").notNull(),
+  strategyLabel: text("strategy_label").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  finishedAt: timestamp("finished_at"),
+  status: text("status").notNull(),
+  errorClass: text("error_class"),
+  /** Whether the 2 credits came back: a failure, or fewer than the minimum swaps held up. */
+  refunded: boolean("refunded").notNull().default(false),
+  modelCallId: uuid("model_call_id").notNull().references(() => modelCalls.id),
+  model: text("model").notNull(),
+  pairs: jsonb("pairs").$type<StoredPair[]>().notNull().default(sql`'[]'::jsonb`),
+  drops: jsonb("drops").$type<UpgradeDrop[]>(),
+  buyTotalCents: integer("buy_total_cents"),
+  bracketBefore: smallint("bracket_before"),
+  bracketAfter: smallint("bracket_after"),
+  /** Model calls made: 1, or 2 with the repair. */
+  calls: smallint("calls"),
+  /** The bracket the player chose (2, 3 or 4), which the run was held to. */
+  bracketTarget: smallint("bracket_target").notNull(),
+  /** Which cards the run could add from: what they own, anything up to the per-card cap, or anything within a total budget. */
+  poolMode: text("pool_mode").notNull(),
+  poolCapCents: integer("pool_cap_cents"),
+  budgetCents: integer("budget_cents"),
+  /** Oracle ids of the picks the player kept: a swap that cuts one is dropped (rule `kept`). */
+  kept: jsonb("kept").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  /** When this run's Overview was claimed: exactly one writer per run takes it (one conditional UPDATE), at no credit. */
+  overviewAt: timestamp("overview_at"),
+}, (t) => [
+  check("guided_builds_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),
+  check("guided_builds_pool_mode_check", sql`${t.poolMode} in ('owned', 'cap', 'budget')`),
+  uniqueIndex("guided_builds_one_pending_idx").on(t.deckId).where(sql`${t.status} = 'pending'`),
+  index("guided_builds_deck_idx").on(t.deckId, t.createdAt),
 ]);
 
 // ── Social foundation (plan `boards/plan-social-foundation-2026-10-12.md`, scope

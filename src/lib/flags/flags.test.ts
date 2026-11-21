@@ -89,6 +89,10 @@ describe("MODEL_CAPABILITIES", () => {
     }
   });
 
+  it("counts Guided build with Upgrade this precon: PRECON_UPGRADE_ENABLED raises both", () => {
+    expect(raisedBy("PRECON_UPGRADE_ENABLED")).toEqual(expect.arrayContaining(["precon_upgrade", "guided_build"]));
+  });
+
   it("is raised by no switch that is not a model switch", () => {
     for (const name of SWITCH_NAMES.filter((n) => switchKind(n) !== "model")) expect(raisedBy(name), name).toEqual([]);
   });
