@@ -13,6 +13,7 @@ const h = vi.hoisted(() => ({
   updates: [] as { set: Record<string, unknown>; where: unknown }[],
   updateRows: [] as unknown[],
   selectRows: [] as unknown[],
+  selectWhere: [] as unknown[],
   reserve: vi.fn(),
   settle: vi.fn(),
   late: vi.fn(),
@@ -42,7 +43,8 @@ vi.mock("../../db", () => {
       transaction: (fn: (t: typeof tx) => Promise<unknown>) => fn(tx),
       select: () => {
         const b: Record<string, unknown> = {};
-        for (const k of ["from", "innerJoin", "where", "orderBy"]) b[k] = () => b;
+        for (const k of ["from", "innerJoin", "orderBy"]) b[k] = () => b;
+        b.where = (w: unknown) => { h.selectWhere.push(w); return b; };
         b.limit = () => Promise.resolve(h.selectRows);
         return b;
       },
@@ -61,7 +63,7 @@ const NOW = new Date("2026-11-21T12:00:00Z");
 
 beforeEach(() => {
   h.seen = { owned: true, pending: false, current: false };
-  h.executed.length = 0; h.inserts.length = 0; h.updates.length = 0; h.updateRows = []; h.selectRows = []; h.insertError = null;
+  h.executed.length = 0; h.inserts.length = 0; h.updates.length = 0; h.updateRows = []; h.selectRows = []; h.selectWhere.length = 0; h.insertError = null;
   h.reserve.mockReset().mockResolvedValue({ id: "call-1" });
   h.settle.mockReset().mockResolvedValue("refunded");
   h.late.mockReset();
@@ -182,8 +184,13 @@ describe("readGuidedState", () => {
     bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, poolMode: "owned", kept: ["o1"], errorClass: null, ...over,
   });
 
-  it("is null for a deck with no run, or one that is not the reader's", async () => {
+  it("is null for a deck with no run, and reads only the reader's own run on the reader's own deck", async () => {
     expect(await readGuidedState("u1", "deck-1")).toBeNull();
+    const w = render(h.selectWhere[0]);
+    expect(w.sql).toContain('"guided_builds"."deck_id" = $1');
+    expect(w.sql).toContain('"guided_builds"."user_id" = $2');
+    expect(w.sql).toContain('"decks"."user_id" = $3');
+    expect(w.params).toEqual(["deck-1", "u1", "u1"]);
   });
 
   it("derives running, done, short and failed from the newest row", async () => {
