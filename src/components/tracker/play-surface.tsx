@@ -84,6 +84,8 @@ export function PlaySurface({
   /** Saves and Undos run one at a time, in order, so an Undo's delete never lands before the save it takes back (clarification 3). */
   const chain = useRef<Promise<unknown>>(Promise.resolve());
   const [undoing, setUndoing] = useState(false);
+  // The guard itself is a ref: the toast's Try again keeps the closure of the render that failed.
+  const undoingRef = useRef(false);
   const [logged, setLogged] = useState<GameLogged | null>(null);
   const [toast, setToast] = useState<SocialToastState | null>(null);
   /** The seat whose panel takes focus once an Undo has reopened the game (clarification 10). */
@@ -102,6 +104,8 @@ export function PlaySurface({
   const nowhere = ready && !game && setupSeats === null;
   useEffect(() => (nowhere ? router.replace(backHref) : undefined), [nowhere, router, backHref]);
   const over = state ? isOver(state) : false;
+  // The change that ended the game, named for the Undo row and its toast (three replays, so once per game, not per render).
+  const ending = useMemo(() => (game && over && snapshot ? endingLine(game, snapshot.players) : null), [game, over, snapshot]);
   useWakeLock(!!state && !over);
   // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
   if (over && sheet) setSheet(null);
@@ -155,21 +159,27 @@ export function PlaySurface({
   // Undo the last change: the server's result goes first, and only once it has does the game reopen here. A game someone
   // seated has logged stays over and shows who (U3); a failure leaves it over with an alert to try again (clarification 4).
   const runUndo = () => {
-    if (!game || undoing) return;
-    const line = endingLine(game, players);
+    if (!game || undoingRef.current) return;
+    const line = ending;
     if (!line) return;
     const before = state ? new Set(state.seats.filter((x) => x.out).map((x) => x.seat)) : new Set<number>();
     const seq = saveSeq.current;
+    undoingRef.current = true;
     setUndoing(true);
-    const fail = () => setToast({ id: Date.now(), text: copy.undo.failed, retry: { label: copy.undo.retry, run: runUndo } });
+    const done = () => {
+      undoingRef.current = false;
+      setUndoing(false);
+    };
+    // A refusal is the server's decision (the night closed, or the seat changed under the game), so it offers no retry.
+    const fail = (retry: boolean) => setToast({ id: Date.now(), text: copy.undo.failed, retry: retry ? { label: copy.undo.retry, run: runUndo } : undefined });
     const call = chain.current.then(() => undoTableResultAction(tableId, sealedRoster));
     chain.current = call.catch(() => undefined);
     call.then(
       ({ result }) => {
-        setUndoing(false);
+        done();
         if (saveSeq.current !== seq) return;
         if (result === "logged") return readLogged(seq);
-        if (result !== "undone") return fail();
+        if (result !== "undone") return fail(false);
         const back = replay({ config: game.config, log: game.log.slice(0, -1) });
         const flipped = back.seats.find((x) => before.has(x.seat) && !x.out);
         refocus.current = flipped?.seat ?? players.find((p) => p.you)?.seat ?? null;
@@ -180,8 +190,8 @@ export function PlaySurface({
         setToast({ id: Date.now(), text: copy.undo.backOn, detail: copy.undo.undid(line) });
       },
       () => {
-        setUndoing(false);
-        fail();
+        done();
+        fail(true);
       },
     );
   };
@@ -190,8 +200,10 @@ export function PlaySurface({
   useEffect(() => {
     if (over || refocus.current === null) return;
     const i = players.findIndex((p) => p.seat === refocus.current);
+    const name = board.current?.querySelectorAll<HTMLElement>('[data-testid="panel-name"]')[i];
+    if (!name) return;
     refocus.current = null;
-    board.current?.querySelectorAll<HTMLElement>('[data-testid="panel-name"]')[i]?.focus();
+    name.focus();
   });
 
   // The Last game card's Undo (U5) lands here with `?undo=1`: the flag leaves the address bar at once, so a reload never
@@ -397,10 +409,7 @@ export function PlaySurface({
           tablet={device === "tablet"}
           closed={closed}
           closesAt={expiresAt}
-          undo={(() => {
-            const line = endingLine(game, seatsInPlay);
-            return line ? { line, busy: undoing || saved === "saving", onUndo: runUndo } : null;
-          })()}
+          undo={ending ? { line: ending, busy: undoing || saved === "saving", onUndo: runUndo } : null}
           logged={logged}
           onRematch={() => {
             setRematch({ layout: game.config.layout, life: game.config.startingLife, players: seatsInPlay });
@@ -411,7 +420,7 @@ export function PlaySurface({
           }}
         />
       ) : null}
-      <SocialToast toast={toast} onDone={() => setToast(null)} role={toast?.retry ? "alert" : "status"} />
+      <SocialToast toast={toast} onDone={() => setToast(null)} role={toast?.text === copy.undo.failed ? "alert" : "status"} />
     </div>
   );
 }

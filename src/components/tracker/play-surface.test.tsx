@@ -224,6 +224,18 @@ describe("PlaySurface Undo the last change", () => {
     expect(screen.queryByTestId("tracker-result")).toBeNull();
   });
 
+  it("offers no Try again when the server refuses the Undo, since a retry cannot change its answer", async () => {
+    vi.mocked(undoTableResultAction).mockResolvedValueOnce({ result: "refused" } as Awaited<ReturnType<typeof undoTableResultAction>>);
+    open();
+    await settle();
+    fireEvent.click(screen.getByTestId("result-undo"));
+    await settle();
+    expect(screen.getByTestId("tracker-result")).toBeTruthy();
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("Undo didn’t go through. The game is still over.");
+    expect(within(alert).queryByRole("button", { name: "Try again" })).toBeNull();
+  });
+
   it("undoes on arrival from the Last game card's Undo (U5), once", async () => {
     open({ undoNow: true });
     await settle();
