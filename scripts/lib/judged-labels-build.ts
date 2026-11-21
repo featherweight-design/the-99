@@ -59,6 +59,7 @@ export const SAMPLE_CONTROL = 40;
 const FAMILY = "judged";
 const RUN_PREFIX = "judged-";
 
+/** `from` is where the sample drew the card: a theme's pre-filter, or the control that no pattern matched. */
 type Candidate = CardRow & { from: JudgedTheme | "control" };
 
 function ratesFor(model: string): Rates {
@@ -245,6 +246,7 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
   console.log(`  pre-filter hits: ${JSON.stringify(perTheme)}`);
   console.log(`  pool ${cards.length}, already judged or in flight ${cards.length - todo.length}, to ask ${todo.length}`);
   console.log(`  ${chunks.length} request(s); worst case $${worst.toFixed(2)} + $${spent.toFixed(2)} already spent vs cap $${opts.capUsd.toFixed(2)}`);
+  if (opts.sample && !opts.spend) for (const c of todo) console.log(`    ${c.from.padEnd(10)} ${c.name}`);
   if (!verdict.ok) { console.error(`REFUSED: ${verdict.why}`); return EXIT_STOP; }
   if (!opts.spend) { console.log("  dry run: nothing written, no model called. Add --spend to submit."); return EXIT_DONE; }
   if (chunks.length === 0) return EXIT_DONE;
@@ -261,9 +263,20 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
     askedHashes: Object.fromEntries(c.oracleIds.map((id) => [id, hashOf.get(id)!])),
   }));
   await db.insert(cardLabelBatches).values(intents);
-  const batch = await opts.client.create({
-    requests: chunks.map((c) => buildJudgedRequest(c.customId, model, c.oracleIds.map((id) => byId.get(id)!))),
-  });
+  let batch: Awaited<ReturnType<JudgedClient["create"]>>;
+  try {
+    batch = await opts.client.create({
+      requests: chunks.map((c) => buildJudgedRequest(c.customId, model, c.oracleIds.map((id) => byId.get(id)!))),
+    });
+  } catch (err) {
+    // A 4xx is a clean refusal that billed nothing: close the intents so the next run is not blocked.
+    // Any other failure is ambiguous (the batch may exist), so its intents stay for a human.
+    const status = (err as { status?: number }).status;
+    if (status !== undefined && status >= 400 && status < 500) {
+      await db.update(cardLabelBatches).set({ status: "failed" }).where(inArray(cardLabelBatches.intentKey, chunks.map((c) => c.intentKey)));
+    }
+    throw err;
+  }
   await db.update(cardLabelBatches).set({ batchId: batch.id, status: "submitted", submittedAt: new Date() })
     .where(inArray(cardLabelBatches.intentKey, chunks.map((c) => c.intentKey)));
   console.log(`submitted ${chunks.length} request(s) as ${batch.id}. Run again with --spend to collect.`);

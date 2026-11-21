@@ -10,8 +10,7 @@
 // anything a player sees.
 import { createHash } from "node:crypto";
 
-import { CARDS_PER_REQUEST } from "./plan";
-import { renderCard, type CardForPrompt } from "./prompt";
+import { acceptsTemperature, needsThinkingDisabled, renderCard, type CardForPrompt } from "./prompt";
 
 export const JUDGED_THEMES = ["groupHug", "pillowFort", "bigMana", "politics"] as const;
 export type JudgedTheme = (typeof JUDGED_THEMES)[number];
@@ -86,7 +85,8 @@ export const buildJudgedRequest = (customId: string, model: string, cards: CardF
   params: {
     model,
     max_tokens: JUDGED_MAX_TOKENS,
-    temperature: 0,
+    ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
+    ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
     system: [{ type: "text" as const, text: JUDGED_SYSTEM }],
     messages: [{ role: "user" as const, content: renderJudgedBody(cards) }],
   },
@@ -148,6 +148,3 @@ export const JUDGED_PREFILTER: Record<JudgedTheme, string> = {
     "\\yvote|council.s dilemma|will of the council|an opponent of your choice|target opponent chooses"
     + "|choose (a|an|target) (player|opponent)|secretly choose|each opponent (may|chooses)|an opponent (may|chooses)",
 };
-
-/** Cards per request, re-exported so the build and its dry run read one number. */
-export const JUDGED_CARDS_PER_REQUEST = CARDS_PER_REQUEST;
