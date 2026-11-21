@@ -1,7 +1,8 @@
 // Taps a life tracker panel's − and + halves three times, 300 ms apart, and samples every 40 ms through the commit
 // (2 s after the last tap) what the player sees: the pressed half's background and glyph color, the panel's gain/loss
-// tint and the pending figure. It asserts the pressed color shows from the first tap, fades steadily (only falling, and
-// still showing halfway) so it is gone by the commit rather than dropping at it, and that no tint flashes across the panel when the change commits.
+// tint and the pending figure. It asserts the cue A of addendum R2: the pressed color shows from the first tap and
+// holds through the whole commit window with no gap between taps, it is gone within 250 ms of the commit, and no tint
+// flashes across the panel when the change commits. A press that slides off hands the light back to the pending half.
 // It only reads and taps: the game lives on the device (localStorage), so it writes nothing to the database. The audit
 // account must sit at the table (`scripts/seed-rule-zero-fixture.mts`'s S4); production and staging are refused.
 //
@@ -139,17 +140,18 @@ try {
       report(`${which}: the first sample after a tap already carries the pressed color`, first && alpha(first.bg) >= 0.15, first?.bg ?? "never pressed");
       const commitAt = rows.findIndex((r, i) => i > 0 && rows[i - 1].pending && !r.pending);
       const around = rows.slice(Math.max(0, commitAt - 2), commitAt + 4);
-      const before = commitAt > 0 ? alpha(rows[commitAt - 1].bg) : 0;
-      report(`${which}: the pressed color has faded out by the commit (no sudden drop)`, before <= 0.05, `alpha before commit ${before.toFixed(2)}`);
-      // Steady: after the last tap the ground only falls, and halfway to the commit it is still showing.
-      const fading = rows.filter((r) => r.t > 700 && r.pending).map((r) => alpha(r.bg));
-      const mid = rows.filter((r) => r.pending && r.t >= 1500 && r.t <= 1800).map((r) => alpha(r.bg));
-      report(`${which}: the pressed color fades steadily after the last tap`, fading.length > 5 && fading.every((a, i) => i === 0 || a <= fading[i - 1] + 0.005) && mid.some((a) => a >= 0.05 && a <= 0.14), `mid ${mid.map((a) => a.toFixed(2)).join(" ")}`);
+      // Cue A (addendum R2): the half holds its 18% ground through the whole window, with no gap between taps,
+      // then fades back over 120 ms once the change commits.
+      const held = pressedRows.map((r) => alpha(r.bg));
+      report(`${which}: the pressed color holds through the window, never dropping between taps`, held.length > 10 && held.every((a) => a >= 0.15), `min ${Math.min(...held).toFixed(2)}`);
+      const commitT = commitAt > 0 ? rows[commitAt].t : Infinity;
+      const after = rows.filter((r) => r.t >= commitT + 250).map((r) => alpha(r.bg));
+      report(`${which}: the pressed color is gone within 250 ms of the commit`, after.length > 0 && after.every((a) => a < 0.03), `after ${after.slice(0, 3).map((a) => a.toFixed(2)).join(" ")}`);
       report(`${which}: no panel tint flashes at the commit`, around.every((r) => r.tint === "none" || r.tint.endsWith("@0.00")), around.map((r) => r.tint).join(" "));
       await page.waitForTimeout(800);
     }
 
-    // A press that slides off without a step hands the light back to the half whose change is pending, mid-fade.
+    // A press that slides off without a step hands the light back to the half whose change is pending.
     {
       const plus = page.getByTestId("half-plus").first();
       const minus = page.getByTestId("half-minus").first();
@@ -162,11 +164,11 @@ try {
       await page.waitForTimeout(120);
       await page.mouse.move(mb.x + mb.width / 2, mb.y - 200, { steps: 4 });
       await page.mouse.up();
-      await page.waitForTimeout(60);
+      await page.waitForTimeout(200);
       const p = await sample(plus);
       const m = await sample(minus);
       report("a slid-off press leaves its own half unlit", alpha(m.bg) < 0.03, m.bg);
-      report("a slid-off press hands the light back to the pending half, mid-fade", alpha(p.bg) >= 0.05 && alpha(p.bg) <= 0.14, p.bg);
+      report("a slid-off press hands the light back to the pending half", alpha(p.bg) >= 0.15, p.bg);
       await page.waitForTimeout(2400);
     }
     await context.close();

@@ -28,17 +28,12 @@ export const COMMIT_MS = 2000;
 const copy = trackerCopy.panel;
 
 /** The pending life change of one panel: taps and holds add to it, and it commits as one entry after COMMIT_MS idle. */
-type Lit = { k: number; sign: 1 | -1; at: number; delay?: number };
-
 function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
   const [pending, setPending] = useState(0);
-  /**
-   * The half lit by the latest press or step, keyed so each one restarts its fade (`k` counts them). `at` is when its fade
-   * began; `delay` (negative) resumes a fade already under way when a cancelled press hands the light back.
-   */
-  const [lit, setLit] = useState<Lit | null>(null);
-  const beforePress = useRef<Lit | null>(null);
-  const light = useCallback((sign: 1 | -1) => setLit((l) => ({ k: (l?.k ?? 0) + 1, sign, at: performance.now() })), []);
+  /** The half lit by the latest press or step: it holds its accent ground until the commit (addendum R2, cue A). */
+  const [lit, setLit] = useState<1 | -1 | null>(null);
+  const beforePress = useRef<1 | -1 | null>(null);
+  const light = useCallback((sign: 1 | -1) => setLit(sign), []);
   const total = useRef(0);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -88,7 +83,7 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
       held.current = false;
       setLit((l) => {
         beforePress.current = l;
-        return { k: (l?.k ?? 0) + 1, sign, at: performance.now() };
+        return sign;
       });
       holdTimer.current = setTimeout(() => {
         held.current = true;
@@ -133,7 +128,7 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
 
   /**
    * A press that ends without a step (the finger slid off) unlights its half and hands the light back to the half lit
-   * before it, mid-fade, while that change is still pending.
+   * before it while that change is still pending.
    */
   const cancel = useCallback(() => {
     // A touch tap fires pointerleave after pointerup: a press already released, or one that stepped by holding, keeps its light.
@@ -141,7 +136,7 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
     stop();
     if (!stepless) return;
     const prev = beforePress.current;
-    setLit(total.current !== 0 && prev ? { ...prev, delay: prev.at - performance.now() } : null);
+    setLit(total.current !== 0 ? prev : null);
   }, [stop]);
 
   return { pending, lit, down, up, cancel, take };
@@ -339,9 +334,9 @@ export function Panel({
                     </span>
                   </div>
                   {([-1, 1] as const).map((sign) => {
-                    // F04 draws the half that made a pending change pressed until it commits: the glyph in the accent, and an
-                    // accent ground lit at once by each press or step that fades steadily to nothing by the commit, so nothing
-                    // flashes when the change lands (Hugh ruling 11-22). Reduced motion holds the ground until the commit.
+                    // F04 draws the half that made a pending change pressed until it commits: the glyph in the accent and an
+                    // 18% accent ground, lit from the first frame of the press and held through the window. At the commit it
+                    // fades back over 120 ms and nothing else flashes (addendum R2, cue A).
                     const pressed = pending !== 0 && Math.sign(pending) === sign;
                     return (
                       <button
@@ -369,18 +364,15 @@ export function Panel({
                           "absolute inset-y-0 flex w-1/2 touch-manipulation select-none items-center font-sans outline-none [-webkit-touch-callout:none] focus-visible:bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] "
             + (sign === 1 ? "right-0 justify-end " : "left-0 justify-start ")
             + (foot ? "px-2 text-[36px] " : "px-1 text-[30px] ")
-            + (pressed || lit?.sign === sign ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-muted)]"),
+            + (pressed || lit === sign ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-muted)]"),
                         )}
                       >
-                        {lit?.sign === sign ? (
-                          <span
-                            key={lit.k}
-                            aria-hidden
-                            data-testid="half-fill"
-                            className="pointer-events-none absolute inset-0 bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] motion-safe:animate-[half-fade_var(--fade)_linear_forwards]"
-                            style={{ "--fade": `${COMMIT_MS}ms`, animationDelay: `${lit.delay ?? 0}ms` } as React.CSSProperties}
-                          />
-                        ) : null}
+                        <span
+                          aria-hidden
+                          data-testid="half-fill"
+                          className={"pointer-events-none absolute inset-0 bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] "
+                            + (lit === sign ? "opacity-100" : "opacity-0 motion-safe:transition-opacity motion-safe:duration-[120ms]")}
+                        />
                         <span aria-hidden className="relative">{sign === 1 ? "+" : "−"}</span>
                       </button>
                     );
