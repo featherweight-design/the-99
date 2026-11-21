@@ -28,7 +28,7 @@ describe("the input hash", () => {
     const base = judgedInputHash(card, "m");
     expect(judgedInputHash({ ...card, oracle_text: "x" }, "m")).not.toBe(base);
     expect(judgedInputHash(card, "n")).not.toBe(base);
-    expect(judgedInputHash(card, "m", "j1", judgedSystemHash(`${JUDGED_SYSTEM} `))).not.toBe(base);
+    expect(judgedInputHash(card, "m", "j2", judgedSystemHash(`${JUDGED_SYSTEM} `))).not.toBe(base);
   });
 });
 

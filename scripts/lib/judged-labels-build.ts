@@ -2,7 +2,7 @@
 // pre-filtered set of cards serves, and stores the answers in `judged_labels`.
 //
 // Three properties carry the money, borrowed from the card-label build (card-labels-build.ts) and
-// bound to the same ledger table (`card_label_batches`, prompt_version "j1"), so the Costs page sees
+// bound to the same ledger table (`card_label_batches`, prompt_version "j2"), so the Costs page sees
 // the spend without a second reader:
 //
 //   NOTHING SPENDS WITHOUT `--spend`. The default is a dry run: it reads, plans and prices, writes
@@ -54,6 +54,8 @@ export type JudgedOptions = {
   model?: string;
   /** Ask again the cards whose request failed. Without it a failure is reported once and its cards are left out. */
   retryFailed?: boolean;
+  /** With `sample`: draw only cards that have no `judged_labels` row yet, so a second sample cannot overlap the first. */
+  fresh?: boolean;
 };
 
 export const SAMPLE_PER_THEME = 40;
@@ -73,40 +75,46 @@ function ratesFor(model: string): Rates {
 
 const anyPattern = JUDGED_THEMES.map((t) => `(${JUDGED_PREFILTER[t]})`).join("|");
 
+/** The `--fresh` clause: leaves out any card that already has a stored answer. */
+const notJudged = (fresh: boolean) =>
+  fresh ? sql`and not exists (select 1 from judged_labels jl where jl.oracle_id = cards.oracle_id)` : sql``;
+
 /** Non-land, Commander-legal cards whose text matches the theme's pre-filter, in oracle id order. */
-async function candidatesFor(theme: JudgedTheme, limit: number | null): Promise<CardRow[]> {
+async function candidatesFor(theme: JudgedTheme, limit: number | null, fresh: boolean): Promise<CardRow[]> {
   const rows = await db.execute<CardRow>(sql`
     select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
       from cards
      where commander_legal = true and type_line not ilike '%land%'
        and lower(oracle_text) ~ ${JUDGED_PREFILTER[theme]}
+       ${notJudged(fresh)}
      order by ${limit === null ? sql`oracle_id` : sql`md5(oracle_id::text)`}
      ${limit === null ? sql`` : sql`limit ${limit}`}`);
   return rows.rows ?? (rows as unknown as CardRow[]);
 }
 
 /** Cards no pattern matches: the control that measures what the pre-filter misses. */
-async function controlCards(limit: number): Promise<CardRow[]> {
+async function controlCards(limit: number, fresh: boolean): Promise<CardRow[]> {
   const rows = await db.execute<CardRow>(sql`
     select oracle_id as "oracleId", name, mana_cost, type_line, oracle_text, layout
       from cards
      where commander_legal = true and type_line not ilike '%land%'
        and not (lower(coalesce(oracle_text, '')) ~ ${anyPattern})
+       ${notJudged(fresh)}
      order by md5(oracle_id::text) limit ${limit}`);
   return rows.rows ?? (rows as unknown as CardRow[]);
 }
 
 /** The cards this run would ask about, before the freshness and in-flight filters. */
-async function pool(sample: boolean): Promise<{ cards: Candidate[]; perTheme: Record<string, number> }> {
+async function pool(sample: boolean, fresh: boolean): Promise<{ cards: Candidate[]; perTheme: Record<string, number> }> {
   const seen = new Map<string, Candidate>();
   const perTheme: Record<string, number> = {};
   for (const t of JUDGED_THEMES) {
-    const rows = await candidatesFor(t, sample ? SAMPLE_PER_THEME : null);
+    const rows = await candidatesFor(t, sample ? SAMPLE_PER_THEME : null, sample && fresh);
     perTheme[t] = rows.length;
     for (const r of rows) if (!seen.has(r.oracleId)) seen.set(r.oracleId, { ...r, from: t });
   }
   if (sample) {
-    const control = await controlCards(SAMPLE_CONTROL);
+    const control = await controlCards(SAMPLE_CONTROL, fresh);
     perTheme.control = control.length;
     for (const r of control) if (!seen.has(r.oracleId)) seen.set(r.oracleId, { ...r, from: "control" });
   }
@@ -230,7 +238,7 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
     if (collected.pending > 0) return EXIT_MORE_WORK;
   }
 
-  const { cards, perTheme } = await pool(opts.sample);
+  const { cards, perTheme } = await pool(opts.sample, opts.fresh ?? false);
   const stored = new Map((await db.select().from(judgedLabels)).map((r) => [r.oracleId, r]));
   const open = await db.select({ asked: cardLabelBatches.asked }).from(cardLabelBatches).where(and(
     like(cardLabelBatches.runId, `${RUN_PREFIX}%`), inArray(cardLabelBatches.status, OPEN_STATUSES), isNotNull(cardLabelBatches.asked),

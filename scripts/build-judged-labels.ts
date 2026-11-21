@@ -4,6 +4,7 @@
 //   pnpm db:build:judged                     dry run, full candidate set: reads, prices, writes nothing
 //   pnpm db:build:judged --sample            dry run of the ~200-card grading sample
 //   pnpm db:build:judged --sample --spend    submits it (and collects a finished batch)
+//   --sample --fresh                         a new sample: only cards with no judged_labels row, so it cannot overlap the last
 //   --retry-failed                           asks again the cards whose request failed (otherwise they are left out)
 //   --model=<id>                             overrides the model (Hugh ruled claude-sonnet-5-5 for the judged themes, 2026-11-21)
 //
@@ -33,6 +34,7 @@ runJudgedBuild({
   spend: !dry,
   model: process.argv.find((a) => a.startsWith("--model="))?.slice(8),
   retryFailed: process.argv.includes("--retry-failed"),
+  fresh: process.argv.includes("--fresh"),
   sample: process.argv.includes("--sample"),
   modelCalls: () => readModelCalls(),
 }).then(
