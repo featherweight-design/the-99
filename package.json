@@ -159,6 +159,7 @@
     "probe:bracket-chip": "node scripts/probe-bracket-chip.mjs",
     "probe:bulk-collection": "node scripts/probe-bulk-collection.mjs",
     "probe:claims": "tsx scripts/probe-claim-model.ts",
+    "probe:several-picks": "node scripts/probe-several-picks.mjs",
     "diff:claim-model": "tsx scripts/diff-claim-model.mts",
     "probe:proxies": "tsx scripts/probe-proxies.ts",
     "probe:locks": "tsx scripts/probe-locks.ts",

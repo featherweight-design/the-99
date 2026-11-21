@@ -24,8 +24,9 @@ import { writePullRelease } from "../src/lib/decks/pull-release";
 import { commitVersion, restoreDraftFromVersion } from "../src/lib/decks/versions";
 import { addCardToDeckFor } from "../src/lib/decks/add-card";
 import { assignCopyFor } from "../src/lib/decks/assign";
+import { assignPendingFor } from "../src/lib/decks/pending-picks";
 import { pruneOrphanProxies } from "../src/lib/decks/prune-proxies";
-import { pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
+import { pruneExcessPicks, pruneOrphanAssignments } from "../src/lib/decks/prune-assignments";
 import { loadContestedCards, countContestedCards } from "../src/lib/collection/summary-read";
 
 neonConfig.webSocketConstructor = ws;
@@ -57,6 +58,9 @@ const USER_K = `probe-commander-buy-${Date.now()}`;
 // The empty-body CLAIM case gets its own user: one owned copy, two decks led by it, and nothing
 // else claiming the card, so both readers' figures are worked out by hand.
 const USER_E = `probe-empty-claim-${Date.now()}`;
+// Several picks (Move a copy addendum, 2026-11-21) get their own user: two copies, three committed
+// decks and two drafts, so every count below is worked out by hand.
+const USER_S = `probe-several-${Date.now()}`;
 
 let failures = 0;
 const check = (label: string, actual: unknown, expected: unknown) => {
@@ -658,9 +662,9 @@ async function assignmentWriteSection() {
     check("pressing the same deck clears it", await assignCopyFor(USER_W, card, junior), null);
     check("and leaves no row behind", await rowsFor(junior), 0);
 
-    // 3. THE MOVE, AND IT IS ALWAYS A MOVE. One authored reservation per card, whatever the
-    //    supply: the chooser is a single-choice control by design, and two reservations would put
-    //    two checked radios in one group. Seniority allocates every copy this pick does not.
+    // 3. THE MOVE, WITH ONE COPY. One copy owned means one pick: the chooser is a radio group and
+    //    a second pick moves the first. With two or more copies a pick adds instead, up to the
+    //    copies owned (severalPicksSection). Seniority allocates every copy no pick names.
     await assignCopyFor(USER_W, card, junior);
     check("a second pick moves the reservation rather than adding one",
       await assignCopyFor(USER_W, card, senior), null);
@@ -814,6 +818,106 @@ async function assignmentWriteSection() {
 //   IT FILTERS TWICE. Demand above supply, and at least two committed claimants: a shortage with
 //   one claimant is a purchase rather than a choice, and drawing it would offer a chooser with
 //   one option.
+// SEVERAL PICKS, ONE PER COPY OWNED (Move a copy addendum, 2026-11-21). With two or more copies a
+// pick ADDS a reservation up to the copies that can be given, a pending pick on an uncommitted add
+// counts toward the same cap, a select at the cap refuses `all-picked` (a purchase's `set` moves the
+// oldest instead), and a removal that leaves more picks than copies drops the newest (G4).
+async function severalPicksSection() {
+  const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id from cards
+    where type_line ~ 'Legendary Creature' and type_line !~ '\\mBasic\\M'
+    order by oracle_id limit 2
+  `);
+  if (legends.length < 2) throw new Error("catalog is empty — seed it first");
+  const card = legends[0].oracle_id;
+  const cmd = legends[1].oracle_id;
+  const mk = async (name: string, ago: number, listed: boolean) => {
+    const { rows: [d] } = await fixture.execute<{ id: string }>(sql`
+      insert into decks (user_id, name, commander_oracle_id) values (${USER_S}, ${name}, ${cmd}) returning id
+    `);
+    const { rows: [v] } = await fixture.execute<{ id: string }>(sql`
+      insert into deck_versions (deck_id, number, committed_at, commander_oracle_id, commander_since)
+      values (${d.id}, 1, now() - (${ago} * interval '1 minute'), ${cmd}, now() - (${ago} * interval '1 minute'))
+      returning id
+    `);
+    if (listed) {
+      await fixture.execute(sql`
+        insert into deck_version_cards (version_id, oracle_id, quantity, since)
+        values (${v.id}, ${card}, 1, now() - (${ago} * interval '1 minute'))
+      `);
+    }
+    // Every deck has the card in its draft: the three committed it, the two drafts only added it.
+    await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${d.id}, ${card}, 1)`);
+    return d.id;
+  };
+  const reserved = async () => {
+    const { rows } = await fixture.execute<{ deck_id: string }>(sql`
+      select deck_id from card_assignments where user_id = ${USER_S} and oracle_id = ${card} order by deck_id
+    `);
+    return rows.map((r) => r.deck_id).sort().join(",");
+  };
+  const pending = async () => {
+    const { rows } = await fixture.execute<{ deck_id: string }>(sql`
+      select deck_id from pending_assignments where user_id = ${USER_S} and oracle_id = ${card} order by deck_id
+    `);
+    return rows.map((r) => r.deck_id).sort().join(",");
+  };
+  const ids = (...d: string[]) => [...d].sort().join(",");
+  const owes = async (deckId: string) =>
+    (await loadDeckBuyRows(USER_S, [deckId])).find((r) => r.oracleId === card)?.quantity ?? 0;
+
+  try {
+    await fixture.execute(sql`
+      insert into collection_items (user_id, oracle_id, quantity, set_code) values (${USER_S}, ${card}, 2, 'probe')
+    `);
+    const oldest = await mk("Several oldest", 60, true);
+    const middle = await mk("Several middle", 50, true);
+    const newest = await mk("Several newest", 40, true);
+    const draftA = await mk("Several draft A", 30, false);
+    const draftB = await mk("Several draft B", 20, false);
+
+    check("several: commit order leaves the newest deck buying", await owes(newest), 1);
+
+    // 1. A pick below the cap ADDS, and the newest unpicked holder is the one that gives it up.
+    check("several: a first pick is accepted", await assignCopyFor(USER_S, card, newest), null);
+    check("several: the picked deck holds its copy", await owes(newest), 0);
+    check("several: the newest unpicked holder buys instead", await owes(middle), 1);
+    check("several: a second pick ADDS beside the first", await assignCopyFor(USER_S, card, oldest), null);
+    check("several: two reservations stand", await reserved(), ids(oldest, newest));
+
+    // 2. At the cap a press refuses by name and writes nothing.
+    check("several: a select at the cap refuses all-picked", await assignCopyFor(USER_S, card, middle), "all-picked");
+    check("several: and writes nothing", await reserved(), ids(oldest, newest));
+
+    // 3. A purchase's pick (`set`) at the cap moves the oldest pick, so the bought copy goes where it was bought for.
+    check("several: a purchase's pick at the cap is accepted", await assignCopyFor(USER_S, card, middle, undefined, "set"), null);
+    check("several: the first pick gave way", (await reserved()).includes(newest), false);
+    check("several: the newer pick stands", await reserved(), ids(oldest, middle));
+
+    // 4. Select again unticks one pick only.
+    check("several: select again unticks", await assignCopyFor(USER_S, card, oldest), null);
+    check("several: leaving the other pick", await reserved(), ids(middle));
+
+    // 5. A pending pick on a draft's add counts toward the same cap.
+    check("several: a pending pick below the cap is accepted", await assignPendingFor(USER_S, draftA, card), null);
+    check("several: beside the reservation", await pending(), ids(draftA));
+    check("several: a pending pick at the cap refuses all-picked", await assignPendingFor(USER_S, draftB, card), "all-picked");
+    check("several: and a reservation at the cap counts the pending pick", await assignCopyFor(USER_S, card, newest), "all-picked");
+    check("several: nothing written by either", `${await reserved()}|${await pending()}`, `${ids(middle)}|${ids(draftA)}`);
+
+    // 6. G4: a removal leaving one copy drops the NEWEST pick, from whichever table holds it.
+    await fixture.execute(sql`update collection_items set quantity = 1 where user_id = ${USER_S} and oracle_id = ${card}`);
+    await db.transaction(async (tx) => { await pruneExcessPicks(tx, USER_S, [card]); });
+    check("several: a removal drops the newest pick", await pending(), "");
+    check("several: and keeps the older one", await reserved(), ids(middle));
+  } finally {
+    await fixture.execute(sql`delete from pending_assignments where user_id = ${USER_S}`);
+    await fixture.execute(sql`delete from card_assignments where user_id = ${USER_S}`);
+    await fixture.execute(sql`delete from decks where user_id = ${USER_S}`);
+    await fixture.execute(sql`delete from collection_items where user_id = ${USER_S}`);
+  }
+}
+
 async function changesDoorSection() {
   const { rows: legends } = await fixture.execute<{ oracle_id: string }>(sql`
     select oracle_id from cards
@@ -1349,6 +1453,7 @@ try {
   await pullReleaseSection();
   await commanderBuySection();
   await emptyBodyClaimSection();
+  await severalPicksSection();
 } finally {
   // Ordered by dependency; deck_versions and deck_cards cascade off decks.
   await fixture.execute(sql`delete from decks where user_id = ${USER}`);
