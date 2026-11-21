@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { OPEN_TTL_MS, parseOpenEntry, type OpenEntry, type OpenFacts } from "./open-entry";
+import type { DeckListItem } from "./read";
+import { OPEN_TTL_MS, openFactsOf, parseOpenEntry, type OpenEntry, type OpenFacts } from "./open-entry";
 
 const facts: OpenFacts = {
   id: "d1",
@@ -30,5 +31,35 @@ describe("parseOpenEntry", () => {
     expect(parseOpenEntry(null, 0)).toBeNull();
     expect(parseOpenEntry("{nope", 0)).toBeNull();
     expect(parseOpenEntry(JSON.stringify({ to: "d1", at: 1 }), 2)).toBeNull();
+  });
+});
+
+describe("openFactsOf", () => {
+  const row = (over: Partial<DeckListItem>) =>
+    ({
+      id: "d1",
+      name: "Pair",
+      commanderName: "Tymna the Weaver",
+      commanderPrintedName: null,
+      partnerName: null,
+      commanderColorIdentity: ["W"],
+      partnerColorIdentity: null,
+      commanderArtCropUri: "u",
+      statusPill: "Draft",
+      built: 40,
+      ...over,
+    }) as unknown as DeckListItem;
+
+  it("names both commanders, merges identity and flags the partner", () => {
+    const f = openFactsOf(row({ partnerName: "Kraum, Ludevic's Opus", partnerColorIdentity: ["U", "B"] }));
+    expect(f.commander).toBe("Tymna the Weaver + Kraum, Ludevic's Opus");
+    expect(f.identity).toEqual(["W", "U", "B"]);
+    expect(f.partner).toBe(true);
+  });
+
+  it("a solo commander is not a partner deck", () => {
+    const f = openFactsOf(row({}));
+    expect(f.partner).toBe(false);
+    expect(f.commander).toBe("Tymna the Weaver");
   });
 });
