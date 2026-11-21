@@ -88,7 +88,12 @@ async function walk(browser, width) {
     const top = (await setup.boundingBox())?.y ?? -1;
     const left = (await setup.boundingBox())?.x ?? -1;
     report(L("setup starts at the top of the viewport"), top >= 0 && top <= 1, `top ${top}`);
-    if (width.viewport.width >= 768) report(L("no rail column holds the left edge"), (await page.locator("aside").evaluateAll((els) => els.filter((e) => e.getBoundingClientRect().width > 0).length)) === 0, `setup x ${left}`);
+    // With no rail, setup's column is centred in the whole viewport; a rail column pushes it right of centre.
+    if (width.viewport.width >= 768) {
+      const w = (await setup.boundingBox())?.width ?? 0;
+      const centred = (width.viewport.width - w) / 2;
+      report(L("no rail column holds the left edge (setup is centred in the full width)"), Math.abs(left - centred) <= 1, `setup x ${left}, centred at ${centred}`);
+    }
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tracker-full-screen-${width.label}.png` });
 
     // The browser's Back returns to the table, with its nav.
