@@ -13,6 +13,8 @@ import { writeCommanderChange, type ChangeCommanderResult } from "./write";
 
 export async function changeCommander(
   deckId: string, to: CommanderPair, staysOracleId: string | null = null,
+  /** A partner arriving from outside the 99 (`pairAdd`): the card that leaves to keep the deck at 100. */
+  cutOracleId: string | null = null,
 ): Promise<ChangeCommanderResult> {
   const userId = await requireUserId();
   // Request data: an id that is not a uuid would reach Postgres's cast and throw, where the caller
@@ -24,9 +26,11 @@ export async function changeCommander(
   }
   const stays = staysOracleId ?? null;
   if (stays !== null && !isUuid(stays)) return { ok: false, reason: "illegal" };
+  const cut = cutOracleId ?? null;
+  if (cut !== null && !isUuid(cut)) return { ok: false, reason: "illegal" };
   const result = await db.transaction((tx) => writeCommanderChange(tx, deckId, userId, {
     commanderOracleId: to.commanderOracleId, partnerOracleId: partner,
-  }, stays));
+  }, stays, cut));
   if (result.ok) {
     // IN the action, not deferred into `after()`: a Server Action that revalidates the route it
     // was called from returns that route's new payload, so the deck page redraws under the new

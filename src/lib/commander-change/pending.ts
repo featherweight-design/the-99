@@ -40,11 +40,15 @@ export function commanderMoved(version: CommanderPair, live: CommanderPair): boo
  * takes one of their slots. `pairUp`: one new half comes out of the 99, and the old single either
  * leaves the deck or is the other half.
  *
+ * `pairAdd` (#491, add a partner): the old single stays and the partner comes from outside the 99,
+ * so nothing moves between the 99 and the command zone. A pair leads 98, so a deck holding 99
+ * needs one card cut; the write takes that cut and refuses the change without it.
+ *
  * Null for a change no design draws, held back: a half out of the 98 beside a half the pair keeps,
- * both new halves out of the 98, a single becoming a pair with nothing out of the 99 (the deck
- * would hold 101), and a pair becoming a single.
+ * both new halves out of the 98, a single becoming a pair that drops the old single with nothing
+ * out of the 99, and a pair becoming a single.
  */
-export type TradeShape = "none" | "trade" | "halfTrade" | "pairTrade" | "pairUp";
+export type TradeShape = "none" | "trade" | "halfTrade" | "pairTrade" | "pairUp" | "pairAdd";
 
 export function tradeShape(
   toIds: readonly string[], fromIds: readonly string[], body: ReadonlySet<string>,
@@ -54,7 +58,8 @@ export function tradeShape(
   if (fromIds.length !== toIds.length) {
     if (fromIds.length === 2) return null;
     if (fromBody === 2) return "pairTrade";
-    return fromBody === 1 ? "pairUp" : null;
+    if (fromBody === 1) return "pairUp";
+    return fromBody === 0 && toIds.includes(fromIds[0]) ? "pairAdd" : null;
   }
   if (fromBody === 0) return "none";
   if (toIds.length === 1) return "trade";

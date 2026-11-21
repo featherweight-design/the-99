@@ -1,7 +1,7 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
-import { commanderMoved } from "./pending";
+import { commanderMoved, offerable, tradeShape } from "./pending";
 import { commanderMovedSql } from "./pending-sql";
 
 const A = "00000000-0000-0000-0000-00000000000a";
@@ -38,5 +38,24 @@ describe("commanderMovedSql", () => {
     expect(text).toContain("array[dk.commander_oracle_id, dk.partner_oracle_id]");
     expect(text).toContain("where x is not null order by x");
     expect(text).toContain("is distinct from");
+  });
+});
+
+describe("tradeShape for a partner added from outside the 99 (#491)", () => {
+  const body = new Set([C]);
+  it("is a pairAdd when the single stays and the partner is not in the 99", () => {
+    expect(tradeShape([A, B], [A], body)).toBe("pairAdd");
+    expect(offerable([A, B], [A], body)).toBe(true);
+  });
+  it("still holds back a pair that drops the old single with nothing out of the 99", () => {
+    expect(tradeShape([B, C], [A], new Set())).toBeNull();
+    expect(tradeShape([B, C], [A], new Set([A]))).toBeNull();
+  });
+  it("keeps the shipped shapes: a partner from the 99 is pairUp, both from the 99 pairTrade", () => {
+    expect(tradeShape([A, C], [A], body)).toBe("pairUp");
+    expect(tradeShape([B, C], [A], new Set([B, C]))).toBe("pairTrade");
+  });
+  it("never offers a pair becoming a single", () => {
+    expect(tradeShape([A], [A, B], new Set())).toBeNull();
   });
 });

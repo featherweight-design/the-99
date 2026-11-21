@@ -10,7 +10,8 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
-import { pruneOrphanLocks } from "../decks/locks";
+import { deckBodySize } from "../decks/deck-size";
+import { liveLockedIds, pruneOrphanLocks } from "../decks/locks";
 import { canPair, partnerAbility } from "../decks/partner";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { touchDeck } from "../decks/touch";
@@ -31,6 +32,22 @@ export type ChangeCommanderRefusal =
 
 export type ChangeCommanderResult = { ok: true } | { ok: false; reason: ChangeCommanderRefusal };
 
+/**
+ * The cut a `pairAdd` needs (#491). A pair leads 98, so a deck whose body holds more than 98 must
+ * lose exactly the excess, and a body already at 98 or under loses nothing. Over 99 is refused: no
+ * single cut brings it to 98, and a deck over 100 is not offered the add. The cut is a card of the
+ * body, never a commander half, and never a locked one.
+ */
+export function cutAllowed(
+  bodyTotal: number, cut: string | null, inBody: ReadonlySet<string>,
+  commanders: readonly string[], locked: ReadonlySet<string>,
+): boolean {
+  const excess = bodyTotal - deckBodySize(true);
+  if (excess <= 0) return cut === null;
+  if (excess > 1 || cut === null) return false;
+  return inBody.has(cut) && !commanders.includes(cut) && !locked.has(cut);
+}
+
 /** Sorted, so two identities compare as sets. */
 function identity(rows: readonly { colorIdentity: string[] }[]): string[] {
   return [...new Set(rows.flatMap((r) => r.colorIdentity))].sort();
@@ -49,6 +66,8 @@ export async function writeCommanderChange(
   tx: Tx, deckId: string, userId: string, to: CommanderPair,
   /** A half-trade's choice: the old half that takes the freed slot. Refused anywhere else. */
   staysOracleId: string | null = null,
+  /** A `pairAdd`'s cut: the card that leaves so the deck stays at 100. Refused anywhere else. */
+  cutOracleId: string | null = null,
 ): Promise<ChangeCommanderResult> {
   const [deck] = await tx.select({
     commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId,
@@ -106,6 +125,27 @@ export async function writeCommanderChange(
   // one is refused rather than ignored (a stale sheet must not write a choice nobody made).
   const leaving = fromIds.filter((id) => !toIds.includes(id));
   if (shape === "halfTrade" ? staysOracleId === null || !leaving.includes(staysOracleId) : staysOracleId !== null) {
+    return { ok: false, reason: "illegal" };
+  }
+
+  // The partner from outside the 99 opens no slot, so the deck's size is the write's to check:
+  // the cut is validated against the rows locked above and the live locks, never the client's view.
+  if (shape === "pairAdd") {
+    const total = [...inBody.values()].reduce((a, b) => a + b, 0);
+    const locked = await liveLockedIds(tx, deckId);
+    if (!cutAllowed(total, cutOracleId, new Set(inBody.keys()), toIds, locked)) {
+      return { ok: false, reason: "illegal" };
+    }
+    if (cutOracleId !== null) {
+      const quantity = inBody.get(cutOracleId)!;
+      if (quantity > 1) {
+        await tx.update(deckCards).set({ quantity: quantity - 1 })
+          .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, cutOracleId)));
+      } else {
+        await tx.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, cutOracleId)));
+      }
+    }
+  } else if (cutOracleId !== null) {
     return { ok: false, reason: "illegal" };
   }
 
