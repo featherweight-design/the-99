@@ -288,7 +288,8 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
         : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt, noticeSeenAt: stay.noticeSeenAt };
     }));
     await dropResultIfRosterChanged(tx, tableId);
-    // Only a NEW seat is news: a player who stays, changes seat or is removed is told nothing (brief state 12).
+    // Only a NEW seat is pushed: a player who stays, changes seat or is removed gets no push (brief state 12). A re-picked
+    // deck takes a new `changed_at` over the kept `noticeSeenAt`, so its seat reads "changed" in the app, as `setSeatDeck` does.
     notified.push(...await queueSeatPushes(tx, tableId, viewerId, seats.filter((s) => !kept.has(s.userId)).map((s) => s.userId), new Date()));
     const gone = before.map((s) => s.userId).filter((u) => !seats.some((s) => s.userId === u));
     if (gone.length > 0) await tx.delete(ruleZeroSeen).where(and(eq(ruleZeroSeen.tableId, tableId), inArray(ruleZeroSeen.userId, gone)));

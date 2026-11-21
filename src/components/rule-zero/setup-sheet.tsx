@@ -76,6 +76,8 @@ export function SetupSheet({
 
   function toggle(m: SetupMember) {
     if (m.kind === "you") return;
+    // A removed player's re-pick goes with them: re-adding them starts from the deck they hold.
+    setRepick(({ [m.publicId]: _drop, ...rest }) => rest);
     setSeated((s) => (s.includes(m.publicId) ? s.filter((p) => p !== m.publicId) : s.length >= SEATS_MAX ? s : [...s, m.publicId]));
   }
 
