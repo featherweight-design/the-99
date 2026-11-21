@@ -235,6 +235,19 @@ describe("Clear all", () => {
     expect(keys).toContain(LEAD);
     expect(screen.getByRole("status")).toHaveTextContent(ca.cleared(3));
   });
+  it("leaves the lead out when the slot holds that very story, and counts only the rows", async () => {
+    const Hold = () => {
+      const held = useHeldLead();
+      useEffect(() => held?.setKey(LEAD), []); // eslint-disable-line react-hooks/exhaustive-deps
+      return null;
+    };
+    render(<HeldLeadProvider><Hold /><WhatsNew feed={feed([view(1), view(2)], view(9, { key: LEAD }))} now={NOW} /></HeldLeadProvider>);
+    await act(async () => { fireEvent.click(clearBtn()!); });
+    expect(m.clear).toHaveBeenCalledTimes(1);
+    const keys = m.clear.mock.calls[0][0] as string[];
+    expect(keys).not.toContain(LEAD);
+    expect(screen.getByRole("status")).toHaveTextContent(ca.cleared(2));
+  });
   it("brings everything back, with the alert and no Undo, when the write fails", async () => {
     m.clear.mockResolvedValue({ ok: false, reason: "off" });
     render(<WhatsNew feed={feed([view(1), view(2)])} now={NOW} />);
