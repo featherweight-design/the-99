@@ -6,3 +6,12 @@ export type DeckBuildKind = (typeof DECK_BUILD_KINDS)[number];
 export function isDeckBuildKind(value: unknown): value is DeckBuildKind {
   return (DECK_BUILD_KINDS as readonly unknown[]).includes(value);
 }
+
+/**
+ * What `createDeck` accepts: the kinds the build choice draws, and `guided`, the free fill with a guided run started over it (its
+ * picker is the guided build's own flow, not this choice). Kept apart so the choice's per-kind records stay what it draws.
+ */
+export type CreateBuildKind = DeckBuildKind | "guided";
+export function isCreateBuildKind(value: unknown): value is CreateBuildKind {
+  return value === "guided" || isDeckBuildKind(value);
+}

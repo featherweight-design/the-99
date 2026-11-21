@@ -89,7 +89,7 @@ export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption,
 }
 
 /** The commanders' most-included cards that the deck does not hold, one row per card at its highest inclusion across a partnered pair. */
-async function readPool(commanderIds: string[], deckIds: string[], noGameChangers: boolean): Promise<PoolRow[]> {
+export async function readPool(commanderIds: string[], deckIds: string[], noGameChangers: boolean): Promise<PoolRow[]> {
   const rows = await db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
     keywords: cards.keywords, inclusion: commanderSupportCards.inclusion, gameChanger: cards.gameChanger,
@@ -110,7 +110,7 @@ async function readPool(commanderIds: string[], deckIds: string[], noGameChanger
  * commander's own inclusion where it has one. The Game Changers list is short by design (tens of cards), so none is cut here: the price cap and
  * `GC_BLOCK_MAX` apply in `poolForPrompt`, and the ones the support list already gave are skipped.
  */
-async function readGameChangers(commanderIds: string[], deckIds: string[], identity: string[], have: readonly PoolRow[]): Promise<PoolRow[]> {
+export async function readGameChangers(commanderIds: string[], deckIds: string[], identity: string[], have: readonly PoolRow[]): Promise<PoolRow[]> {
   const rows = await db.select({
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
     keywords: cards.keywords, inclusion: sql<number | null>`max(${commanderSupportCards.inclusion})`,

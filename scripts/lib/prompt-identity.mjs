@@ -51,6 +51,7 @@ export const CALLERS = {
   "src/lib/precons/upgrade/engine.ts": { builders: ["src/lib/precons/upgrade/prompt.ts"], note: "sends through the callModel its caller injects" },
   "scripts/measure-precon-upgrade.mts": { builders: ["src/lib/precons/upgrade/prompt.ts"], note: "measures the shipped engine on real precons; no run row, no credit" },
   "src/lib/precons/upgrade/run.ts": { builders: ["src/lib/precons/upgrade/prompt.ts"], note: "sends what runUpgrade built through callModel, and builds the prompt once more to check the input ceiling" },
+  "src/lib/guided/run.ts": { builders: ["src/lib/precons/upgrade/prompt.ts"], note: "guided build: builds the prompt once to check the input ceiling and sends what runUpgrade built through callModel; the deck name is the commanders' names" },
   "src/lib/tuning/v2/run.ts": { builders: ["src/lib/tuning/prompt.ts"], note: "streams what runV2 built through streamModel" },
   "src/lib/swaps/fits-read-run.ts": { builders: ["src/lib/swaps/fits-read.ts"] },
   "src/lib/intake/the-read-run.ts": { builders: ["src/lib/intake/the-read.ts", "src/lib/intake/the-read-run.ts"] },

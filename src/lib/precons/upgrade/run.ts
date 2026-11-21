@@ -271,14 +271,14 @@ export async function readSetBracket(
   return permits ? { permits, bracket: playsAt(permits) } : null;
 }
 
-async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<number | null> {
+export async function bracketOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<number | null> {
   return (await bracketsOf(load, pairs))?.plays ?? null;
 }
 
 /** A bracket read with every bracket the list permits: `plays` is one of them, kept to 2 through 4 (`playsAt`). */
-type BoxRead = BracketRead & { permits: number[] };
+export type BoxRead = BracketRead & { permits: number[] };
 
-async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BoxRead | null> {
+export async function bracketsOf(load: BracketList, pairs: readonly UpgradePair[]): Promise<BoxRead | null> {
   const profile = await profileOf(load, pairs);
   if (!profile) return null;
   const { permits } = slotDeck(profile);
