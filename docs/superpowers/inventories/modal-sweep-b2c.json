@@ -1,0 +1,29 @@
+{
+  "feature": "Modal phone slide-in sweep, PR B2: the collection's confirm and sheet dialogs and the precon dialogs slide up on a phone and are instant on desktop",
+  "note": "Signed in, on local-dev or a scratch branch. Writes nothing. A photo at rest cannot show the slide: `pnpm probe:modal-sweep` proves the entrance (the Add cards sheet at 390 and 1300). This sheet shows the Add cards sheet as drawn at both widths: a full-height sheet on a phone, a side sheet on desktop. The confirm modal, revert confirm, edit-copies sheet, export guides, the inner discard and warning confirms and the three precon dialogs need collection or deck state this walk does not hold, so their class is checked by marker, not photographed.",
+  "out": "contact-sheets/modal-sweep-b2c",
+  "rows": [
+    {
+      "id": "collection-add-sheet-phone",
+      "label": "/collection: Add cards sheet opened, phone (full-height sheet)",
+      "view": "src/components/collection/add-cards-sheet.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/collection", "wait": "[data-testid='collection-add-phone']", "settle": 1500 },
+        { "click": "[data-testid='collection-add-phone']", "settle": 600 },
+        { "wait": "[role=dialog]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "collection-add-sheet-desktop",
+      "label": "/collection: Add cards sheet opened, desktop (480px side sheet)",
+      "view": "src/components/collection/add-cards-sheet.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/collection", "wait": "[data-testid='collection-add']", "settle": 1500 },
+        { "click": "[data-testid='collection-add']", "settle": 600 },
+        { "wait": "[role=dialog]", "settle": 600 }
+      ]
+    }
+  ]
+}
