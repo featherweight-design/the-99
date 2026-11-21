@@ -203,13 +203,14 @@ async function main() {
 
     // Hugh's report (2026-11-20): after a player is removed, the setter picks a new deck for each seat that stays.
     const deckA2 = await deck(A, "Ava's other deck");
-    const repick = await rz.reseatTable(A, T1, [seat(pub[B], deckB2), seat(pub[A], deckA2)]);
+    const deckB4 = await deck(B, "Bo's fourth deck");
+    const repick = await rz.reseatTable(A, T1, [seat(pub[B], deckB4), seat(pub[A], deckA2)]);
     const s3 = await seatsOf(T1);
     const bRe = s3.find((s) => s.user_id === B);
     const aRe = s3.find((s) => s.user_id === A);
-    check("after a removal, the setter re-picks every staying seat's deck", repick.kind === "reseated" && bRe?.deck_id === deckB2 && aRe?.deck_id === deckA2 && s3.length === 2, `${repick.kind} ${bRe?.deck_id === deckB2} ${aRe?.deck_id === deckA2} ${s3.length}`);
+    check("after a removal, the setter re-picks every staying seat's deck", repick.kind === "reseated" && bRe?.deck_id === deckB4 && aRe?.deck_id === deckA2 && s3.length === 2, `${JSON.stringify(repick)} ${bRe?.deck_id === deckB4} ${aRe?.deck_id === deckA2} ${s3.length}`);
     check("a re-picked seat takes a new change time", bRe !== undefined && new Date(bRe.changed_at).getTime() > new Date(bAfter!.changed_at).getTime());
-    const same = await rz.reseatTable(A, T1, [seat(pub[B], deckB2), seat(pub[A], deckA2), seat(pub[D])]);
+    const same = await rz.reseatTable(A, T1, [seat(pub[B], deckB4), seat(pub[A], deckA2), seat(pub[D])]);
     const bSame = (await seatsOf(T1)).find((s) => s.user_id === B);
     check("resending the deck a seat holds keeps its change time", same.kind === "reseated" && bSame?.changed_at !== undefined && new Date(bSame.changed_at).getTime() === new Date(bRe!.changed_at).getTime());
 
