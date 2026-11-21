@@ -2794,6 +2794,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   prefill reads the live seats with no result. It fails on main, where the reseat drops the result and the save refuses
   the pre-reseat roster. It WRITES, so it refuses staging, production and local-dev by `neon.branch_id`; without
   `INVITE_CODE_SECRET` set it seals under a per-run key.
+- `pnpm probe:tracker-undo` proves Undo of a table result (life tracker addendum, Undo a mistaken ending, 2026-11-21)
+  against a real database: a player not seated, an altered roster and a roster for another table cannot Undo; an older
+  game's Undo leaves a newer game's result and the newer game's own Undo removes it; once anyone seated logs the game,
+  Undo answers `logged` and the result stands; the U3 read (`gameLogged`) names the first logger at their seat, by
+  name and public id with no account id, reads "You" for the logger, and reads nothing to a player not seated; and an
+  Undo started while a log's transaction is open waits for it and answers `logged`. With the log's share lock on the
+  table row removed (`resolveTableSeatsIn`) the race check fails: the Undo deletes the result under the log. It WRITES,
+  so it refuses staging, production and local-dev by `neon.branch_id`; pass the scratch branch as `PROBE_DATABASE_URL`.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
