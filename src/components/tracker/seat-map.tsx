@@ -20,7 +20,7 @@ type Slot = { side: Side; along: number; rect: Rect };
 const SIDE_OF: Record<Cell["rot"], Side> = { 0: "bottom", 180: "top", 90: "left", [-90]: "right" } as Record<Cell["rot"], Side>;
 const PAD = 7;
 const GAP = 5;
-/** The face's block: a 64px face, a 4px gap and the 13px name. */
+/** The face's block: a 64px face, a 4px gap and the 13px name on its 17px line (64 + 4 + 17). */
 const BLOCK_W = 84;
 const BLOCK_H = 85;
 /** Room a face needs past the outline at an end (F02b: the top face at 0, the outline at 96). */
