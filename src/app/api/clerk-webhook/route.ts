@@ -3,9 +3,10 @@ import { after, type NextRequest } from "next/server";
 import { purgeAccount, recordDeletion } from "../../../lib/account/purge";
 import { reservationIdFrom, spendInviteOnSignUp } from "../../../lib/invites/spend";
 import { spendFlyerOnSignUp } from "../../../lib/flyer/spend";
+import { primaryVerifiedEmail, welcomeEmailHash } from "../../../lib/payments/canonical-email";
 import { grantWelcome } from "../../../lib/payments/welcome";
 import { resolveFlagsStrict } from "../../../lib/flags/snapshot";
-import { captureServerError } from "../../../lib/sentry/capture";
+import { captureServerError, captureServerWarning } from "../../../lib/sentry/capture";
 import { captureSessionEvent, isSessionEvent } from "../../../lib/analytics/session-events";
 import { trackFunnel } from "../../../lib/analytics/funnel";
 
@@ -85,7 +86,7 @@ export async function POST(req: NextRequest) {
  * repeats whichever failed. A spend that throws answers 500 BEFORE the grant is attempted: a grant decided on switches
  * that predate the group could skip (or give) a lot nothing would correct, whereas the retry runs both in order.
  */
-async function handleCreated(data: { id?: unknown; created_at?: unknown; first_name?: unknown; public_metadata?: unknown }, hostname: string): Promise<Response> {
+async function handleCreated(data: { id?: unknown; created_at?: unknown; first_name?: unknown; public_metadata?: unknown; email_addresses?: unknown; primary_email_address_id?: unknown }, hostname: string): Promise<Response> {
   if (typeof data.id !== "string" || data.id.length === 0) return new Response("No user id", { status: 400 });
   const invite = await spendOnCreated(data);
   if (invite.status >= 500) return invite;
@@ -93,7 +94,13 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
     // The account's own creation time, so a redelivery cannot extend the lot; the event's clock only when it is absent.
     // A failed read of the overrides throws (a retryable 500) rather than reading as "switch off": nothing else would grant it later.
     const created = typeof data.created_at === "number" && Number.isFinite(data.created_at) ? new Date(data.created_at) : new Date();
-    const result = await grantWelcome(data.id, created, await resolveFlagsStrict(data.id));
+    // One lot per mailbox: the primary address, only when Clerk verified it, folded and keyed. No such address, or no key to hash it
+    // under, grants nothing (fail closed) and answers 200 like any other refusal: a sign-up under an alias looks the same as any other.
+    const email = primaryVerifiedEmail(data);
+    const emailHash = email ? welcomeEmailHash(email, { SENTRY_USER_HASH_KEY: process.env.SENTRY_USER_HASH_KEY, ANON_KEY_SALT: process.env.ANON_KEY_SALT }) : null;
+    if (!email) captureServerWarning("clerk-webhook:welcome-email", "no verified primary email on user.created: no welcome lot granted");
+    else if (!emailHash) captureServerWarning("clerk-webhook:welcome-key", "welcome claim key missing or too short: no welcome lot granted");
+    const result = await grantWelcome(data.id, created, await resolveFlagsStrict(data.id), emailHash);
     console.info(`[clerk-webhook] user.created: welcome ${result.granted ? "granted" : result.reason}`);
   } catch (error) {
     console.error("[clerk-webhook] user.created: welcome grant failed");

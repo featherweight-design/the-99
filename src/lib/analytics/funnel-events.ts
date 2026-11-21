@@ -34,7 +34,7 @@ export const FUNNEL_TIMEOUT_MS = 3000;
 const MIN_KEY = 32;
 
 /** The key the ids are hashed under: Sentry's user-tag key, else the anonymous-read salt; null when neither is long enough (the event is then not sent). */
-function hashKey(env: { SENTRY_USER_HASH_KEY?: string; ANON_KEY_SALT?: string }): string | null {
+export function hashKey(env: { SENTRY_USER_HASH_KEY?: string; ANON_KEY_SALT?: string }): string | null {
   for (const k of [env.SENTRY_USER_HASH_KEY, env.ANON_KEY_SALT]) if (k && k.length >= MIN_KEY) return k;
   return null;
 }

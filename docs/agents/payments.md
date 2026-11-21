@@ -142,9 +142,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - `credit_grants.source = 'welcome'`: 15 units, `expires_at` required (the migration rewrites
   `credit_grants_pack_never_expires_check`: a pack never expires, a welcome lot always does, a plan lot may). A partial unique
   index (`credit_grants_welcome_once`) holds one per account ever.
-- `grantWelcome(userId, createdAt, env)` (`src/lib/payments/welcome.ts`) runs from the `user.created` webhook for EVERY new
+- `grantWelcome(userId, createdAt, env, emailHash)` (`src/lib/payments/welcome.ts`) runs from the `user.created` webhook for EVERY new
   account, before and apart from the invite spend; either failing answers 500 for a retry. It takes the account's invite lock
-  (the purge's), reads the tombstone under it, then inserts `on conflict do nothing`. The expiry is the Clerk event's
+  (the purge's), reads the tombstone and its own lot under it, claims the mailbox (below), then inserts `on conflict do nothing` (a lot absorbed there gives the claim back). The expiry is the Clerk event's
   `created_at` plus 30 days, never `now`, so a redelivery cannot extend a lot and an account past its 30 days gets nothing.
 - **The admin Payments tab** (`/admin/payments`, admin plan A2b, A3): a UTC month's revenue from `payment_records` per currency (gross, tax, and net of tax and of refunds less the tax they carried back, counted in the payment's month), the disputes still open and the month's, the accounts whose buying is paused with Let them buy, the Costs page's own spend figure beside it, the month's plan, pack and gift lots, the `credits_granted` events, and Grant credits (`grantCredits` → `grantGift`, one `actionId` per grant). Reads in `src/lib/payments/admin-read.ts`. Proof: `pnpm probe:admin-payments`.
 - Spend order is free, welcome, plan, gift, pack (`SOURCE_RANK`). A gift (admin plan A-R5) never expires, so it goes after plan lots, which can lapse, and before packs, which were bought and can be refunded; /credits draws its Gift cell only while it holds a credit, like Welcome. `heldCredits` is the one definition of "holds a lot"; the 20-a-day
@@ -154,8 +154,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   never disagree. `PAID_TODAY_SHOWN_FROM` (15) is unchanged: under a group limit of 15 or less the meter shows only once the limit is reached. The `/credits` history leaves welcome lots out (a gift is not a purchase), and the page
   draws a Welcome cell only while it holds a credit.
 - There is NO in-page fallback and no backfill script: a missed webhook means no grant. `user_prefs` carries no creation time,
-  so it is not a "new account" signal; a fallback is a D2 decision. Accepted: no per-email dedupe, so a deleted account that
-  signs up again gets another lot.
+  so it is not a "new account" signal; a fallback is a D2 decision. One lot per MAILBOX (sign-up hardening, 2026-11-21):
+  `grantWelcome` also takes `emailHash`, the keyed HMAC of the account's canonical primary address
+  (`src/lib/payments/canonical-email.ts`: lowercase, `+tag` dropped everywhere, dots dropped and googlemail.com folded on Gmail only), and
+  claims it in `welcome_email_claims` inside the same transaction as the lot. A claimed address gets reason `alias` and no lot; an
+  account that already holds its lot is `already` before the claim, so a redelivery is not an alias. No verified primary address, or no
+  usable key (`SENTRY_USER_HASH_KEY`, else `ANON_KEY_SALT`, 32+ characters), is `unclaimable`: fail closed, never an unkeyed hash, and the
+  webhook warns in Sentry (`clerk-webhook:welcome-key`) on a missing key. The webhook still answers 200 and the player sees nothing
+  different: no Welcome lot, the existing `none` state. The claim has no account column and is NOT purged, so deleting an account and
+  signing up again on the same address gets nothing. Limits: a custom domain or catch-all cannot be folded; accounts and purged
+  accounts from before the table hold no claim (a backfill from Clerk is a separate follow-up); rotating the key quietly resets every
+  claim (it fails open).
 - Proof: `pnpm probe:payments-ledger` section `m` (order, expiry, the index, the check, the purge).
 - **What the reader is told (D2, plan `2026-10-21-welcome-credits.md`).** `readWelcomeLot` (`src/lib/payments/welcome-read.ts`)
   is the one read that tells a lot used up, expired and absent apart (the allowance drops an expired lot and reads a

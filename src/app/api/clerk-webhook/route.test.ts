@@ -11,8 +11,10 @@ const switchEnv = vi.hoisted(() => vi.fn());
 const after = vi.hoisted(() => vi.fn());
 const captureSession = vi.hoisted(() => vi.fn());
 const trackFunnel = vi.hoisted(() => vi.fn());
+const warn = vi.hoisted(() => vi.fn());
 vi.mock("@clerk/nextjs/webhooks", () => ({ verifyWebhook: verify }));
 vi.mock("../../../lib/payments/welcome", () => ({ grantWelcome: grant }));
+vi.mock("../../../lib/sentry/capture", () => ({ captureServerError: vi.fn(), captureServerWarning: warn }));
 vi.mock("../../../lib/flags/snapshot", () => ({ resolveFlagsStrict: switchEnv }));
 vi.mock("../../../lib/account/purge", () => ({ purgeAccount: purge, recordDeletion: record }));
 vi.mock("../../../lib/invites/spend", async (orig) => ({
@@ -37,6 +39,8 @@ beforeEach(() => {
   process.env.CLERK_WEBHOOK_SIGNING_SECRET = "whsec_test";
   verify.mockReset();
   trackFunnel.mockReset();
+  warn.mockReset();
+  vi.unstubAllEnvs();
   purge.mockReset();
   purge.mockResolvedValue(report);
   record.mockReset().mockResolvedValue(undefined);
@@ -153,8 +157,64 @@ describe("POST /api/clerk-webhook", () => {
       verify.mockResolvedValue(created({}, { created_at: 1_760_000_000_000 }));
       expect((await POST(req())).status).toBe(200);
       expect(switchEnv).toHaveBeenCalledWith("user_new");
-      expect(grant).toHaveBeenCalledWith("user_new", new Date(1_760_000_000_000), { WELCOME_CREDITS_ENABLED: "true" });
+      expect(grant).toHaveBeenCalledWith("user_new", new Date(1_760_000_000_000), { WELCOME_CREDITS_ENABLED: "true" }, null);
       expect(spend).not.toHaveBeenCalled();
+    });
+
+    describe("one welcome lot per mailbox", () => {
+      const KEY = "k".repeat(40);
+      const withEmail = (address: string, status = "verified") => ({
+        email_addresses: [{ id: "idn_1", email_address: address, verification: { status } }], primary_email_address_id: "idn_1",
+      });
+      const stubKey = () => { vi.stubEnv("SENTRY_USER_HASH_KEY", KEY); vi.stubEnv("ANON_KEY_SALT", ""); };
+      const hashOf = (call: number) => grant.mock.calls[call][3];
+
+      it("hands the grant the keyed hash of the CANONICAL primary address: an alias hashes the same as the original", async () => {
+        stubKey();
+        verify.mockResolvedValueOnce(created({}, withEmail("Ab@gmail.com")));
+        await POST(req());
+        verify.mockResolvedValueOnce(created({}, withEmail("a.b+promo@googlemail.com")));
+        await POST(req());
+        expect(hashOf(0)).toMatch(/^[0-9a-f]{64}$/);
+        expect(hashOf(1)).toBe(hashOf(0));
+        expect(hashOf(0)).not.toContain("gmail");
+      });
+
+      it("answers an aliased sign-up exactly as a granted one: same status, body and headers, no redirect", async () => {
+        stubKey();
+        grant.mockResolvedValueOnce({ granted: true, expiresAt: new Date(0) });
+        verify.mockResolvedValueOnce(created({}, withEmail("first@example.com")));
+        const ok = await POST(req());
+        grant.mockResolvedValueOnce({ granted: false, reason: "alias" });
+        verify.mockResolvedValueOnce(created({}, withEmail("first+again@example.com")));
+        const aliased = await POST(req());
+        expect(aliased.status).toBe(200);
+        expect(aliased.status).toBe(ok.status);
+        expect(await aliased.text()).toBe(await ok.text());
+        expect([...aliased.headers]).toEqual([...ok.headers]);
+        expect(aliased.headers.get("location")).toBeNull();
+      });
+
+      it("uses no address Clerk has not verified, nor a non-primary one", async () => {
+        stubKey();
+        verify.mockResolvedValueOnce(created({}, withEmail("x@example.com", "unverified")));
+        await POST(req());
+        verify.mockResolvedValueOnce(created({}, { ...withEmail("y@example.com"), primary_email_address_id: "idn_2" }));
+        await POST(req());
+        expect(hashOf(0)).toBeNull();
+        expect(hashOf(1)).toBeNull();
+        // No usable address is told to Sentry (a mailbox that never earns a lot should not be silent), and the key warning is not used for it.
+        expect(warn.mock.calls.map((c) => c[0])).toEqual(["clerk-webhook:welcome-email", "clerk-webhook:welcome-email"]);
+      });
+
+      it("grants nothing and warns, never hashing unkeyed, when no key is usable; still answers 200", async () => {
+        vi.stubEnv("SENTRY_USER_HASH_KEY", "short");
+        vi.stubEnv("ANON_KEY_SALT", "");
+        verify.mockResolvedValueOnce(created({}, withEmail("x@example.com")));
+        expect((await POST(req())).status).toBe(200);
+        expect(hashOf(0)).toBeNull();
+        expect(warn).toHaveBeenCalledWith("clerk-webhook:welcome-key", expect.any(String));
+      });
     });
 
     it("counts the account in the funnel (its id, the hostname), only after every step succeeded: a failed grant counts nothing", async () => {
