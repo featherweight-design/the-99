@@ -24,6 +24,10 @@ on:
         description: generate only - comma-separated precon files to rewrite even if current (e.g. DeathToll_DSC)
         type: string
         default: ''
+      max_usd:
+        description: generate only - dollar cap for this run, worst case (blank uses the PRECON_OVERVIEW_MAX_USD variable; the build clamps either to $15)
+        type: string
+        default: ''
       dry_run:
         description: generate only - build and hash every request, print the worst case, call and write nothing
         type: boolean
@@ -57,7 +61,7 @@ jobs:
       # Staging's Neon branch. A guard, not a credential: the build refuses any other database.
       PRECON_OVERVIEW_TARGET_BRANCH: br-polished-pond-a6e63y0b
       # The dollar cap, a worst-case stop. The build clamps it to $15 whatever this says.
-      PRECON_OVERVIEW_MAX_USD: ${{ vars.PRECON_OVERVIEW_MAX_USD || '15' }}
+      PRECON_OVERVIEW_MAX_USD: ${{ github.event.inputs.max_usd || vars.PRECON_OVERVIEW_MAX_USD || '15' }}
       # Files to rewrite though current (the dispatch's `force` input); validated as file names by the script.
       PRECON_OVERVIEW_FORCE: ${{ github.event.inputs.force }}
       NODE_OPTIONS: --max-old-space-size=4096
