@@ -56,7 +56,7 @@ export async function beginGuided(userId: string, deckId: string, picks: GuidedP
   await reapGuided(userId, deckId, now);
   const deck = await loadGuidedDeck(userId, deckId);
   if (!deck) return { ok: false, reason: "notFound" };
-  const strategies = await guidedStrategies(deck);
+  const strategies = await guidedStrategies(userId, deck.commanderIds, deck.lines);
   const pick = strategies.find((s) => s.key === picks.strategyKey);
   if (!pick || !isBracketTarget(picks.bracket) || !isPoolMode(picks.poolMode)) return { ok: false, reason: "notOffered" };
   const bracket: BracketTarget = picks.bracket;
