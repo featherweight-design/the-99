@@ -1,6 +1,6 @@
 # The 99 · Life tracker (account 2, 2026-11-18)
 
-Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 21; v18 was the approved round, v19–v21 add the undrawn-states addendum)
+Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 24; v18 was the approved round, v19–v21 add the undrawn-states addendum, v22–v24 the Undo addendum)
 Research brief: https://claude.ai/artifact/8ATRY8gc8mTc3fgnd1ZS2B
 Status: **APPROVED by Hugh 2026-11-18** ("I think this LGTM… we can safely open a PR with the design handoff").
 
@@ -18,6 +18,13 @@ Playwright mini runtime used to click through the prototype) and `map.json` (blo
 The states READINESS.md listed as 🟡 not drawn are now drawn: boards S1–S6, approved by Hugh 2026-11-20. See
 [ADDENDUM-undrawn-states.md](ADDENDUM-undrawn-states.md): Start off at 7–8 seated, a seat still picking its deck,
 resuming a saved game, the table closing or reseating mid-game, a draw, and starting the next game without closing the table.
+
+## Addendum (2026-11-21): Undo a mistaken ending
+
+Boards U1–U5, approved by Hugh 2026-11-21. See [ADDENDUM-undo-ending.md](ADDENDUM-undo-ending.md): the Result gets
+**Undo the last change** under the winner (it names the change that ended the game and undoes only that change, with no
+confirm and a "Game back on" toast). It is no longer offered once anyone seated logs the game, after 6 am, or after
+Rematch or Start, and a note in its slot says why. The Last game card on the table page carries the same Undo.
 
 ## Boards
 
