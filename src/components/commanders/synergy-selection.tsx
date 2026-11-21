@@ -13,7 +13,7 @@
 // state through `useSynergySelection` as siblings of the panel, which is why the
 // state is context and not a prop threaded down one branch.
 
-import React, {
+import {
   createContext,
   useCallback,
   useContext,

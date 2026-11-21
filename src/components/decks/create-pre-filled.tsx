@@ -126,7 +126,8 @@ export function CreatePreFilled({
     return () => { live = false; };
   }, [readKey]);
   const mustChoose = needsBracketChoice(reach);
-  const waiting = reach?.status === "pending" || (mustChoose && choice === null);
+  // Just the commander runs no fill, so the bracket reach and its choice have nothing to decide: they never hold the press.
+  const waiting = build === "free" && (reach?.status === "pending" || (mustChoose && choice === null));
 
   const gradient = commanderGradient(colorIdentity);
 
@@ -148,7 +149,7 @@ export function CreatePreFilled({
       : handOff?.create ?? null;
     startTransition(async () => {
       try {
-        await createDeck(oracleId, trimmed, selectedOracleIds, null, asked, build);
+        await createDeck(oracleId, trimmed, selectedOracleIds, null, build === "empty" ? null : asked, build);
       } catch (err) {
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.

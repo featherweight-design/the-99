@@ -6,7 +6,7 @@ export const guidedBuildCopy = {
   commander: {
     press: "Start a deck →",
     /** Under the button when picks are made: it says where the picks go, not how the rest is built. */
-    picks: (n: number) => `Your ${n} go into the new deck.`,
+    picks: (n: number) => (n === 1 ? "Your pick goes into the new deck." : `Your ${n} go into the new deck.`),
   },
   /** The new-deck screen's choice of how the deck is built. */
   choice: {
@@ -15,8 +15,8 @@ export const guidedBuildCopy = {
     empty: { name: "Just the commander", cost: "free", line: (c: string) => `${c} and 99 empty slots. Build it your way.` },
     /** With picks carried from the commander page (?select=): each row says what it does with them. */
     withPicks: {
-      free: (n: number) => `We fill the rest of the 99 around your ${n} picks, as far as your collection reaches.`,
-      empty: (c: string, n: number) => `${c}, your ${n} picks and ${99 - n} empty slots. Build it your way.`,
+      free: (n: number) => `We fill the rest of the 99 around your ${n === 1 ? "pick" : `${n} picks`}, as far as your collection reaches.`,
+      empty: (c: string, n: number) => `${c}, your ${n === 1 ? "pick" : `${n} picks`} and ${99 - n} empty slots. Build it your way.`,
     },
     picks: {
       label: (n: number) => `Your picks · ${n}`,

@@ -108,4 +108,13 @@ describe("CreatePreFilled", () => {
     render(<CreatePreFilled {...base} />);
     expect(screen.queryByTestId("build-picks")).toBeNull();
   });
+
+  it("sends no answers when Just the commander is chosen on the hand-off: no fill runs to read them", async () => {
+    createDeck.mockClear();
+    render(<CreatePreFilled {...base} handOff={handOff()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Just the commander/ }));
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Blank" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Blank", undefined, null, null, "empty");
+  });
 });
