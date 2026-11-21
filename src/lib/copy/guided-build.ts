@@ -122,7 +122,7 @@ export const guidedBuildCopy = {
     failed: (s: string) => `The guided build toward ${s} didn’t come through. Both credits are back.`,
     open: "See the build",
     /** The deck was created but its guided run did not start (the start refused after the sheet's own check passed): said on the deck's page, never silent. */
-    refused: "The guided build didn’t start, and nothing was spent. The deck has the free build.",
+    refused: "The guided build didn’t start. The deck has the free build.",
     /** Home's resume row has room for the clock alone. */
     runningStamp: (clock: string) => `Sharpening · ${clock}`,
     /** A tile's accessible name: the running line without the clock, which would change its name every second. */

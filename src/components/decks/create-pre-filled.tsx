@@ -96,7 +96,9 @@ export function CreatePreFilled({
   const backHref = handOff?.resultsHref ?? "/decks/new";
   const [deckName, setDeckName] = useState("");
   // Today's fill is the default and is pre-marked; the reader chooses to leave it.
-  const [build, setBuild] = useState<CreateBuildKind>("free");
+  const [picked, setBuild] = useState<CreateBuildKind>("free");
+  // A Guided pick whose row has since gone off (credits spent in another tab) reads as the free build, which is what the row then shows.
+  const build: CreateBuildKind = picked === "guided" && !(guided && guidedChoice(guided).state === "ready") ? "free" : picked;
   const [sheet, setSheet] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -204,7 +206,7 @@ export function CreatePreFilled({
           keeps={guidedKeeps}
           pending={isPending}
           onConfirm={confirmGuided}
-          onClose={() => setSheet(false)}
+          onClose={() => { if (!isPending) setSheet(false); }}
         />
       )}
       {/* ── Page header ── */}

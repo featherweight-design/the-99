@@ -32,14 +32,16 @@ export function RefusedLine() {
 
 export function GuidedRunLine({ deckId, deckName, refused = false }: { deckId: string; deckName: string; refused?: boolean }) {
   const [initial, setInitial] = useState<GuidedState | null>(null);
+  // The refused line waits for the read: a deck that does have a run must not flash it.
+  const [read, setRead] = useState(false);
   useEffect(() => {
     let live = true;
-    readGuidedStateAction(deckId).then((r) => { if (live && r) setInitial(r); }, () => {});
+    readGuidedStateAction(deckId).then((r) => { if (live) { if (r) setInitial(r); setRead(true); } }, () => { if (live) setRead(true); });
     return () => { live = false; };
   }, [deckId]);
   return (
     <>
-      {refused && !initial && <RefusedLine />}
+      {refused && read && !initial && <RefusedLine />}
       {initial ? <Line key={initial.id} deckId={deckId} deckName={deckName} initial={initial} /> : null}
     </>
   );

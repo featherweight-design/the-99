@@ -79,11 +79,10 @@ export default async function NewDeckPage({
       // read draws none: the create still places them (`createDeck` re-checks each id).
       const selected = parseSelectParam(select);
       // The Guided row rides Upgrade's switch, decided for this reader; with it off, or the offer unreadable, the screen draws no row.
-      const env = await requestFlags(userId);
       const [picks, commanderHref, guided] = await Promise.all([
         loadSelectedPicks(userId, selected).catch(() => []),
         selected.length > 0 ? commanderPageHref(userId, commander.oracleId) : null,
-        preconUpgradeEnabled(env) ? loadGuidedOffer(userId, [commander.oracleId], env).catch(() => null) : null,
+        requestFlags(userId).then((env) => (preconUpgradeEnabled(env) ? loadGuidedOffer(userId, [commander.oracleId], env) : null)).catch(() => null),
       ]);
       return (
         <CreatePreFilled
