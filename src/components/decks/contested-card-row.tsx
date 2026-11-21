@@ -114,10 +114,22 @@ function surfaceWords(fromImport: boolean) {
       };
 }
 
+/**
+ * A server refusal, or the row's own: `already-has-copy` is decided on the tap and never written.
+ */
+type RowRefusal = AssignRefusal | "already-has-copy";
+
+/** A deck holding its whole ask, with nothing a reservation could add: not a brew, not a commander-only claim. */
+function holdsItsCopy(c: ContestedCard["claimants"][number] | undefined): boolean {
+  return c !== undefined && !c.brew && c.commanderCopies < c.quantity && c.allocated >= c.quantity;
+}
+
 /** The on-screen sentence for a named refusal — announced verbatim, never summarised. */
-function refusalSentence(cause: AssignRefusal, card: ContestedCard, deckName: string): string {
+function refusalSentence(cause: RowRefusal, card: ContestedCard, deckName: string): string {
   const holder = card.claimants.find((c) => c.allocated > 0)?.deckName ?? "";
   switch (cause) {
+    case "already-has-copy":
+      return copy.contested.refusedAlreadyHas(deckName, card.cardName);
     case "claimant-no-longer-asks":
       return copy.contested.refusedNotWanted(deckName, card.cardName, holder);
     case "no-supply-left":
@@ -151,6 +163,7 @@ export function ContestedCardRow({
   onUnknown,
   externalPick = false,
   onBeforePick,
+  writesOut = false,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
@@ -207,6 +220,11 @@ export function ContestedCardRow({
   externalPick?: boolean;
   /** Fired on a tap while `externalPick` stands, before the write, so the caller can drop its own pick first. */
   onBeforePick?: () => void;
+  /**
+   * A write from an earlier row (a chooser closed and opened again) is still out, so `card` is not the server's
+   * reading: the row then writes every press, never deciding from it that a press changes nothing.
+   */
+  writesOut?: boolean;
 }) {
   const zone = useZone();
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
@@ -215,7 +233,7 @@ export function ContestedCardRow({
   // of the row replaces the optimistic one: the refusal means the props are out of date, so
   // redrawing from them would show the player exactly the state that just lost.
   const [card, setCard] = useState(initial);
-  const [refusal, setRefusal] = useState<AssignRefusal | null>(null);
+  const [refusal, setRefusal] = useState<RowRefusal | null>(null);
   // The optimistic pick, for the window between the tap and the server's answer. A SET rather
   // than a scalar because the DATA can hold more than one granted row — a reservation written
   // before this rule existed, or by another tab — and the row has to draw what is there rather
@@ -288,6 +306,23 @@ export function ContestedCardRow({
     }
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
+    // A PICK NAMES WHO GETS A COPY, never who gives one up. A deck that holds its copy now AND
+    // would hold it with no reservation at all gains nothing from the one reservation moving onto
+    // it. The move only takes the reservation off the deck that holds it, which leaves the same
+    // allocation as clearing that pick, and a press on the checked deck already does that. Written
+    // anyway, it lit the accent on a deck that changed nothing (Hugh's Fabled Passage, 2026-11-21),
+    // so it is said, not written. Stopgap until a card can take several picks.
+    // Not while an Other decks pick stands: there the press replaces that pick, which is a real
+    // change. Not while a write is in flight, this row's or an earlier row's (`writesOut`): `claimants` is then a
+    // preview, or the purchase-time card, not the server's.
+    if (!wasChosen && !externalPick && !writesOut && picked === null) {
+      const baseline = previewAllocation(card.claimants, card.owned, null);
+      if (holdsItsCopy(claimants.find((c) => c.deckId === deckId)) && holdsItsCopy(baseline.find((c) => c.deckId === deckId))) {
+        setRefusal("already-has-copy");
+        setAnnounce(copy.contested.refusedAlreadyHas(deckName, card.cardName));
+        return;
+      }
+    }
     const replacing = externalPick;
     if (replacing) onBeforePick?.();
     // THE OPTIMISTIC SET SAYS WHERE THE GRANT WENT, and nothing else. The allocation that

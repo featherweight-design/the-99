@@ -740,6 +740,52 @@ describe("ContestedCardRow — the chooser", () => {
     expect(assign).not.toHaveBeenCalled();
   });
 
+  // A pick names who GETS a copy. Moving the one reservation onto a deck that holds its copy by
+  // seniority changes nothing, so it is said and not written (Hugh's Fabled Passage, 2026-11-21).
+  it("writes nothing for a deck that already gets its copy by seniority, and says so", () => {
+    render(<ContestedCardRow card={card()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /HD Avatar Aang/ }));
+    expect(assign).not.toHaveBeenCalled();
+    expect(screen.getAllByText(copy.contested.refusedAlreadyHas("HD Avatar Aang", "Brushland")).length).toBeGreaterThan(0);
+    expect(screen.getByRole("radio", { name: /HD Avatar Aang/ }).getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("refuses a senior holder while a junior deck holds the reservation, and keeps that reservation", () => {
+    // Fabled Passage's shape: three decks, two copies, the reservation on the junior deck. Moving
+    // the reservation onto the senior deck, which holds by seniority anyway, would only take it off
+    // the junior deck: the same allocation as clearing that pick. So it is refused, and the pick stands.
+    render(<ContestedCardRow card={card({
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "Gishath", quantity: 1, commanderCopies: 0, granted: 0, since: AUG, versionNumber: 5, allocated: 1 },
+        { deckId: "d2", deckName: "Multiverse", quantity: 1, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 1, allocated: 0 },
+        { deckId: "d3", deckName: "Mutant Menace", quantity: 1, commanderCopies: 0, granted: 1, since: SEP + 1, versionNumber: 4, allocated: 1 },
+      ],
+    })} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Gishath/ }));
+    expect(assign).not.toHaveBeenCalled();
+    expect(screen.getByRole("radio", { name: /Mutant Menace/ }).getAttribute("aria-checked")).toBe("true");
+    // The deck that buys is still pressable: its press is a real move.
+    fireEvent.click(screen.getByRole("radio", { name: /Multiverse/ }));
+    expect(assign).toHaveBeenCalledTimes(1);
+  });
+
+  it("still writes a press on a holding deck while an Other decks pick stands, since it replaces that pick", () => {
+    const before = vi.fn();
+    render(<ContestedCardRow card={card({ owned: 2 })} externalPick onBeforePick={before} />);
+    fireEvent.click(screen.getByRole("radio", { name: /HD Avatar Aang/ }));
+    expect(before).toHaveBeenCalledTimes(1);
+    expect(assign).toHaveBeenCalledTimes(1);
+  });
+
+  it("still writes a press on a holding deck while an earlier chooser's write is out, since its card is not the server's", () => {
+    // The receipt's Change, closed and opened again before the first write landed: this row draws the
+    // purchase-time card, and the press on the seniority holder moves the copy back.
+    render(<ContestedCardRow card={card()} writesOut />);
+    fireEvent.click(screen.getByRole("radio", { name: /HD Avatar Aang/ }));
+    expect(assign).toHaveBeenCalledTimes(1);
+  });
+
   // Announced FROM THE SERVER'S OWN ALLOCATION, once it has one. The trade is the news, and the
   // client cannot know which reservation the server evicted — it resolves them on
   // `(created_at, deck_id)`, not the commit order this row is drawn in. Announcing a loser before
