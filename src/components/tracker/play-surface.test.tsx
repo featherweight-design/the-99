@@ -94,7 +94,7 @@ describe("PlaySurface snapshot", () => {
     const waiting: PlaySeat[] = [seats[0], { ...seats[1], art: null, commander: "", deck: null }];
     render(<PlaySurface tableId="t1" roster="r" expiresAt={Date.now() + 3_600_000} seats={waiting} backHref="/friends/table/t1" logHref={null} podName="Thursday night" />);
     await act(async () => {});
-    fireEvent.click(screen.getByRole("button", { name: "Start the game" }));
+    fireEvent.click(screen.getByRole("button", { name: "Start" }));
     const colin = screen.getAllByTestId("tracker-panel").find((p) => p.dataset.seat === "1")!;
     expect(within(colin).getByTestId("panel-no-deck").textContent).toBe("no deck");
   });
