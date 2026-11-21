@@ -11,7 +11,6 @@ import { joinNames, PersonName, PersonText, type PersonParts, type ThirdPartyNam
 import type { GameState } from "../../lib/tracker/engine";
 import { gameLength, ordinal, resultOf } from "../../lib/tracker/result";
 import { FadingImg } from "../ui/hydrated-art";
-import { UndoIcon } from "./icons";
 import type { PlaySeat } from "./panel";
 
 const copy = trackerCopy.result;
@@ -43,7 +42,6 @@ export function Result({
   logHref,
   backHref,
   tablet,
-  onUndo,
   onRematch,
 }: {
   state: GameState;
@@ -56,7 +54,6 @@ export function Result({
   logHref: string | null;
   backHref: string;
   tablet: boolean;
-  onUndo: () => void;
   onRematch: () => void;
 }) {
   const r = resultOf(state);
@@ -82,10 +79,7 @@ export function Result({
             <PersonName n={podName} />
             {copy.meta(state.round, length)}
           </span>
-          <button type="button" aria-label={trackerCopy.strip.undoAria} onClick={onUndo} className="ml-auto grid size-11 place-items-center text-[color:var(--fg-body)]">
-            <UndoIcon size={20} />
-          </button>
-          <Link href={backHref} aria-label={copy.close} className="grid size-11 place-items-center text-[22px] text-[color:var(--fg)]">
+          <Link href={backHref} aria-label={copy.close} className="ml-auto grid size-11 place-items-center text-[22px] text-[color:var(--fg)]">
             ✕
           </Link>
         </div>

@@ -282,7 +282,6 @@ export function PlaySurface({
           logHref={logHref}
           backHref={backHref}
           tablet={device === "tablet"}
-          onUndo={undo}
           onRematch={() => {
             setRematch({ layout: game.config.layout, life: game.config.startingLife });
             setSaved(null);
