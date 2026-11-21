@@ -76,5 +76,9 @@ export const guidedBuildCopy = {
     short: (s: string) => `The guided build toward ${s} found fewer than 12 cards. Both credits are back.`,
     failed: (s: string) => `The guided build toward ${s} didn’t come through. Both credits are back.`,
     open: "See the build",
+    /** Home's resume row has room for the clock alone. */
+    runningStamp: (clock: string) => `Sharpening · ${clock}`,
+    /** A tile's accessible name: the running line without the clock, which would change its name every second. */
+    runningSpoken: (s: string) => `Sharpening toward ${s}`,
   },
 } as const;

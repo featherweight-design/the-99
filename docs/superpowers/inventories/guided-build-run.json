@@ -1,5 +1,5 @@
 {
-  "feature": "Guided build PR C: the run window (R1, R4, R5) opened from the deck page's guided line (G6 page line).",
+  "feature": "Guided build PR C: the run window (R1, R4, R5) opened from the deck page's guided line (G6 page line); and the tile PR: the run on the /decks tile and Home's resume row (G6 tile).",
   "clearAbout": true,
   "note": "Needs `node scripts/probe-guided-run.mjs seed` first (and `clear` after): three fixture decks on local-dev with a running, a failed and a short guided run, and PRECON_UPGRADE_ENABLED on for the fixture account. Nothing is pressed that spends.",
   "out": "contact-sheets/guided-build-run",
@@ -52,6 +52,30 @@
           "clickRole": "button",
           "name": "See the build",
           "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "tile-decks",
+      "label": "the run on the /decks tiles: running (clock), failed and short in the detail row",
+      "view": "src/components/decks/deck-card.tsx",
+      "steps": [
+        {
+          "goto": "/decks",
+          "wait": "[data-deck-detail]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "tile-home",
+      "label": "Home's resume row: the running clock in the stamp slot",
+      "view": "src/components/home/resume-decks.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-resume-stamp]",
+          "settle": 2500
         }
       ]
     }
