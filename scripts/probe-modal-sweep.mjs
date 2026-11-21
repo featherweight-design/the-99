@@ -85,9 +85,16 @@ async function openCheck(page, check, name, selector, open, tries = 4) {
       });
       mo.observe(document.body, { childList: true, subtree: true });
     }, selector);
-    await open();
+    const opened = await open().then(() => true, (e) => {
+      report(name, false, String(e?.message ?? e).split("\n").slice(0, 8).join(" | "));
+      return false;
+    });
+    if (!opened) return;
     if (await page.locator(selector).first().waitFor({ timeout: 5_000 }).then(() => true, () => false)) break;
-    if (i >= tries - 1) throw new Error(`${name} never opened`);
+    if (i >= tries - 1) {
+      const seen = await page.evaluate(() => [...document.querySelectorAll("[role=dialog]")].map((d) => `${d.getAttribute("aria-label")}:${d.className.slice(0, 40)}:kids=${d.children.length}`).join(" | "));
+      throw new Error(`${name} never opened (dialogs: ${seen || "none"})`);
+    }
   }
   check(name, { found: true, css: await page.evaluate(() => window.__seen) });
 }
@@ -124,6 +131,14 @@ async function landing(browser, width) {
   }
 }
 
+/** Navigate, retrying: a page that spends a recovery token redirects to itself, which aborts the first navigation. */
+async function gotoPath(page, path) {
+  for (let i = 0; i < 3 && new URL(page.url()).pathname !== path; i += 1) {
+    await page.waitForTimeout(1_500);
+    await page.goto(`${BASE}${path}`, { waitUntil: "domcontentloaded", timeout: 180_000 }).catch(() => {});
+  }
+}
+
 async function walk(browser, width) {
   const context = await browser.newContext({ viewport: width.viewport });
   const page = await context.newPage();
@@ -150,15 +165,35 @@ async function walk(browser, width) {
     } else {
       await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "domcontentloaded", timeout: 180_000 });
       await openCheck(page, check, "deck page > Change commander", '[data-testid="receipt-modal"]', () => page.getByRole("button", { name: "Change commander" }).first().click());
+      // Closed for real before the next press: a sheet still open holds the scroll lock and Playwright stalls on the next click.
+      for (let i = 0; i < 3 && (await page.locator('[data-testid="receipt-modal"]').count()) > 0; i += 1) {
+        await page.keyboard.press("Escape");
+        await page.locator('[data-testid="receipt-modal"]').first().waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+      }
+      // Hand-rolled deck sheets (B1). Export draws its phone sheet inside a positioning wrapper, so the phone reads that child. It is found by its own `md:hidden` class, never by the fix's class, so on main the probe still finds the element and reads `none`.
+      await openCheck(page, check, "deck page > Export", phone ? '[role=dialog] > [class~="md:hidden"]' : "[role=dialog]", async () => {
+        // The page is still easing out of the previous sheet and Playwright can stall in scroll-into-view: wait for it to be gone, then press the button itself.
+        await page.locator("[role=dialog]").first().waitFor({ state: "detached", timeout: 10_000 }).catch(() => {});
+        const btn = page.getByRole("button", { name: /^Export/ }).first();
+        await btn.click({ timeout: 10_000 }).catch(() => btn.evaluate((el) => el.click()));
+      });
       await page.keyboard.press("Escape");
     }
 
+    // /decks: the New folder dialog, a centred card on desktop and (Hugh, 2026-11-21) a bottom sheet on a phone.
+    await gotoPath(page, "/decks");
+    if (phone) {
+      // Under 1000 the shelf line is one "Folders" button that opens the shelf sheet; its last row makes the folder.
+      await openCheck(page, check, "decks > Folders sheet", "[role=dialog]", () => page.locator('button[aria-label^="Folder:"]').first().click());
+      await openCheck(page, check, "decks > New folder", "[role=dialog]:has(input)", () => page.locator("[role=dialog]").getByRole("button", { name: /New folder/ }).first().click());
+    } else {
+      await openCheck(page, check, "decks > New folder", "[role=dialog]", () => page.getByRole("button", { name: /New folder/ }).first().click());
+    }
+    await page.keyboard.press("Escape");
+
     // A SocialModal (its own chrome, anim-sheet-in): the same entrance, and it opens on its heading.
     // /friends may spend a recovery token and redirect to itself, which aborts the first navigation.
-    for (let i = 0; i < 3 && !page.url().includes("/friends"); i += 1) {
-      await page.waitForTimeout(1_500);
-      await page.goto(`${BASE}/friends`, { waitUntil: "domcontentloaded", timeout: 180_000 }).catch(() => {});
-    }
+    await gotoPath(page, "/friends");
     await page.getByRole("button", { name: /^Add a friend$/ }).first().waitFor({ timeout: 30_000 }).catch(async (e) => {
       console.log("   url", page.url(), "|", (await page.locator("body").innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 500));
       throw e;
@@ -167,6 +202,11 @@ async function walk(browser, width) {
     const onHeading = await page.evaluate(() => document.activeElement?.tagName === "H2");
     report(L("SocialModal opens with its heading focused"), onHeading, onHeading ? "" : "focus is elsewhere");
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/modal-sweep-social-${width.label}.png` });
+    await page.keyboard.press("Escape");
+
+    // The got-it confirm over a Shopping row. It opens only: nothing is bought or written.
+    await gotoPath(page, "/decks/shopping");
+    await openCheck(page, check, "shopping > Got it confirm", "[role=dialog]", () => page.locator('button[aria-label^="Bought "]').first().click());
     await page.keyboard.press("Escape");
 
     // PR C: the set page's phone filter sheet (FilterSheet, phone only: it is not drawn from 768, so only 390 is checked).

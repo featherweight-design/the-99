@@ -1,0 +1,28 @@
+{
+  "feature": "Modal phone slide-in sweep, PR B1: the hand-rolled deck sheets take the phone entry, and the New folder dialog becomes a bottom sheet on a phone",
+  "note": "Signed in on local-dev or a scratch branch. Writes nothing (the New folder dialog is dismissed unsent). A photo taken at rest cannot show the slide; `pnpm probe:modal-sweep` presses the sheets at 390 and 1300 and reads the animation name the frame each mounts. The Export, copy chooser and got-it sheets need an owned deck, an owned copy or a cart, so they are probed (Export) or covered by the markup and the PR D guard.",
+  "out": "contact-sheets/modal-sweep-b1",
+  "rows": [
+    {
+      "id": "folder-create-desktop",
+      "label": "/decks: New folder dialog, centred 380 card on desktop (unchanged)",
+      "view": "src/components/decks/folder-create-dialog.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/decks", "wait": "h1:visible", "settle": 2500 },
+        { "clickRole": "button", "name": "New folder", "wait": "[role=dialog]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "folder-create-phone",
+      "label": "/decks: Folders sheet then New folder, a bottom sheet with top corners and the safe-area inset",
+      "view": "src/components/decks/folder-create-dialog.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/decks", "wait": "h1:visible", "settle": 2500 },
+        { "click": "button[aria-label^='Folder:']", "wait": "[role=dialog]", "settle": 800 },
+        { "clickRole": "button", "name": "New folder", "wait": "[role=dialog] input", "settle": 800 }
+      ]
+    }
+  ]
+}

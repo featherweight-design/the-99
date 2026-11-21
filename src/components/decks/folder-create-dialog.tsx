@@ -87,7 +87,7 @@ export function FolderCreateDialog({
   }
 
   return (
-    <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-center px-[16px]`} style={visible}>
+    <div ref={inertRef} className={`fixed inset-0 ${VV_FRAME} z-50 flex flex-col justify-center px-[16px] max-md:justify-end max-md:px-0`} style={visible}>
       <div
         aria-hidden="true"
         onClick={dismiss}
@@ -99,7 +99,7 @@ export function FolderCreateDialog({
         aria-modal="true"
         aria-label={folderCopy.create.heading}
         tabIndex={-1}
-        className="relative z-10 mx-auto flex max-h-[calc(100dvh-32px)] max-md:max-h-[min(calc(100dvh-32px),calc(var(--vv-h,100dvh)-32px))] w-full max-w-[380px] flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[16px]"
+        className="relative z-10 mx-auto flex max-h-[calc(100dvh-32px)] max-md:max-h-[min(calc(100dvh-32px),calc(var(--vv-h,100dvh)-32px))] w-full max-w-[380px] flex-col gap-[12px] rounded-[14px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] p-[16px] max-md:max-w-none max-md:rounded-[16px_16px_0_0] max-md:border-x-0 max-md:border-b-0 max-md:pb-[max(16px,env(safe-area-inset-bottom))] anim-sheet-in-phone"
       >
         <h2 className="m-0 font-display text-[18px] font-semibold text-[color:var(--fg)]">
           {folderCopy.create.heading}

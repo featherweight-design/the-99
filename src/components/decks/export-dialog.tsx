@@ -178,7 +178,7 @@ export function ExportDialog({
 
         {/* Mobile bottom sheet */}
         <div
-          className="flex flex-col md:hidden absolute left-0 right-0 bottom-0 pointer-events-auto"
+          className="flex flex-col md:hidden absolute left-0 right-0 bottom-0 pointer-events-auto anim-sheet-in-phone"
           style={{
             background: "var(--surface-rail)",
             borderTop: "1px solid var(--border-strong)",
