@@ -18,6 +18,9 @@ importers:
 
   .:
     dependencies:
+      '@3d-dice/dice-box-threejs':
+        specifier: 0.0.12
+        version: 0.0.12
       '@anthropic-ai/sdk':
         specifier: 0.128.0
         version: 0.128.0(zod@4.6.6)
@@ -156,6 +159,9 @@ importers:
         version: 5.1.0(@opentelemetry/api@1.10.0)(@types/node@24.19.2)(@vitest/coverage-v8@5.1.0)(jsdom@29.1.1)(vite@6.4.5(@types/node@24.19.2)(jiti@2.7.0)(lightningcss@1.33.0)(tsx@4.23.1)(yaml@2.9.1))
 
 packages:
+
+  '@3d-dice/dice-box-threejs@0.0.12':
+    resolution: {integrity: sha512-Bau5UizUunZS9+A6zgGeZecEJotSLEI6YvmYTosvvdhRxv92xo89aIvKYQb6xqdx/AqjHdGENJmqBOadlFL9kA==}
 
   '@adobe/css-tools@4.5.0':
     resolution: {integrity: sha512-6OzddxPio9UiWTCemp4N8cYLV2ZN1ncRnV1cVGtve7dhPOtRkleRyx32GQCYSwDYgaHU3USMm84tNsvKzRCa1Q==}
@@ -2054,6 +2060,9 @@ packages:
   caniuse-lite@1.0.30001819:
     resolution: {integrity: sha512-LFUqIIAwpzsIuevnKnsR9qnStBcgzPShTX61lBwN9uFkkf8o8zLiebEjbW8AYtZiF+1YKDWfdt/pWDtMuG8Xwg==}
 
+  cannon-es@0.20.0:
+    resolution: {integrity: sha512-eZhWTZIkFOnMAJOgfXJa9+b3kVlvG+FX4mdkpePev/w/rP5V8NRquGyEozcjPfEoXUlb+p7d9SUcmDSn14prOA==}
+
   chai@6.3.0:
     resolution: {integrity: sha512-XWAtwJ6OHO+tj0EKCs0Y2UamnyOxseZWltU4x2U2wh8g4AigdjwvtUjvLP2tqkA/avxHEtzxNaqGq/YGNwckKg==}
     engines: {node: '>=18'}
@@ -3589,6 +3598,9 @@ packages:
     resolution: {integrity: sha512-uxc/zpqFg6x7C8vOE7lh6Lbda8eEL9zmVm/PLeTPBRhh1xCgdWaQ+J1CUieGpIfm2HdtsUpRv+HshiasBMcc6A==}
     engines: {node: '>=6'}
 
+  three@0.143.0:
+    resolution: {integrity: sha512-oKcAGYHhJ46TGEuHjodo2n6TY2R6lbvrkp+feKZxqsUL/WkH7GKKaeu6RHeyb2Xjfk2dPLRKLsOP0KM2VgT8Zg==}
+
   tinybench@6.2.3:
     resolution: {integrity: sha512-Al01C2JIBnO2CXCAPbpAl6sUiOZHeThGtHYNTa51JRw9PyWOCdr+9Ong05R4qg/Sk3+H645E8ov1h2c58ityNw==}
     engines: {node: '>=20.0.0'}
@@ -3895,6 +3907,11 @@ packages:
     resolution: {integrity: sha512-4UmzQUF5fxvfcYHlbjBmejU+w+hbDnWFx4aS8kBx7nPBHcO2SqPbpAG8snbdg+Xse4pRefR98hgjFgIMCI/UhA==}
 
 snapshots:
+
+  '@3d-dice/dice-box-threejs@0.0.12':
+    dependencies:
+      cannon-es: 0.20.0
+      three: 0.143.0
 
   '@adobe/css-tools@4.5.0': {}
 
@@ -5502,6 +5519,8 @@ snapshots:
   callsites@3.1.0: {}
 
   caniuse-lite@1.0.30001819: {}
+
+  cannon-es@0.20.0: {}
 
   chai@6.3.0: {}
 
@@ -7197,6 +7216,8 @@ snapshots:
   tailwindcss@4.3.3: {}
 
   tapable@2.3.3: {}
+
+  three@0.143.0: {}
 
   tinybench@6.2.3: {}
 

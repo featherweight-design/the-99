@@ -46,6 +46,43 @@ export const InitiativeIcon = (props: IconProps) => (
   </Icon>
 );
 
+/** The centre strip's own marks (P1): day, night, dice and undo. */
+export const SunIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>
+  </Icon>
+);
+
+export const MoonIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/>
+  </Icon>
+);
+
+export const D6Icon = (props: IconProps) => (
+  <Icon {...props}>
+    <rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/>
+  </Icon>
+);
+
+export const D20Icon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M12 2.5l8.5 5v9l-8.5 5-8.5-5v-9z"/><path d="M12 7.5l4.5 7.5h-9z"/>
+  </Icon>
+);
+
+export const CoinIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/>
+  </Icon>
+);
+
+export const UndoIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 010 10h-2"/>
+  </Icon>
+);
+
 export const MonarchIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M3.5 18l2-10 4.3 4L12 5l2.2 7 4.3-4 2 10z"/><path d="M5 21h14"/>
