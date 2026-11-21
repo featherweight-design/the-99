@@ -89,6 +89,7 @@ try {
     const nameStyle = await style(name, ["font-family", "font-size"]);
     check("header name is Cinzel", /cinzel/i.test(nameStyle["font-family"]), nameStyle["font-family"].slice(0, 40));
     check("header name reads the player, not 'Your sheet'", ((await name.textContent()) ?? "").trim() === "You", (await name.textContent()) ?? "");
+    check("header name is not cut short", await name.evaluate((el) => el.scrollWidth <= el.clientWidth), "ellipsised");
     check("header carries life", /\d+ life/.test((await sheet.locator("i").first().textContent()) ?? ""));
     await shot(page, `${width}-damage`);
 
@@ -132,6 +133,12 @@ try {
     await sheet.getByRole("tab", { name: /^Mana/ }).click();
     const cols = await sheet.locator('[role="tabpanel"] .grid').first().evaluate((el) => getComputedStyle(el).gridTemplateColumns.split(" ").length);
     check("mana grid is three across", cols === 3, `${cols} columns`);
+    const spill = await sheet.locator('[role="tabpanel"] .grid').first().evaluate((grid) =>
+      [...grid.children].filter((card) => {
+        const c = card.getBoundingClientRect();
+        return [...card.querySelectorAll("button")].some((b) => { const r = b.getBoundingClientRect(); return r.left < c.left - 0.5 || r.right > c.right + 0.5; });
+      }).length);
+    check("mana steppers stay inside their cards", spill === 0, `${spill} cards spill`);
     await shot(page, `${width}-mana`);
 
     // Table: Concede and End game in the danger colour.

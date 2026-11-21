@@ -2821,6 +2821,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   check. It WRITES, so it refuses staging, production and local-dev by `neon.branch_id`: run the dev server and the
   probe with the env file naming a scratch branch made from local-dev, seeded by `scripts/seed-rule-zero-fixture.mts`
   for the audit account. `UNDO_TABLE` picks another table, and `SHOTS=<dir>` keeps a photograph of each state.
+- `pnpm probe:tracker-sheet` presses the tracker's in-game player sheet (gap T6) at phone (390x844) and desktop (1300x900)
+  width, against a real table. It starts a game on the fixture's T5 (you and Colin), opens the sheet from the first
+  panel's name and checks the header (the name in Cinzel, never "Your sheet", life shown and the name not cut short), the
+  damage card's Cinzel count and 44px stepper with the commander art, the sheet sitting above the turn strip (the
+  stepper's centre hits the stepper), the Counters tab's count, the tax figure in Cinzel, the mana grid three across with
+  its steppers inside their cards, and Concede and End game drawn in the red. On main the header reads "Your sheet" in
+  the body face, so it fails at the first check. It only reads and taps (the game lives in the device's localStorage),
+  but the fixture table needs a scratch branch seeded by `scripts/seed-rule-zero-fixture.mts`, and the account's other
+  fixture tables throw seat notices over the lower edge (the probe removes them from the page). `SHEET_TABLE` picks
+  another table and `SHOTS=<dir>` keeps a photograph of each state.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a

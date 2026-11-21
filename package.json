@@ -79,6 +79,7 @@
     "probe:rule-zero": "tsx scripts/probe-rule-zero.mts",
     "probe:tracker-reseat": "tsx scripts/probe-tracker-reseat.mts",
     "probe:tracker-undo": "tsx scripts/probe-tracker-undo.mts",
+    "probe:tracker-sheet": "node scripts/probe-tracker-sheet.mjs",
     "probe:tracker-undo-ui": "node scripts/probe-tracker-undo-ui.mjs",
     "probe:admin-pii": "node scripts/probe-admin-pii.mjs",
     "probe:admin-payments": "node scripts/probe-admin-payments.mjs",

@@ -30,7 +30,7 @@ const TAX_PER_CAST = 2;
 /** The three stepper sizes the boards draw: counters (44px), mana (48px), damage and tax (44 to 52px, Cinzel count). */
 const STEPPER_SIZE = {
   counter: { btn: "size-[44px] rounded-[9px] text-[20px]", count: "min-w-[30px] text-[22px]" },
-  mana: { btn: "size-[48px] rounded-[10px] text-[22px]", count: "min-w-[40px] text-[28px]" },
+  mana: { btn: "size-[44px] rounded-[10px] text-[22px]", count: "min-w-[40px] text-[28px]" },
   damage: { btn: "size-[44px] rounded-[10px] text-[22px]", count: "min-w-[40px] text-[30px]" },
   damageOne: { btn: "size-[44px] rounded-[10px] text-[22px]", count: "min-w-[52px] text-[40px]" },
   tax: { btn: "size-[52px] rounded-[12px] text-[26px]", count: "min-w-[48px] text-[40px]" },
@@ -38,12 +38,12 @@ const STEPPER_SIZE = {
 
 const BTN = "touch-manipulation bg-[color:var(--elevated)] leading-none text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border-strong)] disabled:opacity-40";
 
-function Stepper({ count, what, onStep, max, size = "counter", tone }: { count: number; what: string; onStep: (d: 1 | -1) => void; max?: number; size?: keyof typeof STEPPER_SIZE; tone?: "set" }) {
+function Stepper({ count, what, onStep, max, size = "counter", tone, stacked }: { count: number; what: string; onStep: (d: 1 | -1) => void; max?: number; size?: keyof typeof STEPPER_SIZE; tone?: "set"; stacked?: boolean }) {
   const z = STEPPER_SIZE[size];
   return (
-    <span className="flex items-center justify-center gap-1.5">
+    <span className={stacked ? "grid grid-cols-2 justify-items-center gap-1.5 @[600px]:flex @[600px]:items-center" : "flex items-center justify-center gap-1.5"}>
       <button type="button" className={BTN + " " + z.btn} aria-label={copy.sheet.fewer(what)} disabled={count <= 0} onClick={() => onStep(-1)}>−</button>
-      <span className={"text-center font-display font-bold leading-none tabular-nums " + z.count + (tone === "set" ? " text-[color:var(--accent-text)]" : " text-[color:var(--fg)]")} aria-live="polite">{count}</span>
+      <span className={"text-center font-display font-bold leading-none tabular-nums " + (stacked ? "order-first col-span-2 @[600px]:order-none @[600px]:col-span-1 " : "") + z.count + (tone === "set" ? " text-[color:var(--accent-text)]" : " text-[color:var(--fg)]")} aria-live="polite">{count}</span>
       <button type="button" className={BTN + " " + z.btn} aria-label={copy.sheet.more(what)} disabled={max !== undefined && count >= max} onClick={() => onStep(1)}>+</button>
     </span>
   );
@@ -133,7 +133,7 @@ export function Sheet({
           <div className="flex h-[44px] items-center gap-3">
             {seat.art ? <FadingImg src={seat.art} alt="" className="h-10 w-10 rounded-full object-cover" /> : null}
             <span id="sheet-title" className="sr-only">{seat.you ? copy.sheet.ariaYou : <PersonText text={copy.sheet.aria(seat.name)} />}</span>
-            <b className="truncate font-display text-[21px] font-bold">{seat.you ? copy.history.you : <PersonName n={seat.name} />}</b>
+            <b className="max-w-[45%] shrink-0 truncate font-display text-[21px] font-bold">{seat.you ? copy.history.you : <PersonName n={seat.name} />}</b>
             <i className="min-w-0 truncate font-mono text-[12px] not-italic text-[color:var(--fg-muted)]">
               {seat.deck === null ? null : <><PersonName n={seat.deck} />{" · "}</>}
               {copy.sheet.life(mine.life)}
@@ -163,7 +163,7 @@ export function Sheet({
                 aria-controls="sheet-panel"
                 tabIndex={view.tab === t ? 0 : -1}
                 onClick={() => { onView({ seat: view.seat, tab: t }); setEnding(false); }}
-                className={"-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b-2 px-4 text-[14px] font-semibold " + (t === "table" ? "ml-auto " : "") + (view.tab === t ? "border-[color:var(--accent)] text-[color:var(--fg)]" : "border-transparent text-[color:var(--fg-muted)]")}
+                className={"-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b-2 px-3 text-[14px] font-semibold " + (t === "table" ? "ml-auto " : "") + (view.tab === t ? "border-[color:var(--accent)] text-[color:var(--fg)]" : "border-transparent text-[color:var(--fg-muted)]")}
               >
                 {tabLabel(t)}
                 {em(t) ? <em className="ml-1.5 font-mono text-[11.5px] not-italic text-[color:var(--accent-text)]">{em(t)}</em> : null}
@@ -187,7 +187,7 @@ function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: r
     <div className="flex flex-col gap-2">
       {foes.length === 0 ? <p className="text-[13px] text-[color:var(--fg-muted)]">{copy.sheet.noOpponents}</p> : null}
       {/* One card per opponent, as many across as there are opponents once the sheet is wide (F16, F17), two across before. */}
-      <div className="grid grid-cols-2 gap-2.5 @[560px]:[grid-template-columns:repeat(var(--n),minmax(0,1fr))]" style={{ "--n": Math.max(1, foes.length) } as CSSProperties}>
+      <div className={"grid gap-2.5 @[560px]:[grid-template-columns:repeat(var(--n),minmax(0,1fr))]" + (foes.length === 1 ? " grid-cols-1" : " grid-cols-2")} style={{ "--n": Math.max(1, foes.length) } as CSSProperties}>
         {foes.map((foe) => {
           const p = seats.find((x) => x.seat === foe.seat)!;
           return (
@@ -306,7 +306,7 @@ function ManaTab({ seat, onCommit }: { seat: SeatState; onCommit: (a: Action) =>
         {MANA_COLORS.map((color) => (
           <div key={color} className="flex min-h-[64px] flex-col items-center justify-center gap-1 rounded-[12px] bg-[color:var(--surface)] px-2 py-2 shadow-[inset_0_0_0_1px_var(--border)] @[600px]:flex-row @[600px]:justify-between @[600px]:px-3">
             <ManaPip symbol={color} />
-            <Stepper size="mana" count={seat.mana[color]} what={copy.mana[color]} onStep={(d) => onCommit({ t: "mana", seat: seat.seat, color, delta: d })} />
+            <Stepper stacked size="mana" count={seat.mana[color]} what={copy.mana[color]} onStep={(d) => onCommit({ t: "mana", seat: seat.seat, color, delta: d })} />
           </div>
         ))}
       </div>

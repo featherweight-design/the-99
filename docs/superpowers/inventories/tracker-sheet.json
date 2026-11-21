@@ -1,0 +1,145 @@
+{
+  "feature": "Life tracker T6, the in-game player sheet",
+  "note": "The sheet's five tabs as the opening seat sees them. Needs the Rule 0 fixture table seeded on a SCRATCH branch (scripts/seed-rule-zero-fixture.mts) and TRACKER_TABLE set to its id (7a0e0000-0000-4000-8000-000000000005, you and one opponent). Other fixture tables the account sits at throw seat notices over the lower edge, which block a press: close them first (expires_at in the past). The first row presses Start; the game then lives in the browser's localStorage, so the later rows open the running game.",
+  "rows": [
+    {
+      "id": "sheet-damage",
+      "label": "Sheet, Commander damage: a card per opponent, art strip, Cinzel count",
+      "view": "src/components/tracker/sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/table/${TRACKER_TABLE}/play",
+          "wait": "button:text-is('Start')",
+          "settle": 800
+        },
+        {
+          "click": "button:text-is('Start')",
+          "settle": 600
+        },
+        {
+          "wait": "[data-testid='panel-name']"
+        },
+        {
+          "click": "[data-testid='panel-name']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='tracker-sheet']"
+        },
+        {
+          "clickRole": "tab",
+          "name": "Commander damage",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "sheet-counters",
+      "label": "Sheet, Counters: toggles plus steppers, emphasis count on the tab",
+      "view": "src/components/tracker/sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/table/${TRACKER_TABLE}/play",
+          "wait": "[data-testid='panel-name']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='panel-name']"
+        },
+        {
+          "click": "[data-testid='panel-name']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='tracker-sheet']"
+        },
+        {
+          "clickRole": "tab",
+          "name": "Counters",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "sheet-tax",
+      "label": "Sheet, Tax: art, Cinzel count, next cast cost",
+      "view": "src/components/tracker/sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/table/${TRACKER_TABLE}/play",
+          "wait": "[data-testid='panel-name']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='panel-name']"
+        },
+        {
+          "click": "[data-testid='panel-name']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='tracker-sheet']"
+        },
+        {
+          "clickRole": "tab",
+          "name": "Tax",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "sheet-mana",
+      "label": "Sheet, Mana: three across",
+      "view": "src/components/tracker/sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/table/${TRACKER_TABLE}/play",
+          "wait": "[data-testid='panel-name']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='panel-name']"
+        },
+        {
+          "click": "[data-testid='panel-name']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='tracker-sheet']"
+        },
+        {
+          "clickRole": "tab",
+          "name": "Mana",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "sheet-table",
+      "label": "Sheet, Table: Concede and End game in red",
+      "view": "src/components/tracker/sheet.tsx",
+      "steps": [
+        {
+          "goto": "/friends/table/${TRACKER_TABLE}/play",
+          "wait": "[data-testid='panel-name']",
+          "settle": 800
+        },
+        {
+          "wait": "[data-testid='panel-name']"
+        },
+        {
+          "click": "[data-testid='panel-name']",
+          "settle": 700
+        },
+        {
+          "wait": "[data-testid='tracker-sheet']"
+        },
+        {
+          "clickRole": "tab",
+          "name": "Table",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}
