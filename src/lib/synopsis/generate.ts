@@ -456,7 +456,7 @@ export async function startRun(
    * takes the PLAYER path, allowance check included.
    */
   method: "free" | "paid" | null = null,
-  /** 0 for the Overview an upgraded precon deck starts with (`reserveModelCall`); 1 for every other write. */
+  /** 1 for every write today (0 was an upgraded precon deck's Overview at Start, removed 2026-11-21; `reserveModelCall`). */
   units: 0 | 1 = 1,
 ): Promise<{ kind: "started"; runId: string; callId: string } | { kind: "allowance" } | { kind: "ownerShare" } | { kind: "paused" } | { kind: "in_flight" } | { kind: "free_gone" } | { kind: "reused"; synopsis: SynopsisRow } | { kind: "illegal" } | { kind: "no_reading" }> {
   // The reap COMMITS ON ITS OWN, before the reservation: a spent allowance rolls the reservation's
@@ -620,7 +620,7 @@ async function run(
   deps: GenerateDeps,
   retry: SynopsisRow | null,
   env: NodeJS.ProcessEnv,
-  /** The credits the write costs: 0 for an upgraded precon deck's Overview at Start (`writeUpgradedOverviewFor`). */
+  /** The credits the write costs. Only 1 is passed today: the 0-credit Overview an upgraded precon deck was started with is gone (Hugh, 2026-11-21). */
   units: 0 | 1 = 1,
 ): Promise<WriteResult> {
   // FIRST, before the reading, the reuse check and the reservation: a withheld overview spends
@@ -753,20 +753,6 @@ export function writeSynopsisFor(
   env: NodeJS.ProcessEnv,
 ): Promise<WriteResult> {
   return run(deckId, userId, deps, null, env);
-}
-
-/**
- * The Overview an upgraded precon deck is started with: written for the deck's own list at no credit, because the run that made the
- * swaps already cost 2 (migration 0234; its worst case is priced into `FEATURE_CALLS.precon_upgrade`). The same write as
- * `writeSynopsisFor` in every other respect, so the same prompt, checks, repair and refund.
- */
-export function writeUpgradedOverviewFor(
-  deckId: string,
-  userId: string,
-  deps: GenerateDeps,
-  env: NodeJS.ProcessEnv,
-): Promise<WriteResult> {
-  return run(deckId, userId, deps, null, env, 0);
 }
 
 /**

@@ -333,6 +333,11 @@ describe("picks (fresh start R2): a subset of a run's adds and cuts", () => {
     expect(upgraded.calls).toEqual([["user_1", "Box", "Mine", RUN, PICKS], ["user_1", "Box", "Mine", RUN, undefined]]);
   });
 
+  it("an upgraded start writes no Overview: nothing is scheduled after the response (Hugh, 2026-11-21)", async () => {
+    await expect(createDeckFromPrecon("Box", "Mine", RUN, PICKS)).rejects.toThrow(/REDIRECT/);
+    expect(state.after).toEqual([]);
+  });
+
   it("createDeckFromPrecon refuses picks with no run before any read, and hands malformed picks to the write that refuses them", async () => {
     expect(await createDeckFromPrecon("Box", "Mine", undefined, PICKS)).toEqual({ ok: false, reason: "upgradeUnavailable" });
     expect(await createDeckFromPrecon("Box", "Mine", undefined, null as never)).toEqual({ ok: false, reason: "upgradeUnavailable" });

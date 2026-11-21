@@ -81,17 +81,14 @@ describe("FEATURE_CALLS", () => {
     expect(featureWorstCaseMicroUsd("suggested_changes_v2")).toBe(2_134_000);
     // Upgrade this precon (research 2026-11-10): the first call and ONE repair, each at 24,000 input tokens on Sonnet 5.5
     // ($2 in, $10 out) with 5,000 and 2,000 reply tokens, both attempts of each: 2 x (48,000 + 50,000) + 2 x (48,000 + 20,000).
-    // Plus the Overview at Start (G13), inside the same 2 credits: the synopsis's own two steps, so the run's worst case is the
-    // run's own ($0.332) and the synopsis's whole worst case.
-    expect(FEATURE_CALLS.precon_upgrade.steps?.slice(0, 2)).toEqual([
+    // No Overview at Start (Hugh, 2026-11-21): the run's worst case is these two steps alone, $0.332.
+    expect(FEATURE_CALLS.precon_upgrade.callsPerWrite).toBe(2);
+    expect(FEATURE_CALLS.precon_upgrade.steps).toEqual([
       { model: TUNING_MODEL, inputCeilingTokens: 24_000, maxTokens: 5_000 },
       { model: TUNING_MODEL, inputCeilingTokens: 24_000, maxTokens: 2_000 },
     ]);
-    expect(FEATURE_CALLS.precon_upgrade.steps?.slice(2)).toEqual(
-      Array.from({ length: 2 }, () => ({ model: FEATURE_CALLS.synopsis.model, inputCeilingTokens: 24_000, maxTokens: FEATURE_CALLS.synopsis.maxTokens })),
-    );
-    expect(featureWorstCaseMicroUsd("precon_upgrade")).toBe(2 * (48_000 + 50_000) + 2 * (48_000 + 20_000) + featureWorstCaseMicroUsd("synopsis"));
-    // Guided build runs the same steps over a deck of the player's own, the Overview inside the same 2 credits (Y5): written out in
+    expect(featureWorstCaseMicroUsd("precon_upgrade")).toBe(2 * (48_000 + 50_000) + 2 * (48_000 + 20_000));
+    // Guided build runs the same steps over a deck of the player's own, no Overview written for it: written out in
     // FEATURE_CALLS, so this holds it to Upgrade's figure rather than an alias.
     expect(FEATURE_CALLS.guided_build.steps).toEqual(FEATURE_CALLS.precon_upgrade.steps);
     expect(featureWorstCaseMicroUsd("guided_build")).toBe(featureWorstCaseMicroUsd("precon_upgrade"));

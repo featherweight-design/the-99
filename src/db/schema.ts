@@ -3877,7 +3877,7 @@ export const preconUpgrades = pgTable("precon_upgrades", {
   bracketTarget: smallint("bracket_target"),
   /** A fingerprint of the box's list the run was made over (`boxFingerprint`), so a Start can tell the precon changed since. */
   listFp: text("list_fp"),
-  /** When this run's Overview was claimed (migration 0234): the first Start from the run writes one for its deck at no credit, and no later Start does. */
+  /** When this run's Overview was claimed (migration 0234). No longer written (Hugh, 2026-11-21): neither run writes an Overview. Kept so the column and its history stay. */
   overviewAt: timestamp("overview_at"),
   /** When the player was first shown this run's result (migration 0246): null = landed, not yet shown. */
   seenAt: timestamp("seen_at"),
@@ -3928,7 +3928,7 @@ export const guidedBuilds = pgTable("guided_builds", {
   budgetCents: integer("budget_cents"),
   /** Oracle ids of the picks the player kept: a swap that cuts one is dropped (rule `kept`). */
   kept: jsonb("kept").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
-  /** When this run's Overview was claimed: exactly one writer per run takes it (one conditional UPDATE), at no credit. */
+  /** When this run's Overview was claimed (migration 0234). No longer written (Hugh, 2026-11-21): neither run writes an Overview. Kept so the column and its history stay. */
   overviewAt: timestamp("overview_at"),
 }, (t) => [
   check("guided_builds_status_check", sql`${t.status} in ('pending', 'done', 'failed')`),

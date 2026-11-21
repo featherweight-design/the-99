@@ -217,26 +217,23 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
   // floor (`runUpgrade`), so a reservation covers both. MEASURED the same day on claude-sonnet-5-5, ten precons, the single
   // call: 16.4k tokens in on average, 2.05k out, $0.045 to $0.061; the ceilings leave room. The repair resends the deck and
   // pool plus the accepted and rejected lines, so it carries the same input ceiling with a smaller reply.
-  // The first call's reply ceiling rose from 3.5k to 5k (Hugh, 2026-11-20) for a full cut reason per swap: worst case $0.332 a run before the Overview.
-  // THE OVERVIEW at Start (Hugh, G13) is inside the run's 2 credits, so its worst case is counted here too: a synopsis write and its
-  // repair at the synopsis ceilings, the same two steps `synopsis` prices. It is made later, as its own 0-unit `synopsis` row
-  // (`writeUpgradedOverviewFor`), which prices itself at reserve; counting it here keeps the run's whole feature in one worst case.
+  // The first call's reply ceiling rose from 3.5k to 5k (Hugh, 2026-11-20) for a full cut reason per swap: worst case $0.332 a run.
+  // No Overview is written at Start (Hugh, 2026-11-21, reversing G13): the player writes it with the 1-credit Overview button, so the run's worst case
+  // is these two steps alone.
   precon_upgrade: {
-    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 4,
+    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 2,
     steps: [
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS },
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: REPAIR_MAX_TOKENS },
-      ...Array.from({ length: 2 }, () => ({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8 })),
     ],
   },
-  // Guided build (plan 2026-11-21, Y4/Y5): the same run as `precon_upgrade` over a deck of the player's own, with the Overview inside
-  // the 2 credits. Written out, not aliased, so a later change to Upgrade's steps is a visible choice here.
+  // Guided build (plan 2026-11-21, Y4/Y5): the same run as `precon_upgrade` over a deck of the player's own, with no Overview
+  // written for it (Hugh, 2026-11-21). Written out, not aliased, so a later change to Upgrade's steps is a visible choice here.
   guided_build: {
-    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 4,
+    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 2,
     steps: [
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS },
       { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: REPAIR_MAX_TOKENS },
-      ...Array.from({ length: 2 }, () => ({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8 })),
     ],
   },
 };

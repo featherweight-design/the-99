@@ -769,7 +769,7 @@ export default async function DeckBuilderPage({
       ownProvenance={tokenNewest ? provenanceForm(tokenNewest, new Date()) : null}
     >
       {/* The guided build's line (G6): drawn from its own read, so the cached payload above never carries a run. */}
-      {preconUpgradeEnabled(env) && <GuidedRunLine deckId={id} deckName={detail.name} commanderId={detail.commander.oracleId} />}
+      {preconUpgradeEnabled(env) && <GuidedRunLine deckId={id} deckName={detail.name} />}
       <ZoneProvider zone={await resolveZone()}>{landed}</ZoneProvider>
     </DeckTokensProvider>
   );

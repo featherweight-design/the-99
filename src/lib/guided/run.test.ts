@@ -25,7 +25,8 @@ vi.mock("./store", () => ({
   startGuided: async (...a: unknown[]) => { h.startArgs.push(a); return h.started; },
   finishGuided: (...a: unknown[]) => { h.finish(...a); return Promise.resolve(true); },
 }));
-vi.mock("./overview", () => ({ overviewAfterGuidedRun: (...a: unknown[]) => h.overview(...a) }));
+// No Overview is written for a run (Hugh, 2026-11-21): any call that would write one lands on this spy, and no test lets it.
+vi.mock("../synopsis/generate", () => ({ writeSynopsisFor: (...a: unknown[]) => h.overview(...a), defaultDeps: () => ({}) }));
 vi.mock("../precons/upgrade/engine", () => ({ runUpgrade: async (a: unknown) => { h.engineArgs.push(a); if (h.report instanceof Error) throw h.report; return h.report; } }));
 vi.mock("../precons/upgrade/prompt", () => ({ buildUpgradePrompt: () => ({ system: "s", user: "u" }), upgradeReplySchema: {} }));
 vi.mock("../precons/upgrade/run", () => ({
@@ -83,13 +84,13 @@ describe("beginGuided", () => {
     expect([...(h.engineArgs[0] as { kept: Set<string> }).kept]).toEqual(["k1"]);
   });
 
-  it("settles a 12-pair run as spent and writes its Overview", async () => {
+  it("settles a 12-pair run as spent and writes no Overview", async () => {
     h.report = report({});
     const b = await beginGuided("u", "d", picks, env);
     if (!b.ok) throw new Error("not started");
     await b.run();
     expect(h.finish.mock.calls[0][1]).toMatchObject({ status: "done", refunded: false });
-    expect(h.overview).toHaveBeenCalledOnce();
+    expect(h.overview).not.toHaveBeenCalled();
     expect(reval).toHaveBeenCalledWith("d", "u");
   });
 
