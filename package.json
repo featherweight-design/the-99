@@ -83,6 +83,7 @@
     "probe:tracker-undo-ui": "node scripts/probe-tracker-undo-ui.mjs",
     "probe:tracker-setup": "node scripts/probe-tracker-setup.mjs",
     "probe:tracker-full-screen": "node scripts/probe-tracker-full-screen.mjs",
+    "probe:tracker-seat-map": "node scripts/probe-tracker-seat-map.mjs",
     "probe:admin-pii": "node scripts/probe-admin-pii.mjs",
     "probe:admin-payments": "node scripts/probe-admin-payments.mjs",
     "seed:admin-pii-fixture": "node scripts/seed-admin-pii-fixture.mjs",

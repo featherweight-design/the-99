@@ -91,7 +91,7 @@ async function walk(browser, width) {
       closeOk && near(cb.width, 44) && near(cb.height, 44) && (await close.getAttribute("href")) === `/friends/table/${TABLE}`,
       closeOk ? `${cb.width}x${cb.height} ${await close.getAttribute("href")}` : "no Close link",
     );
-    const lead = await setup.getByText(width.viewport.width < 768 ? "Lay the phone flat in the middle of the table." : "Lay the device flat in the middle of the table.").isVisible();
+    const lead = await setup.getByText(width.viewport.width < 768 ? "Lay the phone flat and drag each player to the side they sit on." : "Lay the device flat and drag each player to the side they sit on.").isVisible();
     report(L("the lead line is drawn, naming the phone or the device"), lead);
 
     const group = setup.getByRole("radiogroup", { name: "How the table sits" });
@@ -126,14 +126,14 @@ async function walk(browser, width) {
     const start = setup.getByRole("button", { name: "Start", exact: true });
     const pick = setup.getByRole("button", { name: "I’ll pick" });
     await pick.click();
-    // Turn order starts at the viewer's own seat, so their chip is the first, and it is the one pressed.
-    const chips = setup.locator("ul[aria-label] button");
-    const firstPressed = await chips.first().getAttribute("aria-pressed");
-    const pressedCount = await setup.locator('ul[aria-label] button[aria-pressed="true"]').count();
+    // Turn order starts at the viewer's own seat, so their face holds the first cell, and it is the one pressed.
+    const chips = setup.locator("[data-testid=seat-map] [data-slot]");
+    const firstPressed = await setup.locator("[data-testid=seat-map] [data-slot='0']").getAttribute("aria-pressed");
+    const pressedCount = await setup.locator('[data-testid=seat-map] [data-slot][aria-pressed="true"]').count();
     report(
       L("I'll pick starts on your own seat, and Start stays enabled"),
       firstPressed === "true" && pressedCount === 1 && (await start.isEnabled()),
-      (await chips.first().innerText()).replace(/\s+/g, " "),
+      `${await chips.count()} faces, ${await setup.locator("[data-testid=seat-map] [data-slot='0']").getAttribute("aria-label")}`,
     );
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tracker-setup-pick-${width.label}.png` });
     await setup.getByRole("button", { name: "Random" }).click();

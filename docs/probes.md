@@ -2866,6 +2866,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Browser Back returns to the table with its nav, and setup's ✕ does the same. On main the nav is visible on /play, so
   it fails at the second check. It writes nothing, but needs `INVITE_CODE_SECRET` on the dev server and the fixture
   from `scripts/seed-rule-zero-fixture.mts` on a scratch branch. `PROBE_SHOTS=<dir>` keeps a photograph of each width.
+- `pnpm probe:tracker-seat-map` presses setup's seat map (F02, F02b, F02c) at phone (390x844) and desktop (1300x820)
+  width, on a four-seat table (the fixture's S4). It checks the device outline (150x290 on a phone, 290x202 on a tablet)
+  and four 64px round faces, each labeled with where it sits; on a phone, F02's faces at 214, 46, 46, 214 and flush
+  left. It drags one face onto another and checks they swap (and that the dragged face is lifted), presses an arrow key
+  on a face and checks it swaps with its neighbor that way, keeps focus and announces the move. Under I'll pick it checks
+  the lead, then taps a face and checks it is pressed, ringed 3px and captioned "Goes first". Start must lay the panels
+  out in the map's order, with the picked face's panel active. On a phone it then picks one player on each side (F02b)
+  and checks the 150x170 outline in a 378 map (F02b's 362, plus a caption line under the bottom face), with faces at the top end and the bottom end. On main there is no seat
+  map, so it fails at the first check. It writes nothing; it needs the same dev server and scratch branch as
+  `probe:tracker-setup`, and hides the fixture's "seated you" notices. `SETUP_TABLE` picks another table,
+  `PROBE_SHOTS=<dir>` keeps photographs.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
