@@ -43,9 +43,26 @@ const SIZES = { phone: { width: 390, height: 844, touch: true }, desktop: { widt
 const sheet = (page) => page.getByRole("dialog", { name: "Search all cards" });
 const card = (page) => page.getByRole("dialog").filter({ has: page.getByRole("heading", { name: new RegExp(QUERY, "i") }) });
 
+async function takeBack(page) {
+  const press = (role, label) =>
+    page.evaluate(([r, l]) => {
+      const el = [...document.querySelectorAll(r)].find((e) => e.textContent?.trim() === l && !e.disabled);
+      el?.click();
+      return Boolean(el);
+    }, [role, label]);
+  const dialog = page.getByRole("dialog", { name: /^Revert/ });
+  if (!(await dialog.count()) && !(await press("button", "Undo"))) throw new Error("no Undo toast or Revert dialog to take the copy back with");
+  await dialog.waitFor({ timeout: 30_000 });
+  await page.waitForFunction(() => [...document.querySelectorAll("button")].some((e) => e.textContent?.trim() === "Revert" && !e.disabled), null, { timeout: 90_000 });
+  await press("button", "Revert");
+  await dialog.waitFor({ state: "detached", timeout: 30_000 });
+}
+
 async function run(browser, name, { width, height, touch }) {
   const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: touch, isMobile: touch, serviceWorkers: "block" });
   const page = await ctx.newPage();
+  let added = false;
+  let reverted = false;
   try {
     await signIn(page);
     await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded" });
@@ -67,6 +84,7 @@ async function run(browser, name, { width, height, touch }) {
     await page.waitForFunction(() => !document.body.textContent?.includes("Reading your copies"), null, { timeout: 30_000 });
     await edit.getByRole("button", { name: "More", exact: true }).first().click();
     await edit.getByRole("button", { name: "Save", exact: true }).click();
+    added = true;
 
     const undo = page.getByRole("button", { name: "Undo", exact: true }).locator("visible=true").first();
     await undo.waitFor({ timeout: 30_000 });
@@ -89,9 +107,13 @@ async function run(browser, name, { width, height, touch }) {
     await button.click({ timeout: 60_000 });
     const gone = await revert.waitFor({ state: "detached", timeout: 15_000 }).then(() => true, () => false);
     check(name, "pressing Revert reverts: the dialog closes (only on success)", gone, gone ? "closed" : "still open");
+    reverted = gone;
   } catch (error) {
     check(name, "walk completed", false, String(error?.message ?? error).split("\n").slice(0, 8).join(" / "));
   } finally {
+    // A run that failed after the copy was saved leaves it on the account: take it back. `el.click()` goes around `inert`, which is
+    // exactly what a failing run is stuck behind.
+    if (added && !reverted) await takeBack(page).catch((error) => console.log(`  cleanup failed: ${error?.message ?? error}`));
     await ctx.close();
   }
 }
