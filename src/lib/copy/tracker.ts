@@ -7,18 +7,22 @@ type Name = string | ThirdPartyName;
 
 export const trackerCopy = {
   setup: {
-    title: "Start the game",
+    title: "Set up the game",
+    close: "Close",
+    lead: "Lay the phone flat and drag each player to the side they sit on.",
+    // From md (768px), where the tracker plays on a tablet.
+    leadDevice: "Lay the device flat and drag each player to the side they sit on.",
     table: "Table",
+    tableAria: "How the table sits",
     life: "Starting life",
-    lifeLess: "Lower starting life",
-    lifeMore: "Raise starting life",
+    lifeLess: "Less starting life",
+    lifeMore: "More starting life",
     first: "Who goes first",
     random: "Random",
     pick: "I’ll pick",
-    pickHint: "Tap a seat",
+    pickHint: "Tap who goes first",
     goesFirst: "Goes first",
     start: "Start",
-    layoutAria: (label: string) => `${label} layout`,
   },
   panel: {
     aria: (name: Name): PersonParts => personText`${name}’s panel`,
@@ -218,6 +222,9 @@ export const trackerCopy = {
     waiting: (name: Name): PersonParts => personText`${name} hasn’t picked a deck yet. Start now and ${name} plays on a plain panel, or wait and their art comes with them.`,
     waitingYou: "You haven’t picked a deck yet. Start now and you play on a plain panel, or pick one first and your art comes with you.",
     waitingMany: (names: PersonParts): PersonParts => personText`${names} haven’t picked decks yet. Start now and they play on plain panels, or wait and their art comes with them.`,
+    // F01: under Start when nothing else needs saying.
+    startSub: "Tracks life and counters on this phone. Lay it in the middle of the table.",
+    startSubDevice: "Tracks life and counters on this device. Lay it in the middle of the table.",
     // S6: Start returns under the last game.
     again: "Same seats, layout and starting life as last time; change any of it at setup.",
     // S3 and S4: the game this device holds.

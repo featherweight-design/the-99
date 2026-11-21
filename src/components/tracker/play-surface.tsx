@@ -244,6 +244,7 @@ export function PlaySurface({
         seats={setupSeats}
         layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", setupSeats.length)}
         initial={rematch ?? undefined}
+        backHref={backHref}
         onStart={({ layout, life, first }) => {
           setRematch(null);
           const config: GameConfig = {
