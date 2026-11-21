@@ -8,13 +8,15 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { saveTableResultAction } from "../../app/friends/table/result-actions";
 import { trackerCopy } from "../../lib/copy/tracker";
-import { PersonName } from "../../lib/person-name";
+import { PersonName, type ThirdPartyName } from "../../lib/person-name";
 import { isOver, placements, replay, type Game, type GameConfig } from "../../lib/tracker/engine";
+import { landLife } from "../../lib/tracker/result";
 import { layoutById, layoutsFor, type Device } from "../../lib/tracker/layouts";
 import { rollFair, SIDES, type DieKind } from "./dice";
 import { DiceResult, DiceRoll, type Roll } from "./dice-roll";
 import { MonarchIcon, InitiativeIcon } from "./icons";
 import { Panel, type PlaySeat, type SeatPick } from "./panel";
+import { Result } from "./result";
 import { Setup } from "./setup";
 import { Sheet, type SheetView } from "./sheet";
 import { Spine } from "./spine";
@@ -36,6 +38,8 @@ export function PlaySurface({
   expiresAt,
   seats,
   backHref,
+  logHref,
+  podName,
 }: {
   tableId: string;
   /** The server's hash of who sat where, handed back with the result. */
@@ -44,9 +48,16 @@ export function PlaySurface({
   /** In turn order, starting with the viewer's own seat. */
   seats: readonly PlaySeat[];
   backHref: string;
+  /** The viewer's deck's Games tab for this table (`logGameHref`). */
+  logHref: string | null;
+  podName: string | ThirdPartyName;
 }) {
   const device = useDevice();
-  const { ready, game, start, commit, undo, discard } = useGame(tableId, expiresAt);
+  const { ready, game, start, commit, undo, discard, finish } = useGame(tableId, expiresAt);
+  /** Every panel's pending life change, so a change that ends the game lands the others with it (S5). */
+  const pendingFrom = useRef(new Map<number, () => number>());
+  /** A rematch opens setup on the finished game's table and life. */
+  const [rematch, setRematch] = useState<{ layout: string; life: number } | null>(null);
   const [menu, setMenu] = useState(false);
   const [sheet, setSheet] = useState<SheetView | null>(null);
   const [saved, setSaved] = useState<"saving" | "saved" | "failed" | null>(null);
@@ -65,6 +76,10 @@ export function PlaySurface({
   // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
   if (over && sheet) setSheet(null);
   if (over && pick) setPick(null);
+
+  useEffect(() => {
+    if (over) finish(Date.now());
+  }, [over, finish]);
 
   // The result is saved once per finished game, keyed on its length so an undo that reopens the game and a new finish saves again.
   useEffect(() => {
@@ -90,6 +105,7 @@ export function PlaySurface({
       <Setup
         seats={seats}
         layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", seats.length)}
+        initial={rematch ?? undefined}
         onStart={({ layout, life, first }) => {
           const config: GameConfig = {
             tableId,
@@ -97,6 +113,7 @@ export function PlaySurface({
             seats: seats.map((s) => ({ seat: s.seat, commanders: s.partnerArt ? 2 : 1 })),
             first,
             layout,
+            startedAt: Date.now(),
           };
           start({ config, log: [] } satisfies Game);
         }}
@@ -164,7 +181,10 @@ export function PlaySurface({
               onSheet={(focus) => setSheet({ seat: seat.seat, tab: focus ? "counters" : "damage", focus })}
               disabled={over}
               pick={seatPick(seat, i, s.out !== null)}
-              onLife={(delta) => commit({ t: "life", seat: seat.seat, delta })}
+              onLife={(delta) =>
+                commit(landLife(state, seat.seat, delta, () => [...pendingFrom.current].filter(([n]) => n !== seat.seat).map(([n, take]) => ({ seat: n, delta: take() }))))
+              }
+              pendingFrom={pendingFrom}
               onEndTurn={() => commit({ t: "endTurn" })}
               onUndo={undo}
             />
@@ -251,12 +271,22 @@ export function PlaySurface({
       ) : null}
 
       {over ? (
-        <div role="alertdialog" aria-label={copy.over.title} className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[color:color-mix(in_srgb,var(--bg)_82%,transparent)]" data-testid="tracker-over">
-          <h2 className="text-[22px] font-semibold text-[color:var(--fg)]">{copy.over.title}</h2>
-          <p className="text-[14px] text-[color:var(--fg-body)]">{saved === "saved" ? copy.over.saved : saved === "failed" ? copy.over.notSaved : ""}</p>
-          <button type="button" onClick={undo} className="min-h-[44px] px-6 text-[14px] text-[color:var(--fg)]">{copy.strip.undo}</button>
-          <Link href={backHref} className="min-h-[44px] rounded-full bg-[color:var(--accent)] px-6 py-3 text-[14px] font-medium text-[color:var(--bg)]">{copy.over.back}</Link>
-        </div>
+        <Result
+          state={state}
+          seats={seats}
+          podName={podName}
+          startedAt={game.config.startedAt}
+          endedAt={game.endedAt}
+          saved={saved}
+          logHref={logHref}
+          backHref={backHref}
+          tablet={device === "tablet"}
+          onUndo={undo}
+          onRematch={() => {
+            setRematch({ layout: game.config.layout, life: game.config.startingLife });
+            discard();
+          }}
+        />
       ) : null}
     </div>
   );

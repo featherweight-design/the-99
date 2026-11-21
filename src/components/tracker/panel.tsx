@@ -4,7 +4,7 @@
 // and End turn on the active seat, and the flipped Out face. The panel is laid out in its own upright frame and turned
 // to face its seat (`Cell.rot`), so every control lives where that player's hand is.
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import type { Cell } from "../../lib/tracker/layouts";
 import { COUNTER_KEYS, type CounterKey, type SeatState } from "../../lib/tracker/engine";
@@ -26,6 +26,8 @@ export type PlaySeat = {
   /** The commanders' card names (public card text), for the sheet's damage and tax rows. */
   commander: string;
   partner: string | null;
+  /** The deck's name, as the table draws it (branded on every seat but the viewer's own), for the result. */
+  deck: string | ThirdPartyName;
 };
 
 /** Hold a half this long and it repeats by ten; the delta commits once nothing has been pressed for the window. */
@@ -112,7 +114,18 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
     }
   }, [stop]);
 
-  return { pending, down, up, cancel: stop };
+  /** Hands over the pending change uncommitted, for a commit that ends the game to land it in the same entry. */
+  const take = useCallback(() => {
+    stop();
+    if (commitTimer.current) clearTimeout(commitTimer.current);
+    commitTimer.current = null;
+    const delta = total.current;
+    total.current = 0;
+    setPending(0);
+    return delta;
+  }, [stop]);
+
+  return { pending, down, up, cancel: stop, take };
 }
 
 export function Panel({
@@ -131,6 +144,7 @@ export function Panel({
   onLife,
   onEndTurn,
   onUndo,
+  pendingFrom,
 }: {
   cell: Cell;
   canvas: { w: number; h: number };
@@ -148,6 +162,8 @@ export function Panel({
   onLife: (delta: number) => void;
   onEndTurn: () => void;
   onUndo: () => void;
+  /** Where the surface reaches every panel's pending change (`take`), keyed by seat. */
+  pendingFrom?: RefObject<Map<number, () => number>>;
 }) {
   const out = state.out !== null;
   // A committed life change ticks the number and tints the panel (F04 motion). Keyed on the change, so a repeat re-runs it.
@@ -157,7 +173,13 @@ export function Panel({
     setSeenLife(state.life);
     setPulse({ k: (pulse?.k ?? 0) + 1, gain: state.life > seenLife });
   }
-  const { pending, down, up, cancel } = usePendingLife(onLife, disabled || out);
+  const { pending, down, up, cancel, take } = usePendingLife(onLife, disabled || out);
+  useEffect(() => {
+    const map = pendingFrom?.current;
+    if (!map) return;
+    map.set(seat.seat, take);
+    return () => void map.delete(seat.seat);
+  }, [pendingFrom, seat.seat, take]);
   const sideways = cell.rot === 90 || cell.rot === -90;
   /** A small panel (the phone's 5 and 6 seat sides) has no room for End turn beside a centred number, so the number steps aside. */
   const tight = Math.max(cell.w, cell.h) < 260 && Math.min(cell.w, cell.h) < 200;

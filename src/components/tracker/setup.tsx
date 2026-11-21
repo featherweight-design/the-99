@@ -30,13 +30,16 @@ export function Setup({
   seats,
   layouts,
   onStart,
+  initial,
 }: {
   seats: readonly PlaySeat[];
   layouts: readonly Layout[];
+  /** A rematch opens on last game's table and life. */
+  initial?: { layout: string; life: number };
   onStart: (opts: { layout: string; life: number; first: number }) => void;
 }) {
-  const [layout, setLayout] = useState(layouts[0].id);
-  const [life, setLife] = useState(DEFAULT_LIFE);
+  const [layout, setLayout] = useState(initial && layouts.some((l) => l.id === initial.layout) ? initial.layout : layouts[0].id);
+  const [life, setLife] = useState(initial?.life ?? DEFAULT_LIFE);
   const [mode, setMode] = useState<"random" | "pick">("random");
   const [picked, setPicked] = useState<number | null>(null);
   const clamp = (n: number) => Math.min(LIFE_MAX, Math.max(LIFE_MIN, n));

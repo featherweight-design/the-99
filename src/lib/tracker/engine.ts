@@ -23,6 +23,8 @@ export type GameConfig = {
   seats: readonly SeatConfig[]; // turn order: seating order, ascending seat number
   first: number; // seat number that goes first
   layout: string;
+  /** When Start was pressed (epoch ms), for the result's length. Absent on a game saved before it was kept. */
+  startedAt?: number;
 };
 
 type Leaf =
@@ -215,7 +217,8 @@ export function reduce(prev: GameState, action: Action): GameState {
   return s;
 }
 
-export type Game = { config: GameConfig; log: readonly Action[] };
+/** `endedAt` is when the result first showed (epoch ms); `commit` and `undo` drop it, so a reopened game is unstamped. */
+export type Game = { config: GameConfig; log: readonly Action[]; endedAt?: number };
 
 export const replay = (game: Game): GameState => game.log.reduce(reduce, startGame(game.config));
 
