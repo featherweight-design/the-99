@@ -19,10 +19,10 @@ import { REOPEN_AFTER_MS, scanLoading } from "./screen-state";
 
 const copy = collectionEditCopy.scan;
 
-/** How long a transient problem stays over the feed. */
 // Module scope, so a scanner reopened in the same page session does not send a kind again.
 const reportFallback = fallbackReporter(captureScanFallback);
 
+/** How long a transient problem stays over the feed. */
 export const NOTICE_MS = 3000;
 
 /**
