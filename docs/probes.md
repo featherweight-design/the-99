@@ -2711,8 +2711,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   recipient reads "No code was sent: too many emails to that address. Try again in N minutes." (N in 1..60), is not the
   resend countdown ("Send a new code in"), keeps the email step and the draft; a spent daily cap reads the capped line and
   not the failed toast; no sideways scroll; photographs into `contact-sheets/mail-refusals/`. Fails on main (the limited
-  refusal drew the countdown, the cap the failed toast). The signed-in invite toasts (limited, paced, capped) are pinned in
-  `friends-view-invites.test.tsx`. It WRITES, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports (staging,
+  refusal drew the countdown, the cap the failed toast). Its second half signs the Clerk dev fixture
+  (`alpha-test+clerk_test@the99.app`, code 424242; `PROBE_SIGNED_IN_EMAIL` overrides) in, gives it 5 invites and the About
+  gate's seen version for the run (both put back), and presses Send invitation on `/friends?invite=new` once per refusal: a
+  recipient over its hour (limited), the day's cap (capped), the account's own 30 `invite-email` hits (paced). Each toast
+  carries its line, no "We couldn't send that invitation" and no Try again button; photographs `{phone,desktop}-invite-*.png`.
+  Needs the dev Clerk keys. It WRITES, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports (staging,
   production and local-dev refused by id) and the server must run on the SAME database with `RESEND_API_KEY`,
   `INVITE_EMAIL_FROM`, a 64-hex `INVITE_CODE_SECRET`, `APP_ORIGIN` and the same `RESEND_DAILY_SEND_CAP=5` as the probe;
   no mail is sent (the refusals come first). Every rate row it writes is deleted in a finally.

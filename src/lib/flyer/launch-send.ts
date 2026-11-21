@@ -193,7 +193,7 @@ export async function sendLaunchBatch({ dryRun, limit }: { dryRun: boolean; limi
     else {
       await store.release(row.email);
       released++;
-      // The day's cap or this address's limit: the rest wait for the next batch.
+      // The day's cap (an address's own limit releases just that address): the rest wait for the next batch.
       if (result.reason === "capped" || result.reason === "unconfigured") {
         stoppedBy = "capped";
         break;
