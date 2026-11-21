@@ -140,6 +140,11 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:border-collision
 
+      # A button that swaps to a shorter label while pending shrinks under the pointer unless the label is a SteadyLabel.
+      - name: Steady pending labels
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:steady-labels
+
       # A constraint name Postgres would truncate is invisible to every other step here:
       # drizzle-kit compares its own snapshots, and the failure only appears when the
       # migration RUNS — on a real deployment, the Vercel production build.

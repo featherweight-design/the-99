@@ -14,6 +14,7 @@ import { ModalChrome } from "../decks/receipt-modal";
 import { Sheet } from "../ui/sheet";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { useMinWidth } from "../ui/use-min-width";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = ruleZeroCopy.close;
 
@@ -162,7 +163,7 @@ function Actions({ busy, wide, onKeep, onConfirm }: { busy: boolean; wide: boole
       }}
       className={`${size} ${held} cursor-pointer border-0 bg-[color:var(--danger)] font-sans font-semibold text-[#fff]`}
     >
-      {busy ? copy.closing : copy.action}
+      <SteadyLabel hold={[copy.closing, copy.action]}>{busy ? copy.closing : copy.action}</SteadyLabel>
     </button>
   );
   return wide ? [keep, danger] : [danger, keep];

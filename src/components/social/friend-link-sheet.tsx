@@ -18,6 +18,7 @@ import {
 import { CodeBoxes } from "../join/join-parts";
 import { Face } from "./face";
 import { SocialModal } from "./social-modal";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = friendLinkCopy;
 const d = socialCopy.dialog;
@@ -127,7 +128,7 @@ export function FriendLinkSheet({
           <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{c.reset.body}</p>
           <div className="mt-[8px] flex gap-[8px] max-md:flex-col">
             <button type="button" onClick={() => reset === "confirm" && void doReset()} aria-busy={reset === "busy" || undefined} className={`${BTN} h-[44px] border-0 bg-[color:var(--danger)] px-[16px] text-[14px] font-semibold text-[color:var(--fg)] md:h-[36px] md:text-[13px] ${reset === "busy" ? "opacity-60" : ""}`}>
-              {reset === "busy" ? c.reset.busy : c.reset.confirm}
+              <SteadyLabel hold={[c.reset.busy, c.reset.confirm]}>{reset === "busy" ? c.reset.busy : c.reset.confirm}</SteadyLabel>
             </button>
             <button type="button" onClick={() => reset === "confirm" && setReset("idle")} className={`${BTN} h-[44px] bg-transparent px-[16px] text-[14px] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] md:h-[36px] md:text-[13px]`}>
               {c.reset.keep}
@@ -296,7 +297,7 @@ function CodeSection({ entry, boxes, onType, onSend, onAgain }: {
           onChange={(e: ChangeEvent<HTMLInputElement>) => onType(codeChars(e.target.value))}
         />
         <button type="submit" disabled={!ready} aria-busy={busy || undefined} className={`${BTN} h-[48px] w-full px-[18px] text-[15px] font-semibold md:h-[44px] md:w-auto md:text-[13.5px] ${ready || busy ? "border-0 bg-[color:var(--accent)] text-[color:var(--bg)]" : "cursor-default bg-transparent text-[color:var(--fg-locked)] [border:1px_solid_var(--border)]"} ${busy ? "!bg-[color:var(--accent-strong)]" : ""}`}>
-          {busy ? c.code.sending : c.code.send}
+          <SteadyLabel hold={[c.code.sending, c.code.send]}>{busy ? c.code.sending : c.code.send}</SteadyLabel>
         </button>
       </form>
       {line ? <p id="friend-code-line" role="alert" className="m-0 mt-[8px] text-[12.5px] leading-[1.45] text-[color:var(--danger)] max-md:text-center">{line}</p> : null}

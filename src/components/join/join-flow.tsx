@@ -21,6 +21,7 @@ import { FORM, NewcomerColumn } from "./newcomer-column";
 import { CodeBoxes, ERR, LINKS, PRESS_QUIET, QUIET, QUIET_LINK, field, link, mmss, press, useTicking } from "./join-parts";
 import { PendingReporter } from "../shell/pending-reporter";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
+import { SteadyLabel } from "../ui/steady-label";
 
 export type JoinStart =
   | { kind: "email"; sender: InviteSender }
@@ -257,7 +258,7 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
               />
             </label>
             {line && <p id="join-line" role="alert" className={ERR}>{line}</p>}
-            <button type="submit" disabled={busy || waiting} className={press(busy ? "busy" : "ready")}>{busy ? copy.sendingCode : waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.sendCode}</button>
+            <button type="submit" disabled={busy || waiting} className={press(busy ? "busy" : "ready")}><SteadyLabel hold={[copy.sendingCode, copy.sendCode, copy.resendIn("0:00")]}>{busy ? copy.sendingCode : waiting ? copy.resendIn(mmss(waitUntil - now)) : copy.sendCode}</SteadyLabel></button>
           </form>
         }
       />
@@ -285,7 +286,7 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
               type="submit" disabled={busy || digits.length < CODE_LENGTH} data-quiet={expired && digits.length === 0 ? "true" : undefined}
               className={expired && digits.length === 0 ? PRESS_QUIET : press()}
             >
-              {busy ? copy.confirming : copy.confirm}
+              <SteadyLabel hold={[copy.confirming, copy.confirm]}>{busy ? copy.confirming : copy.confirm}</SteadyLabel>
             </button>
             <div className={LINKS}>
               <button type="button" className={link(waiting)} disabled={busy || waiting} onClick={() => sendCode()}>

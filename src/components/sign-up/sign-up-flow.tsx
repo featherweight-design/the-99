@@ -32,6 +32,7 @@ import { Field, GOOGLE, GoogleMark, HINT, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBA
 import { STRENGTH_ID, StrengthPanel } from "../sign-in/strength-panel";
 import { usePasswordStrength } from "../sign-in/use-password-strength";
 import { passwordLength } from "../../lib/auth/password";
+import { SteadyLabel } from "../ui/steady-label";
 
 /** Q1's card: the 99's own face, as a flyer's is, typed Invitation. */
 const FACE: CardFace = {
@@ -303,7 +304,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       <div className={FORM}>
         {errLine}
         <button type="button" disabled={locked} className={press(locked ? "busy" : "ready")} onClick={() => void land()}>
-          {locked ? copy.checking : joinCopy.retry}
+          <SteadyLabel hold={[copy.checking, joinCopy.retry]}>{locked ? copy.checking : joinCopy.retry}</SteadyLabel>
         </button>
       </div>
     );
@@ -341,7 +342,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
           </>
         )}
         <button type="submit" disabled={locked || !ready} className={press(making ? "busy" : "ready")}>
-          {making ? copy.making : copy.make}
+          <SteadyLabel hold={[copy.making, copy.make]}>{making ? copy.making : copy.make}</SteadyLabel>
         </button>
         {/* J3: a failure under the press, which stays and retries. */}
         {!passwordRefused && errLine}
@@ -350,7 +351,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
             <div className={OR}>{signInCopy.or}</div>
             <button type="button" disabled={locked} className={GOOGLE} onClick={() => void withGoogle()}>
               <GoogleMark />
-              {google ? copy.checking : signInCopy.google}
+              <SteadyLabel hold={[copy.checking, signInCopy.google]}>{google ? copy.checking : signInCopy.google}</SteadyLabel>
             </button>
             {googleLine && <p role="alert" className={SIGN_ERR}>{googleLine}</p>}
             {/* R2 draws no hint under the busy press. */}

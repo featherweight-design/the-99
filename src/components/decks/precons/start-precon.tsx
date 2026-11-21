@@ -22,6 +22,7 @@ import { CommanderThumb } from "../../ui/commander-thumb";
 import { TextField } from "../../ui/text-field";
 import { OptInCheckbox } from "../../ui/opt-in-checkbox";
 import { useDockClearance } from "../../shell/dock-clearance";
+import { SteadyLabel } from "../../ui/steady-label";
 
 const copy = preconsCopy.start;
 
@@ -351,7 +352,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
               disabled={!valid || pending}
               className="h-[46px] flex-1 rounded-[8px] px-[14px] text-[13px] md:h-[40px] md:flex-none"
             >
-              {pending ? copy.pending : copy.submit}
+              <SteadyLabel hold={[copy.pending, copy.submit]}>{pending ? copy.pending : copy.submit}</SteadyLabel>
             </PrimaryButton>
           </div>
         </form>
