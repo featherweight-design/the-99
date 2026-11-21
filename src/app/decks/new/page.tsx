@@ -4,6 +4,7 @@ import { requireUserId } from "../../../lib/auth";
 import { loadPreFilledCommander } from "../../../lib/decks/pre-filled-commander";
 import { listOwnedLegalCommanders } from "../../../lib/decks/read";
 import { parseSelectParam } from "../../../lib/decks/selection-param";
+import { commanderPageHref, loadSelectedPicks } from "../../../lib/decks/selected-picks";
 import { CreatePreFilled } from "../../../components/decks/create-pre-filled";
 import { CreatePicker } from "../../../components/decks/create-picker";
 import { hasListableRun } from "../../../lib/intake/history-read";
@@ -67,6 +68,13 @@ export default async function NewDeckPage({
         // The Bracket row reads what the deck reaches (bracket reach PR 3b) from 3 up.
         readReach: answers.bracket !== null && answers.bracket >= 3,
       } : undefined;
+      // The picks the commander page carried, drawn with their art and whether they are owned (guided build, G9). A failed
+      // read draws none: the create still places them (`createDeck` re-checks each id).
+      const selected = parseSelectParam(select);
+      const [picks, commanderHref] = await Promise.all([
+        loadSelectedPicks(userId, selected).catch(() => []),
+        selected.length > 0 ? commanderPageHref(userId, commander.oracleId) : null,
+      ]);
       return (
         <CreatePreFilled
           oracleId={commander.oracleId}
@@ -77,7 +85,9 @@ export default async function NewDeckPage({
           // Shape-checked in the loader, legality-checked again in `createDeck`: this
           // page has no commander context until that read resolves, and the action has
           // to re-check whatever it is handed anyway.
-          selectedOracleIds={parseSelectParam(select)}
+          selectedOracleIds={selected}
+          picks={picks}
+          commanderHref={commanderHref}
           handOff={handOff}
         />
       );

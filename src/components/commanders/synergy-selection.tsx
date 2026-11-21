@@ -27,6 +27,7 @@ import Link from "next/link";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { MAX_SELECTION } from "../../lib/decks/selection-param";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
+import { guidedBuildCopy } from "../../lib/copy/guided-build";
 import { SynergyPanel } from "./synergy-panel";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -85,7 +86,7 @@ export function SynergySelectionProvider({ children }: { children: ReactNode }) 
 // ─── SynergySelection — promise line + clear control ─────────────────────────
 //
 // Pure over its props; no provider dependency. Returns null at zero selection
-// so the locked zero-selection copy (stickyPromise, seedNote) stands alone.
+// so the commander page says nothing about picks until one is made.
 
 type SelectedCardRef = { oracleId: string; owned: boolean };
 
@@ -99,50 +100,11 @@ export function SynergySelection({ selectedCards, onClear, width }: SynergySelec
   const picked = selectedCards.length;
   if (picked === 0) return null;
 
-  // `createDeck` places the selection first and fills what is left under the 99,
-  // so the baseline is a ceiling on the fill rather than a fixed part of it: at
-  // 40 picks the fill places 59, not 68. Reading it as fixed both overstated the
-  // filled figure and made the clamp line — "your picks fill the 99 on their
-  // own" — fire at 31 picks, where the fill is still placing most of the deck.
-  //
-  // Single-commander throughout: this page is one commander's, and a partner is
-  // chosen later in the create picker, against a deck that does not exist yet.
-  // The fill reaches the whole body now, so what it fills is simply what the picks left.
-  // `fillBaselineTotal` existed to say "68 of 99" and equalled `deckBodySize` by the time it
-  // was deleted — a helper whose whole content was a second name for another function.
-  const filled = Math.max(0, deckBodySize(false) - picked);
-  const total = picked + filled;
+  // The page no longer promises how the deck is built (guided build, call 4): the new-deck screen offers the choice, and
+  // every option keeps the picks, so the line says only where they go.
   const unownedCount = selectedCards.filter((c) => !c.owned).length;
-  const full = filled === 0;
-
-  const totalStr = String(total);
   const promiseFontSize = width === "phone" ? 12 : 10.5;
-
-  // Build a React node for the promise line that highlights {total} in --fg.
-  // The promiseFull and clamp cases do not contain the total figure, so they
-  // render as plain strings. The non-full cases embed the total literal in the
-  // string — split on it and inject a highlighted span.
-  let promiseNode: React.ReactNode;
-  if (full) {
-    promiseNode = synergyCopy.select.promiseFull(String(picked));
-  } else {
-    const raw =
-      width === "phone"
-        ? synergyCopy.select.promiseMobile(String(filled), String(picked), totalStr)
-        : synergyCopy.select.promise(String(filled), String(picked), totalStr);
-    const idx = raw.indexOf(totalStr);
-    if (idx === -1) {
-      promiseNode = raw;
-    } else {
-      promiseNode = (
-        <>
-          {raw.slice(0, idx)}
-          <span style={{ color: "var(--fg)" }}>{totalStr}</span>
-          {raw.slice(idx + totalStr.length)}
-        </>
-      );
-    }
-  }
+  const promiseNode = guidedBuildCopy.commander.picks(picked);
 
   return (
     <div
@@ -216,7 +178,7 @@ export function SelectableBuildButton({
   const buildHref = `/decks?${params}`;
   return (
     <Link href={buildHref} className={className}>
-      Build this deck →
+      {guidedBuildCopy.commander.press}
       <PendingReporter href={buildHref} />
     </Link>
   );

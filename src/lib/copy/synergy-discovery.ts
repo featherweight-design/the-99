@@ -5,8 +5,6 @@
 // stays straight; the one expressive moment is marked.
 //
 // Existing strings this block does NOT touch, and must not duplicate:
-//   recommendationsCopy.build.stickyPromise   'We'll fill {n} of the 99'
-//   recommendationsCopy.build.seedNote        — both LOCKED by brief ruling 6
 //   recommendationsCopy.auto.*                the tag, the sweep, the receipt
 //   recommendationsCopy.fill.provenance*      the arrival lines
 //   recommendationsCopy.shopping.*            the to-buy list
@@ -145,20 +143,9 @@ export const synergyCopy = {
     addAria: (name: string) => `Add ${name} to the deck`,
     remove: 'Remove from the deck',
     removeAria: (name: string) => `Remove ${name} from the deck`,
-    // The promise line. NOT an edit to recommendationsCopy.build.stickyPromise
-    // or .seedNote — those two are ruling 6's locked zero-selection copy and
-    // stay exactly as they are. This is the branch taken when selection is
-    // non-empty, which is why there are two keys and not two edits.
-    promise: (filled: string, picked: string, total: string) =>
-      `We’ll fill ${filled}, plus your ${picked}: ${total} of the 99.`,
-    promiseMobile: (filled: string, picked: string, total: string) =>
-      `We’ll fill ${filled}, plus your ${picked}: ${total} of the 99`,
-    // Appended to either promise when some of the selection is unowned. Ruling
+    // Appended to the picks line (`guidedBuildCopy.commander.picks`) when some of the selection is unowned. Ruling
     // 5 requires buying to be explicit; this is where it is said.
     promiseUnowned: (n: string) => `${n} you don’t own yet.`,
-    // The clamp, and the only refusal on this surface.
-    promiseFull: (picked: string) =>
-      `Your ${picked} fill the 99 on their own. We’ll leave the rest to you.`,
     clear: (n: string) => `Clear selection · ${n}`,
     clearAria: (n: string) => `Clear all ${n} selected cards`,
     // One message per settle, debounced. Twelve fast taps is one announcement.

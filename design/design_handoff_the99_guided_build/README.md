@@ -15,7 +15,7 @@ Every frame is the SHIPPED screen (CreatePreFilled, CommanderDetail, the Upgrade
 - Help me choose stays the way to find a commander; its answers carry into the build visibly.
 
 ## Design's calls
-1. **Where the choice starts:** inline on the new-deck screen (every route lands there: For you, Discover, commander page, Help me choose, Decks › New deck). One radio group, `How we build it`, under Deck name: Free build (pre-marked), Guided build (2 credits, never pre-marked), Just the commander (free). Press: `Create deck →` / `Next · Strategy`.
+1. **Where the choice starts:** inline on the new-deck screen (For you, Discover, the commander page and Help me choose land there; Decks › New deck keeps its commander picker, which leads to the same screen once a commander is chosen). One radio group, `How we build it`, under Deck name: Free build (pre-marked), Guided build (2 credits, never pre-marked), Just the commander (free). Press: `Create deck →` / `Next · Strategy`.
 2. **What guided asks:** Strategy › Bracket › Cards in Upgrade's sheet/720 dialog. Strategy: up to 3 commander themes your cards back (`MIN_BACKING`, `MAX_STRATEGIES`). Bracket: 2/3/4, none pre-picked; combos follow the bracket (no separate question). Cards: Only cards I own / Buy some (each under $12) / Buy within $N (from Help me choose). Cards to avoid: not asked (open question). The free build sees none of it, but still takes Help me choose's answers as shipped.
 3. **Start empty:** yes, `Just the commander`.
 4. **Commander page:** Role Coverage and EDHREC Synergy stay, with the + picks (board P-Picks). It stops promising a build. Phone bar drops READY TO BUILD and the promise, keeps the picks line, one button `Start a deck →`. Desktop: `Start a deck →`, seed note removed.

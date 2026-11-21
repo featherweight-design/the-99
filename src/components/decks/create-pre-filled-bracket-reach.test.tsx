@@ -101,7 +101,7 @@ describe("the hand-off's Bracket row, read", () => {
     expect(screen.queryByTestId("bracket-choice-waiting")).toBeNull();
     expect(createButton().hasAttribute("disabled")).toBe(false);
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 2, bracketBuys: false });
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 2, bracketBuys: false }, "free");
   });
 
   it("Hit submits the target with the buy, and the Budget row names what it pays for first", async () => {
@@ -110,7 +110,7 @@ describe("the hand-off's Bracket row, read", () => {
     fireEvent.click(screen.getByTestId("bracket-choice-hit"));
     expect(rowText("Budget")).toBe("Budget$150Rhystic Study takes $32 of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.");
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 3, bracketBuys: true });
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 3, bracketBuys: true }, "free");
   });
 
   it("keeps the comma after a card name on the name's line (phone wrap)", async () => {
@@ -227,7 +227,7 @@ describe("the hand-off's Bracket row, read", () => {
     expect(rowText("Bracket")).toBe("Bracket3 · UpgradedThe fill keeps every card it chooses inside bracket 3’s limits.");
     expect(createButton().hasAttribute("disabled")).toBe(false);
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, handOff().create);
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, handOff().create, "free");
   });
 
   it("reads nothing without the flag: today's line, no call", async () => {
@@ -268,7 +268,7 @@ describe("the hand-off's Bracket row, read", () => {
     expect(createButton().hasAttribute("disabled")).toBe(true);
     fireEvent.click(screen.getByTestId("bracket-choice-mine"));
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...next.create, bracket: 2, bracketBuys: false });
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...next.create, bracket: 2, bracketBuys: false }, "free");
     expect(readReach).toHaveBeenLastCalledWith(COMMANDER, next.create, []);
   });
 });

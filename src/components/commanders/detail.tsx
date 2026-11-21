@@ -21,7 +21,6 @@ import { CARD_ART_RING } from "../ui/commander-thumb";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { CoverageSection } from "./coverage-section";
 import { retryCoverageFigures } from "../../app/commanders/[slug]/coverage-action";
-import { recommendationsCopy } from "../../lib/copy/recommendations";
 import {
   SynergySelectionProvider,
   SelectableSynergyPanel,
@@ -542,16 +541,7 @@ export function CommanderDetail({
           padding: "12px 16px 24px",
         }}
       >
-        <div className="flex flex-col flex-1">
-          <span
-            className="font-mono"
-            style={{ fontSize: 10, color: "var(--fg-faint)" }}
-          >
-            {recommendationsCopy.build.stickyLabel}
-          </span>
-          <span style={{ fontSize: 12, color: "var(--fg-body)" }}>
-            {recommendationsCopy.build.stickyPromise}
-          </span>
+        <div className="flex flex-col flex-1 min-w-0">
           <SelectableSynergySelection cards={synergyCards} width="phone" />
         </div>
         <SelectableBuildButton
@@ -655,20 +645,7 @@ export function CommanderDetail({
             className={`font-sans font-semibold rounded-lg transition-colors cursor-pointer disabled:cursor-default ${PRIMARY} text-[15px] p-[14px_0] text-center block w-full`}
           />
 
-          {/* Seed note */}
-          <p
-            className="m-0 font-mono text-center"
-            style={{
-              fontSize: 10.5,
-              color: "var(--fg-locked)",
-              textAlign: "center",
-              lineHeight: 1.5,
-            }}
-          >
-            {recommendationsCopy.build.seedNote}
-          </p>
-
-          {/* Promise line + clear, below seed note — desktop width */}
+          {/* Where the picks go + clear, below the button — desktop width */}
           <SelectableSynergySelection cards={synergyCards} width="desktop" />
 
           {/* Not hidden: the quiet Hide line, under the build note. */}

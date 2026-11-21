@@ -1,0 +1,48 @@
+{
+  "feature": "Guided build PR B, Start a deck (design_handoff_the99_guided_build, calls 1, 3, 4, G1, G8, G9): the new-deck screen's How we build it choice (Free build pre-marked, Just the commander) with and without picks carried in ?select=, and the commander page's Start a deck button and picks line.",
+  "clearAbout": true,
+  "note": "Read-only: nothing is pressed. Needs the local-dev fixture account (The Wise Mothman is scored for it). The three picks are Sol Ring and Arcane Signet (owned) and Mana Crypt (not owned).",
+  "out": "contact-sheets/guided-build-start-a-deck",
+  "rows": [
+    {
+      "id": "new-deck-no-picks",
+      "label": "/decks/new with a commander: How we build it, Free build marked",
+      "view": "src/components/decks/build-choice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new?commander=7656f93b-336f-49cb-b8fe-c2b5c014258f",
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "new-deck-picks",
+      "label": "/decks/new with three picks: Your picks block, each option keeps them",
+      "view": "src/components/decks/build-choice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new?commander=7656f93b-336f-49cb-b8fe-c2b5c014258f&select=6ad8011d-3471-4369-9d68-b264cc027487,0bc7f093-bef0-4f1a-852c-4b75ebf54838,2c63e4e1-89d2-4bc6-a232-94e75c4b1c8a",
+          "wait": "[data-testid=build-picks]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "commander-page",
+      "label": "/commanders then the first commander's page: Start a deck, no build promise",
+      "view": "src/components/commanders/detail.tsx",
+      "steps": [
+        {
+          "goto": "/commanders",
+          "wait": "a[href^='/commanders/']",
+          "settle": 1500
+        },
+        {
+          "click": "a[href^='/commanders/']:not([href*='choose']):not([href*='discover']):not([href*='hidden'])",
+          "settle": 4000
+        }
+      ]
+    }
+  ]
+}

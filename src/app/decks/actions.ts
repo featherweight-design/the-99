@@ -55,6 +55,7 @@ import { buildFillPlan } from "../../lib/decks/fill-plan";
 import { gatherFillInputs, planFromPool, readBulkPlans, sleeveableIds, topOffAllowList } from "../../lib/decks/bulk-fill-plans";
 import { answerColumnsFor, retryAnswersOf, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
+import { isDeckBuildKind, type DeckBuildKind } from "../../lib/decks/build-kind";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
@@ -99,8 +100,12 @@ export async function createDeck(
   partnerOracleId: string | null = null,
   /** What Help me choose was asked (F1), when the deck is started from it. */
   answers: CreateAnswers | null = null,
+  /** How the deck is built: the free fill (today's), or just the commander and the picks, with the 99 left empty. */
+  build: DeckBuildKind = "free",
 ): Promise<void> {
   const started = Date.now();
+  // A wire argument whatever its type says: anything but the two kinds is a crafted request.
+  if (!isDeckBuildKind(build)) throw new Error("unknown build kind");
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off (its switch is retired, always on).
@@ -220,7 +225,8 @@ export async function createDeck(
     answerColumns = asked === null ? {} : answerColumnsFor(asked, card);
 
     const bodySize = deckBodySize(partnerOracleId !== null);
-    const plan = await buildFillPlan(
+    // Just the commander (`empty`): the picks are placed, the fill never runs, and the deck is filled as far as it was asked.
+    const plan = build === "empty" ? null : await buildFillPlan(
       userId,
       [
         {
@@ -270,9 +276,9 @@ export async function createDeck(
     // retry or a reader of the deck sees what was built.
     const filledColumns: AnswerColumns = asked === null ? answerColumns : {
       ...answerColumns,
-      answerBracketBuys: asked.bracketBuys && plan.bracketBought === true,
-      ...(asked.bracketBuys && plan.raisedBudgetCents !== undefined ? { answerBudgetCents: plan.raisedBudgetCents } : {}),
-      answerBudgetRaised: asked.bracketBuys && plan.budgetRaised === true,
+      answerBracketBuys: asked.bracketBuys && plan?.bracketBought === true,
+      ...(asked.bracketBuys && plan?.raisedBudgetCents !== undefined ? { answerBudgetCents: plan.raisedBudgetCents } : {}),
+      answerBudgetRaised: asked.bracketBuys && plan?.budgetRaised === true,
     };
     deckId = await db.transaction(async (tx) => {
       const [deck] = await tx.insert(decks)
@@ -286,7 +292,7 @@ export async function createDeck(
       // Forests).
       const rows = [
         ...selected.map((oracleId) => ({ deckId: deck.id, oracleId, quantity: 1, auto: true })),
-        ...plan.rows.map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
+        ...(plan?.rows ?? []).map((r) => ({ deckId: deck.id, oracleId: r.oracleId, quantity: r.quantity, auto: true })),
       ];
       const capped = capToBody(rows, bodySize);
       cardsPlanned = capped.reduce((n, r) => n + r.quantity, 0);
@@ -308,7 +314,7 @@ export async function createDeck(
         // "clear the suggestions, keep the foundation", through `provenance-line.tsx` and
         // `topOffCopy.ledger.undo(n)` exactly as they stand.
         const residualIds = new Set(
-          plan.rows.filter(isResidual).map((r) => r.oracleId),
+          (plan?.rows ?? []).filter(isResidual).map((r) => r.oracleId),
         );
         const foundation = capped.filter((r) => !residualIds.has(r.oracleId));
         const residual = capped.filter((r) => residualIds.has(r.oracleId));
@@ -352,7 +358,7 @@ export async function createDeck(
   // How it was built (straight from a commander, or Help me choose with any cards or only owned ones), the deck row's
   // `filled`, and the summed quantity of card rows the fill planned (0 when the fill fell back): never the deck's name or a card.
   logEvent("deck.built", {
-    mode: asked === null ? "direct" : asked.pool === "own" ? "choose_own" : "choose_any",
+    mode: build === "empty" ? "empty" : asked === null ? "direct" : asked.pool === "own" ? "choose_own" : "choose_any",
     filled: filledRow,
     cards_planned: cardsPlanned,
     ms: Date.now() - started,
