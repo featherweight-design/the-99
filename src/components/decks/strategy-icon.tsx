@@ -56,11 +56,10 @@ export const STRATEGY_GLYPHS: Record<Glyph, ReactNode> = {
   vehicles: (<><path d="M3 15.5V9h11l4 3h3v3.5" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></>),
   bigCreatures: (<><path d="M8 20.5c-2 0-3.2-2-2.2-4 1.8-3.4 10.6-3.4 12.4 0 1 2-.2 4-2.2 4z" /><circle cx="6.5" cy="10" r="1.7" /><circle cx="12" cy="7" r="1.7" /><circle cx="17.5" cy="10" r="1.7" /></>),
 
-  // No glyph drawn yet (Design review table): each shares the closest drawn one. Proliferate adds counters, a Saga is an
-  // Enchantment, and a Planeswalker has no near neighbour, so it draws the dashed fallback.
-  planeswalkers: <circle cx="12" cy="12" r="8" strokeDasharray="2.5 3" />,
-  sagas: <path d="M19 14.5A7.5 7.5 0 1 1 9.5 5 6 6 0 0 0 19 14.5z" />,
-  proliferate: (<><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><path d="M7 12h4M9 10v4M15 9v6" /></>),
+  // Design's addendum (R2, 2026-11-20): a figure with three rays, an open book, three plus signs.
+  planeswalkers: (<><circle cx="12" cy="11" r="3" /><path d="M5.5 21a6.5 6.5 0 0 1 13 0" /><path d="M12 2.5v2.5M6.5 4.5l1.6 1.9M17.5 4.5l-1.6 1.9" /></>),
+  sagas: (<><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5z" /><path d="M12 6.5v13" /></>),
+  proliferate: (<><path d="M12 3v6M9 6h6" /><path d="M6.5 13v6M3.5 16h6" /><path d="M17.5 13v6M14.5 16h6" /></>),
 
   fallback: <circle cx="12" cy="12" r="8" strokeDasharray="2.5 3" />,
 };
