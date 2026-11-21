@@ -18,4 +18,6 @@ export const deckFlipCopy = {
 /** The deck page's loading skeleton (handoff `design_handoff_the99_deck_flip_skeleton`): one line for a screen reader. */
 export const deckOpenLoadingCopy = {
   status: "Opening your deck",
+  /** With the deck's name in hand (a press that carried it). */
+  opening: (name: string) => `Opening ${name}`,
 } as const;

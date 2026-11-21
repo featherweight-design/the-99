@@ -13,6 +13,7 @@ import type { DeckMove } from "./deck-card-overflow";
 import type { StatusPill } from "../../lib/decks/status";
 import type { HeaderNotice } from "./notice-tag";
 import type { FlipDeck } from "../../lib/decks/flip";
+import type { OpenFacts } from "../../lib/decks/open-entry";
 import { DeckFlipStrip, useDeckFlip } from "./deck-flip-strip";
 
 interface BuilderSpineProps {
@@ -47,7 +48,7 @@ interface BuilderSpineProps {
   /** Hidden from friends' row and mark, passed to both widths. See `SpineBandProps`. */
   friendHide?: SpineBandProps["friendHide"];
   /** The player's decks and the builder's live view as a query, for the flip strip. Absent: no strip. */
-  flip?: { decks: FlipDeck[]; search: string };
+  flip?: { decks: FlipDeck[]; search: string; /** Each deck's header facts by id, for the skeleton a flip draws (`open-entry`); kept apart so `FlipDeck` stays the sort's fields. */ facts?: Record<string, OpenFacts> };
 }
 
 export function BuilderSpine({
@@ -65,7 +66,7 @@ export function BuilderSpine({
   flip,
 }: BuilderSpineProps) {
   // One state for both widths: one listener, one prefetch. A list of one deck has nothing to flip to.
-  const flipState = useDeckFlip(flip && flip.decks.length > 1 ? flip.decks : undefined, deck.id, flip?.search ?? "");
+  const flipState = useDeckFlip(flip && flip.decks.length > 1 ? flip.decks : undefined, deck.id, flip?.search ?? "", flip?.facts);
   const flipStrip = flip && flip.decks.length > 1 ? flipState : null;
   // One drawing of both spines, with the deck menu's Move when the page read the shelves.
   const spines = (move?: DeckMove) => (

@@ -22,6 +22,7 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import type { DeckListItem } from "../../lib/decks/read";
+import { openFactsOf } from "../../lib/decks/open-entry";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { byTouched, elapsed, touchedBy } from "../../lib/decks/touched";
 import { statusBarStyle } from "../../lib/decks/status-style";
@@ -116,6 +117,7 @@ function ResumeRow(
   return (
     <IntentPrefetchLink
       href={`/decks/${deck.id}`}
+      opens={openFactsOf(deck)}
       // The deck touched last is prefetched on sight (speed plan (b)): it is the one most likely
       // opened next, and the others wait for intent.
       eager={eager}

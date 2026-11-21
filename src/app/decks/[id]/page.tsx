@@ -1,5 +1,6 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
+import { openFactsOf } from "../../../lib/decks/open-entry";
 import { ZoneProvider } from "../../../components/zone-context";
 import { resolveZone } from "../../../lib/zone/server";
 import { perfRoute } from "../../../lib/perf/timing";
@@ -652,6 +653,7 @@ export default async function DeckBuilderPage({
       deck={{ ...detail, cards, commander, partner }}
       shelf={shelf}
       flipDecks={allDecks.map((d) => ({ id: d.id, name: d.name, createdAt: d.createdAt.getTime(), lastPlayedAt: d.lastPlayedAt?.getTime() ?? null, sortPosition: d.sortPosition ?? null }))}
+      flipFacts={Object.fromEntries(allDecks.map((d) => [d.id, openFactsOf(d)]))}
       friendHide={friendHide}
       suggestions={pricedSuggestions}
       newestAsOf={priced?.newestAsOf ?? null}

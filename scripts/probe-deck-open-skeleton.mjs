@@ -52,7 +52,7 @@ const SIZES = { phone: { width: 390, height: 844, touch: true }, desktop: { widt
 // Installed before the press: stamps when the skeleton first draws, whether it is the strip-bearing one, and when the deck's
 // own strip (data-flip-strip) lands, so a run reports both times and a flash (skeleton shown, then gone within a few frames).
 const WATCH = () => {
-  window.__open = { path0: location.pathname, t0: performance.now(), skeletonAt: null, skeletonHasLink: false, skeletonGoneAt: null, landedAt: null, crown: false };
+  window.__open = { path0: location.pathname, t0: performance.now(), skeletonAt: null, skeletonHasLink: false, skeletonGoneAt: null, landedAt: null, crown: false, text: "", status: "" };
   const tick = () => {
     const o = window.__open;
     const sk = document.querySelector("[data-loading-screen]");
@@ -60,6 +60,8 @@ const WATCH = () => {
       o.skeletonAt = performance.now() - o.t0;
       o.skeletonHasLink = Boolean(sk.querySelector('a[href="/decks"]')) && /Your deck/.test(sk.textContent ?? "");
       o.crown = /Shuffling up/.test(sk.textContent ?? "");
+      o.text = sk.textContent ?? "";
+      o.status = sk.querySelector('[role="status"]')?.textContent ?? "";
     }
     if (!sk && o.skeletonAt !== null && o.skeletonGoneAt === null) o.skeletonGoneAt = performance.now() - o.t0;
     if (location.pathname !== o.path0 && !sk && document.querySelector("[data-flip-strip]") && o.landedAt === null) o.landedAt = performance.now() - o.t0;
@@ -69,11 +71,16 @@ const WATCH = () => {
 };
 
 async function timedFlip(page, name, cdp, profile, trigger) {
+  // The skeleton's facts are read the moment it first draws: its name, its place (`k of n`) and the count.
   await cdp.send("Network.emulateNetworkConditions", profile);
   await page.evaluate(`(${WATCH.toString()})()`);
   await trigger();
-  await page.waitForFunction(() => window.__open?.landedAt !== null, null, { timeout: 90_000 });
+  await page.waitForFunction(() => window.__open?.landedAt !== null, null, { timeout: 120_000 }).catch(async (e) => {
+    console.log(`  !!   stuck at ${page.url()}: ${JSON.stringify(await page.evaluate(() => ({ o: window.__open, body: document.body.innerText.slice(0, 200), strips: document.querySelectorAll("[data-flip-strip]").length })))}`);
+    throw e;
+  });
   const o = await page.evaluate(() => window.__open);
+  if (!o) throw new Error(`no __open after press; url ${page.url()}`);
   await cdp.send("Network.emulateNetworkConditions", FAST);
   return o;
 }
@@ -83,6 +90,7 @@ async function run(browser, name, { width, height, touch }) {
   const page = await ctx.newPage();
   page.setDefaultNavigationTimeout(180_000);
   const cdp = await ctx.newCDPSession(page);
+  page.on("pageerror", (e) => console.log(`  !!   [${name}] page error: ${String(e.message).slice(0, 300)}`));
   try {
     await signIn(page);
     await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
@@ -96,9 +104,32 @@ async function run(browser, name, { width, height, touch }) {
     // Warm every route the timed runs touch (a dev server compiles on first visit).
     for (const h of hrefs.slice(0, 3)) { await page.goto(`${BASE}${h}`, { waitUntil: "domcontentloaded" }); await strip().waitFor({ state: "visible", timeout: 90_000 }); }
 
+    // A: a deck-tile press draws the deck's own facts (its name in the status line, `built / 99`, its place `k of n`) before it lands.
+    const withFacts = (o) => /^Opening (?!your deck$)\S/.test(o.status) && /\d+ \/ 9[89]/.test(o.text) && /\d+ of \d+/.test(o.text);
+    await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
+    await tiles.nth(0).waitFor({ timeout: 30_000 });
+    // Hydrated before the throttle starts: a press on the server-drawn list is a plain page load, not the app's own navigation.
+    await page.waitForLoadState("networkidle", { timeout: 60_000 }).catch(() => {});
+    // A dev server compiles the deck route on its first press, which on this throttle outlasts the wait: press once unthrottled first.
+    await tiles.nth(0).click();
+    await page.waitForURL(/\/decks\/[0-9a-f-]{36}/);
+    await strip().waitFor({ state: "visible", timeout: 120_000 });
+    await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
+    await tiles.nth(0).waitFor({ timeout: 30_000 });
+    await page.waitForLoadState("networkidle", { timeout: 60_000 }).catch(() => {});
+    // Not waited to land: a dev server's first byte for a deck on this throttle is tens of seconds (a production build prefetches the
+    // route's loading boundary from the list, which dev does not), so this reads the skeleton the moment it draws.
+    await cdp.send("Network.emulateNetworkConditions", SLOW);
+    await page.evaluate(`(${WATCH.toString()})()`);
+    await tiles.nth(0).click();
+    await page.waitForFunction(() => window.__open?.skeletonAt !== null, null, { timeout: 120_000 }).catch(() => {});
+    const tileOpen = (await page.evaluate(() => window.__open)) ?? { status: "", text: "" };
+    await cdp.send("Network.emulateNetworkConditions", FAST);
+    check(name, "slow 4G: a tile press draws the deck's facts and its place before the page lands", withFacts(tileOpen), JSON.stringify({ at: Math.round(tileOpen.skeletonAt ?? -1), status: tileOpen.status, text: tileOpen.text.slice(0, 90) }));
+    if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/tile-skeleton-${name}.png` });
     for (const [label, profile] of [["slow 4G", SLOW], ["unthrottled", FAST]]) {
       const times = { skeleton: [], landed: [] };
-      let sawFacts = 0, flashes = 0, crowns = 0;
+      let sawFacts = 0, flashes = 0, crowns = 0, factsMissing = 0;
       for (let i = 0; i < RUNS; i++) {
         // FLIP: open a deck from the list (press its tile), then press Next on its strip.
         await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
@@ -112,11 +143,13 @@ async function run(browser, name, { width, height, touch }) {
         times.landed.push(o.landedAt);
         if (o.skeletonHasLink) sawFacts++;
         if (o.crown) crowns++;
+        if (profile === SLOW && !withFacts(o)) factsMissing++;
         if (o.skeletonAt !== null && o.skeletonGoneAt !== null && o.skeletonGoneAt - o.skeletonAt < 50) flashes++;
       }
       const m = (xs) => (xs.length ? `${Math.round(median(xs))}ms` : "never");
       console.log(`  ..   [${name}] flip, ${label}: skeleton ${m(times.skeleton)} (${times.skeleton.length}/${RUNS} runs drew one), landed ${m(times.landed)}`);
       if (profile === SLOW) {
+        check(name, "slow 4G: a flip draws the destination's facts and its `k of n`", factsMissing === 0, `missing ${factsMissing}/${RUNS}`);
         check(name, "slow 4G: a flip draws the deck-shaped skeleton (the strip's All decks link and the tab words), not the crown", sawFacts === RUNS && crowns === 0, `shaped ${sawFacts}/${RUNS}, crown ${crowns}/${RUNS}`);
       } else {
         // A prefetched flip lands without a skeleton frame, or with one held long enough to read: never a one-frame flash.

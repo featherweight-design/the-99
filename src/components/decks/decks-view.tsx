@@ -80,6 +80,7 @@ import { planReorder } from "../../lib/decks/order-plan";
 import { ArrangeDecks } from "./arrange-decks";
 import { folderCopy } from "../../lib/copy/folders";
 import { writeFlipTrail } from "../../lib/decks/flip-trail";
+import { openFactsOf, writeOpenEntry } from "../../lib/decks/open-entry";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import {
   ALL_DECKS,
@@ -1443,7 +1444,12 @@ export function DecksView({
               onClickCapture={(e) => {
                 // The tile's own link (`/decks/<id>`), not its Shopping or Update links.
                 const id = e.target instanceof Element ? /^\/decks\/([0-9a-f-]{36})$/.exec(e.target.closest("a")?.getAttribute("href") ?? "")?.[1] : undefined;
-                if (id) writeFlipTrail(shown, shelfWord, window.location.pathname + window.location.search, id);
+                if (id) {
+                  writeFlipTrail(shown, shelfWord, window.location.pathname + window.location.search, id);
+                  // The skeleton the deck page draws while it loads: this tile's facts and its place in the list on screen.
+                  const at = shown.findIndex((d) => d.id === id);
+                  if (at >= 0) writeOpenEntry(openFactsOf(shown[at]!), { k: at + 1, n: shown.length, caption: shelfWord });
+                }
               }}
               className="m-0 flex min-h-0 min-w-0 flex-auto list-none flex-col gap-[12px] px-[16px] pt-[14px] pb-[14px] sm:grid sm:grid-cols-3 sm:content-start sm:gap-[14px] sm:p-[18px_22px]"
             >
