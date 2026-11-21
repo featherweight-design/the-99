@@ -8,6 +8,7 @@ import { useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import type { Layout } from "../../lib/tracker/layouts";
 import { PersonName } from "../../lib/person-name";
+import { PendingReporter } from "../shell/pending-reporter";
 import type { PlaySeat } from "./panel";
 
 const copy = trackerCopy.setup;
@@ -20,7 +21,9 @@ const LIFE_MAX = 999;
  * is a 32x56 portrait; a tablet the same 1.5px outline turned landscape, 56x40. Drawn from the layout's own cells, so a
  * mini always matches the table it starts.
  */
-function Mini({ layout }: { layout: Layout }) {
+function Mini({ layout, on }: { layout: Layout; on: boolean }) {
+  // An ink, not text: the drawing reads --accent like a ring does.
+  const ink = on ? "var(--accent)" : "var(--fg-faint)";
   const W = layout.device === "phone" ? 32 : 56;
   const H = layout.device === "phone" ? 56 : 40;
   const pad = 3;
@@ -28,9 +31,9 @@ function Mini({ layout }: { layout: Layout }) {
   const sy = (H - pad * 2) / layout.canvas.h;
   return (
     <svg aria-hidden="true" width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="block">
-      <rect x={0.75} y={0.75} width={W - 1.5} height={H - 1.5} rx={6} fill="none" stroke="currentColor" strokeWidth={1.5} />
+      <rect x={0.75} y={0.75} width={W - 1.5} height={H - 1.5} rx={6} fill="none" stroke={ink} strokeWidth={1.5} />
       {layout.cells.map((c, i) => (
-        <rect key={i} x={pad + c.x * sx + 0.5} y={pad + c.y * sy + 0.5} width={Math.max(1, c.w * sx - 1)} height={Math.max(1, c.h * sy - 1)} rx={2} fill="currentColor" />
+        <rect key={i} x={pad + c.x * sx + 0.5} y={pad + c.y * sy + 0.5} width={Math.max(1, c.w * sx - 1)} height={Math.max(1, c.h * sy - 1)} rx={2} fill={ink} />
       ))}
     </svg>
   );
@@ -76,6 +79,7 @@ export function Setup({
           className="-mr-[10px] ml-auto flex h-[44px] w-[44px] items-center justify-center rounded-[10px] text-[22px] text-[color:var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-[color:var(--accent)]"
         >
           {"✕"}
+          <PendingReporter href={backHref} />
         </Link>
       </div>
       <p className="mt-[4px] mb-[16px] text-[14px] leading-[1.45] text-[color:var(--fg-body)]">
@@ -98,11 +102,11 @@ export function Setup({
                 onClick={() => setLayout(l.id)}
                 className={`flex h-[72px] w-[64px] cursor-pointer items-center justify-center rounded-[10px] border-0 p-0 ${
                   on
-                    ? "bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] text-[color:var(--accent)] shadow-[inset_0_0_0_2px_var(--accent)]"
-                    : "bg-transparent text-[color:var(--fg-faint)] shadow-[inset_0_0_0_1px_var(--border-strong)]"
+                    ? "bg-[color-mix(in_oklab,var(--accent)_10%,transparent)] shadow-[inset_0_0_0_2px_var(--accent)]"
+                    : "bg-transparent shadow-[inset_0_0_0_1px_var(--border-strong)]"
                 }`}
               >
-                <Mini layout={l} />
+                <Mini layout={l} on={on} />
               </button>
             );
           })}
