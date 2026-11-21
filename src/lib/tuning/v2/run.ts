@@ -108,8 +108,10 @@ export async function startTuningV2(args: {
   deckId: string; userId: string; env: NodeJS.ProcessEnv; runId?: string; wire: V2Wire;
   /** The request as `resolveBoxText` resolved it, trimmed; "" for none. */
   request: string;
+  /** The reader's zone, read in the request (the run finishes in `after()`): note dates are drawn in it. */
+  zone?: string | null;
 }): Promise<V2Start> {
-  const { deckId, userId, env, wire, request } = args;
+  const { deckId, userId, env, wire, request, zone } = args;
   const inputs = await tuningInputs(deckId, userId, env);
   if (!inputs) return { kind: "refused", message: deckTuningCopy.run.refused };
   if (inputs.allLocked) return { kind: "refused", message: lockedCardsCopy.tuning.allLocked(inputs.allLocked) };
@@ -150,7 +152,7 @@ export async function startTuningV2(args: {
   if (started.kind === "in_flight") return { kind: "refused", message: deckTuningCopy.announce.started };
   if (started.kind === "allLocked") return { kind: "refused", message: deckTuningCopy.run.refused };
   const run: RunHandle = { runId: started.runId, callId: started.callId };
-  return { kind: "started", runId: run.runId, work: (revalidate) => workV2({ run, inputs, wire, request, startReport, env, revalidate }) };
+  return { kind: "started", runId: run.runId, work: (revalidate) => workV2({ run, inputs, wire, request, startReport, env, revalidate, zone }) };
 }
 
 type Inputs = NonNullable<Awaited<ReturnType<typeof tuningInputs>>>;
@@ -163,9 +165,9 @@ export function ownedOffIndexRoom(firstTier: number): number {
 
 async function workV2(args: {
   run: RunHandle; inputs: Inputs; wire: V2Wire; request: string; startReport: ReturnType<typeof v2StartReport>;
-  env: NodeJS.ProcessEnv; revalidate: () => void;
+  env: NodeJS.ProcessEnv; revalidate: () => void; zone?: string | null;
 }): Promise<void> {
-  const { run, inputs, wire, request, env } = args;
+  const { run, inputs, wire, request, env, zone } = args;
   const { head, games, intent, declared, locked, limits, focus } = inputs;
   const { deckId, userId } = head;
   // One entry per streamed call that billed, settled together under the one reservation, whatever ends the run.
@@ -209,7 +211,7 @@ async function workV2(args: {
     // Spec §4: no owned-only fallback. The limits stay as the player set them, whatever fits, the focus candidates'
     // owned and free-copy rule included (`buyFallback: false`).
     const pack = buildEvidencePack({
-      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits,
+      profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), limits, zone,
       ownedCandidates: firstTier,
       ownedCandidatesComplete: poolComplete,
       ownedOffIndex: offIndexRead?.cards,

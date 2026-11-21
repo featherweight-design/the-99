@@ -9,6 +9,7 @@ import { db } from "../../db";
 import { deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
+import { resolveZone } from "../../lib/zone/server";
 import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
 import { creditsCopy } from "../../lib/copy/credits";
@@ -199,13 +200,15 @@ export async function runTuning(
 ): Promise<DeckMutationResult | SameRequest | CostsMore> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
+  // The reader's zone, read here: the run settles in `after()`, where a cookie is not readable, and note dates are drawn in it.
+  const zone = await resolveZone();
   if (!isUuid(deckId)) return { ok: false, message: deckTuningCopy.run.refused };
   // Suggested changes v2 (plan 2026-10-27, P1 and P5): reached only by a press that carries a count, and only while the
   // reader's `SUGGESTED_CHANGES_V2_ENABLED` is on. Off, a replayed count is refused here, before anything is reserved:
   // it never falls through to v10 either. Every other press is v10's, below, exactly as it was.
   if (typeof opts === "object" && opts !== null && "requestedCount" in opts) {
     if (!suggestedChangesV2Enabled(env)) return { ok: false, message: deckTuningCopy.run.refused };
-    return runTuningV2(deckId, userId, env, opts);
+    return runTuningV2(deckId, userId, env, opts, zone);
   }
   const anyway = typeof opts === "object" && opts !== null && opts.anyway === true;
   // The panel names its run so it can wait on that run and no other (`await-run.ts`). Anything but
@@ -312,7 +315,7 @@ export async function runTuning(
       const shortlist = focusPlan ? focusPlan.shortlist : ownedCandidates;
       const ownedNone = focusPlan ? focusPlan.ownedNone : ownedCandidates !== undefined && ownedCandidates.length === 0;
       const pack = buildEvidencePack({
-        profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), notes,
+        profile, play: buildPlayGroup(games), intent, owned, overview, universal, locked: new Set(locked), notes, zone,
         limits: ownedNone ? { ...limits, ownedOnly: false } : limits,
         ownedCandidates: ownedNone ? undefined : shortlist,
         ownedNone,
@@ -411,7 +414,7 @@ export type SameRequest = { ok: false; confirm: "same_request"; runId: string; a
  *  single source holds them, while a one-credit run would start. Data only; `message` is the ordinary refusal. */
 export type CostsMore = { ok: false; message: string; costs: number };
 
-async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEnv, opts: V2RunOpts): Promise<DeckMutationResult | SameRequest | CostsMore> {
+async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEnv, opts: V2RunOpts, zone: string | null): Promise<DeckMutationResult | SameRequest | CostsMore> {
   const wire = parseV2Wire(opts as Record<string, unknown>);
   if (!wire) return { ok: false, message: deckTuningCopy.run.refused };
   const requested = opts.runId;
@@ -426,7 +429,7 @@ async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEn
     if (!resolved.ok) return { ok: false, message: deckTuningCopy.run.refused };
     request = resolved.text.trim();
   }
-  const started = await startTuningV2({ deckId, userId, env, runId: requested, wire, request });
+  const started = await startTuningV2({ deckId, userId, env, runId: requested, wire, request, zone });
   if (started.kind === "refused") return started.costs ? { ok: false, message: started.message, costs: started.costs } : { ok: false, message: started.message };
   if (started.kind === "confirm") return { ok: false, confirm: "same_request", runId: started.runId, at: started.at, refunded: started.refunded, units: started.units };
   after(() => started.work(() => revalidateDeck(deckId)));

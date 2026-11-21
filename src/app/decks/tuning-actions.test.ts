@@ -39,6 +39,8 @@ const calls = vi.hoisted(() => ({ stateOpts: undefined as { runId?: string | nul
   v2Enabled: true }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+// The reader's zone is read in the request (the run settles in after(), where no cookie is readable) and handed on.
+vi.mock("../../lib/zone/server", () => ({ resolveZone: async () => "America/Denver" }));
 // Suggested changes has no switch: its own retired 2026-11-01, and so did the Analysis tab's it mounts on. Only v2 has one.
 vi.mock("../../lib/tuning/flag", () => ({ suggestedChangesV2Enabled: () => calls.v2Enabled }));
 // The catalog read behind a tag: the real module would reach the (stubbed) database. The stand-in knows only the
@@ -292,6 +294,13 @@ describe("runTuning's model call (v2)", () => {
     await runTuning(DECK, { anyway: true }).catch(() => undefined);
     expect(calls.contextRead).toBe(1);
     expect(calls.packInput).toMatchObject({ overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] });
+  });
+
+  it("hands the pack the reader's zone, read in the request, so note dates are drawn in it", async () => {
+    calls.startKind = "started";
+    calls.reachModel = true;
+    await runTuning(DECK, { anyway: true }).catch(() => undefined);
+    expect(calls.packInput).toMatchObject({ zone: "America/Denver" });
   });
 
   // "Additional notes" (H35, PR 4b): never saved, so the request itself carries it — trimmed,
@@ -1069,7 +1078,7 @@ describe("runTuning's v2 branch (plan 2026-10-27, P1 and PR 3)", () => {
     const result = await press({ requestedCount: 7, request: "  more card draw ", bracket: { choice: "down", target: 2 }, runId: "22222222-2222-4222-8222-222222222222" });
     expect(result).toEqual({ ok: true });
     expect(v2.starts).toEqual([expect.objectContaining({
-      deckId: DECK, userId: "user_1", env: ENV, runId: "22222222-2222-4222-8222-222222222222", request: "more card draw",
+      deckId: DECK, userId: "user_1", env: ENV, runId: "22222222-2222-4222-8222-222222222222", request: "more card draw", zone: "America/Denver",
       wire: { requestedCount: 7, request: "  more card draw ", bracket: { choice: "down", target: 2 }, confirmed: false },
     })]);
     expect(v2.worked).toBe(1);

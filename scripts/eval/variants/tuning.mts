@@ -92,7 +92,7 @@ function citeMenu(pack: EvidencePack): string {
       if (a.worked > 0) lines.push(`- games: "${axisLabel(a.key)} worked in ${a.worked} of ${n} games"`);
     }
     for (const g of games) {
-      if (g.note !== null) lines.push(`- note: "${noteDate(g.playedAt, pack.year)}", and quote it in the rationale as "${oneLine(g.note)}"`);
+      if (g.note !== null) lines.push(`- note: "${noteDate(g.playedAt, pack.year, pack.zone)}", and quote it in the rationale as "${oneLine(g.note)}"`);
     }
   }
   for (const t of pack.targets.roles) lines.push(`- mix: "${t.role} ${t.have} of ${t.target}"`);
