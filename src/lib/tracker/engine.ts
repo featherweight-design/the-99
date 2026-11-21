@@ -5,6 +5,8 @@
  * `batch` entry commits several changes at once, so several players going out in one commit go out together.
  */
 
+import type { TableSnapshot } from "./seat";
+
 export const MAX_SEATS = 6;
 export const COMMANDER_DAMAGE_LETHAL = 21;
 export const POISON_LETHAL = 10;
@@ -25,6 +27,8 @@ export type GameConfig = {
   layout: string;
   /** When Start was pressed (epoch ms), for the result's length. Absent on a game saved before it was kept. */
   startedAt?: number;
+  /** The table as it was at Start (`seat.ts`). Absent only on a game saved before it was kept, which is not resumed. */
+  snapshot?: TableSnapshot;
 };
 
 type Leaf =
