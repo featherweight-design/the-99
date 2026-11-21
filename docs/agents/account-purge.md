@@ -49,6 +49,10 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   sweep. The coverage test keeps `account_tombstones.clerk_id` with that reason, and `probe:purge` proves a late
   write erased by the sweep and the raw id retired after the day.
 
+  **`welcome_email_claims` is kept on purpose.** It holds a keyed hash of the canonical sign-up address and a time, with
+  no account column, so the purge cannot reach it and the coverage test does not list it. It is what stops a deleted
+  account signing up again on the same mailbox for a second welcome lot (`payments.md`). The privacy page says so.
+
   **Stripe first, database second** (payments PR R, scope §6.3). `purgeAccount` step 0, before the transaction, is
   `deleteStripeCustomerFor` (`src/lib/payments/delete-customer.ts`): no `stripe_customers` row means no Stripe call and
   no key needed; a row means the Customer is retrieved, checked to carry `metadata.app = the-99` and this account's
