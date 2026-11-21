@@ -113,6 +113,43 @@ describe("reseatTable and the seat notice", () => {
     expect(m.kicked).toEqual([]);
     expect(f.deletes.map((d) => d.table)).toEqual([ruleZeroSeats, ruleZeroResultSeats, ruleZeroSeen]);
   });
+
+  // The setter holds D_OLD and stays with stay; the last answer is the setter's own-deck check.
+  const D_OLD = "44444444-4444-4444-8444-444444444444";
+  const D_NEW = "55555555-5555-4555-8555-555555555555";
+  const repickSelects = (deckRows: unknown[]) => {
+    const s: unknown[][] = reseatSelects([["setter", P_SETTER], ["stay", P_STAY]]);
+    s[4] = [
+      { userId: "setter", deckId: D_OLD, changedAt: CHANGED, noticeSeenAt: SEEN_SETTER },
+      { userId: "stay", deckId: null, changedAt: CHANGED, noticeSeenAt: SEEN_STAY },
+    ];
+    return [...s, deckRows];
+  };
+  const setterRow = (f: ReturnType<typeof fakeTx>) => f.inserts.find((w) => w.table === ruleZeroSeats)!.values!.find((v) => v.userId === "setter")!;
+
+  it("re-picks a staying seat's deck: the new deck, a new change time, the notice kept, no push", async () => {
+    const f = fakeTx(repickSelects([{ id: D_NEW, userId: "setter" }]));
+    expect(await reseatTable("setter", TABLE, [{ member: P_SETTER, deck: D_NEW }, { member: P_STAY, deck: null }])).toEqual({ kind: "reseated" });
+    const row = setterRow(f);
+    expect(row.deckId).toBe(D_NEW);
+    expect(row.changedAt).toEqual(new Date(1000));
+    expect(row.noticeSeenAt).toBe(SEEN_SETTER);
+    expect(f.outbox).toEqual([]);
+  });
+
+  it("keeps a staying seat untouched when the ask names the deck it holds, without re-checking it", async () => {
+    const f = fakeTx(repickSelects([]));
+    expect(await reseatTable("setter", TABLE, [{ member: P_SETTER, deck: D_OLD }, { member: P_STAY, deck: null }])).toEqual({ kind: "reseated" });
+    const row = setterRow(f);
+    expect(row.deckId).toBe(D_OLD);
+    expect(row.changedAt).toBe(CHANGED);
+  });
+
+  it("refuses a re-pick of a deck the player cannot sit with, and writes no seat", async () => {
+    const f = fakeTx(repickSelects([]));
+    expect(await reseatTable("setter", TABLE, [{ member: P_SETTER, deck: D_NEW }, { member: P_STAY, deck: null }])).toEqual({ kind: "refused", reason: "deck" });
+    expect(f.inserts.some((w) => w.table === ruleZeroSeats)).toBe(false);
+  });
 });
 
 describe("setTable and the seat notice", () => {

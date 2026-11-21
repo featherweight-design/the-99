@@ -251,4 +251,20 @@ describe("Seats: the setter reopens setup with the seats kept", () => {
       { member: "p-colin", deck: null },
     ]);
   });
+
+  it("drops a re-pick when its player is taken off and put back", async () => {
+    const onSave = vi.fn(async (_asks: unknown) => ({ ok: true as const, tableId: "t" }));
+    const colinSat: SetupData = { ...KEPT, seated: [...KEPT.seated!, { publicId: "p-colin", deck: { name: named("Zimone Combo"), commanderName: "Zimone", artCropUri: null } }] };
+    render(<SetupSheet setup={colinSat} onClose={() => {}} onSave={onSave} onDone={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: c.next }));
+    fireEvent.click(screen.getByText("Zimone Combo").closest("button")!);
+    fireEvent.click(screen.getByText("Zimone Combo").closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: c.back }));
+    fireEvent.click(tile(/^Colin/));
+    fireEvent.click(tile(/^Colin/));
+    fireEvent.click(screen.getByRole("button", { name: c.next }));
+    fireEvent.click(screen.getByRole("button", { name: c.set }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][0]).toContainEqual({ member: "p-colin", deck: null });
+  });
 });
