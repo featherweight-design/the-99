@@ -4,10 +4,12 @@
 // on one screen, with Start pinned at its foot.
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
+import { rollForFirst, type FirstRoll } from "../../lib/tracker/first-roll";
 import type { Layout } from "../../lib/tracker/layouts";
 import { PendingReporter } from "../shell/pending-reporter";
+import { rollFair, warmDice } from "./dice";
 import type { PlaySeat } from "./panel";
 import { SeatMap } from "./seat-map";
 
@@ -60,8 +62,11 @@ export function Setup({
   initial?: { layout: string; life: number };
   /** The ✕: back to the table this game is for. */
   backHref: string;
-  /** `order` is the seat numbers by cell: who sits where, which is also the turn order. */
-  onStart: (opts: { layout: string; life: number; first: number; order: number[] }) => void;
+  /**
+   * `order` is the seat numbers by cell: who sits where, which is also the turn order. Under Random, `rolls` holds the
+   * d20 rounds that chose `first`, for the board to throw.
+   */
+  onStart: (opts: { layout: string; life: number; first: number; order: number[]; rolls: FirstRoll["rounds"] | null }) => void;
 }) {
   const [layout, setLayout] = useState(initial && layouts.some((l) => l.id === initial.layout) ? initial.layout : layouts[0].id);
   const [life, setLife] = useState(initial?.life ?? DEFAULT_LIFE);
@@ -73,6 +78,15 @@ export function Setup({
   const order = moved && moved.length === seats.length && seats.every((s) => moved.includes(s.seat)) ? moved : seats.map((s) => s.seat);
   const layoutNow = layouts.find((l) => l.id === layout) ?? layouts[0];
   const clamp = (n: number) => Math.min(LIFE_MAX, Math.max(LIFE_MIN, n));
+  // Random throws the d20s as the game starts, so the dice library starts loading while Random is chosen.
+  useEffect(() => {
+    if (mode === "random") warmDice();
+  }, [mode]);
+  const begin = () => {
+    if (mode === "pick") return onStart({ layout, life, order, first: picked, rolls: null });
+    const { first, rounds } = rollForFirst(order, () => rollFair(20));
+    onStart({ layout, life, order, first, rolls: rounds });
+  };
 
   return (
     <main className="mx-auto flex w-full max-w-[420px] flex-1 flex-col px-[16px] pt-[8px]" data-testid="tracker-setup">
@@ -146,7 +160,7 @@ export function Setup({
       <div className="sticky bottom-0 mt-auto bg-[color:var(--bg)] pt-[12px] pb-[22px]">
         <button
           type="button"
-          onClick={() => onStart({ layout, life, order, first: mode === "pick" ? picked : seats[Math.floor(Math.random() * seats.length)].seat })}
+          onClick={begin}
           className="flex h-[52px] w-full cursor-pointer items-center justify-center rounded-[10px] border-0 bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]"
         >
           {copy.start}

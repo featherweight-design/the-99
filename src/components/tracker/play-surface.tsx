@@ -21,6 +21,8 @@ import { landLife } from "../../lib/tracker/result";
 import { layoutById, layoutsFor, type Device } from "../../lib/tracker/layouts";
 import { rollFair, SIDES, type DieKind } from "./dice";
 import { DiceResult, DiceRoll, type Roll } from "./dice-roll";
+import { FirstRoll } from "./first-roll";
+import type { FirstRoll as FirstRolls } from "../../lib/tracker/first-roll";
 import { MonarchIcon, InitiativeIcon } from "./icons";
 import type { PlaySeat } from "../../lib/tracker/seat";
 import { Panel, type SeatPick } from "./panel";
@@ -82,6 +84,8 @@ export function PlaySurface({
   const [pick, setPick] = useState<"monarch" | "initiative" | null>(null);
   const [fly, setFly] = useState<{ kind: "monarch" | "initiative"; k: number; from: [number, number]; to: [number, number] } | null>(null);
   const [roll, setRoll] = useState<Roll | null>(null);
+  // Random's d20 rounds, on screen over the game that already started on their winner.
+  const [firstRoll, setFirstRoll] = useState<FirstRolls | null>(null);
   const savedFor = useRef<string | null>(null);
   const saveSeq = useRef(0);
   /** Saves and Undos run one at a time, in order, so an Undo's delete never lands before the save it takes back (clarification 3). */
@@ -245,8 +249,9 @@ export function PlaySurface({
         layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", setupSeats.length)}
         initial={rematch ?? undefined}
         backHref={backHref}
-        onStart={({ layout, life, first, order }) => {
+        onStart={({ layout, life, first, order, rolls }) => {
           setRematch(null);
+          setFirstRoll(rolls ? { rounds: rolls, first } : null);
           // The seat map's order is the turn order and the cells' order, so the config and the snapshot both follow it.
           const bySeatNo = new Map(setupSeats.map((s) => [s.seat, s]));
           const seated = order.map((n) => bySeatNo.get(n)!);
@@ -360,6 +365,8 @@ export function PlaySurface({
           onUndo={undo}
           onMenu={() => setMenu((m) => !m)}
         />
+
+        {firstRoll ? <FirstRoll rolls={firstRoll} layout={layout} seats={seatsInPlay} onDone={() => setFirstRoll(null)} /> : null}
 
         {fly ? (
           <span

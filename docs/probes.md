@@ -2877,6 +2877,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   map, so it fails at the first check. It writes nothing; it needs the same dev server and scratch branch as
   `probe:tracker-setup`, and hides the fixture's "seated you" notices. `SETUP_TABLE` picks another table,
   `PROBE_SHOTS=<dir>` keeps photographs.
+- `pnpm probe:tracker-first-roll` presses Start under Random (T3) at phone (390x844) and desktop (1300x820) width, on
+  the fixture's four-seat table S4. It checks one d20 per seat, each 1 to 20, centered on its own panel and turned the
+  way that panel faces; the highest roll's ring reads "Goes first", every other ring dims, the winner's panel is the
+  active one and the live region names who goes first. A tap on the veil clears the dice and the game plays on from the
+  winner. At 1300 it also measures F18's tablet 2+2 board: four 575-wide panels, columns at 10 and 595 of the 1180
+  canvas. A tie rerolls among the tied seats only; `src/lib/tracker/first-roll.test.ts` pins that, since the probe cannot
+  choose the numbers. On main Start throws no dice, so it fails at the second check. It writes nothing, but needs
+  `INVITE_CODE_SECRET` on the dev server and the fixture from `scripts/seed-rule-zero-fixture.mts` on a scratch branch.
+  `PROBE_SHOTS=<dir>` keeps photographs.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
