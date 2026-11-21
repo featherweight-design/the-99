@@ -154,23 +154,35 @@ const CLOCK_SKEW = 120_000;
 
 /** S6: the finished game this device holds, best place first. */
 export function LastGame({ tableId, kept, loggedAt }: { tableId: string; kept: Kept; loggedAt: Date | null }) {
-  const { state, players, game } = kept;
+  const { state, players, game, expiresAt } = kept;
   const router = useRouter();
   const line = useMemo(() => endingLine(game, players), [game, players]);
   const roster = game.config.snapshot?.roster ?? null;
   // U5: the Result's Undo, for a mistake spotted after it closed. Whether anyone seated has logged the game is the
   // server's (U3, clarification 6), read when the card opens and whenever the page comes back into view; until the first
-  // read lands the row waits, as the Result's waits for its save. Pressing it opens /play, which runs the Undo there.
+  // read settles the row waits, as the Result's waits for its save. A failed read offers Undo anyway: the server refuses
+  // it as `logged` if a log exists. Only the latest read applies, so a slow earlier answer cannot revive Undo on a game
+  // a later read found logged. A game past its 6 am is gone from the device by the time /play reads it, so the row goes
+  // with it. Pressing it opens /play, which runs the Undo there.
   const [anyLogged, setAnyLogged] = useState<GameLogged | null | undefined>(undefined);
+  const [expired, setExpired] = useState(false);
   const [leaving, setLeaving] = useState(false);
   useEffect(() => {
     if (!roster) return;
     let live = true;
-    const read = () =>
+    let latest = 0;
+    const read = () => {
+      const n = ++latest;
+      const settle = (next: (was: GameLogged | null | undefined) => GameLogged | null | undefined) => {
+        if (!live || n !== latest) return;
+        setExpired(Date.now() >= expiresAt);
+        setAnyLogged(next);
+      };
       gameLoggedAction(tableId, roster).then(
-        (l) => (live ? setAnyLogged(l) : undefined),
-        () => (live ? setAnyLogged((was) => (was === undefined ? null : was)) : undefined),
+        (l) => settle(() => l),
+        () => settle((was) => (was === undefined ? null : was)),
       );
+    };
     read();
     const onShow = () => (document.visibilityState === "visible" ? read() : undefined);
     document.addEventListener("visibilitychange", onShow);
@@ -178,7 +190,7 @@ export function LastGame({ tableId, kept, loggedAt }: { tableId: string; kept: K
       live = false;
       document.removeEventListener("visibilitychange", onShow);
     };
-  }, [tableId, roster]);
+  }, [tableId, roster, expiresAt]);
   const place = new Map(placements(state).map((p) => [p.seat, p.place]));
   const ranked = [...players].sort((a, b) => (place.get(a.seat) ?? 99) - (place.get(b.seat) ?? 99));
   const winners = ranked.filter((p) => place.get(p.seat) === 1);
@@ -216,7 +228,7 @@ export function LastGame({ tableId, kept, loggedAt }: { tableId: string; kept: K
       </div>
       {anyLogged ? (
         <Note icon="check" text={loggedNoteText(anyLogged)} testId="last-logged-note" />
-      ) : line && roster ? (
+      ) : line && roster && !expired ? (
         <UndoRow
           line={line}
           busy={anyLogged === undefined || leaving}

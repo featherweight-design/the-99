@@ -41,6 +41,7 @@ const start = () => screen.queryByRole("link", { name: copy.start });
 
 afterEach(() => {
   cleanup();
+  vi.clearAllMocks();
   window.localStorage.clear();
 });
 
@@ -122,6 +123,17 @@ describe("the game this device holds", () => {
     expect(card.querySelector('[data-testid="last-logged-note"]')?.textContent).toContain("logged this game at");
     // The viewer has not logged it, so the card still says so.
     expect(card.textContent).toContain(copy.notLogged);
+  });
+
+  it("drops the row once the kept game is past its 6 am (U5)", async () => {
+    window.localStorage.setItem(KEY, JSON.stringify({ v: 1, game: finished, expiresAt: Date.now() + 50 }));
+    await draw({ ...TABLES.T1, loggedAt: null });
+    expect(screen.getByRole("region", { name: copy.lastAria }).querySelector('[data-testid="result-undo"]')).not.toBeNull();
+    await new Promise((r) => setTimeout(r, 80));
+    await act(async () => {
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+    expect(screen.getByRole("region", { name: copy.lastAria }).querySelector('[data-testid="result-undo"]')).toBeNull();
   });
 
   it("still plays on a table its host closed (S4)", async () => {

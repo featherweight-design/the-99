@@ -14,6 +14,7 @@ vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
   useRouter: () => ({ refresh: () => {} }),
 }));
+vi.mock("../result-actions", () => ({ gameLoggedAction: async () => null }));
 vi.mock("../actions", () => ({ markTableSeen: async () => true, markSeatNoticeSeenAction: async () => true }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../../lib/social/rule-zero-notice", () => ({ markSeatNoticeSeen: m.markSeatNoticeSeen }));

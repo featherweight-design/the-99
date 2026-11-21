@@ -114,7 +114,10 @@ try {
       continue;
     }
     // The row waits for the save (clarification 3): pressable once aria-disabled clears.
-    await page.waitForFunction(() => !document.querySelector('[data-testid="result-undo"]')?.hasAttribute("aria-disabled"), null, { timeout: 20_000 });
+    await page.waitForFunction(() => {
+        const row = document.querySelector('[data-testid="result-undo"]');
+        return !!row && !row.hasAttribute("aria-disabled");
+      }, null, { timeout: 20_000 });
     const text = (await undo.textContent()) ?? "";
     check("U1: the row names the change that ended the game", text.endsWith("Colin −40 life, to 0 · round 1"), text);
     const order = await page.evaluate(() => {
@@ -156,7 +159,10 @@ try {
     }, TABLE);
     await page.reload({ waitUntil: "networkidle" });
     await result.waitFor({ timeout: 15_000 });
-    await page.waitForFunction(() => !document.querySelector('[data-testid="result-undo"]')?.hasAttribute("aria-disabled"), null, { timeout: 20_000 });
+    await page.waitForFunction(() => {
+        const row = document.querySelector('[data-testid="result-undo"]');
+        return !!row && !row.hasAttribute("aria-disabled");
+      }, null, { timeout: 20_000 });
     // The table page keeps its own reads open, so it never goes network-idle: wait for the card instead.
     await page.goto(`${BASE}/friends/table/${TABLE}`, { waitUntil: "domcontentloaded", timeout: 90_000 });
     const card = page.getByRole("region", { name: "The last game" });
