@@ -41,8 +41,8 @@ export function commanderMoved(version: CommanderPair, live: CommanderPair): boo
  * leaves the deck or is the other half.
  *
  * `pairAdd` (#491, add a partner): the old single stays and the partner comes from outside the 99,
- * so nothing moves between the 99 and the command zone. A pair leads 98, so a deck holding 99
- * needs one card cut; the write takes that cut and refuses the change without it.
+ * so no card of the 99 becomes a commander. A pair leads 98, so a deck holding 99 needs one card
+ * cut; the write takes that cut and refuses the change without it.
  *
  * Null for a change no design draws, held back: a half out of the 98 beside a half the pair keeps,
  * both new halves out of the 98, a single becoming a pair that drops the old single with nothing

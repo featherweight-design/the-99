@@ -28,7 +28,7 @@ import { canonicalPair } from "../edhrec/pair-order";
 import { isCommanderCandidate } from "../recs/score";
 import { loadUniversalStaples } from "../staples/universal";
 import { MIN_CANDIDATE_DECKS, fitBody, fitCount, type Fit } from "./fit";
-import { offerable } from "./pending";
+import { tradeShape } from "./pending";
 
 export type CandidateHalf = {
   oracleId: string;
@@ -325,7 +325,12 @@ export async function loadChangeCandidates(
     const f = factBy.get(id);
     return f !== undefined && isCommanderCandidate(f);
   }))
-    .filter((k) => offerable(k.ids, currentIds, inDeck));
+    // `pairAdd` (#491) is a shape the write takes and no sheet draws yet: held back here until the
+    // Add a partner section lands, so the sheet never offers a change it cannot confirm.
+    .filter((k) => {
+      const shape = tradeShape(k.ids, currentIds, inDeck);
+      return shape !== null && shape !== "pairAdd";
+    });
 
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   // The commander a growing pair keeps is held by this deck already, so it is asked about as little.

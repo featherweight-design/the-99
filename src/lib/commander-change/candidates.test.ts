@@ -74,9 +74,8 @@ describe("tradeShape for a single becoming a pair", () => {
     expect(tradeShape(["a", "b"], ["x"], new Set(["b"]))).toBe("pairUp");
   });
 
-  it("holds back a pair with nothing out of the 99 (the deck would hold 101), and a pair becoming a single", () => {
+  it("holds back a new pair that drops the old single with nothing out of the 99, and a pair becoming a single", () => {
     expect(tradeShape(["a", "b"], ["x"], new Set(["c"]))).toBeNull();
-    expect(tradeShape(["x", "a"], ["x"], new Set(["c"]))).toBeNull();
     expect(tradeShape(["a"], ["x", "y"], new Set(["a"]))).toBeNull();
     expect(tradeShape(["x"], ["x", "y"], new Set())).toBeNull();
   });

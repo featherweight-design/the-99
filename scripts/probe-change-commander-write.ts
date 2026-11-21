@@ -93,10 +93,13 @@ const bodyOf = async (deckId: string) => {
   return rows.map((r) => `${r.id}x${r.q}`);
 };
 
-const write = (deckId: string, commander: string, partner: string | null = null, stays: string | null = null) =>
+const write = (
+  deckId: string, commander: string, partner: string | null = null, stays: string | null = null,
+  cut: string | null = null,
+) =>
   db.transaction((tx) => writeCommanderChange(tx, deckId, USER, {
     commanderOracleId: commander, partnerOracleId: partner,
-  }, stays));
+  }, stays, cut));
 
 async function main() {
   const { rows: branch } = await fixture.execute<{ id: string | null }>(
@@ -343,12 +346,46 @@ async function main() {
   check("grow, both from the 99: the old single took a slot", tradeAfter.includes(`${anchor.oracle_id}x1`), true);
   check("grow, both from the 99: the deck stays at 100", tradeAfter.length, tradeBefore.length - 1);
 
-  // Nothing out of the 99 would make 101: held back, nothing written.
+  // A new pair that drops the old single with nothing out of the 99 would make 101: held back, nothing written.
   const fullDeck = await makeDeck(anchor.oracle_id);
   for (const f of fillers) await addCard(fullDeck, f.oracle_id);
   const fullBefore = await bodyOf(fullDeck);
   check("grow refused: nothing out of the 99", await write(fullDeck, anchor2.oracle_id, p2.oracle_id), { ok: false, reason: "illegal" });
   check("grow refused: nothing written", [await live(fullDeck), await bodyOf(fullDeck)], [{ c: anchor.oracle_id, p: null }, fullBefore]);
+
+  // ── Adding a partner from outside the 99 (#491, pairAdd) ─────────────────────
+  // The single stays and p2 arrives from outside the 99. A pair leads 98, so a body of 99 takes
+  // exactly one cut, a body of 98 or less takes none, and the cut is checked against the live rows.
+  const addCard99 = async (deckId: string) => fixture.execute(sql`
+    insert into deck_cards (deck_id, oracle_id, quantity) values (${deckId}::uuid, ${fillers[0].oracle_id}::uuid, 99)
+    on conflict (deck_id, oracle_id) do update set quantity = 99
+  `);
+  const underDeck = await makeDeck(anchor.oracle_id);
+  for (const f of fillers) await addCard(underDeck, f.oracle_id);
+  const smallBefore = await bodyOf(underDeck);
+  check("add a partner, body under 99: a cut is refused", await write(underDeck, anchor.oracle_id, p2.oracle_id, null, fillers[0].oracle_id),
+    { ok: false, reason: "illegal" });
+  check("add a partner, body under 99: nothing written", [await live(underDeck), await bodyOf(underDeck)], [{ c: anchor.oracle_id, p: null }, smallBefore]);
+  check("add a partner, body under 99: accepted with no cut", await write(underDeck, anchor.oracle_id, p2.oracle_id), { ok: true });
+  check("add a partner, body under 99: the pair leads", await live(underDeck), { c: anchor.oracle_id, p: p2.oracle_id });
+  check("add a partner, body under 99: the body is untouched", await bodyOf(underDeck), smallBefore);
+
+  const full = await makeDeck(anchor.oracle_id);
+  await addCard99(full);
+  check("add a partner, body of 99: no cut is refused", await write(full, anchor.oracle_id, p2.oracle_id), { ok: false, reason: "illegal" });
+  check("add a partner, body of 99: a cut that is a commander is refused", await write(full, anchor.oracle_id, p2.oracle_id, null, anchor.oracle_id),
+    { ok: false, reason: "illegal" });
+  check("add a partner, body of 99: a cut outside the 99 is refused", await write(full, anchor.oracle_id, p2.oracle_id, null, fillers[1].oracle_id),
+    { ok: false, reason: "illegal" });
+  await fixture.execute(sql`insert into deck_locks (deck_id, oracle_id) values (${full}::uuid, ${fillers[0].oracle_id}::uuid)`);
+  check("add a partner, body of 99: a locked cut is refused", await write(full, anchor.oracle_id, p2.oracle_id, null, fillers[0].oracle_id),
+    { ok: false, reason: "illegal" });
+  check("add a partner, body of 99: nothing written", [await live(full), await bodyOf(full)], [{ c: anchor.oracle_id, p: null }, [`${fillers[0].oracle_id}x99`]]);
+  await fixture.execute(sql`delete from deck_locks where deck_id = ${full}::uuid`);
+  check("add a partner, body of 99: accepted with a cut", await write(full, anchor.oracle_id, p2.oracle_id, null, fillers[0].oracle_id), { ok: true });
+  check("add a partner, body of 99: the pair leads", await live(full), { c: anchor.oracle_id, p: p2.oracle_id });
+  check("add a partner, body of 99: one copy left the 99", await bodyOf(full), [`${fillers[0].oracle_id}x98`]);
+  check("a cut on a swap is refused", await write(pairDeck, anchor.oracle_id, p2.oracle_id, null, fillers[0].oracle_id), { ok: false, reason: "illegal" });
 }
 
 main()

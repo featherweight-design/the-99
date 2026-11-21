@@ -35,7 +35,7 @@ export type ChangeCommanderResult = { ok: true } | { ok: false; reason: ChangeCo
 /**
  * The cut a `pairAdd` needs (#491). A pair leads 98, so a deck whose body holds more than 98 must
  * lose exactly the excess, and a body already at 98 or under loses nothing. Over 99 is refused: no
- * single cut brings it to 98, and a deck over 100 is not offered the add. The cut is a card of the
+ * single cut brings it to 98 (the sheet hides the add for such a deck, and this refuses a request that skips the sheet). The cut is a card of the
  * body, never a commander half, and never a locked one.
  */
 export function cutAllowed(
@@ -58,6 +58,13 @@ function identity(rows: readonly { colorIdentity: string[] }[]): string[] {
 export function identityFits(from: readonly string[], to: readonly string[], growing: boolean): boolean {
   if (!growing) return from.join() === to.join();
   return from.every((c) => to.includes(c));
+}
+
+/** Takes one copy of a card out of the 99: the row's quantity drops by one, and a last copy deletes the row. */
+async function takeOne(tx: Tx, deckId: string, oracleId: string, quantity: number): Promise<void> {
+  const row = and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
+  if (quantity > 1) await tx.update(deckCards).set({ quantity: quantity - 1 }).where(row);
+  else await tx.delete(deckCards).where(row);
 }
 
 /** The whole write, inside the caller's transaction. Refuses, writing nothing, unless the deck is
@@ -136,15 +143,7 @@ export async function writeCommanderChange(
     if (!cutAllowed(total, cutOracleId, new Set(inBody.keys()), toIds, locked)) {
       return { ok: false, reason: "illegal" };
     }
-    if (cutOracleId !== null) {
-      const quantity = inBody.get(cutOracleId)!;
-      if (quantity > 1) {
-        await tx.update(deckCards).set({ quantity: quantity - 1 })
-          .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, cutOracleId)));
-      } else {
-        await tx.delete(deckCards).where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, cutOracleId)));
-      }
-    }
+    if (cutOracleId !== null) await takeOne(tx, deckId, cutOracleId, inBody.get(cutOracleId)!);
   } else if (cutOracleId !== null) {
     return { ok: false, reason: "illegal" };
   }
@@ -157,15 +156,8 @@ export async function writeCommanderChange(
   // A `pairUp` brings one half out of the 99, and a pair leads 98, so no old card takes its slot.
   const departing = shape === "pairUp" ? []
     : staysOracleId ? [staysOracleId, ...leaving.filter((id) => id !== staysOracleId)] : leaving;
-  const gone: string[] = [];
   for (const [i, id] of arrivingFromBody.entries()) {
-    const quantity = inBody.get(id)!;
-    if (quantity > 1) {
-      await tx.update(deckCards).set({ quantity: quantity - 1 })
-        .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, id)));
-    } else {
-      gone.push(id);
-    }
+    await takeOne(tx, deckId, id, inBody.get(id)!);
     const slot = departing[i];
     if (slot !== undefined) {
       await tx.insert(deckCards).values({ deckId, oracleId: slot, quantity: 1, auto: false })
@@ -175,8 +167,6 @@ export async function writeCommanderChange(
         });
     }
   }
-  // In this function's own block, so the two prunes below reconcile what it removed.
-  if (gone.length > 0) await tx.delete(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, gone)));
 
   await tx.update(decks).set({
     commanderOracleId: to.commanderOracleId, partnerOracleId: to.partnerOracleId,
