@@ -1,14 +1,19 @@
 // The real surface: the same-change rule (S5), where the last two players each tapped down to 0 inside the 2 s window
 // go out together, a draw, rather than whichever panel's timer fires first going out alone; the table a game keeps from
-// its Start (the addendum's Snapshot rule); a seat with no deck (S2); and a table closed under the game (S4).
+// its Start (the addendum's Snapshot rule); a seat with no deck (S2); a table closed under the game (S4); and Undo the last
+// change (Undo addendum U1 to U4).
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Game } from "../../lib/tracker/engine";
 import type { PlaySeat } from "../../lib/tracker/seat";
-import { saveTableResultAction } from "../../app/friends/table/result-actions";
+import { gameLoggedAction, saveTableResultAction, undoTableResultAction } from "../../app/friends/table/result-actions";
 import { PlaySurface } from "./play-surface";
 
-vi.mock("../../app/friends/table/result-actions", () => ({ saveTableResultAction: vi.fn(async () => ({ ok: true })) }));
+vi.mock("../../app/friends/table/result-actions", () => ({
+  saveTableResultAction: vi.fn(async () => ({ ok: true })),
+  undoTableResultAction: vi.fn(async () => ({ result: "undone" })),
+  gameLoggedAction: vi.fn(async () => null),
+}));
 const replace = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
 
@@ -119,8 +124,13 @@ describe("PlaySurface on a closed table (S4)", () => {
       vi.advanceTimersByTime(3_600_000);
     });
     const result = screen.getByTestId("tracker-result");
-    expect(within(result).getByTestId("result-closed-note").textContent).toMatch(/^This table stopped logging at .+\. Log it from your deck’s Games tab\.$/);
+    // U4: one note in Undo's slot, and only the way back to Friends.
+    expect(within(result).getByTestId("result-stopped-note").textContent).toMatch(/^This table stopped logging at .+, so this ending stays\. Log it from your deck’s Games tab\.$/);
+    expect(within(result).queryByTestId("result-closed-note")).toBeNull();
     expect(within(result).queryByTestId("result-log")).toBeNull();
+    expect(within(result).queryByTestId("result-undo")).toBeNull();
+    expect(within(result).queryByTestId("result-rematch")).toBeNull();
+    expect(within(result).getByTestId("result-back").textContent).toBe("Back to Friends");
   });
 
   it("goes back when this device holds no game for it", async () => {
@@ -128,5 +138,97 @@ describe("PlaySurface on a closed table (S4)", () => {
     render(<PlaySurface tableId="t1" roster="r" expiresAt={closesAt()} seats={null} backHref="/friends" logHref={null} podName="Thursday night" closed={{ by: null, at: Date.now() }} />);
     await act(async () => {});
     expect(replace).toHaveBeenCalledWith("/friends");
+  });
+});
+
+describe("PlaySurface Undo the last change", () => {
+  // Colin goes out on one change: the game is over the moment it loads, and Hugh (this device) wins.
+  const won: Game = { ...game, log: [{ t: "life", seat: 1, delta: -40 }] };
+  const open = (props: { undoNow?: boolean } = {}) => {
+    window.localStorage.setItem("the99.tracker.t1", JSON.stringify({ v: 1, game: won, expiresAt: Date.now() + 3_600_000 }));
+    render(<PlaySurface tableId="t1" roster="r" expiresAt={Date.now() + 3_600_000} seats={seats} backHref="/friends/table/t1" logHref="/decks/d?tab=games&table=t1" podName="Thursday night" {...props} />);
+  };
+  const settle = () => act(async () => {});
+
+  it("offers Undo under the winner, naming the change that ended the game (U1)", async () => {
+    open();
+    await settle();
+    const row = within(screen.getByTestId("tracker-result")).getByTestId("result-undo");
+    expect(row.textContent).toBe("Undo the last changeColin −40 life, to 0 · round 1");
+    expect(row.getAttribute("aria-label")).toBe("Undo the last change: Colin −40 life, to 0 · round 1");
+    expect(row.getAttribute("aria-disabled")).toBeNull();
+  });
+
+  it("takes the result back, reopens the game, says so, and focuses the panel that came back (U2)", async () => {
+    open();
+    await settle();
+    fireEvent.click(screen.getByTestId("result-undo"));
+    await settle();
+    expect(undoTableResultAction).toHaveBeenCalledWith("t1", "r");
+    expect(screen.queryByTestId("tracker-result")).toBeNull();
+    const toast = screen.getByRole("status");
+    expect(toast.textContent).toContain("Game back on");
+    expect(toast.textContent).toContain("Undid Colin −40 life, to 0 · round 1");
+    expect(document.activeElement).toBe(screen.getAllByTestId("panel-name")[1]);
+  });
+
+  it("waits while the result saves, and runs the Undo only after the save (clarification 3)", async () => {
+    let done!: (v: { ok: boolean }) => void;
+    vi.mocked(saveTableResultAction).mockImplementationOnce(() => new Promise((r) => (done = r)));
+    open();
+    await settle();
+    const row = screen.getByTestId("result-undo");
+    expect(row.getAttribute("aria-disabled")).toBe("true");
+    fireEvent.click(row);
+    await settle();
+    expect(undoTableResultAction).not.toHaveBeenCalled();
+    await act(async () => done({ ok: true }));
+    expect(screen.getByTestId("result-undo").getAttribute("aria-disabled")).toBeNull();
+  });
+
+  it("keeps the ending once someone seated has logged it, and says who (U3)", async () => {
+    vi.mocked(gameLoggedAction).mockResolvedValue({ seat: 1, at: new Date(), you: false, publicId: "p1", name: null });
+    open();
+    await settle();
+    const result = screen.getByTestId("tracker-result");
+    expect(within(result).queryByTestId("result-undo")).toBeNull();
+    expect(within(result).getByTestId("result-logged-note").textContent).toMatch(/^This game was logged at .+, so this ending stays\.$/);
+    expect(within(result).getByTestId("result-log")).toBeTruthy();
+    vi.mocked(gameLoggedAction).mockResolvedValue(null);
+  });
+
+  it("shows the logged note, with no toast, when a log beat the Undo to the server", async () => {
+    vi.mocked(undoTableResultAction).mockResolvedValueOnce({ result: "logged" });
+    open();
+    await settle();
+    vi.mocked(gameLoggedAction).mockResolvedValueOnce({ seat: 0, at: new Date(), you: true });
+    fireEvent.click(screen.getByTestId("result-undo"));
+    await settle();
+    const result = screen.getByTestId("tracker-result");
+    expect(within(result).getByTestId("result-logged-note").textContent).toMatch(/^You logged this game at .+, so this ending stays\.$/);
+    expect(screen.queryByRole("status")).toBeNull();
+  });
+
+  it("leaves the game over and offers Try again when the Undo fails (clarification 4)", async () => {
+    vi.mocked(undoTableResultAction).mockRejectedValueOnce(new Error("offline"));
+    open();
+    await settle();
+    fireEvent.click(screen.getByTestId("result-undo"));
+    await settle();
+    expect(screen.getByTestId("tracker-result")).toBeTruthy();
+    const alert = screen.getByRole("alert");
+    expect(alert.textContent).toContain("Undo didn’t go through. The game is still over.");
+    fireEvent.click(within(alert).getByRole("button", { name: "Try again" }));
+    await settle();
+    expect(undoTableResultAction).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("tracker-result")).toBeNull();
+  });
+
+  it("undoes on arrival from the Last game card's Undo (U5), once", async () => {
+    open({ undoNow: true });
+    await settle();
+    await settle();
+    expect(undoTableResultAction).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("tracker-result")).toBeNull();
   });
 });

@@ -16,9 +16,11 @@ import { loadClosedTable, loadTable } from "../../../../../lib/social/rule-zero-
 import { logGameHref } from "../../../../../lib/rule-zero/table-view";
 import { PlaySurface } from "../../../../../components/tracker/play-surface";
 
-export default async function PlayPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PlayPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const userId = await requireUserId();
   const { id } = await params;
+  // The Last game card's Undo (U5) opens the play surface to undo the game this device holds.
+  const undoNow = (await searchParams).undo === "1";
   const view = await loadTable(userId, id);
   if (view && view.seats.length > MAX_SEATS) notFound();
   const closed = view ? null : await loadClosedTable(userId, id);
@@ -39,6 +41,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
           logHref={logGameHref(closed)}
           podName={closed.podName}
           closed={{ by: how.byYou ? "you" : how.by, at: how.at.getTime() }}
+          undoNow={undoNow}
         />
       </div>
     );
@@ -61,7 +64,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      <PlaySurface tableId={id} roster={night.roster} expiresAt={live.closesAt.getTime()} seats={seats} backHref={`/friends/table/${id}`} logHref={logGameHref(live)} podName={live.podName} />
+      <PlaySurface tableId={id} roster={night.roster} expiresAt={live.closesAt.getTime()} seats={seats} backHref={`/friends/table/${id}`} logHref={logGameHref(live)} podName={live.podName} undoNow={undoNow} />
     </div>
   );
 }

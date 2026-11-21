@@ -32,7 +32,8 @@ export type GameConfig = {
 };
 
 type Leaf =
-  | { t: "life"; seat: number; delta: number }
+  /** `concede` marks a Concede from the sheet (it takes all their life), for the Result's Undo line; the replay ignores it. */
+  | { t: "life"; seat: number; delta: number; concede?: true }
   | { t: "counter"; seat: number; key: CounterKey; delta: number }
   /** Combat damage `from`'s commander `cmdr` (0 or 1) dealt `seat`. It comes off their life as well. */
   | { t: "damage"; seat: number; from: number; cmdr: number; delta: number }
