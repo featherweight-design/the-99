@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>States</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:22%}
+</style>
+</helmet>
+<div style="width: 2302px; min-height: 1658px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>States</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">To buy, room, brew, failed</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">Each one is the confirm with one thing changed. Loading and a failed list read are the shipped sheet’s, unchanged.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>C4</b> · a partner to buy</p><img class="shot" src="art/C4-phone.webp" alt="Thrasios to buy"><p class="cap">Unowned: the shipped buy tag under its card and the shipped buy line. It widens to Bant, so the line counts green cards.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>C5</b> · the deck has room</p><img class="shot" src="art/C5-phone.webp" alt="No cut when the deck has room"><p class="cap">A deck under 100 (here 96 in the 99) has room: no cut section, and the sentence says so with the count after.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>C6</b> · no version yet</p><img class="shot" src="art/C6-phone.webp" alt="A brew's confirm"><p class="cap">A brew can’t Discard back, and a pair never becomes one commander, so the line says the Undo that follows is the only way back.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 900px; flex: none"><p class="lab"><b>C7</b> · failed</p><img class="shot" src="art/C7-desk.webp" alt="The write failed"><p class="cap">Shipped failure: the danger line under the buttons, the primary reads Try again, and the pick is kept.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2302,"height":1658}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

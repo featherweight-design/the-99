@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>After</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:22%}
+</style>
+</helmet>
+<div style="width: 1872px; min-height: 1274px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>After</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Undo, review and history</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">Nothing new on the deck page but the toast. Discard undoes a pending change as shipped; the toast’s Undo is for right after, and is the only way back on a brew.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>A1</b> · deck page, phone</p><img class="shot" src="art/A1-phone.webp" alt="The deck under the pair with the Undo toast"><p class="cap">The sheet closes on the deck under the pair (98 in the body). A deck toast says both moves, <b>Bruse Tarl joins Ishai. Plains left the deck.</b>, with <b>Undo</b>, which puts both back.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 900px; flex: none"><p class="lab"><b>A1</b> · deck page, desktop</p><img class="shot" src="art/A1-desk.webp" alt="Desktop deck page with the toast"><p class="cap">Desktop: the shipped toast slot. The pending banner shows the shipped commander line, and Plains as a cut.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>A2</b> · review page</p><img class="shot" src="art/A2-phone.webp" alt="Review Commander section"><p class="cap">Review: the shipped Commander section reads <b>a partner joins</b>; Plains sits in Going out. History after commit: the shipped version line <b>Ishai → Ishai & Bruse Tarl</b>, with Plains in its diff.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1872,"height":1274}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
