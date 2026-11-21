@@ -4,7 +4,7 @@
  * surface scales the canvas to the screen. Cells list seats in turn order, clockwise from the seat nearest the bottom, so the
  * nth seat of the table takes cell n.
  *
- * L1 to L5 are the drawn boards. The counts the boards do not draw (phone 2, 5 and 6, tablet 4 as 2+2 and tablet 6 as 3+3) follow
+ * L1 to L5 are the drawn boards, and phone 4 on two long sides (F02, setup's default for four). The counts the boards do not draw (phone 2, 5 and 6, tablet 4 as 2+2 and tablet 6 as 3+3) follow
  * the same grammar: full-width rows for the faces at the ends, 155 px columns for the sides on a phone.
  */
 export type Device = "phone" | "tablet";
@@ -27,7 +27,8 @@ export const LAYOUTS: readonly Layout[] = [
   { id: "phone-2", device: "phone", seats: 2, canvas: PHONE, label: "Face to face", cells: [c(6, 648, 378, 190, 0), c(6, 6, 378, 190, 180)], spine: PHONE_SPINE },
   { id: "phone-3-end", device: "phone", seats: 3, canvas: PHONE, label: "One at the end", cells: [c(6, 648, 378, 190, 0), c(6, 6, 155, 636, 90), c(229, 6, 155, 636, -90)], spine: r(167, 6, 56, 636) },
   { id: "phone-3-side", device: "phone", seats: 3, canvas: PHONE, label: "Along one side", cells: [c(6, 565, 316, 273, 90), c(6, 285, 316, 274, 90), c(6, 6, 316, 273, 90)], spine: r(328, 6, 56, 832) },
-  { id: "phone-4-around", device: "phone", seats: 4, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 202, 155, 440, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
+  { id: "phone-4-sides", device: "phone", seats: 4, canvas: PHONE, label: "Two long sides, two players each", cells: [c(6, 425, 155, 413, 90), c(6, 6, 155, 413, 90), c(229, 6, 155, 413, -90), c(229, 425, 155, 413, -90)], spine: r(167, 6, 56, 832) },
+  { id: "phone-4-around", device: "phone", seats: 4, canvas: PHONE, label: "One player on each side", cells: [c(6, 648, 378, 190, 0), c(6, 202, 155, 440, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
   { id: "phone-5", device: "phone", seats: 5, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
   { id: "phone-6", device: "phone", seats: 6, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 217, -90), c(229, 425, 155, 217, -90)], spine: PHONE_SPINE },
   { id: "tablet-4", device: "tablet", seats: 4, canvas: TABLET, label: "Two and two", cells: [c(10, 452, 570, 358, 0), c(10, 10, 570, 358, 180), c(600, 10, 570, 358, 180), c(600, 452, 570, 358, 0)], spine: TABLET_SPINE },

@@ -315,11 +315,17 @@ export function StartGame({
   return (
     <>
       <StartLink href={playHref(tableId, again)} label={copy.start} />
-      {sub ? (
-        <p className="m-0 text-center text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+      <p className="m-0 text-center text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">
+        {sub ? (
           <PersonText text={sub} />
-        </p>
-      ) : null}
+        ) : (
+          // F01: what the tracker does and where the device goes. The phone says phone; a wider screen says device.
+          <>
+            <span className="md:hidden">{copy.startSub}</span>
+            <span className="hidden md:inline">{copy.startSubDevice}</span>
+          </>
+        )}
+      </p>
     </>
   );
 }

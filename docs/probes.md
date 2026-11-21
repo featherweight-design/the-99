@@ -2833,6 +2833,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   another table, `SHEET_EXPECT=partner` (two steppers, two art halves, a rule between) or `noart` (no image) names what the
   table's one opponent plays instead of the default single commander with art (a probe-local fixture: on a scratch branch,
   give the opponent's deck a partner, or clear the seat's deck), and `SHOTS=<dir>` keeps a photograph of each state.
+- `pnpm probe:tracker-setup` presses the tracker's setup screen (F02, F02b, F02c) at phone (390x844) and desktop
+  (1300x820) width, on a four-seat table (the fixture's S4). It checks the header ("Set up the game" and a 44px ✕ linking
+  back to the table), the lead line naming the phone or the device, the Table row (84px, 64x72 tiles; on a phone two long
+  sides first and checked, then one on each side), the 56px Starting life row with its hairline and 44px stepper, that
+  I'll pick starts on the viewer's own seat with Start enabled, that Start is 52px and pinned in the viewport, and that
+  Start opens the board on the chosen table. On main the header and the two-long-sides table are missing, so it fails at
+  the first checks. It writes nothing, but needs `INVITE_CODE_SECRET` (any 64 hex characters) on the dev server so the
+  roster seals, and refuses staging, production and local-dev: run the dev server with the env file naming a scratch
+  branch made from local-dev, seeded by `scripts/seed-rule-zero-fixture.mts` for the audit account. The fixture's
+  "seated you" notices are hidden for the walk. `SETUP_TABLE` picks another table, `PROBE_SHOTS=<dir>` keeps photographs.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
