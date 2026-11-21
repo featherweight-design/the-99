@@ -8,7 +8,7 @@
 // two differences that matter — Enter resolves this line instead of adding a
 // card, and the search runs unfiltered.
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useId, useRef, useState } from "react";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import { deleteUnresolvedRow, resolveUnresolvedRow } from "../../app/decks/import-actions";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
@@ -134,11 +134,24 @@ export function ResolutionExpander({
   function remove() {
     if (answeredRef.current) return;
     answeredRef.current = true;
+    // Same shape as the resolve: nothing is predicted before the server answers.
+    // The optimistic drop unmounts this expander, so a refused delete came back
+    // with no open line to show its message on and the group had already
+    // announced the line as gone. The line stays until the answer: success
+    // announces and drops it, a refusal leaves it open with the error and lets
+    // the player try again.
     runDelete(
       () => deleteUnresolvedRow(deckId, row.id),
-      () => {
+      undefined,
+      (ok) => {
+        if (!ok) {
+          answeredRef.current = false;
+          return;
+        }
         onDeleted();
-        deleteOptimisticRow(row.id);
+        // After an await the transition's scope is gone: a drop dispatched bare would be discarded
+        // with a warning, so it rides its own.
+        startTransition(() => deleteOptimisticRow(row.id));
       },
     );
   }
