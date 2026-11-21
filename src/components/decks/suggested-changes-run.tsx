@@ -35,6 +35,7 @@ import { SuggestedChangesPickLine } from "./suggested-changes-pick-line";
 import { historyDay } from "./tuning-history-day";
 import { DeckRefusalToast } from "./token-refusal-toast";
 import type { RunFigures } from "../../lib/decks/builder-figures";
+import { SteadyLabel } from "../ui/steady-label";
 
 const sc = suggestedChangesV2Copy;
 
@@ -732,7 +733,7 @@ export function SuggestedChangesRun({
               aria-disabled={busy !== null || undefined}
               className="h-[44px] w-full rounded-[8px] px-[14px] text-[13px] font-medium md:h-[36px] md:w-auto text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)] hover:[border-color:var(--fg-muted)] transition-colors"
             >
-              {busy === "undo" ? sc.undoing : sc.bar.undo(appliedSet.length)}
+              <SteadyLabel hold={[sc.undoing, sc.bar.undo(appliedSet.length)]}>{busy === "undo" ? sc.undoing : sc.bar.undo(appliedSet.length)}</SteadyLabel>
             </button>
           ) : null}
           {appliedBar || demo ? null : (

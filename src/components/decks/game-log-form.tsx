@@ -27,6 +27,7 @@ import { TableGlyph } from "../rule-zero/table-glyph";
 import { GameSeats, type YouSeat } from "./game-seats";
 import { MutationError } from "./mutation-error";
 import { PRIMARY } from "../ui/button";
+import { SteadyLabel } from "../ui/steady-label";
 
 export type GameResult = "win" | "loss" | "draw";
 
@@ -627,7 +628,7 @@ export function GameLogForm({
           // R3 §1.
           className={`w-full md:w-auto h-[48px] md:h-auto md:px-[20px] md:py-[11px] rounded-[8px] text-[14.5px] md:text-[14px] font-semibold cursor-pointer ${PRIMARY} disabled:cursor-not-allowed disabled:opacity-50`}
         >
-          {busy ? gameLogCopy.form.saving : gameLogCopy.form.save}
+          <SteadyLabel hold={[gameLogCopy.form.saving, gameLogCopy.form.save]}>{busy ? gameLogCopy.form.saving : gameLogCopy.form.save}</SteadyLabel>
         </button>
         <button
           type="button"

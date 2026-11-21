@@ -17,6 +17,7 @@ import { Face } from "./face";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
+import { SteadyLabel } from "../ui/steady-label";
 
 const p = socialCopy.page;
 
@@ -188,7 +189,7 @@ export function FriendsHead({
           aria-describedby={pressHeld ? `${id}-held` : undefined}
           className={`${ACCENT_BUTTON} min-w-[132px] md:h-[44px] ${pressHeld ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : pressPending ? "!bg-[color:var(--accent-strong)]" : ""} max-md:h-[48px] max-md:text-[15px]`}
         >
-          {pressPending ? p.invitePending : p.invite}
+          <SteadyLabel hold={[p.invitePending, p.invite]}>{pressPending ? p.invitePending : p.invite}</SteadyLabel>
         </button>
         {inviteCount === undefined ? heldLine : (
           <div className="flex flex-col gap-[8px] md:items-end">

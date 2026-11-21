@@ -27,6 +27,7 @@ import { HoverPreviewProvider } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import { lineSentence, passBuyCount, usePassUndo } from "./provenance-line";
 import { ModalChrome, type SheetBack } from "./receipt-modal";
+import { SteadyLabel } from "../ui/steady-label";
 
 const ledger = topOffCopy.ledger;
 
@@ -116,7 +117,7 @@ function OnePassSheet({
             aria-label={ledger.undoAria(n, label)}
             className={FOOT_BUTTON}
           >
-            {pending ? ledger.undoInFlight(n) : count === 1 ? ledger.undoOne : ledger.undo(n)}
+            <SteadyLabel hold={[ledger.undoInFlight(n), ledger.undoOne, ledger.undo(n)]}>{pending ? ledger.undoInFlight(n) : count === 1 ? ledger.undoOne : ledger.undo(n)}</SteadyLabel>
           </GhostButton>
         </>
       )}

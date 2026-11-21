@@ -21,6 +21,7 @@ import type { InviteCount } from "../../lib/invites/rules";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { useAddFriend } from "../social/use-add-friend";
+import { SteadyLabel } from "../ui/steady-label";
 
 const h = socialCopy.home;
 /** Five seats at both widths (R2.2); past five, four faces and the count. */
@@ -164,7 +165,7 @@ export function FriendsSection({ you, friends, links, now, invites = null, frien
         aria-disabled={making || undefined}
         className="h-[44px] cursor-pointer self-stretch rounded-[10px] [border:1px_solid_var(--border-strong)] bg-transparent px-[16px] font-sans text-[14px] text-[color:var(--fg)] aria-disabled:cursor-default min-[1180px]:h-[32px] min-[1180px]:self-start min-[1180px]:rounded-[8px] min-[1180px]:px-[14px] min-[1180px]:text-[12.5px]"
       >
-        {making ? socialCopy.page.invitePending : socialCopy.page.invite}
+        <SteadyLabel hold={[socialCopy.page.invitePending, socialCopy.page.invite]}>{making ? socialCopy.page.invitePending : socialCopy.page.invite}</SteadyLabel>
       </button>
 
       {overlays}

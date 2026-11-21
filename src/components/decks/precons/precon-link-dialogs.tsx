@@ -23,6 +23,7 @@ import { GhostButton, PrimaryButton } from "../../ui/button";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { SearchField } from "../../ui/text-field";
 import { escapeDismisses } from "../../../lib/ui/search-dismiss";
+import { SteadyLabel } from "../../ui/steady-label";
 
 const copy = preconsCopy.link;
 
@@ -118,8 +119,8 @@ function Failed({ text }: { text: string }) {
 }
 
 /** Cancel and the bone primary: never `--danger`, because nothing the player made is lost (lock 5). */
-function Actions({ pending, onDismiss, submit, submitLabel, disabled = false }: {
-  pending: boolean; onDismiss: () => void; submit: () => void; submitLabel: string; disabled?: boolean;
+function Actions({ pending, onDismiss, submit, submitLabel, pendingLabel, disabled = false }: {
+  pending: boolean; onDismiss: () => void; submit: () => void; submitLabel: string; pendingLabel: string; disabled?: boolean;
 }) {
   return (
     <div className="flex gap-[8px] md:justify-end">
@@ -137,7 +138,7 @@ function Actions({ pending, onDismiss, submit, submitLabel, disabled = false }: 
         disabled={disabled || pending}
         className="h-[46px] min-w-0 flex-1 rounded-[8px] px-[14px] text-[13px] md:h-[40px] md:flex-none"
       >
-        {submitLabel}
+        <SteadyLabel hold={[submitLabel, pendingLabel]}>{pending ? pendingLabel : submitLabel}</SteadyLabel>
       </PrimaryButton>
     </div>
   );
@@ -159,7 +160,8 @@ export function ConfirmLinkDialog({ deckId, deckName, match, onDismiss }: {
             pending={pending}
             onDismiss={onDismiss}
             submit={() => run(() => linkPrecon(deckId, match.fileName))}
-            submitLabel={pending ? c.pending : c.submit}
+            submitLabel={c.submit}
+            pendingLabel={c.pending}
           />
         </>
       }
@@ -214,7 +216,8 @@ export function UnlinkDialog({ deckId, deckName, fileName, preconName, onDismiss
             pending={pending}
             onDismiss={onDismiss}
             submit={() => run(() => unlinkPrecon(deckId, fileName))}
-            submitLabel={pending ? c.pending : c.submit}
+            submitLabel={c.submit}
+            pendingLabel={c.pending}
           />
         </>
       }
@@ -287,7 +290,8 @@ export function LinkPicker({ title, lead, searchLabel, label, figSub, items, non
             onDismiss={onDismiss}
             disabled={chosen === null}
             submit={() => { if (chosen) run(() => onLink(chosen.id)); }}
-            submitLabel={pending ? copy.confirm.pending : chosen ? submit(chosen.name) : copy.confirm.submit}
+            submitLabel={chosen ? submit(chosen.name) : copy.confirm.submit}
+            pendingLabel={copy.confirm.pending}
           />
         </>
       }

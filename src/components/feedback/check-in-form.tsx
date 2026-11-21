@@ -13,6 +13,7 @@ import {
 import { ModalChrome } from "../decks/receipt-modal";
 import { FriendCard, MiniCardBack } from "../social/friend-card";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
+import { SteadyLabel } from "../ui/steady-label";
 
 // The check-in sheet (flyer trial PR 6; handoff Survey-Phone S1 to S4, Survey-Desktop S5 and S6): `ModalChrome` at 560
 // on desktop, its sheet on the phone. A 1 to 5 rating (Send needs it), pick-any uses, one answer for the pod, a free
@@ -220,7 +221,7 @@ export function CheckInForm({ onClose, preview = false }: { onClose: () => void;
                   phase === "sending" ? "opacity-75" : !ready ? "opacity-[0.45]" : ""
                 }`}
               >
-                {phase === "sending" ? reportCopy.sending : copy.send}
+                <SteadyLabel hold={[reportCopy.sending, copy.send]}>{phase === "sending" ? reportCopy.sending : copy.send}</SteadyLabel>
               </button>
             </div>
           </form>

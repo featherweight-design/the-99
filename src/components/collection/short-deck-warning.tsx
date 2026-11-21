@@ -13,6 +13,7 @@ import type { ShortDeck, ShortFacts } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { gotItCopy } from "../../lib/copy/i-got-it";
 import { formatShortDeckDate } from "../../lib/decks/format";
+import { SteadyLabel } from "../ui/steady-label";
 
 type DeckRow = { deckId: string; deckName: string; cards: { oracleId: string; cardName: string; short: number; facts?: ShortFacts }[]; short: number };
 
@@ -242,7 +243,7 @@ export function ShortDeckWarning({
             disabled={pending}
             className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
           >
-            {pending ? c.saving : confirmLabel}
+            <SteadyLabel hold={[c.saving, confirmLabel]}>{pending ? c.saving : confirmLabel}</SteadyLabel>
           </button>
         </div>
         ) : null}

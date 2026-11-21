@@ -36,6 +36,7 @@ import { PreconDoor } from "./precons/precon-door";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { noteAppScroll, reveal } from "../../lib/ui/reveal";
 import { useDockClearance } from "../shell/dock-clearance";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = deckImportCopy.commander;
 
@@ -824,7 +825,7 @@ export function CreatePicker(props: CreatePickerProps) {
             disabled={!canCreate || isPending}
             className="w-full text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-0 min-h-[44px]"
           >
-            {isImport ? copy.submit : isPending ? addPanelCopy.createPicker.submitPending : addPanelCopy.createPicker.submit}
+            <SteadyLabel hold={[copy.submit, addPanelCopy.createPicker.submitPending, addPanelCopy.createPicker.submit]}>{isImport ? copy.submit : isPending ? addPanelCopy.createPicker.submitPending : addPanelCopy.createPicker.submit}</SteadyLabel>
           </PrimaryButton>
         </div>
 
@@ -881,7 +882,7 @@ export function CreatePicker(props: CreatePickerProps) {
             disabled={!canCreate || isPending}
             className="w-full text-[15px] transition-opacity disabled:opacity-50 px-0 h-[48px] py-0"
           >
-            {submitLabel}
+            <SteadyLabel hold={[copy.submit, addPanelCopy.createPicker.submitPending, addPanelCopy.createPicker.submit]}>{submitLabel}</SteadyLabel>
           </PrimaryButton>
         </div>
       </div>

@@ -24,6 +24,7 @@ import { BuyTag } from "./buy-tag";
 import { usePreviewRow } from "./hover-preview";
 import { MutationError } from "./mutation-error";
 import { ArtLayer } from "../ui/art-layer";
+import { SteadyLabel } from "../ui/steady-label";
 
 /**
  * One suggested swap (placement addendum v2, A1/A2, B1, C3-C5, E1). A card out, a card in, the
@@ -213,7 +214,7 @@ export function SuggestionCard({
             disabled={busy !== null}
             className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-auto md:flex-none md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
           >
-            {busy === "apply" ? copy.applying : copy.apply}
+            <SteadyLabel hold={[copy.applying, copy.apply]}>{busy === "apply" ? copy.applying : copy.apply}</SteadyLabel>
           </button>
           <button
             type="button"

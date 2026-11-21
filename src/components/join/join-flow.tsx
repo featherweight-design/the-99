@@ -306,7 +306,7 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
         body={sender ? copy.okBody(sender.displayName) : flyerCopy.okBody}
         balance={flyer}
         landing="go"
-        actions={<div className={FORM}><button type="button" disabled={busy || leaving} className={press()} onClick={toSignUp}>{busy || leaving ? copy.continuing : copy.toSignUp}</button></div>}
+        actions={<div className={FORM}><button type="button" disabled={busy || leaving} className={press()} onClick={toSignUp}><SteadyLabel hold={[copy.continuing, copy.toSignUp]}>{busy || leaving ? copy.continuing : copy.toSignUp}</SteadyLabel></button></div>}
       />
     );
   } else if (step === "account" && person) {

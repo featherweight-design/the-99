@@ -13,6 +13,7 @@
 // `Remove N copies` (an elevated secondary, never the accent).
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from "react";
+import { SteadyLabel } from "../ui/steady-label";
 import { createPortal } from "react-dom";
 import { editCollection, loadEditSheet } from "../../app/collection/edit-actions";
 import { useBackDismiss, useDialogA11y } from "../../lib/a11y/dialog";
@@ -459,7 +460,7 @@ export function EditCopiesSheet({
                   : PRIMARY
               } ${saving ? "opacity-60" : ""}`}
             >
-              {saveLabel}
+              <SteadyLabel hold={[collectionEditCopy.shortWarning.checking, c.saving, c.retry, r.confirm(sum.held), c.save]}>{saveLabel}</SteadyLabel>
             </button>
           </div>
         ) : null}

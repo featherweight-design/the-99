@@ -10,6 +10,7 @@ import type { CardActions } from "./suggestion-card";
 import { SuggestionLine } from "./suggestion-line";
 import { useVerdictOverrideView } from "./use-optimistic-verdict";
 import { ArrivalOrder } from "../ui/arrival-queue";
+import { SteadyLabel } from "../ui/steady-label";
 
 /**
  * Suggested changes' two lists (sub-project 8; Design's B10/B10b): a head with the count, the
@@ -89,7 +90,7 @@ export function SuggestionLists({
               disabled={applying || view.anyBusy}
               className="flex min-h-[44px] items-center rounded-[7px] px-[13px] text-[12.5px] font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] md:min-h-[32px] transition-colors"
             >
-              {applying ? copy.applying : anyAnswered ? copy.applyRest : copy.applyAll}
+              <SteadyLabel hold={[copy.applying, copy.applyRest, copy.applyAll]}>{applying ? copy.applying : anyAnswered ? copy.applyRest : copy.applyAll}</SteadyLabel>
             </button>
           </>
         ) : null}

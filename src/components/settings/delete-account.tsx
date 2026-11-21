@@ -35,6 +35,7 @@ import { SupportLink } from "../credits/support-link";
 import { CodeBoxes, field, link, LINKS, mmss, useTicking } from "../join/join-parts";
 import { CODE_ERR, codesOf, SIGN_ERR } from "../sign-in/auth-parts";
 import { SocialModal } from "../social/social-modal";
+import { SteadyLabel } from "../ui/steady-label";
 
 const a = accountCopy.del;
 const c = creditsPageCopy.del;
@@ -308,7 +309,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
             aria-busy={checking || undefined}
             className={`${CONFIRM} ${checking ? "opacity-60" : !canConfirm ? "opacity-[.45]" : ""}`}
           >
-            {checking ? a.deleting : a.confirm}
+            <SteadyLabel hold={[a.deleting, a.confirm]}>{checking ? a.deleting : a.confirm}</SteadyLabel>
           </button>
           <div className={LINKS}>
             {kind === "password" ? (
@@ -407,7 +408,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
             onClick={() => void deleteNow()}
             className={`${GO} ${!ready ? "opacity-[.45]" : busy ? "opacity-60" : ""}`}
           >
-            {busy ? a.deleting : a.go}
+            <SteadyLabel hold={[a.deleting, a.go]}>{busy ? a.deleting : a.go}</SteadyLabel>
           </button>
         </div>
       </div>
