@@ -438,6 +438,7 @@ export async function loadChangeCandidates(
       needsCut,
       bodyTotal,
       ability: partnerAbility(currentCards[0].oracleText, currentCards[0].typeLine) ?? { kind: "generic" },
+      landCeiling,
       lands: bodyRows.reduce((n, r) => (isLandFace(r.typeLine) ? n + r.quantity : n), 0),
       cutPool: needsCut
         ? cuttable(cutRows, commanders, locked).map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri }))

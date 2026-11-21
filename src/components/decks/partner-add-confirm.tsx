@@ -77,11 +77,11 @@ export function PartnerAddConfirm({
 
   const reason = (kind: "land" | "card") =>
     kind === "land"
-      ? copy.confirm.reasonLands(add.lands)
+      ? copy.confirm.reasonLands(add.lands, add.landCeiling)
       : option.hasPairRow ? copy.confirm.reasonUnplayed(pairName) : copy.confirm.reasonUnplayedEither(commanderShort, partnerShort);
   const suggested = useMemo(() => option.cuts.map((c, i) => cutLine(c, reason(c.kind), i)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [option.cuts, option.hasPairRow, add.lands]);
+    [option.cuts, option.hasPairRow, add.lands, add.landCeiling]);
   const found = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return null;

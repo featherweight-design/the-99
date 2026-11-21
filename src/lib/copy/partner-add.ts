@@ -44,7 +44,7 @@ export const partnerAddCopy = {
     opensNone: (colors: string) => `You own no ${colors} cards their decks run.`,
     cutHeading: "The card that leaves",
     cutNote: "suggested first",
-    reasonLands: (lands: number) => `The deck runs ${lands} lands. With two commanders the usual count is ${lands - 1}.`,
+    reasonLands: (lands: number, ceiling: number) => `The deck runs ${lands} lands. With two commanders the usual count is ${ceiling}.`,
     // Said only for a pair EDHREC holds a list for; any other pair reads the two commanders' own lists.
     reasonUnplayed: (pair: string) => `None of the ${pair} decks we read run it.`,
     reasonUnplayedEither: (commander: string, partner: string) =>

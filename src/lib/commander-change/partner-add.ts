@@ -45,6 +45,8 @@ export type PartnerAdd = {
   ability: PartnerAbility;
   /** Cards in the 99 now: with the pair added and nothing cut, the deck holds this plus two. */
   bodyTotal: number;
+  /** The land count a pair's deck runs at most before a land is the first cut. */
+  landCeiling: number;
   /** Lands in the 99, for the suggested land cut's reason. */
   lands: number;
   /** Every card of the 99 a cut may take, for "Cut another card": never a commander, never locked. */
