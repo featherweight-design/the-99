@@ -8,6 +8,7 @@ import { TaggedBox } from "../../cards/tagged-box";
 import { CardTagList, useCardTagPicker, type DeckCardOption } from "../../cards/card-tag-picker";
 import { PRIMARY } from "../../ui/button";
 import { InfoTip } from "../../ui/info-tip";
+import { SteadyLabel } from "../../ui/steady-label";
 
 export type { DeckCardOption };
 
@@ -127,7 +128,7 @@ export function NoteField({
             onClick={onSubmit}
             className={`h-[48px] min-w-[104px] cursor-pointer rounded-[8px] px-[16px] text-[14px] font-semibold disabled:cursor-default disabled:opacity-40 md:h-[40px] md:min-w-0 md:text-[13px] ${PRIMARY}`}
           >
-            {pending ? pendingLabel : submitLabel}
+            <SteadyLabel hold={[pendingLabel, submitLabel]}>{pending ? pendingLabel : submitLabel}</SteadyLabel>
           </button>
         </div>
       </div>

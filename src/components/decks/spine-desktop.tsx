@@ -43,6 +43,7 @@ import { shortName } from "../../lib/cards/short-name";
 import { DeckIntentLine } from "./deck-intent-line";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { TRUNCATES } from "./truncates";
+import { SteadyLabel } from "../ui/steady-label";
 
 /** The slice of the deck both widths of the header read. Narrower than
     `DeckDetail` on purpose: nothing in this band knows about the decklist. */
@@ -663,7 +664,7 @@ export function SpineDesktop({
                     cursor: rename.canSave ? "pointer" : "default",
                   }}
                 >
-                  {saving ? renameCopy.saving : failed ? renameCopy.retry : renameCopy.save}
+                  <SteadyLabel hold={[renameCopy.saving, renameCopy.retry, renameCopy.save]}>{saving ? renameCopy.saving : failed ? renameCopy.retry : renameCopy.save}</SteadyLabel>
                 </button>
                 <button
                   type="button"

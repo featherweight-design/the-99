@@ -304,7 +304,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
       <div className={FORM}>
         {errLine}
         <button type="button" disabled={locked} className={press(locked ? "busy" : "ready")} onClick={() => void land()}>
-          <SteadyLabel hold={[copy.checking, joinCopy.retry]}>{locked ? copy.checking : joinCopy.retry}</SteadyLabel>
+          <SteadyLabel hold={[copy.checking, joinCopy.retry]}><SteadyLabel hold={[copy.checking, joinCopy.retry]}>{locked ? copy.checking : joinCopy.retry}</SteadyLabel></SteadyLabel>
         </button>
       </div>
     );
@@ -342,7 +342,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
           </>
         )}
         <button type="submit" disabled={locked || !ready} className={press(making ? "busy" : "ready")}>
-          {making ? copy.making : copy.make}
+          <SteadyLabel hold={[copy.making, copy.make]}>{making ? copy.making : copy.make}</SteadyLabel>
         </button>
         {/* J3: a failure under the press, which stays and retries. */}
         {!passwordRefused && errLine}
@@ -351,7 +351,7 @@ export function SignUpFlow({ ticket, googleMissing = false }: {
             <div className={OR}>{signInCopy.or}</div>
             <button type="button" disabled={locked} className={GOOGLE} onClick={() => void withGoogle()}>
               <GoogleMark />
-              <SteadyLabel hold={[copy.checking, signInCopy.google]}>{google ? copy.checking : signInCopy.google}</SteadyLabel>
+              <SteadyLabel hold={[copy.checking, signInCopy.google]}><SteadyLabel hold={[copy.checking, signInCopy.google]}>{google ? copy.checking : signInCopy.google}</SteadyLabel></SteadyLabel>
             </button>
             {googleLine && <p role="alert" className={SIGN_ERR}>{googleLine}</p>}
             {/* R2 draws no hint under the busy press. */}

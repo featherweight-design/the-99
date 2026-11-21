@@ -7,17 +7,15 @@ import type { ReactNode } from "react";
  * of buttons shuffles, and the press target moves between the press and the answer. This sizes the label to
  * the widest of the words it can show, so the swap changes the letters and never the box.
  *
- * The other words are drawn as zero-height pseudo-element content (`data-hold`), never as markup: they take
- * up width and nothing else, so a screen reader reads one label, `getByText` finds one, and selecting the
- * button copies one. Pass every other string the control can show in `hold` (two at most; the widest pair
- * is enough, since the box only needs the widest of the set).
+ * The words are drawn as zero-height pseudo-element content (`data-hold`, one word per line), never as markup:
+ * they take up width and nothing else, so a screen reader reads one label, `getByText` finds one, and selecting
+ * the button copies one. Pass every string the control can show in `hold`, the one on screen included.
  */
-export function SteadyLabel({ children, hold }: { children: ReactNode; hold: readonly [string, string?] }) {
+export function SteadyLabel({ children, hold }: { children: ReactNode; hold: readonly (string | undefined)[] }) {
   return (
     <span
-      data-hold={hold[0]}
-      data-hold-more={hold[1]}
-      className="inline-block whitespace-nowrap text-center before:invisible before:block before:h-0 before:overflow-hidden before:content-[attr(data-hold-more)] after:invisible after:block after:h-0 after:overflow-hidden after:content-[attr(data-hold)]"
+      data-hold={hold.filter(Boolean).join("\n")}
+      className="inline-block whitespace-nowrap text-center after:invisible after:block after:h-0 after:overflow-hidden after:whitespace-pre after:content-[attr(data-hold)]"
     >
       {children}
     </span>

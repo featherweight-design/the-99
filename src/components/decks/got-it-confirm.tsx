@@ -24,6 +24,7 @@ import { identityGradient } from "../../lib/cards/gradients";
 import { PrintingRegion } from "../cards/printing-region";
 import type { GotItWritten } from "./got-it-receipt";
 import { ArtLayer } from "../ui/art-layer";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = gotItCopy.confirm;
 const MONO_LABEL = "font-mono text-[9.5px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]";
@@ -459,7 +460,7 @@ export function GotItConfirmForm<F>({
                 : "cursor-default bg-[color:var(--elevated)] text-[color:var(--fg-locked)]"
             }`}
           >
-            {pending ? c.adding : ready ? c.add(qty) : c.choosePrinting}
+            <SteadyLabel hold={[c.adding, c.add(qty), c.choosePrinting]}>{pending ? c.adding : ready ? c.add(qty) : c.choosePrinting}</SteadyLabel>
           </button>
         </div>
       </div>

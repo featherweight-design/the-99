@@ -460,7 +460,7 @@ export function EditCopiesSheet({
                   : PRIMARY
               } ${saving ? "opacity-60" : ""}`}
             >
-              <SteadyLabel hold={[c.saving, isRemoval ? r.confirm(sum.held) : c.save]}>{saveLabel}</SteadyLabel>
+              <SteadyLabel hold={[c.saving, isRemoval ? r.confirm(sum.held) : c.save]}><SteadyLabel hold={[c.saving, collectionEditCopy.shortWarning.checking, c.retry, r.confirm(sum.held), c.save]}>{saveLabel}</SteadyLabel></SteadyLabel>
             </button>
           </div>
         ) : null}

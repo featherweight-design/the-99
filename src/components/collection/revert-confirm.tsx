@@ -300,7 +300,7 @@ export function RevertConfirm({
                   disabled={pending || view.k === "reading"}
                   className="h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
                 >
-                  <SteadyLabel hold={[collectionEditCopy.history.reverting, partial ? c.confirmPartial : c.confirm]}>{pending ? collectionEditCopy.history.reverting : partial ? c.confirmPartial : c.confirm}</SteadyLabel>
+                  <SteadyLabel hold={[collectionEditCopy.history.reverting, partial ? c.confirmPartial : c.confirm]}><SteadyLabel hold={[collectionEditCopy.history.reverting, c.confirmPartial, c.confirm]}>{pending ? collectionEditCopy.history.reverting : partial ? c.confirmPartial : c.confirm}</SteadyLabel></SteadyLabel>
                 </button>
               ) : null}
             </div>

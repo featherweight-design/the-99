@@ -202,7 +202,7 @@ export function ConfirmModal({
             // §1.14 Replace with N cards — the bone fill, 48 phone / 46 desktop
             className="flex h-[48px] md:h-[46px] w-full md:flex-1 items-center justify-center rounded-[10px] md:rounded-lg font-sans font-semibold text-[15px] md:text-[14px] bg-[color:var(--fg)] text-[color:var(--bg)] cursor-pointer disabled:cursor-wait disabled:opacity-60"
           >
-            <SteadyLabel hold={[collectionEditCopy.shortWarning.checking, words.confirm]}>{pending ? (checking ? collectionEditCopy.shortWarning.checking : words.pending) : words.confirm}</SteadyLabel>
+            <SteadyLabel hold={[collectionEditCopy.shortWarning.checking, words.confirm]}><SteadyLabel hold={[collectionEditCopy.shortWarning.checking, words.pending, words.confirm]}>{pending ? (checking ? collectionEditCopy.shortWarning.checking : words.pending) : words.confirm}</SteadyLabel></SteadyLabel>
           </button>
         </div>
           </>

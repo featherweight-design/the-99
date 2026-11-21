@@ -406,7 +406,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
         />
         {errLine}
         <button type="submit" disabled={locked || (!cantUse && password.length === 0)} className={press(busy ? "busy" : "ready")}>
-          {cantUse ? copy.resetPassword : busy || leaving ? copy.signingIn : copy.signIn}
+          <SteadyLabel hold={[copy.resetPassword, copy.signingIn, copy.signIn]}>{cantUse ? copy.resetPassword : busy || leaving ? copy.signingIn : copy.signIn}</SteadyLabel>
         </button>
         <div className={LINKS}>
           {/* N1 offers the emailed code alone: its press is already the reset. */}

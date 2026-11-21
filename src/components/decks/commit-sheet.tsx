@@ -27,6 +27,7 @@ import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { COMMIT_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = deckVersioningCopy.commit;
 
@@ -390,7 +391,7 @@ export function CommitSheet({
               });
             }}
           >
-            {pending ? copy.ctaPending : copy.cta(version)}
+            <SteadyLabel hold={[copy.ctaPending, copy.cta(version)]}>{pending ? copy.ctaPending : copy.cta(version)}</SteadyLabel>
           </PrimaryButton>
           {/* Never over the page: a refused commit changed nothing, so the sheet
               stays open with the note still in it. */}

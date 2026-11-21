@@ -243,7 +243,7 @@ export function ShortDeckWarning({
             disabled={pending}
             className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
           >
-            <SteadyLabel hold={[c.saving, confirmLabel]}>{pending ? c.saving : confirmLabel}</SteadyLabel>
+            <SteadyLabel hold={[c.saving, confirmLabel]}><SteadyLabel hold={[c.saving, confirmLabel]}>{pending ? c.saving : confirmLabel}</SteadyLabel></SteadyLabel>
           </button>
         </div>
         ) : null}

@@ -25,6 +25,7 @@ import { ToastFrame, useToastClock } from "../../collection/edit-toast";
 import { PendingReporter } from "../../shell/pending-reporter";
 import { CommanderThumb } from "../../ui/commander-thumb";
 import { Checkbox } from "../../ui/checkbox";
+import { SteadyLabel } from "../../ui/steady-label";
 
 const copy = preconsCopy.pick;
 const NO_BOX: PreconBox = { copies: 0, tokens: 0, twin: null };
@@ -317,7 +318,7 @@ export function PreconPickView({ rows, entry, initial, hasCollection = false, ad
             onClick={submit}
             className={`h-[48px] w-full cursor-pointer rounded-[10px] border-0 bg-[color:var(--fg)] px-[18px] font-sans text-[14px] font-semibold text-[color:var(--bg)] md:h-[40px] md:w-auto md:rounded-[8px] md:text-[13.5px] ${held ? "opacity-40" : ""}`}
           >
-            {label}
+            <SteadyLabel hold={[copy.adding, copy.addHeld, copy.add(totals.boxes, totals.cards)]}>{label}</SteadyLabel>
           </button>
         </div>
       </div>
