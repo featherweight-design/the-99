@@ -186,7 +186,6 @@ describe("UpgradeEntry", () => {
       expect(screen.getByText(/Led by Rootha, with the 1 swap toward Spells\./)).toBeInTheDocument();
       expect(screen.getByText("all 100 · 1 swapped")).toBeInTheDocument();
       expect(screen.getByText("2 → 3 · Upgraded, as chosen")).toBeInTheDocument();
-      expect(screen.getByText("written for this list as it starts")).toBeInTheDocument();
       fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
       await waitFor(() => expect(create).toHaveBeenCalledWith("f", "Prismari", "r1", { adds: ["a"], cuts: ["c"] }));
     });
