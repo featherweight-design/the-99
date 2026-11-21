@@ -111,15 +111,15 @@ async function main() {
     const g4 = await game();
     const pre = await tablePrefill(A, T, deckA);
     if (!pre) throw new Error("no prefill");
-    let undo: Promise<string> | null = null;
-    const logging = db.transaction(async (tx) => {
+    // The Undo runs on its own pooled connection; its outcome is caught at once, so a failed log never leaves it unhandled.
+    let undo: Promise<string> = Promise.resolve("not started");
+    await db.transaction(async (tx) => {
       await resolveTableSeatsIn(tx, A, pre.table, [2, 3]);
-      undo = undoTableResult(A, T, g4);
+      undo = undoTableResult(A, T, g4).catch((e: unknown) => `threw: ${String(e)}`);
       await sleep(1500);
       await tx.execute(sql`insert into deck_games (deck_id, user_id, result, pod_size, played_at, rule_zero_table_id) values (${deckA}, ${A}, 'loss', 3, now(), ${T})`);
-    });
-    await logging;
-    const raced = await (undo as unknown as Promise<string>);
+    }).finally(() => undo);
+    const raced = await undo;
     check("the Undo racing a log waits for it and answers logged", raced === "logged", raced);
     check("the logged game's result stands", (await rowsOf(T)) === 3);
   } finally {

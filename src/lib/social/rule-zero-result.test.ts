@@ -110,8 +110,8 @@ describe("gameLoggedQuery (Undo's refusal)", () => {
     expect(text).toContain('"rule_zero_result_seats"."table_id" = $1');
     expect(text).toContain('"rule_zero_result_seats"."started_at" = $2');
     // Unqualified, these would compare a column to itself and never find a log (AGENTS.md, correlated subqueries).
-    expect(text).toContain('lg.user_id = "rule_zero_result_seats".user_id');
-    expect(text).toContain('lg.rule_zero_table_id = "rule_zero_result_seats".table_id');
+    expect(text).toContain('dg.user_id = "rule_zero_result_seats".user_id');
+    expect(text).toContain('dg.rule_zero_table_id = "rule_zero_result_seats".table_id');
     expect(text).toContain('>= "rule_zero_result_seats".saved_at');
     expect(params[0]).toBe(TABLE);
   });
