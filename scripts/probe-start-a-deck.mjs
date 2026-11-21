@@ -66,17 +66,54 @@ try {
       await group.waitFor({ timeout: 30_000 });
       const at = `${tag}${withPicks ? " + picks" : ""}`;
       const radios = group.locator("input[type=radio]");
-      report((await radios.count()) === 2, `${at}: two options`, `count=${await radios.count()}`);
+      const n = await radios.count();
+      const guided = n === 3;
+      report(n === 2 || n === 3, `${at}: two options, or three with the Guided row`, `count=${n}`);
       report(await radios.nth(0).isChecked(), `${at}: Free build pre-marked`);
-      for (let i = 0; i < 2; i += 1) {
+      for (let i = 0; i < n; i += 1) {
         const box = await group.locator("label").nth(i).boundingBox();
         report(!!box && box.height >= 44, `${at}: row ${i + 1} at least 44px tall`, `h=${box?.height}`);
       }
       if (!withPicks) {
-        await group.locator("label").nth(1).click();
-        report(await radios.nth(1).isChecked() && !(await radios.nth(0).isChecked()), `${at}: choosing Just the commander moves the mark`);
+        const last = n - 1;
+        await group.locator("label").nth(last).click();
+        report(await radios.nth(last).isChecked() && !(await radios.nth(0).isChecked()), `${at}: choosing Just the commander moves the mark`);
         const press = await onPage(page, "form button[type=submit]").first().innerText();
         report(/Create deck/.test(press), `${at}: the press reads Create deck`, press);
+        const guidedOff = guided && (await radios.nth(1).isDisabled());
+        if (guidedOff) {
+          // Off, never marked: its reason is drawn under it and named by aria-describedby.
+          const reason = await onPage(page, "#build-guided-reason").innerText();
+          report(reason.length > 0 && !(await radios.nth(1).isChecked()), `${at}: the off Guided row says why`, reason.replace(/\s+/g, " "));
+        }
+        if (guided && !guidedOff) {
+          // The sheet opens from the press and is walked to its confirm, which is never pressed: it would spend.
+          await group.locator("label").nth(1).click();
+          report(/Next · Strategy/.test(await onPage(page, "form button[type=submit]").first().innerText()), `${at}: Guided's press reads Next · Strategy`);
+          await page.fill("form input[type=text]", "Probe deck");
+          await onPage(page, "form button[type=submit]").first().click();
+          const dialog = onPage(page, "[role=dialog]");
+          await dialog.waitFor({ timeout: 15_000 });
+          const radiosIn = dialog.locator("[role=radio]");
+          report((await radiosIn.count()) >= 1, `${at}: the sheet draws strategies`, `n=${await radiosIn.count()}`);
+          await radiosIn.first().click();
+          const flow = [];
+          for (let step = 0; step < 3; step += 1) {
+            const go = dialog.locator("button:not([aria-label])").filter({ hasText: /Next|Build toward/ }).last();
+            const text = await go.innerText();
+            flow.push(text);
+            if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/sheet-${tag}-${step}.png` });
+            if (/Build toward/.test(text)) break;
+            if (step === 1) await dialog.locator("[role=radio]").first().click();
+            await go.click();
+            await dialog.locator("[role=radio]").first().waitFor({ timeout: 5_000 });
+            if (step === 0) await dialog.locator("[role=radio]").first().click();
+          }
+          report(flow.some((t) => /Build toward/.test(t)), `${at}: the sheet reaches its confirm`, flow.join(" > "));
+          const sheetOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          report(sheetOverflow <= 0, `${at}: the sheet scrolls nothing sideways`, `overflow=${sheetOverflow}`);
+          await page.keyboard.press("Escape");
+        }
       } else {
         const block = onPage(page, "[data-testid=build-picks]");
         await block.waitFor({ timeout: 15_000 });

@@ -14,6 +14,9 @@ import { hasAnswerRows, loadHandOffAnswers } from "../../../lib/intake/hand-off-
 import { serializeChooseParams } from "../../../lib/intake/params";
 import { loadIntakeCatalog } from "../../../lib/intake/search";
 import { choosePath } from "../../../lib/commanders/place-paths";
+import { requestFlags } from "../../../lib/flags/request";
+import { loadGuidedOffer } from "../../../lib/guided/offer";
+import { preconUpgradeEnabled } from "../../../lib/precons/upgrade/flag";
 
 // The guided build's run (createDeck's `after()`) lives under this page's limit: two upgrade calls and the Overview's deadline
 // fit under it (`src/lib/guided/limits.test.ts` pins the arithmetic).
@@ -75,9 +78,12 @@ export default async function NewDeckPage({
       // The picks the commander page carried, drawn with their art and whether they are owned (guided build, G9). A failed
       // read draws none: the create still places them (`createDeck` re-checks each id).
       const selected = parseSelectParam(select);
-      const [picks, commanderHref] = await Promise.all([
+      // The Guided row rides Upgrade's switch, decided for this reader; with it off, or the offer unreadable, the screen draws no row.
+      const env = await requestFlags(userId);
+      const [picks, commanderHref, guided] = await Promise.all([
         loadSelectedPicks(userId, selected).catch(() => []),
         selected.length > 0 ? commanderPageHref(userId, commander.oracleId) : null,
+        preconUpgradeEnabled(env) ? loadGuidedOffer(userId, [commander.oracleId], env).catch(() => null) : null,
       ]);
       return (
         <CreatePreFilled
@@ -92,6 +98,7 @@ export default async function NewDeckPage({
           selectedOracleIds={selected}
           picks={picks}
           commanderHref={commanderHref}
+          guided={guided}
           handOff={handOff}
         />
       );

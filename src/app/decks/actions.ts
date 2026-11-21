@@ -57,6 +57,7 @@ import { answerColumnsFor, retryAnswersOf, validateCreateAnswers, type AnswerCol
 import { sanitizeSelection } from "../../lib/decks/selection-param";
 import { isCreateBuildKind, type CreateBuildKind } from "../../lib/decks/build-kind";
 import { beginGuided, type GuidedPicks } from "../../lib/guided/run";
+import { landingAfterCreate } from "../../lib/guided/sheet";
 import { preconUpgradeEnabled } from "../../lib/precons/upgrade/flag";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
@@ -387,7 +388,8 @@ export async function createDeck(
   flushLogsAfterResponse();
   // Outside the try: redirect() signals by throwing, and a catch here would
   // read that throw as a failed fill.
-  redirect(`/decks/${deckId}`);
+  // A guided run that did not start lands with the refusal the deck's page draws (`landingAfterCreate`): never silent.
+  redirect(landingAfterCreate(deckId, guidedStart));
 }
 
 

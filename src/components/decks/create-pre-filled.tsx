@@ -27,7 +27,12 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { ArtLayer } from "../ui/art-layer";
 import { BuildChoice } from "./build-choice";
 import { guidedBuildCopy } from "../../lib/copy/guided-build";
-import type { DeckBuildKind } from "../../lib/decks/build-kind";
+import type { CreateBuildKind } from "../../lib/decks/build-kind";
+import { carryIn } from "../../lib/guided/carry-in";
+import { guidedChoice } from "../../lib/guided/choice";
+import type { GuidedOffer } from "../../lib/guided/offer";
+import type { GuidedPicks } from "../../lib/guided/run";
+import { GuidedSheet } from "./guided/guided-sheet";
 import type { SelectedPick } from "../../lib/decks/selected-picks";
 import { SteadyLabel } from "../ui/steady-label";
 
@@ -54,6 +59,8 @@ interface CreatePreFilledProps {
    * when there is a row to draw, and the create carries the answers to the fill. Absent, this is
    * today's page, byte for byte.
    */
+  /** The Guided row's offer (strategies, the reader's credits); null draws no row: the switch is off or the offer could not be read. */
+  guided?: GuidedOffer | null;
   handOff?: {
     answers: HandOffAnswers;
     /** What `createDeck` is handed: the answers as the block shows them. */
@@ -83,12 +90,14 @@ export function CreatePreFilled({
   selectedOracleIds,
   picks = [],
   commanderHref = null,
+  guided = null,
   handOff,
 }: CreatePreFilledProps) {
   const backHref = handOff?.resultsHref ?? "/decks/new";
   const [deckName, setDeckName] = useState("");
   // Today's fill is the default and is pre-marked; the reader chooses to leave it.
-  const [build, setBuild] = useState<DeckBuildKind>("free");
+  const [build, setBuild] = useState<CreateBuildKind>("free");
+  const [sheet, setSheet] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -141,6 +150,8 @@ export function CreatePreFilled({
     }
     if (waiting) return;
     setError(null);
+    // Guided: the sheet picks first, and its confirm is what creates the deck (`confirmGuided`).
+    if (build === "guided" && guided) { setSheet(true); return; }
     // *From my collection* builds to the highest bracket the deck permits; *Hit* to the target, buying.
     const done = reach?.status === "done" ? reach.reach : null;
     const asked = handOff?.create && mustChoose && done
@@ -160,8 +171,42 @@ export function CreatePreFilled({
     });
   }
 
+  function confirmGuided(picksOut: GuidedPicks) {
+    const trimmed = deckName.trim();
+    startTransition(async () => {
+      try {
+        // The answers steer the free fill under the run as they do for the free build; the picks go to the guided start, which re-checks each.
+        await createDeck(oracleId, trimmed, selectedOracleIds, null, handOff?.create ?? null, "guided", picksOut);
+      } catch (err) {
+        unstable_rethrow(err);
+        setSheet(false);
+        setError(addPanelCopy.createPicker.failed);
+      }
+    });
+  }
+  const guidedPick = guided
+    ? carryIn(handOff ? { themes: handOff.answers.themes, pool: handOff.answers.pool, card: handOff.answers.card, budgetDollars: handOff.answers.budgetDollars, bracket: handOff.answers.bracket } : null, guided.strategies)
+    : null;
+  const guidedKeeps = [
+    ...(handOff?.answers.card ? [guidedBuildCopy.sheet.cards.around(handOff.answers.card.name)] : []),
+    ...(picks.length > 0 ? [guidedBuildCopy.sheet.cards.picks(picks.length)] : []),
+  ];
+
   return (
     <section>
+      {sheet && guided && guidedPick && (
+        <GuidedSheet
+          commanderName={name.split(",")[0]}
+          deckName={deckName.trim()}
+          strategies={guided.strategies}
+          carry={guidedPick}
+          extraKept={selectedOracleIds ?? []}
+          keeps={guidedKeeps}
+          pending={isPending}
+          onConfirm={confirmGuided}
+          onClose={() => setSheet(false)}
+        />
+      )}
       {/* ── Page header ── */}
       {/* Mobile: flex center gap-[10px] p-[20px_18px_14px] border-bottom */}
       {/* Desktop: block p-[34px_40px] no border-bottom */}
@@ -401,6 +446,7 @@ export function CreatePreFilled({
               picks={picks}
               commanderHref={commanderHref}
               disabled={isPending}
+              guided={guided ? guidedChoice(guided) : null}
             />
 
             {/* The two CTAs are a flex row (column on mobile) with an explicit

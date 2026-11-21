@@ -91,6 +91,7 @@ import { isUuid } from "../../../lib/uuid";
 import { requestFlags } from "../../../lib/flags/request";
 import { preconUpgradeEnabled } from "../../../lib/precons/upgrade/flag";
 import { GuidedRunLine } from "../../../components/decks/guided/guided-run-line";
+import { GUIDED_REFUSED_PARAM, GUIDED_REFUSED_VALUE } from "../../../lib/guided/sheet";
 import { SWITCH_FLAGS } from "../../../lib/flags/flags";
 import { TOOL_PARAM, deckToolLanding } from "../../../lib/discovery/tools";
 
@@ -769,7 +770,7 @@ export default async function DeckBuilderPage({
       ownProvenance={tokenNewest ? provenanceForm(tokenNewest, new Date()) : null}
     >
       {/* The guided build's line (G6): drawn from its own read, so the cached payload above never carries a run. */}
-      {preconUpgradeEnabled(env) && <GuidedRunLine deckId={id} deckName={detail.name} />}
+      {preconUpgradeEnabled(env) && <GuidedRunLine deckId={id} deckName={detail.name} refused={query[GUIDED_REFUSED_PARAM] === GUIDED_REFUSED_VALUE} />}
       <ZoneProvider zone={await resolveZone()}>{landed}</ZoneProvider>
     </DeckTokensProvider>
   );

@@ -6,21 +6,27 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { PendingReporter } from "../shell/pending-reporter";
 import { guidedBuildCopy } from "../../lib/copy/guided-build";
-import type { DeckBuildKind } from "../../lib/decks/build-kind";
+import type { CreateBuildKind } from "../../lib/decks/build-kind";
+import { CreditsText } from "../ui/credits-text";
+import { creditsCopy } from "../../lib/copy/credits";
+import type { GuidedChoice } from "../../lib/guided/choice";
 import type { SelectedPick } from "../../lib/decks/selected-picks";
 
 const copy = guidedBuildCopy.choice;
 
-const ICONS: Record<DeckBuildKind, ReactNode> = {
+const ICONS: Record<CreateBuildKind, ReactNode> = {
   // a stack of cards
   free: (<><rect x="4" y="5" width="12" height="14" rx="2" /><path d="M8 3h12v14" /></>),
+  // a card with a spark: picked, then sharpened
+  guided: (<><rect x="4" y="6" width="11" height="14" rx="2" /><path d="M18.5 3v6M15.5 6h6" /></>),
   // one card alone
   empty: (<><rect x="6.5" y="4" width="11" height="16" rx="2" /><path d="M10 9.5h4" /></>),
 };
 
-export function BuildChoice({ value, onChange, commander, picks, commanderHref, disabled }: {
-  value: DeckBuildKind;
-  onChange: (kind: DeckBuildKind) => void;
+export function BuildChoice({ value, onChange, commander, picks, commanderHref, disabled, guided = null }: {
+  value: CreateBuildKind;
+  onChange: (kind: CreateBuildKind) => void;
+  guided?: GuidedChoice | null;
   /** The commander's short name, for the rows' lines. */
   commander: string;
   /** The synergy picks carried from the commander page (?select=), drawn so the reader sees they came along. */
@@ -30,8 +36,15 @@ export function BuildChoice({ value, onChange, commander, picks, commanderHref, 
   disabled?: boolean;
 }) {
   const n = picks.length;
-  const rows: { kind: DeckBuildKind; name: string; cost: string; line: string }[] = [
+  const g = copy.guided;
+  const guidedOff = guided !== null && guided.state !== "ready";
+  const guidedReason = guided === null ? null
+    : guided.state === "none" ? g.none
+    : guided.state === "short" ? (guided.payments ? creditsCopy.withMore(g.shortMore(guided.have), true) : g.shortOff(guided.have))
+    : null;
+  const rows: { kind: CreateBuildKind; name: string; cost: string; line: string; off?: boolean; reason?: string | null }[] = [
     { kind: "free", name: copy.free.name, cost: copy.free.cost, line: n > 0 ? copy.withPicks.free(n) : copy.free.line },
+    ...(guided === null ? [] : [{ kind: "guided" as const, name: g.name, cost: g.cost, line: `${g.line} ${g.back}`, off: guidedOff, reason: guidedReason }]),
     { kind: "empty", name: copy.empty.name, cost: copy.empty.cost, line: n > 0 ? copy.withPicks.empty(commander, n) : copy.empty.line(commander) },
   ];
   return (
@@ -62,11 +75,12 @@ export function BuildChoice({ value, onChange, commander, picks, commanderHref, 
       <div role="radiogroup" aria-labelledby="build-choice-label" className="flex flex-col gap-[8px]">
         <p id="build-choice-label" className="mb-[0px] font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{copy.label}</p>
         {rows.map((r) => {
-          const on = r.kind === value;
+          const on = r.kind === value && !r.off;
+          const reasonId = r.reason ? `build-${r.kind}-reason` : undefined;
           return (
             <label
               key={r.kind}
-              className={`flex w-full cursor-pointer gap-[12px] rounded-[10px] border border-solid p-[12px] text-left has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)] ${
+              className={`flex w-full ${r.off ? "cursor-not-allowed" : "cursor-pointer"} gap-[12px] rounded-[10px] border border-solid p-[12px] text-left has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[color:var(--accent)] ${
                 on ? "border-[color:var(--accent)] bg-[color:color-mix(in_oklab,var(--accent)_10%,var(--surface))]" : "border-[color:var(--border)] bg-[color:var(--surface)]"
               }`}
             >
@@ -75,7 +89,8 @@ export function BuildChoice({ value, onChange, commander, picks, commanderHref, 
                 name="build-kind"
                 value={r.kind}
                 checked={on}
-                disabled={disabled}
+                disabled={disabled || r.off}
+                aria-describedby={reasonId}
                 onChange={() => onChange(r.kind)}
                 className="sr-only"
               />
@@ -88,6 +103,9 @@ export function BuildChoice({ value, onChange, commander, picks, commanderHref, 
                   <span className="ml-auto font-mono text-[10.5px] text-[color:var(--fg-faint)]">{r.cost}</span>
                 </span>
                 <span className="text-[12.5px] leading-[1.5] text-[color:var(--fg-body)]">{r.line}</span>
+                {r.reason && (
+                  <span id={reasonId} className="whitespace-pre-line font-mono text-[11px] leading-[1.5]" style={{ color: "var(--warning)" }}><CreditsText text={r.reason} /></span>
+                )}
               </span>
               <span aria-hidden className="mt-[2px] flex h-[18px] w-[18px] flex-none items-center justify-center rounded-full border border-solid" style={{ borderColor: on ? "var(--accent)" : "var(--border-strong)" }}>
                 {on && <span className="h-[10px] w-[10px] rounded-full" style={{ background: "var(--accent)" }} />}

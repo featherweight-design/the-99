@@ -21,14 +21,28 @@ export function lineShows(run: GuidedState, now: number): boolean {
   return now - run.createdAt.getTime() < GUIDED_LINE_HOURS * 3_600_000;
 }
 
-export function GuidedRunLine({ deckId, deckName }: { deckId: string; deckName: string }) {
+/** The line when the deck was created but its guided run was refused at the start (`?guided=refused`): same shape and face as the failed line, nothing to open. */
+export function RefusedLine() {
+  return (
+    <div data-testid="guided-refused-line" className="mx-auto flex w-full max-w-[1400px] items-center gap-[12px] border-b border-solid border-b-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] py-[8px] md:px-[24px]">
+      <p role="alert" className="m-0 min-w-0 flex-1 font-mono text-[11.5px] leading-[1.5]" style={{ color: "var(--danger)" }}>{copy.refused}</p>
+    </div>
+  );
+}
+
+export function GuidedRunLine({ deckId, deckName, refused = false }: { deckId: string; deckName: string; refused?: boolean }) {
   const [initial, setInitial] = useState<GuidedState | null>(null);
   useEffect(() => {
     let live = true;
     readGuidedStateAction(deckId).then((r) => { if (live && r) setInitial(r); }, () => {});
     return () => { live = false; };
   }, [deckId]);
-  return initial ? <Line key={initial.id} deckId={deckId} deckName={deckName} initial={initial} /> : null;
+  return (
+    <>
+      {refused && !initial && <RefusedLine />}
+      {initial ? <Line key={initial.id} deckId={deckId} deckName={deckName} initial={initial} /> : null}
+    </>
+  );
 }
 
 function Line({ deckId, deckName, initial }: { deckId: string; deckName: string; initial: GuidedState }) {
