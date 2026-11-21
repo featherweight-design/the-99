@@ -8,7 +8,7 @@
 
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { canPair, partnerAbility } from "../decks/partner";
+import { canPair, partnerAbility, type PartnerAbility } from "../decks/partner";
 import { isCommanderCandidate } from "../recs/score";
 import { MIN_CANDIDATE_DECKS } from "./fit";
 import type { Candidate } from "./candidates";
@@ -41,6 +41,12 @@ export type PartnerOption = Candidate & {
 export type PartnerAdd = {
   /** The deck's 99 holds 99 cards: the add needs one cut. A deck at 98 or under needs none. */
   needsCut: boolean;
+  /** What the commander's own card prints: the section's title and rule line read it. */
+  ability: PartnerAbility;
+  /** Cards in the 99 now: with the pair added and nothing cut, the deck holds this plus two. */
+  bodyTotal: number;
+  /** Lands in the 99, for the suggested land cut's reason. */
+  lands: number;
   /** Every card of the 99 a cut may take, for "Cut another card": never a commander, never locked. */
   cutPool: { oracleId: string; name: string; imageUri: string | null }[];
   yours: PartnerOption[];

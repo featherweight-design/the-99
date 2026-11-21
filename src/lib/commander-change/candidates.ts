@@ -20,6 +20,7 @@ import { db } from "../../db";
 import { cards, collectionItems, commanderPairSupport, commanderPairSupportCards, commanderSupportCards, deckCards, decks } from "../../db/schema";
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
+import { isLandFace } from "../cards/facet";
 import { isBasicLand } from "../decks/grouping";
 import type { PriceFact } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
@@ -435,6 +436,9 @@ export async function loadChangeCandidates(
     };
     return {
       needsCut,
+      bodyTotal,
+      ability: partnerAbility(currentCards[0].oracleText, currentCards[0].typeLine) ?? { kind: "generic" },
+      lands: bodyRows.reduce((n, r) => (isLandFace(r.typeLine) ? n + r.quantity : n), 0),
       cutPool: needsCut
         ? cuttable(cutRows, commanders, locked).map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri }))
         : [],
