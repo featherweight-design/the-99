@@ -88,7 +88,7 @@ describe("assignPendingIn", () => {
   });
 
   it("counts other decks' pending picks toward the cap, never this deck's own", () => {
-    const src = readFileSync(new URL("./pending-picks.ts", import.meta.url), "utf8");
+    const src = readFileSync("src/lib/decks/pending-picks.ts", "utf8");
     expect(src).toMatch(/p\.deck_id <> \$\{deckId\}/);
     expect(src).toMatch(/target: \[pendingAssignments\.userId, pendingAssignments\.oracleId, pendingAssignments\.deckId\]/);
   });
