@@ -2894,6 +2894,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   choose the numbers. On main Start throws no dice, so it fails at the second check. It writes nothing, but needs
   `INVITE_CODE_SECRET` on the dev server and the fixture from `scripts/seed-rule-zero-fixture.mts` on a scratch branch.
   `PROBE_SHOTS=<dir>` keeps photographs.
+- `pnpm probe:tracker-sheet-seats` opens and closes the tracker's player sheet from every seat of the fixture's S4 at
+  phone (390x844) and both tablet orientations (1024x768, 820x1180). Before any sheet opens it hit-tests a grid across
+  each seat's panel: every point must land on that seat, since a sideways seat's unturned box once lay across the next
+  seat and swallowed its End turn. Then for each seat it reads the sheet's rotation (summed over its ancestors) on the
+  first painted frame, mid-slide and at rest, against the seat's; checks the sheet and its close × are inside the
+  viewport and the × is what a press there hits; and checks the tracker's rect and every scroll offset above it are
+  unchanged while the sheet is open and after it closes. On main the phone sheet opens 227px off screen with the table
+  scrolled under it, a 180° seat's sheet rises upright, and seat 3's box covers seat 2. It writes nothing, needs
+  `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch. `SHOTS=<dir>` keeps photographs.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
