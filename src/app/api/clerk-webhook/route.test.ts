@@ -203,6 +203,8 @@ describe("POST /api/clerk-webhook", () => {
         await POST(req());
         expect(hashOf(0)).toBeNull();
         expect(hashOf(1)).toBeNull();
+        // No usable address is told to Sentry (a mailbox that never earns a lot should not be silent), and the key warning is not used for it.
+        expect(warn.mock.calls.map((c) => c[0])).toEqual(["clerk-webhook:welcome-email", "clerk-webhook:welcome-email"]);
       });
 
       it("grants nothing and warns, never hashing unkeyed, when no key is usable; still answers 200", async () => {

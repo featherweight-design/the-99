@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 // The transaction's shape, played by hand: whether a tombstone exists, whether the unique index absorbs the insert, and
 // what the insert was asked to write.
-const state = vi.hoisted(() => ({ tombstone: false, conflict: false, held: false, claimed: new Set<string>(), lots: 0, claimHash: "", values: null as null | Record<string, unknown>, where: null as unknown, lockSql: "", locked: 0, order: [] as string[] }));
+const state = vi.hoisted(() => ({ tombstone: false, conflict: false, held: false, claimed: new Set<string>(), lots: 0, claimHash: "", released: 0, values: null as null | Record<string, unknown>, where: null as unknown, lockSql: "", locked: 0, order: [] as string[] }));
 vi.mock("../../db", async () => {
   const schema = await vi.importActual<typeof import("../../db/schema")>("../../db/schema");
   const tx = {
@@ -16,6 +16,7 @@ vi.mock("../../db", async () => {
       state.order.push("held");
       return state.held ? [{ id: "lot" }] : [];
     } }) }),
+    delete: (t: unknown) => ({ where: async () => { if (t === schema.welcomeEmailClaims) { state.claimed.delete(state.claimHash); state.released += 1; } } }),
     insert: (t: unknown) => ({
       values: (v: Record<string, unknown>) => {
         if (t === schema.welcomeEmailClaims) {
@@ -50,7 +51,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const NOW = new Date("2026-10-18T12:00:00Z");
 const on = { PAYMENTS_ENABLED: "true", WELCOME_CREDITS_ENABLED: "true" } as unknown as NodeJS.ProcessEnv;
 const H = "a".repeat(64);
-const reset = (over: Partial<typeof state> = {}) => Object.assign(state, { tombstone: false, conflict: false, held: false, claimed: new Set<string>(), lots: 0, claimHash: "", values: null, where: null, lockSql: "", locked: 0, order: [] }, over);
+const reset = (over: Partial<typeof state> = {}) => Object.assign(state, { tombstone: false, conflict: false, held: false, claimed: new Set<string>(), lots: 0, claimHash: "", released: 0, values: null, where: null, lockSql: "", locked: 0, order: [] }, over);
 
 describe("grantWelcome", () => {
   it("writes 15 units that expire 30 days after the ACCOUNT was created, not after the call", async () => {
@@ -85,6 +86,8 @@ describe("grantWelcome", () => {
   it("answers `already` when the unique index absorbs the insert (a redelivery, a backfill)", async () => {
     reset({ conflict: true });
     expect(await grantWelcome("user_a", NOW, on, H, NOW)).toEqual({ granted: false, reason: "already" });
+    // The claim written a moment earlier is given back: a mailbox is never burned without a lot behind it.
+    expect([state.released, state.claimed.has(H)]).toEqual([1, false]);
   });
 
   it("gives an account past its 30 days nothing, and does not touch the database", async () => {

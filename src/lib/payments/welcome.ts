@@ -54,6 +54,11 @@ export async function grantWelcome(userId: string, createdAt: Date, env: NodeJS.
     const inserted = await tx.insert(creditGrants)
       .values({ userId, source: "welcome", units: WELCOME_UNITS, expiresAt, externalId: `welcome:${userId}` })
       .onConflictDoNothing().returning({ id: creditGrants.id });
-    return inserted.length === 0 ? { granted: false, reason: "already" } : { granted: true, expiresAt };
+    if (inserted.length === 0) {
+      // The lot exists under another path (its external id): give the claim back, so a mailbox is never burned for nothing.
+      await tx.delete(welcomeEmailClaims).where(eq(welcomeEmailClaims.emailHash, emailHash));
+      return { granted: false, reason: "already" };
+    }
+    return { granted: true, expiresAt };
   });
 }

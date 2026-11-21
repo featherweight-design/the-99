@@ -98,7 +98,8 @@ async function handleCreated(data: { id?: unknown; created_at?: unknown; first_n
     // under, grants nothing (fail closed) and answers 200 like any other refusal: a sign-up under an alias looks the same as any other.
     const email = primaryVerifiedEmail(data);
     const emailHash = email ? welcomeEmailHash(email, { SENTRY_USER_HASH_KEY: process.env.SENTRY_USER_HASH_KEY, ANON_KEY_SALT: process.env.ANON_KEY_SALT }) : null;
-    if (email && !emailHash) captureServerWarning("clerk-webhook:welcome-key", "welcome claim key missing or too short: no welcome lot granted");
+    if (!email) captureServerWarning("clerk-webhook:welcome-email", "no verified primary email on user.created: no welcome lot granted");
+    else if (!emailHash) captureServerWarning("clerk-webhook:welcome-key", "welcome claim key missing or too short: no welcome lot granted");
     const result = await grantWelcome(data.id, created, await resolveFlagsStrict(data.id), emailHash);
     console.info(`[clerk-webhook] user.created: welcome ${result.granted ? "granted" : result.reason}`);
   } catch (error) {
