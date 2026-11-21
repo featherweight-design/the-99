@@ -12,6 +12,8 @@ const h = vi.hoisted(() => ({
   engineArgs: [] as unknown[],
 }));
 
+const reval = vi.hoisted(() => vi.fn());
+vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: reval }));
 vi.mock("../model/client", () => ({ callModel: vi.fn() }));
 vi.mock("./inputs", () => ({
   loadGuidedDeck: async () => h.deck,
@@ -45,7 +47,7 @@ describe("beginGuided", () => {
     h.deck = deck;
     h.strategies = [{ key: "s1", label: "S1", blurb: "b", backing: [{ oracleId: "x", name: "X" }] }];
     h.started = { kind: "started", runId: "run-1", callId: "call-1" };
-    h.finish.mockReset(); h.overview.mockReset(); h.startArgs.length = 0; h.engineArgs.length = 0;
+    reval.mockReset(); h.finish.mockReset(); h.overview.mockReset(); h.startArgs.length = 0; h.engineArgs.length = 0;
     h.pool = { entries: [{ oracleId: "p1", name: "P1", cents: 100 }], prompt: [] };
   });
 
@@ -88,6 +90,14 @@ describe("beginGuided", () => {
     await b.run();
     expect(h.finish.mock.calls[0][1]).toMatchObject({ status: "done", refunded: false });
     expect(h.overview).toHaveBeenCalledOnce();
+    expect(reval).toHaveBeenCalledWith("d", "u");
+  });
+
+  it("refuses a crafted shape instead of throwing", async () => {
+    expect(await beginGuided("u", "d", null as never, env)).toEqual({ ok: false, reason: "notOffered" });
+    expect(await beginGuided("u", "d", { ...picks, kept: 5 as never }, env)).toEqual({ ok: false, reason: "notOffered" });
+    expect(await beginGuided("u", "d", { ...picks, kept: Array(100).fill("x") }, env)).toEqual({ ok: false, reason: "notOffered" });
+    expect(h.startArgs).toHaveLength(0);
   });
 
   it.each(["short", "ungrounded", "bracket"] as const)("refunds a %s run and writes no Overview", async (why) => {

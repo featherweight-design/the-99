@@ -1,3 +1,4 @@
+import { revalidateClaims } from "../decks/revalidate-claims";
 import { callModel } from "../model/client";
 import type { Billed } from "../model/allowance";
 import { UPGRADE_INPUT_CEILING_TOKENS, UPGRADE_MODEL } from "../precons/upgrade/constants";
@@ -32,6 +33,8 @@ export type GuidedPicks = {
   kept: readonly string[];
 };
 
+/** A deck holds 99 cards: more kept ids than that is not a deck's list. */
+const KEPT_MAX = 99;
 export const BUDGET_MIN_CENTS = 100;
 export const BUDGET_MAX_CENTS = 500_000;
 const isPoolMode = (v: unknown): v is PoolMode => POOL_MODES.some((m) => m === v);
@@ -46,6 +49,8 @@ const liveCall: UpgradeCallModel = (req) =>
   callModel({ model: UPGRADE_MODEL, system: req.system, user: req.user, maxTokens: req.maxTokens, schema: upgradeReplySchema, deadlineMs: req.deadlineMs });
 
 export async function beginGuided(userId: string, deckId: string, picks: GuidedPicks, env: NodeJS.ProcessEnv, deps?: Partial<GuidedDeps>): Promise<GuidedBegin> {
+  // A wire argument whatever its type says: a crafted shape is refused, never thrown on, and the kept list is bounded.
+  if (typeof picks !== "object" || picks === null || typeof picks.strategyKey !== "string" || !Array.isArray(picks.kept) || picks.kept.length > KEPT_MAX || !picks.kept.every((k) => typeof k === "string")) return { ok: false, reason: "notOffered" };
   const call = deps?.call ?? liveCall;
   const now = deps?.now?.() ?? new Date();
   await reapGuided(userId, deckId, now);
@@ -115,6 +120,8 @@ export async function beginGuided(userId: string, deckId: string, picks: GuidedP
         calls: report.calls, refunded, errorClass: report.failed ?? undefined,
       }, bill(), new Date());
       // The Overview rides the credits the run kept: a refunded run writes none, and a superseded one (reaped) neither.
+      // The swaps landed after the start's revalidation: the deck and its lists are stale until this one.
+      if (written) revalidateClaims(deckId, userId);
       if (written && !refunded) await overviewAfterGuidedRun(handle.runId, deckId, userId, deps?.env ?? env);
     } catch (err) {
       await finishGuided(handle, { status: "failed", errorClass: "upstream_busy" }, bill(), new Date()).catch(() => false);

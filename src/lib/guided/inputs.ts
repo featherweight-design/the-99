@@ -27,7 +27,7 @@ export async function loadGuidedDeck(userId: string, deckId: string): Promise<Gu
   const [deck] = await db.select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
     .from(decks).where(and(eq(decks.id, deckId), eq(decks.userId, userId))).limit(1);
   if (!deck) return null;
-  const commanderIds = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
+  const commanderIds = [...new Set([deck.commander, ...(deck.partner ? [deck.partner] : [])])];
   const cols = {
     oracleId: cards.oracleId, name: cards.name, manaCost: cards.manaCost, typeLine: cards.typeLine, oracleText: cards.oracleText,
     keywords: cards.keywords, cmc: cards.cmc, commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity,
