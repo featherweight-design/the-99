@@ -18,7 +18,7 @@
  * refused BY NAME so the row can say which happened.
  */
 
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardAssignments, deckCards, deckVersionCards, deckVersions, decks, pendingAssignments, pullReleases } from "../../db/schema";
 import { isUuid } from "../uuid";
@@ -34,21 +34,19 @@ export type AssignRefusal =
   | "claimant-no-longer-asks"
   | "no-supply-left"
   | "target-is-commander"
-  | "not-your-deck";
+  | "not-your-deck"
+  /** Several picks (2+ copies): every copy is picked already, so a new pick needs one untick first. */
+  | "all-picked";
 
 /**
  * Give one copy of `oracleId` to `deckId`, or take back the copy already given to it.
  *
- * ONE TOGGLE, THREE OUTCOMES, distinguishable only by what is already stored: pressing a deck
- * with no reservation writes one; pressing the deck you already reserved for deletes it,
- * returning the card to the seniority default; pressing a third deck moves the reservation rather
- * than adding to it.
- *
- * ONE AUTHORED RESERVATION PER CARD, WHATEVER THE SUPPLY — see the rule at the `taken >= 1`
- * branch below, which deletes before every insert so a second can never be written. An earlier
- * draft of this comment said a pick ADDS up to the cap when more than one copy is in play; that
- * was never what the code did, and a reader who believed it would write a preview for a state
- * this table cannot hold.
+ * SEVERAL PICKS, UP TO THE COPIES OWNED (Move a copy addendum, Hugh 2026-11-21). Pressing a deck
+ * with no reservation ADDS one while the card's picks (its reservations plus its pending picks)
+ * are fewer than the copies that can be given; pressing a deck you already picked deletes its
+ * reservation, returning that copy to commit order. At the cap a card with ONE giveable copy
+ * MOVES the pick (single-select, unchanged), and a card with two or more refuses with
+ * `all-picked`: the player unticks one first.
  *
  * Returns null when the write landed, or the named cause when it did not.
  */
@@ -142,9 +140,10 @@ export async function assignCopyIn(
   }
 
   // WHAT IS LEFT TO GIVE, read under the lock. The ceiling is the supply less every copy held
-  // as somebody's commander — those are never reservable — and what is left of it is that less
-  // the reservations already made. A row the player pressed may have been drawn before another
-  // pick took the last copy.
+  // as somebody's commander — those are never reservable — and the picks already standing count
+  // against it: the reservations, and every pending pick on ANOTHER deck (a pending pick waits for
+  // its deck's commit, and holds its place in the cap meanwhile). This deck's own pending pick is
+  // the one a commit converts through here, so it is never counted against itself.
   const { rows: [supply] } = await tx.execute<{ giveable: number; taken: number }>(sql`
     with owned as (
       select coalesce(sum(ci.quantity), 0)::int as n
@@ -167,10 +166,15 @@ export async function assignCopyIn(
       select coalesce(sum(a.copies), 0)::int as n
       from card_assignments a
       where a.user_id = ${userId} and a.oracle_id = ${oracleId}
+    ),
+    pending as (
+      select count(*)::int as n
+      from pending_assignments p
+      where p.user_id = ${userId} and p.oracle_id = ${oracleId} and p.deck_id <> ${deckId}
     )
     select
       greatest((select n from owned) - (select n from commanders), 0)::int as giveable,
-      (select n from reserved)::int as taken
+      ((select n from reserved) + (select n from pending))::int as taken
   `);
   const giveable = supply?.giveable ?? 0;
   const taken = supply?.taken ?? 0;
@@ -178,47 +182,47 @@ export async function assignCopyIn(
   if (giveable <= 0) return "no-supply-left";
   if (existing) return null;
 
-  // ONE AUTHORED RESERVATION PER CARD. A pick always MOVES rather than adding, whatever the
-  // supply — which is the handoff's own accessibility model stated as a rule about the data:
-  // "`aria-checked` is true for the brass option only", so one deck at a time carries the
-  // player's authorship while seniority allocates the rest. Allowing two would put two checked
-  // radios in one group, which tells assistive technology the wrong thing about a control that
-  // is single-choice by design.
-  //
-  // The cap line is unaffected: it counts ALLOCATION — what every deck gets — and seniority
-  // hands out the copies this pick does not.
-  if (taken >= 1) {
-    // The existing reservation gives way to the deck the player has just named. Oldest first,
-    // because `(created_at, deck_id)` is the order the model resolves reservations in.
-    const [oldest] = await tx.select({
-      deckId: cardAssignments.deckId,
-      copies: cardAssignments.copies,
-      // As text, so a restore puts back the exact instant: seniority orders on it, to the microsecond.
-      createdAt: sql<string>`${cardAssignments.createdAt}::text`,
-    })
-      .from(cardAssignments)
-      .where(and(
-        eq(cardAssignments.userId, userId),
-        eq(cardAssignments.oracleId, oracleId),
-      ))
-      .orderBy(cardAssignments.createdAt, cardAssignments.deckId)
-      .limit(1)
-      .for("update");
+  // AT THE CAP. Below it a pick simply adds (the claim model grants several reservations in
+  // `(created_at, deck_id)` order, so each pick holds a copy). At it, one giveable copy keeps the
+  // single-select move, and so does a purchase's pick (`set`): the cart's pick only ever leaves the
+  // bought copy with `deckId`, so the oldest pick gives way to it. A pick's press on a card with two
+  // or more copies refuses instead: which of several picks to drop is the player's call, not ours.
+  if (taken >= giveable) {
+    if (mode === "toggle" && giveable >= 2) return "all-picked";
+    // Oldest first across both tables, the order the cap was filled in. As text, so a restore puts
+    // back the exact instant: the model orders reservations on it, to the microsecond.
+    const { rows: [oldest] } = await tx.execute<{ kind: "reserved" | "pending"; deck_id: string; copies: number; created_at: string }>(sql`
+      select kind, deck_id, copies, created_at from (
+        select 'reserved' as kind, a.deck_id, a.copies, a.created_at::text as created_at, a.created_at as at
+        from card_assignments a
+        where a.user_id = ${userId} and a.oracle_id = ${oracleId}
+        union all
+        select 'pending' as kind, p.deck_id, p.copies, p.created_at::text as created_at, p.created_at as at
+        from pending_assignments p
+        where p.user_id = ${userId} and p.oracle_id = ${oracleId} and p.deck_id <> ${deckId}
+      ) picks
+      order by at, deck_id
+      limit 1
+    `);
     // Nothing to move and nothing spare: the copies are all held by claims no pick can touch.
     if (!oldest) return "no-supply-left";
-    await tx.delete(cardAssignments).where(and(
-      eq(cardAssignments.userId, userId),
-      eq(cardAssignments.oracleId, oracleId),
-      inArray(cardAssignments.deckId, [oldest.deckId]),
+    const table = oldest.kind === "reserved" ? cardAssignments : pendingAssignments;
+    await tx.delete(table).where(and(
+      eq(table.userId, userId),
+      eq(table.oracleId, oracleId),
+      eq(table.deckId, oldest.deck_id),
     ));
-    if (report) report.displaced = { deckId: oldest.deckId, copies: oldest.copies, createdAt: oldest.createdAt };
+    // Only a reservation is reported: an undo restores reservations, and a pending pick that gave way is over.
+    if (report && oldest.kind === "reserved") {
+      report.displaced = { deckId: oldest.deck_id, copies: oldest.copies, createdAt: oldest.created_at };
+    }
   }
 
-  // ONE CHOICE PER CARD ACROSS BOTH GROUPS: a reservation about to be written replaces any pending pick
-  // for the card (`pending-picks.ts`), which would otherwise outlive the choice it contradicts.
+  // This deck's own pending pick, when it has one, is the choice this reservation now carries.
   await tx.delete(pendingAssignments).where(and(
     eq(pendingAssignments.userId, userId),
     eq(pendingAssignments.oracleId, oracleId),
+    eq(pendingAssignments.deckId, deckId),
   ));
   const [made] = await tx.insert(cardAssignments).values({ userId, oracleId, deckId })
     .returning({ createdAt: sql<string>`${cardAssignments.createdAt}::text` });

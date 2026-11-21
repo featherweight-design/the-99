@@ -301,6 +301,14 @@ export const cardAssignmentsCopy = {
 
     /** The cap, stated beside the heading whenever it is above one. */
     cap: (given: number, copies: number) => `${given} of ${copies} given`,
+    /** The cap once any pick stands, on a card with two or more copies (several picks). */
+    capPicked: (picked: number, copies: number) => `${picked} of ${copies} picked`,
+    /**
+     * Every copy picked, said under the rows as soon as the last pick lands, and announced on a
+     * select past the cap. Not a refusal: nothing was tried that failed.
+     */
+    allPicked: (copies: number) =>
+      `All ${copies} copies are picked. Untick one to give another deck a copy.`,
     /** THE VERB. Never rendered as a button. */
     heading: (copies: number) =>
       copies === 1 ? "Give the new copy to" : `Give the ${copies} new copies to`,
@@ -314,6 +322,12 @@ export const cardAssignmentsCopy = {
     buys: "buys it",
     /** The fixed holder. It had the card before the import, so the arrival changed nothing for it. */
     keeps: "keeps it",
+    /** A picked deck's outcome leads with its authorship, in accent text: `your pick · gets it`. */
+    yourPick: "your pick",
+    /** The newest unpicked holder: the deck the next pick takes a copy from. After `gets it`. */
+    givesUpFirst: "gives it up first",
+    /** The separator between an outcome's parts. */
+    dot: " · ",
     /**
      * The folded claim's outcome: one copy protected as a commander, and a spare it has also
      * been allocated. `keeps it` alone would hide the second copy and contradict the row's own
@@ -374,7 +388,7 @@ export const cardAssignmentsCopy = {
     /**
      * Said on the tap, with no write: a pick names who GETS a copy, and this deck already gets
      * its copy by seniority, so moving the one reservation onto it would change nothing (Hugh's
-     * Fabled Passage, 2026-11-21). A stopgap until several picks per card ship.
+     * Fabled Passage, 2026-11-21). One copy only: with two or more, that select pins the deck.
      */
     refusedAlreadyHas: (deck: string, card: string) =>
       `${deck} already has a copy of ${card}. Nothing moved. Pick the deck that should get one.`,
@@ -389,10 +403,12 @@ export const cardAssignmentsCopy = {
      */
 
     /** One announcement per settled pick, one per refusal, and no more. */
-    announcedPick: (deck: string, card: string, displaced: string) =>
-      `${deck} gets ${card}. ${displaced} buys it.`,
-    announcedCleared: (card: string, holder: string) =>
-      `Back to first committed. ${holder} has ${card}.`,
+    /** `displaced` is null when nobody lost a copy: a pick on a deck that already had one pins it. */
+    announcedPick: (deck: string, card: string, displaced: string | null) =>
+      displaced ? `${deck} gets ${card}. ${displaced} buys it.` : `${deck} gets ${card}.`,
+    /** `regained` is null when nobody was going without, so the copy stays where commit order puts it. */
+    announcedUntick: (deck: string, regained: string | null) =>
+      regained ? `${deck} unticked. ${regained} gets it back.` : `${deck} unticked.`,
 
     /** Accessible names. Never rendered. */
     a11yGroup: (card: string, copies: number) =>
@@ -405,8 +421,7 @@ export const cardAssignmentsCopy = {
     a11yGroupOwned: (card: string, copies: number) =>
       `Which decks get ${card}: ${copies === 1 ? "1 copy" : `${copies} copies`}`,
     a11yOption: (deck: string, outcome: string) => `${deck}, ${outcome}`,
-    a11ySelected: (deck: string) =>
-      `${deck}, your choice. Choose again to go back to first committed.`,
+    a11yPicked: (deck: string) => `${deck}, your pick, gets it. Select again to untick.`,
     a11yCommander: (deck: string, card: string) =>
       `${deck} keeps ${card} as its commander. It can’t be moved.`,
   },

@@ -1,5 +1,6 @@
-import { sql } from "drizzle-orm";
-import type { Tx } from "./assign";
+import { and, eq, sql } from "drizzle-orm";
+import { cardAssignments, pendingAssignments } from "../../db/schema";
+import { lockCardClaims, type Tx } from "./assign";
 
 /** Anything that can run one statement — a transaction, or the db singleton. Same shape, and for
  * the same reason, as `prune-proxies`: the statement is a single DELETE either way. */
@@ -79,4 +80,65 @@ export async function pruneOrphanAssignments(tx: Runner, deckId: string): Promis
         )
       )
   `);
+}
+
+/**
+ * Several picks (Move a copy addendum G4, 2026-11-21): drop the picks a removal left beyond the copies that can be given.
+ *
+ * A card's picks (its reservations and its pending picks) never exceed its giveable copies when they are written
+ * (`assignCopyIn`, `assignPendingIn`), but a collection change can lower the supply under them. The claim model already
+ * grants reservations oldest first, so an excess pick holds nothing; it is deleted rather than left inert, because it
+ * would hold its copy again the moment one arrived, and the cap counts it meanwhile. The NEWEST picks go, by
+ * `(created_at, deck_id)`, the order the cap was filled in. `keep` is the removal chooser's own pick (the deck the player
+ * just said keeps the card), which never drops.
+ *
+ * Takes each card's claim lock, in sorted order, as every pick write does.
+ */
+export async function pruneExcessPicks(
+  tx: Tx,
+  userId: string,
+  oracleIds: readonly string[],
+  keep?: { oracleId: string; deckId: string },
+): Promise<void> {
+  for (const oracleId of [...new Set(oracleIds)].sort()) {
+    await lockCardClaims(tx, userId, oracleId);
+    const keepDeck = keep?.oracleId === oracleId ? keep.deckId : null;
+    const { rows } = await tx.execute<{ kind: "reserved" | "pending"; deck_id: string }>(sql`
+      with giveable as (
+        select greatest(
+          coalesce((select sum(ci.quantity) from collection_items ci
+                    where ci.user_id = ${userId} and ci.oracle_id = ${oracleId}), 0)
+          - (select count(*) from (
+              select distinct on (v.deck_id) v.commander_oracle_id, v.partner_oracle_id
+              from deck_versions v join decks d on d.id = v.deck_id
+              where d.user_id = ${userId}
+              order by v.deck_id, v.number desc
+            ) nv
+            where nv.commander_oracle_id = ${oracleId} or nv.partner_oracle_id = ${oracleId}),
+          0
+        )::int as n
+      ),
+      picks as (
+        select 'reserved' as kind, a.deck_id, a.copies, a.created_at
+        from card_assignments a
+        where a.user_id = ${userId} and a.oracle_id = ${oracleId}
+        union all
+        select 'pending' as kind, p.deck_id, p.copies, p.created_at
+        from pending_assignments p
+        where p.user_id = ${userId} and p.oracle_id = ${oracleId}
+      ),
+      ranked as (
+        select kind, deck_id, sum(copies) over (
+          order by (deck_id::text = ${keepDeck}::text) is true desc, created_at, deck_id
+          rows between unbounded preceding and current row
+        ) as running
+        from picks
+      )
+      select kind, deck_id from ranked where running > (select n from giveable)
+    `);
+    for (const r of rows) {
+      const table = r.kind === "reserved" ? cardAssignments : pendingAssignments;
+      await tx.delete(table).where(and(eq(table.userId, userId), eq(table.oracleId, oracleId), eq(table.deckId, r.deck_id)));
+    }
+  }
 }

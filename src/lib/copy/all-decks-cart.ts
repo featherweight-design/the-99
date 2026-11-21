@@ -316,7 +316,7 @@ export const allDecksCartCopy = {
      */
     undo: (deck: string) => `Tap ${deck} again to undo this.`,
     backToDefault: "Back to first listed",
-    /** Announced when the pick is cleared, by either way back (the row's `announcedCleared`, said of the cart). */
+    /** Announced when the pick is cleared, by either way back (said of the cart; the row itself now announces an untick). */
     cleared: (holder: string, card: string) => `Back to first listed. ${holder} has ${card}.`,
   },
 

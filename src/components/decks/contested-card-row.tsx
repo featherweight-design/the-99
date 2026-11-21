@@ -212,13 +212,16 @@ export function ContestedCardRow({
    */
   onUnknown?: () => void;
   /**
-   * One choice spans both groups (Move a copy, #2980): the player has picked a deck in the Other decks group, so
-   * the copy is spoken for there. The listed decks draw as if it were out of the supply (they buy it), none is
-   * checked, and the pick counts toward the cap. A tap here then SETS the pick rather than toggling it: a stored
-   * reservation that the Other pick left standing must not be undone by the very tap that replaces the Other pick.
+   * The player has picked a deck in the Other decks group (Move a copy, #2980), so one copy is spoken for there.
+   * The listed decks draw as if it were out of the supply, and the pick counts toward the cap.
+   *
+   * ONE COPY: one choice spans both groups, so none here is checked, and a tap SETS the pick rather than
+   * toggling it: a stored reservation that the Other pick left standing must not be undone by the very tap that
+   * replaces the Other pick. TWO OR MORE (several picks): it is one pick among the rest, the listed picks stay
+   * checked, and a tap adds or unticks as it would without it.
    */
   externalPick?: boolean;
-  /** Fired on a tap while `externalPick` stands, before the write, so the caller can drop its own pick first. */
+  /** Fired on a tap while `externalPick` stands on a one-copy card, before the write, so the caller can drop its own pick first. */
   onBeforePick?: () => void;
   /**
    * A write from an earlier row (a chooser closed and opened again) is still out, so `card` is not the server's
@@ -234,11 +237,9 @@ export function ContestedCardRow({
   // redrawing from them would show the player exactly the state that just lost.
   const [card, setCard] = useState(initial);
   const [refusal, setRefusal] = useState<RowRefusal | null>(null);
-  // The optimistic pick, for the window between the tap and the server's answer. A SET rather
-  // than a scalar because the DATA can hold more than one granted row — a reservation written
-  // before this rule existed, or by another tab — and the row has to draw what is there rather
-  // than the first of it. What this component WRITES is always one: see `pick` below.
-  // AUTHORSHIP ITSELF IS NOT STATE — see `chosenIds`.
+  // The optimistic picks, for the window between the tap and the server's answer: every deck the
+  // player has picked, since a card with two or more copies takes a pick per copy (several picks,
+  // 2026-11-21). A one-copy card holds one at most. AUTHORSHIP ITSELF IS NOT STATE — see `chosenIds`.
   const [picked, setPicked] = useState<Set<string> | null>(null);
   // Which deck the player last tapped, kept only so a refusal can name the deck it refused. The
   // reservation set is not that: after a refusal clears the optimistic pick it holds whoever
@@ -246,6 +247,8 @@ export function ContestedCardRow({
   const [attempted, setAttempted] = useState<{ id: string; name: string } | null>(null);
   const [announce, setAnnounce] = useState("");
   const group = useRef<HTMLUListElement>(null);
+  // The all-picked line: a select past the cap moves focus here, so the reader hears why nothing moved.
+  const full = useRef<HTMLParagraphElement>(null);
   // THE OPTION THAT HAD FOCUS. A write can fold the deck a keyboard reader is on (clearing a
   // holder's pick lets it fold), and removing the focused option drops focus to the document. The
   // effect after the fold below hands it to the group's reachable option instead.
@@ -279,6 +282,24 @@ export function ContestedCardRow({
     tap.current += 1;
   }, [initial]);
 
+  // A commander's copy can never be given away, so a row where every copy is a commander's has
+  // nothing to choose — and says so rather than drawing a queue nobody can change. Only a
+  // COMMITTED commander holds its copy (not `brew`); a brew led by the card claims it softly and
+  // sets no ceiling, exactly as the claim model's `commander_copies_committed` reads it.
+  const spare = Math.max(
+    card.owned - card.claimants.reduce((n, c) => n + (c.brew ? 0 : c.commanderCopies), 0),
+    0,
+  );
+  const nothingToChoose = spare === 0;
+  const folded = card.claimants.some((c) => c.commanderCopies > 0 && c.quantity > c.commanderCopies);
+  // Copies that could go to any deck: the supply less what commanders hold, capped at what this
+  // import brought. It sets the mark's shape as well as the cap, because both answer the same
+  // question — how many copies are actually in play.
+  const giveable = Math.min(spare, card.arrived);
+  // SEVERAL PICKS, one per copy, once two or more copies can move (addendum, 2026-11-21). One copy
+  // is unchanged: one pick, and a select on another deck moves it. The cart's chooser holds one
+  // pick of its own whatever the count, so it is never several.
+  const multi = giveable >= 2 && !chooser;
   // AUTHORSHIP IS A FACT ABOUT THE DATA, not a fact about this component's lifetime. A deck with
   // a GRANTED reservation is a deck the player chose — seniority grants nothing, it only orders a
   // queue — so reading it off the row survives the revalidation that follows every pick. Held in
@@ -286,7 +307,10 @@ export function ContestedCardRow({
   // is exactly when the player looks for confirmation that their tap landed.
   const chosenIds = chooser
     ? new Set(chooser.picked ? [chooser.picked] : [])
-    : picked ?? (externalPick ? new Set<string>() : new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId)));
+    : picked ?? (externalPick && !multi ? new Set<string>() : new Set(card.claimants.filter((c) => c.granted > 0).map((c) => c.deckId)));
+  // Every pick standing, the Other decks one included: it is a pick and counts toward the cap.
+  const pickCount = chosenIds.size + (externalPick ? 1 : 0);
+  const allPicked = multi && pickCount >= giveable;
 
   const pick = (deckId: string, deckName: string) => {
     const wasChosen = chosenIds.has(deckId);
@@ -296,7 +320,7 @@ export function ContestedCardRow({
       // the same preview the marks draw, since there is no server answer to wait for.
       const next = wasChosen ? null : deckId;
       chooser.onPick(next);
-      const preview = previewAllocation(card.claimants, card.owned, next);
+      const preview = previewAllocation(card.claimants, card.owned, new Set(next ? [next] : []));
       setAnnounce(next === null
         ? chooser.cleared(preview.find((c) => c.allocated > 0)?.deckName ?? "")
         : copy.contested.announcedPick(
@@ -306,36 +330,50 @@ export function ContestedCardRow({
     }
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
+    // EVERY COPY IS PICKED: a select on an unpicked deck writes nothing. The line under the rows
+    // already says so; focus goes to it and it is announced, so a reader who could not see it
+    // hears why nothing moved. The server refuses the same select (`all-picked`) if it gets there.
+    if (allPicked && !wasChosen) {
+      setAnnounce(copy.contested.allPicked(giveable));
+      full.current?.focus();
+      return;
+    }
     // A PICK NAMES WHO GETS A COPY, never who gives one up. A deck that holds its copy now AND
     // would hold it with no reservation at all gains nothing from the one reservation moving onto
     // it. The move only takes the reservation off the deck that holds it, which leaves the same
     // allocation as clearing that pick, and a press on the checked deck already does that. Written
     // anyway, it lit the accent on a deck that changed nothing (Hugh's Fabled Passage, 2026-11-21),
-    // so it is said, not written. Stopgap until a card can take several picks.
+    // so it is said, not written. One copy only: with two or more, a select on a deck that already
+    // gets it PINS it (it keeps its copy whatever is picked later), which is a real change.
     // Not while an Other decks pick stands: there the press replaces that pick, which is a real
     // change. Not while a write is in flight, this row's or an earlier row's (`writesOut`): `claimants` is then a
     // preview, or the purchase-time card, not the server's.
-    if (!wasChosen && !externalPick && !writesOut && picked === null) {
-      const baseline = previewAllocation(card.claimants, card.owned, null);
+    if (!multi && !wasChosen && !externalPick && !writesOut && picked === null) {
+      const baseline = previewAllocation(card.claimants, card.owned, new Set());
       if (holdsItsCopy(claimants.find((c) => c.deckId === deckId)) && holdsItsCopy(baseline.find((c) => c.deckId === deckId))) {
         setRefusal("already-has-copy");
         setAnnounce(copy.contested.refusedAlreadyHas(deckName, card.cardName));
         return;
       }
     }
-    const replacing = externalPick;
+    const replacing = externalPick && !multi;
     if (replacing) onBeforePick?.();
+    // What the row drew at the tap, so the announcement can name who lost or regained a copy.
+    const before = claimants;
     // THE OPTIMISTIC SET SAYS WHERE THE GRANT WENT, and nothing else. The allocation that
     // follows from it is not guessed: `previewAllocation` runs the model's own `allocate` over
-    // these claimants with the grant moved, so the marks can move on the tap. What is still
-    // never predicted is which of SEVERAL reservations the server would evict — it resolves
-    // those on `(created_at, deck_id)`, which is not an order this row holds — and that case
-    // cannot arise from a pick, because a pick moves the one authored reservation rather than
-    // adding a second. The returned card replaces all of it the moment it lands.
-    // ONE AUTHORED PICK AT A TIME, which is what the write does and what the group's
-    // `aria-checked` promises: a pick moves the reservation rather than adding to it, so at most
-    // one option is ever checked. Seniority allocates every other copy.
-    setPicked(wasChosen ? new Set() : new Set([deckId]));
+    // these claimants with the grants set, so the marks can move on the tap. What is still never
+    // predicted is which pick the server would displace at the cap: with two or more copies the
+    // row refuses that select above, and with one the pick simply moves. The returned card
+    // replaces all of it the moment it lands.
+    if (multi) {
+      const next = new Set(chosenIds);
+      if (wasChosen) next.delete(deckId);
+      else next.add(deckId);
+      setPicked(next);
+    } else {
+      setPicked(wasChosen ? new Set() : new Set([deckId]));
+    }
     const mine = ++tap.current;
     onPending?.(true);
     startTransition(async () => {
@@ -380,20 +418,27 @@ export function ContestedCardRow({
       // "X gets it, Y buys it" — and naming the loser before the server has decided who that is
       // announces a trade that may not have happened.
       if (result.ok && fresh) {
+        // Read off the change, not the end state: who held a copy at the tap and does not now,
+        // or the reverse. A deck that was already buying it is not news.
+        const had = new Set(before.filter((c) => c.allocated > 0).map((c) => c.deckId));
         const holder = fresh.claimants.find((c) => c.deckId === deckId);
-        const lost = fresh.claimants.find((c) => c.deckId !== deckId && c.allocated === 0);
         setAnnounce(wasChosen
-          ? copy.contested.announcedCleared(
-              fresh.cardName,
-              fresh.claimants.find((c) => c.allocated > 0)?.deckName ?? "",
+          ? copy.contested.announcedUntick(
+              deckName,
+              fresh.claimants.find((c) => c.deckId !== deckId && c.allocated > 0 && !had.has(c.deckId))?.deckName ?? null,
             )
           : copy.contested.announcedPick(
               holder?.deckName ?? deckName,
               fresh.cardName,
-              lost?.deckName ?? "",
+              fresh.claimants.find((c) => c.deckId !== deckId && c.allocated === 0 && had.has(c.deckId))?.deckName ?? null,
             ));
       }
-      if (!result.ok) {
+      if (!result.ok && result.cause === "all-picked") {
+        // Every copy was picked by the time the write landed (another tab): the read-back card
+        // draws the all-picked line, and the reader is taken to it exactly as a select at the cap is.
+        setAnnounce(copy.contested.allPicked(giveable));
+        requestAnimationFrame(() => full.current?.focus());
+      } else if (!result.ok) {
         // `not-your-deck` is the one cause with NO sentence, deliberately — a player cannot reach
         // it from their own decks. Stored anyway it drew an empty red-ruled paragraph, which is
         // the undrawn state drawn. The optimistic pick still stands down; the shipped transport
@@ -428,20 +473,6 @@ export function ContestedCardRow({
       }
     });
   };
-  // A commander's copy can never be given away, so a row where every copy is a commander's has
-  // nothing to choose — and says so rather than drawing a queue nobody can change. Only a
-  // COMMITTED commander holds its copy (not `brew`); a brew led by the card claims it softly and
-  // sets no ceiling, exactly as the claim model's `commander_copies_committed` reads it.
-  const spare = Math.max(
-    card.owned - card.claimants.reduce((n, c) => n + (c.brew ? 0 : c.commanderCopies), 0),
-    0,
-  );
-  const nothingToChoose = spare === 0;
-  const folded = card.claimants.some((c) => c.commanderCopies > 0 && c.quantity > c.commanderCopies);
-  // Copies that could go to any deck: the supply less what commanders hold, capped at what this
-  // import brought. It sets the mark's shape as well as the cap, because both answer the same
-  // question — how many copies are actually in play.
-  const giveable = Math.min(spare, card.arrived);
   // THE NUMBER THIS ROW TALKS ABOUT, derived once.
   //
   // On the receipt it is the arrival: the whole point of that surface is what the import
@@ -460,21 +491,22 @@ export function ContestedCardRow({
   // reader sees two full marks for a card with one copy. Replaced by the server's own reading
   // the moment it lands, and stood down with `picked` on a refusal or a throw, so a wrong guess
   // could only ever survive one round trip.
+  //
+  // The Other decks pick holds one copy the listed decks cannot have: the model's own allocation
+  // over the rest. On a one-copy card a listed tap replaces that pick, so its preview has it back.
+  const outside = externalPick && (multi || !picked) ? 1 : 0;
   const claimants = chooser
-    ? previewAllocation(card.claimants, card.owned, chooser.picked)
-    : picked
-      ? previewAllocation(card.claimants, card.owned, [...picked][0] ?? null)
-      // The Other decks pick holds one copy the listed decks cannot have: the model's own allocation over the rest.
-      : externalPick
-        ? previewAllocation(card.claimants, Math.max(card.owned - 1, 0), null)
-        : card.claimants;
+    ? previewAllocation(card.claimants, card.owned, chosenIds)
+    : picked || outside
+      ? previewAllocation(card.claimants, Math.max(card.owned - outside, 0), chosenIds)
+      : card.claimants;
   // Capped at `inPlay` rather than `arrived`, or the cap could read `2 of 1` on the review door:
   // the numerator counts every non-commander allocation and the denominator is what can move.
   const givenOut = Math.min(
     // A brew holds only the copy it was given; its soft share of the leftover is not given out.
     claimants.reduce((n, c) => n + (c.brew ? c.granted : Math.max(c.allocated - c.commanderCopies, 0)), 0)
-      // The Other decks pick is a copy given out too (not while a listed tap is in flight: that tap replaces it).
-      + (externalPick && !picked ? 1 : 0),
+      // The Other decks pick is a copy given out too (not while a listed one-copy tap replaces it).
+      + outside,
     inPlay,
   );
   // WHICH DECKS HELD A COPY BEFORE THIS IMPORT, per claimant rather than as a fact about the
@@ -509,7 +541,9 @@ export function ContestedCardRow({
   // 2026-10-16: `Show` drew a deck that already had the card as `gets it`, beside the drafts that
   // wanted it). One holder folds as well as twenty, and nothing draws them again.
   // `giveable`, not every arrival: a copy locked as a commander is one no pick can move either.
-  const foldN = addedCopy && !chooser && !nothingToChoose ? foldCount(card.claimants, giveable, card.owned, card.receiptAt) : 0;
+  // NOT WITH SEVERAL PICKS: picks beat commit order, so with every copy picked the oldest deck can
+  // be the one that buys it (P5). No deck keeps its copy whatever is picked, so none folds.
+  const foldN = addedCopy && !chooser && !multi && !nothingToChoose ? foldCount(card.claimants, giveable, card.owned, card.receiptAt) : 0;
   const folding = foldN >= 1;
   const foldedIds = new Set(folding ? card.claimants.slice(0, foldN).map((c) => c.deckId) : []);
   useEffect(() => {
@@ -520,13 +554,19 @@ export function ContestedCardRow({
     focusedDeck.current = null;
     // Only when focus really fell to the document: a reader who has moved on keeps their place.
     if (document.activeElement && document.activeElement !== document.body) return;
-    ul.querySelector<HTMLElement>('[role="radio"][tabindex="0"]')?.focus();
+    ul.querySelector<HTMLElement>('[data-deck][tabindex="0"]')?.focus();
   }, [foldN]);
   const thisDeckName = card.claimants.find((c) => c.deckId === thisDeckId && !foldedIds.has(c.deckId))?.deckName ?? null;
   // A brew reading a loose copy as its own: every brew reads the same copy, so `gets it` on three
   // brews would claim three copies and `buys it` would be false. Only while collection edit is on.
   const canUse = (c: (typeof claimants)[number]) => addedCopy && c.brew === true && c.granted === 0 && c.allocated > 0;
   const canUseCount = claimants.filter(canUse).length;
+  // WHO GIVES IT UP FIRST: the newest unpicked deck holding a copy, the one the next pick takes it
+  // from. Only while a deck buys it and a pick is left; never a commander-only claim or a soft share.
+  const optionable = (c: (typeof claimants)[number]) => !foldedIds.has(c.deckId) && !nothingToChoose && c.commanderCopies < c.quantity;
+  const givesUpId = multi && !allPicked && claimants.some((c) => optionable(c) && !canUse(c) && c.allocated < c.quantity)
+    ? claimants.filter((c) => optionable(c) && !canUse(c) && !chosenIds.has(c.deckId) && c.allocated > 0 && c.allocated > c.commanderCopies).at(-1)?.deckId ?? null
+    : null;
 
   return (
     <div
@@ -557,7 +597,8 @@ export function ContestedCardRow({
             given every copy away before any pick, so the figure is true in both states. */}
         {!nothingToChoose && inPlay > 1 ? (
           <span className="ml-[8px] normal-case tracking-normal" style={{ color: "var(--fg-faint)" }}>
-            {copy.contested.cap(givenOut, inPlay)}
+            {/* Picks once any stands (several picks); with none, what seniority gave out. */}
+            {multi && pickCount > 0 ? copy.contested.capPicked(pickCount, giveable) : copy.contested.cap(givenOut, inPlay)}
           </span>
         ) : null}
       </p>
@@ -573,7 +614,9 @@ export function ContestedCardRow({
           const to = e.relatedTarget as Node | null;
           if (to !== null && !e.currentTarget.contains(to)) focusedDeck.current = null;
         }}
-        role="radiogroup"
+        // A CHECKBOX GROUP WITH TWO OR MORE COPIES: several options can be checked at once, which
+        // a radiogroup cannot say. One copy is one pick, and stays a radiogroup.
+        role={multi ? "group" : "radiogroup"}
         aria-label={words.group(card.cardName, inPlay)}
         aria-describedby={describedBy}
       >
@@ -608,6 +651,7 @@ export function ContestedCardRow({
           const held = inert || chooser?.disabled === true;
           const first = card.claimants.find((x) => !foldedIds.has(x.deckId) && !(nothingToChoose || x.commanderCopies >= x.quantity))?.deckId === c.deckId;
           const soft = canUse(c);
+          const mine = chosenIds.has(c.deckId);
           const outcome = soft
             ? addedCopyCopy.chooser.canUse
             : c.commanderCopies > 0 && c.allocated > 0 && predates
@@ -621,15 +665,15 @@ export function ContestedCardRow({
               // `aria-checked` is the whole authorship model: checked means YOU chose this.
               // A filled mark on an unchecked option means the deck holds a copy by default,
               // which is a different fact and must not read as a selection.
-              role="radio"
+              role={multi ? "checkbox" : "radio"}
               aria-checked={chosenIds.has(c.deckId)}
               aria-disabled={held || undefined}
               tabIndex={held ? -1 : chosenIds.has(c.deckId) || (chosenIds.size === 0 && first) ? 0 : -1}
               aria-label={
                 c.commanderCopies >= c.quantity
                   ? copy.contested.a11yCommander(c.deckName, card.cardName)
-                  : chosenIds.has(c.deckId)
-                    ? copy.contested.a11ySelected(c.deckName)
+                  : mine
+                    ? copy.contested.a11yPicked(c.deckName)
                     : copy.contested.a11yOption(c.deckName, outcome)
               }
               onClick={held ? undefined : () => pick(c.deckId, c.deckName)}
@@ -722,13 +766,26 @@ export function ContestedCardRow({
                     {copy.contested.stamp(c.versionNumber, stampDate(c.since, zone))}
                   </span>
                 ) : null}
-                <span
-                  // `can use it` is mono 11 at both widths (the design table's soft outcome row).
-                  className={soft ? "font-mono text-[11px]" : "font-mono text-[10.5px] md:text-[11px]"}
-                  style={{ color: soft ? "var(--fg-muted)" : c.allocated > 0 ? "var(--success)" : "var(--avail-over-fg)" }}
-                >
-                  {outcome}
-                </span>
+                {mine && !soft ? (
+                  // A pick says so in words, not by hue alone: `your pick` in accent text, then
+                  // what it gets (addendum call 1).
+                  <span className="font-mono text-[10.5px] md:text-[11px]">
+                    <span style={{ color: "var(--accent-text)" }}>{copy.contested.yourPick}</span>
+                    <span style={{ color: "var(--fg-faint)" }}>{copy.contested.dot}</span>
+                    <span style={{ color: c.allocated > 0 ? "var(--success)" : "var(--avail-over-fg)" }}>{outcome}</span>
+                  </span>
+                ) : (
+                  <span
+                    // `can use it` is mono 11 at both widths (the design table's soft outcome row).
+                    className={soft ? "font-mono text-[11px]" : "font-mono text-[10.5px] md:text-[11px]"}
+                    style={{ color: soft ? "var(--fg-muted)" : c.allocated > 0 ? "var(--success)" : "var(--avail-over-fg)" }}
+                  >
+                    {outcome}
+                    {c.deckId === givesUpId ? (
+                      <span style={{ color: "var(--fg-muted)" }}>{copy.contested.dot}{copy.contested.givesUpFirst}</span>
+                    ) : null}
+                  </span>
+                )}
               </span>
             </li>
           );
@@ -767,6 +824,20 @@ export function ContestedCardRow({
           {/* The deck the player TAPPED, not whoever holds a reservation now: after a refusal
               clears the optimistic pick, the latter is a different deck and the wrong name. */}
           {refusalSentence(refusal, card, attempted?.name ?? "")}
+        </p>
+      ) : null}
+
+      {/* EVERY COPY PICKED, said under the rows as soon as the last pick lands, before anyone
+          tries another. Not a refusal, so no rule: the refusal slot's spacing in body text. A
+          select at the cap moves focus here. */}
+      {allPicked && !nothingToChoose ? (
+        <p
+          ref={full}
+          tabIndex={-1}
+          className="text-[11.5px] mt-[9px] mb-0 pl-[9px]"
+          style={{ color: "var(--fg-body)" }}
+        >
+          {copy.contested.allPicked(giveable)}
         </p>
       ) : null}
 

@@ -7,10 +7,14 @@
  * deck's commit. This module owns that lifecycle:
  *
  *   assignPendingFor   writes the pick; the card must already be in the draft (the UI adds it through the
- *                      existing add path first). It touches NO reservation: the player's current one keeps
- *                      holding the copy until the commit, so a pick that lapses loses nothing
+ *                      existing add path first). A pending pick counts toward the card's cap beside its
+ *                      reservations (several picks, 2026-11-21): below the cap it ADDS, at it a one-copy
+ *                      card replaces the other pending pick and a card with two or more refuses
+ *                      (`all-picked`). It touches NO reservation: the player's current one keeps holding
+ *                      the copy until the commit, so a pick that lapses loses nothing
  *   applyPendingPicks  the commit converts it (`assignCopyIn` moves the old reservation then), or lets it lapse
- *   assignCopyIn       a later reservation for the card deletes it (assign.ts)
+ *   assignCopyIn       a later reservation for the card on the same deck deletes it, and a one-copy move
+ *                      can displace it (assign.ts)
  *   restore / prune    a discard, or the card leaving the draft, deletes it (versions.ts, prune-assignments.ts)
  *
  * LOCK ORDER. `assignCopyFor` takes the per-card advisory lock (`lockCardClaims`) BEFORE the deck row lock;
@@ -27,7 +31,7 @@
  * next begins, neither can invert the order above, so no single combined transaction is needed.
  */
 
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
 import { deckCards, deckVersionCards, deckVersions, decks, pendingAssignments } from "../../db/schema";
 import { assignCopyIn, lockCardClaims, type AssignRefusal, type Tx } from "./assign";
 import { isUuid } from "../uuid";
@@ -44,7 +48,7 @@ export type PendingRefusal =
 
 /** What `assignPendingFor` did, for the caller that has to redraw the decks it touched. */
 export type PendingReport = {
-  /** The deck a previous pending pick for this card named, when this one replaced it. */
+  /** The deck a previous pending pick for this card named, when this one replaced it (one copy only). */
   replacedDeckId?: string;
 };
 
@@ -95,8 +99,9 @@ export async function assignPendingIn(
     .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
   if (!inDraft) return "not-in-draft";
 
-  // Supply, as `assignCopyIn` counts it: what the player owns less every copy held as a commander.
-  const { rows: [supply] } = await tx.execute<{ giveable: number }>(sql`
+  // Supply and the picks standing, as `assignCopyIn` counts them: what the player owns less every copy held as
+  // a commander, against the card's reservations plus its pending picks on OTHER decks.
+  const { rows: [supply] } = await tx.execute<{ giveable: number; taken: number }>(sql`
     select greatest(
       coalesce((select sum(ci.quantity) from collection_items ci
                 where ci.user_id = ${userId} and ci.oracle_id = ${oracleId}), 0)
@@ -108,21 +113,37 @@ export async function assignPendingIn(
         ) nv
         where nv.commander_oracle_id = ${oracleId} or nv.partner_oracle_id = ${oracleId}),
       0
-    )::int as giveable
+    )::int as giveable,
+    (
+      coalesce((select sum(a.copies) from card_assignments a
+                where a.user_id = ${userId} and a.oracle_id = ${oracleId}), 0)
+      + (select count(*) from pending_assignments p
+         where p.user_id = ${userId} and p.oracle_id = ${oracleId} and p.deck_id <> ${deckId})
+    )::int as taken
   `);
-  if ((supply?.giveable ?? 0) <= 0) return "no-supply-left";
+  const giveable = supply?.giveable ?? 0;
+  if (giveable <= 0) return "no-supply-left";
 
   // NO RESERVATION IS TOUCHED HERE. The player's current one keeps holding the copy until the deck commits:
   // the pick can still lapse (discard, the card leaving the draft, a refused conversion), and a lapse must
   // not have cost them anything. `applyPendingPicks` converts through `assignCopyIn`, which moves it then.
-  const [prior] = await tx.select({ deckId: pendingAssignments.deckId }).from(pendingAssignments)
-    .where(and(eq(pendingAssignments.userId, userId), eq(pendingAssignments.oracleId, oracleId)))
-    .for("update");
-  if (prior && prior.deckId !== deckId && report) report.replacedDeckId = prior.deckId;
+  //
+  // ONE COPY stays single-select: the pick replaces any other deck's pending pick, and the reservation it
+  // supersedes moves at the commit. Two or more copies ADD up to the cap and refuse at it.
+  if (giveable === 1) {
+    const [prior] = await tx.delete(pendingAssignments).where(and(
+      eq(pendingAssignments.userId, userId),
+      eq(pendingAssignments.oracleId, oracleId),
+      ne(pendingAssignments.deckId, deckId),
+    )).returning({ deckId: pendingAssignments.deckId });
+    if (prior && report) report.replacedDeckId = prior.deckId;
+  } else if ((supply?.taken ?? 0) >= giveable) {
+    return "all-picked";
+  }
   await tx.insert(pendingAssignments).values({ userId, oracleId, deckId })
     .onConflictDoUpdate({
-      target: [pendingAssignments.userId, pendingAssignments.oracleId],
-      set: { deckId, copies: 1, createdAt: sql`clock_timestamp()` },
+      target: [pendingAssignments.userId, pendingAssignments.oracleId, pendingAssignments.deckId],
+      set: { copies: 1, createdAt: sql`clock_timestamp()` },
     });
   return null;
 }
@@ -165,6 +186,7 @@ export async function applyPendingPicks(tx: Tx, deckId: string, versionId: strin
     await tx.delete(pendingAssignments).where(and(
       eq(pendingAssignments.userId, pick.userId),
       eq(pendingAssignments.oracleId, pick.oracleId),
+      eq(pendingAssignments.deckId, deckId),
     ));
   }
 }

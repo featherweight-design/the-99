@@ -1539,9 +1539,10 @@ export const pullReleases = pgTable("pull_releases", {
  * card (`applyPendingPicks`, through `assignCopyIn`), and lapses silently when the commit does not list it.
  *
  * It lives as long as the deck's draft does, as `pull_releases` does: the deck's discard deletes it, and so
- * does taking the card back out of the draft. One row per player per card (the primary key): the one-choice
- * rule across both groups, so a later pick for another deck replaces it, and a reservation written for the
- * card (`assignCopyIn`) deletes it. Cascades with the deck.
+ * does taking the card back out of the draft. One row per player, card and deck (the primary key): several picks
+ * (Move a copy addendum, 2026-11-21) let a player pick up to the copies they own, and a pending pick counts toward
+ * that cap beside the card's reservations. A reservation written for the card on the SAME deck (`assignCopyIn`)
+ * deletes that deck's row; a one-copy move displaces whichever pick is oldest. Cascades with the deck.
  */
 export const pendingAssignments = pgTable("pending_assignments", {
   userId: text("user_id").notNull(),
@@ -1550,7 +1551,7 @@ export const pendingAssignments = pgTable("pending_assignments", {
   copies: integer("copies").notNull().default(1),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 }, (t) => [
-  primaryKey({ columns: [t.userId, t.oracleId] }),
+  primaryKey({ columns: [t.userId, t.oracleId, t.deckId] }),
   // The cascade's own lookup, and the commit's read of the deck's pending picks.
   index("pending_assignments_deck_idx").on(t.deckId),
   check("pending_assignments_copies_positive", sql`${t.copies} > 0`),

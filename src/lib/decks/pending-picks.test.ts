@@ -7,7 +7,7 @@ const assignCopyIn = vi.fn();
 vi.mock("./assign", async (orig) => ({ ...(await orig<typeof import("./assign")>()), assignCopyIn: (...a: unknown[]) => assignCopyIn(...a) }));
 
 import { applyPendingPicks, assignPendingIn, clearPendingPicks, type PendingReport } from "./pending-picks";
-import { pruneOrphanAssignments } from "./prune-assignments";
+import { pruneExcessPicks, pruneOrphanAssignments } from "./prune-assignments";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 
 const U = "user_1";
@@ -55,19 +55,42 @@ describe("assignPendingIn", () => {
     expect(t.log.some((l) => l.op === "insert" || l.op === "delete")).toBe(false);
   });
 
-  it("writes the pick and deletes nothing: the old reservation keeps holding the copy until the commit", async () => {
-    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 1 }] }, [], undefined]);
+  it("writes the pick and touches no reservation: the old one keeps holding the copy until the commit", async () => {
+    // One copy: the only delete is of another deck's PENDING pick, never a reservation.
+    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 1, taken: 1 }] }, [], undefined]);
     expect(await assignPendingIn(t.tx, U, D, C)).toBeNull();
-    expect(t.log.map((l) => l.op)).toEqual(["select", "select", "select", "select", "execute", "select", "insert"]);
-    expect(t.log.some((l) => l.op === "delete")).toBe(false);
+    expect(t.log.map((l) => l.op)).toEqual(["select", "select", "select", "select", "execute", "delete", "insert"]);
     expect(t.left()).toBe(0);
   });
 
-  it("upserts a second pick for another deck, naming the deck it replaced", async () => {
-    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 1 }] }, [{ deckId: "older-deck" }], undefined]);
+  it("on one copy, replaces another deck's pending pick and names the deck it replaced", async () => {
+    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 1, taken: 1 }] }, [{ deckId: "older-deck" }], undefined]);
     const report: PendingReport = {};
     expect(await assignPendingIn(t.tx, U, D, C, report)).toBeNull();
     expect(report.replacedDeckId).toBe("older-deck");
+  });
+
+  // SEVERAL PICKS (addendum, 2026-11-21): with two or more copies a pick ADDS below the cap and
+  // refuses at it; it never deletes another deck's pick.
+  it("on two or more copies, adds a pick beside the others while picks are under the cap", async () => {
+    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 3, taken: 2 }] }, undefined]);
+    const report: PendingReport = {};
+    expect(await assignPendingIn(t.tx, U, D, C, report)).toBeNull();
+    expect(t.log.map((l) => l.op)).toEqual(["select", "select", "select", "select", "execute", "insert"]);
+    expect(report.replacedDeckId).toBeUndefined();
+    expect(t.left()).toBe(0);
+  });
+
+  it("refuses all-picked at the cap, writing nothing", async () => {
+    const t = fakeTx([deck, newest, [], inDraft, { rows: [{ giveable: 2, taken: 2 }] }]);
+    expect(await assignPendingIn(t.tx, U, D, C)).toBe("all-picked");
+    expect(t.log.some((l) => l.op === "insert" || l.op === "delete")).toBe(false);
+  });
+
+  it("counts other decks' pending picks toward the cap, never this deck's own", () => {
+    const src = readFileSync(new URL("./pending-picks.ts", import.meta.url), "utf8");
+    expect(src).toMatch(/p\.deck_id <> \$\{deckId\}/);
+    expect(src).toMatch(/target: \[pendingAssignments\.userId, pendingAssignments\.oracleId, pendingAssignments\.deckId\]/);
   });
 });
 
@@ -140,6 +163,33 @@ describe("the SQL around pending picks", () => {
       if (captured) expect(new PgDialect().sqlToQuery(captured).sql).not.toContain("pending_assignments");
     }
     expect(readFileSync("src/lib/decks/availability-query.ts", "utf8")).not.toContain("pending_assignments");
+  });
+});
+
+describe("pruneExcessPicks", () => {
+  // G4: a removal can leave a card more picks than copies. The NEWEST go, from whichever table holds them.
+  const render = (q: SQL | undefined) => (q ? new PgDialect().sqlToQuery(q).sql : "");
+
+  it("locks each card once, in a stable order, and deletes each excess pick from its own table", async () => {
+    const t = fakeTx([
+      undefined, { rows: [{ kind: "pending", deck_id: "newest" }, { kind: "reserved", deck_id: "newer" }] }, undefined, undefined,
+      undefined, { rows: [] },
+    ]);
+    await pruneExcessPicks(t.tx, U, ["b-card", "a-card", "b-card"]);
+    expect(t.log.map((l) => l.op)).toEqual(["execute", "execute", "delete", "delete", "execute", "execute"]);
+    const locks = t.log.filter((l) => l.op === "execute" && render(l.sql).includes("pg_advisory_xact_lock"));
+    expect(locks).toHaveLength(2);
+    expect(t.left()).toBe(0);
+  });
+
+  it("ranks the newest last, the kept pick first, and counts both tables against the copies", async () => {
+    const t = fakeTx([undefined, { rows: [] }]);
+    await pruneExcessPicks(t.tx, U, [C], { oracleId: C, deckId: D });
+    const q = render(t.log[1].sql);
+    expect(q).toContain("from card_assignments a");
+    expect(q).toContain("from pending_assignments p");
+    expect(q).toMatch(/order by \(deck_id::text = \$\d+::text\) is true desc, created_at, deck_id/);
+    expect(q).toContain("where running > (select n from giveable)");
   });
 });
 

@@ -12,7 +12,7 @@ import { assignCopyIn, lockCardClaims, type AssignRefusal, type AssignReport } f
 import { cartSourceDecks, regrant } from "../decks/mark-bought";
 import { annotateWentTo, wentByOracle } from "./went-to";
 import { proxiedMembership } from "../decks/proxies";
-import { pruneOrphanAssignments } from "../decks/prune-assignments";
+import { pruneExcessPicks, pruneOrphanAssignments } from "../decks/prune-assignments";
 import { collectionItemKey, type CollectionItemIdentity } from "./key";
 import { mergeHolding, toCollectionItemValues, type PendingItem } from "./pending";
 import type { OwnedCounts } from "./arrivals";
@@ -935,8 +935,7 @@ export async function applyCollectionChange(
             const restore = dropped.length > 0 ? restoreToUndo(undo, row.rows) : null;
             // Only once the press's own pick went, never over a row the restored deck already holds,
             // and only for a deck the player still has. Another deck's reservation does not block it:
-            // a card can carry older reservations than the one-per-card rule, and the press moved only
-            // the oldest. Under that deck's row lock (after the card's, the order every reservation
+            // a card carries a reservation per pick (several picks), and the press moved only the oldest. Under that deck's row lock (after the card's, the order every reservation
             // write takes), and swept by the deck's own prune: a deck that has since stopped claiming
             // the card (a commit without it, a proxy) gets no reservation back.
             if (restore) {
@@ -1164,6 +1163,8 @@ export async function applyCollectionChange(
         short = decks;
       }
       if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [], ...(syncPreview ? { sync: syncPreview } : {}) });
+      // A removal can leave a card more picks than copies (several picks, G4): the newest go, the chooser's own pick aside.
+      if (lowered.length > 0) await pruneExcessPicks(tx, userId, lowered, opts.assign);
 
       // A sync's summary on its own upload (G9; no column): the pick is what `readSyncBase` reads to decide
       // whether this upload anchors the next sync, and the rest is what its receipt and History draw.

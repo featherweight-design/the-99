@@ -33,7 +33,7 @@ describe("previewAllocation", () => {
     const rows = previewAllocation(
       [claimant({ deckId: "senior", since: AUG }), claimant({ deckId: "junior", since: SEP })],
       1,
-      "junior",
+      new Set(["junior"]),
     );
     expect(allocOf(rows)).toEqual({ senior: 0, junior: 1 });
   });
@@ -42,19 +42,19 @@ describe("previewAllocation", () => {
     const rows = previewAllocation(
       [claimant({ deckId: "senior", since: AUG }), claimant({ deckId: "junior", since: SEP })],
       1,
-      null,
+      new Set(),
     );
     expect(allocOf(rows)).toEqual({ senior: 1, junior: 0 });
   });
 
-  it("drops a grant the row was already carrying, because a pick moves one reservation", () => {
+  it("drops a grant the row was already carrying when that deck is no longer picked", () => {
     const rows = previewAllocation(
       [
         claimant({ deckId: "senior", since: AUG }),
         claimant({ deckId: "was-granted", since: SEP, granted: 1, allocated: 1 }),
       ],
       1,
-      "senior",
+      new Set(["senior"]),
     );
     expect(allocOf(rows)).toEqual({ senior: 1, "was-granted": 0 });
   });
@@ -70,7 +70,7 @@ describe("previewAllocation", () => {
     const rows = previewAllocation(
       [claimant({ deckId: "senior", since: AUG }), claimant({ deckId: "junior", since: SEP, quantity: 2 })],
       2,
-      "junior",
+      new Set(["junior"]),
     );
     expect(allocOf(rows)).toEqual({ senior: 1, junior: 1 });
   });
@@ -84,7 +84,7 @@ describe("previewAllocation", () => {
         claimant({ deckId: "list", since: SEP, quantity: 2 }),
       ],
       2,
-      "list",
+      new Set(["list"]),
     );
     expect(allocOf(rows)).toEqual({ commander: 1, list: 1 });
     expect(rows.reduce((n, r) => n + r.allocated, 0)).toBe(2);
@@ -99,7 +99,7 @@ describe("previewAllocation", () => {
         claimant({ deckId: "junior-commander", since: SEP, quantity: 1, commanderCopies: 1 }),
       ],
       2,
-      "senior-list",
+      new Set(["senior-list"]),
     );
     expect(allocOf(rows)).toEqual({ "senior-list": 2, "junior-commander": 0 });
   });
@@ -111,14 +111,14 @@ describe("previewAllocation", () => {
         claimant({ deckId: "b", quantity: 2, since: SEP }),
       ],
       3,
-      "b",
+      new Set(["b"]),
     );
     expect(rows.reduce((n, r) => n + r.allocated, 0)).toBe(3);
     expect(allocOf(rows)).toEqual({ a: 2, b: 1 });
   });
 
   it("never gives a deck more than it asked for", () => {
-    const rows = previewAllocation([claimant({ deckId: "only", quantity: 1 })], 4, "only");
+    const rows = previewAllocation([claimant({ deckId: "only", quantity: 1 })], 4, new Set(["only"]));
     expect(allocOf(rows)).toEqual({ only: 1 });
   });
 
@@ -126,8 +126,49 @@ describe("previewAllocation", () => {
     const rows = previewAllocation(
       [claimant({ deckId: "asks-none", quantity: 0 }), claimant({ deckId: "other", since: SEP })],
       1,
-      "asks-none",
+      new Set(["asks-none"]),
     );
     expect(allocOf(rows)).toEqual({ "asks-none": 0, other: 1 });
+  });
+
+  // SEVERAL PICKS (addendum, 2026-11-21): one copy to each picked deck, ahead of the queue, and
+  // commit order fills the rest; the newest unpicked deck goes without.
+  it("gives each picked deck one copy and fills the rest in commit order", () => {
+    const rows = previewAllocation(
+      [
+        claimant({ deckId: "oldest", since: AUG }),
+        claimant({ deckId: "middle", since: SEP }),
+        claimant({ deckId: "newest", since: SEP + 1 }),
+      ],
+      2,
+      new Set(["newest"]),
+    );
+    expect(allocOf(rows)).toEqual({ oldest: 1, middle: 0, newest: 1 });
+  });
+
+  it("lets picks beat commit order, so the oldest deck can be the one that buys it", () => {
+    const rows = previewAllocation(
+      [
+        claimant({ deckId: "oldest", since: AUG }),
+        claimant({ deckId: "middle", since: SEP }),
+        claimant({ deckId: "newest", since: SEP + 1 }),
+      ],
+      2,
+      new Set(["middle", "newest"]),
+    );
+    expect(allocOf(rows)).toEqual({ oldest: 0, middle: 1, newest: 1 });
+  });
+
+  it("pins a deck that already gets its copy without moving anyone", () => {
+    const rows = previewAllocation(
+      [
+        claimant({ deckId: "oldest", since: AUG }),
+        claimant({ deckId: "middle", since: SEP }),
+        claimant({ deckId: "newest", since: SEP + 1 }),
+      ],
+      2,
+      new Set(["oldest"]),
+    );
+    expect(allocOf(rows)).toEqual({ oldest: 1, middle: 1, newest: 0 });
   });
 });

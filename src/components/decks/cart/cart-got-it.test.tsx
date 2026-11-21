@@ -257,7 +257,7 @@ describe("the S1b chooser", () => {
     // A pick moves a copy: Thorin gets it, the last of the default order buys.
     fireEvent.click(options[2]);
     expect(within(group).getAllByRole("radio").map((o) => o.getAttribute("aria-label"))).toEqual([
-      c.a11yOption("HD - Gishath", c.gets), c.a11yOption("HD - Kratos", c.buys), c.a11ySelected("HD -Thorin"),
+      c.a11yOption("HD - Gishath", c.gets), c.a11yOption("HD - Kratos", c.buys), c.a11yPicked("HD -Thorin"),
     ]);
   });
 

@@ -604,7 +604,7 @@ describe("ContestedCardRow — the chooser", () => {
     render(<ContestedCardRow card={card()} />);
     const option = screen.getByRole("radio", { name: /Elemental Dragons/ });
     fireEvent.click(option);
-    fireEvent.click(screen.getByRole("radio", { name: /your choice/ }));
+    fireEvent.click(screen.getByRole("radio", { name: /your pick/ }));
     // A cleared row is indistinguishable from one never touched: no option checked, and the
     // accent gone with it.
     expect(screen.queryByRole("radio", { checked: true })).toBeNull();
@@ -914,7 +914,7 @@ describe("ContestedCardRow — where an added copy goes", () => {
     const c = staging(18);
     c.claimants[19] = { ...c.claimants[19], granted: 1 };
     render(<ContestedCardRow card={c} addedCopy />);
-    expect(screen.getByRole("radio", { name: copy.contested.a11ySelected("HD - Thorin") })).toBeTruthy();
+    expect(screen.getByRole("radio", { name: copy.contested.a11yPicked("HD - Thorin") })).toBeTruthy();
     expect(screen.getAllByText(addedCopyCopy.chooser.canUse)).toHaveLength(2);
   });
 
@@ -924,5 +924,85 @@ describe("ContestedCardRow — where an added copy goes", () => {
     render(<ContestedCardRow card={c} addedCopy />);
     expect(screen.getByText(addedCopyCopy.chooser.fold(3, null))).toBeTruthy();
     expect(screen.getByText("HD - Deck 3")).toBeTruthy();
+  });
+});
+
+// SEVERAL PICKS (Move a copy addendum, 2026-11-21): with two or more copies that can move, each
+// copy takes a pick of its own. Three copies arrived, four decks want one.
+describe("ContestedCardRow — several picks", () => {
+  beforeEach(() => assign.mockReset());
+
+  const decks = ["HD - Zombies", "HD - Urza", "HD - Gishath", "HD - Mutant Menace"];
+  function three(granted: string[] = []): ContestedCard {
+    // The server's allocation: picks first, then commit order fills what is left.
+    let left = 3 - granted.length;
+    const claimants = decks.map((name, i) => {
+      const id = `d${i + 1}`;
+      const pickedIt = granted.includes(id);
+      const allocated = pickedIt ? 1 : left > 0 ? (left--, 1) : 0;
+      return {
+        deckId: id, deckName: name, quantity: 1, commanderCopies: 0, granted: pickedIt ? 1 : 0,
+        since: AUG + i, versionNumber: 1, allocated,
+      };
+    });
+    return { ...card(), cardName: "Fabled Passage", arrived: 3, ownedBefore: 0, owned: 3, claimants };
+  }
+  const row = (name: string) => screen.getByText(name).closest("li") as HTMLElement;
+
+  it("is a group of checkboxes, not a radiogroup", () => {
+    render(<ContestedCardRow card={three()} />);
+    expect(screen.queryByRole("radiogroup")).toBeNull();
+    expect(screen.getByRole("group")).toBeTruthy();
+    expect(screen.getAllByRole("checkbox")).toHaveLength(4);
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
+
+  it("names the newest unpicked holder as the one that gives it up first, only while a deck buys it", () => {
+    render(<ContestedCardRow card={three()} />);
+    expect(row("HD - Gishath").textContent).toContain(copy.contested.givesUpFirst);
+    expect(screen.getAllByText(new RegExp(copy.contested.givesUpFirst))).toHaveLength(1);
+  });
+
+  it("adds a pick beside the copies commit order gives, and counts picks in the heading", async () => {
+    let settle: (v: unknown) => void = () => {};
+    assign.mockReturnValue(new Promise((r) => { settle = r; }));
+    render(<ContestedCardRow card={three()} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Mutant Menace/ }));
+    expect(assign).toHaveBeenCalledWith("o1", "d4");
+    expect(screen.getByRole("checkbox", { checked: true }).getAttribute("aria-label"))
+      .toBe(copy.contested.a11yPicked("HD - Mutant Menace"));
+    expect(screen.getByText(copy.contested.capPicked(1, 3))).toBeTruthy();
+    expect(row("HD - Mutant Menace").textContent).toContain(copy.contested.yourPick);
+    settle({ ok: true, card: three(["d4"]) });
+    await waitFor(() => expect(screen.getByRole("checkbox", { checked: true })).toBeTruthy());
+  });
+
+  it("at the cap says every copy is picked, and a select on another deck writes nothing and goes to that line", () => {
+    render(<ContestedCardRow card={three(["d2", "d3", "d4"])} />);
+    expect(screen.getByText(copy.contested.capPicked(3, 3))).toBeTruthy();
+    const line = screen.getByText(copy.contested.allPicked(3));
+    // Nobody gives it up first once no pick is left to make.
+    expect(screen.queryByText(new RegExp(copy.contested.givesUpFirst))).toBeNull();
+    fireEvent.click(screen.getByRole("checkbox", { name: /Zombies/ }));
+    expect(assign).not.toHaveBeenCalled();
+    expect(document.activeElement).toBe(line);
+    expect(document.querySelector("[aria-live]")?.textContent).toBe(copy.contested.allPicked(3));
+  });
+
+  it("unticks a pick on a second select, and names the deck that gets its copy back", async () => {
+    // Picked: d4 holds, d3 buys. Unticked: commit order gives d3 its copy back.
+    assign.mockResolvedValue({ ok: true, card: three() });
+    const { container } = render(<ContestedCardRow card={three(["d4"])} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: copy.contested.a11yPicked("HD - Mutant Menace") }));
+    expect(screen.queryByRole("checkbox", { checked: true })).toBeNull();
+    await waitFor(() => expect(container.querySelector("[aria-live]")?.textContent)
+      .toBe(copy.contested.announcedUntick("HD - Mutant Menace", "HD - Gishath")));
+  });
+
+  it("goes to the all-picked line when the server refuses the select at the cap", async () => {
+    assign.mockResolvedValue({ ok: false, cause: "all-picked", card: three(["d2", "d3", "d4"]) });
+    render(<ContestedCardRow card={three(["d3", "d4"])} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: /Urza/ }));
+    await waitFor(() => expect(document.activeElement?.textContent).toBe(copy.contested.allPicked(3)));
   });
 });
