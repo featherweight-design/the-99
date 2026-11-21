@@ -40,10 +40,13 @@ export async function runUpgrade(args: {
   hold?: (pairs: UpgradePair[]) => Promise<{ kept: UpgradePair[]; drops: UpgradeDrop[] }>;
   /** What the pairs still lack of the player's bracket (`shortfall`): null when the deck plays at it. Absent, no bracket is required. */
   reach?: (pairs: UpgradePair[]) => Promise<{ note: string } | null>;
+  /** Guided build: cards no swap may cut, and the most the adds may cost in all. Both absent for an Upgrade run. */
+  kept?: ReadonlySet<string>;
+  budgetCents?: number | null;
 }): Promise<UpgradeRunReport> {
-  const { input, deck, pool, callModel, hold, reach } = args;
+  const { input, deck, pool, callModel, hold, reach, kept, budgetCents } = args;
   const check = async (swaps: Parameters<typeof validateUpgrade>[0], already: readonly UpgradePair[]) => {
-    const v = validateUpgrade(swaps, { deck, pool, already });
+    const v = validateUpgrade(swaps, { deck, pool, already, kept, budgetCents });
     if (!hold) return v;
     const held = await hold([...already, ...v.kept]);
     // The accepted pairs were held when they were accepted; only this answer's own can fall, and only theirs are reported.

@@ -104,4 +104,30 @@ describe("validateUpgrade: the reason per cut (fresh start 1/4)", () => {
     expect(out.endsWith("\u{1F525}")).toBe(true);
     expect(out).not.toMatch(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/);
   });
+
+  describe("guided build rules", () => {
+    it("drops a swap that cuts a kept card, and only that one", () => {
+      const r = validateUpgrade([swap("weak card", "skullclamp"), swap("other weak", "smothering tithe")], { deck, pool, kept: new Set(["d2"]) });
+      expect(rules(r)).toEqual(["kept"]);
+      expect(r.kept.map((p) => p.cutId)).toEqual(["d3"]);
+    });
+
+    it("drops the add that would take the run past its budget, and every later one that does not fit", () => {
+      const r = validateUpgrade([swap("weak card", "skullclamp"), swap("other weak", "smothering tithe")], { deck, pool, budgetCents: 800 });
+      expect(r.kept.map((p) => p.addId)).toEqual(["p1"]);
+      expect(rules(r)).toEqual(["budget"]);
+    });
+
+    it("counts the pairs already kept against the budget", () => {
+      const already = [{ cutId: "x", cut: "X", addId: "y", add: "Y", addCents: 600, reason: "r", cutReason: null, position: 0 }];
+      const r = validateUpgrade([swap("weak card", "skullclamp")], { deck, pool, already, budgetCents: 800 });
+      expect(rules(r)).toEqual(["budget"]);
+    });
+
+    it("is the same as before when neither is passed", () => {
+      const r = validateUpgrade([swap("weak card", "skullclamp")], { deck, pool, kept: undefined, budgetCents: undefined });
+      expect(r.drops).toEqual([]);
+      expect(r.kept).toHaveLength(1);
+    });
+  });
 });

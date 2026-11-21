@@ -7,6 +7,7 @@ import { AllowanceSpentError, reserveModelCall, settleModelCall, type Billed } f
 import { UPGRADE_REAP_MS } from "../precons/upgrade/constants";
 import type { StoredPair, UpgradeDrop } from "../precons/upgrade/validate";
 import { recordLate, RunSupersededError } from "../tuning/run-store";
+import { applyGuidedPairsIn } from "./apply";
 import { GUIDED_UNITS, type PoolMode } from "./constants";
 
 /**
@@ -95,8 +96,10 @@ export async function finishGuided(handle: GuidedHandle, write: GuidedOutcomeWri
           }
           : { status: "failed", errorClass: write.errorClass, refunded: wantRefund, finishedAt: now })
         .where(and(eq(guidedBuilds.id, handle.runId), eq(guidedBuilds.status, "pending")))
-        .returning({ id: guidedBuilds.id });
+        .returning({ id: guidedBuilds.id, userId: guidedBuilds.userId, deckId: guidedBuilds.deckId });
       if (written.length === 0) throw new RunSupersededError();
+      // A done run's swaps land on the deck with its outcome (a short run's found cards stay, G6); a failed run changes nothing.
+      if (write.status === "done") await applyGuidedPairsIn(tx, written[0].userId, written[0].deckId, write.pairs);
       const settled = await settleModelCall(tx, handle.callId, wantRefund ? "refunded" : "spent", billed, now, wantRefund ? (write.status === "failed" ? "failed" : "nothing_valid") : null);
       // A spend the ledger turned into a refund (`late_success`: the reservation outlived its window) is not a kept charge, so the row says so.
       if (!wantRefund && settled === "refunded") await tx.update(guidedBuilds).set({ refunded: true }).where(eq(guidedBuilds.id, handle.runId));

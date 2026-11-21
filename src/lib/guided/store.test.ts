@@ -17,6 +17,7 @@ const h = vi.hoisted(() => ({
   reserve: vi.fn(),
   settle: vi.fn(),
   late: vi.fn(),
+  apply: vi.fn(),
 }));
 
 vi.mock("../../db", () => {
@@ -56,6 +57,8 @@ vi.mock("../model/allowance", () => ({ AllowanceSpentError: SpentError, reserveM
 class Superseded extends Error {}
 vi.mock("../tuning/run-store", () => ({ recordLate: h.late, RunSupersededError: Superseded }));
 
+vi.mock("./apply", () => ({ applyGuidedPairsIn: (...a: unknown[]) => h.apply(...a) }));
+
 const { startGuided, finishGuided, reapGuided, readGuidedState } = await import("./store");
 
 const PARAMS = { strategy: { key: "tokens", label: "Tokens" }, bracketTarget: 3, poolMode: "owned" as const, poolCapCents: null, budgetCents: null, kept: ["o1"] };
@@ -67,6 +70,7 @@ beforeEach(() => {
   h.reserve.mockReset().mockResolvedValue({ id: "call-1" });
   h.settle.mockReset().mockResolvedValue("refunded");
   h.late.mockReset();
+  h.apply.mockReset().mockResolvedValue(0);
 });
 
 describe("startGuided (guided build A1)", () => {
@@ -137,6 +141,22 @@ describe("finishGuided and reapGuided", () => {
     expect(w.params).toEqual(["run-1", "pending"]);
     expect(h.settle.mock.calls[0].slice(1, 2)).toEqual(["call-1"]);
     expect(h.settle.mock.calls[0][2]).toBe("spent");
+  });
+
+  it("applies a done run's pairs to the deck in the same transaction, and a failed run changes nothing", async () => {
+    const pair = { cutId: "a", addId: "b" };
+    h.updateRows = [{ id: "run-1", userId: "u", deckId: "d" }];
+    await finishGuided(handle, { ...done, pairs: [pair] as never }, undefined, NOW);
+    expect(h.apply).toHaveBeenCalledOnce();
+    expect(h.apply.mock.calls[0].slice(1)).toEqual(["u", "d", [pair]]);
+    await finishGuided(handle, { status: "failed", errorClass: "model" }, undefined, NOW);
+    expect(h.apply).toHaveBeenCalledOnce();
+  });
+
+  it("applies nothing for a run that was reaped first", async () => {
+    h.updateRows = [];
+    await finishGuided(handle, done, undefined, NOW);
+    expect(h.apply).not.toHaveBeenCalled();
   });
 
   it("refunds a failed run and a short one through the ledger", async () => {

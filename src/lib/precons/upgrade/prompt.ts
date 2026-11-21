@@ -28,6 +28,9 @@ export type UpgradeInput = {
   bracketTarget: BracketTarget;
   /** Set when the player leads with the box's alternate commander: the box's own commander is then one of the 99. */
   commanderSwap?: { lead: string; former: string };
+  /** Guided build: catalog names of the cards the player kept (never cut) and the total the adds may cost, in cents. Both absent for an Upgrade run. */
+  keptNames?: readonly string[];
+  budgetCents?: number | null;
 };
 
 /** The reply: pairs with a reason each. The bracket and every total are computed in code, never asked for. */
@@ -99,7 +102,9 @@ function head(i: UpgradeInput): string {
   const bracket = i.bracketBefore === null ? "" : ` The box as shipped reads as bracket ${i.bracketBefore} today.`;
   const swap = i.commanderSwap ? ` The player leads with ${i.commanderSwap.lead} instead of the box's commander ${i.commanderSwap.former}, which is now one of the 99: keep it or cut it as the strategy asks.` : "";
   const others = i.otherThemes.length ? ` Cut the cards that serve: ${i.otherThemes.join(", ")}.` : "";
-  return `Deck: ${i.deckName}. Cards in list: ${i.deck.reduce((n, d) => n + d.qty, 0)}.${bracket}${swap}
+  const keep = i.keptNames?.length ? `\nKEPT CARDS (never cut these): ${i.keptNames.join("; ")}.` : "";
+  const budget = i.budgetCents != null ? `\nBUDGET: the added cards may cost ${money(i.budgetCents)} in all, by the prices shown in the pool.` : "";
+  return `Deck: ${i.deckName}. Cards in list: ${i.deck.reduce((n, d) => n + d.qty, 0)}.${bracket}${swap}${keep}${budget}
 
 CHOSEN BRACKET: ${BRACKET_RULE[i.bracketTarget]}
 
@@ -127,6 +132,8 @@ const REASON: Record<UpgradeDrop["rule"], string> = {
   duplicateAdd: "was added twice",
   overCard: `costs more than ${money(CARD_CAP_CENTS)}`,
   unpriced: "has no price",
+  kept: "is a card the player kept and cannot be cut",
+  budget: "would take the added cards past the player's budget",
   bracket: "would take the deck past the chosen bracket",
 };
 

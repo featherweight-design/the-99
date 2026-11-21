@@ -7,7 +7,7 @@ import { assertNamedFiles } from "../../../scripts/lib/named-files.mjs";
 //
 // This is a STATIC test for the same reason `env.test.mts` and
 // `surface.test.mts` are: the rule is about a set of call sites, and a set of
-// call sites grows. Eleven files delete or replace `deck_cards` today; the twelfth
+// call sites grows. Twelve files delete or replace `deck_cards` today; the thirteenth
 // is the one that would ship the bug, and nothing in a runtime test would catch
 // it because the bug is an ABSENCE at a site nobody wrote yet.
 //
@@ -19,6 +19,7 @@ const FILES = [
   "src/app/decks/update-actions.ts",
   "src/lib/commander-change/write.ts",
   "src/lib/decks/versions.ts",
+  "src/lib/guided/apply.ts",
   "src/lib/decks/pull.ts",
   "src/lib/decks/remove-card.ts",
   "src/lib/decks/set-basic-quantity.ts",
@@ -89,7 +90,7 @@ describe("proxy rows are reconciled wherever deck membership shrinks", () => {
     // The count is asserted because the guard above is only as good as the set
     // it walks, and the first version of this test silently walked a subset.
     const counts = FILES.map((file) => deleteSites(readFileSync(file, "utf8")).length);
-    expect(counts).toEqual([2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1]);
+    expect(counts).toEqual([2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1]);
   });
 
   // The ordering is load-bearing on exactly one path. `restoreDraftFromVersion`

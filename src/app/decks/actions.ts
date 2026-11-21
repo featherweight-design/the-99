@@ -55,7 +55,9 @@ import { buildFillPlan } from "../../lib/decks/fill-plan";
 import { gatherFillInputs, planFromPool, readBulkPlans, sleeveableIds, topOffAllowList } from "../../lib/decks/bulk-fill-plans";
 import { answerColumnsFor, retryAnswersOf, validateCreateAnswers, type AnswerColumns, type CreateAnswers } from "../../lib/intake/answers";
 import { sanitizeSelection } from "../../lib/decks/selection-param";
-import { isDeckBuildKind, type DeckBuildKind } from "../../lib/decks/build-kind";
+import { isCreateBuildKind, type CreateBuildKind } from "../../lib/decks/build-kind";
+import { beginGuided, type GuidedPicks } from "../../lib/guided/run";
+import { preconUpgradeEnabled } from "../../lib/precons/upgrade/flag";
 import { recordFillPass, summariseFillPasses, type FillPassKind } from "../../lib/decks/fill-passes";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { GAME_AXIS_KEYS, isGameAxisKey, type GameAxisKey } from "../../lib/decks/game-axes";
@@ -101,13 +103,17 @@ export async function createDeck(
   /** What Help me choose was asked (F1), when the deck is started from it. */
   answers: CreateAnswers | null = null,
   /** How the deck is built: the free fill (today's), or just the commander and the picks, with the 99 left empty. */
-  build: DeckBuildKind = "free",
+  build: CreateBuildKind = "free",
+  /** The player's guided-build picks: required for, and only read by, `build === "guided"`. Untrusted: `beginGuided` checks each. */
+  guided: GuidedPicks | null = null,
 ): Promise<void> {
   const started = Date.now();
   // A wire argument whatever its type says: anything but the two kinds is a crafted request.
-  if (!isDeckBuildKind(build)) throw new Error("unknown build kind");
+  if (!isCreateBuildKind(build)) throw new Error("unknown build kind");
   const userId = await requireUserId();
   const env = await requestFlags(userId);
+  // A guided build rides Upgrade this precon's switch (no switch of its own) and needs its picks: refused before anything is written.
+  if (build === "guided" && (!preconUpgradeEnabled(env) || guided === null)) throw new Error("guided build is not available");
   // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off (its switch is retired, always on).
   // Just the commander runs no fill, so the answers have nothing to steer: they are not validated, stored or read.
   const asked = answers === null || build === "empty" ? null : validateCreateAnswers(answers);
@@ -356,11 +362,25 @@ export async function createDeck(
   // fill pass seeded, and it is a deck the discovery lane measures distance
   // from, so both cached list payloads describe a world without it.
   revalidateClaims(deckId, userId);
+  // The guided run starts on the deck as the free fill placed it: the credits and the pending row are written before the response,
+  // and the model runs in `after()`. A refusal (allowance, paused, no pool) leaves the free build, which is what Failed promises.
+  let guidedStart: string = "none";
+  if (build === "guided" && guided !== null) {
+    try {
+      const begun = await beginGuided(userId, deckId, guided, env);
+      guidedStart = begun.ok ? "started" : begun.reason;
+      if (begun.ok) after(begun.run);
+    } catch (err) {
+      guidedStart = "error";
+      console.error("guided build did not start", err);
+    }
+  }
   // How it was built (straight from a commander, or Help me choose with any cards or only owned ones), the deck row's
   // `filled`, and the summed quantity of card rows the fill planned (0 when the fill fell back): never the deck's name or a card.
   logEvent("deck.built", {
-    mode: build === "empty" ? "empty" : asked === null ? "direct" : asked.pool === "own" ? "choose_own" : "choose_any",
+    mode: build === "empty" ? "empty" : build === "guided" ? "guided" : asked === null ? "direct" : asked.pool === "own" ? "choose_own" : "choose_any",
     filled: filledRow,
+    guided_start: guidedStart,
     cards_planned: cardsPlanned,
     ms: Date.now() - started,
   });

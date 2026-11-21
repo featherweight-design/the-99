@@ -57,6 +57,10 @@ export type UpgradeDropRule =
   | "duplicateAdd"
   | "overCard"
   | "unpriced"
+  /** A swap that cuts a card the player kept (guided build, G5): never cut. */
+  | "kept"
+  /** An add that would take the run's total past the player's budget (guided build, G4): an add that does not fit falls, a later cheaper one may still fit. */
+  | "budget"
   /** Held back by the chosen bracket (`hold.ts`): a game changer over the limit, mass land denial or a forbidden combo. */
   | "bracket";
 
@@ -80,7 +84,13 @@ function byName<T extends { name: string }>(entries: readonly T[]): Map<string, 
 
 export function validateUpgrade(
   swaps: readonly RawSwap[],
-  ctx: { deck: readonly DeckEntry[]; pool: readonly PoolEntry[]; already?: readonly UpgradePair[] },
+  ctx: {
+    deck: readonly DeckEntry[]; pool: readonly PoolEntry[]; already?: readonly UpgradePair[];
+    /** Oracle ids no swap may cut (guided build). Absent: none. */
+    kept?: ReadonlySet<string>;
+    /** The most the run's adds may cost in all, in cents, the first answer's kept pairs counted (guided build). Absent: no budget. */
+    budgetCents?: number | null;
+  },
 ): UpgradeValidation {
   const deck = byName(ctx.deck);
   const pool = byName(ctx.pool);
@@ -90,6 +100,7 @@ export function validateUpgrade(
   const drops: UpgradeDrop[] = [];
   let overCeiling = 0;
   const room = MAX_SWAPS - (ctx.already?.length ?? 0);
+  let spent = (ctx.already ?? []).reduce((n, p) => n + p.addCents, 0);
   swaps.forEach((s, position) => {
     const cut = deck.get(normalizeName(s.out));
     const add = pool.get(normalizeName(s.in));
@@ -97,13 +108,16 @@ export function validateUpgrade(
     if (!cut) return drop("cutNotInDeck", s.out);
     if (cut.isCommander) return drop("cutCommander", cut.name);
     if (cut.basic) return drop("cutBasic", cut.name);
+    if (ctx.kept?.has(cut.oracleId)) return drop("kept", cut.name);
     if (cuts.has(cut.oracleId)) return drop("duplicateCut", cut.name);
     if (deck.has(normalizeName(s.in)) || (add && ctx.deck.some((d) => d.oracleId === add.oracleId))) return drop("addInDeck", s.in);
     if (!add) return drop("addNotInPool", s.in);
     if (adds.has(add.oracleId)) return drop("duplicateAdd", add.name);
     if (add.cents === null) return drop("unpriced", add.name);
     if (add.cents > CARD_CAP_CENTS) return drop("overCard", add.name);
+    if (ctx.budgetCents != null && spent + add.cents > ctx.budgetCents) return drop("budget", add.name);
     if (kept.length >= room) { overCeiling++; return; }
+    spent += add.cents;
     cuts.add(cut.oracleId);
     adds.add(add.oracleId);
     kept.push({ cutId: cut.oracleId, cut: cut.name, addId: add.oracleId, add: add.name, addCents: add.cents, reason: s.reason.trim(), cutReason: cutReasonOf(s.cutReason), position });
