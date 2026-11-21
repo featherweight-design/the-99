@@ -140,6 +140,8 @@ export type GuidedState = {
   bracketAfter: number | null;
   bracketTarget: number;
   poolMode: PoolMode;
+  /** The budget a `budget` run was given, in cents: what a retry sends again. */
+  budgetCents: number | null;
   kept: string[];
   errorClass: string | null;
 };
@@ -153,7 +155,7 @@ export async function readGuidedState(userId: string, deckId: string): Promise<G
     id: guidedBuilds.id, status: guidedBuilds.status, refunded: guidedBuilds.refunded, strategyKey: guidedBuilds.strategyKey,
     strategyLabel: guidedBuilds.strategyLabel, createdAt: guidedBuilds.createdAt, pairs: guidedBuilds.pairs, buyTotalCents: guidedBuilds.buyTotalCents,
     bracketBefore: guidedBuilds.bracketBefore, bracketAfter: guidedBuilds.bracketAfter, bracketTarget: guidedBuilds.bracketTarget,
-    poolMode: guidedBuilds.poolMode, kept: guidedBuilds.kept, errorClass: guidedBuilds.errorClass,
+    poolMode: guidedBuilds.poolMode, budgetCents: guidedBuilds.budgetCents, kept: guidedBuilds.kept, errorClass: guidedBuilds.errorClass,
   })
     .from(guidedBuilds)
     .innerJoin(decks, eq(decks.id, guidedBuilds.deckId))
@@ -165,7 +167,7 @@ export async function readGuidedState(userId: string, deckId: string): Promise<G
   return {
     id: r.id, state, strategyKey: r.strategyKey, strategyLabel: r.strategyLabel, createdAt: new Date(r.createdAt),
     pairs: r.pairs.map((p) => ({ ...p, cutReason: p.cutReason ?? null })), buyTotalCents: r.buyTotalCents,
-    bracketBefore: r.bracketBefore, bracketAfter: r.bracketAfter, bracketTarget: r.bracketTarget, poolMode: r.poolMode as PoolMode,
+    bracketBefore: r.bracketBefore, bracketAfter: r.bracketAfter, bracketTarget: r.bracketTarget, poolMode: r.poolMode as PoolMode, budgetCents: r.budgetCents,
     kept: r.kept, errorClass: r.errorClass,
   };
 }

@@ -15,6 +15,10 @@ import { serializeChooseParams } from "../../../lib/intake/params";
 import { loadIntakeCatalog } from "../../../lib/intake/search";
 import { choosePath } from "../../../lib/commanders/place-paths";
 
+// The guided build's run (createDeck's `after()`) lives under this page's limit: two upgrade calls and the Overview's deadline
+// fit under it (`src/lib/guided/limits.test.ts` pins the arithmetic).
+export const maxDuration = 300;
+
 export default async function NewDeckPage({
   searchParams,
 }: {

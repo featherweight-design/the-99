@@ -28,4 +28,53 @@ export const guidedBuildCopy = {
     },
   },
   press: { free: "Create deck →", empty: "Create deck →" },
+  /** The run's window (R1 to R5): the title, the picks line, the wait, the result and the failed run. */
+  run: {
+    title: (deck: string) => `Build ${deck}`,
+    close: "Close",
+    steps: { label: "Your picks", strategy: "Strategy", bracket: "Bracket", cards: "Cards" },
+    /** The picks line's words for the card pool, after the strategy and the bracket. */
+    pool: { owned: "only cards you own", cap: "buying some", budget: "buying within a budget" },
+    bracket: (n: number) => `bracket ${n}`,
+    wait: {
+      building: (s: string) => `Sharpening toward ${s}`,
+      usual: "usually about 8 seconds",
+      leave: "Leave whenever you like: the deck is already in Decks with the free build, and the guided picks land in it when they’re done.",
+      held: "Running · 2 credits held",
+      sharpening: (s: string) => `Sharpening 12 to 18 cards toward ${s}`,
+      overview: "Writing the deck’s Overview",
+      filled: "Filled · the 99 from your cards",
+      pressing: (s: string) => `Build toward ${s}`,
+    },
+    failed: {
+      line: "The guided build didn’t come through. Both credits are back.",
+      kept: (deck: string) => `${deck} keeps the free build, so nothing is lost.`,
+      retry: "Try again",
+      retryLine: "2 credits · same picks",
+      open: "Open the deck",
+      /** The retry itself was refused (credits gone, a run already going, the switch off): the window stays on the failed run. */
+      retryRefused: "That didn’t start. Nothing was spent.",
+    },
+    result: {
+      title: (deck: string) => `${deck} is ready`,
+      facts: { strategy: "Strategy", bracket: "Bracket", sharpened: "Sharpened", toBuy: "To buy" },
+      cards: "cards",
+      none: "none",
+      overview: "Overview",
+      overviewNote: "written with the build",
+      /** The run kept its charge but the Overview did not arrive: the deck is built, and the Overview tab writes it. */
+      overviewMissing: "The Overview didn’t come through. You can write it from the deck’s Overview tab.",
+      short: (n: number, b: number) => (n === 0
+      ? `No cards could be sharpened at bracket ${b}, so both credits are back.`
+      : `Only ${n} ${n === 1 ? "card" : "cards"} could be sharpened at bracket ${b}, so both credits are back. ${n === 1 ? "It is" : `The ${n} are`} in the deck.`),
+      open: (deck: string) => `Open ${deck}`,
+    },
+  },
+  /** On the deck's page while the run is going, and after it came up short or failed (G6). */
+  line: {
+    running: (s: string, clock: string) => `Sharpening toward ${s} · ${clock}`,
+    short: (s: string) => `The guided build toward ${s} found fewer than 12 cards. Both credits are back.`,
+    failed: (s: string) => `The guided build toward ${s} didn’t come through. Both credits are back.`,
+    open: "See the build",
+  },
 } as const;
