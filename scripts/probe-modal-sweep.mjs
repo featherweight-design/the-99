@@ -117,7 +117,7 @@ async function landing(browser, width) {
     await link.waitFor({ timeout: 30_000 });
     await openCheck(page, (name, info) => {
       const sheetIn = info.css === "filter-sheet-in";
-      report(`${width.label}: ${name} ${phone ? "slides in" : "is instant"}`, info.found && sheetIn === phone, `animationName ${info.css}`);
+      report(`${width.label}: ${name} ${phone ? "slides in" : "is instant"}`, info.found && (phone ? sheetIn : info.css === "none"), `animationName ${info.css}`);
     }, "landing > What credits cost", '[data-testid="cost-sheet"]', () => link.click());
   } finally {
     await context.close();
@@ -131,7 +131,7 @@ async function walk(browser, width) {
   const phone = width.label === 390;
   const check = (name, info) => {
     const sheetIn = info.css === "filter-sheet-in";
-    report(L(`${name} ${phone ? "slides in" : "is instant"}`), info.found && sheetIn === phone, `animationName ${info.css}`);
+    report(L(`${name} ${phone ? "slides in" : "is instant"}`), info.found && (phone ? sheetIn : info.css === "none"), `animationName ${info.css}`);
   };
   try {
     const userId = await signIn(page);

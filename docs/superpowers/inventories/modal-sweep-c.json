@@ -1,0 +1,27 @@
+{
+  "feature": "Modal phone slide-in sweep, PR C: set filter sheet, set-list sheet, creator note, admin setting dialog and confirm frame, landing cost sheet slide up on a phone and are instant on desktop",
+  "note": "Signed in, on local-dev or a scratch branch. Writes nothing. A photo at rest cannot show the slide: `pnpm probe:modal-sweep` proves the entrance (landing cost sheet and the set filter sheet at 390 and 1300). This sheet shows the set filter sheet landing as drawn at 390, and the desktop, where it is not drawn, unchanged. The creator note (first-run tour), the admin setting dialog and confirm frame (admin only), the set-list sheet and the signed-out landing cost sheet are not reachable from a signed-in member walk, so their class is checked by marker, not photographed.",
+  "out": "contact-sheets/modal-sweep-c",
+  "rows": [
+    {
+      "id": "set-filter-sheet",
+      "label": "/collection/sets/lea: Filters sheet opened (phone only: not drawn from 768)",
+      "view": "src/components/sets/set-grid-view.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/collection/sets/lea", "wait": "button:has-text('Filters')", "settle": 1500 },
+        { "clickRole": "button", "name": "Filters", "settle": 600 },
+        { "wait": "[role=dialog]", "settle": 600 }
+      ]
+    },
+    {
+      "id": "set-page-desktop",
+      "label": "/collection/sets/lea at 1300: the filters sit in the page, unchanged",
+      "view": "src/components/sets/set-grid-view.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/collection/sets/lea", "settle": 2500 }
+      ]
+    }
+  ]
+}
