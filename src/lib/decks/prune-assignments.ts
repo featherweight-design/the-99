@@ -90,9 +90,14 @@ export async function pruneOrphanAssignments(tx: Runner, deckId: string): Promis
  * grants reservations oldest first, so an excess pick holds nothing; it is deleted rather than left inert, because it
  * would hold its copy again the moment one arrived, and the cap counts it meanwhile. The NEWEST picks go, by
  * `(created_at, deck_id)`, the order the cap was filled in. `keep` is the removal chooser's own pick (the deck the player
- * just said keeps the card), which never drops.
+ * just said keeps the card), which drops last: only when no copy is left to give at all.
  *
- * Takes each card's claim lock, in sorted order, as every pick write does.
+ * ONE GIVEABLE COPY is single-select, where a reservation and another deck's pending pick stand together by design
+ * (`assignPendingIn`: the pending pick moves the reservation at its deck's commit). There each kind is capped on its own,
+ * so a pick that is waiting for its commit never lapses because the copy it will take is reserved meanwhile.
+ *
+ * Only cards that have a pick are locked and read, so a replace that lowers thousands of cards costs one query when
+ * almost none of them carry a pick. Takes each such card's claim lock, in sorted order, as every pick write does.
  */
 export async function pruneExcessPicks(
   tx: Tx,
@@ -100,7 +105,17 @@ export async function pruneExcessPicks(
   oracleIds: readonly string[],
   keep?: { oracleId: string; deckId: string },
 ): Promise<void> {
-  for (const oracleId of [...new Set(oracleIds)].sort()) {
+  const ids = [...new Set(oracleIds)];
+  if (ids.length === 0) return;
+  // Read before any lock: a pick written after this read is written under the cap the lowered supply sets.
+  const { rows: withPicks } = await tx.execute<{ oracle_id: string }>(sql`
+    select a.oracle_id from card_assignments a
+    where a.user_id = ${userId} and a.oracle_id = any(${sql.param(ids)}::uuid[])
+    union
+    select p.oracle_id from pending_assignments p
+    where p.user_id = ${userId} and p.oracle_id = any(${sql.param(ids)}::uuid[])
+  `);
+  for (const oracleId of withPicks.map((r) => r.oracle_id).sort()) {
     await lockCardClaims(tx, userId, oracleId);
     const keepDeck = keep?.oracleId === oracleId ? keep.deckId : null;
     const { rows } = await tx.execute<{ kind: "reserved" | "pending"; deck_id: string }>(sql`
@@ -128,13 +143,14 @@ export async function pruneExcessPicks(
         where p.user_id = ${userId} and p.oracle_id = ${oracleId}
       ),
       ranked as (
-        select kind, deck_id, sum(copies) over (
-          order by (deck_id::text = ${keepDeck}::text) is true desc, created_at, deck_id
+        select p.kind, p.deck_id, g.n, sum(p.copies) over (
+          partition by case when g.n = 1 then p.kind else 'all' end
+          order by (p.deck_id::text = ${keepDeck}::text) is true desc, p.created_at, p.deck_id
           rows between unbounded preceding and current row
         ) as running
-        from picks
+        from picks p cross join giveable g
       )
-      select kind, deck_id from ranked where running > (select n from giveable)
+      select kind, deck_id from ranked where running > n
     `);
     for (const r of rows) {
       const table = r.kind === "reserved" ? cardAssignments : pendingAssignments;

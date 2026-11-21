@@ -905,11 +905,34 @@ async function severalPicksSection() {
     check("several: and a reservation at the cap counts the pending pick", await assignCopyFor(USER_S, card, newest), "all-picked");
     check("several: nothing written by either", `${await reserved()}|${await pending()}`, `${ids(middle)}|${ids(draftA)}`);
 
-    // 6. G4: a removal leaving one copy drops the NEWEST pick, from whichever table holds it.
+    // 6. One copy is single-select: a reservation and another deck's pending pick stand together (the pending
+    //    pick moves the copy at its deck's commit), so a removal to one copy drops neither.
     await fixture.execute(sql`update collection_items set quantity = 1 where user_id = ${USER_S} and oracle_id = ${card}`);
     await db.transaction(async (tx) => { await pruneExcessPicks(tx, USER_S, [card]); });
-    check("several: a removal drops the newest pick", await pending(), "");
-    check("several: and keeps the older one", await reserved(), ids(middle));
+    check("several: one copy keeps the waiting pending pick", await pending(), ids(draftA));
+    check("several: and the reservation it will move", await reserved(), ids(middle));
+
+    // 7. G4: with several copies, a removal drops the NEWEST picks.
+    await fixture.execute(sql`delete from pending_assignments where user_id = ${USER_S}`);
+    await fixture.execute(sql`update collection_items set quantity = 3 where user_id = ${USER_S} and oracle_id = ${card}`);
+    check("several: a pick on three copies", await assignCopyFor(USER_S, card, oldest), null);
+    check("several: and another", await assignCopyFor(USER_S, card, newest), null);
+    await fixture.execute(sql`update collection_items set quantity = 2 where user_id = ${USER_S} and oracle_id = ${card}`);
+    await db.transaction(async (tx) => { await pruneExcessPicks(tx, USER_S, [card]); });
+    check("several: a removal drops the newest pick", await reserved(), ids(middle, oldest));
+
+    // 8. A one-copy row's pick names the deck it moves from, and moves it rather than adding (two copies owned).
+    check("several: a move names its deck", await assignCopyFor(USER_S, card, newest, undefined, "toggle", oldest), null);
+    check("several: the pick moved, not added", await reserved(), ids(middle, newest));
+
+    // 9. Down to one copy, the older reservation keeps it; a reservation written then clears every pending pick.
+    await fixture.execute(sql`update collection_items set quantity = 1 where user_id = ${USER_S} and oracle_id = ${card}`);
+    await db.transaction(async (tx) => { await pruneExcessPicks(tx, USER_S, [card]); });
+    check("several: one copy keeps the older reservation", await reserved(), ids(middle));
+    check("several: a pending pick on one copy is accepted", await assignPendingFor(USER_S, draftA, card), null);
+    check("several: a reservation on one copy moves the copy", await assignCopyFor(USER_S, card, oldest), null);
+    check("several: and clears the other deck's pending pick", await pending(), "");
+    check("several: and keeps the older one", await reserved(), ids(oldest));
   } finally {
     await fixture.execute(sql`delete from pending_assignments where user_id = ${USER_S}`);
     await fixture.execute(sql`delete from card_assignments where user_id = ${USER_S}`);

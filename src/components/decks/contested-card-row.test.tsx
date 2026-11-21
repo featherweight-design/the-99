@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 
 // The server action, stubbed: what these cases are about is what the ROW does with each answer.
 const assign = vi.hoisted(() => vi.fn());
@@ -492,6 +492,23 @@ describe("ContestedCardRow — the chooser", () => {
     await waitFor(() => {
       expect(screen.getByRole("radio", { checked: true })).toBeTruthy();
     });
+  });
+
+  it("moves a one-copy row's pick off the deck it was on, though the collection owns more", async () => {
+    // One copy arrived of two owned: the row draws one pick, while the server caps picks at both copies.
+    // Without naming the deck it moves from, the second select would ADD a pick this row cannot draw.
+    assign.mockResolvedValue({ ok: true, card: null });
+    render(<ContestedCardRow card={card({
+      arrived: 1,
+      owned: 2,
+      claimants: [
+        { deckId: "d1", deckName: "HD Avatar Aang", quantity: 1, commanderCopies: 0, granted: 1, since: AUG, versionNumber: 7, allocated: 1 },
+        { deckId: "d2", deckName: "Elemental Dragons", quantity: 2, commanderCopies: 0, granted: 0, since: SEP, versionNumber: 2, allocated: 1 },
+      ],
+    })} />);
+    expect(screen.getByRole("radiogroup")).toBeTruthy();
+    await act(async () => { fireEvent.click(screen.getByRole("radio", { name: /Elemental Dragons/ })); });
+    expect(assign).toHaveBeenCalledWith("o1", "d2", undefined, "d1");
   });
 
   it("previews against the copies owned, not the copies the import brought", async () => {

@@ -357,6 +357,10 @@ export function ContestedCardRow({
       }
     }
     const replacing = externalPick && !multi;
+    // ONE PICK MOVES. The server caps picks at every copy owned, and a receipt row caps them at the
+    // copies its import brought, so a one-copy row names the deck it is moving the pick from: the
+    // write then moves it, as drawn, instead of adding a second pick this row cannot show.
+    const movesFrom = !multi && !wasChosen && chosenIds.size === 1 ? [...chosenIds][0] : undefined;
     if (replacing) onBeforePick?.();
     // What the row drew at the tap, so the announcement can name who lost or regained a copy.
     const before = claimants;
@@ -382,7 +386,11 @@ export function ContestedCardRow({
       // forever behind a write whose outcome nobody knows. Standing the state down is the one
       // thing that must happen on every path out of here.
       try {
-      const result = replacing ? await assignCopy(card.oracleId, deckId, "set") : await assignCopy(card.oracleId, deckId);
+      const result = replacing
+        ? await assignCopy(card.oracleId, deckId, "set")
+        : movesFrom
+          ? await assignCopy(card.oracleId, deckId, undefined, movesFrom)
+          : await assignCopy(card.oracleId, deckId);
       // THE LIVE READ CARRIES NO RECEIPT. `arrived` and `ownedBefore` are facts about the import
       // this row came from, and `loadContestedCard` has no import to read — it returns nought for
       // both. Taking its object whole would cost the row its cap, its mark shape and its

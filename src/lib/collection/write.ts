@@ -922,11 +922,16 @@ export async function applyCollectionChange(
         // card's claim lock, which every reservation write takes.
         // The press names its pick (I got it, the cart), or else the entry's own record does: a revert from History and a
         // removal's Put back name none, and the keeper's reservation still goes with the copy.
-        // Every card the entry names, locked up front in sorted order, before the restore below takes a deck row:
-        // the revert's lowered cards are among them, and `pruneExcessPicks` locks those again after this (a no-op
-        // then), so no card lock is ever first taken behind a deck lock that a pick write would wait on.
-        for (const id of [...new Set((row.rows ?? []).map((r) => r.oracleId))].sort()) await lockCardClaims(tx, userId, id);
-        for (const undo of change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows)) {
+        // When an undo puts a reservation back it locks that deck's row, and the prune after the plan then locks
+        // the revert's lowered cards. So, only then, every card the entry names is locked first, in sorted order
+        // (the lowered cards are among them, and the prune's lock is then a no-op): no card lock is ever first taken
+        // behind a deck lock a pick write would wait on. A revert that restores nothing locks no deck here, and a
+        // large import's revert pays for no locks it does not need.
+        const undos = change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows);
+        if (undos.some((u) => u.restore)) {
+          for (const id of [...new Set((row.rows ?? []).map((r) => r.oracleId))].sort()) await lockCardClaims(tx, userId, id);
+        }
+        for (const undo of undos) {
           const drop = placementToUndo(undo, row.rows);
           if (drop) {
             await lockCardClaims(tx, userId, drop.oracleId);

@@ -56,8 +56,10 @@ export async function assignCopyFor(
   deckId: string,
   report?: AssignReport,
   mode: "toggle" | "set" = "toggle",
+  /** A one-copy row's pick MOVES: the deck it moves from, whose reservation goes first (see `assignCopyIn`). */
+  from?: string,
 ): Promise<AssignRefusal | null> {
-  if (!isUuid(oracleId) || !isUuid(deckId)) return "not-your-deck";
+  if (!isUuid(oracleId) || !isUuid(deckId) || (from !== undefined && !isUuid(from))) return "not-your-deck";
   return db.transaction<AssignRefusal | null>(async (tx) => {
     // SERIALIZED PER CARD, before anything is read. The deck row lock below covers one deck, and
     // the supply question is about every deck at once: two picks naming DIFFERENT decks would
@@ -71,7 +73,7 @@ export async function assignCopyFor(
     // taking a weaker lock, which is how the probe caught it. `hashtextextended` for the reason
     // `replaceCollection` uses it: the ids are text of arbitrary length.
     await lockCardClaims(tx, userId, oracleId);
-    return assignCopyIn(tx, userId, oracleId, deckId, mode, report);
+    return assignCopyIn(tx, userId, oracleId, deckId, mode, report, from);
   });
 }
 
@@ -113,6 +115,14 @@ export async function assignCopyIn(
    * `displaced` is the reservation a MOVE deleted to make room, so an undo can put it back.
    */
   report?: AssignReport,
+  /**
+   * The deck a ONE-COPY row's pick moves from. The row draws one pick when one copy is in play for
+   * it (a receipt caps that at the copies the import brought), while the cap here counts every copy
+   * owned, so without it a second select would ADD a pick the row has no way to draw. Its
+   * reservation is deleted before the cap is read, and reported as displaced, so the press is the
+   * move the row drew. Only a toggle's press names one.
+   */
+  from?: string,
 ): Promise<AssignRefusal | null> {
   const ask = await reservableAsk(tx, userId, deckId, oracleId);
   if (typeof ask === "string") return ask;
@@ -137,6 +147,15 @@ export async function assignCopyIn(
       eq(cardAssignments.deckId, deckId),
     ));
     return null;
+  }
+
+  if (from && from !== deckId && mode === "toggle") {
+    const [moved] = await tx.delete(cardAssignments).where(and(
+      eq(cardAssignments.userId, userId),
+      eq(cardAssignments.oracleId, oracleId),
+      eq(cardAssignments.deckId, from),
+    )).returning({ copies: cardAssignments.copies, createdAt: sql<string>`${cardAssignments.createdAt}::text` });
+    if (moved && report) report.displaced = { deckId: from, copies: moved.copies, createdAt: moved.createdAt };
   }
 
   // WHAT IS LEFT TO GIVE, read under the lock. The ceiling is the supply less every copy held
@@ -221,11 +240,13 @@ export async function assignCopyIn(
     }
   }
 
-  // This deck's own pending pick, when it has one, is the choice this reservation now carries.
+  // This deck's own pending pick, when it has one, is the choice this reservation now carries. On a
+  // one-copy card every other deck's pending pick goes too: one copy is single-select, and a pending
+  // pick left standing would move the copy off this deck at its commit, overriding the newer pick.
   await tx.delete(pendingAssignments).where(and(
     eq(pendingAssignments.userId, userId),
     eq(pendingAssignments.oracleId, oracleId),
-    eq(pendingAssignments.deckId, deckId),
+    ...(giveable === 1 ? [] : [eq(pendingAssignments.deckId, deckId)]),
   ));
   const [made] = await tx.insert(cardAssignments).values({ userId, oracleId, deckId })
     .returning({ createdAt: sql<string>`${cardAssignments.createdAt}::text` });

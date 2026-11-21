@@ -69,6 +69,13 @@ const { rows: [{ branch }] } = await client.query("select current_setting('neon.
 assertScratchBranch(branch, "probe:several-picks");
 
 async function seed(userId) {
+  // A crashed earlier run leaves its decks standing: clear their card's fixture first, found through the decks'
+  // own list, so this run does not seed beside it (and the next card choice is not skewed by the leftover copies).
+  const { rows: left } = await client.query(
+    `select distinct dc.oracle_id from deck_cards dc join decks d on d.id = dc.deck_id
+     where d.user_id = $1 and d.name like 'Probe several %'`, [userId]);
+  for (const r of left) await cleanup(userId, { oracle_id: r.oracle_id });
+  await client.query(`delete from decks where user_id = $1 and name like 'Probe several %'`, [userId]);
   // A non-legendary card the account owns none of, and a legend to lead the decks.
   const { rows: [card] } = await client.query(
     `select c.oracle_id, c.name from cards c

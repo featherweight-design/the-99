@@ -31,10 +31,12 @@ export async function assignCopy(
   deckId: string,
   /** `set` leaves the copy with the deck whatever is stored (the same deck again is not an undo). Anything else toggles. */
   mode?: "set",
+  /** A one-copy row's pick moves: the deck it moves from (`assignCopyIn`). */
+  from?: string,
 ): Promise<AssignResult> {
   const userId = await requireUserId();
   const report: AssignReport = { created: false };
-  const cause = await assignCopyFor(userId, oracleId, deckId, report, mode === "set" ? "set" : "toggle");
+  const cause = await assignCopyFor(userId, oracleId, deckId, report, mode === "set" ? "set" : "toggle", from);
 
   // A DECK THAT IS NOT THIS PLAYER'S WROTE NOTHING, so nothing is invalidated and nothing is read
   // back. Falling through would let anyone post a valid deck id belonging to somebody else and
