@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Picking themes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8FB4F0}a:hover{color:#B7CFF7}
+</style>
+</helmet>
+<div style="width:2540px;height:1800px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif">Picking themes</h2>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1500px">Desktop reuses Printed in's FilterPanel unchanged except one new head slot for Theme match. Phone puts the most-played themes inline in the shipped filter sheet, so the common pick is one tap, and the whole list is the same second layer Printed in opens.</p>
+</div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:780px;flex:none">
+<img src="/_blob/58f36eb3921820fe36e9f8495ac377f5" alt="Themes panel open, nothing picked" style="width:780px;height:540px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">Panel open, nothing picked</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Search, 44px rows, "Most commanders first". Theme match sits in the head, greyed in place with one or no theme, and says "Pick two to combine" so the greyed control explains itself.</p></figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:780px;flex:none">
+<img src="/_blob/9cbb5c2f4b3fee0ab68d122e8dfb4202" alt="Two themes picked, Any" style="width:780px;height:540px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">Several picked, Any</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Picks pin to the shipped "Selected · 2" group; Theme match goes live with Any on. One chip names both ("Aristocrats, Tokens"); a third collapses it to "3 themes". 801 rows: either theme.</p></figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:780px;flex:none">
+<img src="/_blob/b2839a3da341da1b70d8d572265a4ca7" alt="Searching themes for ra" style="width:780px;height:540px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">Searching</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The panel's shipped ranking: names that start with the query first. Creature-type themes carry "typal" in the hint slot, where Printed in shows a set code.</p></figcaption>
+</figure>
+</div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:330px;flex:none">
+<img src="/_blob/81e5b852a99f3178db27ce536e410ac1" alt="Phone filter sheet with Themes section" style="width:330px;height:714px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">Phone · sheet</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Themes sits under color, before Printed in: six 44px pills on a fixed two-column grid, each filling its cell with the count pinned right, so counts changing under other filters never resize a pill. Then "All 394 themes ›" and Theme match.</p></figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:330px;flex:none">
+<img src="/_blob/8af5a5ad8632b606f279a755e1e44e58" alt="Phone sheet, two themes picked" style="width:330px;height:714px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">Phone · two picked</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Picked pills light and lead the row, so a pick made in the full list is never hidden here. Theme match is live. Taps apply at once; the footer counts.</p></figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:330px;flex:none">
+<img src="/_blob/5a3d6b13c84c9b62fa1a3722c1da201c" alt="Phone, all themes list layer" style="width:330px;height:714px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">Phone · all themes</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The shared SetListSheet one layer up: search, picks first, "2 of 394 selected", Back to filters.</p></figcaption>
+</figure>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2540,"height":1800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

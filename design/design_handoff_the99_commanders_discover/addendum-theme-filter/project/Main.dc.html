@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Themes on Discover</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8FB4F0}a:hover{color:#B7CFF7}
+</style>
+</helmet>
+<div style="width:2090px;height:1180px;box-sizing:border-box;padding:48px 56px 56px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<p style="margin:0;font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#8FB4F0">Discover · filter rack addendum · #159 · R1</p>
+<h1 style="margin:0;font:700 34px 'Chakra Petch',sans-serif;color:#E6E8F0">Narrow commanders by theme</h1>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1500px">Every frame is the shipped Discover page rendered from its own components (kaldheim), with the proposal applied as code: a <b style="color:#E6E8F0">Themes ▾</b> control built from the rack's two shipped multi-select shapes, the Printed in panel on desktop and the filter sheet plus its second-layer list on phone. Counts are illustrative; the theme names are EDHREC's, the same ones the row's play-style sentence prints.</p>
+</div>
+<div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px">
+<div style="border:1px solid #262A35;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:14px">Pick one or several</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Checkbox rows on desktop, 44px pills plus the full list on phone. Several combine with <b style="color:#E6E8F0">Any</b> (default, like Printed in) or <b style="color:#E6E8F0">All</b>, a modifier that is greyed until two are picked, like Exactly.</p></div>
+<div style="border:1px solid #262A35;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:14px">Listed by popularity</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Most commanders first, counted under the other controls, with search for the long tail. Mechanics and creature types share one list; typal ones carry a "typal" hint. No grouping: 394 names in two groups is still a scroll.</p></div>
+<div style="border:1px solid #262A35;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:14px">Reads on the row</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">One chip per control, as shipped. On each row the picked themes lead the play-style sentence in accent ink ("play styles include Tokens, …"), so why a row survived is on the row.</p></div>
+<div style="border:1px solid #262A35;border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:14px">Round-trips in the URL</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD"><span style="font-family:'IBM Plex Mono',monospace;color:#E6E8F0">?t=aristocrats,tokens&amp;tm=all</span>. EDHREC slugs, sorted; <span style="font-family:'IBM Plex Mono',monospace">tm</span> is written only for All with two or more.</p></div>
+</div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:780px;flex:none">
+<img src="/_blob/4adb9a232a3083923ad26a4436b1caaa" alt="Discover, desktop, no theme picked" style="width:780px;height:540px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">1 · No theme picked</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Themes ▾ joins the rack between color and Printed in: the shipped FilterPanel trigger at the rack's 34px. Nothing else on the page changes.</p></figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:780px;flex:none">
+<img src="/_blob/47ed2e0600259bf48aa90484527a2182" alt="Discover, desktop, Tokens picked" style="width:780px;height:540px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">2 · One picked</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The trigger lights and counts (Themes 1), one chip names the theme, the result line counts the rows. Tokens leads each row's play-style sentence in accent ink.</p></figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:330px;flex:none">
+<img src="/_blob/468f9f9d568e0544330051cce8008680" alt="Discover, phone, Tokens picked" style="width:330px;height:714px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font-weight:600;font-size:15px">Phone · one picked</p><p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Filters badge 1, the Tokens chip, the same row sentence. The persistent row is unchanged.</p></figcaption>
+</figure>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2090,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
