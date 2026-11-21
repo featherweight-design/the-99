@@ -46,7 +46,7 @@ export function PlaySurface({
   closed = null,
 }: {
   tableId: string;
-  /** The server's hash of who sat where at load. A game keeps the one from its Start and hands that back with the result. */
+  /** The server's sealed Start roster (seats, accounts, decks, issue time). A game keeps the one from its Start and hands that back with the result. */
   roster: string;
   expiresAt: number;
   /** The live seats in turn order, starting with the viewer's own; null on a closed table, where no game starts. */

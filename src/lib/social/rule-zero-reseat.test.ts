@@ -111,7 +111,9 @@ describe("reseatTable and the seat notice", () => {
     expect(await reseatTable("setter", TABLE, asks(P_SETTER, P_STAY))).toEqual({ kind: "reseated" });
     expect(f.outbox).toEqual([]);
     expect(m.kicked).toEqual([]);
-    expect(f.deletes.map((d) => d.table)).toEqual([ruleZeroSeats, ruleZeroResultSeats, ruleZeroSeen]);
+    // Ruling (b): a reseat keeps the stored result, which holds the seats the game was played at.
+    expect(f.deletes.map((d) => d.table)).toEqual([ruleZeroSeats, ruleZeroSeen]);
+    expect(f.deletes.some((d) => d.table === ruleZeroResultSeats)).toBe(false);
   });
 
   // The setter holds D_OLD and stays with stay; the last answer is the setter's own-deck check.
