@@ -371,6 +371,13 @@ export const cardAssignmentsCopy = {
       `${have === 1 ? "the only one" : "one"}, and your collection has ` +
       `${have === 1 ? "one" : String(have)}. Nothing moved, and the decks above are what you ` +
       `actually have. Take it off ${holder} first if you want ${deck} to have it.`,
+    /**
+     * Said on the tap, with no write: a pick names who GETS a copy, and this deck already gets
+     * its copy by seniority, so moving the one reservation onto it would change nothing (Hugh's
+     * Fabled Passage, 2026-11-21). A stopgap until several picks per card ship.
+     */
+    refusedAlreadyHas: (deck: string, card: string) =>
+      `${deck} already has a copy of ${card}. Nothing moved. Pick the deck that should get one.`,
     /** Reachable: the payload records one import, so a deck can promote the card between renders. */
     refusedIsCommander: (card: string, deck: string) =>
       `${card} is ${deck}’s commander now. A commander’s copy can’t be given away. Nothing ` +
