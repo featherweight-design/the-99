@@ -43,12 +43,29 @@ export async function loadGuidedDeck(userId: string, deckId: string): Promise<Gu
   return { deckName: heads.map((h) => h.name).join(" + "), commanderIds, lines };
 }
 
-/** The strategies the commander's themes back with cards the deck holds. Empty means no run is offered (READINESS Y3). */
-export async function guidedStrategies(deck: GuidedDeck): Promise<(Strategy & { backing: { oracleId: string; name: string }[] })[]> {
-  const meta = await loadSupportMeta(deck.commanderIds);
-  const tags = deck.commanderIds.flatMap((id) => meta.get(id)?.tags ?? []);
-  const facts = assembleDeck(deck.lines, new Map()).facts;
-  const names = new Map(deck.lines.map((l) => [l.oracleId, l.name] as const));
+export type GuidedStrategy = Strategy & { backing: { oracleId: string; name: string }[] };
+
+/**
+ * The strategies the commander's themes back with cards the player can put in the deck: the cards the deck holds plus the cards they
+ * own from the commander's index (what an owned-only run adds from). ONE function for the sheet (before the deck exists: `lines` is the
+ * commander alone) and for `beginGuided` (the free fill as placed). The start's facts are a superset of the sheet's (the fill's cards
+ * plus the owned index cards the fill left out), so a strategy the sheet offers is backed at the start too; only the three-strategy cap
+ * can drop one there, and the start then refuses it as not offered.
+ * Empty means no run is offered (READINESS Y3).
+ */
+export async function guidedStrategies(userId: string, commanderIds: string[], lines: readonly DeckLine[]): Promise<GuidedStrategy[]> {
+  const meta = await loadSupportMeta(commanderIds);
+  const tags = commanderIds.flatMap((id) => meta.get(id)?.tags ?? []);
+  // No themes means no strategy can be backed (and an id that is no indexed commander): skip the pool and ownership reads.
+  if (tags.length === 0) return [];
+  const held = new Set([...commanderIds, ...lines.map((l) => l.oracleId)]);
+  const index = await readPool(commanderIds, [...held], false);
+  const owned = await readOwnedOracleIds(userId, index.map((r) => r.oracleId));
+  const facts = [
+    ...assembleDeck(lines, new Map()).facts,
+    ...index.filter((r) => owned.has(r.oracleId)).map((r) => ({ oracleId: r.oracleId, name: r.name, typeLine: r.typeLine, oracleText: r.oracleText, isCommander: false })),
+  ];
+  const names = new Map(facts.map((f) => [f.oracleId, f.name] as const));
   return detectStrategies({ tags, deck: facts, overview: [] })
     .map((s) => ({ ...s, backing: s.backingIds.map((id) => ({ oracleId: id, name: names.get(id) ?? "" })) }));
 }

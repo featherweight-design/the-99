@@ -10,7 +10,7 @@ import {
 } from "../precons/upgrade/run";
 import { readSwapPartners } from "../precons/upgrade/swap-partners";
 import type { StoredPair } from "../precons/upgrade/validate";
-import { POOL_MODES, type PoolMode } from "./constants";
+import { BUDGET_MAX_CENTS, BUDGET_MIN_CENTS, POOL_MODES, type PoolMode } from "./constants";
 import { guidedStrategies, loadGuidedDeck, loadGuidedPool } from "./inputs";
 import { overviewAfterGuidedRun } from "./overview";
 import { finishGuided, reapGuided, startGuided, type GuidedHandle } from "./store";
@@ -35,8 +35,7 @@ export type GuidedPicks = {
 
 /** A deck holds 99 cards: more kept ids than that is not a deck's list. */
 const KEPT_MAX = 99;
-export const BUDGET_MIN_CENTS = 100;
-export const BUDGET_MAX_CENTS = 500_000;
+export { BUDGET_MAX_CENTS, BUDGET_MIN_CENTS };
 const isPoolMode = (v: unknown): v is PoolMode => POOL_MODES.some((m) => m === v);
 
 export type GuidedBegin =
@@ -56,7 +55,7 @@ export async function beginGuided(userId: string, deckId: string, picks: GuidedP
   await reapGuided(userId, deckId, now);
   const deck = await loadGuidedDeck(userId, deckId);
   if (!deck) return { ok: false, reason: "notFound" };
-  const strategies = await guidedStrategies(deck);
+  const strategies = await guidedStrategies(userId, deck.commanderIds, deck.lines);
   const pick = strategies.find((s) => s.key === picks.strategyKey);
   if (!pick || !isBracketTarget(picks.bracket) || !isPoolMode(picks.poolMode)) return { ok: false, reason: "notOffered" };
   const bracket: BracketTarget = picks.bracket;
