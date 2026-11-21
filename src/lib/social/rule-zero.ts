@@ -29,7 +29,6 @@ import { friendDecksIn, pickerSeesDeck } from "./games";
 import { tableClosesAt } from "../rule-zero/rules";
 import { isUuid } from "./rules";
 import { tableOpen, tableOpenAs } from "./rule-zero-open";
-import { dropResultIfRosterChanged } from "./rule-zero-result";
 import { ownedDeckArt, type DeckArt } from "./rule-zero-art";
 import { enqueueSeatPushQuery } from "../push/seat";
 import { kickPush } from "../push/kick";
@@ -76,10 +75,11 @@ export async function ruledOwnersOf(userIds: readonly string[]): Promise<string[
   return [...new Set(userIds)];
 }
 
-/** A table's seated players other than the viewer whose deck rules apply (`ruledOwnersOf`). */
+/** A table's players other than the viewer, seated now or in its stored result, whose deck rules apply (`ruledOwnersOf`). */
 export async function ruledSeatOwnersOf(viewerId: string, tableId: string, q: Pick<typeof db, "select">): Promise<string[]> {
-  const players = await q.select({ userId: ruleZeroSeats.userId }).from(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
-  return ruledOwnersOf(players.map((p) => p.userId).filter((u) => u !== viewerId));
+  const owners = await q.select({ userId: ruleZeroSeats.userId }).from(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId))
+    .union(q.select({ userId: ruleZeroResultSeats.userId }).from(ruleZeroResultSeats).where(eq(ruleZeroResultSeats.tableId, tableId)));
+  return ruledOwnersOf(owners.map((p) => p.userId).filter((u) => u !== viewerId));
 }
 
 /**
@@ -287,7 +287,7 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
         ? { tableId, userId: s.userId, seat: i + 1, deckId: stay.deckId, changedAt: stay.changedAt, noticeSeenAt: stay.noticeSeenAt }
         : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt, noticeSeenAt: stay.noticeSeenAt };
     }));
-    await dropResultIfRosterChanged(tx, tableId);
+    // A stored result stays through a reseat: it names the players who played, at the seats they played (ruling (b)).
     // Only a NEW seat is pushed: a player who stays, changes seat or is removed gets no push (brief state 12). A re-picked
     // deck takes a new `changed_at` over the kept `noticeSeenAt`, so its seat reads "changed" in the app, as `setSeatDeck` does.
     notified.push(...await queueSeatPushes(tx, tableId, viewerId, seats.filter((s) => !kept.has(s.userId)).map((s) => s.userId), new Date()));

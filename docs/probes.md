@@ -2784,6 +2784,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   in the limit a panel reads; with the default at 1, a player in no group takes 1 while the owner keeps their own,
   until placed in a group; and the column refuses 0. It WRITES, so it fails closed: `PROBE_DB_BRANCH` must name the
   branch `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
+- `pnpm probe:tracker-reseat` proves the life tracker's ruling (b) (2026-11-20) against a real database: a table
+  reseated mid-game and then saved logs from the seats it was played at. The tracker page's roster is sealed (no account
+  id in it) and only a seated player gets one; after a reseat a Start player still at the table saves, while a player
+  seated since, a roster for another table, an altered roster and placements for a seat the roster lacks all refuse;
+  the result stores the Start seats, accounts and decks; a later reseat keeps it; the prefill names the Start players at
+  their Start seats with their Start decks and the win at the winner's Start seat, and the save resolves those same
+  seats; a Start player who has left the table gets no prefill; and once the viewer logs a game from the table their
+  prefill reads the live seats with no result. It fails on main, where the reseat drops the result and the save refuses
+  the pre-reseat roster. It WRITES, so it refuses staging, production and local-dev by `neon.branch_id`; without
+  `INVITE_CODE_SECRET` set it seals under a per-run key.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
