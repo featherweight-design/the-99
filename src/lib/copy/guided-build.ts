@@ -64,7 +64,9 @@ export const guidedBuildCopy = {
       overviewNote: "written with the build",
       /** The run kept its charge but the Overview did not arrive: the deck is built, and the Overview tab writes it. */
       overviewMissing: "The Overview didn’t come through. You can write it from the deck’s Overview tab.",
-      short: (n: number, b: number) => `Only ${n} cards could be sharpened at bracket ${b}, so both credits are back. The ${n} are in the deck.`,
+      short: (n: number, b: number) => (n === 0
+      ? `No cards could be sharpened at bracket ${b}, so both credits are back.`
+      : `Only ${n} ${n === 1 ? "card" : "cards"} could be sharpened at bracket ${b}, so both credits are back. ${n === 1 ? "It is" : `The ${n} are`} in the deck.`),
       open: (deck: string) => `Open ${deck}`,
     },
   },
