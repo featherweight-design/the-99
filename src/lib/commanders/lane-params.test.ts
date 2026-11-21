@@ -142,7 +142,7 @@ describe("serializeLaneParams", () => {
   it("writes only the non-default keys, in a stable order", () => {
     expect(
       serializeLaneParams(
-        { q: "druid", colors: ["b", "g"], match: "exactly", avail: "free", order: "name", printedIn: [] },
+        { q: "druid", colors: ["b", "g"], match: "exactly", avail: "free", order: "name", printedIn: [], themes: [], themeMatch: "any" },
         "owned",
       ),
     ).toBe("?q=druid&c=b%2Cg&m=exact&a=free&o=name");
@@ -155,7 +155,7 @@ describe("serializeLaneParams", () => {
   });
 
   it("round-trips through parse", () => {
-    const p: LaneParams = { q: "a b", colors: ["u"], match: "exactly", avail: "all", order: "recent", printedIn: [] };
+    const p: LaneParams = { q: "a b", colors: ["u"], match: "exactly", avail: "all", order: "recent", printedIn: [], themes: [], themeMatch: "any" };
     const qs = serializeLaneParams(p, "discover");
     expect(parseLaneParams(new URLSearchParams(qs), "discover")).toEqual(p);
   });
@@ -230,19 +230,19 @@ describe("activeControlCount", () => {
   // Search and order never count.
   it("counts a Printed in selection as one control, however many sets it names", () => {
     expect(activeControlCount({ ...defaultParams("owned"), printedIn: ["hob", "hoc"] }, "owned")).toBe(1);
-    expect(activeControlCount({ ...defaultParams("discover"), printedIn: ["hob"] }, "discover")).toBe(1);
+    expect(activeControlCount({ ...defaultParams("discover"), printedIn: ["hob"], themes: [], themeMatch: "any" }, "discover")).toBe(1);
   });
 
   it("ceilings at 4 on owned and 3 on discover", () => {
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name", printedIn: ["hob"] },
+        { q: "x", colors: ["b"], match: "exactly", avail: "free", order: "name", printedIn: ["hob"], themes: [], themeMatch: "any" },
         "owned",
       ),
     ).toBe(4);
     expect(
       activeControlCount(
-        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent", printedIn: ["hob"] },
+        { q: "x", colors: ["b"], match: "exactly", avail: "all", order: "recent", printedIn: ["hob"], themes: [], themeMatch: "any" },
         "discover",
       ),
     ).toBe(3);
@@ -266,5 +266,28 @@ describe("discoverSort", () => {
     for (const o of ["bestfit", "popularity", "name", "recent"] as const) {
       expect(discoverSort(o)).toBe("fit");
     }
+  });
+});
+
+describe("themes (t, tm)", () => {
+  it("reads t as sorted, de-duplicated, lower-case slugs and drops anything not shaped like one", () => {
+    const p = parseLaneParams(new URLSearchParams("t=Tokens,aristocrats,tokens,,bad slug,+1-1-counters"), "discover");
+    expect(p.themes).toEqual(["aristocrats", "tokens"]);
+  });
+
+  it("reads tm=all, and anything else as any", () => {
+    expect(parseLaneParams(new URLSearchParams("t=a,b&tm=all"), "discover").themeMatch).toBe("all");
+    expect(parseLaneParams(new URLSearchParams("t=a,b&tm=nope"), "discover").themeMatch).toBe("any");
+  });
+
+  it("writes t, and tm only with two or more themes", () => {
+    const base = defaultParams("discover");
+    expect(serializeLaneParams({ ...base, themes: ["tokens"], themeMatch: "all" }, "discover")).toBe("?t=tokens");
+    expect(serializeLaneParams({ ...base, themes: ["a", "b"], themeMatch: "all" }, "discover")).toBe("?t=a%2Cb&tm=all");
+  });
+
+  it("keeps t and tm out of the foreign keys laneQuery copies across", () => {
+    const live = new URLSearchParams("t=a,b&tm=all&utm=x");
+    expect(laneQuery(live, defaultParams("discover"), "discover")).toBe("?utm=x");
   });
 });

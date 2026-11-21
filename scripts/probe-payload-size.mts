@@ -169,7 +169,7 @@ async function main() {
         const bytes = Buffer.byteLength(JSON.stringify(encoded));
         // The page's own cut, for the default URL of this sort: no search, colour or set, with the window's oracle ids.
         const order = sort === "new" ? "new" : "bestfit";
-        const first = discoveryRows(decodeDiscovery(encoded).items, { q: "", colors: [], match: "contains", order, printedIn: [] }, null)
+        const first = discoveryRows(decodeDiscovery(encoded).items, { q: "", colors: [], match: "contains", order, printedIn: [], themes: [], themeMatch: "any" }, null)
           .slice(0, REVEAL_STEP);
         worstShipped = Math.max(worstShipped, Buffer.byteLength(JSON.stringify(cutToWindow(encoded, new Set(first.map((r) => r.slug)), oracleIds))));
         worstRatio = Math.max(worstRatio, bytes / plain);

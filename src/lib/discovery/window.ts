@@ -7,6 +7,7 @@
 import { filterByColors, type JoinMode } from "../commanders/filter";
 import { discoverSort, type LaneOrder } from "../commanders/lane-params";
 import { isPrintedIn } from "../sets/printed-in";
+import { hasThemes, type ThemeMatch } from "../themes/commander-themes";
 
 /** The figures the client-side orders rank on, and nothing a row only draws. */
 type OrderedRow = { name: string; releasedAt: string | null; deckCount: number | null };
@@ -77,6 +78,19 @@ export function inSets<T extends { slug: string }>(
     : rows.filter((r) => isPrintedIn(codesBySlug, r.slug, setCodes));
 }
 
+/**
+ * `Themes` (#159). With no index the selection is not applied: there is nothing to apply it
+ * against, as with `inSets`.
+ */
+export function withThemes<T extends { slug: string }>(
+  rows: T[],
+  slugsBySlug: ReadonlyMap<string, readonly string[]> | null,
+  themes: readonly string[],
+  match: ThemeMatch,
+): T[] {
+  return themes.length === 0 || !slugsBySlug ? rows : rows.filter((r) => hasThemes(slugsBySlug, r.slug, themes, match));
+}
+
 export type WindowParams = {
   q: string;
   /** As the URL writes them, lower case; lifted here. */
@@ -84,15 +98,18 @@ export type WindowParams = {
   match: JoinMode;
   order: LaneOrder;
   printedIn: string[];
+  themes: string[];
+  themeMatch: ThemeMatch;
 };
 
-/** Search, then sets, then colour, then order: the list the reader is looking at, whole. */
+/** Search, then sets, then themes, then colour, then order: the list the reader is looking at, whole. */
 export function discoveryRows<T extends OrderedRow & { slug: string; colorIdentity: string[] }>(
   rows: T[],
   p: WindowParams,
   codesBySlug: ReadonlyMap<string, readonly string[]> | null,
+  themesBySlug: ReadonlyMap<string, readonly string[]> | null = null,
 ): T[] {
-  const narrowed = inSets(searchRows(rows, p.q), codesBySlug, p.printedIn);
+  const narrowed = withThemes(inSets(searchRows(rows, p.q), codesBySlug, p.printedIn), themesBySlug, p.themes, p.themeMatch);
   return ordered(filterByColors(narrowed, upper(p.colors), p.match), p.order);
 }
 
