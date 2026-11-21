@@ -150,7 +150,7 @@ async function collectOpen(opts: JudgedOptions): Promise<{ stored: number; refus
       for (const intent of intents) {
         const here = got.get(intent.customId);
         if (here === undefined) {
-          // Errored, canceled or expired: unbilled, and its cards are asked again by the next plan.
+          // Errored, canceled or expired: unbilled, and its cards are left out of the next plan until --retry-failed.
           await tx.update(cardLabelBatches).set({ status: "failed" }).where(eq(cardLabelBatches.intentKey, intent.intentKey));
           continue;
         }
@@ -238,7 +238,7 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
   const inFlight = new Set(open.flatMap((o) => o.asked));
   const hashOf = new Map(cards.map((c) => [c.oracleId, judgedInputHash(c, model)]));
   const failedRows = await db.select({ asked: cardLabelBatches.asked }).from(cardLabelBatches).where(and(
-    like(cardLabelBatches.runId, `${RUN_PREFIX}%`), eq(cardLabelBatches.status, "failed"), eq(cardLabelBatches.model, model),
+    like(cardLabelBatches.runId, `${RUN_PREFIX}%`), inArray(cardLabelBatches.status, ["failed", "expired"]), eq(cardLabelBatches.model, model),
   ));
   const { todo, dropped } = withoutFailed(
     cards.filter((c) => !inFlight.has(c.oracleId) && stored.get(c.oracleId)?.inputHash !== hashOf.get(c.oracleId)),
