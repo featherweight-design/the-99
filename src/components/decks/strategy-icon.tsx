@@ -56,6 +56,14 @@ export const STRATEGY_GLYPHS: Record<Glyph, ReactNode> = {
   vehicles: (<><path d="M3 15.5V9h11l4 3h3v3.5" /><circle cx="7" cy="17" r="2" /><circle cx="17" cy="17" r="2" /></>),
   bigCreatures: (<><path d="M8 20.5c-2 0-3.2-2-2.2-4 1.8-3.4 10.6-3.4 12.4 0 1 2-.2 4-2.2 4z" /><circle cx="6.5" cy="10" r="1.7" /><circle cx="12" cy="7" r="1.7" /><circle cx="17.5" cy="10" r="1.7" /></>),
 
+  // Text axes (rules-text mechanics): Storm and Monarch are the life tracker's marks, redrawn at this stroke.
+  storm: (<><path d="M4 8.5h13M6 12h11M8.5 15.5h7M11 19h3.5" /><path d="M17 8.5c2 0 3-1.2 3-2.5S19 3.5 17 3.5H8" /></>),
+  monarch: (<><path d="M3.5 18l2-10 4.3 4L12 5l2.2 7 4.3-4 2 10z" /><path d="M5 21h14" /></>),
+  extraTurns: (<><path d="M6.5 3.5h11M6.5 20.5h11" /><path d="M8 3.5v2c0 3.5 4 4.5 4 6.5s-4 3-4 6.5v2M16 3.5v2c0 3.5-4 4.5-4 6.5s4 3 4 6.5v2" /></>),
+  extraCombats: (<><path d="M4 4l11 11M13 17.5l4.5-4.5M15 15l4.5 4.5" /><path d="M20 4L9 15M11 17.5L6.5 13M9 15l-4.5 4.5" /></>),
+  minusCounters: (<><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><path d="M7 12h4M15 9v6" /></>),
+  burn: <path d="M12 21.5a6.5 6.5 0 0 0 6.5-6.5c0-4.5-3.5-6.5-4-12-2.5 2-3.5 4.5-3.5 7-1.2-.8-2-2.2-2.2-3.8C6.6 8 5.5 11.5 5.5 15a6.5 6.5 0 0 0 6.5 6.5z" />,
+
   // Design's addendum (R2, 2026-11-20): a figure with three rays, an open book, three plus signs.
   planeswalkers: (<><circle cx="12" cy="11" r="3" /><path d="M5.5 21a6.5 6.5 0 0 1 13 0" /><path d="M12 2.5v2.5M6.5 4.5l1.6 1.9M17.5 4.5l-1.6 1.9" /></>),
   sagas: (<><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5z" /><path d="M12 6.5v13" /></>),
