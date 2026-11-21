@@ -9,6 +9,7 @@
 import { useRef, useState } from "react";
 import { undoPartnerAdd } from "../../lib/commander-change/actions";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
+import { SteadyLabel } from "../ui/steady-label";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import { DeckRefusalToast } from "./token-refusal-toast";
 
@@ -65,7 +66,7 @@ export function PartnerAddUndoToast({
           onClick={undo}
           className="min-h-[44px] cursor-pointer border-0 bg-transparent px-[12px] text-[13.5px] font-semibold text-[color:var(--accent-text)] underline underline-offset-2"
         >
-          {phase === "undoing" ? c.undoing : c.undo}
+          <SteadyLabel hold={[c.undo, c.undoing]}>{phase === "undoing" ? c.undoing : c.undo}</SteadyLabel>
         </button>
       ) : undefined}
     />
