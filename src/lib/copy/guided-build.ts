@@ -15,7 +15,7 @@ export const guidedBuildCopy = {
     guided: {
       name: "Guided build",
       cost: "2 credits",
-      line: "You pick a strategy, a bracket and which cards it can use. We fill the 99, sharpen 12 to 18 cards toward the strategy and write the deck’s Overview.",
+      line: "You pick a strategy, a bracket and which cards it can use. We fill the 99 and sharpen 12 to 18 cards toward the strategy.",
       back: "Both credits come back if it doesn’t come through or finds fewer than 12.",
       /** No strategy has enough cards behind it for this commander: the row is drawn, off, with its reason. */
       none: "Your cards don’t back a strategy for this commander yet.",

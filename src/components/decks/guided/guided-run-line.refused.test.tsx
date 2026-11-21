@@ -9,14 +9,14 @@ afterEach(cleanup);
 
 describe("the deck page after a refused guided start", () => {
   it("draws the refused line, as an alert, when the deck has no run", async () => {
-    render(<GuidedRunLine deckId="d1" deckName="Deck" commanderId={null} refused />);
+    render(<GuidedRunLine deckId="d1" deckName="Deck" refused />);
     const line = await screen.findByTestId("guided-refused-line");
     expect(line.textContent).toContain("didn’t start");
     expect(line.querySelector("[role=alert]")).not.toBeNull();
   });
 
   it("draws nothing without the refusal and without a run", async () => {
-    render(<GuidedRunLine deckId="d1" deckName="Deck" commanderId={null} />);
+    render(<GuidedRunLine deckId="d1" deckName="Deck" />);
     await Promise.resolve();
     expect(screen.queryByTestId("guided-refused-line")).toBeNull();
   });
