@@ -71,11 +71,14 @@ export async function partnerSources(commander: Pairer, inDeck: ReadonlySet<stri
   };
 
   const [rows, pairers] = await Promise.all([
-    db.execute<{ a: string; b: string; deck_count: number }>(sql`
-      select ps.commander_oracle_id as a, ps.partner_oracle_id as b, ps.deck_count
+    // The other half's card rides along: a row's partner still has to be able to lead a deck.
+    db.execute<{ a: string; b: string; deck_count: number; type_line: string; oracle_text: string | null; mana_cost: string | null; layout: string | null }>(sql`
+      select ps.commander_oracle_id as a, ps.partner_oracle_id as b, ps.deck_count,
+             co.type_line, co.oracle_text, co.mana_cost, co.layout
       from commander_pair_support ps
       join cards ca on ca.oracle_id = ps.commander_oracle_id
       join cards cb on cb.oracle_id = ps.partner_oracle_id
+      join cards co on co.oracle_id = case when ps.commander_oracle_id = ${c} then ps.partner_oracle_id else ps.commander_oracle_id end
       where ps.synergy_state = 'ok'
         and (ps.commander_oracle_id = ${c} or ps.partner_oracle_id = ${c})
         and ca.commander_legal and cb.commander_legal
@@ -88,7 +91,10 @@ export async function partnerSources(commander: Pairer, inDeck: ReadonlySet<stri
              or oracle_text ilike '%companion%' or type_line ilike '%doctor%')
     `),
   ]);
-  for (const r of rows.rows) put(r.a === c ? r.b : r.a, r.deck_count, true);
+  for (const r of rows.rows) {
+    if (!isCommanderCandidate({ typeLine: r.type_line, oracleText: r.oracle_text, manaCost: r.mana_cost, layout: r.layout })) continue;
+    put(r.a === c ? r.b : r.a, r.deck_count, true);
+  }
   const mine = { name: commander.name, ability };
   for (const p of pairers.rows) {
     if (!isCommanderCandidate({ typeLine: p.type_line, oracleText: p.oracle_text, manaCost: p.mana_cost, layout: p.layout })) continue;
