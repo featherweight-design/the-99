@@ -153,7 +153,8 @@ export function IntentPrefetchLink({ eager = false, href, claimPrefetch, opens, 
         // The press is the navigation: a prefetch still waiting for an idle moment would fetch the
         // page a second time beside it, the duplicate #1571 removed for touches.
         done.current = true;
-        if (opens) writeOpenEntry(opens, null);
+        // Not for a press that opens a new tab (modifier or middle click): that tab would inherit the entry.
+        if (opens && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) writeOpenEntry(opens, null);
         onClick?.(e);
       }}
       onFocus={(e) => {

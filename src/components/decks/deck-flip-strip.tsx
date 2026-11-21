@@ -9,7 +9,7 @@ import { deckFlipCopy } from "../../lib/copy/deck-flip";
 import { DECK_SORT_KEY } from "../../lib/decks/sort";
 import { FLIP_KEY, parseTrail, resolveFlip, type FlipDeck } from "../../lib/decks/flip";
 import { extendFlipTrail } from "../../lib/decks/flip-trail";
-import { clearOpenEntry, writeOpenEntry, type OpenFacts } from "../../lib/decks/open-entry";
+import { clearOpenEntry, placeAfter, writeOpenEntry, type OpenFacts } from "../../lib/decks/open-entry";
 import { GhostButton } from "../ui/button";
 import { PendingReporter } from "../shell/pending-reporter";
 import { readRaw } from "../ui/local-store";
@@ -73,7 +73,7 @@ export function useDeckFlip(decks: readonly FlipDeck[] | undefined, id: string, 
   const openEntry = useCallback(
     (to: string, step: -1 | 1) => {
       const f = facts?.[to];
-      if (f && flip) writeOpenEntry(f, { k: ((flip.k - 1 + step + flip.n) % flip.n) + 1, n: flip.n, caption: flip.caption });
+      if (f && flip) writeOpenEntry(f, { k: placeAfter(flip.k, flip.n, step), n: flip.n, caption: flip.caption });
     },
     [facts, flip],
   );

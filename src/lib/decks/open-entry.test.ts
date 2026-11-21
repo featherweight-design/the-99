@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DeckListItem } from "./read";
-import { OPEN_TTL_MS, openFactsOf, parseOpenEntry, type OpenEntry, type OpenFacts } from "./open-entry";
+import { OPEN_TTL_MS, openFactsOf, parseOpenEntry, placeAfter, type OpenEntry, type OpenFacts } from "./open-entry";
 
 const facts: OpenFacts = {
   id: "d1",
@@ -32,6 +32,11 @@ describe("parseOpenEntry", () => {
     expect(parseOpenEntry("{nope", 0)).toBeNull();
     expect(parseOpenEntry(JSON.stringify({ to: "d1", at: 1 }), 2)).toBeNull();
   });
+
+  it("drops an entry whose facts lack a field the skeleton draws", () => {
+    expect(parseOpenEntry(entry({ facts: { ...facts, identity: undefined } as unknown as OpenFacts }), 1001)).toBeNull();
+    expect(parseOpenEntry(entry({ facts: { ...facts, name: undefined } as unknown as OpenFacts }), 1001)).toBeNull();
+  });
 });
 
 describe("openFactsOf", () => {
@@ -61,5 +66,14 @@ describe("openFactsOf", () => {
     const f = openFactsOf(row({}));
     expect(f.partner).toBe(false);
     expect(f.commander).toBe("Tymna the Weaver");
+  });
+});
+
+describe("placeAfter", () => {
+  it("steps and wraps at both ends", () => {
+    expect(placeAfter(1, 5, -1)).toBe(5);
+    expect(placeAfter(5, 5, 1)).toBe(1);
+    expect(placeAfter(2, 5, 1)).toBe(3);
+    expect(placeAfter(3, 5, -1)).toBe(2);
   });
 });

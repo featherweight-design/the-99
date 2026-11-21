@@ -219,8 +219,8 @@ const serverNull = () => null;
 export function DeckOpenLoading() {
   const params = useSearchParams();
   const id = usePathname().split("/").filter(Boolean)[1];
-  // A press wrote this deck's header facts (`open-entry`); a skeleton for any other deck, or after a reload, draws its shapes alone.
-  // The browser is read after mount (the server snapshot is absent), so a direct load never paints facts the server did not.
+  // A press wrote this deck's header facts (`open-entry`); a skeleton for any other deck, or for an entry older than a minute, draws its shapes alone.
+  // The server snapshot is absent, so the server and the first hydration draw shapes; a client navigation reads the entry at once.
   const raw = useSyncExternalStore(noopSubscribe, readOpenRaw, serverNull);
   const [now] = useState(Date.now);
   const parsed = parseOpenEntry(raw, now);
