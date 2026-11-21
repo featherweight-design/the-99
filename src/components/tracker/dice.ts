@@ -48,6 +48,8 @@ function getScene(): Promise<Scene | null> {
       Object.assign(el.style, { position: "fixed", inset: "0", zIndex: "60", pointerEvents: "none", visibility: "hidden" });
       document.body.append(el);
       const css = getComputedStyle(document.documentElement);
+      // The scene paints from the theme's tokens. The named fallbacks only stand in if a token is somehow unset, so
+      // a die is never drawn with an empty colour.
       const token = (name: string, fallback: string) => css.getPropertyValue(name).trim() || fallback;
       const box = new DiceBox("#tracker-dice", {
         sounds: false,
@@ -55,9 +57,9 @@ function getScene(): Promise<Scene | null> {
         theme_material: "plastic",
         theme_customColorset: {
           name: "tracker",
-          foreground: token("--bg", "#111111"),
-          background: token("--accent", "#c9a45c"),
-          outline: token("--bg", "#111111"),
+          foreground: token("--bg", "black"),
+          background: token("--accent", "darkgoldenrod"),
+          outline: token("--bg", "black"),
           texture: "none",
           material: "plastic",
         },
