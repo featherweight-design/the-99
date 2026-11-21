@@ -56,6 +56,8 @@ export type JudgedOptions = {
   retryFailed?: boolean;
   /** With `sample`: draw only cards that have no `judged_labels` row yet, so a second sample cannot overlap the first. */
   fresh?: boolean;
+  /** With `sample`: a deeper draw for a rare theme, so a theme the pre-filter rarely confirms still reaches enough true cards to score. */
+  deep?: Partial<Record<JudgedTheme, number>>;
 };
 
 export const SAMPLE_PER_THEME = 40;
@@ -105,11 +107,11 @@ async function controlCards(limit: number, fresh: boolean): Promise<CardRow[]> {
 }
 
 /** The cards this run would ask about, before the freshness and in-flight filters. */
-async function pool(sample: boolean, fresh: boolean): Promise<{ cards: Candidate[]; perTheme: Record<string, number> }> {
+async function pool(sample: boolean, fresh: boolean, deep: JudgedOptions["deep"]): Promise<{ cards: Candidate[]; perTheme: Record<string, number> }> {
   const seen = new Map<string, Candidate>();
   const perTheme: Record<string, number> = {};
   for (const t of JUDGED_THEMES) {
-    const rows = await candidatesFor(t, sample ? SAMPLE_PER_THEME : null, sample && fresh);
+    const rows = await candidatesFor(t, sample ? (deep?.[t] ?? SAMPLE_PER_THEME) : null, sample && fresh);
     perTheme[t] = rows.length;
     for (const r of rows) if (!seen.has(r.oracleId)) seen.set(r.oracleId, { ...r, from: t });
   }
@@ -239,7 +241,7 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
     if (endsAfterCollect(opts.sample, collected)) { console.log("sample collected; not planning another. Run again to draw a new one."); return 0; }
   }
 
-  const { cards, perTheme } = await pool(opts.sample, opts.fresh ?? false);
+  const { cards, perTheme } = await pool(opts.sample, opts.fresh ?? false, opts.deep);
   const stored = new Map((await db.select().from(judgedLabels)).map((r) => [r.oracleId, r]));
   const open = await db.select({ asked: cardLabelBatches.asked }).from(cardLabelBatches).where(and(
     like(cardLabelBatches.runId, `${RUN_PREFIX}%`), inArray(cardLabelBatches.status, OPEN_STATUSES), isNotNull(cardLabelBatches.asked),

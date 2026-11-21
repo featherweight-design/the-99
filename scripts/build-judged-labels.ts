@@ -5,6 +5,7 @@
 //   pnpm db:build:judged --sample            dry run of the ~200-card grading sample
 //   pnpm db:build:judged --sample --spend    submits it (and collects a finished batch)
 //   --sample --fresh                         a new sample: only cards with no judged_labels row, so it cannot overlap the last
+//   --deep=<theme>:<n>,...                   with --sample: draw n cards for a rare theme instead of 40
 //   --retry-failed                           asks again the cards whose request failed (otherwise they are left out)
 //   --model=<id>                             overrides the model (Hugh ruled claude-sonnet-5-5 for the judged themes, 2026-11-21)
 //
@@ -18,11 +19,23 @@ if (!dry) requireAnthropic("build-judged-labels");
 import Anthropic from "@anthropic-ai/sdk";
 
 import { boundedNumber } from "../src/lib/labels/plan";
+import { JUDGED_THEMES, type JudgedTheme } from "../src/lib/labels/judged";
 import { runJudgedBuild } from "./lib/judged-labels-build";
 import { readModelCalls } from "./lib/model-calls-gate.mjs";
 
 /** The whole programme's ceiling across every judged run; $15 covers the sample and the full run with a retry wave. */
 const CAP_USD = boundedNumber("JUDGED_CAP_USD", process.env.JUDGED_CAP_USD, 15, 0, 65);
+
+/** `--deep=pillowFort:160,bigMana:240`: more cards drawn for the named themes in a sample. */
+function parseDeep(arg: string | undefined): Partial<Record<JudgedTheme, number>> {
+  const out: Partial<Record<JudgedTheme, number>> = {};
+  for (const part of (arg ?? "").split(",").filter(Boolean)) {
+    const [theme, n] = part.split(":");
+    if (!(JUDGED_THEMES as readonly string[]).includes(theme) || !(Number(n) >= 0)) throw new Error(`--deep: bad entry "${part}"`);
+    out[theme as JudgedTheme] = Number(n);
+  }
+  return out;
+}
 
 // The REAL endpoint: `.env` may point ANTHROPIC_BASE_URL at the local proxy, which has no batches route.
 const client = new Anthropic({ baseURL: "https://api.anthropic.com", ...(dry ? { apiKey: "dry-run" } : {}) });
@@ -35,6 +48,7 @@ runJudgedBuild({
   model: process.argv.find((a) => a.startsWith("--model="))?.slice(8),
   retryFailed: process.argv.includes("--retry-failed"),
   fresh: process.argv.includes("--fresh"),
+  deep: parseDeep(process.argv.find((a) => a.startsWith("--deep="))?.slice(7)),
   sample: process.argv.includes("--sample"),
   modelCalls: () => readModelCalls(),
 }).then(
