@@ -30,6 +30,11 @@ const NOT_YET = new Set([
   "src/components/feedback/check-in-form.tsx",
   "src/components/settings/delete-account.tsx",
   "src/components/ui/delete-confirm.tsx",
+  "src/components/decks/create-picker.tsx",
+  "src/components/decks/create-pre-filled.tsx",
+  "src/components/decks/rename-form.tsx",
+  "src/components/home/friends-section.tsx",
+  "src/components/social/friends-head.tsx",
 ]);
 
 const { files, findings } = await steadyFindings();

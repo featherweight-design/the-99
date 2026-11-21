@@ -13,6 +13,11 @@ describe("bareSwaps", () => {
     expect(bareSwaps("<PrimaryButton>\n{saving ? c.saving : phase === \"failed\" ? c.retry : c.save}\n</PrimaryButton>")).toEqual([2]);
   });
 
+  it("flags a camelCase flag and a pending word in a later branch", () => {
+    expect(bareSwaps(button("{isPending ? a.saving : a.save}"))).toEqual([2]);
+    expect(bareSwaps(button("{resumeAt !== null ? c.carryOn(1) : load === \"loading\" ? c.loading : c.start}"))).toEqual([2]);
+  });
+
   it("passes the same swap drawn through SteadyLabel", () => {
     expect(bareSwaps(button("<SteadyLabel hold={[copy.saving, copy.save]}>{busy ? copy.saving : copy.save}</SteadyLabel>"))).toEqual([]);
   });
