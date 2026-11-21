@@ -7,12 +7,12 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { lifeSize, type Cell } from "../../lib/tracker/layouts";
-import type { PlaySeat } from "../../lib/tracker/seat";
+import { commanderArt, commanderOf, TAX_PER_CAST, type PlaySeat } from "../../lib/tracker/seat";
 import { COUNTER_KEYS, type CounterKey, type SeatState } from "../../lib/tracker/engine";
-import { PersonName, PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
+import { PersonName, PersonText, personAttrs, type PersonParts } from "../../lib/person-name";
 import { FadingImg } from "../ui/hydrated-art";
-import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
-import { CounterIcon, EndTurnIcon, InitiativeIcon, MonarchIcon, SheetChevronIcon } from "./icons";
+import { TOUCH_HIT } from "../ui/touch-hit";
+import { CounterIcon, EndTurnIcon, InitiativeIcon, MonarchIcon, SheetChevronIcon, TaxUpIcon } from "./icons";
 import { TurnRing } from "./turn-ring";
 
 /** Picking who gets the crown or the initiative (F13): the seat's button over its panel, and what it says. */
@@ -151,7 +151,7 @@ export function Panel({
   state,
   active,
   round,
-  outFrom,
+  seats,
   monarch,
   initiative,
   disabled,
@@ -170,13 +170,14 @@ export function Panel({
   state: SeatState;
   active: boolean;
   round: number;
-  /** The seat whose commander put this one out, with its name, when that is why. */
-  outFrom: { you: boolean; name: string | ThirdPartyName } | null;
+  /** Every seat at the table, by seat number: whose commander dealt the damage this seat has taken. */
+  seats: ReadonlyMap<number, PlaySeat>;
   monarch: boolean;
   initiative: boolean;
   disabled: boolean;
   pick?: SeatPick | null;
-  onSheet: (focus?: CounterKey) => void;
+  /** Open this seat's sheet: on its tab, or on one counter. */
+  onSheet: (tab?: "damage" | "tax" | "counters", focus?: CounterKey) => void;
   onLife: (delta: number) => void;
   onEndTurn: () => void;
   onUndo: () => void;
@@ -198,16 +199,43 @@ export function Panel({
   const sideways = cell.rot === 90 || cell.rot === -90;
   const label = seat.you ? copy.ariaYou : copy.aria(seat.name);
   const sheetLabel = seat.you ? trackerCopy.sheet.ariaYou : trackerCopy.sheet.aria(seat.name);
-  const hasBadges = monarch || initiative || COUNTER_KEYS.some((k) => state.counters[k] > 0);
+  // The badges (F10, F12, F14): commander damage taken (that commander's art and the count), the top tax, each counter
+  // set, then the monarch and initiative marks in the accent. Each count opens the sheet where it is changed.
+  const hits = Object.entries(state.damage)
+    .filter(([, n]) => n > 0)
+    .map(([key, n]) => {
+      const [from, cmdr] = key.split(":").map(Number);
+      return { key, n, cmdr, p: seats.get(from) };
+    })
+    .filter((h): h is typeof h & { p: PlaySeat } => h.p !== undefined)
+    .sort((a, b) => b.n - a.n || a.key.localeCompare(b.key));
+  const topTax = Math.max(...state.tax.slice(0, state.commanders)) * TAX_PER_CAST;
+  const setCounters = COUNTER_KEYS.filter((k) => state.counters[k] > 0);
+  const hasBadges = hits.length > 0 || topTax > 0 || setCounters.length > 0 || monarch || initiative;
   const badges = hasBadges ? (
-    <div className={"flex flex-wrap gap-1 " + (foot ? "min-w-0" : "absolute left-[14px] top-[50px] z-10 max-w-[60%]")} data-testid="panel-badges">
-      {monarch ? <Badge label={copy.monarch}><MonarchIcon size={14} /></Badge> : null}
-      {initiative ? <Badge label={copy.initiative}><InitiativeIcon size={14} /></Badge> : null}
-      {COUNTER_KEYS.filter((k) => state.counters[k] > 0).map((k) => (
-        <Badge key={k} label={trackerCopy.counters[k].name} count={state.counters[k]} onPress={() => onSheet(k)}>
-          <CounterIcon kind={k} size={14} />
+    <div className={"flex min-w-0 items-center overflow-hidden " + (foot ? "gap-[6px]" : "shrink gap-[5px]")} data-testid="panel-badges">
+      {hits.map((h) => {
+        const art = commanderArt(h.p, h.cmdr);
+        const text = copy.badge(commanderOf(h.p, h.cmdr) ?? trackerCopy.sheet.commanderFallback, h.n);
+        return (
+          <Badge key={h.key} foot={foot} text={text} onPress={() => onSheet("damage")} lead={art ? "img" : "none"}>
+            {/* eslint-disable-next-line @next/next/no-img-element -- the seat's own art, already loaded by its panel */}
+            {art ? <img src={art} alt="" className={"shrink-0 rounded-full object-cover " + (foot ? "size-5" : "size-[18px]")} /> : null}
+          </Badge>
+        );
+      })}
+      {topTax > 0 ? (
+        <Badge foot={foot} text={copy.badgeTax(topTax)} onPress={() => onSheet("tax")}>
+          <TaxUpIcon size={12} />
+        </Badge>
+      ) : null}
+      {setCounters.map((k) => (
+        <Badge key={k} foot={foot} text={copy.badge(trackerCopy.counters[k].name, state.counters[k])} onPress={() => onSheet("counters", k)}>
+          <CounterIcon kind={k} size={12} />
         </Badge>
       ))}
+      {monarch ? <Badge foot={foot} accent text={copy.monarch}><MonarchIcon size={12} /></Badge> : null}
+      {initiative ? <Badge foot={foot} accent text={copy.initiative}><InitiativeIcon size={12} /></Badge> : null}
     </div>
   ) : null;
   // End turn and the sheet button (F04, F12): in the name row on a phone and the tablet's ends, in the foot on the tablet's grids.
@@ -244,6 +272,56 @@ export function Panel({
       <SheetChevronIcon size={foot ? 22 : 20} />
     </button>
   );
+  const name = (
+    <b className={"min-w-0 shrink truncate font-semibold text-[color:var(--fg)] " + (foot ? "max-w-[150px] text-[18px]" : "mr-1 max-w-[110px] text-[16px]")} data-testid="panel-name">
+      {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
+    </b>
+  );
+  const deck = seat.deck === null ? (
+    <i className="shrink-0 font-mono text-[11px] not-italic text-[color:var(--fg-muted)]" data-testid="panel-no-deck">{tablet ? copy.noDeckTablet : copy.noDeck}</i>
+  ) : (
+    <i className={"min-w-0 truncate font-mono not-italic text-[color:var(--fg-body)] " + (foot ? "text-[12.5px]" : "text-[12px]")} data-testid="panel-deck">
+      {typeof seat.deck === "string" ? seat.deck : <PersonName n={seat.deck} />}
+    </i>
+  );
+  const whoRow = "relative z-10 flex shrink-0 whitespace-nowrap " + (foot ? "h-6 items-baseline gap-[10px]" : "h-11 items-center gap-[6px]");
+  const pane = "relative flex h-full w-full " + (foot ? "flex-col-reverse px-[18px] py-4" : "flex-col pb-2 pl-[14px] pr-2 pt-[6px]");
+  const face = "absolute inset-0 overflow-hidden shadow-[inset_0_0_0_1px_var(--border)] [backface-visibility:hidden] [-webkit-backface-visibility:hidden] " + (foot ? "rounded-[18px] " : "rounded-[16px] ");
+  // The commander art (F04), split in two halves with a 2px seam for a partner pair (F14).
+  const art = (front: boolean) =>
+    seat.art ? (
+      <>
+        <span
+          aria-hidden
+          className={"pointer-events-none absolute inset-0 flex " + (!front ? "opacity-[.22] [filter:grayscale(1)]" : foot ? "opacity-60" : active ? "opacity-[.72]" : "opacity-[.55]")}
+          data-testid={front ? "panel-art" : "panel-out-art"}
+        >
+          <FadingImg src={seat.art} alt="" className={"h-full object-cover " + (seat.partnerArt ? "w-1/2" : "w-full")} />
+          {seat.partnerArt ? <FadingImg src={seat.partnerArt} alt="" className="h-full w-1/2 object-cover" /> : null}
+          {seat.partnerArt ? <span className="absolute inset-y-0 left-1/2 -ml-px w-[2px] bg-[color:var(--bg)] opacity-80" data-testid="panel-seam" /> : null}
+        </span>
+        <span
+          aria-hidden
+          className={"pointer-events-none absolute inset-0 " + (front ? "bg-[color:color-mix(in_srgb,var(--bg)_50%,transparent)]" : "bg-[color:color-mix(in_srgb,var(--bg)_78%,transparent)]")}
+          data-testid={front ? "panel-wash" : "panel-out-wash"}
+        />
+      </>
+    ) : null;
+  // The out face stays mounted once a seat has gone out, so an Undo turns the panel back (the flip reversed).
+  const [shownOut, setShownOut] = useState(state.out);
+  if (state.out && state.out !== shownOut) setShownOut(state.out);
+  const reason = shownOut?.reason;
+  const cause = !shownOut || !reason
+    ? null
+    : reason.kind === "life"
+      ? copy.outLife(shownOut.round)
+      : reason.kind === "poison"
+        ? copy.outPoison(shownOut.round)
+        : copy.outCommander(
+            (seats.get(reason.from) && commanderOf(seats.get(reason.from)!, reason.cmdr)) ?? trackerCopy.sheet.commanderFallback,
+            shownOut.round,
+          );
+  const ground = seat.art ? "bg-[color:var(--surface)] " : "bg-[radial-gradient(260px_180px_at_50%_45%,var(--elevated),var(--surface))] ";
 
   return (
     <div
@@ -270,58 +348,28 @@ export function Panel({
           data-active={active ? "" : undefined}
           data-out={out ? "" : undefined}
           data-pane={foot ? "foot" : "who"}
-          {...personAttrs(
-            { "aria-label": label },
-            "relative h-full w-full overflow-hidden shadow-[inset_0_0_0_1px_var(--border)] "
-              + (foot ? "rounded-[18px] " : "rounded-[16px] ")
-              // A seat with no art plays on the plain ground (S2), never the grey of an out seat.
-              + (seat.art ? "bg-[color:var(--surface)] " : "bg-[radial-gradient(260px_180px_at_50%_45%,var(--elevated),var(--surface))] ")
-              + (out ? "[filter:grayscale(1)] opacity-80" : ""),
-          )}
+          {...personAttrs({ "aria-label": label }, "relative h-full w-full [perspective:1200px]")}
         >
-          {seat.art ? (
-            <>
-              <span aria-hidden className={"pointer-events-none absolute inset-0 flex " + (foot ? "opacity-60" : active ? "opacity-[.72]" : "opacity-[.55]")} data-testid="panel-art">
-                <FadingImg src={seat.art} alt="" className={"h-full object-cover " + (seat.partnerArt ? "w-1/2" : "w-full")} />
-                {seat.partnerArt ? <FadingImg src={seat.partnerArt} alt="" className="h-full w-1/2 object-cover" /> : null}
-              </span>
-              <span aria-hidden className="pointer-events-none absolute inset-0 bg-[color:color-mix(in_srgb,var(--bg)_50%,transparent)]" data-testid="panel-wash" />
-            </>
-          ) : null}
-          {active && !out ? <TurnRing key={round + ":" + seat.seat} radius={foot ? 18 : 16} /> : null}
+          {/* The flip (F10): the panel turns over to its out face in 0.45s, and back on Undo; under reduced motion it simply changes. */}
+          <div
+            className="relative h-full w-full [transform-style:preserve-3d] motion-safe:transition-transform motion-safe:duration-[450ms] motion-safe:ease-[cubic-bezier(.4,.1,.2,1)]"
+            style={{ transform: out ? "rotateY(180deg)" : "rotateY(0deg)" }}
+            data-testid="panel-flip"
+          >
+            <div className={face + ground} inert={out} data-testid="panel-front">
+              {art(true)}
+              {active && !out ? <TurnRing key={round + ":" + seat.seat} radius={foot ? 18 : 16} /> : null}
 
-          <div className={"relative flex h-full w-full " + (foot ? "flex-col-reverse px-[18px] py-4" : "flex-col pb-2 pl-[14px] pr-2 pt-[6px]")}>
-            <div className={"relative z-10 flex shrink-0 whitespace-nowrap " + (foot ? "h-6 items-baseline gap-[10px]" : "h-11 items-center gap-[6px]")} data-testid="panel-who">
-              <b className={"min-w-0 shrink truncate font-semibold text-[color:var(--fg)] " + (foot ? "max-w-[150px] text-[18px]" : "mr-1 max-w-[110px] text-[16px]")} data-testid="panel-name">
-                {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
-              </b>
-              {seat.deck === null ? (
-                <i className="shrink-0 font-mono text-[11px] not-italic text-[color:var(--fg-muted)]" data-testid="panel-no-deck">{tablet ? copy.noDeckTablet : copy.noDeck}</i>
-              ) : (
-                <i className={"min-w-0 truncate font-mono not-italic text-[color:var(--fg-body)] " + (foot ? "text-[12.5px]" : "text-[12px]")} data-testid="panel-deck">
-                  {typeof seat.deck === "string" ? seat.deck : <PersonName n={seat.deck} />}
-                </i>
-              )}
-              {foot ? null : endTurn}
-              {foot ? null : sheetButton}
-            </div>
-
-            <div className="relative min-h-0 flex-1">
-              {out ? (
-                <div className="flex h-full flex-col items-center justify-center gap-1 px-3 text-center" data-testid="panel-out">
-                  <span className="text-[max(10px,min(13px,6cqmin))] leading-tight text-[color:var(--fg)]">
-                    {state.out!.reason.kind === "life" ? copy.outLife(state.out!.round) : null}
-                    {state.out!.reason.kind === "poison" ? copy.outPoison(state.out!.round) : null}
-                    {state.out!.reason.kind === "commander" ? (
-                      outFrom?.you === false ? <PersonText text={copy.outCommander(outFrom.name, state.out!.round)} /> : copy.outCommanderYou(state.out!.round)
-                    ) : null}
-                  </span>
-                  <button type="button" onClick={onUndo} className="min-h-[44px] rounded-[10px] border border-[color:var(--border-strong)] px-4 text-[14px] text-[color:var(--fg)]">
-                    {copy.undo}
-                  </button>
+              <div className={pane}>
+                <div className={whoRow} data-testid="panel-who">
+                  {name}
+                  {deck}
+                  {foot ? null : badges}
+                  {foot ? null : endTurn}
+                  {foot ? null : sheetButton}
                 </div>
-              ) : (
-                <>
+
+                <div className="relative min-h-0 flex-1">
                   <div className="pointer-events-none absolute inset-0 flex items-center justify-center" aria-live="polite" aria-atomic="true" data-testid="panel-life">
                     <span className="sr-only">{copy.lifeLabel}</span>
                     <span
@@ -383,55 +431,92 @@ export function Panel({
                       </button>
                     );
                   })}
-                </>
-              )}
+                </div>
+
+                {foot ? (
+                  <div className="relative z-10 flex h-[52px] shrink-0 items-center gap-2" data-testid="panel-foot">
+                    {endTurn}
+                    {badges}
+                    {sheetButton}
+                  </div>
+                ) : null}
+              </div>
+              {pick ? (
+                <button
+                  type="button"
+                  onClick={pick.onPick}
+                  data-testid="seat-pick"
+                  {...personAttrs(
+                    { "aria-label": pick.label },
+                    "absolute inset-[50px_8px_8px_14px] z-30 flex items-center justify-center gap-2 rounded-[12px] px-3 text-center text-[16px] font-semibold "
+                      + (pick.now
+                        ? "bg-[color:var(--accent-dim)] text-[color:var(--fg)] shadow-[inset_0_0_0_2px_var(--accent)]"
+                        : "bg-[color:color-mix(in_srgb,var(--bg)_86%,transparent)] text-[color:var(--accent-text)] shadow-[inset_0_0_0_1.5px_var(--accent)]"),
+                  )}
+                >
+                  {pick.kind === "monarch" ? <MonarchIcon size={20} /> : <InitiativeIcon size={20} />}
+                  <span aria-hidden><PersonText text={pick.label} /></span>
+                </button>
+              ) : null}
             </div>
 
-            {foot ? (
-              <div className="relative z-10 flex h-[52px] shrink-0 items-center gap-2" data-testid="panel-foot">
-                {endTurn}
-                {badges}
-                {sheetButton}
+            {shownOut ? (
+              <div className={face + ground + "[transform:rotateY(180deg)]"} inert={!out} data-testid="panel-back">
+                {art(false)}
+                <div className={pane}>
+                  <div className={whoRow}>
+                    {name}
+                    {sheetButton}
+                  </div>
+                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-3 text-center" data-testid="panel-out">
+                    <strong className="font-display text-[26px] font-bold leading-[1.1] text-[color:var(--fg)]">{copy.out}</strong>
+                    <span className="text-[12.5px] leading-tight text-[color:var(--fg-body)]" data-testid="panel-out-cause">{cause}</span>
+                    <button
+                      type="button"
+                      onClick={onUndo}
+                      className="mt-1 h-11 rounded-[10px] bg-[color:color-mix(in_srgb,var(--bg)_80%,transparent)] px-5 text-[14px] text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border-strong)]"
+                      data-testid="panel-undo"
+                    >
+                      {copy.undo}
+                    </button>
+                  </div>
+                </div>
               </div>
-            ) : (
-              badges
-            )}
+            ) : null}
           </div>
-          {pick ? (
-            <button
-              type="button"
-              onClick={pick.onPick}
-              data-testid="seat-pick"
-              {...personAttrs(
-                { "aria-label": pick.label },
-                "absolute inset-[50px_8px_8px_14px] z-30 flex items-center justify-center gap-2 rounded-[12px] px-3 text-center text-[16px] font-semibold "
-                  + (pick.now
-                    ? "bg-[color:var(--accent-dim)] text-[color:var(--fg)] shadow-[inset_0_0_0_2px_var(--accent)]"
-                    : "bg-[color:color-mix(in_srgb,var(--bg)_86%,transparent)] text-[color:var(--accent-text)] shadow-[inset_0_0_0_1.5px_var(--accent)]"),
-              )}
-            >
-              {pick.kind === "monarch" ? <MonarchIcon size={20} /> : <InitiativeIcon size={20} />}
-              <span aria-hidden><PersonText text={pick.label} /></span>
-            </button>
-          ) : null}
         </div>
       </div>
     </div>
   );
 }
 
-/** A counter or holder badge under the name. A counter's opens the sheet on it; the monarch and initiative marks only show. */
-function Badge({ label, count, onPress, children }: { label: string; count?: number; onPress?: () => void; children: React.ReactNode }) {
-  const body = (
-    <>
-      {children}
-      {count !== undefined ? <span className="font-mono text-[11px] tabular-nums">{count}</span> : null}
-    </>
-  );
-  const cls = "inline-flex h-6 items-center gap-1 rounded-full bg-[color:var(--elevated)] px-2 text-[color:var(--fg)]";
+/**
+ * A panel badge (F10 `.bd`, F12 on the tablet): a pill with its icon or the commander's art, then its words. A count
+ * opens the sheet where it is changed, over a hit area 10px taller each way; the monarch and initiative marks only show.
+ */
+function Badge({ text, foot, accent = false, lead = "icon", onPress, children }: {
+  text: string;
+  foot: boolean;
+  accent?: boolean;
+  lead?: "icon" | "img" | "none";
+  onPress?: () => void;
+  children: React.ReactNode;
+}) {
+  const cls =
+    "relative inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-[color:color-mix(in_srgb,var(--bg)_82%,transparent)] font-mono tabular-nums "
+    + (foot ? "h-7 gap-[6px] pr-[11px] text-[12.5px] " : "h-6 gap-[5px] pr-[9px] text-[11.5px] ")
+    + (lead === "none" ? (foot ? "pl-[11px] " : "pl-[9px] ") : foot ? "pl-[5px] " : "pl-1 ")
+    + (lead === "icon" ? (foot ? "[&>svg]:ml-1 [&>span:first-child]:ml-1 " : "[&>svg]:ml-[3px] [&>span:first-child]:ml-[3px] ") : "")
+    + (accent ? "text-[color:var(--accent-text)] shadow-[inset_0_0_0_1px_var(--accent)]" : "text-[color:var(--fg-body)] shadow-[inset_0_0_0_1px_var(--border-strong)]");
   return onPress ? (
-    <button type="button" onClick={onPress} aria-label={copy.badgeAria(label, count ?? 0)} className={cls + " " + TOUCH_HIT_INLINE}>{body}</button>
+    <button type="button" onClick={onPress} aria-label={copy.badgeAria(text)} className={cls + " after:absolute after:inset-[-10px_-3px] after:content-['']"} data-testid="panel-badge">
+      {children}
+      <span aria-hidden>{text}</span>
+    </button>
   ) : (
-    <span role="img" aria-label={label} className={cls}>{body}</span>
+    <span role="img" aria-label={text} className={cls} data-testid="panel-badge">
+      {children}
+      <span aria-hidden>{text}</span>
+    </span>
   );
 }

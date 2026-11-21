@@ -91,7 +91,8 @@ try {
     check("four panels on the board", (await panels.count()) === 4, String(await panels.count()));
     const panel = panels.first();
     check(`pane variant is ${w.pane}`, (await panel.getAttribute("data-pane")) === w.pane, String(await panel.getAttribute("data-pane")));
-    const ps = await style(panel, ["border-top-left-radius", "border-top-width"]);
+    // The corners and the inset edge live on the panel's faces, since T5 turns the panel over to its Out face.
+    const ps = await style(panel.getByTestId("panel-front"), ["border-top-left-radius", "border-top-width"]);
     check(`panel corners ${w.radius}px`, ps["border-top-left-radius"] === `${w.radius}px`, ps["border-top-left-radius"]);
     check("panel draws no real border (inset shadow instead)", ps["border-top-width"] === "0px", ps["border-top-width"]);
 

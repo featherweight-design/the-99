@@ -20,3 +20,12 @@ export type PlaySeat = {
 
 /** The table as the game started: its seats in turn order, and the server's sealed Start roster the result is saved against. */
 export type TableSnapshot = { players: readonly PlaySeat[]; roster: string };
+
+/** Each cast of a commander from the command zone costs 2 more than the last. */
+export const TAX_PER_CAST = 2;
+
+/** Commander `cmdr` of a seat (1 is the partner), by card name, or null with no deck. */
+export const commanderOf = (p: PlaySeat, cmdr: number): string | null => (cmdr === 1 && p.partner ? p.partner : p.commander || null);
+
+/** The art of commander `cmdr` (1 is the partner's half). */
+export const commanderArt = (p: PlaySeat, cmdr: number): string | null => (cmdr === 1 ? p.partnerArt : p.art);

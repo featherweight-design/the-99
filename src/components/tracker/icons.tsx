@@ -23,6 +23,13 @@ export const SheetChevronIcon = (props: IconProps) => (
   </Icon>
 );
 
+/** The panel's tax badge (F14 `.bd`): an arrow up, the cost going up. */
+export const TaxUpIcon = (props: IconProps) => (
+  <Icon strokeWidth={2.1} {...props}>
+    <path d="M12 4v16M5 11l7-7 7 7"/>
+  </Icon>
+);
+
 /** End turn's arrow (F04 `.endt`). */
 export const EndTurnIcon = (props: IconProps) => (
   <Icon strokeWidth={2.2} {...props}>
