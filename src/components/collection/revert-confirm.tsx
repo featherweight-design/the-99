@@ -19,6 +19,7 @@ import { collectionItemKey, type CollectionItemIdentity } from "../../lib/collec
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { ShortDeckWarning } from "./short-deck-warning";
 import { SheetGrabber } from "../ui/sheet-grabber";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = collectionEditCopy.revert;
 const SHOWN = 8;
@@ -299,7 +300,7 @@ export function RevertConfirm({
                   disabled={pending || view.k === "reading"}
                   className="h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
                 >
-                  {pending ? collectionEditCopy.history.reverting : partial ? c.confirmPartial : c.confirm}
+                  <SteadyLabel hold={[collectionEditCopy.history.reverting, partial ? c.confirmPartial : c.confirm]}>{pending ? collectionEditCopy.history.reverting : partial ? c.confirmPartial : c.confirm}</SteadyLabel>
                 </button>
               ) : null}
             </div>

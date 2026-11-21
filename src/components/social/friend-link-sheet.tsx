@@ -18,6 +18,7 @@ import {
 import { CodeBoxes } from "../join/join-parts";
 import { Face } from "./face";
 import { SocialModal } from "./social-modal";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = friendLinkCopy;
 const d = socialCopy.dialog;
@@ -296,7 +297,7 @@ function CodeSection({ entry, boxes, onType, onSend, onAgain }: {
           onChange={(e: ChangeEvent<HTMLInputElement>) => onType(codeChars(e.target.value))}
         />
         <button type="submit" disabled={!ready} aria-busy={busy || undefined} className={`${BTN} h-[48px] w-full px-[18px] text-[15px] font-semibold md:h-[44px] md:w-auto md:text-[13.5px] ${ready || busy ? "border-0 bg-[color:var(--accent)] text-[color:var(--bg)]" : "cursor-default bg-transparent text-[color:var(--fg-locked)] [border:1px_solid_var(--border)]"} ${busy ? "!bg-[color:var(--accent-strong)]" : ""}`}>
-          {busy ? c.code.sending : c.code.send}
+          <SteadyLabel hold={[c.code.sending, c.code.send]}>{busy ? c.code.sending : c.code.send}</SteadyLabel>
         </button>
       </form>
       {line ? <p id="friend-code-line" role="alert" className="m-0 mt-[8px] text-[12.5px] leading-[1.45] text-[color:var(--danger)] max-md:text-center">{line}</p> : null}

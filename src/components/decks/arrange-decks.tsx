@@ -22,6 +22,7 @@ import { noteAppScroll } from "../../lib/ui/reveal";
 import { ArtLayer } from "../ui/art-layer";
 import { PRIMARY } from "../ui/button";
 import { statusPillLabel } from "./status-pill";
+import { SteadyLabel } from "../ui/steady-label";
 
 const EDGE_PX = 80;
 const SCROLL_STEP = 14;
@@ -445,7 +446,7 @@ function Actions({ saving, settling, onCancel, onDone, phone = false }: { saving
         disabled={saving || settling}
         className={`flex ${size} cursor-pointer items-center justify-center rounded-[8px] border-0 font-sans text-[14px] font-semibold disabled:opacity-50 ${PRIMARY}`}
       >
-        {saving ? copy.saving : copy.done}
+        <SteadyLabel hold={[copy.saving, copy.done]}>{saving ? copy.saving : copy.done}</SteadyLabel>
       </button>
     </>
   );

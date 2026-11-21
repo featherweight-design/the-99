@@ -44,6 +44,7 @@ import type { EditCard } from "../../lib/collection/edit-lines";
 import { ArtLayer } from "../ui/art-layer";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { useMomentHold } from "../../lib/moments/hold";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = collectionEditCopy.add;
 const scanCopy = collectionEditCopy.scan;
@@ -790,7 +791,7 @@ function AddMode({
               }}
               className={`h-[46px] cursor-pointer rounded-[10px] px-[22px] text-[15px] font-semibold aria-disabled:cursor-default aria-disabled:opacity-40 md:h-[40px] md:rounded-[8px] md:text-[14px] ${PRIMARY}`}
             >
-              {saving ? copy.saving : phase === "failed" ? copy.retry : copy.save(stats.copies)}
+              <SteadyLabel hold={[copy.saving, copy.save(stats.copies)]}>{saving ? copy.saving : phase === "failed" ? copy.retry : copy.save(stats.copies)}</SteadyLabel>
             </button>
           </div>
         )}

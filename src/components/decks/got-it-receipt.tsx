@@ -27,6 +27,7 @@ import { ShortDeckWarning } from "../collection/short-deck-warning";
 import { PendingReporter } from "../shell/pending-reporter";
 import { DECK_TOAST_CLAIM, ToastFrame, useToastClock } from "../collection/edit-toast";
 import { SheetGrabber } from "../ui/sheet-grabber";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = gotItCopy.receipt;
 
@@ -477,7 +478,7 @@ export function GotItReceipt({
             onClick={() => { if (!held) void check(); }}
             className={`${btn} font-semibold ${held ? "cursor-default text-[color:var(--fg-muted)] opacity-80" : "cursor-pointer text-[color:var(--accent-text)]"}`}
           >
-            {phase.k === "checking" ? c.checking : phase.k === "undoing" ? c.undoing : c.undo}
+            <SteadyLabel hold={[c.checking, c.undoing]}>{phase.k === "checking" ? c.checking : phase.k === "undoing" ? c.undoing : c.undo}</SteadyLabel>
           </button>
         </>
       }

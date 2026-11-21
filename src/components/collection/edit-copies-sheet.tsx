@@ -35,6 +35,7 @@ import { ShortDeckChooser, choosable } from "./short-deck-chooser";
 import { ShortDeckWarning } from "./short-deck-warning";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { useMomentHold } from "../../lib/moments/hold";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = collectionEditCopy.copies;
 const r = collectionEditCopy.remove;
@@ -459,7 +460,7 @@ export function EditCopiesSheet({
                   : PRIMARY
               } ${saving ? "opacity-60" : ""}`}
             >
-              {saveLabel}
+              <SteadyLabel hold={[c.saving, isRemoval ? r.confirm(sum.held) : c.save]}>{saveLabel}</SteadyLabel>
             </button>
           </div>
         ) : null}

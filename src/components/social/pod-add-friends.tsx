@@ -16,6 +16,7 @@ import { useFriendInvite } from "./invite-context";
 import { ACCENT_BUTTON } from "./friends-head";
 import { Checkbox } from "../ui/checkbox";
 import { PersonName, PersonText, type ThirdPartyName } from "../../lib/person-name";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = socialCopy.pods;
 
@@ -75,7 +76,7 @@ export function PodAddFriends({
               aria-disabled={friendInvite.pending || friendInvite.held || undefined}
               className={`${ACCENT_BUTTON} mt-[6px] h-[44px] w-full ${friendInvite.held ? "!bg-[color:var(--elevated)] !text-[color:var(--fg-locked)]" : ""} max-md:h-[48px] max-md:text-[15px] md:w-auto md:px-[18px]`}
             >
-              {friendInvite.pending ? socialCopy.page.invitePending : socialCopy.page.invite}
+              <SteadyLabel hold={[socialCopy.page.invitePending, socialCopy.page.invite]}>{friendInvite.pending ? socialCopy.page.invitePending : socialCopy.page.invite}</SteadyLabel>
             </button>
           ) : null}
         </div>

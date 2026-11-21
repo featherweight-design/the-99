@@ -29,6 +29,7 @@ import { mirrorUrl } from "../../lib/url/mirror";
 import { CODE_ERR, Field, GOOGLE, GoogleMark, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, SignLine, codeOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "./auth-parts";
 import { STRENGTH_ID, StrengthPanel } from "./strength-panel";
 import { usePasswordStrength } from "./use-password-strength";
+import { SteadyLabel } from "../ui/steady-label";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
@@ -456,7 +457,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
         {/* Live strength (R1c): any line takes the slot under its meter. Only Clerk's verdict empties the meter; the failed
             line is no verdict on strength (READINESS clarification 3). */}
         <StrengthPanel reading={strength.reading} line={line} live={strength.live} />
-        <button type="submit" disabled={locked} className={press(busy ? "busy" : "ready")}>{busy || leaving ? copy.saving : copy.save}</button>
+        <button type="submit" disabled={locked} className={press(busy ? "busy" : "ready")}><SteadyLabel hold={[copy.saving, copy.save]}>{busy || leaving ? copy.saving : copy.save}</SteadyLabel></button>
       </form>
     );
   }

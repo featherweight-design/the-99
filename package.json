@@ -50,6 +50,7 @@
     "db:restamp:prose": "tsx scripts/restamp-prose.ts",
     "push:keys": "node scripts/push-keys.mjs",
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
+    "probe:pending-width": "node scripts/probe-pending-width.mjs",
     "probe:launch-scrollbar": "node scripts/probe-launch-scrollbar.mjs",
     "probe:tab-navs": "node scripts/probe-tab-navs.mjs",
     "probe:history-local-time": "node scripts/probe-history-local-time.mjs",
