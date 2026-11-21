@@ -83,7 +83,7 @@ try {
     await page.getByTestId("tracker-play").waitFor({ timeout: 15_000 });
     // Seat notices from the fixture account's other tables stack over the lower edge; they are not under test.
     await page.evaluate(() => document.querySelectorAll("[data-seat-notice-stack]").forEach((n) => n.remove()));
-    await page.locator('[data-testid="panel-name"]').first().evaluate((el) => el.click());
+    await page.locator('[data-testid="panel-sheet"]').first().evaluate((el) => el.click());
     const sheet = page.getByRole("dialog");
     await sheet.waitFor({ timeout: 10_000 });
 

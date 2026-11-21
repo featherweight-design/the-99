@@ -220,7 +220,7 @@ export function PlaySurface({
   useEffect(() => {
     if (over || refocus.current === null) return;
     const i = players.findIndex((p) => p.seat === refocus.current);
-    const name = board.current?.querySelectorAll<HTMLElement>('[data-testid="panel-name"]')[i];
+    const name = board.current?.querySelectorAll<HTMLElement>('[data-testid="panel-sheet"]')[i];
     if (!name) return;
     refocus.current = null;
     name.focus();
@@ -336,6 +336,7 @@ export function PlaySurface({
               }
               pendingFrom={pendingFrom}
               tablet={device === "tablet"}
+              foot={layout.foot === true}
               onEndTurn={() => commit({ t: "endTurn" })}
               onUndo={undo}
             />

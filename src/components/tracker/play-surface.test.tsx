@@ -45,7 +45,7 @@ describe("PlaySurface result", () => {
   it("is a draw when the last two players tap down to 0 within the same window", async () => {
     render(<PlaySurface tableId="t1" roster="r" expiresAt={Date.now() + 3_600_000} seats={seats} backHref="/friends/table/t1" logHref="/decks/d?tab=games&table=t1" podName="Thursday night" />);
     await act(async () => {});
-    const lose = screen.getAllByRole("button", { name: "Lose 1 life" });
+    const lose = screen.getAllByRole("button", { name: /^(You lose|.+ loses) 1 life$/ });
     expect(lose).toHaveLength(2);
     for (const b of lose) {
       fireEvent.pointerDown(b);
@@ -63,7 +63,7 @@ describe("PlaySurface result", () => {
 /** Both players tap down to 0 together, so the game ends and the result opens. */
 async function endTheGame() {
   await act(async () => {});
-  for (const b of screen.getAllByRole("button", { name: "Lose 1 life" })) {
+  for (const b of screen.getAllByRole("button", { name: /^(You lose|.+ loses) 1 life$/ })) {
     fireEvent.pointerDown(b);
     fireEvent.pointerUp(b);
   }
@@ -182,7 +182,7 @@ describe("PlaySurface Undo the last change", () => {
     expect(toast).toBeTruthy();
     expect(toast!.textContent).toContain("Game back on");
     expect(toast!.textContent).toContain("Undid Colin −40 life, to 0 · round 1");
-    expect(document.activeElement).toBe(screen.getAllByTestId("panel-name")[1]);
+    expect(document.activeElement).toBe(screen.getAllByTestId("panel-sheet")[1]);
   });
 
   it("waits while the result saves, and runs the Undo only after the save (clarification 3)", async () => {

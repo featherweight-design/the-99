@@ -16,7 +16,21 @@ export type Rect = { x: number; y: number; w: number; h: number };
  * `spine` is the centre strip's box (round, monarch, initiative, day/night, dice, undo, menu), in the gap the cells leave:
  * a column on a phone, a row on a tablet. L1 to L5 draw it; the rest sit it in the same gap.
  */
-export type Layout = { id: string; device: Device; seats: number; canvas: { w: number; h: number }; label: string; cells: readonly Cell[]; spine: Rect };
+export type Layout = {
+  id: string;
+  device: Device;
+  seats: number;
+  canvas: { w: number; h: number };
+  label: string;
+  cells: readonly Cell[];
+  spine: Rect;
+  /**
+   * The tablet's grid boards (F12, F18, F19) draw the panel with a 52px foot toward the strip (End turn, badges, the
+   * sheet button) and the name on the outer edge. Every other board (the phone's, and the tablet's ends, L4 and L5) keeps
+   * them in one name row along the top.
+   */
+  foot?: true;
+};
 
 const PHONE = { w: 390, h: 844 } as const;
 const TABLET = { w: 1180, h: 820 } as const;
@@ -33,13 +47,27 @@ export const LAYOUTS: readonly Layout[] = [
   { id: "phone-4-around", device: "phone", seats: 4, canvas: PHONE, label: "One player on each side", cells: [c(6, 648, 378, 190, 0), c(6, 202, 155, 440, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
   { id: "phone-5", device: "phone", seats: 5, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
   { id: "phone-6", device: "phone", seats: 6, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 217, -90), c(229, 425, 155, 217, -90)], spine: PHONE_SPINE },
-  { id: "tablet-4", device: "tablet", seats: 4, canvas: TABLET, label: "Two and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 575, 358, 180), c(595, 10, 575, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
-  { id: "tablet-5", device: "tablet", seats: 5, canvas: TABLET, label: "Three and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 380, 358, 180), c(400, 10, 380, 358, 180), c(790, 10, 380, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
+  { id: "tablet-4", foot: true, device: "tablet", seats: 4, canvas: TABLET, label: "Two and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 575, 358, 180), c(595, 10, 575, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
+  { id: "tablet-5", foot: true, device: "tablet", seats: 5, canvas: TABLET, label: "Three and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 380, 358, 180), c(400, 10, 380, 358, 180), c(790, 10, 380, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
   { id: "tablet-5-end", device: "tablet", seats: 5, canvas: TABLET, label: "One at the end", cells: [c(10, 452, 445, 358, 0), c(10, 10, 445, 358, 180), c(465, 10, 445, 358, 180), c(920, 10, 250, 800, -90), c(465, 452, 445, 358, 0)], spine: r(10, 378, 900, 64) },
-  { id: "tablet-6", device: "tablet", seats: 6, canvas: TABLET, label: "Three and three", cells: [c(10, 452, 380, 358, 0), c(10, 10, 380, 358, 180), c(400, 10, 380, 358, 180), c(790, 10, 380, 358, 180), c(790, 452, 380, 358, 0), c(400, 452, 380, 358, 0)], spine: TABLET_SPINE },
+  { id: "tablet-6", foot: true, device: "tablet", seats: 6, canvas: TABLET, label: "Three and three", cells: [c(10, 452, 380, 358, 0), c(10, 10, 380, 358, 180), c(400, 10, 380, 358, 180), c(790, 10, 380, 358, 180), c(790, 452, 380, 358, 0), c(400, 452, 380, 358, 0)], spine: TABLET_SPINE },
   { id: "tablet-6-ends", device: "tablet", seats: 6, canvas: TABLET, label: "Ends", cells: [c(270, 452, 315, 358, 0), c(10, 10, 250, 800, 90), c(270, 10, 315, 358, 180), c(595, 10, 315, 358, 180), c(920, 10, 250, 800, -90), c(595, 452, 315, 358, 0)], spine: r(270, 378, 640, 64) },
 ];
 
 /** The layouts a screen offers for a seat count, drawn boards first. */
 export const layoutsFor = (device: Device, seats: number): Layout[] => LAYOUTS.filter((l) => l.device === device && l.seats === seats);
 export const layoutById = (id: string): Layout | undefined => LAYOUTS.find((l) => l.id === id);
+
+/**
+ * The life number's size on the design canvas, by the cell it sits in: the boards draw 88px in F04's 155x413 sides, 86px
+ * in L1 and L2's longer sides, 106px across L1's 378x190 ends, 110px in L3's 316x273 panels, and on a tablet 150px in
+ * the 358px-tall grid panels and 140px in L4 and L5's 250px-wide ends. The panel scales it with the canvas.
+ */
+export function lifeSize(device: Device, cell: Cell): number {
+  const short = Math.min(cell.w, cell.h);
+  const long = Math.max(cell.w, cell.h);
+  if (device === "tablet") return short >= 300 ? 150 : 140;
+  if (short >= 270) return 110;
+  if (short >= 180) return 106;
+  return long === 413 ? 88 : 86;
+}

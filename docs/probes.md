@@ -2837,9 +2837,17 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   check. It WRITES, so it refuses staging, production and local-dev by `neon.branch_id`: run the dev server and the
   probe with the env file naming a scratch branch made from local-dev, seeded by `scripts/seed-rule-zero-fixture.mts`
   for the audit account. `UNDO_TABLE` picks another table, and `SHOTS=<dir>` keeps a photograph of each state.
+- `pnpm probe:tracker-panel` presses the tracker's in-game panel (gap T4) at phone (390x844) and desktop (1300x900)
+  width, against the fixture's four-seat S4 (`PANEL_TABLE` picks another). It starts a game and checks pane W on the
+  phone (name row on top, End turn in it) and pane F on the tablet grid (name on the outer edge, a 52px foot holding End
+  turn and the sheet button): the 16px or 18px corners with no real border, the life number in Cinzel 700 sized from its
+  cell, the − and + glyphs and their named labels, the pending delta hanging off the number without moving it, the round
+  sheet button (44px or 52px) opening the sheet, End turn's height and arrow, the name no longer a button, and the wash
+  over the art. On main the halves draw no glyph and there is no sheet button, so it fails. It only reads and taps (the
+  game lives in the device's localStorage), so it may run against local-dev. `SHOTS=<dir>` keeps a photograph of each state.
 - `pnpm probe:tracker-sheet` presses the tracker's in-game player sheet (gap T6) at phone (390x844) and desktop (1300x900)
   width, against a real table. It starts a game on the fixture's T5 (you and Colin), opens the sheet from the first
-  panel's name and checks the header (the name in Cinzel, never "Your sheet", life shown and the name not cut short), the
+  panel's round sheet button and checks the header (the name in Cinzel, never "Your sheet", life shown and the name not cut short), the
   damage card's Cinzel count and 44px stepper with the commander art, the sheet sitting above the turn strip (the
   stepper's centre hits the stepper), the Counters tab's count, the tax figure in Cinzel, the mana grid three across with
   its steppers inside their cards, and Concede and End game drawn in the red. On main the header reads "Your sheet" in
