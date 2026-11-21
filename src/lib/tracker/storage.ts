@@ -28,9 +28,14 @@ function parse(raw: string | null, tableId: string): Stored | null {
 
 /** The game kept for a table, or null when none is kept, it is unreadable, or its table has closed for logging. */
 export function loadGame(storage: Pick<Storage, "getItem" | "removeItem">, tableId: string, now: number): Game | null {
+  return loadKept(storage, tableId, now)?.game ?? null;
+}
+
+/** `loadGame` with the instant it stops being kept, so a discard's Undo can put it back exactly (`saveGame`). */
+export function loadKept(storage: Pick<Storage, "getItem" | "removeItem">, tableId: string, now: number): { game: Game; expiresAt: number } | null {
   try {
     const kept = parse(storage.getItem(keyOf(tableId)), tableId);
-    if (kept && kept.expiresAt > now) return kept.game;
+    if (kept && kept.expiresAt > now) return { game: kept.game, expiresAt: kept.expiresAt };
     storage.removeItem(keyOf(tableId));
   } catch {
     /* storage unavailable */

@@ -164,6 +164,7 @@ describe("TableLive's close", () => {
     setBy: null,
     how: { kind: "host", byYou: true, by: null, at: new Date("2026-10-16T23:52:00Z"), logOpen: true },
     faces: [{ name: "Hugh", artCropUri: null }],
+    loggedAt: null,
   };
   let closedNow = false;
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -279,6 +280,7 @@ describe("the closed table's sentence (C3 to C5)", () => {
     setBy: named("Colin"),
     how,
     faces: [{ name: "Hugh", artCropUri: null }],
+    loggedAt: null,
   });
 
   it("says the viewer closed it, with the time", () => {

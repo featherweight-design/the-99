@@ -18,5 +18,5 @@ export type PlaySeat = {
   deck: string | ThirdPartyName | null;
 };
 
-/** The table as the game started: its seats in turn order, and the server's roster hash the result is saved against. */
+/** The table as the game started: its seats in turn order, and the server's sealed Start roster the result is saved against. */
 export type TableSnapshot = { players: readonly PlaySeat[]; roster: string };

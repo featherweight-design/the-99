@@ -46,16 +46,18 @@ export function reviveTableView(raw: TableView): TableView {
     closesAt: at(raw.closesAt),
     revision: at(raw.revision),
     seenAt: raw.seenAt === null ? null : at(raw.seenAt),
+    loggedAt: raw.loggedAt == null ? null : at(raw.loggedAt),
     seats: raw.seats.map((s) => ({ ...s, changedAt: at(s.changedAt) })),
   };
 }
 
 /** A closed table as the poll's JSON carries it: `how.at` is an ISO string, not the Date the server held. */
-export type ClosedTableWire = Omit<ClosedTable, "how"> & {
+export type ClosedTableWire = Omit<ClosedTable, "how" | "loggedAt"> & {
+  loggedAt?: string | null;
   how: { kind: "host"; byYou: boolean; by: ThirdPartyName | null; at: string; logOpen: boolean } | { kind: "morning"; at: string };
 };
 
 /** The closed twin of `reviveTableView`: `how.at` goes back to a Date before anything calls a Date method on it. */
 export function reviveClosedTable(raw: ClosedTableWire): ClosedTable {
-  return { ...raw, how: { ...raw.how, at: new Date(raw.how.at) } as ClosedHow };
+  return { ...raw, how: { ...raw.how, at: new Date(raw.how.at) } as ClosedHow, loggedAt: raw.loggedAt == null ? null : new Date(raw.loggedAt) };
 }
