@@ -170,7 +170,7 @@ export default async function Shell({
     // main column's padding, the sheets and docks that sit clear of it, and the provider's own
     // loading overlay, which renders beside the shell rather than inside it. Unlocked it is the
     // global 74px from globals.css.
-    <div className="contents" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
+    <div className="contents" data-shell-vars="" style={locked ? ({ "--tabbar-h": "88px" } as React.CSSProperties) : undefined}>
     {/* The cold-start launch animation: signed-in shell only, so the "seen" flag is written here and nowhere else
         (`launch-detect.ts`). Hidden by the stylesheet unless the head script marked this launch. */}
     <LaunchLoader />

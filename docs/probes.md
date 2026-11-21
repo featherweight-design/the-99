@@ -2859,6 +2859,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   roster seals, and refuses staging, production and local-dev: run the dev server with the env file naming a scratch
   branch made from local-dev, seeded by `scripts/seed-rule-zero-fixture.mts` for the audit account. The fixture's
   "seated you" notices are hidden for the walk. `SETUP_TABLE` picks another table, `PROBE_SHOTS=<dir>` keeps photographs.
+- `pnpm probe:tracker-full-screen` proves the tracker's /play route draws full screen (T1b, orchestrator ruling
+  2026-11-21) at phone (390x844) and desktop (1300x820) width, on the fixture's four-seat table S4. It first checks the
+  control: the table page draws the shell's nav (the phone header and tab bar, or the desktop rail). Then on /play, no
+  shell nav is visible, setup starts at the top of the viewport, and on desktop no rail column holds the left edge.
+  Browser Back returns to the table with its nav, and setup's ✕ does the same. On main the nav is visible on /play, so
+  it fails at the second check. It writes nothing, but needs `INVITE_CODE_SECRET` on the dev server and the fixture
+  from `scripts/seed-rule-zero-fixture.mts` on a scratch branch. `PROBE_SHOTS=<dir>` keeps a photograph of each width.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a

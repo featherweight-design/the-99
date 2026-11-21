@@ -6,6 +6,9 @@
 // A seat still waiting for its deck plays on a plain panel (S2). A table its host closed keeps the game this device
 // holds until 6 am (S4): it passes no seats, since no new game starts there, and the surface goes back to Friends
 // when the device has no game for it.
+//
+// The surface is full screen, as the boards draw it: `data-full-screen` sets the shell's nav aside (globals.css), and
+// the way out is setup's ✕ and the strip's Menu, or the browser's own Back.
 
 import { notFound } from "next/navigation";
 import { requireUserId } from "../../../../../lib/auth";
@@ -36,7 +39,7 @@ export default async function PlayPage({ params, searchParams }: { params: Promi
   if (closed) {
     const how = closed.how as Extract<typeof closed.how, { kind: "host" }>;
     return (
-      <div className="flex w-full flex-1 flex-col">
+      <div data-full-screen="" className="flex w-full flex-1 flex-col">
         <PlaySurface
           tableId={id}
           roster={night.roster}
@@ -71,7 +74,7 @@ export default async function PlayPage({ params, searchParams }: { params: Promi
   }));
 
   return (
-    <div className="flex w-full flex-1 flex-col">
+    <div data-full-screen="" className="flex w-full flex-1 flex-col">
       <PlaySurface tableId={id} roster={night.roster} expiresAt={table.closesAt.getTime()} seats={fits ? seats : null} again={again} undoNow={undoNow} backHref={`/friends/table/${id}`} logHref={logGameHref(table)} podName={table.podName} />
     </div>
   );
