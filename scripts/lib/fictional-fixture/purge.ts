@@ -47,6 +47,7 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   intake_reads: ["user_id"],
   invite_balances: ["user_id"],
   invite_edges: ["inviter_user_id", "invitee_user_id"],
+  guided_builds: ["user_id"],
   invite_reservations: ["user_id"],
   mana_trade_applies: ["user_id"],
   model_calls: ["user_id"],

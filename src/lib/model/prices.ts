@@ -229,6 +229,16 @@ export const FEATURE_CALLS: Readonly<Record<ModelFeature, {
       ...Array.from({ length: 2 }, () => ({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8 })),
     ],
   },
+  // Guided build (plan 2026-11-21, Y4/Y5): the same run as `precon_upgrade` over a deck of the player's own, with the Overview inside
+  // the 2 credits. Written out, not aliased, so a later change to Upgrade's steps is a visible choice here.
+  guided_build: {
+    model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS, callsPerWrite: 4,
+    steps: [
+      { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: UPGRADE_MAX_TOKENS },
+      { model: UPGRADE_MODEL, inputCeilingTokens: UPGRADE_INPUT_CEILING_TOKENS, maxTokens: REPAIR_MAX_TOKENS },
+      ...Array.from({ length: 2 }, () => ({ model: SYNOPSIS_MODEL, inputCeilingTokens: 24_000, maxTokens: SYNOPSIS_MAX_TOKENS_V8 })),
+    ],
+  },
 };
 
 /**

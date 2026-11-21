@@ -3,7 +3,7 @@ import { getTableConfig, PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import {
-  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, fitsReads, friendLinkKeys, friendRequests, modelCalls, preconUpgrades,
+  deckCutItems, deckGames, decks, deckSuggestionItems, deckSuggestionRuns, deckSynopses, deckVersionSynopses, fitsReads, friendLinkKeys, friendRequests, modelCalls, guidedBuilds, preconUpgrades,
 } from "./schema";
 
 describe("deck tuning schema", () => {
@@ -61,6 +61,20 @@ describe("deck tuning schema", () => {
     const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(q).sql.replace(/\s+/g, " ");
     const callChecks = Object.fromEntries(getTableConfig(modelCalls).checks.map((c) => [c.name, render(c.value)]));
     expect(callChecks.model_calls_feature_check).toContain(`'precon_upgrade'`);
+  });
+
+  it("holds one pending guided run per deck, deletes a deck's runs with it, ties a run to its unit, and records the ledger feature", () => {
+    const config = getTableConfig(guidedBuilds);
+    const pending = config.indexes.find((i) => i.config.name === "guided_builds_one_pending_idx");
+    expect(pending?.config.unique).toBe(true);
+    expect(pending?.config.columns.map((c) => ("name" in c ? c.name : ""))).toEqual(["deck_id"]);
+    expect(new PgDialect().sqlToQuery(pending!.config.where!).sql).toBe(`"guided_builds"."status" = 'pending'`);
+    const fks = config.foreignKeys.map((f) => { const r = f.reference(); return [r.columns[0].name, getTableName(r.foreignTable), f.onDelete]; });
+    expect(fks).toEqual(expect.arrayContaining([["deck_id", "decks", "cascade"], ["model_call_id", "model_calls", "no action"]]));
+    const render = (q: Parameters<PgDialect["sqlToQuery"]>[0]) => new PgDialect().sqlToQuery(q).sql.replace(/\s+/g, " ");
+    expect(Object.fromEntries(config.checks.map((c) => [c.name, render(c.value)])).guided_builds_pool_mode_check).toContain(`in ('owned', 'cap', 'budget')`);
+    const callChecks = Object.fromEntries(getTableConfig(modelCalls).checks.map((c) => [c.name, render(c.value)]));
+    expect(callChecks.model_calls_feature_check).toContain(`'guided_build'`);
   });
 
   it("ties both of an item's card columns to the catalog, and a run to its allowance unit", () => {
