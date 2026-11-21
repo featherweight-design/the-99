@@ -166,6 +166,7 @@ const table = (input: TableSeatView[], o: Partial<TableView> = {}): TableView =>
     read: read.kind === "read" ? { kind: "read", middle: read.middle, band: read.band } : read,
     seats,
     offer: [],
+    loggedAt: null,
     ...o,
   };
 };

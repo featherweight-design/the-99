@@ -1,7 +1,7 @@
 // /friends/table/[id]/play: the life tracker's play surface (life tracker plan, PR 4). Not linked from anywhere until
-// go-live, so it must be safe on its own: the table is read through the viewer's grant (`loadTable`, or
-// `loadClosedTable` once its host has closed it) and the roster only exists inside the table's night (`tableRoster`),
-// so a stranger, a table past its 6 am and a tracker over six seats all answer not found.
+// go-live, so it must be safe on its own: the table is read through the viewer's grant (`loadTableWith`, or
+// `loadClosedTableWith` once its host has closed it) and the roster only exists inside the table's night (`tableRoster`),
+// so a stranger and a table past its 6 am answer not found. Over six seats, only a game this device already holds plays.
 //
 // A seat still waiting for its deck plays on a plain panel (S2). A table its host closed keeps the game this device
 // holds until 6 am (S4): it passes no seats, since no new game starts there, and the surface goes back to Friends
@@ -12,18 +12,23 @@ import { requireUserId } from "../../../../../lib/auth";
 import { MAX_SEATS } from "../../../../../lib/tracker/engine";
 import type { PlaySeat } from "../../../../../lib/tracker/seat";
 import { tableRoster } from "../../../../../lib/social/rule-zero-result";
-import { loadClosedTable, loadTable } from "../../../../../lib/social/rule-zero-table";
+import { loadClosedTableWith, loadTableWith } from "../../../../../lib/social/rule-zero-table";
 import { logGameHref } from "../../../../../lib/rule-zero/table-view";
 import { PlaySurface } from "../../../../../components/tracker/play-surface";
 
-export default async function PlayPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PlayPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const userId = await requireUserId();
   const { id } = await params;
-  const view = await loadTable(userId, id);
-  if (view && view.seats.length > MAX_SEATS) notFound();
-  const closed = view ? null : await loadClosedTable(userId, id);
+  const again = (await searchParams).again === "1";
+  // The roster is read in the same snapshot as the seats, so it seals the very seats this page draws: a reseat landing
+  // between two separate reads would start a game whose save the roster then refuses, or credits the wrong seats.
+  const roster = (tx: Parameters<Parameters<typeof loadTableWith>[2]>[0]) => tableRoster(userId, id, tx);
+  const live = await loadTableWith(userId, id, roster);
+  const view = live?.view ?? null;
+  const shut = live ? null : await loadClosedTableWith(userId, id, roster);
+  const closed = shut?.closed ?? null;
   if (!view && (!closed || closed.how.kind !== "host" || !closed.how.logOpen)) notFound();
-  const night = await tableRoster(userId, id);
+  const night = live?.also ?? shut?.also ?? null;
   if (!night) notFound();
 
   if (closed) {
@@ -44,10 +49,13 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
     );
   }
 
+  // Over six seated, no new game starts (S1), but a game this device started before the reseat still resumes from its own
+  // Start snapshot, so the surface gets no seats rather than a not found.
+  const fits = view!.seats.length <= MAX_SEATS;
   // Turn order is the table's seat order, rotated so the viewer's own seat is the one nearest the bottom of the screen.
-  const live = view!;
-  const mine = live.seats.findIndex((s) => s.you);
-  const ordered = [...live.seats.slice(mine), ...live.seats.slice(0, mine)];
+  const table = view!;
+  const mine = table.seats.findIndex((s) => s.you);
+  const ordered = [...table.seats.slice(mine), ...table.seats.slice(0, mine)];
   const seats: PlaySeat[] = ordered.map((s) => ({
     seat: s.seat,
     you: s.you,
@@ -61,7 +69,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      <PlaySurface tableId={id} roster={night.roster} expiresAt={live.closesAt.getTime()} seats={seats} backHref={`/friends/table/${id}`} logHref={logGameHref(live)} podName={live.podName} />
+      <PlaySurface tableId={id} roster={night.roster} expiresAt={table.closesAt.getTime()} seats={fits ? seats : null} again={again} backHref={`/friends/table/${id}`} logHref={logGameHref(table)} podName={table.podName} />
     </div>
   );
 }

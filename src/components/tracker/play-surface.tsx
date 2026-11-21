@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { mirrorUrl } from "../../lib/url/mirror";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { saveTableResultAction } from "../../app/friends/table/result-actions";
 import { trackerCopy } from "../../lib/copy/tracker";
@@ -44,6 +45,7 @@ export function PlaySurface({
   logHref,
   podName,
   closed = null,
+  again = false,
 }: {
   tableId: string;
   /** The server's sealed Start roster (seats, accounts, decks, issue time). A game keeps the one from its Start and hands that back with the result. */
@@ -55,6 +57,8 @@ export function PlaySurface({
   /** The viewer's deck's Games tab for this table (`logGameHref`). */
   logHref: string | null;
   podName: string | ThirdPartyName;
+  /** Opened from the table page's Start under its Last game (S6): a finished game this device holds opens setup on its layout and life. */
+  again?: boolean;
   /** The table's host closed it (S4): who ("you", a name, or null when unknown) and when. */
   closed?: { by: string | ThirdPartyName | null; at: number } | null;
 }) {
@@ -81,6 +85,19 @@ export function PlaySurface({
   const players = snapshot?.players ?? [];
   const fits = !!snapshot && !!saved_layout && saved_layout.cells.length === players.length && game!.config.seats.length === players.length && game!.config.seats.every((c, i) => c.seat === players[i].seat);
   useEffect(() => (game && !fits ? discard() : undefined), [game, fits, discard]);
+  // Start under the Last game (S6) is a rematch on the live seats; the flag leaves the address bar at once, so a reload
+  // of the game it starts, or of that game's result, is never discarded by it.
+  const [againPending, setAgainPending] = useState(again);
+  useEffect(() => {
+    if (!ready || !againPending) return;
+    mirrorUrl(window.location.pathname);
+    if (game && game.endedAt !== undefined && seats) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- the saved game exists only in the browser, so the rematch is decided after it is read
+      setRematch({ layout: game.config.layout, life: game.config.startingLife, players: seats });
+      discard();
+    }
+    setAgainPending(false);
+  }, [ready, againPending, game, seats, discard]);
   // Setup draws the live seats; on a closed table only a rematch has seats to start from, and with none it goes back.
   const setupSeats = seats ?? rematch?.players ?? null;
   const nowhere = ready && !game && setupSeats === null;
@@ -112,7 +129,7 @@ export function PlaySurface({
     );
   }, [state, over, tableId, roster, snapshot]);
 
-  if (!ready) return <div className="flex-1" aria-busy="true" />;
+  if (!ready || againPending) return <div className="flex-1" aria-busy="true" />;
 
   if (game && !fits) return null;
   if (!game || !state) {
