@@ -8,7 +8,7 @@ import { useCallback, useEffect, useState } from "react";
 import { commit as commitAction, undo as undoAction, type Action, type Game } from "../../lib/tracker/engine";
 import { discardGame, loadGame, saveGame } from "../../lib/tracker/storage";
 
-const local = (): Storage | null => {
+export const local = (): Storage | null => {
   try {
     return window.localStorage;
   } catch {

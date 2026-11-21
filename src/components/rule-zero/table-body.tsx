@@ -21,6 +21,7 @@ import { CloseTable } from "./close-table";
 import { ReadCard } from "./read-card";
 import { SeatsButton } from "./seats-button";
 import { TableSeat } from "./table-seat";
+import { GameInProgress, LastGame, StartGame, useKeptGame } from "./table-game";
 
 const copy = ruleZeroCopy.page;
 
@@ -45,6 +46,11 @@ export function TableBody({
   // The server's draw is in UTC, the reader's own zone after hydration, so the two first renders agree (`when.ts`).
   const closes = closesWhen(view.closesAt, now, useHydrated() ? undefined : "UTC");
   const log = logGameHref(view);
+  // The tracker is the seated players' alone (ruling 3): a pod member off the table sees no Start and no game.
+  const seated = view.seats.some((s) => s.you);
+  const tracker = useKeptGame(view.tableId);
+  const waiting = view.seats.filter((s) => s.deck === null).map((s) => ({ you: s.you, name: s.displayName }));
+  const start = seated && !tracker.running;
   return (
     <div data-testid="table-body" className="flex flex-col">
       {/* The phone's back row sits outside the padded column (R1); desktop's sits in the head band (R2). */}
@@ -69,7 +75,10 @@ export function TableBody({
         {/* One mount of each part, placed by the grid: desktop's right column is the read over Log this game (14px
             apart), and the seats span both rows on the left. */}
         <div className="flex flex-col gap-[14px] xl:grid xl:grid-cols-[minmax(0,1fr)_392px] xl:grid-rows-[auto_1fr] xl:items-start xl:gap-x-[28px] xl:gap-y-[14px] xl:px-[34px] xl:pb-[28px] xl:pt-[22px]">
-          <div className="xl:col-start-2 xl:row-start-1">
+          {/* The device's game sits over the read (S3, S6): first in the phone's column, atop desktop's right column. */}
+          <div className="flex flex-col gap-[14px] xl:col-start-2 xl:row-start-1">
+            {seated && tracker.running ? <GameInProgress tableId={view.tableId} kept={tracker.running} onDiscard={tracker.discard} /> : null}
+            {seated && tracker.finished ? <LastGame kept={tracker.finished} loggedAt={view.loggedAt} /> : null}
             <ReadCard draw={draw} updated={updated} />
           </div>
           <div className="flex flex-col gap-[10px] xl:col-start-1 xl:row-start-1 xl:row-end-3" data-testid="table-seats">
@@ -77,15 +86,18 @@ export function TableBody({
               <TableSeat key={s.key} draw={s} now={now} tableId={view.tableId} />
             ))}
           </div>
-          {log || (view.setByYou && onClose) ? (
-            // The table's foot: Log this game, then the setter's Close the table under it (T1, D1); on desktop it closes the read's column.
-            <div className="flex flex-col gap-[14px] xl:col-start-2 xl:row-start-2">
+          {start || log || (view.setByYou && onClose) ? (
+            // The table's foot: Start the game (S1, S2, S6), Log this game, then the setter's Close the table (T1, D1); on
+            // desktop it closes the read's column. With Start it keeps the addendum's 10px (12px on desktop) rhythm.
+            <div className={`flex flex-col xl:col-start-2 xl:row-start-2 ${start ? "gap-[10px] xl:gap-[12px]" : "gap-[14px]"}`}>
+              {start ? <StartGame tableId={view.tableId} seated={view.seats.length} waiting={waiting} again={!!tracker.finished} /> : null}
               {log ? <LogGame href={log} /> : null}
               {view.setByYou && onClose ? <CloseTable podName={view.podName} run={onClose} /> : null}
             </div>
           ) : null}
         </div>
       </div>
+      {tracker.toast}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Game } from "./engine";
-import { discardGame, loadGame, saveGame, sweepGames } from "./storage";
+import { discardGame, loadGame, loadKept, saveGame, sweepGames } from "./storage";
 
 class Mem {
   m = new Map<string, string>();
@@ -48,5 +48,16 @@ describe("device storage", () => {
     const boom = { getItem: () => { throw new Error("x"); }, setItem: () => { throw new Error("x"); }, removeItem: () => { throw new Error("x"); }, key: () => { throw new Error("x"); }, length: 1 };
     expect(() => { saveGame(boom, game("a"), 1); discardGame(boom, "a"); sweepGames(boom, 1); }).not.toThrow();
     expect(loadGame(boom, "a", 0)).toBeNull();
+  });
+});
+
+describe("loadKept", () => {
+  it("hands back the game with the instant it stops being kept, so an Undo restores it exactly", () => {
+    const s = new Mem();
+    saveGame(s, game("a"), 1000);
+    expect(loadKept(s, "a", 0)).toEqual({ game: game("a"), expiresAt: 1000 });
+    discardGame(s, "a");
+    expect(loadKept(s, "a", 0)).toBeNull();
+    expect(loadKept(s, "a", 2000)).toBeNull();
   });
 });

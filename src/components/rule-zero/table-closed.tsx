@@ -15,6 +15,7 @@ import { useHydrated } from "../ui/hydrated-art";
 import { Face } from "../social/face";
 import { BackLink } from "./back-link";
 import { GhostButton } from "../ui/button";
+import { GameInProgress, useKeptGame } from "./table-game";
 
 const copy = ruleZeroCopy.expired;
 
@@ -38,6 +39,8 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
           ? copy.bodyClosedByUnknown(podName, at(how.at))
           : copy.body(podName, setBy ?? "you");
   const log = how.kind === "host" && how.logOpen ? logGameHref(closed) : null;
+  // S4: a game this device was running when the table closed still plays, and its result still logs, until the morning.
+  const tracker = useKeptGame(closed.tableId);
   return (
     // The phone keeps its `‹ Friends` row (L4); desktop draws the card alone, centered in the page (H3).
     // `flex-1` continues the shell's stretch chain, so the card centers in the height the shell leaves at either width.
@@ -63,6 +66,7 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
           <PersonText text={body} />
         </p>
+        {log && tracker.running ? <GameInProgress tableId={closed.tableId} kept={tracker.running} onDiscard={tracker.discard} className="mb-[4px] mt-[6px] w-full" /> : null}
         {log ? (
           <div className="flex w-full max-w-[300px] flex-col items-center gap-[8px]">
             <GhostButton href={log} className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
@@ -78,6 +82,7 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
           </GhostButton>
         )}
       </div>
+      {tracker.toast}
     </div>
   );
 }
