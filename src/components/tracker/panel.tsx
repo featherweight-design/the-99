@@ -220,9 +220,9 @@ export function Panel({
 
           <div className="relative flex h-full w-full flex-col items-center justify-center">
             <div className="absolute left-3 top-2 z-10 max-w-[55%]">
-              <button type="button" onClick={() => onSheet()} className={"block max-w-full truncate text-left text-[13px] text-[color:var(--fg-body)] " + TOUCH_HIT} data-testid="panel-name">
-                {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
-                {seat.deck === null ? <span className="ml-[6px] font-mono text-[11px] text-[color:var(--fg-muted)]" data-testid="panel-no-deck">{tablet ? copy.noDeckTablet : copy.noDeck}</span> : null}
+              <button type="button" onClick={() => onSheet()} className={"flex max-w-full items-baseline text-left text-[13px] text-[color:var(--fg-body)] " + TOUCH_HIT} data-testid="panel-name">
+                <span className="min-w-0 truncate">{seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}</span>
+                {seat.deck === null ? <span className="ml-[6px] shrink-0 whitespace-nowrap font-mono text-[11px] text-[color:var(--fg-muted)]" data-testid="panel-no-deck">{tablet ? copy.noDeckTablet : copy.noDeck}</span> : null}
               </button>
             </div>
             {monarch || initiative || COUNTER_KEYS.some((k) => state.counters[k] > 0) ? (
