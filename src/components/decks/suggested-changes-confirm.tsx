@@ -15,6 +15,7 @@ import { useSheetHost } from "../ui/sheet-host";
 import { PullControl } from "./pull-control";
 import { ModalChrome } from "./receipt-modal";
 import { Name, Thumb } from "./suggestion-line";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = suggestedChangesV2Copy;
 const review = deckVersioningCopy.review;
@@ -89,7 +90,7 @@ export function SuggestedChangesConfirm({
             data-sc-confirm-apply=""
             className="h-[48px] w-full rounded-[8px] px-[18px] text-[13.5px] font-semibold md:h-[40px] md:w-auto bg-[color:var(--accent)] text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] transition-colors"
           >
-            {busy ? copy.applying : copy.confirm.apply(n * 2)}
+            <SteadyLabel hold={[copy.applying, copy.confirm.apply(n * 2)]}>{busy ? copy.applying : copy.confirm.apply(n * 2)}</SteadyLabel>
           </button>
         </div>
       }

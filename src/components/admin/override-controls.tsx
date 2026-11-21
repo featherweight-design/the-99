@@ -11,6 +11,7 @@ import { ALL_FEATURES } from "../../lib/flags/registry";
 import { KillConfirm } from "./kill-confirm";
 import { ModelConfirm, type ConfirmContext } from "./model-confirm";
 import { onSegmentKeys } from "../ui/segment-keys";
+import { SteadyLabel } from "../ui/steady-label";
 
 // The switch page's writes (admin STATES F3, F5, F9 to F12; design table, Switch page): the App-wide
 // segment, On and Off on each override row, and Clear. Each control runs its own write: the option
@@ -384,7 +385,7 @@ export function RowControls({
         onClick={() => (pending ? onCleared?.() : w.run({ op: "clear", value: null, note: null }, undefined, () => focusAdd(target.scope)))}
         className="absolute right-[14px] top-[12px] min-h-[24px] border-0 bg-transparent p-0 text-[13px] text-[color:var(--accent-text)] disabled:text-[color:var(--fg-disabled)] md:static md:flex-none"
       >
-        {pending ? copy.cancelAdd : copy.clear}
+        <SteadyLabel hold={[copy.cancelAdd, copy.clear]}>{pending ? copy.cancelAdd : copy.clear}</SteadyLabel>
       </button>
       {w.dialog}
     </>

@@ -21,6 +21,7 @@ import { MutationError } from "./mutation-error";
 import type { CardActions } from "./suggestion-card";
 import { useOptimisticVerdict } from "./use-optimistic-verdict";
 import { ArtLayer } from "../ui/art-layer";
+import { SteadyLabel } from "../ui/steady-label";
 
 const TARGET = { apply: "accepted", reject: "dismissed", undo: "pending", restore: "pending" } as const;
 
@@ -122,7 +123,7 @@ export function SuggestionLine({
       disabled={busy !== null}
       className="h-[44px] flex-1 rounded-[8px] text-[13px] font-semibold md:h-[32px] md:flex-none md:rounded-[7px] md:px-[13px] md:text-[12.5px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
     >
-      {busy === "apply" ? copy.working : isAdd ? copy.add : copy.cut}
+      <SteadyLabel hold={[copy.working, isAdd ? copy.add : copy.cut]}>{busy === "apply" ? copy.working : isAdd ? copy.add : copy.cut}</SteadyLabel>
     </button>
   );
   const no = (

@@ -29,6 +29,7 @@ import { BuildChoice } from "./build-choice";
 import { guidedBuildCopy } from "../../lib/copy/guided-build";
 import type { DeckBuildKind } from "../../lib/decks/build-kind";
 import type { SelectedPick } from "../../lib/decks/selected-picks";
+import { SteadyLabel } from "../ui/steady-label";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -412,7 +413,7 @@ export function CreatePreFilled({
                 disabled={isPending || deckName.trim().length === 0 || waiting}
                 className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-[26px]"
               >
-                {isPending ? "Creating…" : guidedBuildCopy.press[build]}
+                <SteadyLabel hold={["Creating…", guidedBuildCopy.press[build]]}>{isPending ? "Creating…" : guidedBuildCopy.press[build]}</SteadyLabel>
               </PrimaryButton>
 
               {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md

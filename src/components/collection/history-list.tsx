@@ -30,6 +30,7 @@ import { Chevron } from "../ui/chevron";
 import { useHydrated } from "../ui/hydrated-art";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 import { reveal } from "../../lib/ui/reveal";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = collectionEditCopy.history;
 
@@ -610,7 +611,7 @@ export function HistoryList({
             disabled={pager === "loading"}
             className="min-h-[44px] cursor-pointer rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] text-[14px] text-[color:var(--fg)] disabled:cursor-wait disabled:opacity-60"
           >
-            {pager === "loading" ? c.loading : c.olderEntries}
+            <SteadyLabel hold={[c.loading, c.olderEntries]}>{pager === "loading" ? c.loading : c.olderEntries}</SteadyLabel>
           </button>
           {pager === "failed" ? <p role="alert" className="m-0 mt-[6px] text-[13px] text-[color:var(--fg-body)]">{c.loadFailed}</p> : null}
         </div>

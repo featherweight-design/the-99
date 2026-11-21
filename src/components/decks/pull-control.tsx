@@ -35,6 +35,7 @@ import { MutationError } from "./mutation-error";
 import { Chevron } from "../ui/chevron";
 import { useMomentHold } from "../../lib/moments/hold";
 import { useZone } from "../zone-context";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = deckVersioningCopy.review;
 const sourceCopy = copy.source;
@@ -291,7 +292,7 @@ function SinglePull({
             });
           }}
         >
-          {pending ? copy.pulling : copy.pull}
+          <SteadyLabel hold={[copy.pulling, copy.pull]}>{pending ? copy.pulling : copy.pull}</SteadyLabel>
         </button>
       </span>
       {/* The shipped refusal, not a second one written here: a pull is refused by
@@ -805,7 +806,7 @@ function SourcePickerBody({
           onClick={onConfirm}
           className={`h-[36px] flex-1 rounded-[7px] font-sans text-[12.5px] font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)] disabled:cursor-default disabled:opacity-50`}
         >
-          {pending ? copy.pulling : sourceCopy.confirm(chosenName)}
+          <SteadyLabel hold={[copy.pulling, sourceCopy.confirm(chosenName)]}>{pending ? copy.pulling : sourceCopy.confirm(chosenName)}</SteadyLabel>
         </button>
       </div>
       {error && <MutationError message={error} />}

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { PersonText, type PersonParts } from "../../lib/person-name";
+import { SteadyLabel } from "./steady-label";
 
 /**
  * The delete confirm pane: a heading naming the thing, the sentence saying what goes and what does
@@ -90,7 +91,7 @@ export function DeleteConfirm({
           onClick={onConfirm}
           className={`${size} flex-1 cursor-pointer rounded-[6px] border-none bg-[color:var(--danger)] font-sans font-semibold text-[color:var(--bg)]`}
         >
-          {pending && pendingLabel ? pendingLabel : confirmLabel}
+          <SteadyLabel hold={[pendingLabel, confirmLabel]}>{pending && pendingLabel ? pendingLabel : confirmLabel}</SteadyLabel>
         </button>
       </div>
       </div>

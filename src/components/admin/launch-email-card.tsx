@@ -5,6 +5,7 @@ import { useState } from "react";
 import { launchEmailDryRun, sendLaunchEmailBatch, type LaunchEmailActionResult } from "../../app/admin/invites/launch-email-actions";
 import { launchEmailAdminCopy as copy } from "../../lib/copy/admin";
 import { LAUNCH_BATCH_MAX } from "../../lib/flyer/launch-rule";
+import { SteadyLabel } from "../ui/steady-label";
 
 // The launch email's card on /admin/invites (launch email R2c G3). Eng-drawn admin tooling (orchestrator ruling
 // 2026-11-20), styled as the launch-list card above it: a dry run first, then Send next N behind a confirm that names the
@@ -62,7 +63,7 @@ export function LaunchEmailCard() {
         </span>
         <span className="-ml-[6px] flex justify-start md:m-0 md:justify-end">
           <button type="button" data-testid="launch-email-dry-run" disabled={pending} onClick={() => run(launchEmailDryRun)} className={TEXT_BUTTON}>
-            {pending && !confirming ? copy.checking : copy.check}
+            <SteadyLabel hold={[copy.checking, copy.check]}>{pending && !confirming ? copy.checking : copy.check}</SteadyLabel>
           </button>
         </span>
       </div>
@@ -93,7 +94,7 @@ export function LaunchEmailCard() {
         <div role="alertdialog" aria-label={copy.confirm(count)} className="flex flex-wrap items-center gap-[10px] px-[14px] pb-[12px] md:px-[16px]">
           <span className="text-[12.5px] text-[color:var(--fg)]">{copy.confirm(count)}</span>
           <button type="button" data-testid="launch-email-confirm" disabled={pending} onClick={() => run(() => sendLaunchEmailBatch(count))} className={TEXT_BUTTON}>
-            {pending ? copy.sending : copy.confirmYes(count)}
+            <SteadyLabel hold={[copy.sending, copy.confirmYes(count)]}>{pending ? copy.sending : copy.confirmYes(count)}</SteadyLabel>
           </button>
           <button type="button" disabled={pending} onClick={() => setConfirming(false)} className={TEXT_BUTTON}>
             {copy.cancel}

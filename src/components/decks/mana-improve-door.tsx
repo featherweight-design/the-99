@@ -37,6 +37,7 @@ import { AnsweredRow, Arrow } from "./suggestion-card";
 import { MutationError } from "./mutation-error";
 import { FadingImg } from "../ui/hydrated-art";
 import { LinkOutLabel } from "../ui/link-out-icon";
+import { SteadyLabel } from "../ui/steady-label";
 
 export type HelpRead = (deckId: string, color: string) => Promise<ManaHelp | null>;
 export type TradeActions = {
@@ -592,7 +593,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
             disabled={busy !== null}
             className="h-[44px] w-full rounded-[8px] text-[13px] font-semibold md:h-auto md:w-auto md:self-start md:rounded-[7px] md:px-[13px] md:py-[7px] md:text-[12.5px] text-[color:var(--accent-text)] [border:1px_solid_var(--accent)] hover:bg-[color:color-mix(in_oklab,var(--accent)_10%,transparent)] transition-colors"
           >
-            {busy === staple.oracleId ? deckTuningCopy.card.applying : copy.help.tradeApply(trade.out.name)}
+            <SteadyLabel hold={[deckTuningCopy.card.applying, copy.help.tradeApply(trade.out.name)]}>{busy === staple.oracleId ? deckTuningCopy.card.applying : copy.help.tradeApply(trade.out.name)}</SteadyLabel>
           </button>
           {refused ? <MutationError message={refused} /> : null}
         </div>

@@ -6,6 +6,7 @@ import { PrimaryButton } from "@/components/ui/button";
 import { TextField } from "@/components/ui/text-field";
 import { useDeckRename } from "./use-deck-rename";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
+import { SteadyLabel } from "../ui/steady-label";
 
 interface RenameFormProps {
   deckId: string;
@@ -63,7 +64,7 @@ export function RenameForm({ deckId, currentName, onDone }: RenameFormProps) {
           disabled={!canSave}
           className="flex-1 rounded-[6px] py-[7px] text-[13px]"
         >
-          {isPending ? renameCopy.saving : error ? renameCopy.retry : renameCopy.save}
+          <SteadyLabel hold={[renameCopy.saving, renameCopy.retry, renameCopy.save]}>{isPending ? renameCopy.saving : error ? renameCopy.retry : renameCopy.save}</SteadyLabel>
         </PrimaryButton>
         <button
           type="button"
