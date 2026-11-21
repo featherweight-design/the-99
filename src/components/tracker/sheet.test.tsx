@@ -40,7 +40,21 @@ describe("tracker sheet", () => {
   it("shows the next cast's tax on the Tax tab", () => {
     const html = render("tax", game);
     expect(html).toContain("Next cast costs");
-    expect(html).toMatch(/text-\[16px\][^>]*>\+(<!-- -->)?4</);
+    expect(html).toMatch(/text-\[44px\][^>]*>\+(<!-- -->)?4</);
+  });
+  it("heads the sheet with the player's name and deck, then life", () => {
+    const html = render("damage", game);
+    expect(html).toMatch(/font-display[^>]*>You<\/b>/);
+    expect(html).toContain("Sai Artifacts");
+  });
+  it("draws one damage card per opponent with a Cinzel count and the commander name", () => {
+    const html = render("damage", game);
+    expect(html).toMatch(/font-display[^>]*tabular-nums[^>]*>10</);
+    expect(html).toContain("Bruse");
+  });
+  it("draws Concede and End game in the danger colour", () => {
+    const html = render("table", game);
+    expect(html.match(/border-\[color:var\(--danger\)\]/g)?.length).toBe(2);
   });
   it("renders the six mana colours", () => {
     const html = render("mana", game);
