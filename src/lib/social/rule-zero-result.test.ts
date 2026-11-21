@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { placementsFor, resultPlacesQuery, rosterHash } from "./rule-zero-result";
+import { mayReplace, maySave, placementsFor, resultPlacesQuery, startDeckOf } from "./rule-zero-result";
 import { resultFor } from "./rule-zero-log";
 
 const TABLE = "7a0e0000-0000-4000-8000-000000000001";
@@ -9,11 +9,37 @@ const SEATS = [
   { seat: 3, userId: "user_c" },
 ];
 
-describe("rosterHash", () => {
-  it("ignores row order and changes when anyone moves", () => {
-    expect(rosterHash(TABLE, [...SEATS].reverse())).toBe(rosterHash(TABLE, SEATS));
-    const swapped = [{ seat: 1, userId: "user_b" }, { seat: 2, userId: "user_a" }, SEATS[2]];
-    expect(rosterHash(TABLE, swapped)).not.toBe(rosterHash(TABLE, SEATS));
+describe("maySave (ruling (b))", () => {
+  const start = SEATS.map((s) => ({ ...s, deckId: null }));
+  it("lets a Start player save after a reseat moved them", () => {
+    expect(maySave(start, [{ userId: "user_c" }, { userId: "user_a" }], "user_a")).toBe(true);
+  });
+  it("refuses a player not in the Start roster, even one seated now", () => {
+    expect(maySave(start, [...SEATS, { userId: "user_new" }], "user_new")).toBe(false);
+  });
+  it("refuses a Start player who has left the table", () => {
+    expect(maySave(start, SEATS.filter((s) => s.userId !== "user_a"), "user_a")).toBe(false);
+  });
+});
+
+describe("mayReplace", () => {
+  const t = new Date("2026-11-20T20:00:00Z");
+  it("lets the same or a newer game's roster replace the stored result, never an older one", () => {
+    expect(mayReplace(null, t)).toBe(true);
+    expect(mayReplace(t, t)).toBe(true);
+    expect(mayReplace(t, new Date(t.getTime() + 1))).toBe(true);
+    expect(mayReplace(new Date(t.getTime() + 1), t)).toBe(false);
+  });
+});
+
+describe("startDeckOf", () => {
+  const D = "d0000000-0000-4000-8000-000000000001";
+  const start = [{ seat: 1, userId: "user_a", deckId: D }, { seat: 2, userId: "user_b", deckId: null }];
+  it("keeps a Start deck only while it exists and is still that seat player's own", () => {
+    expect(startDeckOf(start, [{ id: D, userId: "user_a" }], { seat: 1, userId: "user_a" })).toBe(D);
+    expect(startDeckOf(start, [], { seat: 1, userId: "user_a" })).toBeNull();
+    expect(startDeckOf(start, [{ id: D, userId: "user_b" }], { seat: 1, userId: "user_a" })).toBeNull();
+    expect(startDeckOf(start, [{ id: D, userId: "user_a" }], { seat: 2, userId: "user_b" })).toBeNull();
   });
 });
 
@@ -46,11 +72,11 @@ describe("placementsFor", () => {
 describe("resultFor", () => {
   const rows = SEATS;
   const placed = [{ userId: "user_a", place: 2 }, { userId: "user_b", place: 1 }, { userId: "user_c", place: 3 }];
-  it("names the winner's current seat for a loss", () => {
+  it("names the seat the winner is drawn at for a loss", () => {
     expect(resultFor(rows, placed, "user_a")).toEqual({ viewer: "loss", winnerSeat: 2 });
     expect(resultFor([{ seat: 5, userId: "user_b" }, ...rows.filter((r) => r.userId !== "user_b")], placed, "user_a")).toEqual({ viewer: "loss", winnerSeat: 5 });
   });
-  it("gives no winner seat once the winner left the table", () => {
+  it("gives no winner seat once the winner is not drawn (left the pod)", () => {
     expect(resultFor(rows.filter((r) => r.userId !== "user_b"), placed, "user_a")).toEqual({ viewer: "loss", winnerSeat: null });
   });
   it("is a win for the sole first place and a draw for a tie in it", () => {

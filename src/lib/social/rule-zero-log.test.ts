@@ -3,7 +3,7 @@
 // a save resolves a seat number only against the seating the prefill was drawn from.
 import { describe, expect, it } from "vitest";
 import { named } from "../person-name/mint";
-import { prefillFrom, resolveSeatsFrom, seatingHash, tablePrefill, tableSeatsQuery, type TableSeatRow } from "./rule-zero-log";
+import { logsFromResult, prefillFrom, resolveSeatsFrom, resultSeatsQuery, seatingHash, tablePrefill, tableSeatsQuery, type TableSeatRow } from "./rule-zero-log";
 
 const VIEWER = "user_viewer";
 const TABLE = "7a0e0000-0000-4000-8000-000000000001";
@@ -55,6 +55,34 @@ describe("tableSeatsQuery", () => {
   });
 });
 
+describe("resultSeatsQuery (ruling (b))", () => {
+  const q = resultSeatsQuery(VIEWER, TABLE).toSQL();
+
+  it("reads the stored result's seats under the live grant, only while the viewer played and has not logged it", () => {
+    expect(q.sql).toContain('from "rule_zero_result_seats" inner join "rule_zero_tables"');
+    expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
+    expect(q.sql).toContain(`inner join "rule_zero_result_seats" "viewer_played" on ("viewer_played"."table_id" = "rule_zero_tables"."id" and "viewer_played"."user_id" = $2)`);
+    expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_result_seats"."user_id")`);
+    expect(q.sql).toContain('"rule_zero_tables"."expires_at" > now()');
+    expect(q.sql).toContain('>= "rule_zero_result_seats".saved_at');
+  });
+
+  it("draws the deck each seat held at Start, only while it is that player's own", () => {
+    expect(q.sql).toContain(`left join "decks" on ("decks"."id" = "rule_zero_result_seats"."deck_id" and "decks"."user_id" = "rule_zero_result_seats"."user_id")`);
+    expect(q.sql).not.toContain('"rule_zero_seats"."deck_id"');
+  });
+});
+
+describe("logsFromResult", () => {
+  const placed = [{ userId: VIEWER }, { userId: "user_colin" }];
+  it("draws the result's seats only while the viewer is in the result and in its granted rows", () => {
+    expect(logsFromResult(VIEWER, placed, [{ userId: VIEWER }, { userId: "user_colin" }])).toBe(true);
+    expect(logsFromResult(VIEWER, [{ userId: "user_colin" }], [{ userId: VIEWER }])).toBe(false);
+    expect(logsFromResult(VIEWER, placed, [{ userId: "user_colin" }])).toBe(false);
+    expect(logsFromResult(VIEWER, [], [])).toBe(false);
+  });
+});
+
 describe("seatingHash", () => {
   it("is the same for the same seating, whatever order the rows come in", () => {
     expect(seatingHash(TABLE, ROWS)).toBe(seatingHash(TABLE, [...ROWS].reverse()));
@@ -98,6 +126,11 @@ describe("prefillFrom", () => {
         if (id !== null) expect(wire, id).not.toContain(id);
       }
     }
+  });
+
+  it("counts every player in the result, one no longer drawn (left the pod) too", () => {
+    const placed = [...ROWS.map((r, i) => ({ userId: r.userId, place: i + 1 })), { userId: "user_gone", place: 5 }];
+    expect(prefillFrom(ROWS, VIEWER, TABLE, MY_DECK, placed)!.podSize).toBe(5);
   });
 
   it("is null when the viewer's seat does not hold the page's deck, or the viewer is not seated", () => {

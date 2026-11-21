@@ -1786,6 +1786,13 @@
       "when": 1795221530570,
       "tag": "0256_melted_wind_dancer",
       "breakpoints": true
+    },
+    {
+      "idx": 257,
+      "version": "7",
+      "when": 1795224771884,
+      "tag": "0257_quick_kid_colt",
+      "breakpoints": true
     }
   ]
 }

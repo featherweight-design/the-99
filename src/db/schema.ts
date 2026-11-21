@@ -4100,9 +4100,9 @@ export const ruleZeroSeats = pgTable("rule_zero_seats", {
 
 /**
  * The result of a table's latest tracked game (life tracker PR1; handoff `design_handoff_the99_life_tracker`): one row
- * per seat of the game's SNAPSHOT, so a seated player's Log this game finds the winner filled in. Keyed by (table,
- * user) with the seat the player held when the game was saved; a later reseat renumbers `rule_zero_seats`, and the
- * prefill maps a result by the account, never by the number. `place` is 1 for a winner; two seats at 1 is a draw.
+ * per seat of the game's START roster (sealed at Start, `rule-zero-roster.ts`), so a seated player's Log this game
+ * finds the game filled in. Keyed by (table, user) with the seat and deck the player held at Start; a later reseat
+ * renumbers `rule_zero_seats` and leaves these alone, and the log's prefill draws these seats, not the table's new ones. `place` is 1 for a winner; two seats at 1 is a draw.
  * A new game on the same table replaces every row (`saveTableResult`). The table row's delete cascades these away,
  * and the account purge clears the player's own.
  */
@@ -4111,6 +4111,10 @@ export const ruleZeroResultSeats = pgTable("rule_zero_result_seats", {
   userId: text("user_id").notNull(),
   seat: smallint("seat").notNull(),
   place: smallint("place").notNull(),
+  /** The deck the seat held at the game's Start (the sealed roster), so the log fills from the seats played, not the table's new ones. */
+  deckId: uuid("deck_id").references(() => decks.id, { onDelete: "set null" }),
+  /** When the tracker page issued the roster this result was saved from: an older game's roster cannot replace it. Null on rows saved before the roster. */
+  startedAt: timestamp("started_at", { withTimezone: true }),
   savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   primaryKey({ columns: [t.tableId, t.userId] }),
@@ -4118,6 +4122,7 @@ export const ruleZeroResultSeats = pgTable("rule_zero_result_seats", {
   check("rule_zero_result_seats_seat_check", sql`${t.seat} between 1 and 8`),
   check("rule_zero_result_seats_place_check", sql`${t.place} between 1 and 8`),
   index("rule_zero_result_seats_user_idx").on(t.userId),
+  index("rule_zero_result_seats_deck_idx").on(t.deckId),
 ]);
 
 /** A seated player's own last draw of a table: a seat changed after it carries a dot. Home never reads it. */

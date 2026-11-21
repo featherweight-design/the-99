@@ -9,13 +9,17 @@
  * **A seat number is not an identity**: `reseatTable` renumbers every seat. The prefill therefore carries the table's
  * `seating`, a hash of who sat where, and the save refuses when the seating it reads no longer hashes to it, so a
  * reseat between the press and the save cannot repoint seat 3 at somebody else.
+ *
+ * **A tracked game logs the seats it was played at** (ruling (b), 2026-11-20): while the viewer is in the table's stored
+ * result and has not logged it, the prefill and the save both read the result's seats (`resultSeatsQuery`: the Start
+ * roster's seats, accounts and decks), not the table's live ones, so a reseat mid-game does not move who the log names.
  */
 import { createHash } from "node:crypto";
 import { and, asc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { tableLoggable } from "./rule-zero-open";
-import { cards, decks, friendLinks, podMembers, pods, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
+import { cards, decks, friendLinks, podMembers, pods, ruleZeroResultSeats, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 // `SEAT_LABEL_MAX` is `OPPONENT_LABEL_MAX`: that module is read only by the game log's own (game-opponents.test.ts).
 import type { ThirdPartyName } from "../person-name/brand";
 import { named } from "../person-name/mint";
@@ -23,7 +27,7 @@ import { SEAT_LABEL_MAX } from "../decks/game-seats";
 import { ruledSeatOwnersOf, seatDeckVisible } from "./rule-zero";
 import { cleanName, isUuid } from "./rules";
 import { ownedDeckArt } from "./rule-zero-art";
-import { resultPlacesQuery } from "./rule-zero-result";
+import { notLoggedSince, resultPlacesQuery } from "./rule-zero-result";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -56,6 +60,7 @@ export type TablePrefillResult = { viewer: "win" | "loss" | "draw"; winnerSeat: 
 
 const viewerSeat = alias(ruleZeroSeats, "viewer_seat");
 const viewerIn = alias(podMembers, "viewer_in");
+const viewerPlayed = alias(ruleZeroResultSeats, "viewer_played");
 const viewerFriend = alias(friendLinks, "viewer_friend");
 const commanderOf = alias(cards, "seat_commander");
 
@@ -101,6 +106,62 @@ export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeo
 export type TableSeatRow = Awaited<ReturnType<typeof tableSeatsQuery>>[number];
 
 /**
+ * The seats of the table's stored result, under the same grant as `tableSeatsQuery` (the viewer seated at the table
+ * now, the table inside its night, the viewer and each player still in its pod), and only while the viewer played in
+ * it and has not logged it since it was saved (`notLoggedSince`). Each seat draws the deck it held at Start, under the
+ * same visibility rule. Same row shape as `tableSeatsQuery`, so the prefill and the save treat both alike. Server-only.
+ */
+export function resultSeatsQuery(viewerId: string, tableId: string, q: Pick<typeof db, "select"> = db, ruledOwners: readonly string[] = []) {
+  return q
+    .select({
+      seat: ruleZeroResultSeats.seat,
+      userId: ruleZeroResultSeats.userId,
+      displayName: socialProfiles.displayName,
+      publicId: socialProfiles.publicId,
+      friend: viewerFriend.friendUserId,
+      deckId: decks.id,
+      deckName: decks.name,
+      commanderOracleId: decks.commanderOracleId,
+      partnerOracleId: decks.partnerOracleId,
+      commanderName: commanderOf.name,
+      commanderArt: commanderOf.artCropUri,
+      podName: pods.name,
+    })
+    .from(ruleZeroResultSeats)
+    .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroResultSeats.tableId))
+    .innerJoin(viewerSeat, and(eq(viewerSeat.tableId, ruleZeroTables.id), eq(viewerSeat.userId, viewerId)))
+    .innerJoin(viewerPlayed, and(eq(viewerPlayed.tableId, ruleZeroTables.id), eq(viewerPlayed.userId, viewerId)))
+    .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
+    .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroResultSeats.userId)))
+    .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroResultSeats.userId))
+    .leftJoin(viewerFriend, and(eq(viewerFriend.userId, viewerId), eq(viewerFriend.friendUserId, ruleZeroResultSeats.userId)))
+    .leftJoin(userPrefs, eq(userPrefs.userId, ruleZeroResultSeats.userId))
+    .leftJoin(decks, and(eq(decks.id, ruleZeroResultSeats.deckId), eq(decks.userId, ruleZeroResultSeats.userId), seatDeckVisible(viewerId, ruledOwners)))
+    .leftJoin(commanderOf, eq(commanderOf.oracleId, decks.commanderOracleId))
+    .where(and(eq(ruleZeroResultSeats.tableId, tableId), tableLoggable, notLoggedSince(tableId, viewerId)))
+    .orderBy(asc(ruleZeroResultSeats.seat));
+}
+
+/**
+ * The seats a log from this table names, and the result it carries, in the caller's transaction: the stored result's
+ * seats while the viewer played in it and has not logged it, else the live seats with no result. The prefill and the
+ * save both read through here, so the seating the prefill hashes is the seating the save checks.
+ */
+export async function logSeatsIn(viewerId: string, tableId: string, q: Pick<typeof db, "select">): Promise<{ rows: TableSeatRow[]; placed: { userId: string; place: number }[] }> {
+  const ruled = await ruledSeatOwnersOf(viewerId, tableId, q);
+  const placed = await resultPlacesQuery(tableId, viewerId, q);
+  const played = placed.some((p) => p.userId === viewerId) ? await resultSeatsQuery(viewerId, tableId, q, ruled) : [];
+  if (logsFromResult(viewerId, placed, played)) return { rows: played, placed };
+  return { rows: await tableSeatsQuery(viewerId, tableId, q, ruled), placed: [] };
+}
+
+/** Pure: whether the log draws the stored result's seats: the viewer is in the result and drawn in its granted rows. */
+export function logsFromResult(viewerId: string, placed: readonly { userId: string }[], played: readonly { userId: string }[]): boolean {
+  return placed.some((p) => p.userId === viewerId) && played.some((r) => r.userId === viewerId);
+}
+
+/**
  * Who sat where, with what: the table, and each seat as everything a save stores from it (the account, the deck, the
  * deck's commander and partner, and the name a non-friend's label takes), in seat order. Hashed, so no id leaves the
  * server. A save refuses when any of it moved since the prefill (a reseat, another deck, a commander changed in place,
@@ -119,8 +180,8 @@ export function seatingHash(
 
 /**
  * Pure: the tracked result as the viewer logs it. First place alone wins; a tie for first is a draw for a player in
- * it. Beaten by one winner, the winner's seat is where that player sits NOW (a reseat renumbers), else none. Null when
- * the viewer is not in the stored result.
+ * it. Beaten by one winner, the winner's seat is the one they played at (the rows are the result's seats), else none.
+ * Null when the viewer is not in the stored result.
  */
 export function resultFor(
   rows: readonly Pick<TableSeatRow, "seat" | "userId">[],
@@ -148,7 +209,8 @@ export function prefillFrom(
   return {
     table: { id: tableId, seating: seatingHash(tableId, rows) },
     podName: named(mine.podName),
-    podSize: rows.length,
+    // The game's size: a result counts every player who played, a drawn seat or not (one who left the pod is not drawn).
+    podSize: placed.length > 0 ? placed.length : rows.length,
     result: resultFor(rows, placed, viewerId),
     seats: rows.filter((r) => r.userId !== viewerId).map((r) => ({
       seat: r.seat,
@@ -168,13 +230,7 @@ export function prefillFrom(
 export async function tablePrefill(viewerId: string, tableId: unknown, deckId: string): Promise<TablePrefill | null> {
   if (!isUuid(tableId) || !isUuid(deckId)) return null;
   // One snapshot for the owners and the seats, so a reseat between the two reads cannot draw a deck its owner's rules hide.
-  const { rows, placed } = await db.transaction(
-    async (tx) => ({
-      rows: await tableSeatsQuery(viewerId, tableId, tx, await ruledSeatOwnersOf(viewerId, tableId, tx)),
-      placed: await resultPlacesQuery(tableId, viewerId, tx),
-    }),
-    { isolationLevel: "repeatable read" },
-  );
+  const { rows, placed } = await db.transaction((tx) => logSeatsIn(viewerId, tableId, tx), { isolationLevel: "repeatable read" });
   const prefill = prefillFrom(rows, viewerId, tableId, deckId, placed);
   if (!prefill) return null;
   // Each seat's art from the copy its deck's owner holds, as the table draws it (`ownedDeckArt`), else the oracle art.
@@ -240,5 +296,5 @@ export async function resolveTableSeatsIn(
   if (!isUuid(table.id)) return null;
   // The owners and the seats are two reads in the game's transaction: a reseat between them changes the seating, so
   // `resolveSeatsFrom` refuses the save against the prefill's hash rather than logging a deck the owner hides.
-  return resolveSeatsFrom(await tableSeatsQuery(viewerId, table.id, tx, await ruledSeatOwnersOf(viewerId, table.id, tx)), viewerId, table, seats);
+  return resolveSeatsFrom((await logSeatsIn(viewerId, table.id, tx)).rows, viewerId, table, seats);
 }
