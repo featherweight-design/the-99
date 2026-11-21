@@ -94,7 +94,8 @@ export function Sheet({
   const sideways = rot === 90 || rot === -90;
   const closeRef = useRef<HTMLButtonElement>(null);
   const [ending, setEnding] = useState(false);
-  useEffect(() => closeRef.current?.focus(), []);
+  // preventScroll: focusing the × must not scroll the tracker under it to bring a turned seat's corner into view.
+  useEffect(() => closeRef.current?.focus({ preventScroll: true }), []);
 
   const nameOf = (n: number): string | ThirdPartyName => {
     const s = seats.find((x) => x.seat === n)!;
@@ -120,14 +121,15 @@ export function Sheet({
 
   return (
     <div className="absolute inset-0 z-30" style={{ containerType: "size" }}>
-      <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: sideways ? "100cqh" : "100%", height: sideways ? "100cqw" : "100%" }}>
+      {/* The seat's turn sits on this wrapper, not on the dialog: the dialog's sheet-in keyframe animates `transform`, and
+          would replace a rotation drawn there until it ends, so a sheet opened from an upside-down seat rose upright. */}
+      <div className="absolute left-1/2 top-1/2" style={{ width: sideways ? "100cqh" : "100%", height: sideways ? "100cqw" : "100%", transform: `translate(-50%, -50%) rotate(${rot}deg)` }}>
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="sheet-title"
           onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
           className="flex h-full w-full flex-col gap-2 bg-[color:var(--surface-raised)] px-4 pb-3 pt-2 text-[color:var(--fg)] motion-safe:animate-[sheet-in_.26s_cubic-bezier(.2,.8,.2,1)]"
-          style={rot === 0 ? undefined : { transform: `rotate(${rot}deg)` }}
           data-testid="tracker-sheet"
         >
           <div className="flex h-[44px] items-center gap-3">

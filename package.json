@@ -86,6 +86,7 @@
     "probe:tracker-full-screen": "node scripts/probe-tracker-full-screen.mjs",
     "probe:tracker-seat-map": "node scripts/probe-tracker-seat-map.mjs",
     "probe:tracker-first-roll": "node scripts/probe-tracker-first-roll.mjs",
+    "probe:tracker-sheet-seats": "node scripts/probe-tracker-sheet-seats.mjs",
     "probe:admin-pii": "node scripts/probe-admin-pii.mjs",
     "probe:admin-payments": "node scripts/probe-admin-payments.mjs",
     "seed:admin-pii-fixture": "node scripts/seed-admin-pii-fixture.mjs",

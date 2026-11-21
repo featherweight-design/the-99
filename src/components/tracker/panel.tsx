@@ -233,9 +233,12 @@ export function Panel({
         containerType: "size",
       }}
     >
+      {/* The seat's turn sits on this box, which is laid out unturned (a sideways seat's box is the cell's height wide).
+          Turned only inside, the box itself spilled across the next seat, and a later seat's box swallowed the press on
+          an earlier seat's End turn. */}
       <div
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
-        style={{ width: sideways ? "100cqh" : "100%", height: sideways ? "100cqw" : "100%" }}
+        className="absolute left-1/2 top-1/2"
+        style={{ width: sideways ? "100cqh" : "100%", height: sideways ? "100cqw" : "100%", transform: `translate(-50%, -50%) rotate(${cell.rot}deg)` }}
       >
         <div
           role="group"
@@ -252,7 +255,6 @@ export function Panel({
               + (seat.art ? "bg-[color:var(--surface)] " : "bg-[radial-gradient(260px_180px_at_50%_45%,var(--elevated),var(--surface))] ")
               + (out ? "[filter:grayscale(1)] opacity-80" : ""),
           )}
-          style={cell.rot === 0 ? undefined : { transform: `rotate(${cell.rot}deg)` }}
         >
           {seat.art ? (
             <>
