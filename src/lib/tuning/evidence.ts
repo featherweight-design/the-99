@@ -56,6 +56,8 @@ export type EvidencePack = {
   /** The year note dates are judged against (`noteDate`), taken ONCE, when the pack is built, so
    *  the prompt and the validator format a date alike even if the model call crosses a New Year. */
   year: number;
+  /** The reader's zone the note dates are drawn in (`noteDate`), or null for UTC: stored with the year so prompt and validator agree. */
+  zone?: string | null;
   /**
    * How the deck plays, from its own stored overview (tuning v2, Hugh's ruling 2026-09-24): its
    * strategy steps with their card marks unwrapped, and its Key cards, which are never cut. Only
@@ -112,6 +114,8 @@ export function buildEvidencePack(input: {
    *  stored in the analysis, so toggling a lock never marks a reading stale. */
   locked?: ReadonlySet<string>;
   now?: Date;
+  /** The reader's zone (`resolveZone`), read in the request: the run finishes after it, where no cookie can be read. */
+  zone?: string | null;
   /** The deck's shown overview: its strategy steps and its Key cards' names, as written. */
   overview?: { strategy: string[]; keyCards: string[] } | null;
   /** The universal staples, resolved to names. */
@@ -196,7 +200,8 @@ export function buildEvidencePack(input: {
     play,
     intent,
     notes: input.notes ?? null,
-    year: currentYear(input.now),
+    year: currentYear(input.now, input.zone ?? null),
+    zone: input.zone ?? null,
     strategy: input.overview ? strategyOf(input.overview, profile.cards) : null,
     universal: universalOf(input.universal ?? []),
     limits: input.limits ?? { capCents: null, sets: [], ownedOnly: false },

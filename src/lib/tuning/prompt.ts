@@ -427,7 +427,7 @@ function renderPack(pack: EvidencePack, listText = false): string {
       lines.push("Notes:");
       const year = pack.year;
       for (const g of noted) {
-        lines.push(playerText(`Note from ${noteDate(g.playedAt, year)}`, g.note!, deckTuningCopy.note.maxLength));
+        lines.push(playerText(`Note from ${noteDate(g.playedAt, year, pack.zone)}`, g.note!, deckTuningCopy.note.maxLength));
       }
     }
   }

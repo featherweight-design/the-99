@@ -234,9 +234,9 @@ export function sizeLists(kept: readonly ValidatedSuggestion[], max: number): Va
 
 /** Everything the player wrote that a run's text may quote, as `validateSuggestions` reads it (see its comment there).
  *  Also the why's own check (`v2/why.ts`). */
-export function quotableOf(pack: Pick<EvidencePack, "play" | "intent" | "notes" | "year">): Quotable[] {
+export function quotableOf(pack: Pick<EvidencePack, "play" | "intent" | "notes" | "year" | "zone">): Quotable[] {
   return [
-    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, pack.year) }])),
+    ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, pack.year, pack.zone) }])),
     ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
     ...(pack.notes === null ? [] : [{ text: playerTextBody(pack.notes), date: null }]),
   ];
@@ -493,7 +493,7 @@ export function validateSuggestions(args: {
         // other citation, where a quotation would be doing a different citation's job.
         const own = [s.rationale, s.rationaleShort, c.value];
         return pack.play.games.some((g) => {
-          if (g.note === null || !mentionsDate(c.value, noteDate(g.playedAt, year))) return false;
+          if (g.note === null || !mentionsDate(c.value, noteDate(g.playedAt, year, pack.zone))) return false;
           const note = playerTextBody(g.note);
           return own.some((t) => t.includes(`"${note}"`) || t.includes(`\u201c${note}\u201d`));
         });
