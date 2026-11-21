@@ -104,6 +104,13 @@ export const buildJudgedRequest = (customId: string, model: string, cards: CardF
 });
 
 /**
+ * A `--sample --spend` run that collected answers is finished: the next sample is drawn on purpose, by a
+ * fresh invocation. Planning one here billed a stray batch on 2026-11-21 (`--fresh` skips the cards just stored).
+ */
+export const endsAfterCollect = (sample: boolean, collected: { stored: number; refused: number }): boolean =>
+  sample && collected.stored + collected.refused > 0;
+
+/**
  * Cards whose request already failed (errored, canceled, expired or refused) are dropped from the next plan, so a
  * failure is reported once and never re-asked by every later `--spend` run: that loop once resubmitted 36 batches.
  * `--retry-failed` is the deliberate way to ask them again. Pure, so the rule is pinned without a database.

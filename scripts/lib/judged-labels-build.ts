@@ -25,7 +25,7 @@ import { db } from "../../src/db";
 import { cardLabelBatches, judgedLabels } from "../../src/db/schema";
 import {
   buildJudgedRequest, JUDGED_MAX_TOKENS, JUDGED_PREFILTER, JUDGED_PROMPT_VERSION, JUDGED_SYSTEM, JUDGED_THEMES,
-  judgedInputHash, judgedKey, parseJudgedReply, withoutFailed, type JudgedTheme,
+  judgedInputHash, judgedKey, endsAfterCollect, parseJudgedReply, withoutFailed, type JudgedTheme,
 } from "../../src/lib/labels/judged";
 import {
   familySpend, planChunks, withinCap, worstCaseUsd, type Rates,
@@ -236,6 +236,7 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
       return EXIT_STOP;
     }
     if (collected.pending > 0) return EXIT_MORE_WORK;
+    if (endsAfterCollect(opts.sample, collected)) { console.log("sample collected; not planning another. Run again to draw a new one."); return 0; }
   }
 
   const { cards, perTheme } = await pool(opts.sample, opts.fresh ?? false);

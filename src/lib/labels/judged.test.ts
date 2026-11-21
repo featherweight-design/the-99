@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   JUDGED_PREFILTER, JUDGED_SYSTEM, JUDGED_THEMES, judgedInputHash, judgedSystemHash, parseJudgedReply, renderJudgedBody,
-  buildJudgedRequest, withoutFailed,
+  buildJudgedRequest, endsAfterCollect, withoutFailed,
 } from "./judged";
 
 const card = { oracleId: "a", name: "Howling Mine", mana_cost: "{2}", type_line: "Artifact", oracle_text: "At the beginning of each player's draw step, if Howling Mine is untapped, that player draws an additional card." };
@@ -72,5 +72,16 @@ describe("buildJudgedRequest for Sonnet 5.5", () => {
     const old = buildJudgedRequest("j-0", "claude-sonnet-4-5", [card]).params;
     expect(old.temperature).toBe(0);
     expect(old).not.toHaveProperty("thinking");
+  });
+});
+
+describe("endsAfterCollect", () => {
+  it("stops a sample run that collected answers, so it never submits a second sample", () => {
+    expect(endsAfterCollect(true, { stored: 200, refused: 0 })).toBe(true);
+    expect(endsAfterCollect(true, { stored: 0, refused: 3 })).toBe(true);
+  });
+  it("lets a sample run that collected nothing plan, and never stops a full run", () => {
+    expect(endsAfterCollect(true, { stored: 0, refused: 0 })).toBe(false);
+    expect(endsAfterCollect(false, { stored: 500, refused: 0 })).toBe(false);
   });
 });
