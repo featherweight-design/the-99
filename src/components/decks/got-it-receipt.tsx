@@ -493,6 +493,8 @@ export function GotItReceipt({
         onWrite={onWrite}
         onPending={onPending}
         onUnknown={onUnknown}
+        // Drawn from the purchase-time card while an earlier chooser's write is out: the row must write every press.
+        writesOut={changing}
         onClose={closeChooser}
       />
     ) : null}

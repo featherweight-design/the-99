@@ -20,7 +20,7 @@ import { SheetGrabber } from "../ui/sheet-grabber";
 const c = gotItCopy.receipt;
 
 export function CopyChooserDialog({
-  card, cardName, thisDeckId, sub, title, below, externalPick, onBeforePick, onCard, onWrite, onPending, onUnknown, onClose,
+  card, cardName, thisDeckId, sub, title, below, externalPick, onBeforePick, writesOut, onCard, onWrite, onPending, onUnknown, onClose,
 }: {
   card: ContestedCard;
   cardName: string;
@@ -35,6 +35,8 @@ export function CopyChooserDialog({
   /** The row's one-choice-across-both-groups state (see `ContestedCardRow`). */
   externalPick?: boolean;
   onBeforePick?: () => void;
+  /** A write from an earlier chooser is still out (the row's `writesOut`). */
+  writesOut?: boolean;
   /** The card a write read back; null when it settled with none (the last copy went elsewhere). */
   onCard: (card: ContestedCard | null) => void;
   /** A write that landed: whether it left a pick on `deckId` (the row's `onWrite`). */
@@ -77,7 +79,7 @@ export function CopyChooserDialog({
         {/* The row is the body: it scrolls inside the cap, so the title and Done stay in view. The 6px pad and
             its negative margin keep a focus ring inside the scroller's clip. */}
         <div className="-m-[6px] min-h-0 flex-1 overflow-y-auto overscroll-contain p-[6px]">
-          <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} externalPick={externalPick} onBeforePick={onBeforePick} />
+          <ContestedCardRow card={named} thisDeckId={thisDeckId} addedCopy onCard={onCard} onWrite={onWrite} onPending={onPending} onUnknown={onUnknown} externalPick={externalPick} onBeforePick={onBeforePick} writesOut={writesOut} />
           {below}
         </div>
         <div className="mt-[16px] flex flex-none justify-end">

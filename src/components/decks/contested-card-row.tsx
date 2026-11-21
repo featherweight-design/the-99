@@ -163,6 +163,7 @@ export function ContestedCardRow({
   onUnknown,
   externalPick = false,
   onBeforePick,
+  writesOut = false,
 }: {
   card: ContestedCard;
   thisDeckId?: string;
@@ -219,6 +220,11 @@ export function ContestedCardRow({
   externalPick?: boolean;
   /** Fired on a tap while `externalPick` stands, before the write, so the caller can drop its own pick first. */
   onBeforePick?: () => void;
+  /**
+   * A write from an earlier row (a chooser closed and opened again) is still out, so `card` is not the server's
+   * reading: the row then writes every press, never deciding from it that a press changes nothing.
+   */
+  writesOut?: boolean;
 }) {
   const zone = useZone();
   // OPTIMISTIC ON SUCCESS, AUTHORITATIVE ON REFUSAL. A pick moves the words and the marks on the
@@ -307,8 +313,9 @@ export function ContestedCardRow({
     // anyway, it lit the accent on a deck that changed nothing (Hugh's Fabled Passage, 2026-11-21),
     // so it is said, not written. Stopgap until a card can take several picks.
     // Not while an Other decks pick stands: there the press replaces that pick, which is a real
-    // change. Not while a write is in flight: `claimants` is then a preview, not the server's.
-    if (!wasChosen && !externalPick && picked === null) {
+    // change. Not while a write is in flight, this row's or an earlier row's (`writesOut`): `claimants` is then a
+    // preview, or the purchase-time card, not the server's.
+    if (!wasChosen && !externalPick && !writesOut && picked === null) {
       const baseline = previewAllocation(card.claimants, card.owned, null);
       if (holdsItsCopy(claimants.find((c) => c.deckId === deckId)) && holdsItsCopy(baseline.find((c) => c.deckId === deckId))) {
         setRefusal("already-has-copy");

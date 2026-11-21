@@ -778,6 +778,14 @@ describe("ContestedCardRow — the chooser", () => {
     expect(assign).toHaveBeenCalledTimes(1);
   });
 
+  it("still writes a press on a holding deck while an earlier chooser's write is out, since its card is not the server's", () => {
+    // The receipt's Change, closed and opened again before the first write landed: this row draws the
+    // purchase-time card, and the press on the seniority holder moves the copy back.
+    render(<ContestedCardRow card={card()} writesOut />);
+    fireEvent.click(screen.getByRole("radio", { name: /HD Avatar Aang/ }));
+    expect(assign).toHaveBeenCalledTimes(1);
+  });
+
   // Announced FROM THE SERVER'S OWN ALLOCATION, once it has one. The trade is the news, and the
   // client cannot know which reservation the server evicted — it resolves them on
   // `(created_at, deck_id)`, not the commit order this row is drawn in. Announcing a loser before
