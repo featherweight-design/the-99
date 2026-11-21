@@ -578,12 +578,14 @@ describe("loadCardDetail's round trips", () => {
     const { load, asked } = await fresh({ catalog: [catalogRow] });
     try {
       const pending = load("user_1", "o-1", undefined, ENV_VIEW);
-      for (let i = 0; i < 5; i += 1) await flush();
-      // The prices read has not answered, and everything else has already been asked.
-      expect(loadAvailability).toHaveBeenCalled();
-      expect(asked.flags).toBe(1);
-      expect(cardComboCalls).toHaveLength(1);
-      expect(asked.execute).toBeGreaterThanOrEqual(1);
+      // Each read starts behind a dynamic import, which takes real time on a cold run, so wait for them rather than count
+      // ticks. The prices read is held open throughout: everything else being asked while it has not answered is the claim.
+      await vi.waitFor(() => {
+        expect(loadAvailability).toHaveBeenCalled();
+        expect(asked.flags).toBe(1);
+        expect(cardComboCalls).toHaveLength(1);
+        expect(asked.execute).toBeGreaterThanOrEqual(1);
+      });
       answer(null);
       expect((await pending)?.name).toBe("Arcane Signet");
     } finally { done(); }
@@ -598,11 +600,13 @@ describe("loadCardDetail's round trips", () => {
     const { load, asked } = await fresh({ catalog: [catalogRow], printings });
     try {
       const pending = load("user_1", "o-1", undefined, ENV_VIEW);
-      for (let i = 0; i < 5; i += 1) await flush();
-      expect(asked.printings).toBe(1);
-      expect(loadPrintingPrices).toHaveBeenCalled();
-      expect(asked.flags).toBe(1);
-      expect(cardComboCalls).toHaveLength(1);
+      // The printings read is held open: the others being asked while it has not answered is the claim.
+      await vi.waitFor(() => {
+        expect(asked.printings).toBe(1);
+        expect(loadPrintingPrices).toHaveBeenCalled();
+        expect(asked.flags).toBe(1);
+        expect(cardComboCalls).toHaveLength(1);
+      });
       answer([]);
       expect((await pending)?.oracleId).toBe("o-1");
     } finally { done(); }
