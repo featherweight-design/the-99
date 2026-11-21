@@ -206,10 +206,10 @@ index f085792..a578307 100644
                form="sheet"
 diff --git a/src/components/commanders/rack/theme-control.tsx b/src/components/commanders/rack/theme-control.tsx
 new file mode 100644
-index 0000000..a3da4c7
+index 0000000..82f1c9c
 --- /dev/null
 +++ b/src/components/commanders/rack/theme-control.tsx
-@@ -0,0 +1,267 @@
+@@ -0,0 +1,270 @@
 +"use client";
 +
 +// `Themes ▾` (#159): narrow Discover by the EDHREC themes a commander is built around. The same
@@ -418,7 +418,10 @@ index 0000000..a3da4c7
 +      <p className="font-mono m-0 text-[10px] tracking-[0.12em] uppercase text-[color:var(--fg-faint)]">
 +        {copy.legend}
 +      </p>
-+      <div className="flex flex-wrap gap-[8px]">
++      {/* A fixed two-column grid, each pill filling its cell with the count pinned to the right edge
++          (SetListSheet's H8 rule): a count changing under another control never resizes a pill or
++          reflows the row. */}
++      <div className="grid grid-cols-2 gap-[8px]">
 +        {inline.map((o) => {
 +          const on = selected.includes(o.code);
 +          return (
@@ -429,7 +432,7 @@ index 0000000..a3da4c7
 +              aria-disabled={o.disabled && !on ? true : undefined}
 +              onClick={() => (!o.disabled || on) && onChange(toggle(selected, o.code))}
 +              className={[
-+                "flex h-[44px] items-center gap-[8px] rounded-full border border-solid px-[14px] text-[13.5px]",
++                "flex h-[44px] min-w-0 w-full items-center justify-between gap-[8px] rounded-full border border-solid px-[14px] text-[13.5px]",
 +                on
 +                  ? "bg-[color-mix(in_oklab,var(--accent)_16%,transparent)] border-[color:var(--accent)] text-[color:var(--fg)]"
 +                  : o.disabled
@@ -437,8 +440,8 @@ index 0000000..a3da4c7
 +                    : "bg-transparent border-[color:var(--border-strong)] text-[color:var(--fg-body)]",
 +              ].join(" ")}
 +            >
-+              <span>{o.label}</span>
-+              <span className="font-mono text-[11px] text-[color:var(--fg-faint)]">{o.count.toLocaleString("en-US")}</span>
++              <span className="min-w-0 truncate">{o.label}</span>
++              <span className="shrink-0 font-mono text-[11px] tabular-nums text-[color:var(--fg-faint)]">{o.count.toLocaleString("en-US")}</span>
 +            </button>
 +          );
 +        })}

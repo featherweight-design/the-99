@@ -25,7 +25,9 @@ popular/new already exist; this adds mechanic/theme.
    decides where the per-commander tag list rides (the discover payload carries only the top three today).
 4. **Picking one or several.** Desktop: checkbox rows; picks pin to the shipped `Selected · N` group on open.
    Phone: the six most-played themes (under the other controls) as 44px pills, picked ones first, then
-   `All N themes ›` opening the whole searchable list. Taps apply at once, as everywhere in the rack.
+   `All N themes ›` opening the whole searchable list.
+   R1b (Hugh, 2026-11-21): the pills sit on a fixed two-column grid, each filling its cell, label left (truncates)
+   and count pinned right in tabular figures, so a count changing under another filter never resizes a pill. Taps apply at once, as everywhere in the rack.
 5. **Several combine with Any (default) or All.** `Theme match` mirrors Color match: two segments, greyed in place
    with fewer than two themes and saying why ("Pick two to combine" / "Pick two themes to choose how they
    combine."). Any is the default, matching `Printed in`. All keeps only commanders listed under every pick.
