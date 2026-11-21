@@ -163,7 +163,7 @@ export function SetListSheet({
         aria-modal="true"
         aria-label={copy.panelAriaLabel}
         tabIndex={-1}
-        className="relative z-10 flex h-[86dvh] max-[999px]:h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
+        className="anim-sheet-in-phone relative z-10 flex h-[86dvh] max-[999px]:h-[min(86dvh,calc(var(--vv-h,100dvh)*0.86))] flex-col gap-[12px] rounded-t-[22px] border-x-0 border-b-0 border-t border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-inset)] px-[16px] pt-[12px] pb-[16px]"
       >
         <div
           aria-hidden="true"
