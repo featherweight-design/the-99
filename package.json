@@ -399,6 +399,7 @@
     "probe:collection-tabs": "node scripts/probe-collection-tabs.mjs",
     "probe:collection-head": "node scripts/probe-collection-head.mjs",
     "probe:deck-scroll": "node scripts/probe-deck-scroll.mjs",
+    "probe:undo-revert-inert": "node scripts/probe-undo-revert-inert.mjs",
     "probe:anthropic-cost": "tsx scripts/probe-anthropic-cost.mts",
     "probe:autocapture-names": "tsx scripts/probe-autocapture-names.mts",
     "prepare": "husky || true"
