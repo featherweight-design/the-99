@@ -10,9 +10,9 @@ Shipped shell (NavRail, MobileHeader, TabBar) + shipped SpineMobile / SpineDeskt
 ## Today
 `src/app/decks/[id]/loading.tsx` draws the shared crown screen ("Shuffling up / counting the 99…"), so a flip drops the strip, header and place in the list until the next deck lands.
 
-## Options
-- **A · The header lands at once (recommended).** On a flip, the next deck's art, name, colours + commander line, status chip, count and the (static) actions draw at once; the strip reads the new place (3 of 5) and stays live. Below the header: to-do card shell, five mix cells, the tab row in real words (counts as bars, kept tab underlined), the tab's tools and card rows. Bracket chip / notice tag arrive with the page (no shape held).
-- **B · All shapes.** Same, header as shapes too (art band empty, name and meta as bars). No new data, but each press blanks the art.
+## Options (Hugh, 2026-11-20: keep both — A is the build, B its fallback)
+- **A · The header lands at once (the build).** On a flip, the next deck's art, name, colours + commander line, status chip, count and the (static) actions draw at once; the strip reads the new place (3 of 5) and stays live. Below the header: to-do card shell, five mix cells, the tab row in real words (counts as bars, kept tab underlined), the tab's tools and card rows. Bracket chip / notice tag arrive with the page (no shape held).
+- **B · All shapes (A's fallback).** Same, header as shapes too (art band empty, name and meta as bars). Drawn on any flip whose header facts are not in hand at the press (deck missing from the list, facts not reached the page); ships alone if the list cannot carry the facts.
 
 ## Calls (both)
 - Only on a flip (‹ ›, ← →). Every other entry keeps the crown screen.
@@ -21,4 +21,4 @@ Shipped shell (NavRail, MobileHeader, TabBar) + shipped SpineMobile / SpineDeskt
 - sr-only status line, copy DRAFT: `Opening <deck name>`.
 
 ## Open
-Q1 A or B. Copy DRAFT.
+Copy DRAFT.
