@@ -1,8 +1,10 @@
 // "Precons I own" (/decks/precons?pick=own) must not load behind the list's skeleton: its loading frame has to sit where the
-// loaded pick page's blocks sit. Signs in as the audit user, opens /decks, holds the pick route's server render open, pushes
-// the route client-side, measures the skeleton's title, first row and foot, then releases and measures the same blocks on the
-// loaded page, at 390 and 1300. Each block's top and height must agree within TOL px. On main the list's skeleton draws a
-// header, chassis and tiles, so the first row (and at 390 the title) miss and this exits 1. `PROBE_BASE=http://localhost:3231 node scripts/probe-precons-skeleton.mjs`.
+// loaded pick page's blocks sit. Signs in as the audit user, opens /decks, pushes the pick route client-side and measures the
+// loading screen the frame it appears (a MutationObserver: the response carries the skeleton and the page together, so the
+// probe cannot hold it open), then measures the same blocks on the loaded page, at 390 and 1300. The title, the first row's
+// top, the shortest of the first eight rows and the foot must agree within TOL px. On main the list's skeleton draws a
+// different frame, so every block misses and this exits 1. `PROBE_BASE=http://localhost:3231 node scripts/probe-precons-skeleton.mjs`
+// (webpack dev: `pnpm dev --webpack`). PROBE_SHOTS=<dir> keeps the two screens as PNGs.
 // Needs a browser and the audit user (`E2E_AUDIT_USER_*`, `CLERK_SECRET_KEY`); never production. Exits 1 on any miss.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
