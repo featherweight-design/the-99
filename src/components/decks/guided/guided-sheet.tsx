@@ -205,7 +205,7 @@ export function GuidedSheet({ commanderName, deckName, strategies, carry, extraK
                       onChange={(e) => set({ budgetText: e.target.value })}
                       aria-invalid={picks.budgetText !== "" && !stepDone(picks, "cards")}
                       aria-describedby="guided-budget-error"
-                      className="h-[44px] w-full max-w-[200px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[14px] text-[color:var(--fg)] md:h-[40px]"
+                      className="h-[44px] w-full max-w-[200px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] px-[12px] font-mono text-[16px] [@media(pointer:fine)]:text-[14px] text-[color:var(--fg)] md:h-[40px]"
                     />
                     <span id="guided-budget-error" role="status" className="font-mono text-[11px]" style={{ color: "var(--warning)" }}>
                       {picks.budgetText !== "" && !stepDone(picks, "cards") ? copy.cards.budgetError : ""}
