@@ -58,8 +58,8 @@ same in the average as in the deck it is compared with.
   They ride the type-line machinery, so they cost no model call, move no label prompt or schema and need no migration.
   Measured on staging 2026-11-20 over 32,643 Commander-legal cards: storm 33, monarch 63, extra turns 55 (two cards that
   give an OPPONENT the turn, Eon Frolicker and Emrakul, the Promised End, are excluded), extra combats 46, -1/-1 counters
-  about 180 (put or enter with, never remove; persist's reminder is stripped), burn 1,096 (a number, X or "that much" to
-  an opponent, a player or any target; damage to creatures alone is removal and stays out). Re-measure before widening a
+  about 180 (put or enter with, never remove; persist's reminder is stripped), burn 449 (a number, X or "that much" to
+  an opponent or a player; "any target" and damage to creatures alone are removal and stay out, or every red deck reads as burn). Re-measure before widening a
   rule. A mechanic with no regex that holds up (group hug, pillow fort, big mana, politics) waits for the label model run.
 - Icons: `StrategyIcon` (`src/components/decks/strategy-icon.tsx`), one line glyph per theme and type-line axis plus
   the spears every creature type shares (`tribal` too) and a dashed fallback for a theme added later. Five are the

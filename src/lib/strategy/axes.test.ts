@@ -29,7 +29,7 @@ describe("fixedAxesOf", () => {
   });
 
   it("files a card under the text axes its rules text reads, alongside its type axes", () => {
-    const c: AxisCard = { ...card("Instant"), oracleText: "Lightning Helix deals 3 damage to any target. You gain 3 life." };
+    const c: AxisCard = { ...card("Instant"), oracleText: "Fireblast Mage deals 3 damage to target opponent. You gain 3 life." };
     expect(fixedAxesOf(c)).toEqual(["burn"]);
     expect(fixedAxesOf({ ...card("Artifact"), oracleText: "When this enters, you become the monarch." })).toEqual(["artifacts", "monarch"]);
     expect(fixedAxesOf(card("Instant"))).toEqual([]);

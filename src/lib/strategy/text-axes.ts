@@ -13,10 +13,10 @@ const stripReminders = (text: string) => text.replace(/\([^)]*\)/g, "");
 const GIVES_A_TURN_AWAY = /(opponent|that player) takes an extra turn/;
 
 /**
- * Damage that can reach a player: a number, X or "that much" dealt to an opponent, a player or any target. Damage to a
- * creature alone ("target creature", "each creature") is removal and stays out.
+ * Damage aimed at a player: a number, X or "that much" dealt to an opponent or a player. "Any target" is generic removal
+ * (every red deck plays it) and damage to a creature alone is removal too, so both stay out.
  */
-const BURN = /deals? (\d+|x|that much) damage to (each opponent|each other player|each player|any target|target opponent|target player)/;
+const BURN = /deals? (\d+|x|that much) damage to (each opponent|each other player|each player|target opponent|target player)/;
 
 const RULES: readonly [TextAxis, (text: string, keywords: readonly string[]) => boolean][] = [
   ["storm", (t, k) => k.some((w) => w.toLowerCase() === "storm") || /storm count/.test(t)],

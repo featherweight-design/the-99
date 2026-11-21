@@ -35,14 +35,15 @@ describe("textAxesOf", () => {
   });
 
   it("reads Burn as damage a player can take, not damage to creatures alone", () => {
-    expect(axes("This spell deals 3 damage to any target.")).toContain("burn");
+    expect(axes("This spell deals 3 damage to target opponent.")).toContain("burn");
+    expect(axes("This spell deals 3 damage to any target.")).not.toContain("burn");
     expect(axes("At the beginning of your upkeep, this deals X damage to each opponent.")).toContain("burn");
     expect(axes("This deals 3 damage to target creature.")).not.toContain("burn");
     expect(axes("This deals 2 damage to each creature.")).not.toContain("burn");
   });
 
   it("reads the front face only, and a card with no text joins nothing", () => {
-    expect(axes("Flying\n//\nThis deals 3 damage to any target.")).toEqual([]);
+    expect(axes("Flying\n//\nThis deals 3 damage to each opponent.")).toEqual([]);
     expect(textAxesOf(null, [])).toEqual([]);
   });
 });
