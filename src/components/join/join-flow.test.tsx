@@ -111,6 +111,27 @@ describe("JoinFlow", () => {
     expect((screen.getByRole("button", { name: /Send a new code in/ }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it("a recipient over our hourly limit says no code was sent and when, with no resend countdown", async () => {
+    m.claim.mockResolvedValue({ ok: false, reason: "limited", waitMs: 33 * 60_000 - 1 });
+    start({ kind: "email", sender });
+    fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
+    await screen.findByText(joinCopy.limited("33 minutes"));
+    expect(screen.queryByRole("button", { name: /Send a new code in/ })).toBeNull();
+    expect(screen.queryByText(joinCopy.failed)).toBeNull();
+    expect((screen.getByLabelText(joinCopy.emailLabel) as HTMLInputElement).value).toBe("new@x.dev");
+  });
+
+  it("a spent daily cap says no code was sent, not the generic failure", async () => {
+    m.claim.mockResolvedValue({ ok: false, reason: "capped" });
+    start({ kind: "email", sender });
+    fireEvent.change(screen.getByLabelText(joinCopy.emailLabel), { target: { value: "new@x.dev" } });
+    fireEvent.click(screen.getByRole("button", { name: joinCopy.sendCode }));
+    await screen.findByText(joinCopy.capped);
+    expect(screen.queryByText(joinCopy.failed)).toBeNull();
+    expect(screen.queryByRole("button", { name: /Send a new code in/ })).toBeNull();
+  });
+
   it("a replacement address refused for the cooldown keeps the email step and its draft", async () => {
     m.claim.mockResolvedValue({ ok: false, reason: "wait", waitMs: 30_000 });
     start({ kind: "code", sender, email: "a@x.dev", resendWaitMs: 0, expired: false });

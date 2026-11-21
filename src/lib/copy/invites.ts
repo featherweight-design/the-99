@@ -75,6 +75,12 @@ export const inviteCopy = {
     lastOne: "That was your last invite.",
     /** Toast, with Try again: a failure before anything was sent (E6). (new, for /copy-review) */
     sendFailed: "We couldn’t send that invitation. Try again.",
+    /** Toast, no Try again: our recipient limit refused it, so nothing was sent and pressing again cannot work yet. `wait` is waitPhrase(). (new, for /copy-review) */
+    limited: (wait: string) => `Too many emails to that address. Try again in ${wait}.`,
+    /** Toast, no Try again: this sender pressed Send past the hourly press limit. `wait` is waitPhrase(). (new, for /copy-review) */
+    paced: (wait: string) => `You’ve sent a lot of invitations. Try again in ${wait}.`,
+    /** Toast, no Try again: the day's send cap is spent. (new, for /copy-review) */
+    capped: "Invitations are paused for today. Try again tomorrow.",
     /** (new, for /copy-review) */
     retry: "Try again",
   },

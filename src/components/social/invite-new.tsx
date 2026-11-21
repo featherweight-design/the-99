@@ -20,6 +20,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import type { InviteCount } from "../../lib/invites/rules";
 import { isEmailShape, normalizeEmail } from "../../lib/invites/rules";
 import { inviteCopy } from "../../lib/copy/invites";
+import { waitPhrase } from "../../lib/copy/wait-phrase";
 import { sendEmailInviteAction } from "../../app/friends/invite-actions";
 import { TextField } from "../ui/text-field";
 import { InviteCountLine } from "./invite-count-line";
@@ -143,6 +144,9 @@ export function InviteNew({
     setStage({ kind: "form" });
     if (out && !out.ok && out.reason === "invalid") setBad(true);
     else if (out && !out.ok && out.reason === "out") onRefresh();
+    else if (out && !out.ok && out.reason === "limited") say(t.limited(waitPhrase(out.waitMs)));
+    else if (out && !out.ok && out.reason === "paced") say(t.paced(waitPhrase(out.waitMs)));
+    else if (out && !out.ok && out.reason === "capped") say(t.capped);
     else say(t.sendFailed, { label: t.retry, run: () => void latest.current() });
   }
   useEffect(() => {

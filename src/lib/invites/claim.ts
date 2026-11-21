@@ -89,7 +89,7 @@ export function proofWrite(row: { linkKeyId: string | null; provenAt: Date | nul
 
 export type ClaimResult =
   | { ok: true; claimSecret: string; mailed: boolean }
-  | { ok: false; reason: "invalid" | "unconfigured" | "wait" | "failed"; waitMs?: number }
+  | { ok: false; reason: "invalid" | "unconfigured" | "wait" | "limited" | "failed" | "capped"; waitMs?: number }
   | Ended;
 
 export type ClaimDeps = {
@@ -124,10 +124,10 @@ export async function claimInvite(
   if (!config || !secret) return { ok: false, reason: "unconfigured" };
   const email = normalizeEmail(rawEmail);
   // Our recipient and daily limits, BEFORE anything is claimed: a refusal after the transaction would already have rotated
-  // the code (the one mailed before would stop working) and held a place for a mail that never went. A refused recipient waits
-  // (the seconds left in its hour or day); a spent daily cap reads as the existing "couldn't do that" answer.
+  // the code (the one mailed before would stop working) and held a place for a mail that never went. A refused recipient is `limited`
+  // (the seconds left in its hour or day) and a spent daily cap is `capped`: neither is the resend cooldown, since no code went.
   const refused = await mailRefusal(email);
-  if (refused) return refused.reason === "limited" ? { ok: false, reason: "wait", waitMs: refused.waitSec * 1000 } : { ok: false, reason: "failed" };
+  if (refused) return refused.reason === "limited" ? { ok: false, reason: "limited", waitMs: refused.waitSec * 1000 } : { ok: false, reason: "capped" };
   const hash = secretHash(token);
 
   const [found] = await db.select({ userId: inviteReservations.userId }).from(inviteReservations)

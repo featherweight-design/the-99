@@ -2705,6 +2705,21 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and ended for any other, N11 and N12 naming nobody, an unknown token ended, no sideways scroll, and photographs into
   `contact-sheets/invites-join/`. Needs a server on the SAME database with no `INVITE_CODE_SECRET`; it WRITES, so `PROBE_DB_BRANCH` must name the branch
   `DATABASE_URL` reports, and staging, production and local-dev are refused by id.
+- `pnpm probe:mail-refusals` proves the join page says what our own mail limits did, in Chromium, SIGNED OUT, at 390 and 1300.
+  It seeds one sender and two QR reservations (per-run ids), fills a made-up recipient's `mail-recipient` window (3 an
+  hour) and the day's `mail-all-day` counter to the cap, then types an address on `/join/<token>` and checks: a limited
+  recipient reads "No code was sent: too many emails to that address. Try again in N minutes." (N in 1..60), is not the
+  resend countdown ("Send a new code in"), keeps the email step and the draft; a spent daily cap reads the capped line and
+  not the failed toast; no sideways scroll; photographs into `contact-sheets/mail-refusals/`. Fails on main (the limited
+  refusal drew the countdown, the cap the failed toast). Its second half signs the Clerk dev fixture
+  (`alpha-test+clerk_test@the99.app`, code 424242; `PROBE_SIGNED_IN_EMAIL` overrides) in, gives it 5 invites and the About
+  gate's seen version for the run (both put back), and presses Send invitation on `/friends?invite=new` once per refusal: a
+  recipient over its hour (limited), the day's cap (capped), the account's own 30 `invite-email` hits (paced). Each toast
+  carries its line, no "We couldn't send that invitation" and no Try again button; photographs `{phone,desktop}-invite-*.png`.
+  Needs the dev Clerk keys. It WRITES, so `PROBE_DB_BRANCH` must name the branch `DATABASE_URL` reports (staging,
+  production and local-dev refused by id) and the server must run on the SAME database with `RESEND_API_KEY`,
+  `INVITE_EMAIL_FROM`, a 64-hex `INVITE_CODE_SECRET`, `APP_ORIGIN` and the same `RESEND_DAILY_SEND_CAP=5` as the probe;
+  no mail is sent (the refusals come first). Every rate row it writes is deleted in a finally.
 - `pnpm probe:collection-sort-memory` proves `/collection` remembers the reader's sort in a browser at 390 and 1300 (cookie
   `collection_sort`, `<key>.<direction>`, written by the Sort control's press and read by the page): pick Quantity, leave,
   and a bare visit restores it, with the address mirroring `?sort=` through `mirrorUrl`, the server's own HTML already in

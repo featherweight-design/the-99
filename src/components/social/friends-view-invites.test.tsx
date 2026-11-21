@@ -241,6 +241,23 @@ describe("Add a friend, invites on, answers that land after the reader moved on"
     expect(a.createInviteAction).toHaveBeenCalledTimes(1);
   });
 
+  it.each([
+    [{ ok: false, reason: "limited", waitMs: 20 * 60_000 }, inviteCopy.path.limited("20 minutes")],
+    [{ ok: false, reason: "capped" }, inviteCopy.path.capped],
+    [{ ok: false, reason: "paced", waitMs: 41 * 60_000 }, inviteCopy.path.paced("41 minutes")],
+  ])("says which of our mail limits refused an email invite, with no Try again (%j)", async (answer, line) => {
+    inv.sendEmailInviteAction.mockResolvedValue(answer);
+    draw({ invites });
+    fireEvent.click(press());
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(inviteCopy.chooser.newTitle) }));
+    const field = screen.getByLabelText(inviteCopy.path.emailLabel) as HTMLInputElement;
+    fireEvent.change(field, { target: { value: "jo@example.com" } });
+    await act(async () => fireEvent.submit(field.closest("form")!));
+    expect(screen.getByText(line)).toBeTruthy();
+    expect(screen.queryByText(inviteCopy.path.sendFailed)).toBeNull();
+    expect(screen.queryByRole("button", { name: inviteCopy.path.retry })).toBeNull();
+  });
+
   it("puts an email failure's Try again away on ‹ back, so it cannot send from a form no longer drawn", async () => {
     inv.sendEmailInviteAction.mockResolvedValue({ ok: false, reason: "failed" });
     draw({ invites });

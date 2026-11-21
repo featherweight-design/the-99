@@ -12,6 +12,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { InviteSender } from "../../lib/social/friends";
 import { flyerJoinCopy as flyerCopy, joinCopy as copy } from "../../lib/copy/join";
 import { CODE_LENGTH, isEmailShape, parseCode } from "../../lib/invites/rules";
+import { waitPhrase } from "../../lib/copy/wait-phrase";
 import type { FlyerJoinView } from "../../lib/flyer/join-read";
 import type { FlyerClosed } from "../../lib/flyer/rules";
 import { claimInviteAction, confirmCodeAction, handOverAction } from "../../app/join/actions";
@@ -157,7 +158,9 @@ export function JoinFlow({ token, ...props }: JoinFlowProps) {
         // Refused, so the stored address is unchanged: stay where the reader is (the email step names the cooldown).
         setWaitUntil(Date.now() + (r.waitMs ?? 60_000));
         setNow(Date.now());
-      } else if (r.reason === "closed") {
+      } else if (r.reason === "limited") setLine(copy.limited(waitPhrase(r.waitMs ?? 0)));
+      else if (r.reason === "capped") setLine(copy.capped);
+      else if (r.reason === "closed") {
         // Used up, or revoked since the page loaded: the card turns face down and the launch list takes the address.
         setUp(false);
         setStep(r.closed === "revoked" ? "revoked" : "full");

@@ -8,14 +8,15 @@ import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../lib/auth";
 import { ensureSenderProfile } from "./sender-profile";
 import { atFloor } from "../../lib/invites/floor";
-import { sendEmailInvite, showInviteQr } from "../../lib/invites/send";
+import { sendEmailInvite, showInviteQr, type SendResult } from "../../lib/invites/send";
 import { isRequestId, joinPath } from "../../lib/invites/rules";
 import { inviteSecret } from "../../lib/invites/tokens";
 import { requestInvitationRedirectUrl } from "../../lib/invites/request-redirect";
 import { enforceHit } from "../../lib/rate/observe";
 import { originFrom } from "../../lib/social/client-rules";
 
-export type SendEmailInviteOutcome = { ok: true } | { ok: false; reason: "invalid" | "out" | "failed" };
+/** `paced`: this sender pressed Send more than the hourly press limit allows; nothing was held, and `waitMs` is when the hour turns. */
+export type SendEmailInviteOutcome = SendResult | { ok: false; reason: "paced"; waitMs: number };
 
 /**
  * By email (R5). `invalid` is the address's shape (E1), checked before anything else, and `out` none left; neither
@@ -34,8 +35,9 @@ export async function sendEmailInviteAction(email: unknown, requestId?: unknown)
   if (typeof email !== "string") return { ok: false, reason: "invalid" };
   const id = requestId === undefined ? null : isRequestId(requestId) ? requestId : undefined;
   if (id === undefined) return { ok: false, reason: "failed" };
-  // Refused before anything is reserved, so `failed` (nothing held, try again) is true of it.
-  if ((await enforceHit(userId, "invite-email")) !== null) return { ok: false, reason: "failed" };
+  // Refused before anything is reserved, so nothing is held; the sender is told it is their own pace and when it lifts.
+  const pacedSec = await enforceHit(userId, "invite-email");
+  if (pacedSec !== null) return { ok: false, reason: "paced", waitMs: pacedSec * 1000 };
   // The newcomer's friend row lists the sender through their profile: made first (sender-profile.ts).
   await ensureSenderProfile(userId);
   // The invitation's link lands on the deployment's own /sign-up, never on an origin the request names (`redirect.ts`).
