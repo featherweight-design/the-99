@@ -344,7 +344,7 @@ export function Panel({
                           "absolute inset-y-0 flex w-1/2 touch-manipulation select-none items-center font-sans outline-none [-webkit-touch-callout:none] motion-safe:transition-[background-color] motion-safe:duration-[120ms] active:bg-[color:color-mix(in_srgb,var(--fg)_6%,transparent)] focus-visible:bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] "
             + (sign === 1 ? "right-0 justify-end " : "left-0 justify-start ")
             + (foot ? "px-2 text-[36px] " : "px-1 text-[30px] ")
-            + (pressed ? "bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] text-[color:var(--accent)]" : "text-[color:var(--fg-muted)]"),
+            + (pressed ? "bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] text-[color:var(--accent-text)]" : "text-[color:var(--fg-muted)]"),
                         )}
                       >
                         <span aria-hidden>{sign === 1 ? "+" : "−"}</span>
