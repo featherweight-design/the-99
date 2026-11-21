@@ -248,6 +248,37 @@ describe("createDeck with a selection", () => {
     expect(selected).toMatchObject({ auto: true, quantity: 1 });
   });
 
+  it("builds just the commander and the picks when the build is empty: the fill never runs", async () => {
+    stub.state.cards.push(commanderRow(), cardRow(VALID), cardRow(OTHER));
+    stub.state.collectionItems.push(cardRow(VALID), cardRow(OTHER));
+    try {
+      await createDeck(CMDR, "Blank", [VALID], null, null, "empty");
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+    // The pick is placed; the owned card the fill would have taken is not.
+    expect(insertedIds()).toEqual([VALID]);
+    // A deck the reader chose to leave empty is not one whose fill failed: no retry banner.
+    const deck = stub.state.insertCalls.find((c) => c.table === "decks")!.values as Record<string, unknown>;
+    expect(deck.filled).toBe(true);
+  });
+
+  it("ignores hand-off answers on an empty build, even from a direct call", async () => {
+    stub.state.cards.push(commanderRow(), cardRow(VALID));
+    try {
+      await createDeck(CMDR, "Blank", [VALID], null, { themes: ["Dinosaurs"], cardOracleId: null, budgetDollars: 150, bracket: null, bracketBuys: false } as never, "empty");
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+    expect(insertedIds()).toEqual([VALID]);
+  });
+
+  it("refuses a build kind it does not know", async () => {
+    stub.state.cards.push(commanderRow());
+    await expect(createDeck(CMDR, "Nope", [], null, null, "guided" as never)).rejects.toThrow("unknown build kind");
+    expect(stub.state.insertCalls).toHaveLength(0);
+  });
+
   it("keeps the fill from spending a card the selection already placed", async () => {
     // The owned pool and the selection overlap on VALID. Gap report 4: it lands
     // once, not once for the pick and once for the role.

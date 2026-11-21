@@ -65,6 +65,56 @@ describe("CreatePreFilled", () => {
     render(<CreatePreFilled {...base} handOff={handOff()} />);
     fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Stompy" } });
     await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Stompy", undefined, null, handOff().create);
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Stompy", undefined, null, handOff().create, "free");
+  });
+
+  it("marks the free build and creates with it, as today", async () => {
+    createDeck.mockClear();
+    render(<CreatePreFilled {...base} />);
+    const group = screen.getByRole("radiogroup", { name: "How we build it" });
+    expect((screen.getByRole("radio", { name: /Free build/ }) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByRole("radio", { name: /Just the commander/ }) as HTMLInputElement).checked).toBe(false);
+    expect(group.querySelectorAll("input[type=radio]")).toHaveLength(2);
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Stompy" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Stompy", undefined, null, null, "free");
+  });
+
+  it("creates the commander alone when Just the commander is chosen", async () => {
+    createDeck.mockClear();
+    render(<CreatePreFilled {...base} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Just the commander/ }));
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Blank" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Blank", undefined, null, null, "empty");
+  });
+
+  it("draws the picks the commander page carried, says each option keeps them, and links back", () => {
+    const picks = [
+      { oracleId: "0000aaaa-0000-4000-8000-0000000000a1", name: "Sol Ring", imageUri: null, owned: true },
+      { oracleId: "0000aaaa-0000-4000-8000-0000000000a2", name: "Arcane Signet", imageUri: null, owned: false },
+    ];
+    render(<CreatePreFilled {...base} selectedOracleIds={picks.map((p) => p.oracleId)} picks={picks} commanderHref="/commanders/gishath" />);
+    const block = screen.getByTestId("build-picks");
+    expect(block.textContent).toContain("Your picks · 2");
+    expect(block.textContent).toContain("Sol Ring");
+    expect(block.textContent).toContain("not owned");
+    expect(block.textContent).toContain("Every option keeps them.");
+    expect(screen.getByRole("link", { name: "Change on Gishath’s page" }).getAttribute("href")).toBe("/commanders/gishath");
+    expect(screen.getByRole("radio", { name: /Just the commander/ }).closest("label")!.textContent).toContain("your 2 picks and 97 empty slots");
+  });
+
+  it("draws no picks block without picks", () => {
+    render(<CreatePreFilled {...base} />);
+    expect(screen.queryByTestId("build-picks")).toBeNull();
+  });
+
+  it("sends no answers when Just the commander is chosen on the hand-off: no fill runs to read them", async () => {
+    createDeck.mockClear();
+    render(<CreatePreFilled {...base} handOff={handOff()} />);
+    fireEvent.click(screen.getByRole("radio", { name: /Just the commander/ }));
+    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Blank" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Blank", undefined, null, null, "empty");
   });
 });

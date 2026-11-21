@@ -322,7 +322,7 @@ describe("CommanderDetail synergy panel", () => {
     render(
       <CommanderDetail hidden={false} commander={commander()} rank={1} isBestFit synergyCards={synergyCards} newestAsOf={null}  avail="all"/>,
     );
-    for (const link of screen.getAllByRole("link", { name: /Build this deck/i })) {
+    for (const link of screen.getAllByRole("link", { name: /Start a deck/i })) {
       expect(link).toHaveAttribute("href", `/decks?commander=${commander().oracleId}`);
     }
   });
@@ -334,7 +334,7 @@ describe("CommanderDetail synergy panel", () => {
     const rows = screen.getAllByRole("listitem");
     fireEvent.click(within(rows[0]).getByRole("button", { name: /^Add / }));
     fireEvent.click(within(rows[1]).getByRole("button", { name: /^Add / }));
-    const href = screen.getAllByRole("link", { name: /Build this deck/i })[0].getAttribute("href");
+    const href = screen.getAllByRole("link", { name: /Start a deck/i })[0].getAttribute("href");
     expect(href).toContain(`commander=${commander().oracleId}`);
     expect(new URL(href!, "http://x").searchParams.get("select")?.split(",")).toHaveLength(2);
   });

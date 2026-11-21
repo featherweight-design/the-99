@@ -5,6 +5,7 @@ import {
   SynergySelectionProvider,
   useSynergySelection,
 } from "./synergy-selection";
+import { guidedBuildCopy } from "../../lib/copy/guided-build";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { MAX_SELECTION } from "../../lib/decks/selection-param";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
@@ -72,18 +73,10 @@ describe("SynergySelection", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("states the fill, the pick and the total", () => {
+  it("says where the picks go, and promises nothing about how the rest is built", () => {
     render(<SynergySelection selectedCards={owned(7)} onClear={() => {}} width="desktop" />);
-    // The total ("75") is wrapped in a highlighted span, so getByText on the full
-    // string no longer matches; use a function query on the container instead.
-    expect(
-      screen.getByText((_content, el) =>
-        el?.tagName === "SPAN" &&
-        // 92 and 99, not 68 and 75: the fill continues to the body through its synergy
-        // residual, so seven picks leave ninety-two for it and the deck arrives whole.
-        el.textContent === synergyCopy.select.promise("92", "7", "99"),
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(guidedBuildCopy.commander.picks(7))).toBeInTheDocument();
+    expect(screen.queryByText(/We.ll fill/)).not.toBeInTheDocument();
   });
 
   it("names the unowned cards in the selection", () => {
@@ -97,43 +90,9 @@ describe("SynergySelection", () => {
     expect(screen.getByText(synergyCopy.select.promiseUnowned("2"))).toBeInTheDocument();
   });
 
-  it("says the selection fills the deck on its own only when it does", () => {
-    render(<SynergySelection selectedCards={owned(99)} onClear={() => {}} width="desktop" />);
-    expect(screen.getByText(synergyCopy.select.promiseFull("99"))).toBeInTheDocument();
-  });
-
-  // The build places the selection first and fills what is left under the 99, so
-  // the baseline is a ceiling on the fill, not a fixed part of it. Reading it as
-  // fixed put the clamp line — "your picks fill the 99 on their own" — on a deck
-  // the fill was still placing 59 cards of.
-  it("shrinks the filled figure once the selection eats into the baseline", () => {
-    render(<SynergySelection selectedCards={owned(40)} onClear={() => {}} width="desktop" />);
-    expect(screen.queryByText(synergyCopy.select.promiseFull("40"))).not.toBeInTheDocument();
-    expect(
-      screen.getByText((_content, el) =>
-        el?.tagName === "SPAN" &&
-        el.textContent === synergyCopy.select.promise("59", "40", "99"),
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("takes the mobile promise string at phone width", () => {
-    render(<SynergySelection selectedCards={owned(7)} onClear={() => {}} width="phone" />);
-    // Total is wrapped in a span; check the container text content instead.
-    expect(
-      screen.getByText((_content, el) =>
-        el?.tagName === "SPAN" &&
-        el.textContent === synergyCopy.select.promiseMobile("92", "7", "99"),
-      ),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText((_content, el) =>
-        el?.tagName === "SPAN" &&
-        // 92 and 99, not 68 and 75: the fill continues to the body through its synergy
-        // residual, so seven picks leave ninety-two for it and the deck arrives whole.
-        el.textContent === synergyCopy.select.promise("92", "7", "99"),
-      ),
-    ).not.toBeInTheDocument();
+  it("draws the same line at phone width", () => {
+    render(<SynergySelection selectedCards={owned(40)} onClear={() => {}} width="phone" />);
+    expect(screen.getByText(guidedBuildCopy.commander.picks(40))).toBeInTheDocument();
   });
 
   it("clears the selection", () => {

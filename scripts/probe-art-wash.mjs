@@ -1021,13 +1021,13 @@ try {
     // The pre-filled door is entered from a COMMANDER PAGE now. Home's hero used
     // to link straight to `/decks/new?commander=<oracleId>` and that CTA is cut —
     // nobody builds a deck without seeing the pool first — so the route in is
-    // `Build this deck`, which points at `/decks?commander=<oracleId>` and is
+    // `Start a deck`, which points at `/decks?commander=<oracleId>` and is
     // redirected by that page to the pre-filled URL. Following the link the app
     // actually offers is also the more honest probe.
     // Back to the list first. The block above followed a commander link to its
     // detail page, and a detail page carries no `/commanders/<slug>` self-link —
     // so this query returned null there, skipped the whole census, and then
-    // failed the run for finding no `Build this deck` link. The page it needs is
+    // failed the run for finding no `Start a deck` link. The page it needs is
     // the one the link lives on.
     await page.goto(`${BASE}/commanders`, { waitUntil: "networkidle" });
     await page.waitForTimeout(600);
@@ -1169,7 +1169,7 @@ try {
       await checkChrome(page, `${vpName} the picker, picked`, note);
     }
     if (!commanderBuildHref) {
-      note(`  FAIL no Build this deck link (/decks?commander=) found — the pre-filled door goes unchecked`);
+      note(`  FAIL no Start a deck link (/decks?commander=) found — the pre-filled door goes unchecked`);
     }
 
     // The deck header, which is the other surface drawing this control — and the

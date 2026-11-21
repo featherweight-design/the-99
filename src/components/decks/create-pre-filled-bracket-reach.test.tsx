@@ -52,6 +52,9 @@ beforeEach(() => {
   readReach.mockReset();
 });
 
+// The build choice's own radios (name "build-kind") share the role; the Bracket row's are the ones these tests read.
+const bracketRadios = () => screen.queryAllByRole("radio").filter((r) => (r as HTMLInputElement).name !== "build-kind");
+
 describe("the hand-off's Bracket row, read", () => {
   it("is pending until the read lands, with Create held", async () => {
     readReach.mockReturnValue(new Promise(() => {}));
@@ -81,7 +84,7 @@ describe("the hand-off's Bracket row, read", () => {
   it("short: two rows, neither picked; Create waits with the line in the error slot", async () => {
     await settle(SHORT);
     nameIt();
-    const radios = screen.getAllByRole("radio");
+    const radios = bracketRadios();
     expect(radios.map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
     expect(rowText("Bracket")).toBe(
       "Bracket3 · UpgradedFrom your cards this deck is bracket 1-2. Choose how to build it:"
@@ -101,7 +104,7 @@ describe("the hand-off's Bracket row, read", () => {
     expect(screen.queryByTestId("bracket-choice-waiting")).toBeNull();
     expect(createButton().hasAttribute("disabled")).toBe(false);
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 2, bracketBuys: false });
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 2, bracketBuys: false }, "free");
   });
 
   it("Hit submits the target with the buy, and the Budget row names what it pays for first", async () => {
@@ -110,7 +113,7 @@ describe("the hand-off's Bracket row, read", () => {
     fireEvent.click(screen.getByTestId("bracket-choice-hit"));
     expect(rowText("Budget")).toBe("Budget$150Rhystic Study takes $32 of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.");
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 3, bracketBuys: true });
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...handOff().create, bracket: 3, bracketBuys: true }, "free");
   });
 
   it("keeps the comma after a card name on the name's line (phone wrap)", async () => {
@@ -124,7 +127,7 @@ describe("the hand-off's Bracket row, read", () => {
   it("a press on a card name opens the card and picks nothing", async () => {
     await settle(SHORT);
     fireEvent.click(within(screen.getByTestId("bracket-choice-hit")).getByTestId("hand-off-reach-card"));
-    expect(screen.getAllByRole("radio").map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
+    expect(bracketRadios().map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
   });
 
   it("over budget: Hit stays pickable, says what it costs against the budget, and raises it when picked", async () => {
@@ -216,7 +219,7 @@ describe("the hand-off's Bracket row, read", () => {
     await settle({ target: 3, permits: [1, 2], placed: [], buy: null });
     nameIt();
     expect(rowText("Bracket")).toBe("Bracket3 · UpgradedNo Game Changer or two-card combo the fill can place fits this commander, so the deck is bracket 1-2.");
-    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(bracketRadios()).toHaveLength(0);
     expect(createButton().hasAttribute("disabled")).toBe(false);
   });
 
@@ -227,7 +230,7 @@ describe("the hand-off's Bracket row, read", () => {
     expect(rowText("Bracket")).toBe("Bracket3 · UpgradedThe fill keeps every card it chooses inside bracket 3’s limits.");
     expect(createButton().hasAttribute("disabled")).toBe(false);
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, handOff().create);
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, handOff().create, "free");
   });
 
   it("reads nothing without the flag: today's line, no call", async () => {
@@ -258,17 +261,17 @@ describe("the hand-off's Bracket row, read", () => {
     view.rerender(<CreatePreFilled {...base} handOff={next} />);
     // In that same render: pending, no rows, Create held. The old Hit cannot submit.
     expect(screen.getByTestId("hand-off-reach-pending")).toBeTruthy();
-    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(bracketRadios()).toHaveLength(0);
     expect(createButton().hasAttribute("disabled")).toBe(true);
     await submit();
     expect(createDeck).not.toHaveBeenCalled();
     // The new read lands: the choice is fresh, nothing picked, still held.
     await act(async () => { land(SHORT); });
-    expect(screen.getAllByRole("radio").map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
+    expect(bracketRadios().map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
     expect(createButton().hasAttribute("disabled")).toBe(true);
     fireEvent.click(screen.getByTestId("bracket-choice-mine"));
     await submit();
-    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...next.create, bracket: 2, bracketBuys: false });
+    expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Sai’s Workshop", undefined, null, { ...next.create, bracket: 2, bracketBuys: false }, "free");
     expect(readReach).toHaveBeenLastCalledWith(COMMANDER, next.create, []);
   });
 });

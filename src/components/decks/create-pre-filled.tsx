@@ -25,6 +25,10 @@ import type { CreateAnswers } from "../../lib/intake/answers";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 import { PendingReporter } from "../shell/pending-reporter";
 import { ArtLayer } from "../ui/art-layer";
+import { BuildChoice } from "./build-choice";
+import { guidedBuildCopy } from "../../lib/copy/guided-build";
+import type { DeckBuildKind } from "../../lib/decks/build-kind";
+import type { SelectedPick } from "../../lib/decks/selected-picks";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -40,6 +44,9 @@ interface CreatePreFilledProps {
       so the picker door, which has no commander in the URL and therefore no
       selection to carry, needs no change. */
   selectedOracleIds?: string[];
+  /** Those picks as the screen draws them (name, image, owned), and the commander's own page where they are changed. */
+  picks?: SelectedPick[];
+  commanderHref?: string | null;
   /**
    * Set when a Help me choose result brought the player here (HANDOFF §6): every way back leads to
    * those results, the subs say the deck is built from the answers, the answers block is drawn
@@ -73,10 +80,14 @@ export function CreatePreFilled({
   colorIdentity,
   imageUri,
   selectedOracleIds,
+  picks = [],
+  commanderHref = null,
   handOff,
 }: CreatePreFilledProps) {
   const backHref = handOff?.resultsHref ?? "/decks/new";
   const [deckName, setDeckName] = useState("");
+  // Today's fill is the default and is pre-marked; the reader chooses to leave it.
+  const [build, setBuild] = useState<DeckBuildKind>("free");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -115,7 +126,8 @@ export function CreatePreFilled({
     return () => { live = false; };
   }, [readKey]);
   const mustChoose = needsBracketChoice(reach);
-  const waiting = reach?.status === "pending" || (mustChoose && choice === null);
+  // Just the commander runs no fill, so the bracket reach and its choice have nothing to decide: they never hold the press.
+  const waiting = build === "free" && (reach?.status === "pending" || (mustChoose && choice === null));
 
   const gradient = commanderGradient(colorIdentity);
 
@@ -137,7 +149,7 @@ export function CreatePreFilled({
       : handOff?.create ?? null;
     startTransition(async () => {
       try {
-        await createDeck(oracleId, trimmed, selectedOracleIds, null, asked);
+        await createDeck(oracleId, trimmed, selectedOracleIds, null, build === "empty" ? null : asked, build);
       } catch (err) {
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
@@ -191,10 +203,10 @@ export function CreatePreFilled({
 
           {/* §Subtitle: mobile mono 10px var(--fg-faint) mt 1; desktop IBM Plex Sans 14px var(--fg-muted) mb 26 */}
           <p className="font-mono text-[10px] mt-[1px] md:hidden" style={{ color: "var(--fg-faint)", marginBottom: 0 }}>
-            {handOff ? handOffCopy.subPhone : "Commander selected"}
+            {handOff && build === "free" ? handOffCopy.subPhone : "Commander selected"}
           </p>
           <p className="font-sans hidden md:block text-[14px]" style={{ color: "var(--fg-muted)", marginBottom: 26 }}>
-            {handOff ? handOffCopy.sub : "Name your deck."}
+            {handOff && build === "free" ? handOffCopy.sub : "Name your deck."}
           </p>
         </div>
       </div>
@@ -333,7 +345,7 @@ export function CreatePreFilled({
             </div>
           </div>
 
-          {handOff?.drawBlock && (
+          {handOff?.drawBlock && build === "free" && (
             <HandOffAnswersBlock
               answers={handOff.answers} changeHref={handOff.changeHref}
               reach={reach} choice={choice} onChoose={setChoice}
@@ -381,6 +393,15 @@ export function CreatePreFilled({
               </p>
             ) : null}
 
+            <BuildChoice
+              value={build}
+              onChange={setBuild}
+              commander={name.split(",")[0]}
+              picks={picks}
+              commanderHref={commanderHref}
+              disabled={isPending}
+            />
+
             {/* The two CTAs are a flex row (column on mobile) with an explicit
                 gap. They used to be a margin plus the whitespace between two
                 inline-blocks, which collapsed to nothing on desktop (#125). */}
@@ -391,7 +412,7 @@ export function CreatePreFilled({
                 disabled={isPending || deckName.trim().length === 0 || waiting}
                 className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-[26px]"
               >
-                {isPending ? "Creating…" : "Create deck →"}
+                {isPending ? "Creating…" : guidedBuildCopy.press[build]}
               </PrimaryButton>
 
               {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md
