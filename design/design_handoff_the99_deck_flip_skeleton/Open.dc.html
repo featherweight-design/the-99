@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Opening a deck</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2140px; height: 1780px; box-sizing: border-box; padding: 32px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #E1E8E9">Opening a deck · the same skeleton</h2>
+    <p style="margin: 0; font-size: 15px; color: #95A4A6">Every open of your own deck draws it, not only a flip. From Decks or Home the tile already holds the header, so A draws (as on the A board). A link or a reload has nothing in hand: B’s header, and the strip row is held with ‹ All decks until the place in the list is read.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 390px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">PHONE · OPENED BY A LINK</div>
+      <img src="art/O-phone.png" alt="Opening by link, phone" style="width: 390px; height: 1580px; display: block; border-radius: 6px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 1300px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">DESKTOP · OPENED BY A LINK</div>
+      <img src="art/O-desk.png" alt="Opening by link, desktop" style="width: 1300px; height: 1180px; display: block; border-radius: 6px">
+    </div>
+    <div style="width: 320px; display: flex; flex-direction: column; gap: 14px; padding-top: 26px">
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">From Decks:</b> A, strip with its place (the tile writes the list, as today).</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">From Home or anywhere a deck tile shows:</b> A; the strip’s count and arrows land with the page.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">A link, a reload, a notification:</b> B, as drawn here.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">Unchanged:</b> precons, friend decks and the deck’s other routes (Changes, Import) keep their own loading screens.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2140,"height":1780}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
