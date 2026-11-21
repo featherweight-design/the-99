@@ -51,7 +51,7 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     [".anim-backdrop-in", `backdrop-in ${DURATION} ${EASE} both`],
     // Arrivals wait a beat.
     [".anim-sheet-in", `filter-sheet-in ${DURATION} ${EASE} ${DELAY} both`],
-    [".anim-sheet-in-phone", `filter-sheet-in ${DURATION} ${EASE} ${DELAY} both`],
+    [".anim-sheet-in-phone", `filter-sheet-in ${DURATION} ${EASE} ${DELAY} backwards`],
     // The kept curves, on token lengths: the stacked card and the phone card keep the sheet's snap curve.
     [".anim-stack-rise", `stack-rise ${DURATION} ${OUT} ${DELAY} both`],
     // `backwards`: a held end state would own the `scale` and `opacity` the next swipe writes.

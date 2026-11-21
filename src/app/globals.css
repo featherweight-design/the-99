@@ -906,7 +906,8 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 .anim-sheet-in { animation: filter-sheet-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
 /* The same entrance on the phone alone: a sheet that is a bottom sheet below 768 and a centred dialog from 768, where it
    does not move. `max-md:` cannot prefix a plain-CSS class (`max-md:anim-sheet-in` generated nothing), hence the media rule. */
-.anim-sheet-in-phone { animation: filter-sheet-in var(--motion-duration) var(--motion-ease) var(--motion-delay) both; }
+/* `backwards`, not `both`: a held `transform` would make the dialog the containing block of any fixed descendant. */
+.anim-sheet-in-phone { animation: filter-sheet-in var(--motion-duration) var(--motion-ease) var(--motion-delay) backwards; }
 @media (min-width: 48rem) {
   .anim-sheet-in-phone { animation: none; }
 }

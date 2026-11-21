@@ -1,7 +1,7 @@
 // probe:modal-sweep — the phone entrance of a ModalChrome dialog, pressed in a real browser at 390x844 and 1300x820
 // (Hugh, 2026-11-21: "make them all match": a sheet slides up on a phone and is instant on desktop). It opens
 // About > Report a problem (drawn in `ModalChrome`, as are ~22 other dialogs, so one caller proves the class) and asserts, at open:
-//   390:  the dialog runs a `filter-sheet-in` animation (read from `getAnimations()`);
+//   390:  the dialog runs a `filter-sheet-in` animation (read from the computed `animation-name` the frame it mounts);
 //   1300: the dialog runs no animation.
 // Its one write: About draws the Report row only with FEEDBACK_ENABLED on, so the run adds a per-user `flag_overrides`
 // row (marked `updated_by = probe:modal-sweep`, only when the account has none of its own) and deletes it in `finally`.
@@ -75,7 +75,7 @@ async function walk(browser, width) {
   const L = (s) => `${width.label}: ${s}`;
   const phone = width.label === 390;
   const check = (name, info) => {
-    const sheetIn = info.css === "filter-sheet-in" || info.names.includes("filter-sheet-in");
+    const sheetIn = info.css === "filter-sheet-in";
     report(L(`${name} ${phone ? "slides in" : "is instant"}`), info.found && sheetIn === phone, `animationName ${info.css}`);
   };
   try {
@@ -99,7 +99,7 @@ async function walk(browser, width) {
       if (i === 11) throw new Error("Report a problem never opened");
     }
     const seen = await page.evaluate(() => window.__seen);
-    check("About > Report a problem", { found: true, names: [], css: seen });
+    check("About > Report a problem", { found: true, css: seen });
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/modal-sweep-report-${width.label}.png` });
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
@@ -110,7 +110,7 @@ async function walk(browser, width) {
 }
 
 const [{ branch } = {}] = await sql`select current_setting('neon.branch_id', true) as branch`;
-assertNotSharedBranch(branch, "probe:modal-close-focus");
+assertNotSharedBranch(branch, "probe:modal-sweep");
 await clerkSetup();
 const browser = await chromium.launch();
 try {
