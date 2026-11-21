@@ -10,7 +10,8 @@
 import { and, eq, inArray } from "drizzle-orm";
 import type { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
-import { pruneOrphanLocks } from "../decks/locks";
+import { deckBodySize } from "../decks/deck-size";
+import { liveLockedIds, pruneOrphanLocks } from "../decks/locks";
 import { canPair, partnerAbility } from "../decks/partner";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { touchDeck } from "../decks/touch";
@@ -31,6 +32,22 @@ export type ChangeCommanderRefusal =
 
 export type ChangeCommanderResult = { ok: true } | { ok: false; reason: ChangeCommanderRefusal };
 
+/**
+ * The cut a `pairAdd` needs (#491). A pair leads 98, so a deck whose body holds more than 98 must
+ * lose exactly the excess, and a body already at 98 or under loses nothing. Over 99 is refused: no
+ * single cut brings it to 98 (the sheet hides the add for such a deck, and this refuses a request that skips the sheet). The cut is a card of the
+ * body, never a commander half, and never a locked one.
+ */
+export function cutAllowed(
+  bodyTotal: number, cut: string | null, inBody: ReadonlySet<string>,
+  commanders: readonly string[], locked: ReadonlySet<string>,
+): boolean {
+  const excess = bodyTotal - deckBodySize(true);
+  if (excess <= 0) return cut === null;
+  if (excess > 1 || cut === null) return false;
+  return inBody.has(cut) && !commanders.includes(cut) && !locked.has(cut);
+}
+
 /** Sorted, so two identities compare as sets. */
 function identity(rows: readonly { colorIdentity: string[] }[]): string[] {
   return [...new Set(rows.flatMap((r) => r.colorIdentity))].sort();
@@ -43,12 +60,24 @@ export function identityFits(from: readonly string[], to: readonly string[], gro
   return from.every((c) => to.includes(c));
 }
 
+/** Takes one copy of a card out of the 99. A copy beyond the first drops the quantity and returns
+ *  false; a last copy returns true and the caller deletes the row, in the block that prunes the
+ *  proxies and locks the removal leaves behind. */
+async function takeOne(tx: Tx, deckId: string, oracleId: string, quantity: number): Promise<boolean> {
+  if (quantity <= 1) return true;
+  await tx.update(deckCards).set({ quantity: quantity - 1 })
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
+  return false;
+}
+
 /** The whole write, inside the caller's transaction. Refuses, writing nothing, unless the deck is
  *  the user's, the new leader is legal, and it matches the deck's size and exact identity. */
 export async function writeCommanderChange(
   tx: Tx, deckId: string, userId: string, to: CommanderPair,
   /** A half-trade's choice: the old half that takes the freed slot. Refused anywhere else. */
   staysOracleId: string | null = null,
+  /** A `pairAdd`'s cut: the card that leaves so the deck stays at 100. Refused anywhere else. */
+  cutOracleId: string | null = null,
 ): Promise<ChangeCommanderResult> {
   const [deck] = await tx.select({
     commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId,
@@ -109,6 +138,20 @@ export async function writeCommanderChange(
     return { ok: false, reason: "illegal" };
   }
 
+  // The partner from outside the 99 opens no slot, so the deck's size is the write's to check:
+  // the cut is validated against the rows locked above and the live locks, never the client's view.
+  const gone: string[] = [];
+  if (shape === "pairAdd") {
+    const total = [...inBody.values()].reduce((a, b) => a + b, 0);
+    const locked = await liveLockedIds(tx, deckId);
+    if (!cutAllowed(total, cutOracleId, new Set(inBody.keys()), toIds, locked)) {
+      return { ok: false, reason: "illegal" };
+    }
+    if (cutOracleId !== null && await takeOne(tx, deckId, cutOracleId, inBody.get(cutOracleId)!)) gone.push(cutOracleId);
+  } else if (cutOracleId !== null) {
+    return { ok: false, reason: "illegal" };
+  }
+
   // The trade: each arriving half that comes out of the 99 frees one slot, and a departing
   // half takes it. A commander that arrives from outside the 99 opens no slot, so the one it
   // replaces simply leaves.
@@ -117,15 +160,8 @@ export async function writeCommanderChange(
   // A `pairUp` brings one half out of the 99, and a pair leads 98, so no old card takes its slot.
   const departing = shape === "pairUp" ? []
     : staysOracleId ? [staysOracleId, ...leaving.filter((id) => id !== staysOracleId)] : leaving;
-  const gone: string[] = [];
   for (const [i, id] of arrivingFromBody.entries()) {
-    const quantity = inBody.get(id)!;
-    if (quantity > 1) {
-      await tx.update(deckCards).set({ quantity: quantity - 1 })
-        .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, id)));
-    } else {
-      gone.push(id);
-    }
+    if (await takeOne(tx, deckId, id, inBody.get(id)!)) gone.push(id);
     const slot = departing[i];
     if (slot !== undefined) {
       await tx.insert(deckCards).values({ deckId, oracleId: slot, quantity: 1, auto: false })

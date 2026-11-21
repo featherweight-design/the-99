@@ -66,7 +66,16 @@ describe("changeCommander at the request boundary", () => {
     expect(transaction).not.toHaveBeenCalled();
     transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => fn("tx"));
     await changeCommander(DECK, { commanderOracleId: CARD, partnerOracleId: null }, CARD);
-    expect(writeCommanderChange).toHaveBeenCalledWith("tx", DECK, "user_1", { commanderOracleId: CARD, partnerOracleId: null }, CARD);
+    expect(writeCommanderChange).toHaveBeenCalledWith("tx", DECK, "user_1", { commanderOracleId: CARD, partnerOracleId: null }, CARD, null);
+  });
+
+  it("refuses a malformed cut, and passes a well-formed one to the write", async () => {
+    const to = { commanderOracleId: CARD, partnerOracleId: CARD };
+    expect(await changeCommander(DECK, to, null, "z")).toEqual({ ok: false, reason: "illegal" });
+    expect(transaction).not.toHaveBeenCalled();
+    transaction.mockImplementationOnce(async (fn: (tx: unknown) => unknown) => fn("tx"));
+    await changeCommander(DECK, to, null, CARD);
+    expect(writeCommanderChange).toHaveBeenCalledWith("tx", DECK, "user_1", to, null, CARD);
   });
 });
 
