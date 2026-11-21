@@ -2830,7 +2830,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   the body face, so it fails at the first check. It only reads and taps (the game lives in the device's localStorage),
   but the fixture table needs a scratch branch seeded by `scripts/seed-rule-zero-fixture.mts`, and the account's other
   fixture tables throw seat notices over the lower edge (the probe removes them from the page). `SHEET_TABLE` picks
-  another table and `SHOTS=<dir>` keeps a photograph of each state.
+  another table, `SHEET_EXPECT=partner` (two steppers, two art halves, a rule between) or `noart` (no image) names what the
+  table's one opponent plays instead of the default single commander with art (a probe-local fixture: on a scratch branch,
+  give the opponent's deck a partner, or clear the seat's deck), and `SHOTS=<dir>` keeps a photograph of each state.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a

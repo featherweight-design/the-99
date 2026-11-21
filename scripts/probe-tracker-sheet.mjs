@@ -16,6 +16,9 @@ const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(BASE)) throw new Error("PROBE_BASE must be a local dev server");
 const TABLE = process.env.SHEET_TABLE ?? "7a0e0000-0000-4000-8000-000000000005";
 const SHOTS = process.env.SHOTS;
+// What the table's one opponent plays: "one" commander with art (the default), "partner" (two commanders, two art
+// halves, two steppers), or "noart" (a seat whose commander draws no image).
+const EXPECT = process.env.SHEET_EXPECT ?? "one";
 const WIDTHS = [
   { label: "phone 390x844", width: 390, height: 844 },
   { label: "desktop 1300x900", width: 1300, height: 900 },
@@ -101,8 +104,14 @@ try {
     check("damage count is Cinzel and big", /cinzel/i.test(countStyle["font-family"]) && parseFloat(countStyle["font-size"]) >= 28, `${countStyle["font-size"]}`);
     const btn = await more.boundingBox();
     check("damage stepper is a 44px target", (btn?.width ?? 0) >= 44 && (btn?.height ?? 0) >= 44, `${btn?.width}x${btn?.height}`);
-    const art = await sheet.locator("img").count();
-    check("damage card draws commander art when the seat has it", art >= 0);
+    const steppers = await sheet.locator('[aria-live="polite"]').count();
+    const art = await sheet.locator("span[aria-hidden] img").count();
+    const rule = await sheet.locator(".border-t.pt-2").count();
+    const wantSteppers = EXPECT === "partner" ? 2 : 1;
+    const wantArt = EXPECT === "partner" ? 2 : EXPECT === "noart" ? 0 : 1;
+    check(`damage card has ${wantSteppers} stepper(s)`, steppers === wantSteppers, `${steppers}`);
+    check(`damage card draws ${wantArt} commander image(s)`, art === wantArt, `${art}`);
+    check("a partner pair is split by a rule, a single commander is not", rule === (EXPECT === "partner" ? 1 : 0), `${rule}`);
 
     // The modal sheet covers the whole table, the turn strip included: the stepper centre must hit a sheet control.
     const covered = await page.evaluate(() => {
