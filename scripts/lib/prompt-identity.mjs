@@ -30,6 +30,7 @@ export const BUILDERS = [
   { file: "src/lib/synopsis/prompt.ts", fns: ["buildSynopsisPrompt"] },
   { file: "src/lib/synopsis/generate.ts", fns: ["repairPrompt"] },
   { file: "src/lib/labels/prompt.ts", fns: ["buildRequest"] },
+  { file: "src/lib/labels/judged.ts", fns: ["buildJudgedRequest", "renderJudgedBody"] },
   { file: "src/lib/prose/prompt.ts", fns: ["buildProsePrompt", "buildProseRetryPrompt"] },
   // The eval harness's prompt variants, which append to a shipped builder's system and user. A non-callable export
   // (a variant table) is walked as a value: every function in it, its parameters and its return.
@@ -59,6 +60,8 @@ export const CALLERS = {
   "scripts/lib/prose-request.ts": { builders: ["src/lib/prose/prompt.ts"], note: "sends the prompt generate-commander-prose.ts builds with buildProsePrompt; adds nothing of its own" },
   "scripts/lib/precon-overview-request.ts": { builders: ["src/lib/synopsis/prompt.ts"], note: "builds a precon Overview's request from the catalog; sends nothing" },
   "scripts/build-card-labels.ts": { builders: ["src/lib/labels/prompt.ts"] },
+  "scripts/build-judged-labels.ts": { builders: ["src/lib/labels/judged.ts"] },
+  "scripts/lib/judged-labels-build.ts": { builders: ["src/lib/labels/judged.ts"], note: "sends through the client its caller hands it" },
   "scripts/label-cards-run.mts": { builders: ["src/lib/labels/prompt.ts"] },
   "scripts/lib/card-labels-build.ts": { builders: ["src/lib/labels/prompt.ts"], note: "sends through the client its caller hands it" },
   "scripts/label-cards-collect.mts": { note: "collects batch results; sends no prompt" },

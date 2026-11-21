@@ -282,6 +282,7 @@
     "check:constraints": "node scripts/check-constraints.mjs",
     "check:migrations": "node scripts/check-migrations.mjs",
     "db:build:labels": "tsx scripts/build-card-labels.ts",
+    "db:build:judged": "tsx scripts/build-judged-labels.ts",
     "db:copy:labels": "tsx scripts/copy-card-labels.ts",
     "db:catalog-build": "tsx scripts/catalog-build.ts",
     "db:index-due": "tsx scripts/index-due.ts",
