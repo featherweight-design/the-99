@@ -47,10 +47,10 @@ export function LeadSlot({ lead, now, face }: { lead: FeedView | null; now: stri
   // The failure toast lives here, not in the story: a failed answer releases the hold, and the story that showed it may
   // then be replaced or gone (the server's lead moved on while the answer was out).
   const toast = useSpareToast();
-  // Hidden with its ✕, the story leaves the slot at once; the refresh that follows draws Home without it.
+  // Hidden with its ✕ or by What's new's Clear all (`publish.gone`), the story leaves the slot at once; the refresh that follows draws Home without it.
   const dismissed = useFeedDismiss(() => document.getElementById(HOME_HEADING_ID), (key, on) =>
     publish?.setGone(on ? key : null));
-  const shown = held ?? (lead && !dismissed.hidden.has(lead.key) ? { item: lead, face: face ?? null } : null);
+  const shown = held ?? (lead && !dismissed.hidden.has(lead.key) && publish?.gone !== lead.key ? { item: lead, face: face ?? null } : null);
   if (!shown) return <>{toast.node}{dismissed.toast}</>;
   const hold = (on: boolean) => {
     setHeld(on ? shown : null);

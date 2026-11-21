@@ -375,7 +375,8 @@ describe("WhatsNew, the Past announcements entry (small items 11, item 3)", () =
     const { container } = render(<WhatsNew feed={chosen(items)} now={NOW} archive />);
     const foot = container.querySelector("[data-feed-footer]")!;
     expect(entry(container)).toHaveAttribute("href", "/announcements");
-    expect([...foot.children].map((c) => c.textContent)).toEqual(["Past announcements›", `Show all ${items.length}`]);
+    // Clear all sits between them (the clear-all handoff): the entry, then Clear all and Show all in the foot's right group.
+    expect([...foot.children].map((c) => c.textContent)).toEqual(["Past announcements›", `Clear allShow all ${items.length}`]);
   });
 
   it("keeps the foot for the entry alone when every row fits, and draws it under the quiet line", () => {

@@ -17,6 +17,7 @@ import { displaceLead, useHeldLead } from "./held-lead";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { clearFeedItemsAction, restoreFeedItemsAction } from "../../app/feed-dismiss-actions";
 import { closeFeedOfferAction, saveFeedKinds } from "../../app/settings/feed-actions";
 import { feedCopy } from "../../lib/copy/feed";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
@@ -26,7 +27,9 @@ import { ComboGlyph } from "../cards/combo-glyph";
 import { NavIcon } from "../shell/nav-icons";
 import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
-import { AnswerSheetProvider } from "./answer-sheet";
+import { AnswerSheetProvider, useAnswerSheet } from "./answer-sheet";
+import { SocialToast, type SocialToastState } from "../social/social-toast";
+import { CLEAR_ALL_MAX } from "../../lib/social/feed-dismiss-limits";
 import { HOME_HEADING_ID } from "./home-heading";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
@@ -69,6 +72,21 @@ function ArchiveEntry() {
   );
 }
 
+/** Clear all, the foot's text press before Show all: Show all's size, in `--fg-muted` so Show all stays the main press. */
+function ClearAllPress({ onPress }: { onPress: () => void }) {
+  return (
+    <button
+      type="button"
+      data-clear-all
+      aria-label={c.clearAll.aria}
+      onClick={onPress}
+      className="flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg-muted)] focus-visible:outline-transparent focus-visible:shadow-[0_0_0_2px_var(--accent)] md:min-h-[36px]"
+    >
+      {c.clearAll.label}
+    </button>
+  );
+}
+
 /** The foot with the entry alone, under a box with no rows (the quiet line, the offer). */
 function ArchiveFoot() {
   return (
@@ -99,8 +117,66 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
   const offer = chosen ? (feed.items.length + drops > 0 && feed.offer && feed.offer.length > 0 ? feed.offer : null) : feed.offer.length > 0 ? feed.offer : null;
   // After its ✕ this visit, the quiet line alone: with no kind on, its lead alone (nothing to name).
   const [offerGone, setOfferGone] = useState(false);
+  // Clear all (clear-all handoff): the clearable keys, lead first. The lead is the slot's own story, so it joins only while
+  // the slot holds nothing (a held lead is an answer out or a receipt, and `displaceLead` has already moved the server's).
+  const [clearToast, setClearToast] = useState<SocialToastState | null>(null);
+  const [clearFailed, setClearFailed] = useState<SocialToastState | null>(null);
+  const clearSeq = useRef(0);
+  const refocusClear = useRef(false);
+  useEffect(() => {
+    if (!refocusClear.current) return;
+    const press = document.querySelector<HTMLElement>("[data-clear-all]");
+    if (!press) return;
+    refocusClear.current = false;
+    press.focus();
+  });
+  const leadKey = chosen && feed.lead && heldLead && heldLead.key === null ? feed.lead.key : null;
+  const clearable = chosen ? [...(leadKey ? [leadKey] : []), ...feed.items.map((i) => i.key), ...(feed.upcoming ?? []).map((i) => i.key)] : [];
+  const bring = (keys: readonly string[], on: boolean, lead: string | null) => {
+    dismissed.hideMany(keys, on);
+    if (lead) heldLead?.setGone(on ? lead : null);
+  };
+  const clearAll = (pending: string | null) => {
+    const keys = [...new Set(clearable.filter((k) => k !== pending))].slice(0, CLEAR_ALL_MAX);
+    if (keys.length === 0) return;
+    const lead = leadKey && keys.includes(leadKey) ? leadKey : null;
+    setClearToast(null);
+    bring(keys, true, lead);
+    requestAnimationFrame(() => document.getElementById("home-whats-new")?.focus());
+    const fail = (text: string) => setClearFailed({ id: ++clearSeq.current, text });
+    // Undo lifts only what this press newly wrote: an item dismissed elsewhere meanwhile stays dismissed.
+    const undo = (wrote: string[]) => () => {
+      bring(keys, false, lead);
+      // The press is not on the page until the rows are back: the effect below focuses it once it is.
+      refocusClear.current = true;
+      void (wrote.length > 0 ? restoreFeedItemsAction(wrote) : Promise.resolve({ ok: true as const }))
+        .then((r) => {
+          if (!r.ok) throw new Error(r.reason);
+        })
+        .catch(() => {
+          refocusClear.current = false;
+          bring(keys, true, lead);
+          fail(c.clearAll.undoFailed);
+        });
+    };
+    void clearFeedItemsAction(keys)
+      .then((r) => {
+        if (!r.ok) throw new Error(r.reason);
+        setClearToast({ id: ++clearSeq.current, text: c.clearAll.cleared(keys.length), retry: { label: c.clearAll.undo, run: undo(r.cleared) } });
+      })
+      .catch(() => {
+        bring(keys, false, lead);
+        fail(c.clearAll.failed);
+      });
+  };
+  const clearToasts = (
+    <>
+      <SocialToast toast={clearToast} role="status" onDone={() => setClearToast(null)} />
+      <SocialToast toast={clearFailed} onDone={() => setClearFailed(null)} />
+    </>
+  );
   // The lead alone and nothing more: the head stands over no box, since the quiet line would contradict the lead.
-  if (chosen && feed.items.length === 0 && drops === 0 && feed.lead) return dismissed.toast;
+  if (chosen && feed.items.length === 0 && drops === 0 && feed.lead) return <>{dismissed.toast}{clearToasts}</>;
 
   return (
     <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length + drops > 0 ? "items" : "quiet") : feed.on.length > 0 ? "quiet" : "offer"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
@@ -124,7 +200,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
         ) : (
           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
             <HoverPreviewProvider className="flex flex-col">
-              <Rows items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} archive={archive} />
+              <Rows items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
             </HoverPreviewProvider>
           </AnswerSheetProvider>
         )}
@@ -133,6 +209,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
         {offer && <Offer key={offer.join(",")} offer={offer} rule={chosen || feed.on.length > 0} onClosed={setOfferGone} />}
       </div>
       {dismissed.toast}
+      {clearToasts}
     </section>
   );
 }
@@ -170,9 +247,13 @@ function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>, goneLead: st
   };
 }
 
-function Rows({ items, upcoming, now, faces, zone, expanded, onExpand, onDismiss, archive }: {
+function Rows({ items, upcoming, now, faces, zone, expanded, onExpand, onDismiss, archive, clearCount, onClear }: {
   items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; expanded: boolean; onExpand: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
+  /** Everything Clear all would clear (the lead included), and the press; the press shows from two items. */
+  clearCount: number; onClear: (pending: string | null) => void;
 }) {
+  // The item whose answer sheet is opening is skipped, as its ✕ is while an answer is out.
+  const pending = useAnswerSheet()?.pending ?? null;
   const { today, earlier, hidden } = feedGroups(items, now, expanded);
   // While Upcoming drops shows, the rest is always labelled (handoff call 1); otherwise only when both days hold rows.
   const grouped = upcoming.length > 0;
@@ -188,7 +269,7 @@ function Rows({ items, upcoming, now, faces, zone, expanded, onExpand, onDismiss
       {today.length > 0 && <ul className={ROWS}>{today.map(row)}</ul>}
       {labelled && earlier.length > 0 && <p className={`${DAY} ${today.length > 0 || grouped ? "[border-top:1px_solid_var(--border)]" : ""}`}>{c.earlier}</p>}
       {earlier.length > 0 && <ul className={`${ROWS} ${!labelled && today.length > 0 ? "[border-top:1px_solid_var(--border)]" : ""}`}>{earlier.map(row)}</ul>}
-      <ShowAllFooter hidden={hidden} total={items.length} onExpand={onExpand} aside={archive ? <ArchiveEntry /> : undefined} />
+      <ShowAllFooter hidden={hidden} total={items.length} onExpand={onExpand} aside={archive ? <ArchiveEntry /> : undefined} clear={clearCount >= 2 ? <ClearAllPress onPress={() => onClear(pending)} /> : undefined} />
     </>
   );
 }

@@ -2,9 +2,10 @@
 // product call 6): the reader's own `feed_dismissals` row, which every read leaves out for good (`standing` for stored
 // items and push, the catalog branches in `lib/feed/read.ts`, `notDismissedAsk` for the asks). Lives here because an
 // item's key is resolved through `feed_items`, a social table (`check:social-reads`). Never answers an ask.
-import { sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { feedDismissals, feedItems, spareRequests } from "../../db/schema";
+import { CLEAR_ALL_MAX } from "./feed-dismiss-limits";
 import { isUuid } from "./rules";
 
 /** What the ✕ names: Home's opaque key for an item, or a Waiting on you ask by its request id. */
@@ -52,4 +53,47 @@ export function dismissQuery(userId: string, t: DismissTarget): SQL {
 /** Dismisses the target for the reader. Whether anything matched is not reported: a ✕ on a row already gone is done. */
 export async function dismissFeedTarget(userId: string, t: DismissTarget): Promise<void> {
   await db.execute(dismissQuery(userId, t));
+}
+
+/**
+ * The keys Clear all may write or lift: Home's own (`item:`, `set:`, `precon:`, `post:`), never an `ask:` (Clear all
+ * does not answer or hide a Waiting row), at most `CLEAR_ALL_MAX`, deduplicated. Null when the input is not that, so
+ * one bad key refuses the lot.
+ */
+export function parseClearKeys(raw: unknown): { items: string[]; catalog: string[] } | null {
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > CLEAR_ALL_MAX) return null;
+  const items = new Set<string>();
+  const catalog = new Set<string>();
+  for (const k of raw) {
+    const t = parseDismissKey(k);
+    if (!t || t.kind === "ask") return null;
+    if (t.kind === "item") items.add(t.id);
+    else catalog.add(t.key);
+  }
+  return { items: [...items], catalog: [...catalog] };
+}
+
+/** The one statement behind Clear all: every stored item only from the reader's own rows, every catalog key as given. Idempotent. */
+export function clearQuery(userId: string, k: { items: string[]; catalog: string[] }): SQL {
+  const parts: SQL[] = [];
+  if (k.items.length > 0) {
+    parts.push(sql`select dfi.user_id, 'item:' || dfi.id::text from ${feedItems} dfi
+    where dfi.user_id = ${userId} and dfi.id in (${sql.join(k.items.map((id) => sql`${id}::uuid`), sql`, `)})`);
+  }
+  if (k.catalog.length > 0) {
+    parts.push(sql`select ${userId}::text, ck from (values ${sql.join(k.catalog.map((key) => sql`(${key})`), sql`, `)}) as c(ck)`);
+  }
+  return sql`insert into ${feedDismissals} (user_id, key) ${sql.join(parts, sql` union all `)} on conflict do nothing returning key`;
+}
+
+/** Clear all's write. Returns the keys it newly wrote: one the reader had already dismissed (another tab) is not among them, so Undo leaves it alone. */
+export async function clearFeedKeys(userId: string, k: { items: string[]; catalog: string[] }): Promise<string[]> {
+  const done = await db.execute<{ key: string }>(clearQuery(userId, k));
+  return done.rows.map((r) => r.key);
+}
+
+/** Undo's inverse: the reader's own dismissals for the keys Clear all newly wrote (its action returns them), and nobody else's. */
+export async function restoreFeedKeys(userId: string, k: { items: string[]; catalog: string[] }): Promise<void> {
+  const keys = [...k.items.map((id) => `item:${id}`), ...k.catalog];
+  await db.delete(feedDismissals).where(and(eq(feedDismissals.userId, userId), inArray(feedDismissals.key, keys)));
 }

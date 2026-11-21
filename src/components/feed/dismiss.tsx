@@ -80,6 +80,8 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
   hidden: ReadonlySet<string>;
   /** `move: false` hides the row without moving focus: a press made elsewhere, after the reader moved on (the answer sheet's late Clear). */
   dismiss: (key: string, from: HTMLElement, move?: boolean) => void;
+  /** Hides (or brings back) many rows at once, writing nothing: Clear all owns its write, its Undo and its focus. */
+  hideMany: (keys: readonly string[], on: boolean) => void;
   toast: ReactNode;
 } {
   const [hidden, setHidden] = useState<ReadonlySet<string>>(() => new Set());
@@ -107,5 +109,14 @@ export function useFeedDismiss(fallback?: () => HTMLElement | null, onChange?: (
         setToast({ id: ++seq.current, text: d.failed });
       });
   }
-  return { hidden, dismiss, toast: <SocialToast toast={toast} onDone={() => setToast(null)} /> };
+  const hideMany = (keys: readonly string[], on: boolean) =>
+    setHidden((prev) => {
+      const next = new Set(prev);
+      for (const k of keys) {
+        if (on) next.add(k);
+        else next.delete(k);
+      }
+      return next;
+    });
+  return { hidden, dismiss, hideMany, toast: <SocialToast toast={toast} onDone={() => setToast(null)} /> };
 }

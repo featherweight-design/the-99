@@ -2,11 +2,12 @@
 // with the ✕ (small items board `Dismiss-X`), 44px on a phone and 32px from desktop with a 44px coarse hit, the press hides the item at once under the key the server
 // keeps (Home's own key; an ask by `ask:<request id>`), the count follows, and a failed write brings the row back with
 // the toast.
+import { useEffect } from "react";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const m = vi.hoisted(() => ({ dismiss: vi.fn() }));
-vi.mock("../../app/feed-dismiss-actions", () => ({ dismissFeedItemAction: m.dismiss }));
+const m = vi.hoisted(() => ({ dismiss: vi.fn(), clear: vi.fn(), restore: vi.fn() }));
+vi.mock("../../app/feed-dismiss-actions", () => ({ dismissFeedItemAction: m.dismiss, clearFeedItemsAction: m.clear, restoreFeedItemsAction: m.restore }));
 vi.mock("../../app/settings/feed-actions", () => ({ saveFeedKinds: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => ({ answerSpareAction: vi.fn() }));
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => null }));
@@ -14,7 +15,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: 
 
 import { WhatsNew } from "../home/whats-new";
 import { LeadSlot } from "../home/lead-story";
-import { HeldLeadProvider } from "../home/held-lead";
+import { HeldLeadProvider, useHeldLead } from "../home/held-lead";
 import { nextDismiss } from "./dismiss";
 import { WaitingOnYou } from "../social/waiting-on-you";
 import { FeedItemRow } from "./feed-item";
@@ -41,6 +42,10 @@ const titleOf = (n: number) => feedCopy.home.title.newSet(`Set ${n}`);
 beforeEach(() => {
   m.dismiss.mockReset();
   m.dismiss.mockResolvedValue({ ok: true });
+  m.clear.mockReset();
+  m.clear.mockImplementation(async (keys: string[]) => ({ ok: true, cleared: keys }));
+  m.restore.mockReset();
+  m.restore.mockResolvedValue({ ok: true });
 });
 afterEach(cleanup);
 
@@ -184,6 +189,83 @@ describe("the lead and the count (Copilot round 1, #2285)", () => {
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: plain(d.aria(titleOf(9))) })); });
     expect(screen.getByText(titleOf(9))).toBeInTheDocument();
     expect(screen.getByText(feedCopy.home.newCount(2), { exact: false })).toBeInTheDocument();
+  });
+});
+
+const ca = feedCopy.home.clearAll;
+const LEAD = "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f";
+const clearBtn = () => screen.queryByRole("button", { name: ca.aria });
+
+describe("Clear all", () => {
+  it("shows from two items, the lead counted, and not for one", () => {
+    const one = render(<WhatsNew feed={feed([view(1)])} now={NOW} />);
+    expect(clearBtn()).toBeNull();
+    one.unmount();
+    const two = render(<HeldLeadProvider><WhatsNew feed={feed([view(1)], view(9, { key: LEAD }))} now={NOW} /></HeldLeadProvider>);
+    expect(clearBtn()).not.toBeNull();
+    two.unmount();
+    render(<WhatsNew feed={feed([view(1), view(2)])} now={NOW} />);
+    expect(clearBtn()).not.toBeNull();
+  });
+  it("hides every row at once, writes every key (rows, drops and the rows under Show all) lead first, and offers Undo", async () => {
+    const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
+    const rows = [1, 2, 3, 4, 5, 6, 7].map((n) => view(n));
+    render(<HeldLeadProvider><LeadSlot lead={view(9, { key: LEAD })} now={NOW} /><WhatsNew feed={feed(rows, view(9, { key: LEAD }))} now={NOW} /></HeldLeadProvider>);
+    await act(async () => { fireEvent.click(clearBtn()!); });
+    expect(m.clear).toHaveBeenCalledWith([LEAD, ...rows.map((r) => r.key)]);
+    expect(screen.queryByText(titleOf(1))).toBeNull();
+    expect(screen.queryByText(titleOf(9))).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(ca.cleared(8));
+    expect(document.activeElement?.id).toBe("home-whats-new");
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: ca.undo })); });
+    expect(m.restore).toHaveBeenCalledWith([LEAD, ...rows.map((r) => r.key)]);
+    expect(screen.getByText(titleOf(1))).toBeInTheDocument();
+    expect(screen.getByText(titleOf(9))).toBeInTheDocument();
+    raf.mockRestore();
+  });
+  it("skips a held lead (an answer out or a receipt) and counts only what it cleared", async () => {
+    const Hold = () => {
+      const held = useHeldLead();
+      useEffect(() => held?.setKey("item:held"), []); // eslint-disable-line react-hooks/exhaustive-deps
+      return null;
+    };
+    render(<HeldLeadProvider><Hold /><WhatsNew feed={feed([view(1), view(2)], view(9, { key: LEAD }))} now={NOW} /></HeldLeadProvider>);
+    await act(async () => { fireEvent.click(clearBtn()!); });
+    // The slot holds, so What's new's list carries the displaced server lead among its rows (`displaceLead`): three rows, no lead slot.
+    expect(m.clear).toHaveBeenCalledTimes(1);
+    const keys = m.clear.mock.calls[0][0] as string[];
+    expect(keys).toContain(LEAD);
+    expect(screen.getByRole("status")).toHaveTextContent(ca.cleared(3));
+  });
+  it("lifts on Undo only the keys the clear newly wrote, so an item dismissed elsewhere meanwhile stays dismissed", async () => {
+    const rows = [1, 2, 3].map((n) => view(n));
+    m.clear.mockResolvedValue({ ok: true, cleared: [rows[1].key, rows[2].key] });
+    render(<WhatsNew feed={feed(rows)} now={NOW} />);
+    await act(async () => { fireEvent.click(clearBtn()!); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: ca.undo })); });
+    expect(m.restore).toHaveBeenCalledWith([rows[1].key, rows[2].key]);
+  });
+  it("leaves the lead out when the slot holds that very story, and counts only the rows", async () => {
+    const Hold = () => {
+      const held = useHeldLead();
+      useEffect(() => held?.setKey(LEAD), []); // eslint-disable-line react-hooks/exhaustive-deps
+      return null;
+    };
+    render(<HeldLeadProvider><Hold /><WhatsNew feed={feed([view(1), view(2)], view(9, { key: LEAD }))} now={NOW} /></HeldLeadProvider>);
+    await act(async () => { fireEvent.click(clearBtn()!); });
+    expect(m.clear).toHaveBeenCalledTimes(1);
+    const keys = m.clear.mock.calls[0][0] as string[];
+    expect(keys).not.toContain(LEAD);
+    expect(screen.getByRole("status")).toHaveTextContent(ca.cleared(2));
+  });
+  it("brings everything back, with the alert and no Undo, when the write fails", async () => {
+    m.clear.mockResolvedValue({ ok: false, reason: "off" });
+    render(<WhatsNew feed={feed([view(1), view(2)])} now={NOW} />);
+    await act(async () => { fireEvent.click(clearBtn()!); });
+    expect(screen.getByText(titleOf(1))).toBeInTheDocument();
+    expect(screen.getByText(titleOf(2))).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(ca.failed);
+    expect(screen.queryByRole("button", { name: ca.undo })).toBeNull();
   });
 });
 
