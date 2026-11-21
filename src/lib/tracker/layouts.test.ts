@@ -30,6 +30,13 @@ describe("layouts", () => {
     expect(at("tablet-5")).toEqual([[10, 452, 575, 0], [10, 10, 380, 180], [400, 10, 380, 180], [790, 10, 380, 180], [595, 452, 575, 0]]);
   });
 
+  it("offers four seats the same arrangements, by the same names, on both devices", () => {
+    const names = (device: "phone" | "tablet") => layoutsFor(device, 4).map((l) => l.label).sort();
+    expect(names("tablet")).toEqual(names("phone"));
+    const at = (id: string) => layoutById(id)!.cells.map((c) => [c.x, c.y, c.w, c.h, c.rot]);
+    expect(at("tablet-4-around")).toEqual([[270, 452, 640, 358, 0], [10, 10, 250, 800, 90], [270, 10, 640, 358, 180], [920, 10, 250, 800, -90]]);
+  });
+
   it("has unique ids and offers phone 2 to 6 and tablet 4 to 6", () => {
     expect(new Set(LAYOUTS.map((l) => l.id)).size).toBe(LAYOUTS.length);
     for (const device of ["phone", "tablet"] as const) for (const n of [2, 3, 4, 5, 6]) if (!(device === "tablet" && (n === 2 || n === 3))) expect(layoutsFor(device, n).length).toBeGreaterThan(0);
