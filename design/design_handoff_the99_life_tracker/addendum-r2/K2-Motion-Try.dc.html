@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>K2 · Try it</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(/_blob/92b49ae8bf36fee523d2c940101a47cd) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(/_blob/28a118a4f1d2d89f048ed8dda083f273) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(/_blob/ab35e14cb6458bb7fa4f3f54f8f02a5f) format("woff2");font-weight:500}
+body{margin:0}
+.try{--bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-dim:#6B482A;--success:#6FA368;--danger:#C6533F;width:820px;height:420px;box-sizing:border-box;padding:40px 48px;background:var(--bg);color:var(--fg);font-family:"IBM Plex Sans",system-ui,sans-serif;display:flex;flex-direction:column;gap:28px}
+.hd h1{margin:0;font-family:"Cinzel",serif;font-size:30px;font-weight:700}
+.hd p{margin:8px 0 0;font-size:15px;color:var(--fg-body)}
+.spine{height:64px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border);display:flex;align-items:center;justify-content:center;gap:16px}
+.rule{width:1px;height:26px;background:var(--border-strong)}
+.tn{width:50px;height:50px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);font-family:"Cinzel",serif;font-weight:700;font-size:22px}
+.sb{position:relative;width:48px;height:48px;border-radius:50%;border:0;padding:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 200ms cubic-bezier(.45,0,.55,1),background-color 200ms cubic-bezier(.45,0,.55,1),color 200ms cubic-bezier(.45,0,.55,1)}
+.sb.on{color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.sb.off{color:var(--fg-faint)}
+.sb:active{background:var(--accent);color:var(--bg);box-shadow:none;transform:scale(.92)}
+.sb img{position:absolute;right:-5px;bottom:-5px;width:22px;height:22px;border-radius:50%;object-fit:cover;box-shadow:0 0 0 2px var(--surface)}
+.ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.gone{opacity:0}
+.outA{animation:outA 320ms cubic-bezier(.2,.7,.2,1) both}.outB{animation:outB 320ms cubic-bezier(.2,.7,.2,1) both}
+.inA{animation:inA 320ms cubic-bezier(.2,.7,.2,1) both}.inB{animation:inB 320ms cubic-bezier(.2,.7,.2,1) both}
+@keyframes outA{from{transform:none;opacity:1}to{transform:rotate(90deg) scale(.6);opacity:0}}
+@keyframes outB{from{transform:none;opacity:1}to{transform:rotate(90deg) scale(.6);opacity:0}}
+@keyframes inA{from{transform:rotate(-90deg) scale(.6);opacity:0}to{transform:none;opacity:1}}
+@keyframes inB{from{transform:rotate(-90deg) scale(.6);opacity:0}to{transform:none;opacity:1}}
+.rmon .sb{transition:none}.rmon .sb:active{transform:none}
+.rmon .outA,.rmon .outB{animation:none;opacity:0}.rmon .inA,.rmon .inB{animation:none}
+.rm{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px;color:var(--fg-body)}
+.rm input{width:20px;height:20px;accent-color:#CF8745}
+</style>
+</helmet>
+<div class="try {{rmCls}}">
+<div class="hd"><h1>Try it</h1><p>Press any strip button. Tap the sun to turn the day.</p></div>
+<div class="spine h">
+<div class="tn" aria-label="Round 2, Colin's turn">2</div><div class="rule"></div>
+<button class="sb on" aria-label="Monarch: Max. Tap to pass it"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg><img src="/_blob/747b6b5b0a287c64fc2a76924491c25e" alt=""></button>
+<button class="sb off" aria-label="Initiative: nobody. Tap to pass it"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></svg></button>
+<button class="{{dnCls}}" aria-label="{{dnLabel}}" onClick="{{toggle}}"><span class="ico {{outCls}}"><sc-if value="{{outMoon}}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></sc-if><sc-if value="{{outSun}}" hint-placeholder-val="{{ true }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></sc-if></span><span class="ico {{inCls}}"><sc-if value="{{inMoon}}" hint-placeholder-val="{{ false }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></sc-if><sc-if value="{{inSun}}" hint-placeholder-val="{{ true }}"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></sc-if></span></button>
+<button class="sb" aria-label="Roll dice or flip a coin"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3.5"/><circle cx="9" cy="9" r="1.3" fill="currentColor" stroke="none"/><circle cx="15" cy="15" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.3" fill="currentColor" stroke="none"/></svg></button><div class="rule"></div>
+<button class="sb" aria-label="Undo the last change"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7L4 12l5 5"/><path d="M4 12h10a5 5 0 010 10h-2"/></svg></button>
+<button class="sb" aria-label="Menu" aria-haspopup="menu" aria-expanded="false"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="5.5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor" stroke="none"/></svg></button>
+</div>
+<label class="rm"><input type="checkbox" onChange="{{toggleRm}}"> Play it as reduced motion</label>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 820, "height": 420}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { dn: 'off', prev: 'off', k: 0, rm: false }; }
+  toggle() { const s = this.state; this.setState({ prev: s.dn, dn: s.dn === 'day' ? 'night' : 'day', k: s.k + 1 }); }
+  toggleRm() { this.setState({ rm: !this.state.rm }); }
+  renderVals() {
+    const s = this.state;
+    const ab = s.k % 2 ? 'A' : 'B';
+    return {
+      toggle: () => this.toggle(), toggleRm: () => this.toggleRm(),
+      rmCls: s.rm ? 'rmon' : '',
+      dnCls: 'sb ' + (s.dn === 'off' ? 'off' : 'on'),
+      dnLabel: s.dn === 'off' ? 'Day and night: not started. Tap to make it day' : s.dn === 'day' ? 'It is day. Tap to make it night' : 'It is night. Tap to make it day',
+      outMoon: s.prev === 'night', outSun: s.prev !== 'night', inMoon: s.dn === 'night', inSun: s.dn !== 'night',
+      outCls: s.k ? 'out' + ab : 'gone', inCls: s.k ? 'in' + ab : ''
+    };
+  }
+}
+</script>
+</body>
+</html>
