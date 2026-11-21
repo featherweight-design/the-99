@@ -308,7 +308,7 @@ describe("HistoryList", () => {
     const e = entry({ id: "big", rowCount: 10, wentTo: { decks, soft: false }, multi: { oracleIds: names, capped: false } });
     const rows = names.map((n) => ({ ...row(n, null, 1), wentTo: { decks: [{ deckId: "d1", copies: 1 }] } }));
     loadEntry.mockResolvedValue({ ...detail(e, rows, { d1: "A" }), live: {} });
-    const live = Object.fromEntries(names.map((n, i) => [n, { change: i < 2, holders: [] }]));
+    const live = Object.fromEntries(names.map((n, i) => [n, { change: i < 2, holders: [], gained: [] }]));
     const onToggle = vi.fn();
     const { rerender } = render(
       <ul>

@@ -178,8 +178,8 @@ export function GotItReceipt({
     if (card) setLast(card);
   }, []);
   // The pick the Change's own landed writes left standing, which Undo drops with the copy. Set by a
-  // write that leaves a pick, cleared by one that clears it: there is one authored pick per card,
-  // so a clear leaves none. Never inferred from the purchase-time card, which cannot tell a pick
+  // write that leaves a pick, cleared by one that clears it: the receipt's row draws one copy in play,
+  // so its writes move a single pick (`movesFrom`) and a clear leaves none of the Change's own. Never inferred from the purchase-time card, which cannot tell a pick
   // the Change made from one it cleared and made again.
   // A Change write that threw may have left a pick nobody recorded: Undo holds until a later write
   // lands and says where the pick stands. History still reverts the purchase meanwhile.

@@ -7,9 +7,10 @@ import { allocate } from "./allocate";
  * WHY THIS IS ALLOWED TO EXIST, given that a client re-deriving the model's queue cost three
  * review rounds during the build. That mistake was predicting which of SEVERAL reservations the
  * server would evict — unanswerable here, because the server resolves those on `(created_at,
- * deck_id)`, which is not an order this row holds. This predicts something else: there is only
- * ever ONE authored reservation per card (a pick MOVES it rather than adding), so the pick's
- * outcome is the model's own allocation with one grant moved, and nothing about it is guessed.
+ * deck_id)`, which is not an order this row holds. This predicts something else: where the
+ * player's own picks go. Each picked deck gets one copy ahead of the queue (several picks,
+ * 2026-11-21), and the preview is the model's own allocation with those grants set. Nothing in it
+ * is guessed: the row refuses a pick past the cap rather than predict which one the server drops.
  *
  * IT CALLS THE MODEL RATHER THAN MIRRORING IT. `allocate` is the same function the server runs;
  * the only thing computed here is where the grant goes. The first version of this file was a
@@ -24,21 +25,20 @@ import { allocate } from "./allocate";
  *
  * @param claimants The row's claimants, in the order they arrive — `(since, deckId)`, the queue.
  * @param owned     Copies the collection holds. The supply `allocate` distributes.
- * @param chosenId  The deck the player just picked, or null when they cleared their pick.
+ * @param picks     The decks the player has picked. Empty when nothing is picked.
  */
 export function previewAllocation(
   claimants: ContestedClaimant[],
   owned: number,
-  chosenId: string | null,
+  picks: ReadonlySet<string>,
 ): ContestedClaimant[] {
   return allocate(
     owned,
     claimants.map((c) => ({
       ...c,
-      // ONE COPY, TO ONE DECK. A pick moves the reservation rather than adding to it, so every
-      // other deck's grant goes to nought — including one that held a grant a moment ago. A deck
-      // asking for nothing cannot be granted anything, which is what the `min` guards.
-      granted: c.deckId === chosenId ? Math.min(1, c.quantity) : 0,
+      // ONE COPY TO EACH PICKED DECK, and none to any other, including one that held a grant a
+      // moment ago. A deck asking for nothing cannot be granted anything, which the `min` guards.
+      granted: picks.has(c.deckId) ? Math.min(1, c.quantity) : 0,
     })),
   );
 }

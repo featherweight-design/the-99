@@ -145,7 +145,7 @@ export function BracketFactsDetail({ card }: { card: BrowseCard }) {
  * everyone every committed deck gets its ask, and `gets it` on every row is a word per row
  * saying nothing.
  */
-function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): string {
+function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): ReactNode {
   const c = availabilityCopy.collection;
   // A brew holds only what the player GAVE it (2026-10-11); the rest of its ask is a want.
   if (!claim.mature) {
@@ -153,6 +153,15 @@ function claimLabel(claim: DeckClaim, allocated: number, contested: boolean): st
   }
   const holds = c.detailClaimHolds(claim.quantity);
   if (!contested) return holds;
+  // A PICK says so, in accent text, in place of `gets it` (several picks, C1–C3): a pick always
+  // gets its copy, and the shorter line keeps a phone's deck names from truncating.
+  if ((claim.granted ?? 0) > 0) {
+    return (
+      <>
+        {holds} · <span style={{ color: "var(--accent-text)" }}>{c.detailClaimYourPick}</span>
+      </>
+    );
+  }
   if (allocated === 0) return `${holds} · ${c.detailClaimBuys}`;
   if (allocated < claim.quantity) {
     return `${holds} · ${c.detailClaimGetsPartial(allocated, claim.quantity)}`;

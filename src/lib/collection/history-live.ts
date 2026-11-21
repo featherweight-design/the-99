@@ -17,7 +17,13 @@ export async function loadHistoryLive(userId: string, oracleIds: readonly string
     // The door's own rule (card details): every copy spoken for, and some deck claims it. `free` is the query's, never recomputed.
     const change = a.owned > 0 && a.free <= 0 && a.claims.length > 0;
     const holders = allocateClaims(a).filter((c) => c.allocated > 0).map((c) => ({ id: c.deckId, name: c.deckName }));
-    out[id] = { change, holders };
+    // The decks a pick put a copy in: holders now, less the holders commit order alone would give (several picks, G3).
+    const byOrder = new Set(
+      allocateClaims({ owned: a.owned, claims: a.claims.map((c) => ({ ...c, granted: 0 })) })
+        .filter((c) => c.allocated > 0)
+        .map((c) => c.deckId),
+    );
+    out[id] = { change, holders, gained: holders.filter((h) => !byOrder.has(h.id)) };
   }
   return out;
 }

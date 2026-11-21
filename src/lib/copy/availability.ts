@@ -335,6 +335,9 @@ export const availabilityCopy = {
     // `gets it` on every row is a word per row saying nothing.
     detailClaimGets: "gets it",
     detailClaimBuys: "buys it",
+    // A deck the player picked to get a copy (several picks): it replaces `gets it`, since a pick
+    // always gets one, and names the authorship the word `gets` cannot.
+    detailClaimYourPick: "your pick",
     // The folded case: some of the ask covered, the rest bought. A bare `gets it`
     // would claim the whole ask was covered, and `buys it` that none of it was.
     detailClaimGetsPartial: (allocated: number, wanted: number) =>

@@ -1,0 +1,174 @@
+{
+  "feature": "Move a copy, several picks (addendum 2026-11-21): the chooser's checkboxes and the card's your pick",
+  "clearAbout": true,
+  "note": "Fixture: `PROBE_KEEP=1 pnpm probe:several-picks` on a scratch branch from local-dev leaves Mine Security (three probe copies, four decks `Probe several 1..4`, picks on 2 and 4). Deck and card ids below are that run's; re-run the probe and update them to re-shoot.",
+  "rows": [
+    {
+      "id": "detail-deck-desktop",
+      "label": "Deck page, card details: In your decks with your pick on the picked decks",
+      "view": "src/components/cards/card-detail-blocks.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/e9fddde0-8db9-4710-a7db-c056fb972826",
+          "wait": "button[aria-label=\"View details for Mine Security\"]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-label=\"View details for Mine Security\"]"
+        },
+        {
+          "wait": "button[aria-label=\"Change where Mine Security goes\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "detail-deck-phone",
+      "label": "Deck page, card details (full sheet): In your decks with your pick",
+      "view": "src/components/cards/card-detail-blocks.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/e9fddde0-8db9-4710-a7db-c056fb972826",
+          "wait": "button[aria-label=\"View details for Mine Security\"]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-label=\"View details for Mine Security\"]"
+        },
+        {
+          "wait": "button:has-text(\"All details\")",
+          "settle": 800
+        },
+        {
+          "click": "button:has-text(\"All details\")"
+        },
+        {
+          "wait": "button[aria-label=\"Change where Mine Security goes\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "chooser-desktop",
+      "label": "Change: the chooser as checkboxes, two of three picked",
+      "view": "src/components/decks/contested-card-row.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/e9fddde0-8db9-4710-a7db-c056fb972826",
+          "wait": "button[aria-label=\"View details for Mine Security\"]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-label=\"View details for Mine Security\"]"
+        },
+        {
+          "wait": "button[aria-label=\"Change where Mine Security goes\"]",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-label=\"Change where Mine Security goes\"]"
+        },
+        {
+          "wait": "[role=checkbox]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "chooser-phone",
+      "label": "Change: the chooser as checkboxes, two of three picked",
+      "view": "src/components/decks/contested-card-row.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/decks/e9fddde0-8db9-4710-a7db-c056fb972826",
+          "wait": "button[aria-label=\"View details for Mine Security\"]",
+          "settle": 3000
+        },
+        {
+          "click": "button[aria-label=\"View details for Mine Security\"]"
+        },
+        {
+          "wait": "button:has-text(\"All details\")",
+          "settle": 800
+        },
+        {
+          "click": "button:has-text(\"All details\")"
+        },
+        {
+          "wait": "button[aria-label=\"Change where Mine Security goes\"]",
+          "settle": 800
+        },
+        {
+          "click": "button[aria-label=\"Change where Mine Security goes\"]"
+        },
+        {
+          "wait": "[role=checkbox]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "detail-collection-desktop",
+      "label": "/collection, card details: the same In your decks receipt",
+      "view": "src/components/cards/card-detail-blocks.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Mine%20Security",
+          "wait": "text=\"Mine Security\"",
+          "settle": 3000
+        },
+        {
+          "click": "text=\"Mine Security\""
+        },
+        {
+          "wait": "button[aria-label=\"Change where Mine Security goes\"]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "detail-collection-phone",
+      "label": "/collection, card details (full sheet): the same In your decks receipt",
+      "view": "src/components/cards/card-detail-blocks.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection?q=Mine%20Security",
+          "wait": "text=\"Mine Security\"",
+          "settle": 3000
+        },
+        {
+          "click": "text=\"Mine Security\""
+        },
+        {
+          "wait": "button:has-text(\"All details\")",
+          "settle": 800
+        },
+        {
+          "click": "button:has-text(\"All details\")"
+        },
+        {
+          "wait": "button[aria-label=\"Change where Mine Security goes\"]",
+          "settle": 1500
+        }
+      ]
+    }
+  ]
+}

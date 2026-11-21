@@ -24,8 +24,8 @@ export type OtherDeck = {
 
 export type OtherDecks = {
   decks: OtherDeck[];
-  /** The deck this card's pending pick names, when that deck is among `decks`. */
-  pendingDeckId: string | null;
+  /** The decks this card's pending picks name, among `decks`, oldest pick first (several picks, 2026-11-21). */
+  pendingDeckIds: string[];
 };
 
 export async function loadOtherDecks(userId: string, oracleId: string): Promise<OtherDecks> {
@@ -34,13 +34,13 @@ export async function loadOtherDecks(userId: string, oracleId: string): Promise<
     db.select({ commanderLegal: cards.commanderLegal, colorIdentity: cards.colorIdentity })
       .from(cards).where(eq(cards.oracleId, oracleId)),
   ]);
-  if (!card) return { decks: [], pendingDeckId: null };
+  if (!card) return { decks: [], pendingDeckIds: [] };
   // Only a deck with a committed version can hold a reservation. A brew has no version to commit a pick into.
   const committed = list.filter((d) => d.lastCommittedAt !== null);
-  if (committed.length === 0) return { decks: [], pendingDeckId: null };
+  if (committed.length === 0) return { decks: [], pendingDeckIds: [] };
 
   const ids = sql.join(committed.map((d) => sql`${d.id}::uuid`), sql`, `);
-  const [{ rows: listing }, commanders, [pending]] = await Promise.all([
+  const [{ rows: listing }, commanders, pending] = await Promise.all([
     db.execute<{ deck_id: string }>(sql`
       select nv.deck_id
       from (
@@ -54,7 +54,8 @@ export async function loadOtherDecks(userId: string, oracleId: string): Promise<
     db.select({ id: decks.id, commanderOracleId: decks.commanderOracleId, partnerOracleId: decks.partnerOracleId })
       .from(decks).where(sql`${decks.userId} = ${userId} and ${decks.id} in (${ids})`),
     db.select({ deckId: pendingAssignments.deckId }).from(pendingAssignments)
-      .where(sql`${pendingAssignments.userId} = ${userId} and ${pendingAssignments.oracleId} = ${oracleId}`),
+      .where(sql`${pendingAssignments.userId} = ${userId} and ${pendingAssignments.oracleId} = ${oracleId}`)
+      .orderBy(pendingAssignments.createdAt, pendingAssignments.deckId),
   ]);
   const lists = new Set(listing.map((r) => r.deck_id));
   const commanderOf = new Map(commanders.map((c) => [c.id, c]));
@@ -79,6 +80,6 @@ export async function loadOtherDecks(userId: string, oracleId: string): Promise<
   }
   return {
     decks: offered,
-    pendingDeckId: pending && offered.some((d) => d.id === pending.deckId) ? pending.deckId : null,
+    pendingDeckIds: pending.map((p) => p.deckId).filter((id) => offered.some((d) => d.id === id)),
   };
 }

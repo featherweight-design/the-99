@@ -514,6 +514,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   behind subtracts nothing until the source commits the card AGAIN, and then hands the asker a
   copy nobody gave up.
 
+- `pnpm probe:several-picks` (Move a copy, several picks; `scripts/probe-several-picks.mjs`; `PROBE_BASE=<dev url>`,
+  `PROBE_SHOTS=<dir>` keeps a frame per width) presses the chooser behind card details' Change door at 390 and 1300.
+  It seeds three `probe` copies of a card the signed-in account owns none of and four committed decks listing it,
+  then checks: four checkboxes in a group (not radios), three presses leave three ticked and three
+  `card_assignments` rows, a fourth press at the cap ticks and writes nothing and shows the all-picked line, and
+  pressing a ticked deck unticks that one alone. It deletes its fixture in a `finally`. It adds rows to a shared
+  account, so it runs on a scratch branch made from local-dev only (`assertScratchBranch`). Fails on the
+  single-pick chooser (radios; a second press moves the first pick). `pnpm probe:claims`' several-picks section
+  holds the same rules against the write functions directly, pending picks and the G4 prune included.
+
 - `pnpm probe:mark-bought` proves I got it's receipt and undo (plan `2026-10-10-i-got-it.md`, PR 1)
   against a real Postgres, where the availability read under the write's lock is the whole point.
   A copy bought for the junior of two committed decks goes to the senior one, the receipt names it

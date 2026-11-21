@@ -31,6 +31,11 @@ function refusalFor(r: Extract<PickOtherResult, { ok: false }>, deck: string, ca
       return contested.refusedNoSupplyOwned(holder, card?.owned ?? 0, deck);
     }
     case "target-is-commander": return contested.refusedIsCommander(cardName, deck);
+    // Every copy that can move is picked already (several picks): the row's own all-picked line.
+    case "all-picked": {
+      const held = card?.claimants.reduce((n, x) => n + (x.brew ? 0 : x.commanderCopies), 0) ?? 0;
+      return contested.allPicked(Math.max((card?.owned ?? 0) - held, 0));
+    }
     case "deck-already-lists-it": return moveCopyCopy.refused.listsIt(deck, cardName);
     case "deck-not-committed": return moveCopyCopy.refused.notCommitted(deck);
     default: return moveCopyCopy.refused.couldNot(deck, cardName);
@@ -80,7 +85,8 @@ export function ChangeCopyDoor({ oracleId, cardName, owned, onWritten }: {
         const r = await openMoveCopy(oracleId);
         if (!r || !r.card) { setAnnounce(moveCopyCopy.loadFailed); return; }
         setView({ card: r.card, other: r.other });
-        setPickedId(r.other.pendingDeckId);
+        // This door makes one Other pick at a time; the oldest stands for any left by an earlier session.
+        setPickedId(r.other.pendingDeckIds[0] ?? null);
         setOpen(true);
       } catch {
         // Said once in the button's own live region; the door stays where it was.

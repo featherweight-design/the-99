@@ -1,0 +1,2 @@
+ALTER TABLE "pending_assignments" DROP CONSTRAINT "pending_assignments_user_id_oracle_id_pk";--> statement-breakpoint
+ALTER TABLE "pending_assignments" ADD CONSTRAINT "pending_assignments_user_id_oracle_id_deck_id_pk" PRIMARY KEY("user_id","oracle_id","deck_id");
