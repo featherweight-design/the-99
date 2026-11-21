@@ -117,7 +117,7 @@ export function PartnerRow({ c, open = false, matched = [] }: { c: PartnerCandid
 
 function MatchedPlate({ caption, names, indent = true }: { caption: string; names: string[]; indent?: boolean }) {
   return (
-    <div className={`mb-[12px] ${indent ? "ml-[68px]" : ""} flex flex-col gap-[9px] rounded-[9px] border border-[color:var(--border)] px-[13px] pb-[13px] pt-[11px]`} style={{ background: "var(--surface-sunken)" }}>
+    <div className={`mb-[12px] flex flex-col gap-[9px] rounded-[9px] border border-[color:var(--border)] px-[13px] pb-[13px] pt-[11px]`} style={{ background: "var(--surface-sunken)" }}>
       <p className="font-mono text-[10px] uppercase tracking-[0.12em]" style={{ color: "var(--fg-faint)" }}>{caption}</p>
       <div className="grid grid-cols-2 gap-x-[14px] md:grid-cols-3">
         {names.map((n) => (

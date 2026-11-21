@@ -2,7 +2,7 @@
  "v": 3,
  "createdOnFiles": {
   "v": 1,
-  "at": "2026-11-21T17:03:42Z"
+  "at": "2026-11-21T21:21:13Z"
  },
  "title": "Add a partner to a deck",
  "launch": {
@@ -20,41 +20,41 @@
   "PA-Door.dc.html": {
    "x": 1432,
    "y": 0,
-   "w": 1442,
-   "h": 1434,
+   "w": 1872,
+   "h": 1514,
    "title": "Door"
   },
   "PA-List.dc.html": {
-   "x": 2954,
+   "x": 3384,
    "y": 0,
    "w": 1872,
-   "h": 2168,
+   "h": 2190,
    "title": "List"
   },
   "PA-Confirm.dc.html": {
    "x": 0,
-   "y": 2288,
+   "y": 2310,
    "w": 2302,
    "h": 1830,
    "title": "Confirm"
   },
   "PA-States.dc.html": {
    "x": 2382,
-   "y": 2288,
+   "y": 2310,
    "w": 2302,
    "h": 1658,
    "title": "States"
   },
   "PA-After.dc.html": {
    "x": 0,
-   "y": 4238,
+   "y": 4260,
    "w": 1872,
    "h": 1274,
    "title": "After"
   },
   "PA-Rules.dc.html": {
    "x": 1952,
-   "y": 4238,
+   "y": 4260,
    "w": 1792,
    "h": 1388,
    "title": "Rules"

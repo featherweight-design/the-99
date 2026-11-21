@@ -84,13 +84,14 @@ def emit(name, title, rows, head):
     boards.append((name, title, w, h))
 
 emit("PA-Door.dc.html", "Door", [[
-    ("D1-phone", "card details, phone", "Ishai's card details with a Second commander box", "The commander’s own card details, opened on its deck page. A box under the oracle text, in the card facts box’s style: <b>Second commander</b>, one line naming the ability, and <b>Add a partner</b>, 44px. It opens Change commander on its Add a partner section."),
-    ("D1-desk", "card details, desktop", "Desktop card details with the same box", "Desktop: the button sits beside the line at 36px. Drawn only for a single-commander deck whose commander prints a pair ability, on its own deck page, behind CHANGE_COMMANDER_ENABLED. No ability: no box."),
-]], header("Door", "Where adding a partner starts", "Both doors, one sheet. Change commander already lists the pairs a deck’s own 99 can make, so the outside partners join that list. The commander’s card details is where a player reads “Partner” and learns the deck can take one, so it carries the second door."))
+    ("D0-phone", "card details, phone", "Shipped card details peek for Ishai on its deck page", "The shipped card details for the deck’s own commander, opened from its deck page. Nothing changes in the peek: <b>All details</b> opens the full sheet."),
+    ("D1-phone", "all details, phone", "Full card details with the Second commander box", "The full sheet, every shipped box in order. <b>Second commander</b> goes straight after the card’s own facts (oracle text, card facts), before what you own: one line naming the ability and <b>Add a partner</b> at 44px. It opens Change commander on its Add a partner section."),
+    ("D1-desk", "card details, desktop", "Desktop card details with the box in the details column", "Desktop: the same place in the details column, the button beside the line at 36px; the column scrolls to the rest as shipped. Drawn only for a single-commander deck whose commander prints a pair ability, on its own deck page. No ability, a pair already, or another page: no box."),
+]], header("Door", "Where adding a partner starts", "Both doors, one sheet. Change commander already lists the pairs a deck’s own 99 can make, so the outside partners join that list. The commander’s card details is where a player reads “Partner” and learns the deck can take one, so it carries the second door. Drawn on the shipped CardModal, rendered from main."))
 
 emit("PA-List.dc.html", "List", [[
     ("L1-phone", "the list, phone", "Change commander with Add a partner on top", "<b>Add a partner</b> first, then the shipped list under <b>Replace Ishai</b>. Yours, then To buy (first 5, Show all), each by the figure the pair’s decks give. A partner already in the 99 keeps the shipped pairUpKeep and reads <b>in this deck · nothing leaves</b>."),
-    ("L2-phone", "a figure open", "A partner row with its figure open", "The shipped figure, for the pair: the deck’s cards Ishai + Bruse Tarl decks run. One row open at a time."),
+    ("L2-phone", "a figure open", "A partner row with its figure open", "The shipped figure, for the pair: the deck’s cards Ishai + Bruse Tarl decks run. One row open at a time. The figure box now runs the row’s full width, here and in the shipped Replace list."),
     ("L1-desk", "the list, desktop", "Desktop list", "Each row: the partner’s art, name and shipped mark (free, held in another deck, or buy with price), its cost, and <b>widens to</b> with the pair’s colors and name when it adds any. The dialog scrolls as shipped."),
 ]], header("List", "Finding a partner", "Owned first, then to buy, ordered by how many of this deck’s cards the pair’s decks run. The lede says once that a partner from outside takes a slot, and names the ability’s rule. Choose opens the confirm in the same sheet."))
 
@@ -151,7 +152,7 @@ main += '<div class="box"><p class="lab"><b>Engineering</b></p>' + "".join(f'<di
 main += '</div>\n'
 main += '<div class="box" style="max-width: 1240px; box-sizing: border-box"><p class="lab"><b>Boards</b></p><table>' + "".join(
     f'<tr><td>{t}</td><td>{d}</td></tr>' for t, d in [
-        ("Door", "D1 card details, phone and desktop."),
+        ("Door", "D0 card details peek, D1 all details (phone, desktop)."),
         ("List", "L1 list phone and desktop, L2 a figure open."),
         ("Confirm", "C1 suggested cut (phone, desktop), C2 another pick with the colors open, C3 Cut another card."),
         ("States", "C4 to buy, C5 the deck has room, C6 no version yet, C7 failed."),

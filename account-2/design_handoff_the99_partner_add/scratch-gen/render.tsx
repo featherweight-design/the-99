@@ -11,6 +11,7 @@ import { SpineMobile } from "../src/components/decks/spine-mobile";
 import { SpineDesktop } from "../src/components/decks/spine-desktop";
 import { CommanderSection } from "../src/components/decks/change-commander-review";
 import { ToastFrame } from "../src/components/collection/edit-toast-frame";
+import { CardModal } from "../src/components/cards/card-modal";
 import { OracleText } from "../src/components/cards/oracle-text";
 import { NavRail, TabBar, MobileHeader } from "../src/components/shell/nav";
 import { AddPartnerSection, PartnerConfirm, PartnerDoorBox, type PartnerCandidate } from "../src/components/decks/partner-add";
@@ -133,6 +134,19 @@ function detailsDesk(text: string, door: ReactNode) {
   );
 }
 
+// D · the shipped card details (CardModal) for the deck's own commander on its deck page, with the door after the card facts.
+const ISHAI_CARD: any = {
+  oracleId: "o-ishai", name: "Ishai, Ojutai Dragonspeaker", typeLine: "Legendary Creature — Bird Monk", manaCost: "{2}{W}{U}", cmc: 4,
+  oracleText: "Flying\nWhenever an opponent casts a spell, put a +1/+1 counter on Ishai, Ojutai Dragonspeaker.\nPartner (You can have two commanders if both have partner.)",
+  keywords: ["Flying", "Partner"], rarity: "mythic", colorIdentity: ["W", "U"], imageUri: ISHAI.imageUri, printedName: null, quantity: 1,
+  printings: [{ setCode: "CM2", scryfallId: "x", setName: "Commander Anthology Volume II", collectorNumber: "12", releasedAt: "2018-06-08", quantity: 1, finishes: { nonfoil: 1 }, imageUri: ISHAI.imageUri, artCropUri: A("ishai-ojutai-dragonspeaker"), backImageUri: null, hasOwnBack: false, hasOwnArt: true, flavorName: null }],
+  setCodes: ["CM2"], primarySetCode: "CM2", preferredPrinting: null, proxiedBy: [],
+  availability: { owned: 1, hard: 1, soft: 0, free: 0, claims: [{ id: "d1", name: "HD - Ishai", quantity: 1, mature: true, pending: false, commander: true, senior: true }] },
+};
+const details = (door: ReactNode, full = true) => (
+  <CardModal card={ISHAI_CARD} position={1} total={1} onClose={() => {}} onPrev={null} onNext={null} deckId="d1" deckName="HD - Ishai" deckPage deckHolds openCombo={full} commanderDoor={door} />
+);
+
 type Dev = "phone" | "desk";
 const frames: { id: string; dev: Dev; vh?: number }[] = [];
 function emit(id: string, dev: Dev, body: ReactNode, vh?: number) {
@@ -154,8 +168,9 @@ const confirm = (o: Partial<React.ComponentProps<typeof PartnerConfirm>> = {}) =
 };
 
 // D · the door on the commander's card details
-emit("D1-phone", "phone", detailsPhone(ORACLE, <PartnerDoorBox kind="partner" short="Ishai" />), 960);
-emit("D1-desk", "desk", detailsDesk(ORACLE, <PartnerDoorBox kind="partner" short="Ishai" />), 620);
+emit("D0-phone", "phone", details(<PartnerDoorBox kind="partner" short="Ishai" />, false), 844);
+emit("D1-phone", "phone", details(<PartnerDoorBox kind="partner" short="Ishai" />), 1040);
+emit("D1-desk", "desk", details(<PartnerDoorBox kind="partner" short="Ishai" />), 1000);
 // L · the list
 emit("L1-phone", "phone", <>{shell(spine(false))}{sheet(cc.sheet.title.single, list())}</>, 1640);
 emit("L1-desk", "desk", <>{shell(spine(false))}{sheet(cc.sheet.title.single, list())}</>, 1500);

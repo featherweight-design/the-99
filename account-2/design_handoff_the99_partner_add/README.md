@@ -1,6 +1,8 @@
 # Handoff: Add a partner to an existing deck (#491), R1
 
-Account 2, 2026-11-21. Status: **R1, awaiting Hugh's review.** No handoff PR yet.
+Account 2, 2026-11-21. Status: **R1b, awaiting Hugh's review.** No handoff PR yet.
+
+R1b (2026-11-21, Hugh's R1 notes): the card details door is now drawn on the shipped CardModal rendered from main (D0 peek, D1 all details on phone, D1 desktop), with the Second commander box after the card facts; the figure box under a candidate row runs the row's full width (no 68px indent), in Add a partner and in the shipped Replace list.
 
 Canvas: https://claude.ai/artifact/3NbaxtK9hwjoTxmxa96Pob (boards Main, Door, List, Confirm, States, After, Rules).
 Drawn over the shipped Change commander sheet (`change-commander-sheet.tsx`), its confirm (Plate + fates),
@@ -41,7 +43,8 @@ Removing a partner is out of scope (#492).
 
 | Board | Frame | State |
 |---|---|---|
-| Door | D1 phone, desktop | Card details with the Second commander box |
+| Door | D0 phone | Shipped card details peek (unchanged) |
+| Door | D1 phone, desktop | All details with the Second commander box after the card facts |
 | List | L1 phone, desktop | Add a partner section, Yours + To buy, Replace Ishai below |
 | List | L2 phone | A partner's figure open |
 | Confirm | C1 phone, desktop | Suggested cut (Plains) picked |
@@ -85,6 +88,6 @@ Loading and a failed list read are the shipped sheet's, unchanged.
 - `canvas.json`, `*.dc.html`, `art/*.webp`: the canvas.
 - `copy/partner-add.ts`: copy.
 - `scratch-gen/`: `partner-add.tsx` (proposal components: PartnerDoorBox, PartnerRow, AddPartnerSection,
-  PartnerConfirm), `change-commander-sheet.exports.diff` (exports Mark, Thumb, Plate), `render.tsx` (fixtures and
-  21 frames, SSR with shipped CSS), `shoot.cjs` (Playwright 2x), `gen_boards.py`. Card images came from Scryfall via
+  PartnerConfirm), `proposal.diff` (sheet exports Mark, Thumb, Plate and drops the figure plate's indent; CardModal and CardModalSheet take `commanderDoor`, drawn after BracketFactsDetail), `render.tsx` (fixtures and
+  22 frames, SSR with shipped CSS), `shoot.cjs` (Playwright 2x), `gen_boards.py`. Card images came from Scryfall via
   the built-in browser.
