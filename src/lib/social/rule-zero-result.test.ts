@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mayReplace, maySave, placementsFor, resultPlacesQuery, startDeckOf } from "./rule-zero-result";
+import { gameLoggedQuery, gameLoggerQuery, mayReplace, maySave, placementsFor, resultPlacesQuery, startDeckOf } from "./rule-zero-result";
 import { resultFor } from "./rule-zero-log";
 
 const TABLE = "7a0e0000-0000-4000-8000-000000000001";
@@ -100,5 +100,31 @@ describe("resultPlacesQuery", () => {
     expect(text).toContain('dg.rule_zero_table_id = $3');
     expect(text).toContain('>= "rule_zero_result_seats".saved_at');
     expect(params).toEqual([TABLE, "user_a", TABLE]);
+  });
+});
+
+describe("gameLoggedQuery (Undo's refusal)", () => {
+  it("asks for one game's rows that any seat player has logged from this table since the save, aliased and qualified", () => {
+    const started = new Date("2026-11-21T03:00:00.000Z");
+    const { sql: text, params } = gameLoggedQuery(TABLE, started).toSQL();
+    expect(text).toContain('"rule_zero_result_seats"."table_id" = $1');
+    expect(text).toContain('"rule_zero_result_seats"."started_at" = $2');
+    // Unqualified, these would compare a column to itself and never find a log (AGENTS.md, correlated subqueries).
+    expect(text).toContain('lg.user_id = "rule_zero_result_seats".user_id');
+    expect(text).toContain('lg.rule_zero_table_id = "rule_zero_result_seats".table_id');
+    expect(text).toContain('>= "rule_zero_result_seats".saved_at');
+    expect(params[0]).toBe(TABLE);
+  });
+});
+
+describe("gameLoggerQuery (the U3 note's read)", () => {
+  it("joins the viewer's seat and pod membership in the same statement, and the logger's name only through their membership", () => {
+    const { sql: text, params } = gameLoggerQuery("user_a", TABLE, new Date("2026-11-21T03:00:00.000Z")).toSQL();
+    expect(text).toContain('inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $');
+    expect(text).toContain('inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $');
+    expect(text).toContain('left join "pod_members" "logger_in" on ("logger_in"."pod_id" = "rule_zero_tables"."pod_id" and "logger_in"."user_id" = "rule_zero_result_seats"."user_id")');
+    expect(text).toContain('"deck_games"."rule_zero_table_id" = "rule_zero_result_seats"."table_id"');
+    expect(text).toContain('left join "social_profiles" on "social_profiles"."user_id" = "logger_in"."user_id"');
+    expect(params.filter((p) => p === "user_a")).toHaveLength(2);
   });
 });

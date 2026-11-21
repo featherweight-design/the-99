@@ -294,6 +294,9 @@ export async function resolveTableSeatsIn(
   seats: readonly number[],
 ): Promise<TableSeatResolution[] | null> {
   if (!isUuid(table.id)) return null;
+  // The table row's share lock, before the seats: Undo takes it for update (`undoTableResult`), so a log from the table
+  // and an Undo of its result cannot both commit. The log waits for the delete, or the delete sees the log.
+  await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(eq(ruleZeroTables.id, table.id)).for("share");
   // The owners and the seats are two reads in the game's transaction: a reseat between them changes the seating, so
   // `resolveSeatsFrom` refuses the save against the prefill's hash rather than logging a deck the owner hides.
   return resolveSeatsFrom((await logSeatsIn(viewerId, table.id, tx)).rows, viewerId, table, seats);
