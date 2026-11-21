@@ -7,8 +7,9 @@
 // nothing and says so.
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
-import { useInertWhileOpen } from "../../lib/a11y/inert-page";
+import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import {
   previewRevert, revertCollectionEntry, type RevertPreview,
 } from "../../app/collection/history-actions";
@@ -173,9 +174,13 @@ export function RevertConfirm({
   const nothingLeft = preview !== null && preview.rows.length === 0;
   const shown = all ? lines : lines.slice(0, SHOWN);
 
-  return (
+  // On the body, not where the host draws it: the Undo toast lives in the shell, beside <main>, and a card modal open over
+  // the page makes everything beside its path inert (`inert-page.ts`), a dialog inside that toast's wrapper with it. On the
+  // body it paints after the card modal, so it is above it, and `inertExemptProps` keeps it live under that modal's hold.
+  return createPortal(
     <div
       ref={inertHost}
+      {...inertExemptProps}
       className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_oklab,var(--bg)_70%,transparent)] md:items-center md:bg-[color-mix(in_oklab,var(--bg)_74%,transparent)]"
       role="presentation"
       onClick={() => { if (!pending) onClose(); }}
@@ -301,6 +306,7 @@ export function RevertConfirm({
           </div>
         )}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
