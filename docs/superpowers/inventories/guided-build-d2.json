@@ -1,0 +1,140 @@
+{
+  "feature": "Guided build PR D2: the Guided row on the new-deck screen, the three-step sheet (Strategy, Bracket, Cards) and the refused landing line on the deck page.",
+  "clearAbout": true,
+  "note": "Read-only: the confirm is never pressed (it would spend). Needs the local-dev fixture account with PRECON_UPGRADE_ENABLED on (probe-guided-run.mjs seed) and a pack credit_grants row so the Guided row is ready, not off. The refused row needs a deck of that account with no guided run; the id here is a local-dev deck.",
+  "out": "contact-sheets/guided-build-d2",
+  "rows": [
+    {
+      "id": "guided-row",
+      "label": "/decks/new: Free build, Guided build (2 credits) and Just the commander",
+      "view": "src/components/decks/build-choice.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new?commander=7656f93b-336f-49cb-b8fe-c2b5c014258f",
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        }
+      ]
+    },
+    {
+      "id": "sheet-strategy",
+      "label": "Guided sheet, step 1: strategies with their backing cards",
+      "view": "src/components/decks/guided/guided-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new?commander=7656f93b-336f-49cb-b8fe-c2b5c014258f",
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        },
+        {
+          "click": "label:has(input[value=guided])"
+        },
+        {
+          "fill": "form input[type=text]",
+          "text": "Contact sheet deck"
+        },
+        {
+          "click": "form button[type=submit]",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]"
+        }
+      ]
+    },
+    {
+      "id": "sheet-bracket",
+      "label": "Guided sheet, step 2: bracket",
+      "view": "src/components/decks/guided/guided-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new?commander=7656f93b-336f-49cb-b8fe-c2b5c014258f",
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        },
+        {
+          "click": "label:has(input[value=guided])"
+        },
+        {
+          "fill": "form input[type=text]",
+          "text": "Contact sheet deck"
+        },
+        {
+          "click": "form button[type=submit]",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 600
+        },
+        {
+          "click": "[role=dialog] [role=radio]"
+        }
+      ]
+    },
+    {
+      "id": "sheet-cards",
+      "label": "Guided sheet, step 3: cards, confirm waiting on a pick",
+      "view": "src/components/decks/guided/guided-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/new?commander=7656f93b-336f-49cb-b8fe-c2b5c014258f",
+          "wait": "[role=radiogroup]",
+          "settle": 1500
+        },
+        {
+          "click": "label:has(input[value=guided])"
+        },
+        {
+          "fill": "form input[type=text]",
+          "text": "Contact sheet deck"
+        },
+        {
+          "click": "form button[type=submit]",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 800
+        },
+        {
+          "click": "[role=dialog] [role=radio]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 600
+        },
+        {
+          "click": "[role=dialog] [role=radio]"
+        },
+        {
+          "clickRole": "button",
+          "name": "^Next",
+          "wait": "[role=dialog] [role=radio]",
+          "settle": 600
+        },
+        {
+          "click": "[role=dialog] [role=radio]"
+        }
+      ]
+    },
+    {
+      "id": "refused-landing",
+      "label": "Deck page after a refused guided start: the refused line",
+      "view": "src/components/decks/guided/guided-run-line.tsx",
+      "steps": [
+        {
+          "goto": "/decks/f729c78d-3bda-48fc-89a1-cc4a99319321?guided=refused",
+          "wait": "[data-testid=guided-refused-line]",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}
