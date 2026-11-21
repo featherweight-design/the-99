@@ -66,6 +66,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": true,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 1
      }
@@ -166,6 +167,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -515,6 +517,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -663,6 +666,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -826,212 +830,6 @@ export const cardDetailsJson: unknown = {
    },
    "proxiedBy": []
   },
-  "fbf9f8c5-849f-45d5-8129-5fc683c21a04": {
-   "oracleId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04",
-   "name": "Fury",
-   "typeLine": "Creature — Elemental Incarnation",
-   "manaCost": "{3}{R}{R}",
-   "cmc": 5,
-   "oracleText": "Double strike\nWhen this creature enters, it deals 4 damage divided as you choose among any number of target creatures and/or planeswalkers.\nEvoke—Exile a red card from your hand.",
-   "keywords": [
-    "Evoke",
-    "Double strike"
-   ],
-   "rarity": "mythic",
-   "colorIdentity": [
-    "R"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/b/b/bb6d2808-b75b-44b3-91c9-bb7134075b20.jpg?1783926952",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "PMH2",
-     "scryfallId": "bb6d2808-b75b-44b3-91c9-bb7134075b20",
-     "setName": "Modern Horizons 2 Promos",
-     "collectorNumber": "126s",
-     "releasedAt": "2021-06-18",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/b/b/bb6d2808-b75b-44b3-91c9-bb7134075b20.jpg?1783926952",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/9/3/932d0fb9-382d-464a-9427-b91fa2398cdb.jpg?1783911524",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "PMH2"
-   ],
-   "primarySetCode": "PMH2",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 0,
-    "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 8,
-    "catalogKeys": 8,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      1
-     ],
-     [
-      2,
-      2
-     ],
-     [
-      3,
-      3
-     ],
-     [
-      4,
-      4
-     ],
-     [
-      5,
-      5
-     ],
-     [
-      6,
-      6
-     ],
-     [
-      7,
-      7
-     ]
-    ],
-    "ids": [
-     "0507c8ea-3478-494f-985f-cdff385f77e2",
-     "071daca8-ccc6-4707-843e-adac40dd1588",
-     "932d0fb9-382d-464a-9427-b91fa2398cdb",
-     "adc3f475-562e-4904-8dca-051c17f6b647",
-     "bd281158-8180-40b9-a5b7-03cfc712d81a",
-     "bb6d2808-b75b-44b3-91c9-bb7134075b20",
-     "d9193de8-4169-45d7-8b66-c2a416a92929",
-     "469d96bc-331b-42a8-9938-93ecece2fb5f"
-    ],
-    "keys": [
-     "SPG|52",
-     "MH2|313",
-     "ECC|50",
-     "H2R|10",
-     "MH2|126",
-     "PMH2|126s",
-     "SLD|7007",
-     "SPG|47"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      null,
-      2417,
-      null,
-      0
-     ],
-     [
-      337,
-      881,
-      null,
-      0
-     ],
-     [
-      37,
-      null,
-      null,
-      0
-     ],
-     [
-      442,
-      797,
-      null,
-      0
-     ],
-     [
-      75,
-      638,
-      null,
-      0
-     ],
-     [
-      null,
-      832,
-      null,
-      0
-     ],
-     [
-      null,
-      104198,
-      null,
-      0
-     ],
-     [
-      356,
-      723,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": [
-    {
-     "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-     "name": "Ashen Banner Parade"
-    }
-   ]
-  },
   "3a940dfa-a026-4969-8981-ef90cdfbe9ef": {
    "oracleId": "3a940dfa-a026-4969-8981-ef90cdfbe9ef",
    "name": "Ornithopter of Paradise",
@@ -1091,6 +889,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -1287,6 +1086,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -1501,6 +1301,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -1683,6 +1484,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -1831,6 +1633,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -2781,6 +2584,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -2949,6 +2753,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -3277,6 +3082,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -3427,6 +3233,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -4327,6 +4134,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -4495,6 +4303,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -4549,1039 +4358,6 @@ export const cardDetailsJson: unknown = {
      [
       35,
       71,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "4457ed35-7c10-48c8-9776-456485fdf070": {
-   "oracleId": "4457ed35-7c10-48c8-9776-456485fdf070",
-   "name": "Lightning Bolt",
-   "typeLine": "Instant",
-   "manaCost": "{R}",
-   "cmc": 1,
-   "oracleText": "Lightning Bolt deals 3 damage to any target.",
-   "keywords": [],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "R"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/0/7/074d2360-3ded-412d-90b5-2b8ab209fe47.jpg?1783910869",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 2,
-   "printings": [
-    {
-     "setCode": "SLP",
-     "scryfallId": "074d2360-3ded-412d-90b5-2b8ab209fe47",
-     "setName": "Secret Lair Promo",
-     "collectorNumber": "21",
-     "releasedAt": "2023-02-17",
-     "quantity": 2,
-     "finishes": {
-      "nonfoil": 2
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/0/7/074d2360-3ded-412d-90b5-2b8ab209fe47.jpg?1783910869",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "SLP"
-   ],
-   "primarySetCode": "SLP",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 2,
-    "hard": 2,
-    "soft": 0,
-    "free": 0,
-    "claims": [
-     {
-      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-      "name": "Ashen Banner Parade",
-      "since": 1792459816309,
-      "locked": false,
-      "mature": true,
-      "senior": true,
-      "granted": 0,
-      "pending": true,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": 1,
-      "commanderCopies": 0
-     },
-     {
-      "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
-      "name": "Tidewrack Library",
-      "since": 1789176616309,
-      "locked": false,
-      "mature": true,
-      "senior": true,
-      "granted": 0,
-      "pending": false,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": 3,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 67,
-    "catalogKeys": 67,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      3,
-      1
-     ],
-     [
-      4,
-      2
-     ],
-     [
-      5,
-      3
-     ],
-     [
-      7,
-      4
-     ],
-     [
-      8,
-      5
-     ],
-     [
-      9,
-      6
-     ],
-     [
-      10,
-      7
-     ],
-     [
-      11,
-      8
-     ],
-     [
-      12,
-      9
-     ],
-     [
-      13,
-      10
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
-     ],
-     [
-      16,
-      13
-     ],
-     [
-      17,
-      14
-     ],
-     [
-      18,
-      15
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      21,
-      18
-     ],
-     [
-      22,
-      19
-     ],
-     [
-      23,
-      20
-     ],
-     [
-      24,
-      21
-     ],
-     [
-      25,
-      22
-     ],
-     [
-      26,
-      23
-     ],
-     [
-      27,
-      24
-     ],
-     [
-      28,
-      25
-     ],
-     [
-      29,
-      26
-     ],
-     [
-      30,
-      27
-     ],
-     [
-      31,
-      28
-     ],
-     [
-      32,
-      29
-     ],
-     [
-      34,
-      30
-     ],
-     [
-      35,
-      31
-     ],
-     [
-      36,
-      32
-     ],
-     [
-      37,
-      33
-     ],
-     [
-      38,
-      34
-     ],
-     [
-      39,
-      35
-     ],
-     [
-      40,
-      36
-     ],
-     [
-      41,
-      37
-     ],
-     [
-      43,
-      38
-     ],
-     [
-      44,
-      39
-     ],
-     [
-      45,
-      40
-     ],
-     [
-      46,
-      41
-     ],
-     [
-      47,
-      42
-     ],
-     [
-      48,
-      43
-     ],
-     [
-      49,
-      44
-     ],
-     [
-      50,
-      45
-     ],
-     [
-      51,
-      46
-     ],
-     [
-      53,
-      47
-     ],
-     [
-      54,
-      48
-     ],
-     [
-      55,
-      49
-     ],
-     [
-      56,
-      50
-     ],
-     [
-      57,
-      51
-     ],
-     [
-      59,
-      52
-     ],
-     [
-      60,
-      53
-     ],
-     [
-      61,
-      54
-     ],
-     [
-      62,
-      55
-     ],
-     [
-      63,
-      56
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      3,
-      1
-     ],
-     [
-      4,
-      2
-     ],
-     [
-      5,
-      3
-     ],
-     [
-      7,
-      4
-     ],
-     [
-      8,
-      5
-     ],
-     [
-      9,
-      6
-     ],
-     [
-      10,
-      7
-     ],
-     [
-      11,
-      8
-     ],
-     [
-      12,
-      9
-     ],
-     [
-      13,
-      10
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
-     ],
-     [
-      16,
-      13
-     ],
-     [
-      17,
-      14
-     ],
-     [
-      18,
-      15
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      21,
-      18
-     ],
-     [
-      22,
-      19
-     ],
-     [
-      23,
-      20
-     ],
-     [
-      24,
-      21
-     ],
-     [
-      25,
-      22
-     ],
-     [
-      26,
-      23
-     ],
-     [
-      27,
-      24
-     ],
-     [
-      28,
-      25
-     ],
-     [
-      29,
-      26
-     ],
-     [
-      30,
-      27
-     ],
-     [
-      31,
-      28
-     ],
-     [
-      32,
-      29
-     ],
-     [
-      34,
-      30
-     ],
-     [
-      35,
-      31
-     ],
-     [
-      36,
-      32
-     ],
-     [
-      37,
-      33
-     ],
-     [
-      38,
-      34
-     ],
-     [
-      39,
-      35
-     ],
-     [
-      40,
-      36
-     ],
-     [
-      41,
-      37
-     ],
-     [
-      43,
-      38
-     ],
-     [
-      44,
-      39
-     ],
-     [
-      45,
-      40
-     ],
-     [
-      46,
-      41
-     ],
-     [
-      47,
-      42
-     ],
-     [
-      48,
-      43
-     ],
-     [
-      49,
-      44
-     ],
-     [
-      50,
-      45
-     ],
-     [
-      51,
-      46
-     ],
-     [
-      53,
-      47
-     ],
-     [
-      54,
-      48
-     ],
-     [
-      55,
-      49
-     ],
-     [
-      56,
-      50
-     ],
-     [
-      57,
-      51
-     ],
-     [
-      59,
-      52
-     ],
-     [
-      60,
-      53
-     ],
-     [
-      61,
-      54
-     ],
-     [
-      62,
-      55
-     ],
-     [
-      63,
-      56
-     ]
-    ],
-    "ids": [
-     "0277c0b1-da97-49c1-a539-7fbaa1f77419",
-     "0ef3c273-ec92-41d0-9abe-0f99e33db4f5",
-     "132dc07f-74e2-4bd7-bdb1-4f5d5253c7f2",
-     "0f29ea1f-a226-4ec4-8297-109e2f2b5c69",
-     "677da834-7f4a-4f60-9151-de7ddcf29622",
-     "6fb94c1b-8002-4d79-add0-c4dfef9019ee",
-     "02e20655-321c-4194-ab72-b4a5473238d1",
-     "24484578-7885-4125-b95f-e677d970a5a1",
-     "27740ea5-79c8-420f-bc49-6d5eac58dac5",
-     "3c738171-d0dc-4cc2-8af8-1d306143db37",
-     "edd88c4f-58bd-4920-b41f-037462b54915",
-     "45184cd7-b037-4a85-a063-e622ca928d17",
-     "4f43c378-9e6a-4ece-9c24-5dc08c977746",
-     "54199d7c-02f8-4ff0-9e43-e7bf66ef9715",
-     "5a763474-5ce9-48cc-aaf8-8ca363df4430",
-     "5fbb6751-1072-4fc0-8b54-836d05950914",
-     "6ab06973-6440-4b12-8947-8c412500fa41",
-     "719d571c-0740-4212-86c2-e9ef38516f6c",
-     "9809473d-f793-476f-ae7e-e535b6725d65",
-     "ae5f9fb1-5a55-4db3-98a1-2628e3598c18",
-     "ce711943-c1a1-43a0-8b89-8d169cfb8e06",
-     "996a81ae-0c2d-4e74-b018-5f0ec0fcfbd3",
-     "b6bc6ff3-f466-4cb0-8b4e-a20d8ed129c8",
-     "ff1b8fc5-604a-4449-a73d-861e53642a70",
-     "cb9b9a9d-ae4c-4e04-bf9d-cae48f01292c",
-     "435589bb-27c6-4a6d-9d63-394d5092b9d8",
-     "52f85017-c88b-4302-96f2-e27b23fd702f",
-     "54be73dd-cb3b-411b-8f48-d12ca5183dee",
-     "6773a3cf-707f-4bc0-b64d-2a96b70f7975",
-     "7673784e-db4b-43a1-8d55-1bb9fc1e284f",
-     "77c6fa74-5543-42ac-9ead-0e890b188e99",
-     "9521375e-0bc1-45ef-b513-6d332a25f9d2",
-     "a9f447d7-bd08-4f35-bc09-ed335b09a0f8",
-     "b539a9de-037a-4b7a-80a5-0514680af095",
-     "b5d3dcab-2260-479d-9ef6-dfb92d4f6061",
-     "d573ef03-4730-45aa-93dd-e45ac1dbaf4a",
-     "e3285e6b-3e79-4d7c-bf96-d920f973b122",
-     "e768c957-3a1f-42f5-853a-96942f645df5",
-     "e89794ab-6070-4916-936f-2b42fe41d31b",
-     "ef9047f6-5e5d-49bf-a183-4d1490b291fb",
-     "f29ba16f-c8fb-42fe-aabf-87089cb214a7",
-     "fcf2ea50-44af-46d7-80c9-36fc18606748",
-     "2c025b3b-a3b4-4399-9173-b855a9473b36",
-     "dc12105d-7536-429b-9510-4f56bfc0c497",
-     "b14fae63-2e82-49c1-8e62-d84a65f27479",
-     "b9399b98-a545-47b2-99bb-6d8251d9ae76",
-     "bde26955-6de3-4212-9e1a-5e11f73ebf44",
-     "c3eb3895-b64c-46ab-b704-3c46963920ba",
-     "c69f668b-cf28-495a-bbe1-24e9d0089fa1",
-     "c8c8390f-4072-454f-8dc4-174919187a47",
-     "df77bf7d-546a-416b-a2fe-8038a4125af5",
-     "6e8b2951-3c66-4042-add9-b2615951ba52",
-     "a050f085-dc6a-4715-8cd3-33daf3e27bfc",
-     "4eaac4fd-95f5-4f38-b593-0101e79a20f9",
-     "6881d7c8-5bb7-4f8c-9f03-50fb1309d9c8",
-     "1ddc5922-f62a-4f91-809e-f959edfcfc6a",
-     "ccee0b4c-0cb0-4c0f-8ddc-bc74b8b97273",
-     "a6de74d2-0668-49c6-a385-bf706bfed8f7",
-     "ddaa110c-ee6e-4df5-a6c8-3fdf4b89293f",
-     "28708c8c-4336-4d04-b43a-59a31471a9f6",
-     "ff204024-20a5-4bb9-82b6-f6b4337efd60",
-     "6580f4f9-870b-4258-8dce-48c606b90a6c",
-     "32a180dd-9641-4546-8940-9b21084f0c71",
-     "074d2360-3ded-412d-90b5-2b8ab209fe47",
-     "fc8f431d-b7eb-4848-99dd-a5f896248145",
-     "d1f67dc6-473c-4c98-bd03-cd1e53acb7e1",
-     "310de1ef-f1b6-4b61-9d6c-6b70382a7f95"
-    ],
-    "keys": [
-     "SLD|901",
-     "SLZ|305",
-     "PLST|CLB-187",
-     "PLST|PF19-1",
-     "MM2|122",
-     "SLD|84",
-     "PTC|et208",
-     "SLD|1743",
-     "SLD|675",
-     "SLD|2289",
-     "PTC|gb208",
-     "SLD|83",
-     "SLD|1638",
-     "SLD|1638★",
-     "SLD|1871",
-     "SLD|1822",
-     "SLD|85",
-     "SLD|1879",
-     "PTC|mj208",
-     "CLB|187",
-     "JMP|342",
-     "30A|454",
-     "PW26|5",
-     "2ED|162",
-     "3ED|162",
-     "M10|146",
-     "ATH|43",
-     "30A|157",
-     "PD2|17",
-     "MSC|806",
-     "CLU|141",
-     "4ED|208",
-     "BTD|41",
-     "P09|146",
-     "LEB|162",
-     "LEA|161",
-     "A25|141",
-     "M11|149",
-     "FCA|40",
-     "CEI|162",
-     "2X2|117",
-     "FBB|162",
-     "SLZ|63",
-     "SLD|IFIYW-2",
-     "STA|105",
-     "SLP|37",
-     "SLD|IFIYW-7",
-     "SLD|86",
-     "CLB|401",
-     "2X2|361",
-     "PLST|A25-141",
-     "JGP|1",
-     "SLD|2579",
-     "STA|42",
-     "TLE|32",
-     "CED|162",
-     "E01|54",
-     "GN3|83",
-     "OLGC|2023",
-     "P10|1",
-     "PF19|1",
-     "PF25|13",
-     "PLST|E01-54",
-     "SLP|21",
-     "SUM|162",
-     "SLZ|184",
-     "4BB|208"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      null,
-      1373,
-      null,
-      0
-     ],
-     [
-      988,
-      null,
-      null,
-      0
-     ],
-     [
-      110,
-      228,
-      null,
-      0
-     ],
-     [
-      null,
-      499,
-      null,
-      0
-     ],
-     [
-      321,
-      312,
-      null,
-      0
-     ],
-     [
-      668,
-      936,
-      null,
-      0
-     ],
-     [
-      459,
-      617,
-      null,
-      0
-     ],
-     [
-      1084,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      363,
-      null,
-      0
-     ],
-     [
-      376,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      313,
-      null,
-      0
-     ],
-     [
-      552,
-      549,
-      null,
-      0
-     ],
-     [
-      362,
-      310,
-      null,
-      0
-     ],
-     [
-      null,
-      426,
-      null,
-      0
-     ],
-     [
-      492,
-      370,
-      null,
-      0
-     ],
-     [
-      1123,
-      null,
-      null,
-      0
-     ],
-     [
-      83,
-      119,
-      null,
-      0
-     ],
-     [
-      102,
-      null,
-      null,
-      0
-     ],
-     [
-      34901,
-      null,
-      null,
-      0
-     ],
-     [
-      200,
-      1458,
-      null,
-      0
-     ],
-     [
-      1030,
-      null,
-      null,
-      0
-     ],
-     [
-      92,
-      null,
-      null,
-      0
-     ],
-     [
-      98,
-      885,
-      null,
-      0
-     ],
-     [
-      104,
-      null,
-      null,
-      0
-     ],
-     [
-      1059,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      146,
-      null,
-      0
-     ],
-     [
-      72,
-      97,
-      null,
-      0
-     ],
-     [
-      164,
-      null,
-      null,
-      0
-     ],
-     [
-      52,
-      null,
-      null,
-      0
-     ],
-     [
-      209,
-      null,
-      null,
-      0
-     ],
-     [
-      19681,
-      null,
-      null,
-      0
-     ],
-     [
-      30478,
-      null,
-      null,
-      0
-     ],
-     [
-      93,
-      215,
-      null,
-      0
-     ],
-     [
-      55,
-      342,
-      null,
-      0
-     ],
-     [
-      66,
-      151,
-      null,
-      0
-     ],
-     [
-      9376,
-      null,
-      null,
-      0
-     ],
-     [
-      108,
-      116,
-      null,
-      0
-     ],
-     [
-      6335,
-      null,
-      null,
-      0
-     ],
-     [
-      114,
-      82,
-      null,
-      0
-     ],
-     [
-      1744,
-      1109,
-      1109,
-      0
-     ],
-     [
-      76064,
-      238408,
-      null,
-      0
-     ],
-     [
-      null,
-      267,
-      null,
-      0
-     ],
-     [
-      null,
-      624,
-      null,
-      0
-     ],
-     [
-      79,
-      108,
-      null,
-      0
-     ],
-     [
-      161,
-      130,
-      null,
-      0
-     ],
-     [
-      108,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      53938,
-      null,
-      0
-     ],
-     [
-      210,
-      566,
-      599,
-      0
-     ],
-     [
-      207,
-      1430,
-      null,
-      0
-     ],
-     [
-      7345,
-      null,
-      null,
-      0
-     ],
-     [
-      120,
-      null,
-      null,
-      0
-     ],
-     [
-      174,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      1349,
-      null,
-      0
-     ],
-     [
-      494,
-      625,
-      null,
-      0
-     ],
-     [
-      null,
-      472,
-      null,
-      0
-     ],
-     [
-      101,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      6424,
       null,
       0
      ]
@@ -5648,6 +4424,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -5922,6 +4699,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -6172,6 +4950,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -6505,6 +5284,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -6767,6 +5547,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -7105,6 +5886,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -7273,6 +6055,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -7455,6 +6238,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -7559,6 +6343,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      },
@@ -7574,6 +6359,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 3,
       "commanderCopies": 0
      }
@@ -8311,306 +7097,6 @@ export const cardDetailsJson: unknown = {
     "inScope": false
    }
   },
-  "086b2564-9114-4ba2-94fd-b490f98f38a7": {
-   "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
-   "name": "Chain Reaction",
-   "typeLine": "Sorcery",
-   "manaCost": "{2}{R}{R}",
-   "cmc": 4,
-   "oracleText": "Chain Reaction deals X damage to each creature, where X is the number of creatures on the battlefield.",
-   "keywords": [],
-   "rarity": "rare",
-   "colorIdentity": [
-    "R"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "C15",
-     "scryfallId": "288fd67a-46ee-417d-b2ce-05944e30011e",
-     "setName": "Commander 2015",
-     "collectorNumber": "144",
-     "releasedAt": "2015-11-13",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/2/8/288fd67a-46ee-417d-b2ce-05944e30011e.jpg?1783938079",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/6/f/6f34d11e-8452-448f-be4f-838e0ace9904.jpg?1783903818",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "C15"
-   ],
-   "primarySetCode": "C15",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 1,
-    "soft": 0,
-    "free": 0,
-    "claims": [
-     {
-      "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
-      "name": "Ashen Banner Parade",
-      "since": 1792459816309,
-      "locked": false,
-      "mature": true,
-      "senior": true,
-      "granted": 0,
-      "pending": true,
-      "draftCut": false,
-      "quantity": 1,
-      "commander": false,
-      "versionNumber": 1,
-      "commanderCopies": 0
-     }
-    ]
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 16,
-    "catalogKeys": 16,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      0
-     ],
-     [
-      3,
-      1
-     ],
-     [
-      4,
-      2
-     ],
-     [
-      5,
-      0
-     ],
-     [
-      6,
-      3
-     ],
-     [
-      7,
-      0
-     ],
-     [
-      8,
-      4
-     ],
-     [
-      9,
-      0
-     ],
-     [
-      10,
-      5
-     ],
-     [
-      11,
-      6
-     ],
-     [
-      12,
-      7
-     ],
-     [
-      13,
-      1
-     ],
-     [
-      14,
-      8
-     ],
-     [
-      15,
-      0
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      1,
-      0
-     ],
-     [
-      2,
-      0
-     ],
-     [
-      3,
-      1
-     ],
-     [
-      4,
-      2
-     ],
-     [
-      5,
-      0
-     ],
-     [
-      6,
-      3
-     ],
-     [
-      7,
-      0
-     ],
-     [
-      8,
-      4
-     ],
-     [
-      9,
-      0
-     ],
-     [
-      10,
-      5
-     ],
-     [
-      11,
-      6
-     ],
-     [
-      12,
-      7
-     ],
-     [
-      13,
-      1
-     ],
-     [
-      14,
-      8
-     ],
-     [
-      15,
-      0
-     ]
-    ],
-    "ids": [
-     "b6c0d5df-1195-49c1-9b8f-befed9faa401",
-     "6f34d11e-8452-448f-be4f-838e0ace9904",
-     "0609ddd2-1e98-4fe3-855e-c0ba1c365369",
-     "288fd67a-46ee-417d-b2ce-05944e30011e",
-     "3c289f27-e824-4c67-beac-855556ee1e30",
-     "491c77ae-ccd9-4eb5-a0f0-bae85b82d50a",
-     "edc7e977-b51e-4dbb-89fa-6d7490fc5f56",
-     "4ec4e917-97c8-4b68-ba83-514d5c29679f",
-     "cbcdb367-7e50-4f51-890a-5f8321762e3f",
-     "df294fe7-884d-4fd0-9554-dfba132471cd",
-     "e631b484-37a2-4532-b4da-f24ee03152f6",
-     "87687369-ebe8-49ba-8445-9ea3bef334a0",
-     "614b9df9-c959-4bdb-91c0-75ae60b724e4",
-     "92ca793e-a54a-4e8f-a87d-f0dc4f178412",
-     "86ac292c-070e-439f-9c25-f4037cf1edd5",
-     "5d996ee5-4a4d-4f1e-9db7-a0f55f73acab"
-    ],
-    "keys": [
-     "ECC|92",
-     "SOC|121",
-     "SCD|126",
-     "C15|144",
-     "SLD|2219",
-     "NEC|103",
-     "CMD|113",
-     "DRC|47",
-     "C18|121",
-     "EOC|87",
-     "AFC|116",
-     "C21|161",
-     "WWK|74",
-     "CLB|783",
-     "ONC|97",
-     "NCC|265"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      15,
-      null,
-      null,
-      0
-     ],
-     [
-      25,
-      null,
-      null,
-      0
-     ],
-     [
-      84,
-      92,
-      null,
-      0
-     ],
-     [
-      36,
-      null,
-      null,
-      0
-     ],
-     [
-      17,
-      null,
-      null,
-      0
-     ],
-     [
-      19,
-      null,
-      null,
-      0
-     ],
-     [
-      16,
-      null,
-      null,
-      0
-     ],
-     [
-      28,
-      877,
-      null,
-      0
-     ],
-     [
-      26,
-      null,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
   "3d6fa57a-aa53-4b5c-b8af-a7612c823117": {
    "oracleId": "3d6fa57a-aa53-4b5c-b8af-a7612c823117",
    "name": "Faithless Looting",
@@ -8672,6 +7158,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -9198,6 +7685,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -9554,6 +8042,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -9833,6 +8322,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      },
@@ -9848,6 +8338,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 3,
       "commanderCopies": 0
      }
@@ -10158,6 +8649,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -10344,6 +8836,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -10706,6 +9199,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -11470,6 +9964,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      },
@@ -11485,6 +9980,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": null,
       "commanderCopies": 0
      }
@@ -12831,6 +11327,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -12947,6 +11444,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -13571,6 +12069,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -13704,6 +12203,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      },
@@ -13719,6 +12219,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": null,
       "commanderCopies": 0
      }
@@ -13949,6 +12450,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -14377,6 +12879,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -14637,6 +13140,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -14851,6 +13355,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -15209,6 +13714,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -15456,6 +13962,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -15588,6 +14095,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -15933,6 +14441,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -16131,6 +14640,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -16265,6 +14775,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      },
@@ -16280,6 +14791,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": null,
       "commanderCopies": 0
      }
@@ -18243,6 +16755,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -18584,6 +17097,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -18848,6 +17362,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -19198,6 +17713,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      },
@@ -19213,6 +17729,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": null,
       "commanderCopies": 0
      }
@@ -19441,6 +17958,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      },
@@ -19456,6 +17974,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": null,
       "commanderCopies": 0
      }
@@ -19689,6 +18208,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -19855,6 +18375,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -19989,6 +18510,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -20622,6 +19144,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -21250,6 +19773,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -21561,6 +20085,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -21969,6 +20494,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -23595,6 +22121,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -24382,6 +22909,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -34441,6 +32969,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -35127,6 +33656,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -35387,6 +33917,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -35647,6 +34178,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": 1,
       "commanderCopies": 0
      }
@@ -35827,483 +34359,6 @@ export const cardDetailsJson: unknown = {
      [
       null,
       24045,
-      null,
-      0
-     ]
-    ]
-   },
-   "proxiedBy": []
-  },
-  "24d0f5e7-0d9e-4b76-900e-a7274e80312d": {
-   "oracleId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
-   "name": "Mulldrifter",
-   "typeLine": "Creature — Elemental",
-   "manaCost": "{4}{U}",
-   "cmc": 5,
-   "oracleText": "Flying\nWhen this creature enters, draw two cards.\nEvoke {2}{U} (You may cast this spell for its evoke cost. If you do, it's sacrificed when it enters.)",
-   "keywords": [
-    "Flying",
-    "Evoke"
-   ],
-   "rarity": "uncommon",
-   "colorIdentity": [
-    "U"
-   ],
-   "imageUri": "https://cards.scryfall.io/normal/front/3/4/345fd005-5052-4500-a260-3649500e21f4.jpg?1783928323",
-   "printedName": null,
-   "layout": "normal",
-   "backImageUri": null,
-   "quantity": 1,
-   "printings": [
-    {
-     "setCode": "KHC",
-     "scryfallId": "345fd005-5052-4500-a260-3649500e21f4",
-     "setName": "Kaldheim Commander",
-     "collectorNumber": "42",
-     "releasedAt": "2021-02-05",
-     "quantity": 1,
-     "finishes": {
-      "nonfoil": 1
-     },
-     "imageUri": "https://cards.scryfall.io/normal/front/3/4/345fd005-5052-4500-a260-3649500e21f4.jpg?1783928323",
-     "artCropUri": "https://cards.scryfall.io/art_crop/front/3/d/3de308cc-14ac-407e-99e7-568572ecd0e7.jpg?1783904564",
-     "backImageUri": null,
-     "hasOwnBack": false,
-     "hasOwnArt": true,
-     "flavorName": null
-    }
-   ],
-   "setCodes": [
-    "KHC"
-   ],
-   "primarySetCode": "KHC",
-   "preferredPrinting": null,
-   "availability": {
-    "owned": 1,
-    "hard": 0,
-    "soft": 0,
-    "free": 1,
-    "claims": []
-   },
-   "prices": {
-    "packed": 1,
-    "catalogIds": 29,
-    "catalogKeys": 29,
-    "ambiguousKeys": [],
-    "newestAsOf": 0,
-    "byId": [
-     [
-      0,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      7,
-      6
-     ],
-     [
-      8,
-      7
-     ],
-     [
-      10,
-      8
-     ],
-     [
-      11,
-      3
-     ],
-     [
-      12,
-      9
-     ],
-     [
-      13,
-      10
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
-     ],
-     [
-      16,
-      13
-     ],
-     [
-      17,
-      14
-     ],
-     [
-      18,
-      15
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      21,
-      3
-     ],
-     [
-      22,
-      18
-     ],
-     [
-      23,
-      17
-     ],
-     [
-      24,
-      19
-     ],
-     [
-      25,
-      20
-     ],
-     [
-      26,
-      21
-     ],
-     [
-      27,
-      22
-     ]
-    ],
-    "byKey": [
-     [
-      0,
-      0
-     ],
-     [
-      2,
-      1
-     ],
-     [
-      3,
-      2
-     ],
-     [
-      4,
-      3
-     ],
-     [
-      5,
-      4
-     ],
-     [
-      6,
-      5
-     ],
-     [
-      7,
-      6
-     ],
-     [
-      8,
-      7
-     ],
-     [
-      10,
-      8
-     ],
-     [
-      11,
-      3
-     ],
-     [
-      12,
-      9
-     ],
-     [
-      13,
-      10
-     ],
-     [
-      14,
-      11
-     ],
-     [
-      15,
-      12
-     ],
-     [
-      16,
-      13
-     ],
-     [
-      17,
-      14
-     ],
-     [
-      18,
-      15
-     ],
-     [
-      19,
-      16
-     ],
-     [
-      20,
-      17
-     ],
-     [
-      21,
-      3
-     ],
-     [
-      22,
-      18
-     ],
-     [
-      23,
-      17
-     ],
-     [
-      24,
-      19
-     ],
-     [
-      25,
-      20
-     ],
-     [
-      26,
-      21
-     ],
-     [
-      27,
-      22
-     ]
-    ],
-    "ids": [
-     "0f0e6ff7-eed1-4965-813f-00d92fb48a1e",
-     "6c547ab2-920a-4849-87ce-e2c8905b0400",
-     "3bdcae2f-fcf3-4dfd-8818-606d16a03beb",
-     "5d9acfe6-e1af-427b-86e1-05c35ce569a3",
-     "2fb5330d-5c1b-4caa-8d30-3ca8303ff611",
-     "95cc00e8-a40f-40d7-a747-d36d0ece6319",
-     "eb6d8d1c-8d23-4273-9c9b-f3b71eb0e105",
-     "4f3deefe-28bc-4e45-a0a0-ab03167e2e81",
-     "a5ad7ebb-4994-49f1-a211-90bdccb6a91b",
-     "1626d3f9-cb89-4716-ac68-86baf1550365",
-     "99074b05-f252-4626-a96a-6bc286e8d03a",
-     "d9fb2f2b-ed82-4461-9013-490e8bca89f8",
-     "3de308cc-14ac-407e-99e7-568572ecd0e7",
-     "48cbc1ad-23ad-4666-b178-060ee602fc6d",
-     "6a9f464a-6a5f-46ad-a0f7-478107a1bd40",
-     "8e06fc13-6a58-40f8-a3e6-5558a7a0d18f",
-     "d8e4b31d-2efa-4c5c-a84b-6aac3ec475f6",
-     "ff990293-3e73-4c01-9b79-707339c8b28b",
-     "e0fed1e5-fcbd-4597-91b5-ba809571573b",
-     "c76448bc-47a1-472c-936b-bad433892343",
-     "6757e07f-fb3e-42a2-9684-d4f53030255d",
-     "6f5a5da9-f328-423c-8724-f3fcdddb9f16",
-     "909c8cc3-4adf-4c14-8fac-673558fe1f7f",
-     "345fd005-5052-4500-a260-3649500e21f4",
-     "a97cfefa-ade7-49f6-b2aa-1118b9db4935",
-     "d7e282a2-d258-4c23-852c-6b0f10ae1962",
-     "f18233ee-3d90-4a28-8d93-918983bc9d11",
-     "ea86b5bf-c38f-4168-a4dd-96859948423c",
-     "d2f40d1c-0c8d-4b86-9554-bb6699e8c170"
-    ],
-    "keys": [
-     "CMR|639",
-     "SLZ|267",
-     "SLD|374",
-     "SLD|1887",
-     "AFC|87",
-     "PLST|CM2-47",
-     "MKC|111",
-     "C14|118",
-     "SLD|373",
-     "SLZ|25",
-     "2X2|349",
-     "C20|117",
-     "ECC|67",
-     "F09|6",
-     "CM2|47",
-     "CMR|400",
-     "CMD|52",
-     "SLD|168",
-     "2X2|60",
-     "C15|97",
-     "C18|94",
-     "DD2|12",
-     "JVC|12",
-     "KHC|42",
-     "LRW|76",
-     "MM2|51",
-     "MMA|54",
-     "TSR|311",
-     "SLZ|146"
-    ],
-    "dates": [
-     "2026-09-06T01:13:38.156Z"
-    ],
-    "facts": [
-     [
-      57,
-      37,
-      null,
-      0
-     ],
-     [
-      293,
-      289,
-      null,
-      0
-     ],
-     [
-      null,
-      302,
-      null,
-      0
-     ],
-     [
-      25,
-      null,
-      null,
-      0
-     ],
-     [
-      34,
-      null,
-      null,
-      0
-     ],
-     [
-      22,
-      null,
-      null,
-      0
-     ],
-     [
-      30,
-      null,
-      null,
-      0
-     ],
-     [
-      207,
-      285,
-      null,
-      0
-     ],
-     [
-      90,
-      125,
-      null,
-      0
-     ],
-     [
-      21,
-      null,
-      null,
-      0
-     ],
-     [
-      null,
-      939,
-      null,
-      0
-     ],
-     [
-      32,
-      null,
-      null,
-      0
-     ],
-     [
-      26,
-      null,
-      null,
-      0
-     ],
-     [
-      27,
-      null,
-      null,
-      0
-     ],
-     [
-      331,
-      336,
-      null,
-      0
-     ],
-     [
-      26,
-      40,
-      null,
-      0
-     ],
-     [
-      29,
-      null,
-      null,
-      0
-     ],
-     [
-      23,
-      null,
-      null,
-      0
-     ],
-     [
-      69,
-      null,
-      null,
-      0
-     ],
-     [
-      20,
-      988,
-      null,
-      0
-     ],
-     [
-      29,
-      56,
-      null,
-      0
-     ],
-     [
-      28,
-      51,
-      null,
-      0
-     ],
-     [
-      70,
-      1301,
       null,
       0
      ]

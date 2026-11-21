@@ -61,7 +61,7 @@ const CARD_OUT = (chunk: string) => fileURLToPath(new URL(`../src/lib/demo/card-
 const COLLECTION_WINDOW = 12;
 const COMMANDER_WINDOW = 3;
 
-const args = parseArgs({ options: { write: { type: "boolean", default: false }, run: { type: "string" }, merge: { type: "string" } } }).values;
+const args = parseArgs({ options: { write: { type: "boolean", default: false }, run: { type: "string" }, merge: { type: "string" }, upgrade: { type: "string" } } }).values;
 
 // `--run scripts/out/demo-generate-<timestamp>.json`: the paid run's summary, which names the stored row each model tool
 // wrote (`steps[].stored`). Steps 3 (Help me choose), 5's Overview, 6 (Suggested changes), 7's Proposed cuts and 8 (Which
@@ -69,7 +69,8 @@ const args = parseArgs({ options: { write: { type: "boolean", default: false }, 
 type RunSummary = { steps: { step: string; status: string; stored: Record<string, string | null> | null }[] };
 const run: RunSummary | null = args.run ? (JSON.parse(readFileSync(args.run, "utf8")) as RunSummary) : null;
 // `--merge=<key>[,<key>]`: free reads only, into the COMMITTED file (`MERGERS`, below). It takes no `--run`: a merge reads no
-// stored model row, so it can run on a fresh fixture after the paid run's branch is gone.
+// stored model row, so it can run on a fresh fixture after the paid run's branch is gone. The one merger that reads a
+// stored run, `upgrade`, takes its `precon_upgrades` id as `--upgrade <id>` (a read of the stored row, never a press).
 const mergeKeys = args.merge !== undefined ? [...new Set(args.merge.split(",").map((k) => k.trim()).filter((k) => k.length > 0))] : null;
 if (mergeKeys && run) throw new Error("demo:export: --merge and --run are exclusive; a merge reads no stored model row.");
 if (mergeKeys?.length === 0) throw new Error("demo:export: --merge names no key.");
@@ -345,6 +346,32 @@ async function fixtureDrift(committed: Committed): Promise<string[]> {
   return drift;
 }
 
+/**
+ * The Precon Upgrade step (addendum A5): the panel as the precon page reads it (`readUpgrade`, which WRITES: see the header),
+ * restricted to the stored run by its `precon_upgrades` id, and the whole run's set bracket (`readSetBracket` over every add and
+ * cut, the real read behind the result's bar), the seed the demo's tally measures a picked subset from (C4). Never a press.
+ * A failed read pushes onto `failures` and answers undefined.
+ */
+async function readUpgradeStep(upgradeRunId: string, upgradeFile: string) {
+  const { LIVE_DEPS, readUpgrade, readSetBracket } = await import("../src/lib/precons/upgrade/run");
+  const { projectUpgrade } = await import("../src/lib/demo/project-upgrade");
+  const [precon] = (await sql`select name from precons where file_name = ${upgradeFile}`) as { name: string }[];
+  const panel = precon ? await readUpgrade(userId, upgradeFile, LIVE_DEPS, env) : null;
+  const stored = panel?.runs.find((r) => r.id === upgradeRunId);
+  if (!precon) failures.push(`Precon Upgrade: the catalog holds no precon ${upgradeFile}`);
+  else if (!panel || !stored) failures.push(`Precon Upgrade: the panel does not hold the stored run ${upgradeRunId}`);
+  else {
+    const read = await readSetBracket(userId, upgradeFile, upgradeRunId, stored.pairs.map((p) => p.addId), stored.pairs.map((p) => p.cutId));
+    if (!read) failures.push("Precon Upgrade: the set bracket read nothing (the run's list is no longer the box's, or the read failed)");
+    try {
+      return projectUpgrade({ precon: precon.name, panel, runId: upgradeRunId, setPermits: read?.permits ?? null });
+    } catch (e) {
+      failures.push((e as Error).message);
+    }
+  }
+  return undefined;
+}
+
 const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partial<Committed & DemoCardData>; lines: string[] }>> = {
   // Card details for the committed file's own card set. Before the reads, the fixture must be the file's: the same collection
   // window, and each deck the same commanders and rows (`cardSetDrift`). After them, what the details say must be what the file
@@ -379,6 +406,22 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
         `merge cardDetails: ${clock.kept} claim(s) kept on the committed details' clock, ${clock.unanchored} with no committed counterpart left as read`,
       ],
     };
+  },
+  // The Precon Upgrade step from a run already stored on this fixture (`--upgrade <precon_upgrades id>`): a read of that row and
+  // the panel around it, never a press. The fixture must be the file's (`fixtureDrift`). Run it with cardDetails
+  // (`--merge=upgrade,cardDetails`) so the upgrade chunk's cards are read for the run's adds and cuts.
+  upgrade: async (committed) => {
+    const drift = await fixtureDrift(committed);
+    if (drift.length > 0) {
+      for (const d of drift) console.error(`demo:export: drift: ${d}`);
+      throw new Error("demo:export --merge=upgrade: this fixture is not the one the committed file was exported from; nothing written.");
+    }
+    if (!args.upgrade) throw new Error("demo:export --merge=upgrade: pass --upgrade <the stored precon_upgrades id>.");
+    const [row] = (await sql`select precon_file from precon_upgrades where id = ${args.upgrade}::uuid and user_id = ${userId}`) as { precon_file: string }[];
+    if (!row) throw new Error(`demo:export --merge=upgrade: the fixture account holds no precon_upgrades row ${args.upgrade}; nothing written.`);
+    const projected = await readUpgradeStep(args.upgrade, row.precon_file);
+    if (!projected) throw new Error("demo:export --merge=upgrade: the stored run did not read; nothing written.");
+    return { values: { upgrade: projected }, lines: [`merge upgrade: ${projected.precon}, ${projected.panel.runs[0].pairs.length} swaps, set permits ${projected.setPermits?.join("/") ?? "unread"}`] };
   },
   // Top off's stored bulk plans: the two plans `bulkFillOptions` answers for the under deck, which need the owned pool's text and
   // the commander's shape and so cannot be derived from the file. The fixture must be the file's (`fixtureDrift`), and the plans
@@ -416,7 +459,8 @@ if (mergeKeys) {
   const merged: Record<string, unknown> = { ...committed, ...mergeCardChunks(chunks) };
   const lines: string[] = [];
   for (const key of mergeKeys) {
-    const out = await MERGERS[key](committed);
+    // Each merger reads the file as the earlier ones left it (`upgrade` then `cardDetails` opens the new run's cards).
+    const out = await MERGERS[key](merged as Committed);
     Object.assign(merged, out.values);
     lines.push(...out.lines);
   }
@@ -615,31 +659,12 @@ const fits = projectFits({
 });
 
 // --- The Precon Upgrade step (addendum A5): the paid run's stored result on the fixture account. ----------------------------------
-// The panel as the precon page reads it (`readUpgrade`, which WRITES: see the header), restricted to the run `demo:generate`'s
-// upgrade step stored, found by its `precon_upgrades` id; and the whole run's set bracket (`readSetBracket` over every add and cut,
-// the real read behind the result's bar), the seed the demo's tally measures a picked subset from (C4). Never a press.
-const { LIVE_DEPS, readUpgrade, readSetBracket } = await import("../src/lib/precons/upgrade/run");
-const { projectUpgrade } = await import("../src/lib/demo/project-upgrade");
-let upgrade: ReturnType<typeof projectUpgrade> | undefined;
+// The step as `readUpgradeStep` reads it, from the run `demo:generate`'s upgrade step stored, found by its `precon_upgrades` id.
+let upgrade: Awaited<ReturnType<typeof readUpgradeStep>>;
 const upgradeRunId = storedId("upgrade", "precon_upgrades");
 const upgradeFile = storedId("upgrade", "precon_file");
 if (!upgradeRunId || !upgradeFile) skipped.push("upgrade (needs --run)");
-else {
-  const [precon] = (await sql`select name from precons where file_name = ${upgradeFile}`) as { name: string }[];
-  const panel = precon ? await readUpgrade(userId, upgradeFile, LIVE_DEPS, env) : null;
-  const stored = panel?.runs.find((r) => r.id === upgradeRunId);
-  if (!precon) failures.push(`Precon Upgrade: the catalog holds no precon ${upgradeFile}`);
-  else if (!panel || !stored) failures.push(`Precon Upgrade: the panel does not hold the stored run ${upgradeRunId}`);
-  else {
-    const read = await readSetBracket(userId, upgradeFile, upgradeRunId, stored.pairs.map((p) => p.addId), stored.pairs.map((p) => p.cutId));
-    if (!read) failures.push("Precon Upgrade: the set bracket read nothing (the run's list is no longer the box's, or the read failed)");
-    try {
-      upgrade = projectUpgrade({ precon: precon.name, panel, runId: upgradeRunId, setPermits: read?.permits ?? null });
-    } catch (e) {
-      failures.push((e as Error).message);
-    }
-  }
-}
+else upgrade = await readUpgradeStep(upgradeRunId, upgradeFile);
 
 const steps = {
   format: 3 as const,
