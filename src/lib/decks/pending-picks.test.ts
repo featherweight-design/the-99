@@ -170,26 +170,36 @@ describe("pruneExcessPicks", () => {
   // G4: a removal can leave a card more picks than copies. The NEWEST go, from whichever table holds them.
   const render = (q: SQL | undefined) => (q ? new PgDialect().sqlToQuery(q).sql : "");
 
-  it("locks each card once, in a stable order, and deletes each excess pick from its own table", async () => {
+  it("reads which cards carry a pick, then locks only those, once each, in a stable order", async () => {
     const t = fakeTx([
+      { rows: [{ oracle_id: "b-card" }, { oracle_id: "a-card" }] },
       undefined, { rows: [{ kind: "pending", deck_id: "newest" }, { kind: "reserved", deck_id: "newer" }] }, undefined, undefined,
       undefined, { rows: [] },
     ]);
-    await pruneExcessPicks(t.tx, U, ["b-card", "a-card", "b-card"]);
-    expect(t.log.map((l) => l.op)).toEqual(["execute", "execute", "delete", "delete", "execute", "execute"]);
+    await pruneExcessPicks(t.tx, U, ["b-card", "a-card", "b-card", "c-card"]);
+    expect(t.log.map((l) => l.op)).toEqual(["execute", "execute", "execute", "delete", "delete", "execute", "execute"]);
+    expect(render(t.log[0].sql)).not.toContain("pg_advisory_xact_lock");
     const locks = t.log.filter((l) => l.op === "execute" && render(l.sql).includes("pg_advisory_xact_lock"));
     expect(locks).toHaveLength(2);
     expect(t.left()).toBe(0);
   });
 
-  it("ranks the newest last, the kept pick first, and counts both tables against the copies", async () => {
-    const t = fakeTx([undefined, { rows: [] }]);
+  it("takes no lock when no card carries a pick", async () => {
+    const t = fakeTx([{ rows: [] }]);
+    await pruneExcessPicks(t.tx, U, ["a-card", "b-card"]);
+    expect(t.log.map((l) => l.op)).toEqual(["execute"]);
+    expect(t.left()).toBe(0);
+  });
+
+  it("ranks the newest last, the kept pick first, and caps each kind on its own at one copy", async () => {
+    const t = fakeTx([{ rows: [{ oracle_id: C }] }, undefined, { rows: [] }]);
     await pruneExcessPicks(t.tx, U, [C], { oracleId: C, deckId: D });
-    const q = render(t.log[1].sql);
+    const q = render(t.log[2].sql);
     expect(q).toContain("from card_assignments a");
     expect(q).toContain("from pending_assignments p");
-    expect(q).toMatch(/order by \(deck_id::text = \$\d+::text\) is true desc, created_at, deck_id/);
-    expect(q).toContain("where running > (select n from giveable)");
+    expect(q).toContain("partition by case when g.n = 1 then p.kind else 'all' end");
+    expect(q).toMatch(/order by \(p\.deck_id::text = \$\d+::text\) is true desc, p\.created_at, p\.deck_id/);
+    expect(q).toContain("where running > n");
   });
 });
 

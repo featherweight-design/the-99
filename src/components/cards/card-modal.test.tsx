@@ -352,7 +352,9 @@ describe("CardModal allocation receipt", () => {
     });
     const rows = screen.getAllByRole("listitem");
     const textOf = (deck: string) => rows.find((r) => r.textContent!.includes(deck))!.textContent!;
-    expect(textOf("Avatar Aang")).toContain(c.detailClaimGets);
+    // Several picks: a picked deck reads `holds 1 · your pick`, which replaces `gets it`.
+    expect(textOf("Avatar Aang")).toContain(c.detailClaimYourPick);
+    expect(textOf("Avatar Aang")).not.toContain(c.detailClaimGets);
     expect(textOf("Prismari Artistry")).toContain(c.detailClaimBuys);
   });
 
