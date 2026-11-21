@@ -27,7 +27,7 @@ const STEPPED: readonly CounterKey[] = ["poison", "energy", "experience", "rad",
 /** Each cast from the command zone adds this much to the next cast. */
 const TAX_PER_CAST = 2;
 
-/** The three stepper sizes the boards draw: counters (44px), mana (48px), damage and tax (44 to 52px, Cinzel count). */
+/** The stepper sizes: 44px buttons for counters, mana and damage (the 44px touch target), 52px for tax; a Cinzel count throughout. */
 const STEPPER_SIZE = {
   counter: { btn: "size-[44px] rounded-[9px] text-[20px]", count: "min-w-[30px] text-[22px]" },
   mana: { btn: "size-[44px] rounded-[10px] text-[22px]", count: "min-w-[40px] text-[28px]" },
