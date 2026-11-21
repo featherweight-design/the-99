@@ -1,0 +1,107 @@
+--- a/src/components/decks/contested-card-row.tsx	2026-11-21 15:34:50.425299797 +0000
++++ b/src/components/decks/contested-card-row.tsx	2026-11-21 15:39:44.991194179 +0000
+@@ -492,6 +492,11 @@
+   // brews would claim three copies and `buys it` would be false. Only while collection edit is on.
+   const canUse = (c: (typeof claimants)[number]) => addedCopy && c.brew === true && c.granted === 0 && c.allocated > 0;
+   const canUseCount = claimants.filter(canUse).length;
++  // PROPOSAL (several picks): the newest unpicked deck holding a copy is the one a new pick takes it from.
++  const full = inPlay > 1 && chosenIds.size >= inPlay;
++  const someoneBuys = claimants.some((c) => c.allocated === 0);
++  const yieldsId = full || !someoneBuys ? null
++    : [...claimants].reverse().find((c) => !chosenIds.has(c.deckId) && c.allocated > 0 && c.commanderCopies === 0)?.deckId ?? null;
+ 
+   return (
+     <div
+@@ -522,7 +527,7 @@
+             given every copy away before any pick, so the figure is true in both states. */}
+         {!nothingToChoose && inPlay > 1 ? (
+           <span className="ml-[8px] normal-case tracking-normal" style={{ color: "var(--fg-faint)" }}>
+-            {copy.contested.cap(givenOut, inPlay)}
++            {chosenIds.size > 0 ? copy.contested.capPicked(chosenIds.size, inPlay) : copy.contested.cap(givenOut, inPlay)}
+           </span>
+         ) : null}
+       </p>
+@@ -580,6 +585,8 @@
+                   ? copy.contested.keepsAndGets(Math.min(c.commanderCopies, c.allocated), spareToThisDeck)
+                   : copy.contested.keeps)
+               : c.allocated > 0 ? copy.contested.gets : copy.contested.buys;
++          const mine = chosenIds.has(c.deckId);
++          const yields = !mine && c.deckId === yieldsId;
+           return (
+             <li
+               key={c.deckId}
+@@ -692,7 +699,9 @@
+                   className={soft ? "font-mono text-[11px]" : "font-mono text-[10.5px] md:text-[11px]"}
+                   style={{ color: soft ? "var(--fg-muted)" : c.allocated > 0 ? "var(--success)" : "var(--avail-over-fg)" }}
+                 >
++                  {mine ? <span style={{ color: "var(--accent-text)" }}>{copy.contested.yourPick} · </span> : null}
+                   {outcome}
++                  {yields ? <span style={{ color: "var(--fg-muted)" }}> · {copy.contested.givesUpFirst}</span> : null}
+                 </span>
+               </span>
+             </li>
+@@ -712,6 +721,12 @@
+         </p>
+       ) : null}
+ 
++      {full && someoneBuys ? (
++        <p className="text-[11.5px] mt-[9px] mb-0" style={{ color: "var(--fg-body)" }}>
++          {copy.contested.allPicked(inPlay)}
++        </p>
++      ) : null}
++
+       {/* Why every brew reads the same copy, once there are two of them reading it. */}
+       {canUseCount >= 2 && !nothingToChoose ? (
+         <p className="text-[11px] mt-[8px] mb-0" style={{ color: "var(--fg-faint)" }}>
+--- a/src/lib/copy/card-assignments.ts	2026-11-21 15:34:50.529905019 +0000
++++ b/src/lib/copy/card-assignments.ts	2026-11-21 15:39:44.991573141 +0000
+@@ -301,6 +301,10 @@
+ 
+     /** The cap, stated beside the heading whenever it is above one. */
+     cap: (given: number, copies: number) => `${given} of ${copies} given`,
++    capPicked: (picked: number, copies: number) => `${picked} of ${copies} picked`,
++    yourPick: "your pick",
++    givesUpFirst: "gives it up first",
++    allPicked: (copies: number) => `All ${copies} copies are picked. Untick one to give another deck a copy.`,
+     /** THE VERB. Never rendered as a button. */
+     heading: (copies: number) =>
+       copies === 1 ? "Give the new copy to" : `Give the ${copies} new copies to`,
+--- a/src/components/cards/card-detail-blocks.tsx	2026-11-21 15:34:50.396573799 +0000
++++ b/src/components/cards/card-detail-blocks.tsx	2026-11-21 15:43:02.630893677 +0000
+@@ -364,7 +364,9 @@
+                   {claim.name}
+                 </DeckLink>
+                 <span className="shrink-0 font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
+-                  {claimLabel(claim, allocated.get(claim.id) ?? 0, contested)}
++                  {contested && claim.mature && (claim.granted ?? 0) > 0
++                    ? <>{availabilityCopy.collection.detailClaimHolds(claim.quantity)} · <span style={{ color: "var(--accent-text)" }}>your pick</span></>
++                    : claimLabel(claim, allocated.get(claim.id) ?? 0, contested)}
+                 </span>
+               </li>
+             ))}
+--- a/src/lib/collection/history-live-view.ts	2026-11-21 15:34:50.521145036 +0000
++++ b/src/lib/collection/history-live-view.ts	2026-11-21 15:41:32.138145331 +0000
+@@ -10,6 +10,12 @@
+  */
+ export function nowHolderNames(wentDeckIds: readonly string[], live: HistoryLive | undefined): string[] | null {
+   if (!live || live.holders.length === 0) return null;
++  // PROPOSAL (several picks): only when a deck the record named holds no copy now, and then only the decks a pick put a copy in.
++  const g = (live as { gained?: { id: string; name: string }[] }).gained;
++  if (g) {
++    const held = new Set(live.holders.map((h) => h.id));
++    return wentDeckIds.every((id) => held.has(id)) || g.length === 0 ? null : g.map((h) => h.name);
++  }
+   const went = new Set(wentDeckIds);
+   if (live.holders.length === went.size && live.holders.every((h) => went.has(h.id))) return null;
+   return live.holders.map((h) => h.name);
+--- a/src/components/collection/history-list.tsx	2026-11-21 15:34:50.405299796 +0000
++++ b/src/components/collection/history-list.tsx	2026-11-21 15:43:48.779206014 +0000
+@@ -363,7 +363,7 @@
+ }) {
+   const kind = historyKindOf(e);
+   const reverted = e.revertedBy !== null;
+-  const [tab, setTab] = useState<RowGroup | "move" | null>(null);
++  const [tab, setTab] = useState<RowGroup | "move" | null>((globalThis as any).__TAB ?? null);
+   // Change where N cards go: N from the opened entry's own rows (exact), else from the page payload's placed cards and the page's one live read.
+   const opened = detail && detail !== "loading" && detail !== "failed" ? detail : null;
+   const placedIds = opened ? opened.rows.filter((r) => r.wentTo && !r.wentTo.soft).map((r) => r.oracleId) : e.multi && !e.multi.capped ? e.multi.oracleIds : [];

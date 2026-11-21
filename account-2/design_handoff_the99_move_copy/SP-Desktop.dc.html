@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Several picks desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:34%}
+</style>
+</helmet>
+<div style="width: 1432px; min-height: 1800px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>D · desktop · 1280</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Desktop</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">Every state above at 1280, from the same render.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 640px; flex: none"><p class="lab"><b>D1</b> · chooser, no picks</p><img class="shot" src="art/sp/D1-desk.png" alt="Desktop chooser before"><p class="cap">The shipped 520 modal over History. One-line rows: the hint sits in the outcome slot.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 640px; flex: none"><p class="lab"><b>D2</b> · chooser, two picks</p><img class="shot" src="art/sp/D2-desk.png" alt="Desktop chooser two picks"><p class="cap">Same as P3: two accent rows, Gishath buys it, Urza gives it up first.</p></div>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 640px; flex: none"><p class="lab"><b>D3</b> · chooser, every copy picked</p><img class="shot" src="art/sp/D3-desk.png" alt="Desktop chooser full"><p class="cap">Same as P5, with the line under the rows.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 640px; flex: none"><p class="lab"><b>D4</b> · card details receipt</p><img class="shot" src="art/sp/D4-desk.png" alt="Desktop card details"><p class="cap">The receipt column of the card modal: holds 1 · your pick.</p></div>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 640px; flex: none"><p class="lab"><b>D5</b> · History</p><img class="shot" src="art/sp/D5-desk.png" alt="Desktop History"><p class="cap">Went to HD - Gishath. Now HD Tune - Mutant Menace has it.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 640px; flex: none"><p class="lab"><b>D6</b> · Can move tab</p><img class="shot" src="art/sp/D6-desk.png" alt="Desktop Can move"><p class="cap">The large entry on its last tab.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1432,"height":1800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
