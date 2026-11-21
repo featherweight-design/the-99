@@ -30,6 +30,9 @@ const copy = trackerCopy.panel;
 /** The pending life change of one panel: taps and holds add to it, and it commits as one entry after COMMIT_MS idle. */
 function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
   const [pending, setPending] = useState(0);
+  /** The half lit by the latest press or step, keyed so each one restarts its fade (`k` counts them). */
+  const [lit, setLit] = useState<{ k: number; sign: 1 | -1 } | null>(null);
+  const light = useCallback((sign: 1 | -1) => setLit((l) => ({ k: (l?.k ?? 0) + 1, sign })), []);
   const total = useRef(0);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -48,6 +51,7 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
     const delta = total.current;
     total.current = 0;
     setPending(0);
+    setLit(null);
     if (delta !== 0) commitRef.current(delta);
   }, []);
 
@@ -55,10 +59,11 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
     (delta: number) => {
       total.current += delta;
       setPending(total.current);
+      light(delta > 0 ? 1 : -1);
       if (commitTimer.current) clearTimeout(commitTimer.current);
       commitTimer.current = setTimeout(flush, COMMIT_MS);
     },
-    [flush],
+    [flush, light],
   );
 
   const stop = useCallback(() => {
@@ -75,13 +80,14 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
       stop();
       pressed.current = sign;
       held.current = false;
+      light(sign);
       holdTimer.current = setTimeout(() => {
         held.current = true;
         add(sign * 10);
         repeat.current = setInterval(() => add(sign * 10), REPEAT_MS);
       }, HOLD_MS);
     },
-    [add, disabled, stop],
+    [add, disabled, light, stop],
   );
 
   const up = useCallback(
@@ -112,10 +118,17 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
     const delta = total.current;
     total.current = 0;
     setPending(0);
+    setLit(null);
     return delta;
   }, [stop]);
 
-  return { pending, down, up, cancel: stop, take };
+  /** A press that ends without a step (the finger slid off) unlights its half, unless a change is still pending. */
+  const cancel = useCallback(() => {
+    stop();
+    if (total.current === 0) setLit(null);
+  }, [stop]);
+
+  return { pending, lit, down, up, cancel, take };
 }
 
 export function Panel({
@@ -162,14 +175,7 @@ export function Panel({
   foot?: boolean;
 }) {
   const out = state.out !== null;
-  // A committed life change ticks the number and tints the panel (F04 motion). Keyed on the change, so a repeat re-runs it.
-  const [seenLife, setSeenLife] = useState(state.life);
-  const [pulse, setPulse] = useState<{ k: number; gain: boolean } | null>(null);
-  if (state.life !== seenLife) {
-    setSeenLife(state.life);
-    setPulse({ k: (pulse?.k ?? 0) + 1, gain: state.life > seenLife });
-  }
-  const { pending, down, up, cancel, take } = usePendingLife(onLife, disabled || out);
+  const { pending, lit, down, up, cancel, take } = usePendingLife(onLife, disabled || out);
   useEffect(() => {
     const map = pendingFrom?.current;
     if (!map) return;
@@ -265,7 +271,6 @@ export function Panel({
               <span aria-hidden className="pointer-events-none absolute inset-0 bg-[color:color-mix(in_srgb,var(--bg)_50%,transparent)]" data-testid="panel-wash" />
             </>
           ) : null}
-          {pulse ? <span key={pulse.k} aria-hidden className={"pointer-events-none absolute inset-0 opacity-0 motion-safe:animate-[life-pulse_.6s_ease-out] " + (pulse.gain ? "bg-[color:color-mix(in_srgb,var(--success)_35%,transparent)]" : "bg-[color:color-mix(in_srgb,var(--danger)_35%,transparent)]")} /> : null}
           {active && !out ? <TurnRing key={round + ":" + seat.seat} radius={foot ? 18 : 16} /> : null}
 
           <div className={"relative flex h-full w-full " + (foot ? "flex-col-reverse px-[18px] py-4" : "flex-col pb-2 pl-[14px] pr-2 pt-[6px]")}>
@@ -318,7 +323,9 @@ export function Panel({
                     </span>
                   </div>
                   {([-1, 1] as const).map((sign) => {
-                    // F04 draws the half that made a pending change pressed until it commits.
+                    // F04 draws the half that made a pending change pressed until it commits: the glyph in the accent, and an
+                    // accent ground lit at once by each press or step that fades steadily to nothing by the commit, so nothing
+                    // flashes when the change lands (Hugh ruling 11-22). Reduced motion holds the ground until the commit.
                     const pressed = pending !== 0 && Math.sign(pending) === sign;
                     return (
                       <button
@@ -343,13 +350,22 @@ export function Panel({
                         }}
                         {...personAttrs(
                           { "aria-label": seat.you ? (sign === 1 ? copy.gainYou : copy.loseYou) : sign === 1 ? copy.gain(seat.name) : copy.lose(seat.name) },
-                          "absolute inset-y-0 flex w-1/2 touch-manipulation select-none items-center font-sans outline-none [-webkit-touch-callout:none] motion-safe:transition-[background-color] motion-safe:duration-[120ms] active:bg-[color:color-mix(in_srgb,var(--fg)_6%,transparent)] focus-visible:bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] "
+                          "absolute inset-y-0 flex w-1/2 touch-manipulation select-none items-center font-sans outline-none [-webkit-touch-callout:none] focus-visible:bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] "
             + (sign === 1 ? "right-0 justify-end " : "left-0 justify-start ")
             + (foot ? "px-2 text-[36px] " : "px-1 text-[30px] ")
-            + (pressed ? "bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] text-[color:var(--accent-text)]" : "text-[color:var(--fg-muted)]"),
+            + (pressed || lit?.sign === sign ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-muted)]"),
                         )}
                       >
-                        <span aria-hidden>{sign === 1 ? "+" : "−"}</span>
+                        {lit?.sign === sign ? (
+                          <span
+                            key={lit.k}
+                            aria-hidden
+                            data-testid="half-fill"
+                            className="pointer-events-none absolute inset-0 bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] motion-safe:animate-[half-fade_var(--fade)_linear_forwards]"
+                            style={{ "--fade": `${COMMIT_MS}ms` } as React.CSSProperties}
+                          />
+                        ) : null}
+                        <span aria-hidden className="relative">{sign === 1 ? "+" : "−"}</span>
                       </button>
                     );
                   })}

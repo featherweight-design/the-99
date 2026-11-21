@@ -760,8 +760,9 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { transform: scale(0.4); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
-@keyframes life-pulse {
-  from { opacity: 0.3; }
+/* A tapped life half's accent ground: lit at once, gone by the commit (F04 `.press`, Hugh ruling 11-22). */
+@keyframes half-fade {
+  from { opacity: 1; }
   to { opacity: 0; }
 }
 
