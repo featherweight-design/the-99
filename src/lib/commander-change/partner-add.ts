@@ -1,6 +1,6 @@
 // Where Add a partner finds its options: the partners a single commander could take beside it
 // while it stays, each from outside the deck's 99 (a partner already in the 99 is the pair-up
-// trade the sheet offers elsewhere, so the two lists never repeat a pair). Three sources, merged:
+// trade the sheet offers elsewhere, so the two lists never repeat a pair). Two sources, merged:
 // pairs EDHREC has a row for (any deck count; a pair below the floor is listed last, never
 // hidden), and the catalog's own pairing rules (`canPair`), so a legal partner EDHREC has not
 // sampled is still found. Backgrounds are not here: `isCommanderCandidate` rejects them.
