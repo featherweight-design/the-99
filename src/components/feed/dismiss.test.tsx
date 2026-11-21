@@ -208,6 +208,7 @@ describe("Clear all", () => {
     expect(clearBtn()).not.toBeNull();
   });
   it("hides every row at once, writes every key (rows, drops and the rows under Show all) lead first, and offers Undo", async () => {
+    const raf = vi.spyOn(window, "requestAnimationFrame").mockImplementation((cb) => { cb(0); return 0; });
     const rows = [1, 2, 3, 4, 5, 6, 7].map((n) => view(n));
     render(<HeldLeadProvider><LeadSlot lead={view(9, { key: LEAD })} now={NOW} /><WhatsNew feed={feed(rows, view(9, { key: LEAD }))} now={NOW} /></HeldLeadProvider>);
     await act(async () => { fireEvent.click(clearBtn()!); });
@@ -220,6 +221,7 @@ describe("Clear all", () => {
     expect(m.restore).toHaveBeenCalledWith([LEAD, ...rows.map((r) => r.key)]);
     expect(screen.getByText(titleOf(1))).toBeInTheDocument();
     expect(screen.getByText(titleOf(9))).toBeInTheDocument();
+    raf.mockRestore();
   });
   it("skips a held lead (an answer out or a receipt) and counts only what it cleared", async () => {
     const Hold = () => {
