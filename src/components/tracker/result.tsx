@@ -5,6 +5,7 @@
 // and Rematch, same seats. Drawn at 390 only: the tablet shows the same column, centred (READINESS).
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { joinNames, PersonName, PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import type { GameState } from "../../lib/tracker/engine";
@@ -67,9 +68,14 @@ export function Result({
   const win = winners[0];
   const winLife = state.seats.find((x) => x.seat === win.seat)!.life;
 
+  // The dialog takes focus when it opens, so a keyboard is not left on a panel behind it.
+  const dialog = useRef<HTMLDivElement>(null);
+  useEffect(() => dialog.current?.focus(), []);
+
+  const logCls = "grid min-h-[52px] place-items-center rounded-[10px] bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]";
   const ghost = "min-h-[44px] rounded-[10px] text-[14.5px] text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border-strong)]";
   return (
-    <div role="alertdialog" aria-modal="true" aria-label={trackerCopy.over.title} className="absolute inset-0 z-50 overflow-y-auto bg-[color:var(--bg)]" data-testid="tracker-result">
+    <div ref={dialog} tabIndex={-1} role="alertdialog" aria-modal="true" aria-label={trackerCopy.over.title} className="absolute inset-0 z-50 overflow-y-auto bg-[color:var(--bg)]" data-testid="tracker-result">
       <div className={"mx-auto flex min-h-full w-full flex-col gap-[14px] px-4 pb-[22px] pt-2 " + (tablet ? "max-w-[472px]" : "max-w-[430px]")}>
         <div className="flex h-11 items-center">
           <span className="font-mono text-[11.5px] text-[color:var(--fg-faint)]" data-testid="result-meta">
@@ -137,13 +143,13 @@ export function Result({
         ) : null}
 
         <div className="mt-auto flex flex-col gap-[10px]">
-          {logHref ? (
-            <Link
-              href={logHref}
-              aria-disabled={saved === "saving" || undefined}
-              className="grid min-h-[52px] place-items-center rounded-[10px] bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]"
-              data-testid="result-log"
-            >
+          {logHref && saved === "saving" ? (
+            // Until the result is saved, the Games tab would open blank, so the button waits.
+            <span aria-disabled="true" className={logCls + " opacity-60"} data-testid="result-log">
+              {copy.log}
+            </span>
+          ) : logHref ? (
+            <Link href={logHref} className={logCls} data-testid="result-log">
               {copy.log}
             </Link>
           ) : null}

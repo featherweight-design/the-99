@@ -107,6 +107,7 @@ export function PlaySurface({
         layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", seats.length)}
         initial={rematch ?? undefined}
         onStart={({ layout, life, first }) => {
+          setRematch(null);
           const config: GameConfig = {
             tableId,
             startingLife: life,
@@ -284,6 +285,7 @@ export function PlaySurface({
           onUndo={undo}
           onRematch={() => {
             setRematch({ layout: game.config.layout, life: game.config.startingLife });
+            setSaved(null);
             discard();
           }}
         />

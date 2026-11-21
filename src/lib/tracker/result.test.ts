@@ -74,3 +74,12 @@ describe("formatting", () => {
     expect([1, 2, 3, 4, 11, 12, 13, 21].map(ordinal)).toEqual(["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st"]);
   });
 });
+
+describe("landLife after the game is over", () => {
+  it("takes nothing from the other panels", () => {
+    const over = play({ t: "life", seat: 3, delta: -40 }, { t: "life", seat: 2, delta: -40 }, { t: "life", seat: 1, delta: -40 });
+    let taken = 0;
+    expect(landLife(over, 0, -1, () => (taken++, [{ seat: 1, delta: -1 }]))).toEqual({ t: "life", seat: 0, delta: -1 });
+    expect(taken).toBe(0);
+  });
+});

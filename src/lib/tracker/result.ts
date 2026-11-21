@@ -42,7 +42,8 @@ export function resultOf(s: GameState): Result {
  */
 export function landLife(s: GameState, seat: number, delta: number, others: () => { seat: number; delta: number }[]): Action {
   const own: Change = { t: "life", seat, delta };
-  if (!isOver(reduce(s, own))) return own;
+  // A game already over ignores the change, so the others keep theirs (an Undo reopens the game with them).
+  if (isOver(s) || !isOver(reduce(s, own))) return own;
   const rest: Change[] = others()
     .filter((o) => o.seat !== seat && o.delta !== 0)
     .map((o) => ({ t: "life", seat: o.seat, delta: o.delta }));
