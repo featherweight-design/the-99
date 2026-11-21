@@ -25,8 +25,9 @@ describe("tracker panel", () => {
   it("shows life, two tap halves and End turn only on the active seat", () => {
     const on = render(base, true);
     expect(on).toContain(">40<");
-    expect(on).toContain('aria-label="Lose 1 life"');
-    expect(on).toContain('aria-label="Gain 1 life"');
+    expect(on).toContain('aria-label="You lose 1 life"');
+    expect(on).toContain('aria-label="You gain 1 life"');
+    expect(on).toContain('aria-label="Your sheet"');
     expect(on).toContain("End turn");
     expect(on).toContain('data-testid="turn-ring"');
     const off = render(base, false);
@@ -37,7 +38,7 @@ describe("tracker panel", () => {
     const html = render({ ...base, life: 0, out: { reason: { kind: "life" }, round: 3, entry: 4 } }, false);
     expect(html).toContain("Out · 0 life · round 3");
     expect(html).toContain("Undo");
-    expect(html).not.toContain("Lose 1 life");
+    expect(html).not.toContain("lose 1 life");
   });
   it("draws a badge for each counter in play and for the holder marks", () => {
     const counters = { ...base.counters, poison: 3, energy: 0 } as SeatState["counters"];

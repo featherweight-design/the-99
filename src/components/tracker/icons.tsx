@@ -16,6 +16,20 @@ function Icon({ size = 20, children, ...rest }: IconProps & { children: React.Re
   );
 }
 
+/** The panel's sheet opener (F04 `.mk`): a chevron pointing up, into the sheet that rises from the panel. */
+export const SheetChevronIcon = (props: IconProps) => (
+  <Icon strokeWidth={2} {...props}>
+    <path d="M6 15l6-6 6 6"/>
+  </Icon>
+);
+
+/** End turn's arrow (F04 `.endt`). */
+export const EndTurnIcon = (props: IconProps) => (
+  <Icon strokeWidth={2.2} {...props}>
+    <path d="M5 12h12M13 6l6 6-6 6"/>
+  </Icon>
+);
+
 export const RadIcon = (props: IconProps) => (
   <Icon {...props}>
     <circle cx="12" cy="12" r="1.6"/><path d="M10.20 8.88L7.50 4.21A9 9 0 0 1 16.50 4.21L13.80 8.88A3.6 3.6 0 0 0 10.20 8.88z"/><path d="M15.60 12.00L21.00 12.00A9 9 0 0 1 16.50 19.79L13.80 15.12A3.6 3.6 0 0 0 15.60 12.00z"/><path d="M10.20 15.12L7.50 19.79A9 9 0 0 1 3.00 12.00L8.40 12.00A3.6 3.6 0 0 0 10.20 15.12z"/>
