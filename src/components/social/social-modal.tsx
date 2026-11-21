@@ -44,6 +44,7 @@ export function SocialModal({
   sub?: string | PersonParts;
   closeLabel: string;
   onClose: () => void;
+  /** Where focus lands at open. Unset, the sheet's heading (never the ✕), as `ModalChrome` does; a sheet that opens to type passes its field. */
   initialFocusRef?: RefObject<HTMLElement | null>;
   returnFocusRef?: RefObject<HTMLElement | null>;
   tall?: boolean;
@@ -66,6 +67,7 @@ export function SocialModal({
   const inertHost = useInertWhileOpen(true);
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const back = useRef<HTMLButtonElement>(null);
   const id = useId();
   const shownScreen = useRef(screen);
@@ -74,7 +76,7 @@ export function SocialModal({
     shownScreen.current = screen;
     (back.current ?? close.current)?.focus();
   }, [screen]);
-  useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close, returnFocusRef });
+  useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? heading, returnFocusRef });
   // The phone sheet frames the VISIBLE window, which a keyboard shrinks (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame();
   // Rule 0's setup (640) keeps its board's rhythm: 24px sides from md, lined up with its footer, and its own gaps.
@@ -101,7 +103,7 @@ export function SocialModal({
         aria-labelledby={`${id}-title`}
         data-social-modal=""
         tabIndex={-1}
-        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] md:[animation:none] ${tall ? "max-md:h-[calc(var(--vv-h,100dvh)*0.86)] md:max-h-[80dvh]" : "max-md:max-h-[calc(var(--vv-h,100dvh)*0.92)] md:max-h-[calc(90dvh-24px)]"} ${width === 640 ? "md:w-[640px]" : width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
+        className={`flex w-full flex-col overflow-hidden rounded-[20px_20px_0_0] bg-[color:var(--surface-raised)] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,0.5)] anim-sheet-in-phone md:rounded-[14px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_30px_70px_rgba(0,0,0,0.6)] ${tall ? "max-md:h-[calc(var(--vv-h,100dvh)*0.86)] md:max-h-[80dvh]" : "max-md:max-h-[calc(var(--vv-h,100dvh)*0.92)] md:max-h-[calc(90dvh-24px)]"} ${width === 640 ? "md:w-[640px]" : width === 520 ? "md:w-[520px]" : width === 420 ? "md:w-[420px]" : "md:w-[440px]"}`}
       >
         <SheetGrabber />
         <div className={`flex items-center gap-[4px] px-[18px] md:pt-[12px] ${setup ? "md:px-[24px]" : "md:px-[20px]"}`}>
@@ -116,7 +118,7 @@ export function SocialModal({
               {"‹"}
             </button>
           ) : null}
-          <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
+          <h2 ref={heading} id={`${id}-title`} tabIndex={-1} className="m-0 min-w-0 flex-1 outline-none font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
             <PersonText text={title} />
           </h2>
           <button

@@ -72,7 +72,7 @@ describe("AddFriendDialog", () => {
   const NOW = new Date("2026-10-15T21:41:00Z");
   const URL_ = "https://the-99.dev/friend/AbCdEfGhIjKlMnOpQrStUv";
 
-  it("leads with the QR code, then the link, Copy link and the two rules; focus opens on ✕", () => {
+  it("leads with the QR code, then the link, Copy link and the two rules; focus opens on the heading, not the ✕", () => {
     render(<AddFriendDialog url={URL_} expiresAt={new Date("2026-10-22T21:41:00Z")} now={NOW} timeZone="UTC" onClose={() => {}} />);
     expect(screen.getByText(d.sub)).toBeTruthy();
     const qr = screen.getByRole("img", { name: d.qrAria });
@@ -81,7 +81,8 @@ describe("AddFriendDialog", () => {
     expect(qr.querySelector("path")!.getAttribute("d")!.length).toBeGreaterThan(100);
     expect((screen.getByRole("textbox", { name: d.linkAria }) as HTMLInputElement).value).toBe(URL_);
     expect(screen.getByText(d.meta("Thu, Oct 22"))).toBeTruthy();
-    expect(screen.getByRole("button", { name: d.close })).toHaveFocus();
+    expect(screen.getByRole("dialog").querySelector("h2")).toHaveFocus();
+    expect(screen.getByRole("button", { name: d.close })).not.toHaveFocus();
     expect(screen.queryByRole("button", { name: d.share })).toBeNull();
   });
 

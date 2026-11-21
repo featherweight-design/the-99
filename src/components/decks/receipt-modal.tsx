@@ -284,7 +284,7 @@ export function ModalChrome({
         className={
           // Phone: a sheet from 52px down, over a card too (stacked sheets R1, call 7: the card under
           // it no longer steps down to 52, so neither does this sheet to 96). Desktop: centered.
-          "flex flex-col w-full border-t "
+          "flex flex-col w-full border-t anim-sheet-in-phone "
           + (cap ? "rounded-t-[18px] max-h-[88%] " : fit ? "rounded-t-[18px] max-h-[calc(100%-52px)] " : "rounded-t-[14px] h-[calc(100%-52px)] ")
           + "md:rounded-[14px] md:border overflow-hidden "
           // Over a card its top is pushed down, so its height is capped to end 20px above the fold. A sheet that

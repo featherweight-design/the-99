@@ -1,0 +1,66 @@
+{
+  "feature": "Modal phone slide-in sweep, PR A: ModalChrome dialogs slide up on a phone and are instant on desktop",
+  "note": "Signed in, FEEDBACK_ENABLED=true for the account, MS_DECK set to a deck the account owns, on local-dev or a scratch branch. Writes nothing. A photo taken at rest cannot show the slide; `pnpm probe:modal-sweep` proves the entrance, and this sheet shows that every ModalChrome caller still lands as drawn at 390 and 1300 (desktop unchanged).",
+  "out": "contact-sheets/modal-sweep-a",
+  "rows": [
+    {
+      "id": "report-form",
+      "label": "/about: Report a problem opened (sheet at 390, ModalChrome 520 at 1300), Send dim",
+      "view": "src/components/feedback/report-form.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-about-report]",
+          "settle": 1000
+        },
+        {
+          "click": "[data-about-report] button",
+          "settle": 500
+        },
+        {
+          "waitDialog": "Report a problem",
+          "settle": 500
+        }
+      ]
+    },
+    {
+      "id": "deck-change-commander",
+      "label": "/decks/[id]: Change commander (ModalChrome in the deck page's own containers)",
+      "view": "src/components/decks/change-commander-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${MS_DECK}",
+          "wait": "button:has-text('Change commander')",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "Change commander",
+          "settle": 600
+        },
+        {
+          "waitDialog": "Change commander",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "friends-add",
+      "label": "/friends: Add a friend (SocialModal, opens on its heading)",
+      "view": "src/components/social/social-modal.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1:visible",
+          "settle": 2500
+        },
+        {
+          "clickRole": "button",
+          "name": "^Add a friend$",
+          "wait": "[role=dialog]",
+          "settle": 800
+        }
+      ]
+    }
+  ]
+}
