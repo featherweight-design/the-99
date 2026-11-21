@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Door</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:22%}
+</style>
+</helmet>
+<div style="width: 1442px; min-height: 1434px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>Door</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Where adding a partner starts</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">Both doors, one sheet. Change commander already lists the pairs a deck’s own 99 can make, so the outside partners join that list. The commander’s card details is where a player reads “Partner” and learns the deck can take one, so it carries the second door.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>D1</b> · card details, phone</p><img class="shot" src="art/D1-phone.webp" alt="Ishai's card details with a Second commander box"><p class="cap">The commander’s own card details, opened on its deck page. A box under the oracle text, in the card facts box’s style: <b>Second commander</b>, one line naming the ability, and <b>Add a partner</b>, 44px. It opens Change commander on its Add a partner section.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 900px; flex: none"><p class="lab"><b>D1</b> · card details, desktop</p><img class="shot" src="art/D1-desk.webp" alt="Desktop card details with the same box"><p class="cap">Desktop: the button sits beside the line at 36px. Drawn only for a single-commander deck whose commander prints a pair ability, on its own deck page, behind CHANGE_COMMANDER_ENABLED. No ability: no box.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1442,"height":1434}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

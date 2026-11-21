@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Rules</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:22%}
+</style>
+</helmet>
+<div style="width: 1792px; min-height: 1388px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>Rules</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Each pair ability</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The flow is the same for every ability. Only the section title, the rule line and which cards are listed change.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>V1</b> · Choose a Background</p><img class="shot" src="art/V1-phone.webp" alt="Lae'zel offered Backgrounds"><p class="cap"><b>Add a Background</b>: any Background, which leads beside the commander and isn’t a creature. Needs canPair to learn Backgrounds (G1).</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>V2</b> · Friends forever</p><img class="shot" src="art/V2-phone.webp" alt="Hargilde offered Friends forever commanders"><p class="cap">Any other Friends forever commander. Same rows and confirm.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>V3</b> · Doctor and companion</p><img class="shot" src="art/V3-phone.webp" alt="The Tenth Doctor offered companions"><p class="cap"><b>Add a companion</b> on a Doctor; <b>Add a Doctor</b> on a companion. A Doctor is a Time Lord Doctor with no other creature types.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>V4</b> · Partner with</p><img class="shot" src="art/V4-phone.webp" alt="Pir offered only Toothy"><p class="cap">Partner with names one card: one row, here to buy. Restricted Partner (Character select, Survivors, Father & son) lists only the same label.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1792,"height":1388}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

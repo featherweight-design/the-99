@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add a partner</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:22%}
+</style>
+</helmet>
+<div style="width: 1352px; min-height: 1180px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>#491 · add a partner to an existing deck</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Add a partner from outside the deck</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">A player builds a deck, then learns the commander can take a partner that isn’t in the 99. Drawn over the shipped Change commander sheet, its confirm, and Suggested changes’ cut line. Fixture: HD - Ishai (Ishai, Ojutai Dragonspeaker, W/U), 99 cards, 37 lands, v3.</p>
+</div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px; max-width: 1240px">
+<div class="box"><p class="lab"><b>The calls</b></p><div class="it"><span class="n">1</span><span><b>Both doors.</b> Change commander gets an <b>Add a partner</b> section above the shipped list (now headed <b>Replace Ishai</b>). The commander’s card details on its deck page gets a <b>Second commander</b> box whose button opens that section. Neither shows without a pair ability.</span></div><div class="it"><span class="n">2</span><span><b>Finding one.</b> Yours first, then To buy, by the pair’s figure. Rows reuse the candidate row’s art, mark, figure and Choose, plus <b>widens to</b> when the pair adds colors. A partner already in the 99 is the shipped no-cut case.</span></div><div class="it"><span class="n">3</span><span><b>The card that leaves.</b> Suggested changes’ cut line, three suggested, the first picked: a basic land while the deck runs 37+ lands, then the two cards the pair’s decks run least. <b>Cut another card</b> searches the 99. Exactly one pick.</span></div><div class="it"><span class="n">4</span><span><b>Wider colors.</b> Only ever wider, so nothing becomes illegal. The confirm says the new identity and how many owned cards in the new colors the pair’s decks run, and lists them on press.</span></div><div class="it"><span class="n">5</span><span><b>Confirm, undo, history.</b> Shipped pair CTA, lands in pending changes (Discard undoes). A deck toast with <b>Undo</b> follows. Review: shipped <b>a partner joins</b>. History: the shipped <b>Ishai → Ishai & Bruse Tarl</b> line.</span></div><div class="it"><span class="n">6</span><span><b>Every ability.</b> Partner, Partner with, restricted Partner, Friends forever, Choose a Background, Doctor’s companion. Same flow; the title and rule line change.</span></div></div>
+<div style="display: flex; flex-direction: column; gap: 24px"><div class="box"><p class="lab"><b>For Hugh</b></p><div class="it"><span class="n">Q1</span><span>Both doors (as drawn), or Change commander only?</span></div><div class="it"><span class="n">Q2</span><span>Backgrounds drawn as supported, which needs G1. Keep, or leave Backgrounds for later?</span></div><div class="it"><span class="n">Q3</span><span>The toast’s Undo is new on this flow. Keep it, or rely on Discard (and no way back on a brew)?</span></div></div>
+<div class="box"><p class="lab"><b>Engineering</b></p><div class="it"><span class="n">G1</span><span>canPair has no Background kinds (`partner.ts`). Choose a Background + a Legendary Enchantment — Background, either order; a Background never leads alone.</span></div><div class="it"><span class="n">G2</span><span>A write for an outside partner with a cut: `changeCommander(deckId, to, {{ cutOracleId }})`. Refused when the cut isn’t in the 99 or is locked, or the deck would end over 100. `offerable()` stops holding the outside case back.</span></div><div class="it"><span class="n">G3</span><span>Undo from the toast: restores the single commander and the cut card in one write, only while the draft still holds that change unchanged.</span></div><div class="it"><span class="n">G4</span><span>Suggestions: lands vs 36, then least-run by the pair’s support list (the `growingHits` read). No model spend.</span></div><div class="it"><span class="n">G5</span><span>The opened-cards count: owned cards in the new colors that the pair’s decks run, from the same support list.</span></div><div class="it"><span class="n">G6</span><span>A deck already over 100 is not offered the add until it is at 100 or under (not drawn).</span></div></div></div>
+</div>
+<div class="box" style="max-width: 1240px; box-sizing: border-box"><p class="lab"><b>Boards</b></p><table><tr><td>Door</td><td>D1 card details, phone and desktop.</td></tr><tr><td>List</td><td>L1 list phone and desktop, L2 a figure open.</td></tr><tr><td>Confirm</td><td>C1 suggested cut (phone, desktop), C2 another pick with the colors open, C3 Cut another card.</td></tr><tr><td>States</td><td>C4 to buy, C5 the deck has room, C6 no version yet, C7 failed.</td></tr><tr><td>After</td><td>A1 deck page with the Undo toast (phone, desktop), A2 review.</td></tr><tr><td>Rules</td><td>V1 Background, V2 Friends forever, V3 Doctor and companion, V4 Partner with.</td></tr></table></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1352,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Confirm</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:22%}
+</style>
+</helmet>
+<div style="width: 2302px; min-height: 1830px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>Confirm</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Choosing the card that leaves</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">A deck at 100 goes to 101 when a partner comes from outside, so the confirm asks which card leaves, with a suggestion picked. Suggestions: a basic land while the deck runs 37 or more (the land count drops to 36 with two commanders), then the two cards the pair’s decks run least. No model call.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>C1</b> · confirm, phone</p><img class="shot" src="art/C1-phone.webp" alt="Confirm with Plains as the suggested cut"><p class="cap">Change commander’s confirm: <b>Leaves the deck</b> Plains → <b>Lead the deck</b> Ishai (stays) + Bruse Tarl (free). Then the widened identity, then <b>The card that leaves</b>: Suggested changes’ cut line, three of them, the first picked. One tap still confirms.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>C2</b> · another pick, colors open</p><img class="shot" src="art/C2-phone.webp" alt="Hedron Archive picked, the red cards listed"><p class="cap">Picking another line moves the pick (one card leaves). The plate and the sentence follow it. <b>12 of your red cards are in their decks</b> opens the shipped figure plate with their names.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>C3</b> · cut another card</p><img class="shot" src="art/C3-phone.webp" alt="Searching the 99 for Ponder"><p class="cap"><b>Cut another card</b> searches the 99 and shows matches as the same lines, so any card can go. Clearing the field brings the three suggestions back.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 900px; flex: none"><p class="lab"><b>C1</b> · confirm, desktop</p><img class="shot" src="art/C1-desk.webp" alt="Desktop confirm"><p class="cap">Desktop: one column, buttons in a row. The CTA is the shipped pair CTA, <b>Make Ishai and Bruse Tarl commanders</b>.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2302,"height":1830}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
