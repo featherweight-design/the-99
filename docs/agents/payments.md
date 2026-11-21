@@ -142,9 +142,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 - `credit_grants.source = 'welcome'`: 15 units, `expires_at` required (the migration rewrites
   `credit_grants_pack_never_expires_check`: a pack never expires, a welcome lot always does, a plan lot may). A partial unique
   index (`credit_grants_welcome_once`) holds one per account ever.
-- `grantWelcome(userId, createdAt, env)` (`src/lib/payments/welcome.ts`) runs from the `user.created` webhook for EVERY new
+- `grantWelcome(userId, createdAt, env, emailHash)` (`src/lib/payments/welcome.ts`) runs from the `user.created` webhook for EVERY new
   account, before and apart from the invite spend; either failing answers 500 for a retry. It takes the account's invite lock
-  (the purge's), reads the tombstone under it, then inserts `on conflict do nothing`. The expiry is the Clerk event's
+  (the purge's), reads the tombstone and its own lot under it, claims the mailbox (below), then inserts `on conflict do nothing` (a lot absorbed there gives the claim back). The expiry is the Clerk event's
   `created_at` plus 30 days, never `now`, so a redelivery cannot extend a lot and an account past its 30 days gets nothing.
 - **The admin Payments tab** (`/admin/payments`, admin plan A2b, A3): a UTC month's revenue from `payment_records` per currency (gross, tax, and net of tax and of refunds less the tax they carried back, counted in the payment's month), the disputes still open and the month's, the accounts whose buying is paused with Let them buy, the Costs page's own spend figure beside it, the month's plan, pack and gift lots, the `credits_granted` events, and Grant credits (`grantCredits` → `grantGift`, one `actionId` per grant). Reads in `src/lib/payments/admin-read.ts`. Proof: `pnpm probe:admin-payments`.
 - Spend order is free, welcome, plan, gift, pack (`SOURCE_RANK`). A gift (admin plan A-R5) never expires, so it goes after plan lots, which can lapse, and before packs, which were bought and can be refunded; /credits draws its Gift cell only while it holds a credit, like Welcome. `heldCredits` is the one definition of "holds a lot"; the 20-a-day
