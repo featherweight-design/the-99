@@ -85,11 +85,14 @@ try {
     await page.getByRole("button", { name: "Start", exact: true }).click({ timeout: 20_000 });
     await page.getByTestId("tracker-play").waitFor({ timeout: 15_000 });
 
-    // End the game as a tap would: one lethal change on Colin, appended to the game this device holds.
+    // End the game as a tap would: one lethal change on Colin (the fixture table's one other seat), appended to the game
+    // this device holds once it has been written.
+    await page.waitForFunction((id) => !!window.localStorage.getItem(`the99.tracker.${id}`), TABLE, { timeout: 10_000 });
     const ended = await page.evaluate((id) => {
       const key = `the99.tracker.${id}`;
       const held = JSON.parse(window.localStorage.getItem(key) ?? "null");
-      const colin = held?.game?.config?.snapshot?.players?.find((p) => p.name === "Colin");
+      const others = held?.game?.config?.snapshot?.players?.filter((p) => !p.you) ?? [];
+      const colin = others.length === 1 ? others[0] : null;
       if (!colin) return false;
       held.game.log.push({ t: "life", seat: colin.seat, delta: -40 });
       window.localStorage.setItem(key, JSON.stringify(held));
