@@ -55,7 +55,7 @@ function RunningText({ run }: { run: GuidedState }) {
 function LineRow({ run, onOpen }: { run: GuidedState; onOpen: () => void }) {
   const failed = run.state === "failed";
   return (
-    <div data-testid="guided-run-line" className="mx-auto flex w-full max-w-[1400px] items-center gap-[12px] border-b border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] py-[8px] md:px-[24px]">
+    <div data-testid="guided-run-line" className="mx-auto flex w-full max-w-[1400px] items-center gap-[12px] border-b border-solid border-b-[color:var(--border)] bg-[color:var(--surface-sunken)] px-[16px] py-[8px] md:px-[24px]">
       <p role={run.state === "running" ? undefined : failed ? "alert" : "status"} className="m-0 min-w-0 flex-1 font-mono text-[11.5px] leading-[1.5]" style={failed ? { color: "var(--danger)" } : { color: "var(--fg-body)" }}>
         {run.state === "running" ? <RunningText run={run} /> : failed ? copy.failed(run.strategyLabel) : copy.short(run.strategyLabel)}
       </p>
