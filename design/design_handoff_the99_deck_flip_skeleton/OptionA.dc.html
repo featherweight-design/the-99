@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A · the header lands at once</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2140px; height: 1780px; box-sizing: border-box; padding: 32px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 20px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <h2 style="margin: 0; font-size: 28px; font-weight: 600; color: #E1E8E9">A · The header lands at once, the page breathes (recommended)</h2>
+    <p style="margin: 0; font-size: 15px; color: #95A4A6">› pressed on Ashen Banner Parade. Hollow Oak Hours’ header and the strip (3 of 5) draw at once; everything below the header is the skeleton until the deck lands.</p>
+  </div>
+  <div style="display: flex; gap: 32px; align-items: flex-start">
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 390px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">PHONE</div>
+      <img src="art/A-phone.png" alt="Skeleton with real header on phone" style="width: 390px; height: 1580px; display: block; border-radius: 6px">
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px; width: 1300px">
+      <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: #8A999B">DESKTOP</div>
+      <img src="art/A-desk.png" alt="Skeleton with real header on desktop" style="width: 1300px; height: 1180px; display: block; border-radius: 6px">
+    </div>
+    <div style="width: 320px; display: flex; flex-direction: column; gap: 14px; padding-top: 26px">
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">Real from the press:</b> art, name, colours and commander, status chip, the count, the actions (the same on every deck) and the strip.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">Where it comes from:</b> the deck list the page already reads for the flip carries these fields; the neighbours’ art is preloaded with the existing prefetch.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">Still live:</b> ‹ › and ← → work during the skeleton, so a quick run of presses walks the list without waiting for each deck.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">Shapes:</b> to-do card shell, mix cells, tab words with count bars, tools and card rows, in the shipped skeleton tokens and pulse.</p>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5"><b style="color:#E1E8E9">Arrives late</b> (no shape held): the bracket chip and notice tag, which the list does not know.</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2140,"height":1780}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Deck flip skeleton · the calls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1180px; height: 760px; box-sizing: border-box; padding: 40px 44px; background: #0B0B0F; color: #C6D2D3; font-family: 'IBM Plex Sans', sans-serif; display: flex; flex-direction: column; gap: 22px">
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; letter-spacing: 0.12em; color: #8A999B">DECK FLIP · LOADING SKELETON · APPROVED</div>
+    <h1 style="margin: 0; font-size: 32px; font-weight: 600; color: #E1E8E9">A skeleton of the deck page while ‹ › flips</h1>
+    <p style="margin: 0; font-size: 16px; line-height: 1.5; color: #95A4A6">Today a flip drops the whole page for the crown screen (“Shuffling up”). The strip, the header and your place in the list vanish, then everything returns. Every frame here is the shipped header and strip rendered from the app’s components (kaldheim), flipping from Ashen Banner Parade (2 of 5) to Hollow Oak Hours (3 of 5).</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px">
+    <div style="display: flex; flex-direction: column; gap: 8px; padding: 20px; border: 1px solid #2A3236; border-radius: 12px">
+      <div style="font-size: 18px; font-weight: 600; color: #E1E8E9">A · The header lands at once (the build)</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5">The next deck’s art, name, commander line, status and count draw straight away, from the deck list the page already reads for the flip. The strip reads 3 of 5 and stays live, so › again keeps flipping. Below the header the page breathes.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px; padding: 20px; border: 1px solid #2A3236; border-radius: 12px">
+      <div style="font-size: 18px; font-weight: 600; color: #E1E8E9">B · All shapes (A’s fallback)</div>
+      <p style="margin: 0; font-size: 15px; line-height: 1.5">The same skeleton with the header as shapes too: the art band empty, name and commander line as bars. Drawn whenever A’s header facts are not in hand at the press (the deck is missing from the list, or its facts did not reach the page), and the whole build if the list cannot carry them.</p>
+    </div>
+  </div>
+  <div style="display: flex; flex-direction: column; gap: 10px; font-size: 15px; line-height: 1.5">
+    <div><b style="color:#E1E8E9">Flipping and opening (Hugh, 2026-11-21).</b> Every open of your own deck draws this skeleton: a flip or a deck tile → A, a link or reload → B. Precons and friend decks keep their own screens.</div>
+    <div><b style="color:#E1E8E9">Body, in shipped skeleton tokens.</b> The to-do card’s shell, the mix’s five cells, the tab row in real words (counts as bars, the kept tab underlined), the tab’s tools and card rows. Breathes on the shipped 1.4s skeleton pulse; still with reduced motion.</div>
+    <div><b style="color:#E1E8E9">Landing.</b> The real page replaces it in place, at the top, no fade. The tab you were on is kept as today.</div>
+    <div><b style="color:#E1E8E9">Other tabs.</b> On Analysis, Consider, Games or Versions the same header and tab row, then plain rows under it (drawn here for Your deck only).</div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1180,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

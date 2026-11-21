@@ -1,0 +1,58 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-21T01:40:00Z"
+ },
+ "title": "The 99 · Deck flip skeleton",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1180,
+   "h": 760,
+   "title": "Main · the calls"
+  },
+  "Today.dc.html": {
+   "x": 1260,
+   "y": 0,
+   "w": 2140,
+   "h": 1040,
+   "title": "Today · a flip shows the crown screen"
+  },
+  "OptionA.dc.html": {
+   "x": 0,
+   "y": 1160,
+   "w": 2140,
+   "h": 1780,
+   "title": "A · The header lands at once (the build)"
+  },
+  "OptionB.dc.html": {
+   "x": 2220,
+   "y": 1160,
+   "w": 2140,
+   "h": 1780,
+   "title": "B · All shapes (A’s fallback)"
+  },
+  "Open.dc.html": {
+   "x": 4440,
+   "y": 1160,
+   "w": 2140,
+   "h": 1780,
+   "title": "Opening a deck"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Today.dc.html",
+  "OptionA.dc.html",
+  "OptionB.dc.html",
+  "Open.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
