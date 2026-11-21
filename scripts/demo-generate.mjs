@@ -572,8 +572,10 @@ async function upgrade(page) {
   await dialog.getByRole("button", { name: copy.next(copy.steps.strategy) }).click();
   await dialog.getByRole("radio", { name: new RegExp(`^${UPGRADE_STRATEGY}\\b`) }).first().click({ timeout: 30_000 });
   await dialog.getByRole("button", { name: preconUpgradeCopy.strategy.press(UPGRADE_STRATEGY) }).click();
-  // The result view's title: the run came back (the row is read, and its picks checked, in `upgrade.rows`).
-  await dialog.getByText(copy.resultTitle, { exact: true }).first().waitFor({ timeout: MODEL_WAIT_MS });
+  // The result view: the run came back (the row is read, and its picks checked, in `upgrade.rows`). The dialog is
+  // labelled by its heading, which becomes `resultTitle` at the results stage, so the dialog by the pick stage's name
+  // is gone by then: wait on the dialog by its result name (the first paid run timed out here after a good run).
+  await page.getByRole("dialog", { name: copy.resultTitle, exact: true }).waitFor({ timeout: MODEL_WAIT_MS });
   return { precon_file: UPGRADE_FILE };
 }
 upgrade.rows = async (callId) => {

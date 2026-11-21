@@ -3243,6 +3243,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": null,
       "commanderCopies": 0
      }
@@ -5131,6 +5132,7 @@ export const cardDetailsJson: unknown = {
       "draftCut": false,
       "quantity": 1,
       "commander": false,
+      "grantedAt": null,
       "versionNumber": null,
       "commanderCopies": 0
      }

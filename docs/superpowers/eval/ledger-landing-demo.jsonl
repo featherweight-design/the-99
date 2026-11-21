@@ -44,3 +44,9 @@
 {"at":"2026-11-11T07:36:24.090Z","runId":"landing-demo-help-me-choose","source":"realtime:1","usd":0.103838,"requests":1,"settles":"1794382552736-help-me-choose","note":"help-me-choose intake"}
 {"at":"2026-11-11T07:36:33.138Z","runId":"1794382593138-which-deck","source":"pending","usd":0.14,"requests":1,"pending":"1794382593138-which-deck","note":"which-deck fits_read"}
 {"at":"2026-11-11T07:37:04.075Z","runId":"landing-demo-which-deck","source":"realtime:1","usd":0.001221,"requests":1,"settles":"1794382593138-which-deck","note":"which-deck fits_read"}
+{"at":"2026-11-20T19:50:38.583Z","runId":"1795204238583-upgrade","source":"pending","usd":1.164,"requests":1,"pending":"1795204238583-upgrade","note":"upgrade precon_upgrade"}
+{"at":"2026-11-20T19:56:41.060Z","runId":"landing-demo-upgrade","source":"realtime:1","usd":0.053448,"requests":1,"settles":"1795204238583-upgrade","note":"upgrade precon_upgrade failed"}
+{"at":"2026-11-21T00:16:09.374Z","runId":"1795220169374-upgrade","source":"pending","usd":1.164,"requests":1,"pending":"1795220169374-upgrade","note":"upgrade precon_upgrade"}
+{"at":"2026-11-21T00:16:41.701Z","runId":"landing-demo-upgrade","source":"realtime:1","usd":0,"requests":0,"settles":"1795220169374-upgrade","note":"upgrade precon_upgrade: stopped before any model call (the dialog opened on a stored result), no spend; corrected from the worst case"}
+{"at":"2026-11-21T00:17:14.941Z","runId":"1795220234941-upgrade","source":"pending","usd":1.164,"requests":1,"pending":"1795220234941-upgrade","note":"upgrade precon_upgrade"}
+{"at":"2026-11-21T00:23:17.544Z","runId":"landing-demo-upgrade","source":"realtime:1","usd":0.062154,"requests":1,"settles":"1795220234941-upgrade","note":"upgrade precon_upgrade: run stored (14 swaps); the script timed out on the dialog name at results"}

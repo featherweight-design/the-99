@@ -42,10 +42,9 @@ export const CARD_CHUNK_BUDGETS: Record<DemoCardChunk, number> = {
   played: 482_600, // 459,601, 117,019 (74 cards; the basic Mountain's printings are 62 KB of it)
   over: 24_100, // 22,897, 4,673 (4 cards)
   under: 84_000, // 79,987, 17,025 (19 cards)
-  // PROVISIONAL (the chunk is empty until `demo:export` first writes it with the paid upgrade run): about 28 cards at the played chunk's
-  // per-card average (about 6.5 KB). The PR that exports the run replaces it with the measured figure plus about 5%.
-  upgrade: 190_000,
-  shared: 8_900, // 8,402, 3,126 (3 cards; Which deck's card and the cards its panel names)
+  // Measured 2026-11-21 with the first Precon Upgrade run exported (14 swaps on Prismari Artistry; 148 cards in all), each figure plus about 5%.
+  upgrade: 113_000, // 107,554, 23,294 (24 cards)
+  shared: 35_400, // 33,656, 11,509 (9 cards: Which deck's card and the cards its panel names, and six the upgrade's adds and cuts share with other steps)
 };
 
 /**

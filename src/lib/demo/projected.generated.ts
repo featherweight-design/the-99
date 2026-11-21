@@ -17400,5 +17400,1799 @@ export const projectedJson: unknown = {
     ]
    }
   }
+ },
+ "upgrade": {
+  "precon": "Prismari Artistry",
+  "panel": {
+   "boxBracket": 2,
+   "boxPermits": [
+    1,
+    2
+   ],
+   "commanders": [
+    {
+     "key": "348c67ef-9ccc-4651-9038-efdf1ad1b36a",
+     "isFace": true,
+     "cards": [
+      {
+       "oracleId": "348c67ef-9ccc-4651-9038-efdf1ad1b36a",
+       "name": "Rootha, Mastering the Moment",
+       "manaCost": "{2}{U}{R}",
+       "cmc": 4,
+       "typeLine": "Legendary Creature — Orc Sorcerer"
+      }
+     ],
+     "line": "Rootha decks lean into spell-copying momentum, usually combining aggressive combat steps with token swarms and explosive mana to overwhelm opponents through sheer repetition.",
+     "strategies": [
+      {
+       "key": "spellslinger",
+       "label": "Spells",
+       "blurb": "Cast many instants and sorceries and reward each one.",
+       "source": "edhrec",
+       "backingIds": [
+        "9a8f6e5e-6cde-49df-861c-a26cb09c9b12",
+        "d751580b-bb72-4d1d-be27-d0410f883b2a",
+        "3e0e3676-e634-4e64-bdfd-4aaa5885461f",
+        "655ee0db-1913-464f-bd06-072c6bf446bd",
+        "61816f98-9d1a-4b16-9194-cb7249880710",
+        "943fc88d-c281-46bb-9dc7-1052f789362b",
+        "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+        "61747805-0c34-4beb-8cbf-97bac7a998d0",
+        "086b2564-9114-4ba2-94fd-b490f98f38a7",
+        "8305d576-21d8-4ce7-8eda-a7cd9793aca5",
+        "c7b044c3-3cfa-407e-bf20-2875e8e04b7b",
+        "f8b17b89-26ce-4208-874a-9e1d66514640",
+        "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+        "fb60739e-1dc3-481d-a056-ad72e665c680",
+        "88d0a394-79e2-42ac-9a37-1a7b78231941",
+        "7a2484a9-04fd-41a0-8224-610c1c07ed10",
+        "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+        "c336b735-3e6b-471e-be7a-84d7402ae2f5",
+        "615b4189-e800-408b-99e0-71ae7089b937",
+        "9ea14a03-c6a2-49ec-953d-4249a2c27e1d",
+        "515c522f-51d5-4f6d-b9b1-ea3c7f6a378e",
+        "8ea414c1-88cf-46d4-9a54-6dee9847c537",
+        "83cf1169-5853-4332-b897-7b17d72d76ab",
+        "9c2fd3a3-96f2-4e84-85a9-77698c2f83aa",
+        "f9217532-f7cf-4436-b476-72d97a3147dc",
+        "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+        "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+        "d57a6b19-bd06-4b07-8ee1-0b45612ba9e4",
+        "0bb896ba-e15e-43a9-9120-e674d7ba003c",
+        "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
+        "b21d6482-1b3a-47e6-98a5-3067f5f3818b",
+        "ab1cc360-b9de-48d9-9983-4dfe4a7d2a37",
+        "579cbd92-797f-4cdf-91ed-fca7a523eae5",
+        "70dc830e-d05b-4fc7-88dd-879e140b3fbf",
+        "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+        "5b6bdf5a-2742-4851-92cd-a857a3852836",
+        "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+        "a5cbd257-c836-493e-bb1a-76242619dea2",
+        "a8dba58b-2956-492e-ae30-49db2ae68e53",
+        "a145ff8c-5812-4bcb-bd16-9839dc25121d",
+        "e3444fcf-70ed-4d6e-aea9-030af15cad56",
+        "ec2968fb-163d-4907-862b-b84a1f167833",
+        "c7aecca5-2f67-4245-ab2d-e723d8b23a67",
+        "3735559f-efe5-43ad-9b3e-3ef127c0ceda",
+        "17b60106-a4c7-410a-8ac3-ec8e74e29a7c"
+       ],
+       "backing": [
+        {
+         "oracleId": "9a8f6e5e-6cde-49df-861c-a26cb09c9b12",
+         "name": "Muddle, the Ever-Changing"
+        },
+        {
+         "oracleId": "d751580b-bb72-4d1d-be27-d0410f883b2a",
+         "name": "Inspired Skypainter // Maestro's Gift"
+        },
+        {
+         "oracleId": "3e0e3676-e634-4e64-bdfd-4aaa5885461f",
+         "name": "Abstract Performance"
+        },
+        {
+         "oracleId": "655ee0db-1913-464f-bd06-072c6bf446bd",
+         "name": "Dirgur Focusmage // Braingeyser"
+        },
+        {
+         "oracleId": "61816f98-9d1a-4b16-9194-cb7249880710",
+         "name": "Leitmotif Composer"
+        },
+        {
+         "oracleId": "943fc88d-c281-46bb-9dc7-1052f789362b",
+         "name": "Furygale Flocking"
+        },
+        {
+         "oracleId": "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+         "name": "Prismari Pianist"
+        },
+        {
+         "oracleId": "61747805-0c34-4beb-8cbf-97bac7a998d0",
+         "name": "Renegade Bull"
+        },
+        {
+         "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
+         "name": "Chain Reaction"
+        },
+        {
+         "oracleId": "8305d576-21d8-4ce7-8eda-a7cd9793aca5",
+         "name": "Archmage Emeritus"
+        },
+        {
+         "oracleId": "c7b044c3-3cfa-407e-bf20-2875e8e04b7b",
+         "name": "Brazen Borrower // Petty Theft"
+        },
+        {
+         "oracleId": "f8b17b89-26ce-4208-874a-9e1d66514640",
+         "name": "Dig Through Time"
+        },
+        {
+         "oracleId": "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+         "name": "Replication Technique"
+        },
+        {
+         "oracleId": "fb60739e-1dc3-481d-a056-ad72e665c680",
+         "name": "Rite of Replication"
+        },
+        {
+         "oracleId": "88d0a394-79e2-42ac-9a37-1a7b78231941",
+         "name": "Thunderclap Drake"
+        },
+        {
+         "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10",
+         "name": "Blasphemous Act"
+        },
+        {
+         "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+         "name": "Chaos Warp"
+        },
+        {
+         "oracleId": "c336b735-3e6b-471e-be7a-84d7402ae2f5",
+         "name": "Creative Technique"
+        },
+        {
+         "oracleId": "615b4189-e800-408b-99e0-71ae7089b937",
+         "name": "Dance with Calamity"
+        },
+        {
+         "oracleId": "9ea14a03-c6a2-49ec-953d-4249a2c27e1d",
+         "name": "Mirrorwing Dragon"
+        },
+        {
+         "oracleId": "515c522f-51d5-4f6d-b9b1-ea3c7f6a378e",
+         "name": "Rousing Refrain"
+        },
+        {
+         "oracleId": "8ea414c1-88cf-46d4-9a54-6dee9847c537",
+         "name": "Surge to Victory"
+        },
+        {
+         "oracleId": "83cf1169-5853-4332-b897-7b17d72d76ab",
+         "name": "Twinflame"
+        },
+        {
+         "oracleId": "9c2fd3a3-96f2-4e84-85a9-77698c2f83aa",
+         "name": "Volcanic Salvo"
+        },
+        {
+         "oracleId": "f9217532-f7cf-4436-b476-72d97a3147dc",
+         "name": "Galazeth Prismari"
+        },
+        {
+         "oracleId": "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+         "name": "Magma Opus"
+        },
+        {
+         "oracleId": "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+         "name": "Prismari Command"
+        },
+        {
+         "oracleId": "d57a6b19-bd06-4b07-8ee1-0b45612ba9e4",
+         "name": "Veyran, Voice of Duality"
+        },
+        {
+         "oracleId": "0bb896ba-e15e-43a9-9120-e674d7ba003c",
+         "name": "Hall of Oracles"
+        },
+        {
+         "oracleId": "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
+         "name": "Prismari Charm"
+        },
+        {
+         "oracleId": "b21d6482-1b3a-47e6-98a5-3067f5f3818b",
+         "name": "Aether Gale"
+        },
+        {
+         "oracleId": "ab1cc360-b9de-48d9-9983-4dfe4a7d2a37",
+         "name": "Arcane Denial"
+        },
+        {
+         "oracleId": "579cbd92-797f-4cdf-91ed-fca7a523eae5",
+         "name": "Deep Analysis"
+        },
+        {
+         "oracleId": "70dc830e-d05b-4fc7-88dd-879e140b3fbf",
+         "name": "Reality Shift"
+        },
+        {
+         "oracleId": "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+         "name": "Resculpt"
+        },
+        {
+         "oracleId": "5b6bdf5a-2742-4851-92cd-a857a3852836",
+         "name": "Treasure Cruise"
+        },
+        {
+         "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+         "name": "Abrade"
+        },
+        {
+         "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+         "name": "Big Score"
+        },
+        {
+         "oracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53",
+         "name": "Mana Geyser"
+        },
+        {
+         "oracleId": "a145ff8c-5812-4bcb-bd16-9839dc25121d",
+         "name": "Storm-Kiln Artist"
+        },
+        {
+         "oracleId": "e3444fcf-70ed-4d6e-aea9-030af15cad56",
+         "name": "Throes of Chaos"
+        },
+        {
+         "oracleId": "ec2968fb-163d-4907-862b-b84a1f167833",
+         "name": "Volcanic Torrent"
+        },
+        {
+         "oracleId": "c7aecca5-2f67-4245-ab2d-e723d8b23a67",
+         "name": "Expressive Iteration"
+        },
+        {
+         "oracleId": "3735559f-efe5-43ad-9b3e-3ef127c0ceda",
+         "name": "Rootha, Mercurial Artist"
+        },
+        {
+         "oracleId": "17b60106-a4c7-410a-8ac3-ec8e74e29a7c",
+         "name": "Mystic Sanctuary"
+        }
+       ]
+      },
+      {
+       "key": "tokens",
+       "label": "Tokens",
+       "blurb": "Make creature tokens and use them in numbers.",
+       "source": "edhrec",
+       "backingIds": [
+        "9a8f6e5e-6cde-49df-861c-a26cb09c9b12",
+        "d751580b-bb72-4d1d-be27-d0410f883b2a",
+        "61816f98-9d1a-4b16-9194-cb7249880710",
+        "943fc88d-c281-46bb-9dc7-1052f789362b",
+        "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+        "e4ed7935-0263-4cde-8118-ac18fffce3ef",
+        "0be907b2-54f9-4c8c-b6af-7c0093892e42",
+        "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+        "fb60739e-1dc3-481d-a056-ad72e665c680",
+        "716b3ea2-45b7-4a8f-af72-de7f4e510eff",
+        "f426aa1a-e1dc-4563-b450-2e23d6bd980b",
+        "792c4d38-41e6-49eb-bd4e-de0a5ac8330f",
+        "be4f47e9-1bd2-4aa9-bc85-3f203ad21639",
+        "83cf1169-5853-4332-b897-7b17d72d76ab",
+        "a7ac5d98-805e-4212-be94-333a0c0c44a7",
+        "f9217532-f7cf-4436-b476-72d97a3147dc",
+        "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+        "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+        "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+        "a5cbd257-c836-493e-bb1a-76242619dea2",
+        "a145ff8c-5812-4bcb-bd16-9839dc25121d"
+       ],
+       "backing": [
+        {
+         "oracleId": "9a8f6e5e-6cde-49df-861c-a26cb09c9b12",
+         "name": "Muddle, the Ever-Changing"
+        },
+        {
+         "oracleId": "d751580b-bb72-4d1d-be27-d0410f883b2a",
+         "name": "Inspired Skypainter // Maestro's Gift"
+        },
+        {
+         "oracleId": "61816f98-9d1a-4b16-9194-cb7249880710",
+         "name": "Leitmotif Composer"
+        },
+        {
+         "oracleId": "943fc88d-c281-46bb-9dc7-1052f789362b",
+         "name": "Furygale Flocking"
+        },
+        {
+         "oracleId": "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+         "name": "Prismari Pianist"
+        },
+        {
+         "oracleId": "e4ed7935-0263-4cde-8118-ac18fffce3ef",
+         "name": "Determined Iteration"
+        },
+        {
+         "oracleId": "0be907b2-54f9-4c8c-b6af-7c0093892e42",
+         "name": "Curiosity Crafter"
+        },
+        {
+         "oracleId": "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+         "name": "Replication Technique"
+        },
+        {
+         "oracleId": "fb60739e-1dc3-481d-a056-ad72e665c680",
+         "name": "Rite of Replication"
+        },
+        {
+         "oracleId": "716b3ea2-45b7-4a8f-af72-de7f4e510eff",
+         "name": "Goldspan Dragon"
+        },
+        {
+         "oracleId": "f426aa1a-e1dc-4563-b450-2e23d6bd980b",
+         "name": "Manaform Hellkite"
+        },
+        {
+         "oracleId": "792c4d38-41e6-49eb-bd4e-de0a5ac8330f",
+         "name": "Redoubled Stormsinger"
+        },
+        {
+         "oracleId": "be4f47e9-1bd2-4aa9-bc85-3f203ad21639",
+         "name": "Rionya, Fire Dancer"
+        },
+        {
+         "oracleId": "83cf1169-5853-4332-b897-7b17d72d76ab",
+         "name": "Twinflame"
+        },
+        {
+         "oracleId": "a7ac5d98-805e-4212-be94-333a0c0c44a7",
+         "name": "Brudiclad, Telchor Engineer"
+        },
+        {
+         "oracleId": "f9217532-f7cf-4436-b476-72d97a3147dc",
+         "name": "Galazeth Prismari"
+        },
+        {
+         "oracleId": "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+         "name": "Magma Opus"
+        },
+        {
+         "oracleId": "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+         "name": "Prismari Command"
+        },
+        {
+         "oracleId": "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+         "name": "Resculpt"
+        },
+        {
+         "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+         "name": "Big Score"
+        },
+        {
+         "oracleId": "a145ff8c-5812-4bcb-bd16-9839dc25121d",
+         "name": "Storm-Kiln Artist"
+        }
+       ]
+      },
+      {
+       "key": "flying",
+       "label": "Fliers",
+       "blurb": "Win in the air with evasive creatures.",
+       "source": "edhrec",
+       "backingIds": [
+        "d751580b-bb72-4d1d-be27-d0410f883b2a",
+        "943fc88d-c281-46bb-9dc7-1052f789362b",
+        "a984db23-40ea-428d-829f-e944267280f8",
+        "c7b044c3-3cfa-407e-bf20-2875e8e04b7b",
+        "0be907b2-54f9-4c8c-b6af-7c0093892e42",
+        "88d0a394-79e2-42ac-9a37-1a7b78231941",
+        "716b3ea2-45b7-4a8f-af72-de7f4e510eff",
+        "f426aa1a-e1dc-4563-b450-2e23d6bd980b",
+        "9ea14a03-c6a2-49ec-953d-4249a2c27e1d",
+        "f9217532-f7cf-4436-b476-72d97a3147dc"
+       ],
+       "backing": [
+        {
+         "oracleId": "d751580b-bb72-4d1d-be27-d0410f883b2a",
+         "name": "Inspired Skypainter // Maestro's Gift"
+        },
+        {
+         "oracleId": "943fc88d-c281-46bb-9dc7-1052f789362b",
+         "name": "Furygale Flocking"
+        },
+        {
+         "oracleId": "a984db23-40ea-428d-829f-e944267280f8",
+         "name": "Faerie Mastermind"
+        },
+        {
+         "oracleId": "c7b044c3-3cfa-407e-bf20-2875e8e04b7b",
+         "name": "Brazen Borrower // Petty Theft"
+        },
+        {
+         "oracleId": "0be907b2-54f9-4c8c-b6af-7c0093892e42",
+         "name": "Curiosity Crafter"
+        },
+        {
+         "oracleId": "88d0a394-79e2-42ac-9a37-1a7b78231941",
+         "name": "Thunderclap Drake"
+        },
+        {
+         "oracleId": "716b3ea2-45b7-4a8f-af72-de7f4e510eff",
+         "name": "Goldspan Dragon"
+        },
+        {
+         "oracleId": "f426aa1a-e1dc-4563-b450-2e23d6bd980b",
+         "name": "Manaform Hellkite"
+        },
+        {
+         "oracleId": "9ea14a03-c6a2-49ec-953d-4249a2c27e1d",
+         "name": "Mirrorwing Dragon"
+        },
+        {
+         "oracleId": "f9217532-f7cf-4436-b476-72d97a3147dc",
+         "name": "Galazeth Prismari"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "key": "9a8f6e5e-6cde-49df-861c-a26cb09c9b12",
+     "isFace": false,
+     "cards": [
+      {
+       "oracleId": "9a8f6e5e-6cde-49df-861c-a26cb09c9b12",
+       "name": "Muddle, the Ever-Changing",
+       "manaCost": "{2}{U}{R}",
+       "cmc": 4,
+       "typeLine": "Legendary Creature — Elemental Otter Shapeshifter"
+      }
+     ],
+     "line": "Muddle decks lean on spellslinger and clones, and they usually pile up copies and cast-triggered value over time rather than racing with a lean aggressive curve.",
+     "strategies": [
+      {
+       "key": "spellslinger",
+       "label": "Spells",
+       "blurb": "Cast many instants and sorceries and reward each one.",
+       "source": "edhrec",
+       "backingIds": [
+        "348c67ef-9ccc-4651-9038-efdf1ad1b36a",
+        "d751580b-bb72-4d1d-be27-d0410f883b2a",
+        "3e0e3676-e634-4e64-bdfd-4aaa5885461f",
+        "655ee0db-1913-464f-bd06-072c6bf446bd",
+        "61816f98-9d1a-4b16-9194-cb7249880710",
+        "943fc88d-c281-46bb-9dc7-1052f789362b",
+        "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+        "61747805-0c34-4beb-8cbf-97bac7a998d0",
+        "086b2564-9114-4ba2-94fd-b490f98f38a7",
+        "8305d576-21d8-4ce7-8eda-a7cd9793aca5",
+        "c7b044c3-3cfa-407e-bf20-2875e8e04b7b",
+        "f8b17b89-26ce-4208-874a-9e1d66514640",
+        "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+        "fb60739e-1dc3-481d-a056-ad72e665c680",
+        "88d0a394-79e2-42ac-9a37-1a7b78231941",
+        "7a2484a9-04fd-41a0-8224-610c1c07ed10",
+        "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+        "c336b735-3e6b-471e-be7a-84d7402ae2f5",
+        "615b4189-e800-408b-99e0-71ae7089b937",
+        "9ea14a03-c6a2-49ec-953d-4249a2c27e1d",
+        "515c522f-51d5-4f6d-b9b1-ea3c7f6a378e",
+        "8ea414c1-88cf-46d4-9a54-6dee9847c537",
+        "83cf1169-5853-4332-b897-7b17d72d76ab",
+        "9c2fd3a3-96f2-4e84-85a9-77698c2f83aa",
+        "f9217532-f7cf-4436-b476-72d97a3147dc",
+        "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+        "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+        "d57a6b19-bd06-4b07-8ee1-0b45612ba9e4",
+        "0bb896ba-e15e-43a9-9120-e674d7ba003c",
+        "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
+        "b21d6482-1b3a-47e6-98a5-3067f5f3818b",
+        "ab1cc360-b9de-48d9-9983-4dfe4a7d2a37",
+        "579cbd92-797f-4cdf-91ed-fca7a523eae5",
+        "70dc830e-d05b-4fc7-88dd-879e140b3fbf",
+        "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+        "5b6bdf5a-2742-4851-92cd-a857a3852836",
+        "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+        "a5cbd257-c836-493e-bb1a-76242619dea2",
+        "a8dba58b-2956-492e-ae30-49db2ae68e53",
+        "a145ff8c-5812-4bcb-bd16-9839dc25121d",
+        "e3444fcf-70ed-4d6e-aea9-030af15cad56",
+        "ec2968fb-163d-4907-862b-b84a1f167833",
+        "c7aecca5-2f67-4245-ab2d-e723d8b23a67",
+        "3735559f-efe5-43ad-9b3e-3ef127c0ceda",
+        "17b60106-a4c7-410a-8ac3-ec8e74e29a7c"
+       ],
+       "backing": [
+        {
+         "oracleId": "348c67ef-9ccc-4651-9038-efdf1ad1b36a",
+         "name": "Rootha, Mastering the Moment"
+        },
+        {
+         "oracleId": "d751580b-bb72-4d1d-be27-d0410f883b2a",
+         "name": "Inspired Skypainter // Maestro's Gift"
+        },
+        {
+         "oracleId": "3e0e3676-e634-4e64-bdfd-4aaa5885461f",
+         "name": "Abstract Performance"
+        },
+        {
+         "oracleId": "655ee0db-1913-464f-bd06-072c6bf446bd",
+         "name": "Dirgur Focusmage // Braingeyser"
+        },
+        {
+         "oracleId": "61816f98-9d1a-4b16-9194-cb7249880710",
+         "name": "Leitmotif Composer"
+        },
+        {
+         "oracleId": "943fc88d-c281-46bb-9dc7-1052f789362b",
+         "name": "Furygale Flocking"
+        },
+        {
+         "oracleId": "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+         "name": "Prismari Pianist"
+        },
+        {
+         "oracleId": "61747805-0c34-4beb-8cbf-97bac7a998d0",
+         "name": "Renegade Bull"
+        },
+        {
+         "oracleId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
+         "name": "Chain Reaction"
+        },
+        {
+         "oracleId": "8305d576-21d8-4ce7-8eda-a7cd9793aca5",
+         "name": "Archmage Emeritus"
+        },
+        {
+         "oracleId": "c7b044c3-3cfa-407e-bf20-2875e8e04b7b",
+         "name": "Brazen Borrower // Petty Theft"
+        },
+        {
+         "oracleId": "f8b17b89-26ce-4208-874a-9e1d66514640",
+         "name": "Dig Through Time"
+        },
+        {
+         "oracleId": "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+         "name": "Replication Technique"
+        },
+        {
+         "oracleId": "fb60739e-1dc3-481d-a056-ad72e665c680",
+         "name": "Rite of Replication"
+        },
+        {
+         "oracleId": "88d0a394-79e2-42ac-9a37-1a7b78231941",
+         "name": "Thunderclap Drake"
+        },
+        {
+         "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10",
+         "name": "Blasphemous Act"
+        },
+        {
+         "oracleId": "07a0cba9-8768-4fd9-a3d5-b0f83b4bf8e8",
+         "name": "Chaos Warp"
+        },
+        {
+         "oracleId": "c336b735-3e6b-471e-be7a-84d7402ae2f5",
+         "name": "Creative Technique"
+        },
+        {
+         "oracleId": "615b4189-e800-408b-99e0-71ae7089b937",
+         "name": "Dance with Calamity"
+        },
+        {
+         "oracleId": "9ea14a03-c6a2-49ec-953d-4249a2c27e1d",
+         "name": "Mirrorwing Dragon"
+        },
+        {
+         "oracleId": "515c522f-51d5-4f6d-b9b1-ea3c7f6a378e",
+         "name": "Rousing Refrain"
+        },
+        {
+         "oracleId": "8ea414c1-88cf-46d4-9a54-6dee9847c537",
+         "name": "Surge to Victory"
+        },
+        {
+         "oracleId": "83cf1169-5853-4332-b897-7b17d72d76ab",
+         "name": "Twinflame"
+        },
+        {
+         "oracleId": "9c2fd3a3-96f2-4e84-85a9-77698c2f83aa",
+         "name": "Volcanic Salvo"
+        },
+        {
+         "oracleId": "f9217532-f7cf-4436-b476-72d97a3147dc",
+         "name": "Galazeth Prismari"
+        },
+        {
+         "oracleId": "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+         "name": "Magma Opus"
+        },
+        {
+         "oracleId": "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+         "name": "Prismari Command"
+        },
+        {
+         "oracleId": "d57a6b19-bd06-4b07-8ee1-0b45612ba9e4",
+         "name": "Veyran, Voice of Duality"
+        },
+        {
+         "oracleId": "0bb896ba-e15e-43a9-9120-e674d7ba003c",
+         "name": "Hall of Oracles"
+        },
+        {
+         "oracleId": "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
+         "name": "Prismari Charm"
+        },
+        {
+         "oracleId": "b21d6482-1b3a-47e6-98a5-3067f5f3818b",
+         "name": "Aether Gale"
+        },
+        {
+         "oracleId": "ab1cc360-b9de-48d9-9983-4dfe4a7d2a37",
+         "name": "Arcane Denial"
+        },
+        {
+         "oracleId": "579cbd92-797f-4cdf-91ed-fca7a523eae5",
+         "name": "Deep Analysis"
+        },
+        {
+         "oracleId": "70dc830e-d05b-4fc7-88dd-879e140b3fbf",
+         "name": "Reality Shift"
+        },
+        {
+         "oracleId": "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+         "name": "Resculpt"
+        },
+        {
+         "oracleId": "5b6bdf5a-2742-4851-92cd-a857a3852836",
+         "name": "Treasure Cruise"
+        },
+        {
+         "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+         "name": "Abrade"
+        },
+        {
+         "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+         "name": "Big Score"
+        },
+        {
+         "oracleId": "a8dba58b-2956-492e-ae30-49db2ae68e53",
+         "name": "Mana Geyser"
+        },
+        {
+         "oracleId": "a145ff8c-5812-4bcb-bd16-9839dc25121d",
+         "name": "Storm-Kiln Artist"
+        },
+        {
+         "oracleId": "e3444fcf-70ed-4d6e-aea9-030af15cad56",
+         "name": "Throes of Chaos"
+        },
+        {
+         "oracleId": "ec2968fb-163d-4907-862b-b84a1f167833",
+         "name": "Volcanic Torrent"
+        },
+        {
+         "oracleId": "c7aecca5-2f67-4245-ab2d-e723d8b23a67",
+         "name": "Expressive Iteration"
+        },
+        {
+         "oracleId": "3735559f-efe5-43ad-9b3e-3ef127c0ceda",
+         "name": "Rootha, Mercurial Artist"
+        },
+        {
+         "oracleId": "17b60106-a4c7-410a-8ac3-ec8e74e29a7c",
+         "name": "Mystic Sanctuary"
+        }
+       ]
+      },
+      {
+       "key": "tokens",
+       "label": "Tokens",
+       "blurb": "Make creature tokens and use them in numbers.",
+       "source": "edhrec",
+       "backingIds": [
+        "348c67ef-9ccc-4651-9038-efdf1ad1b36a",
+        "d751580b-bb72-4d1d-be27-d0410f883b2a",
+        "61816f98-9d1a-4b16-9194-cb7249880710",
+        "943fc88d-c281-46bb-9dc7-1052f789362b",
+        "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+        "e4ed7935-0263-4cde-8118-ac18fffce3ef",
+        "0be907b2-54f9-4c8c-b6af-7c0093892e42",
+        "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+        "fb60739e-1dc3-481d-a056-ad72e665c680",
+        "716b3ea2-45b7-4a8f-af72-de7f4e510eff",
+        "f426aa1a-e1dc-4563-b450-2e23d6bd980b",
+        "792c4d38-41e6-49eb-bd4e-de0a5ac8330f",
+        "be4f47e9-1bd2-4aa9-bc85-3f203ad21639",
+        "83cf1169-5853-4332-b897-7b17d72d76ab",
+        "a7ac5d98-805e-4212-be94-333a0c0c44a7",
+        "f9217532-f7cf-4436-b476-72d97a3147dc",
+        "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+        "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+        "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+        "a5cbd257-c836-493e-bb1a-76242619dea2",
+        "a145ff8c-5812-4bcb-bd16-9839dc25121d"
+       ],
+       "backing": [
+        {
+         "oracleId": "348c67ef-9ccc-4651-9038-efdf1ad1b36a",
+         "name": "Rootha, Mastering the Moment"
+        },
+        {
+         "oracleId": "d751580b-bb72-4d1d-be27-d0410f883b2a",
+         "name": "Inspired Skypainter // Maestro's Gift"
+        },
+        {
+         "oracleId": "61816f98-9d1a-4b16-9194-cb7249880710",
+         "name": "Leitmotif Composer"
+        },
+        {
+         "oracleId": "943fc88d-c281-46bb-9dc7-1052f789362b",
+         "name": "Furygale Flocking"
+        },
+        {
+         "oracleId": "f58117e4-ba85-41b8-8fd5-4245716a84dc",
+         "name": "Prismari Pianist"
+        },
+        {
+         "oracleId": "e4ed7935-0263-4cde-8118-ac18fffce3ef",
+         "name": "Determined Iteration"
+        },
+        {
+         "oracleId": "0be907b2-54f9-4c8c-b6af-7c0093892e42",
+         "name": "Curiosity Crafter"
+        },
+        {
+         "oracleId": "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+         "name": "Replication Technique"
+        },
+        {
+         "oracleId": "fb60739e-1dc3-481d-a056-ad72e665c680",
+         "name": "Rite of Replication"
+        },
+        {
+         "oracleId": "716b3ea2-45b7-4a8f-af72-de7f4e510eff",
+         "name": "Goldspan Dragon"
+        },
+        {
+         "oracleId": "f426aa1a-e1dc-4563-b450-2e23d6bd980b",
+         "name": "Manaform Hellkite"
+        },
+        {
+         "oracleId": "792c4d38-41e6-49eb-bd4e-de0a5ac8330f",
+         "name": "Redoubled Stormsinger"
+        },
+        {
+         "oracleId": "be4f47e9-1bd2-4aa9-bc85-3f203ad21639",
+         "name": "Rionya, Fire Dancer"
+        },
+        {
+         "oracleId": "83cf1169-5853-4332-b897-7b17d72d76ab",
+         "name": "Twinflame"
+        },
+        {
+         "oracleId": "a7ac5d98-805e-4212-be94-333a0c0c44a7",
+         "name": "Brudiclad, Telchor Engineer"
+        },
+        {
+         "oracleId": "f9217532-f7cf-4436-b476-72d97a3147dc",
+         "name": "Galazeth Prismari"
+        },
+        {
+         "oracleId": "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+         "name": "Magma Opus"
+        },
+        {
+         "oracleId": "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+         "name": "Prismari Command"
+        },
+        {
+         "oracleId": "814e321d-16fd-4f7b-a8d8-2b089be76f2c",
+         "name": "Resculpt"
+        },
+        {
+         "oracleId": "a5cbd257-c836-493e-bb1a-76242619dea2",
+         "name": "Big Score"
+        },
+        {
+         "oracleId": "a145ff8c-5812-4bcb-bd16-9839dc25121d",
+         "name": "Storm-Kiln Artist"
+        }
+       ]
+      },
+      {
+       "key": "burn",
+       "label": "Burn",
+       "blurb": "Deal direct damage to creatures and players.",
+       "source": "edhrec",
+       "backingIds": [
+        "7a2484a9-04fd-41a0-8224-610c1c07ed10",
+        "9c2fd3a3-96f2-4e84-85a9-77698c2f83aa",
+        "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+        "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+        "0fe16212-66c3-4e45-a641-7391e9b2e304",
+        "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
+        "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+        "14d2979d-5728-42d7-a027-0eb1f754655d"
+       ],
+       "backing": [
+        {
+         "oracleId": "7a2484a9-04fd-41a0-8224-610c1c07ed10",
+         "name": "Blasphemous Act"
+        },
+        {
+         "oracleId": "9c2fd3a3-96f2-4e84-85a9-77698c2f83aa",
+         "name": "Volcanic Salvo"
+        },
+        {
+         "oracleId": "985f9dd7-e693-48ff-9dd6-a1a3cbaa236b",
+         "name": "Magma Opus"
+        },
+        {
+         "oracleId": "fa3e28b1-131c-4223-81e0-18dfbab22c26",
+         "name": "Prismari Command"
+        },
+        {
+         "oracleId": "0fe16212-66c3-4e45-a641-7391e9b2e304",
+         "name": "Shivan Reef"
+        },
+        {
+         "oracleId": "c3c25a2c-f71c-4cb7-9117-0bcda9248bfd",
+         "name": "Prismari Charm"
+        },
+        {
+         "oracleId": "f9db72dc-9a5b-48a4-a86e-7464d9a2166a",
+         "name": "Abrade"
+        },
+        {
+         "oracleId": "14d2979d-5728-42d7-a027-0eb1f754655d",
+         "name": "Talisman of Creativity"
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "runs": [
+    {
+     "id": "3ae0c01b-940a-45c0-afcc-508c7665cb14",
+     "status": "done",
+     "strategyKey": "9a8f6e5e-6cde-49df-861c-a26cb09c9b12/3/spellslinger",
+     "strategyLabel": "Spells",
+     "refunded": false,
+     "createdAt": {
+      "$date": "2026-11-21T07:17:16.303Z"
+     },
+     "pairs": [
+      {
+       "add": "Narset, Parter of Veils",
+       "cut": "Determined Iteration",
+       "addId": "ab26fbe2-e808-48b9-8d0d-3fbb6c3d554f",
+       "cutId": "e4ed7935-0263-4cde-8118-ac18fffce3ef",
+       "reason": "Game Changer that digs four cards deep for instants and sorceries and chokes opponents' card draw.",
+       "addCents": 20,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 0,
+       "cutReason": "Populate engine only serves the token theme and needs token creators the deck is cutting.",
+       "addBracketAfter": [
+        3
+       ],
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Guttersnipe",
+       "cut": "Redoubled Stormsinger",
+       "addId": "c6bdaf76-6a03-4695-9c4b-f040e73435af",
+       "cutId": "792c4d38-41e6-49eb-bd4e-de0a5ac8330f",
+       "reason": "Deals 2 damage to each opponent for every instant or sorcery cast, rewarding each spell.",
+       "addCents": 15,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 1,
+       "cutReason": "Token-copying attacker that does nothing for a spells plan.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Gifts Ungiven",
+       "cut": "Brudiclad, Telchor Engineer",
+       "addId": "58aec411-167d-4709-8560-793eaaed62c5",
+       "cutId": "a7ac5d98-805e-4212-be94-333a0c0c44a7",
+       "reason": "Game Changer tutor that finds spells and fuels the graveyard for delve and flashback cards.",
+       "addCents": 411,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 2,
+       "cutReason": "Six-mana token engine that is off-plan for a spells deck.",
+       "addBracketAfter": [
+        3
+       ],
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Archaeomancer",
+       "cut": "Curiosity Crafter",
+       "addId": "a91a3266-cadd-47a0-9b20-160307f14c07",
+       "cutId": "0be907b2-54f9-4c8c-b6af-7c0093892e42",
+       "reason": "Returns a key instant or sorcery to hand for repeat casts and value.",
+       "addCents": 15,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 3,
+       "cutReason": "Needs creature tokens connecting to draw cards, which is a token payoff.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Pinnacle Monk // Mystic Peak",
+       "cut": "Rionya, Fire Dancer",
+       "addId": "f3d48efa-910a-4872-a5b1-a353c5dbce99",
+       "cutId": "be4f47e9-1bd2-4aa9-bc85-3f203ad21639",
+       "reason": "Recurs an instant or sorcery on entering, with prowess, and can be played as a land.",
+       "addCents": 156,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 4,
+       "cutReason": "Five-mana token-copy effect that is clunky and off-plan.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Brainstorm",
+       "cut": "Twinflame",
+       "addId": "36cd2364-d113-47d1-b2c4-b088d9eb88dd",
+       "cutId": "83cf1169-5853-4332-b897-7b17d72d76ab",
+       "reason": "Cheap cantrip that triggers spell payoffs and smooths draws.",
+       "addCents": 80,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 5,
+       "cutReason": "Temporary token copies of creatures are a token effect.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Izzet Signet",
+       "cut": "Faerie Mastermind",
+       "addId": "2fda4fe7-8b0c-489c-a000-6d358e614e34",
+       "cutId": "a984db23-40ea-428d-829f-e944267280f8",
+       "reason": "Cheap two-color ramp that fixes mana for casting multiple spells a turn.",
+       "addCents": 40,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 6,
+       "cutReason": "Expensive creature whose draw trigger depends on opponents, not on casting spells.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Preordain",
+       "cut": "Harmonic Prodigy",
+       "addId": "ac641490-ca14-48d7-8cc4-b69ce984befa",
+       "cutId": "2e2ace5b-4018-43af-8e72-ebafec1a7739",
+       "reason": "Cheap cantrip that triggers every spell payoff and sets up the next draws.",
+       "addCents": 41,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 7,
+       "cutReason": "Wizard-trigger doubling has little to work with here, so it is a weak prowess body.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Mulldrifter",
+       "cut": "Replication Technique",
+       "addId": "24d0f5e7-0d9e-4b76-900e-a7274e80312d",
+       "cutId": "163baf58-b35d-4f2b-aa53-8384b8b5800a",
+       "reason": "Flying body that draws two cards, or can be evoked cheaply for card advantage.",
+       "addCents": 20,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 8,
+       "cutReason": "Clones permanents only, a token-style effect that is weak in this deck.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Counterspell",
+       "cut": "Rite of Replication",
+       "addId": "cc187110-1148-4090-bbb8-e205694a39f5",
+       "cutId": "fb60739e-1dc3-481d-a056-ad72e665c680",
+       "reason": "Cheap interaction that doubles as a spell to trigger payoffs.",
+       "addCents": 62,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 9,
+       "cutReason": "Copies creatures for a token plan and is clunky without good targets.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Mind Stone",
+       "cut": "Plargg and Nassari",
+       "addId": "c97361b5-af16-4a7b-af85-a429dbaf4ad2",
+       "cutId": "9e769a65-7aa5-484d-9493-badb485b5964",
+       "reason": "Cheap ramp that later cashes in for a card.",
+       "addCents": 20,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 10,
+       "cutReason": "Five-mana creature with a random, opponent-chosen free-cast effect that is inconsistent.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Frantic Search",
+       "cut": "Aether Gale",
+       "addId": "16e015b2-f8a3-4b1a-80be-58a8f5fb5e8c",
+       "cutId": "b21d6482-1b3a-47e6-98a5-3067f5f3818b",
+       "reason": "Cheap cantrip that untaps lands, so it can effectively cost nothing to chain spells.",
+       "addCents": 62,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 11,
+       "cutReason": "Six-target bounce at five mana is slow and does not advance the spells plan.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Lightning Bolt",
+       "cut": "Chain Reaction",
+       "addId": "4457ed35-7c10-48c8-9776-456485fdf070",
+       "cutId": "086b2564-9114-4ba2-94fd-b490f98f38a7",
+       "reason": "Efficient instant removal that triggers every spell payoff.",
+       "addCents": 52,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 12,
+       "cutReason": "Symmetrical sweeper that is unreliable and kills our own creatures.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      },
+      {
+       "add": "Fury",
+       "cut": "Mirrorwing Dragon",
+       "addId": "fbf9f8c5-849f-45d5-8129-5fc683c21a04",
+       "cutId": "9ea14a03-c6a2-49ec-953d-4249a2c27e1d",
+       "reason": "Evokable removal that clears blockers and triggers payoffs, or lands as a double-strike body.",
+       "addCents": 37,
+       "addCombo": null,
+       "cutCombo": null,
+       "position": 13,
+       "cutReason": "Five-mana Dragon whose ability rarely triggers and is a mediocre body.",
+       "addBracketAfter": null,
+       "cutBracketAfter": null
+      }
+     ],
+     "buyTotalCents": 1031,
+     "bracketBefore": 2,
+     "bracketAfter": 3,
+     "bracketTarget": 3,
+     "listFp": "405051ce5e74012e52984fe0d0680d4a",
+     "seenAt": {
+      "$date": "2026-11-21T07:17:40.408Z"
+     },
+     "unpicked": [],
+     "toBuy": {
+      "cards": 1,
+      "cents": 20
+     },
+     "owned": 13,
+     "themes": {
+      "e4ed7935-0263-4cde-8118-ac18fffce3ef": "Tokens",
+      "792c4d38-41e6-49eb-bd4e-de0a5ac8330f": "Tokens",
+      "a7ac5d98-805e-4212-be94-333a0c0c44a7": "Tokens",
+      "0be907b2-54f9-4c8c-b6af-7c0093892e42": "Tokens",
+      "be4f47e9-1bd2-4aa9-bc85-3f203ad21639": "Tokens",
+      "83cf1169-5853-4332-b897-7b17d72d76ab": "Spells",
+      "163baf58-b35d-4f2b-aa53-8384b8b5800a": "Spells",
+      "fb60739e-1dc3-481d-a056-ad72e665c680": "Spells",
+      "b21d6482-1b3a-47e6-98a5-3067f5f3818b": "Spells",
+      "086b2564-9114-4ba2-94fd-b490f98f38a7": "Spells",
+      "9ea14a03-c6a2-49ec-953d-4249a2c27e1d": "Spells"
+     },
+     "deck": null
+    }
+   ],
+   "listFp": "405051ce5e74012e52984fe0d0680d4a",
+   "cards": {
+    "e4ed7935-0263-4cde-8118-ac18fffce3ef": {
+     "cmc": 2,
+     "identity": [
+      "R"
+     ],
+     "owned": false,
+     "typeLine": "Enchantment",
+     "image": "https://cards.scryfall.io/normal/front/d/9/d95490fe-44f2-4f83-b587-b0df402d38ed.jpg?1783903820",
+     "typeGroup": "Enchantments",
+     "role": null
+    },
+    "ab26fbe2-e808-48b9-8d0d-3fbb6c3d554f": {
+     "cmc": 3,
+     "identity": [
+      "U"
+     ],
+     "facts": [
+      "gameChanger"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Legendary Planeswalker — Narset",
+     "image": "https://cards.scryfall.io/normal/front/4/e/4e6e5c63-b6e5-4756-bf23-6c6f8669442d.jpg?1783915440",
+     "typeGroup": "Planeswalkers",
+     "role": null
+    },
+    "792c4d38-41e6-49eb-bd4e-de0a5ac8330f": {
+     "cmc": 3,
+     "identity": [
+      "R"
+     ],
+     "owned": false,
+     "typeLine": "Creature — Orc Wizard",
+     "image": "https://cards.scryfall.io/normal/front/f/c/fc5fcb5e-091e-4f47-9c74-9e187a9e0e5d.jpg?1783903772",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "c6bdaf76-6a03-4695-9c4b-f040e73435af": {
+     "cmc": 3,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Creature — Goblin Shaman",
+     "image": "https://cards.scryfall.io/normal/front/f/6/f6bb1ffc-2251-4655-b8f9-4c8047dd5d5f.jpg?1785497556",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "a7ac5d98-805e-4212-be94-333a0c0c44a7": {
+     "cmc": 6,
+     "identity": [
+      "R",
+      "U"
+     ],
+     "owned": false,
+     "typeLine": "Legendary Artifact Creature — Phyrexian Artificer",
+     "image": "https://cards.scryfall.io/normal/front/d/2/d24bf1df-5087-4ad6-a1aa-4eda2340cd8b.jpg?1783903759",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "58aec411-167d-4709-8560-793eaaed62c5": {
+     "cmc": 4,
+     "identity": [
+      "U"
+     ],
+     "facts": [
+      "gameChanger",
+      "tutor"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Instant",
+     "image": "https://cards.scryfall.io/normal/front/c/c/cc950b6c-0346-4939-b36b-9f10a75f7a32.jpg?1783921916",
+     "typeGroup": "Instants",
+     "role": null
+    },
+    "0be907b2-54f9-4c8c-b6af-7c0093892e42": {
+     "cmc": 4,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 2,
+      "hard": 0,
+      "soft": 0,
+      "free": 2,
+      "claims": []
+     },
+     "typeLine": "Creature — Bird Wizard",
+     "image": "https://cards.scryfall.io/normal/front/9/3/930d830b-5e6a-422a-806e-fd7275517deb.jpg?1783903793",
+     "typeGroup": "Creatures",
+     "role": "draw"
+    },
+    "a91a3266-cadd-47a0-9b20-160307f14c07": {
+     "cmc": 4,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 3,
+      "hard": 0,
+      "soft": 0,
+      "free": 3,
+      "claims": []
+     },
+     "typeLine": "Creature — Human Wizard",
+     "image": "https://cards.scryfall.io/normal/front/c/c/cc258713-6ce3-44e0-9b4b-8fa7d1d093a1.jpg?1783933855",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "be4f47e9-1bd2-4aa9-bc85-3f203ad21639": {
+     "cmc": 5,
+     "identity": [
+      "R"
+     ],
+     "owned": false,
+     "typeLine": "Legendary Creature — Human Wizard",
+     "image": "https://cards.scryfall.io/normal/front/0/8/086e68b5-0f89-46d0-9a04-7f8658a9ab53.jpg?1783903772",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "f3d48efa-910a-4872-a5b1-a353c5dbce99": {
+     "cmc": 5,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Creature — Djinn Monk // Land",
+     "image": "https://cards.scryfall.io/normal/front/2/4/24d4f26e-7f96-4b38-867e-4fac819b2679.jpg?1783911228",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "83cf1169-5853-4332-b897-7b17d72d76ab": {
+     "cmc": 2,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Sorcery",
+     "image": "https://cards.scryfall.io/normal/front/8/5/85c863ef-b266-410d-87b3-ced791f99966.jpg?1783903769",
+     "typeGroup": "Sorceries",
+     "role": null
+    },
+    "36cd2364-d113-47d1-b2c4-b088d9eb88dd": {
+     "cmc": 1,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 1,
+      "free": 1,
+      "claims": [
+       {
+        "id": "3365a387-a06a-5632-8318-3b59ac200034",
+        "name": "Lanternlight Tinkers",
+        "since": null,
+        "locked": false,
+        "mature": false,
+        "senior": false,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "grantedAt": null,
+        "versionNumber": null,
+        "commanderCopies": 0
+       }
+      ]
+     },
+     "typeLine": "Instant",
+     "image": "https://cards.scryfall.io/normal/front/e/c/ec7d6864-7b6b-4f74-8474-9b9ec96b1d33.jpg?1789599806",
+     "typeGroup": "Instants",
+     "role": "draw"
+    },
+    "a984db23-40ea-428d-829f-e944267280f8": {
+     "cmc": 2,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Creature — Faerie Rogue",
+     "image": "https://cards.scryfall.io/normal/front/b/c/bc9a7599-3c7d-4b83-bff3-e3d1f20f1b0f.jpg?1783903820",
+     "typeGroup": "Creatures",
+     "role": "draw"
+    },
+    "2fda4fe7-8b0c-489c-a000-6d358e614e34": {
+     "cmc": 2,
+     "identity": [
+      "R",
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Artifact",
+     "image": "https://cards.scryfall.io/normal/front/d/5/d5e141ad-5cb8-416b-9acf-bce1baeb6b6b.jpg?1789599844",
+     "typeGroup": "Artifacts",
+     "role": "ramp"
+    },
+    "2e2ace5b-4018-43af-8e72-ebafec1a7739": {
+     "cmc": 2,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 2,
+      "hard": 0,
+      "soft": 0,
+      "free": 2,
+      "claims": []
+     },
+     "typeLine": "Creature — Human Wizard",
+     "image": "https://cards.scryfall.io/normal/front/6/3/63a565e3-d7a8-469d-898f-49fef634c107.jpg?1783903818",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "ac641490-ca14-48d7-8cc4-b69ce984befa": {
+     "cmc": 1,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Sorcery",
+     "image": "https://cards.scryfall.io/normal/front/d/d/dd29a0e5-c1de-4e8a-8866-715e9f9cde1f.jpg?1783907099",
+     "typeGroup": "Sorceries",
+     "role": "draw"
+    },
+    "163baf58-b35d-4f2b-aa53-8384b8b5800a": {
+     "cmc": 5,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Sorcery",
+     "image": "https://cards.scryfall.io/normal/front/b/3/b3149976-2811-4bbd-af1e-d59016bb0754.jpg?1783903791",
+     "typeGroup": "Sorceries",
+     "role": null
+    },
+    "24d0f5e7-0d9e-4b76-900e-a7274e80312d": {
+     "cmc": 5,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Creature — Elemental",
+     "image": "https://cards.scryfall.io/normal/front/3/d/3de308cc-14ac-407e-99e7-568572ecd0e7.jpg?1783904564",
+     "typeGroup": "Creatures",
+     "role": "draw"
+    },
+    "fb60739e-1dc3-481d-a056-ad72e665c680": {
+     "cmc": 4,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 4,
+      "hard": 0,
+      "soft": 0,
+      "free": 4,
+      "claims": []
+     },
+     "typeLine": "Sorcery",
+     "image": "https://cards.scryfall.io/normal/front/5/0/5032d71d-d9f8-498c-97d1-271c2e9c1c47.jpg?1783903790",
+     "typeGroup": "Sorceries",
+     "role": null
+    },
+    "cc187110-1148-4090-bbb8-e205694a39f5": {
+     "cmc": 2,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 1,
+      "free": 1,
+      "claims": [
+       {
+        "id": "3365a387-a06a-5632-8318-3b59ac200034",
+        "name": "Lanternlight Tinkers",
+        "since": null,
+        "locked": false,
+        "mature": false,
+        "senior": false,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "grantedAt": null,
+        "versionNumber": null,
+        "commanderCopies": 0
+       }
+      ]
+     },
+     "typeLine": "Instant",
+     "image": "https://cards.scryfall.io/normal/front/4/f/4f616706-ec97-4923-bb1e-11a69fbaa1f8.jpg?1783909630",
+     "typeGroup": "Instants",
+     "role": null
+    },
+    "9e769a65-7aa5-484d-9493-badb485b5964": {
+     "cmc": 5,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 3,
+      "hard": 0,
+      "soft": 0,
+      "free": 3,
+      "claims": []
+     },
+     "typeLine": "Legendary Creature — Orc Efreet",
+     "image": "https://cards.scryfall.io/normal/front/e/6/e66ee7c6-23bc-4fef-a566-35aee2064bd9.jpg?1783903772",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "c97361b5-af16-4a7b-af85-a429dbaf4ad2": {
+     "cmc": 2,
+     "identity": [],
+     "owned": false,
+     "typeLine": "Artifact",
+     "image": "https://cards.scryfall.io/normal/front/b/3/b30a8f92-ce42-4b27-a893-bcf97fde228d.jpg?1785759375",
+     "typeGroup": "Artifacts",
+     "role": "ramp"
+    },
+    "b21d6482-1b3a-47e6-98a5-3067f5f3818b": {
+     "cmc": 5,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 1,
+      "free": 1,
+      "claims": [
+       {
+        "id": "3365a387-a06a-5632-8318-3b59ac200034",
+        "name": "Lanternlight Tinkers",
+        "since": null,
+        "locked": false,
+        "mature": false,
+        "senior": false,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "grantedAt": null,
+        "versionNumber": null,
+        "commanderCopies": 0
+       }
+      ]
+     },
+     "typeLine": "Sorcery",
+     "image": "https://cards.scryfall.io/normal/front/4/e/4e336e87-e5af-46a0-8caf-5d9ad8d671fd.jpg?1783903794",
+     "typeGroup": "Sorceries",
+     "role": "removal"
+    },
+    "16e015b2-f8a3-4b1a-80be-58a8f5fb5e8c": {
+     "cmc": 3,
+     "identity": [
+      "U"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 2,
+      "hard": 0,
+      "soft": 0,
+      "free": 2,
+      "claims": []
+     },
+     "typeLine": "Instant",
+     "image": "https://cards.scryfall.io/normal/front/d/8/d8c5e52d-57ae-464b-8860-7dd39ebfef64.jpg?1783904806",
+     "typeGroup": "Instants",
+     "role": "ramp"
+    },
+    "086b2564-9114-4ba2-94fd-b490f98f38a7": {
+     "cmc": 4,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 1,
+      "soft": 0,
+      "free": 0,
+      "claims": [
+       {
+        "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
+        "name": "Ashen Banner Parade",
+        "since": 1793274335722,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": true,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "grantedAt": null,
+        "versionNumber": 1,
+        "commanderCopies": 0
+       }
+      ]
+     },
+     "typeLine": "Sorcery",
+     "image": "https://cards.scryfall.io/normal/front/6/f/6f34d11e-8452-448f-be4f-838e0ace9904.jpg?1783903818",
+     "typeGroup": "Sorceries",
+     "role": "wipes"
+    },
+    "4457ed35-7c10-48c8-9776-456485fdf070": {
+     "cmc": 1,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 2,
+      "hard": 2,
+      "soft": 0,
+      "free": 0,
+      "claims": [
+       {
+        "id": "3237a80d-7485-52dd-b69e-31acda7dd9ef",
+        "name": "Ashen Banner Parade",
+        "since": 1793274335722,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": true,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "grantedAt": null,
+        "versionNumber": 1,
+        "commanderCopies": 0
+       },
+       {
+        "id": "26c50a39-4b44-5802-ba34-3a6a0fc2fcc6",
+        "name": "Tidewrack Library",
+        "since": 1789991135722,
+        "locked": false,
+        "mature": true,
+        "senior": true,
+        "granted": 0,
+        "pending": false,
+        "draftCut": false,
+        "quantity": 1,
+        "commander": false,
+        "grantedAt": null,
+        "versionNumber": 3,
+        "commanderCopies": 0
+       }
+      ]
+     },
+     "typeLine": "Instant",
+     "image": "https://cards.scryfall.io/normal/front/7/6/7673784e-db4b-43a1-8d55-1bb9fc1e284f.jpg?1783903008",
+     "typeGroup": "Instants",
+     "role": "removal"
+    },
+    "9ea14a03-c6a2-49ec-953d-4249a2c27e1d": {
+     "cmc": 5,
+     "identity": [
+      "R"
+     ],
+     "owned": false,
+     "typeLine": "Creature — Dragon",
+     "image": "https://cards.scryfall.io/normal/front/6/b/6ba557ab-9d80-4d0a-bddb-ec230cc4437d.jpg?1783903772",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "fbf9f8c5-849f-45d5-8129-5fc683c21a04": {
+     "cmc": 5,
+     "identity": [
+      "R"
+     ],
+     "owned": true,
+     "availability": {
+      "owned": 1,
+      "hard": 0,
+      "soft": 0,
+      "free": 1,
+      "claims": []
+     },
+     "typeLine": "Creature — Elemental Incarnation",
+     "image": "https://cards.scryfall.io/normal/front/9/3/932d0fb9-382d-464a-9427-b91fa2398cdb.jpg?1783911524",
+     "typeGroup": "Creatures",
+     "role": "removal"
+    },
+    "348c67ef-9ccc-4651-9038-efdf1ad1b36a": {
+     "cmc": 4,
+     "identity": [
+      "R",
+      "U"
+     ],
+     "owned": false,
+     "typeLine": "Legendary Creature — Orc Sorcerer",
+     "image": "https://cards.scryfall.io/normal/front/a/5/a5b3dbb2-c090-4118-9e47-56c16202572c.jpg?1783903866",
+     "typeGroup": "Creatures",
+     "role": null
+    },
+    "9a8f6e5e-6cde-49df-861c-a26cb09c9b12": {
+     "cmc": 4,
+     "identity": [
+      "R",
+      "U"
+     ],
+     "owned": false,
+     "typeLine": "Legendary Creature — Elemental Otter Shapeshifter",
+     "image": "https://cards.scryfall.io/normal/front/9/1/916d3e31-3243-47b3-b7d2-ce9a6dd47aba.jpg?1783903867",
+     "typeGroup": "Creatures",
+     "role": null
+    }
+   },
+   "figures": {
+    "348c67ef-9ccc-4651-9038-efdf1ad1b36a": {
+     "typeCounts": {
+      "Creatures": 25,
+      "Sorceries": 19,
+      "Lands": 38,
+      "Enchantments": 1,
+      "Instants": 10,
+      "Artifacts": 6
+     },
+     "roles": [
+      {
+       "role": "ramp",
+       "have": 17,
+       "target": 12
+      },
+      {
+       "role": "draw",
+       "have": 16,
+       "target": 11
+      },
+      {
+       "role": "removal",
+       "have": 10,
+       "target": 6
+      },
+      {
+       "role": "wipes",
+       "have": 3,
+       "target": 0
+      },
+      {
+       "role": "land",
+       "have": 38,
+       "target": 37
+      }
+     ]
+    },
+    "9a8f6e5e-6cde-49df-861c-a26cb09c9b12": {
+     "typeCounts": {
+      "Creatures": 25,
+      "Sorceries": 19,
+      "Lands": 38,
+      "Enchantments": 1,
+      "Instants": 10,
+      "Artifacts": 6
+     },
+     "roles": [
+      {
+       "role": "ramp",
+       "have": 17,
+       "target": 13
+      },
+      {
+       "role": "draw",
+       "have": 16,
+       "target": 18
+      },
+      {
+       "role": "removal",
+       "have": 10,
+       "target": 7
+      },
+      {
+       "role": "wipes",
+       "have": 3,
+       "target": 1
+      },
+      {
+       "role": "land",
+       "have": 38,
+       "target": 35
+      }
+     ]
+    }
+   },
+   "allowance": {
+    "used": 0,
+    "limit": 1,
+    "reopensAt": null,
+    "nextAt": null,
+    "welcome": 0,
+    "plan": 0,
+    "gift": 8,
+    "pack": 0,
+    "planExpiresAt": null,
+    "welcomeExpiresAt": null,
+    "planExpiring": 0,
+    "planByExpiry": [],
+    "paidUsedToday": 2,
+    "paidLimit": 20,
+    "paidBackAt": null,
+    "paidNextAt": {
+     "$date": "2026-11-22T00:17:16.303Z"
+    },
+    "payments": false
+   }
+  },
+  "runId": "3ae0c01b-940a-45c0-afcc-508c7665cb14",
+  "setPermits": [
+   3
+  ]
  }
 };
