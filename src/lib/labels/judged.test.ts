@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   JUDGED_PREFILTER, JUDGED_SYSTEM, JUDGED_THEMES, judgedInputHash, judgedSystemHash, parseJudgedReply, renderJudgedBody,
+  buildJudgedRequest, withoutFailed,
 } from "./judged";
 
 const card = { oracleId: "a", name: "Howling Mine", mana_cost: "{2}", type_line: "Artifact", oracle_text: "At the beginning of each player's draw step, if Howling Mine is untapped, that player draws an additional card." };
@@ -47,5 +48,29 @@ describe("the pre-filter", () => {
 describe("renderJudgedBody", () => {
   it("numbers the cards in order", () => {
     expect(renderJudgedBody([card, card])).toMatch(/Key: 1\n[^]*Key: 2\n/);
+  });
+});
+
+describe("withoutFailed", () => {
+  const cards = [{ oracleId: "a" }, { oracleId: "b" }, { oracleId: "c" }];
+  it("leaves a failed card out and reports it, so the next run does not ask again", () => {
+    expect(withoutFailed(cards, ["b"], false)).toEqual({ todo: [{ oracleId: "a" }, { oracleId: "c" }], dropped: [{ oracleId: "b" }] });
+  });
+  it("asks everything again only when told to", () => {
+    expect(withoutFailed(cards, ["b"], true)).toEqual({ todo: cards, dropped: [] });
+  });
+});
+
+describe("buildJudgedRequest for Sonnet 5.5", () => {
+  it("sends no temperature and turns thinking off with between_tools, which 5.5 requires", () => {
+    const { params } = buildJudgedRequest("j-0", "claude-sonnet-5-5", [card]);
+    expect(params).not.toHaveProperty("temperature");
+    expect(params.thinking).toEqual({ type: "between_tools" });
+  });
+  it("keeps disabled for Sonnet 5 and temperature 0 for Sonnet 4.5", () => {
+    expect(buildJudgedRequest("j-0", "claude-sonnet-5", [card]).params.thinking).toEqual({ type: "disabled" });
+    const old = buildJudgedRequest("j-0", "claude-sonnet-4-5", [card]).params;
+    expect(old.temperature).toBe(0);
+    expect(old).not.toHaveProperty("thinking");
   });
 });

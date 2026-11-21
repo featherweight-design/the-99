@@ -47,7 +47,7 @@ describe("the request asks for no prompt caching", () => {
   // round — `buildRequest(customId, model, cards)` — and built a request for a model called
   // "b-0", where `acceptsTemperature` and `needsThinkingDisabled` both take their default
   // branch. It asserted caching on a model that does not exist.
-  for (const model of ["claude-sonnet-4-5", "claude-haiku-4-5-20251001", "claude-sonnet-5"]) {
+  for (const model of ["claude-sonnet-4-5", "claude-haiku-4-5-20251001", "claude-sonnet-5", "claude-sonnet-5-5"]) {
     it(`sends no cache_control on the system block for ${model}`, () => {
       const req = buildRequest("b-0", model, [card]);
       expect(req.params.model).toBe(model);

@@ -25,14 +25,15 @@ import { db } from "../../src/db";
 import { cardLabelBatches, judgedLabels } from "../../src/db/schema";
 import {
   buildJudgedRequest, JUDGED_MAX_TOKENS, JUDGED_PREFILTER, JUDGED_PROMPT_VERSION, JUDGED_SYSTEM, JUDGED_THEMES,
-  judgedInputHash, judgedKey, parseJudgedReply, type JudgedTheme,
+  judgedInputHash, judgedKey, parseJudgedReply, withoutFailed, type JudgedTheme,
 } from "../../src/lib/labels/judged";
 import {
   familySpend, planChunks, withinCap, worstCaseUsd, type Rates,
 } from "../../src/lib/labels/plan";
 import { BODY_OVERHEAD_TOKENS, OPEN_STATUSES, PER_CARD_TOKENS } from "../../src/lib/labels/reserve";
 import { readCardsById, type CardRow } from "../../src/lib/labels/publish";
-import { ALL_MODELS, DEFAULT_LABEL_MODEL, PRICING } from "./card-labels-pricing.mjs";
+import { DEFAULT_LABEL_MODEL } from "./card-labels-pricing.mjs";
+import { batchRates } from "../../src/lib/model/prices";
 
 export type JudgedClient = Pick<Anthropic["messages"]["batches"], "create" | "retrieve" | "results">;
 
@@ -51,6 +52,8 @@ export type JudgedOptions = {
   /** Read before submitting. Absent (a probe), nothing is checked. */
   modelCalls?: () => Promise<{ state: "on" } | { state: "off" | "unconfirmed"; line: string }>;
   model?: string;
+  /** Ask again the cards whose request failed. Without it a failure is reported once and its cards are left out. */
+  retryFailed?: boolean;
 };
 
 export const SAMPLE_PER_THEME = 40;
@@ -63,9 +66,9 @@ const RUN_PREFIX = "judged-";
 type Candidate = CardRow & { from: JudgedTheme | "control" };
 
 function ratesFor(model: string): Rates {
-  const key = (Object.entries(ALL_MODELS) as [keyof typeof PRICING, string][]).find(([, id]) => id === model)?.[0];
-  if (key === undefined) throw new Error(`model "${model}" has no canonical rate; refusing rather than pricing it as another model`);
-  return { in: PRICING[key].in, out: PRICING[key].out };
+  // `batchRates` throws on a model with no rate card, so an unpriced model never runs at another model's price.
+  const r = batchRates(model);
+  return { in: r.in, out: r.out };
 }
 
 const anyPattern = JUDGED_THEMES.map((t) => `(${JUDGED_PREFILTER[t]})`).join("|");
@@ -234,7 +237,13 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
   ));
   const inFlight = new Set(open.flatMap((o) => o.asked));
   const hashOf = new Map(cards.map((c) => [c.oracleId, judgedInputHash(c, model)]));
-  const todo = cards.filter((c) => !inFlight.has(c.oracleId) && stored.get(c.oracleId)?.inputHash !== hashOf.get(c.oracleId));
+  const failedRows = await db.select({ asked: cardLabelBatches.asked }).from(cardLabelBatches).where(and(
+    like(cardLabelBatches.runId, `${RUN_PREFIX}%`), eq(cardLabelBatches.status, "failed"), eq(cardLabelBatches.model, model),
+  ));
+  const { todo, dropped } = withoutFailed(
+    cards.filter((c) => !inFlight.has(c.oracleId) && stored.get(c.oracleId)?.inputHash !== hashOf.get(c.oracleId)),
+    failedRows.flatMap((r) => r.asked), opts.retryFailed ?? false,
+  );
 
   const prior = (await db.select({ asked: cardLabelBatches.asked }).from(cardLabelBatches).where(eq(cardLabelBatches.runId, opts.runId))).map((r) => r.asked);
   const chunks = planChunks(opts.runId, model, todo.map((c) => c.oracleId), prior);
@@ -245,6 +254,9 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
   console.log(`${opts.sample ? "SAMPLE" : "FULL"} ${opts.spend ? "SPEND" : "DRY RUN"}, model ${model}, run ${opts.runId}`);
   console.log(`  pre-filter hits: ${JSON.stringify(perTheme)}`);
   console.log(`  pool ${cards.length}, already judged or in flight ${cards.length - todo.length}, to ask ${todo.length}`);
+  if (dropped.length > 0) {
+    console.log(`  ${dropped.length} card(s) left out: their request failed earlier. Fix the cause, then pass --retry-failed to ask them again.`);
+  }
   console.log(`  ${chunks.length} request(s); worst case $${worst.toFixed(2)} + $${spent.toFixed(2)} already spent vs cap $${opts.capUsd.toFixed(2)}`);
   if (opts.sample && !opts.spend) for (const c of todo) console.log(`    ${c.from.padEnd(10)} ${c.name}`);
   if (!verdict.ok) { console.error(`REFUSED: ${verdict.why}`); return EXIT_STOP; }
