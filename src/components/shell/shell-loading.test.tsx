@@ -25,7 +25,8 @@ describe("ShellLoading", () => {
     pathname = "/decks/0b9f6c3e-1d2a-4c5b-8e7f-123456789abc";
     render(<ShellLoading />);
     expect(screen.getByRole("status").textContent).toBe("Opening your deck");
-    expect(screen.getByRole("link", { name: /all decks/i }).getAttribute("href")).toBe("/decks");
+    // The strip draws once per layout (phone and desktop), as on the real page.
+    for (const link of screen.getAllByRole("link", { name: /all decks/i })) expect(link.getAttribute("href")).toBe("/decks");
   });
 
   it("keeps the crown screen for a deck's own sub-route", () => {
