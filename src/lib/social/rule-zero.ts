@@ -227,8 +227,10 @@ export type ReseatResult = { kind: "reseated" } | { kind: "refused"; reason: Sea
 
 /**
  * The setter's `Seats`: the same checks as `setTable`, over an open table the viewer set. A player who stays keeps
- * their deck and `changed_at`, whatever the asks say (each player changes their own deck through `setSeatDeck`), so
- * a reseat alone never marks anyone's seat as changed. A player who leaves the table loses their seen row with it.
+ * their deck and `changed_at` unless the ask names a different deck: the setter may re-pick a staying seat's deck
+ * exactly as they may pick it at setup (their own decks, a friend's listed ones, through `resolveSeatsIn`), and that
+ * seat takes a new `changed_at`, so its dot shows the swap. A null ask, or the deck it already holds, keeps the seat as
+ * it is. A player who leaves the table loses their seen row with it.
  */
 export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: unknown): Promise<ReseatResult> {
   if (!isUuid(tableId) || !validAsks(rawSeats)) return { kind: "refused", reason: "invalid" };
@@ -263,27 +265,31 @@ export async function reseatTable(viewerId: string, tableId: unknown, rawSeats: 
       // wait (and then find the old row gone) instead of racing, and a mark committed before is in this read.
       .for("update");
     const kept = new Map(before.map((s) => [s.userId, s]));
-    // A staying player's deck is theirs to change, so only a NEW seat's pick is checked (and used).
+    // A staying seat's ask counts only when it names a deck other than the one held: null, or the same deck, keeps the
+    // seat untouched (its deck is not re-checked, so a friend's deck hidden since they sat is not refused by a resend).
     const members = await tx
       .select({ userId: socialProfiles.userId, publicId: socialProfiles.publicId })
       .from(socialProfiles)
       .where(inArray(socialProfiles.publicId, asks.map((a) => a.member)));
     const userOf = new Map(members.map((m) => [m.publicId, m.userId]));
-    const checked = asks.map((a) => (kept.has(userOf.get(a.member) ?? "") ? { ...a, deck: null } : a));
+    const checked = asks.map((a) => (kept.get(userOf.get(a.member) ?? "")?.deckId === a.deck ? { ...a, deck: null } : a));
     const seats = await resolveSeatsIn(tx, viewerId, found.podId, checked);
     if (typeof seats === "string") return { kind: "refused", reason: seats } as const;
-    // A new seat's stamp, read BEFORE the delete below empties the table it is measured against.
+    // A new or re-picked seat's stamp, read BEFORE the delete below empties the table it is measured against.
     const { rows: stamp } = await tx.execute<{ ms: string }>(sql`select round(extract(epoch from ${nextChange(tableId)}) * 1000)::bigint::text as ms`);
     const joinedAt = new Date(Number(stamp[0].ms));
     await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.tableId, tableId));
     await tx.insert(ruleZeroSeats).values(seats.map((s, i) => {
       const stay = kept.get(s.userId);
-      return stay
+      if (!stay) return { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt, noticeSeenAt: null };
+      // `checked` nulled every ask that keeps the seat, so a deck here is a re-pick `resolveSeatsIn` allowed.
+      return s.deckId === null
         ? { tableId, userId: s.userId, seat: i + 1, deckId: stay.deckId, changedAt: stay.changedAt, noticeSeenAt: stay.noticeSeenAt }
-        : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt, noticeSeenAt: null };
+        : { tableId, userId: s.userId, seat: i + 1, deckId: s.deckId, changedAt: joinedAt, noticeSeenAt: stay.noticeSeenAt };
     }));
     await dropResultIfRosterChanged(tx, tableId);
-    // Only a NEW seat is news: a player who stays, changes seat or is removed is told nothing (brief state 12).
+    // Only a NEW seat is pushed: a player who stays, changes seat or is removed gets no push (brief state 12). A re-picked
+    // deck takes a new `changed_at` over the kept `noticeSeenAt`, so its seat reads "changed" in the app, as `setSeatDeck` does.
     notified.push(...await queueSeatPushes(tx, tableId, viewerId, seats.filter((s) => !kept.has(s.userId)).map((s) => s.userId), new Date()));
     const gone = before.map((s) => s.userId).filter((u) => !seats.some((s) => s.userId === u));
     if (gone.length > 0) await tx.delete(ruleZeroSeen).where(and(eq(ruleZeroSeen.tableId, tableId), inArray(ruleZeroSeen.userId, gone)));

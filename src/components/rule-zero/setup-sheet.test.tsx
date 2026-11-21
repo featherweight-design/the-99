@@ -216,10 +216,10 @@ describe("Seats: the setter reopens setup with the seats kept", () => {
     expect(screen.getByText(c.count(2))).toBeTruthy();
     fireEvent.click(tile(/^Colin/));
     fireEvent.click(screen.getByRole("button", { name: c.next }));
-    // A kept seat shows the deck it sits with, with no control; only the new seat opens a picker.
+    // A kept seat shows the deck it sits with. A non-friend's has no control; the setter's own opens its picker.
     const gisa = screen.getByText("Gisa Zombies").closest("button")!;
     expect(gisa.getAttribute("aria-disabled")).toBe("true");
-    expect(screen.getByText("Ghalta Stompy").closest("button")!.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByText("Ghalta Stompy").closest("button")!.getAttribute("aria-disabled")).toBeNull();
     expect(screen.getByText("Zimone Combo").closest("button")!.getAttribute("aria-disabled")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: c.set }));
     await waitFor(() => expect(onSave).toHaveBeenCalled());
@@ -228,5 +228,43 @@ describe("Seats: the setter reopens setup with the seats kept", () => {
       { member: "p-you", deck: null },
       { member: "p-colin", deck: "d-c1" },
     ]);
+  });
+
+  // Hugh's report (2026-11-20): after a player was removed, pressing a staying seat's deck did nothing.
+  it("re-picks a staying seat's deck after a player is removed, and sends only the re-pick", async () => {
+    const onSave = vi.fn(async () => ({ ok: true as const, tableId: "t" }));
+    const colinSat: SetupData = { ...KEPT, seated: [...KEPT.seated!, { publicId: "p-colin", deck: { name: named("Zimone Combo"), commanderName: "Zimone", artCropUri: null } }] };
+    render(<SetupSheet setup={colinSat} onClose={() => {}} onSave={onSave} onDone={vi.fn()} />);
+    fireEvent.click(tile(/^Max/));
+    fireEvent.click(screen.getByRole("button", { name: c.next }));
+    fireEvent.click(screen.getByText("Ghalta Stompy").closest("button")!);
+    fireEvent.click(screen.getByText("Other").closest("button")!);
+    fireEvent.click(screen.getByText("Zimone Combo").closest("button")!);
+    // A staying seat's list has no "Leave it to": the seat already holds what leaving it means.
+    expect(screen.queryByText(/^Leave it to/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(c.backToSeats) }));
+    expect(screen.getByText("Other")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: c.set }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave).toHaveBeenCalledWith([
+      { member: "p-you", deck: "d-y2" },
+      { member: "p-colin", deck: null },
+    ]);
+  });
+
+  it("drops a re-pick when its player is taken off and put back", async () => {
+    const onSave = vi.fn(async (_asks: unknown) => ({ ok: true as const, tableId: "t" }));
+    const colinSat: SetupData = { ...KEPT, seated: [...KEPT.seated!, { publicId: "p-colin", deck: { name: named("Zimone Combo"), commanderName: "Zimone", artCropUri: null } }] };
+    render(<SetupSheet setup={colinSat} onClose={() => {}} onSave={onSave} onDone={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: c.next }));
+    fireEvent.click(screen.getByText("Zimone Combo").closest("button")!);
+    fireEvent.click(screen.getByText("Zimone Combo").closest("button")!);
+    fireEvent.click(screen.getByRole("button", { name: c.back }));
+    fireEvent.click(tile(/^Colin/));
+    fireEvent.click(tile(/^Colin/));
+    fireEvent.click(screen.getByRole("button", { name: c.next }));
+    fireEvent.click(screen.getByRole("button", { name: c.set }));
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    expect(onSave.mock.calls[0][0]).toContainEqual({ member: "p-colin", deck: null });
   });
 });

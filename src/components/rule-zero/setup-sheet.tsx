@@ -6,8 +6,9 @@
 // saves); ✕ keeps nothing.
 //
 // A member who is not the viewer's friend can sit but has no control: their decks are never listed (G3). In `Seats`
-// (`setup.tableId`), a player already seated keeps the deck they sit with, as `reseatTable` keeps it, so their row
-// shows it with no control; only a new seat takes a pick.
+// (`setup.tableId`), a player already seated keeps the deck they sit with unless the setter re-picks it: their row
+// shows that deck, and opens the same deck list a new seat does when the viewer may pick for them. Only a re-pick is
+// sent; `reseatTable` keeps every other staying seat as it is.
 
 import { useMemo, useRef, useState } from "react";
 import { ruleZeroCopy, type Said } from "../../lib/copy/rule-zero";
@@ -57,6 +58,8 @@ export function SetupSheet({
   const [picks, setPicks] = useState<Record<string, string | null>>(() =>
     Object.fromEntries(setup.members.map((m) => [m.publicId, m.start])),
   );
+  // A staying seat's new deck, only once the setter picks one (absent keeps the deck they sit with).
+  const [repick, setRepick] = useState<Record<string, string>>({});
   const [screen, setScreen] = useState<Screen>({ kind: "who" });
   const [failed, setFailed] = useState<"failed" | "occupied" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -73,6 +76,8 @@ export function SetupSheet({
 
   function toggle(m: SetupMember) {
     if (m.kind === "you") return;
+    // A removed player's re-pick goes with them: re-adding them starts from the deck they hold.
+    setRepick(({ [m.publicId]: _drop, ...rest }) => rest);
     setSeated((s) => (s.includes(m.publicId) ? s.filter((p) => p !== m.publicId) : s.length >= SEATS_MAX ? s : [...s, m.publicId]));
   }
 
@@ -82,7 +87,7 @@ export function SetupSheet({
     setBusy(true);
     setFailed(null);
     try {
-      const out = await onSave(ordered.map((p) => ({ member: p, deck: kept.has(p) ? null : seatable(byId.get(p)) ? picks[p] ?? null : null })));
+      const out = await onSave(ordered.map((p) => ({ member: p, deck: kept.has(p) ? repick[p] ?? null : seatable(byId.get(p)) ? picks[p] ?? null : null })));
       if (out.ok) onDone(out.tableId);
       else setFailed(out.reason === "occupied" ? "occupied" : "failed");
     } catch {
@@ -97,8 +102,12 @@ export function SetupSheet({
     const m = byId.get(screen.publicId);
     if (!m) return null;
     const name = m.kind === "you" ? pods.you : m.displayName;
+    const staying = kept.has(m.publicId);
+    const chosen = staying ? repick[m.publicId] : picks[m.publicId];
     const choose = (deck: string | null) => {
-      setPicks((p) => ({ ...p, [m.publicId]: deck }));
+      if (staying) {
+        if (deck !== null) setRepick((r) => ({ ...r, [m.publicId]: deck }));
+      } else setPicks((p) => ({ ...p, [m.publicId]: deck }));
       setScreen({ kind: "decks" });
     };
     return (
@@ -116,7 +125,7 @@ export function SetupSheet({
             <li key={d.deckId}>
               <button
                 type="button"
-                aria-pressed={picks[m.publicId] === d.deckId}
+                aria-pressed={chosen === d.deckId}
                 onClick={() => choose(d.deckId)}
                 className="flex min-h-[60px] w-full cursor-pointer items-center gap-[12px] rounded-[9px] border-0 bg-transparent px-[8px] py-[6px] text-left text-[color:var(--fg)] aria-pressed:bg-[color:var(--elevated)]"
               >
@@ -125,11 +134,11 @@ export function SetupSheet({
               </button>
             </li>
           ))}
-          {m.kind === "you" ? null : (
+          {m.kind === "you" || staying ? null : (
             <li>
               <button
                 type="button"
-                aria-pressed={picks[m.publicId] === null}
+                aria-pressed={chosen === null}
                 onClick={() => choose(null)}
                 className="flex min-h-[60px] w-full cursor-pointer items-center gap-[12px] rounded-[9px] border-0 bg-transparent px-[8px] py-[6px] text-left text-[color:var(--fg)] aria-pressed:bg-[color:var(--elevated)]"
               >
@@ -174,7 +183,7 @@ export function SetupSheet({
         <div className="flex flex-col gap-[8px]">
           {ordered.map((p) => {
             const m = byId.get(p);
-            return m ? <SeatRow key={p} member={m} kept={kept.get(p)} pick={picks[p] ?? null} onOpen={() => setScreen({ kind: "friend", publicId: p })} /> : null;
+            return m ? <SeatRow key={p} member={m} kept={kept.get(p)} pick={kept.has(p) ? repick[p] ?? null : picks[p] ?? null} onOpen={() => setScreen({ kind: "friend", publicId: p })} /> : null;
           })}
           {failed ? (
             <p role="alert" className="m-0 text-[13px] leading-[1.55] text-[color:var(--warning)]">
@@ -282,9 +291,10 @@ function MemberTile({ member, on, off, noDecks, onToggle }: { member: SetupMembe
 
 function SeatRow({ member, kept, pick, onOpen }: { member: SetupMember; kept: SeatedNow | undefined; pick: string | null; onOpen: () => void }) {
   const name = member.kind === "you" ? pods.you : member.displayName;
-  const deck = kept ? kept.deck : member.decks.find((d) => d.deckId === pick) ?? null;
-  // A seat with a control: a new seat whose player has decks listed to the viewer.
-  const control = !kept && seatable(member) && member.decks.length > 0;
+  const picked = member.decks.find((d) => d.deckId === pick) ?? null;
+  const deck = kept && !picked ? kept.deck : picked;
+  // A seat with a control: any seat, new or staying, whose player has decks listed to the viewer.
+  const control = seatable(member) && member.decks.length > 0;
   const you = member.kind === "you";
   const notFriend = member.kind === "picksOwn";
   const line = deck

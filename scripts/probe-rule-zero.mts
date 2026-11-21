@@ -1,7 +1,7 @@
 // Proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a real database:
 // setup's one open table per pod, under three concurrent setups too; its refusals; what a seated player, an unseated
 // member and a member who left the pod read; a seat's own deck and `on delete set null`; `markSeen` keeping a swap
-// that landed after its snapshot; the setter's reseat; Home's read dropping a table the moment it expires, with no
+// that landed after its snapshot; the setter's reseat and its re-pick of a staying seat's deck; Home's read dropping a table the moment it expires, with no
 // write between the two reads; and the account purge removing all three tables' rows and closing a table it leaves
 // with one seat.
 //
@@ -20,6 +20,8 @@ const id = (k: string) => `probe_rz_${k}_${run}`;
 const [A, B, C, D, E, X] = ["a", "b", "c", "d", "e", "x"].map(id);
 
 let failed = 0;
+// A name the read layer wraps (`named()`, a ThirdPartyName `{ $tp }`) as the text a reader sees; a plain string as is.
+const txt = (v: unknown) => (typeof v === "string" ? v : (v as { $tp?: string } | null | undefined)?.$tp);
 const check = (label: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "ok  " : "FAIL"} ${label}${detail ? ` (${detail})` : ""}`);
   if (!ok) failed++;
@@ -138,14 +140,14 @@ async function main() {
 
     // The reads: a seated non-friend sees the table and its faces, an unseated member sees nothing.
     const forC = await rz.openTablesFor(C);
-    check("a seated non-friend reads the table, all three faces", forC.length === 1 && forC[0].seats.map((s) => s.displayName).join() === "Ava,Bo,Cy");
+    check("a seated non-friend reads the table, all three faces", forC.length === 1 && forC[0].seats.map((s) => txt(s.displayName)).join() === "Ava,Bo,Cy");
     check("the payload names no account or deck id", !JSON.stringify(forC).includes(B) && !JSON.stringify(forC).includes(deckB));
     check("an unseated member reads no table", (await rz.openTablesFor(D)).length === 0);
     // PR 6: Home's sentence names the setter and the reader's own deck; a non-friend's face is initials (D2).
-    check("the read names the setter and the reader's own seated deck", forC[0].setterName === "Ava" && forC[0].yourDeck === "Cy's deck" && !forC[0].setByYou);
+    check("the read names the setter and the reader's own seated deck", txt(forC[0].setterName) === "Ava" && forC[0].yourDeck === "Cy's deck" && !forC[0].setByYou);
     await db.execute(sql`update social_profiles set commander_oracle_id = ${CMD} where user_id in (${A}, ${B})`);
     const faced = (await rz.openTablesFor(C))[0]?.seats ?? [];
-    check("a friend's face is their commander, a non-friend's is initials", faced.find((f) => f.displayName === "Ava")?.commander != null && faced.find((f) => f.displayName === "Bo")?.commander === null);
+    check("a friend's face is their commander, a non-friend's is initials", faced.find((f) => txt(f.displayName) === "Ava")?.commander != null && faced.find((f) => txt(f.displayName) === "Bo")?.commander === null);
     check("Home's read lists the table for its setter", (await loadHomeTables(A)).some((t) => t.tableId === T1 && t.setByYou));
 
     // A seat's own deck.
@@ -190,7 +192,9 @@ async function main() {
     await rz.markSeen(C, T1, new Date());
     const bBefore = (await seatsOf(T1)).find((s) => s.user_id === B)!;
     check("only the setter reseats", (await rz.reseatTable(B, T1, [seat(pub[B]), seat(pub[A])])).kind === "refused");
-    const reseat = await rz.reseatTable(A, T1, [seat(pub[B], deckC), seat(pub[A], deckA), seat(pub[D])]);
+    // A staying seat's re-pick is checked as a setup pick is: another player's deck for B refuses the whole reseat.
+    check("a staying seat cannot take another player's deck", JSON.stringify(await rz.reseatTable(A, T1, [seat(pub[B], deckC), seat(pub[A], deckA), seat(pub[D])])) === JSON.stringify({ kind: "refused", reason: "deck" }));
+    const reseat = await rz.reseatTable(A, T1, [seat(pub[B]), seat(pub[A], deckA), seat(pub[D])]);
     check("A reseats", reseat.kind === "reseated", JSON.stringify(reseat));
     const s2 = await seatsOf(T1);
     const bAfter = s2.find((s) => s.user_id === B);
@@ -199,10 +203,23 @@ async function main() {
     check("a player off the table loses their seen row", (await count(sql`select count(*)::int as n from rule_zero_seen where table_id = ${T1} and user_id = ${C}`)) === 0);
     check("a player off the table reads nothing", (await rz.openTablesFor(C)).length === 0);
 
+    // Hugh's report (2026-11-20): after a player is removed, the setter picks a new deck for each seat that stays.
+    const deckA2 = await deck(A, "Ava's other deck");
+    const deckB4 = await deck(B, "Bo's fourth deck");
+    const repick = await rz.reseatTable(A, T1, [seat(pub[B], deckB4), seat(pub[A], deckA2)]);
+    const s3 = await seatsOf(T1);
+    const bRe = s3.find((s) => s.user_id === B);
+    const aRe = s3.find((s) => s.user_id === A);
+    check("after a removal, the setter re-picks every staying seat's deck", repick.kind === "reseated" && bRe?.deck_id === deckB4 && aRe?.deck_id === deckA2 && s3.length === 2, `${JSON.stringify(repick)} ${bRe?.deck_id === deckB4} ${aRe?.deck_id === deckA2} ${s3.length}`);
+    check("a re-picked seat takes a new change time", bRe !== undefined && new Date(bRe.changed_at).getTime() > new Date(bAfter!.changed_at).getTime());
+    const same = await rz.reseatTable(A, T1, [seat(pub[B], deckB4), seat(pub[A], deckA2), seat(pub[D])]);
+    const bSame = (await seatsOf(T1)).find((s) => s.user_id === B);
+    check("resending the deck a seat holds keeps its change time", same.kind === "reseated" && bSame?.changed_at !== undefined && new Date(bSame.changed_at).getTime() === new Date(bRe!.changed_at).getTime());
+
     // A swap racing the setter's reseat: the table row serializes them, so the swap is never undone by the reseat.
     const deckB3 = await deck(B, "Bo's third deck");
     const [raceReseat, raceSwap] = await Promise.all([
-      rz.reseatTable(A, T1, [seat(pub[B]), seat(pub[A], deckA), seat(pub[D])]),
+      rz.reseatTable(A, T1, [seat(pub[B]), seat(pub[A]), seat(pub[D])]),
       rz.setSeatDeck(B, T1, deckB3),
     ]);
     const afterRace = (await seatsOf(T1)).find((s) => s.user_id === B);
@@ -213,7 +230,7 @@ async function main() {
     // A member who leaves the pod loses the table, and the others stop seeing their seat.
     await pods.leavePod(D, P1);
     check("a member who left the pod reads no table", (await rz.openTablesFor(D)).length === 0);
-    check("the others' faces omit them", (await rz.openTablesFor(A))[0]?.seats.map((s) => s.displayName).join() === "Bo,Ava");
+    check("the others' faces omit them", (await rz.openTablesFor(A))[0]?.seats.map((s) => txt(s.displayName)).join() === "Bo,Ava");
 
     // Two concurrent setups on a fresh pod: one table, the others answered open or occupied by whether they sit at it.
     const P2 = await pod(A, "Friday", [B, D]);
@@ -260,9 +277,9 @@ async function main() {
     if (t7.kind !== "set") throw new Error("table fixture refused");
     const T7 = t7.tableId;
     const viewC = await loadTable(C, T7);
-    const seatOf = (v: Awaited<ReturnType<typeof loadTable>>, name: string) => v?.seats.find((s) => s.displayName === name);
+    const seatOf = (v: Awaited<ReturnType<typeof loadTable>>, name: string) => v?.seats.find((s) => txt(s.displayName) === name);
     check("a seated player reads the table, every seat", viewC !== null && viewC.seats.length === 3);
-    check("a non-friend's seat shows their deck by name and no publicId", seatOf(viewC, "Bo")?.deck?.name === "Bo's legal deck" && seatOf(viewC, "Bo")?.publicId === null);
+    check("a non-friend's seat shows their deck by name and no publicId", txt(seatOf(viewC, "Bo")?.deck?.name) === "Bo's legal deck" && seatOf(viewC, "Bo")?.publicId === null);
     check("a friend's seat carries their publicId", seatOf(viewC, "Ava")?.publicId === pub[A]);
     check("only the viewer's own seat carries a deck id", seatOf(viewC, "Cy")?.deck?.deckId === legalC && seatOf(viewC, "Bo")?.deck?.deckId === null && seatOf(viewC, "Ava")?.deck?.deckId === null);
     const wire = JSON.stringify(viewC);
