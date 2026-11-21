@@ -15,6 +15,7 @@ import { replaceCopy } from "../../lib/copy/replace";
 import { cards, collectionEditCopy, rows } from "../../lib/copy/collection-edit";
 import { ReplaceReviewDetail, type ReviewChange } from "./replace-review-detail";
 import { syncBar, syncFigures, type SyncBar, type SyncReviewControls } from "./sync-review";
+import { SteadyLabel } from "../ui/steady-label";
 
 const INITIAL_LIMIT = 8; // Per-section preview cap; full list lives in the Issue Inspector.
 
@@ -540,7 +541,7 @@ function SyncBarButtons({
           held ? "opacity-40" : ""
         }`}
       >
-        {pending ? b.pending : bar.kind === "confirm" ? bar.label : b.confirm}
+        <SteadyLabel hold={[b.pending, bar.kind === "confirm" ? bar.label : b.confirm]}>{pending ? b.pending : bar.kind === "confirm" ? bar.label : b.confirm}</SteadyLabel>
       </PrimaryButton>
     </div>
   );

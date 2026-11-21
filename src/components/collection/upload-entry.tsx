@@ -17,6 +17,7 @@ import { TOUCH_HIT, TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { useTarget } from "../discovery/targets-provider";
 import { replaceCopy } from "../../lib/copy/replace";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { SteadyLabel } from "../ui/steady-label";
 
 type Mode = "dropzone" | "paste";
 
@@ -344,7 +345,7 @@ export function UploadEntry({
               disabled={pending}
               className={`${TOUCH_HIT} text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap disabled:opacity-60 disabled:cursor-wait`}
             >
-              {pending ? "Uploading…" : collectionChassisCopy.upload.browse}
+              <SteadyLabel hold={["Uploading…", collectionChassisCopy.upload.browse]}>{pending ? "Uploading…" : collectionChassisCopy.upload.browse}</SteadyLabel>
             </PrimaryButton>
             {/* Helper — §Helper Text: 12/13px --fg-faint, margin-top 14px mobile */}
             <p

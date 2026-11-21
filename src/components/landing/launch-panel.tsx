@@ -14,6 +14,7 @@ import { createContext, useContext, useId, useState, type FormEvent, type ReactN
 import { landingCopy } from "../../lib/copy/landing";
 import { AFFIX_FOCUS, AFFIX_INPUT } from "../ui/text-field";
 import { isEmailShape } from "../../lib/email-shape";
+import { SteadyLabel } from "../ui/steady-label";
 
 const c = landingCopy.launch;
 
@@ -134,7 +135,7 @@ export function LaunchPanel() {
           disabled={busy}
           className="box-border inline-flex h-[48px] w-full cursor-pointer items-center justify-center whitespace-nowrap rounded-[8px] border-0 bg-[color:var(--accent)] px-[22px] font-sans text-[15px] font-semibold text-[color:var(--bg)] hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:opacity-75 disabled:hover:bg-[color:var(--accent)] md:w-auto"
         >
-          {busy ? c.sending : c.press}
+          <SteadyLabel hold={[c.sending, c.press]}>{busy ? c.sending : c.press}</SteadyLabel>
         </button>
       </form>
       <p className="m-0 mt-[10px] font-mono text-[11.5px] leading-[1.55] text-[color:var(--fg-faint)]">{c.fine}</p>

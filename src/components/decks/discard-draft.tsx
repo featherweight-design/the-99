@@ -32,6 +32,7 @@ import { useFlushBasicCounts } from "./basic-counts";
 import { commanderBackClause } from "./change-commander-banner";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
 import { useZone } from "../zone-context";
+import { SteadyLabel } from "../ui/steady-label";
 
 const copy = deckVersioningCopy.discard;
 
@@ -381,7 +382,7 @@ export function DiscardConfirm({
           }}
           className={DANGER_CTA}
         >
-          {pending ? copy.pending : copy.confirm(n)}
+          <SteadyLabel hold={[copy.pending, copy.confirm(n)]}>{pending ? copy.pending : copy.confirm(n)}</SteadyLabel>
         </button>
       </div>
       {/* Under the answers, with the question still up: a refused discard changed

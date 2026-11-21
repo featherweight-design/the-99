@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ShortChoice, ShortDeck } from "../../lib/collection/write";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { formatShortDeckDate } from "../../lib/decks/format";
+import { SteadyLabel } from "../ui/steady-label";
 
 type Claimant = ShortChoice["claimants"][number];
 
@@ -176,7 +177,7 @@ export function ShortDeckChooser({
           }}
           className="flex h-[44px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] px-[18px] text-[14px] font-semibold text-[color:var(--fg)] disabled:opacity-60"
         >
-          {pending ? c.saving : source === "remove" ? c.confirmRemove : c.confirmSave}
+          <SteadyLabel hold={[c.saving, source === "remove" ? c.confirmRemove : c.confirmSave]}>{pending ? c.saving : source === "remove" ? c.confirmRemove : c.confirmSave}</SteadyLabel>
         </button>
       </div>
     </div>

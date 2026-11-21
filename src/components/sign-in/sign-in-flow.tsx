@@ -29,6 +29,7 @@ import { mirrorUrl } from "../../lib/url/mirror";
 import { CODE_ERR, Field, GOOGLE, GoogleMark, LINE_ID, MIN_PASSWORD, OR, SIGN_ERR, SSO_CALLBACK, SignLine, codeOf, passwordLine, toLanding, useCacheRestore, useLeaveDeadline } from "./auth-parts";
 import { STRENGTH_ID, StrengthPanel } from "./strength-panel";
 import { usePasswordStrength } from "./use-password-strength";
+import { SteadyLabel } from "../ui/steady-label";
 
 /** The least time from a press to the screen it leads to, on the password, code and reset paths (ruling 2). */
 export const FLOOR_MS = 900;
@@ -378,7 +379,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
         <form onSubmit={toPassword} noValidate className={FORM}>
           <button type="button" disabled={locked} className={GOOGLE} onClick={() => void withGoogle()}>
             <GoogleMark />
-            {google ? copy.signingIn : copy.google}
+            <SteadyLabel hold={[copy.signingIn, copy.google]}>{google ? copy.signingIn : copy.google}</SteadyLabel>
           </button>
           {googleLine && <p role="alert" className={SIGN_ERR}>{googleLine}</p>}
           <div className={OR}>{copy.or}</div>
@@ -405,7 +406,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
         />
         {errLine}
         <button type="submit" disabled={locked || (!cantUse && password.length === 0)} className={press(busy ? "busy" : "ready")}>
-          {cantUse ? copy.resetPassword : busy || leaving ? copy.signingIn : copy.signIn}
+          <SteadyLabel hold={[copy.resetPassword, copy.signingIn, copy.signIn]}>{cantUse ? copy.resetPassword : busy || leaving ? copy.signingIn : copy.signIn}</SteadyLabel>
         </button>
         <div className={LINKS}>
           {/* N1 offers the emailed code alone: its press is already the reset. */}
@@ -428,7 +429,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
           />
           {errLine}
           <button type="submit" disabled={locked || digits.length < CODE_LENGTH} className={press()}>
-            {busy || leaving ? joinCopy.confirming : joinCopy.confirm}
+            <SteadyLabel hold={[joinCopy.confirming, joinCopy.confirm]}>{busy || leaving ? joinCopy.confirming : joinCopy.confirm}</SteadyLabel>
           </button>
           <div className={LINKS}>
             <button type="button" className={link(waiting)} disabled={locked || waiting} onClick={resend}>
@@ -456,7 +457,7 @@ export function SignInFlow({ landing = HOME, googleRefused = false, googleCode =
         {/* Live strength (R1c): any line takes the slot under its meter. Only Clerk's verdict empties the meter; the failed
             line is no verdict on strength (READINESS clarification 3). */}
         <StrengthPanel reading={strength.reading} line={line} live={strength.live} />
-        <button type="submit" disabled={locked} className={press(busy ? "busy" : "ready")}>{busy || leaving ? copy.saving : copy.save}</button>
+        <button type="submit" disabled={locked} className={press(busy ? "busy" : "ready")}><SteadyLabel hold={[copy.saving, copy.save]}>{busy || leaving ? copy.saving : copy.save}</SteadyLabel></button>
       </form>
     );
   }

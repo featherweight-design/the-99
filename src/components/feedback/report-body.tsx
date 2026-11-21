@@ -5,6 +5,7 @@ import { sendProblemReport } from "../../app/feedback-actions";
 import { reportCopy as copy } from "../../lib/copy/report";
 import { DOING_MAX, WHAT_MAX, type ReportSource } from "../../lib/feedback/report-rule";
 import type { SocialToastState } from "../social/social-toast";
+import { SteadyLabel } from "../ui/steady-label";
 
 // The Report a problem form's body, ONE implementation for both homes: the sheet / `ModalChrome` of the app (`ReportForm`,
 // flyer trial `Report-Phone` R3 to R6, `Report-Desktop` D3 and D4) and the page of its own (`/report`, `ReportPage`, small
@@ -203,7 +204,7 @@ export function ReportBody({
               phase === "sending" ? "opacity-75" : !ready ? "opacity-[0.45]" : ""
             }`}
           >
-            {phase === "sending" ? copy.sending : copy.send}
+            <SteadyLabel hold={[copy.sending, copy.send]}>{phase === "sending" ? copy.sending : copy.send}</SteadyLabel>
           </button>
         </div>
       </form>
