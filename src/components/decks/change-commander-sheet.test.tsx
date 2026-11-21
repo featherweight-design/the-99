@@ -31,7 +31,7 @@ const data = (over: Partial<ChangeCandidates> = {}): ChangeCandidates => ({
   identity: ["B", "G", "R"], counted: 62,
   yours: [cand(half("Prosper"), 41)],
   toBuy: Array.from({ length: 10 }, (_, i) => cand(half(`Buy ${i}`, { owned: false, availability: null }), 10 - i)),
-  claimsKnown: true, newestAsOf: null, ...over,
+  claimsKnown: true, newestAsOf: null, partnerAdd: null, ...over,
 });
 
 const mount = (pair = false, hasVersion = true) => render(

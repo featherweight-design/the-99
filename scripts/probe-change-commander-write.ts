@@ -386,6 +386,34 @@ async function main() {
   check("add a partner, body of 99: the pair leads", await live(full), { c: anchor.oracle_id, p: p2.oracle_id });
   check("add a partner, body of 99: one copy left the 99", await bodyOf(full), [`${fillers[0].oracle_id}x98`]);
   check("a cut on a swap is refused", await write(pairDeck, anchor.oracle_id, p2.oracle_id, null, fillers[0].oracle_id), { ok: false, reason: "illegal" });
+
+  // ── The Add a partner read (#491, loadChangeCandidates.partnerAdd) ───────────
+  const partnersOf = (r: Awaited<ReturnType<typeof loadChangeCandidates>>) =>
+    [...(r?.partnerAdd?.yours ?? []), ...(r?.partnerAdd?.toBuy ?? [])];
+  const readFull = await makeDeck(anchor.oracle_id);
+  await addCard99(readFull);
+  const fullRead = await loadChangeCandidates(readFull, USER);
+  const found = partnersOf(fullRead).find((o) => o.halves[1].oracleId === p2.oracle_id);
+  check("partner add: the catalog scan finds a legal partner with no pair row", [!!found, found?.hasPairRow, found?.belowFloor], [true, false, true]);
+  check("partner add: the stay leads every pair", partnersOf(fullRead).every((o) => o.halves[0].oracleId === anchor.oracle_id), true);
+  check("partner add: a body of 99 needs a cut", fullRead?.partnerAdd?.needsCut, true);
+  check("partner add: the cut named is a card of the 99", found?.cuts.map((c) => c.oracleId), [fillers[0].oracle_id]);
+  await fixture.execute(sql`insert into deck_locks (deck_id, oracle_id) values (${readFull}::uuid, ${fillers[0].oracle_id}::uuid)`);
+  const lockedRead = await loadChangeCandidates(readFull, USER);
+  check("partner add: a locked card is never suggested", partnersOf(lockedRead).flatMap((o) => o.cuts), []);
+  check("partner add: a locked card is not in the cut pool", lockedRead?.partnerAdd?.cutPool, []);
+  await fixture.execute(sql`delete from deck_locks where deck_id = ${readFull}::uuid`);
+
+  const readSmall = await makeDeck(anchor.oracle_id);
+  for (const f of fillers) await addCard(readSmall, f.oracle_id);
+  const smallRead = await loadChangeCandidates(readSmall, USER);
+  check("partner add: a body under 99 needs no cut", [smallRead?.partnerAdd?.needsCut, partnersOf(smallRead).flatMap((o) => o.cuts)], [false, []]);
+  await addCard(readSmall, p2.oracle_id);
+  check("partner add: a partner already in the 99 is not offered here", partnersOf(await loadChangeCandidates(readSmall, USER)).some((o) => o.halves[1].oracleId === p2.oracle_id), false);
+
+  await fixture.execute(sql`update deck_cards set quantity = 100 where deck_id = ${readFull}::uuid and oracle_id = ${fillers[0].oracle_id}::uuid`);
+  check("partner add: a deck over 99 cards is not offered the add", (await loadChangeCandidates(readFull, USER))?.partnerAdd, null);
+  check("partner add: a pair deck is not offered it", (await loadChangeCandidates(pairDeck, USER))?.partnerAdd, null);
 }
 
 main()

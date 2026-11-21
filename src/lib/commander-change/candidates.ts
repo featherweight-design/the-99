@@ -26,9 +26,16 @@ import { loadPrices } from "../decks/price-query";
 import { canPair, partnerAbility } from "../decks/partner";
 import { canonicalPair } from "../edhrec/pair-order";
 import { isCommanderCandidate } from "../recs/score";
+import { deckBodySize, landTarget } from "../decks/deck-size";
+import { liveLockedIds } from "../decks/locks";
+import { loadSkeletonForCommanders } from "../profile/load";
 import { loadUniversalStaples } from "../staples/universal";
 import { MIN_CANDIDATE_DECKS, fitBody, fitCount, type Fit } from "./fit";
 import { tradeShape } from "./pending";
+import {
+  byPartnerFit, isBelowFloor, partnerSources, type PartnerAdd, type PartnerOption,
+} from "./partner-add";
+import { cuttable, suggestCuts } from "./partner-add-cuts";
 
 export type CandidateHalf = {
   oracleId: string;
@@ -77,6 +84,10 @@ export type ChangeCandidates = {
   toBuy: Candidate[];
   claimsKnown: boolean;
   newestAsOf: Date | null;
+  /** Partners this single commander could take beside it. Null when the deck cannot be offered the
+   *  add (a pair already leads it, its 99 holds more than 99 cards, nothing pairs with the
+   *  commander). Reads only: no caller yet. */
+  partnerAdd: PartnerAdd | null;
 };
 
 /** Yours when every half is owned or already in the 99; To buy otherwise. */
@@ -285,7 +296,10 @@ export async function loadChangeCandidates(
   const pair = currentIds.length === 2;
   const [currentCards, bodyRows, staples] = await Promise.all([
     readCards(currentIds),
-    db.select({ oracleId: deckCards.oracleId, typeLine: cards.typeLine, name: cards.name, imageUri: cards.imageUri })
+    db.select({
+      oracleId: deckCards.oracleId, typeLine: cards.typeLine, name: cards.name, imageUri: cards.imageUri,
+      cmc: cards.cmc, quantity: deckCards.quantity,
+    })
       .from(deckCards).innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
       .where(eq(deckCards.deckId, deckId)),
     loadUniversalStaples(),
@@ -306,11 +320,19 @@ export async function loadChangeCandidates(
     (await readCards([...inDeck])).filter((c) => c.commanderLegal && isCommanderCandidate(c)),
     identity,
   );
-  const keys = [...sampled, ...growing.map((ids) => ({ ids, deckCount: 0 }))];
+  // Add a partner: a single commander beside a partner from OUTSIDE the 99. A pair in the 99 is the
+  // growing pair above, so the two lists never repeat one. A deck holding more than 99 cards is
+  // not offered the add (the write refuses it).
+  const bodyTotal = bodyRows.reduce((n, r) => n + r.quantity, 0);
+  const partners = !pair && currentCards.length > 0 && bodyTotal <= deckBodySize(false)
+    ? await partnerSources(currentCards[0], inDeck)
+    : [];
+  const partnerKeys = partners.map((p) => ({ ids: [...p.ids], deckCount: p.deckCount }));
+  const keys = [...sampled, ...growing.map((ids) => ({ ids, deckCount: 0 })), ...partnerKeys];
   const halfIds = [...new Set(keys.flatMap((k) => k.ids))];
   const [facts, hits, ownedRows] = await Promise.all([
     readCards(halfIds),
-    Promise.all([supportHits(sampled, body, pair), growingHits(growing, body)]).then(([a, b]) => new Map([...a, ...b])),
+    Promise.all([supportHits(sampled, body, pair), growingHits([...growing, ...partnerKeys.map((k) => k.ids)], body)]).then(([a, b]) => new Map([...a, ...b])),
     halfIds.length === 0
       ? Promise.resolve([] as { oracleId: string }[])
       : db.selectDistinct({ oracleId: collectionItems.oracleId }).from(collectionItems)
@@ -335,7 +357,7 @@ export async function loadChangeCandidates(
   // Claims and prices for the halves outside the 99 only: a half in the 99 keeps its own copy.
   // The commander a growing pair keeps is held by this deck already, so it is asked about as little.
   const leads = new Set(currentIds);
-  const asked = [...new Set(legal.flatMap((k) => k.ids))].filter((id) => !inDeck.has(id) && !leads.has(id));
+  const asked = [...new Set([...legal, ...partnerKeys].flatMap((k) => k.ids))].filter((id) => !inDeck.has(id) && !leads.has(id));
   // The art a reader OWNS for each owned half and for the commander(s) now leading, read beside the
   // claims: a candidate's thumbnail, its hover preview and its card's neighbor plate drew the
   // oracle-level printing while the card details drew the owned one (Hugh, 2026-10-05: Shirei,
@@ -354,7 +376,7 @@ export async function loadChangeCandidates(
     ? await loadPrices(toBuyIds).catch(() => null)
     : null;
 
-  const candidates: Candidate[] = legal.map((k) => {
+  const build = (k: { ids: string[]; deckCount: number }): Candidate => {
     const key = k.ids.join("+");
     const matchedIds = hits.get(key) ?? [];
     return {
@@ -379,7 +401,46 @@ export async function loadChangeCandidates(
         };
       }),
     };
-  });
+  };
+  const candidates = legal.map(build);
+
+  const needsCut = bodyTotal === deckBodySize(false);
+  const partnerAdd = partners.length === 0 ? null : await readPartnerAdd();
+
+  async function readPartnerAdd(): Promise<PartnerAdd> {
+    const cutRows = bodyRows.map((r) => ({ ...r, imageUri: r.imageUri ?? null }));
+    const locked = needsCut ? await liveLockedIds(db, deckId) : new Set<string>();
+    const commanders = new Set(currentIds);
+    // The measured land figure of the commander the deck has now, one fewer for the pair it becomes.
+    const skeleton = needsCut
+      ? await loadSkeletonForCommanders(currentIds[0], null, identity).then((r) => r.skeleton).catch(() => null)
+      : null;
+    const landCeiling = landTarget(true, skeleton);
+    const options: PartnerOption[] = partners.map((p) => {
+      const cand = build({ ids: [...p.ids], deckCount: p.deckCount });
+      const wide = factBy.get(p.ids[1])?.colorIdentity ?? [];
+      return {
+        ...cand,
+        hasPairRow: p.hasPairRow,
+        belowFloor: isBelowFloor(p),
+        opens: [...new Set(wide)].filter((c) => !identity.includes(c)).sort(),
+        cuts: needsCut
+          ? suggestCuts({ body: cutRows, commanders, locked, landCeiling, supported: new Set(cand.matched.map((m) => m.oracleId)) })
+          : [],
+      };
+    });
+    const grouped = {
+      yours: options.filter(isYours).sort(byPartnerFit),
+      toBuy: options.filter((o) => !isYours(o)).sort(byPartnerFit),
+    };
+    return {
+      needsCut,
+      cutPool: needsCut
+        ? cuttable(cutRows, commanders, locked).map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri }))
+        : [],
+      ...grouped,
+    };
+  }
 
   return {
     current: currentIds.map((id) => {
@@ -394,5 +455,6 @@ export async function loadChangeCandidates(
     ...groupCandidates(candidates),
     claimsKnown: availability !== null,
     newestAsOf: prices?.newestAsOf ?? null,
+    partnerAdd,
   };
 }
