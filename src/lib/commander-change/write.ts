@@ -60,11 +60,14 @@ export function identityFits(from: readonly string[], to: readonly string[], gro
   return from.every((c) => to.includes(c));
 }
 
-/** Takes one copy of a card out of the 99: the row's quantity drops by one, and a last copy deletes the row. */
-async function takeOne(tx: Tx, deckId: string, oracleId: string, quantity: number): Promise<void> {
-  const row = and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId));
-  if (quantity > 1) await tx.update(deckCards).set({ quantity: quantity - 1 }).where(row);
-  else await tx.delete(deckCards).where(row);
+/** Takes one copy of a card out of the 99. A copy beyond the first drops the quantity and returns
+ *  false; a last copy returns true and the caller deletes the row, in the block that prunes the
+ *  proxies and locks the removal leaves behind. */
+async function takeOne(tx: Tx, deckId: string, oracleId: string, quantity: number): Promise<boolean> {
+  if (quantity <= 1) return true;
+  await tx.update(deckCards).set({ quantity: quantity - 1 })
+    .where(and(eq(deckCards.deckId, deckId), eq(deckCards.oracleId, oracleId)));
+  return false;
 }
 
 /** The whole write, inside the caller's transaction. Refuses, writing nothing, unless the deck is
@@ -137,13 +140,14 @@ export async function writeCommanderChange(
 
   // The partner from outside the 99 opens no slot, so the deck's size is the write's to check:
   // the cut is validated against the rows locked above and the live locks, never the client's view.
+  const gone: string[] = [];
   if (shape === "pairAdd") {
     const total = [...inBody.values()].reduce((a, b) => a + b, 0);
     const locked = await liveLockedIds(tx, deckId);
     if (!cutAllowed(total, cutOracleId, new Set(inBody.keys()), toIds, locked)) {
       return { ok: false, reason: "illegal" };
     }
-    if (cutOracleId !== null) await takeOne(tx, deckId, cutOracleId, inBody.get(cutOracleId)!);
+    if (cutOracleId !== null && await takeOne(tx, deckId, cutOracleId, inBody.get(cutOracleId)!)) gone.push(cutOracleId);
   } else if (cutOracleId !== null) {
     return { ok: false, reason: "illegal" };
   }
@@ -157,7 +161,7 @@ export async function writeCommanderChange(
   const departing = shape === "pairUp" ? []
     : staysOracleId ? [staysOracleId, ...leaving.filter((id) => id !== staysOracleId)] : leaving;
   for (const [i, id] of arrivingFromBody.entries()) {
-    await takeOne(tx, deckId, id, inBody.get(id)!);
+    if (await takeOne(tx, deckId, id, inBody.get(id)!)) gone.push(id);
     const slot = departing[i];
     if (slot !== undefined) {
       await tx.insert(deckCards).values({ deckId, oracleId: slot, quantity: 1, auto: false })
@@ -167,6 +171,8 @@ export async function writeCommanderChange(
         });
     }
   }
+  // In this function's own block, so the two prunes below reconcile what it removed.
+  if (gone.length > 0) await tx.delete(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, gone)));
 
   await tx.update(decks).set({
     commanderOracleId: to.commanderOracleId, partnerOracleId: to.partnerOracleId,
