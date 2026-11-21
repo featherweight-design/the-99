@@ -42,7 +42,7 @@ export async function seedFixture(databaseUrl, userId) {
   for (const [key, status, err, , refunded] of specs) {
     const deckId = GUIDED_RUN_DECKS[key];
     await sql`insert into decks (id, user_id, name, commander_oracle_id) values (${deckId}, ${userId}, ${`Guided run probe · ${key}`}, ${COMMANDER})`;
-    const [call] = await sql`insert into model_calls (user_id, feature, origin, status, model) values (${userId}, 'guided_build', 'player', 'refunded', 'fixture') returning id`;
+    const [call] = await sql`insert into model_calls (user_id, feature, origin, status, model) values (${userId}, 'guided_build', 'player', ${status === "pending" ? "reserved" : "refunded"}, 'fixture') returning id`;
     await sql`
       insert into guided_builds (user_id, deck_id, strategy_key, strategy_label, status, error_class, refunded, model_call_id, model, bracket_target, pool_mode, created_at, finished_at)
       values (${userId}, ${deckId}, 'tokens', 'Tokens', ${status}, ${err}, ${refunded}, ${call.id}, 'fixture', 3, 'owned',
