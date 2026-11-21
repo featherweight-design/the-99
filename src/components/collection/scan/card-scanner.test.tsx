@@ -12,9 +12,26 @@ vi.mock("./frame-reader", () => ({
   },
 }));
 
+const { captureScanFallback } = vi.hoisted(() => ({ captureScanFallback: vi.fn() }));
+vi.mock("../../../lib/analytics/posthog", () => ({ captureScanFallback }));
+
 const { CardScanner } = await import("./card-scanner");
+const { scanMark } = await import("../../../lib/scan/marks");
 
 describe("CardScanner", () => {
+  it("sends a scan_fallback event for a fallback mark made while it is open, once, and none after it closes", () => {
+    const { unmount } = render(
+      <CardScanner layout="phone" listed={new Map()} onAdd={vi.fn(async () => true)} onClose={vi.fn()} onNoneOfThese={vi.fn()} />,
+    );
+    scanMark("scan:webgpu-off", { stage: "run" });
+    scanMark("scan:webgpu-off", { stage: "run" });
+    expect(captureScanFallback).toHaveBeenCalledTimes(1);
+    expect(captureScanFallback).toHaveBeenCalledWith({ kind: "webgpu", from: "webgpu", to: "wasm", reason: "run" });
+    unmount();
+    scanMark("scan:reader-off", { stage: "hang" });
+    expect(captureScanFallback).toHaveBeenCalledTimes(1);
+  });
+
   it("times the models' load from the scanner opening into the row it posts as it closes", async () => {
     // jsdom's video has no picture; the timer counts only frames of a camera with one
     const width = vi.spyOn(HTMLVideoElement.prototype, "videoWidth", "get").mockReturnValue(1280);

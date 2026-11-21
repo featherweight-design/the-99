@@ -55,11 +55,24 @@ export function relayScanMarks(to: typeof relay): void {
   relay = to;
 }
 
+/** The page's one listener for marks as they are first made (`fallback-events.ts`); the scan lab sets none. */
+let sink: ((name: ScanMark, detail?: Record<string, unknown>) => void) | null = null;
+
+/** Hands each mark's first making in an open to `to` from now on (null stops it). */
+export function setScanMarkSink(to: typeof sink): void {
+  sink = to;
+}
+
 /** Marks `name` unless this scanner open already did; `detail` rides on the mark (a model's source and size). */
 export function scanMark(name: ScanMark, detail?: Record<string, unknown>): void {
   if (marked.has(name)) return;
   marked.add(name);
   relay?.(name, detail);
+  try {
+    sink?.(name, detail);
+  } catch {
+    // a listener never breaks the scanner
+  }
   const waiters = waiting.get(name);
   waiting.delete(name);
   waiters?.forEach((w) => w());
