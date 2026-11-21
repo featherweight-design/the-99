@@ -263,6 +263,16 @@ describe("createDeck with a selection", () => {
     expect(deck.filled).toBe(true);
   });
 
+  it("ignores hand-off answers on an empty build, even from a direct call", async () => {
+    stub.state.cards.push(commanderRow(), cardRow(VALID));
+    try {
+      await createDeck(CMDR, "Blank", [VALID], null, { themes: ["Dinosaurs"], cardOracleId: null, budgetDollars: 150, bracket: null, bracketBuys: false } as never, "empty");
+    } catch (err) {
+      if (!(err as { __nextRedirect?: boolean }).__nextRedirect) throw err;
+    }
+    expect(insertedIds()).toEqual([VALID]);
+  });
+
   it("refuses a build kind it does not know", async () => {
     stub.state.cards.push(commanderRow());
     await expect(createDeck(CMDR, "Nope", [], null, null, "guided" as never)).rejects.toThrow("unknown build kind");

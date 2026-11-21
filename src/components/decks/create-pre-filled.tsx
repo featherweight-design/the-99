@@ -203,10 +203,10 @@ export function CreatePreFilled({
 
           {/* §Subtitle: mobile mono 10px var(--fg-faint) mt 1; desktop IBM Plex Sans 14px var(--fg-muted) mb 26 */}
           <p className="font-mono text-[10px] mt-[1px] md:hidden" style={{ color: "var(--fg-faint)", marginBottom: 0 }}>
-            {handOff ? handOffCopy.subPhone : "Commander selected"}
+            {handOff && build === "free" ? handOffCopy.subPhone : "Commander selected"}
           </p>
           <p className="font-sans hidden md:block text-[14px]" style={{ color: "var(--fg-muted)", marginBottom: 26 }}>
-            {handOff ? handOffCopy.sub : "Name your deck."}
+            {handOff && build === "free" ? handOffCopy.sub : "Name your deck."}
           </p>
         </div>
       </div>
@@ -345,7 +345,7 @@ export function CreatePreFilled({
             </div>
           </div>
 
-          {handOff?.drawBlock && (
+          {handOff?.drawBlock && build === "free" && (
             <HandOffAnswersBlock
               answers={handOff.answers} changeHref={handOff.changeHref}
               reach={reach} choice={choice} onChoose={setChoice}

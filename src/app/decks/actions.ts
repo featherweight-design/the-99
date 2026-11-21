@@ -109,7 +109,8 @@ export async function createDeck(
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off (its switch is retired, always on).
-  const asked = answers === null ? null : validateCreateAnswers(answers);
+  // Just the commander runs no fill, so the answers have nothing to steer: they are not validated, stored or read.
+  const asked = answers === null || build === "empty" ? null : validateCreateAnswers(answers);
   // Shape first: a crafted request can put any string here, and a malformed uuid
   // reaching `inArray` is rejected by Postgres rather than by this action — the
   // player would see a 500 where the refusal below reads as one.
@@ -344,7 +345,7 @@ export async function createDeck(
     cardsPlanned = 0;
     // The answers ride on the empty deck too (F1), so the retry fills to them.
     const [deck] = await db.insert(decks)
-      .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: false, ...answerColumns })
+      .values({ userId, name: deckName, commanderOracleId, partnerOracleId, filled: build === "empty", ...answerColumns })
       .returning({ id: decks.id });
     deckId = deck.id;
   }

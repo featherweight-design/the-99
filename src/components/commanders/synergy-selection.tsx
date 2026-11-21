@@ -158,7 +158,7 @@ export function SelectableSynergySelection({
 
 // ─── SelectableBuildButton — dynamic Build href from provider ─────────────────
 //
-// Renders the "Build this deck →" link whose href carries the selected oracle
+// Renders the "Start a deck →" link whose href carries the selected oracle
 // ids. At zero selection the href is byte-identical to what detail.tsx shipped.
 // The className prop lets the caller match the existing PrimaryButton styles.
 
