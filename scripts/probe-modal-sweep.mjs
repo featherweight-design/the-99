@@ -3,8 +3,8 @@
 // About > Report a problem (drawn in `ModalChrome`, as are ~22 other dialogs, so one caller proves the class) and asserts, at open:
 //   390:  the dialog runs a `filter-sheet-in` animation (read from the computed `animation-name` the frame it mounts);
 //   1300: the dialog runs no animation.
-// Its one write: About draws the Report row only with FEEDBACK_ENABLED on, so the run adds a per-user `flag_overrides`
-// row (marked `updated_by = probe:modal-sweep`, only when the account has none of its own) and deletes it in `finally`.
+// Its one write: About draws the Report row only with FEEDBACK_ENABLED on, and /friends needs the friend switches, so the run adds per-user `flag_overrides`
+// rows (marked `updated_by = probe:modal-sweep`, only when the account has none of its own) and deletes it in `finally`.
 // Production and staging are refused by `neon.branch_id`. DATABASE_URL must be the database the dev server reads.
 //
 //   PROBE_BASE=http://localhost:3291 node scripts/probe-modal-sweep.mjs
@@ -17,7 +17,7 @@ import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
 const sql = neon(DATABASE_URL);
 const MARK = "probe:modal-sweep";
-const SWITCH = "FEEDBACK_ENABLED";
+const SWITCHES = ["FEEDBACK_ENABLED"];
 if (!EMAIL.includes("+clerk_test")) throw new Error("Use a +clerk_test account (see the local-auth note).");
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) throw new Error("This probe runs against a local dev server only.");
@@ -62,11 +62,34 @@ async function signIn(page) {
 let switched = false;
 async function switchOn(userId, page) {
   if (switched) return;
-  const [own] = await sql`select 1 from flag_overrides where "switch" = ${SWITCH} and scope = 'user' and user_id = ${userId}`;
   switched = true;
-  if (own) return;
-  await sql`insert into flag_overrides ("switch", scope, user_id, value, updated_by) values (${SWITCH}, 'user', ${userId}, 'on', ${MARK})`;
-  await page.waitForTimeout(31_000);
+  let added = false;
+  for (const name of SWITCHES) {
+    const [own] = await sql`select 1 from flag_overrides where "switch" = ${name} and scope = 'user' and user_id = ${userId}`;
+    if (own) continue;
+    await sql`insert into flag_overrides ("switch", scope, user_id, value, updated_by) values (${name}, 'user', ${userId}, 'on', ${MARK})`;
+    added = true;
+  }
+  if (added) await page.waitForTimeout(31_000);
+}
+
+/** Press `open` until the dialog at `selector` mounts (a hydrating page can swallow a press), recording the animation
+ *  name the frame it mounts. */
+async function openCheck(page, check, name, selector, open, tries = 4) {
+  for (let i = 0; ; i += 1) {
+    await page.evaluate((sel) => {
+      window.__seen = null;
+      const mo = new MutationObserver(() => {
+        const d = document.querySelector(sel);
+        if (d && !window.__seen) { window.__seen = getComputedStyle(d).animationName; mo.disconnect(); }
+      });
+      mo.observe(document.body, { childList: true, subtree: true });
+    }, selector);
+    await open();
+    if (await page.locator(selector).first().waitFor({ timeout: 5_000 }).then(() => true, () => false)) break;
+    if (i >= tries - 1) throw new Error(`${name} never opened`);
+  }
+  check(name, { found: true, css: await page.evaluate(() => window.__seen) });
 }
 
 async function walk(browser, width) {
@@ -79,30 +102,40 @@ async function walk(browser, width) {
     report(L(`${name} ${phone ? "slides in" : "is instant"}`), info.found && sheetIn === phone, `animationName ${info.css}`);
   };
   try {
-    await switchOn(await signIn(page), page);
+    const userId = await signIn(page);
+    await switchOn(userId, page);
     await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded", timeout: 180_000 });
     const press = page.locator("[data-about-report] button");
     await press.waitFor({ timeout: 30_000 });
-    const dialog = page.locator('[data-testid="receipt-modal"]');
-    for (let i = 0; ; i += 1) {
-      // Arm a watcher that records the animation name the moment the dialog mounts.
-      await page.evaluate(() => {
-        window.__seen = null;
-        const mo = new MutationObserver(() => {
-          const d = document.querySelector('[data-testid="receipt-modal"]');
-          if (d && !window.__seen) { window.__seen = getComputedStyle(d).animationName; mo.disconnect(); }
-        });
-        mo.observe(document.body, { childList: true, subtree: true });
-      });
-      await press.click();
-      if (await dialog.waitFor({ timeout: 5_000 }).then(() => true, () => false)) break;
-      if (i === 11) throw new Error("Report a problem never opened");
-    }
-    const seen = await page.evaluate(() => window.__seen);
-    check("About > Report a problem", { found: true, css: seen });
+    await openCheck(page, check, "About > Report a problem", '[data-testid="receipt-modal"]', () => page.locator("[data-about-report] button").click(), 12);
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/modal-sweep-report-${width.label}.png` });
     await page.keyboard.press("Escape");
-    await dialog.waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+
+    // A deck page: the commander sheet is ModalChrome inside the deck's own containers.
+    const [deck] = await sql`select id from decks where user_id = ${userId} order by created_at limit 1`;
+    if (!deck) {
+      report(L("a deck to open"), false, "the signed-in account owns no deck on this database");
+    } else {
+      await page.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "domcontentloaded", timeout: 180_000 });
+      await openCheck(page, check, "deck page > Change commander", '[data-testid="receipt-modal"]', () => page.getByRole("button", { name: "Change commander" }).first().click());
+      await page.keyboard.press("Escape");
+    }
+
+    // A SocialModal (its own chrome, anim-sheet-in): the same entrance, and it opens on its heading.
+    // /friends may spend a recovery token and redirect to itself, which aborts the first navigation.
+    for (let i = 0; i < 3 && !page.url().includes("/friends"); i += 1) {
+      await page.waitForTimeout(1_500);
+      await page.goto(`${BASE}/friends`, { waitUntil: "domcontentloaded", timeout: 180_000 }).catch(() => {});
+    }
+    await page.getByRole("button", { name: /^Add a friend$/ }).first().waitFor({ timeout: 30_000 }).catch(async (e) => {
+      console.log("   url", page.url(), "|", (await page.locator("body").innerText().catch(() => "")).replace(/\s+/g, " ").slice(0, 500));
+      throw e;
+    });
+    await openCheck(page, check, "friends > Add a friend (SocialModal)", "[role=dialog]", () => page.getByRole("button", { name: /^Add a friend$/ }).first().click());
+    const onHeading = await page.evaluate(() => document.activeElement?.tagName === "H2");
+    report(L("SocialModal opens with its heading focused"), onHeading, onHeading ? "" : "focus is elsewhere");
+    if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/modal-sweep-social-${width.label}.png` });
+    await page.keyboard.press("Escape");
 
   } finally {
     await context.close();
@@ -124,7 +157,7 @@ try {
 } finally {
   await browser.close();
   try {
-    await sql`delete from flag_overrides where "switch" = ${SWITCH} and updated_by = ${MARK}`;
+    await sql`delete from flag_overrides where updated_by = ${MARK}`;
     const [{ n }] = await sql`select count(*)::int as n from flag_overrides where updated_by = ${MARK}`;
     report("the probe's switch row is removed", n === 0, `${n} left`);
   } catch (error) {
