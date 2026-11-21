@@ -19,7 +19,9 @@ vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: (...a: unknown[
 
 const writeCommanderChange = vi.fn(async () => ({ ok: false, reason: "mismatch" }));
 vi.mock("./write", () => ({ writeCommanderChange: (...a: unknown[]) => writeCommanderChange(...(a as [])) }));
-const { changeCommander, readChangeCandidates } = await import("./actions");
+const writeUndoPartnerAdd = vi.fn(async () => ({ ok: true }));
+vi.mock("./undo-write", () => ({ writeUndoPartnerAdd: (...a: unknown[]) => writeUndoPartnerAdd(...(a as [])) }));
+const { changeCommander, readChangeCandidates, undoPartnerAdd } = await import("./actions");
 const DECK = "00000000-0000-4000-8000-000000000001";
 const CARD = "00000000-0000-4000-8000-000000000002";
 
@@ -83,5 +85,29 @@ describe("readChangeCandidates at the request boundary", () => {
   it("answers null for a malformed deck id without reading", async () => {
     expect(await readChangeCandidates("nope")).toBeNull();
     expect(loadChangeCandidates).not.toHaveBeenCalled();
+  });
+});
+
+describe("undoPartnerAdd at the request boundary", () => {
+  const STAYS = "00000000-0000-4000-8000-000000000003";
+  const PARTNER = "00000000-0000-4000-8000-000000000004";
+
+  it("refuses malformed ids without opening a transaction", async () => {
+    expect(await undoPartnerAdd("nope", STAYS, PARTNER, null)).toEqual({ ok: false, reason: "unavailable" });
+    expect(await undoPartnerAdd(DECK, "x", PARTNER, null)).toEqual({ ok: false, reason: "changed" });
+    expect(await undoPartnerAdd(DECK, STAYS, "y", null)).toEqual({ ok: false, reason: "changed" });
+    expect(await undoPartnerAdd(DECK, STAYS, PARTNER, "z")).toEqual({ ok: false, reason: "changed" });
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it("revalidates on a success, and not on a refusal", async () => {
+    transaction.mockResolvedValueOnce({ ok: true });
+    expect(await undoPartnerAdd(DECK, STAYS, PARTNER, CARD)).toEqual({ ok: true });
+    expect(revalidateClaims).toHaveBeenCalledWith(DECK, "user_1");
+
+    revalidateClaims.mockReset();
+    transaction.mockResolvedValueOnce({ ok: false, reason: "changed" });
+    expect(await undoPartnerAdd(DECK, STAYS, PARTNER, null)).toEqual({ ok: false, reason: "changed" });
+    expect(revalidateClaims).not.toHaveBeenCalled();
   });
 });

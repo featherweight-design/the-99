@@ -24,6 +24,7 @@ import ws from "ws";
 import { db } from "../src/db";
 import { loadChangeCandidates } from "../src/lib/commander-change/candidates";
 import { MIN_CANDIDATE_DECKS } from "../src/lib/commander-change/fit";
+import { writeUndoPartnerAdd } from "../src/lib/commander-change/undo-write";
 import { writeCommanderChange } from "../src/lib/commander-change/write";
 import { isCommanderCandidate } from "../src/lib/recs/score";
 import { partnerAbility } from "../src/lib/decks/partner";
@@ -100,6 +101,9 @@ const write = (
   db.transaction((tx) => writeCommanderChange(tx, deckId, USER, {
     commanderOracleId: commander, partnerOracleId: partner,
   }, stays, cut));
+
+const undo = (deckId: string, stays: string, partner: string, cut: string | null, user = USER) =>
+  db.transaction((tx) => writeUndoPartnerAdd(tx, deckId, user, stays, partner, cut));
 
 async function main() {
   const { rows: branch } = await fixture.execute<{ id: string | null }>(
@@ -414,6 +418,44 @@ async function main() {
   await fixture.execute(sql`update deck_cards set quantity = 100 where deck_id = ${readFull}::uuid and oracle_id = ${fillers[0].oracle_id}::uuid`);
   check("partner add: a deck over 99 cards is not offered the add", (await loadChangeCandidates(readFull, USER))?.partnerAdd, null);
   check("partner add: a pair deck is not offered it", (await loadChangeCandidates(pairDeck, USER))?.partnerAdd, null);
+
+  // ── Undo of a partner add (#491, writeUndoPartnerAdd) ────────────────────────
+  // The pair the toast wrote goes back to the single, and the cut comes back, in one write; every
+  // fact is read from the live rows.
+  const nobody = "00000000-0000-4000-8000-0000000000aa";
+  const undoOk = await makeDeck(anchor.oracle_id, p2.oracle_id);
+  await addCard(undoOk, fillers[1].oracle_id);
+  check("undo: another pair leading is refused", await undo(undoOk, anchor.oracle_id, p3.oracle_id, null), { ok: false, reason: "changed" });
+  check("undo: a single leading is refused", await undo(await makeDeck(anchor.oracle_id), anchor.oracle_id, p2.oracle_id, null), { ok: false, reason: "changed" });
+  check("undo: a cut already in the 99 is refused", await undo(undoOk, anchor.oracle_id, p2.oracle_id, fillers[1].oracle_id), { ok: false, reason: "changed" });
+  check("undo: a cut that is not a card is refused", await undo(undoOk, anchor.oracle_id, p2.oracle_id, nobody), { ok: false, reason: "changed" });
+  check("undo: another reader's deck is unavailable", await undo(undoOk, anchor.oracle_id, p2.oracle_id, null, `${USER}-other`), { ok: false, reason: "unavailable" });
+  check("undo: refusals wrote nothing", [await live(undoOk), await bodyOf(undoOk)], [{ c: anchor.oracle_id, p: p2.oracle_id }, [`${fillers[1].oracle_id}x1`]]);
+  check("undo: the cut comes back", await undo(undoOk, anchor.oracle_id, p2.oracle_id, fillers[0].oracle_id), { ok: true });
+  check("undo: the single leads alone", await live(undoOk), { c: anchor.oracle_id, p: null });
+  check("undo: the cut is in the 99", await bodyOf(undoOk), [fillers[0].oracle_id, fillers[1].oracle_id].sort().map((id) => `${id}x1`));
+  check("undo: it does not run twice", await undo(undoOk, anchor.oracle_id, p2.oracle_id, null), { ok: false, reason: "changed" });
+
+  const undoNoCut = await makeDeck(anchor.oracle_id, p2.oracle_id);
+  await addCard(undoNoCut, fillers[1].oracle_id);
+  check("undo: with no cut, the body is untouched", [await undo(undoNoCut, anchor.oracle_id, p2.oracle_id, null), await live(undoNoCut), await bodyOf(undoNoCut)],
+    [{ ok: true }, { c: anchor.oracle_id, p: null }, [`${fillers[1].oracle_id}x1`]]);
+
+  // A cut that was one copy of a stack comes back onto the stack; a non-stacking card in the 99 is refused.
+  const { rows: basics } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id::text from cards where type_line like 'Basic Land%' order by oracle_id limit 1
+  `);
+  if (basics[0]) {
+    const stack = await makeDeck(anchor.oracle_id, p2.oracle_id);
+    await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${stack}::uuid, ${basics[0].oracle_id}::uuid, 4)`);
+    check("undo: a stacked cut comes back onto its stack", [await undo(stack, anchor.oracle_id, p2.oracle_id, basics[0].oracle_id), await live(stack), await bodyOf(stack)],
+      [{ ok: true }, { c: anchor.oracle_id, p: null }, [`${basics[0].oracle_id}x5`]]);
+  }
+
+  const undoFull = await makeDeck(anchor.oracle_id, p2.oracle_id);
+  await addCard99(undoFull);
+  check("undo: a cut that would take the deck past 100 is refused", await undo(undoFull, anchor.oracle_id, p2.oracle_id, fillers[1].oracle_id), { ok: false, reason: "full" });
+  check("undo: that refusal wrote nothing", [await live(undoFull), await bodyOf(undoFull)], [{ c: anchor.oracle_id, p: p2.oracle_id }, [`${fillers[0].oracle_id}x99`]]);
 }
 
 main()

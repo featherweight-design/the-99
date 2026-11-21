@@ -152,4 +152,16 @@ export const changeCommanderCopy = {
     commanderOnly: (version: number, date: string, cards: number) =>
       `The deck goes back to v${version} as committed on ${date}: ${cards} ${cards === 1 ? "card" : "cards"}.`,
   },
+
+  // The toast after a partner is added (#491): it holds the one Undo. The wording is Design's
+  // (partner-add handoff copy); `refused` is ours, written for the shipped refusal toast shape.
+  partnerUndo: {
+    joined: (partner: string, commander: string) => `${partner} joins ${commander}.`,
+    cut: (cut: string) => `${cut} left the deck.`,
+    undo: "Undo",
+    undoing: "Undoing…",
+    undone: (commander: string) => `${commander} leads alone again.`,
+    refused: "We couldn’t undo that.",
+    refusedDetail: "Check what the deck holds now.",
+  },
 } as const;

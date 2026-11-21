@@ -9,6 +9,7 @@ import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
 import { loadChangeCandidates, type ChangeCandidates } from "./candidates";
 import type { CommanderPair } from "./pending";
+import { writeUndoPartnerAdd, type UndoPartnerAddResult } from "./undo-write";
 import { writeCommanderChange, type ChangeCommanderResult } from "./write";
 
 export async function changeCommander(
@@ -40,6 +41,26 @@ export async function changeCommander(
     // `revalidateClaims` retires the user's list tag as well.
     revalidateClaims(deckId, userId);
   }
+  return result;
+}
+
+/**
+ * The toast's Undo for a partner add (#491): the pair goes back to the single that stayed and the
+ * cut card comes back, in one write. The transaction is `undo-write.ts`'s, which reads the live
+ * rows; the ids here are the toast's memory of the add and are checked against them.
+ */
+export async function undoPartnerAdd(
+  deckId: string, staysOracleId: string, partnerOracleId: string, cutOracleId: string | null,
+): Promise<UndoPartnerAddResult> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId)) return { ok: false, reason: "unavailable" };
+  const cut = cutOracleId ?? null;
+  if (!isUuid(staysOracleId) || !isUuid(partnerOracleId) || (cut !== null && !isUuid(cut))) {
+    return { ok: false, reason: "changed" };
+  }
+  const result = await db.transaction((tx) => writeUndoPartnerAdd(tx, deckId, userId, staysOracleId, partnerOracleId, cut));
+  // In the action, as `changeCommander` does: the reply carries the deck page under the single.
+  if (result.ok) revalidateClaims(deckId, userId);
   return result;
 }
 
