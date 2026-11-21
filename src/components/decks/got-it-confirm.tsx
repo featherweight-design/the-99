@@ -282,7 +282,7 @@ export function GotItConfirmForm<F>({
         onClick={(e) => e.stopPropagation()}
         // Phone: the bottom sheet, 16px top corners, top border only. Desktop: the 520px modal, centered.
         // Capped at 92dvh: the title and the buttons stay put and the form between them scrolls.
-        className="relative flex max-h-[92dvh] w-full flex-col gap-[18px] overflow-hidden rounded-[16px_16px_0_0] bg-[color:var(--surface)] px-[18px] pb-[18px] pt-[10px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[20px] md:pt-[24px] md:[border:1px_solid_var(--border-strong)] md:[box-shadow:var(--modal-shadow)]"
+        className="relative flex max-h-[92dvh] w-full flex-col gap-[18px] overflow-hidden anim-sheet-in-phone rounded-[16px_16px_0_0] bg-[color:var(--surface)] px-[18px] pb-[18px] pt-[10px] outline-none [border-top:1px_solid_var(--border-strong)] md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[20px] md:pt-[24px] md:[border:1px_solid_var(--border-strong)] md:[box-shadow:var(--modal-shadow)]"
       >
         <span aria-hidden className="mb-[2px] h-[4px] w-[36px] flex-none self-center rounded-[2px] bg-[color:var(--border-dashed)] md:hidden" />
         <button
