@@ -1,6 +1,6 @@
 # The 99 · Life tracker (account 2, 2026-11-18)
 
-Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 24; v18 was the approved round, v19–v21 add the undrawn-states addendum, v22–v24 the Undo addendum)
+Canvas: https://claude.ai/artifact/9PFoKAYvCXK8QijxU3XVZs (Version 25; v18 was the approved round, v19–v21 add the undrawn-states addendum, v22–v24 the Undo addendum, v25 the tablet and Menu addendum)
 Research brief: https://claude.ai/artifact/8ATRY8gc8mTc3fgnd1ZS2B
 Status: **APPROVED by Hugh 2026-11-18** ("I think this LGTM… we can safely open a PR with the design handoff").
 
@@ -25,6 +25,13 @@ Boards U1–U5, approved by Hugh 2026-11-21. See [ADDENDUM-undo-ending.md](ADDEN
 **Undo the last change** under the winner (it names the change that ended the game and undoes only that change, with no
 confirm and a "Game back on" toast). It is no longer offered once anyone seated logs the game, after 6 am, or after
 Rematch or Start, and a note in its slot says why. The Last game card on the table page carries the same Undo.
+
+## Addendum (2026-11-21): Tablet 2 and 3, the tablet upright, the strip's Menu
+
+Boards T1–T3, V2–V6 and M1, approved by Hugh 2026-11-21. See
+[ADDENDUM-undrawn-tablet-menu.md](ADDENDUM-undrawn-tablet-menu.md): tablet layouts for 2 players (Face to face) and 3
+(One at the end, default, or Along one side); an upright tablet draws each layout turned a quarter, so seats stay on
+their edges (no rotate prompt); the strip's last button, Menu (⋯), opens one row, **Back to the table**, with no confirm.
 
 ## Boards
 
