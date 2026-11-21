@@ -9,11 +9,21 @@ export const trackerCopy = {
   setup: {
     title: "Set up the game",
     close: "Close",
-    // Until the seat map lands (F02, T2), there is nothing to drag, so the line stops at laying the phone down. T2 takes
-    // the board's "Lay the phone flat and drag each player to the side they sit on."
-    lead: "Lay the phone flat in the middle of the table.",
+    lead: "Lay the phone flat and drag each player to the side they sit on.",
     // From md (768px), where the tracker plays on a tablet.
-    leadDevice: "Lay the device flat in the middle of the table.",
+    leadDevice: "Lay the device flat and drag each player to the side they sit on.",
+    // F02c: with I'll pick, the map also picks who goes first.
+    pickLead: "Tap who goes first. Drag a face to move their seat.",
+    mapAria: "Where everyone sits",
+    seatAria: (name: Name, where: string): PersonParts => personText`${name}, ${where}. Drag to move`,
+    pickAria: (name: Name): PersonParts => personText`${name}. Tap to go first`,
+    firstAria: (name: Name): PersonParts => personText`${name} goes first. Tap someone else to change it`,
+    // The keyboard's drag, read after each face's name.
+    moveKeys: "Arrow keys move their seat.",
+    moved: (name: Name, where: string): PersonParts => personText`${name}, now ${where}`,
+    // Where a face sits: its side, then where along it when it shares the side ("left side, top").
+    where: { left: "left side", right: "right side", top: "top end", bottom: "bottom end" },
+    along: { top: "top", bottom: "bottom", left: "left", right: "right", middle: "middle" },
     table: "Table",
     tableAria: "How the table sits",
     life: "Starting life",

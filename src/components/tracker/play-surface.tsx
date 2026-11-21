@@ -245,16 +245,19 @@ export function PlaySurface({
         layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", setupSeats.length)}
         initial={rematch ?? undefined}
         backHref={backHref}
-        onStart={({ layout, life, first }) => {
+        onStart={({ layout, life, first, order }) => {
           setRematch(null);
+          // The seat map's order is the turn order and the cells' order, so the config and the snapshot both follow it.
+          const bySeatNo = new Map(setupSeats.map((s) => [s.seat, s]));
+          const seated = order.map((n) => bySeatNo.get(n)!);
           const config: GameConfig = {
             tableId,
             startingLife: life,
-            seats: setupSeats.map((s) => ({ seat: s.seat, commanders: s.partnerArt ? 2 : 1 })),
+            seats: seated.map((s) => ({ seat: s.seat, commanders: s.partnerArt ? 2 : 1 })),
             first,
             layout,
             startedAt: Date.now(),
-            snapshot: { players: setupSeats, roster },
+            snapshot: { players: seated, roster },
           };
           start({ config, log: [] } satisfies Game);
         }}

@@ -22,7 +22,7 @@ export type SeatConfig = { seat: number; commanders: 1 | 2 };
 export type GameConfig = {
   tableId: string;
   startingLife: number;
-  seats: readonly SeatConfig[]; // turn order: seating order, ascending seat number
+  seats: readonly SeatConfig[]; // turn order: where they sit, clockwise from the bottom cell (setup's seat map)
   first: number; // seat number that goes first
   layout: string;
   /** When Start was pressed (epoch ms), for the result's length. Absent on a game saved before it was kept. */

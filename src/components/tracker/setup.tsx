@@ -1,15 +1,15 @@
 "use client";
 
-// The setup screen (F02, F02b, F02c): how the table sits, the starting life and who goes first, on one screen, with
-// Start pinned at its foot.
+// The setup screen (F02, F02b, F02c): where everyone sits, how the table sits, the starting life and who goes first,
+// on one screen, with Start pinned at its foot.
 
 import Link from "next/link";
 import { useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import type { Layout } from "../../lib/tracker/layouts";
-import { PersonName } from "../../lib/person-name";
 import { PendingReporter } from "../shell/pending-reporter";
 import type { PlaySeat } from "./panel";
+import { SeatMap } from "./seat-map";
 
 const copy = trackerCopy.setup;
 export const DEFAULT_LIFE = 40;
@@ -60,13 +60,18 @@ export function Setup({
   initial?: { layout: string; life: number };
   /** The ✕: back to the table this game is for. */
   backHref: string;
-  onStart: (opts: { layout: string; life: number; first: number }) => void;
+  /** `order` is the seat numbers by cell: who sits where, which is also the turn order. */
+  onStart: (opts: { layout: string; life: number; first: number; order: number[] }) => void;
 }) {
   const [layout, setLayout] = useState(initial && layouts.some((l) => l.id === initial.layout) ? initial.layout : layouts[0].id);
   const [life, setLife] = useState(initial?.life ?? DEFAULT_LIFE);
   const [mode, setMode] = useState<"random" | "pick">("random");
   // I'll pick starts on the viewer's own seat, so Start never waits on a choice.
   const [picked, setPicked] = useState<number>(() => (seats.find((s) => s.you) ?? seats[0]).seat);
+  // Who sits where, by cell. Seats that change under setup (a join, a leave) reset it to the table's own order.
+  const [moved, setMoved] = useState<number[] | null>(null);
+  const order = moved && moved.length === seats.length && seats.every((s) => moved.includes(s.seat)) ? moved : seats.map((s) => s.seat);
+  const layoutNow = layouts.find((l) => l.id === layout) ?? layouts[0];
   const clamp = (n: number) => Math.min(LIFE_MAX, Math.max(LIFE_MIN, n));
 
   return (
@@ -83,9 +88,17 @@ export function Setup({
         </Link>
       </div>
       <p className="mt-[4px] mb-[16px] text-[14px] leading-[1.45] text-[color:var(--fg-body)]">
-        <span className="md:hidden">{copy.lead}</span>
-        <span className="hidden md:inline">{copy.leadDevice}</span>
+        {mode === "pick" ? (
+          copy.pickLead
+        ) : (
+          <>
+            <span className="md:hidden">{copy.lead}</span>
+            <span className="hidden md:inline">{copy.leadDevice}</span>
+          </>
+        )}
       </p>
+
+      <SeatMap seats={seats} order={order} layout={layoutNow} pick={mode === "pick"} first={picked} onMove={setMoved} onPick={setPicked} />
 
       <div className="flex min-h-[84px] items-center gap-[12px] border-t border-[color:var(--border)]">
         <span className={KEY}>{copy.table}</span>
@@ -129,32 +142,11 @@ export function Setup({
           <button type="button" aria-pressed={mode === "pick"} onClick={() => setMode("pick")} className={`${SEG} ${mode === "pick" ? SEG_ON : SEG_OFF}`}>{copy.pick}</button>
         </div>
       </div>
-      {mode === "pick" ? (
-        // Until the seat map (F02c) lands, the pick is a row of names; the chosen one is ringed and captioned.
-        <ul className="m-0 mb-[12px] flex list-none flex-wrap gap-[8px] p-0" aria-label={copy.pickHint}>
-          {seats.map((s) => (
-            <li key={s.seat}>
-              <button
-                type="button"
-                aria-pressed={picked === s.seat}
-                onClick={() => setPicked(s.seat)}
-                className={`min-h-[44px] cursor-pointer rounded-[10px] border-0 px-[14px] text-[14px] font-semibold ${
-                  picked === s.seat ? "bg-[color:var(--elevated)] text-[color:var(--fg)] shadow-[inset_0_0_0_2px_var(--accent)]" : "bg-transparent text-[color:var(--fg-body)] shadow-[inset_0_0_0_1px_var(--border-strong)]"
-                }`}
-              >
-                {s.you ? (s.name as string) : <PersonName n={s.name} />}
-                {picked === s.seat ? <span className="ml-[8px] font-mono text-[12px] font-normal text-[color:var(--accent-text)]">{copy.goesFirst}</span> : null}
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-
       {/* Pinned to the foot: in reach on a short screen, never scrolled away. */}
       <div className="sticky bottom-0 mt-auto bg-[color:var(--bg)] pt-[12px] pb-[22px]">
         <button
           type="button"
-          onClick={() => onStart({ layout, life, first: mode === "pick" ? picked : seats[Math.floor(Math.random() * seats.length)].seat })}
+          onClick={() => onStart({ layout, life, order, first: mode === "pick" ? picked : seats[Math.floor(Math.random() * seats.length)].seat })}
           className="flex h-[52px] w-full cursor-pointer items-center justify-center rounded-[10px] border-0 bg-[color:var(--accent)] text-[16px] font-semibold text-[color:var(--bg)]"
         >
           {copy.start}
