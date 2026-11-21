@@ -23,6 +23,9 @@ CHECK_IC = ('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke=
 TABLE_IC = ('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" '
             'aria-hidden="true"><ellipse cx="12" cy="12" rx="9" ry="5"/><path d="M8 20l1-3M16 20l-1-3"/></svg>')
 
+CLOCK_IC = ('<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" '
+            'stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>')
+
 UND_CSS = '''.und{display:flex;align-items:center;gap:12px;width:100%;min-height:60px;box-sizing:border-box;padding:8px 14px 8px 8px;border:0;border-radius:12px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font-family:"IBM Plex Sans",sans-serif;text-align:left;cursor:pointer}
 .und .ic{flex:none;width:44px;height:44px;border-radius:50%;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:flex;align-items:center;justify-content:center}
 .und .tx{min-width:0}
@@ -77,7 +80,7 @@ files['U3-Logged-Phone'] = ('U3 · Someone logged it: the ending stays, and says
 files['U3-Logged-Tablet'] = ('U3 · Logged, tablet', 1180, 820, retitle(tabletize(s), 'U3 · Logged: no Undo, tablet'))
 
 # U4 · past 6 am: the table stopped logging, so the ending stays; no Log, no Rematch
-SIXAM = note(TABLE_IC, 'This table stopped logging at 6 am, so this ending stays. Log it from your deck\'s Games tab.')
+SIXAM = note(CLOCK_IC, 'This table stopped logging at 6 am, so this ending stays. Log it from your deck\'s Games tab.')
 s = sub(F11, HERO, HERO + '\n  ' + SIXAM)
 s = sub(s, '''    <button class="go">Log this game</button>
     <p class="sub">Everyone seated finds Colin's win filled in when they log.</p>
