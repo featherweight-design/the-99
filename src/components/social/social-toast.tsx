@@ -11,7 +11,13 @@ import { useCartStacked } from "../decks/cart/cart-toast-stack";
 import { PersonText, type PersonParts } from "../../lib/person-name";
 
 /** `text` that names someone is `PersonParts` (`personText`): `PersonText` marks the span holding it. */
-export type SocialToastState = { id: number; text: string | PersonParts; retry?: { label: string; run: () => void } };
+export type SocialToastState = {
+  id: number;
+  text: string | PersonParts;
+  /** A mono second line under the title (the tracker's `Game back on` names what it undid). */
+  detail?: string | PersonParts;
+  retry?: { label: string; run: () => void };
+};
 
 export function SocialToast({
   toast,
@@ -69,6 +75,7 @@ export function SocialToast({
       kind={stacked ? "alert" : undefined}
       onHold={(kind, on) => (kind === "hover" ? setHover : setFocus)(on)}
       title={<PersonText text={toast.text} />}
+      detail={toast.detail ? <PersonText text={toast.detail} /> : undefined}
       actions={toast.retry ? (
         <button
           type="button"

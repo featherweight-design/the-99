@@ -3,13 +3,18 @@
 // The play surface (F03 to F12): the seats' panels laid out for this screen, the centre strip, and the game's life from
 // setup to the last player standing. Game state is this device's (`useGame`); the one server write is the result, saved
 // once when the game ends (`saveTableResultAction`). A running game draws the table it kept at Start (`TableSnapshot`),
-// never the live one, so a reseat, a deck change or a close does not touch it (addendum, Snapshot rule).
+// never the live one, so a reseat, a deck change or a close does not touch it (addendum, Snapshot rule). Undo the last
+// change takes a mistaken ending back (Undo addendum): it deletes the saved result, then reopens the game on this device.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
-import { saveTableResultAction } from "../../app/friends/table/result-actions";
+import { gameLoggedAction, saveTableResultAction, undoTableResultAction } from "../../app/friends/table/result-actions";
 import { trackerCopy } from "../../lib/copy/tracker";
+import type { GameLogged } from "../../lib/social/rule-zero-result";
+import { endingLine } from "../../lib/tracker/ending";
+import { mirrorUrl } from "../../lib/url/mirror";
+import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { PersonName, type ThirdPartyName } from "../../lib/person-name";
 import { isOver, placements, replay, type Game, type GameConfig } from "../../lib/tracker/engine";
 import { landLife } from "../../lib/tracker/result";
@@ -44,6 +49,7 @@ export function PlaySurface({
   logHref,
   podName,
   closed = null,
+  undoNow = false,
 }: {
   tableId: string;
   /** The server's sealed Start roster (seats, accounts, decks, issue time). A game keeps the one from its Start and hands that back with the result. */
@@ -57,6 +63,8 @@ export function PlaySurface({
   podName: string | ThirdPartyName;
   /** The table's host closed it (S4): who ("you", a name, or null when unknown) and when. */
   closed?: { by: string | ThirdPartyName | null; at: number } | null;
+  /** Opened from the Last game card's Undo (U5): the finished game this device holds is undone on arrival. */
+  undoNow?: boolean;
 }) {
   const device = useDevice();
   const router = useRouter();
@@ -73,6 +81,16 @@ export function PlaySurface({
   const [roll, setRoll] = useState<Roll | null>(null);
   const savedFor = useRef<string | null>(null);
   const saveSeq = useRef(0);
+  /** Saves and Undos run one at a time, in order, so an Undo's delete never lands before the save it takes back (clarification 3). */
+  const chain = useRef<Promise<unknown>>(Promise.resolve());
+  const [undoing, setUndoing] = useState(false);
+  // The guard itself is a ref: the toast's Try again keeps the closure of the render that failed.
+  const undoingRef = useRef(false);
+  const [logged, setLogged] = useState<GameLogged | null>(null);
+  const [toast, setToast] = useState<SocialToastState | null>(null);
+  /** The seat whose panel takes focus once an Undo has reopened the game (clarification 10). */
+  const refocus = useRef<number | null>(null);
+  const board = useRef<HTMLDivElement>(null);
 
   const state = useMemo(() => (game ? replay(game) : null), [game]);
   const saved_layout = game ? layoutById(game.config.layout) : undefined;
@@ -86,6 +104,8 @@ export function PlaySurface({
   const nowhere = ready && !game && setupSeats === null;
   useEffect(() => (nowhere ? router.replace(backHref) : undefined), [nowhere, router, backHref]);
   const over = state ? isOver(state) : false;
+  // The change that ended the game, named for the Undo row and its toast (three replays, so once per game, not per render).
+  const ending = useMemo(() => (game && over && snapshot ? endingLine(game, snapshot.players) : null), [game, over, snapshot]);
   useWakeLock(!!state && !over);
   // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
   if (over && sheet) setSheet(null);
@@ -104,13 +124,98 @@ export function PlaySurface({
     savedFor.current = key;
     // A save that resolves after a Rematch or a later finish is not this game's, so it sets nothing.
     const mine = ++saveSeq.current;
-    const settle = (v: "saved" | "failed") => (saveSeq.current === mine ? setSaved(v) : undefined);
+    const settle = (v: "saved" | "failed") => {
+      if (saveSeq.current !== mine) return;
+      setSaved(v);
+      readLogged(mine);
+    };
     setSaved("saving");
-    saveTableResultAction(tableId, snapshot?.roster ?? roster, placements(state)).then(
+    const sealed = snapshot?.roster ?? roster;
+    const rows = placements(state);
+    const save = chain.current.then(() => saveTableResultAction(tableId, sealed, rows));
+    chain.current = save.catch(() => undefined);
+    save.then(
       (r) => settle(r.ok ? "saved" : "failed"),
       () => settle("failed"),
     );
-  }, [state, over, tableId, roster, snapshot]);
+  }, [state, over, tableId, roster, snapshot]); // eslint-disable-line react-hooks/exhaustive-deps -- readLogged reads refs only
+
+  // Who logged the game (U3) is the server's, read once the save settles and again whenever the screen comes back into view.
+  const sealedRoster = snapshot?.roster ?? roster;
+  function readLogged(seq: number) {
+    gameLoggedAction(tableId, sealedRoster).then(
+      (l) => (saveSeq.current === seq ? setLogged(l) : undefined),
+      () => undefined,
+    );
+  }
+  useEffect(() => {
+    if (!over) return;
+    const seq = saveSeq.current;
+    const onShow = () => (document.visibilityState === "visible" ? readLogged(seq) : undefined);
+    document.addEventListener("visibilitychange", onShow);
+    return () => document.removeEventListener("visibilitychange", onShow);
+  }, [over, tableId, sealedRoster]); // eslint-disable-line react-hooks/exhaustive-deps -- readLogged reads refs only
+
+  // Undo the last change: the server's result goes first, and only once it has does the game reopen here. A game someone
+  // seated has logged stays over and shows who (U3); a failure leaves it over with an alert to try again (clarification 4).
+  const runUndo = () => {
+    if (!game || undoingRef.current) return;
+    const line = ending;
+    if (!line) return;
+    const before = state ? new Set(state.seats.filter((x) => x.out).map((x) => x.seat)) : new Set<number>();
+    const seq = saveSeq.current;
+    undoingRef.current = true;
+    setUndoing(true);
+    const done = () => {
+      undoingRef.current = false;
+      setUndoing(false);
+    };
+    // A refusal is the server's decision (the night closed, or the seat changed under the game), so it offers no retry.
+    const fail = (retry: boolean) => setToast({ id: Date.now(), text: copy.undo.failed, retry: retry ? { label: copy.undo.retry, run: runUndo } : undefined });
+    const call = chain.current.then(() => undoTableResultAction(tableId, sealedRoster));
+    chain.current = call.catch(() => undefined);
+    call.then(
+      ({ result }) => {
+        done();
+        if (saveSeq.current !== seq) return;
+        if (result === "logged") return readLogged(seq);
+        if (result !== "undone") return fail(false);
+        const back = replay({ config: game.config, log: game.log.slice(0, -1) });
+        const flipped = back.seats.find((x) => before.has(x.seat) && !x.out);
+        refocus.current = flipped?.seat ?? players.find((p) => p.you)?.seat ?? null;
+        saveSeq.current++;
+        setSaved(null);
+        setLogged(null);
+        undo();
+        setToast({ id: Date.now(), text: copy.undo.backOn, detail: copy.undo.undid(line) });
+      },
+      () => {
+        done();
+        fail(true);
+      },
+    );
+  };
+
+  // Once the board is back, focus goes to the panel that came back in, which the toast announces.
+  useEffect(() => {
+    if (over || refocus.current === null) return;
+    const i = players.findIndex((p) => p.seat === refocus.current);
+    const name = board.current?.querySelectorAll<HTMLElement>('[data-testid="panel-name"]')[i];
+    if (!name) return;
+    refocus.current = null;
+    name.focus();
+  });
+
+  // The Last game card's Undo (U5) lands here with `?undo=1`: the flag leaves the address bar at once, so a reload never
+  // undoes again, and the game this device holds is undone once it is read.
+  const [undoPending, setUndoPending] = useState(undoNow);
+  useEffect(() => {
+    if (!ready || !undoPending) return;
+    mirrorUrl(window.location.pathname);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- the saved game exists only in the browser, so the Undo is decided after it is read
+    setUndoPending(false);
+    if (over && Date.now() < expiresAt) runUndo();
+  }, [ready, undoPending, over]); // eslint-disable-line react-hooks/exhaustive-deps -- runs once, on arrival
 
   if (!ready) return <div className="flex-1" aria-busy="true" />;
 
@@ -177,7 +282,7 @@ export function PlaySurface({
   const rollDie = (kind: DieKind) => setRoll({ kind, values: [rollFair(SIDES[kind])], k: (roll?.k ?? 0) + 1 });
 
   return (
-    <div className="relative flex w-full flex-1 items-center justify-center overflow-hidden" data-testid="tracker-play">
+    <div ref={board} className="relative flex w-full flex-1 items-center justify-center overflow-hidden" data-testid="tracker-play">
       <div
         className="relative"
         style={{ aspectRatio: `${layout.canvas.w} / ${layout.canvas.h}`, width: `min(100%, calc(100dvh * ${layout.canvas.w} / ${layout.canvas.h}))` }}
@@ -304,14 +409,18 @@ export function PlaySurface({
           tablet={device === "tablet"}
           closed={closed}
           closesAt={expiresAt}
+          undo={ending ? { line: ending, busy: undoing || saved === "saving", onUndo: runUndo } : null}
+          logged={logged}
           onRematch={() => {
             setRematch({ layout: game.config.layout, life: game.config.startingLife, players: seatsInPlay });
             setSaved(null);
+            setLogged(null);
             saveSeq.current++;
             discard();
           }}
         />
       ) : null}
+      <SocialToast toast={toast} onDone={() => setToast(null)} role={toast?.text === copy.undo.failed ? "alert" : "status"} />
     </div>
   );
 }

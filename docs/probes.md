@@ -2802,6 +2802,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Undo started while a log's transaction is open waits for it and answers `logged`. With the log's share lock on the
   table row removed (`resolveTableSeatsIn`) the race check fails: the Undo deletes the result under the log. It WRITES,
   so it refuses staging, production and local-dev by `neon.branch_id`; pass the scratch branch as `PROBE_DATABASE_URL`.
+- `pnpm probe:tracker-undo-ui` presses Undo on the tracker's Result screen (addendum U1 and U2) at phone (390x844) and
+  tablet (1180x820) width, against a real table. It starts a game on the fixture's T5 (you and Colin), appends one lethal
+  change to the game the device holds and reloads, so the Result saves the table result through the shipped action. It
+  then checks that the Undo row sits under the winner and names the change, that the result rows exist, and that
+  pressing Undo closes the Result, raises "Game back on" with "Undid ...", focuses Colin's panel, removes the result rows
+  and leaves the device's game running without the change. On main there is no Undo row, so it fails at the first
+  check. It WRITES, so it refuses staging, production and local-dev by `neon.branch_id`: run the dev server and the
+  probe with the env file naming a scratch branch made from local-dev, seeded by `scripts/seed-rule-zero-fixture.mts`
+  for the audit account. `UNDO_TABLE` picks another table, and `SHOTS=<dir>` keeps a photograph of each state.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a

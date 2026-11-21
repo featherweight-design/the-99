@@ -153,7 +153,8 @@ export const trackerCopy = {
     closedBy: (closer: Name, at: string, until: string): PersonParts => personText`${closer} closed the table at ${at}. This game still logs from it until ${until}.`,
     closedByUnknown: (at: string, until: string) => `The table was closed at ${at}. This game still logs from it until ${until}.`,
     // The table's logging ended while the result was open: the line takes Log this game's place.
-    stopped: (at: string) => `This table stopped logging at ${at}. Log it from your deck’s Games tab.`,
+    // U4: the table's logging ended while the result was open. The note takes Undo's slot, and Log and Rematch go.
+    stopped: (at: string) => `This table stopped logging at ${at}, so this ending stays. Log it from your deck’s Games tab.`,
     backFriends: "Back to Friends",
   },
   // The result (F11, S5). "Thursday night · 4 rounds · 1 h 14 min": the pod's name is drawn before it.
@@ -181,5 +182,30 @@ export const trackerCopy = {
     logDraw: (drew: PersonParts, lost: PersonParts | null): PersonParts =>
       lost ? personText`Logs as a draw for ${drew}, and a loss for ${lost}.` : personText`Logs as a draw for ${drew}.`,
     rematch: "Rematch, same seats",
+  },
+  // Undo a mistaken ending (addendum U1 to U5): the row under the winner, its line naming the change that ended the game,
+  // the toast once the game is back on, and the note that takes the row's place once someone seated has logged it.
+  undo: {
+    label: "Undo the last change",
+    aria: (line: PersonParts): PersonParts => personText`Undo the last change: ${line}`,
+    // "You −3 life, to 0 · round 4"; "you" in a list ("Colin and you −4 life"). Life can go below 0, as the out rows show it.
+    life: (who: Name, n: number, to: number) => personText`${who} −${n} life, to ${to}`,
+    commander: (who: Name, n: number, commander: string, to: number) => personText`${who} +${n} commander damage from ${commander}, to ${to}`,
+    poison: (who: Name, n: number, to: number) => personText`${who} +${n} poison, to ${to}`,
+    // Several out in one change: "Colin and you −4 life"; amounts that differ: "Colin −4 and you −3 life".
+    lifeTogether: (who: PersonParts, n: number) => personText`${who} −${n} life`,
+    lifeEach: (each: PersonParts) => personText`${each} life`,
+    lifeAmount: (who: Name, n: number) => personText`${who} −${n}`,
+    conceded: (who: Name) => personText`${who} conceded`,
+    byHandWon: (who: Name) => personText`Ended by hand: ${who} won`,
+    byHandDraw: "Ended by hand: a draw",
+    round: (line: PersonParts, round: number): PersonParts => [...line, ` · round ${round}`],
+    backOn: "Game back on",
+    undid: (line: PersonParts): PersonParts => personText`Undid ${line}`,
+    failed: "Undo didn’t go through. The game is still over.",
+    retry: "Try again",
+    loggedYou: (at: string) => `You logged this game at ${at}, so this ending stays.`,
+    loggedBy: (who: Name, at: string): PersonParts => personText`${who} logged this game at ${at}, so this ending stays.`,
+    loggedUnknown: (at: string) => `This game was logged at ${at}, so this ending stays.`,
   },
 };

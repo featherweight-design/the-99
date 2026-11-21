@@ -84,7 +84,7 @@ export function Sheet({
     table: ending ? (
       <EndTab state={state} seats={seats} onCommit={(a) => { onCommit(a); onClose(); }} onBack={() => setEnding(false)} />
     ) : (
-      <TableTab seat={mine} state={state} game={game} nameOf={nameOf} seats={seats} onCommit={onCommit} onUndo={onUndo} onConcede={() => { onCommit({ t: "life", seat: mine.seat, delta: -mine.life }); onClose(); }} onEnd={() => setEnding(true)} />
+      <TableTab seat={mine} state={state} game={game} nameOf={nameOf} seats={seats} onCommit={onCommit} onUndo={onUndo} onConcede={() => { onCommit({ t: "life", seat: mine.seat, delta: -mine.life, concede: true }); onClose(); }} onEnd={() => setEnding(true)} />
     ),
   };
 
