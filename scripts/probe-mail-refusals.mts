@@ -20,7 +20,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { chromium, type Page } from "playwright";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { inviteCopy } from "../src/lib/copy/invites";
-import { ABOUT_VERSION } from "../src/lib/copy/about";
+import { captureAboutSeen, markEveryEntrySeen, restoreAboutSeen } from "./lib/about-clear.mjs";
 import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { joinCopy } from "../src/lib/copy/join";
 import { waitPhrase } from "../src/lib/copy/wait-phrase";
@@ -78,14 +78,12 @@ async function signedIn(
   const userId = await signIn(probe);
   await probe.context().close();
   const keys: string[] = [];
-  const was = await db.execute<{ about: number | null; held: number | null }>(sql`
-    select (select about_version_seen from user_prefs where user_id = ${userId}) as about,
-           (select held from invite_balances where user_id = ${userId}) as held`);
+  const was = await db.execute<{ held: number | null }>(sql`select (select held from invite_balances where user_id = ${userId}) as held`);
+  const about = await captureAboutSeen(userId);
   try {
     await db.execute(sql`insert into invite_balances (user_id, held) values (${userId}, 5)
       on conflict (user_id) do update set held = 5, updated_at = now()`);
-    await db.execute(sql`insert into user_prefs (user_id, about_version_seen) values (${userId}, ${ABOUT_VERSION})
-      on conflict (user_id) do update set about_version_seen = greatest(user_prefs.about_version_seen, ${ABOUT_VERSION})`);
+    await markEveryEntrySeen(userId);
     for (const [width, height, w] of [[390, 844, "phone"], [1300, 900, "desktop"]] as const) {
       const page = await (await browser.newContext({ viewport: { width, height } })).newPage();
       await signIn(page);
@@ -146,7 +144,7 @@ async function signedIn(
     for (const k of keys) await db.execute(sql`delete from rate_hits where user_id = ${k}`);
     if (was.rows[0]?.held == null) await db.execute(sql`delete from invite_balances where user_id = ${userId}`);
     else await db.execute(sql`update invite_balances set held = ${was.rows[0].held} where user_id = ${userId}`);
-    if (was.rows[0]?.about != null) await db.execute(sql`update user_prefs set about_version_seen = ${was.rows[0].about} where user_id = ${userId}`);
+    await restoreAboutSeen(about);
   }
 }
 
