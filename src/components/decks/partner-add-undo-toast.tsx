@@ -1,6 +1,6 @@
 "use client";
 // The toast after a partner is added (#491, partner-add handoff §6, G3): `joins`, what left the deck, and
-// one Undo. Dormant until the Add a partner section draws it. It is a receipt in the deck stack (`status`, the
+// one Undo. The Add a partner section mounts it. It is a receipt in the deck stack (`status`, the
 // floor) while it holds the Undo, and the shipped refusal alert (`role="alert"`, replacing itself like the token
 // refusal) when the write is refused or throws. Eight seconds, held on hover, focus and an undo in flight, and
 // lost on a reload or navigation: nothing is stored. Any other draft edit dismisses it, which is the caller's

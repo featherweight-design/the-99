@@ -206,7 +206,7 @@ export function AddPartnerSection({
   return (
     <div data-partner-section="" className="flex flex-col gap-[16px]">
       <SectionHead title={copy.section.title(ability.kind)}>
-        <Para>{copy.section.lede(short)} {copy.section.rule(ability)}</Para>
+        <Para>{copy.section.lede(short, add.needsCut)} {copy.section.rule(ability)}</Para>
         <Para mono>{cc.sheet.counted(data.counted)}</Para>
       </SectionHead>
       {yoursAll.length > 0 ? (

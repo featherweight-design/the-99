@@ -11,8 +11,10 @@ export const partnerAddCopy = {
     title: (kind: PartnerAbility["kind"]): string =>
       kind === "doctorsCompanion" ? "Add a Doctor" : kind === "doctor" ? "Add a companion" : "Add a partner",
     replaceTitle: (short: string) => `Replace ${short}`,
-    lede: (short: string) =>
-      `${short} stays, and a second commander joins. One from outside the deck takes a slot, so you pick the card that leaves.`,
+    lede: (short: string, needsCut: boolean) =>
+      needsCut
+        ? `${short} stays, and a second commander joins. One from outside the deck takes a slot, so you pick the card that leaves.`
+        : `${short} stays, and a second commander joins. The deck has room, so nothing leaves.`,
     // The ability's own rule, said once, where it narrows the list.
     rule: (ability: PartnerAbility): string => {
       switch (ability.kind) {
@@ -44,7 +46,7 @@ export const partnerAddCopy = {
     opensNone: (colors: string) => `You own no ${colors} cards their decks run.`,
     cutHeading: "The card that leaves",
     cutNote: "suggested first",
-    reasonLands: (lands: number, ceiling: number) => `The deck runs ${lands} lands. With two commanders the usual count is ${ceiling}.`,
+    reasonLands: (lands: number, ceiling: number) => `The deck runs ${lands} lands. With two commanders it keeps at most ${ceiling}.`,
     // Said only for a pair EDHREC holds a list for; any other pair reads the two commanders' own lists.
     reasonUnplayed: (pair: string) => `None of the ${pair} decks we read run it.`,
     reasonUnplayedEither: (commander: string, partner: string) =>

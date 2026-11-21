@@ -87,7 +87,7 @@ export type ChangeCandidates = {
   newestAsOf: Date | null;
   /** Partners this single commander could take beside it. Null when the deck cannot be offered the
    *  add (a pair already leads it, its 99 holds more than 99 cards, nothing pairs with the
-   *  commander). Reads only: no caller yet. */
+   *  commander). Drawn by the sheet's Add a partner section. */
   partnerAdd: PartnerAdd | null;
 };
 
@@ -348,8 +348,8 @@ export async function loadChangeCandidates(
     const f = factBy.get(id);
     return f !== undefined && isCommanderCandidate(f);
   }))
-    // `pairAdd` (#491) is a shape the write takes and no sheet draws yet: held back here until the
-    // Add a partner section lands, so the sheet never offers a change it cannot confirm.
+    // `pairAdd` (#491) is offered by the Add a partner section (`partnerAdd`), never as a Replace
+    // candidate: the Replace list only carries trades that swap a commander out.
     .filter((k) => {
       const shape = tradeShape(k.ids, currentIds, inDeck);
       return shape !== null && shape !== "pairAdd";
