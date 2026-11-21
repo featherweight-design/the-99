@@ -1,0 +1,34 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-21T01:06:08Z"
+ },
+ "title": "The 99 \u00b7 Clear all",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 2900,
+   "h": 3725,
+   "title": "1 \u00b7 Clear all, before and after"
+  },
+  "States.dc.html": {
+   "x": 0,
+   "y": 3845,
+   "w": 2140,
+   "h": 3237,
+   "title": "2 \u00b7 When it shows, and the press\u2019s states"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "States.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
