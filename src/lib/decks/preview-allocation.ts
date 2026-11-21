@@ -7,10 +7,10 @@ import { allocate } from "./allocate";
  * WHY THIS IS ALLOWED TO EXIST, given that a client re-deriving the model's queue cost three
  * review rounds during the build. That mistake was predicting which of SEVERAL reservations the
  * server would evict — unanswerable here, because the server resolves those on `(created_at,
- * deck_id)`, which is not an order this row holds. This predicts something else: every authored reservation is the player's own pick: ONE copy to each deck they picked, granted
- * ahead of the queue (several picks, 2026-11-21). The preview is the model's own allocation with
- * those grants set, and nothing about it is guessed. Which pick the SERVER would displace at the
- * cap is still not predicted here: the row refuses a pick past the cap instead of making one.
+ * deck_id)`, which is not an order this row holds. This predicts something else: where the
+ * player's own picks go. Each picked deck gets one copy ahead of the queue (several picks,
+ * 2026-11-21), and the preview is the model's own allocation with those grants set. Nothing in it
+ * is guessed: the row refuses a pick past the cap rather than predict which one the server drops.
  *
  * IT CALLS THE MODEL RATHER THAN MIRRORING IT. `allocate` is the same function the server runs;
  * the only thing computed here is where the grant goes. The first version of this file was a

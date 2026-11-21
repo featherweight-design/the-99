@@ -189,8 +189,11 @@ export async function assignCopyIn(
   // or more copies refuses instead: which of several picks to drop is the player's call, not ours.
   if (taken >= giveable) {
     if (mode === "toggle" && giveable >= 2) return "all-picked";
-    // Oldest first across both tables, the order the cap was filled in. As text, so a restore puts
-    // back the exact instant: the model orders reservations on it, to the microsecond.
+    // The oldest RESERVATION first, the order the cap was filled in, and a pending pick only when no
+    // reservation stands: an undo puts a displaced reservation back from the entry's record, and has no
+    // record of a pending pick. (Rarely reached: a purchase raises the supply before this runs, and a
+    // commit's own pending pick is not counted in `taken`.) As text, so a restore puts back the exact
+    // instant: the model orders reservations on it, to the microsecond.
     const { rows: [oldest] } = await tx.execute<{ kind: "reserved" | "pending"; deck_id: string; copies: number; created_at: string }>(sql`
       select kind, deck_id, copies, created_at from (
         select 'reserved' as kind, a.deck_id, a.copies, a.created_at::text as created_at, a.created_at as at
@@ -201,7 +204,7 @@ export async function assignCopyIn(
         from pending_assignments p
         where p.user_id = ${userId} and p.oracle_id = ${oracleId} and p.deck_id <> ${deckId}
       ) picks
-      order by at, deck_id
+      order by kind = 'pending', at, deck_id
       limit 1
     `);
     // Nothing to move and nothing spare: the copies are all held by claims no pick can touch.

@@ -922,6 +922,10 @@ export async function applyCollectionChange(
         // card's claim lock, which every reservation write takes.
         // The press names its pick (I got it, the cart), or else the entry's own record does: a revert from History and a
         // removal's Put back name none, and the keeper's reservation still goes with the copy.
+        // Every card the entry names, locked up front in sorted order, before the restore below takes a deck row:
+        // the revert's lowered cards are among them, and `pruneExcessPicks` locks those again after this (a no-op
+        // then), so no card lock is ever first taken behind a deck lock that a pick write would wait on.
+        for (const id of [...new Set((row.rows ?? []).map((r) => r.oracleId))].sort()) await lockCardClaims(tx, userId, id);
         for (const undo of change.undoPlacement ? [change.undoPlacement] : entryPlacements(row.rows)) {
           const drop = placementToUndo(undo, row.rows);
           if (drop) {
@@ -1148,6 +1152,11 @@ export async function applyCollectionChange(
         : undefined;
       if (opts.inside && change.kind === "add") await opts.inside(tx);
 
+      // A removal can leave a card more picks than copies (several picks, G4): the newest go, the chooser's own pick
+      // aside. BEFORE the deck check reads its "after", so the warning names the decks the write really leaves short
+      // (the chooser's pick is the newest, and read with every pick standing it would look short instead); a refusal
+      // or a preview throws and rolls the prune back with everything else.
+      if (lowered.length > 0) await pruneExcessPicks(tx, userId, lowered, opts.assign);
       const moves = countMoves(rows);
       let short: ShortDeck[] = [];
       if (claimsBefore) {
@@ -1163,8 +1172,6 @@ export async function applyCollectionChange(
         short = decks;
       }
       if (opts.dryRun) throw new Refused({ status: "preview", ...moves, rows, decks: [], ...(syncPreview ? { sync: syncPreview } : {}) });
-      // A removal can leave a card more picks than copies (several picks, G4): the newest go, the chooser's own pick aside.
-      if (lowered.length > 0) await pruneExcessPicks(tx, userId, lowered, opts.assign);
 
       // A sync's summary on its own upload (G9; no column): the pick is what `readSyncBase` reads to decide
       // whether this upload anchors the next sync, and the rest is what its receipt and History draw.
