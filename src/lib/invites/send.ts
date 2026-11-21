@@ -30,7 +30,11 @@ export async function lockSenderIn(tx: Tx, senderId: string, given?: Date): Prom
   return given ?? new Date();
 }
 
-export type SendResult = { ok: true } | { ok: false; reason: "invalid" | "out" | "failed" };
+/** `limited` and `capped` are our own mail limits (`mailRefusal`): nothing was sent, and `waitMs` is how long until this address can be. */
+export type SendResult =
+  | { ok: true }
+  | { ok: false; reason: "invalid" | "out" | "failed" | "capped" }
+  | { ok: false; reason: "limited"; waitMs: number };
 
 /**
  * The email invite: the sender's name, the one link (Clerk's invitation ticket) and, when the sender has commander art, the
@@ -153,11 +157,12 @@ export async function sendEmailInvite(
   const reservationId = reserved.id;
 
   // Our recipient and daily mail limits, before Clerk is asked for an invitation: a refusal after it would create and then revoke
-  // one per press. The reservation is given back and the sender is told it failed, never that it was sent.
-  if (await mailRefusal(email)) {
+  // one per press. The reservation is given back and the sender is told which limit stopped it, never that it was sent.
+  const refused = await mailRefusal(email);
+  if (refused) {
     console.warn("[invites] invite-email refused by the mail limits");
     await returnReservation(reservationId);
-    return { ok: false, reason: "failed" };
+    return refused.reason === "limited" ? { ok: false, reason: "limited", waitMs: refused.waitSec * 1000 } : { ok: false, reason: "capped" };
   }
   // The hand's address is worked out beside Clerk's call, not after it (it never rejects: a failed read is the plain hand).
   const hand = handFor(senderId, reservationId, config.origin, deps.env ?? mailEnv());

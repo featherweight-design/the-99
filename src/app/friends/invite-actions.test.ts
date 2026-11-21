@@ -61,9 +61,9 @@ describe("sendEmailInviteAction", () => {
     expect(m.sendEmailInvite).toHaveBeenCalledWith("user_a", "a@x.dev", expect.objectContaining({ requestId: RID.toUpperCase() }));
   });
 
-  it("refuses as failed, reserving and sending nothing, over the invite-email rule", async () => {
+  it("refuses as paced, with the wait, reserving and sending nothing, over the invite-email rule", async () => {
     m.enforceHit.mockResolvedValue(900);
-    expect(await sendEmailInviteAction("a@x.dev", RID)).toEqual({ ok: false, reason: "failed" });
+    expect(await sendEmailInviteAction("a@x.dev", RID)).toEqual({ ok: false, reason: "paced", waitMs: 900_000 });
     expect(m.sendEmailInvite).not.toHaveBeenCalled();
     expect(m.atFloor).not.toHaveBeenCalled();
   });

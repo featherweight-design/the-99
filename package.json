@@ -91,6 +91,7 @@
     "probe:purge": "tsx scripts/probe-purge.mts",
     "probe:invites": "tsx scripts/probe-invites.mts",
     "probe:invites-join": "tsx scripts/probe-invites-join.mts",
+    "probe:mail-refusals": "tsx scripts/probe-mail-refusals.mts",
     "announcements:test-fire": "tsx scripts/announcements-test-fire.ts",
     "probe:push-flush": "tsx scripts/probe-push-flush.mts",
     "probe:push-subscriptions": "tsx scripts/probe-push-subscriptions.mts",

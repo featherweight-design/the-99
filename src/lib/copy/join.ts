@@ -43,6 +43,10 @@ export const joinCopy = {
   endedTitle: "This invite QR no longer works",
   endedBody: "Each invite QR works once. Ask whoever showed it to make a new one.",
   haveOne: "Already on The 99?",
+  /** Error line on the email step: our recipient limit refused it, so no code went. `wait` is waitPhrase(). (new, for /copy-review) */
+  limited: (wait: string) => `No code was sent: too many emails to that address. Try again in ${wait}.`,
+  /** Error line on the email step: the day's send cap is spent, so no code went. (new, for /copy-review) */
+  capped: "No code was sent. Sending is paused for today. Try again tomorrow.",
   /** R14: a transport failure on Send code, Confirm or Continue to sign-up. The field keeps its text. */
   failed: "We couldn’t do that. Try again.",
   retry: "Try again",
