@@ -23,10 +23,10 @@ import type { GuidedRun } from "./use-guided-run";
 
 const copy = guidedBuildCopy.run;
 // The foot's presses are Upgrade's: the accent fill, dimmed and still when off, and the hairline ghost.
-const ACCENT_PRESS = "inline-flex h-[46px] cursor-pointer items-center justify-center rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] no-underline transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] disabled:hover:bg-[color:var(--elevated)] md:h-[40px]";
-const GHOST_PRESS = "inline-flex h-[46px] cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] no-underline disabled:cursor-default disabled:opacity-60 md:h-[40px]";
-const FOOT = "flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]";
-const FOOT_LINE = "m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:order-1 md:min-w-0 md:flex-1";
+export const ACCENT_PRESS = "inline-flex h-[46px] cursor-pointer items-center justify-center rounded-[8px] border-0 bg-[color:var(--accent)] px-[16px] font-sans text-[13px] font-semibold text-[color:var(--bg)] no-underline transition-colors hover:bg-[color:var(--accent-hover)] disabled:cursor-default disabled:bg-[color:var(--elevated)] disabled:text-[color:var(--fg-faint)] disabled:hover:bg-[color:var(--elevated)] md:h-[40px]";
+export const GHOST_PRESS = "inline-flex h-[46px] cursor-pointer items-center justify-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[16px] font-sans text-[13px] font-semibold text-[color:var(--fg)] no-underline disabled:cursor-default disabled:opacity-60 md:h-[40px]";
+export const FOOT = "flex flex-none flex-col gap-[8px] md:flex-row md:items-center md:justify-between md:gap-[16px]";
+export const FOOT_LINE = "m-0 font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)] md:order-1 md:min-w-0 md:flex-1";
 
 /** The pick's words, for the picks line and the tracker's cells. */
 export function runPicks(run: GuidedState) {
