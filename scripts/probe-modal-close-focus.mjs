@@ -138,6 +138,8 @@ async function walk(browser, width) {
       inBox && inCorner,
       `ring ${[ring.r.left, ring.r.top, ring.r.right, ring.r.bottom].map((n) => n.toFixed(1)).join(",")} panel ${[ring.p.left, ring.p.top, ring.p.right, ring.p.bottom].map((n) => n.toFixed(1)).join(",")} radius ${ring.radius}, ring radius ${ring.ringRadius}`,
     );
+    // PROBE_SHOTS=<dir>: the focused ✕ as drawn, for the contact sheet.
+    if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/modal-close-focus-${width.label}.png` });
   } finally {
     await context.close();
   }

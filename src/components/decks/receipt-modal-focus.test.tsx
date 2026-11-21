@@ -38,6 +38,9 @@ describe("ModalChrome initial focus", () => {
         <p>Body</p>
       </ModalChrome>,
     );
-    expect(screen.getByRole("button", { name: "Close" }).className.split(" ")).toContain("focus-visible:outline-offset-[-4px]");
+    const classes = screen.getByRole("button", { name: "Close" }).className.split(" ");
+    expect(classes).toContain("focus-visible:outline-offset-[-4px]");
+    // Rounded, so the ring's corner clears the phone sheet's 18px corner (a square one sat 0.9px outside it).
+    expect(classes).toContain("rounded-[10px]");
   });
 });
