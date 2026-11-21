@@ -29,6 +29,9 @@ const EXEMPT: Record<string, string> = {
     "its press closes the menu, which unmounts the chip, so the navigation runs through usePendingPush and the provider reports it",
   "components/tracker/play-surface.tsx :: backHref":
     "a Back press on the play screen: the table page is a kept screen that commits at press",
+  "components/tracker/result.tsx :: backHref":
+    "✕ and Back on the result: the table page is a kept screen that commits at press",
+  "components/tracker/result.tsx :: logHref": KEPT,
   "components/decks/deck-card-overflow.tsx :: `/decks/${deckId}/import`": KEPT,
   "components/decks/deck-card.tsx :: `/decks/${deck.id}`": KEPT,
   "components/decks/lineup/deck-link.tsx :: `/decks/${id}`": KEPT,

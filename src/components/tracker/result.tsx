@@ -93,7 +93,7 @@ export function Result({
             <Art src={win.art} className="size-full" />
           )}
           {draw ? (
-            <span aria-hidden className="absolute left-1/2 top-[44%] grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[color:color-mix(in_srgb,var(--bg)_85%,transparent)] text-[color:var(--accent)] shadow-[inset_0_0_0_2px_var(--accent)]">
+            <span aria-hidden className="absolute left-1/2 top-[44%] grid size-11 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-[color:color-mix(in_srgb,var(--bg)_85%,transparent)] text-[color:var(--accent-text)] shadow-[inset_0_0_0_2px_var(--accent)]">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round"><path d="M5 9h14M5 15h14" /></svg>
             </span>
           ) : null}
