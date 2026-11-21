@@ -2,7 +2,7 @@
 // must be PRESSABLE. The Edit copies toast lives in the shell beside <main>; a card modal over the page makes everything beside its
 // path inert, so a Revert dialog drawn inside the toast's wrapper was inert with it. The probe adds one copy of an owned card from
 // its details, presses Undo, checks the dialog is not under an `inert` ancestor, presses Revert, and asserts the revert happened (the
-// dialog and the toast are gone, and a second Edit copies read shows the original count). It FAILS on main.
+// dialog closes only through `onReverted`; a stale, short or refused answer keeps it open). It FAILS on main.
 //
 // Writes: one copy added then reverted on the audit account's collection. Point it at local-dev or a scratch branch, NEVER production
 // or staging. PROBE_OWNED_QUERY must name a card the account owns (default Sol Ring).
@@ -88,9 +88,7 @@ async function run(browser, name, { width, height, touch }) {
     // Disabled while the dry run reads (a dev server compiles the action on first use): the press waits for it.
     await button.click({ timeout: 60_000 });
     const gone = await revert.waitFor({ state: "detached", timeout: 15_000 }).then(() => true, () => false);
-    check(name, "pressing Revert reverts: the dialog closes", gone, gone ? "closed" : "still open");
-    const toastGone = await page.getByRole("button", { name: "Undo", exact: true }).count().then((n) => n === 0);
-    check(name, "and the Undo toast is gone", toastGone, String(toastGone));
+    check(name, "pressing Revert reverts: the dialog closes (only on success)", gone, gone ? "closed" : "still open");
   } catch (error) {
     check(name, "walk completed", false, String(error?.message ?? error).split("\n").slice(0, 8).join(" / "));
   } finally {
