@@ -200,7 +200,7 @@ function ResumeRow(
             className="ml-auto flex-none whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-locked)]"
           >
             {/* While a guided run is going the stamp is its clock (the row has the one slot); a finished run leaves the stamp as it was. */}
-            {deck.guided?.status === "running" ? <GuidedStamp startedAt={deck.guided.startedAt} /> : stamp}
+            {deck.guided?.status === "running" ? <GuidedStamp startedAt={deck.guided.startedAt} stamp={stamp} /> : stamp}
           </span>
         </span>
 

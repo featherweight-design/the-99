@@ -111,7 +111,6 @@ async function walk(browser, w) {
       report(tag(`tile ${key}: drawn on /decks`), there, "article");
       if (!there) continue;
       const want = key === "running" ? /Sharpening toward Tokens · \d+:\d\d/ : key === "failed" ? /guided build toward Tokens didn.t come through/ : /found fewer than 12 cards/;
-      await page.waitForFunction(() => true).catch(() => {});
       await page.waitForTimeout(1200);
       const text = await detailText(id);
       report(tag(`tile ${key}: the detail row says the run`), want.test(text), text);
