@@ -1,0 +1,94 @@
+--- a/src/components/decks/change-commander-sheet.tsx	2026-11-21 16:56:44.010298326 +0000
++++ a/src/components/decks/change-commander-sheet.tsx	2026-11-21 21:19:33.638740623 +0000
+@@ -321,7 +321,7 @@
+   return <SheetGroupHeading as="h3" label={label} note={note} />;
+ }
+ 
+-function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | null }) {
++export function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | null }) {
+   if (half.inDeck) {
+     // `in this deck · trades places`, its separator in `--border-strong` as the handoff draws it.
+     const [where, what] = copy.sheet.inDeck.split(" · ");
+@@ -349,7 +349,7 @@
+   return <AvailabilityMarker bareOne availability={half.availability} density="row" className="flex-none font-mono text-[10.5px]" />;
+ }
+ 
+-function Thumb({ halves }: { halves: CandidateHalf[] }) {
++export function Thumb({ halves }: { halves: CandidateHalf[] }) {
+   return (
+     <span
+       aria-hidden="true"
+@@ -464,7 +464,7 @@
+       {open ? (
+         <div
+           id={panelId}
+-          className="mb-[12px] ml-[68px] flex flex-col gap-[9px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[11px] pb-[13px]"
++          className="mb-[12px] flex flex-col gap-[9px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[11px] pb-[13px]"
+           style={{ background: "var(--surface-sunken)" }}
+         >
+           <p className="font-mono text-[10px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
+@@ -492,7 +492,7 @@
+   );
+ }
+ 
+-function Plate({
++export function Plate({
+   cards, label, tone, compare, pair, fates,
+ }: {
+   cards: { oracleId: string; name: string; imageUri: string | null; manaCost: string | null }[];
+--- cm.orig	2026-11-21 21:19:02.923658764 +0000
++++ src/components/cards/card-modal.tsx	2026-11-21 21:19:02.953811229 +0000
+@@ -99,6 +99,7 @@
+   onEditCopies = null,
+   browsePrintings = false,
+   receiptLink = null,
++  commanderDoor = null,
+   fitsOpen = false,
+   fitsReading = false,
+   view = null,
+@@ -184,6 +185,8 @@
+    * The provider never passes both.
+    */
+   receiptLink?: ReactNode;
++  /** #491: the deck's own commander, opened on its deck page, when it prints a pair ability and leads alone. */
++  commanderDoor?: ReactNode;
+   /** The picker the door opened is up, so its close hands focus back to the door. */
+   fitsOpen?: boolean;
+   /**
+@@ -1303,7 +1306,7 @@
+           fitsDoor={onFindDeck ? (layout) => (
+             <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} moment={fitsMoment} layout={layout} reading={fitsReading} />
+           ) : null}
+-          onEditCopies={onEditCopies ? () => onEditCopies(previewAt?.scryfallId) : null} receiptLink={receiptLink} onPrev={onPrev} onNext={onNext}
++          onEditCopies={onEditCopies ? () => onEditCopies(previewAt?.scryfallId) : null} receiptLink={receiptLink} commanderDoor={commanderDoor} onPrev={onPrev} onNext={onNext}
+           sheetRef={sheetRef} gripRef={gripRef} doorRef={doorRef} sheetBodyRef={sheetBodyRef}
+           mobileTriggerRef={mobileTriggerRef} desktopTriggerRef={desktopTriggerRef}
+           prevButtonRef={prevButtonRef} nextButtonRef={nextButtonRef}
+--- cms.orig	2026-11-21 21:19:02.925274910 +0000
++++ src/components/cards/card-modal-sheet.tsx	2026-11-21 21:19:02.954445294 +0000
+@@ -102,6 +102,8 @@
+   fitsDoor: ((layout: "row" | "column") => ReactNode) | null;
+   onEditCopies: React.ComponentProps<typeof AvailabilityDetail>["onEditCopies"];
+   receiptLink: React.ComponentProps<typeof AvailabilityDetail>["receiptLink"];
++  /** #491: the Second commander box, after the card facts. */
++  commanderDoor?: React.ReactNode;
+   onPrev: (() => void) | null | undefined;
+   onNext: (() => void) | null | undefined;
+   sheetRef: RefObject<HTMLDivElement | null>;
+@@ -122,7 +124,7 @@
+   deckPage, deckName, buyUrl, buyLabel, min, full, zoomed, viewOpen, cramped, gentle, sheetFull, teaserHeight, closeReserve, back,
+   onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
+   openCombo, onOpenCombo, onSelectCard, expanded, triggerAria, onToggleExpanded, fitsDoor,
+-  onEditCopies, receiptLink, onPrev, onNext, sheetRef, gripRef, doorRef, sheetBodyRef, mobileTriggerRef, desktopTriggerRef,
++  onEditCopies, receiptLink, commanderDoor = null, onPrev, onNext, sheetRef, gripRef, doorRef, sheetBodyRef, mobileTriggerRef, desktopTriggerRef,
+   prevButtonRef, nextButtonRef, registerCloseRef, registerBackRef, onClose,
+ }: CardModalSheetProps) {
+   return (
+@@ -387,6 +389,7 @@
+         )}
+ 
+         <BracketFactsDetail card={card} />
++        {commanderDoor}
+         {/* SECOND IN THE STACK: card fact, then PAIR fact, then copy facts. This block is
+             the hinge where the reader crosses from what the card IS to what they HAVE,
+             which is exactly what a pair fact is. */}
