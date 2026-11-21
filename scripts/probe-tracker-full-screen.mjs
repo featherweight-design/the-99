@@ -88,11 +88,11 @@ async function walk(browser, width) {
     const top = (await setup.boundingBox())?.y ?? -1;
     const left = (await setup.boundingBox())?.x ?? -1;
     report(L("setup starts at the top of the viewport"), top >= 0 && top <= 1, `top ${top}`);
-    // With no rail, setup's column is centred in the whole viewport; a rail column pushes it right of centre.
+    // With no rail, setup's column is centered in the whole viewport; a rail column pushes it right of center.
     if (width.viewport.width >= 768) {
       const w = (await setup.boundingBox())?.width ?? 0;
-      const centred = (width.viewport.width - w) / 2;
-      report(L("no rail column holds the left edge (setup is centred in the full width)"), Math.abs(left - centred) <= 1, `setup x ${left}, centred at ${centred}`);
+      const centered = (width.viewport.width - w) / 2;
+      report(L("no rail column holds the left edge (setup is centered in the full width)"), Math.abs(left - centered) <= 1, `setup x ${left}, centered at ${centered}`);
     }
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/tracker-full-screen-${width.label}.png` });
 
