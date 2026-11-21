@@ -7,6 +7,7 @@
 // baseline's share of it. The baseline is a parameter: the whole catalog, or one commander's EDHREC average deck.
 import { frontFaceTypeLine } from "@/lib/recs/faces";
 import { CREATURE_TYPES } from "./creature-types.generated";
+import { TEXT_AXES, textAxesOf } from "./text-axes";
 
 /** Copies on an axis below this score 0: a splash, not a plan (research §2). */
 export const AXIS_FLOOR = 5;
@@ -17,13 +18,13 @@ export const TYPAL_AXES = 3;
 /** A baseline share under this is raised to it, so an axis a baseline never holds has a finite lift. */
 export const BASELINE_FLOOR = 0.005;
 
-export const FIXED_AXES = ["artifacts", "enchantments", "voltron", "vehicles", "bigCreatures", "planeswalkers", "sagas", "proliferate"] as const;
+export const FIXED_AXES = ["artifacts", "enchantments", "voltron", "vehicles", "bigCreatures", "planeswalkers", "sagas", "proliferate", ...TEXT_AXES] as const;
 export type FixedAxis = (typeof FIXED_AXES)[number];
 /** `typal:<Type>`, the type as the type line spells it (`typal:Elf`). */
 export type AxisKey = FixedAxis | `typal:${string}`;
 
-/** One nonland card of a list. The caller drops lands. */
-export type AxisCard = { typeLine: string; manaValue: number; keywords: readonly string[]; quantity: number };
+/** One nonland card of a list. The caller drops lands. `oracleText` feeds the text axes; a card without it joins none. */
+export type AxisCard = { typeLine: string; manaValue: number; keywords: readonly string[]; quantity: number; oracleText?: string | null };
 
 type Parsed = { types: string; subtypes: string[] };
 
@@ -75,6 +76,7 @@ export function fixedAxesOf(card: AxisCard): FixedAxis[] {
   if (/\bplaneswalker\b/.test(p.types)) out.push("planeswalkers");
   if (p.subtypes.includes("Saga")) out.push("sagas");
   if (hasKeyword(card, "proliferate")) out.push("proliferate");
+  out.push(...textAxesOf(card.oracleText, card.keywords));
   return out;
 }
 

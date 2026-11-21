@@ -65,7 +65,7 @@ export function freshThemes(r: CardRow): LabelTheme[] {
 /** A commander-legal game card that is not a land, as the strategy reads count it. */
 export function toStrategyCard(r: CardRow): KeyedStrategyCard | null {
   if (!isGameCard({ layout: r.layout, typeLine: r.typeLine }) || isLandFace(r.typeLine)) return null;
-  return { oracleId: r.oracleId, typeLine: r.typeLine, manaValue: r.manaValue, keywords: r.keywords, themes: freshThemes(r), quantity: r.quantity };
+  return { oracleId: r.oracleId, typeLine: r.typeLine, manaValue: r.manaValue, keywords: r.keywords, oracleText: r.oracleText, themes: freshThemes(r), quantity: r.quantity };
 }
 
 const strategyCards = (rows: readonly CardRow[]) => rows.map(toStrategyCard).filter((c): c is KeyedStrategyCard => c !== null);
