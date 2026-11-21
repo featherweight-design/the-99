@@ -9,6 +9,7 @@ import { requireUserId } from "../../../../../lib/auth";
 import { MAX_SEATS } from "../../../../../lib/tracker/engine";
 import { tableRoster } from "../../../../../lib/social/rule-zero-result";
 import { loadTable } from "../../../../../lib/social/rule-zero-table";
+import { logGameHref } from "../../../../../lib/rule-zero/table-view";
 import { PlaySurface } from "../../../../../components/tracker/play-surface";
 import type { PlaySeat } from "../../../../../components/tracker/panel";
 
@@ -32,11 +33,12 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
     partnerArt: s.deck?.partner?.artCropUri ?? null,
     commander: s.deck?.commander.name ?? "",
     partner: s.deck?.partner?.name ?? null,
+    deck: s.deck?.name ?? "",
   }));
 
   return (
     <div className="flex w-full flex-1 flex-col">
-      <PlaySurface tableId={id} roster={roster} expiresAt={view.closesAt.getTime()} seats={seats} backHref={`/friends/table/${id}`} />
+      <PlaySurface tableId={id} roster={roster} expiresAt={view.closesAt.getTime()} seats={seats} backHref={`/friends/table/${id}`} logHref={logGameHref(view)} podName={view.podName} />
     </div>
   );
 }

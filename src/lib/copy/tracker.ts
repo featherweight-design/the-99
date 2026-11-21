@@ -144,8 +144,32 @@ export const trackerCopy = {
   },
   over: {
     title: "Game over",
-    saved: "Result saved",
-    notSaved: "Result not saved",
+    notSaved: "The result didn’t save, so Log this game starts blank.",
     back: "Back to the table",
+  },
+  // The result (F11, S5). "Thursday night · 4 rounds · 1 h 14 min": the pod's name is drawn before it.
+  result: {
+    meta: (rounds: number, length: string | null) => ` · ${rounds === 1 ? "1 round" : `${rounds} rounds`}${length ? ` · ${length}` : ""}`,
+    close: "Close the result",
+    wins: (name: Name): PersonParts => personText`${name} wins`,
+    youWin: "You win",
+    winSub: (deck: Name, life: number): PersonParts => personText`${deck} · ${life} life left`,
+    draw: "A draw",
+    // "Colin and you went out together · round 6"; a draw from End game: "Colin and you drew · round 6"
+    drawOut: (who: PersonParts, round: number): PersonParts => personText`${who} went out together · round ${round}`,
+    drawHand: (who: PersonParts, round: number): PersonParts => personText`${who} drew · round ${round}`,
+    outKicker: "Out, last first",
+    outYou: "You",
+    outLife: (round: number) => `Round ${round} · life`,
+    outPoison: (round: number) => `Round ${round} · 10 poison`,
+    outCommander: (round: number, commander: string) => `Round ${round} · 21 commander damage from ${commander}`,
+    outStillIn: (round: number) => `Round ${round} · still in at the end`,
+    log: "Log this game",
+    logWin: (name: Name): PersonParts => personText`Everyone seated finds ${name}’s win filled in when they log.`,
+    logWinYou: "Everyone seated finds your win filled in when they log.",
+    // "Logs as a draw for Colin and you, and a loss for Max and Peter."
+    logDraw: (drew: PersonParts, lost: PersonParts | null): PersonParts =>
+      lost ? personText`Logs as a draw for ${drew}, and a loss for ${lost}.` : personText`Logs as a draw for ${drew}.`,
+    rematch: "Rematch, same seats",
   },
 };

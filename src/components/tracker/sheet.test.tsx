@@ -6,8 +6,8 @@ import { Sheet, type SheetTab } from "./sheet";
 
 const config: GameConfig = { tableId: "t", startingLife: 40, seats: [{ seat: 0, commanders: 1 }, { seat: 1, commanders: 2 }], first: 0, layout: "phone-2" };
 const seats: PlaySeat[] = [
-  { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null },
-  { seat: 1, you: false, name: "Colin" as never, art: null, partnerArt: null, commander: "Ishai", partner: "Bruse" },
+  { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null, deck: "Sai Artifacts" },
+  { seat: 1, you: false, name: "Colin" as never, art: null, partnerArt: null, commander: "Ishai", partner: "Bruse", deck: "Ishai Ojutai" },
 ];
 const render = (tab: SheetTab, game: Game) =>
   renderToStaticMarkup(

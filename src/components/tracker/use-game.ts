@@ -35,11 +35,13 @@ export function useGame(tableId: string, expiresAt: number) {
   const start = useCallback((g: Game) => setGame(g), []);
   const commit = useCallback((a: Action) => setGame((g) => (g ? commitAction(g, a) : g)), []);
   const undo = useCallback(() => setGame((g) => (g ? undoAction(g) : g)), []);
+  /** Stamps when the result first showed; a game already stamped keeps its time. */
+  const finish = useCallback((at: number) => setGame((g) => (g && g.endedAt === undefined ? { ...g, endedAt: at } : g)), []);
   const discard = useCallback(() => {
     const s = local();
     if (s) discardGame(s, tableId);
     setGame(null);
   }, [tableId]);
 
-  return { ready, game, start, commit, undo, discard };
+  return { ready, game, start, commit, undo, discard, finish };
 }

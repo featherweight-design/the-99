@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { SeatState } from "@/lib/tracker/engine";
 import { Panel, type PlaySeat } from "./panel";
 
-const seat: PlaySeat = { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null };
+const seat: PlaySeat = { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null, deck: "Sai Artifacts" };
 const base: SeatState = {
   seat: 0,
   commanders: 1,
