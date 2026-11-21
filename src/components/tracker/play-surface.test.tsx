@@ -166,9 +166,11 @@ describe("PlaySurface Undo the last change", () => {
     await settle();
     expect(undoTableResultAction).toHaveBeenCalledWith("t1", "r");
     expect(screen.queryByTestId("tracker-result")).toBeNull();
-    const toast = screen.getByRole("status");
-    expect(toast.textContent).toContain("Game back on");
-    expect(toast.textContent).toContain("Undid Colin −40 life, to 0 · round 1");
+    // The board's own "Your turn" line is a status region too, so the toast is the status that says Game back on.
+    const toast = screen.getAllByRole("status").find((el) => el.textContent?.includes("Game back on"));
+    expect(toast).toBeTruthy();
+    expect(toast!.textContent).toContain("Game back on");
+    expect(toast!.textContent).toContain("Undid Colin −40 life, to 0 · round 1");
     expect(document.activeElement).toBe(screen.getAllByTestId("panel-name")[1]);
   });
 
@@ -206,7 +208,7 @@ describe("PlaySurface Undo the last change", () => {
     await settle();
     const result = screen.getByTestId("tracker-result");
     expect(within(result).getByTestId("result-logged-note").textContent).toMatch(/^You logged this game at .+, so this ending stays\.$/);
-    expect(screen.queryByRole("status")).toBeNull();
+    expect(screen.queryAllByRole("status").some((el) => el.textContent?.includes("Game back on"))).toBe(false);
   });
 
   it("leaves the game over and offers Try again when the Undo fails (clarification 4)", async () => {
