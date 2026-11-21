@@ -472,7 +472,7 @@ export function EditCopiesSheet({
             role="alertdialog"
             aria-modal="true"
             aria-labelledby={warnId}
-            className="max-h-[88%] w-full overflow-y-auto rounded-t-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[20px] md:w-[400px] md:rounded-[12px]"
+            className="anim-sheet-in-phone max-h-[88%] w-full overflow-y-auto rounded-t-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[20px] md:w-[400px] md:rounded-[12px]"
           >
             {warning.choice ? (
               <ShortDeckChooser
@@ -512,7 +512,7 @@ export function EditCopiesSheet({
             aria-modal="true"
             aria-labelledby={`${titleId}-discard`}
             aria-describedby={`${titleId}-discard-body`}
-            className="w-full rounded-t-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[20px] md:w-[360px] md:rounded-[12px]"
+            className="anim-sheet-in-phone w-full rounded-t-[16px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-rail)] p-[20px] md:w-[360px] md:rounded-[12px]"
           >
             <p id={`${titleId}-discard`} className="m-0 font-display text-[17px] font-semibold">{c.discardTitle}</p>
             <p id={`${titleId}-discard-body`} className="mb-0 mt-[8px] text-[13.5px] text-[color:var(--fg-body)]">{c.discardBody}</p>

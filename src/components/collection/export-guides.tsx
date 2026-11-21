@@ -58,7 +58,7 @@ function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusR
         tabIndex={-1}
         data-testid="export-guides"
         onClick={(e) => e.stopPropagation()}
-        className="anim-sheet-up relative flex max-h-[92dvh] w-full flex-col gap-[6px] overflow-hidden rounded-[18px_18px_0_0] border border-solid border-[color:var(--border-strong)] max-md:border-b-0 bg-[color:var(--surface-raised)] px-[18px] pb-[24px] pt-[10px] outline-none md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[18px] md:pt-[22px]"
+        className="anim-sheet-in-phone relative flex max-h-[92dvh] w-full flex-col gap-[6px] overflow-hidden rounded-[18px_18px_0_0] border border-solid border-[color:var(--border-strong)] max-md:border-b-0 bg-[color:var(--surface-raised)] px-[18px] pb-[24px] pt-[10px] outline-none md:w-[520px] md:rounded-[14px] md:px-[24px] md:pb-[18px] md:pt-[22px]"
       >
         <SheetGrabber className="pt-0" barClassName="mb-[2px]" />
         <div className="flex flex-none items-start justify-between gap-[12px]">

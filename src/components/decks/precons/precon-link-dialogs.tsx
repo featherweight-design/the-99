@@ -81,7 +81,7 @@ function Shell({ title, pending, onDismiss, initialFocusRef, children, footer }:
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative z-10 mx-auto flex max-h-[90dvh] max-md:max-h-[min(90dvh,calc(var(--vv-h,100dvh)*0.9))] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
+        className="anim-sheet-in-phone relative z-10 mx-auto flex max-h-[90dvh] max-md:max-h-[min(90dvh,calc(var(--vv-h,100dvh)*0.9))] w-full flex-col gap-[16px] overflow-hidden rounded-[16px_16px_0_0] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] p-[10px_18px_18px] md:max-w-[500px] md:rounded-[14px] md:p-[24px_24px_20px]"
       >
         <span aria-hidden className="mx-auto h-[4px] w-[36px] flex-none rounded-full bg-[color:var(--border-strong)] md:hidden" />
         <div className="flex flex-none items-start justify-between gap-[12px]">

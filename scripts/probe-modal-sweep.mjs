@@ -225,6 +225,19 @@ async function walk(browser, width) {
       await openCheck(page, check, "set page > Filters (FilterSheet)", "[role=dialog]", () => page.getByRole("button", { name: /^Filters/ }).first().click());
       await page.keyboard.press("Escape");
     }
+
+    // PR B2: the collection's Add cards sheet (SHEET_PANEL_CLASS: full height on a phone, a side sheet from 768).
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded", timeout: 180_000 });
+        break;
+      } catch (error) {
+        if (attempt >= 2 || !/ERR_ABORTED/.test(String(error?.message))) throw error;
+        await page.waitForTimeout(1500);
+      }
+    }
+    await openCheck(page, check, "collection > Add cards (sheet)", "[role=dialog]", () => page.locator('[data-testid="collection-add"]').first().click(), 12);
+    await page.keyboard.press("Escape");
   } finally {
     await context.close();
   }
