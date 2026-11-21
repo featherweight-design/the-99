@@ -52,7 +52,7 @@ const SIZES = { phone: { width: 390, height: 844, touch: true }, desktop: { widt
 // Installed before the press: stamps when the skeleton first draws, whether it is the strip-bearing one, and when the deck's
 // own strip (data-flip-strip) lands, so a run reports both times and a flash (skeleton shown, then gone within a few frames).
 const WATCH = () => {
-  window.__open = { t0: performance.now(), skeletonAt: null, skeletonHasLink: false, skeletonGoneAt: null, landedAt: null, crown: false };
+  window.__open = { path0: location.pathname, t0: performance.now(), skeletonAt: null, skeletonHasLink: false, skeletonGoneAt: null, landedAt: null, crown: false };
   const tick = () => {
     const o = window.__open;
     const sk = document.querySelector("[data-loading-screen]");
@@ -62,7 +62,7 @@ const WATCH = () => {
       o.crown = /Shuffling up/.test(sk.textContent ?? "");
     }
     if (!sk && o.skeletonAt !== null && o.skeletonGoneAt === null) o.skeletonGoneAt = performance.now() - o.t0;
-    if (document.querySelector("[data-flip-strip]") && o.landedAt === null && o.t0 !== null) o.landedAt = performance.now() - o.t0;
+    if (location.pathname !== o.path0 && !sk && document.querySelector("[data-flip-strip]") && o.landedAt === null) o.landedAt = performance.now() - o.t0;
     if (o.landedAt === null) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
@@ -70,14 +70,7 @@ const WATCH = () => {
 
 async function timedFlip(page, name, cdp, profile, trigger) {
   await cdp.send("Network.emulateNetworkConditions", profile);
-  // The probe's own stamp: a stale strip from the page we left must not count as landed.
-  await page.evaluate(() => { document.querySelectorAll("[data-flip-strip]").forEach((e) => e.setAttribute("data-stale", "")); });
   await page.evaluate(`(${WATCH.toString()})()`);
-  await page.evaluate(() => {
-    const o = window.__open; const orig = o;
-    const check = () => { if (document.querySelector("[data-flip-strip]:not([data-stale])")) { if (orig.landedAt === null) orig.landedAt = performance.now() - orig.t0; } else requestAnimationFrame(check); };
-    orig.landedAt = null; requestAnimationFrame(check);
-  });
   await trigger();
   await page.waitForFunction(() => window.__open?.landedAt !== null, null, { timeout: 90_000 });
   const o = await page.evaluate(() => window.__open);
@@ -88,6 +81,7 @@ async function timedFlip(page, name, cdp, profile, trigger) {
 async function run(browser, name, { width, height, touch }) {
   const ctx = await browser.newContext({ viewport: { width, height }, hasTouch: touch, isMobile: touch, serviceWorkers: "block" });
   const page = await ctx.newPage();
+  page.setDefaultNavigationTimeout(180_000);
   const cdp = await ctx.newCDPSession(page);
   try {
     await signIn(page);
