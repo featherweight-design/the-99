@@ -11,13 +11,18 @@ import { PhotoList } from "./photo-list";
 import { usePhotoReader, type PhotoReaderDeps } from "./photo-reader";
 import { nextFrame, useCardScan, type AddOutcome, type CardScanDeps, type ScanCapture, type ScanPicked } from "./use-card-scan";
 import { scanTimer, type ScanTimer } from "../../../lib/scan/timing";
-import { resetScanMarks, scanMark } from "../../../lib/scan/marks";
+import { resetScanMarks, scanMark, setScanMarkSink } from "../../../lib/scan/marks";
+import { fallbackReporter } from "../../../lib/scan/fallback-events";
+import { captureScanFallback } from "../../../lib/analytics/posthog";
 import { holdModelLoad, scanModelLoad } from "../../../lib/scan/model-progress";
 import { REOPEN_AFTER_MS, scanLoading } from "./screen-state";
 
 const copy = collectionEditCopy.scan;
 
 /** How long a transient problem stays over the feed. */
+// Module scope, so a scanner reopened in the same page session does not send a kind again.
+const reportFallback = fallbackReporter(captureScanFallback);
+
 export const NOTICE_MS = 3000;
 
 /**
@@ -64,7 +69,10 @@ export function CardScanner({
   // Declared before the frame reader, so its mount effect (which starts the load) runs after the marks are reset.
   useEffect(() => {
     resetScanMarks();
+    // One `scan_fallback` event per fallback kind per page session (`fallback-events.ts`); the scan lab sets no sink.
+    setScanMarkSink(reportFallback);
     scanMark("scan:open");
+    return () => setScanMarkSink(null);
   }, []);
   // The loading panel (loading addendum): until the models are loaded and warmed, the looking panel says how far the
   // shared load has got, read from the load itself so a scanner reopened mid-download shows its real progress.

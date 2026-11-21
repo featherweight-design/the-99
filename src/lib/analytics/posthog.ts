@@ -182,6 +182,14 @@ export function captureSurveyShown(): void {
 }
 
 /**
+ * The card scanner fell back (`scan/fallback-events.ts`): `from` and `to` name the two paths, `reason` is one of a
+ * closed set of classes. No card, no image, no free text; the identity is what `identifyReader` already set.
+ */
+export function captureScanFallback(e: { kind: string; from: string; to: string; reason: string }): void {
+  withClient((posthog) => posthog.capture("scan_fallback", { kind: e.kind, from: e.from, to: e.to, reason: e.reason }));
+}
+
+/**
  * A reader this browser had seen signed in, now signed out (`sign-out-evidence.ts`). Called BEFORE `resetReader`, so
  * it lands on the same person as the session it lost. Every property is a fact about the browser, never about who.
  */

@@ -202,6 +202,16 @@ describe("captureSurveyShown", () => {
   });
 });
 
+describe("captureScanFallback", () => {
+  it("sends scan_fallback with the kind, the two paths and the reason, and nothing else", async () => {
+    const m = await load();
+    void m.startAnalytics(LIVE);
+    m.captureScanFallback({ kind: "webgpu", from: "webgpu", to: "wasm", reason: "run" });
+    await settle();
+    expect(posthog.capture.mock.calls.at(-1)).toEqual(["scan_fallback", { kind: "webgpu", from: "webgpu", to: "wasm", reason: "run" }]);
+  });
+});
+
 describe("posthogCspHosts", () => {
   it("names nothing without a key", async () => {
     const { posthogCspHosts } = await load();
