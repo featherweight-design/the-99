@@ -14,3 +14,8 @@ export const deckFlipCopy = {
   prev: (name: string, keyHint: boolean) => `Previous deck · ${name}${keyHint ? " (←)" : ""}`,
   next: (name: string, keyHint: boolean) => `Next deck · ${name}${keyHint ? " (→)" : ""}`,
 } as const;
+
+/** The deck page's loading skeleton (handoff `design_handoff_the99_deck_flip_skeleton`): one line for a screen reader. */
+export const deckOpenLoadingCopy = {
+  status: "Opening your deck",
+} as const;
