@@ -17,6 +17,7 @@ vi.mock("./card-details/binder.generated", () => chunkFile("binder"));
 vi.mock("./card-details/played.generated", () => chunkFile("played"));
 vi.mock("./card-details/over.generated", () => chunkFile("over"));
 vi.mock("./card-details/under.generated", () => chunkFile("under"));
+vi.mock("./card-details/upgrade.generated", () => chunkFile("upgrade"));
 vi.mock("./card-details/shared.generated", () => chunkFile("shared"));
 
 const prices = indexPriceRows([
@@ -38,7 +39,7 @@ describe("decodeCardDetails", () => {
 describe("loadDemoCardDetails", () => {
   const empty = { played: {}, over: {}, under: {} };
   const written = () => {
-    chunk.json = Object.fromEntries(["binder", "played", "over", "under", "shared"].map((n) => [n, encodeDemo({ format: 1, cardDetails: {}, deckCombos: empty })]));
+    chunk.json = Object.fromEntries(["binder", "played", "over", "under", "upgrade", "shared"].map((n) => [n, encodeDemo({ format: 1, cardDetails: {}, deckCombos: empty })]));
     chunk.json.played = encodeDemo({ format: 1, cardDetails: packCardDetails(details), deckCombos });
     chunk.json.shared = encodeDemo({ format: 1, cardDetails: { y: { oracleId: "y", name: "Mountain", prices: null } }, deckCombos: empty });
   };
