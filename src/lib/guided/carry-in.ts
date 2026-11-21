@@ -1,6 +1,6 @@
 import type { BracketTarget } from "../precons/upgrade/targets";
 import { isBracketTarget } from "../precons/upgrade/targets";
-import type { PoolMode } from "./constants";
+import { BUDGET_MAX_CENTS, BUDGET_MIN_CENTS, type PoolMode } from "./constants";
 
 /**
  * Help me choose's answers as the Guided sheet's starting picks (H2 to H4): each step opens pre-picked and marked `from your answers`.
@@ -27,10 +27,16 @@ export const NO_CARRY: CarryIn = { strategyKey: null, bracket: null, poolMode: n
 /** The first answered theme the offer backs, by the index's slug or its label; the bracket only if it is one Guided offers (2 to 4). */
 export function carryIn(answers: CarryAnswers | null, offered: readonly { key: string; label: string }[]): CarryIn {
   if (answers === null) return NO_CARRY;
-  const theme = answers.themes.find((t) => offered.some((o) => o.key === t.slug || o.label.toLowerCase() === t.label.toLowerCase()));
-  const strategy = theme ? offered.find((o) => o.key === theme.slug || o.label.toLowerCase() === theme.label.toLowerCase()) ?? null : null;
+  const same = (o: { key: string; label: string }, t: { slug: string; label: string }) => o.key === t.slug || o.label.trim().toLowerCase() === t.label.trim().toLowerCase();
+  let strategy: { key: string } | null = null;
+  for (const t of answers.themes) {
+    strategy = offered.find((o) => same(o, t)) ?? null;
+    if (strategy) break;
+  }
   const bracket = answers.bracket !== null && isBracketTarget(answers.bracket) ? answers.bracket : null;
-  const budget = answers.budgetDollars !== null && answers.pool === "any" ? Math.round(answers.budgetDollars * 100) : null;
+  const cents = answers.budgetDollars !== null && answers.pool === "any" ? Math.round(answers.budgetDollars * 100) : null;
+  // A budget Guided would refuse (zero, negative, not a number, past the cap) pre-picks nothing.
+  const budget = cents !== null && Number.isFinite(cents) && cents >= BUDGET_MIN_CENTS && cents <= BUDGET_MAX_CENTS ? cents : null;
   return {
     strategyKey: strategy?.key ?? null,
     bracket,

@@ -26,6 +26,7 @@ describe("carryIn", () => {
     expect(carryIn(answers({ pool: "own", budgetDollars: 50 }), offered)).toMatchObject({ poolMode: "owned", budgetCents: null });
     expect(carryIn(answers({ budgetDollars: 12.5 }), offered)).toMatchObject({ poolMode: "budget", budgetCents: 1250 });
     expect(carryIn(answers(), offered).poolMode).toBeNull();
+    for (const bad of [0, -5, Number.NaN, Number.POSITIVE_INFINITY, 6000]) expect(carryIn(answers({ budgetDollars: bad }), offered)).toMatchObject({ poolMode: null, budgetCents: null });
     expect(carryIn(answers({ card: { oracleId: "c1" } }), offered).kept).toEqual(["c1"]);
   });
 });

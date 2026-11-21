@@ -10,7 +10,7 @@ import {
 } from "../precons/upgrade/run";
 import { readSwapPartners } from "../precons/upgrade/swap-partners";
 import type { StoredPair } from "../precons/upgrade/validate";
-import { POOL_MODES, type PoolMode } from "./constants";
+import { BUDGET_MAX_CENTS, BUDGET_MIN_CENTS, POOL_MODES, type PoolMode } from "./constants";
 import { guidedStrategies, loadGuidedDeck, loadGuidedPool } from "./inputs";
 import { overviewAfterGuidedRun } from "./overview";
 import { finishGuided, reapGuided, startGuided, type GuidedHandle } from "./store";
@@ -35,8 +35,7 @@ export type GuidedPicks = {
 
 /** A deck holds 99 cards: more kept ids than that is not a deck's list. */
 const KEPT_MAX = 99;
-export const BUDGET_MIN_CENTS = 100;
-export const BUDGET_MAX_CENTS = 500_000;
+export { BUDGET_MAX_CENTS, BUDGET_MIN_CENTS };
 const isPoolMode = (v: unknown): v is PoolMode => POOL_MODES.some((m) => m === v);
 
 export type GuidedBegin =

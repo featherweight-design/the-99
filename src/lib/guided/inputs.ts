@@ -48,12 +48,16 @@ export type GuidedStrategy = Strategy & { backing: { oracleId: string; name: str
 /**
  * The strategies the commander's themes back with cards the player can put in the deck: the cards the deck holds plus the cards they
  * own from the commander's index (what an owned-only run adds from). ONE function for the sheet (before the deck exists: `lines` is the
- * commander alone) and for `beginGuided` (the free fill as placed), so a strategy the sheet offers is one the start accepts.
+ * commander alone) and for `beginGuided` (the free fill as placed). The start's facts are a superset of the sheet's (the fill's cards
+ * plus the owned index cards the fill left out), so a strategy the sheet offers is backed at the start too; only the three-strategy cap
+ * can drop one there, and the start then refuses it as not offered.
  * Empty means no run is offered (READINESS Y3).
  */
 export async function guidedStrategies(userId: string, commanderIds: string[], lines: readonly DeckLine[]): Promise<GuidedStrategy[]> {
   const meta = await loadSupportMeta(commanderIds);
   const tags = commanderIds.flatMap((id) => meta.get(id)?.tags ?? []);
+  // No themes means no strategy can be backed (and an id that is no indexed commander): skip the pool and ownership reads.
+  if (tags.length === 0) return [];
   const held = new Set([...commanderIds, ...lines.map((l) => l.oracleId)]);
   const index = await readPool(commanderIds, [...held], false);
   const owned = await readOwnedOracleIds(userId, index.map((r) => r.oracleId));
