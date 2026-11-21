@@ -43,7 +43,7 @@ beforeEach(() => {
   m.dismiss.mockReset();
   m.dismiss.mockResolvedValue({ ok: true });
   m.clear.mockReset();
-  m.clear.mockResolvedValue({ ok: true });
+  m.clear.mockImplementation(async (keys: string[]) => ({ ok: true, cleared: keys }));
   m.restore.mockReset();
   m.restore.mockResolvedValue({ ok: true });
 });
@@ -234,6 +234,14 @@ describe("Clear all", () => {
     const keys = m.clear.mock.calls[0][0] as string[];
     expect(keys).toContain(LEAD);
     expect(screen.getByRole("status")).toHaveTextContent(ca.cleared(3));
+  });
+  it("lifts on Undo only the keys the clear newly wrote, so an item dismissed elsewhere meanwhile stays dismissed", async () => {
+    const rows = [1, 2, 3].map((n) => view(n));
+    m.clear.mockResolvedValue({ ok: true, cleared: [rows[1].key, rows[2].key] });
+    render(<WhatsNew feed={feed(rows)} now={NOW} />);
+    await act(async () => { fireEvent.click(clearBtn()!); });
+    await act(async () => { fireEvent.click(screen.getByRole("button", { name: ca.undo })); });
+    expect(m.restore).toHaveBeenCalledWith([rows[1].key, rows[2].key]);
   });
   it("leaves the lead out when the slot holds that very story, and counts only the rows", async () => {
     const Hold = () => {

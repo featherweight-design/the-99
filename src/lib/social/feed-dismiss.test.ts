@@ -86,7 +86,7 @@ describe("Clear all's keys and its one statement", () => {
   });
   it("writes items only from the reader's own rows and catalog keys as given, in one statement", () => {
     const { sql, params } = render(clearQuery("u1", { items: [ID], catalog: ["set:dsk"] }));
-    expect(sql).toMatch(/^insert into "feed_dismissals" \(user_id, key\) select dfi\.user_id, 'item:' \|\| dfi\.id::text from "feed_items" dfi where dfi\.user_id = \$1 and dfi\.id in \(\$2::uuid\) union all select \$3::text, ck from \(values \(\$4\)\) as c\(ck\) on conflict do nothing$/);
+    expect(sql).toMatch(/^insert into "feed_dismissals" \(user_id, key\) select dfi\.user_id, 'item:' \|\| dfi\.id::text from "feed_items" dfi where dfi\.user_id = \$1 and dfi\.id in \(\$2::uuid\) union all select \$3::text, ck from \(values \(\$4\)\) as c\(ck\) on conflict do nothing returning key$/);
     expect(params).toEqual(["u1", ID, "u1", "set:dsk"]);
   });
 });

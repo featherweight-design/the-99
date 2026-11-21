@@ -83,15 +83,16 @@ export function clearQuery(userId: string, k: { items: string[]; catalog: string
   if (k.catalog.length > 0) {
     parts.push(sql`select ${userId}::text, ck from (values ${sql.join(k.catalog.map((key) => sql`(${key})`), sql`, `)}) as c(ck)`);
   }
-  return sql`insert into ${feedDismissals} (user_id, key) ${sql.join(parts, sql` union all `)} on conflict do nothing`;
+  return sql`insert into ${feedDismissals} (user_id, key) ${sql.join(parts, sql` union all `)} on conflict do nothing returning key`;
 }
 
-/** Clear all's write. */
-export async function clearFeedKeys(userId: string, k: { items: string[]; catalog: string[] }): Promise<void> {
-  await db.execute(clearQuery(userId, k));
+/** Clear all's write. Returns the keys it newly wrote: one the reader had already dismissed (another tab) is not among them, so Undo leaves it alone. */
+export async function clearFeedKeys(userId: string, k: { items: string[]; catalog: string[] }): Promise<string[]> {
+  const done = await db.execute<{ key: string }>(clearQuery(userId, k));
+  return done.rows.map((r) => r.key);
 }
 
-/** Undo's inverse: the reader's own dismissals for exactly the keys Clear all wrote, and nobody else's. */
+/** Undo's inverse: the reader's own dismissals for the keys Clear all newly wrote (its action returns them), and nobody else's. */
 export async function restoreFeedKeys(userId: string, k: { items: string[]; catalog: string[] }): Promise<void> {
   const keys = [...k.items.map((id) => `item:${id}`), ...k.catalog];
   await db.delete(feedDismissals).where(and(eq(feedDismissals.userId, userId), inArray(feedDismissals.key, keys)));

@@ -137,22 +137,24 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
     if (lead) heldLead?.setGone(on ? lead : null);
   };
   const clearAll = (pending: string | null) => {
-    const keys = clearable.filter((k) => k !== pending).slice(0, CLEAR_ALL_MAX);
+    const keys = [...new Set(clearable.filter((k) => k !== pending))].slice(0, CLEAR_ALL_MAX);
     if (keys.length === 0) return;
     const lead = leadKey && keys.includes(leadKey) ? leadKey : null;
     setClearToast(null);
     bring(keys, true, lead);
     requestAnimationFrame(() => document.getElementById("home-whats-new")?.focus());
     const fail = (text: string) => setClearFailed({ id: ++clearSeq.current, text });
-    const undo = () => {
+    // Undo lifts only what this press newly wrote: an item dismissed elsewhere meanwhile stays dismissed.
+    const undo = (wrote: string[]) => () => {
       bring(keys, false, lead);
       // The press is not on the page until the rows are back: the effect below focuses it once it is.
       refocusClear.current = true;
-      void restoreFeedItemsAction(keys)
+      void (wrote.length > 0 ? restoreFeedItemsAction(wrote) : Promise.resolve({ ok: true as const }))
         .then((r) => {
           if (!r.ok) throw new Error(r.reason);
         })
         .catch(() => {
+          refocusClear.current = false;
           bring(keys, true, lead);
           fail(c.clearAll.undoFailed);
         });
@@ -160,7 +162,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
     void clearFeedItemsAction(keys)
       .then((r) => {
         if (!r.ok) throw new Error(r.reason);
-        setClearToast({ id: ++clearSeq.current, text: c.clearAll.cleared(keys.length), retry: { label: c.clearAll.undo, run: undo } });
+        setClearToast({ id: ++clearSeq.current, text: c.clearAll.cleared(keys.length), retry: { label: c.clearAll.undo, run: undo(r.cleared) } });
       })
       .catch(() => {
         bring(keys, false, lead);
