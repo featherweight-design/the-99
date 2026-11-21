@@ -28,11 +28,17 @@ export const COMMIT_MS = 2000;
 const copy = trackerCopy.panel;
 
 /** The pending life change of one panel: taps and holds add to it, and it commits as one entry after COMMIT_MS idle. */
+type Lit = { k: number; sign: 1 | -1; at: number; delay?: number };
+
 function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
   const [pending, setPending] = useState(0);
-  /** The half lit by the latest press or step, keyed so each one restarts its fade (`k` counts them). */
-  const [lit, setLit] = useState<{ k: number; sign: 1 | -1 } | null>(null);
-  const light = useCallback((sign: 1 | -1) => setLit((l) => ({ k: (l?.k ?? 0) + 1, sign })), []);
+  /**
+   * The half lit by the latest press or step, keyed so each one restarts its fade (`k` counts them). `at` is when its fade
+   * began; `delay` (negative) resumes a fade already under way when a cancelled press hands the light back.
+   */
+  const [lit, setLit] = useState<Lit | null>(null);
+  const beforePress = useRef<Lit | null>(null);
+  const light = useCallback((sign: 1 | -1) => setLit((l) => ({ k: (l?.k ?? 0) + 1, sign, at: performance.now() })), []);
   const total = useRef(0);
   const commitTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -80,14 +86,17 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
       stop();
       pressed.current = sign;
       held.current = false;
-      light(sign);
+      setLit((l) => {
+        beforePress.current = l;
+        return { k: (l?.k ?? 0) + 1, sign, at: performance.now() };
+      });
       holdTimer.current = setTimeout(() => {
         held.current = true;
         add(sign * 10);
         repeat.current = setInterval(() => add(sign * 10), REPEAT_MS);
       }, HOLD_MS);
     },
-    [add, disabled, light, stop],
+    [add, disabled, stop],
   );
 
   const up = useCallback(
@@ -122,10 +131,17 @@ function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
     return delta;
   }, [stop]);
 
-  /** A press that ends without a step (the finger slid off) unlights its half, unless a change is still pending. */
+  /**
+   * A press that ends without a step (the finger slid off) unlights its half and hands the light back to the half lit
+   * before it, mid-fade, while that change is still pending.
+   */
   const cancel = useCallback(() => {
+    // A touch tap fires pointerleave after pointerup: a press already released, or one that stepped by holding, keeps its light.
+    const stepless = pressed.current !== null && !held.current;
     stop();
-    if (total.current === 0) setLit(null);
+    if (!stepless) return;
+    const prev = beforePress.current;
+    setLit(total.current !== 0 && prev ? { ...prev, delay: prev.at - performance.now() } : null);
   }, [stop]);
 
   return { pending, lit, down, up, cancel, take };
@@ -362,7 +378,7 @@ export function Panel({
                             aria-hidden
                             data-testid="half-fill"
                             className="pointer-events-none absolute inset-0 bg-[color:color-mix(in_srgb,var(--accent)_18%,transparent)] motion-safe:animate-[half-fade_var(--fade)_linear_forwards]"
-                            style={{ "--fade": `${COMMIT_MS}ms` } as React.CSSProperties}
+                            style={{ "--fade": `${COMMIT_MS}ms`, animationDelay: `${lit.delay ?? 0}ms` } as React.CSSProperties}
                           />
                         ) : null}
                         <span aria-hidden className="relative">{sign === 1 ? "+" : "−"}</span>

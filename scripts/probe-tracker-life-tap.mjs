@@ -57,7 +57,14 @@ async function signIn(page) {
 const sample = (half) =>
   half.evaluate((el) => {
     const panel = el.closest("[data-testid=panel-front]") ?? el.closest("[data-testid=tracker-panel]") ?? el.parentElement.parentElement;
-    const tint = [...panel.querySelectorAll("span[aria-hidden]")].find((s) => s.className.includes("life-pulse"));
+    // A tint is any animating layer, outside the halves, that covers most of the panel (main's `life-pulse` span was one),
+    // found by what it does rather than by its class, so a renamed or reworked flash is still caught.
+    const pr = panel.getBoundingClientRect();
+    const tint = [...panel.querySelectorAll("*")].find((n) => {
+      if (n.closest("button") || n.getAnimations().length === 0) return false;
+      const r = n.getBoundingClientRect();
+      return r.width * r.height > 0.5 * pr.width * pr.height;
+    });
     // What the half draws: its own ground, or the fill layer inside it, its alpha scaled by the layer's opacity.
     const fill = el.querySelector("[data-testid=half-fill]");
     const own = getComputedStyle(el).backgroundColor;
@@ -140,6 +147,27 @@ try {
       report(`${which}: the pressed color fades steadily after the last tap`, fading.length > 5 && fading.every((a, i) => i === 0 || a <= fading[i - 1] + 0.005) && mid.some((a) => a >= 0.05 && a <= 0.14), `mid ${mid.map((a) => a.toFixed(2)).join(" ")}`);
       report(`${which}: no panel tint flashes at the commit`, around.every((r) => r.tint === "none" || r.tint.endsWith("@0.00")), around.map((r) => r.tint).join(" "));
       await page.waitForTimeout(800);
+    }
+
+    // A press that slides off without a step hands the light back to the half whose change is pending, mid-fade.
+    {
+      const plus = page.getByTestId("half-plus").first();
+      const minus = page.getByTestId("half-minus").first();
+      const pb = await plus.boundingBox();
+      const mb = await minus.boundingBox();
+      await page.touchscreen.tap(pb.x + pb.width / 2, pb.y + pb.height / 2);
+      await page.waitForTimeout(900);
+      await page.mouse.move(mb.x + mb.width / 2, mb.y + mb.height / 2);
+      await page.mouse.down();
+      await page.waitForTimeout(120);
+      await page.mouse.move(mb.x + mb.width / 2, mb.y - 200, { steps: 4 });
+      await page.mouse.up();
+      await page.waitForTimeout(60);
+      const p = await sample(plus);
+      const m = await sample(minus);
+      report("a slid-off press leaves its own half unlit", alpha(m.bg) < 0.03, m.bg);
+      report("a slid-off press hands the light back to the pending half, mid-fade", alpha(p.bg) >= 0.05 && alpha(p.bg) <= 0.14, p.bg);
+      await page.waitForTimeout(2400);
     }
     await context.close();
   }
