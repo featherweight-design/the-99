@@ -91,7 +91,7 @@ async function walk(browser, width) {
       closeOk && near(cb.width, 44) && near(cb.height, 44) && (await close.getAttribute("href")) === `/friends/table/${TABLE}`,
       closeOk ? `${cb.width}x${cb.height} ${await close.getAttribute("href")}` : "no Close link",
     );
-    const lead = await setup.getByText(width.viewport.width < 768 ? "Lay the phone flat and drag each player to the side they sit on." : "Lay the device flat and drag each player to the side they sit on.").isVisible();
+    const lead = await setup.getByText(width.viewport.width < 768 ? "Lay the phone flat in the middle of the table." : "Lay the device flat in the middle of the table.").isVisible();
     report(L("the lead line is drawn, naming the phone or the device"), lead);
 
     const group = setup.getByRole("radiogroup", { name: "How the table sits" });

@@ -9,9 +9,11 @@ export const trackerCopy = {
   setup: {
     title: "Set up the game",
     close: "Close",
-    lead: "Lay the phone flat and drag each player to the side they sit on.",
+    // Until the seat map lands (F02, T2), there is nothing to drag, so the line stops at laying the phone down. T2 takes
+    // the board's "Lay the phone flat and drag each player to the side they sit on."
+    lead: "Lay the phone flat in the middle of the table.",
     // From md (768px), where the tracker plays on a tablet.
-    leadDevice: "Lay the device flat and drag each player to the side they sit on.",
+    leadDevice: "Lay the device flat in the middle of the table.",
     table: "Table",
     tableAria: "How the table sits",
     life: "Starting life",
