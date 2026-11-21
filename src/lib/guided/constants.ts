@@ -6,3 +6,6 @@ export const GUIDED_UNITS = UPGRADE_UNITS;
 /** The three pools a run can add from (G4): what the player owns, anything up to the per-card cap, or anything within a total budget. */
 export const POOL_MODES = ["owned", "cap", "budget"] as const;
 export type PoolMode = (typeof POOL_MODES)[number];
+
+/** A short or failed run's line, and its tile's, stays this long (it has no "seen" mark to retire it): derived from the run's start, never stored. */
+export const GUIDED_LINE_HOURS = 24;

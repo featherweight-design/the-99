@@ -6,14 +6,13 @@
 import { useEffect, useState } from "react";
 import { readGuidedStateAction } from "../../../app/decks/guided-actions";
 import { guidedBuildCopy } from "../../../lib/copy/guided-build";
+import { GUIDED_LINE_HOURS } from "../../../lib/guided/constants";
 import type { GuidedState } from "../../../lib/guided/store";
 import { GuidedRunDialog } from "./guided-run-view";
 import { useGuidedRun } from "./use-guided-run";
 import { useClock } from "../precons/upgrade/wait-view";
 
 const copy = guidedBuildCopy.line;
-/** A short or failed run's line stays this long (it has no "seen" mark to retire it): derived from the run's start, never stored. */
-export const GUIDED_LINE_HOURS = 24;
 
 /** Pure: whether the deck's page draws a line for this run. */
 export function lineShows(run: GuidedState, now: number): boolean {

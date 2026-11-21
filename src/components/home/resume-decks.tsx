@@ -24,6 +24,7 @@ import { commanderDisplayName } from "../../lib/cards/printed-name";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { byTouched, elapsed, touchedBy } from "../../lib/decks/touched";
+import { GuidedStamp } from "../decks/guided/guided-tile-line";
 import { statusBarStyle } from "../../lib/decks/status-style";
 import { TRUNCATES } from "../decks/truncates";
 import { BracketChip } from "../decks/bracket-chip";
@@ -198,7 +199,8 @@ function ResumeRow(
             data-resume-stamp
             className="ml-auto flex-none whitespace-nowrap font-mono text-[10.5px] text-[color:var(--fg-locked)]"
           >
-            {stamp}
+            {/* While a guided run is going the stamp is its clock (the row has the one slot); a finished run leaves the stamp as it was. */}
+            {deck.guided?.status === "running" ? <GuidedStamp startedAt={deck.guided.startedAt} /> : stamp}
           </span>
         </span>
 

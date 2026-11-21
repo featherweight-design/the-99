@@ -45,6 +45,7 @@ import {
 } from "./grouping";
 import { statusPill, type StatusPill } from "./status";
 import { chipAnswer } from "../bracket/chip-answer";
+import { loadGuidedTiles, type GuidedTile } from "../guided/tile";
 import { isReachablePermits } from "../bracket/verdict-head";
 import { storedPermitsSql } from "../profile/stored-sql";
 import { noticeSummarySql, type NoticeSummary } from "../notices/summary-sql";
@@ -947,6 +948,8 @@ export type DeckListItem = {
   bracket: TileBracket | null;
   /** The deck's notice for its tile (deck notices plan D6). Null or absent: none. */
   notice?: NoticeSummary;
+  /** The deck's newest guided run, while its tile draws one (G6): running, or short or failed within the day. Null or absent: none. */
+  guided?: GuidedTile | null;
 };
 
 export type TileBracket = { permits: Bracket[]; answered: Bracket | null };
@@ -1409,6 +1412,14 @@ export async function listDecksWithStats(
       )
     : new Map<string, DeckPrinting>();
 
+  // Tolerated like the reads above: a failed read draws no run line, and its payload stays out of the cache.
+  const guidedByDeck = rows.length > 0
+    ? await loadGuidedTiles(rows.map((r) => r.id)).catch(() => {
+        recordSoftFailure();
+        return new Map<string, GuidedTile>();
+      })
+    : new Map<string, GuidedTile>();
+
   return rows.map((row) => {
     const proxies = proxiedByDeck.get(row.id);
     const proxiedCount = proxies?.copies ?? 0;
@@ -1480,6 +1491,7 @@ export async function listDecksWithStats(
       statusPill: pill,
       bracket: tileBracket(row.bracketPermits, row.declaredBracket),
       notice: row.notice ?? null,
+      guided: guidedByDeck.get(row.id) ?? null,
     };
   });
 }

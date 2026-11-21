@@ -189,6 +189,9 @@ async function main() {
       pull_releases: { insert: `insert into pull_releases (user_id, source_deck_id, oracle_id, asking_deck_id) values ($U, '${deck.id}', '${card}', '${other.id}')`, key: "user_id = $U", touch: "copies = copies" },
       card_assignments: { insert: `insert into card_assignments (user_id, oracle_id, deck_id) values ($U, '${card}', '${deck.id}')`, key: "user_id = $U", touch: "copies = copies" },
       collection_items: { insert: `insert into collection_items (user_id, oracle_id, quantity, set_code, collector_number) values ($U, '${card}', 1, 'probe', 'probe')`, key: "user_id = $U and set_code = 'probe'", touch: "quantity = quantity" },
+      // The run's own ledger row first (its FK is not null), in one statement: the CTE's id is the only way to name it. Deleting the run leaves that row,
+      // which the cleanup below takes with the user's other rows.
+      guided_builds: { insert: `with m as (insert into model_calls (user_id, feature) values ($U, 'guided_build') returning id) insert into guided_builds (user_id, deck_id, strategy_key, strategy_label, status, model_call_id, model, bracket_target, pool_mode) select $U, '${other.id}', 'probe', 'Probe', 'pending', m.id, 'probe', 3, 'owned' from m`, key: "user_id = $U", touch: "strategy_key = strategy_key" },
       card_art_preferences: { insert: `insert into card_art_preferences (user_id, oracle_id, set_code) values ($U, '${card}', 'probe')`, key: "user_id = $U", touch: "set_code = set_code" },
       csv_uploads: { insert: `insert into csv_uploads (user_id, filename, row_count, unmatched_count, preview_payload) values ($U, 'probe.csv', 0, 0, '{}'::jsonb)`, key: "user_id = $U", touch: "filename = filename" },
       commander_scores: { insert: `insert into commander_scores (user_id, oracle_id, slug, score, fit_pool, fit_roles, synergy_state, receipts, color_pool_size, role_counts) values ($U, '${card}', 'probe', 0, 0, 0, 'absent', '', 0, '{}'::jsonb)`, key: "user_id = $U", touch: "slug = slug" },
@@ -287,7 +290,7 @@ async function main() {
   } finally {
     // Decks cascade to every deck-keyed row; the rest are keyed on the fixture user.
     for (const table of ["decks", "deck_folders", "pull_releases", "card_assignments", "collection_items",
-      "card_art_preferences", "csv_uploads", "commander_scores", "deck_profiles", "deck_games", "user_prefs", "user_data_stamps"]) {
+      "card_art_preferences", "csv_uploads", "commander_scores", "deck_profiles", "deck_games", "model_calls", "user_prefs", "user_data_stamps"]) {
       await pool.query(`delete from ${table} where user_id = $1`, [USER]).catch((error) => {
         console.warn(`cleanup of ${table} failed: ${error instanceof Error ? error.message : error}`);
       });

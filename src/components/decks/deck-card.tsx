@@ -23,6 +23,7 @@ import { HiddenFromFriendsGlyph } from "./hidden-from-friends-mark";
 import { socialCopy } from "../../lib/copy/social";
 import type { FriendDeckPrefs } from "../../lib/social/deck-visibility-rule";
 import { noticesHref } from "../../lib/notices/arrival";
+import { GuidedTileText, guidedTileSpoken } from "./guided/guided-tile-line";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { verdictHead } from "../../lib/bracket/verdict-head";
 
@@ -350,8 +351,11 @@ export function DeckCard({
   // The yield applies only to a RANGE beside a notice or the hidden glyph: a single mark's name fits beside any tag.
   const yieldsFace = Boolean(deck.bracket && (deck.notice || hiddenMark) && verdictHead(deck.bracket.permits, deck.bracket.answered).split);
   const yieldClasses = deck.notice && hiddenMark ? YIELD_HIDDEN : YIELD;
+  // A guided run's line takes the detail row (and its slot) while it lasts, as `created today` does on a New tile.
+  const guided = deck.guided ?? null;
+  const spokenDetail = guided ? guidedTileSpoken(guided) : detail?.text ?? null;
   const ariaLabel =
-    detail === null
+    spokenDetail === null
       ? refreshCopy.decks.cardAriaNoDetail(
           deck.name,
           identity,
@@ -364,7 +368,7 @@ export function DeckCard({
           identity,
           spokenStatus,
           count,
-          detail.text,
+          spokenDetail,
           hasLastPlayed ? lastPlayed : undefined,
         );
 
@@ -561,9 +565,9 @@ export function DeckCard({
         <span data-deck-detail className="flex h-[14px] flex-none items-center gap-[10px] font-mono">
           <span
             className="min-w-0 flex-1 truncate text-[11px] sm:text-[10.5px]"
-            style={detail ? { color: detail.color } : undefined}
+            style={guided ? { color: guided.status === "failed" ? "var(--danger)" : "var(--fg-muted)" } : detail ? { color: detail.color } : undefined}
           >
-            {detail?.cart ? (
+            {guided ? <GuidedTileText guided={guided} /> : detail?.cart ? (
               // A second link over the tile's cover link, F19's pattern: the To buy figure opens the
               // all-decks cart on this deck. Out of the tab order and the tree, since the cover link
               // is the tile's one target and already speaks the figure.
@@ -579,7 +583,7 @@ export function DeckCard({
               </Link>
             ) : detail?.text}
           </span>
-          {hasLastPlayed && (
+          {hasLastPlayed && !guided && (
             <span className="flex-none text-right text-[10.5px]" style={{ color: "var(--fg-faint)" }}>
               {lastPlayed}
             </span>

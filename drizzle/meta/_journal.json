@@ -1800,6 +1800,13 @@
       "when": 1795274509695,
       "tag": "0258_guided_builds",
       "breakpoints": true
+    },
+    {
+      "idx": 259,
+      "version": "7",
+      "when": 1795275509695,
+      "tag": "0259_guided_builds_stamp",
+      "breakpoints": true
     }
   ]
 }
