@@ -4,6 +4,7 @@
 // shape, each led by a line icon. The Guided row joins in a later PR; this one draws the free build and just the commander.
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { guidedBuildCopy } from "../../lib/copy/guided-build";
 import type { DeckBuildKind } from "../../lib/decks/build-kind";
 import type { SelectedPick } from "../../lib/decks/selected-picks";
@@ -40,7 +41,7 @@ export function BuildChoice({ value, onChange, commander, picks, commanderHref, 
           <div className="mb-[10px] flex items-baseline gap-[8px]">
             <span className="whitespace-nowrap font-mono text-[10px] uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{copy.picks.label(n)}</span>
             {commanderHref && (
-              <Link href={commanderHref} aria-label={copy.picks.changeLabel(commander)} className="ml-auto font-mono text-[11px] text-[color:var(--accent-text)]">{copy.picks.change}</Link>
+              <Link href={commanderHref} aria-label={copy.picks.changeLabel(commander)} className="ml-auto font-mono text-[11px] text-[color:var(--accent-text)]">{copy.picks.change}<PendingReporter href={commanderHref} /></Link>
             )}
           </div>
           <ul className="m-0 flex list-none gap-[8px] overflow-x-auto p-0">

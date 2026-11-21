@@ -52,6 +52,9 @@ beforeEach(() => {
   readReach.mockReset();
 });
 
+// The build choice's own radios (name "build-kind") share the role; the Bracket row's are the ones these tests read.
+const bracketRadios = () => screen.queryAllByRole("radio").filter((r) => (r as HTMLInputElement).name !== "build-kind");
+
 describe("the hand-off's Bracket row, read", () => {
   it("is pending until the read lands, with Create held", async () => {
     readReach.mockReturnValue(new Promise(() => {}));
@@ -81,7 +84,7 @@ describe("the hand-off's Bracket row, read", () => {
   it("short: two rows, neither picked; Create waits with the line in the error slot", async () => {
     await settle(SHORT);
     nameIt();
-    const radios = screen.getAllByRole("radio");
+    const radios = bracketRadios();
     expect(radios.map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
     expect(rowText("Bracket")).toBe(
       "Bracket3 · UpgradedFrom your cards this deck is bracket 1-2. Choose how to build it:"
@@ -124,7 +127,7 @@ describe("the hand-off's Bracket row, read", () => {
   it("a press on a card name opens the card and picks nothing", async () => {
     await settle(SHORT);
     fireEvent.click(within(screen.getByTestId("bracket-choice-hit")).getByTestId("hand-off-reach-card"));
-    expect(screen.getAllByRole("radio").map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
+    expect(bracketRadios().map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
   });
 
   it("over budget: Hit stays pickable, says what it costs against the budget, and raises it when picked", async () => {
@@ -216,7 +219,7 @@ describe("the hand-off's Bracket row, read", () => {
     await settle({ target: 3, permits: [1, 2], placed: [], buy: null });
     nameIt();
     expect(rowText("Bracket")).toBe("Bracket3 · UpgradedNo Game Changer or two-card combo the fill can place fits this commander, so the deck is bracket 1-2.");
-    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(bracketRadios()).toHaveLength(0);
     expect(createButton().hasAttribute("disabled")).toBe(false);
   });
 
@@ -258,13 +261,13 @@ describe("the hand-off's Bracket row, read", () => {
     view.rerender(<CreatePreFilled {...base} handOff={next} />);
     // In that same render: pending, no rows, Create held. The old Hit cannot submit.
     expect(screen.getByTestId("hand-off-reach-pending")).toBeTruthy();
-    expect(screen.queryAllByRole("radio")).toHaveLength(0);
+    expect(bracketRadios()).toHaveLength(0);
     expect(createButton().hasAttribute("disabled")).toBe(true);
     await submit();
     expect(createDeck).not.toHaveBeenCalled();
     // The new read lands: the choice is fresh, nothing picked, still held.
     await act(async () => { land(SHORT); });
-    expect(screen.getAllByRole("radio").map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
+    expect(bracketRadios().map((r) => (r as HTMLInputElement).checked)).toEqual([false, false]);
     expect(createButton().hasAttribute("disabled")).toBe(true);
     fireEvent.click(screen.getByTestId("bracket-choice-mine"));
     await submit();
