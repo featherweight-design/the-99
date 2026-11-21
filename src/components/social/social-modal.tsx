@@ -44,6 +44,7 @@ export function SocialModal({
   sub?: string | PersonParts;
   closeLabel: string;
   onClose: () => void;
+  /** Where focus lands at open. Unset, the sheet's heading (never the ✕), as `ModalChrome` does; a sheet that opens to type passes its field. */
   initialFocusRef?: RefObject<HTMLElement | null>;
   returnFocusRef?: RefObject<HTMLElement | null>;
   tall?: boolean;
@@ -66,6 +67,7 @@ export function SocialModal({
   const inertHost = useInertWhileOpen(true);
   const panel = useRef<HTMLDivElement>(null);
   const close = useRef<HTMLButtonElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const back = useRef<HTMLButtonElement>(null);
   const id = useId();
   const shownScreen = useRef(screen);
@@ -74,7 +76,7 @@ export function SocialModal({
     shownScreen.current = screen;
     (back.current ?? close.current)?.focus();
   }, [screen]);
-  useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? close, returnFocusRef });
+  useDialogA11y(panel, onClose, { initialFocusRef: initialFocusRef ?? heading, returnFocusRef });
   // The phone sheet frames the VISIBLE window, which a keyboard shrinks (ui/visual-viewport.ts).
   const visible = useVisualViewportFrame();
   // Rule 0's setup (640) keeps its board's rhythm: 24px sides from md, lined up with its footer, and its own gaps.
@@ -116,7 +118,7 @@ export function SocialModal({
               {"‹"}
             </button>
           ) : null}
-          <h2 id={`${id}-title`} className="m-0 min-w-0 flex-1 font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
+          <h2 ref={heading} id={`${id}-title`} tabIndex={-1} className="m-0 min-w-0 flex-1 outline-none font-display text-[18px] font-bold md:text-[19px] text-[color:var(--fg)]">
             <PersonText text={title} />
           </h2>
           <button

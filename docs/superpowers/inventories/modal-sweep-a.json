@@ -1,0 +1,27 @@
+{
+  "feature": "Modal phone slide-in sweep, PR A: ModalChrome dialogs slide up on a phone and are instant on desktop",
+  "note": "Signed in, FEEDBACK_ENABLED=true for the account, on local-dev or a scratch branch. Writes nothing. A photo taken at rest cannot show the slide; `pnpm probe:modal-sweep` proves the entrance, and this sheet shows that every ModalChrome caller still lands as drawn at 390 and 1300 (desktop unchanged).",
+  "out": "contact-sheets/modal-sweep-a",
+  "rows": [
+    {
+      "id": "report-form",
+      "label": "/about: Report a problem opened (sheet at 390, ModalChrome 520 at 1300), Send dim",
+      "view": "src/components/feedback/report-form.tsx",
+      "steps": [
+        {
+          "goto": "/about",
+          "wait": "[data-about-report]",
+          "settle": 1000
+        },
+        {
+          "click": "[data-about-report] button",
+          "settle": 500
+        },
+        {
+          "waitDialog": "Report a problem",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}

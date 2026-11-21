@@ -51,6 +51,7 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     [".anim-backdrop-in", `backdrop-in ${DURATION} ${EASE} both`],
     // Arrivals wait a beat.
     [".anim-sheet-in", `filter-sheet-in ${DURATION} ${EASE} ${DELAY} both`],
+    [".anim-sheet-in-phone", `filter-sheet-in ${DURATION} ${EASE} ${DELAY} both`],
     // The kept curves, on token lengths: the stacked card and the phone card keep the sheet's snap curve.
     [".anim-stack-rise", `stack-rise ${DURATION} ${OUT} ${DELAY} both`],
     // `backwards`: a held end state would own the `scale` and `opacity` the next swipe writes.
@@ -66,6 +67,10 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
     expect(CSS).toMatch(/@media \(min-width: 48rem\) \{\s*\.anim-tip-in \{ animation: none; \}\s*\}/);
   });
 
+  it("turns the phone-only sheet entrance off from 48rem, so a ModalChrome dialog is instant on desktop", () => {
+    expect(CSS).toMatch(/@media \(min-width: 48rem\) \{\s*\.anim-sheet-in-phone \{ animation: none; \}\s*\}/);
+  });
+
   it.each([
     [".anim-card-turn", `transition: transform ${DURATION} ${OUT};`],
     [".sheet-snap", `transition: top ${QUICK} ${OUT};`],
@@ -76,7 +81,7 @@ describe("E6: the ratified motion, retimed onto the tokens", () => {
 
   it("leaves no motion class on a literal length or curve, in any rule outside the reduced-motion block", () => {
     const retimed = [".anim-menu-in", ".anim-tip-in", ".anim-zoom-in", ".anim-sheet-up", ".anim-rail-tag", ".anim-overlay-in", ".anim-overlay-out",
-      ".anim-sheet-in", ".anim-backdrop-in", ".anim-stack-rise", ".anim-phone-card-enter", ".anim-phone-peek-enter", ".anim-carousel-prev", ".anim-carousel-next",
+      ".anim-sheet-in", ".anim-sheet-in-phone", ".anim-backdrop-in", ".anim-stack-rise", ".anim-phone-card-enter", ".anim-phone-peek-enter", ".anim-carousel-prev", ".anim-carousel-next",
       ".anim-card-turn", ".sheet-snap", ".band-dim", ".anim-quickadd-in"];
     for (const selector of retimed) {
       const re = new RegExp(`^\\s*${selector.replace(/[.[\]]/g, "\\$&")}\\s*\\{([^}]*)\\}`, "gm");
