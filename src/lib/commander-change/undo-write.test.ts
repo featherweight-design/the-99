@@ -10,6 +10,10 @@ describe("undoRoom", () => {
   it("refuses a cut that is back in the 99", () => {
     expect(undoRoom(98, "c3", body(98))).toBe("changed");
   });
+  it("lets a stacking cut come back onto its stack", () => {
+    expect(undoRoom(98, "c3", body(98), true)).toBeNull();
+    expect(undoRoom(99, "c3", body(99), true)).toBe("full");
+  });
   it("refuses a cut that would take the deck past 100", () => {
     expect(undoRoom(99, "cut", body(99))).toBe("full");
   });

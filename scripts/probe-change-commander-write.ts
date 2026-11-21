@@ -441,6 +441,17 @@ async function main() {
   check("undo: with no cut, the body is untouched", [await undo(undoNoCut, anchor.oracle_id, p2.oracle_id, null), await live(undoNoCut), await bodyOf(undoNoCut)],
     [{ ok: true }, { c: anchor.oracle_id, p: null }, [`${fillers[1].oracle_id}x1`]]);
 
+  // A cut that was one copy of a stack comes back onto the stack; a non-stacking card in the 99 is refused.
+  const { rows: basics } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id::text from cards where type_line like 'Basic Land%' order by oracle_id limit 1
+  `);
+  if (basics[0]) {
+    const stack = await makeDeck(anchor.oracle_id, p2.oracle_id);
+    await fixture.execute(sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${stack}::uuid, ${basics[0].oracle_id}::uuid, 4)`);
+    check("undo: a stacked cut comes back onto its stack", [await undo(stack, anchor.oracle_id, p2.oracle_id, basics[0].oracle_id), await live(stack), await bodyOf(stack)],
+      [{ ok: true }, { c: anchor.oracle_id, p: null }, [`${basics[0].oracle_id}x5`]]);
+  }
+
   const undoFull = await makeDeck(anchor.oracle_id, p2.oracle_id);
   await addCard99(undoFull);
   check("undo: a cut that would take the deck past 100 is refused", await undo(undoFull, anchor.oracle_id, p2.oracle_id, fillers[1].oracle_id), { ok: false, reason: "full" });

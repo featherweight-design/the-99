@@ -162,6 +162,6 @@ export const changeCommanderCopy = {
     undoing: "Undoing…",
     undone: (commander: string) => `${commander} leads alone again.`,
     refused: "We couldn’t undo that.",
-    refusedDetail: "The deck changed since. Check what it holds now.",
+    refusedDetail: "Check what the deck holds now.",
   },
 } as const;
