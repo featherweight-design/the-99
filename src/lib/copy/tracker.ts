@@ -160,6 +160,15 @@ export const trackerCopy = {
     flipAgain: (result: string) => `${result}. Tap to flip again`,
     close: "Close",
   },
+  // Random's d20 for who goes first: one die per seat, each number shown on its own panel.
+  firstRoll: {
+    goesFirst: "Goes first",
+    tie: "Tied. Rolling again",
+    /** The veil's button: the game is already started on the winner, so this only clears the dice. */
+    play: "Play",
+    first: (name: Name): PersonParts => personText`${name} goes first`,
+    youFirst: "You go first",
+  },
   over: {
     title: "Game over",
     notSaved: "The result didn’t save, so Log this game starts blank.",

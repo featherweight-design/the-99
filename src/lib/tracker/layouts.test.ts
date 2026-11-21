@@ -24,6 +24,12 @@ describe("layouts", () => {
     }
   });
 
+  it("lays tablet 2+2 (F18) and 3+2 (F19) out as drawn", () => {
+    const at = (id: string) => layoutById(id)!.cells.map((c) => [c.x, c.y, c.w, c.rot]);
+    expect(at("tablet-4")).toEqual([[10, 452, 575, 0], [10, 10, 575, 180], [595, 10, 575, 180], [595, 452, 575, 0]]);
+    expect(at("tablet-5")).toEqual([[10, 452, 575, 0], [10, 10, 380, 180], [400, 10, 380, 180], [790, 10, 380, 180], [595, 452, 575, 0]]);
+  });
+
   it("has unique ids and offers phone 2 to 6 and tablet 4 to 6", () => {
     expect(new Set(LAYOUTS.map((l) => l.id)).size).toBe(LAYOUTS.length);
     for (const device of ["phone", "tablet"] as const) for (const n of [2, 3, 4, 5, 6]) if (!(device === "tablet" && (n === 2 || n === 3))) expect(layoutsFor(device, n).length).toBeGreaterThan(0);
