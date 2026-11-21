@@ -11,6 +11,7 @@
 // - S1/S2: Start, `aria-disabled` with its reason over six seated; a seat still picking its deck says so under it.
 
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { PersonName, PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
@@ -105,7 +106,7 @@ export function GameInProgress({ tableId, kept, onDiscard, className = "" }: { t
   return (
     <section aria-label={copy.inProgressAria} className={`flex flex-col gap-[12px] rounded-[14px] bg-[color:var(--surface)] px-[14px] pb-[10px] pt-[14px] text-left shadow-[inset_0_0_0_1px_var(--accent)] ${className}`}>
       <div className="flex items-baseline gap-[10px]">
-        <span className="font-mono text-[11px] uppercase tracking-[.06em] text-[color:var(--accent)]">{copy.inProgress}</span>
+        <span className="font-mono text-[11px] uppercase tracking-[.06em] text-[color:var(--accent-text)]">{copy.inProgress}</span>
         <span className="ml-auto font-mono text-[11.5px] text-[color:var(--fg-faint)]">{copy.meta(state.round, length)}</span>
       </div>
       <div className={`grid gap-[8px] ${grid(players.length)}`}>
@@ -175,7 +176,7 @@ export function LastGame({ kept, loggedAt }: { kept: Kept; loggedAt: Date | null
               h={56}
               className={first ? "shadow-[inset_0_0_0_2px_var(--accent)] [&_img]:opacity-60" : "[&_img]:opacity-40 [&_img]:[filter:grayscale(.6)]"}
             >
-              <em className={`absolute right-[7px] top-[4px] font-display text-[13px] font-bold not-italic [text-shadow:0_1px_4px_rgba(0,0,0,.8)] ${first ? "text-[color:var(--accent)]" : "text-[color:var(--fg-body)]"}`}>
+              <em className={`absolute right-[7px] top-[4px] font-display text-[13px] font-bold not-italic [text-shadow:0_1px_4px_rgba(0,0,0,.8)] ${first ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-body)]"}`}>
                 {ordinal(place.get(p.seat) ?? ranked.length)}
               </em>
             </Tile>
@@ -200,6 +201,7 @@ function StartLink({ href, label }: { href: string; label: string }) {
     <Link href={href} className={`${GO} bg-[color:var(--accent)] text-[color:var(--bg)]`}>
       {PLAY}
       {label}
+      <PendingReporter href={href} />
     </Link>
   );
 }

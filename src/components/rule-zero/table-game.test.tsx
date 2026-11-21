@@ -2,7 +2,7 @@
 // line, the game this device holds in Start's place (Back, and Discard with the shared toast's Undo), the Last game with
 // the server's logged link (ruling 4), and the closed page's running game (S4).
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { TABLES } from "../../lib/social/rule-zero-fixtures";
 import type { TableView } from "../../lib/rule-zero/table-view";
@@ -11,6 +11,8 @@ import type { PlaySeat } from "../../lib/tracker/seat";
 import { named } from "../../lib/person-name/mint";
 import { TableBody } from "./table-body";
 import { TableClosed } from "./table-closed";
+
+vi.mock("next/navigation", () => ({ useRouter: () => ({ push: () => {}, refresh: () => {} }), usePathname: () => "/friends/table/table-1" }));
 
 const copy = trackerCopy.table;
 const NOW = new Date("2026-11-20T20:00:00Z");
