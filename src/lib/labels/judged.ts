@@ -10,7 +10,7 @@
 // anything a player sees.
 import { createHash } from "node:crypto";
 
-import { acceptsTemperature, needsThinkingDisabled, renderCard, type CardForPrompt } from "./prompt";
+import { acceptsTemperature, needsThinkingDisabled, renderCard, thinkingOff, type CardForPrompt } from "./prompt";
 
 export const JUDGED_THEMES = ["groupHug", "pillowFort", "bigMana", "politics"] as const;
 export type JudgedTheme = (typeof JUDGED_THEMES)[number];
@@ -86,11 +86,24 @@ export const buildJudgedRequest = (customId: string, model: string, cards: CardF
     model,
     max_tokens: JUDGED_MAX_TOKENS,
     ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
-    ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
+    ...(needsThinkingDisabled(model) ? { thinking: thinkingOff(model) } : {}),
     system: [{ type: "text" as const, text: JUDGED_SYSTEM }],
     messages: [{ role: "user" as const, content: renderJudgedBody(cards) }],
   },
 });
+
+/**
+ * Cards whose request already failed (errored, canceled, expired or refused) are dropped from the next plan, so a
+ * failure is reported once and never re-asked by every later `--spend` run: that loop once resubmitted 36 batches.
+ * `--retry-failed` is the deliberate way to ask them again. Pure, so the rule is pinned without a database.
+ */
+export const withoutFailed = <T extends { oracleId: string }>(
+  cards: readonly T[], failedAsked: readonly string[], retryFailed: boolean,
+): { todo: T[]; dropped: T[] } => {
+  if (retryFailed) return { todo: [...cards], dropped: [] };
+  const failed = new Set(failedAsked);
+  return { todo: cards.filter((c) => !failed.has(c.oracleId)), dropped: cards.filter((c) => failed.has(c.oracleId)) };
+};
 
 export type JudgedReply =
   | { ok: true; themes: Map<string, JudgedTheme[]>; refused: string[] }

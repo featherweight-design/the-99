@@ -4,6 +4,8 @@
 //   pnpm db:build:judged                     dry run, full candidate set: reads, prices, writes nothing
 //   pnpm db:build:judged --sample            dry run of the ~200-card grading sample
 //   pnpm db:build:judged --sample --spend    submits it (and collects a finished batch)
+//   --retry-failed                           asks again the cards whose request failed (otherwise they are left out)
+//   --model=<id>                             overrides the model (Hugh ruled claude-sonnet-5-5 for the judged themes, 2026-11-21)
 //
 // NOTHING IS SUBMITTED WITHOUT `--spend`, and Hugh approves the spend before anyone passes it.
 // First, and on its own line: src/db reads DATABASE_URL at module scope.
@@ -29,6 +31,8 @@ runJudgedBuild({
   runId: process.env.JUDGED_RUN_ID ?? `judged-${new Date().toISOString().slice(0, 10)}`,
   capUsd: CAP_USD,
   spend: !dry,
+  model: process.argv.find((a) => a.startsWith("--model="))?.slice(8),
+  retryFailed: process.argv.includes("--retry-failed"),
   sample: process.argv.includes("--sample"),
   modelCalls: () => readModelCalls(),
 }).then(

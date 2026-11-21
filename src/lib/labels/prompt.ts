@@ -434,7 +434,8 @@ export const MAX_TOKENS_PER_BATCH = (() => {
  * 400 with "`temperature` is deprecated for this model", while Haiku 4.5 and Sonnet 4.5
  * accept 0. A list rather than a pattern, so a new model is a deliberate addition.
  */
-export const acceptsTemperature = (model: string) => model !== "claude-sonnet-5";
+const SONNET_5_FAMILY = new Set(["claude-sonnet-5", "claude-sonnet-5-5"]);
+export const acceptsTemperature = (model: string) => !SONNET_5_FAMILY.has(model);
 
 /**
  * Models whose thinking must be turned OFF explicitly, and why it is not optional here.
@@ -450,7 +451,14 @@ export const acceptsTemperature = (model: string) => model !== "claude-sonnet-5"
  * `{type:"enabled", budget_tokens}` is rejected for this model — it wants
  * `adaptive` with `output_config.effort` — so `disabled` is the only way to match.
  */
-export const needsThinkingDisabled = (model: string) => model === "claude-sonnet-5";
+export const needsThinkingDisabled = (model: string) => SONNET_5_FAMILY.has(model);
+
+/**
+ * The `thinking` parameter that turns it off. Sonnet 5.5 rejects `disabled` (measured 2026-11-21):
+ * it wants `between_tools`, which the installed SDK types do not know yet, hence the cast.
+ */
+export const thinkingOff = (model: string) =>
+  (model === "claude-sonnet-5-5" ? { type: "between_tools" } : { type: "disabled" }) as { type: "disabled" };
 
 export const buildRequest = (customId: string, model: string, cards: CardForPrompt[]) => ({
   custom_id: customId,
@@ -466,7 +474,7 @@ export const buildRequest = (customId: string, model: string, cards: CardForProm
     // are: the comparison is matched on prompt, batching and scorer but NOT on
     // temperature, which is a real caveat rather than a formality.
     ...(acceptsTemperature(model) ? { temperature: 0 } : {}),
-    ...(needsThinkingDisabled(model) ? { thinking: { type: "disabled" as const } } : {}),
+    ...(needsThinkingDisabled(model) ? { thinking: thinkingOff(model) } : {}),
     system: [{
       type: "text" as const, text: SYSTEM,
       ...(SENDS_CACHE_BREAKPOINT ? { cache_control: { type: "ephemeral" as const } } : {}),
