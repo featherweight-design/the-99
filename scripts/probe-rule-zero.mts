@@ -20,6 +20,8 @@ const id = (k: string) => `probe_rz_${k}_${run}`;
 const [A, B, C, D, E, X] = ["a", "b", "c", "d", "e", "x"].map(id);
 
 let failed = 0;
+// A name the read layer wraps (`named()`, a ThirdPartyName `{ $tp }`) as the text a reader sees; a plain string as is.
+const txt = (v: unknown) => (typeof v === "string" ? v : (v as { $tp?: string } | null | undefined)?.$tp);
 const check = (label: string, ok: boolean, detail = "") => {
   console.log(`${ok ? "ok  " : "FAIL"} ${label}${detail ? ` (${detail})` : ""}`);
   if (!ok) failed++;
@@ -138,14 +140,14 @@ async function main() {
 
     // The reads: a seated non-friend sees the table and its faces, an unseated member sees nothing.
     const forC = await rz.openTablesFor(C);
-    check("a seated non-friend reads the table, all three faces", forC.length === 1 && forC[0].seats.map((s) => s.displayName).join() === "Ava,Bo,Cy");
+    check("a seated non-friend reads the table, all three faces", forC.length === 1 && forC[0].seats.map((s) => txt(s.displayName)).join() === "Ava,Bo,Cy");
     check("the payload names no account or deck id", !JSON.stringify(forC).includes(B) && !JSON.stringify(forC).includes(deckB));
     check("an unseated member reads no table", (await rz.openTablesFor(D)).length === 0);
     // PR 6: Home's sentence names the setter and the reader's own deck; a non-friend's face is initials (D2).
-    check("the read names the setter and the reader's own seated deck", forC[0].setterName === "Ava" && forC[0].yourDeck === "Cy's deck" && !forC[0].setByYou);
+    check("the read names the setter and the reader's own seated deck", txt(forC[0].setterName) === "Ava" && forC[0].yourDeck === "Cy's deck" && !forC[0].setByYou);
     await db.execute(sql`update social_profiles set commander_oracle_id = ${CMD} where user_id in (${A}, ${B})`);
     const faced = (await rz.openTablesFor(C))[0]?.seats ?? [];
-    check("a friend's face is their commander, a non-friend's is initials", faced.find((f) => f.displayName === "Ava")?.commander != null && faced.find((f) => f.displayName === "Bo")?.commander === null);
+    check("a friend's face is their commander, a non-friend's is initials", faced.find((f) => txt(f.displayName) === "Ava")?.commander != null && faced.find((f) => txt(f.displayName) === "Bo")?.commander === null);
     check("Home's read lists the table for its setter", (await loadHomeTables(A)).some((t) => t.tableId === T1 && t.setByYou));
 
     // A seat's own deck.
@@ -228,7 +230,7 @@ async function main() {
     // A member who leaves the pod loses the table, and the others stop seeing their seat.
     await pods.leavePod(D, P1);
     check("a member who left the pod reads no table", (await rz.openTablesFor(D)).length === 0);
-    check("the others' faces omit them", (await rz.openTablesFor(A))[0]?.seats.map((s) => s.displayName).join() === "Bo,Ava");
+    check("the others' faces omit them", (await rz.openTablesFor(A))[0]?.seats.map((s) => txt(s.displayName)).join() === "Bo,Ava");
 
     // Two concurrent setups on a fresh pod: one table, the others answered open or occupied by whether they sit at it.
     const P2 = await pod(A, "Friday", [B, D]);
@@ -275,9 +277,9 @@ async function main() {
     if (t7.kind !== "set") throw new Error("table fixture refused");
     const T7 = t7.tableId;
     const viewC = await loadTable(C, T7);
-    const seatOf = (v: Awaited<ReturnType<typeof loadTable>>, name: string) => v?.seats.find((s) => s.displayName === name);
+    const seatOf = (v: Awaited<ReturnType<typeof loadTable>>, name: string) => v?.seats.find((s) => txt(s.displayName) === name);
     check("a seated player reads the table, every seat", viewC !== null && viewC.seats.length === 3);
-    check("a non-friend's seat shows their deck by name and no publicId", seatOf(viewC, "Bo")?.deck?.name === "Bo's legal deck" && seatOf(viewC, "Bo")?.publicId === null);
+    check("a non-friend's seat shows their deck by name and no publicId", txt(seatOf(viewC, "Bo")?.deck?.name) === "Bo's legal deck" && seatOf(viewC, "Bo")?.publicId === null);
     check("a friend's seat carries their publicId", seatOf(viewC, "Ava")?.publicId === pub[A]);
     check("only the viewer's own seat carries a deck id", seatOf(viewC, "Cy")?.deck?.deckId === legalC && seatOf(viewC, "Bo")?.deck?.deckId === null && seatOf(viewC, "Ava")?.deck?.deckId === null);
     const wire = JSON.stringify(viewC);
