@@ -1,5 +1,7 @@
 # The 99 · Move a copy to another deck later (R1c, APPROVED)
 
+> **Addendum 2026-11-21: several picks** (APPROVED). Picks per card up to the copies owned; read `ADDENDUM-several-picks.md` (boards `SP-*`, frames `art/sp/`). It amends call 2 below ("the chooser is unchanged") and card assignments decision 3b / `assign.ts`'s one-reservation rule.
+
 Issue: featherweight-design/the-99 #2980. Account 2, 2026-11-18. Status: APPROVED by Hugh 2026-11-18. Source: design-assets 1cce6ca (account-2), which also holds scratch-gen (proposal.diff, render.tsx).
 Canvas: https://claude.ai/artifact/PXKbecyqx4VGUr9FwZxn2Q (boards Main, Details, Scenarios, Other, History, Desktop, Large; frames in art/).
 Every frame is the shipped component SSR'd from main with shipped CSS (amonkhet), proposal applied (scratch-gen/proposal.diff).

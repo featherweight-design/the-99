@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Several picks chooser phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&amp;family=IBM+Plex+Mono:wght@400;500;600&amp;family=Cinzel:wght@600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0D0B09}
+p{margin:0}
+.lab{font:500 10.5px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#948B78}
+.lab b{color:#CF8745;font-weight:600}
+.cap{font-size:13px;line-height:1.55;color:#A59C89}
+.cap b{color:#EDE6D8;font-weight:600}
+.q{font-family:'IBM Plex Mono',monospace;font-size:12.5px;color:#EDE6D8}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr);gap:10px;font-size:14px;line-height:1.6;color:#C0B8A6}
+.it b{color:#EDE6D8;font-weight:600}
+.n{font:600 12px 'IBM Plex Mono',monospace;color:#CF8745;padding-top:2px}
+.box{border:1px solid #3A3229;border-radius:14px;padding:22px 24px;display:flex;flex-direction:column;gap:12px;background:#15120F}
+.shot{display:block;width:100%;border-radius:14px;border:1px solid #3A3229}
+table{border-collapse:collapse;width:100%;font-size:13px;color:#C0B8A6}
+td{border-top:1px solid #2A241E;padding:7px 10px 7px 0;vertical-align:top;line-height:1.5}
+td:first-child{color:#EDE6D8;width:34%}
+</style>
+</helmet>
+<div style="width: 2222px; min-height: 1280px; box-sizing: border-box; padding: 48px 56px 64px; background: #0D0B09; font-family: 'IBM Plex Sans', sans-serif; color: #EDE6D8; display: flex; flex-direction: column; gap: 30px">
+<div style="display: flex; flex-direction: column; gap: 9px; max-width: 1240px">
+<p class="lab"><b>P · the chooser · phone · 390</b></p>
+<h2 style="margin: 0; font: 700 30px 'Cinzel', serif">Picking several decks</h2>
+<p style="font-size: 14px; line-height: 1.6; color: #C0B8A6">The shipped “Where these copies go” sheet over card details (scrolled to its receipt), opened from Change. Fabled Passage, 5 copies, 6 decks in commit order.</p>
+</div>
+<div style="display: flex; gap: 40px; align-items: flex-start; flex-wrap: wrap">
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>P1</b> · before any pick</p><img class="shot" src="art/sp/P1-phone.png" alt="Chooser, no picks"><p class="cap">Commit order gives the 5 copies. <b>Multiverse Reforged</b> is the newest deck holding one, so it reads <b>gives it up first</b>. Mutant Menace buys it.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>P2</b> · select Mutant Menace</p><img class="shot" src="art/sp/P2-phone.png" alt="Mutant Menace picked"><p class="cap">Mutant Menace is <b>your pick · gets it</b>. Multiverse Reforged flips to buys it on the same select; the hint moves up to Gishath. <b>1 of 5 picked</b>.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>P3</b> · select Multiverse Reforged too</p><img class="shot" src="art/sp/P3-phone.png" alt="Two picks"><p class="cap">Hugh’s case solved: both picked, <b>Gishath buys it</b>. Picking Multiverse first, then Mutant Menace, lands in the same place.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>P4</b> · select Mutant Menace again</p><img class="shot" src="art/sp/P4-phone.png" alt="Mutant Menace unticked"><p class="cap">Unticked: Mutant Menace goes back to buying it and <b>Gishath gets its copy back</b>, the oldest deck that was going without.</p></div>
+<div style="display: flex; flex-direction: column; gap: 10px; width: 390px; flex: none"><p class="lab"><b>P5</b> · every copy picked</p><img class="shot" src="art/sp/P5-phone.png" alt="Five picks"><p class="cap"><b>5 of 5 picked</b> and the line under the rows. Even the oldest deck (Zombies) buys it now: picks beat commit order. Selecting Zombies writes nothing and reads the line out.</p></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2222,"height":1280}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
