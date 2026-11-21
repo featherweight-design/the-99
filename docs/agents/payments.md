@@ -154,8 +154,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   never disagree. `PAID_TODAY_SHOWN_FROM` (15) is unchanged: under a group limit of 15 or less the meter shows only once the limit is reached. The `/credits` history leaves welcome lots out (a gift is not a purchase), and the page
   draws a Welcome cell only while it holds a credit.
 - There is NO in-page fallback and no backfill script: a missed webhook means no grant. `user_prefs` carries no creation time,
-  so it is not a "new account" signal; a fallback is a D2 decision. Accepted: no per-email dedupe, so a deleted account that
-  signs up again gets another lot.
+  so it is not a "new account" signal; a fallback is a D2 decision. One lot per MAILBOX (sign-up hardening, 2026-11-21):
+  `grantWelcome` also takes `emailHash`, the keyed HMAC of the account's canonical primary address
+  (`src/lib/payments/canonical-email.ts`: lowercase, `+tag` dropped everywhere, dots dropped and googlemail.com folded on Gmail only), and
+  claims it in `welcome_email_claims` inside the same transaction as the lot. A claimed address gets reason `alias` and no lot; an
+  account that already holds its lot is `already` before the claim, so a redelivery is not an alias. No verified primary address, or no
+  usable key (`SENTRY_USER_HASH_KEY`, else `ANON_KEY_SALT`, 32+ characters), is `unclaimable`: fail closed, never an unkeyed hash, and the
+  webhook warns in Sentry (`clerk-webhook:welcome-key`) on a missing key. The webhook still answers 200 and the player sees nothing
+  different: no Welcome lot, the existing `none` state. The claim has no account column and is NOT purged, so deleting an account and
+  signing up again on the same address gets nothing. Limits: a custom domain or catch-all cannot be folded; accounts and purged
+  accounts from before the table hold no claim (a backfill from Clerk is a separate follow-up); rotating the key quietly resets every
+  claim (it fails open).
 - Proof: `pnpm probe:payments-ledger` section `m` (order, expiry, the index, the check, the purge).
 - **What the reader is told (D2, plan `2026-10-21-welcome-credits.md`).** `readWelcomeLot` (`src/lib/payments/welcome-read.ts`)
   is the one read that tells a lot used up, expired and absent apart (the allowance drops an expired lot and reads a

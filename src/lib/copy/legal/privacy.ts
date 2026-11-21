@@ -85,6 +85,7 @@ export const privacyDoc: LegalDoc = {
           items: [
             { text: "purchase records (amount, tax, country), because tax and dispute records have to outlive an account;" },
             { text: "a one-way scrambled form of your account id and the date it was deleted, so a deletion can’t be undone by accident;" },
+            { text: "a one-way scrambled form of your sign-up email address, so the welcome credits go out once per address;" },
             { text: "your name and deck name in friends’ game logs, as they were the day they logged the game." },
           ],
         },

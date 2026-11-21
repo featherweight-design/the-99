@@ -4427,6 +4427,17 @@ export const accountTombstones = pgTable("account_tombstones", {
   index("account_tombstones_held_idx").on(t.deletedAt).where(sql`${t.clerkId} is not null`),
 ]);
 
+/**
+ * Who has already been given a welcome lot, by keyed hash of the CANONICAL address (`canonical-email.ts`). One row per
+ * mailbox ever: the unique key is what stops a second sign-up under an alias (or after a delete) collecting another lot.
+ * It carries no account column and is NOT purged with the account, on purpose: it must outlive the account to do its job,
+ * and a keyed hash names nobody without the key. Written inside `grantWelcome`'s transaction, with the lot.
+ */
+export const welcomeEmailClaims = pgTable("welcome_email_claims", {
+  emailHash: text("email_hash").primaryKey(),
+  claimedAt: timestamp("claimed_at").notNull().defaultNow(),
+});
+
 /** Raw bytes. Only the card-scan lab's kept frames use it. */
 const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => "bytea" });
 
