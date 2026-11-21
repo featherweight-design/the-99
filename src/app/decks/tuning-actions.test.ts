@@ -296,8 +296,6 @@ describe("runTuning's model call (v2)", () => {
     expect(calls.packInput).toMatchObject({ overview: { strategy: ["Attack."], keyCards: ["Oxen"] }, universal: [{ oracleId: "ring", name: "Sol Ring" }] });
   });
 
-  // "Additional notes" (H35, PR 4b): never saved, so the request itself carries it — trimmed,
-  // and blank after trimming reads the same as none.
   it("hands the pack the reader's zone, read in the request, so note dates are drawn in it", async () => {
     calls.startKind = "started";
     calls.reachModel = true;
@@ -305,6 +303,8 @@ describe("runTuning's model call (v2)", () => {
     expect(calls.packInput).toMatchObject({ zone: "America/Denver" });
   });
 
+  // "Additional notes" (H35, PR 4b): never saved, so the request itself carries it — trimmed,
+  // and blank after trimming reads the same as none.
   it("hands the request's own notes to the pack, trimmed, and null when blank", async () => {
     calls.startKind = "started";
     calls.reachModel = true;

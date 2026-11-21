@@ -203,7 +203,7 @@ async function spendRun() {
       cutsFailed: report.cutsFailed, budgetReached: report.budgetReached, charge: report.charge,
       usd: stored.reduce((s, c) => s + c.usd, 0), calls: stored,
       quotables: [
-        ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, pack.year) }])),
+        ...pack.play.games.flatMap((g) => (g.note === null ? [] : [{ text: playerTextBody(g.note), date: noteDate(g.playedAt, pack.year, pack.zone) }])),
         ...(pack.intent === null ? [] : [{ text: playerTextBody(pack.intent), date: null }]),
         ...(REQUESTS[p.deck] ? [{ text: playerTextBody(REQUESTS[p.deck]), date: null }] : []),
       ],
