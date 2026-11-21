@@ -3,6 +3,8 @@
 // Claims: a deck whose newest guided run is going draws the line `Sharpening toward Tokens` on its page; pressing it opens a dialog
 // (aria-modal, a `status` wait region), Escape closes it; a failed run draws an alert line, its window offers `Try again` and
 // `Open the deck` (at least 44px tall at 390) and the retry is never pressed here (a paid press); nothing scrolls sideways at either width.
+// The tile (G6): /decks draws the run in the tile's detail row (the clock ticks; short and failed in words) with the tile's height unchanged, and Home's
+// resume row carries the running clock in its stamp.
 // Seeds (with a PRECON_UPGRADE_ENABLED user override for the fixture account) three fixture decks and deletes them in a `finally`.
 // Writes: point it at `local-dev` or a scratch branch, never production or staging.
 //
@@ -96,6 +98,45 @@ async function walk(browser, w) {
         report(tag("running: Escape closes it"), await dlg.waitFor({ state: "detached", timeout: 4000 }).then(() => true, () => false), "dialog gone");
       }
     }
+
+    // The tile. Direct writes to guided_builds do not move the stamp on a database without migration 0259, so the decks rows are touched too.
+    await sql`update guided_builds set status = 'pending', created_at = now(), finished_at = null, error_class = null, refunded = false where deck_id = ${GUIDED_RUN_DECKS.running}`;
+    await sql`update decks set name = name where id = any(${Object.values(GUIDED_RUN_DECKS)}::uuid[])`;
+    await go(page, `${BASE}/decks`);
+    const tile = (id) => page.locator(`article:has(a[href="/decks/${id}"])`);
+    const detailText = async (id) => (await tile(id).locator("[data-deck-detail]").innerText().catch(() => "")).replace(/\s+/g, " ").trim();
+    const tileHeights = {};
+    for (const [key, id] of Object.entries(GUIDED_RUN_DECKS)) {
+      const there = await tile(id).first().waitFor({ timeout: 30_000 }).then(() => true, () => false);
+      report(tag(`tile ${key}: drawn on /decks`), there, "article");
+      if (!there) continue;
+      const want = key === "running" ? /Sharpening toward Tokens · \d+:\d\d/ : key === "failed" ? /guided build toward Tokens didn.t come through/ : /found fewer than 12 cards/;
+      await page.waitForFunction(() => true).catch(() => {});
+      await page.waitForTimeout(1200);
+      const text = await detailText(id);
+      report(tag(`tile ${key}: the detail row says the run`), want.test(text), text);
+      tileHeights[key] = (await tile(id).first().boundingBox())?.height ?? 0;
+    }
+    if (tileHeights.running) {
+      const first = await detailText(GUIDED_RUN_DECKS.running);
+      await page.waitForTimeout(2200);
+      const later = await detailText(GUIDED_RUN_DECKS.running);
+      report(tag("tile running: the clock ticks"), first !== later, `${first} -> ${later}`);
+    }
+    const heights = Object.values(tileHeights);
+    const spread = heights.length ? Math.max(...heights) - Math.min(...heights) : 0;
+    report(tag("tiles: the three run tiles are one height"), heights.length === 3 && spread < 1, heights.join("/"));
+    await noSideScroll("/decks with run tiles");
+    await go(page, `${BASE}/`);
+    const row = page.locator(`a[href="/decks/${GUIDED_RUN_DECKS.running}"] [data-resume-stamp]`).first();
+    const rowUp = await row.waitFor({ timeout: 30_000 }).then(() => true, () => false);
+    report(tag("home: the running deck's resume row is drawn"), rowUp, "stamp");
+    if (rowUp) {
+      await page.waitForTimeout(1500);
+      const t = (await row.innerText()).trim();
+      report(tag("home: the stamp is the running clock"), /^Sharpening · \d+:\d\d$/.test(t), t);
+    }
+    await noSideScroll("Home with a run row");
 
     // Failed: an alert line, Try again and Open the deck, both tall enough. Retry is never pressed (a paid run).
     await go(page, `${BASE}/decks/${GUIDED_RUN_DECKS.failed}`);
