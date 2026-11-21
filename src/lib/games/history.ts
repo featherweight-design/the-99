@@ -175,8 +175,10 @@ export function historyMonthsQuery(viewerId: string, filter: GameHistoryFilter, 
     .from(deckGames)
     .innerJoin(decks, eq(decks.id, deckGames.deckId))
     .where(and(ownedGames(viewerId), ...filterConditions(viewerId, filter)))
-    .groupBy(month)
-    .orderBy(desc(month));
+    // By position, never by the expression: the zone is a bound value, so the select's `$1` and a repeated `$4` are
+    // different expressions to Postgres, and a `group by` that re-embedded it fails with 42803.
+    .groupBy(sql`1`)
+    .orderBy(sql`1 desc`);
 }
 
 /** The counts under the filter, in one statement. */
