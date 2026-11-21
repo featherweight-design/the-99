@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>K1 · Motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(/_blob/92b49ae8bf36fee523d2c940101a47cd) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(/_blob/28a118a4f1d2d89f048ed8dda083f273) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(/_blob/ab35e14cb6458bb7fa4f3f54f8f02a5f) format("woff2");font-weight:500}
+body{margin:0}
+.sheet{--bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--accent:#CF8745;--accent-dim:#6B482A;--success:#6FA368;--danger:#C6533F;width:1500px;box-sizing:border-box;padding:48px 56px 56px;background:var(--bg);color:var(--fg);font-family:"IBM Plex Sans",system-ui,sans-serif}
+.hd h1{margin:0;font-family:"Cinzel",serif;font-size:34px;font-weight:700}
+.hd p,.lead{margin:10px 0 0;font-size:16px;color:var(--fg-body);max-width:1000px;line-height:1.55}
+section{margin-top:40px;padding:28px 32px;border-radius:18px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border)}
+h2{margin:0 0 20px;font-size:20px;font-weight:600}
+.film{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap}
+figure{margin:0;width:150px;display:flex;flex-direction:column;gap:12px}
+.pad{height:120px;border-radius:14px;background:var(--bg);box-shadow:inset 0 0 0 1px var(--border);display:flex;align-items:center;justify-content:center}
+figcaption{font-size:13px;line-height:1.45;color:var(--fg-muted)}
+figcaption b{display:block;font-size:14px;color:var(--fg)}
+.arr{align-self:center;margin-top:-40px;color:var(--fg-faint);font-size:22px}
+.sbx{position:relative;width:48px;height:48px;border-radius:50%;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:flex;align-items:center;justify-content:center}
+.sbx.off{color:var(--fg-faint)}
+.sbx.on{color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.sbx.dn{background:var(--accent);color:var(--bg);box-shadow:none;transform:scale(.92)}
+.ico{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.spec{flex:1;min-width:520px}
+table{border-collapse:collapse;width:100%;font-size:14px;line-height:1.5}
+th{text-align:left;vertical-align:top;width:130px;padding:7px 14px 7px 0;color:var(--fg-muted);font-weight:500}
+td{padding:7px 0;color:var(--fg-body);border-top:1px solid var(--border)}
+th{border-top:1px solid var(--border)}
+code{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--fg)}
+</style>
+</helmet>
+<div class="sheet">
+<div class="hd"><h1>Motion: the strip press, day and night</h1><p>Both answer a tap, so neither waits a beat and neither delays the change: the state lands on the press, the motion only dresses it. Under reduced motion nothing moves; the state still changes.</p></div>
+<section><h2>1 · A strip button, pressed</h2>
+<div class="film">
+<figure><div class="pad"><span class="sbx off"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg></span></div><figcaption><b>Rest</b>elevated ground, its usual ink</figcaption></figure>
+<span class="arr">→</span>
+<figure><div class="pad"><span class="sbx dn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg></span></div><figcaption><b>Pressed</b>accent ground, bg ink, scale .92</figcaption></figure>
+<span class="arr">→</span>
+<figure><div class="pad"><span class="sbx on"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/></svg></span></div><figcaption><b>Released</b>back to its state (here: held, lit ring)</figcaption></figure>
+<div class="spec"><table>
+<tr><th>Trigger</th><td><code>:active</code> (pointer down, Space or Enter held). Every strip button: monarch, initiative, day/night, dice, undo, Menu. Not the round (a display) or a disabled Undo.</td></tr>
+<tr><th>Colour</th><td>ground <code>var(--accent)</code>, icon <code>var(--bg)</code>, ring off. The same fill as Dice open and a monarch pick, so "lit" means one thing on the strip.</td></tr>
+<tr><th>Push</th><td><code>scale(.92)</code>, as the panel's round sheet button (End turn's pill is .94).</td></tr>
+<tr><th>Timing</th><td><code>transition: transform, background-color, color</code> over <code>--motion-quick</code> (200 ms) on <code>--motion-ease</code>, no beat, both ways: the app's press feedback.</td></tr>
+<tr><th>Holder art</th><td>The holder's face in the corner scales with the button, so it never detaches.</td></tr>
+<tr><th>Reduced motion</th><td>No scale and no transition. The accent ground still shows while pressed.</td></tr>
+</table></div></div></section>
+<section><h2>2 · Day and night, spinning</h2>
+<div class="film">
+<figure><div class="pad"><span class="sbx on"><span class="ico" style="transform:rotate(0deg)"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></span></span></div><figcaption><b>0 ms</b>Day. Tap.</figcaption></figure>
+<figure><div class="pad"><span class="sbx on"><span class="ico" style="transform:rotate(35deg) scale(.83);opacity:.6"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></span><span class="ico" style="transform:rotate(-55deg) scale(.77);opacity:.4"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></span></span></div><figcaption><b>80 ms</b>sun turns out</figcaption></figure>
+<figure><div class="pad"><span class="sbx on"><span class="ico" style="transform:rotate(68deg) scale(.69);opacity:.2"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/></svg></span><span class="ico" style="transform:rotate(-22deg) scale(.91);opacity:.8"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></span></span></div><figcaption><b>160 ms</b>moon turns in</figcaption></figure>
+<figure><div class="pad"><span class="sbx on"><span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 019.5 4a8 8 0 1010.5 10.5z"/></svg></span></span></div><figcaption><b>320 ms</b>Night.</figcaption></figure>
+<div class="spec"><table>
+<tr><th>Direction</th><td>Always clockwise, like a dial: the old icon turns out to <code>+90°</code>, the new one turns in from <code>−90°</code>. Night to day keeps turning the same way.</td></tr>
+<tr><th>Shape</th><td>Both at once, stacked: out <code>rotate(0→90°) scale(1→.6) opacity(1→0)</code>; in <code>rotate(−90°→0) scale(.6→1) opacity(0→1)</code>.</td></tr>
+<tr><th>Duration, easing</th><td>320 ms (<code>--motion-duration</code>) on <code>--motion-ease-out</code> <code>cubic-bezier(.2,.7,.2,1)</code>, no beat. No overshoot (the prototype's bounce read as a wobble on a 24 px icon).</td></tr>
+<tr><th>First tap</th><td>Off to day: the faint sun turns out, the lit sun turns in, and the ring lights at once.</td></tr>
+<tr><th>Fast taps</th><td>A tap mid-spin finishes the running one instantly and starts the next, so the icon always matches the state.</td></tr>
+<tr><th>Reduced motion</th><td>The icon swaps on the tap; no turn, no fade.</td></tr>
+</table></div></div></section>
+<section><h2>3 · The gain/loss pulse is gone</h2><p class="lead">The <code>life-pulse</code> keyframes and the panel's pulse span go. What a tap shows is the 2 s window: the half lit 18% accent and the pending ±N beside the number (G1). On commit the half fades back over its shipped 120 ms and the number ticks (opacity .7→1, 120 ms). Nothing else moves.</p></section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 1500, "height": 1340}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
