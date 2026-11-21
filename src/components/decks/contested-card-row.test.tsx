@@ -751,8 +751,9 @@ describe("ContestedCardRow — the chooser", () => {
   });
 
   it("refuses a senior holder while a junior deck holds the reservation, and keeps that reservation", () => {
-    // Fabled Passage's shape: three decks, two copies, the reservation on the junior deck. The
-    // middle deck buys; the senior one holds by seniority however the reservation moves.
+    // Fabled Passage's shape: three decks, two copies, the reservation on the junior deck. Moving
+    // the reservation onto the senior deck, which holds by seniority anyway, would only take it off
+    // the junior deck: the same allocation as clearing that pick. So it is refused, and the pick stands.
     render(<ContestedCardRow card={card({
       owned: 2,
       claimants: [
@@ -766,6 +767,14 @@ describe("ContestedCardRow — the chooser", () => {
     expect(screen.getByRole("radio", { name: /Mutant Menace/ }).getAttribute("aria-checked")).toBe("true");
     // The deck that buys is still pressable: its press is a real move.
     fireEvent.click(screen.getByRole("radio", { name: /Multiverse/ }));
+    expect(assign).toHaveBeenCalledTimes(1);
+  });
+
+  it("still writes a press on a holding deck while an Other decks pick stands, since it replaces that pick", () => {
+    const before = vi.fn();
+    render(<ContestedCardRow card={card({ owned: 2 })} externalPick onBeforePick={before} />);
+    fireEvent.click(screen.getByRole("radio", { name: /HD Avatar Aang/ }));
+    expect(before).toHaveBeenCalledTimes(1);
     expect(assign).toHaveBeenCalledTimes(1);
   });
 

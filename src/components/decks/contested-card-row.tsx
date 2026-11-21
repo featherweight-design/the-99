@@ -301,12 +301,15 @@ export function ContestedCardRow({
     setRefusal(null);
     setAttempted({ id: deckId, name: deckName });
     // A PICK NAMES WHO GETS A COPY, never who gives one up. A deck that holds its copy now AND
-    // would hold it with no reservation at all gets nothing from the one reservation moving onto
-    // it: the deck that buys is still the most junior unreserved one. Written anyway, it lit the
-    // accent and changed nothing (Hugh's Fabled Passage, 2026-11-21), so it is said, not written.
-    // `claimants` is the allocation drawn now; the baseline is the same supply with no grant.
-    if (!wasChosen) {
-      const baseline = previewAllocation(card.claimants, externalPick ? Math.max(card.owned - 1, 0) : card.owned, null);
+    // would hold it with no reservation at all gains nothing from the one reservation moving onto
+    // it. The move only takes the reservation off the deck that holds it, which leaves the same
+    // allocation as clearing that pick, and a press on the checked deck already does that. Written
+    // anyway, it lit the accent on a deck that changed nothing (Hugh's Fabled Passage, 2026-11-21),
+    // so it is said, not written. Stopgap until a card can take several picks.
+    // Not while an Other decks pick stands: there the press replaces that pick, which is a real
+    // change. Not while a write is in flight: `claimants` is then a preview, not the server's.
+    if (!wasChosen && !externalPick && picked === null) {
+      const baseline = previewAllocation(card.claimants, card.owned, null);
       if (holdsItsCopy(claimants.find((c) => c.deckId === deckId)) && holdsItsCopy(baseline.find((c) => c.deckId === deckId))) {
         setRefusal("already-has-copy");
         setAnnounce(copy.contested.refusedAlreadyHas(deckName, card.cardName));
