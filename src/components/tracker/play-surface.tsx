@@ -65,6 +65,7 @@ export function PlaySurface({
   const [fly, setFly] = useState<{ kind: "monarch" | "initiative"; k: number; from: [number, number]; to: [number, number] } | null>(null);
   const [roll, setRoll] = useState<Roll | null>(null);
   const savedFor = useRef<string | null>(null);
+  const saveSeq = useRef(0);
 
   const state = useMemo(() => (game ? replay(game) : null), [game]);
   const saved_layout = game ? layoutById(game.config.layout) : undefined;
@@ -88,11 +89,13 @@ export function PlaySurface({
     const key = `${tableId}:${state.entries}`;
     if (savedFor.current === key) return;
     savedFor.current = key;
-     
+    // A save that resolves after a Rematch or a later finish is not this game's, so it sets nothing.
+    const mine = ++saveSeq.current;
+    const settle = (v: "saved" | "failed") => (saveSeq.current === mine ? setSaved(v) : undefined);
     setSaved("saving");
     saveTableResultAction(tableId, roster, placements(state)).then(
-      (r) => setSaved(r.ok ? "saved" : "failed"),
-      () => setSaved("failed"),
+      (r) => settle(r.ok ? "saved" : "failed"),
+      () => settle("failed"),
     );
   }, [state, over, tableId, roster]);
 
@@ -285,6 +288,7 @@ export function PlaySurface({
           onRematch={() => {
             setRematch({ layout: game.config.layout, life: game.config.startingLife });
             setSaved(null);
+            saveSeq.current++;
             discard();
           }}
         />
