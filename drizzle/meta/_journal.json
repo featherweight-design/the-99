@@ -1779,6 +1779,13 @@
       "when": 1795206582696,
       "tag": "0255_dizzy_magma",
       "breakpoints": true
+    },
+    {
+      "idx": 256,
+      "version": "7",
+      "when": 1795221530570,
+      "tag": "0256_melted_wind_dancer",
+      "breakpoints": true
     }
   ]
 }

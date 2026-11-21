@@ -3629,6 +3629,23 @@ export const cardLabels = pgTable("card_labels", {
 });
 
 /**
+ * The four JUDGEMENT themes a card serves (`src/lib/labels/judged.ts`): group hug, pillow fort, big
+ * mana, politics. A separate table from `card_labels` so the card-label prompt and its append-only
+ * SYSTEM registry stay untouched. NOTHING in the app reads it yet: a theme becomes a strategy axis
+ * only after a graded sample proves its labels. Keyed on oracle id like `card_labels`, and cascades
+ * with the card. `themes` is empty for a card judged to serve none, which is an answer, not a gap.
+ * `input_hash` is `judgedInputHash`: the card as rendered, the model, the version and the SYSTEM hash.
+ */
+export const judgedLabels = pgTable("judged_labels", {
+  oracleId: uuid("oracle_id").primaryKey().references(() => cards.oracleId, { onDelete: "cascade" }),
+  themes: jsonb("themes").$type<string[]>().notNull(),
+  model: text("model").notNull(),
+  promptVersion: text("prompt_version").notNull(),
+  inputHash: text("input_hash").notNull(),
+  labelledAt: timestamp("labelled_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/**
  * One counter per reader that moves whenever a table Home or `/decks` reads changes for them.
  * Those two pages cache their whole payload keyed on it (`src/lib/cache/user-data-stamp.ts`),
  * so a write invalidates them by construction rather than by remembering to call something.
