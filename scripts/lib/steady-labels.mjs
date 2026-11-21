@@ -12,13 +12,16 @@ const CLOSER = /^<\/(button|[A-Z]\w*Button)>/;
 export function bareSwaps(source) {
   const lines = source.split("\n");
   const found = [];
+  // `const label = busy ? a : b;` drawn later as `{label}` alone in a button is the same swap, one step removed.
+  const swapNames = new Set();
+  for (const m of source.matchAll(/const (\w+) = ([^;<>]*\?[^;<>]*:[^;<>]*);/g)) if (PENDING.test(m[2])) swapNames.add(m[1]);
   lines.forEach((raw, i) => {
     const line = raw.trim();
     if (line.includes("SteadyLabel")) return;
     // alone on its line, closed by the button on the next; or `>{...}</button>` on one line
     const alone = /^\{(.+)\}$/.exec(line);
-    const inline = /^.*>\{([^{}<>]*\?[^{}<>]*:[^{}<>]*)\}<\/(button|[A-Z]\w*Button)>$/.exec(line);
-    const expr = inline ? inline[1] : alone && CLOSER.test((lines[i + 1] ?? "").trim()) ? alone[1] : null;
+    const inline = />\{([^{}<>]*\?[^{}<>]*:[^{}<>]*)\}<\/(button|[A-Z]\w*Button)>/.exec(line);
+    const expr = inline ? inline[1] : alone && CLOSER.test((lines[i + 1] ?? "").trim()) ? (swapNames.has(alone[1]) ? `${alone[1]} ? a : pending` : alone[1]) : null;
     if (!expr) return;
     if (!expr.includes("?") || !expr.includes(":")) return;
     // Anywhere in the expression: `resumeAt !== null ? a : load === "loading" ? b : c` swaps to a pending word in a later branch.

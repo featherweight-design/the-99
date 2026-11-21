@@ -882,7 +882,7 @@ export function CreatePicker(props: CreatePickerProps) {
             disabled={!canCreate || isPending}
             className="w-full text-[15px] transition-opacity disabled:opacity-50 px-0 h-[48px] py-0"
           >
-            {submitLabel}
+            <SteadyLabel hold={[copy.submit, addPanelCopy.createPicker.submitPending, addPanelCopy.createPicker.submit]}>{submitLabel}</SteadyLabel>
           </PrimaryButton>
         </div>
       </div>
