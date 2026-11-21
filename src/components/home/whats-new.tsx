@@ -122,6 +122,14 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
   const [clearToast, setClearToast] = useState<SocialToastState | null>(null);
   const [clearFailed, setClearFailed] = useState<SocialToastState | null>(null);
   const clearSeq = useRef(0);
+  const refocusClear = useRef(false);
+  useEffect(() => {
+    if (!refocusClear.current) return;
+    const press = document.querySelector<HTMLElement>("[data-clear-all]");
+    if (!press) return;
+    refocusClear.current = false;
+    press.focus();
+  });
   const leadKey = chosen && feed.lead && heldLead && heldLead.key === null ? feed.lead.key : null;
   const clearable = chosen ? [...(leadKey ? [leadKey] : []), ...feed.items.map((i) => i.key), ...(feed.upcoming ?? []).map((i) => i.key)] : [];
   const bring = (keys: readonly string[], on: boolean, lead: string | null) => {
@@ -138,7 +146,8 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
     const fail = (text: string) => setClearFailed({ id: ++clearSeq.current, text });
     const undo = () => {
       bring(keys, false, lead);
-      requestAnimationFrame(() => document.querySelector<HTMLElement>("[data-clear-all]")?.focus());
+      // The press is not on the page until the rows are back: the effect below focuses it once it is.
+      refocusClear.current = true;
       void restoreFeedItemsAction(keys)
         .then((r) => {
           if (!r.ok) throw new Error(r.reason);
