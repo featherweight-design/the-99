@@ -68,4 +68,18 @@ describe("PreconsLoading", () => {
     const caption = container.querySelector("[data-testid=tile-skeleton] > div:last-child")!;
     for (const token of CARD_TILE_CAPTION_SUB_H.split(" ")) expect(caption.className, token).toContain(token);
   });
+
+  it("draws Precons I own's own frame for ?pick=own, not the list's tiles, with the pick's real header and a back link that follows ?from", () => {
+    search = "pick=own";
+    const { container } = render(<PreconsLoading />);
+    expect(screen.getByRole("heading", { name: "Precons I own" })).toBeTruthy();
+    expect(screen.getByRole("link", { name: "‹ Home" }).getAttribute("href")).toBe("/");
+    expect(container.querySelector("[data-testid=tile-skeleton]")).toBeNull();
+    expect(container.querySelectorAll("[data-testid=pick-row-skeleton]").length).toBeGreaterThan(8);
+    expect(container.firstElementChild!.hasAttribute("data-loading-screen")).toBe(true);
+    cleanup();
+    search = "pick=own&from=collection";
+    render(<PreconsLoading />);
+    expect(screen.getByRole("link", { name: "‹ Collection" }).getAttribute("href")).toBe("/collection");
+  });
 });

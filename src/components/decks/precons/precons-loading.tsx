@@ -16,13 +16,15 @@ import { useSearchParams } from "next/navigation";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { preconsLoadingCopy } from "../../../lib/copy/shell";
 import { parsePreconParams } from "../../../lib/precons/list";
+import { PICK_ENTRY_HREF, PICK_PARAM, PICK_VALUE, pickEntry } from "../../../lib/precons/pick";
 import { StallWatch } from "../../shell/nav-stall";
 import { PendingReporter } from "../../shell/pending-reporter";
-import { RowSkeleton, TileSkeleton } from "../../ui/tile-skeleton";
+import { BAR, RowSkeleton, TileSkeleton } from "../../ui/tile-skeleton";
 import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
 import { TOUCH_HIT } from "../../ui/touch-hit";
 
 const copy = preconsCopy.list;
+const pickCopy = preconsCopy.pick;
 const SHAPE = "rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]";
 
 /** The page's own columns with the row gap taken off the grid and put on each tile as a margin: the extra tiles sit in
@@ -36,6 +38,8 @@ const TILE_COUNT = 24;
  *  as in the list. */
 export function PreconsLoading({ storedView = null }: { storedView?: "tiles" | "rows" | null }) {
   const params = useSearchParams();
+  // `?pick=own` is a different page (Precons I own, `PreconPickView`): its own frame, not the list's.
+  if (params.get(PICK_PARAM) === PICK_VALUE) return <PreconPickLoading entry={pickEntry(params.get("from"))} />;
   const view = parsePreconParams(new URLSearchParams(params.toString())).view ?? storedView ?? "tiles";
   const fromNew = params.get("from") === "new";
   const back = fromNew ? "/decks/new" : "/decks";
@@ -80,6 +84,75 @@ export function PreconsLoading({ storedView = null }: { storedView?: "tiles" | "
               {Array.from({ length: 6 }, (_, i) => <RowSkeleton key={i} index={i} />)}
             </ul>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const PICK_ROWS = 14;
+const PICK_NAME = [62, 74, 55, 80, 68, 58, 77];
+
+/** What `?pick=own` draws while it loads: the pick view's own frame (its header with the real title and lead, the search and
+ *  colour line, the result line, a year heading, rows at the real rows' 56px (52 from `md`), and the sticky foot), so the
+ *  page does not change shape when the list lands. The header and the foot's place are real; the rest are shapes. */
+function PreconPickLoading({ entry }: { entry: "home" | "collection" }) {
+  const back = PICK_ENTRY_HREF[entry];
+  return (
+    <div data-loading-screen className="flex min-w-0 flex-1 flex-col">
+      <span role="status" className="sr-only">{preconsLoadingCopy.status}</span>
+      <StallWatch />
+      <header className="flex flex-col gap-[4px] p-[12px_16px_0] md:mx-auto md:w-full md:max-w-[900px] md:p-[22px_0_0]">
+        <Link href={back} className="flex min-h-[32px] items-center self-start text-[13px] text-[color:var(--fg-muted)] no-underline md:text-[12.5px]">
+          {entry === "collection" ? pickCopy.backCollection : pickCopy.backHome}
+          <PendingReporter href={back} />
+        </Link>
+        <h1 className="m-0 font-display text-[22px] font-normal text-[color:var(--fg)] md:text-[26px]">{pickCopy.title}</h1>
+        <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-muted)] md:hidden">{pickCopy.subPhone}</p>
+        <p className="m-0 hidden max-w-[720px] text-[13.5px] leading-[1.55] text-[color:var(--fg-muted)] md:block">{pickCopy.sub}</p>
+      </header>
+      <div aria-hidden className="anim-skeleton flex flex-1 flex-col">
+        <div className="p-[12px_16px_0] md:mx-auto md:w-full md:max-w-[900px] md:p-[16px_0_0]">
+          <div className="flex flex-col gap-[10px] md:flex-row md:items-center">
+            <span className={`${SHAPE} h-[44px] min-w-0 md:flex-1`} />
+            <span className={`${SHAPE} h-[22px] w-[134px] flex-none pointer-coarse:h-[44px] pointer-coarse:w-[264px]`} />
+          </div>
+          <span className="m-[10px_0_0] flex h-[16px] items-center md:h-[17px]"><span className={`${BAR} h-[10px] w-[180px]`} /></span>
+        </div>
+        <div className="flex flex-1 flex-col gap-[18px] overflow-hidden p-[8px_16px_24px] md:mx-auto md:w-full md:max-w-[900px] md:px-0">
+          <section className="flex flex-col">
+            <span className="flex h-[34px] items-start border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)] pb-[7px]">
+              <span className={`${BAR} h-[17px] w-[64px]`} />
+            </span>
+            <ul className="m-0 list-none p-0">
+              {Array.from({ length: PICK_ROWS }, (_, i) => (
+                <li key={i} data-testid="pick-row-skeleton" className="flex flex-col border-x-0 border-t-0 border-b-[1px] border-solid border-b-[color:var(--border)]">
+                  <span className="flex min-h-[56px] items-center gap-[12px] px-[4px] md:min-h-[52px] md:gap-[14px] md:px-[10px]">
+                    <span className="h-[18px] w-[18px] flex-none rounded-[4px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]" />
+                    <span className="h-[48px] w-[34px] flex-none rounded-[4px] bg-[color:var(--surface-sunken)]" />
+                    <span className="flex w-[52px] flex-none gap-[3px] md:w-[57px]">
+                      <span className="h-[8px] w-[8px] rounded-full bg-[color:var(--surface-raised)] md:h-[9px] md:w-[9px]" />
+                    </span>
+                    <span className="flex min-w-0 flex-1 flex-col gap-[3px] md:gap-[2px]">
+                      <span className={`${BAR} h-[14px]`} style={{ width: `${PICK_NAME[i % PICK_NAME.length]}%`, maxWidth: 280 }} />
+                      <span className={`${BAR} h-[10px] w-[96px] bg-[color:var(--surface-raised)]`} />
+                    </span>
+                    <span className={`${BAR} h-[11px] w-[28px] flex-none bg-[color:var(--surface-raised)] md:w-[64px]`} />
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+      </div>
+      <div
+        aria-hidden
+        className="sticky bottom-[var(--tabbar-h)] z-20 border-x-0 border-b-0 border-t-[1px] border-solid border-t-[color:var(--border)] bg-[color:var(--bg)] p-[10px_16px_12px] md:bottom-0 md:bg-[color:var(--surface-rail)] md:p-0"
+      >
+        <div className="flex flex-col gap-[8px] md:mx-auto md:h-[68px] md:max-w-[900px] md:flex-row md:items-center md:gap-[12px]">
+          <span className="flex h-[13px] items-center justify-center md:flex-1 md:justify-start"><span className={`${BAR} h-[10px] w-[160px]`} /></span>
+          <span className={`${SHAPE} hidden h-[40px] w-[78px] md:block`} />
+          <span className={`${SHAPE} h-[48px] w-full rounded-[10px] md:h-[40px] md:w-[110px] md:rounded-[8px]`} />
         </div>
       </div>
     </div>
