@@ -35,6 +35,7 @@
 // nothing to prefetch into, and the link is a plain link.
 import Link from "next/link";
 import { AppRouterContext, type AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { writeOpenEntry, type OpenFacts } from "../../lib/decks/open-entry";
 import { useCallback, useContext, useEffect, useRef, type ComponentProps } from "react";
 
 type Props = ComponentProps<typeof Link> & {
@@ -45,6 +46,8 @@ type Props = ComponentProps<typeof Link> & {
    * A caller holding a budget across links reserves its slot here, before the request exists.
    */
   claimPrefetch?: () => boolean;
+  /** The deck this link opens: a press writes its header facts for the deck page's loading skeleton (`open-entry`), with no list place. */
+  opens?: OpenFacts;
 };
 type PrefetchOptions = NonNullable<Parameters<AppRouterInstance["prefetch"]>[1]>;
 
@@ -83,7 +86,7 @@ function onIdle(fn: () => void): () => void {
 /** The full prefetch: the page's dynamic data too, not only its loading boundary. */
 const FULL = { kind: "full" } as unknown as PrefetchOptions;
 
-export function IntentPrefetchLink({ eager = false, href, claimPrefetch, onPointerEnter, onFocus, onClick, ref, ...props }: Props) {
+export function IntentPrefetchLink({ eager = false, href, claimPrefetch, opens, onPointerEnter, onFocus, onClick, ref, ...props }: Props) {
   const router = useContext(AppRouterContext);
   const done = useRef(false);
   const anchor = useRef<HTMLAnchorElement | null>(null);
@@ -150,6 +153,8 @@ export function IntentPrefetchLink({ eager = false, href, claimPrefetch, onPoint
         // The press is the navigation: a prefetch still waiting for an idle moment would fetch the
         // page a second time beside it, the duplicate #1571 removed for touches.
         done.current = true;
+        // Not for a press that opens a new tab (modifier or middle click): that tab would inherit the entry.
+        if (opens && e.button === 0 && !(e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)) writeOpenEntry(opens, null);
         onClick?.(e);
       }}
       onFocus={(e) => {

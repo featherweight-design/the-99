@@ -5,7 +5,8 @@
 // `‹ All decks` link, the tab row is real words with the kept tab underlined, and everything else is a shape. It carries
 // `StallWatch` and `data-loading-screen` as `LoadingScreen` does, so a deck stuck here is reported like any other loading screen.
 
-import { useSearchParams } from "next/navigation";
+import { useState, useSyncExternalStore } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deckFlipCopy, deckOpenLoadingCopy } from "../../lib/copy/deck-flip";
@@ -15,6 +16,11 @@ import { StallWatch } from "../shell/nav-stall";
 import { PendingReporter } from "../shell/pending-reporter";
 import { BAR } from "../ui/tile-skeleton";
 import Link from "next/link";
+import { ArtWash } from "../ui/art-wash";
+import { IdentityPips } from "../commanders/commander-art";
+import { StatusPillBadge } from "./status-pill";
+import { deckBodySize } from "../../lib/decks/deck-size";
+import { parseOpenEntry, readOpenRaw, type OpenEntry } from "../../lib/decks/open-entry";
 
 const SH = "rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]";
 const NAME = [62, 48, 74, 55, 68, 44, 80, 58, 66, 50, 72, 46];
@@ -112,17 +118,65 @@ function Body({ wide, tab }: { wide: boolean; tab: string }) {
   );
 }
 
+/**
+ * Skeleton A: the shipped band fed from the facts the press carried. The commander's crop (the shipped no-crop band when the deck
+ * has none), the name, colours and commander line, the status chip and `built / 99`. The actions, the bracket chip and the notice
+ * tag arrive with the page, so none is drawn inert here; no intent row either, which this list read does not carry.
+ */
+function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["facts"]; strip: React.ReactNode }) {
+  const size = deckBodySize(facts.partner);
+  const label = (
+    <div className="relative flex flex-col gap-[8px]">
+      <h1 className="m-0 font-serif text-[26px] font-semibold leading-[1.15] text-[color:var(--fg)] md:text-[30px]">{facts.name}</h1>
+      <div className="flex items-center gap-[8px] text-[14px] text-[color:var(--fg-body)]">
+        <IdentityPips colorIdentity={facts.identity} size={10} />
+        <span className="min-w-0 truncate">{facts.commander}</span>
+      </div>
+      <div className="flex items-center gap-[10px]">
+        <StatusPillBadge status={facts.status} className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]" />
+        <span className="font-mono text-[13px] text-[color:var(--fg-muted)]">{facts.built} / {size}</span>
+      </div>
+    </div>
+  );
+  if (wide) {
+    return (
+      <div className="hidden md:block">
+        <div className="relative overflow-hidden bg-[color:var(--surface-sunken)]" style={{ height: 288, borderBottom: "1px solid var(--border)" }}>
+          <ArtWash strategy="left-portrait" height={288} portrait={340} labelAtPx="flat" artCropUri={facts.artCropUri} colorIdentity={facts.identity} />
+          <div className="absolute" style={{ left: 380, bottom: 24, right: 24 }}>{label}</div>
+        </div>
+        <div className="flex" style={{ borderBottom: "1px solid var(--border)", padding: "6px 24px" }}>{strip}</div>
+      </div>
+    );
+  }
+  return (
+    <div className="md:hidden">
+      <div className="relative overflow-hidden bg-[color:var(--surface-sunken)]" style={{ height: 288 }}>
+        <ArtWash strategy="cover" height={288} labelAtPx="block" artCropUri={facts.artCropUri} colorIdentity={facts.identity} />
+        <div className="absolute inset-x-0 bottom-0 px-[18px] pb-[12px]">{label}</div>
+      </div>
+      <div className="flex flex-col items-center" style={{ borderTop: "1px solid var(--border)", padding: "14px 16px 12px", gap: 8 }}>
+        {strip}
+      </div>
+    </div>
+  );
+}
+
 /** The band at its shipped height on the sunken ground, then what sits under it, drawn once per width. */
-function Header({ wide }: { wide: boolean }) {
+function Header({ wide, entry }: { wide: boolean; entry: OpenEntry | null }) {
+  const facts = entry?.facts;
+  const place = entry?.place ?? null;
   const strip = (
     <nav aria-label={deckFlipCopy.region} className={`flex w-full items-center justify-between ${wide ? "min-h-[36px]" : "min-h-[44px]"}`}>
       <Link href="/decks" className={`flex min-h-[44px] items-center gap-[6px] text-[color:var(--fg-body)] ${wide ? "text-[14px]" : "text-[15px]"}`}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6" /></svg>
-        <span>{deckFlipCopy.allDecks}</span>
+        <span>{place?.caption ?? deckFlipCopy.allDecks}</span>
         <PendingReporter href="/decks" />
       </Link>
+      {place && <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{deckFlipCopy.place(place.k, place.n)}</span>}
     </nav>
   );
+  if (facts) return <FactsHeader wide={wide} facts={facts} strip={strip} />;
   if (wide) {
     return (
       <div aria-hidden={undefined} className="hidden md:block">
@@ -159,16 +213,26 @@ function Header({ wide }: { wide: boolean }) {
   );
 }
 
+const noopSubscribe = () => () => {};
+const serverNull = () => null;
+
 export function DeckOpenLoading() {
   const params = useSearchParams();
-  const raw = params.get(TAB_PARAM);
-  const tab = TABS.some((t) => t.id === raw) ? (raw as string) : "deck";
+  const id = usePathname().split("/").filter(Boolean)[1];
+  // A press wrote this deck's header facts (`open-entry`); a skeleton for any other deck, or for an entry older than a minute, draws its shapes alone.
+  // The server snapshot is absent, so the server and the first hydration draw shapes; a client navigation reads the entry at once.
+  const raw = useSyncExternalStore(noopSubscribe, readOpenRaw, serverNull);
+  const [now] = useState(Date.now);
+  const parsed = parseOpenEntry(raw, now);
+  const entry = parsed && parsed.to === id ? parsed : null;
+  const rawTab = params.get(TAB_PARAM);
+  const tab = TABS.some((t) => t.id === rawTab) ? (rawTab as string) : "deck";
   return (
     <div data-loading-screen>
-      <span role="status" className="sr-only">{deckOpenLoadingCopy.status}</span>
+      <span role="status" className="sr-only">{entry ? deckOpenLoadingCopy.opening(entry.facts.name) : deckOpenLoadingCopy.status}</span>
       <StallWatch />
-      <Header wide={false} />
-      <Header wide />
+      <Header wide={false} entry={entry} />
+      <Header wide entry={entry} />
       <Body wide={false} tab={tab} />
       <Body wide tab={tab} />
     </div>
