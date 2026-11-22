@@ -413,6 +413,7 @@
     "probe:sheet-inert": "node scripts/probe-sheet-inert.mjs",
     "probe:modal-inert": "node scripts/probe-modal-inert.mjs",
     "probe:modal-sweep": "node scripts/probe-modal-sweep.mjs",
+    "probe:partner-add": "node scripts/probe-partner-add.mjs",
     "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test",
     "probe:nav-pending": "node scripts/probe-nav-pending.mjs",
     "probe:collection-tabs": "node scripts/probe-collection-tabs.mjs",
