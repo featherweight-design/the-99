@@ -1,21 +1,34 @@
 import { neon } from "@neondatabase/serverless";
+import { after } from "next/server";
 import { isOverrideName } from "./registry";
 import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
 
 /**
- * Every override and every group membership, held for 30 seconds per server instance (admin plan,
- * "Per-user overrides on every request"; brief, locked rule 7). The tables are small and change
- * only when the admin writes, so in steady state a request costs no query. An admin write clears
- * the memo on its own instance; every other instance catches up within the window, and the
- * Switches UI says so rather than promising instant.
+ * Every override and every group membership, held per server instance and served stale while it refreshes (admin plan,
+ * "Per-user overrides on every request"; brief, locked rule 7; SWR, Hugh 2026-11-22). The tables are small and change
+ * only when the admin writes, so in steady state a request costs no query:
+ * - Within `SNAPSHOT_TTL_MS` of the last good read, the held snapshot is served.
+ * - Past it, the held snapshot is STILL served at once, and one read refreshes it behind the response (`after()`). So a
+ *   flip or a kill reaches an instance one request after its window ends, not on that request: the tradeoff Hugh took
+ *   for taking the read off the request's path (cold instances paid it at p50 442ms on GET /).
+ * - Only an instance's first read, or the first after an admin write clears it, makes a request wait.
+ * An admin write clears the memo on its own instance; every other instance catches up a refresh after the window, and
+ * the Switches UI says so rather than promising instant.
  *
- * A read that fails resolves every switch to its compiled fallback (`switchFallbackOn`; the model-call switch's
- * variable still stops it), and is not held, so the next request asks again. A switch the database names and this build does not know (a row written by a newer build)
- * is skipped rather than trusted.
+ * A read that fails is never held. With nothing held it resolves every switch to its compiled fallback
+ * (`switchFallbackOn`; the model-call switch's variable still stops it), and the next request asks again. With a snapshot
+ * held, a failed refresh keeps serving it (the last state the admin wrote beats the fallbacks) and the next request past
+ * the window asks again. A switch the database names and this build does not know (a row written by a newer build) is
+ * skipped rather than trusted.
  */
 export const SNAPSHOT_TTL_MS = 30_000;
 
-let memo: { at: number; snapshot: Promise<SwitchSnapshot | null>; settled: boolean } | null = null;
+/** The last good read and when it was asked for. Never a failed one. */
+let held: { at: number; snapshot: SwitchSnapshot } | null = null;
+/** The read in flight, if any, so concurrent requests share one. */
+let inflight: Promise<SwitchSnapshot | null> | null = null;
+/** Bumped by an admin write's clear, so a read begun before the write cannot land after it. */
+let generation = 0;
 
 /**
  * Both tables in ONE statement, so one snapshot: an admin moving an account between groups and
@@ -62,30 +75,57 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
 }
 
 export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null> {
-  if (memo && now - memo.at < SNAPSHOT_TTL_MS) return memo.snapshot;
-  const snapshot = readSnapshot();
-  const entry = { at: now, snapshot, settled: false };
-  memo = entry;
-  // A failed read is not held: the next request asks again.
-  void snapshot.then((s) => {
-    entry.settled = true;
-    if (s === null && memo === entry) memo = null;
+  if (held && now - held.at < SNAPSHOT_TTL_MS) return Promise.resolve(held.snapshot);
+  if (held) {
+    keepAlive(refresh(now));
+    return Promise.resolve(held.snapshot);
+  }
+  return refresh(now);
+}
+
+/** One read at a time per instance; a good one is held from the moment it was asked for. */
+function refresh(now: number): Promise<SwitchSnapshot | null> {
+  if (inflight) return inflight;
+  const asked = generation;
+  const read = readSnapshot().then((snapshot) => {
+    if (asked === generation) {
+      if (snapshot) held = { at: now, snapshot };
+      inflight = null;
+    }
+    return snapshot;
   });
-  return snapshot;
+  inflight = read;
+  return read;
 }
 
 /**
- * How a read now would be answered, for the proxy's `[perf]` line: `hit` from a settled memo (no
- * query), `pending` by waiting on another request's read still in flight, `miss` by a read of its own.
+ * A refresh behind the response must outlive it: `after()` holds the invocation open until the read lands, or a
+ * serverless instance could freeze mid-read. The read is already running; this only keeps it alive. Outside a request
+ * (a script, a test) `after` throws and there is nothing to keep alive.
  */
-export function switchSnapshotState(now = Date.now()): "hit" | "pending" | "miss" {
-  if (memo === null || now - memo.at >= SNAPSHOT_TTL_MS) return "miss";
-  return memo.settled ? "hit" : "pending";
+function keepAlive(read: Promise<unknown>): void {
+  try {
+    after(() => read);
+  } catch {
+    // outside a request scope
+  }
+}
+
+/**
+ * How a read now would be answered, for the proxy's `[perf]` line: `hit` from a held snapshot inside its window (no
+ * query), `stale` from one past it while a read refreshes it behind the response (no wait), `pending` by waiting on
+ * another request's first read still in flight, `miss` by a first read of its own.
+ */
+export function switchSnapshotState(now = Date.now()): "hit" | "stale" | "pending" | "miss" {
+  if (held) return now - held.at < SNAPSHOT_TTL_MS ? "hit" : "stale";
+  return inflight ? "pending" : "miss";
 }
 
 /** Called by an admin write, after its transaction commits, so its own instance reads it at once. */
 export function clearSwitchSnapshot(): void {
-  memo = null;
+  held = null;
+  inflight = null;
+  generation++;
 }
 
 /** One reader's resolved switches, env-shaped. Resolve ONCE per page, action or route, and pass it down. */

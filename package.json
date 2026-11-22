@@ -100,6 +100,7 @@
     "probe:tracker-scroll-lock": "node scripts/probe-tracker-scroll-lock.mjs",
     "probe:admin-pii": "node scripts/probe-admin-pii.mjs",
     "probe:admin-payments": "node scripts/probe-admin-payments.mjs",
+    "probe:flag-snapshot-swr": "node scripts/probe-flag-snapshot-swr.mjs",
     "seed:admin-pii-fixture": "node scripts/seed-admin-pii-fixture.mjs",
     "probe:social": "tsx scripts/probe-social.mts",
     "probe:face-printing": "tsx scripts/probe-face-printing.mts",

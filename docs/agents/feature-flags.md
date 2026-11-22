@@ -47,9 +47,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   `discoveryKey` and `commanderRankingsKey` take the basis, the stored scores' `writer_version` carries it
   (`scoreWriterVersion(env)`), and `cachePageForUser` keys on every switch. The registry
   (`src/lib/flags/registry.ts`) is the closed set the table is checked against, and `registry.test.ts` fails when
-  `src/` reads a variable it does not name. `resolveFlags(userId)` reads the overrides through a 30-second
-  per-instance memo (an admin write, `src/lib/admin/flag-writes.ts`, commits and then clears its own instance's
-  memo; the proxy's memo, which feeds every page's switches, catches up within the 30 seconds), serves each switch's
+  `src/` reads a variable it does not name. `resolveFlags(userId)` reads the overrides through a per-instance
+  stale-while-revalidate memo (Hugh, 2026-11-22): inside 30 seconds of its last read it is served as held; past them it
+  is still served at once and one read refreshes it behind the response (`after()`), so only an instance's first read
+  waits and a flip lands one request after the window ends. An admin write, `src/lib/admin/flag-writes.ts`, commits and
+  then clears its own instance's memo (its next read waits, and a refresh begun before the write is discarded); the
+  proxy's memo, which feeds every page's switches, catches up a refresh after the window. A failed refresh keeps the
+  held snapshot. It serves each switch's
   compiled fallback when the read fails (it served the environment alone until flags-in-DB PR 2), and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
   never raises its parent. Every page, layout, action and route handler decides a switch from
@@ -146,7 +150,7 @@ Plan `docs/superpowers/plans/2026-10-31-feature-flags-in-db.md`. Two additions; 
   is (`isKilled`, `resolve.ts`). The resolved env carries the kill value `off`, so every flag function reads it as the
   env's kill. Either kill alone is enough, with one difference: a request whose override read fails is served the
   compiled fallbacks (`snapshot.ts`), so a `killed` row holds only while the read succeeds (the fallback is off for every
-  switch but the model calls, the rate limit and the list cache). It takes effect within the 30-second snapshot window.
+  switch but the model calls, the rate limit and the list cache). It takes effect a refresh after the 30-second snapshot window.
 - **The seed** (`src/lib/flags/seed.ts`): after the migrations on each Vercel build (`vercel-migrate.ts`, production
   and staging, each against its own branch) and locally by `pnpm db:seed:flags` (the branch `.env` names), every switch
   with no app-wide row gets one holding what its variable serves now (`true` is on, anything else off), note
