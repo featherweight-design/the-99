@@ -34,6 +34,12 @@ export function underCardRows(twoFaced: boolean, door: boolean): number {
   return 10 + 15 + (twoFaced ? 38 : 0) + 27 + (door ? DOOR_HEIGHT : 0);
 }
 
+/**
+ * The printings strip's height in the phone's teaser (alternate printings R2): the design's +98px (README-R2, "the door-strip
+ * pattern"), which the card band gives up as it does for the door strip. Added to the teaser in `useSheetSnap`.
+ */
+export const PRINTING_STRIP_TEASER_HEIGHT = 98;
+
 /** The narrowest card the phone's teaser may leave room for; below it the sheet opens full. */
 export const MIN_TEASER_CARD_WIDTH = 120;
 
