@@ -276,7 +276,7 @@ function TileArt({ line, eager }: { line: FriendSpareLine; eager: boolean }) {
 function DeckNeedMark({ need }: { need: number }) {
   return (
     <span data-testid="spare-deck-need" className="inline-flex items-center gap-[5px]">
-      <i aria-hidden className="size-[7px] shrink-0 rounded-full border border-solid border-[color:var(--fg-muted)]" />
+      <i aria-hidden className="size-[7px] shrink-0 rounded-full border border-dashed border-[color:var(--fg-muted)]" />
       {sparesSearchCopy.tile.deck(need)}
     </span>
   );

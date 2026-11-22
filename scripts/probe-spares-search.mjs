@@ -63,6 +63,8 @@ for (const vp of VIEW) {
     await page.goto(`${BASE}/friends/${FRIEND}/spares${qs}`, { waitUntil: "domcontentloaded" });
     await tiles.first().waitFor({ timeout: 30_000 });
     await page.waitForTimeout(500);
+    // The account's own table-seat notices stack over the page's foot; they are not under test.
+    await page.addStyleTag({ content: "[data-seat-notice-stack]{display:none!important}" });
   };
   const search = page.getByRole("searchbox", { name: /Search spares/ });
   const resultLine = () => page.locator("body").innerText().then((t) => (t.match(/\d+ (?:of \d+ )?spares/) ?? [""])[0]);
@@ -96,13 +98,13 @@ for (const vp of VIEW) {
   await open();
   if (wide) {
     await page.getByRole("button", { name: /^Type/ }).first().click();
-    await page.getByRole("checkbox", { name: /^Artifact/ }).first().click();
+    await page.getByRole("option", { name: /^Artifact/ }).first().click();
     await page.keyboard.press("Escape");
   } else {
-    await page.getByRole("button", { name: /Filters/ }).first().click();
+    await page.getByRole("button", { name: /^Filter cards/ }).first().click();
     await page.getByRole("dialog", { name: "Filter spares" }).waitFor();
     await shot("sheet");
-    await page.getByRole("dialog").getByRole("button", { name: /^Artifact/ }).first().click();
+    await page.getByRole("dialog").getByRole("switch", { name: /^Artifact/ }).first().click();
     await page.getByRole("dialog").getByRole("button", { name: /^Show / }).click();
   }
   await page.waitForTimeout(500);
