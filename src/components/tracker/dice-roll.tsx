@@ -6,6 +6,7 @@
 
 import { useEffect, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
+import { CoinFace } from "./coin-face";
 import { type DieKind, diePoints, hideDice, reducedMotion, throwDice } from "./dice";
 
 export type Roll = { kind: DieKind; values: readonly number[]; k: number };
@@ -66,8 +67,8 @@ export function DiceRoll({ roll, label, onAgain, onClose, tablet = false, childr
               data-testid="dice-coin"
             >
               {[-3, -2, -1, 0, 1, 2, 3].map((i) => <span key={i} aria-hidden className="coin-rim" style={{ "--z": i / 7 } as React.CSSProperties} />)}
-              <span aria-hidden className="coin-face coin-face-front" style={{ fontSize: tablet ? 20 : 14 }}>{trackerCopy.dice.heads}</span>
-              <span aria-hidden className="coin-face coin-face-back" style={{ fontSize: tablet ? 20 : 14 }}>{trackerCopy.dice.tails}</span>
+              <span aria-hidden className="coin-face coin-face-front"><CoinFace side="heads" word={trackerCopy.dice.heads} /></span>
+              <span aria-hidden className="coin-face coin-face-back"><CoinFace side="tails" word={trackerCopy.dice.tails} /></span>
             </button>
           </span>
         </div>
