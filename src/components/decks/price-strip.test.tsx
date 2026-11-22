@@ -4,6 +4,9 @@ import { PriceStrip } from "./price-strip";
 import { priceCopy } from "../../lib/copy/price";
 import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
 import type { ProvenanceForm } from "../../lib/decks/price";
+import { StoreProvider } from "../stores/store-provider";
+import { storeCopy } from "../../lib/copy/store";
+import { STORE_INFO } from "../../lib/stores/info";
 
 const fresh: ProvenanceForm = { behind: false, when: "Monday" };
 const behind: ProvenanceForm = { behind: true, when: "12 August" };
@@ -237,5 +240,38 @@ describe("PriceStrip buy link", () => {
     const link = screen.getByRole("link");
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener");
+  });
+});
+
+describe("PriceStrip by store (store choice)", () => {
+  const summary = { totalCents: 1240, pricedCopies: 3, totalCopies: 3 };
+  const strip = (store: "manapool" | "tcgplayer" | "cardkingdom") =>
+    render(
+      <StoreProvider store={store}>
+        <PriceStrip summary={summary} provenance={fresh} shoppingCards={list} />
+      </StoreProvider>,
+    );
+
+  it("names TCGplayer's market prices with the accuracy note, and offers the list to paste instead of a cart link", () => {
+    const { container } = strip("tcgplayer");
+    expect(container.textContent).toContain(`${storeCopy.provenance(STORE_INFO.tcgplayer)} · ${storeCopy.marketNote} · ${priceCopy.strip.lastChecked("Monday")}`);
+    expect(container.textContent).not.toContain(priceCopy.strip.cartNote);
+    expect(container.querySelector("[data-no-cart]")).toHaveTextContent(storeCopy.noCart(STORE_INFO.tcgplayer));
+    expect(screen.getByRole("button", { name: storeCopy.copyAria(3) })).toBeTruthy();
+    expect(screen.queryByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeNull();
+  });
+
+  it("names Card Kingdom's listings without the market note", () => {
+    const { container } = strip("cardkingdom");
+    expect(container.textContent).toContain(`${storeCopy.provenance(STORE_INFO.cardkingdom)} · ${priceCopy.strip.lastChecked("Monday")}`);
+    expect(container.textContent).not.toContain(storeCopy.marketNote);
+    expect(container.querySelector('[data-store-paste="cardkingdom"]')).toBeTruthy();
+  });
+
+  it("under Mana Pool draws exactly what it drew before stores", () => {
+    const { container } = strip("manapool");
+    expect(container.querySelector("[data-no-cart]")).toBeNull();
+    expect(container.querySelector("[data-store-paste]")).toBeNull();
+    expect(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeTruthy();
   });
 });

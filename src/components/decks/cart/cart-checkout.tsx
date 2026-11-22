@@ -8,6 +8,9 @@ import { priceCopy } from "../../../lib/copy/price";
 import { formatCents, type ProvenanceForm } from "../../../lib/decks/price";
 import type { CartFigures } from "../../../lib/decks/cart";
 import { ExternalLink } from "../../ui/external-link";
+import { storeCopy } from "../../../lib/copy/store";
+import { StorePasteRow } from "../../stores/store-paste-row";
+import { useStoreInfo } from "../../stores/store-provider";
 
 export function CartCheckout({
   total,
@@ -15,6 +18,7 @@ export function CartCheckout({
   priced,
   provenance,
   links,
+  pasteLines = [],
 }: {
   total: CartFigures;
   /** Selected decks. Zero is A4: nothing to buy, so no figure and no link. */
@@ -22,7 +26,10 @@ export function CartCheckout({
   priced: boolean;
   provenance: ProvenanceForm | null;
   links: { href: string; lineCount: number }[];
+  /** The selection as `1 Name` lines, for a store with no cart link (store choice, call 6). Empty on Mana Pool. */
+  pasteLines?: readonly { name: string; quantity: number }[];
 }) {
+  const store = useStoreInfo();
   // Whether ManaPool priced anything and whether the sum is worth drawing are two questions: a
   // live copy at $0.00 is priced, and draws no figure (as the tile draws none for a zero total).
   const anyPriced = priced && total.pricedCopies > 0;
@@ -30,9 +37,11 @@ export function CartCheckout({
   const showClause = showFigure && total.pricedCopies < total.copies;
   const first = !priced
     ? copy.checkout.unread
-    : anyPriced ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced;
+    : anyPriced ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store);
   const provenanceLine = [
     first,
+    // A market figure is an average of sales, said beside the figure it qualifies (call 4).
+    ...(anyPriced && store.figure === "market" ? [storeCopy.marketNote] : []),
     ...(priced && provenance ? [priceCopy.strip.lastChecked(provenance.when)] : []),
     ...(priced && provenance?.behind ? [priceCopy.strip.behind] : []),
   ].join(" · ");
@@ -69,6 +78,15 @@ export function CartCheckout({
           </p>
           <div>
             <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}</p>
+            {!store.cart ? (
+              // No whole-list link (call 6): the line says so, then the paste row; no sends line, since nothing is sent.
+              <>
+                <p data-no-cart="" className={`m-0 mt-[6px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] ${store.paste && pasteLines.length > 0 ? "" : "pb-[12px]"}`}>
+                  {storeCopy.noCart(store)}
+                </p>
+                {store.paste && pasteLines.length > 0 ? <div className="pb-[6px]"><StorePasteRow store={store} lines={pasteLines} /></div> : null}
+              </>
+            ) : null}
             {links.map((link, i) => (
               // K3: one row per part, the part inside the link's own label, so each of several links
               // has a name of its own rather than five that all read `Buy these at Mana Pool`.
@@ -81,9 +99,11 @@ export function CartCheckout({
                 />
               </div>
             ))}
-            <p className="m-0 pb-[12px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)]">
-              {copy.checkout.sends(links.reduce((n, l) => n + l.lineCount, 0))}
-            </p>
+            {store.cart ? (
+              <p className="m-0 pb-[12px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+                {copy.checkout.sends(links.reduce((n, l) => n + l.lineCount, 0))}
+              </p>
+            ) : null}
           </div>
         </>
       )}

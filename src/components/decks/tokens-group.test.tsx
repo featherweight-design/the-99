@@ -354,6 +354,10 @@ describe("the line that says what is sent", () => {
   it("draws no line for a token with no figure", () => {
     expect(printingLine(token(), NEWEST)).toBeNull();
   });
+
+  it("draws no line on a store with no cart link, where nothing is sent (store choice)", () => {
+    expect(printingLine(withPrice({ productName: "Soldier", productSet: "tla", productNumber: "8" }), NEWEST, false)).toBeNull();
+  });
 });
 
 describe("the Tokens group on Shopping", () => {

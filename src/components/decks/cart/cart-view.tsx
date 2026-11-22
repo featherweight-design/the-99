@@ -10,7 +10,7 @@ import { createContext, useContext, useEffect, useMemo, useRef, useState, type C
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { compareNames } from "../../../lib/person-name";
 import type { ProvenanceForm } from "../../../lib/decks/price";
-import { cartTotal, checkoutLinks, ownFact, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
+import { cartTotal, checkoutLines, checkoutLinks, ownFact, selectLine, type CartPayload, type SelectedLine } from "../../../lib/decks/cart";
 import {
   DEFAULT_SORTS, MAX_QUERY, byCardOrder, cardCompare, friendKeeps, friendParam, matchesQuery, ownedKeeps, parseFriend, parseOwned,
   parseQuery, parseSort, searchLines, settleFriend, sortDecks, sortGroups, toggleFriend,
@@ -18,6 +18,7 @@ import {
 } from "../../../lib/decks/cart-sort";
 import { CartChassis, type CartFilters, type FriendOffer } from "./cart-chassis";
 import { CartCheckout } from "./cart-checkout";
+import { useStoreInfo } from "../../stores/store-provider";
 import { CartCardLine, CartHeldSlot } from "./cart-line";
 import { CartColumns, SpareColumnContext } from "./cart-columns";
 import { NameFitProvider } from "./cart-facts";
@@ -344,10 +345,12 @@ function CartBody({
   }, [hasList]);
   // K1, once per visit: armed when the Mana Pool link is pressed, shown when the tab comes back,
   // and never again once dismissed. Held here, so nothing that remounts the list resets it.
+  const store = useStoreInfo();
   const [band, setBand] = useState<"off" | "armed" | "shown" | "dismissed">("off");
   const arm = (e: React.MouseEvent) => {
     // The band tells the player to press buy.
-    if ((e.target as HTMLElement).closest("a[href]")) setBand((b) => (b === "off" ? "armed" : b));
+    // Only a cart link: a paste page is not a cart, so nothing comes back to finish (call 6 drops the band).
+    if (store.cart && (e.target as HTMLElement).closest("a[href]")) setBand((b) => (b === "off" ? "armed" : b));
   };
   useEffect(() => {
     if (band !== "armed") return;
@@ -359,7 +362,9 @@ function CartBody({
   }, [band]);
   const readIds = useMemo(() => new Set(cart.lines.map((l) => l.oracleId)), [cart.lines]);
   const total = cartTotal(cart.decks, selected);
-  const links = useMemo(() => checkoutLinks(cart.lines, selected), [cart.lines, selected]);
+  // A store with a cart link gets its links; one without gets the selection as lines to paste (store choice, call 6).
+  const links = useMemo(() => (store.cart ? checkoutLinks(cart.lines, selected) : []), [store.cart, cart.lines, selected]);
+  const pasteLines = useMemo(() => (store.cart ? [] : checkoutLines(cart.lines, selected)), [store.cart, cart.lines, selected]);
   const deckCount = cart.decks.filter((d) => selected.has(d.id)).length;
   // An explicit `?view=deck` or `?deck=` arrival is honoured with one deck too; only the switch
   // hides there (E1), since both views list the same cards.
@@ -491,7 +496,7 @@ function CartBody({
             onAuxClickCapture={arm}
             className="order-1 flex-none outline-none md:order-2"
           >
-            <CartCheckout total={total} deckCount={deckCount} priced={cart.priced} provenance={provenance} links={links} />
+            <CartCheckout total={total} deckCount={deckCount} priced={cart.priced} provenance={provenance} links={links} pasteLines={pasteLines} />
           </div>
         </div>
 

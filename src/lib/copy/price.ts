@@ -19,6 +19,11 @@
 // THE PROVENANCE LINE IS NOT A WARNING. "these are behind" describes our
 // ingest, which the player did not cause and cannot fix. It rides --fg-locked
 // with the rest of line 2, and nothing in this block reaches for alarm words.
+// The strip's provenance clauses are Mana Pool's forms of the store copy (store choice), kept here for every surface
+// that has not moved to the reader's store yet.
+import { storeCopy } from "./store";
+import { STORE_INFO } from "../stores/info";
+
 export const priceCopy = {
   // ── The tag's tail ────────────────────────────────────────────────────
   // The separator between `buy` and the tail is the component's, not copy —
@@ -46,13 +51,13 @@ export const priceCopy = {
     // What the figure IS: one copy per card at the printing the price read picks (a deck's in-stock pick first,
     // then non-foil stock), never a promise of the cheapest. A Mana Pool cart can come to more (a friend's read $46
     // against our $40, 2026-10-15).
-    provenance: "single-copy prices on Mana Pool",
+    provenance: storeCopy.provenance(STORE_INFO.manapool),
     // Replaces `provenance` when no row on the list has a price. States the
     // absence rather than a check we cannot evidence, and keeps the same ink:
     // the feed has never stocked these, which is our gap and not the player's
     // error. The buy link below is why this line now has something to say —
     // we could not price these, the store can.
-    provenanceUnpriced: "no prices from Mana Pool for these",
+    provenanceUnpriced: storeCopy.provenanceUnpriced(STORE_INFO.manapool),
     lastChecked: (when: string) => `last checked ${when}`,
     behind: "these are behind",
     // Last on the line, and only beside a figure: why the cart the link builds can cost more than it. Mana Pool's

@@ -8,6 +8,7 @@
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { recordSoftFailure } from "../cache/soft-failure";
 import { userPrefs } from "../../db/schema";
 import { storePreferenceEnabled } from "./flag";
 import { OTHER_STORES, type Store } from "./rows";
@@ -31,6 +32,19 @@ export async function readerStore(userId: string, env: NodeJS.ProcessEnv, q: Q =
   if (!storePreferenceEnabled(env)) return "manapool";
   const [row] = await q.select({ preferred: userPrefs.preferredStore }).from(userPrefs).where(eq(userPrefs.userId, userId));
   return storeOf(env, row?.preferred);
+}
+
+/**
+ * A page's read of the reader's store: Mana Pool when the read fails, so the page still draws, every figure and label
+ * on it from one store. The failure is logged, since the reader then sees Mana Pool though they chose another.
+ */
+export function readerStoreForPage(userId: string, env: NodeJS.ProcessEnv): Promise<Store> {
+  return readerStore(userId, env).catch((error: unknown): Store => {
+    console.error("[store] reader store read failed; drawing Mana Pool", error);
+    // A page drawn on the fallback is not the reader's page, so the list cache must not keep it.
+    recordSoftFailure();
+    return "manapool";
+  });
 }
 
 /**

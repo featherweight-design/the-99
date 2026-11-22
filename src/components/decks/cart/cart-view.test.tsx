@@ -40,6 +40,9 @@ import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
 import { priceCopy } from "../../../lib/copy/price";
 import type { CartPayload } from "../../../lib/decks/cart";
 import { spareCopy } from "../../../lib/copy/social";
+import { StoreProvider } from "../../stores/store-provider";
+import { storeCopy } from "../../../lib/copy/store";
+import { STORE_INFO } from "../../../lib/stores/info";
 
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
@@ -260,6 +263,32 @@ describe("CartView", () => {
     const links = screen.getAllByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) });
     expect(links.length).toBeGreaterThan(1);
     expect(links[0].textContent).toContain(copy.checkout.part(1, links.length, 1));
+  });
+});
+
+describe("CartView by store (store choice)", () => {
+  it("under TCGplayer prices in its name with the market note, sends no Mana Pool link, and offers the list to paste", () => {
+    const { container } = render(
+      <StoreProvider store="tcgplayer">
+        <CartView cart={cart()} provenance={provenance} />
+      </StoreProvider>,
+    );
+    expect(container.textContent).toContain(`${storeCopy.provenance(STORE_INFO.tcgplayer)} · ${storeCopy.marketNote}`);
+    expect(screen.queryByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeNull();
+    expect(screen.queryByText(copy.checkout.sends(3))).toBeNull();
+    expect(screen.getByText(storeCopy.noCart(STORE_INFO.tcgplayer))).toBeTruthy();
+    expect(screen.getByRole("button", { name: storeCopy.copyAria(4) })).toBeTruthy();
+    expect(screen.getByRole("link", { name: new RegExp(storeCopy.openPaste(STORE_INFO.tcgplayer)) })).toBeTruthy();
+  });
+
+  it("under Mana Pool keeps its link and draws no paste row", () => {
+    const { container } = render(
+      <StoreProvider store="manapool">
+        <CartView cart={cart()} provenance={provenance} />
+      </StoreProvider>,
+    );
+    expect(screen.getByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeTruthy();
+    expect(container.querySelector("[data-store-paste]")).toBeNull();
   });
 });
 

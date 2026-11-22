@@ -101,4 +101,14 @@ describe("tokenPriceTablesExist", () => {
     exec.mockResolvedValueOnce({ rows: [{ ok: true }] }).mockResolvedValueOnce({ rows: [{ ok: true }] });
     expect(await tokenPriceTablesExist()).toBe(true);
   });
+
+  it("asks for the store table on another store, and the Mana Pool table on Mana Pool", async () => {
+    exec.mockResolvedValue({ rows: [{ ok: true }] });
+    await tokenPriceTablesExist("tcgplayer");
+    expect(JSON.stringify(exec.mock.calls[1][0])).toContain("token_store_prices");
+    exec.mockClear();
+    await tokenPriceTablesExist("manapool");
+    expect(JSON.stringify(exec.mock.calls[1][0])).toContain("token_printing_prices");
+    expect(JSON.stringify(exec.mock.calls[1][0])).not.toContain("token_store_prices");
+  });
 });
