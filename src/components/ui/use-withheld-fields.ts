@@ -22,6 +22,8 @@ import { useCallback, useEffect, useState } from "react";
 const IDLE_FALLBACK_MS = 200;
 
 /** The pauses before a failed batch the reader is waiting on is asked for again. */
+/** The most ids an urgent batch (one the reader is waiting on) is filled up to with spare rows. */
+const URGENT_FILL = 200;
 const RETRY_MS = [1_000, 3_000, 9_000];
 
 type NavigationLike = EventTarget & object;
@@ -37,7 +39,7 @@ export type FieldsSource<Row> = {
   keyOf: (row: Row) => string;
   /** A row the page shipped whole, which needs nothing. */
   isDrawn: (row: Row) => boolean;
-  /** The GET that answers `{ fields: { [key]: fields } }` for these keys. */
+  /** The request URL (a GET, or the POST's target when `body` is given) answering `{ fields: { [key]: fields } }` for these keys. */
   url: (keys: string[]) => string;
   /**
    * The JSON body, for a list whose batch is too long for a query string: the request is then a POST
@@ -160,8 +162,11 @@ export function createFieldsLoop<Row extends object, Fields extends object>(onLa
     // over the limit is refused outright; the rest go in the next batch, since every batch pumps.
     const batch = waiting.slice(0, source.maxBatch);
     const seen = new Set(batch);
+    // A batch the reader is waiting on is topped up only to URGENT_FILL: the rest of a 500-card
+    // read would hold the rows on screen behind cards nobody is looking at. Idle batches go full.
+    const fillTo = urgent ? Math.min(source.maxBatch, URGENT_FILL) : source.maxBatch;
     for (const r of all) {
-      if (batch.length >= source.maxBatch) break;
+      if (batch.length >= fillTo) break;
       const key = keyOf(r);
       if (!seen.has(key) && needs(r)) {
         batch.push(key);

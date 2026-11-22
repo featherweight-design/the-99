@@ -145,3 +145,12 @@ describe("POST /api/collection-fields", () => {
     expect(stub.load).not.toHaveBeenCalled();
   });
 });
+
+describe("POST /api/collection-fields body size", () => {
+  it("refuses a body over 64 KB, declared or not, before reading anything", async () => {
+    const big = JSON.stringify({ ids: [A], pad: "x".repeat(70_000) });
+    const res = await POST(new NextRequest("http://localhost/api/collection-fields", { method: "POST", body: big }));
+    expect(res.status).toBe(400);
+    expect(stub.load).not.toHaveBeenCalled();
+  });
+});

@@ -39,26 +39,40 @@ async function answer(userId: string, ids: string[]) {
   return NextResponse.json({ fields: collectionDrawFieldsFor(cards, asked) }, { headers: HEADERS });
 }
 
-/** A batch in the query string, 200 ids at most: what a client that has not reloaded since this changed still sends. */
-export async function GET(req: NextRequest) {
+/** The reader, or the refusal to hand back: not signed in (401), or over the draw-fields rule (429). */
+async function gate(): Promise<{ userId: string } | NextResponse> {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
   const wait = await enforceHit(userId, "draw-fields");
   if (wait !== null) return tooManyRequests(wait, HEADERS);
+  return { userId };
+}
+
+const BAD_REQUEST = () => NextResponse.json(null, { status: 400, headers: HEADERS });
+/** 500 ids is ~20 KB of JSON; a body past this is no batch, and is refused before it is parsed. */
+const MAX_BODY_BYTES = 64 * 1024;
+
+/** A batch in the query string, 200 ids at most: what a client that has not reloaded since this changed still sends. */
+export async function GET(req: NextRequest) {
+  const who = await gate();
+  if (who instanceof NextResponse) return who;
   const ids = validIds((req.nextUrl.searchParams.get("ids") ?? "").split(",").filter(Boolean), MAX_COLLECTION_FIELDS_GET);
-  if (!ids) return NextResponse.json(null, { status: 400, headers: HEADERS });
-  return answer(userId, ids);
+  return ids ? answer(who.userId, ids) : BAD_REQUEST();
 }
 
 /** A batch in the body, `{ ids: string[] }`, up to `MAX_COLLECTION_FIELDS_BATCH`. */
 export async function POST(req: NextRequest) {
-  const { userId } = await auth();
-  if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
-  const wait = await enforceHit(userId, "draw-fields");
-  if (wait !== null) return tooManyRequests(wait, HEADERS);
-  const body: unknown = await req.json().catch(() => null);
+  const who = await gate();
+  if (who instanceof NextResponse) return who;
+  // The declared length first, so a large body is never read; the text's own length after, since the header can lie.
+  if (Number(req.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) return BAD_REQUEST();
+  const text = await req.text().catch(() => "");
+  if (text.length > MAX_BODY_BYTES) return BAD_REQUEST();
+  let body: unknown = null;
+  try {
+    body = JSON.parse(text);
+  } catch {}
   const raw = body !== null && typeof body === "object" && "ids" in body ? (body as { ids: unknown }).ids : null;
   const ids = Array.isArray(raw) ? validIds(raw, MAX_COLLECTION_FIELDS_BATCH) : null;
-  if (!ids) return NextResponse.json(null, { status: 400, headers: HEADERS });
-  return answer(userId, ids);
+  return ids ? answer(who.userId, ids) : BAD_REQUEST();
 }
