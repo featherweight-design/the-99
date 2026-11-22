@@ -12,8 +12,15 @@ diff -ruN src.orig/components/card-search/card-search.tsx src/components/card-se
  export function useCardSearch(): CardSearchContextValue | null {
 diff -ruN src.orig/components/decks/cart/cart-checkout.tsx src/components/decks/cart/cart-checkout.tsx
 --- src.orig/components/decks/cart/cart-checkout.tsx	2026-11-22 19:51:53.138279720 +0000
-+++ src/components/decks/cart/cart-checkout.tsx	2026-11-22 19:56:47.445041249 +0000
-@@ -8,6 +8,9 @@
++++ src/components/decks/cart/cart-checkout.tsx	2026-11-22 20:10:33.293317877 +0000
+@@ -2,12 +2,16 @@
+ // box is PriceStrip's, copied rather than mounted: PriceStrip draws nothing on a failed price read,
+ // and the cart keeps its link then (T2), because the link carries names and quantities only.
+ 
++import { CopyList } from "../copy-list";
+ import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
+ import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
+ import { priceCopy } from "../../../lib/copy/price";
  import { formatCents, type ProvenanceForm } from "../../../lib/decks/price";
  import type { CartFigures } from "../../../lib/decks/cart";
  import { ExternalLink } from "../../ui/external-link";
@@ -23,7 +30,7 @@ diff -ruN src.orig/components/decks/cart/cart-checkout.tsx src/components/decks/
  
  export function CartCheckout({
    total,
-@@ -28,11 +31,13 @@
+@@ -28,11 +32,13 @@
    const anyPriced = priced && total.pricedCopies > 0;
    const showFigure = anyPriced && total.cents > 0;
    const showClause = showFigure && total.pricedCopies < total.copies;
@@ -38,14 +45,15 @@ diff -ruN src.orig/components/decks/cart/cart-checkout.tsx src/components/decks/
      ...(priced && provenance ? [priceCopy.strip.lastChecked(provenance.when)] : []),
      ...(priced && provenance?.behind ? [priceCopy.strip.behind] : []),
    ].join(" · ");
-@@ -68,22 +73,23 @@
+@@ -68,22 +74,24 @@
              {copy.checkout.copiesLine(total.copies, deckCount)}
            </p>
            <div>
 -            <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}</p>
 -            {links.map((link, i) => (
 +            <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}<StoreDoor /></p>
-+            {!store.cart ? <p data-no-cart="" className="m-0 mt-[6px] pb-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{storeCopy.noCart(store)}</p> : null}
++            {!store.cart ? <p data-no-cart="" className={`m-0 mt-[6px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] ${store.paste ? "" : "pb-[12px]"}`}>{storeCopy.noCart(store)}</p> : null}
++            {!store.cart && store.paste ? <div className="pb-[6px]"><CopyList store={store} copied={(globalThis as any).__COPIED} lines={(globalThis as any).__CART_LINES ?? []} /></div> : null}
 +            {(store.cart ? links : []).map((link, i) => (
                // K3: one row per part, the part inside the link's own label, so each of several links
                // has a name of its own rather than five that all read `Buy these at Mana Pool`.
@@ -68,6 +76,53 @@ diff -ruN src.orig/components/decks/cart/cart-checkout.tsx src/components/decks/
            </div>
          </>
        )}
+diff -ruN src.orig/components/decks/copy-list.tsx src/components/decks/copy-list.tsx
+--- src.orig/components/decks/copy-list.tsx	1970-01-01 00:00:00.000000000 +0000
++++ src/components/decks/copy-list.tsx	2026-11-22 20:14:44.099573098 +0000
+@@ -0,0 +1,43 @@
++"use client";
++// Store choice R1·Q3 PROPOSAL: where the store has no whole-list link but has a page that takes a pasted list
++// (TCGplayer Mass Entry, Card Kingdom Deck Builder), the link's 44px row holds two presses: Copy the list (a button
++// in the link's own face, the export dialog's clipboard logic and 1.5s swap to Copied, announced) and the store's
++// paste page as an ExternalLink. The text is `1 Name` lines of the shown selection, Mana Pool's text form.
++import { useEffect, useRef, useState } from "react";
++import { storeCopy } from "../../lib/copy/store";
++import type { Store } from "../../lib/store/stores";
++import { ExternalLink } from "../ui/external-link";
++import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
++
++const PRESS =
++  "inline cursor-pointer rounded-[6px] border-0 bg-transparent p-0 text-[14px] font-medium leading-[1.45] text-[color:var(--accent-hover)] " +
++  "underline decoration-1 underline-offset-[3px] decoration-[color-mix(in_srgb,var(--accent-hover)_45%,transparent)] " +
++  "hover:text-[color:var(--fg)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
++
++/** Placeholder: the plan measures each store's paste page URL (READINESS G3). */
++const PASTE_HREF: Record<string, string> = { tcgplayer: "https://www.tcgplayer.com/massentry", cardkingdom: "https://www.cardkingdom.com/builder" };
++
++export function CopyList({ store, lines, copied: drawn = false }: { store: Store; lines: { name: string; qty: number }[]; copied?: boolean }) {
++  const [copied, setCopied] = useState(drawn);
++  const [status, setStatus] = useState("");
++  const t = useRef<ReturnType<typeof setTimeout> | null>(null);
++  useEffect(() => () => { if (t.current) clearTimeout(t.current); }, []);
++  if (!store.paste) return null;
++  const text = lines.map((l) => `${l.qty} ${l.name}`).join("\n");
++  const copy = () =>
++    navigator.clipboard?.writeText(text).then(() => {
++      setCopied(true);
++      setStatus(storeCopy.copied);
++      if (t.current) clearTimeout(t.current);
++      t.current = setTimeout(() => { setCopied(false); setStatus(""); }, 1500);
++    });
++  return (
++    <div data-copy-list="" className="mt-[2px] flex min-h-[44px] flex-wrap items-center gap-x-[18px] gap-y-[4px]">
++      <button type="button" onClick={copy} aria-label={storeCopy.copyAria(lines.length)} className={`${TOUCH_HIT_INLINE} ${PRESS}`}>
++        {copied ? (<><span aria-hidden="true" className="mr-[5px] inline-block text-[color:var(--success)]">✓</span>{storeCopy.copied}</>) : storeCopy.copyList}
++      </button>
++      <ExternalLink href={PASTE_HREF[store.id] ?? "#"} label={storeCopy.openPaste(store)} />
++      <span role="status" className="sr-only">{status}</span>
++    </div>
++  );
++}
 diff -ruN src.orig/components/decks/lineup/worth-card.tsx src/components/decks/lineup/worth-card.tsx
 --- src.orig/components/decks/lineup/worth-card.tsx	2026-11-22 19:51:53.145531162 +0000
 +++ src/components/decks/lineup/worth-card.tsx	2026-11-22 19:55:58.959027536 +0000
@@ -91,8 +146,16 @@ diff -ruN src.orig/components/decks/lineup/worth-card.tsx src/components/decks/l
    );
 diff -ruN src.orig/components/decks/price-strip.tsx src/components/decks/price-strip.tsx
 --- src.orig/components/decks/price-strip.tsx	2026-11-22 19:51:53.148049589 +0000
-+++ src/components/decks/price-strip.tsx	2026-11-22 19:52:50.590831657 +0000
-@@ -18,6 +18,9 @@
++++ src/components/decks/price-strip.tsx	2026-11-22 20:10:33.277231798 +0000
+@@ -11,6 +11,7 @@
+ // the buy link on the left — easily missed, and a second arrangement someone
+ // could drift from the phone's. It now reuses the phone's column exactly.
+ 
++import { CopyList } from "./copy-list";
+ import { priceCopy } from "../../lib/copy/price";
+ import { tokensCopy } from "../../lib/copy/tokens";
+ import type { TokenShopping } from "../../lib/tokens/shopping";
+@@ -18,6 +19,9 @@
  import { formatCents, type PriceSummary, type ProvenanceForm } from "../../lib/decks/price";
  import { manapoolAddDeckUrl } from "../../lib/manapool/links";
  import { ExternalLink } from "../ui/external-link";
@@ -102,7 +165,7 @@ diff -ruN src.orig/components/decks/price-strip.tsx src/components/decks/price-s
  
  export function PriceStrip({
    summary,
-@@ -85,7 +88,8 @@
+@@ -85,7 +89,8 @@
    // Derived on every render from the list on screen. Not memoised: the row ✕
    // has no sync to perform, so the basket, the total and this href move
    // together or the link buys a card the player just removed.
@@ -112,7 +175,7 @@ diff -ruN src.orig/components/decks/price-strip.tsx src/components/decks/price-s
  
    return (
      // ONE LAYOUT, both widths (Hugh's ruling, #1222 follow-up): the figure
-@@ -137,11 +141,13 @@
+@@ -137,11 +142,13 @@
              on something nothing here can act on. */}
          <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
            {[
@@ -128,13 +191,14 @@ diff -ruN src.orig/components/decks/price-strip.tsx src/components/decks/price-s
          </p>
          {/* The 44px is the ROW's height, never the link's box — the link stays
              inline text, so the words get a full-height target vertically while
-@@ -160,9 +166,12 @@
+@@ -160,9 +167,13 @@
              condition on the link, but only as long as that holds: a caller
              passing a summary from one list and rows from another would render a
              strip with nothing to buy from. */}
 +        {!store.cart && shoppingCards.length > 0 ? (
-+          <p data-no-cart="" className="m-0 mt-[6px] pb-[11px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>{storeCopy.noCart(store)}</p>
++          <p data-no-cart="" className={`m-0 mt-[6px] text-[12.5px] leading-[1.5] ${store.paste ? "" : "pb-[11px]"}`} style={{ color: "var(--fg-muted)" }}>{storeCopy.noCart(store)}</p>
 +        ) : null}
++        {!store.cart && shoppingCards.length > 0 ? <CopyList store={store} copied={(globalThis as any).__COPIED} lines={shoppingCards.map((c) => ({ name: c.name, qty: c.quantity }))} /> : null}
          {buyHref ? (
            <div className="mt-[9px] flex min-h-[44px] items-center">
 -            <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
@@ -196,6 +260,85 @@ diff -ruN src.orig/components/help/help-root.tsx src/components/help/help-root.t
  
  /** The md breakpoint, read at the press: card details is answered only where its ? can be pressed. */
  const DESKTOP = "(min-width: 768px)";
+diff -ruN src.orig/components/home/first-run-store.tsx src/components/home/first-run-store.tsx
+--- src.orig/components/home/first-run-store.tsx	1970-01-01 00:00:00.000000000 +0000
++++ src/components/home/first-run-store.tsx	2026-11-22 20:10:59.922885416 +0000
+@@ -0,0 +1,44 @@
++"use client";
++// Store choice R1·Q1 PROPOSAL (Hugh, 2026-11-22: "also part of the onboarding flow"). An unnumbered first-run row,
++// after signature and before Add your friends, in the Friends row's live box. Not a step: the kicker stays Step 1 of 3,
++// and nothing waits on it, since Mana Pool is already chosen. The switch is the shipped SegmentedSwitch (radio, compact,
++// fill), saved on press with the Settings section's write; a failed write puts the last store back and raises the same
++// toast. Once the player has any cards the checklist is gone and Settings' Store section (and Change store) remain.
++// A fourth store adds a segment; past what 390 holds, the switch takes the shipped `scroll` option.
++import { useState } from "react";
++import { storeCopy } from "../../lib/copy/store";
++import { STORES, type StoreId } from "../../lib/store/stores";
++import { SegmentedSwitch } from "../ui/segmented-switch";
++
++export function FirstRunStoreRow({ store }: { store: StoreId }) {
++  const [value, setValue] = useState<StoreId>(store);
++  const c = storeCopy.firstRun;
++  return (
++    <section
++      aria-labelledby="first-run-store-title"
++      data-first-run-store=""
++      className="flex flex-col gap-[12px] rounded-[14px] [border:1px_solid_var(--border-strong)] bg-[color:var(--surface-inset)] p-[14px_15px] font-sans sm:p-[15px_18px]"
++    >
++      <div className="flex items-center gap-[12px] sm:gap-[14px]">
++        <span aria-hidden className="flex h-[22px] w-[22px] flex-none items-center justify-center rounded-[6px] [border:1.5px_solid_var(--accent-shadow)]">
++          <span className="h-[6px] w-[6px] rotate-45 bg-[color:var(--accent)]" />
++        </span>
++        <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
++          <b id="first-run-store-title" className="font-display text-[15px] font-semibold text-[color:var(--fg)] sm:text-[16px]">{c.title}</b>
++          <span className="text-[12px] leading-[1.45] text-[color:var(--fg-muted)]">{c.line}</span>
++        </span>
++      </div>
++      <div className="sm:pl-[36px]">
++        <SegmentedSwitch
++          kind="radio"
++          size="compact"
++          fill
++          ariaLabel={storeCopy.groupLabel}
++          segments={STORES.map((s) => ({ value: s.id, label: s.name }))}
++          value={value}
++          onChange={setValue}
++        />
++      </div>
++    </section>
++  );
++}
+diff -ruN src.orig/components/home/first-run.tsx src/components/home/first-run.tsx
+--- src.orig/components/home/first-run.tsx	2026-11-22 19:51:53.155333121 +0000
++++ src/components/home/first-run.tsx	2026-11-22 20:11:08.719381707 +0000
+@@ -22,6 +22,8 @@
+ import { lockPageLine, refreshCopy } from "../../lib/copy/refresh";
+ import { PendingReporter } from "../shell/pending-reporter";
+ import { Lock } from "../ui/lock";
++import { FirstRunStoreRow } from "./first-run-store";
++import type { StoreId } from "../../lib/store/stores";
+ import { FirstRunFriendsRow, type FirstRunFriendsProps } from "./first-run-friends";
+ 
+ /**
+@@ -137,7 +139,10 @@
+   tourCredits = null,
+   news = false,
+   commandersPlace = false,
++  store = null,
+ }: {
++  /** Store choice R1·Q1: the reader's store, or null (a failed read): no row. After signature, before Friends. */
++  store?: StoreId | null;
+   /** The Choose your news row, last (always on now). */
+   news?: boolean;
+   /** the Commanders place (always on) for the reader: the lock's page line names only the slots the bar locks. */
+@@ -218,6 +223,7 @@
+         {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
+             stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
+         {signature}
++        {store && <FirstRunStoreRow store={store} />}
+         {friends && <FirstRunFriendsRow {...friends} />}
+         {news && <FirstRunNewsRow />}
+         {/* The tour's precon line follows step 1's ways group, which always offers Precons I own. */}
 diff -ruN src.orig/components/landing/demo/demo-card-modal.tsx src/components/landing/demo/demo-card-modal.tsx
 --- src.orig/components/landing/demo/demo-card-modal.tsx	2026-11-22 19:51:53.157690175 +0000
 +++ src/components/landing/demo/demo-card-modal.tsx	2026-11-22 19:55:13.362505295 +0000
@@ -273,8 +416,28 @@ diff -ruN src.orig/components/wishlist/wishlist-view.tsx src/components/wishlist
              </>
 diff -ruN src.orig/lib/copy/store.ts src/lib/copy/store.ts
 --- src.orig/lib/copy/store.ts	2026-11-22 19:51:53.192506450 +0000
-+++ src/lib/copy/store.ts	2026-11-22 19:54:27.283420967 +0000
-@@ -32,8 +32,8 @@
++++ src/lib/copy/store.ts	2026-11-22 20:14:44.099301857 +0000
+@@ -27,13 +27,27 @@
+   marketNote: "averages of recent sales, so a listing can differ",
+ 
+   // ── No whole-list cart (the strip and the all-decks cart) ────────────
+-  noCart: (s: Store) => `${s.name} has no link for a whole list. Buy each card from its details.`,
++  noCart: (s: Store) =>
++    s.paste
++      ? `${s.name} has no link for a whole list. Copy it, then paste it into ${s.name}’s ${s.paste}.`
++      : `${s.name} has no link for a whole list. Buy each card from its details.`,
++  /** Q3: the press beside the no-cart line. Copies `1 Name` lines (the Mana Pool text form), the shown selection only. */
++  copyList: "Copy the list",
++  copied: "Copied",
++  openPaste: (s: Store) => `Open ${s.paste}`,
++  copyAria: (n: number) => `Copy the list, ${n} ${n === 1 ? "card" : "cards"}`,
++
++  // ── First run (onboarding): an unnumbered checklist row ──────────────
++  firstRun: {
++    title: "Where do you buy cards?",
++    line: "Prices and buy links come from this store. Change it any time in Settings.",
++  },
+ 
    // ── Card details ─────────────────────────────────────────────────────
    linkOut: (s: Store) => `Buy any printing at ${s.name}`,
    linkOutPrinting: (s: Store, set: string, n: string) => `Buy ${set} ${n} at ${s.name}`,
@@ -285,3 +448,22 @@ diff -ruN src.orig/lib/copy/store.ts src/lib/copy/store.ts
    /** No price from this store (item 7): in the tag's place. */
    noPrice: (s: Store) => `no price from ${s.name}`,
    /** The link's words when the store has no figure for the card: a search, not a claim it sells it. */
+diff -ruN src.orig/lib/store/stores.ts src/lib/store/stores.ts
+--- src.orig/lib/store/stores.ts	2026-11-22 19:51:53.232488251 +0000
++++ src/lib/store/stores.ts	2026-11-22 20:09:44.452344148 +0000
+@@ -9,11 +9,13 @@
+   figure: "listing" | "market";
+   /** One link that fills the store's cart with a whole list (Mana Pool's add-deck today). */
+   cart: boolean;
++  /** The store's own page that takes a pasted list, where it has one and no cart link: the Copy the list press names it. */
++  paste?: string;
+ };
+ export const STORES: readonly Store[] = [
+   { id: "manapool", name: "Mana Pool", figure: "listing", cart: true },
+-  { id: "tcgplayer", name: "TCGplayer", figure: "market", cart: false },
+-  { id: "cardkingdom", name: "Card Kingdom", figure: "listing", cart: false },
++  { id: "tcgplayer", name: "TCGplayer", figure: "market", cart: false, paste: "Mass Entry" },
++  { id: "cardkingdom", name: "Card Kingdom", figure: "listing", cart: false, paste: "Deck Builder" },
+ ];
+ export const DEFAULT_STORE: StoreId = "manapool";
+ export const storeOf = (id: StoreId) => STORES.find((s) => s.id === id)!;

@@ -12,7 +12,7 @@ const STORES = ["manapool", "tcgplayer", "cardkingdom"];
 const F: Record<string, number> = { manapool: 1, tcgplayer: 0.91, cardkingdom: 1.18 };
 const box = (x: any, w = 360) => `<div style="width:${w}px;padding:16px;box-sizing:border-box">${renderToString(W(x, "/decks"))}</div>`;
 for (const s of STORES) {
-  G.__STORE = s;
+  G.__STORE = s; G.__CART_LINES = Array.from({ length: 41 }, (_, i) => ({ name: "c" + i, qty: 1 }));
   writeFileSync(`dz/frames/k-${s}.html`, box(<CartCheckout total={{ copies: 41, cents: Math.round(61287 * F[s]), pricedCopies: 41 }} deckCount={3} priced provenance={prov}
     links={[{ href: "https://manapool.com/add-deck?deck=x", lineCount: 38 }]} />));
   const item = (k: string, name: string, art: string, from: number, to: number, printing: string | null): any => ({ key: k, kind: "price-drop", at: "2026-11-22T14:00:00Z", unseen: true,

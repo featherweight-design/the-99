@@ -31,7 +31,7 @@ function deckFor(store: string, gaps: number) {
   return { ...deck0, cards };
 }
 function shop(store: string, o: any = {}) {
-  G.__STORE = store;
+  G.__STORE = store; G.__COPIED = !!o.copied;
   const deck = deckFor(store, o.gaps ?? 0);
   const sort = DEFAULT_DECK_SORT.shopping;
   const compare = deckCardComparator(sort.key, sort.direction, deck.newestAsOf);
@@ -63,6 +63,6 @@ function shop(store: string, o: any = {}) {
       </div>
     </DemoProviders>, "/decks/x");
 }
-for (const [k, s, o] of [["sh-mp", "manapool"], ["sh-tcg", "tcgplayer"], ["sh-ck", "cardkingdom"], ["sh-ck-gap", "cardkingdom", { gaps: 3 }], ["sh-ck-none", "cardkingdom", { gaps: 999 }]] as any)
+for (const [k, s, o] of [["sh-mp", "manapool"], ["sh-tcg", "tcgplayer"], ["sh-ck", "cardkingdom"], ["sh-ck-gap", "cardkingdom", { gaps: 3 }], ["sh-ck-none", "cardkingdom", { gaps: 999 }], ["sh-tcg-copied", "tcgplayer", { copied: true }]] as any)
   writeFileSync(`dz/frames/${k}.html`, shop(s, o));
 console.log("ok", deck0.deckName, deck0.cards.filter(isShoppingCard).length);

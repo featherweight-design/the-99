@@ -2,6 +2,17 @@
 
 Frames named as on the canvas. "Store" is the reader's chosen store; a reader who never chose has Mana Pool.
 
+## First run · the store row
+
+| State | Trigger | Draws | Must not |
+|---|---|---|---|
+| Untouched (O1, O4) | First run, never chosen | The row after step 3 and the signature row, before Add your friends; Mana Pool filled | Count as a step, change the kicker, or block anything |
+| Picked (O2, O3) | A segment pressed | That segment filled at once; written in the background | Ask to confirm |
+| Saving / save failed | As Settings | One write at a time; on failure the last saved store back and the same `SocialToast` | |
+| Chosen in Settings first | `user_prefs.store` set | The row shows that store | Reset it to Mana Pool |
+| Cards in | Collection read | The checklist goes with the row; Settings and Change store remain | Carry the row onto Home |
+| Read failed | `user_prefs` unread | No row (`store={null}`), as the Friends row on a failed read | Draw Mana Pool as if chosen |
+
 ## Settings · Store section
 
 | State | Trigger | Draws | Must not |
@@ -17,10 +28,13 @@ Frames named as on the canvas. "Store" is the reader's chosen store; a reader wh
 | State | Trigger | Draws | Must not |
 |---|---|---|---|
 | Mana Pool (P1, D1, K1) | Store has `cart` | As shipped + `· Change store`; Buy these at Mana Pool; parts as shipped | Change the cart's parts or sends |
-| Market store priced (P2, D2, K2) | TCGplayer | `TCGplayer market prices · averages of recent sales, so a listing can differ · last checked … · Change store`; the no-link line | Draw the cart note or a buy link |
-| Listing store, no cart (P3, D3, K3) | Card Kingdom | `single-copy prices on Card Kingdom · last checked … · Change store`; the no-link line | Draw a disabled link |
+| Market store priced (P2, D2, K2) | TCGplayer | `TCGplayer market prices · averages of recent sales, so a listing can differ · last checked … · Change store`; the paste line; `Copy the list` · `Open Mass Entry` | Draw the cart note or a cart link |
+| Listing store, no cart (P3, D3, K3) | Card Kingdom | `single-copy prices on Card Kingdom · last checked … · Change store`; the paste line; `Copy the list` · `Open Deck Builder` | Draw a disabled link |
+| Just copied (P2b) | Copy the list pressed, clipboard write landed | `✓ Copied` for 1.5s, then back; `Copied` in the `role=status` | Move focus or open the store |
+| Copy failed | Clipboard refused, legacy copy failed | The export dialog's `copyFailed` in the status; the press stays `Copy the list` | Claim it copied |
+| No paste page | A store with `cart: false` and no `paste` | `Buy each card from its details.`; no presses | Draw Copy with nowhere to paste |
 | Some unpriced (E1, E3) | Store has no figure for some rows | Figure of the priced; `11 of 14 priced`; bare `buy` rows last under Price sort | Count them as $0 |
-| None priced (E2) | Store has no figure for any row | `no prices from {store} for these · …`; no figure | Draw `$0.00` |
+| None priced (E2) | Store has no figure for any row | `no prices from {store} for these · …`; no figure; Copy the list stays (the paste page prices it) | Draw `$0.00` |
 | Behind | Store's newest `as_of` past 10 days | `these are behind` as shipped, per store | Mix two stores' dates |
 | Price read failed | As shipped | Strip absent as shipped (checkout: `copy.checkout.unread`) | |
 | Nothing selected (cart A4) | As shipped | Provenance line + Change store; no figure, no link, no no-link line | |
@@ -48,5 +62,5 @@ Frames named as on the canvas. "Store" is the reader's chosen store; a reader wh
 ## Not drawn (no trigger)
 
 - Two stores' prices side by side: ruled out by the brief.
-- A first-run prompt or banner: call 2 rules it out.
+- A banner or toast prompting the choice: call 2 puts it in the first-run checklist instead.
 - A store that is down or unread: the shipped "price read failed" path covers it, per store.

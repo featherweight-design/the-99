@@ -9,11 +9,13 @@ export type Store = {
   figure: "listing" | "market";
   /** One link that fills the store's cart with a whole list (Mana Pool's add-deck today). */
   cart: boolean;
+  /** The store's own page that takes a pasted list, where it has one and no cart link: the Copy the list press names it. */
+  paste?: string;
 };
 export const STORES: readonly Store[] = [
   { id: "manapool", name: "Mana Pool", figure: "listing", cart: true },
-  { id: "tcgplayer", name: "TCGplayer", figure: "market", cart: false },
-  { id: "cardkingdom", name: "Card Kingdom", figure: "listing", cart: false },
+  { id: "tcgplayer", name: "TCGplayer", figure: "market", cart: false, paste: "Mass Entry" },
+  { id: "cardkingdom", name: "Card Kingdom", figure: "listing", cart: false, paste: "Deck Builder" },
 ];
 export const DEFAULT_STORE: StoreId = "manapool";
 export const storeOf = (id: StoreId) => STORES.find((s) => s.id === id)!;

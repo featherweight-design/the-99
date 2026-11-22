@@ -1,7 +1,8 @@
 # Let players choose their card store · R1
 
-Account 1, 2026-11-22. Status: **R1, for Hugh's review.** Hugh's brief asked for this round to be opened as a PR.
-Canvas (Design type): https://claude.ai/artifact/TnVy9hkHQpVt3AZ3nduNjn (Main, Setting, Shopping, Card, Elsewhere, Empty).
+Account 1, 2026-11-22. Status: **R1, for Hugh's review.** Hugh's brief asked for this round to be opened as a PR. Q1 to Q3 settled
+2026-11-22 (below). Canvas (Design type): https://claude.ai/artifact/TnVy9hkHQpVt3AZ3nduNjn (Main, Onboarding, Setting,
+Shopping, Card, Elsewhere, Empty).
 
 The 99 quotes Mana Pool alone today. Players at card shops buy from different stores, so each player picks **one** store and
 its prices and buy links replace Mana Pool's everywhere a price appears. The app never shows two stores' prices at once.
@@ -32,11 +33,19 @@ Card Kingdom ~18% over); card art comes from other handoffs' `art/`.
      puts the last saved store back and raises `SocialToast` with `We couldn’t save that. Try again.`
    - `#settings-store` is the section's id; arriving on that hash washes the section for 2s (`--elevated` fill, a
      `--border-strong` inset ring, fading; none under reduced motion), as `#settings-decks-see` washes its row.
-2. **The nudge: a Change store link, no first run** (Shopping P1 to P3, K1 to K3; Setting S4). No first-run step, banner or
-   toast. The provenance line on the deck Shopping strip and the all-decks cart's checkout box ends with
+2. **Two doors: a first-run row and a Change store link** (Onboarding O1 to O4; Shopping P1 to P3, K1 to K3; Setting S4).
+   - **First run (Hugh, 2026-11-22).** The first-run checklist (`FirstRunChecklist`) gains an unnumbered row after the
+     locked steps and the signature row, before Add your friends: `Where do you buy cards?`, the line `Prices and buy links
+     come from this store. Change it any time in Settings.`, and the stores as the shipped `SegmentedSwitch` (`kind="radio"`,
+     `size="compact"`, `fill`), Mana Pool chosen. The box is the Friends row's live box (`--surface-inset`,
+     `--border-strong`, radius 14) with the News row's accent diamond. Not a step: the kicker stays Step 1 of 3 and nothing
+     waits on it. A press saves with the Settings write (same failure toast). A fourth store adds a segment; past what 390
+     holds, the switch takes its shipped `scroll` option. Once cards are in, the checklist goes and the other doors remain.
+   - **Change store (Q2, kept).** No banner or toast. The provenance line on the deck Shopping strip and the all-decks cart's checkout box ends with
    `· Change store`, inline in the line's own mono 9.5 and `--fg-locked`, the link in `--fg-muted` with an underline, the
    inline 44px coarse hit (`TOUCH_HIT_INLINE`), to `/settings#settings-store`. That line names the store on every visit, so
-   a player who buys elsewhere reads it where they buy and has the change one press away. Its accessible name says the
+   a player who buys elsewhere reads it where they buy and has the change one press away. Kept beside first run because
+   players who joined before this ship never see first run, and a new player who skipped the row meets it where it matters. Its accessible name says the
    current store (`Change store, now Mana Pool`).
 3. **Price, link and the label naming the store** (Main's table; Shopping, Card, Elsewhere).
    - Figures stay bare where they repeat: buy tags, Wishlist tile lines, the feed's drop figures, the cart's lines. One store
@@ -58,9 +67,14 @@ Card Kingdom ~18% over); card art comes from other handoffs' `art/`.
      its cart.
 5. **Mana Pool is the default, said once**: the foot of the Store section, `Mana Pool is the default. Changing store changes
    every price, buy link and price-drop alert.` Nowhere else.
-6. **No whole-list link** (Shopping P2, P3, D2, D3, K2, K3; Empty E1, E2). Where the store has none, the strip and checkout
-   keep the figure and the provenance and draw, in the link's place, `{store} has no link for a whole list. Buy each card
-   from its details.` (sans 12.5 `--fg-muted`, 11px under the line). The sends line and the back-from band go with the link.
+6. **No whole-list link: copy and paste** (Shopping P2, P2b, P3, D2, D3, K2, K3; Empty E1, E2). Where the store has no cart
+   link but has a page that takes a pasted list (`paste` in `STORES`: TCGplayer's Mass Entry, Card Kingdom's Deck Builder),
+   the strip and checkout keep the figure and the provenance, then `{store} has no link for a whole list. Copy it, then paste
+   it into {store}’s {paste}.` (sans 12.5 `--fg-muted`), then in the link's 44px row two presses, 18px apart:
+   `Copy the list` (a button in `ExternalLink`'s face; the export dialog's clipboard logic and 1.5s swap to `✓ Copied`,
+   `--success` tick, announced in a `role=status`) and `Open {paste}` (an `ExternalLink`). The text is the shown selection
+   as `1 Name` lines. Q3, decided: two presses put the whole list in the store's cart, where buying card by card from each
+   card's details is fourteen trips. A store with no paste page keeps the plain line `Buy each card from its details.` The sends line and the back-from band go with the link.
    The same rule removes every other whole-list link for that store: the set page's `Send N to Mana Pool` and a version's
    `Open in Mana Pool`. It is the store's `cart` flag, so a store that gains a link shows it with no redesign.
 7. **No price from the chosen store** (Empty E1 to E5; Elsewhere W1). The shipped silence rules, store-named:
@@ -70,13 +84,12 @@ Card Kingdom ~18% over); card art comes from other handoffs' `art/`.
      `Look for it at {store}`: a search, not a claim the store sells it.
    - Wishlist tile: no price line (as for a card never stocked). Home: no drop is raised while there is no figure.
 
-## Open for Hugh
+## Settled with Hugh (2026-11-22)
 
-- **Q1 · Where Store sits** (Setting S1): first on Settings (drawn), or after Notifications.
-- **Q2 · The nudge** (Shopping P1, K1): the Change store link on the strip and checkout (drawn), or none, leaving Settings as
-  the only door.
-- **Q3 · No whole-list link** (Empty E1): the line alone (drawn), or the line plus a Copy list press (the export dialog's
-  copy button, reused) so a player can paste the list into the store's own mass entry.
+- **Q1 · Where Store sits:** first on Settings, and also in onboarding (call 2, Onboarding board).
+- **Q2 · The nudge:** "best user experience" was asked; kept the Change store link (call 2).
+- **Q3 · No whole-list link:** "best user experience" was asked; the line plus Copy the list and the store's paste page
+  (call 6). The plan measures each paste page's URL and whether it takes a prefilled list (READINESS G3).
 
 ## Phone and desktop
 
@@ -87,9 +100,10 @@ card details put the link in the desktop foot row and at the foot of the phone's
 
 | File | What |
 |---|---|
-| `Main.dc.html` | The calls, the surface-by-store table, Q1 to Q3 |
+| `Main.dc.html` | The calls, the surface-by-store table, Q1 to Q3 as settled |
+| `Onboarding.dc.html` | 1, 2 · the first-run store row at 390 and 1300 |
 | `Setting.dc.html` | 1, 5 · the Store section at 390 and 1300, each store, the wash |
-| `Shopping.dc.html` | 2, 3, 4, 6 · a deck's Shopping list per store at both widths; the all-decks checkout box |
+| `Shopping.dc.html` | 2, 3, 4, 6 · a deck’s Shopping list per store at both widths, Copy the list, the all-decks checkout box |
 | `Card.dc.html` | 3, 4 · card details per store |
 | `Elsewhere.dc.html` | 3 · the Wishlist tab, Home's price drop, What each deck is worth |
 | `Empty.dc.html` | 6, 7 · no whole-list link, some and no prices from the store |
