@@ -1,0 +1,398 @@
+diff -ruN the-99/src/components/cards/card-modal-sheet.tsx sc/src/components/cards/card-modal-sheet.tsx
+--- the-99/src/components/cards/card-modal-sheet.tsx	2026-11-22 16:11:55.531471874 +0000
++++ sc/src/components/cards/card-modal-sheet.tsx	2026-11-22 16:15:25.401433489 +0000
+@@ -14,6 +14,7 @@
+ import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
+ import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
+ import { ManaCost } from "./mana-pips";
++import { PrintingsPanel, PrintingsButton } from "./printings-panel";
+ import { ComboPartnersDetail } from "./combo-partners-detail";
+ import type { CardCombo } from "../../lib/combos/near-combos";
+ import { ExternalLink } from "../ui/external-link";
+@@ -83,6 +84,8 @@
+   doorStrip: ReactNode;
+   /** The printings strip (alternate printings R2) for a card opened from search, drawn under the price line on the phone and under the title on desktop; null where there is none. */
+   strip: ((paddles: boolean) => ReactNode) | null;
++  stripPrintings?: any[];
++  shownKey?: string | null;
+   footer: ((layout: SheetFooterLayout, priced?: boolean) => ReactNode) | null;
+   figured: boolean;
+   /** The expanded printing region for one instance. The node MUST carry the given `id`: the picker trigger's `aria-controls` points at it. */
+@@ -119,7 +122,7 @@
+ export function CardModalSheet({
+   card, preview, resolved, titleId, caption, ownedPrintings, onlyPrinting, hasPicker, isToken, tokenNoSet, pick, deckScope, total, position,
+   deckPage, deckName, buyUrl, buyLabel, min, full, zoomed, viewOpen, cramped, gentle, sheetFull, teaserHeight, closeReserve, back,
+-  onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, strip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
++  onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, strip, stripPrintings, shownKey, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
+   openCombo, onOpenCombo, onSelectCard, expanded, triggerAria, onToggleExpanded, fitsDoor,
+   onEditCopies, receiptLink, commanderBox, onPrev, onNext, sheetRef, gripRef, doorRef, sheetBodyRef, mobileTriggerRef, desktopTriggerRef,
+   prevButtonRef, nextButtonRef, registerCloseRef, registerBackRef, onClose,
+@@ -308,7 +311,7 @@
+           </div>
+         )}
+         {resolved && (
+-          <span data-testid="teaser-set" className="font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
++          (globalThis as any).__BUTTON && (stripPrintings?.length ?? 0) > 1 ? <PrintingsButton set={resolved.setCode} number={resolved.collectorNumber} total={stripPrintings!.length} /> : <span data-testid="teaser-set" className="font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
+             {cardSheetCopy.printing(resolved.setCode, resolved.collectorNumber)}
+           </span>
+         )}
+@@ -317,7 +320,9 @@
+       </div>
+       {/* THE PRINTINGS STRIP (alternate printings R2), under the price line. Not in the full sheet, which has the Set
+           field; its height is in the teaser's (`PRINTING_STRIP_TEASER_HEIGHT`). */}
+-      {strip && !full ? <div inert={min} className="md:hidden mt-[14px]">{strip(false)}</div> : null}
++      {strip && !full && !(globalThis as any).__BUTTON ? <div inert={min} className="md:hidden mt-[14px]">{strip(false)}</div> : null}
++      {(globalThis as any).__PANEL ? <div className="md:hidden absolute inset-x-0 top-[22px] bottom-0 z-10 pb-[34px]" style={{ background: "var(--surface-rail)" }}><PrintingsPanel printings={stripPrintings ?? []} shownKey={shownKey ?? null} query={(globalThis as any).__QUERY ?? ""} cols={5} thumbW={62} cardName={card.name} /></div> : null}
++      {(globalThis as any).__PANEL ? <div className="hidden md:block absolute left-[24px] right-[24px] top-[150px] z-20 h-[400px] rounded-[12px] pt-[12px]" style={{ background: "var(--surface-raised)", border: "1px solid var(--border-strong)", boxShadow: "0 22px 50px rgba(0,0,0,0.6)" }}><PrintingsPanel printings={stripPrintings ?? []} shownKey={shownKey ?? null} query={(globalThis as any).__QUERY ?? ""} cols={6} thumbW={62} cardName={card.name} /></div> : null}
+       {strip ? <div className="hidden md:block mt-[20px]">{strip(true)}</div> : null}
+ 
+       {/* THE TEASER (README R2): three lines of oracle text under a fade, then `All details`,
+diff -ruN the-99/src/components/cards/card-modal.tsx sc/src/components/cards/card-modal.tsx
+--- the-99/src/components/cards/card-modal.tsx	2026-11-22 16:11:55.531471874 +0000
++++ sc/src/components/cards/card-modal.tsx	2026-11-22 16:20:57.921374445 +0000
+@@ -423,13 +423,13 @@
+   const stripCount = browsePrintings && card.kind !== "token" && deckPrinting === undefined
+     ? card.printings.length + (card.quantity > 0 ? card.otherPrintings?.length ?? 0 : 0)
+     : 0;
+-  const hasStrip = stripCount > 1;
++  const hasStrip = stripCount > ((globalThis as any).__RESERVE ? 0 : 1);
+   const { setSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min } = useSheetSnap({
+     startMinimized,
+-    forceFull: landsFull || startsFull,
++    forceFull: (globalThis as any).__FULL || landsFull || startsFull,
+     onMinimizedChange,
+     narrow,
+-    doorHeight: doorHeight + (narrow && hasStrip ? PRINTING_STRIP_TEASER_HEIGHT : 0),
++    doorHeight: doorHeight + ((globalThis as any).__STRIPH ?? (narrow && hasStrip ? PRINTING_STRIP_TEASER_HEIGHT : 0)),
+     dialogRef,
+   });
+   // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
+@@ -506,7 +506,7 @@
+   // a particular printing shows that one; afterwards their choice wins.
+   const [picked, setPicked] = useState(false);
+   // The printing previewed from the catalog list (alternate printings from search), by catalog id; null shows the card's own.
+-  const [previewId, setPreviewId] = useState<string | null>(null);
++  const [previewId, setPreviewId] = useState<string | null>((globalThis as any).__PREVIEW ?? null);
+   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
+   // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
+   const others = useMemo(
+@@ -798,7 +798,7 @@
+   const hasPicker = ownedPrintings.length > 1
+     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
+   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
+-  const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
++  const buyLabel = isToken ? cardLinkOutCopy.token : (globalThis as any).__W && !(globalThis as any).__W.soldOut ? `Buy ${(globalThis as any).__W.set} ${(globalThis as any).__W.num} at Mana Pool` : cardLinkOutCopy.card;
+   // M8 (discovery R1): Find a deck's moment is for a card the reader owns and no deck uses, read off this card's own
+   // claims (`fitsDoor` decides only that the door is drawn). A card with no availability read is not counted as unused.
+   const fitsMoment = card.quantity > 0 && !deckHolds && card.availability != null
+@@ -1262,7 +1262,7 @@
+             over the snap until the release, and the top transitions to whichever snap it chose. */}
+         <CardModalSheet
+           card={card} preview={preview} resolved={resolved} titleId={titleId} caption={caption} ownedPrintings={ownedPrintings}
+-          onlyPrinting={onlyPrinting} strip={strip}
++          onlyPrinting={onlyPrinting} strip={strip} stripPrintings={stripPrintings} shownKey={shownKey}
+           hasPicker={hasPicker} isToken={isToken} tokenNoSet={tokenNoSet} pick={pick} deckScope={deckScope} total={total} position={position}
+           deckPage={deckPage} deckName={deckName} buyUrl={buyUrl} buyLabel={buyLabel}
+           min={min} full={full} zoomed={zoomed} viewOpen={viewOpen} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
+diff -ruN the-99/src/components/cards/printing-strip.tsx sc/src/components/cards/printing-strip.tsx
+--- the-99/src/components/cards/printing-strip.tsx	2026-11-22 16:11:55.535471875 +0000
++++ sc/src/components/cards/printing-strip.tsx	2026-11-22 16:19:50.003880013 +0000
+@@ -9,6 +9,8 @@
+ import { reveal } from "../../lib/ui/reveal";
+ import { ArtLayer } from "../ui/art-layer";
+ import { printingKey } from "./printing-region";
++import { SearchTile } from "./printings-panel";
++import { Bookmark } from "../wishlist/wishlist-printing";
+ 
+ /** A printing in the strip: `mine` is one the reader holds, `pick` the one that represents the card. */
+ export type StripPrinting = BrowsePrinting & { mine?: boolean; pick?: boolean };
+@@ -119,6 +121,7 @@
+           className="relative flex gap-[8px] overflow-x-auto pb-[2px]"
+           style={{ scrollbarWidth: "none" }}
+         >
++          {(globalThis as any).__TILE && printings.length > 1 ? <SearchTile /> : null}
+           {printings.map((p, i) => {
+             const key = stripKey(p);
+             const shown = key === shownKey;
+@@ -152,7 +155,7 @@
+                     className="whitespace-nowrap font-mono text-[10px] leading-none"
+                     style={{ color: shown ? "var(--fg)" : p.mine ? "var(--accent-text)" : "var(--fg-muted)" }}
+                   >
+-                    {p.pick ? "◆ " : ""}{p.setCode}{p.mine && !p.pick ? ` ×${p.quantity}` : ""}
++                    {(globalThis as any).__W && (globalThis as any).__W.set === p.setCode && (globalThis as any).__W.num === p.collectorNumber ? <span style={{ color: "var(--accent-text)", display: "inline-block", verticalAlign: "-1px", marginRight: 3 }}><Bookmark size={9} /></span> : null}{p.pick ? "◆ " : ""}{p.setCode}{p.mine && !p.pick ? ` ×${p.quantity}` : ""}
+                   </span>
+                 </button>
+               </div>
+diff -ruN the-99/src/components/cards/printings-panel.tsx sc/src/components/cards/printings-panel.tsx
+--- the-99/src/components/cards/printings-panel.tsx	1970-01-01 00:00:00.000000000 +0000
++++ sc/src/components/cards/printings-panel.tsx	2026-11-22 16:18:35.945043015 +0000
+@@ -0,0 +1,94 @@
++"use client";
++// Alternate printings R3 (account 2, 2026-11-22): the printings panel. Opened from the Set line's printings button (A) or the
++// strip's search tile (B). Searches the card's printings by set name, set code or number; selecting one shows it in place.
++import type { BrowsePrinting } from "../../lib/collection/browse";
++import { SearchField } from "../ui/text-field";
++import { SearchGlyph } from "../card-search/card-search";
++import { stripKey, type StripPrinting } from "./printing-strip";
++import { Bookmark, PanelFoot } from "../wishlist/wishlist-printing";
++
++const head = "m-0 font-mono uppercase text-[10px] tracking-[0.14em]";
++
++function Thumb({ p, shown, w }: { p: StripPrinting; shown: boolean; w: number }) {
++  return (
++    <button type="button" aria-pressed={shown} className="flex flex-col items-center gap-[5px] border-0 bg-transparent p-0 cursor-pointer" style={{ width: w }}>
++      <span className="relative block w-full overflow-hidden rounded-[4px]" style={{ aspectRatio: "63/88",
++        boxShadow: shown ? "0 0 0 2px var(--bg), 0 0 0 4px var(--accent)" : "0 0 0 1px var(--border-strong)", opacity: shown ? 1 : 0.86 }}>
++        {p.imageUri ? <img src={p.imageUri} alt="" className="block h-full w-full object-cover" /> : null}
++      </span>
++      <span className="whitespace-nowrap font-mono text-[10px] leading-none" style={{ color: shown ? "var(--fg)" : p.mine ? "var(--accent-text)" : "var(--fg-muted)" }}>
++        {(globalThis as any).__W && (globalThis as any).__W.set === p.setCode && (globalThis as any).__W.num === p.collectorNumber ? <span style={{ color: "var(--accent-text)", display: "inline-block", verticalAlign: "-1px", marginRight: 3 }}><Bookmark size={9} /></span> : null}{p.pick ? "◆ " : ""}{p.setCode} {p.mine && !p.pick ? `×${p.quantity}` : p.collectorNumber}
++      </span>
++    </button>
++  );
++}
++
++export function PrintingsPanel({ printings, shownKey, query, cols, thumbW, cardName }: {
++  printings: StripPrinting[]; shownKey: string | null; query: string; cols: number; thumbW: number; cardName: string;
++}) {
++  const q = query.trim().toLowerCase();
++  const hits = q === "" ? printings : printings.filter((p) =>
++    `${p.setName ?? ""} ${p.setCode} ${p.collectorNumber}`.toLowerCase().includes(q));
++  // Searching groups by set; otherwise yours first, then the rest.
++  const groups: { label: string; items: StripPrinting[] }[] = [];
++  if (q !== "") {
++    for (const p of hits) {
++      const label = p.setName ?? p.setCode;
++      const g = groups.find((x) => x.label === label);
++      if (g) g.items.push(p); else groups.push({ label, items: [p] });
++    }
++  } else {
++    const mine = hits.filter((p) => p.mine);
++    if (mine.length) groups.push({ label: `In your collection · ${mine.length}`, items: mine });
++    groups.push({ label: mine.length ? `Other printings · ${hits.length - mine.length}` : "", items: hits.filter((p) => !p.mine) });
++  }
++  return (
++    <div role="dialog" aria-label={`Printings of ${cardName}`} className="flex h-full min-h-0 flex-col">
++      <div className="flex flex-none items-center gap-[6px] pl-[16px] pr-[6px] md:pl-[18px]">
++        <SearchField containerClassName="h-11 min-w-0 flex-1 rounded-[10px] border-[color:var(--border-strong)] bg-[color:var(--surface-sunken)] pr-[6px] pl-[13px]"
++          className="text-[16px] whitespace-nowrap" leading={<span className="flex-none text-[color:var(--fg-muted)]"><SearchGlyph size={18} /></span>}
++          aria-label={`Search ${printings.length} printings`} placeholder={`Search ${printings.length} printings by set`} value={query} onChange={() => {}} onClear={() => {}}
++          clearClassName="h-8 w-8 rounded-none bg-transparent text-[13px]" />
++        <button type="button" aria-label="Close printings" className="flex h-11 w-11 flex-none items-center justify-center border-0 bg-transparent text-[16px] text-[color:var(--fg-muted)]">✕</button>
++      </div>
++      <div className="min-h-0 flex-1 overflow-y-auto px-[16px] pt-[14px] pb-[16px] md:px-[18px]" style={{ scrollbarWidth: "none" }}>
++        {q !== "" ? <p className={head + " mb-[12px]"} style={{ color: "var(--fg-faint)" }}>{hits.length} of {printings.length} printings</p> : null}
++        {groups.map((g) => (
++          <div key={g.label || "all"} className="mb-[16px]">
++            {g.label ? <p className={head + " mb-[10px]"} style={{ color: q !== "" ? "var(--fg-muted)" : "var(--fg-faint)" }}>{g.label}</p> : null}
++            <div className="grid gap-x-[10px] gap-y-[14px]" style={{ gridTemplateColumns: `repeat(${cols}, ${thumbW}px)` }}>
++              {g.items.map((p) => <Thumb key={stripKey(p)} p={p} shown={stripKey(p) === shownKey} w={thumbW} />)}
++            </div>
++          </div>
++        ))}
++      </div>
++      <PanelFoot />
++    </div>
++  );
++}
++
++/** A: the Set line as the printings button (a plate, like the price), on cards with 2+ printings. */
++export function PrintingsButton({ set, number, total }: { set: string; number: string; total: number }) {
++  return (
++    <button type="button" aria-haspopup="dialog" aria-label={`${set} ${number}. ${total} printings. Search and view them.`}
++      className="inline-flex h-[30px] items-center gap-[8px] rounded-[7px] px-[9px] font-mono text-[12px] cursor-pointer"
++      style={{ background: "var(--bg)", border: "1px solid var(--border-strong)", color: "var(--fg)" }}>
++      <span>{set} · {number}</span>
++      <span aria-hidden style={{ color: "var(--fg-faint)" }}>|</span>
++      <span style={{ color: "var(--accent-text)" }}>{total} printings ▾</span>
++    </button>
++  );
++}
++
++/** B: the strip's leading search tile. */
++export function SearchTile() {
++  return (
++    <button type="button" aria-label="Search printings" className="flex w-[48px] flex-none flex-col items-center gap-[5px] border-0 bg-transparent p-0 cursor-pointer">
++      <span className="flex w-[48px] items-center justify-center rounded-[4px] text-[color:var(--fg-muted)]" style={{ aspectRatio: "63/88", border: "1px dashed var(--border-strong)", background: "var(--surface-sunken)" }}>
++        <SearchGlyph size={20} />
++      </span>
++      <span className="font-mono text-[10px] leading-none" style={{ color: "var(--fg-muted)" }}>Search</span>
++    </button>
++  );
++}
++export type { BrowsePrinting };
+diff -ruN the-99/src/components/collection/collection-place-head.tsx sc/src/components/collection/collection-place-head.tsx
+--- the-99/src/components/collection/collection-place-head.tsx	2026-11-22 16:11:55.538034983 +0000
++++ sc/src/components/collection/collection-place-head.tsx	2026-11-22 16:20:11.421407237 +0000
+@@ -126,7 +126,7 @@
+   /** The Wishlist tab, fifth: always true from the layout (its switch is retired). */
+   wishlistEnabled?: boolean;
+ }) {
+-  const pathname = usePathname();
++  const pathname = ((globalThis as any).__PATH ?? usePathname());
+   const current = placeFromPathname(pathname);
+ 
+   // The layout that mounts this once fetches its two props on first mount only; a Next
+diff -ruN the-99/src/components/place/place-strip.tsx sc/src/components/place/place-strip.tsx
+--- the-99/src/components/place/place-strip.tsx	2026-11-22 16:11:55.613822633 +0000
++++ sc/src/components/place/place-strip.tsx	2026-11-22 16:20:11.420807486 +0000
+@@ -52,7 +52,7 @@
+   /** The trailing control beside the tabs (Collection's `+ Add` / Replace); inside the strip's scroll row. */
+   children?: React.ReactNode;
+ }) {
+-  const pathname = usePathname();
++  const pathname = (globalThis as any).__PATH ?? usePathname();
+   const [pending, setPending] = useState<string | null>(null);
+   // Adjusted DURING RENDER (react.dev's own pattern for resetting state when a prop changes), not in
+   // an effect: this compares against the pathname LAST SEEN here and fires only on an actual commit.
+diff -ruN the-99/src/components/wishlist/card-wishlist.tsx sc/src/components/wishlist/card-wishlist.tsx
+--- the-99/src/components/wishlist/card-wishlist.tsx	2026-11-22 16:11:55.639343170 +0000
++++ sc/src/components/wishlist/card-wishlist.tsx	2026-11-22 16:18:35.944403804 +0000
+@@ -23,6 +23,7 @@
+ import { momentsCopy } from "../../lib/copy/moments";
+ import { useMomentAnchor } from "../moments/moments-provider";
+ import { useMergedRef } from "../ui/use-merged-ref";
++import { WishlistPrintingLine, SoldOutNote } from "./wishlist-printing";
+ 
+ const copy = wishlistCopy.details;
+ 
+@@ -180,6 +181,7 @@
+           <span className="font-mono" style={{ color: "var(--fg-muted)" }}>{copy.have(have)}</span>
+         </div>
+       )}
++      {want !== null ? <><WishlistPrintingLine /><SoldOutNote /></> : null}
+       <SocialToast toast={toast} onDone={() => setToast(null)} />
+     </section>
+   );
+diff -ruN the-99/src/components/wishlist/wishlist-printing.tsx sc/src/components/wishlist/wishlist-printing.tsx
+--- the-99/src/components/wishlist/wishlist-printing.tsx	1970-01-01 00:00:00.000000000 +0000
++++ sc/src/components/wishlist/wishlist-printing.tsx	2026-11-22 16:25:23.549900156 +0000
+@@ -0,0 +1,83 @@
++// Wishlist printing (account 1, 2026-11-22): the parts this round adds, static, driven by globalThis hooks for SSR.
++// Scratch only: the Wishlist box’s Printing line, the panel’s wanted mark and foot, and the tile’s price line.
++const G = globalThis as any;
++
++export function Bookmark({ size = 12, filled = true }: { size?: number; filled?: boolean }) {
++  return (
++    <svg aria-hidden width={size} height={size} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinejoin="round" style={{ flex: "none" }}>
++      <path d="M6 3h12v18l-6-4-6 4z" />
++    </svg>
++  );
++}
++
++const BTN = "inline-flex h-[44px] md:h-[30px] flex-none cursor-pointer items-center justify-center gap-[7px] rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[13px] font-medium text-[color:var(--fg)]";
++const LINK = "inline-flex h-[44px] md:h-auto flex-none cursor-pointer items-center border-0 bg-transparent p-0 font-mono text-[11.5px] text-[color:var(--fg-muted)] underline decoration-dotted underline-offset-[3px]";
++
++/** The Wishlist box's Printing line. W = { set, num, setName, price, img, soldOut } or null (any printing); S = the printing on screen. */
++export function WishlistPrintingLine() {
++  const W = G.__W ?? null; const S = G.__SHOWN ?? null; // S: { set, num } when the card shows another printing than the catalog's
++  const shownIsWanted = W && S && W.set === S.set && W.num === S.num;
++  const offer = S && !shownIsWanted ? `Want ${S.set} ${S.num}` : null;
++  return (
++    <div className="mt-[12px] flex min-h-[44px] md:min-h-[34px] items-center gap-[10px] border-t border-solid border-[color:var(--border)] pt-[12px] text-[13px]" style={{ color: "var(--fg-body)" }}>
++      {W ? (
++        <span className="relative block h-[34px] w-[24px] flex-none overflow-hidden rounded-[3px]" style={{ boxShadow: "0 0 0 1px var(--border-strong)" }}>
++          <img src={W.img} alt="" className="block h-full w-full object-cover" style={W.soldOut ? { opacity: 0.55 } : undefined} />
++        </span>
++      ) : null}
++      <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
++        <span className="font-mono text-[9.5px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-faint)" }}>Printing</span>
++        {W ? (
++          <span className="min-w-0 truncate">
++            <span className="font-mono" style={{ color: "var(--fg)" }}>{W.set} {W.num}</span>
++            <span className="font-mono" style={{ color: "var(--fg-muted)" }}> · {W.soldOut ? "sold out" : W.price}</span>
++          </span>
++        ) : (
++          <span className="min-w-0 truncate">Any printing{!offer ? <span className="font-mono text-[11.5px]" style={{ color: "var(--fg-faint)" }}> · cheapest</span> : null}</span>
++        )}
++      </span>
++      {offer ? (
++        <button type="button" className={BTN}><Bookmark size={12} filled={false} />{offer}</button>
++      ) : W ? (
++        <button type="button" className={LINK}>Any printing</button>
++      ) : null}
++    </div>
++  );
++}
++
++/** Under the line when the wanted printing is sold out: what Shopping does about it. */
++export function SoldOutNote() {
++  const W = G.__W ?? null;
++  if (!W?.soldOut) return null;
++  return <p className="m-0 mt-[8px] font-mono text-[11px] leading-[1.5]" style={{ color: "var(--fg-faint)" }}>Mana Pool has none now. Any printing is $1.49.</p>;
++}
++
++/** The panel's foot, on a card in your wishlist: what you want, and the one press for the printing on screen. */
++export function PanelFoot() {
++  const W = G.__W ?? null; const S = G.__SHOWN ?? null;
++  if (!G.__ONLIST) return null;
++  const shownIsWanted = W && S && W.set === S.set && W.num === S.num;
++  return (
++    <div className="flex flex-none items-center gap-[10px] border-t border-solid border-[color:var(--border-strong)] px-[16px] pt-[10px] md:px-[18px] md:pb-[12px]">
++      <span className="flex min-w-0 flex-1 items-center gap-[6px] font-mono text-[11.5px]" style={{ color: "var(--fg-muted)" }}>
++        <span style={{ color: "var(--accent-text)" }}><Bookmark size={12} /></span>
++        <span className="truncate">Wanted: {W ? `${W.set} ${W.num}` : "any printing"}</span>
++      </span>
++      {S && !shownIsWanted ? <button type="button" className={BTN}><Bookmark size={12} filled={false} />Want {S.set} {S.num}</button>
++        : W ? <button type="button" className={LINK}>Any printing</button> : null}
++    </div>
++  );
++}
++
++/** The wishlist tile's price line, under the caption: the figure (or `sold out`), then the wanted printing. Any printing is the
++ * figure alone (the cheapest). Phone: the set code only; the number joins from md, where the tile is wide enough. */
++export function TilePriceLine({ price, set, num, soldOut }: { price: string | null; set?: string; num?: string; soldOut?: boolean }) {
++  return (
++    <span className="flex min-w-0 items-center gap-[6px] whitespace-nowrap font-mono text-[9px] leading-[1.2] md:text-[9.5px]" style={{ color: "var(--fg-faint)" }}>
++      <span className="flex-none" style={{ color: soldOut ? "var(--fg-muted)" : "var(--fg-body)", fontWeight: soldOut ? 400 : 600 }}>{soldOut ? "sold out" : price}</span>
++      {set ? (
++        <span className="flex min-w-0 items-center gap-[3px]" style={{ color: "var(--accent-text)" }}><Bookmark size={9} /><span>{set}<span className="hidden md:inline"> {num}</span></span></span>
++      ) : null}
++    </span>
++  );
++}
+diff -ruN the-99/src/components/wishlist/wishlist-tile.tsx sc/src/components/wishlist/wishlist-tile.tsx
+--- the-99/src/components/wishlist/wishlist-tile.tsx	2026-11-22 16:11:55.639343170 +0000
++++ sc/src/components/wishlist/wishlist-tile.tsx	2026-11-22 16:20:57.919624605 +0000
+@@ -7,10 +7,11 @@
+ import { wishlistCopy, type CopyPart } from "../../lib/copy/wishlist";
+ import { TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
+ import { HydratedImg } from "../ui/hydrated-art";
++import { TilePriceLine } from "./wishlist-printing";
+ 
+ /** What a tile draws. The tab's `WishlistViewTile` carries this and more. `have` is null on a friend's tile, which
+  * reads `wants N` and never an owned count. */
+-export type WishlistTileCard = { name: string; imageUri: string | null; want: number; have: number | null };
++export type WishlistTileCard = { name: string; imageUri: string | null; want: number; have: number | null; line?: { price: string | null; set?: string; num?: string; soldOut?: boolean } | null };
+ 
+ /** The tile's outer box: the press on the tab and on a friend's page, a plain box in the specimen. */
+ export const WISHLIST_TILE_SHELL = `${TILE_SHELL} w-full text-left bg-[color:var(--surface)] border border-solid border-[color:var(--border)]`;
+@@ -73,6 +74,7 @@
+             strong="font-semibold text-[color:var(--fg-body)]"
+           />
+         </span>
++        {tile.line ? <TilePriceLine {...tile.line} /> : null}
+       </span>
+     </>
+   );
+diff -ruN the-99/src/components/wishlist/wishlist-view.tsx sc/src/components/wishlist/wishlist-view.tsx
+--- the-99/src/components/wishlist/wishlist-view.tsx	2026-11-22 16:11:55.639343170 +0000
++++ sc/src/components/wishlist/wishlist-view.tsx	2026-11-22 16:21:40.927830486 +0000
+@@ -35,7 +35,7 @@
+   notices: WishlistViewNotice[];
+   hasFriend: boolean;
+ }) {
+-  const router = useRouter();
++  const router = (globalThis as any).__PATH ? ({ refresh() {} } as any) : useRouter();
+   const [sort, setSort] = useState<Sort>("newest");
+   const [searching, setSearching] = useState(false);
+   // The notices this visit's ✕ dismissed, by card and time, so a notice a later refresh brings is still drawn.
+@@ -136,7 +136,7 @@
+                 className={`m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] px-[14px] pb-[14px] pt-[12px] transition-opacity md:gap-[20px] md:px-[34px] md:pb-[34px] md:pt-[18px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`}
+               >
+                 {tiles.map((t, i) => (
+-                  <WishlistTile key={t.oracleId} tile={t} eager={i < GRID_EAGER_TILES} siblings={siblings} />
++                  <WishlistTile key={t.oracleId} tile={t} eager={(globalThis as any).__PATH ? true : i < GRID_EAGER_TILES} siblings={siblings} />
+                 ))}
+               </ul>
+             </>
