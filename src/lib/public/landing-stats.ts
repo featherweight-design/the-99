@@ -114,23 +114,31 @@ export function completeStats(stats: LandingStats): boolean {
 }
 
 /**
- * EACH COUNT CACHED ON ITS OWN through `cachedWhen` (`cache/stored-when.ts`), keyed on the figure, the catalog generation
- * and the deployment, so every ingest and index copy (which stamp `catalog_refreshes`) retires them, and a new build
- * retires a shape it changed. A failed count is served as missing and not stored, so it is tried again on the next
- * request, while the healthy counts stay stored: one failing query costs one query a request, not eight. The counts move
- * only when the catalog does, so a day's revalidate is a backstop.
+ * THE COUNTS CACHED AS ONE ENTRY through `cachedWhen` (`cache/stored-when.ts`), keyed on the catalog generation and the
+ * deployment, so every ingest and index copy (which stamp `catalog_refreshes`) retires it, and a new build retires a shape
+ * it changed. One entry and not one per count: every cached read is a round trip to Vercel's data cache, and the signed-out
+ * landing made one per count, seven identical calls in a render (Sentry THE-99-D, an N+1). Only a COMPLETE set is stored:
+ * a failed count is served as missing and not stored, so the next request reads the counts again (seven cheap queries).
+ * The counts move only when the catalog does, so a day's revalidate is a backstop.
  *
  * `preconOverviews` is `readPreconsWithOverview`'s length: the featured list's own entry, key and hour window.
  *
- * If the cache itself throws (`unstable_cache` outside a request), the figure is logged and left out, as a failed count
+ * If the cache itself throws (`unstable_cache` outside a request), the counts are logged and left out, as a failed count
  * is; nothing is read again. Wrapped in `React.cache` too, so one request reads once.
  */
 export const LANDING_STATS_REVALIDATE_S = 60 * 60 * 24;
 
-/** One count's cache key, exported so a test can pin that the catalog moving moves the key. */
-export function landingStatKey(key: LandingCountKey, generation: string, deployment: string = DEPLOYMENT_ID): string[] {
-  return ["public-landing-stat", `stat:${key}`, `gen:${generation}`, `dep:${deployment}`];
+/** The counts' cache key, exported so a test can pin that the catalog moving moves the key. */
+export function landingStatsKey(generation: string, deployment: string = DEPLOYMENT_ID): string[] {
+  return ["public-landing-stats", `gen:${generation}`, `dep:${deployment}`];
 }
+
+/** Every count, uncached, as one object: what the single cache entry holds. */
+async function loadLandingCounts(): Promise<LandingStats> {
+  return collect(await Promise.all(COUNT_KEYS.map(async (key) => [key, await loadLandingStat(key)] as const)));
+}
+
+const countsComplete = (counts: LandingStats): boolean => COUNT_KEYS.every((k) => counts[k] !== undefined);
 
 async function logged(key: LandingStatKey, read: () => Promise<number | null>): Promise<readonly [LandingStatKey, number | null]> {
   try {
@@ -141,11 +149,20 @@ async function logged(key: LandingStatKey, read: () => Promise<number | null>): 
   }
 }
 
+async function readLandingCounts(generation: string): Promise<LandingStats> {
+  try {
+    return await cachedWhen(landingStatsKey(generation), loadLandingCounts, countsComplete, LANDING_STATS_REVALIDATE_S);
+  } catch (error) {
+    console.error("landing stats: the counts could not be read", error);
+    return {};
+  }
+}
+
 export const readLandingStats = cache(async (): Promise<LandingStats> => {
   const generation = await catalogGeneration();
-  return collect(await Promise.all([
-    ...COUNT_KEYS.map((key) => logged(key, () =>
-      cachedWhen(landingStatKey(key, generation), () => loadLandingStat(key), (n) => n !== null, LANDING_STATS_REVALIDATE_S))),
+  const [counts, overviews] = await Promise.all([
+    readLandingCounts(generation),
     logged("preconOverviews", async () => (await readPreconsWithOverview()).length),
-  ]));
+  ]);
+  return { ...counts, ...collect([overviews]) };
 });

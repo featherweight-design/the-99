@@ -57,7 +57,8 @@ async function run(browser, name, { width, height, touch }) {
       await sheet(page).waitFor({ timeout: 3_000 }).catch(() => {});
     }
     const field = sheet(page).getByRole("combobox");
-    await field.fill(QUERY);
+    await field.waitFor({ timeout: 60_000 });
+    await field.fill(QUERY, { timeout: 60_000 });
     const option = sheet(page).getByRole("option").first();
     await option.waitFor({ timeout: 30_000 });
     await option.click();
@@ -78,7 +79,10 @@ async function run(browser, name, { width, height, touch }) {
     await signIn(page);
     await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded" });
     await openCard();
-    await strip().waitFor({ timeout: 15_000 });
+    // An absent strip is a failed check, not a thrown timeout: the probe must fail on the strip itself.
+    const drawn = await strip().waitFor({ timeout: 15_000 }).then(() => true, () => false);
+    check(name, "the strip is drawn under the card", drawn, drawn ? "visible" : "no printing-strip on screen");
+    if (!drawn) return;
     const n = await thumbs().count();
     check(name, "the strip lists the card's printings", n > 1, `thumbs=${n}`);
     check(name, "no printings disclosure is on the Set field", (await card(page).locator("button[aria-expanded]").filter({ hasText: /\d+ printings/ }).count()) === 0, "trigger absent");

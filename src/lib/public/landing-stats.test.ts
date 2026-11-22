@@ -42,7 +42,7 @@ const list = vi.hoisted(() => ({ load: vi.fn(), read: vi.fn() }));
 vi.mock("./precon-overview", () => ({ loadPreconsWithOverview: list.load, readPreconsWithOverview: list.read }));
 
 import {
-  LANDING_STAT_QUERIES, completeStats, landingStatKey, loadLandingStats, proseShownWhere, readLandingStats, statValue, type LandingCountKey,
+  LANDING_STAT_QUERIES, completeStats, landingStatsKey, loadLandingStats, proseShownWhere, readLandingStats, statValue, type LandingCountKey,
 } from "./landing-stats";
 import { commanderSupport } from "../../db/schema";
 import { db } from "../../db";
@@ -129,9 +129,16 @@ describe("loadLandingStats", () => {
 });
 
 describe("the landing stats cache", () => {
-  it("keys each count on its figure, the catalog generation and the deployment", () => {
-    expect(landingStatKey("cards", "1000", "dpl_1")).toEqual(["public-landing-stat", "stat:cards", "gen:1000", "dep:dpl_1"]);
-    expect(landingStatKey("cards", "1001", "dpl_1")).not.toEqual(landingStatKey("cards", "1000", "dpl_1"));
+  it("keys the counts on the catalog generation and the deployment", () => {
+    expect(landingStatsKey("1000", "dpl_1")).toEqual(["public-landing-stats", "gen:1000", "dep:dpl_1"]);
+    expect(landingStatsKey("1001", "dpl_1")).not.toEqual(landingStatsKey("1000", "dpl_1"));
+  });
+
+  it("asks the data cache for the counts once, not once per count (THE-99-D)", async () => {
+    fake.state.on = true;
+    await readLandingStats();
+    expect(keys.filter((k) => k[0] === "public-landing-stats")).toHaveLength(1);
+    expect(keys).toHaveLength(1);
   });
 
   it("serves the counts from the store until the catalog moves, then reads again", async () => {
@@ -146,7 +153,7 @@ describe("the landing stats cache", () => {
     expect(keys.at(-1)).toContain("gen:2000");
   });
 
-  it("keeps the healthy counts stored when one fails, and retries only the failed one", async () => {
+  it("stores nothing when a count fails, serves the rest, and reads the counts again next time", async () => {
     fake.state.on = true;
     fake.state.answer = (i) => {
       if (i === at("combos")) throw new Error("db down");
@@ -155,12 +162,12 @@ describe("the landing stats cache", () => {
     const stats = await readLandingStats();
     expect(stats).not.toHaveProperty("combos");
     expect(stats.cards).toBe(7);
-    expect(store.size).toBe(KEYS.length - 1);
+    expect(store.size).toBe(0);
     await readLandingStats();
-    expect(fake.state.calls).toBe(KEYS.length + 1);
+    expect(fake.state.calls).toBe(KEYS.length * 2);
   });
 
-  it("leaves out a figure whose read throws through the cache, and reads nothing again", async () => {
+  it("leaves out the Overview figure when its read throws through the cache, and reads nothing again", async () => {
     list.read.mockRejectedValue(new Error("no incremental cache"));
     fake.state.on = true;
     const stats = await readLandingStats();
