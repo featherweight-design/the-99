@@ -1,7 +1,7 @@
 # Life tracker addendum: the ±N over any art (account 1, 2026-11-22)
 
 Canvas (Design type): https://claude.ai/artifact/C4YLoNSi9tsrx7oMb7krdV (Main, Seats, Motion, Contrast).
-Status: **Drawn for Hugh's review** (2026-11-22). Not yet approved; the PR follows his approval.
+Status: **Approved by Hugh** (2026-11-22, "This LGTM"), halo at 60% as drawn.
 
 When a player taps or holds their life, a green +N or red −N fades in beside the total, holds for the 2 s commit window
 and drifts away at the save (the Nudge press, `ADDENDUM-life-press.md`). #3191 moved the loss ink from `--danger` to

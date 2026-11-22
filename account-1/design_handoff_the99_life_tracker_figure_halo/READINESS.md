@@ -1,6 +1,6 @@
 # Readiness Review — Life tracker addendum: the ±N over any art
 
-**Verdict:** 🟡 Yellow (buildable as drawn once Hugh approves the boards and #3191 lands)
+**Verdict:** 🟡 Yellow (boards approved by Hugh 2026-11-22; buildable once #3191 lands)
 **Audited:** 2026-11-22, against origin/main 14f9519 plus #3191 (`life-loss-red`, open)
 **Related:** `ADDENDUM-life-press.md` (Nudge, #3160/#3155); #3191 (loss ink `--critical-fg`, its probe `probe-tracker-loss-ink.mjs` and the Clavileño residual it reports)
 **Plan PR target:** TBD (one small tracker PR, after or on top of #3191)
@@ -9,8 +9,7 @@
 
 One class string on two spans. The whole change is `scratch-gen/proposal.diff` (a `HALO` constant and two class
 concatenations in `panel.tsx`), which is what every board renders, so the boards and the diff agree by construction. It
-uses existing tokens only, adds no keyframe, no state, no copy and no setting. Yellow because the boards are not yet
-approved, because it depends on #3191's ink, and because #3191's new probe would measure the halo away (below).
+uses existing tokens only, adds no keyframe, no state, no copy and no setting. Yellow because it depends on #3191's ink, and because #3191's new probe would measure the halo away (below).
 
 ## Per-dimension findings
 
@@ -71,8 +70,7 @@ None.
 
 ## Open questions
 
-- For Hugh: the halo at 60% (drawn) or a touch darker for more margin over white (62% measured 3.76:1)? Eng builds 60%
-  unless told otherwise.
+- Resolved: Hugh approved the boards as drawn (2026-11-22), so the halo is 60%.
 
 ## Decisions inherited
 
