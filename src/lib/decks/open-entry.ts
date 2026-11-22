@@ -20,7 +20,7 @@ export type OpenFacts = {
   name: string;
   /** The commander's name on the copy owned (`commanderDisplayName`). */
   commander: string;
-  /** The partner's name, drawn as the loaded header's own second half of the commander line. Absent on an entry from an older build or a lone commander. */
+  /** The partner's name, drawn as the loaded header's own second half of the commander line. Null for a lone commander; absent on an entry from an older build. */
   partnerName?: string | null;
   /** Both commanders' colours in WUBRG order (`deckIdentity`). */
   identity: string[];

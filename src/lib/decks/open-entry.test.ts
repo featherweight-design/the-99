@@ -23,6 +23,15 @@ describe("parseOpenEntry", () => {
     expect(parseOpenEntry(entry(), 1000 + OPEN_TTL_MS + 1)).toBeNull();
   });
 
+  it("drops a malformed partnerName and keeps an entry with a null or absent one", () => {
+    const withPartner = (partnerName: unknown) => entry({ facts: { ...facts, partnerName } as unknown as OpenFacts });
+    expect(parseOpenEntry(withPartner(7), 1001)?.facts.partnerName).toBeUndefined();
+    expect(parseOpenEntry(withPartner({ a: 1 }), 1001)?.facts.name).toBe("Scrappy Survivors");
+    expect(parseOpenEntry(withPartner(null), 1001)?.facts.partnerName).toBeNull();
+    expect(parseOpenEntry(withPartner("Kraum"), 1001)?.facts.partnerName).toBe("Kraum");
+    expect(parseOpenEntry(entry(), 1001)?.facts.partnerName).toBeUndefined();
+  });
+
   it("drops an entry whose facts name another deck than `to`", () => {
     expect(parseOpenEntry(entry({ to: "d2" }), 1001)).toBeNull();
   });
@@ -75,7 +84,7 @@ describe("openFactsOf", () => {
       ...over,
     }) as unknown as DeckListItem;
 
-  it("names both commanders, merges identity and flags the partner", () => {
+  it("splits the partner out of the commander line, merges identity and flags the partner", () => {
     const f = openFactsOf(row({ partnerName: "Kraum, Ludevic's Opus", partnerColorIdentity: ["U", "B"] }));
     expect(f.commander).toBe("Tymna the Weaver");
     expect(f.partnerName).toBe("Kraum, Ludevic's Opus");
