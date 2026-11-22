@@ -52,9 +52,7 @@ export async function spendFlyerOnSignUp(
     .where(and(eq(flyerClaims.userId, newUserId), eq(flyerClaims.state, "spent")));
   if (done) return { spent: false, reason: "already" };
 
-  let joined = false;
-  const result = await db.transaction(async (tx): Promise<FlyerSpendResult> => {
-    joined = false;
+  const { result, joined } = await db.transaction(async (tx): Promise<{ result: FlyerSpendResult; joined: boolean }> => {
     // Hugh's invite lock and the newcomer's, taken in the DATABASE's user-id order, exactly as the personal spend takes
     // its sender's and newcomer's, so no two writers wait on each other. The time to judge the hold by is read once both
     // are held.
@@ -63,43 +61,43 @@ export async function spendFlyerOnSignUp(
     for (const r of order.rows as { id: string }[]) now = await lockSenderIn(tx, r.id, deps.now);
     const [gone] = await tx.select({ id: accountTombstones.idHash }).from(accountTombstones)
       .where(eq(accountTombstones.idHash, tombstoneHash(newUserId)));
-    if (gone) return { spent: false, reason: "deleted" };
+    if (gone) return { result: { spent: false, reason: "deleted" }, joined: false };
     const [row] = await tx.select().from(flyerClaims).where(eq(flyerClaims.id, claimId)).for("update");
-    if (!row) return { spent: false, reason: "unknown" };
-    if (row.state === "spent") return { spent: false, reason: row.userId === newUserId ? "already" : "lapsed" };
+    if (!row) return { result: { spent: false, reason: "unknown" }, joined: false };
+    if (row.state === "spent") return { result: { spent: false, reason: row.userId === newUserId ? "already" : "lapsed" }, joined: false };
     // Only a claim still holding its place spends. A revoked code spends nothing even for a claim already handed over:
     // revoking is Hugh's word that the code is over, and the revoke takes this same lock, so the two cannot interleave.
     const [code] = await tx.select().from(flyerCodes).where(eq(flyerCodes.id, row.codeId));
     const holding = (row.state === "open" || row.state === "proven") && row.holdsUntil.getTime() > now.getTime();
-    if (!code || code.revokedAt !== null || !holding) return { spent: false, reason: "lapsed" };
+    if (!code || code.revokedAt !== null || !holding) return { result: { spent: false, reason: "lapsed" }, joined: false };
 
     // The creator's stock first, and nothing else written until it moved: the claim was holding one of Hugh's invites (it
     // counts in his stock) and now it is gone. A purged creator has no balance row (and a tombstone), so the decrement
     // touches nothing and the claim spends nothing, rather than granting membership and invites against no stock.
     const [creatorGone] = await tx.select({ id: accountTombstones.idHash }).from(accountTombstones)
       .where(eq(accountTombstones.idHash, tombstoneHash(code.createdBy)));
-    if (creatorGone) return { spent: false, reason: "lapsed" };
+    if (creatorGone) return { result: { spent: false, reason: "lapsed" }, joined: false };
     const lowered = await tx.update(inviteBalances).set({ held: sql`${inviteBalances.held} - 1`, updatedAt: now })
       .where(and(eq(inviteBalances.userId, code.createdBy), sql`${inviteBalances.held} > 0`))
       .returning({ userId: inviteBalances.userId });
-    if (lowered.length === 0) return { spent: false, reason: "lapsed" };
+    if (lowered.length === 0) return { result: { spent: false, reason: "lapsed" }, joined: false };
     // `clerk_invitation_id` stays (an id, no address) so the record of which invitation made the account survives.
     await tx.update(flyerClaims).set({
       state: "spent", userId: newUserId, email: null, codeHmac: null, codeExpiresAt: null, resolvedAt: now,
     }).where(eq(flyerClaims.id, row.id));
+    let added: unknown[] = [];
     if (code.groupId !== null) {
       // A group move is an override change for this account: it waits on the same lock every switch write and group save
       // takes, so a confirmation an admin read against the old membership still holds when it applies.
       await lockSwitchWrites(tx);
-      const added = await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: code.groupId, addedBy: code.createdBy })
+      added = await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: code.groupId, addedBy: code.createdBy })
         .onConflictDoNothing().returning({ userId: flagGroupMembers.userId });
-      joined = added.length > 0;
     }
     await createProfileIn(tx, newUserId, offeredName);
     // Never lowers a stock the account already has.
     await tx.insert(inviteBalances).values({ userId: newUserId, held: FLYER_STARTER_INVITES, updatedAt: now })
       .onConflictDoNothing();
-    return { spent: true };
+    return { result: { spent: true }, joined: added.length > 0 };
   });
   // The new member's group can change their switches, and the snapshot every server holds predates it: retired after
   // the commit, as an admin's group move is.

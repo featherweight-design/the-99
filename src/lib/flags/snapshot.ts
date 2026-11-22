@@ -112,6 +112,22 @@ class SnapshotReadFailed extends Error {}
 
 /** Built on first use, not at module scope: `unstable_cache` runs where it is called (see `catalog-generation.ts`). */
 let shared: (() => Promise<SnapshotRows>) | null = null;
+/** Set by a write on this instance: its next refresh reads Neon, not the entry the write is retiring. */
+let wroteHere = false;
+let warnedNoCache = false;
+
+/**
+ * The database's host, in the entry's key: two environments that share a data-cache namespace (previews, a branch
+ * swap) never read each other's switches. The host only, never the credentials.
+ */
+function databaseKey(): string {
+  try {
+    return new URL(process.env.DATABASE_URL ?? "").host;
+  } catch {
+    // not a fallback: an unparsable URL fails the read itself; the key only needs to be stable.
+    return "unknown";
+  }
+}
 
 /**
  * The memo's refresh: the shared entry, filled from Neon on a miss. Where Next has no data cache to give (outside a
@@ -132,13 +148,17 @@ async function readSharedSnapshot(): Promise<SwitchSnapshot | null> {
           throw new SnapshotReadFailed("switch overrides could not be read", { cause: error });
         }
       },
-      [SNAPSHOT_TAG],
+      [SNAPSHOT_TAG, databaseKey()],
       { tags: [SNAPSHOT_TAG], revalidate: SNAPSHOT_CACHE_SECONDS },
     );
     rows = await shared();
   } catch (error) {
     if (error instanceof SnapshotReadFailed) return readFailed(error.cause);
     // not a fallback: no data cache in this scope, so the database answers, exactly as it did before the cache.
+    if (!warnedNoCache && process.env.NODE_ENV === "production") {
+      warnedNoCache = true; // once per instance: a script has no cache by design, a deployment should
+      console.warn("switch snapshot: no data cache here, reading the database", error);
+    }
     return readSnapshot();
   }
   return toSnapshot(rows);
@@ -157,7 +177,11 @@ export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null>
 function refresh(now: number): Promise<SwitchSnapshot | null> {
   if (inflight) return inflight;
   const asked = generation;
-  const read = readSharedSnapshot().then((snapshot) => {
+  // The first read after a write on this instance goes to Neon: the shared entry is retired only once the response is
+  // sent, and a redirect straight back here must not draw from it.
+  const fresh = wroteHere;
+  wroteHere = false;
+  const read = (fresh ? readSnapshot() : readSharedSnapshot()).then((snapshot) => {
     if (asked === generation) {
       if (snapshot) held = { at: now, snapshot };
       inflight = null;
@@ -205,24 +229,19 @@ export function clearSwitchSnapshot(): void {
   held = null;
   inflight = null;
   generation++;
+  wroteHere = true;
   retireSharedSnapshot();
 }
 
 /**
- * `expire: 0`, so the next read after a write is a miss rather than the stale entry served while it refreshes. Next
- * refuses `revalidateTag` while a page renders (the `/friends` flyer spend runs in one), so there it runs once the
- * response is sent, in `after()`; outside a request there is no data cache to retire.
+ * `expire: 0`, so the next read after a write is a miss rather than the stale entry served while it refreshes. Always
+ * once the response is sent, in `after()`: Next refuses `revalidateTag` while a page renders (the `/friends` flyer
+ * spend runs in one), and in a Server Action it would ship the caller's page again. Its own instance does not wait on
+ * it (`wroteHere`). Outside a request there is no data cache to retire; an error inside the task reaches Next's log.
  */
 function retireSharedSnapshot(): void {
-  const retire = () => revalidateTag(SNAPSHOT_TAG, { expire: 0 });
   try {
-    retire();
-    return;
-  } catch {
-    // not a fallback: a render or a script cannot retire a tag here; the after() below, or nothing, does.
-  }
-  try {
-    after(retire);
+    after(() => revalidateTag(SNAPSHOT_TAG, { expire: 0 }));
   } catch {
     // not a fallback: outside a request there is no shared entry to retire, and the memo is already cleared.
   }

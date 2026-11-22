@@ -56,13 +56,17 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   held snapshot. A snapshot five minutes old (`SNAPSHOT_MAX_STALE_MS`, a quiet instance) is not served: that request
   waits on the read, and a failed read there answers the fallbacks. Each refresh reads the shared Vercel data cache, not Neon
   (`readSharedSnapshot`, lane 58 PR2, 2026-11-22): the snapshot is the same for every reader, so one `unstable_cache`
-  entry (about 2 KB, tagged `SNAPSHOT_TAG`) serves every instance, and a cold instance's first read is a cache lookup
-  (p50 ~46ms) instead of a Neon round trip (p50 442ms on GET /). `clearSwitchSnapshot` retires the tag with
-  `revalidateTag(tag, { expire: 0 })` on every write that passes through the app: the admin switch and group writes,
-  and `spendFlyerOnSignUp` when it adds a member. A render cannot retire a tag (Next throws), so the `/friends` flyer
-  recovery defers it to `after()`, and that response's own redirect may draw from the old entry once. Writes made
-  outside the app (the seed, a purge's cascade, hand-run SQL) are caught by the entry's own ceiling,
-  `SNAPSHOT_CACHE_SECONDS` (60), as is a refill that read the pre-write rows while the write committed. A failed read
+  entry (about 2 KB, tagged `SNAPSHOT_TAG`, keyed on the database host so environments sharing a cache namespace never
+  cross) serves every instance, and a cold instance's first read is a cache lookup (p50 ~46ms) instead of a Neon round
+  trip (p50 442ms on GET /). `clearSwitchSnapshot` retires the tag with `revalidateTag(tag, { expire: 0 })` on every
+  write that passes through the app: the admin switch and group writes, and `spendFlyerOnSignUp` when it adds a
+  member. It always does so in `after()`, once the response is sent: a render cannot retire a tag (Next throws, and
+  the `/friends` flyer recovery spends in one), and a Server Action that revalidates ships its caller's page again. So
+  the writing instance does not wait on it, its next refresh reads Neon rather than the entry being retired
+  (`wroteHere`). Writes made outside the app (the seed, a purge's cascade, hand-run SQL) are caught by the entry's own
+  ceiling, `SNAPSHOT_CACHE_SECONDS` (60), as is a refill that read the pre-write rows while the write committed; the
+  ceiling is a revalidate, so the first read past it may still get the old entry once while Next refills it. A
+  deployment with no data cache logs one warning per instance and reads Neon. A failed read
   is thrown inside the cached function, so it is never stored; a scope with no data cache (a script, outside a
   request) reads Neon directly, as before. Under `next dev` the cache is skipped and every refresh reads Neon: the
   probes write `flag_overrides` with plain SQL, which no tag hears. The proxy runs the same code; whether Vercel backs
