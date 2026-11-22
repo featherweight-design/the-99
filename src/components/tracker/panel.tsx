@@ -379,11 +379,12 @@ export function Panel({
                         {state.life + pending}
                       </span>
                       {pending !== 0 ? (
+                        // The loss figure is 18px text, so it takes --critical-fg (4.6:1 or better on every ground), not --danger (3.0 to 4.4).
                         // The pending change hangs off the number's right edge (F04), so the number never moves. It sits outside the keyed
                         // number so a later step changes its text in place instead of restarting its fade-in.
                         <span
                           className={"absolute left-full top-2 ml-[6px] font-mono text-[18px] font-medium tabular-nums [text-shadow:none] motion-safe:animate-[life-pending-in_.15s_ease-out] "
-                            + (pending > 0 ? "text-[color:var(--success)]" : "text-[color:var(--danger)]")}
+                            + (pending > 0 ? "text-[color:var(--success)]" : "text-[color:var(--critical-fg)]")}
                           data-testid="life-pending"
                         >
                           {copy.pending(pending)}
@@ -396,7 +397,7 @@ export function Panel({
                           aria-hidden
                           onAnimationEnd={clearGhost}
                           className={"absolute left-full top-2 ml-[6px] hidden font-mono text-[18px] font-medium tabular-nums [text-shadow:none] motion-safe:block motion-safe:animate-[life-pending-out_.4s_ease-out_forwards] "
-                            + (ghost.sign > 0 ? "text-[color:var(--success)]" : "text-[color:var(--danger)]")}
+                            + (ghost.sign > 0 ? "text-[color:var(--success)]" : "text-[color:var(--critical-fg)]")}
                           data-testid="life-pending-fade"
                         >
                           {ghost.text}

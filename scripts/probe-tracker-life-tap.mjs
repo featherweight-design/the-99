@@ -77,13 +77,13 @@ const sample = (half) =>
       fg: getComputedStyle(el).color,
       tint: tint ? `${getComputedStyle(tint).backgroundColor}@${Number(getComputedStyle(tint).opacity).toFixed(2)}` : "none",
       pending: panel.querySelector("[data-testid=life-pending]")?.textContent ?? "",
-      // The pending figure's ink against the theme's --success and --danger, resolved to rgb by a probe element.
+      // The pending figure's ink against the theme's --success and --critical-fg, resolved to rgb by a probe element.
       pendingInk: (() => {
         const n = panel.querySelector("[data-testid=life-pending]");
         return n ? getComputedStyle(n).color : "";
       })(),
       success: (() => { const t = document.createElement("i"); t.style.color = "var(--success)"; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; })(),
-      danger: (() => { const t = document.createElement("i"); t.style.color = "var(--danger)"; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; })(),
+      danger: (() => { const t = document.createElement("i"); t.style.color = "var(--critical-fg)"; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; })(),
     };
   });
 const alpha = (c) => {
@@ -119,7 +119,7 @@ try {
     await page.waitForTimeout(800);
 
     // The life press (addendum "life press = Nudge"): a 10% accent wash only while a finger is down, the number ticking and
-    // nudging on every step, the pending figure in --success / --danger ink fading out at the commit, nothing held through the window.
+    // nudging on every step, the pending figure in --success / --critical-fg ink fading out at the commit, nothing held through the window.
     for (const which of ["half-minus", "half-plus"]) {
       const half = page.getByTestId(which).first();
       const box = await half.boundingBox();

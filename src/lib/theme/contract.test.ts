@@ -160,7 +160,8 @@ describe("theme contract", () => {
       expect(contrast(hex("fg-locked"), hex("surface"))).toBeGreaterThanOrEqual(3);
       // The inks a reader reads as text (text inks addendum R1): 4.5:1 on every solid ground, `--elevated` the weakest.
       // --fg-faint was once held to 3:1 as decoration; it is read text at hundreds of sites, so it owes the text floor.
-      for (const ink of ["fg-faint", "accent-text", "accent-hover"]) {
+      // --critical-fg is the life tracker's ±N loss figure and the Critical chip: --danger is 3.0 to 4.4 on these grounds, so it stays an edge colour.
+      for (const ink of ["fg-faint", "accent-text", "accent-hover", "critical-fg"]) {
         const value = ink === "accent-text" && aliasOf(name, ink) ? hex("accent") : hex(ink);
         for (const ground of TEXT_GROUNDS) {
           expect(contrast(value, hex(ground)), `--${ink} on --${ground}`).toBeGreaterThanOrEqual(4.5);
