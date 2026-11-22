@@ -29,7 +29,7 @@ export default async function AdminInvitesPage() {
     <>
       {flyers && <FlyerCodes view={flyersView(flyers, new Date())} groups={groups.map((g) => ({ id: g.id, name: g.name })).sort((a, b) => a.name.localeCompare(b.name))} />}
       {/* Whatever the flyer switch says: at launch the trial is off and the list is still to be emailed. */}
-      {/* The same padded column and 12px gap as the Flyer codes section above and the tree below. */}
+      {/* The same padded column as the Flyer codes section above and the tree below, with the 12px gap the admin cards use. */}
       <div className="flex flex-col gap-[12px] px-[16px] pt-[16px] md:px-[28px] md:pt-[22px]">
         <LaunchEmailCard />
         <EmailPreviewCard />

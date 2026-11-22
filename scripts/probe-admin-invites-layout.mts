@@ -3,11 +3,10 @@
 // the two cards are 12px apart, not touching. Before the fix the cards were bare siblings of the padded sections: they ran to
 // the column's outer edges (28px wider each side on desktop) and touched.
 //
-// Signs in as the audit account, which must be named in `ADMIN_USER_IDS` with `ADMIN_ENV_LABEL=staging` or `production` on the
+// Signs in as the audit account, which must be named in `ADMIN_USER_IDS` with `ADMIN_ENV_LABEL=staging` on the
 // dev server. Writes nothing.
 //
 //   PROBE_BASE=http://localhost:3313 pnpm probe:admin-invites-layout
-import "./lib/env.mjs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";

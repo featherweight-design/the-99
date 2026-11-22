@@ -13,5 +13,6 @@
         }
       ]
     }
-  ]
+  ],
+  "note": "Signed in as the admin audit account (ADMIN_USER_IDS, ADMIN_ENV_LABEL=staging on the server). The flyer switch is per reader, so the sheet shows whichever state the server resolves; probe:admin-invites-layout measures against the Flyer codes table when it draws and the invite tree's column when it does not."
 }
