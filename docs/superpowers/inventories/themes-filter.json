@@ -1,0 +1,66 @@
+{
+  "feature": "Themes ▾ on Discover (#159, build T2)",
+  "note": "Discover is the only route that mounts the Themes control; the owned lane's rack passes no themeOptions and draws none. Rows: the wide popover, the phone sheet section, the phone whole-list layer, one theme lit (chip, badge, lead), two themes with All.",
+  "shares": {
+    "module": "src/components/commanders/rack/theme-control.tsx",
+    "binding": "ThemeControl",
+    "note": "One rack serves both widths, so the view is the rack that imports it."
+  },
+  "rows": [
+    {
+      "id": "discover-open",
+      "label": "/commanders/discover: Themes opened (wide popover)",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/commanders/discover", "wait": "[data-testid='themes'] button:visible", "settle": 1500 },
+        { "click": "[data-testid='themes'] button", "settle": 600 }
+      ]
+    },
+    {
+      "id": "discover-open-phone",
+      "label": "/commanders/discover phone: the sheet's Themes section",
+      "view": "src/components/commanders/rack/filter-sheet.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/commanders/discover", "settle": 1500 },
+        { "clickRole": "button", "name": "Filters", "settle": 600 }
+      ]
+    },
+    {
+      "id": "discover-list-phone",
+      "label": "/commanders/discover phone: All N themes as a second layer",
+      "view": "src/components/commanders/rack/filter-sheet.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/commanders/discover", "settle": 1500 },
+        { "clickRole": "button", "name": "Filters", "settle": 600 },
+        { "click": "[data-testid='themes-row']", "settle": 600 }
+      ]
+    },
+    {
+      "id": "discover-one",
+      "label": "/commanders/discover?t=tokens: one theme, the chip, the badge, the lead",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders/discover?t=tokens", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "discover-all",
+      "label": "/commanders/discover?t=tokens,blink&tm=all: two themes under All",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders/discover?t=tokens,blink&tm=all", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "discover-empty",
+      "label": "/commanders/discover?t=tokens,blink&tm=all&c=w&cm=exactly: the combined empty state, if the corner is empty",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders/discover?t=tokens,blink,treasure&tm=all&c=wubrg&p=lea", "settle": 2000 }
+      ]
+    }
+  ]
+}

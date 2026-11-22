@@ -173,5 +173,7 @@ export function activeControlCount(p: LaneParams, lane: Lane): number {
   if (p.colors.length > 0 && p.match === "exactly") n += 1;
   if (lane === "owned" && p.avail === "free") n += 1;
   if (p.printedIn.length > 0) n += 1;
+  if (p.themes.length > 0) n += 1;
+  if (p.themes.length > 1 && p.themeMatch === "all") n += 1;
   return n;
 }

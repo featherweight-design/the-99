@@ -71,6 +71,36 @@ export const filterCopy = {
     listEmpty: (query: string) => `No set matches “${query}”.`,
     listShown: (shown: number) => `${n(shown)} ${shown === 1 ? "commander" : "commanders"} shown`,
   },
+  // Themes ▾ (#159): EDHREC's theme tags, the same names the row's play-style sentence prints.
+  themes: {
+    legend: "Themes",
+    // One chip for the whole pick: one or two by name, more by a count.
+    chip: (labels: readonly string[]) =>
+      labels.length <= 2 ? labels.join(", ") : `${labels.length} themes`,
+    removeAria: "Clear the theme filter",
+    // The modifier, which is a filter only at two or more themes (as Exactly is only with pips lit).
+    match: {
+      legend: "Theme match",
+      any: "Any of these",
+      all: "All of these",
+      anyShort: "Any",
+      allShort: "All",
+      chip: "All themes",
+      removeAria: "Match any theme",
+      // Greyed in place with one theme or none, and the reason said once in the sheet.
+      idle: "Pick two themes to choose how they combine.",
+      // The wide panel's head has one line for it.
+      idleShort: "Pick two to combine",
+    },
+    // Shown in the panel head only while colors are lit, because that is when rows go to 0.
+    countedInColors: "Counted within the colors you picked.",
+    // The phone sheet: the most-played themes inline, then the whole list one layer up.
+    rowAll: (total: number) => `All ${n(total)} themes`,
+    typal: "typal",
+    listNone: "No themes to filter by.",
+    listEmpty: (query: string) => `No theme matches “${query}”.`,
+    listShown: (shown: number) => `${n(shown)} ${shown === 1 ? "commander" : "commanders"} shown`,
+  },
 } as const;
 
 const commanders = (v: number) => `${n(v)} ${v === 1 ? "commander" : "commanders"}`;
@@ -120,6 +150,34 @@ export const printedInPanelCopy: FilterPanelCopy = {
       ? `${setName} removed. No set filter, ${commanders(shown)} shown.`
       : `${setName} removed. ${n(sets)} ${sets === 1 ? "set" : "sets"}, ${n(shown)} of ${commanders(total)} shown.`,
   announceCleared: (shown: number) => `Printed-in filter cleared. ${commanders(shown)} shown.`,
+};
+
+/** `Themes ▾` as `FilterPanel` and the shared list sheet read it. Counts are commanders. */
+export const themesPanelCopy: FilterPanelCopy = {
+  ...printedInPanelCopy,
+  triggerLabel: "Themes",
+  triggerCount: (count: number) => (count === 0 ? "Themes" : `Themes ${count}`),
+  triggerAriaCollapsed: "Filter by theme, collapsed",
+  triggerAriaWithSelection: (count: number) => `Filter by theme, ${n(count)} selected, collapsed`,
+  panelAriaLabel: "Filter by theme",
+  sheetTitle: "Themes",
+  searchPlaceholder: "Search themes",
+  searchAriaLabel: "Search themes",
+  groupDefault: "Most commanders first",
+  optionAria: (theme: string, count: number) => `${theme}, ${commanders(count)}`,
+  optionAriaUnavailable: (theme: string) => `${theme}, no commanders match your other filters`,
+  footerTotal: (total: number) => `${n(total)} ${total === 1 ? "theme" : "themes"}`,
+  emptyTitle: "No theme by that name",
+  emptyBody: (query: string) => ({ before: "No theme matches ", query: `“${query}”`, after: "." }),
+  announceMatches: (count: number, query: string) =>
+    count === 0 ? `No themes match ${query}` : `${n(count)} ${count === 1 ? "theme matches" : "themes match"} ${query}`,
+  announceAdded: (theme: string, themes: number, shown: number, total: number) =>
+    `${theme} added. ${n(themes)} ${themes === 1 ? "theme" : "themes"}, ${n(shown)} of ${commanders(total)} shown.`,
+  announceRemoved: (theme: string, themes: number, shown: number, total: number) =>
+    themes === 0
+      ? `${theme} removed. No theme filter, ${commanders(shown)} shown.`
+      : `${theme} removed. ${n(themes)} ${themes === 1 ? "theme" : "themes"}, ${n(shown)} of ${commanders(total)} shown.`,
+  announceCleared: (shown: number) => `Theme filter cleared. ${commanders(shown)} shown.`,
 };
 
 export const commandersCopy = {

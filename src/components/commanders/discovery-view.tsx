@@ -18,7 +18,8 @@ import {
   parseLaneParams,
   type LaneParams,
 } from "../../lib/commanders/lane-params";
-import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { discoveryCopy, themeWords } from "../../lib/copy/commander-discovery";
+import { filterCopy } from "../../lib/copy/lanes";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { colorWords, guildLabel } from "../../lib/copy/color-labels";
 import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper, withThemes } from "../../lib/discovery/window";
@@ -29,10 +30,11 @@ import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper, withThemes
 import { decodeDiscovery, isDrawn, type DiscoveryRow, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { useDrawFields } from "./use-draw-fields";
 import { filePrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
-import { fileThemes, type LaneThemes } from "../../lib/themes/commander-themes";
+import { fileThemes, type LaneThemes, type ThemeInfo } from "../../lib/themes/commander-themes";
 import { mergeSets, printedInOptions } from "../../lib/commanders/printed-in-lane";
-import { printedInLabel } from "./rack/chip-line";
+import { printedInLabel, themeLabelFromSlug } from "./rack/chip-line";
 import { FilterRack } from "./rack/filter-rack";
+import type { ThemeOption } from "./rack/theme-control";
 import { PageHeader } from "./page-header";
 import { CommanderRow } from "./commander-row";
 import { CommanderUndoRow } from "./commander-undo-row";
@@ -75,6 +77,7 @@ const emptyCopy = discoveryCopy.empty;
 const EMPTY_MATCHES: ExcludedMatch[] = [];
 /** One empty selection, so a memo reading it holds still across renders. */
 const NO_SETS: string[] = [];
+const NO_THEMES: string[] = [];
 
 
 /**
@@ -131,11 +134,24 @@ export function DiscoveryView({
   // Each row's themes, filed the same way and for the same reason.
   const [themesFrom, setThemesFrom] = useState<LaneThemes | undefined>(undefined);
   const [themesBySlug, setThemesBySlug] = useState<Map<string, string[]> | null>(null);
+  // Every theme any payload this visit has seen named, by slug: a label for a chip or a pick whose
+  // row a later ranking no longer carries.
+  const [knownThemes, setKnownThemes] = useState<Map<string, ThemeInfo>>(new Map());
   if (themes !== themesFrom) {
     setThemesFrom(themes);
-    setThemesBySlug(
-      themes ? (m) => fileThemes(new Map(m ?? []), served.items.map((r) => r.slug), themes) : null,
-    );
+    if (themes) {
+      setThemesBySlug((m) => fileThemes(new Map(m ?? []), served.items.map((r) => r.slug), themes));
+      setKnownThemes((known) => {
+        const next = new Map(known);
+        for (const t of themes.themes) next.set(t.slug, t);
+        return next;
+      });
+    } else {
+      // A failed read is the control's absence, as for `Printed in`: keeping the old map would go
+      // on filtering rows this payload never indexed.
+      setThemesBySlug(null);
+      setKnownThemes(new Map());
+    }
   }
   if (printedIn !== filedFrom) {
     setFiledFrom(printedIn);
@@ -296,19 +312,26 @@ export function DiscoveryView({
   const setCodes = codesBySlug ? params.printedIn : NO_SETS;
   // With no index the selection filters nothing, so the rack must not draw its chip or count it on
   // the badge either: a chip over an unfiltered list says the list was narrowed when it was not.
+  // `Themes` likewise: with no index the pick filters nothing, so it is neither chipped nor counted.
+  const themeCodes = themesBySlug ? params.themes : NO_THEMES;
   const rackParams = useMemo(
-    () => (codesBySlug || params.printedIn.length === 0 ? params : { ...params, printedIn: NO_SETS }),
-    [codesBySlug, params],
+    () => ({
+      ...params,
+      printedIn: codesBySlug ? params.printedIn : NO_SETS,
+      themes: themesBySlug ? params.themes : NO_THEMES,
+    }),
+    [codesBySlug, themesBySlug, params],
   );
   const inSets = useCallback(
     <T extends { slug: string }>(rows: T[]): T[] => inSetsOf(rows, codesBySlug, setCodes),
     [codesBySlug, setCodes],
   );
   // Search, then sets, then colour, so each figure below answers for the control it names.
-  const narrowed = useMemo(
-    () => withThemes(inSets(searched), themesBySlug, params.themes, params.themeMatch),
-    [inSets, searched, themesBySlug, params.themes, params.themeMatch],
+  const inThemes = useCallback(
+    <T extends { slug: string }>(rows: T[]): T[] => withThemes(rows, themesBySlug, themeCodes, params.themeMatch),
+    [themesBySlug, themeCodes, params.themeMatch],
   );
+  const narrowed = useMemo(() => inThemes(inSets(searched)), [inThemes, inSets, searched]);
 
   const filtered = useMemo(
     () => ordered(filterByColors(narrowed, colors, params.match), params.order),
@@ -330,6 +353,30 @@ export function DiscoveryView({
         : undefined,
     [codesBySlug, knownSets, items, colors, params.match, setCodes],
   );
+
+  // `Themes`'s rows: every theme this visit knows, each counting the rows the OTHER controls leave
+  // (search, colors and sets; not the themes themselves, so a pick never zeroes its siblings under
+  // Any). Most commanders first, ties alphabetical. A theme the other controls leave at 0 stays in
+  // place and cannot be picked, unless it is picked already: that one must stay removable.
+  const themeOptions = useMemo((): ThemeOption[] | undefined => {
+    if (!themesBySlug || knownThemes.size === 0) return undefined;
+    const counts = new Map<string, number>();
+    for (const r of filterByColors(inSets(searched), colors, params.match)) {
+      for (const slug of themesBySlug.get(r.slug) ?? []) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    }
+    return [...knownThemes.values()]
+      .map((t) => {
+        const count = counts.get(t.slug) ?? 0;
+        return {
+          code: t.slug,
+          label: t.label,
+          hint: t.typal ? filterCopy.themes.typal : undefined,
+          count,
+          disabled: count === 0 && !params.themes.includes(t.slug),
+        };
+      })
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [themesBySlug, knownThemes, inSets, searched, colors, params.match, params.themes]);
 
   // What `Exactly` costs against `Any`, counted over the SAME searched list on
   // both sides so the figure answers for one control alone. The defect this
@@ -599,23 +646,43 @@ export function DiscoveryView({
     !showSearchEmpty &&
     !pending &&
     (trimmedQuery === "" || nameMatchesAny) &&
-    (colors.length > 0 || setCodes.length > 0) &&
+    (colors.length > 0 || setCodes.length > 0 || themeCodes.length > 0) &&
     filtered.length === 0;
 
   // What the filtered-zero state says, and which control its primary clears. With one kind of
-  // filter lit, that filter emptied the list. With both lit it is the COMBINATION, so the body
-  // names both, and the primary clears whichever gives back more rows on its own (a tie keeps
-  // the colors, as before there was a second control). Where neither gives any back on its own,
-  // clearing one would only land on a second empty state, so the primary clears both.
-  const filteredFix = useMemo((): "colors" | "sets" | "both" => {
-    if (setCodes.length === 0) return "colors";
-    if (colors.length === 0) return "sets";
-    const withoutSets = filterByColors(searched, colors, params.match).length;
-    const withoutColors = narrowed.length;
-    if (withoutSets === 0 && withoutColors === 0) return "both";
-    return withoutSets > withoutColors ? "sets" : "colors";
-  }, [setCodes.length, colors, searched, narrowed.length, params.match]);
-  const bothLit = colors.length > 0 && setCodes.length > 0;
+  // filter lit, that filter emptied the list. With several lit it is the COMBINATION, so the body
+  // names them all, and the primary clears whichever one gives back the most rows on its own (a
+  // tie keeps the earlier of colors, sets, themes, as before there was a second control). Where
+  // none gives any back on its own, clearing one would only land on a second empty state, so the
+  // primary clears them all. Themes alone, with All on, is its own case: nothing is wrong with the
+  // picks, only with how they combine, so the primary loosens that and keeps every pick.
+  const themeLabel = useCallback(
+    (slug: string) => knownThemes.get(slug)?.label ?? themeLabelFromSlug(slug),
+    [knownThemes],
+  );
+  // The picked themes a row carries, in the order they were picked, as the labels its sentence leads with.
+  const pickedThemesOf = (slug: string): string[] | undefined => {
+    if (themeCodes.length === 0) return undefined;
+    const mine = themesBySlug?.get(slug);
+    const hit = themeCodes.filter((t) => mine?.includes(t));
+    return hit.length > 0 ? hit.map(themeLabel) : undefined;
+  };
+  const pickedWords = themeWords(themeCodes.map(themeLabel));
+  const litCount = (colors.length > 0 ? 1 : 0) + (setCodes.length > 0 ? 1 : 0) + (themeCodes.length > 0 ? 1 : 0);
+  const filteredFix = useMemo((): "colors" | "sets" | "themes" | "match" | "all" => {
+    if (litCount === 1) {
+      if (themeCodes.length > 0) return themeCodes.length > 1 && params.themeMatch === "all" ? "match" : "themes";
+      return setCodes.length > 0 ? "sets" : "colors";
+    }
+    const without = {
+      colors: colors.length > 0 ? inThemes(inSets(searched)).length : -1,
+      sets: setCodes.length > 0 ? inThemes(filterByColors(searched, colors, params.match)).length : -1,
+      themes: themeCodes.length > 0 ? inSets(filterByColors(searched, colors, params.match)).length : -1,
+    };
+    const best = (["colors", "sets", "themes"] as const).reduce((a, k) => (without[k] > without[a] ? k : a));
+    return without[best] > 0 ? best : "all";
+  }, [litCount, colors, setCodes.length, themeCodes.length, params.themeMatch, params.match, searched, inSets, inThemes]);
+  const bothLit = litCount > 1;
   // The list is empty, the reader is owed a sentence, and the index cannot
   // supply one. It gets written about the list alone.
   const showUnknownEmpty =
@@ -637,8 +704,8 @@ export function DiscoveryView({
       resolveExclusionLine({
         // Over the rows the set filter left, so the clause answers for the colors alone.
         colorExcluded:
-          inSets(items).length -
-          filterByColors(inSets(items), colors, params.match).length,
+          inThemes(inSets(items)).length -
+          filterByColors(inThemes(inSets(items)), colors, params.match).length,
         colors,
         join: params.match,
         floorExcluded: discovery.floorExcluded,
@@ -646,7 +713,7 @@ export function DiscoveryView({
         bestPct: discovery.bestPct,
         sort: discovery.sort,
       }),
-    [discovery, items, inSets, colors, params.match],
+    [discovery, items, inSets, inThemes, colors, params.match],
   );
 
   // Where the owned lane's copy of this search lives. The `scope` cause is the
@@ -687,7 +754,7 @@ export function DiscoveryView({
     // Colors only: a built deck has no printing, so "these are where those went" cannot be said
     // of a set.
     // Colors alone: a built deck has no printing, so the clause cannot account for a set.
-    if (!showFilteredEmpty || setCodes.length > 0) return null;
+    if (!showFilteredEmpty || setCodes.length > 0 || themeCodes.length > 0) return null;
     const matching = filterByColors(
       discovery.deckIdentities.map((colorIdentity) => ({ colorIdentity })),
       colors,
@@ -699,7 +766,7 @@ export function DiscoveryView({
       discovery.deckIdentities.length,
       guildLabel(colors),
     );
-  }, [showFilteredEmpty, setCodes.length, discovery.deckIdentities, colors, params.match]);
+  }, [showFilteredEmpty, setCodes.length, themeCodes.length, discovery.deckIdentities, colors, params.match]);
 
   // Ranks come from the server, over every item this list carries, so filtering
   // never renumbers — the same invariant CommandersView holds, reached differently.
@@ -720,6 +787,7 @@ export function DiscoveryView({
         excludedByExactly={excludedByExactly}
         chooseLink={chooseLink}
         printedInOptions={setOptions}
+        themeOptions={themeOptions}
       />
 
       {/* The inset the owned lane draws its list in, and for the same reason:
@@ -804,11 +872,17 @@ export function DiscoveryView({
         ) : showFilteredEmpty ? (
           <ZeroState
             heading={
-              bothLit
-                ? emptyCopy.filteredTogetherHeading
-                : setCodes.length > 0
-                  ? emptyCopy.filteredSetsHeading
-                  : emptyCopy.filteredHeading
+              litCount === 3
+                ? emptyCopy.filteredAllHeading
+                : bothLit
+                  ? emptyCopy.filteredTogetherHeading
+                  : themeCodes.length > 0
+                    ? filteredFix === "match"
+                      ? emptyCopy.filteredThemesAllHeading
+                      : emptyCopy.filteredThemesHeading
+                    : setCodes.length > 0
+                      ? emptyCopy.filteredSetsHeading
+                      : emptyCopy.filteredHeading
             }
             // The ranked count: "the N you have not built" names the list the
             // filter just emptied, and under `sort="new"` the candidate count is
@@ -817,11 +891,22 @@ export function DiscoveryView({
             // discovery, so the whole clause is marked rather than a phrase inside it.
             body={
               <>
-                {bothLit
-                  ? emptyCopy.filteredTogetherBody(colorWords(colors), printedInLabel(setCodes), items.length)
-                  : setCodes.length > 0
-                    ? emptyCopy.filteredSetsBody(printedInLabel(setCodes), items.length)
-                    : emptyCopy.filteredBody(colorWords(colors), items.length)}
+                {themeCodes.length > 0 && bothLit
+                  ? emptyCopy.filteredThemesTogetherBody(
+                      colors.length > 0 ? colorWords(colors) : null,
+                      setCodes.length > 0 ? printedInLabel(setCodes) : null,
+                      pickedWords,
+                      items.length,
+                    )
+                  : bothLit
+                    ? emptyCopy.filteredTogetherBody(colorWords(colors), printedInLabel(setCodes), items.length)
+                    : themeCodes.length > 0
+                      ? filteredFix === "match"
+                        ? emptyCopy.filteredThemesAllBody(pickedWords, items.length)
+                        : emptyCopy.filteredThemesBody(pickedWords, items.length)
+                      : setCodes.length > 0
+                        ? emptyCopy.filteredSetsBody(printedInLabel(setCodes), items.length)
+                        : emptyCopy.filteredBody(colorWords(colors), items.length)}
                 {builtClause ? (
                   <>
                     {" "}
@@ -840,7 +925,18 @@ export function DiscoveryView({
                       ? { ...params, printedIn: [] }
                       : filteredFix === "colors"
                         ? { ...params, colors: [], match: "contains" }
-                        : { ...params, colors: [], match: "contains", printedIn: [] },
+                        : filteredFix === "themes"
+                          ? { ...params, themes: [], themeMatch: "any" }
+                          : filteredFix === "match"
+                            ? { ...params, themeMatch: "any" }
+                            : {
+                                ...params,
+                                colors: [],
+                                match: "contains",
+                                printedIn: [],
+                                themes: [],
+                                themeMatch: "any",
+                              },
                   )
                 }
                 className={ZERO_PRIMARY}
@@ -849,7 +945,13 @@ export function DiscoveryView({
                   ? emptyCopy.filteredSetsCta
                   : filteredFix === "colors"
                     ? emptyCopy.filteredCta
-                    : emptyCopy.filteredBothCta}
+                    : filteredFix === "themes"
+                      ? emptyCopy.filteredThemesCta
+                      : filteredFix === "match"
+                        ? emptyCopy.filteredThemesAllCta
+                        : litCount === 3
+                          ? emptyCopy.filteredAllCta
+                          : emptyCopy.filteredBothCta}
               </PrimaryButton>
             }
             // The other lane, reached the way D5 reaches it: a route, so a link.
@@ -932,6 +1034,7 @@ export function DiscoveryView({
                   ) : isDrawn(item) ? (
                   <CommanderRow
                     position={i}
+                    pickedThemes={pickedThemesOf(item.slug)}
                     onHide={() => {
                       // The drawn row's oracle id, which arrived with its draw fields from the payload it draws.
                       const oracleId = item.oracleId;

@@ -237,6 +237,26 @@ export const discoveryCopy = {
     filteredTogetherBody: (colors: string, sets: string, candidates: number) =>
       `None of the ${n(candidates)} you don’t own is ${colors} and ${sets.charAt(0).toLowerCase()}${sets.slice(1)}.`,
     filteredBothCta: "Clear both filters",
+    // Themes ▾ (#159). With All on, the pick itself can empty the list, and the one-tap fix keeps
+    // every theme the reader picked: it loosens how they combine instead of dropping one.
+    filteredThemesAllHeading: "No commander plays all of those",
+    filteredThemesAllBody: (themes: string, candidates: number) =>
+      `${themes} together leave nothing in the ${n(candidates)} you don’t own.`,
+    filteredThemesAllCta: "Match any theme",
+    // Any (or one theme): every commander with it is one the reader owns already.
+    filteredThemesHeading: "No commander for that theme here",
+    filteredThemesBody: (themes: string, candidates: number) =>
+      `${themes} leaves nothing in the ${n(candidates)} you don’t own. The ones you own are on your commanders.`,
+    filteredThemesCta: "Clear the theme filter",
+    // Themes with colors, a set, or both: the shipped `filteredTogetherHeading` ("No commander fits
+    // both"), and with all three lit `filteredAllHeading`. Colors then set then themes, so it reads
+    // "is W/U, printed in Kaldheim and plays Tokens".
+    filteredThemesTogetherBody: (colors: string | null, sets: string | null, themes: string, candidates: number) => {
+      const lead = [colors, sets ? `${sets.charAt(0).toLowerCase()}${sets.slice(1)}` : null].filter(Boolean).join(", ");
+      return `None of the ${n(candidates)} you don’t own is ${lead} and plays ${themes}.`;
+    },
+    filteredAllHeading: "No commander fits all three",
+    filteredAllCta: "Clear all filters",
     // Names the lane, the way `discoverCopy.otherLane` names it. The old wording
     // was the deleted scope control's option label, and it opened on "or", which
     // read as a trailing clause of the button beside it rather than a link.
@@ -253,3 +273,12 @@ export const discoveryCopy = {
       `ranks ${n(from)}–${n(to)} of ${n(total)}`,
   },
 } as const;
+
+/** Picked theme labels as a phrase: `Tokens`, `Aristocrats and Tokens`, `Blink, Tokens and Treasure`,
+    then a count once a list would run long. */
+export function themeWords(labels: readonly string[]): string {
+  if (labels.length <= 1) return labels[0] ?? "";
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  if (labels.length === 3) return `${labels[0]}, ${labels[1]} and ${labels[2]}`;
+  return `${labels.length} themes`;
+}

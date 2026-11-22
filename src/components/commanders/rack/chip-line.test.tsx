@@ -55,4 +55,20 @@ describe("chipsFor", () => {
     const discover = chipsFor({ ...defaultParams("discover"), colors: ["r"] }, "discover");
     expect(discover.some((c) => c.key.startsWith("avail"))).toBe(false);
   });
+
+  it("gives the themes one chip for the pick and a second for All", () => {
+    const base = { ...defaultParams("discover"), themes: ["tokens", "blink"] };
+    const any = chipsFor(base, "discover");
+    expect(any.map((c) => c.key)).toEqual(["themes"]);
+    const all = chipsFor({ ...base, themeMatch: "all" }, "discover");
+    expect(all.map((c) => c.key)).toEqual(["themes", "themeMatch"]);
+    expect(all[0].label).toBe("Tokens, Blink");
+  });
+
+  it("unsets the themes and their match together, and All alone back to Any", () => {
+    const params = { ...defaultParams("discover"), themes: ["tokens", "blink"], themeMatch: "all" as const };
+    const chips = chipsFor(params, "discover");
+    expect({ ...params, ...chips[0].next }).toMatchObject({ themes: [], themeMatch: "any" });
+    expect({ ...params, ...chips[1].next }).toMatchObject({ themes: ["tokens", "blink"], themeMatch: "any" });
+  });
 });

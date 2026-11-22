@@ -154,6 +154,7 @@ export function FilterPanel({
   onAnnounce,
   portalSheet = false,
   note,
+  headExtra,
   desktopTriggerHeightPx,
   compactTriggerHeightPx,
   triggerLook = "chip",
@@ -180,6 +181,11 @@ export function FilterPanel({
    * `/collection`'s `Set ▾` does one route away.
    */
   note?: string;
+  /**
+   * A control in the panel's head, under the note: `Themes ▾`'s Any / All match. It changes how
+   * the chosen rows combine, so it lives with them rather than on the rack.
+   */
+  headExtra?: ReactNode;
   copy: FilterPanelCopy;
   options: FilterPanelPersonOption[];
   selected: string[];
@@ -1013,6 +1019,9 @@ export function FilterPanel({
           >
             {note}
           </p>
+        )}
+        {headExtra && (
+          <div className={bp("mx-[12px] mb-[8px]", "mx-[16px] mb-[10px]")}>{headExtra}</div>
         )}
         {noResults ? renderEmptyState() : renderList()}
         {/* Desktop drops the footer entirely in the no-results state — a
