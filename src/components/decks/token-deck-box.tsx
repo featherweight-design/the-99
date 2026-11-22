@@ -11,10 +11,12 @@ import { tokensCopy } from "../../lib/copy/tokens";
 import { useDeckTokens } from "./deck-tokens-context";
 import { TokenMakers } from "./token-makers";
 import { printingLine, useTokenPress } from "./token-row";
+import { useStoreInfo } from "../stores/store-provider";
 
 export function TokenDeckBox({ oracleId, onSelectCard }: { oracleId: string; onSelectCard?: (oracleId: string) => void }) {
   const ctx = useDeckTokens();
   const { press, pending, toast } = useTokenPress();
+  const store = useStoreInfo();
   if (!ctx || ctx.read.status !== "ok") return null;
   const token = ctx.read.tokens.find((t) => t.oracleId === oracleId);
   if (!token) return null;
@@ -50,7 +52,7 @@ export function TokenDeckBox({ oracleId, onSelectCard }: { oracleId: string; onS
         </button>
       )}
       {canOpen ? (
-        <TokenMakers layout="box" makers={token.makers} printingLine={printingLine(token, ctx.read.newestPriceAsOf)} onSelect={onSelectCard} />
+        <TokenMakers layout="box" makers={token.makers} printingLine={printingLine(token, ctx.read.newestPriceAsOf, store.cart)} onSelect={onSelectCard} />
       ) : (
         <p className="m-0 mt-[8px] font-mono text-[10.5px] leading-[1.5] text-[color:var(--fg-faint)]">{tokensCopy.row.noMaker}</p>
       )}

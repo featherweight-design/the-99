@@ -81,10 +81,10 @@ export function CartCheckout({
             {!store.cart ? (
               // No whole-list link (call 6): the line says so, then the paste row; no sends line, since nothing is sent.
               <>
-                <p data-no-cart="" className={`m-0 mt-[6px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] ${store.paste ? "" : "pb-[12px]"}`}>
+                <p data-no-cart="" className={`m-0 mt-[6px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)] ${store.paste && pasteLines.length > 0 ? "" : "pb-[12px]"}`}>
                   {storeCopy.noCart(store)}
                 </p>
-                {store.paste ? <div className="pb-[6px]"><StorePasteRow store={store} lines={pasteLines} /></div> : null}
+                {store.paste && pasteLines.length > 0 ? <div className="pb-[6px]"><StorePasteRow store={store} lines={pasteLines} /></div> : null}
               </>
             ) : null}
             {links.map((link, i) => (

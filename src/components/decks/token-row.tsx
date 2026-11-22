@@ -16,6 +16,7 @@ import { ArtLayer } from "../ui/art-layer";
 import { useDeckTokens } from "./deck-tokens-context";
 import { TokenRefusalToast } from "./token-refusal-toast";
 import { tokenPT } from "./tokens-shopping-view";
+import { useStoreInfo } from "../stores/store-provider";
 
 /** `{W}{U}` for a token's colors, `{C}` for none: the row's pip is the same pip a card's cost draws. */
 export function tokenPips(colors: string[]): string {
@@ -34,9 +35,12 @@ export function tokenFaceDescription(token: DeckToken): string {
     .join(". ");
 }
 
-/** The "pictured and sent" line, only for a token that has a figure to name (an unpriced one sends nothing). */
-export function printingLine(token: DeckToken, newestAsOf: Date | null): string | null {
-  if (!token.price || !token.picture) return null;
+/**
+ * The "pictured and sent" line, only for a token that has a figure to name (an unpriced one sends nothing), and only on
+ * a store with a cart link: on any other store nothing is sent, so there is no sent printing to name (store choice).
+ */
+export function printingLine(token: DeckToken, newestAsOf: Date | null, cart = true): string | null {
+  if (!cart || !token.price || !token.picture) return null;
   const figure = formatPriceFigure(token.price, priceState(token.price, newestAsOf));
   if (!figure) return null;
   const { setCode, collectorNumber, printings } = token.picture;
@@ -155,6 +159,7 @@ export function TokenRow({
 }) {
   const [open, setOpen] = useState(false);
   const { press, pending, toast } = useTokenPress();
+  const store = useStoreInfo();
 
   const pt = tokenPT(token);
   const first = token.makers[0];
@@ -306,7 +311,7 @@ export function TokenRow({
 
       {toast}
 
-      {open && canOpen ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf)} /> : null}
+      {open && canOpen ? <TokenMakers makers={token.makers} printingLine={printingLine(token, newestAsOf, store.cart)} /> : null}
     </li>
   );
 }
