@@ -1,6 +1,9 @@
 import type { JoinMode } from "./filter";
 import { parseColors } from "../color-param";
 import { normalizeSetCodes } from "../sets/printed-in";
+import { normalizeThemeSlugs, type ThemeMatch } from "../themes/commander-themes";
+
+export type { ThemeMatch };
 
 export type Lane = "owned" | "discover";
 // `added` is deliberately absent. The handoff's owned order reads Fit · Name ·
@@ -26,6 +29,12 @@ export type LaneParams = {
   order: LaneOrder;
   /** `Printed in`: set codes, lower-cased and sorted. Any printing counts (decision 9). */
   printedIn: string[];
+  /** `Themes`: EDHREC theme slugs, lower-cased and sorted. A commander matches a theme it lists at
+      or above the filter floor (`THEME_FILTER_MIN_DECKS`). */
+  themes: string[];
+  /** How two or more themes combine: `any` keeps a commander with one of them, `all` only a
+      commander with every one. */
+  themeMatch: ThemeMatch;
 };
 
 const WUBRG = ["w", "u", "b", "r", "g"] as const;
@@ -52,6 +61,8 @@ export function defaultParams(lane: Lane): LaneParams {
     avail: "all",
     order: ORDERS[lane][0],
     printedIn: [],
+    themes: [],
+    themeMatch: "any",
   };
 }
 
@@ -96,6 +107,9 @@ export function parseLaneParams(
     // Unknown codes are kept rather than validated: a set that stops existing matches nothing,
     // and the empty state names the control to drop.
     printedIn: normalizeSetCodes((sp.get("p") ?? "").split(",")),
+    // Unknown slugs are kept, like set codes: a theme EDHREC retires matches nothing.
+    themes: normalizeThemeSlugs((sp.get("t") ?? "").split(",")),
+    themeMatch: sp.get("tm") === "all" ? "all" : "any",
   };
 }
 
@@ -115,6 +129,9 @@ export function serializeLaneParams(p: LaneParams, lane: Lane, saved: Avail = "a
   if (lane === "owned" && p.avail !== saved) sp.set("a", p.avail);
   if (p.order !== ORDERS[lane][0]) sp.set("o", p.order);
   if (p.printedIn.length > 0) sp.set("p", normalizeSetCodes(p.printedIn).join(","));
+  if (p.themes.length > 0) sp.set("t", normalizeThemeSlugs(p.themes).join(","));
+  // Written only where it changes the list: `all` over one theme is the same list as `any`.
+  if (p.themes.length > 1 && p.themeMatch === "all") sp.set("tm", "all");
   const qs = sp.toString();
   return qs ? `?${qs}` : "";
 }
@@ -123,7 +140,7 @@ export function serializeLaneParams(p: LaneParams, lane: Lane, saved: Avail = "a
 // belong to neither lane — a campaign tag, something another surface left — and
 // a write rebuilt from `LaneParams` alone would drop them. This is the list a
 // write is allowed to clear; everything else on the live URL is copied across.
-const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s", "p"];
+const LANE_KEYS = ["q", "c", "m", "join", "a", "avail", "o", "sort", "s", "p", "t", "tm"];
 
 /**
  * The query string to write for `p`, keeping every parameter the lane does not

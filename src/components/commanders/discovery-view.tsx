@@ -21,7 +21,7 @@ import {
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { planeCopy } from "../../lib/copy/commanders-plane";
 import { colorWords, guildLabel } from "../../lib/copy/color-labels";
-import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper } from "../../lib/discovery/window";
+import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper, withThemes } from "../../lib/discovery/window";
 // Not type-only: `decodeDiscovery` runs on the client. Safe to import as a
 // value because `encode.ts` imports nothing but types from `list.ts`, which
 // reaches `src/db/index.ts` (whose body throws when DATABASE_URL is unset), so
@@ -29,6 +29,7 @@ import { inSets as inSetsOf, ordered, searchRows, settleOrder, upper } from "../
 import { decodeDiscovery, isDrawn, type DiscoveryRow, type EncodedDiscovery } from "../../lib/discovery/encode";
 import { useDrawFields } from "./use-draw-fields";
 import { filePrintedIn, type LanePrintedIn, type PrintedInSet } from "../../lib/sets/printed-in";
+import { fileThemes, type LaneThemes } from "../../lib/themes/commander-themes";
 import { mergeSets, printedInOptions } from "../../lib/commanders/printed-in-lane";
 import { printedInLabel } from "./rack/chip-line";
 import { FilterRack } from "./rack/filter-rack";
@@ -92,6 +93,7 @@ const NO_SETS: string[] = [];
 export function DiscoveryView({
   encoded,
   printedIn,
+  themes,
   chooseLink = false,
   basis,
 }: {
@@ -103,6 +105,9 @@ export function DiscoveryView({
   /** `Printed in ▾`'s index for `encoded`'s rows, aligned by position. Absent when the read
       failed, and then the control is not drawn and a `?p=` is not applied. */
   printedIn?: LanePrintedIn;
+  /** `Themes`'s index for `encoded`'s rows, aligned by position. Absent when the read failed, and
+      then a `?t=` is not applied. */
+  themes?: LaneThemes;
   /** Help me choose's link on the result line; the route passes the feature's flag. */
   chooseLink?: boolean;
 }) {
@@ -123,6 +128,15 @@ export function DiscoveryView({
   const [filedFrom, setFiledFrom] = useState<LanePrintedIn | undefined>(undefined);
   const [codesBySlug, setCodesBySlug] = useState<Map<string, string[]> | null>(null);
   const [knownSets, setKnownSets] = useState<PrintedInSet[]>([]);
+  // Each row's themes, filed the same way and for the same reason.
+  const [themesFrom, setThemesFrom] = useState<LaneThemes | undefined>(undefined);
+  const [themesBySlug, setThemesBySlug] = useState<Map<string, string[]> | null>(null);
+  if (themes !== themesFrom) {
+    setThemesFrom(themes);
+    setThemesBySlug(
+      themes ? (m) => fileThemes(new Map(m ?? []), served.items.map((r) => r.slug), themes) : null,
+    );
+  }
   if (printedIn !== filedFrom) {
     setFiledFrom(printedIn);
     if (printedIn) {
@@ -291,7 +305,10 @@ export function DiscoveryView({
     [codesBySlug, setCodes],
   );
   // Search, then sets, then colour, so each figure below answers for the control it names.
-  const narrowed = useMemo(() => inSets(searched), [inSets, searched]);
+  const narrowed = useMemo(
+    () => withThemes(inSets(searched), themesBySlug, params.themes, params.themeMatch),
+    [inSets, searched, themesBySlug, params.themes, params.themeMatch],
+  );
 
   const filtered = useMemo(
     () => ordered(filterByColors(narrowed, colors, params.match), params.order),

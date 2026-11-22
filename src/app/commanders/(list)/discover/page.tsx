@@ -11,6 +11,8 @@ import { discoveryRows, settleOrder } from "../../../../lib/discovery/window";
 import { REVEAL_STEP } from "../../../../lib/commanders/reveal-step";
 import { filePrintedIn } from "../../../../lib/sets/printed-in";
 import { lanePrintedInFor } from "../../../../lib/sets/lane-printed-in";
+import { fileThemes } from "../../../../lib/themes/commander-themes";
+import { laneThemesFor } from "../../../../lib/themes/lane-themes";
 import { discoverSort, parseLaneParams } from "../../../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../../../lib/commanders/search-params";
 
@@ -59,7 +61,10 @@ export default async function DiscoverPage({
   // for the entry's whole life. `loadCommanderPrintings` is memoised per catalog generation, so
   // the per-request cost is the crossing, not the read.
   const { encoded, oracleIds, basis } = await perf.timed("payload", () => loadDiscoveryPayload(userId, sort, env));
-  const printedIn = await perf.timed("printedIn", () => lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId }))));
+  const [printedIn, themes] = await Promise.all([
+    perf.timed("printedIn", () => lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId })))),
+    perf.timed("themes", () => laneThemesFor(oracleIds)),
+  ]);
 
   // THE URL'S OWN FIRST WINDOW keeps its draw columns and every other row ships without them
   // (list payload plan, PR 3): only 25 of about 3,000 rows are drawn on arrival, and the art,
@@ -71,7 +76,8 @@ export default async function DiscoverPage({
   const codesBySlug = printedIn
     ? filePrintedIn(new Map(), decoded.items.map((r) => r.slug), printedIn)
     : null;
-  const first = discoveryRows(decoded.items, settleOrder(params, decoded.sort), codesBySlug)
+  const themesBySlug = themes ? fileThemes(new Map(), decoded.items.map((r) => r.slug), themes) : null;
+  const first = discoveryRows(decoded.items, settleOrder(params, decoded.sort), codesBySlug, themesBySlug)
     .slice(0, REVEAL_STEP);
   // The window's rows carry their oracle ids, which the row's Hide hands `hideCommanderAction`: from this entry, so
   // each is the card its row draws. The withheld rows' arrive with their other draw fields.
@@ -80,7 +86,7 @@ export default async function DiscoverPage({
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={shipped} printedIn={printedIn} basis={basis} />
+      <DiscoveryView encoded={shipped} printedIn={printedIn} themes={themes} basis={basis} />
     </section>
   );
 }
