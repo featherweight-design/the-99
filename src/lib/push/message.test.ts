@@ -206,7 +206,7 @@ describe("a game to log (log reminder, PR 3)", () => {
   it("cuts a winner only when the split title is itself too long", () => {
     const m = toMessage([log(T1, 1, { pod: "The Friday night pod at the shop", result: { kind: "won", winner: "W".repeat(60) } })]);
     expect(len(m.title)).toBeLessThanOrEqual(40);
-    expect(m.title.endsWith("… won. Log your game") || m.title.includes("…")).toBe(true);
+    expect(m.title).toMatch(/^W+… won\. Log your game$/);
   });
   it("merges one table's games into one push that opens Home, oldest first, in both modes", () => {
     const m = messagesFor([log(T1, 2000, { result: { kind: "won", winner: "Sam" } }), log(T1, 1000)], "live");
