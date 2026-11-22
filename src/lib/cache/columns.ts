@@ -26,14 +26,21 @@ export type ColumnTable = { n: number; cols: Record<string, Column> };
 const UUID = /^([0-9a-f]{8})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{4})-([0-9a-f]{12})(\?\d+)?$/;
 const SHORT = /^([A-Za-z0-9_-]{22})(\?\d+)?$/;
 
+// btoa and atob, not Node's byte buffers: `fromColumns` runs in the browser, which has none.
 const shorten = (s: string): string | null => {
   const m = UUID.exec(s);
-  return m ? Buffer.from(m.slice(1, 6).join(""), "hex").toString("base64url") + (m[6] ?? "") : null;
+  if (!m) return null;
+  const hex = m.slice(1, 6).join("");
+  let bin = "";
+  for (let i = 0; i < 32; i += 2) bin += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16));
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "") + (m[6] ?? "");
 };
 
 const lengthen = (s: string): string => {
   const m = SHORT.exec(s)!;
-  const h = Buffer.from(m[1], "base64url").toString("hex");
+  const bin = atob(m[1].replace(/-/g, "+").replace(/_/g, "/"));
+  let h = "";
+  for (let i = 0; i < bin.length; i++) h += bin.charCodeAt(i).toString(16).padStart(2, "0");
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}${m[2] ?? ""}`;
 };
 

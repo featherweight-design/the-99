@@ -16,7 +16,7 @@
 import { cacheForUser } from "../cache/user-lists";
 import { type BrowseListCard } from "./browse";
 import { loadBrowseCards } from "./browse-read";
-import { packCollection, unpackCollection } from "./list-wire";
+import { packCollection, unpackCollection } from "./packed-list";
 
 class PricesUnread extends Error {
   constructor(readonly cards: BrowseListCard[]) {

@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 import { fromColumns, toColumns } from "./columns";
@@ -38,5 +39,14 @@ describe("toColumns / fromColumns", () => {
 
   it("round-trips no records", () => {
     expect(fromColumns(toColumns([]))).toEqual([]);
+  });
+
+  // The browser decodes with this file (and `collection/list-wire.ts`), where Buffer and node:
+  // modules do not exist.
+  it("stays free of Node-only APIs, since the browser runs it", () => {
+    for (const file of ["./columns.ts", "../collection/list-wire.ts"]) {
+      const text = readFileSync(new URL(file, import.meta.url), "utf8");
+      expect(text).not.toMatch(/\bBuffer\b|from "node:/);
+    }
   });
 });

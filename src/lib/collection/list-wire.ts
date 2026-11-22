@@ -15,14 +15,13 @@
 //
 //   - THE CARDS CROSS AS COLUMNS (`cache/columns.ts`), one array per key: no key name repeated per
 //     card, repeated strings (type lines, rarities, set codes) said once, UUIDs at 22 characters
-//     rather than 36. The cached entry is the same encoding, compressed (`packCollection`), so one
+//     rather than 36. The cached entry is the same encoding, compressed (`packed-list.ts`), so one
 //     form is measured and kept correct, and a collection of 24,000 cards fits the data cache.
 //
 // Decoding restores exactly what was encoded, nothing invented: `decodeCollection(encode…)`
 // equals the list it started from, which `list-wire.test.ts` asserts on every field. One
 // deliberate exception: the claim bit carries `holdsCopy`, so a brew the player gave a copy to
 // decodes as `mature: true` without its `granted` (a marker asks only whether the deck holds it).
-import { packJson, unpackJson } from "../cache/packed";
 import { fromColumns, toColumns, type ColumnTable } from "../cache/columns";
 import { holdsCopy, type AvailabilitySummary } from "../decks/availability";
 import type { BrowseListCard } from "./browse";
@@ -189,14 +188,4 @@ export function collectionDrawFieldsFor(
     out[card.oracleId] = fields;
   }
   return out;
-}
-
-/** The whole list as the cache entry holds it: the wire's own encoding, every card whole, compressed. */
-export function packCollection(cards: BrowseListCard[]): string {
-  return packJson(encodeCollection(cards, null));
-}
-
-export function unpackCollection(packed: string): BrowseListCard[] {
-  // Every card in the entry is whole (no `keep`), so none decodes withheld.
-  return decodeCollection(unpackJson<CollectionWire>(packed)) as BrowseListCard[];
 }
