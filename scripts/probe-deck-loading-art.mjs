@@ -5,6 +5,10 @@
 // asserts the two are equal. On main the skeleton always draws the 340px portrait while a 1300px window's header draws 560px, so
 // the 1300 checks fail there.
 //
+// It also reads the header's type in both states, the title (h1) and the commander line under it: font size, weight, family,
+// computed line height and the first line box's height, and asserts the two agree. On main the skeleton's title was a larger,
+// lighter serif than the loaded display face, so every type check fails there.
+//
 // Its writes: two decks of its own (`probe:deck-loading-art`, no cards) on the signed-in account, deleted in `finally`.
 // Production and staging are refused by `neon.branch_id`. DATABASE_URL must be the database the dev server reads.
 //   E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=http://localhost:3291 node scripts/probe-deck-loading-art.mjs
@@ -93,6 +97,26 @@ const READ_ART = (scope) => {
   };
 };
 
+/** The drawn title and commander line inside `scope`: the values a reader sees change when the page lands. */
+const READ_TYPE = (scope) => {
+  const root = document.querySelector(scope);
+  if (!root) return { missing: `no ${scope}` };
+  const shown = (el) => el.getClientRects().length > 0 && el.getBoundingClientRect().width > 0;
+  const h1 = [...root.querySelectorAll("h1")].find(shown);
+  if (!h1) return { missing: "no drawn h1" };
+  // Loaded: the band's meta row; skeleton: the row under the title. Both hold the commander's name in a mono span.
+  const meta = [...root.querySelectorAll("[data-spine-meta]")].find(shown);
+  const line = meta ? meta.querySelector("span.font-mono") : [...h1.parentElement.children].find((c) => c !== h1 && c.querySelector("span.truncate"))?.querySelector("span.truncate");
+  const read = (el) => {
+    const cs = getComputedStyle(el);
+    const box = el.getClientRects()[0];
+    const lh = cs.lineHeight === "normal" ? "normal" : String(Math.round(parseFloat(cs.lineHeight) * 10) / 10);
+    return { size: cs.fontSize, weight: cs.fontWeight, family: cs.fontFamily, lineHeight: lh, // An inline element's rect is its font's content area, not its line box, so an inline title (the phone's) reports its line height.
+      lineBox: cs.display === "inline" ? parseFloat(cs.lineHeight) : Math.round(box.height * 10) / 10 };
+  };
+  return { title: read(h1), commander: line ? read(line) : { missing: "no commander line" } };
+};
+
 async function walk(browser, width, deck) {
   const context = await browser.newContext({ viewport: width.viewport });
   const page = await context.newPage();
@@ -126,12 +150,22 @@ async function walk(browser, width, deck) {
     const loading = await page.evaluate(READ_ART, "[data-loading-screen]");
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/${width.label}-${deck.kind}-loading.png` });
     report(L("the skeleton draws the commander's art"), loading.image === "url", JSON.stringify(loading));
+    const loadingType = await page.evaluate(READ_TYPE, "[data-loading-screen]");
     release();
     await page.locator("[data-loading-screen]").first().waitFor({ state: "detached", timeout: 90_000 });
     await page.waitForTimeout(600);
     const loaded = await page.evaluate(READ_ART, "main");
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/${width.label}-${deck.kind}-loaded.png` });
     report(L("the loaded header draws the commander's art"), loaded.image === "url", JSON.stringify(loaded));
+    const loadedType = await page.evaluate(READ_TYPE, "main");
+    for (const part of ["title", "commander"]) {
+      for (const key of ["size", "weight", "family", "lineHeight"]) {
+        const a = loadingType[part]?.[key], b = loadedType[part]?.[key];
+        report(L(`skeleton and loaded header agree on the ${part}'s ${key}`), a !== undefined && a === b, `skeleton ${a} vs loaded ${b}`);
+      }
+    }
+    // The title's first line box: the skeleton's h1 and the loaded one are the same height, so nothing below shifts.
+    report(L("skeleton and loaded header agree on the title's line box"), loadingType.title?.lineBox === loadedType.title?.lineBox, `skeleton ${loadingType.title?.lineBox} vs loaded ${loadedType.title?.lineBox}`);
     for (const key of ["band", "art", "size", "position", "mask"]) {
       const same = JSON.stringify(loading[key]) === JSON.stringify(loaded[key]);
       report(L(`skeleton and loaded header agree on the art's ${key}`), same, same ? "" : `skeleton ${JSON.stringify(loading[key])} vs loaded ${JSON.stringify(loaded[key])}`);

@@ -12,6 +12,7 @@ import type { DeckFlip } from "./deck-flip-strip";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { useCommanderSiblings } from "./deck-siblings";
 import { IdentityPips } from "../commanders/commander-art";
+import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS } from "./deck-header-type";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { DeckHeaderArt, DECK_HEADER_LABEL_INSET } from "./deck-header-art";
 import { DeckCardOverflow, type DeckMove } from "./deck-card-overflow";
@@ -353,8 +354,8 @@ export function SpineDesktop({
                   // clamped box needs `overflow: hidden`, and anything beside the
                   // text inside it gets clipped when the heading shrink-wraps a
                   // short name.
-                  className="flex min-w-0 items-end font-display font-[700]"
-                  style={{ fontSize: 21, lineHeight: 1.2, color: "var(--fg)" }}
+                  className={`flex min-w-0 items-end ${DECK_TITLE_CLASS}`}
+                  style={{ ...DECK_TITLE.desktop, color: "var(--fg)" }}
                 >
                   {/* `data-deck-title` marks the deck's name for anything that
                       needs it apart from the heading's own layout — the browser
@@ -463,7 +464,7 @@ export function SpineDesktop({
             <span
               className="font-mono flex"
               style={{
-                fontSize: 11,
+                fontSize: DECK_COMMANDER_SIZE.desktop,
                 color: "var(--fg-body)",
                 gap: 5,
                 minWidth: 0,
