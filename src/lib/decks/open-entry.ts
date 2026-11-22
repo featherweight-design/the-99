@@ -23,6 +23,8 @@ export type OpenFacts = {
   /** Both commanders' colours in WUBRG order (`deckIdentity`). */
   identity: string[];
   artCropUri: string | null;
+  /** The commander's own colours, which the art's no-crop gradient draws (the loaded header passes the commander's, not the pair's). Absent on an entry from an older build: the pair's `identity` stands in. */
+  artIdentity?: string[];
   status: StatusPill;
   built: number;
   /** A partner deck's body is 98 (`deckBodySize`), so the count's denominator needs the fact, not the name. */
@@ -48,6 +50,7 @@ export function openFactsOf(d: DeckListItem): OpenFacts {
     commander: d.partnerName ? `${commander} + ${d.partnerName}` : commander,
     identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
     artCropUri: d.commanderArtCropUri,
+    artIdentity: d.commanderColorIdentity,
     status: d.statusPill,
     built: d.built,
     partner: d.partnerName !== null,

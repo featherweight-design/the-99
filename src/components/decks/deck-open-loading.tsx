@@ -17,6 +17,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { BAR } from "../ui/tile-skeleton";
 import Link from "next/link";
 import { ArtWash } from "../ui/art-wash";
+import { DeckHeaderArt, DECK_HEADER_LABEL_LEFT } from "./deck-header-art";
 import { IdentityPips } from "../commanders/commander-art";
 import { StatusPillBadge } from "./status-pill";
 import { deckBodySize } from "../../lib/decks/deck-size";
@@ -140,10 +141,10 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
   );
   if (wide) {
     return (
-      <div className="hidden md:block">
+      <div className="@container hidden md:block">
         <div className="relative overflow-hidden bg-[color:var(--surface-sunken)]" style={{ height: 288, borderBottom: "1px solid var(--border)" }}>
-          <ArtWash strategy="left-portrait" height={288} portrait={340} labelAtPx="flat" artCropUri={facts.artCropUri} colorIdentity={facts.identity} />
-          <div className="absolute" style={{ left: 380, bottom: 24, right: 24 }}>{label}</div>
+          <DeckHeaderArt artCropUri={facts.artCropUri} colorIdentity={facts.artIdentity ?? facts.identity} />
+          <div className={`absolute ${DECK_HEADER_LABEL_LEFT}`} style={{ bottom: 24, right: 24 }}>{label}</div>
         </div>
         <div className="flex" style={{ borderBottom: "1px solid var(--border)", padding: "6px 24px" }}>{strip}</div>
       </div>
@@ -152,7 +153,7 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
   return (
     <div className="md:hidden">
       <div className="relative overflow-hidden bg-[color:var(--surface-sunken)]" style={{ height: 288 }}>
-        <ArtWash strategy="cover" height={288} labelAtPx="block" artCropUri={facts.artCropUri} colorIdentity={facts.identity} />
+        <ArtWash strategy="cover" height={288} labelAtPx="block" artCropUri={facts.artCropUri} colorIdentity={facts.artIdentity ?? facts.identity} />
         <div className="absolute inset-x-0 bottom-0 px-[18px] pb-[12px]">{label}</div>
       </div>
       <div className="flex flex-col items-center" style={{ borderTop: "1px solid var(--border)", padding: "14px 16px 12px", gap: 8 }}>
