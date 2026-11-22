@@ -224,6 +224,19 @@ describe("priceFor", () => {
 });
 
 describe("cheapestLiveCents", () => {
+  it("skips a printing its store reports sold out, though it is dated at the newest", () => {
+    const newestAsOf = new Date("2026-11-22T12:00:00Z");
+    const prices = {
+      newestAsOf,
+      byScryfallId: {
+        out: { cents: 100, foilCents: null, etchedCents: null, asOf: newestAsOf, soldOut: true as const },
+        in: { cents: 300, foilCents: null, etchedCents: null, asOf: newestAsOf },
+      },
+      byKey: {},
+    } as unknown as Parameters<typeof cheapestLiveCents>[0];
+    expect(cheapestLiveCents(prices)).toBe(300);
+  });
+
   it("takes the lowest non-foil figure among the live printings", () => {
     const prices = indexPriceRows([
       row({ scryfall_id: "s-1", collector_number: "1", price_cents: 439 }),
