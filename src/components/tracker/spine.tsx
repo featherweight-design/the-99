@@ -4,19 +4,22 @@
 // gap the layout leaves between the seats (`Layout.spine`). A column on a phone, a row on a tablet. Its buttons shrink
 // with the gap, so a short phone screen still fits all of them.
 
-import { useLayoutEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { personAttrs, type PersonParts } from "../../lib/person-name";
 import type { Rect } from "../../lib/tracker/layouts";
 import type { DayNight } from "../../lib/tracker/engine";
 import { FadingImg } from "../ui/hydrated-art";
 import { type DieKind, warmDice } from "./dice";
-import { CoinIcon, D20Icon, D6Icon, InitiativeIcon, MonarchIcon, MoonIcon, SunIcon, UndoIcon } from "./icons";
+import { CoinIcon, D20Icon, D6Icon, DoorIcon, InitiativeIcon, MonarchIcon, MoonIcon, MoreIcon, SunIcon, UndoIcon } from "./icons";
 
 const copy = trackerCopy.strip;
 const diceCopy = trackerCopy.dice;
 
 export type Holder = { label: string | PersonParts; art: string | null; held: boolean };
+/** The Menu's one row: where Back to the table goes, its line, and what to do first (land any pending life). */
+export type Back = { href: string; line: string; onLeave: () => void };
 
 export function Spine({
   rect,
@@ -29,6 +32,7 @@ export function Spine({
   pick,
   canUndo,
   menu,
+  back,
   onPick,
   onDay,
   onDice,
@@ -45,6 +49,7 @@ export function Spine({
   pick: "monarch" | "initiative" | null;
   canUndo: boolean;
   menu: boolean;
+  back: Back;
   onPick: (kind: "monarch" | "initiative") => void;
   onDay: () => void;
   onDice: (kind: DieKind) => void;
@@ -56,21 +61,25 @@ export function Spine({
   // Each day/night toggle re-keys the pair: the icon it leaves turns out while the new one turns in (addendum R2, K1). A
   // tap mid-turn starts the next pair from the icon showing. `n` 0 is the first draw, with nothing turning.
   const [dayTurn, setDayTurn] = useState<{ n: number; from: DayNight | null }>({ n: 0, from: null });
-  // How far the dice menu moves sideways to stay 8px inside the viewport (a strip near the screen's edge).
   const diceMenu = useRef<HTMLDivElement>(null);
-  const [menuShift, setMenuShift] = useState(0);
-  useLayoutEffect(() => {
-    const el = diceMenu.current;
-    const anchor = el?.offsetParent;
-    if (!dice || !el || !anchor) return setMenuShift(0);
-    // From the layout box, not the drawn one: the pop starts the menu scaled to .4, so its drawn rect is too narrow. It
-    // is centred on its anchor (the dice button's wrapper), which the pop does not transform.
-    const a = anchor.getBoundingClientRect();
-    const left = a.left + a.width / 2 - el.offsetWidth / 2;
-    const right = left + el.offsetWidth;
-    const vw = document.documentElement.clientWidth;
-    setMenuShift(right > vw - 8 ? vw - 8 - right : left < 8 ? 8 - left : 0);
-  }, [dice]);
+  const diceShift = useClamp(diceMenu, dice);
+  const moreMenu = useRef<HTMLDivElement>(null);
+  const moreShift = useClamp(moreMenu, menu);
+  const moreButton = useRef<HTMLButtonElement>(null);
+  const backItem = useRef<HTMLAnchorElement>(null);
+  // The Menu takes focus to its row on open, hands it back to Menu on close, and closes on Esc.
+  const wasOpen = useRef(false);
+  useEffect(() => {
+    if (menu) backItem.current?.focus();
+    else if (wasOpen.current) moreButton.current?.focus();
+    wasOpen.current = menu;
+    if (!menu) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onMenu();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [menu, onMenu]);
+  // A strip along the top edge of the table (tablet three along one side) opens its Menu below it, into the table.
+  const below = !column && rect.y + rect.h / 2 < canvas.h / 2;
   // Down a column: the round (1.04 buttons), six buttons and eight gaps of a quarter button make 9.04 buttons, plus two
   // 1px rules and 6px clear at each end. The buttons take what that leaves, up to 48px.
   const size = column ? "min(48px, calc((100cqh - 14px) / 9.04))" : "min(48px, calc(100cqh - 12px))";
@@ -157,7 +166,7 @@ export function Spine({
                 role="menu"
                 // P1 `.dmenu`: centred over the strip, just above the dice, popping up from its foot.
                 className="absolute bottom-[calc(100%+4px)] left-1/2 z-40 flex w-[128px] origin-bottom -translate-x-1/2 flex-col gap-1.5 rounded-[16px] bg-[color:var(--elevated)] p-2 shadow-[0_10px_30px_rgba(0,0,0,.55),inset_0_0_0_1px_var(--border-strong)] motion-safe:animate-[end-turn-pop_.22s_cubic-bezier(.3,1.4,.5,1)]"
-                style={{ marginLeft: menuShift }}
+                style={{ marginLeft: diceShift }}
                 data-testid="dice-menu"
               >
                 {(["d6", "d20", "coin"] as const).map((k) => (
@@ -184,9 +193,57 @@ export function Spine({
         <button type="button" onClick={onUndo} disabled={!canUndo} aria-label={copy.undoAria} className={sb + " text-[color:var(--fg)] disabled:opacity-35"} data-testid="strip-undo">
           <UndoIcon size={22} />
         </button>
-        <button type="button" onClick={onMenu} aria-expanded={menu} className={sb + " text-[11px] font-semibold text-[color:var(--fg-body)]"} data-testid="strip-menu">
-          {copy.menu}
-        </button>
+        <span className="relative shrink-0">
+          <button
+            ref={moreButton}
+            type="button"
+            onClick={() => {
+              setDice(false);
+              onMenu();
+            }}
+            aria-label={copy.menu}
+            aria-haspopup="menu"
+            aria-expanded={menu}
+            className={sb + (menu ? " bg-[color:var(--accent)] text-[color:var(--bg)]" : " text-[color:var(--fg)]")}
+            data-testid="strip-menu"
+          >
+            <MoreIcon size={22} />
+          </button>
+          {menu ? (
+            <>
+              <button type="button" aria-label={copy.menuClose} tabIndex={-1} onClick={onMenu} className="fixed inset-0 z-30 cursor-default" />
+              <div
+                ref={moreMenu}
+                role="menu"
+                aria-label={copy.menu}
+                // M1: centred on Menu, above it (below a strip on the top edge), popping from the side it opens from.
+                className={
+                  "absolute left-1/2 z-40 w-[300px] -translate-x-1/2 rounded-[16px] bg-[color:var(--elevated)] p-2 shadow-[0_10px_30px_rgba(0,0,0,.55),inset_0_0_0_1px_var(--border-strong)] motion-safe:animate-[end-turn-pop_.22s_cubic-bezier(.3,1.4,.5,1)] " +
+                  (below ? "top-[calc(100%+10px)] origin-top" : "bottom-[calc(100%+10px)] origin-bottom")
+                }
+                style={{ marginLeft: moreShift }}
+                data-testid="strip-menu-pop"
+              >
+                <Link
+                  ref={backItem}
+                  href={back.href}
+                  role="menuitem"
+                  onClick={back.onLeave}
+                  className="flex min-h-[64px] items-center gap-3 rounded-[10px] bg-[color:var(--surface)] py-2 pl-2 pr-3.5 text-left outline-offset-2 motion-safe:transition-transform motion-safe:duration-75 motion-safe:active:scale-[.98]"
+                  data-testid="strip-menu-back"
+                >
+                  <span aria-hidden className="grid size-[44px] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] text-[color:var(--fg-body)] shadow-[inset_0_0_0_1px_var(--border-strong)]">
+                    <DoorIcon size={22} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[15px] font-semibold text-[color:var(--fg)]">{copy.back}</span>
+                    <span className="mt-0.5 block text-[12.5px] leading-[1.4] text-[color:var(--fg-muted)]">{back.line}</span>
+                  </span>
+                </Link>
+              </div>
+            </>
+          ) : null}
+        </span>
       </div>
     </div>
   );
@@ -199,6 +256,26 @@ export function Spine({
  */
 const sb =
   "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] enabled:active:bg-[color:var(--accent)] enabled:active:text-[color:var(--bg)] enabled:active:shadow-none motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:enabled:active:[transform:scale(.92)]";
+
+/**
+ * How far a strip popover moves sideways to stay 8px inside the viewport (a strip near the screen's edge). From the
+ * layout box, not the drawn one: the pop starts the menu scaled to .4, so its drawn rect is too narrow. It is centred
+ * on its anchor (the button's wrapper), which the pop does not transform.
+ */
+function useClamp(ref: React.RefObject<HTMLDivElement | null>, open: boolean) {
+  const [shift, setShift] = useState(0);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const anchor = el?.offsetParent;
+    if (!open || !el || !anchor) return setShift(0);
+    const a = anchor.getBoundingClientRect();
+    const left = a.left + a.width / 2 - el.offsetWidth / 2;
+    const right = left + el.offsetWidth;
+    const vw = document.documentElement.clientWidth;
+    setShift(right > vw - 8 ? vw - 8 - right : left < 8 ? 8 - left : 0);
+  }, [ref, open]);
+  return shift;
+}
 
 /** The day/night button's icon: the moon at night, else the sun (lit by day, faint with the cycle off). */
 function DayIcon({ day }: { day: DayNight | null }) {

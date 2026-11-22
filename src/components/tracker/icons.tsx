@@ -104,6 +104,20 @@ export const UndoIcon = (props: IconProps) => (
   </Icon>
 );
 
+/** The strip's Menu (M1 `more`): three dots. */
+export const MoreIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="5.5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="18.5" cy="12" r="1.7" fill="currentColor" stroke="none"/>
+  </Icon>
+);
+
+/** The Menu's Back to the table (M1 `door`): an arrow out through a door frame. */
+export const DoorIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M14 4h4a2 2 0 012 2v12a2 2 0 01-2 2h-4"/><path d="M10 8l-4 4 4 4"/><path d="M6 12h10"/>
+  </Icon>
+);
+
 export const MonarchIcon = (props: IconProps) => (
   <Icon {...props}>
     <path d="M3.5 18l2-10 4.3 4L12 5l2.2 7 4.3-4 2 10z"/><path d="M5 21h14"/>
