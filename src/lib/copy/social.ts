@@ -130,9 +130,7 @@ export const socialCopy = {
     tabs: { spares: "Spares", wishlist: "Wishlist", decks: "Decks" },
     spares: {
       /** The line under the strip: where the share reaches the viewer, and the order. */
-      /** `wishlist`: the reader's wishlist is on, so their cards come first and are marked. */
-      line: (pods: readonly ThirdPartyName[], wishlist: boolean) =>
-        personText`Shared with ${joinNames(pods)}.${wishlist ? " Cards on your wishlist first." : ""}`,
+      line: (pods: readonly ThirdPartyName[]) => personText`Shared with ${joinNames(pods)}.`,
       count: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
       onWishlist: "on your wishlist",
       /** Appended to the line with spare requests on (signature card call 8): a tile press opens the card's modal, with Ask. */
@@ -545,5 +543,32 @@ export const spareCopy = {
        */
       sheet: { title: "Your request", close: "Close", clear: "Clear", all: "All your requests ›" },
     },
+  },
+} as const;
+
+/** Find a friend's spares (handoff `design_handoff_the99_spares_search`). Reused shipped strings are named in comments. */
+export const sparesSearchCopy = {
+  search: {
+    placeholderWide: "Search by name or type…",
+    placeholderCompact: "Name or type…",
+    aria: "Search spares by name or type",
+  },
+  result: (shown: number, total: number) => (shown === total ? `${total} spares` : `${shown} of ${total} spares`),
+  wanted: {
+    label: "Wanted",
+    wishlist: "On your wishlist",
+    deck: "A deck needs it",
+    panelAria: "Filter by what you want",
+  },
+  sort: { trigger: (current: string) => `Sort · ${current}`, wantedFirst: "Wanted first", name: "Name", most: "Most spares", panelAria: "Sort spares" },
+  sheet: { title: "Filter spares", colourHeading: "Color identity", typeHeading: "Type", wantedHeading: "Wanted", show: (n: number) => (n === 1 ? "Show 1 spare" : `Show ${n} spares`), match: (shown: number, total: number) => `${shown} of ${total} match` },
+  chip: { search: (q: string) => `“${q}”`, colours: (n: number) => (n === 1 ? "1 color" : `${n} colors`), types: (n: number, first: string) => (n === 1 ? first : `${n} types`), wanted: (n: number, first: string) => (n === 1 ? first : `${n} wanted`) },
+  tile: { deck: (n: number) => (n === 1 ? "a deck needs it" : `${n} decks need it`) },
+  none: {
+    heading: (q: string) => (q ? `No spares match “${q}”.` : "No spares match those filters."),
+    body: (friend: string | ThirdPartyName) =>
+      personText`Search looks at each card’s name and type line, so “wizard” or “saga” works. ${friend} may still have it in a deck.`,
+    keepSearch: "Keep only search",
+    clear: "Clear all filters",
   },
 } as const;

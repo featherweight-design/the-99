@@ -166,7 +166,7 @@ describe("a friend's page group", () => {
 
   it("draws the spares tab: wishlist cards marked and first, each with its count", async () => {
     const html = renderToString(await FriendSparesPage({ params: params() }));
-    expect(html).toContain(plain(p.spares.line([named("Thursday pod")], true)));
+    expect(html).toContain(plain(p.spares.line([named("Thursday pod")])));
     expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
     expect(html.indexOf("Ghalta, Primal Hunger")).toBeLessThan(html.indexOf("Sol Ring"));
     expect(html).toContain("2 spares");

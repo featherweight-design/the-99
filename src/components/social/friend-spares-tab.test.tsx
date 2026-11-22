@@ -84,7 +84,7 @@ async function mount(a: FriendSparesAsks | undefined) {
 describe("the tab, spare requests on", () => {
   it("adds the press sentence to the line", async () => {
     await mount(ON());
-    expect(document.body.textContent).toContain(`${plain(p.line(SPARES.pods, true))}${p.pressToAsk}`);
+    expect(document.body.textContent).toContain(`${plain(p.line(SPARES.pods))}${p.pressToAsk}`);
   });
 
   it("opens the card's modal on a tile press: the page's friend first, the wishlist kicker, the tile ringed", async () => {
@@ -209,7 +209,7 @@ describe("the tab, spare requests off", () => {
   it("is as shipped: the line alone, a tile opens card details, no ask on the count line, ?spare= ignored", async () => {
     window.history.replaceState(null, "", `/friends/x?spare=${SAI}`);
     await mount(undefined);
-    expect(screen.getByText(plain(p.line(SPARES.pods, true)))).toBeTruthy();
+    expect(screen.getByText(plain(p.line(SPARES.pods)))).toBeTruthy();
     expect(screen.queryByTestId("spare-tile-press")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByTestId("spare-count")).toBeNull();

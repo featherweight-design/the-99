@@ -8,6 +8,8 @@ import { loadFriend } from "../../../../../lib/social/access";
 import { isUuid } from "../../../../../lib/social/rules";
 import { catalogCardName, friendSpareList } from "../../../../../lib/social/friend-page-data";
 import { loadPrices } from "../../../../../lib/decks/price-query";
+import { loadDeckNeed } from "../../../../../lib/decks/deck-need";
+import { parseSpareParams } from "../../../../../lib/social/spare-browse";
 import { FriendSparesTab } from "../../../../../components/social/friend-spares-tab";
 
 // Spare requests (signature card calls 8 and 9): a tile opens the card's modal with Ask, and `?spare={oracleId}` opens it
@@ -24,19 +26,26 @@ export default async function FriendSparesPage({
   const { publicId } = await params;
   const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, true)]);
   if (!friend) notFound();
-  const raw = (await searchParams)?.spare;
+  const query = (await searchParams) ?? {};
+  const raw = query.spare;
+  // The tab's search, filters and order ride the address, so a shared or reloaded link draws the same list.
+  const view = parseSpareParams(new URLSearchParams(Object.entries(query).flatMap(([k, v]) => (typeof v === "string" ? [[k, v]] : []))));
   // Lowercased: the catalog's ids are, and both lookups below compare as strings.
   const spare = isUuid(raw) ? raw.toLowerCase() : null;
   // A card the friend still offers opens its modal; any other names the card for the toast (the catalog's name).
   const offered = spare !== null && (spares?.lines.some((l) => l.oracleId === spare) ?? false);
   // The modal's buy tag prices the card as Shopping does (`loadPrices`: one printing per card, cheapest live first).
   // A failed read degrades to the bare tag, never the page.
-  const [goneName, priced] = await Promise.all([
+  // `deckNeed` (the decks of the reader's that still need each card) is one more read beside them; it fails soft to {}.
+  const [goneName, priced, deckNeed] = await Promise.all([
     spare !== null && !offered ? catalogCardName(spare) : null,
     loadPrices(spares?.lines.map((l) => l.oracleId) ?? []).catch(() => ({ prices: new Map(), newestAsOf: null })),
+    spares && spares.lines.length > 0 ? loadDeckNeed(userId) : {},
   ]);
   return (
     <FriendSparesTab
+      deckNeed={deckNeed}
+      initial={view}
       name={friend.displayName}
       spares={spares}
       asks={{
