@@ -28,6 +28,11 @@ export const COMMIT_MS = 2000;
 const SHORT_ROW = 240;
 
 const copy = trackerCopy.panel;
+/** The ±N's halo: a soft --bg pool under the figure, flat over the glyphs and feathered past them, a child of the figure so it
+    rises, fades and clears with it. It holds the figure at 3:1 or better over any art, white included. */
+export const HALO =
+  "isolate before:pointer-events-none before:absolute before:inset-y-[1px] before:-inset-x-[3px] before:-z-10 before:rounded-full " +
+  "before:bg-[color:color-mix(in_srgb,var(--bg)_60%,transparent)] before:shadow-[0_0_10px_7px_color-mix(in_srgb,var(--bg)_60%,transparent)] ";
 
 /** The pending life change of one panel: taps and holds add to it, and it commits as one entry after COMMIT_MS idle. */
 function usePendingLife(commit: (delta: number) => void, disabled: boolean) {
@@ -383,7 +388,7 @@ export function Panel({
                         // The pending change hangs off the number's right edge (F04), so the number never moves. It sits outside the keyed
                         // number so a later step changes its text in place instead of restarting its fade-in.
                         <span
-                          className={"absolute left-full top-2 ml-[6px] font-mono text-[18px] font-medium tabular-nums [text-shadow:none] motion-safe:animate-[life-pending-in_.15s_ease-out] "
+                          className={"absolute left-full top-2 ml-[6px] font-mono text-[18px] font-medium tabular-nums [text-shadow:none] " + HALO + "motion-safe:animate-[life-pending-in_.15s_ease-out] "
                             + (pending > 0 ? "text-[color:var(--success)]" : "text-[color:var(--critical-fg)]")}
                           data-testid="life-pending"
                         >
@@ -396,7 +401,7 @@ export function Panel({
                           key={ghost.n}
                           aria-hidden
                           onAnimationEnd={clearGhost}
-                          className={"absolute left-full top-2 ml-[6px] hidden font-mono text-[18px] font-medium tabular-nums [text-shadow:none] motion-safe:block motion-safe:animate-[life-pending-out_.4s_ease-out_forwards] "
+                          className={"absolute left-full top-2 ml-[6px] hidden font-mono text-[18px] font-medium tabular-nums [text-shadow:none] " + HALO + "motion-safe:block motion-safe:animate-[life-pending-out_.4s_ease-out_forwards] "
                             + (ghost.sign > 0 ? "text-[color:var(--success)]" : "text-[color:var(--critical-fg)]")}
                           data-testid="life-pending-fade"
                         >
