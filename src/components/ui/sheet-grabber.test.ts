@@ -22,6 +22,7 @@ const ALLOWED: Record<string, [number, string]> = {
   "components/collection/filter-sheet.tsx": [1, "38 wide, a Sheet handleBarClassName"],
   "components/collection/issue-inspector.tsx": [1, "38 wide, a Sheet handleBarClassName"],
   "components/decks/deck-filter-sheet.tsx": [1, "38 wide, a Sheet handleBarClassName"],
+  "components/social/spares-chassis.tsx": [1, "38 wide, dashed ink, a Sheet handleBarClassName"],
   "components/decks/cart/cart-filter-sheet.tsx": [1, "38 wide, dashed ink"],
   "components/decks/got-it-confirm.tsx": [1, "36 wide, dashed ink"],
   "components/about/reference/creator-note.tsx": [1, "dashed ink, 8px top margin"],
