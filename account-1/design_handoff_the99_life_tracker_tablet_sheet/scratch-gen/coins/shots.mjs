@@ -1,6 +1,6 @@
 // node coins/shots.mjs  (from gen/). Studio stills of each option, then each option in place on the tablet table.
-import { chromium } from "playwright"; import { writeFileSync } from "node:fs"; import { face, OPTIONS } from "./faces.mjs";
-const G = process.cwd(), O = G + "/coins/out";
+import { chromium } from "playwright"; import { writeFileSync } from "node:fs"; import { face, OPTIONS } from "./faces2.mjs";
+const G = process.cwd(), O = G + "/coins/out3";
 const F = "file:///home/user/the-99/.worktrees/design-tracker-tablet-sheet/src/app/fonts/";
 const fonts = `@font-face{font-family:Cinzel;src:url(${F}cinzel-variable.woff2) format("woff2");font-weight:400 900}`;
 const coin = (opt, size, t, tf, showSide) => `<div style="position:relative;width:${size}px;height:${size}px;perspective:900px">

@@ -1,6 +1,6 @@
 // node coins/inplace.mjs (from gen/): each option thrown on the tablet table (1180x820), at 450 ms and landed (1150 ms).
-import { chromium } from "playwright"; import { writeFileSync } from "node:fs"; import { page } from "../page.mjs"; import { SEATS, LOG } from "../fix.mjs"; import { face, OPTIONS } from "./faces.mjs";
-const G = process.cwd(), O = G + "/coins/out";
+import { chromium } from "playwright"; import { writeFileSync } from "node:fs"; import { page } from "../page.mjs"; import { SEATS, LOG } from "../fix.mjs"; import { face, OPTIONS } from "./faces2.mjs";
+const G = process.cwd(), O = G + "/coins/out3";
 const fix = { seats: [SEATS.you, SEATS.colin, SEATS.peter, SEATS.max], log: LOG, layout: "tablet-4" };
 writeFileSync(`${G}/out/m-coins.html`, page({ fix, css: "app2.css", js: "app2.js" }));
 const b = await chromium.launch({ executablePath: "/opt/pw-browsers/chromium", args: ["--no-sandbox", "--allow-file-access-from-files"] });

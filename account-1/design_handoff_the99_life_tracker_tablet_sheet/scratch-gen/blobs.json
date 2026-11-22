@@ -59,5 +59,21 @@
  "F-place-crowned-mid": "/_blob/851f5ddb35926d144bc693bb0292d734",
  "F-place-mana-heads": "/_blob/97599e4b1537ceb7509391da763d0483",
  "F-place-mana-tails": "/_blob/af0071da8ebe01ae775791c3e6e20d66",
- "F-place-mana-mid": "/_blob/a2ffe753614eced3462d94a8220eca6b"
+ "F-place-mana-mid": "/_blob/a2ffe753614eced3462d94a8220eca6b",
+ "G-studio-daynight": "/_blob/15107cd5a4695f99a5d7b46adcfb33ec",
+ "G-studio-spark": "/_blob/ac53c29ab59a49912f3a2f6c781d05ff",
+ "G-studio-pips": "/_blob/29fa6bd7e9bdd3660e78535e716381ea",
+ "G-studio-bare": "/_blob/4d913b5492031bd817de90d9fbc0335d",
+ "G-place-daynight-mid": "/_blob/b2303f64f6ba00407ed4b8513960aba4",
+ "G-place-daynight-heads": "/_blob/ef36ac2120943925683319dda29244d1",
+ "G-place-daynight-tails": "/_blob/122b9718bcd94aa7643d820dab8678ed",
+ "G-place-spark-mid": "/_blob/72c64a281e30bbcd3ff83c4c5e470dd9",
+ "G-place-spark-heads": "/_blob/261ca53f947e71d4e1f8e01e78c54f60",
+ "G-place-spark-tails": "/_blob/28b22587c942d9e38ee9b9e92a6b9bcd",
+ "G-place-pips-mid": "/_blob/860357901bd3ff1ffa302d00c288f93f",
+ "G-place-pips-heads": "/_blob/30221c42fd51bb94151bb0031451c419",
+ "G-place-pips-tails": "/_blob/ef7c6199013edd61da7c59f389a3aee7",
+ "G-place-bare-mid": "/_blob/ad406105580609d740c62e1558240ba7",
+ "G-place-bare-heads": "/_blob/97e66deaf27a0e43eb0ecc9c4e2f61d6",
+ "G-place-bare-tails": "/_blob/8021fc8cf0a6c7386764c26e50dcbc31"
 }

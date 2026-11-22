@@ -1,6 +1,7 @@
 # Life tracker addendum: the player sheet on a tablet, and the coin toss (account 1, 2026-11-22).
 # Writes the boards twice: for the canvas (/_blob urls from blobs.json) and for the repo (art/).
 import json, sys, os
+FACES_H = 4500
 mode, out = sys.argv[1], sys.argv[2]
 BLOB = json.load(open(os.path.join(os.path.dirname(__file__), "blobs.json"))) if mode == "canvas" else {}
 def src(k): return BLOB[k] if mode == "canvas" else f"art/ts-{k}.webp"
@@ -164,7 +165,7 @@ boards["Coin.dc.html"] = (1700, 2890, "Coin · the toss beside the dice", page("
    land("kR", "Reduced motion", "No toss, no rattle, no ring animation: the coin lies on its face and the result card shows at once. Same as shipped.", 560),
    land("kF", "Landed (motion on)", "1.7 s in: identical to the reduced frame, so both end the same way.", 560)])))
 
-OPTS = [
+OPTS_R2 = [
  ("daynight", "A · Day and night", "Heads is the sun, tails the moon and two stars: Magic's own day and night (Innistrad), drawn with the tracker's shipped SunIcon and MoonIcon, which already mean day and night on the table strip. Reads at a glance at 72px; the most Magic-literal of the three without borrowing a card.",
   ["Matches the day/night control the tracker already ships, so the coin feels part of the same table.", "Two clear, opposite silhouettes: you can tell which side landed before reading the word."]),
  ("crowned", "B · The crowned 99", "Heads is the brand's crowned 99 (the three CrownDiamonds over a Cinzel 900 99), tails the XCIX seal. A minted The 99 coin: the most ownable and the least Magic, since it is our mark rather than the game's.",
@@ -181,8 +182,28 @@ def optrow(k, t, p, notes):
           fig(f"F-place-{k}-heads", 346, 300, "Landed heads", "1150 ms, the ring still spreading; the result card lands below."),
           fig(f"F-place-{k}-tails", 346, 300, "Landed tails", "Same toss with a half-turn more.")])
       + '</div>')
-boards["Faces.dc.html"] = (1700, 3440, "Coin faces · three options (R2)", page("Coin faces", 1700, 3440,
- head("Coin faces · three options", "Hugh, R2: the coin needs imagery on each side that feels Magic, with HEADS and TAILS still curving along the bottom. Each option keeps the toss, timing and size from the Coin board unchanged and only redraws the two faces: a reeded edge, an inner ring, the emblem engraved in the shade of the accent (a 1px light lip below it), and the word on the arc. Theme is Low Sun; every theme recolours with its accent. No card art: that would need rights and a fetch per printing, so these use only marks and symbols the app already ships.")
+
+OPTS = [
+ ("daynight", "A · Day and night", "Heads is Magic's day symbol, tails its night: the markers printed on the day/night card and on daybound and nightbound faces (Innistrad: Midnight Hunt). Replaces R2's generic sun and moon.",
+  ["The most Magic-literal pair, and it says heads or tails by shape alone.", "Day's open centre keeps it light; night is a solid disc, so the two sides read differently even mid-flip."]),
+ ("spark", "B · Spark and planeswalker", "Heads is the spark, tails the planeswalker symbol: the front and back markers of the Magic Origins planeswalkers who transform when their spark ignites. A second Magic-specific pair, offered beside day and night.",
+  ["Every player knows the planeswalker symbol.", "The spark is the less familiar of the two marks."]),
+ ("pips", "C · Mana, struck pips", "Your mana option without colour: each pip is a disc cut into the coin with its symbol left standing in the metal, set larger (about 23% of the coin across, against 15%) so the five fill the ring. Tails is one large {C}.",
+  ["Reads as mana pips at a glance, in the theme's own metal.", "About 17px a pip on the phone's 72px coin."]),
+ ("bare", "D · Mana, bare symbols", "The same five symbols engraved straight into the face with no discs, larger still (21% each). Tails is the {C} diamond alone.",
+  ["The lightest of the four; the coin's metal shows most.", "The symbols' own shapes vary in weight (the sun is thinner than the skull), so the ring looks less even than C."]),
+]
+def optrow(k, t, p, notes):
+    return ('<div style="display:flex;flex-direction:column;gap:18px;padding:28px 0 8px;border-top:1px solid #262A35">'
+      + f'<div style="display:flex;flex-direction:column;gap:8px"><h3 style="margin:0;font:700 24px \'Chakra Petch\',sans-serif;color:#E6E8F0">{t}</h3><p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1240px">{p}</p>{ul(notes)}</div>'
+      + row("Faces · heads, tails, and tilted to show the rim", [fig(f"G-studio-{k}", 1180, 340, "Heads · Tails · tilted heads · tilted tails", "On the shipped coin: the same metal and 8px rim; the emblem centred in the inner ring; HEADS / TAILS on its own band between the ring and the edge.")])
+      + row("On the tablet table, 120px", [
+          fig(f"G-place-{k}-mid", 300, 300, "450 ms · at the top of the toss", "Up 55% at 1.8×, mid-turn."),
+          fig(f"G-place-{k}-heads", 346, 300, "Landed heads", "1150 ms, the ring still spreading; the result card lands below."),
+          fig(f"G-place-{k}-tails", 346, 300, "Landed tails", "Same toss with a half-turn more.")])
+      + '</div>')
+boards["Faces.dc.html"] = (1700, FACES_H, "Coin faces · four options (R3)", page("Coin faces", 1700, FACES_H,
+ head("Coin faces · four options (R3)", "Hugh on R2: centre the emblems, give HEADS / TAILS room from the ring above it, make day and night Magic's own, and take the colour off the mana pips and let them fill the face. Every emblem now sits in the centre of the inner ring (r 35 of 50); the word has its own band between that ring and the edge (baseline r 43, caps clear of the ring by about 3%). Toss, timing and size are unchanged from the Coin board. The symbols are Magic's own as drawn in the mana-font set (the same family as the app's public/mana); a build would add the two or seven glyphs it uses to the app's icons.")
  + "".join(optrow(*o) for o in OPTS)))
 
 os.makedirs(out, exist_ok=True)
