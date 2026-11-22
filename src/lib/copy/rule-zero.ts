@@ -241,6 +241,25 @@ export const ruleZeroCopy = {
     logByHand: "Log it by hand",
     logged: (day: string, time: string, deck: string) => `You logged this game on ${day} at ${time}. It’s on ${/s$/i.test(deck.trim()) ? `${deck}’` : `${deck}’s`} Games tab.`,
   },
+  // Log reminder 2b (boards H1 to H3): Home's Game to log card. Copy-reviewed with the design.
+  homeLog: {
+    kicker: "Game to log",
+    kickerMany: (n: number) => `Games to log · ${n}`,
+    /** The one-game sentence; the deck is drawn bold between the halves. */
+    body: (until: string) => ({ before: "Seats and result are filled in for ", after: ` until ${until}.` }),
+    /** The pod and the day, under the kicker (one game) or under the result (a row). */
+    meta: (pod: Said, day: string) => personText`${pod} · ${day}`,
+    /** A row's third line: the viewer's deck and where they placed. */
+    placed: (deck: string, place: string) => `${deck}, ${place}`,
+    log: "Log",
+    lastDay: "Last day",
+    rowLabel: (pod: Said) => personText`Log ${pod}’s game`,
+    dismiss: (pod: Said) => personText`Dismiss ${pod}’s game`,
+    more: (n: number) => `Show ${n} more`,
+    hidden: (until: string) => `Reminder hidden. Log this game stays on the table until ${until}.`,
+    undo: "Undo",
+    hideFailed: "We couldn’t hide that reminder. Try again.",
+  },
   // Close the table (Table board C1 to C5, T1, D1, D2). The setter's text button at the table's foot and its confirm.
   close: {
     // Copy-reviewed (Close UI).

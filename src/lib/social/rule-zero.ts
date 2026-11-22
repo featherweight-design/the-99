@@ -20,7 +20,7 @@
 import { and, asc, eq, inArray, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroResultSeats, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
+import { cards, deckGames, decks, friendLinks, podMembers, pods, ruleZeroLogHidden, ruleZeroResultSeats, ruleZeroSeats, ruleZeroSeen, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 import type { ThirdPartyName } from "../person-name/brand";
 import { named } from "../person-name/mint";
 import type { Reader } from "./access";
@@ -708,6 +708,7 @@ export async function purgeRuleZeroIn(tx: Tx, userId: string): Promise<RuleZeroP
     order by t.id for update`);
   const left = await tx.delete(ruleZeroSeats).where(eq(ruleZeroSeats.userId, userId)).returning({ tableId: ruleZeroSeats.tableId });
   await tx.delete(ruleZeroSeen).where(eq(ruleZeroSeen.userId, userId));
+  await tx.delete(ruleZeroLogHidden).where(eq(ruleZeroLogHidden.userId, userId));
   // A result without one of its players would read a tie as a win: every result they sat in goes, the others' included.
   const touched = [...new Set(left.map((s) => s.tableId))];
   await tx.delete(ruleZeroResultSeats).where(touched.length > 0

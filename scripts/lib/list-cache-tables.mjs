@@ -79,6 +79,9 @@ export const PER_REQUEST_READS = {
   // Rule 0's `Tonight's table` card (plan decision 1): a reseat by a player who is not the reader's friend, a rename
   // and an expiry move nothing in Home's key, and the seats carry no stamp trigger.
   "src/lib/social/rule-zero-home.ts": "Home's Tonight's table card reads the open tables the reader sits at fresh on every request; no write of theirs moves Home's key",
+  // Home's Game to log card (log reminder 2b): the reader's unlogged, unhidden games at ended tables. A game saved at someone
+  // else's table, a log made on the deck's Games tab and a hide move nothing in Home's key.
+  "src/lib/social/rule-zero-log-home.ts": "Home's Game to log card reads the reader's unlogged games at ended tables fresh on every request; no write of theirs moves Home's key",
   // The welcome-credits strip (welcome credits D2, PR 2): the welcome lot, the strip's dismissal and `everBought`. A run
   // spending a welcome credit writes `model_calls` and a purchase writes `credit_grants`, neither of which moves the
   // stamp, so the strip is read fresh beside the chip's read rather than stored in the payload.

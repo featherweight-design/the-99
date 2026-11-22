@@ -3,6 +3,7 @@
 // (`/friends/table/[id]`) draws each state of plan `2026-11-21-log-reminder.md`:
 //   C1  inside the keep window, one game the viewer has not logged (Colin won): `Log this game`
 //   L1  inside the keep window, one game the viewer logged (they won): the logged note, no button
+//   C3  inside the keep window, a second unlogged game the viewer won, so Home draws several rows (PR 2b)
 //   C2  past the keep window, still seated: the clock note and `Log it by hand`
 // `scripts/probe-log-reminder.mjs` presses them. SCRATCH BRANCH ONLY; a rerun starts clean (it deletes its own ids).
 //   RZ_FIXTURE_BRANCH=br-... RZ_FIXTURE_USER=user_... pnpm tsx scripts/seed-log-reminder-fixture.mts
@@ -23,6 +24,7 @@ export const LOG_REMINDER_IDS = {
   C1: "7a0e0000-0000-4000-8000-0000000000c1",
   L1: "7a0e0000-0000-4000-8000-0000000000a1",
   C2: "7a0e0000-0000-4000-8000-0000000000c2",
+  C3: "7a0e0000-0000-4000-8000-0000000000c3",
 } as const;
 
 const { rows: src } = await db.execute<{ pod_id: string; set_by: string }>(sql`select pod_id, set_by from rule_zero_tables where id = ${SOURCE}`);
@@ -39,9 +41,9 @@ for (const [state, id] of Object.entries(LOG_REMINDER_IDS)) {
   for (const s of seats) await db.execute(sql`insert into rule_zero_seats (table_id, user_id, seat, deck_id) values (${id}, ${s.user_id}, ${s.seat}, ${s.deck_id})`);
   if (past) continue; // C2 has no game to fill in: its results are gone with the week
   // One timestamp for every seat: `now()` per statement would give each seat its own started_at, and so its own game, and a game's id is whole milliseconds (`gameMsOf`), so a microsecond tail would never match.
-  const [{ t }] = (await db.execute<{ t: string }>(sql`select date_trunc('milliseconds', now() - interval '90 minutes')::text as t`)).rows;
+  const [{ t }] = (await db.execute<{ t: string }>(sql`select date_trunc('milliseconds', now() - ${state === "C3" ? sql`interval '150 minutes'` : sql`interval '90 minutes'`})::text as t`)).rows;
   const startedAt = sql`${t}::timestamptz`;
-  for (const [user, place] of places(state === "L1" ? viewer : colin)) {
+  for (const [user, place] of places(state === "L1" || state === "C3" ? viewer : colin)) {
     const s = seats.find((x) => x.user_id === user)!;
     await db.execute(sql`insert into rule_zero_result_seats (table_id, user_id, seat, place, deck_id, started_at) values (${id}, ${user}, ${s.seat}, ${place}, ${s.deck_id}, ${startedAt})`);
   }

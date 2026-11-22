@@ -8,6 +8,7 @@
 import { currentUserId, requireUserId } from "../../../lib/auth";
 import { markSeen, setSeatDeck } from "../../../lib/social/rule-zero";
 import type { ThirdPartyName } from "../../../lib/person-name";
+import { hideLogReminder, unhideLogReminder } from "../../../lib/social/rule-zero-log-hidden";
 import { markSeatNoticeSeen, unseenSeatNotices } from "../../../lib/social/rule-zero-notice";
 import { loadDeckChoices, loadTable, type DeckChoice, type TableView } from "../../../lib/social/rule-zero-table";
 
@@ -62,4 +63,19 @@ export async function swapSeatDeckAction(tableId: unknown, deckId: unknown): Pro
 export async function loadDeckChoicesAction(tableId: unknown): Promise<DeckChoice[] | null> {
   const userId = await requireUserId();
   return loadDeckChoices(userId, tableId);
+}
+
+/**
+ * Hide the Home card's reminder for one game (log reminder 2b), for the session's reader only. Nothing is revalidated:
+ * the card hides itself on the client and Home reads it per request, so a refresh already leaves it out.
+ */
+export async function hideLogReminderAction(tableId: unknown, gameMs: unknown): Promise<boolean> {
+  const userId = await requireUserId();
+  return hideLogReminder(userId, tableId, gameMs);
+}
+
+/** Undo a hide: the reminder draws again on the next Home read. */
+export async function unhideLogReminderAction(tableId: unknown, gameMs: unknown): Promise<boolean> {
+  const userId = await requireUserId();
+  return unhideLogReminder(userId, tableId, gameMs);
 }

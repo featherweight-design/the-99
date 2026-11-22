@@ -4195,6 +4195,22 @@ export const ruleZeroSeen = pgTable("rule_zero_seen", {
 ]);
 
 /**
+ * A player's hidden reminder to log one game (log reminder, Home card's ✕): one row per (player, game), the game named
+ * as the URL names it (`game_ms`, whole milliseconds of the result's `started_at`). Hides the Home card's row (and, from PR 3, a push
+ * still waiting for that game), for that player only; Undo deletes the row. The table's own deletion (a week past its
+ * morning) cascades it, so no sweep is needed.
+ */
+export const ruleZeroLogHidden = pgTable("rule_zero_log_hidden", {
+  userId: text("user_id").notNull(),
+  tableId: uuid("table_id").notNull().references(() => ruleZeroTables.id, { onDelete: "cascade" }),
+  gameMs: bigint("game_ms", { mode: "number" }).notNull(),
+  hiddenAt: timestamp("hidden_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  primaryKey({ columns: [t.userId, t.tableId, t.gameMs] }),
+  index("rule_zero_log_hidden_table_idx").on(t.tableId),
+]);
+
+/**
  * A player's wishlist (scope §2, Hugh's ruling Q7, 2026-10-12): cards wanted outside any deck, at CARD level
  * (any printing will do). `quantity` is how many copies the player wants to own in all. Once the collection
  * holds that many the card is COLLECTED and leaves the list (Social R2 G5, Hugh, 2026-10-15, reversing Q9's
