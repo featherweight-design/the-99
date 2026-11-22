@@ -53,8 +53,9 @@ export function Spine({
 }) {
   const column = rect.h > rect.w;
   const [dice, setDice] = useState(false);
-  // Each day/night toggle remounts the icon so the turn-in (P1 `dnA`/`dnB`) plays again; 0 is the first draw, unturned.
-  const [dayTurns, setDayTurns] = useState(0);
+  // Each day/night toggle re-keys the pair: the icon it leaves turns out while the new one turns in (addendum R2, K1). A
+  // tap mid-turn starts the next pair from the icon showing. `n` 0 is the first draw, with nothing turning.
+  const [dayTurn, setDayTurn] = useState<{ n: number; from: DayNight | null }>({ n: 0, from: null });
   // How far the dice menu moves sideways to stay 8px inside the viewport (a strip near the screen's edge).
   const diceMenu = useRef<HTMLDivElement>(null);
   const [menuShift, setMenuShift] = useState(0);
@@ -109,15 +110,28 @@ export function Spine({
         <button
           type="button"
           onClick={() => {
-            setDayTurns((n) => n + 1);
+            setDayTurn((t) => ({ n: t.n + 1, from: day }));
             onDay();
           }}
           aria-label={day === null ? copy.dayNightOff : copy.dayNightIs(day)}
           className={sb + (day === null ? " text-[color:var(--fg-faint)]" : " text-[color:var(--accent-text)] shadow-[inset_0_0_0_1.5px_var(--accent)]")}
           data-testid="strip-day"
         >
-          <span key={dayTurns} className={"flex" + (dayTurns ? " motion-safe:animate-[day-turn_.45s_cubic-bezier(.3,1.3,.5,1)]" : "")} data-testid="strip-day-icon">
-            {day === "night" ? <MoonIcon size={22} /> : <SunIcon size={22} />}
+          <span className="relative grid size-[22px]">
+            {dayTurn.n ? (
+              // The outgoing icon keeps its own ink (the faint sun when the cycle was off). Reduced motion draws only the new one.
+              <span
+                key={`out-${dayTurn.n}`}
+                aria-hidden
+                className={"absolute inset-0 motion-safe:animate-[dn-out_320ms_var(--motion-ease-out)_both] motion-reduce:hidden " + (dayTurn.from === null ? "text-[color:var(--fg-faint)]" : "text-[color:var(--accent-text)]")}
+                data-testid="strip-day-out"
+              >
+                <DayIcon day={dayTurn.from} />
+              </span>
+            ) : null}
+            <span key={`in-${dayTurn.n}`} className={"absolute inset-0" + (dayTurn.n ? " motion-safe:animate-[dn-in_320ms_var(--motion-ease-out)_both]" : "")} data-testid="strip-day-icon">
+              <DayIcon day={day} />
+            </span>
           </span>
         </button>
         <span className="relative shrink-0">
@@ -178,11 +192,17 @@ export function Spine({
 }
 
 /**
- * A strip button (`.sb`): a circle sized by the strip, on the elevated surface. Held down it fills with the accent and is
- * pushed in, easing both ways (P1 `.sb:active`, Hugh ruling 11-22); reduced motion keeps the fill and drops the push.
+ * A strip button (`.sb`): a circle sized by the strip, on the elevated surface. Held down it fills with the accent, drops
+ * its ring and is pushed in, easing both ways on `--motion-quick` (addendum R2, Hugh ruling 11-22). A disabled Undo does
+ * not press; reduced motion keeps the fill and drops the push.
  */
 const sb =
-  "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] enabled:active:bg-[color:var(--accent)] enabled:active:text-[color:var(--bg)] motion-safe:[transition:transform_.08s,background-color_.2s,color_.2s] motion-safe:enabled:active:[transform:scale(.92)]";
+  "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] enabled:active:bg-[color:var(--accent)] enabled:active:text-[color:var(--bg)] enabled:active:shadow-none motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:enabled:active:[transform:scale(.92)]";
+
+/** The day/night button's icon: the moon at night, else the sun (lit by day, faint with the cycle off). */
+function DayIcon({ day }: { day: DayNight | null }) {
+  return day === "night" ? <MoonIcon size={22} /> : <SunIcon size={22} />;
+}
 
 function Rule({ column }: { column: boolean }) {
   return <span aria-hidden className={"shrink-0 bg-[color:var(--border-strong)] " + (column ? "h-px w-[26px]" : "h-[26px] w-px")} />;
