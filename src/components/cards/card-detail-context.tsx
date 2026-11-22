@@ -155,6 +155,11 @@ export type CardDetailContextValue = {
    * receipt, even with nothing in it, so the link has a line to sit on.
    */
   registerReceiptLink: (link: ReceiptLink) => () => void;
+  /**
+   * Declare the box a card draws after its facts for the deck's commander (Second commander, #491), and get back the
+   * call that withdraws it. The deck list registers it for its one commander, so a card opened anywhere else draws none.
+   */
+  registerCommanderBox: (box: CommanderBox) => () => void;
 };
 
 /**
@@ -223,6 +228,9 @@ export type CardDoor = (oracleId: string, layout: "art" | "strip") => ReactNode;
 
 /** I got it's link for one card, on the receipt's label line, or null. */
 export type ReceiptLink = (oracleId: string) => ReactNode;
+
+/** The Second commander box for one card, drawn after its facts, or null for a card that is not the deck's commander. */
+export type CommanderBox = (oracleId: string) => ReactNode;
 
 /**
  * A sheet's footer for a card stacked over it, or null for a card that is not one of the sheet's

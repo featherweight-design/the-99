@@ -23,7 +23,7 @@ function props(over: Partial<CardModalSheetProps> = {}): CardModalSheetProps {
     printingRegion: () => null, wishlistBox: null, proxyBox: null, tokenDeckBox: null,
     openCombo: undefined, onOpenCombo: null, onSelectCard: () => {},
     expanded: false, triggerAria: "", onToggleExpanded: () => {}, fitsDoor: null,
-    onEditCopies: null, receiptLink: null, onPrev: null, onNext: null,
+    onEditCopies: null, receiptLink: null, commanderBox: null, onPrev: null, onNext: null,
     sheetRef: createRef(), gripRef: createRef(), doorRef: createRef(), sheetBodyRef: createRef(),
     mobileTriggerRef: createRef(), desktopTriggerRef: createRef(), prevButtonRef: createRef(), nextButtonRef: createRef(),
     registerCloseRef: () => {}, registerBackRef: () => {}, onClose: () => {},

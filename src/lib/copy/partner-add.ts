@@ -7,6 +7,20 @@
 import type { PartnerAbility } from "../decks/partner";
 
 export const partnerAddCopy = {
+  // The commander's card details on its own deck page: a box after the card's facts.
+  door: {
+    heading: "Second commander",
+    body: (short: string, ability: PartnerAbility): string => {
+      switch (ability.kind) {
+        case "with": return `${short} partners with ${ability.name}, so this deck can add them.`;
+        case "friendsForever": return `${short} has Friends forever, so this deck can add a second commander.`;
+        case "doctorsCompanion": return `${short} is a Doctor’s companion, so this deck can add a Doctor.`;
+        case "doctor": return `${short} is a Doctor, so this deck can add a companion.`;
+        case "restricted": return `${short} has ${ability.label}, so this deck can add a second commander.`;
+        default: return `${short} has Partner, so this deck can add a second commander.`;
+      }
+    },
+  },
   section: {
     title: (kind: PartnerAbility["kind"]): string =>
       kind === "doctorsCompanion" ? "Add a Doctor" : kind === "doctor" ? "Add a companion" : "Add a partner",

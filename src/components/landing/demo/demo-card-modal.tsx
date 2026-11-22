@@ -281,7 +281,7 @@ export function DemoCardModal({
           openCombo={false} onOpenCombo={null} onSelectCard={undefined}
           expanded={false} triggerAria={triggerAria} onToggleExpanded={noop}
           fitsDoor={(layout) => <DemoFitsDoor cardName={card.name} layout={layout} />}
-          onEditCopies={null} receiptLink={null} onPrev={onPrev} onNext={onNext}
+          onEditCopies={null} receiptLink={null} commanderBox={null} onPrev={onPrev} onNext={onNext}
           sheetRef={sheetRef} gripRef={gripRef} doorRef={doorRef} sheetBodyRef={sheetBodyRef}
           mobileTriggerRef={mobileTriggerRef} desktopTriggerRef={desktopTriggerRef}
           prevButtonRef={prevButtonRef} nextButtonRef={nextButtonRef}

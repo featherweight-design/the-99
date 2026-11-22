@@ -392,6 +392,8 @@ const NOT_A_ROW = new Set<string>([
   "components/commanders/detail.tsx",
   "components/cards/change-copy-door.tsx",
   "components/decks/change-commander-door.tsx",
+  // Registers a box inside card details; it closes the card and opens the sheet, and draws no card row.
+  "components/decks/commander-box.tsx",
   "components/decks/got-it-door.tsx",
   "components/decks/pull-control.tsx",
   "components/decks/spine-desktop.tsx",

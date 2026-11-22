@@ -1,5 +1,5 @@
 // probe:partner-add — Add a partner to an existing deck (#491), pressed in a real browser at 390x844 and 1300x820.
-// Per width it opens Change commander on a single-commander deck with a full 99, presses Choose on the first partner,
+// Per width, and from each door (the deck header, and the commander's card details box), it opens Change commander on a single-commander deck with a full 99, presses Choose on the first partner,
 // confirms with the suggested cut, then asserts the deck now holds the pair (read back from the database) and that the
 // toast's Undo restores it: one commander again and the cut card back in the 99. On main there is no Add a partner section,
 // so the first wait fails.
@@ -87,16 +87,30 @@ async function until(deckId, want, ms = 20_000) {
   return s;
 }
 
-async function walk(browser, width, userId, deckId) {
+async function walk(browser, width, userId, deckId, via) {
   const context = await browser.newContext({ viewport: width.viewport });
   const page = await context.newPage();
-  const L = (s) => `${width.label}: ${s}`;
+  const L = (s) => `${width.label} via ${via}: ${s}`;
   try {
     await signIn(page);
     await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded", timeout: 180_000 });
-    const door = page.getByRole("button", { name: "Change commander" }).first();
-    await door.waitFor({ timeout: 60_000 });
-    await door.click();
+    if (via === "details") {
+      // The commander's card details: its Second commander box is the second door (#491). On main the box is absent.
+      const details = page.getByRole("button", { name: "View card details" }).first();
+      await details.waitFor({ timeout: 60_000 });
+      await details.click();
+      // The phone opens on the peek; the box sits in the full sheet, one press on All details away.
+      const more = page.getByRole("button", { name: /^All details/ });
+      if (await more.first().waitFor({ state: "visible", timeout: 5_000 }).then(() => true, () => false)) await more.first().click();
+      const box = page.locator("[data-commander-box-cta]");
+      const drawn = await box.first().waitFor({ timeout: 30_000 }).then(() => true, () => false);
+      if (!report(L("card details draw the Second commander box"), drawn, drawn ? "" : (await page.locator("[role=dialog]").first().innerText().catch(() => "no dialog")).replace(/\s+/g, " ").slice(0, 400))) return;
+      await box.first().click();
+    } else {
+      const door = page.getByRole("button", { name: "Change commander" }).first();
+      await door.waitFor({ timeout: 60_000 });
+      await door.click();
+    }
     const section = page.locator("[data-choose]");
     const opened = await section.first().waitFor({ timeout: 60_000 }).then(() => true, () => false);
     if (!report(L("Add a partner section draws on the sheet"), opened, opened ? "" : (await page.locator("[role=dialog]").first().innerText().catch(() => "no dialog")).replace(/\s+/g, " ").slice(0, 300))) return;
@@ -131,12 +145,14 @@ try {
   const userId = await signIn(page);
   await context.close();
   for (const width of WIDTHS) {
-    deckId = await makeDeck(userId);
-    try {
-      await walk(browser, width, userId, deckId);
-    } finally {
-      await sql`delete from decks where id = ${deckId}`;
-      deckId = null;
+    for (const via of ["header", "details"]) {
+      deckId = await makeDeck(userId);
+      try {
+        await walk(browser, width, userId, deckId, via);
+      } finally {
+        await sql`delete from decks where id = ${deckId}`;
+        deckId = null;
+      }
     }
   }
 } finally {

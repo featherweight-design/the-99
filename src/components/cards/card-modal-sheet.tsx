@@ -102,6 +102,7 @@ export type CardModalSheetProps = {
   fitsDoor: ((layout: "row" | "column") => ReactNode) | null;
   onEditCopies: React.ComponentProps<typeof AvailabilityDetail>["onEditCopies"];
   receiptLink: React.ComponentProps<typeof AvailabilityDetail>["receiptLink"];
+  commanderBox: React.ReactNode;
   onPrev: (() => void) | null | undefined;
   onNext: (() => void) | null | undefined;
   sheetRef: RefObject<HTMLDivElement | null>;
@@ -122,7 +123,7 @@ export function CardModalSheet({
   deckPage, deckName, buyUrl, buyLabel, min, full, zoomed, viewOpen, cramped, gentle, sheetFull, teaserHeight, closeReserve, back,
   onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
   openCombo, onOpenCombo, onSelectCard, expanded, triggerAria, onToggleExpanded, fitsDoor,
-  onEditCopies, receiptLink, onPrev, onNext, sheetRef, gripRef, doorRef, sheetBodyRef, mobileTriggerRef, desktopTriggerRef,
+  onEditCopies, receiptLink, commanderBox, onPrev, onNext, sheetRef, gripRef, doorRef, sheetBodyRef, mobileTriggerRef, desktopTriggerRef,
   prevButtonRef, nextButtonRef, registerCloseRef, registerBackRef, onClose,
 }: CardModalSheetProps) {
   return (
@@ -387,7 +388,8 @@ export function CardModalSheet({
         )}
 
         <BracketFactsDetail card={card} />
-        {/* SECOND IN THE STACK: card fact, then PAIR fact, then copy facts. This block is
+        {commanderBox}
+        {/* SECOND IN THE STACK: card fact (and the commander box), then PAIR fact, then copy facts. This block is
             the hinge where the reader crosses from what the card IS to what they HAVE,
             which is exactly what a pair fact is. */}
         <ComboPartnersDetail

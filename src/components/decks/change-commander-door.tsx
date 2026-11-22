@@ -24,8 +24,8 @@ const PLATE =
 
 type Width = "desktop" | "mobile";
 
-/** The sheet, from the door that opened it. */
-function Sheet({ width }: { width: Width }) {
+/** The sheet, from the door that opened it (a deck header door, or the commander's card details). */
+export function Sheet({ width }: { width: Width | "details" }) {
   const door = useChangeCommander();
   const open = door !== null && door.openFrom === width;
   const host = useSheetHost(open);

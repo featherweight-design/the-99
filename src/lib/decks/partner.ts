@@ -6,6 +6,7 @@
 // forms, mutual naming for `Partner with` — not a rules engine. It answers the
 // one question the picker and the import re-validation ask, and the spec's
 // out-of-scope line covers every legality rule beyond it.
+import { deckBodySize } from "./deck-size";
 
 export type PartnerAbility =
   | { kind: "generic" }
@@ -105,4 +106,19 @@ export function partnerAbilityLabel(ability: PartnerAbility): string {
     case "doctor":
       return "Time Lord Doctor";
   }
+}
+
+/**
+ * Second commander (#491): what a deck's card details offer for its single commander. Null when the deck already has a
+ * pair, when the commander has no pair ability, or when the body is over the single-commander 99 (the candidates read's
+ * own bound), so the box is never drawn where the add could not write.
+ */
+export function addPartnerOffer(
+  commander: { oracleId: string; oracleText: string | null; typeLine: string | null },
+  paired: boolean,
+  bodyTotal: number,
+): { oracleId: string; ability: PartnerAbility } | null {
+  if (paired || bodyTotal > deckBodySize(false)) return null;
+  const ability = partnerAbility(commander.oracleText, commander.typeLine);
+  return ability ? { oracleId: commander.oracleId, ability } : null;
 }

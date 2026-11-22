@@ -9,9 +9,12 @@
 
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { DECK_TOAST_CLAIM } from "../collection/edit-toast";
+import type { PartnerAbility } from "../../lib/decks/partner";
 import { PartnerAddUndoToast } from "./partner-add-undo-toast";
 
 export type DoorWidth = "desktop" | "mobile";
+/** What opened the sheet: a deck header door, or the commander's card details (Second commander, #491). */
+export type SheetOrigin = DoorWidth | "details";
 
 /** What a partner add wrote, for the Undo toast that follows it (#491). */
 export type PartnerAdded = {
@@ -27,9 +30,11 @@ type Door = {
   pair: boolean;
   /** False for a brew: the confirm then says only another change undoes it. */
   hasVersion: boolean;
+  /** The commander its card details offer a Second commander box, with its pair ability; null for a pair, no ability, or a deck past 99. */
+  addPartner: { oracleId: string; ability: PartnerAbility } | null;
   /** The door whose sheet is open, or null. */
-  openFrom: DoorWidth | null;
-  openSheet: (from: DoorWidth) => void;
+  openFrom: SheetOrigin | null;
+  openSheet: (from: SheetOrigin) => void;
   closeSheet: () => void;
   /** Read out once a change lands. Held here, because the sheet that makes the change is gone by
    *  the time a screen reader would read a live region inside it. */
@@ -49,15 +54,16 @@ export function useChangeCommander(): Door | null {
 }
 
 export function ChangeCommanderProvider({
-  deckId, deckName, pair, hasVersion, children,
+  deckId, deckName, pair, hasVersion, addPartner = null, children,
 }: {
   deckId: string;
   deckName: string;
   pair: boolean;
   hasVersion: boolean;
+  addPartner?: { oracleId: string; ability: PartnerAbility } | null;
   children: ReactNode;
 }) {
-  const [openFrom, setOpenFrom] = useState<DoorWidth | null>(null);
+  const [openFrom, setOpenFrom] = useState<SheetOrigin | null>(null);
   const [announced, setAnnounced] = useState("");
   const [focusPending, setFocusPending] = useState(false);
   const [added, setAdded] = useState<{ n: number; info: PartnerAdded } | null>(null);
@@ -68,14 +74,14 @@ export function ChangeCommanderProvider({
     return () => window.removeEventListener(DECK_TOAST_CLAIM, leave);
   }, []);
   const value = useMemo(() => ({
-    deckId, deckName, pair, hasVersion, openFrom,
-    openSheet: (from: DoorWidth) => { setAdded(null); setOpenFrom(from); },
+    deckId, deckName, pair, hasVersion, addPartner, openFrom,
+    openSheet: (from: SheetOrigin) => { setAdded(null); setOpenFrom(from); },
     closeSheet: () => setOpenFrom(null),
     announce: (text: string) => { setAnnounced(text); setFocusPending(true); },
     focusPending,
     focusTaken: () => setFocusPending(false),
     partnerAdded: (info: PartnerAdded) => setAdded((a) => ({ n: (a?.n ?? 0) + 1, info })),
-  }), [deckId, deckName, pair, hasVersion, openFrom, focusPending]);
+  }), [deckId, deckName, pair, hasVersion, addPartner, openFrom, focusPending]);
   return (
     <Context.Provider value={value}>
       {children}
