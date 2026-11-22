@@ -59,3 +59,5 @@ round-trip is needed. Copy is DRAFT and goes to copy-review.
 ## Decisions inherited
 
 - Calls 1–5 and Q1–Q3 as drawn (Hugh, 2026-11-22). Strings DRAFT. No new switch: ships with its build PR.
+
+Audited 2026-11-22: concur (Yellow). Against origin/main 7271023b5: browsePrintings is still absent from the Wishlist provider (wishlist-view.tsx:82); the push copy (`push.ts` priceDrop body) and the feed item's Buy press also say "cheapest printing" and are not in the handoff; migration is 0266, nullable `scryfall_id`, FK to printings with on delete set null.
