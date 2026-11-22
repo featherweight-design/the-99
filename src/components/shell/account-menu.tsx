@@ -11,6 +11,7 @@
 
 import { inertExemptProps } from "@/lib/a11y/inert-page";
 import { forgetThisDevice } from "../../lib/push/forget-device";
+import { clearSavedFields } from "../ui/saved-fields";
 import { useEffect, useId, useRef, useState, type RefObject } from "react";
 import { useRouter } from "next/navigation";
 import { createPortal } from "react-dom";
@@ -543,6 +544,8 @@ export function AccountMenu({
     setBusy(true);
     // Card search's recent cards go with the account on this device (README call 7), before the session does.
     if (user) clearRecent(user.id);
+    // So does the saved copy of the collection's fields (`ui/saved-fields`): the next reader of this browser starts clean.
+    void clearSavedFields();
     // Tells the sign-out evidence this one was pressed, not lost.
     noteSignOutPressed();
     // This browser's push subscription goes first (G7): the action needs the session, and it never blocks past its limit.

@@ -28,6 +28,7 @@ import { creditsPageCopy } from "../../lib/copy/credits-page";
 import { joinCopy, signInCopy } from "../../lib/copy/join";
 import { warnsBeforeDelete, type HeldPaid } from "../../lib/payments/held-rule";
 import { clearRecent } from "../../lib/card-search/recent";
+import { clearSavedFields } from "../ui/saved-fields";
 import { forgetThisDevice } from "../../lib/push/forget-device";
 import { clearSignOutPressed, noteSignOutPressed } from "../../lib/analytics/sign-out-evidence";
 import { CODE_LENGTH, CODE_RESEND_MS } from "../../lib/invites/rules";
@@ -157,6 +158,7 @@ export function DeleteAccount({ facts, onClose, returnFocusRef }: { facts: Delet
   function leave() {
     // The session is already gone on Clerk's side; should Clerk's sign-out itself throw, a load of the landing is the way out
     // (READINESS clarification 7). Its token can outlive the session by about a minute, so that load is the fallback only.
+    void clearSavedFields();
     clerk.signOut({ redirectUrl: DELETED_HREF }).catch(() => window.location.replace(DELETED_HREF));
   }
 

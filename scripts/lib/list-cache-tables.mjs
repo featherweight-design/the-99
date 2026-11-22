@@ -19,6 +19,9 @@ import ts from "typescript";
 export const CACHED_PAGES = [
   "src/app/page.tsx", "src/app/decks/page.tsx", "src/app/decks/shopping/page.tsx", "src/app/decks/precons/(list)/page.tsx",
   "src/app/decks/precons/[fileName]/page.tsx",
+  // `/collection`'s withheld draw fields are kept in the browser under the data stamp (`collection/saved-token.ts`),
+  // so the loaders that answer them are held to the same rule: every per-user table it reads carries the trigger.
+  "src/lib/collection/browse-read.ts",
 ];
 const OWNER_COLUMNS = ["user_id", "deck_id", "version_id"];
 export const STAMP_TABLE = "user_data_stamps";

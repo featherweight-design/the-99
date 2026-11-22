@@ -28,6 +28,7 @@ export function CollectionClient({
   availabilityOk,
   pricesFailed = false,
   viewHint,
+  savedToken = null,
 }: {
   wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
@@ -36,6 +37,8 @@ export function CollectionClient({
   pricesFailed?: boolean;
   /** The page's two view-cookie hints. Absent reads as no hint, as `CollectionBrowser` reads it. */
   viewHint?: ViewHint;
+  /** The token the server says the browser's saved fields are good for (`lib/collection/saved-token`); null keeps none. */
+  savedToken?: string | null;
 }) {
   // Decoded once per payload: the same wire identity is the same list, so everything below
   // that compares `cards` by identity keeps working.
@@ -92,6 +95,7 @@ export function CollectionClient({
         availabilityOk={availabilityOk}
         pricesFailed={pricesFailed}
         viewHint={viewHint}
+        savedToken={savedToken}
       />
     </CardDetailProvider>
   );

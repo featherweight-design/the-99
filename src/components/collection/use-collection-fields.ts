@@ -37,12 +37,19 @@ const SOURCE: FieldsSource<CollectionRow> = {
  * windows are that list with the reader's printing picks laid over, a new array on every pick,
  * and keying the store on those would drop every fetched field at each one.
  */
-export function useCollectionFields(served: CollectionRow[], wanted: CollectionRow[], onStale?: () => void) {
+export function useCollectionFields(
+  served: CollectionRow[],
+  wanted: CollectionRow[],
+  onStale?: () => void,
+  /** What the server says the browser's saved copy of the fetched fields is good for (`saved-token.ts`); null keeps none. */
+  savedToken: string | null = null,
+) {
   const { resolve: under } = useWithheldFields<CollectionRow, BrowseListCard & Pick<CollectionDrawFields, "art">>(
     SOURCE,
     served,
     wanted,
     onStale,
+    savedToken ? { list: "collection", token: savedToken } : null,
   );
   // The art and its caption are drawn from ONE read. A withheld row's art comes from the batch,
   // so its printed name and set code do too, which the batch read off the same printing; the

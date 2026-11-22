@@ -21,6 +21,7 @@ import { CardFan } from "../../../components/marks";
 import { CollectionClient } from "../../../components/collection/collection-client";
 import { encodeCollection } from "../../../lib/collection/list-wire";
 import { loadCollectionList } from "../../../lib/collection/payload";
+import { savedListToken } from "../../../lib/collection/saved-token";
 import { pageWindowIds } from "../../../lib/collection/window";
 import { parseSortCookie, withStoredSort } from "../../../lib/collection/sort-options";
 import { searchParamsToQuery } from "../../../lib/commanders/search-params";
@@ -59,7 +60,7 @@ export default async function CollectionPage({
     // The sort the reader last chose: the first window is cut by it unless the URL names its own.
     sort: parseSortCookie(jar.get(COLLECTION_SORT_COOKIE)?.value),
   };
-  const [stats, { cards, pricesFailed }, ownedSets, availability] = await Promise.all([
+  const [stats, { cards, pricesFailed }, ownedSets, availability, savedToken] = await Promise.all([
     perf.timed("stats", () => getCollectionStats(userId)),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
@@ -94,6 +95,10 @@ export default async function CollectionPage({
     // Quiet failure: /collection shows no banner, the markers simply do not
     // appear and the Availability ▾ trigger disables (Task 10).
     perf.timed("availability", () => loadAvailability(userId)).catch(() => null),
+    // What the browser's saved copy of the fetched draw fields is good for, or null (switch off,
+    // stamp unreadable). The fields themselves are fetched after this render, so a write landing in
+    // between can only make the copy filed under this token newer than it says, never older.
+    savedListToken(userId, env).catch(() => null),
   ]);
 
   // Flattened onto the cards here: a Map cannot cross the server/client
@@ -166,6 +171,7 @@ export default async function CollectionPage({
         availabilityOk={availability !== null}
         pricesFailed={pricesFailed}
         viewHint={viewHint}
+        savedToken={savedToken}
       />
     </section>
   );

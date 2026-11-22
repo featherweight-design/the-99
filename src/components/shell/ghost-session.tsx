@@ -18,6 +18,7 @@
 import { useEffect, useRef } from "react";
 import { useClerk, useUser } from "@clerk/nextjs";
 import * as Sentry from "@sentry/nextjs";
+import { clearSavedFields } from "../ui/saved-fields";
 import { usePathname } from "next/navigation";
 import { SSO_CALLBACK } from "../sign-in/sso-paths";
 
@@ -61,6 +62,7 @@ export function GhostSession() {
       // A fixed tag only (nothing of the reader or the error travels): how often this happens in production.
       Sentry.captureException(new Error("ghost-session-cleared"), { level: "warning", tags: { site: "ghost-session" } });
       void (async () => {
+        await clearSavedFields();
         try {
           await latest.clerk.signOut({ redirectUrl: "/" });
         } catch {
