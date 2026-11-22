@@ -7,6 +7,7 @@ import { publicLandingEnabled, publicPagesEnabled } from "../public/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { preconUpgradeEnabled } from "../precons/upgrade/flag";
 import { scanLabEnabled } from "../scan-lab/flag";
+import { storePreferenceEnabled } from "../stores/flag";
 import { feedbackEnabled } from "../feedback/flag";
 import { flyerTrialEnabled } from "../flyer/flag";
 import { friendLinksEnabled } from "../friend-links/flag";
@@ -31,6 +32,7 @@ export const SWITCH_FLAGS: Readonly<Record<SwitchName, (env: NodeJS.ProcessEnv) 
   PUBLIC_PAGES_ENABLED: publicPagesEnabled,
   SCAN_LAB_ENABLED: scanLabEnabled,
   PUSH_ENABLED: pushEnabled,
+  STORE_PREFERENCE_ENABLED: storePreferenceEnabled,
   SUGGESTED_CHANGES_V2_ENABLED: suggestedChangesV2Enabled,
   WELCOME_CREDITS_ENABLED: welcomeCreditsEnabled,
 };

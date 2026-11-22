@@ -901,6 +901,7 @@ export const flyerAdminCopy = {
 export const flagCopy: Readonly<Record<SwitchName, { label: string; description: string }>> = {
   FEEDBACK_ENABLED: { label: "Feedback", description: "Report a problem, the check-in on Home and the Feedback tab here." },
   FLYER_TRIAL_ENABLED: { label: "Flyer trial", description: "Gates the /join/<CODE> flyer sign-ups and the Flyer codes section on /admin/invites. Off retires every code." },
+  STORE_PREFERENCE_ENABLED: { label: "Store choice", description: "Lets a player price the app at TCGplayer or Card Kingdom instead of Mana Pool. Off, every price is Mana Pool's." },
   FRIEND_LINKS_ENABLED: { label: "Friend links", description: "Gives every player a reusable friend link, QR and code that send friend requests. Off keeps single-use links." },
   ANNOUNCEMENTS_ENABLED: { label: "Announcements", description: "Wizards announcements on Home, in Settings and as pushes. No surface yet." },
   LIST_CACHE_ENABLED: { label: "List cache", description: "Home and /decks cached per reader." },
