@@ -5,15 +5,14 @@
 // until all ~32.6k were relabelled at full price to add four themes that fit about 6% of them.
 // Here only a pre-filtered candidate set is asked, and the answers live in `judged_labels`.
 //
-// Nothing in the app reads `judged_labels` yet. A theme becomes a strategy axis only after a graded
-// sample proves its labels (docs/agents/judged-labels.md), so the table can fill without shipping
-// anything a player sees.
+// The app reads only `verified_themes`, through `judged-read.ts` and the strategy loader. A theme
+// became a strategy axis once a graded sample proved its labels (docs/agents/judged-labels.md).
 import { createHash } from "node:crypto";
 
+import { JUDGED_THEMES, type JudgedTheme } from "./judged-themes";
 import { acceptsTemperature, needsThinkingDisabled, renderCard, thinkingOff, type CardForPrompt } from "./prompt";
 
-export const JUDGED_THEMES = ["groupHug", "pillowFort", "bigMana", "politics"] as const;
-export type JudgedTheme = (typeof JUDGED_THEMES)[number];
+export { JUDGED_THEMES, type JudgedTheme };
 
 /**
  * Names the ledger rows (`card_label_batches.prompt_version`) and the stored answers. Bumped, and

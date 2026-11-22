@@ -6,6 +6,7 @@ vi.mock("../labels/generation", () => ({ labelGeneration: vi.fn(async (): Promis
 import { db } from "../../db";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { labelGeneration } from "../labels/generation";
+import { JUDGED_PROMPT_VERSION, judgedInputHash } from "../labels/judged";
 import { LABEL_PROMPT_VERSION, labelInputHash } from "../labels/prompt";
 import type { Job } from "../labels/types";
 import {
@@ -18,7 +19,8 @@ let n = 0;
 const row = (typeLine: string, extra: Partial<CardRow> = {}): CardRow => ({
   oracleId: `00000000-0000-4000-8000-${String(++n).padStart(12, "0")}`, name: `Card ${n}`, manaCost: "{2}", oracleText: "Text.",
   layout: "normal", typeLine, manaValue: 3, keywords: [], quantity: 1,
-  labels: null, labelModel: null, promptVersion: null, inputHash: null, ...extra,
+  labels: null, labelModel: null, promptVersion: null, inputHash: null,
+  verifiedThemes: null, judgedModel: null, judgedVersion: null, judgedHash: null, ...extra,
 });
 const themeJob = (kind: string): Job => ({
   space: "theme", kind, restrictedTo: null, affects: "self", to: null, method: null, trigger: "none", recurrence: "oneShot", threshold: null, modal: false,
@@ -38,6 +40,7 @@ describe("deckCardsQuery", () => {
 
   it("reads the card's own label row, whole, with the inputs its freshness is judged against", () => {
     expect(sql).toContain('"card_labels"."input_hash"');
+    expect(sql).toContain('"judged_labels"."verified_themes"');
     expect(sql).toContain('"cards"."oracle_text"');
   });
 });
@@ -109,6 +112,21 @@ describe("freshThemes", () => {
     expect(freshThemes({ ...card, oracleText: "New text." })).toEqual([]);
     expect(freshThemes({ ...card, promptVersion: "not-a-version" })).toEqual([]);
     expect(freshThemes(row("Instant"))).toEqual([]);
+  });
+
+  it("adds a fresh verified judgement theme, and nothing from an unverified or stale one", () => {
+    const base = labelled(row("Enchantment"), ["tokens"]);
+    const judged = (verified: unknown, over: Partial<CardRow> = {}): CardRow => ({
+      ...base, verifiedThemes: verified, judgedModel: "jm", judgedVersion: JUDGED_PROMPT_VERSION,
+      judgedHash: judgedInputHash({ oracleId: base.oracleId, name: base.name, mana_cost: base.manaCost, type_line: base.typeLine, oracle_text: base.oracleText, layout: base.layout }, "jm"),
+      ...over,
+    });
+    expect(freshThemes(judged(["politics", "bigMana"]))).toEqual(["tokens", "politics", "bigMana"]);
+    // Pass 1 not yet verified (null), a theme outside the four, and a card whose text moved all serve nothing.
+    expect(freshThemes(judged(null))).toEqual(["tokens"]);
+    expect(freshThemes(judged(["notATheme", "groupHug"]))).toEqual(["tokens", "groupHug"]);
+    expect(freshThemes(judged(["politics"], { oracleText: "Moved." }))).toEqual([]);
+    expect(freshThemes(judged(["politics"], { judgedVersion: "j0" }))).toEqual(["tokens"]);
   });
 
   it("keeps a stale card's type-line axes", () => {

@@ -5,14 +5,16 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cardLabels, cards, deckCards, decks, deckVersionCards } from "../../db/schema";
+import { cardLabels, cards, deckCards, decks, deckVersionCards, judgedLabels } from "../../db/schema";
 import { newestVersion } from "../decks/versions";
 import { catalogGeneration } from "../cache/catalog-generation";
 import { labelGeneration } from "../labels/generation";
 import { isLandFace } from "../cards/facet";
 import { isGameCard } from "../cards/game-card";
+import { freshVerifiedThemes } from "../labels/judged-read";
 import { freshJobsOf } from "../labels/read";
 import type { Job, LabelTheme } from "../labels/types";
+import type { StrategyTheme } from "./score";
 import { parseStrategyKey } from "./focus";
 import {
   catalogBaseline, deckStrategy, pendingChanges, strategyAxis,
@@ -39,6 +41,11 @@ export const cardColumns = {
   labelModel: cardLabels.model,
   promptVersion: cardLabels.promptVersion,
   inputHash: cardLabels.inputHash,
+  // The judgement themes (`judged_labels`): only what survived the verifier is read, and only while fresh.
+  verifiedThemes: judgedLabels.verifiedThemes,
+  judgedModel: judgedLabels.model,
+  judgedVersion: judgedLabels.promptVersion,
+  judgedHash: judgedLabels.inputHash,
 };
 
 /** One card with its label row, or no label row. */
@@ -46,6 +53,7 @@ export type CardRow = {
   oracleId: string; name: string; manaCost: string | null; oracleText: string | null; layout: string; typeLine: string;
   manaValue: number; keywords: string[]; quantity: number;
   labels: unknown; labelModel: string | null; promptVersion: string | null; inputHash: string | null;
+  verifiedThemes: unknown; judgedModel: string | null; judgedVersion: string | null; judgedHash: string | null;
 };
 
 /** A card's FRESH label jobs; null for a card with no label row or a stale one. */
@@ -58,8 +66,22 @@ export function freshJobs(r: CardRow): Job[] | null {
 }
 
 /** The theme kinds of a card's FRESH labels; none for a card with no label row or a stale one. */
-export function freshThemes(r: CardRow): LabelTheme[] {
+function labelThemes(r: CardRow): LabelTheme[] {
   return (freshJobs(r) ?? []).filter((j) => j.space === "theme").map((j) => j.kind as LabelTheme);
+}
+
+/** The judgement themes a card's FRESH verified row serves; none for no row, an unverified one or a stale one. */
+function judgedThemes(r: CardRow): StrategyTheme[] {
+  if (r.judgedModel === null || r.judgedVersion === null || r.judgedHash === null) return [];
+  return freshVerifiedThemes({
+    oracleId: r.oracleId, verifiedThemes: r.verifiedThemes, model: r.judgedModel, promptVersion: r.judgedVersion, inputHash: r.judgedHash,
+    name: r.name, manaCost: r.manaCost, typeLine: r.typeLine, oracleText: r.oracleText, layout: r.layout,
+  });
+}
+
+/** A card's strategy themes: its FRESH label themes and its FRESH verified judgement themes. */
+export function freshThemes(r: CardRow): StrategyTheme[] {
+  return [...labelThemes(r), ...judgedThemes(r)];
 }
 
 /** A commander-legal game card that is not a land, as the strategy reads count it. */
@@ -76,6 +98,7 @@ export function catalogQuery(q: Reader) {
     .select({ ...cardColumns, quantity: sql<number>`1` })
     .from(cards)
     .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
+    .leftJoin(judgedLabels, eq(judgedLabels.oracleId, cards.oracleId))
     .where(eq(cards.commanderLegal, true));
 }
 
@@ -87,6 +110,7 @@ export function deckCardsQuery(q: Reader, userId: string, deckId: string) {
     .innerJoin(decks, eq(decks.id, deckCards.deckId))
     .innerJoin(cards, eq(cards.oracleId, deckCards.oracleId))
     .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
+    .leftJoin(judgedLabels, eq(judgedLabels.oracleId, cards.oracleId))
     .where(and(eq(deckCards.deckId, deckId), eq(decks.userId, userId)));
 }
 
@@ -97,6 +121,7 @@ export function versionCardsQuery(q: Reader, versionId: string) {
     .from(deckVersionCards)
     .innerJoin(cards, eq(cards.oracleId, deckVersionCards.oracleId))
     .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
+    .leftJoin(judgedLabels, eq(judgedLabels.oracleId, cards.oracleId))
     .where(eq(deckVersionCards.versionId, versionId));
 }
 

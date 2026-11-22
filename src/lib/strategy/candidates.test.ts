@@ -25,6 +25,8 @@ describe("candidateQuery", () => {
     expect(sql).toContain('fs.oracle_id = "cards".oracle_id');
     expect(sql).toContain('"cards"."commander_legal" = $');
     expect(sql).toContain("twin.name");
+    // The candidates' themes read the verified judgement themes, so the join is there for both sources.
+    expect(sql).toContain('left join "judged_labels" on "judged_labels"."oracle_id" = "cards"."oracle_id"');
     expect(sql).not.toContain("collection_items");
   });
 
