@@ -27,8 +27,8 @@ const EXEMPT: Record<string, string> = {
     "its press closes the sheet, which unmounts the row, so the navigation runs through usePendingPush and the provider reports it",
   "components/shell/credit-chip.tsx :: \"/credits\"":
     "its press closes the menu, which unmounts the chip, so the navigation runs through usePendingPush and the provider reports it",
-  "components/tracker/play-surface.tsx :: backHref":
-    "a Back press on the play screen: the table page is a kept screen that commits at press",
+  "components/tracker/spine.tsx :: back.href":
+    "Back to the table in the strip's Menu: the table page is a kept screen that commits at press",
   "components/tracker/result.tsx :: backHref":
     "✕ and Back on the result: the table page is a kept screen that commits at press",
   "components/tracker/result.tsx :: logHref": KEPT,
