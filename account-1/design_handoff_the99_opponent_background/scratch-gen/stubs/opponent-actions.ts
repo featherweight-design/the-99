@@ -3,7 +3,7 @@ const delay = <T,>(v: T) => new Promise<T>((r) => setTimeout(() => r(v), 30));
 const hit = (oracleId: string, name: string, imageUri: string | null, colorIdentity: string[], kind: string | null) =>
   ({ oracleId, name, typeLine: "Legendary Creature", manaCost: null, colorIdentity, partner: kind ? { kind } : null, flavorName: null, imageUri });
 const COMMANDERS = [
-  hit("o-laezel", "Lae’zel, Vlaakith’s Champion", "art/laezel-stand-in.png", ["W"], "chooseBackground"),
+  hit("o-laezel", "Lae’zel, Vlaakith’s Champion", "art/laezel.jpg", ["W"], "chooseBackground"),
   hit("o-lathliss", "Lathliss, Dragon Queen", "art/lathliss.jpg", ["R"], null),
   hit("o-gisa", "Ghoulcaller Gisa", "art/gisa.jpg", ["B"], null),
 ];

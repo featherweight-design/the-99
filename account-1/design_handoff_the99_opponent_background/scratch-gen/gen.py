@@ -5,13 +5,14 @@ BLOB = json.load(open(os.path.join(os.path.dirname(__file__), "blobs.json"))) if
 def src(k): return f"/_blob/{BLOB[k]}" if mode == "canvas" else f"art/ob-{k}.webp"
 FONT = '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">'
 ACC = "#E8A25C"
+SUPPORT = "./support.js" if mode == "canvas" else "../support.js"
 def page(title, w, h, body):
     return f'''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>{title}</title>
-<script src="../support.js"></script>
+<script src="{SUPPORT}"></script>
 </head>
 <body>
 <x-dc>
@@ -49,7 +50,7 @@ def dk(k, cap, note, w=700, ratio=1280/2600): return fig(k, w, round(w*ratio), c
 def call(n, t, body): return f'<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A"><p style="margin:0;font:600 17px \'IBM Plex Sans\',sans-serif;color:#E6E8F0"><span style="font-family:\'IBM Plex Mono\',monospace;color:{ACC}">{n}</span> · {t}</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7">{body}</div></div>'
 def ul(items): return '<ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">' + "".join(f"<li>{i}</li>" for i in items) + '</ul>'
 def m(t): return f'<span style="font-family:\'IBM Plex Mono\',monospace;color:#E6E8F0">{t}</span>'
-NOTE_ART = f'<p style="margin:0;padding:12px 16px;border:1px dashed #4A4F5E;border-radius:10px;font-size:13px;line-height:1.55;color:#959AAD;max-width:1240px"><b style="color:#E6E8F0">About the striped art.</b> Lae’zel’s card art could not be fetched from this session (Scryfall is blocked by its network), so a striped stand-in marked {m("art not loadable")} holds her place in every frame. The app draws her card art there. Raised by Giants and Noble Heritage are real crops from the approved partner add boards (V1), so they are soft at large sizes.</p>'
+NOTE_ART = f'<p style="margin:0;padding:12px 16px;border:1px dashed #4A4F5E;border-radius:10px;font-size:13px;line-height:1.55;color:#959AAD;max-width:1240px"><b style="color:#E6E8F0">Art.</b> Lae’zel’s art is from the card image Hugh supplied (R1.1). Raised by Giants and Noble Heritage are crops from the approved partner add board V1, so they are soft when drawn large.</p>'
 
 boards = {}
 boards["Main.dc.html"] = (1600, 1860, "Main · a Background beside an opponent", page("Opponent Background: main", 1600, 1860,
