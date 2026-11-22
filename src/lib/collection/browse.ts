@@ -957,10 +957,10 @@ function matchesName(card: Pick<BrowseCard, "name" | "printedName">, search: str
 }
 
 /**
- * Does this card answer to `search`: by either name (a substring, as ever), or by its type line, whole words only?
- * "saga", "zombie" and "equipment" find those cards, and "art" does not find Artifact. The FRONT face's type line, the
- * one the Type filter reads, and every typed word must be one of its words ("legendary elf" finds a Legendary Creature
- * - Elf). The one predicate the server's window and the browser both run, so they cut the same list.
+ * Does this card answer to `search`: by either name (a substring, as ever), or by its type line, word by word? Every
+ * typed word must START a word of the FRONT face's type line, the face the Type filter reads, so "zom" finds a Zombie as
+ * you type, "saga" and "equipment" find those cards, and "legendary elf" finds a Legendary Creature - Elf. The one
+ * predicate the server's window and the browser both run, so they cut the same list.
  *
  * `search` arrives trimmed and lowercased, as for `matchesName`.
  */
@@ -971,8 +971,8 @@ export function matchesSearch(
   if (matchesName(card, search)) return true;
   const typed = search.split(/\s+/).filter(Boolean);
   if (typed.length === 0) return false;
-  const words = new Set(frontFace(card.typeLine ?? "").toLowerCase().split(/[\s\u2014-]+/).filter(Boolean));
-  return typed.every((w) => words.has(w));
+  const words = frontFace(card.typeLine ?? "").toLowerCase().split(/[\s\u2014-]+/).filter(Boolean);
+  return typed.every((w) => words.some((word) => word.startsWith(w)));
 }
 
 export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseListCard[] {

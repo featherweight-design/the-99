@@ -779,14 +779,15 @@ describe("toListCards", () => {
 
 describe("matchesSearch: type words", () => {
   const c = (name: string, typeLine: string, printedName: string | null = null) => ({ name, printedName, typeLine });
-  it("finds a card by a whole word of its type line", () => {
+  it("finds a card by a word of its type line", () => {
     expect(matchesSearch(c("Doom Blade Zed", "Creature — Zombie Wizard"), "zombie")).toBe(true);
     expect(matchesSearch(c("The Eldest Reborn", "Enchantment — Saga"), "saga")).toBe(true);
     expect(matchesSearch(c("Sword of Fire", "Artifact — Equipment"), "equipment")).toBe(true);
   });
-  it("never matches part of a word: art is not Artifact", () => {
-    expect(matchesSearch(c("Sol Ring", "Artifact"), "art")).toBe(false);
-    expect(matchesSearch(c("Sol Ring", "Artifact"), "artifact")).toBe(true);
+  it("matches the start of a type word, so a half-typed word already finds", () => {
+    expect(matchesSearch(c("Doom Blade Zed", "Creature \u2014 Zombie Wizard"), "zom")).toBe(true);
+    expect(matchesSearch(c("Sol Ring", "Artifact"), "art")).toBe(true);
+    expect(matchesSearch(c("Sol Ring", "Artifact"), "tifact")).toBe(false);
   });
   it("needs every typed word in the type line", () => {
     expect(matchesSearch(c("Llanowar Elves", "Creature — Elf Druid"), "creature elf")).toBe(true);

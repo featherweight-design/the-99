@@ -1,6 +1,6 @@
 // Collection Type search, at 390x844 and 1300x900. Typing a type-line word in /collection's search finds cards
 // by type as well as name: "zombie" and "saga" must return cards, a word that is no name and no type returns none,
-// and "art" must not return a card only because it is an Artifact. Read-only. The account needs a Zombie that is
+// and a half-typed type word ("zom") already finds the Zombies. Read-only. The account needs a Zombie that is
 // not named for one (it fails on main when none matches by name).
 //
 //   PROBE_BASE=http://localhost:<port> [PROBE_SHOTS=<dir>] pnpm probe:type-search
@@ -62,13 +62,13 @@ for (const vp of VIEW) {
   if (process.env.PROBE_SHOTS) await page.addStyleTag({ content: "[data-seat-notice-stack]{display:none!important}" });
   if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/zombie-${vp.width}.png` });
   const saga = await count("saga");
-  const art = await count("art");
+  const zom = await count("zom");
   const artifact = await count("artifact");
   const none = await count("xqzvkw");
   check(`${vp.label}: "zombie" finds cards`, zombie > 0, `${zombie}`);
   check(`${vp.label}: "saga" finds cards`, saga > 0, `${saga}`);
   check(`${vp.label}: "artifact" finds the Artifacts`, artifact > 0, `${artifact}`);
-  check(`${vp.label}: "art" is not "artifact"`, art < artifact, `art ${art}, artifact ${artifact}`);
+  check(`${vp.label}: "zom" finds the Zombies as you type`, zom >= zombie && zom > 0, `zom ${zom}, zombie ${zombie}`);
   check(`${vp.label}: nonsense finds none`, none === 0, `${none}`);
   await context.close();
 }
