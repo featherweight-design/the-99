@@ -127,6 +127,15 @@ const measure = (page) =>
         const stepper = h.querySelector("button").parentElement;
         return { half: h.clientWidth, stepper: stepper.offsetWidth, overflow: h.scrollWidth - h.clientWidth };
       }),
+      // Every card's buttons inside the card's box: the card clips (overflow-hidden), so a stepper too wide hides its +.
+      outside: cards.flatMap((c) => {
+        const r = c.getBoundingClientRect();
+        return [...c.querySelectorAll("button")].filter((btn) => {
+          const q = btn.getBoundingClientRect();
+          return q.left < r.left - 0.5 || q.right > r.right + 0.5 || q.top < r.top - 0.5 || q.bottom > r.bottom + 0.5;
+        }).map((btn) => btn.getAttribute("aria-label"));
+      }),
+      cardW: cards.map((c) => c.clientWidth),
       buttons: cards.flatMap((c) => [...c.querySelectorAll("button")].map((b) => Math.min(b.offsetWidth, b.offsetHeight))),
       tableGap: table.offsetLeft - (mana.offsetLeft + mana.offsetWidth),
     };
@@ -150,6 +159,7 @@ try {
         m.halves.length === 2 && m.halves.every((h) => h.stepper <= h.half && h.overflow <= 0),
         m.halves.map((h) => `half ${h.half}px, stepper ${h.stepper}px, overflow ${h.overflow}`).join("; "),
       );
+      check(`${s.name}: every card's stepper inside its card`, m.outside.length === 0, `cards ${m.cardW.join("/")}px; outside: ${m.outside.join(", ") || "none"}`);
       check(`${s.name}: every damage button at least 44px`, m.buttons.length === 12 && Math.min(...m.buttons) >= 44, `${m.buttons.length} buttons, smallest ${Math.min(...m.buttons)}px`);
       // End game inside the half sheet: the outcome tiles on screen, inside the sheet.
       const sheet = page.getByTestId("tracker-sheet");

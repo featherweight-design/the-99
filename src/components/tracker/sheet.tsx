@@ -124,7 +124,8 @@ export function Sheet({
 
   return (
     <div className="absolute inset-0 z-30" style={{ containerType: "size" }}>
-      {tablet ? <button type="button" tabIndex={-1} aria-label={copy.sheet.close} onClick={onClose} className="absolute inset-0 cursor-default bg-[rgba(0,0,0,.42)] motion-safe:animate-[sheet-veil_.26s_ease-out_both]" data-testid="sheet-veil" /> : null}
+      {tablet ? // The veil is a pointer target only: ✕ and Esc close the sheet for a keyboard or screen reader, so it stays out of both.
+        <button type="button" tabIndex={-1} aria-hidden onClick={onClose} className="absolute inset-0 cursor-default bg-[rgba(0,0,0,.42)] motion-safe:animate-[sheet-veil_.26s_ease-out_both]" data-testid="sheet-veil" /> : null}
       {/* The seat's turn sits on this wrapper, not on the dialog: the dialog's sheet-in keyframe animates `transform`, and
           would replace a rotation drawn there until it ends, so a sheet opened from an upside-down seat rose upright. */}
       <div className="absolute left-1/2 top-1/2" style={{ width: sideways ? "100cqh" : "100%", height: sideways ? "100cqw" : "100%", transform: `translate(-50%, -50%) rotate(${rot}deg)` }}>
