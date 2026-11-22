@@ -220,12 +220,16 @@ try {
       const k0 = await page.getByTestId("dice-roll").getAttribute("data-k");
       const b = await target.boundingBox();
       if (!b) return report(`9 the ${what} takes a tap`, false, "not drawn");
+      const at = await page.evaluate(([x, y]) => {
+        const e = document.elementFromPoint(x, y);
+        return e ? `${e.tagName.toLowerCase()}[${e.getAttribute("data-testid") ?? e.className.toString().slice(0, 40)}]` : "nothing";
+      }, [b.x + b.width / 2, b.y + b.height / 2]);
       await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
       await page.waitForTimeout(300);
       const open = (await page.getByTestId("dice-roll").count()) > 0;
       const k1 = open ? await page.getByTestId("dice-roll").getAttribute("data-k") : null;
       report(`9 tapping the ${what} keeps the roll open`, open);
-      report(`9 tapping the ${what} rolls again`, open && k1 !== k0, `${k0} -> ${k1}`);
+      report(`9 tapping the ${what} rolls again`, open && k1 !== k0, `${k0} -> ${k1}, pressed ${at} at ${[b.x + b.width / 2, b.y + b.height / 2].map(Math.round)}`);
     };
     if (coinDrawn) await rolledAgain(coin, "coin");
     else report("9 tapping the coin rolls again", false, "no coin drawn");
