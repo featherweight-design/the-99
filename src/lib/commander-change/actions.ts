@@ -8,6 +8,7 @@ import { requireUserId } from "../auth";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
 import { loadChangeCandidates, type ChangeCandidates } from "./candidates";
+import { loadOpenedCards } from "./opened-cards";
 import type { CommanderPair } from "./pending";
 import { writeUndoPartnerAdd, type UndoPartnerAddResult } from "./undo-write";
 import { writeCommanderChange, type ChangeCommanderResult } from "./write";
@@ -73,4 +74,16 @@ export async function readChangeCandidates(deckId: string): Promise<ChangeCandid
   const userId = await requireUserId();
   if (!isUuid(deckId)) return null;
   return loadChangeCandidates(deckId, userId);
+}
+
+/**
+ * The colors a partner opens and the reader's own cards in them that the pair's decks run, read when the
+ * add's confirm opens. Null when the deck is not the reader's or the two cannot pair.
+ */
+export async function readOpenedCards(
+  deckId: string, partnerOracleId: string,
+): Promise<Awaited<ReturnType<typeof loadOpenedCards>>> {
+  const userId = await requireUserId();
+  if (!isUuid(deckId) || !isUuid(partnerOracleId)) return null;
+  return loadOpenedCards(deckId, userId, partnerOracleId);
 }

@@ -22,6 +22,10 @@ import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/comma
 import type { PriceFact } from "../../lib/decks/price";
 import { tradeShape, type TradeShape } from "../../lib/commander-change/pending";
 import { useChangeCommander } from "./change-commander-context";
+import { AddPartnerSection, SectionHead, isKeptPartner } from "./partner-add-section";
+import { PartnerAddConfirm } from "./partner-add-confirm";
+import type { PartnerOption } from "../../lib/commander-change/partner-add";
+import { partnerAddCopy } from "../../lib/copy/partner-add";
 import { SheetGroupHeading, SheetGroupToggle } from "../ui/sheet-group";
 import { Chevron } from "../ui/chevron";
 import { ArtLayer } from "../ui/art-layer";
@@ -29,7 +33,7 @@ import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 /** Each group's first screen, the swap sheet's own (Hugh's staging walk, 2026-09-25). */
-const GROUP_SHOWN = 5;
+export const GROUP_SHOWN = 5;
 
 /** The name a sentence uses: the part before a comma or a face separator. */
 export function shortName(name: string): string {
@@ -82,6 +86,8 @@ export function ChangeCommanderSheet({
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [chosen, setChosen] = useState<Candidate | null>(null);
+  // A partner from outside the deck (#491): its own confirm, with the card that leaves.
+  const [adding, setAdding] = useState<PartnerOption | null>(null);
   // A half-trade's answer to "which one stays", per candidate, so Back and Choose again keep it.
   const [staysBy, setStaysBy] = useState<Record<string, string>>({});
   // Back to the list restores it as it was: the list stays mounted behind the confirm (its open
@@ -95,12 +101,12 @@ export function ChangeCommanderSheet({
     return el;
   };
   useEffect(() => {
-    if (chosen === null && listScroll.current !== null) {
+    if (chosen === null && adding === null && listScroll.current !== null) {
       const el = scroller();
       if (el) el.scrollTop = listScroll.current;
       listScroll.current = null;
     }
-  }, [chosen]);
+  }, [chosen, adding]);
 
   useEffect(() => {
     let live = true;
@@ -115,6 +121,12 @@ export function ChangeCommanderSheet({
   const choose = (c: Candidate) => {
     listScroll.current = scroller()?.scrollTop ?? 0;
     setChosen(c);
+  };
+  const choosePartner = (c: Candidate) => {
+    const add = phase.kind === "ready" ? [...(phase.data.partnerAdd?.yours ?? []), ...(phase.data.partnerAdd?.toBuy ?? [])].find((o) => o.key === c.key) : null;
+    if (!add) return choose(c); // a partner already in the 99: the shipped confirm, nothing leaves
+    listScroll.current = scroller()?.scrollTop ?? 0;
+    setAdding(add);
   };
 
   return (
@@ -138,6 +150,16 @@ export function ChangeCommanderSheet({
         {phase.kind === "failed" ? (
           <Failed pair={pair} onRetry={() => { setPhase({ kind: "loading" }); setAttempt((n) => n + 1); }} />
         ) : null}
+        {phase.kind === "ready" && adding ? (
+          <PartnerAddConfirm
+            deckId={deckId}
+            data={phase.data}
+            option={adding}
+            hasVersion={hasVersion}
+            onBack={() => setAdding(null)}
+            onDone={onClose}
+          />
+        ) : null}
         {phase.kind === "ready" && chosen ? (
           <Confirm
             deckId={deckId}
@@ -152,8 +174,8 @@ export function ChangeCommanderSheet({
           />
         ) : null}
         {phase.kind === "ready" ? (
-          <div hidden={chosen !== null} className="flex flex-col gap-[16px]">
-            <List data={phase.data} pair={pair} onChoose={choose} />
+          <div hidden={chosen !== null || adding !== null} className="flex flex-col gap-[16px]">
+            <List data={phase.data} pair={pair} onChoose={choose} onChoosePartner={choosePartner} />
           </div>
         ) : null}
       </div>
@@ -230,12 +252,20 @@ function Failed({ pair, onRetry }: { pair: boolean; onRetry: () => void }) {
   );
 }
 
-function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean; onChoose: (c: Candidate) => void }) {
+function List({ data, pair, onChoose, onChoosePartner }: {
+  data: ChangeCandidates; pair: boolean; onChoose: (c: Candidate) => void; onChoosePartner: (c: Candidate) => void;
+}) {
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [allYours, setAllYours] = useState(false);
   const [allBuy, setAllBuy] = useState(false);
   const firstScreen = (rows: Candidate[], all: boolean) => (all ? rows : rows.slice(0, GROUP_SHOWN));
-  const yours = firstScreen(data.yours, allYours);
+  // A single deck with a partner to add: the Add a partner section leads, and the shipped groups sit under
+  // Replace. A partner already in the 99 moves into the section, where nothing leaves (#491).
+  const adding = !pair && data.partnerAdd !== null && data.current.length === 1;
+  const keptYours = adding ? data.yours.filter((c) => isKeptPartner(c, data.current)) : [];
+  const keptKeys = new Set(keptYours.map((c) => c.key));
+  const replaceYours = data.yours.filter((c) => !keptKeys.has(c.key));
+  const yours = firstScreen(replaceYours, allYours);
   const toBuy = firstScreen(data.toBuy, allBuy);
   // The card modal's Prev/Next walks every candidate, folded or not, as the swap sheet's does.
   const siblings = [...data.yours, ...data.toBuy].flatMap((c) => c.halves.map((h) => ({ oracleId: h.oracleId, name: h.name, imageUri: h.imageUri })));
@@ -244,7 +274,8 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
     name: joinShort(data.current.map((c) => c.name)),
   };
 
-  if (data.yours.length === 0 && data.toBuy.length === 0) {
+  const sectionRows = adding ? keptYours.length + data.partnerAdd!.yours.length + data.partnerAdd!.toBuy.length : 0;
+  if (data.yours.length === 0 && data.toBuy.length === 0 && sectionRows === 0) {
     const identity = data.identity.length === 0 ? "colorless" : guildLabel(data.identity);
     return (
       <div className="flex flex-col gap-[10px] pt-[18px] pb-[6px]">
@@ -278,12 +309,27 @@ function List({ data, pair, onChoose }: { data: ChangeCandidates; pair: boolean;
   return (
     // One reading order across both groups (`ArrivalOrder`): the group you own fills before the one to buy.
     <ArrivalOrder>
-      <Lede pair={pair} counted={data.counted} />
-      {data.yours.length > 0 ? (
-        <section className="flex flex-col" aria-label={copy.sheet.groupYours(data.yours.length)}>
-          <CandidateGroupHeading label={copy.sheet.groupYours(data.yours.length)} note={copy.sheet.groupNote} />
+      {adding && sectionRows > 0 ? (
+        <>
+          <AddPartnerSection
+            data={data}
+            ability={data.partnerAdd!.ability}
+            short={shortName(data.current[0].name)}
+            keptYours={keptYours}
+            onChoose={onChoosePartner}
+          />
+          <SectionHead title={partnerAddCopy.section.replaceTitle(shortName(data.current[0].name))}>
+            <p className="m-0 text-[13.5px] leading-[1.55] text-pretty" style={{ color: "var(--fg-body)" }}>{copy.sheet.lede.single}</p>
+          </SectionHead>
+        </>
+      ) : (
+        <Lede pair={pair} counted={data.counted} />
+      )}
+      {replaceYours.length > 0 ? (
+        <section className="flex flex-col" aria-label={copy.sheet.groupYours(replaceYours.length)}>
+          <CandidateGroupHeading label={copy.sheet.groupYours(replaceYours.length)} note={copy.sheet.groupNote} />
           {yours.map(row)}
-          <GroupToggle total={data.yours.length} all={allYours} onToggle={() => setAllYours((v) => !v)} />
+          <GroupToggle total={replaceYours.length} all={allYours} onToggle={() => setAllYours((v) => !v)} />
         </section>
       ) : (
         <p className="font-mono text-[11px]" style={{ color: "var(--fg-muted)" }}>{copy.sheet.ownsNone}</p>
@@ -321,7 +367,7 @@ export function CandidateGroupHeading({ label, note }: { label: string; note: st
   return <SheetGroupHeading as="h3" label={label} note={note} />;
 }
 
-function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | null }) {
+export function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | null }) {
   if (half.inDeck) {
     // `in this deck · trades places`, its separator in `--border-strong` as the handoff draws it.
     const [where, what] = copy.sheet.inDeck.split(" · ");
@@ -349,7 +395,7 @@ function Mark({ half, newestAsOf }: { half: CandidateHalf; newestAsOf: Date | nu
   return <AvailabilityMarker bareOne availability={half.availability} density="row" className="flex-none font-mono text-[10.5px]" />;
 }
 
-function Thumb({ halves }: { halves: CandidateHalf[] }) {
+export function Thumb({ halves }: { halves: CandidateHalf[] }) {
   return (
     <span
       aria-hidden="true"
@@ -464,7 +510,7 @@ export function CandidateRow({
       {open ? (
         <div
           id={panelId}
-          className="mb-[12px] ml-[68px] flex flex-col gap-[9px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[11px] pb-[13px]"
+          className="mb-[12px] flex flex-col gap-[9px] rounded-[9px] border border-[color:var(--border)] px-[13px] pt-[11px] pb-[13px]"
           style={{ background: "var(--surface-sunken)" }}
         >
           <p className="font-mono text-[10px] tracking-[0.12em] uppercase" style={{ color: "var(--fg-faint)" }}>
@@ -492,7 +538,7 @@ export function CandidateRow({
   );
 }
 
-function Plate({
+export function Plate({
   cards, label, tone, compare, pair, fates,
 }: {
   cards: { oracleId: string; name: string; imageUri: string | null; manaCost: string | null }[];

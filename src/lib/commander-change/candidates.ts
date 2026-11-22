@@ -20,6 +20,7 @@ import { db } from "../../db";
 import { cards, collectionItems, commanderPairSupport, commanderPairSupportCards, commanderSupportCards, deckCards, decks } from "../../db/schema";
 import type { Availability } from "../decks/availability";
 import { loadAvailability } from "../decks/availability-query";
+import { isLandFace } from "../cards/facet";
 import { isBasicLand } from "../decks/grouping";
 import type { PriceFact } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
@@ -86,7 +87,7 @@ export type ChangeCandidates = {
   newestAsOf: Date | null;
   /** Partners this single commander could take beside it. Null when the deck cannot be offered the
    *  add (a pair already leads it, its 99 holds more than 99 cards, nothing pairs with the
-   *  commander). Reads only: no caller yet. */
+   *  commander). Drawn by the sheet's Add a partner section. */
   partnerAdd: PartnerAdd | null;
 };
 
@@ -347,8 +348,8 @@ export async function loadChangeCandidates(
     const f = factBy.get(id);
     return f !== undefined && isCommanderCandidate(f);
   }))
-    // `pairAdd` (#491) is a shape the write takes and no sheet draws yet: held back here until the
-    // Add a partner section lands, so the sheet never offers a change it cannot confirm.
+    // `pairAdd` (#491) is offered by the Add a partner section (`partnerAdd`), never as a Replace
+    // candidate: the Replace list only carries trades that swap a commander out.
     .filter((k) => {
       const shape = tradeShape(k.ids, currentIds, inDeck);
       return shape !== null && shape !== "pairAdd";
@@ -435,6 +436,10 @@ export async function loadChangeCandidates(
     };
     return {
       needsCut,
+      bodyTotal,
+      ability: partnerAbility(currentCards[0].oracleText, currentCards[0].typeLine) ?? { kind: "generic" },
+      landCeiling,
+      lands: bodyRows.reduce((n, r) => (isLandFace(r.typeLine) ? n + r.quantity : n), 0),
       cutPool: needsCut
         ? cuttable(cutRows, commanders, locked).map((r) => ({ oracleId: r.oracleId, name: r.name, imageUri: r.imageUri }))
         : [],

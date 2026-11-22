@@ -7,9 +7,19 @@
 // which lives inside the shell this wraps, so the door that was pressed renders it (through a
 // portal, since one of the two spines is always `display: none`).
 
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { DECK_TOAST_CLAIM } from "../collection/edit-toast";
+import { PartnerAddUndoToast } from "./partner-add-undo-toast";
 
 export type DoorWidth = "desktop" | "mobile";
+
+/** What a partner add wrote, for the Undo toast that follows it (#491). */
+export type PartnerAdded = {
+  stays: string;
+  partner: string;
+  cut: string | null;
+  names: { stays: string; partner: string; cut: string | null };
+};
 
 type Door = {
   deckId: string;
@@ -28,6 +38,8 @@ type Door = {
    *  success focus lands on the banner's commander line). */
   focusPending: boolean;
   focusTaken: () => void;
+  /** A partner add landed: the provider holds its Undo toast, because the sheet that made the add is gone. */
+  partnerAdded: (info: PartnerAdded) => void;
 };
 
 const Context = createContext<Door | null>(null);
@@ -48,17 +60,26 @@ export function ChangeCommanderProvider({
   const [openFrom, setOpenFrom] = useState<DoorWidth | null>(null);
   const [announced, setAnnounced] = useState("");
   const [focusPending, setFocusPending] = useState(false);
+  const [added, setAdded] = useState<{ n: number; info: PartnerAdded } | null>(null);
+  // Any other receipt in the deck stack replaces this one (the floor holds the newest).
+  useEffect(() => {
+    const leave = () => setAdded(null);
+    window.addEventListener(DECK_TOAST_CLAIM, leave);
+    return () => window.removeEventListener(DECK_TOAST_CLAIM, leave);
+  }, []);
   const value = useMemo(() => ({
     deckId, deckName, pair, hasVersion, openFrom,
-    openSheet: (from: DoorWidth) => setOpenFrom(from),
+    openSheet: (from: DoorWidth) => { setAdded(null); setOpenFrom(from); },
     closeSheet: () => setOpenFrom(null),
     announce: (text: string) => { setAnnounced(text); setFocusPending(true); },
     focusPending,
     focusTaken: () => setFocusPending(false),
+    partnerAdded: (info: PartnerAdded) => setAdded((a) => ({ n: (a?.n ?? 0) + 1, info })),
   }), [deckId, deckName, pair, hasVersion, openFrom, focusPending]);
   return (
     <Context.Provider value={value}>
       {children}
+      {added ? <PartnerAddUndoToast key={added.n} deckId={deckId} {...added.info} onDone={() => setAdded(null)} /> : null}
       <span className="sr-only" aria-live="polite">{announced}</span>
     </Context.Provider>
   );
