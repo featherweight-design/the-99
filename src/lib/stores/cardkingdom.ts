@@ -1,3 +1,4 @@
+import { isUuid } from "../uuid";
 import { dollarsToCents, type StorePriceRow } from "./rows";
 
 export const CARDKINGDOM_PRICELIST_URL = "https://api.cardkingdom.com/api/v2/pricelist";
@@ -53,9 +54,11 @@ export type CardKingdomFeed = { rows: StorePriceRow[]; asOf: Date; skipped: numb
 /**
  * Card Kingdom's pricelist to one row per printing, the finishes folded together.
  *
- * `meta.created_at` (`"2026-11-22 12:11:03"`, no zone) is read as UTC. It only orders Card Kingdom's own runs
- * against each other (liveness is per store), so the zone shifts nothing that is compared. `price_retail` is the
- * NM retail price; a row with no Scryfall id, finish, price, quantity or link is skipped and counted.
+ * `meta.created_at` (`"2026-11-22 12:11:03"`, no zone) is read as UTC. The feed does not say its zone
+ * (likely US local), so `as_of` is only for ordering Card Kingdom's own runs against each other (liveness is per
+ * store), where a fixed offset shifts nothing; never compare it with the clock. A daily midday build never meets
+ * the repeated hour of a DST fall-back. `price_retail` is the
+ * NM retail price; a row with no well-formed Scryfall id, finish, price, quantity or link is skipped and counted.
  */
 export function parseCardKingdomPricelist(payload: unknown): CardKingdomFeed {
   const p = payload as { meta?: { created_at?: unknown; base_url?: unknown }; data?: unknown } | null;
@@ -72,18 +75,23 @@ export function parseCardKingdomPricelist(payload: unknown): CardKingdomFeed {
   let collapsed = 0;
   for (const raw of p.data as unknown[]) {
     const row = (raw ?? {}) as Record<string, unknown>;
-    const id = row.scryfall_id;
+    // The id lands in a uuid column, so a malformed one would fail the whole lookup chunk, not one row: one
+    // 35-character id in the 2026-11-22 feed did exactly that. Lowercased, because the lookup hands back
+    // Postgres's canonical form and a row is matched against it as a string.
+    const id = isUuid(row.scryfall_id) ? (row.scryfall_id as string).toLowerCase() : null;
     const finish = finishOf(row);
     const cents = dollarsToCents(row.price_retail);
     const quantity = row.qty_retail;
-    if (typeof id !== "string" || id.length === 0 || finish === null || cents === null
+    if (id === null || finish === null || cents === null
       || typeof quantity !== "number" || !Number.isSafeInteger(quantity) || quantity < 0
       || typeof row.url !== "string" || row.url.length === 0) {
       skipped++;
       continue;
     }
     // Relative to the feed's own base, and refused if it resolves anywhere else: a link we draw goes to Card Kingdom.
-    const url = new URL(row.url, base);
+    // A link that does not parse is one bad row, counted like the others, never a throw out of the whole feed.
+    let url: URL;
+    try { url = new URL(row.url, base); } catch { skipped++; continue; }
     if (url.origin !== new URL(base).origin) { skipped++; continue; }
     const sku: Sku = { finish, cents, quantity, url: url.href };
     const finishes = byPrinting.get(id) ?? {};

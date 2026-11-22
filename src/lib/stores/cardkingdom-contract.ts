@@ -9,11 +9,13 @@ export function cardKingdomContractProblems(raw: unknown): string[] {
   if (typeof payload?.meta?.created_at !== "string") problems.push("meta.created_at is not a string");
   if (typeof payload?.meta?.base_url !== "string") problems.push("meta.base_url is not a string");
   if (!Array.isArray(payload?.data)) return [...problems, "data is not an array"];
-  const first = payload.data[0];
-  if (first === undefined) return [...problems, "data is empty"];
-  if (typeof first !== "object" || first === null) return [...problems, "first entry is not an object"];
+  if (payload.data.length === 0) return [...problems, "data is empty"];
+  // Across every entry, not the first alone: one odd first SKU must not fail the check, and a field that went missing
+  // from a fifth of the feed must not pass it. A key may hold null (612 ids were null on 2026-11-22); it must exist.
+  const entries = payload.data.length;
   for (const key of REQUIRED) {
-    if (!(key in first)) problems.push(`first entry is missing ${key}`);
+    const missing = payload.data.filter((e) => typeof e !== "object" || e === null || !(key in e)).length;
+    if (missing / entries > 0.05) problems.push(`${key} is missing from ${missing} of ${entries} entries`);
   }
   if (problems.length > 0) return problems;
 
