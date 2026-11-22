@@ -1821,6 +1821,13 @@
       "when": 1795284446421,
       "tag": "0261_pending_picks_per_deck",
       "breakpoints": true
+    },
+    {
+      "idx": 262,
+      "version": "7",
+      "when": 1795307184213,
+      "tag": "0262_log_reminder_games",
+      "breakpoints": true
     }
   ]
 }

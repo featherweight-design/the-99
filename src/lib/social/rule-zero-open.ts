@@ -3,9 +3,10 @@
  * and its morning has not come (`expires_at > now()`, the database's clock, never one passed in). Every read that
  * decides "open" uses `tableOpen`/`tableOpenAs`; none spells `expires_at > now()` on its own.
  *
- * Two deliberate exceptions, both about a host-closed table's seated players keeping *Log this game* until the morning:
- * `tableLoggable` below, and `setTable`'s cleanup, which deletes only clock-expired rows (`expires_at <= now()`) so a
- * host-closed row lingers until its morning. Neither can shadow a new table: every pod-table lookup filters `tableOpen`.
+ * Two deliberate exceptions, both about a seated player keeping *Log this game* after the night:
+ * `tableKept` below, and `setTable`'s cleanup, which deletes only rows a week past their morning (`tablePastKept`), so a
+ * clock-expired or host-closed row lingers that long. Neither can shadow a new table: every pod-table lookup filters
+ * `tableOpen`, so a kept row never reads as open. `tableLoggable` stays inside the night (the tracker's own window).
  *
  */
 import { sql } from "drizzle-orm";
@@ -19,6 +20,12 @@ export const tableEnded = sql`(${ruleZeroTables.closedAt} is not null or ${ruleZ
 
 /** Still inside its original night: where the game log keeps its seats, whether or not the host closed it. */
 export const tableLoggable = sql`${ruleZeroTables.expiresAt} > now()`;
+
+/** Within a week of its morning (the database's clock): where an ended table still draws its closed page and the log's prefill. A kept table is NOT open; see `tableOpen`. */
+export const tableKept = sql`(${ruleZeroTables.expiresAt} + interval '7 days' > now())`;
+
+/** Past its keep window: the rows `setTable` deletes. The exact complement of `tableKept`. */
+export const tablePastKept = sql`(${ruleZeroTables.expiresAt} + interval '7 days' <= now())`;
 
 /** `tableOpen` for raw SQL, over a table alias written in this repo's own code (never a client string). */
 export const tableOpenAs = (alias: string) => sql.raw(`(${alias}.closed_at is null and ${alias}.expires_at > now())`);

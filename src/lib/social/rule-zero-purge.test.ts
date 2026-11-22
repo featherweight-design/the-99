@@ -54,4 +54,13 @@ describe("purgeRuleZeroIn", () => {
     expect(deleted).toHaveLength(4);
     expect(out).toEqual({ seats: 0, tables: 1 });
   });
+
+  it("removes a table by its setter, closer or seat with no expiry filter, so an idle pod's week-old table goes with the account", async () => {
+    const { tx, executed, deleted } = fakeTx([[{ tableId: "t1" }], [], [], [{ id: "a" }], []]);
+    await purgeRuleZeroIn(tx as never, "user_gone");
+    for (const text of [...executed, ...deleted]) {
+      expect(text).not.toContain("expires_at");
+      expect(text).not.toContain("interval");
+    }
+  });
 });

@@ -9,20 +9,20 @@
  * **What is stored**: each Start seat's account, seat number, deck and place, and when the roster was issued, and
  * nothing the roster does not name. A roster issued before the stored result's refuses: a stale tab or a device left
  * from an earlier game on the same table cannot replace the newer game's result.
- * A game on the same table replaces the last one in one transaction under the table row's lock, the lock every seat
- * writer takes. Only the table's own purge and the account purge remove a result (`purgeRuleZeroIn`): nothing else
+ * A game on the same table is stored beside the earlier ones, keyed by the roster's `started_at` (its id); a re-save
+ * of the same game replaces its rows, in one transaction under the table row's lock, the lock every seat writer takes. Only the table's own purge and the account purge remove a result (`purgeRuleZeroIn`): nothing else
  * makes a played game unplayed, except Undo on the device that held the game (`undoTableResult`), and only until
  * anyone seated has logged it.
  * **What leaves the server**: nothing with an account id. The log's prefill draws the stored seats (`resultSeatsQuery`,
  * in `rule-zero-log.ts`) under the viewer's grant.
  */
-import { and, asc, eq, inArray, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { deckGames, decks, podMembers, ruleZeroResultSeats, ruleZeroSeats, ruleZeroTables, socialProfiles } from "../../db/schema";
 import type { ThirdPartyName } from "../person-name/brand";
 import { named } from "../person-name/mint";
-import { tableLoggable } from "./rule-zero-open";
+import { tableKept, tableLoggable } from "./rule-zero-open";
 import { openRoster, rosterSecret, sealRoster, type RosterSeat } from "./rule-zero-roster";
 import { isUuid } from "./rules";
 
@@ -111,35 +111,53 @@ export async function saveTableResult(viewerId: string, tableId: unknown, roster
     const wanted = start.flatMap((s) => (s.deckId === null ? [] : [s.deckId]));
     // FOR SHARE: a deck delete cannot commit between this read and the insert, which would fail the deck's foreign key.
     const owned = wanted.length === 0 ? [] : await tx.select({ id: decks.id, userId: decks.userId }).from(decks).where(inArray(decks.id, wanted)).for("share");
-    await tx.delete(ruleZeroResultSeats).where(eq(ruleZeroResultSeats.tableId, tableId));
+    // Only this game's rows: an earlier game at the table stays, loggable for its week (`tableKept`).
+    await tx.delete(ruleZeroResultSeats).where(gameRows(tableId, startedAt));
     await tx.insert(ruleZeroResultSeats).values(rows.map((r) => ({ tableId, ...r, deckId: startDeckOf(start, owned, r), startedAt })));
     return "saved";
   });
 }
 
 /**
- * The filter every read of a stored result for the viewer's log carries: none once the viewer has logged a game from
- * this table since the result was saved, so a result never prefills a second log (the next game's save is newer again).
+ * The filter every read of a stored result for the viewer's log carries: none once the viewer has logged THIS game, so a
+ * result never prefills a second log (the next game is another game, with its own id).
  */
 export const notLoggedSince = (tableId: string, viewerId: string) => sql`not ${loggedSinceSave(viewerId, tableId)}`;
 
 /**
- * A game logged at or after the stored result's save: the one rule for "this result's game is logged", shared by the
- * prefill (`notLoggedSince`), Undo's refusal (`gameLoggedQuery`) and the U3 read (`gameLoggerQuery`). `created_at` is a
- * UTC wall time without a zone; `saved_at` has one.
+ * A log of the stored row's game: `rule_zero_game_at` names it, or, for a log made before games were addressable, the
+ * log was made at or after the result's save. `created_at` is a UTC wall time without a zone; `saved_at` has one.
  */
-const loggedAtOrAfterSave = (createdAt: SQL) => sql`(${createdAt} at time zone 'UTC') >= ${ruleZeroResultSeats}.saved_at`;
+const logsThisGame = (gameAt: SQL, createdAt: SQL) =>
+  sql`(${gameAt} = ${ruleZeroResultSeats}.started_at or (${gameAt} is null and (${createdAt} at time zone 'UTC') >= ${ruleZeroResultSeats}.saved_at))`;
 
-/** A game from `table` by `user` since the save. Aliased and qualified, as a correlated subquery must be. */
+/** A game from `table` by `user` that logged this row's game. Aliased and qualified, as a correlated subquery must be. */
 const loggedSinceSave = (user: SQL | string, table: SQL | string) => sql`exists (
       select 1 from ${deckGames} dg
-      where dg.user_id = ${user} and dg.rule_zero_table_id = ${table} and ${loggedAtOrAfterSave(sql`dg.created_at`)}
+      where dg.user_id = ${user} and dg.rule_zero_table_id = ${table} and ${logsThisGame(sql`dg.rule_zero_game_at`, sql`dg.created_at`)}
     )`;
 
-/** The stored placements of one table for the viewer's prefill (which applies the table's grant): account and place only. */
-export const resultPlacesQuery = (tableId: string, viewerId: string, q: Pick<typeof db, "select"> = db) =>
+/** A game's id in a URL and a payload: whole milliseconds since the epoch, the precision a JavaScript Date (and the tracker's roster) carries. Rounded, because `extract` is not exact in a double. */
+export const gameMsOf = (col: SQL | typeof ruleZeroResultSeats.startedAt) => sql<number>`(round(extract(epoch from ${col}) * 1000))::float8`.mapWith(Number);
+
+/** The viewer's own newest game at a table that they played and have not logged, or the one `gameMs` names. Null when none. Apart so a test can render its SQL. */
+export const pickGameQuery = (viewerId: string, tableId: string, gameMs: number | null, q: Pick<typeof db, "select"> = db) =>
+  q.select({ startedAt: ruleZeroResultSeats.startedAt, ms: gameMsOf(ruleZeroResultSeats.startedAt) }).from(ruleZeroResultSeats)
+    .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroResultSeats.tableId))
+    .where(and(
+      eq(ruleZeroResultSeats.tableId, tableId),
+      eq(ruleZeroResultSeats.userId, viewerId),
+      tableKept,
+      notLoggedSince(tableId, viewerId),
+      gameMs === null ? undefined : sql`${gameMsOf(ruleZeroResultSeats.startedAt)} = ${gameMs}`,
+    ))
+    .orderBy(desc(ruleZeroResultSeats.startedAt))
+    .limit(1);
+
+/** The stored placements of one game for the viewer's prefill (which applies the table's grant): account and place only. */
+export const resultPlacesQuery = (tableId: string, viewerId: string, game: Date, q: Pick<typeof db, "select"> = db) =>
   q.select({ userId: ruleZeroResultSeats.userId, place: ruleZeroResultSeats.place }).from(ruleZeroResultSeats).where(and(
-    eq(ruleZeroResultSeats.tableId, tableId),
+    gameRows(tableId, game),
     notLoggedSince(tableId, viewerId),
   ));
 
@@ -215,7 +233,7 @@ export const gameLoggerQuery = (viewerId: string, tableId: string, startedAt: Da
     .innerJoin(deckGames, and(
       eq(deckGames.userId, ruleZeroResultSeats.userId),
       eq(deckGames.ruleZeroTableId, ruleZeroResultSeats.tableId),
-      loggedAtOrAfterSave(sql`${deckGames.createdAt}`),
+      logsThisGame(sql`${deckGames.ruleZeroGameAt}`, sql`${deckGames.createdAt}`),
     ))
     .where(and(gameRows(tableId, startedAt), tableLoggable))
     .groupBy(ruleZeroResultSeats.seat, ruleZeroResultSeats.userId, socialProfiles.publicId, socialProfiles.displayName)

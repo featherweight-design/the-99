@@ -170,8 +170,20 @@ export function logPrefillTable(query: Record<string, string | string[] | undefi
   return typeof query.table === "string" ? query.table : null;
 }
 
-/** `/decks/<seated deck>?tab=games&table=<id>` (plan §PR 8), or null while the viewer's seat waits. */
-export function logGameHref(view: Pick<TableView, "tableId" | "viewerDeckId">): string | null {
+/**
+ * The game the Log opens on: the `game` parameter, whole milliseconds since the epoch (a game's id, `gameMsOf`), read
+ * only beside a table. Anything that is not a plain run of digits within the safe integers reads nothing, so the Log
+ * falls back to the newest game the viewer has not logged.
+ */
+export function logPrefillGame(query: Record<string, string | string[] | undefined>): number | null {
+  if (logPrefillTable(query) === null || typeof query.game !== "string" || !/^[0-9]{1,16}$/.test(query.game)) return null;
+  const ms = Number(query.game);
+  return Number.isSafeInteger(ms) ? ms : null;
+}
+
+/** `/decks/<seated deck>?tab=games&table=<id>[&game=<epoch ms>]` (plan §PR 8), or null while the viewer's seat waits. */
+export function logGameHref(view: Pick<TableView, "tableId" | "viewerDeckId">, gameMs: number | null = null): string | null {
   if (!view.viewerDeckId) return null;
-  return `/decks/${encodeURIComponent(view.viewerDeckId)}?tab=games&table=${encodeURIComponent(view.tableId)}`;
+  const game = gameMs === null ? "" : `&game=${Math.trunc(gameMs)}`;
+  return `/decks/${encodeURIComponent(view.viewerDeckId)}?tab=games&table=${encodeURIComponent(view.tableId)}${game}`;
 }

@@ -31,7 +31,7 @@ import { resolveFlags } from "../flags/snapshot";
 import { ownedDeckArt } from "./rule-zero-art";
 import { ruledSeatOwnersOf, SEATS_MAX, seatDeckVisible } from "./rule-zero";
 import { isUuid } from "./rules";
-import { tableEnded, tableOpen } from "./rule-zero-open";
+import { tableEnded, tableKept, tableOpen } from "./rule-zero-open";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -128,8 +128,8 @@ export function tableGrantQuery(viewerId: string, tableId: string, q: Pick<typeo
       closedAt: ruleZeroTables.closedAt,
       closedBy: ruleZeroTables.closedBy,
       closerName: closer.displayName,
-      // Still inside its original night: a host-closed table keeps Log this game until then (`tableLoggable`).
-      loggable: sql<boolean>`(${ruleZeroTables.expiresAt} > now())`,
+      // Inside its keep window (`tableKept`): an ended table keeps Log this game for a week after its morning.
+      loggable: sql<boolean>`${tableKept}`,
     })
     .from(ruleZeroTables)
     .innerJoin(viewerSeat, and(eq(viewerSeat.tableId, ruleZeroTables.id), eq(viewerSeat.userId, viewerId)))
@@ -137,7 +137,7 @@ export function tableGrantQuery(viewerId: string, tableId: string, q: Pick<typeo
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
     .leftJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroTables.setBy))
     .leftJoin(closer, eq(closer.userId, ruleZeroTables.closedBy))
-    .where(and(eq(ruleZeroTables.id, tableId), closed ? tableEnded : tableOpen));
+    .where(and(eq(ruleZeroTables.id, tableId), closed ? and(tableEnded, tableKept) : tableOpen));
 }
 
 const viewerFriend = alias(friendLinks, "viewer_friend");
@@ -565,7 +565,7 @@ export function closedHow(viewerId: string, table: ClosedGrant): ClosedHow {
 /**
  * The viewer's own table after its night ended, or null: not found, still open, not seated, or no longer in the pod.
  * The same grant as `loadTable` on the other side of the clock, and the same seats; nothing but names and art leaves.
- * A pod's expired tables are deleted at its next setup, so this answers only until then.
+ * An ended table answers for a week past its morning (`tableKept`), then reads as nothing, deleted or not.
  */
 export async function loadClosedTable(viewerId: string, tableId: unknown): Promise<ClosedTable | null> {
   return (await loadClosedTableWith(viewerId, tableId, async () => null))?.closed ?? null;

@@ -3,7 +3,7 @@
 // answers, including a table expiring between two reads.
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
-import { tableEnded, tableLoggable, tableOpen } from "./rule-zero-open";
+import { tableEnded, tableKept, tableLoggable, tableOpen, tablePastKept } from "./rule-zero-open";
 import { closeTableWhere, closeTable, markSeen, openTablesQuery, podSetup, tableFacesQuery, podSetupMembers, reseatTable, setSeatDeck, setTable, setupDecksQuery, startDeck, tableSetup } from "./rule-zero";
 
 const VIEWER = "user_viewer";
@@ -117,6 +117,16 @@ describe("the open predicate (closeTable's lifecycle)", () => {
   it("keeps the game log on the clock alone, so a host-closed table logs until its morning", () => {
     expect(render(tableLoggable)).toBe(`"rule_zero_tables"."expires_at" > now()`);
     expect(render(tableLoggable)).not.toContain("closed_at");
+  });
+
+  it("keeps an ended table for a week past its morning, and a kept table is still not open", () => {
+    expect(render(tableKept)).toBe(`("rule_zero_tables"."expires_at" + interval '7 days' > now())`);
+    expect(render(tablePastKept)).toBe(`("rule_zero_tables"."expires_at" + interval '7 days' <= now())`);
+    // The window never widens "open": open is still the original morning, so a kept row can never read as open, in the
+    // pod row, the Home table card, the open-table check or any other read that filters `tableOpen`.
+    expect(render(tableOpen)).not.toContain("interval");
+    expect(render(tableOpen)).toContain(`"rule_zero_tables"."expires_at" > now()`);
+    expect(render(tableEnded)).not.toContain("interval");
   });
 });
 
