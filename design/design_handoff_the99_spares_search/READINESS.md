@@ -56,3 +56,12 @@ search for the shared matcher; if this builds first, it adds that matcher and Co
 ## Decisions inherited
 
 Calls 1–4 as drawn; Q1 frame always (Hugh), Q2 count and Q3 sort kept as drawn. Strings DRAFT. Ships behind the existing switches.
+
+---
+
+Audited 2026-11-22: concur (Yellow, cold read against origin/main c444a93). Three clarifications the plan PR records beyond the above:
+- `deckNeed`: `loadDeckBuyRows` always computes the user-wide claim model (its `deckIds` argument only narrows rows returned), so reading it on every Spares tab load is a heavy read. The plan measures on staging and decides: read after paint, or a bounded query over the friend's offered ids.
+- Wishlist `Friends' spares` sort: the provider reads in `MAX_SPARES_BATCH` batches, so re-sort once when every batch has landed (`loaded` covers all tiles), not per batch.
+- Wishlist modal's buy tag needs prices (`SparesSheetHost` prices): the Wishlist page loads none for it, so the plan names the source (`loadPrices` over the tiles' ids, after the page, honouring #3200's store choice). Also define the result-line unit (cards, not copies) and adapt `buildTypeOptions`/`CollectionFilterSheet` (typed on `BrowseListCard`, `BrowseFilters`, Set and Availability props) to spare lines.
+
+PR split proposed: (1) shared word-prefix matcher, only if lane 9b's has not landed; (2) Spares tab: data fields, frame, filters, sort, tile line, tests; (3) Wishlist press, provider mount, `stillNeeded` fix, key items, sort.
