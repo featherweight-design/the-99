@@ -2903,6 +2903,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   unchanged while the sheet is open and after it closes. On main the phone sheet opens 227px off screen with the table
   scrolled under it, a 180° seat's sheet rises upright, and seat 3's box covers seat 2. It writes nothing, needs
   `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch. `SHOTS=<dir>` keeps photographs.
+- `pnpm probe:tracker-life-tap` taps a tracker panel's − and + halves three times, 300 ms apart, at phone (390x844)
+  and tablet (1024x768) width on the fixture's S4, sampling every 40 ms through the commit what the half draws (its own
+  ground or its `half-fill` layer, alpha scaled by opacity) and any panel tint (an animating layer, outside the halves,
+  covering most of the panel). It checks addendum R2's cue A: the accent ground shows on the first sample after a tap,
+  holds at 18% through the window with no gap between taps, is gone within 250 ms of the commit, and no tint crosses the
+  panel when the change lands. A press slid off one half leaves it dark and the pending half lit. On main the first
+  sample is transparent, the ground drops between taps and a .35 danger or success tint flashes: 12 failures. It writes
+  nothing, needs `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a

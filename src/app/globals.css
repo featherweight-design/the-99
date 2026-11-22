@@ -760,10 +760,6 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { transform: scale(0.4); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
-@keyframes life-pulse {
-  from { opacity: 0.3; }
-  to { opacity: 0; }
-}
 
 /* ------------------------------------------------------------------
  * Character-layer motion — richness pass.
