@@ -69,7 +69,7 @@ export function PrintingStrip({
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [measure, printings.length]);
+  }, [measure, printings, paddles]);
 
   // The printing on screen starts in view, however far along a long strip it sits.
   const first = useRef(true);
@@ -93,6 +93,7 @@ export function PrintingStrip({
   };
 
   const move = (e: KeyboardEvent, i: number) => {
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
     const to = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? printings.length - 1 : null;
     if (to === null || to < 0 || to >= printings.length) return;
     e.preventDefault();
@@ -115,8 +116,8 @@ export function PrintingStrip({
         <div
           ref={row}
           onScroll={measure}
-          className="flex gap-[8px] overflow-x-auto pb-[2px]"
-          style={{ scrollbarWidth: "none", paddingRight: paddles && more.forward ? 34 : 0, paddingLeft: paddles && more.back ? 34 : 0 }}
+          className="relative flex gap-[8px] overflow-x-auto pb-[2px]"
+          style={{ scrollbarWidth: "none" }}
         >
           {printings.map((p, i) => {
             const key = stripKey(p);
