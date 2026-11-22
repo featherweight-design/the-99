@@ -39,6 +39,8 @@ Boards in [addendum-tablet-sheet/](addendum-tablet-sheet/README.md), drawn for H
 window, which the tracker draws as one) the sheet takes half the table from the opener's edge over a veil; Commander
 damage cards carry the commander's art edge to edge; Table joins the tab row on every device; the coin gets a 3D toss
 (rim, arc, end-over-end spin, rattle, landing ring) with the result still at 1.15 s. The phone sheet is unchanged.
+R3 (Hugh's pick): the coin's faces are struck mana pips, W U B R G on heads and {C} on tails, with HEADS / TAILS on the
+bottom arc (Faces board).
 
 ## Boards
 

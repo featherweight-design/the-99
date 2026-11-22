@@ -1,7 +1,7 @@
 # Life tracker addendum: the player sheet on a tablet, and the coin toss (account 1, 2026-11-22)
 
-Canvas (Design type): https://claude.ai/artifact/57VqDifoTFPvzp4VGgzd2E (Main, Sheet, Damage, Portrait, Tabs, Coin).
-Status: **Drawn for Hugh's review.** Opened as a PR directly at his request (2026-11-22); not yet approved.
+Canvas (Design type): https://claude.ai/artifact/57VqDifoTFPvzp4VGgzd2E (Main, Sheet, Damage, Portrait, Tabs, Coin, Faces).
+Status: **Approved and merged** (#3185, 2026-11-22). **R3 adds call 5, the coin's faces: Hugh picked option C** (struck mana pips).
 
 The approved handoff drew the sheet for phone and desktop. On an iPad (1180×820 landscape, 820×1180 portrait) the
 shipped sheet covers the whole table, its Commander damage art is a 56 px strip, its content uses the top quarter, and
@@ -37,6 +37,31 @@ Sam on Killian and Alex with no deck.
    it lies flat, a shadow that stays on the table, and the dice's landing ring at the landing. The result still lands at
    **1150 ms** (`COIN_MS` unchanged). 120 px on a tablet, 72 px on a phone (today's size). Reduced motion: no toss; the
    coin lies on its face and the result shows at once, as today.
+5. **The coin's faces: struck mana pips (R3, Hugh's pick, every device).** The words alone looked unfinished next to the
+   dice, so each face is now an engraved coin face (Faces board, option C): a reeded edge, an inner ring, and
+   HEADS / TAILS in Cinzel along the bottom on their own band. **Heads** carries the five mana symbols W U B R G, each a
+   disc cut into the coin with its symbol left standing in the metal, in a ring that fills the face. **Tails** carries one
+   large {C}. No colour: every mark is the theme's accent metal and its shade, so each theme recolours the coin.
+   The motion, size and timing from call 4 are unchanged; the Coin board's frames still show the word-only faces.
+
+### The coin face, measured
+
+One SVG per face on a 100×100 box, laid over the shipped `.coin-face` metal (which keeps its gradient and drops its text):
+
+| Part | Value |
+|---|---|
+| Reeded edge | circle r 47.6, stroke 2.8, dash .7 / 1.3, shade at 75% |
+| Outer line | r 45.8, stroke .9, shade |
+| Inner ring | r 35, stroke .7, shade at 80% |
+| Word | `trackerCopy.dice.heads` / `.tails` in capitals, Cinzel 700, 6.4, tracking 2, shade, on the arc r 43 from 9 o'clock under to 3 o'clock |
+| Heads pips | five discs r 11.6 (23% of the coin) at r 19.5 from the centre, W at the top then clockwise U B R G; each disc shade with a light lip (+.5, +.6, 50%); the glyph at 60% of the disc in the metal |
+| Tails pip | one disc r 25 at the centre; the {C} glyph at 58% of it |
+| Glyphs | the app's own `public/mana/{W,U,B,R,G,C}.svg`, last path only (the coloured disc is dropped) |
+| Colours | shade `color-mix(in oklab, var(--accent) 34%, black)`; light `… 45%, white`; glyph metal `… 88%, white` |
+
+Options A (Magic's day/night markers), B (spark and planeswalker) and D (bare symbols) are kept on the Faces board as the
+record. Hugh picked C so day and night stay with the spine's own button, which keeps its shipped sun and moon (he found
+Magic's day marker hard to read there). A legend for the tracker's controls is a separate piece of work.
 
 ### Phone and desktop
 
@@ -71,8 +96,10 @@ drawn at rest. The dice frames on the Coin board are the shipped `@3d-dice/dice-
 | Portrait | 820×1180: now (B2), Commander damage (D5), Counters (C2) |
 | Tabs | The tab row before and after on the tablet; the phone before and after |
 | Coin | The toss animated (tablet, shipped, phone), 12 frames with times, shipped frames, the d20 beside it, timing table, reduced motion |
+| Faces | The coin's faces (R3): four options, flat, tilted and in place on the tablet; the pick (C) on the phone |
 
 Files: `*.dc.html` + `canvas.json` (open with the handoff's `../support.js`), `art/ts-*.webp` (2×), `STATES.md`,
 `copy strings.ts`, `READINESS.md`, `scratch-gen/` (reference only, never import: `build.mjs` bundles the shipped
 `PlaySurface` with three stubs, `css.mjs` compiles `globals.css`, `shots.mjs` + `specs.json` take the stills,
-`motion.mjs` the coin and dice frames with `document.getAnimations()` paused at each time, `gen.py` the boards).
+`motion.mjs` the coin and dice frames with `document.getAnimations()` paused at each time, `gen.py` the boards,
+`coins/` the coin faces: `faces.mjs` draws them, `shots.mjs` and `inplace.mjs` render them).
