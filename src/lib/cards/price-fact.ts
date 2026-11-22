@@ -34,6 +34,12 @@ export type PriceFact = {
    * deck page's payload.
    */
   printing?: { scryfallId: string };
+  /**
+   * The store says this printing is out of stock in every finish it prices (Card Kingdom's
+   * `qty_retail` of 0). Mana Pool's feed omits a sold-out printing instead, so its facts never set
+   * this and sell out by going stale. Set only by `loadPrices` for a store that reports stock.
+   */
+  soldOut?: true;
 };
 
 export type PriceState = "priced" | "foilOnly" | "soldOut" | "absent";
@@ -95,9 +101,10 @@ export function priceState(
 
   // The read returns the best row it can find regardless of liveness — live
   // printings sort first — so a stale row here means no live printing exists
-  // for this card at all. That is what "sold out" means and the only way the
-  // state is reachable.
-  if (fact.asOf.getTime() !== newestAsOf.getTime()) return "soldOut";
+  // for this card at all. That is what "sold out" means. A store that reports
+  // stock (Card Kingdom) says it directly: a live row with every priced finish
+  // at zero, which the read sorts behind every in-stock printing the same way.
+  if (fact.soldOut || fact.asOf.getTime() !== newestAsOf.getTime()) return "soldOut";
 
   if (fact.cents !== null) return "priced";
   if (fact.foilCents !== null || fact.etchedCents !== null) return "foilOnly";

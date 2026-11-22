@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { readFileSync } from "node:fs";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
@@ -22,7 +23,7 @@ vi.mock("../../db", () => ({
 
 import { loadPrices, priceFor, pricesForDeck, type PriceRead } from "./price-query";
 import { moneyStats } from "./stats-money";
-import type { PriceFact } from "./price";
+import { priceState, type PriceFact } from "./price";
 
 const NEWEST = new Date("2026-10-10T09:00:00Z");
 const STALE = new Date("2026-10-01T09:00:00Z");
@@ -144,5 +145,61 @@ describe("loadPrices", () => {
     expect(result.prices.get(CARD)?.printing).toEqual({ scryfallId: CHOSEN });
     expect(priceFor(result, DECK, CARD)?.printing).toEqual({ scryfallId: PICK });
     expect(priceFor(result, OTHER_DECK, CARD)?.printing).toEqual({ scryfallId: CHOSEN });
+  });
+});
+
+describe("loadPrices per store", () => {
+  const A = "77777777-7777-4777-8777-777777777777";
+  const pick = [{ deckId: DECK, oracleId: CARD, setCode: "LEA", collectorNumber: "1" }];
+  /** Every shape the read can issue: no picks, picks, named printings, both, and named alone. */
+  async function everyShape(store?: "manapool" | "tcgplayer" | "cardkingdom") {
+    const O = CARD;
+    const args: [string[], typeof pick, string[]][] = [[[O], [], []], [[O], pick, []], [[O], [], [O]], [[O], pick, [O]], [[], [], [O]]];
+    for (const [ids, picks, named] of args) {
+      if (store) await loadPrices(ids, picks, named, store);
+      else await loadPrices(ids, picks, named);
+    }
+    return state.texts.map((t, i) => `${t}\n--params ${JSON.stringify(state.params[i])}`).join("\n=====\n") + "\n";
+  }
+
+  it("reads Mana Pool byte for byte as it did before stores, with or without the argument", async () => {
+    // The fixture is the statement main issued before stores, rendered for each shape.
+    const before = readFileSync(new URL("./price-query.manapool.sql", import.meta.url), "utf8");
+    expect(await everyShape()).toBe(before);
+    state.texts = [];
+    state.params = [];
+    expect(await everyShape("manapool")).toBe(before);
+  });
+
+  it("reads another store's own rows and its own newest, in every half of the statement", async () => {
+    await loadPrices([CARD], pick, [A], "cardkingdom");
+    const text = state.texts[0];
+    expect(text).not.toMatch(/\bprinting_prices\b/);
+    expect(text).toMatch(/select max\(as_of\) as as_of from printing_store_prices where store = \$1/);
+    // chosen, picked and named each join the store's rows.
+    expect(text.match(/from printing_store_prices\s+where store = \$\d+\s+\) s/g)).toHaveLength(3);
+    expect(state.params[0].filter((v) => v === "cardkingdom")).toHaveLength(4);
+    // A sold-out printing sorts with the stale ones, behind every printing in stock.
+    expect(text).toContain("(pp.as_of = (select as_of from newest) and not pp.sold_out) desc");
+    expect(text).toMatch(/facts\.named,\s+facts\.sold_out\s+from newest/);
+  });
+
+  it("draws a store's sold-out row as sold out, though its as_of is the newest", async () => {
+    state.rows = [
+      { newest_as_of: NEWEST, deck_id: null, oracle_id: CARD, price_cents: 300, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST, scryfall_id: A, named: false, sold_out: true },
+    ];
+    const result = await loadPrices([CARD], [], [], "cardkingdom");
+    const fact = result.prices.get(CARD);
+    expect(fact?.soldOut).toBe(true);
+    expect(priceState(fact, result.newestAsOf)).toBe("soldOut");
+  });
+
+  it("leaves soldOut off a row in stock, so a store's live fact reads as Mana Pool's does", async () => {
+    state.rows = [
+      { newest_as_of: NEWEST, deck_id: null, oracle_id: CARD, price_cents: 250, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST, scryfall_id: A, named: false, sold_out: false },
+    ];
+    const result = await loadPrices([CARD], [], [], "tcgplayer");
+    expect(result.prices.get(CARD)).not.toHaveProperty("soldOut");
+    expect(priceState(result.prices.get(CARD), result.newestAsOf)).toBe("priced");
   });
 });
