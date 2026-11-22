@@ -2889,6 +2889,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Browser Back returns to the table with its nav, and setup's ✕ does the same. On main the nav is visible on /play, so
   it fails at the second check. It writes nothing, but needs `INVITE_CODE_SECRET` on the dev server and the fixture
   from `scripts/seed-rule-zero-fixture.mts` on a scratch branch. `PROBE_SHOTS=<dir>` keeps a photograph of each width.
+- `pnpm probe:tracker-scroll-lock` proves the tracker's /play does not scroll during a game (Hugh's ruling, 2026-11-22)
+  at phone (390x844) and tablet (1180x820) width on the fixture's S4 table. It starts a game, scrolls as far as the page
+  allows and reloads, then checks scrollY is 0, the page is exactly one screen tall, the Fan Content notice is gone, and a
+  mouse wheel, a touch swipe (CDP's synthesized scroll gesture) and `window.scrollTo` all leave scrollY at 0. Controls: the
+  table page and setup still draw the notice, and the table draws it again after the game. On main the page is 147px
+  (phone) or 129px (tablet) taller than the screen, so the reload lands scrolled. Writes only localStorage; needs the
+  fixture from `scripts/seed-rule-zero-fixture.mts` on a scratch branch and `INVITE_CODE_SECRET` on the dev server.
+  `SHOTS=<dir>` keeps a photograph of each width.
 - `pnpm probe:tracker-seat-map` presses setup's seat map (F02, F02b, F02c) at phone (390x844) and desktop (1300x820)
   width, on a four-seat table (the fixture's S4). It checks the device outline (150x290 on a phone, 290x202 on a tablet)
   and four 64px round faces, each labeled with where it sits; on a phone, F02's faces at 214, 46, 46, 214 and flush

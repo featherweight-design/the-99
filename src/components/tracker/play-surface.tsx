@@ -355,7 +355,7 @@ export function PlaySurface({
   return (
     // overflow-clip, not overflow-hidden: both cut at the same edge, but a hidden box can still be scrolled (by focus or
     // scrollIntoView inside a sheet), which slid the whole table sideways under a turned seat's sheet. A clipped box cannot.
-    <div ref={board} className="relative flex w-full flex-1 items-center justify-center overflow-clip" data-testid="tracker-play">
+    <div ref={board} className="relative flex w-full flex-1 items-center justify-center overflow-clip" data-testid="tracker-play" data-game-on="">
       <div
         className="relative"
         style={{ aspectRatio: `${layout.canvas.w} / ${layout.canvas.h}`, width: `min(100%, calc(100dvh * ${layout.canvas.w} / ${layout.canvas.h}))` }}
