@@ -80,7 +80,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   whole, columns, brotli q6, base64, `cache/packed.ts`); the page decodes it and re-encodes with
   availability and the first window. Measured at 23,960 unique cards (a scratch branch from
   local-dev, 50k seeded rows): plain rows 9.97MB, the old gzipped-rows entry 2.92MB (over the 2MB
-  data-cache limit, so the loader reran on every request), the columnar entry 1.83MB (about 9% under
+  data-cache limit, so the loader reran on every request), the columnar entry 1.83MB (about 13% under
   the 2 MiB limit: headroom is thin, and the next lever is dropping the draw keys from the entry and
   reading the first window's from the database). Pack 190ms, unpack 55ms. The real largest account
   is 8.4k cards, ~0.7MB. Cache key `browse-6`.

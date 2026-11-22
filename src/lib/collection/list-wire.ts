@@ -136,7 +136,7 @@ export function encodeCollection(
     }
     if (keep && !keep.has(card.oracleId)) for (const key of COLLECTION_DRAW_KEYS) delete wire[key];
     return wire;
-    });
+  });
   return { decks, cards: toColumns(rows) };
 }
 
