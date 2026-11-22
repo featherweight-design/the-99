@@ -608,7 +608,7 @@ export function SpineDesktop({
             push them out of the band rather than onto a second line. The rename
             column is also the narrower of the two, so the title has room without
             it giving anything. */}
-        <div className={renaming ? "flex-none" : "min-w-0 shrink-[4] grow-0 basis-auto"}>
+        <div data-spine-header-actions className={renaming ? "flex-none" : "min-w-0 shrink-[4] grow-0 basis-auto"}>
           {renaming ? (
             // §B14 — the actions are replaced, not joined.
             <div

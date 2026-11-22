@@ -7,7 +7,11 @@
 
 import { useState, useSyncExternalStore } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, deckHeaderCopy, overCopy } from "../../lib/copy/decks-builder";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { PrimaryButton, GhostButton } from "../ui/button";
+import { InertFlipSquares } from "./deck-flip-strip";
+import { InertChangeCommanderDoor } from "./change-commander-door";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deckFlipCopy, deckOpenLoadingCopy } from "../../lib/copy/deck-flip";
 import { gameLogCopy } from "../../lib/copy/game-log";
@@ -151,7 +155,16 @@ function PhoneLabel({ facts }: { facts: OpenEntry["facts"] }) {
           style={{ fontSize: DECK_COMMANDER_SIZE.phone, color: "var(--fg-body)", textShadow: COVER_INK_SHADOW, gap: 4, minWidth: 0, overflow: "hidden", alignItems: "baseline" }}
         >
           <span style={TRUNCATES}>{facts.commander}</span>
-          {facts.partner ? null : <span style={{ flex: "none", whiteSpace: "nowrap" }}>&nbsp;· {colorLabel(facts.identity)}</span>}
+          {facts.partnerName ? (
+            <>
+              <span style={{ flex: "none" }}>+</span>
+              <span style={{ ...TRUNCATES, flexShrink: 1000, fontSize: 10, color: "inherit", textShadow: COVER_INK_SHADOW }}>
+                <span style={{ borderBottom: "1px solid var(--border-strong)" }}>{facts.partnerName}</span>
+              </span>
+            </>
+          ) : (
+            <span style={{ flex: "none", whiteSpace: "nowrap" }}>&nbsp;· {colorLabel(facts.identity)}</span>
+          )}
         </span>
       </div>
       <div data-spine-chips className="@container flex w-full flex-wrap items-center" style={{ gap: 8 }}>
@@ -182,7 +195,13 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
         <IdentityPips colorIdentity={facts.identity} size={10} />
         <span className="font-mono flex" style={{ fontSize: DECK_COMMANDER_SIZE.desktop, color: "var(--fg-body)", gap: 5, minWidth: 0, overflow: "hidden", alignItems: "baseline" }}>
           <span style={TRUNCATES}>{facts.commander}</span>
-          {facts.partner ? null : <span style={{ flex: "none" }}>· {colorLabel(facts.identity)}</span>}
+          {facts.partnerName ? (
+            <>
+              <span style={{ flex: "none" }}>+</span>
+              <span style={{ ...TRUNCATES, flexShrink: 1000, fontSize: 11, color: "var(--fg-body)", borderBottom: "1px solid var(--border-strong)" }}>{facts.partnerName}</span>
+            </>
+          ) : null}
+          <span style={{ flex: "none" }}>· {colorLabel(facts.identity)}</span>
         </span>
       </div>
       <div data-spine-chips className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 8 }}>
@@ -192,10 +211,42 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
         <div className="min-w-0 flex-1" style={{ maxWidth: 170, height: 6, borderRadius: 999, background: "var(--elevated)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)", overflow: "hidden" }}>
           <div className="h-full" style={statusBarStyle(facts.status, facts.built, size)} />
         </div>
-        <div className="flex flex-none items-baseline" style={{ gap: 4 }}>
+        <div data-spine-count className="flex flex-none items-baseline" style={{ gap: 4 }}>
           <span className="font-mono font-semibold" style={{ fontSize: 15, color: "var(--fg)" }}>{facts.built}</span>
-          <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>/ {size}</span>
+          <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>{overCopy.figure.denominator(size)}</span>
         </div>
+      </div>
+    </div>
+  );
+  // The loaded header's action column, drawn inert: the same buttons in the same boxes (`spine-desktop`), disabled so none is
+  // focusable or pressable until the page lands. The commit offer, when the deck has one, arrives with the page.
+  const actions = (
+    <div className="min-w-0 shrink-[4] grow-0 basis-auto" aria-hidden="true" data-inert-actions>
+      <div className="flex flex-wrap items-center justify-end" style={{ gap: 9 }}>
+        {facts.built > 0 ? (
+          <GhostButton disabled tabIndex={-1} className="flex h-[32px] items-center px-[14px] font-sans text-[12.5px]">{deckImportCopy.update.entryLabel}</GhostButton>
+        ) : null}
+        {facts.built === 0 ? (
+          <button
+            type="button"
+            disabled
+            tabIndex={-1}
+            className="flex h-[32px] items-center gap-[6px] rounded-[8px] border border-[color:var(--border)] bg-transparent px-[14px] font-sans text-[12.5px] font-semibold text-[color:var(--fg-faint)]"
+            style={{ cursor: "not-allowed" }}
+          >
+            {deckHeaderCopy.export}
+          </button>
+        ) : (
+          <PrimaryButton disabled tabIndex={-1} className="flex h-[32px] items-center gap-[6px] px-[14px] text-[12.5px]">{deckHeaderCopy.export}</PrimaryButton>
+        )}
+        <button
+          type="button"
+          disabled
+          tabIndex={-1}
+          className="flex h-[32px] w-[32px] items-center justify-center rounded-[8px] border border-[color:var(--border-strong)] bg-transparent p-0 font-mono text-[13px] tracking-[1px] text-[color:var(--fg-body)]"
+        >
+          …
+        </button>
       </div>
     </div>
   );
@@ -204,7 +255,8 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
       <div className="@container hidden md:block">
         <div className="relative bg-[color:var(--surface-sunken)]" style={{ minHeight: 288, borderBottom: "1px solid var(--border)" }}>
           <DeckHeaderArt artCropUri={facts.artCropUri} colorIdentity={facts.artIdentity ?? facts.identity} />
-          <div className={`relative flex min-h-[288px] items-end ${DECK_HEADER_LABEL_INSET}`} style={{ paddingRight: 24, paddingBottom: 18, gap: 18 }}>{label}{/* The loaded header's action column, as room only: the description wraps at the width the loaded column leaves it. */}<div aria-hidden className="shrink-[4] grow-0" style={{ width: 109.5 }} /></div>
+          <InertChangeCommanderDoor width="desktop" hasCrop={Boolean(facts.artCropUri)} pair={facts.partner} />
+          <div className={`relative flex min-h-[288px] items-end ${DECK_HEADER_LABEL_INSET}`} style={{ paddingRight: 24, paddingBottom: 18, gap: 18 }}>{label}{actions}</div>
         </div>
         <div className="flex" style={{ borderBottom: "1px solid var(--border)", padding: "6px 24px" }}>{strip}</div>
       </div>
@@ -215,9 +267,19 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
       <div className="relative overflow-hidden bg-[color:var(--surface-sunken)]" style={{ height: 288 }}>
         <ArtWash strategy="cover" height={288} labelAtPx="block" artCropUri={facts.artCropUri} colorIdentity={facts.artIdentity ?? facts.identity} />
         <PhoneLabel facts={facts} />
+        <InertChangeCommanderDoor width="mobile" hasCrop={Boolean(facts.artCropUri)} pair={facts.partner} />
       </div>
       <div className="flex flex-col items-center" style={{ borderTop: "1px solid var(--border)", padding: "14px 16px 12px", gap: 8 }}>
         {strip}
+        <div className="flex w-full items-center" style={{ gap: 10 }}>
+          <div className="min-w-0 flex-1" style={{ height: 6, borderRadius: 999, background: "var(--elevated)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+            <div className="h-full" style={statusBarStyle(facts.status, facts.built, size)} />
+          </div>
+          <div data-spine-count className="flex flex-none items-baseline" style={{ gap: 4 }}>
+            <span className="font-mono font-semibold" style={{ fontSize: 14, color: "var(--fg)" }}>{facts.built}</span>
+            <span data-spine-denominator className="font-mono" style={{ fontSize: 14, color: "var(--fg-faint)" }}>{overCopy.figure.denominator(size)}</span>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -234,7 +296,12 @@ function Header({ wide, entry }: { wide: boolean; entry: OpenEntry | null }) {
         <span>{place?.caption ?? deckFlipCopy.allDecks}</span>
         <PendingReporter href="/decks" />
       </Link>
-      {place && <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{deckFlipCopy.place(place.k, place.n)}</span>}
+      {place && (
+        <div className="flex items-center gap-[8px]">
+          <span className="font-mono text-[12px] text-[color:var(--fg-muted)]">{deckFlipCopy.place(place.k, place.n)}</span>
+          <InertFlipSquares width={wide ? "desktop" : "phone"} />
+        </div>
+      )}
     </nav>
   );
   if (facts) return <FactsHeader wide={wide} facts={facts} strip={strip} />;

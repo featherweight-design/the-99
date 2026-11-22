@@ -77,7 +77,8 @@ describe("openFactsOf", () => {
 
   it("names both commanders, merges identity and flags the partner", () => {
     const f = openFactsOf(row({ partnerName: "Kraum, Ludevic's Opus", partnerColorIdentity: ["U", "B"] }));
-    expect(f.commander).toBe("Tymna the Weaver + Kraum, Ludevic's Opus");
+    expect(f.commander).toBe("Tymna the Weaver");
+    expect(f.partnerName).toBe("Kraum, Ludevic's Opus");
     expect(f.identity).toEqual(["W", "U", "B"]);
     expect(f.artIdentity).toEqual(["W"]);
     expect(f.partner).toBe(true);

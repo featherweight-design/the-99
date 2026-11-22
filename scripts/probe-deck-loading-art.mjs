@@ -144,6 +144,13 @@ const READ_RECTS = (scope) => {
     description: rect(first("[data-deck-intent]")),
     commander: rect(meta?.querySelector("span.font-mono") ?? null),
     chips: rect(first("[data-spine-chips]")),
+    // The controls the loaded header draws and the skeleton draws inert in the same boxes. Each part reads null when a width draws none.
+    door: rect(first('[data-testid="change-commander-door"], [data-inert-door]')),
+    flipPrev: rect(first('[data-inert-flip="prev"], [data-flip-strip] a[aria-label]:nth-of-type(1)')),
+    flipNext: rect(first('[data-inert-flip="next"], [data-flip-strip] a[aria-label]:nth-of-type(2)')),
+    count: rect(first("[data-spine-count]")),
+    // Desktop only: the phone's `data-spine-actions` is its own below-the-fold row, which the skeleton does not draw.
+    actions: rect(first("[data-inert-actions], [data-spine-header-actions]")),
   };
 };
 
@@ -190,11 +197,11 @@ async function walk(browser, width, deck) {
     report(L("the loaded header draws the commander's art"), loaded.image === "url", JSON.stringify(loaded));
     const loadedType = await page.evaluate(READ_TYPE, "main");
     const loadedRects = await page.evaluate(READ_RECTS, "main");
-    for (const part of ["gradient", "name", "description", "commander", "chips"]) {
+    for (const part of ["gradient", "name", "description", "commander", "chips", "door", "flipPrev", "flipNext", "count", "actions"]) {
       const a = loadingRects[part], b = loadedRects[part];
       // The description of a deck with none draws no row in either state; the gradient is a phone part.
       if (a === null && b === null) continue;
-      const keys = part === "commander" && deck.kind === "partner" ? ["x", "y", "h"] : ["x", "y", "w", "h"];
+      const keys = ["x", "y", "w", "h"];
       const same = a && b && keys.every((k) => Math.abs(a[k] - b[k]) <= 1);
       report(L(`skeleton and loaded header draw the ${part} in the same place`), Boolean(same), `skeleton ${JSON.stringify(a)} vs loaded ${JSON.stringify(b)}`);
     }
@@ -219,15 +226,16 @@ await clerkSetup();
 const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
 await assertNotSharedBranch(branch, "probe-deck-loading-art");
 const browser = await chromium.launch();
+let ownerId = null;
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
-  const userId = await signIn(page);
+  ownerId = await signIn(page);
   await context.close();
-  const decks = await makeDecks(userId);
+  const decks = await makeDecks(ownerId);
   for (const width of WIDTHS) for (const deck of decks) await walk(browser, width, deck);
 } finally {
-  await sql`delete from decks where name = ${NAME}`;
+  if (ownerId) await sql`delete from decks where name = ${NAME} and user_id = ${ownerId}`;
   await browser.close();
 }
 console.log(failures === 0 ? "\nall passed" : `\n${failures} failed`);

@@ -313,7 +313,8 @@ export function SpineMobile({
           // 44px target reached into the meta row. A centred block had to pad
           // both sides to clear that corner without moving its centre; a
           // left-aligned one pays for it once.
-          // Its foot is the band's, with the 12px inset as padding, so its own
+          // The block's geometry is `phoneBlockStyle` (deck-header-type.ts), shared with the
+          // loader. Its foot is the band's, with the 12px inset as padding, so its own
           // height is the figure the ramp is keyed to; `isolation` keeps the ramp
           // under this block's ink and over the art.
           style={phoneBlockStyle(renaming ? 8 : 6)}

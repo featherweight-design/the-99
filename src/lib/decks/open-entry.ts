@@ -18,8 +18,10 @@ export const OPEN_TTL_MS = 60 * 1000;
 export type OpenFacts = {
   id: string;
   name: string;
-  /** The commander line: the name on the copy owned (`commanderDisplayName`), and the partner's after it. */
+  /** The commander's name on the copy owned (`commanderDisplayName`). */
   commander: string;
+  /** The partner's name, drawn as the loaded header's own second half of the commander line. Absent on an entry from an older build or a lone commander. */
+  partnerName?: string | null;
   /** Both commanders' colours in WUBRG order (`deckIdentity`). */
   identity: string[];
   artCropUri: string | null;
@@ -49,7 +51,8 @@ export function openFactsOf(d: DeckListItem): OpenFacts {
   return {
     id: d.id,
     name: d.name,
-    commander: d.partnerName ? `${commander} + ${d.partnerName}` : commander,
+    commander,
+    partnerName: d.partnerName,
     identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
     artCropUri: d.commanderArtCropUri,
     artIdentity: d.commanderColorIdentity,
@@ -71,6 +74,7 @@ export function parseOpenEntry(raw: string | null, now: number): OpenEntry | nul
     if (!Array.isArray(f.identity) || !f.identity.every((c) => typeof c === "string")) return null;
     // Optional, so an older entry stays valid; a malformed one is dropped to the deck's identity.
     if (f.artIdentity !== undefined && (!Array.isArray(f.artIdentity) || !f.artIdentity.every((c) => typeof c === "string"))) delete f.artIdentity;
+    if (f.partnerName !== undefined && f.partnerName !== null && typeof f.partnerName !== "string") delete f.partnerName;
     if (f.intent !== undefined && f.intent !== null && typeof f.intent !== "string") delete f.intent;
     if (now - v.at > OPEN_TTL_MS || v.facts.id !== v.to) return null;
     return v as OpenEntry;
