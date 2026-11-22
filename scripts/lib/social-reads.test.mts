@@ -30,7 +30,7 @@ describe("socialReadsIn", () => {
   });
 
   it("covers the Rule 0 tables, by binding and by name", () => {
-    for (const [binding, name] of [["ruleZeroTables", "rule_zero_tables"], ["ruleZeroSeats", "rule_zero_seats"], ["ruleZeroSeen", "rule_zero_seen"]]) {
+    for (const [binding, name] of [["ruleZeroTables", "rule_zero_tables"], ["ruleZeroSeats", "rule_zero_seats"], ["ruleZeroSeen", "rule_zero_seen"], ["ruleZeroLogHidden", "rule_zero_log_hidden"]]) {
       expect(socialReadsIn(`import { ${binding} } from "../../db/schema";`)).toEqual([{ line: 1, why: `imports ${binding}` }]);
       expect(socialReadsIn(`sql\`select 1 from ${name} where user_id = \${id}\``).map((f) => f.why)).toEqual([`names ${name} in SQL`]);
     }

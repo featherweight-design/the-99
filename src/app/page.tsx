@@ -22,6 +22,8 @@ import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
 import { loadHomeTables } from "../lib/social/rule-zero-home";
 import { HomeTableCard } from "../components/rule-zero/home-table-card";
+import { HomeLogCard } from "../components/rule-zero/home-log-card";
+import { loadHomeLogGames } from "../lib/social/rule-zero-log-home";
 import { loadInviteCount } from "../lib/invites/read";
 import { loadHomeFriends, type HomeFriends } from "../lib/social/home-friends";
 import { readTourSeen, tourDue } from "../lib/discovery/tour";
@@ -299,6 +301,15 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     // not a fallback: this read runs after the cached load and is never stored, so nothing stale can be kept.
     console.error("home: tonight's table could not be read", error);
   }
+  // The log reminder (2b): games the reader played at a closed table and has not logged, read per request for the same
+  // reason, after the tables. A failed read draws no card.
+  let homeLogGames: Awaited<ReturnType<typeof loadHomeLogGames>> = [];
+  try {
+    homeLogGames = await loadHomeLogGames(userId);
+  } catch (error) {
+    recordSoftFailure();
+    console.error("home: the log reminder could not be read", error);
+  }
   // Friends on Home (Social R3 addendum, readiness gap 1): read per request, outside the cached payload, because a
   // friend's rename, a link made or revoked and a link's expiry move nothing its key carries. A failed read draws no
   // section, as a failed Commitments read draws no card. Read before the first-run return, so the checklist's Friends
@@ -390,7 +401,14 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites, friendLinks: friendLinksEnabled(env) }}
         signature={signatureRow}
-        tables={homeTables.length > 0 ? homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />) : null}
+        tables={
+          homeTables.length > 0 || homeLogGames.length > 0 ? (
+            <>
+              {homeTables.map((t) => <HomeTableCard key={t.tableId} table={t} now={now} />)}
+              {homeLogGames.length > 0 ? <HomeLogCard games={homeLogGames} now={now} /> : null}
+            </>
+          ) : null
+        }
         tour={data.tourDue}
         tourCredits={tourCredits}
         news
@@ -437,6 +455,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       pushVisit={pushVisit}
       commandersPlace
       tables={homeTables}
+      logGames={homeLogGames}
       friends={homeFriends && { you: homeFriends.you, friends: homeFriends.friends, links: homeFriends.links, invites, friendLinks: friendLinksEnabled(env) }}
       // One clock for the whole page, read on the server, so every relative
       // date below agrees.

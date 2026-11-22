@@ -28,6 +28,7 @@ export const SOCIAL_PURGED: Readonly<Record<string, readonly string[]>> = {
   rule_zero_tables: ["set_by"],
   rule_zero_seats: ["user_id"],
   rule_zero_seen: ["user_id"],
+  rule_zero_log_hidden: ["user_id"],
   rule_zero_result_seats: ["user_id"],
   // The news feed's stored items (menu and Home, G1): the account's own, and every other reader's item that names it
   // as the friend (a trade match). Here rather than in `PURGE_ORDER` because the second half reaches other accounts.

@@ -26,6 +26,8 @@ import { Lock } from "../ui/lock";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
 import { FriendsSection, type FriendsSectionProps } from "./friends-section";
 import { HomeTableCard } from "../rule-zero/home-table-card";
+import { HomeLogCard } from "../rule-zero/home-log-card";
+import type { HomeLogGame } from "../../lib/social/rule-zero-log-home";
 import type { OpenTable } from "../../lib/social/rule-zero";
 import { Fragment } from "react";
 import type { HomeFeed } from "../../lib/feed/home";
@@ -75,6 +77,8 @@ export type DashboardProps = {
   friends?: (Omit<FriendsSectionProps, "className" | "now" | "head">) | null;
   /** Rule 0's open tables the reader sits at, read per request (plan decision 1); empty with a failed read. */
   tables?: OpenTable[];
+  /** Games to log (log reminder 2b), read per request; drawn after every table card. Empty with a failed read. */
+  logGames?: HomeLogGame[];
   shopping: ShoppingRollup;
   /**
    * The arrivals banner (upcoming precons), or null: switch off, nothing to show, or the read failed. Part of the
@@ -260,11 +264,12 @@ export function Dashboard(props: DashboardProps) {
         <div data-dismiss-scope className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
           {/* Rule 0's cards head the main column (board H6-H8): the right rail starts level with them from 1180, and below it
               they are first in the one column. Drawn once. 10px apart; 12px to the next block (the column's 11px gap + 1). */}
-          {tables.length > 0 && (
+          {(tables.length > 0 || (props.logGames?.length ?? 0) > 0) && (
             <div data-home-tables className="flex flex-col gap-[10px] sm:max-w-[392px] min-[1180px]:mb-[1px] xl:max-w-none">
               {tables.map((t) => (
                 <HomeTableCard key={t.tableId} table={t} now={new Date(props.now)} />
               ))}
+              {props.logGames && props.logGames.length > 0 ? <HomeLogCard games={props.logGames} now={new Date(props.now)} /> : null}
             </div>
           )}
           {props.signature}

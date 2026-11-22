@@ -64,6 +64,7 @@ export const USER_KEYED: Readonly<Record<string, readonly string[]>> = {
   rate_hits: ["user_id"],
   rule_zero_seats: ["user_id"],
   rule_zero_seen: ["user_id"],
+  rule_zero_log_hidden: ["user_id"],
   rule_zero_result_seats: ["user_id"],
   scan_lab_cadence: ["user_id"],
   scan_lab_results: ["user_id"],

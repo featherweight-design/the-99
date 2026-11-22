@@ -72,6 +72,11 @@ export function gameDay(d: Date, timeZone?: string): string {
   return fmt({ weekday: "short", month: "short", day: "numeric" }, timeZone).format(d);
 }
 
+/** `Nov 19`: a game's day on a row that already names the pod. */
+export function monthDay(d: Date, timeZone?: string): string {
+  return fmt({ month: "short", day: "numeric" }, timeZone).format(d);
+}
+
 /** `9:14 am`: a clock time in the house's lowercase form (`closesWhen`'s). */
 export function clockTime(d: Date, timeZone?: string): string {
   return fmt({ hour: "numeric", minute: "2-digit" }, timeZone).format(d).replace(/\s?([AP])M$/, (_, m: string) => ` ${m.toLowerCase()}m`);
