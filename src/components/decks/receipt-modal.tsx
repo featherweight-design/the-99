@@ -574,7 +574,8 @@ export function ReceiptTile({
         style={{
           aspectRatio: "63 / 88",
           backgroundColor: "var(--elevated)",
-          ...(tilt ? { transform: `rotate(${tilt}deg)` } : null),
+          // Each card turns about its inner bottom corner (the drawn design's origin), so the pair meets at the + disc.
+          ...(tilt ? { transform: `rotate(${tilt}deg)`, transformOrigin: tilt < 0 ? "bottom right" : "bottom left" } : null),
         }}
       >
         {drawn?.imageUri ? <ArtLayer src={drawn.imageUri} /> : null}
@@ -657,7 +658,7 @@ export function ComboBody({
 }) {
   const names = combo.cards.map((c) => art.get(c.oracleId)?.name ?? c.name);
   const siblings = allSiblings ?? combo.cards.map((c) => ({ oracleId: c.oracleId, name: art.get(c.oracleId)?.name ?? c.name, imageUri: art.get(c.oracleId)?.imageUri ?? null }));
-  // A pair leans toward itself (small items 12, call 1: 2.5 degrees); three or more stand flat.
+  // A pair leans as the drawn design does (small items 12, call 1: 2.5 degrees, the first plate counter-clockwise, the second clockwise); three or more stand flat.
   const pair = combo.cards.length === 2;
   return (
     <section className="border-b border-b-[color:var(--border)] border-[color:var(--border)] last:border-b-0" data-testid="receipt-combo">
@@ -682,7 +683,7 @@ export function ComboBody({
                 where={oneAway?.where(card.oracleId)}
                 missing={oneAway?.missingOracleId !== undefined && oneAway.missingOracleId === card.oracleId}
                 press={oneAway?.stillOracleId !== card.oracleId}
-                tilt={pair ? (i === 0 ? 2.5 : -2.5) : undefined}
+                tilt={pair ? (i === 0 ? -2.5 : 2.5) : undefined}
               />
               {i < combo.cards.length - 1 ? (
                 <span
