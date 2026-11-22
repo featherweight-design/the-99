@@ -28,6 +28,22 @@ const fakeQ = (statements: string[]) => ({
   },
 }) as never;
 
+describe("resolving a stored price drop", () => {
+  const read = async (env: NodeJS.ProcessEnv) => {
+    const statements: string[] = [];
+    const q = { execute: async (s: Parameters<PgDialect["sqlToQuery"]>[0]) => { statements.push(dialect.sqlToQuery(s).sql); return { rows: [] }; } } as never;
+    await resolvePushItems("u1", [{ kind: "price-drop", key: "c1:2026-W43", batch: "b" }], env, NOW, q);
+    return statements.find((s) => s.includes(`"feed_items"`)) ?? "";
+  };
+
+  it("stands in the reader's chosen store only while their switch is on, and in Mana Pool while it is off", async () => {
+    expect(await read({ STORE_PREFERENCE_ENABLED: "true" } as unknown as NodeJS.ProcessEnv)).toContain("sup.preferred_store");
+    const off = await read({} as NodeJS.ProcessEnv);
+    expect(off).toContain(`"feed_items"`);
+    expect(off).not.toContain("sup.preferred_store");
+  });
+});
+
 describe("resolving catalog rows (PR 3c)", () => {
   it("words each set and precon the feed's way, and drops a key the feed no longer lists", async () => {
     const statements: string[] = [];

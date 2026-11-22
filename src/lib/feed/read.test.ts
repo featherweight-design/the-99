@@ -249,6 +249,21 @@ describe("the reads", () => {
     }
   });
 
+  it("reads price drops in the reader's store only while their store switch is on (store preference)", async () => {
+    const ran: SQL[] = [];
+    const q = { execute: async (s: SQL) => { ran.push(s); return { rows: [{ n: 0 }] }; } } as never;
+    await loadFeed("u", env(), NOW, q);
+    await unseenCount("u", env(), NOW, q);
+    await loadFeed("u", { ...env(), STORE_PREFERENCE_ENABLED: "true" }, NOW, q);
+    await unseenCount("u", { ...env(), STORE_PREFERENCE_ENABLED: "true" }, NOW, q);
+    const texts = ran.map((s) => render(s).sql);
+    for (const text of texts.slice(0, 2)) {
+      expect(text).toContain("coalesce(fi.data ->> 'store', 'manapool') = 'manapool')");
+      expect(text).not.toContain("sup.preferred_store");
+    }
+    for (const text of texts.slice(2)) expect(text).toContain("coalesce(fi.data ->> 'store', 'manapool') = coalesce((select sup.preferred_store");
+  });
+
   it("sorts what it reads waiting-on-you first, then newest", async () => {
     const rows = [
       { kind: "new-set", key: "set:a", created_at: "2026-10-21 00:00:00+00", code: "a", name: "A", file_name: null, oracle_id: null, variant_id: null, friend_public_id: null, friend_name: null, data: {}, unseen: false },

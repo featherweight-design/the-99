@@ -13,6 +13,12 @@ import { cards, printings, wishlistItems } from "../../db/schema";
 import { cheapestNow, loadPrices } from "../decks/price-query";
 import { priceOf, priceState, type PriceFact } from "../decks/price";
 import { heldCopies } from "./held";
+import { requestFlags } from "../flags/request";
+import { readerStore } from "../stores/preference";
+import type { Store } from "../stores/rows";
+
+/** The store a line's baseline is read in: the reader's (store preference, design #3200), Mana Pool while their switch is off. */
+const baselineStore = async (viewerId: string): Promise<Store> => readerStore(viewerId, await requestFlags(viewerId));
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const MAX_WISHLIST_QUANTITY = 99;
@@ -191,8 +197,10 @@ async function writeWant(
 ): Promise<WantResult | null> {
   // The price-drop baseline (menu and Home G2): today's cheapest, as every buy tag draws it, read before the lock so
   // the collection lock is held no longer than it was. Written only by a NEW line; a quantity change keeps the
-  // line's own. Null when the card has no live price, which the price job fills on its next run.
-  const atAdd = cheapestNow(await loadPrices([oracleId]), oracleId);
+  // line's own. Null when the card has no live price, which the price job fills on its next run. Read in the reader's
+  // store and recorded with it (`price_store`), so the job compares the line at once, never across two stores.
+  const store = await baselineStore(viewerId);
+  const atAdd = cheapestNow(await loadPrices([oracleId], [], [], store), oracleId);
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
     // `held` is what the collection holds as THIS line counts it (`held.ts`): a line naming a printing counts that
@@ -210,8 +218,8 @@ async function writeWant(
       return { status: "held", quantity, held: card.held };
     }
     await tx.execute(sql`
-      insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents)
-      values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int)
+      insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents, price_store)
+      values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int, ${store})
       on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
     `);
     return { status: "wanted", quantity, held: card.held };
@@ -231,12 +239,15 @@ async function writeWant(
  * to want, so it is removed (`held`), as `writeWant` removes a want set at or below what is held. The baseline is
  * null when the printing has no live price (the price job fills it on its next run); a named printing that is sold
  * out sets no alert until it returns.
+ *
+ * The baseline is read in the reader's store and recorded with it (`price_store`, store preference, design #3200).
  */
 export async function setWishlistPrinting(viewerId: string, oracleId: unknown, rawPrintingId: unknown): Promise<WantResult | null> {
   if (typeof oracleId !== "string" || !UUID.test(oracleId)) return null;
   const printingId = rawPrintingId === null ? null : typeof rawPrintingId === "string" && UUID.test(rawPrintingId) ? rawPrintingId : undefined;
   if (printingId === undefined) return null;
-  const read = await loadPrices([oracleId], [], printingId ? [printingId] : []);
+  const store = await baselineStore(viewerId);
+  const read = await loadPrices([oracleId], [], printingId ? [printingId] : [], store);
   const fact = printingId ? read.named?.get(printingId) : undefined;
   const atAdd = printingId ? (fact ? priceOf(fact, priceState(fact, read.newestAsOf)) : null) : cheapestNow(read, oracleId);
   return db.transaction(async (tx) => {
@@ -261,10 +272,11 @@ export async function setWishlistPrinting(viewerId: string, oracleId: unknown, r
       return { status: "held", quantity, held: card.held };
     }
     await tx.execute(sql`
-      insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents, scryfall_id)
-      values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int, ${printingId}::uuid)
+      insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents, scryfall_id, price_store)
+      values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int, ${printingId}::uuid, ${store})
       on conflict (user_id, oracle_id) do update set
-        scryfall_id = excluded.scryfall_id, price_at_add_cents = excluded.price_at_add_cents, price_noticed_at = null
+        scryfall_id = excluded.scryfall_id, price_at_add_cents = excluded.price_at_add_cents, price_noticed_at = null,
+        price_store = excluded.price_store
     `);
     return { status: "wanted", quantity, held: card.held };
   });

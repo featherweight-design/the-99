@@ -20,6 +20,7 @@ import { userPrefs } from "../../db/schema";
 import { availableFeedKinds } from "./flag";
 import { FEED_KINDS, isDefaultOn, isFeedKind, type FeedKind } from "./kinds";
 import { markSeenQuery } from "./read";
+import { storePreferenceEnabled } from "../stores/flag";
 import { markFriendRequestsSeen } from "../social/friend-requests";
 import { markAnswersSeen } from "../social/spare-requests";
 
@@ -216,7 +217,7 @@ type Executor = Pick<typeof db, "execute">;
  * render stays unseen. Returns whether it wrote.
  */
 export async function markFeedSeen(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<boolean> {
-  return wrote(markSeenQuery(userId, availableFeedKinds(env), now, "feed_seen_at"), q);
+  return wrote(markSeenQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env)), q);
 }
 
 /**
