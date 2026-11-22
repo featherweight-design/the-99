@@ -138,8 +138,9 @@ export async function writeStoreRows(store: OtherStore, { rows, asOf, skipped, c
   // The cached list payloads (Home, /decks and its Stats, the all-decks cart) price a reader on another store from this
   // table, and the catalog generation in their key is what retires them. Stamped after the commit, as the Mana Pool run
   // is: the daily refresh writes store prices after Mana Pool's, so Mana Pool's stamp alone would leave a payload cached
-  // between the two on yesterday's store prices until the next day's run.
-  await stampCatalogRefresh();
+  // between the two on yesterday's store prices until the next day's run. A run that wrote nothing (every row held
+  // back by the never-backwards guard) changed no figure, so it retires nothing.
+  if (upserted + tokenUpserted > 0) await stampCatalogRefresh();
   const heldBack = cardRows.length + tokenRows.length - upserted - tokenUpserted;
   return { store, upserted, tokenUpserted, heldBack, skippedOrphan, skipped, collapsed, asOf };
 }

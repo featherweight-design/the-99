@@ -41,7 +41,9 @@ export async function readerStore(userId: string, env: NodeJS.ProcessEnv, q: Q =
 export function readerStoreForPage(userId: string, env: NodeJS.ProcessEnv): Promise<Store> {
   return readerStore(userId, env).catch((error: unknown): Store => {
     console.error("[store] reader store read failed; drawing Mana Pool", error);
-    // A page drawn on the fallback is not the reader's page, so the list cache must not keep it.
+    // Inside a cached load this keeps the fallback page out of the list cache. A page that reads the store before
+    // its cache (Home, /decks) is outside that scope, so this does nothing there; its payload is then keyed on
+    // "manapool" and drawn wholly in Mana Pool, which is correct for that key.
     recordSoftFailure();
     return "manapool";
   });

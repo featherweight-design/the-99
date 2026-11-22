@@ -31,8 +31,8 @@ vi.mock("./landing-entry", () => ({ SignedOutLanding: stub.landing, landingMetad
 vi.mock("@clerk/nextjs", () => ({ SignInButton: () => null }));
 vi.mock("../lib/flags/request", () => ({ requestFlags: async () => stub.env as NodeJS.ProcessEnv }));
 vi.mock("../lib/cache/page-cache", () => ({
-  cachePageForUser: async (_u: string, _p: string, _k: string[], load: (env: NodeJS.ProcessEnv) => Promise<{ value: unknown }>, env: NodeJS.ProcessEnv) =>
-    (await load(env)).value,
+  cachePageForUser: async (_u: string, _p: string, k: string[], load: (env: NodeJS.ProcessEnv) => Promise<{ value: unknown }>, env: NodeJS.ProcessEnv) =>
+    (cacheKeys.seen.push(k), (await load(env)).value),
 }));
 vi.mock("../lib/home/summary", () => ({
   getCollectionStats: async () => ({ totalCards: stub.uniqueCards, uniqueCards: stub.uniqueCards }),
@@ -40,6 +40,7 @@ vi.mock("../lib/home/summary", () => ({
 }));
 vi.mock("../lib/decks/read", () => ({ listDecksWithStats: async () => stub.decks }));
 vi.mock("../lib/recs/ranked-list", () => ({ getRankedList: async () => ({ items: [], degraded: false }) }));
+const cacheKeys = vi.hoisted(() => ({ seen: [] as string[][] }));
 const rollup = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => ({})), store: vi.fn(async (..._a: unknown[]): Promise<string> => "manapool") }));
 vi.mock("../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: rollup.load }));
 vi.mock("../lib/stores/preference", () => ({ readerStoreForPage: rollup.store }));
@@ -104,6 +105,8 @@ describe("Home's store", () => {
     rollup.store.mockResolvedValue("tcgplayer");
     await HomePage();
     expect(rollup.load).toHaveBeenCalledWith("user_1", undefined, "tcgplayer");
+    // Keyed on the store, so a store change never serves the other store's cached total.
+    expect(cacheKeys.seen.at(-1)?.at(-1)).toBe("tcgplayer");
   });
 });
 
