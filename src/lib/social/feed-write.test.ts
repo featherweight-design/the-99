@@ -2,7 +2,7 @@ import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 
-import { feedItemProblem, recordFeedItem, recordFeedItemQuery, type FeedItemInput } from "./feed-write";
+import { feedItemProblem, lastFeedItemAt, recordFeedItem, recordFeedItemQuery, type FeedItemInput } from "./feed-write";
 
 const NOW = new Date("2026-10-22T12:00:00Z");
 const CARD = "0b6b8d7c-2f4e-4b1a-9a3e-1c2d3e4f5a6b";
@@ -80,5 +80,27 @@ describe("recordFeedItem", () => {
     const { tx, ran } = recorder(1);
     await expect(recordFeedItem(tx, { ...input, variantId: null })).rejects.toThrow(/recordFeedItem: combo needs a variant/);
     expect(ran).toEqual([]);
+  });
+});
+
+describe("lastFeedItemAt", () => {
+  const capture = () => {
+    const ran: SQL[] = [];
+    const tx = { execute: async (q: SQL) => { ran.push(q); return { rows: [{ at: "2026-10-20T00:00:00Z" }] }; } } as never;
+    return { ran, tx };
+  };
+
+  it("reads every item of the kind about the card when no store is named", async () => {
+    const { ran, tx } = capture();
+    expect(await lastFeedItemAt(tx, "u", "price-drop", CARD)).toEqual(new Date("2026-10-20T00:00:00Z"));
+    expect(flat(new PgDialect().sqlToQuery(ran[0]).sql)).not.toContain("data ->> 'store'");
+  });
+
+  it("counts only items told in the named store, Mana Pool when an item names none (store preference)", async () => {
+    const { ran, tx } = capture();
+    await lastFeedItemAt(tx, "u", "price-drop", CARD, "tcgplayer");
+    const { sql, params } = new PgDialect().sqlToQuery(ran[0]);
+    expect(flat(sql)).toMatch(/and coalesce\(lfi\.data ->> 'store', 'manapool'\) = \$\d+$/);
+    expect(params.at(-1)).toBe("tcgplayer");
   });
 });

@@ -119,10 +119,17 @@ export async function recordFeedItem(tx: Executor, input: FeedItemInput): Promis
   return (done.rowCount ?? done.rows.length) > 0;
 }
 
-/** When this reader was last given an item of `kind` about this card, or null: a rule that spaces notices reads it. */
-export async function lastFeedItemAt(tx: Executor, userId: string, kind: FeedItemInput["kind"], oracleId: string): Promise<Date | null> {
+/**
+ * When this reader was last given an item of `kind` about this card, or null: a rule that spaces notices reads it. With
+ * `store`, only items told in that store (`data.store`, Mana Pool when absent) count, so a price drop told in the old
+ * store does not hold back the first one in the reader's new store.
+ */
+export async function lastFeedItemAt(
+  tx: Executor, userId: string, kind: FeedItemInput["kind"], oracleId: string, store?: string,
+): Promise<Date | null> {
+  const inStore = store === undefined ? sql`` : sql` and coalesce(lfi.data ->> 'store', 'manapool') = ${store}`;
   const r = await tx.execute<{ at: Date | string | null }>(
-    sql`select max(lfi.created_at) as at from ${feedItems} lfi where lfi.user_id = ${userId} and lfi.kind = ${kind} and lfi.oracle_id = ${oracleId}`,
+    sql`select max(lfi.created_at) as at from ${feedItems} lfi where lfi.user_id = ${userId} and lfi.kind = ${kind} and lfi.oracle_id = ${oracleId}${inStore}`,
   );
   const at = r.rows[0]?.at;
   return at == null ? null : new Date(at);

@@ -56,4 +56,10 @@ describe("isoWeek", () => {
   it("keys a drop by card and week", () => {
     expect(priceDropKey("a1b2", now)).toBe("a1b2:2026-W43");
   });
+
+  it("keys Mana Pool's drop as it always was, and another store's apart from it (store preference)", () => {
+    expect(priceDropKey("a1b2", now, "manapool")).toBe("a1b2:2026-W43");
+    expect(priceDropKey("a1b2", now, "tcgplayer")).toBe("a1b2:tcgplayer:2026-W43");
+    expect(priceDropKey("a1b2", now, "tcgplayer")).not.toBe(priceDropKey("a1b2", now, "cardkingdom"));
+  });
 });

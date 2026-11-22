@@ -48,9 +48,9 @@ export function feedFriend(publicId: string | null, displayName: string | null):
  * `STORE_PREFERENCE_ENABLED`, resolved by the caller) and Mana Pool while off. A drop told in TCGplayer's figures is
  * not shown, nor pushed, beside Card Kingdom's prices.
  */
-function standing(now: Date, storeOn: boolean): SQL {
+function standing(viewerId: string, now: Date, storeOn: boolean): SQL {
   return sql`
-      and (fi.kind <> 'price-drop' or coalesce(fi.data ->> 'store', 'manapool') = ${readerStoreSql(storeOn)})
+      and (fi.kind <> 'price-drop' or coalesce(fi.data ->> 'store', 'manapool') = ${readerStoreSql(viewerId, storeOn)})
       and not exists (select 1 from ${feedDismissals} ffd where ffd.user_id = fi.user_id and ffd.key = 'item:' || fi.id::text)
       and (fi.kind <> 'spare-request' or exists (
         select 1 from ${spareRequests} fsr
@@ -74,10 +74,11 @@ function standing(now: Date, storeOn: boolean): SQL {
           where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)))))`;
 }
 
-/** The reader's store as SQL, on the item's `fi.user_id`: their `preferred_store` while `storeOn`, else Mana Pool. */
-function readerStoreSql(storeOn: boolean): SQL {
+/** The reader's store as SQL: their `preferred_store` while `storeOn`, else Mana Pool. Keyed on the viewer, not the row,
+    so Postgres reads it once per statement (an InitPlan), not once per item. */
+function readerStoreSql(viewerId: string, storeOn: boolean): SQL {
   return storeOn
-    ? sql`coalesce((select sup.preferred_store from ${userPrefs} sup where sup.user_id = fi.user_id), 'manapool')`
+    ? sql`coalesce((select sup.preferred_store from ${userPrefs} sup where sup.user_id = ${viewerId}), 'manapool')`
     : sql`'manapool'`;
 }
 
@@ -117,7 +118,7 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[],
     where fi.user_id = ${viewerId}
       and fi.kind = any(${sql.param([...kinds])}::text[])
       and fi.created_at > ${kindEnabledAt(sql`fup`, sql`fi.kind`)}
-      ${standing(now, storeOn)}`;
+      ${standing(viewerId, now, storeOn)}`;
 }
 
 /**
@@ -140,5 +141,5 @@ export function storedItemsByKeyQuery(
     left join ${socialProfiles} sp on sp.user_id = fi.friend_user_id
     where fi.user_id = ${viewerId}
       and (fi.kind, 'item:' || fi.id::text) in (${pairs})
-      ${standing(now, storeOn)}`;
+      ${standing(viewerId, now, storeOn)}`;
 }

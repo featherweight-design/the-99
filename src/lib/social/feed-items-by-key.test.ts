@@ -35,13 +35,16 @@ describe("storedItemsByKeyQuery", () => {
     const off = "and (fi.kind <> 'price-drop' or coalesce(fi.data ->> 'store', 'manapool') = 'manapool')";
     expect(q.sql).toContain(off);
     expect(dialect.sqlToQuery(storedFeedBranch("u1", ["price-drop"], NOW)).sql).toContain(off);
-    const on = `= coalesce((select sup.preferred_store from "user_prefs" sup where sup.user_id = fi.user_id), 'manapool'))`;
-    for (const sql of [
-      dialect.sqlToQuery(storedItemsByKeyQuery("u1", [{ kind: "price-drop", key: "item:id-1" }], NOW, true)!).sql,
-      dialect.sqlToQuery(storedFeedBranch("u1", ["price-drop"], NOW, true)).sql,
+    // Keyed on the viewer (a bound parameter), never the row's `fi.user_id`, so it is read once per statement.
+    const on = /and \(fi\.kind <> 'price-drop' or coalesce\(fi\.data ->> 'store', 'manapool'\) = coalesce\(\(select sup\.preferred_store from "user_prefs" sup where sup\.user_id = \$(\d+)\), 'manapool'\)\)/;
+    for (const built of [
+      dialect.sqlToQuery(storedItemsByKeyQuery("u1", [{ kind: "price-drop", key: "item:id-1" }], NOW, true)!),
+      dialect.sqlToQuery(storedFeedBranch("u1", ["price-drop"], NOW, true)),
     ]) {
-      expect(sql).toContain("and (fi.kind <> 'price-drop' or coalesce(fi.data ->> 'store', 'manapool') " + on);
-      expect(sql).not.toContain(off);
+      const m = built.sql.match(on);
+      expect(m).not.toBeNull();
+      expect(built.params[Number(m![1]) - 1]).toBe("u1");
+      expect(built.sql).not.toContain(off);
     }
   });
 

@@ -209,14 +209,14 @@ export async function noticePriceDrops(base: NodeJS.ProcessEnv, clock: () => Dat
         // figure above is the old one's), or re-baselined in another store since: not this notice's line any more.
         if (!line || !line.unmet || line.at_add_cents !== r.at_add_cents || line.scryfall_id !== r.scryfall_id || line.price_store !== store) return false;
         // The cooldown outlives the line: a want removed and added again starts with no stamp, but the feed remembers.
-        const told = await lastFeedItemAt(tx, r.user_id, "price-drop", r.oracle_id);
+        const told = await lastFeedItemAt(tx, r.user_id, "price-drop", r.oracle_id, store);
         const stamped = line.noticed_at === null ? null : new Date(line.noticed_at);
         const lastNoticed = told && (!stamped || told > stamped) ? told : stamped;
         if (!priceDropped({ atAddCents: line.at_add_cents, nowCents, noticedAt: lastNoticed, now })) return false;
         const written = await recordFeedItem(tx, {
           userId: r.user_id,
           kind: "price-drop",
-          dedupeKey: priceDropKey(r.oracle_id, now),
+          dedupeKey: priceDropKey(r.oracle_id, now, store),
           oracleId: r.oracle_id,
           // The printing the line watched, as it was named when the drop was written: the item says "at SLD 2125",
           // and a later change of the choice does not rewrite what was told.

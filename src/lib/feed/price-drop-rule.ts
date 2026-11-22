@@ -43,5 +43,7 @@ export function isoWeek(d: Date): string {
   return `${t.getUTCFullYear()}-W${String(week).padStart(2, "0")}`;
 }
 
-/** The feed item's dedupe key: one price-drop item per card per ISO week, whatever the job's run count. */
-export const priceDropKey = (oracleId: string, now: Date): string => `${oracleId}:${isoWeek(now)}`;
+/** The feed item's dedupe key: one price-drop item per card per ISO week, whatever the job's run count. A store other than
+    Mana Pool keys its own (store preference), so a drop told in the old store this week never blocks the new store's. */
+export const priceDropKey = (oracleId: string, now: Date, store = "manapool"): string =>
+  store === "manapool" ? `${oracleId}:${isoWeek(now)}` : `${oracleId}:${store}:${isoWeek(now)}`;
