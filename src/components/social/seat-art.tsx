@@ -1,6 +1,7 @@
 // A member's art seat: the pod card's tile (Social R1 §3a), 74px on the phone and 84px from md, their commander's art
 // or their initials, outlined in the accent when `ring` (the viewer on the pod card, a seated member in Rule 0's
-// setup). One component, so the two surfaces cannot drift apart.
+// setup). One component, so the two surfaces cannot drift apart. `min-w-[60px]`: the art is a size container when it
+// carries a crop, so its width is 0 in a shrink-to-fit parent; the floor keeps a tile that was never stretched readable.
 
 import { FadingImg } from "../ui/hydrated-art";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
@@ -10,7 +11,7 @@ export function SeatArt({ art, name, ring, children }: { art: string | null; nam
   return (
     <span
       aria-hidden
-      className={`relative block h-[74px] overflow-hidden rounded-[10px] bg-[color:var(--surface)] md:h-[84px] ${art ? ART_CROP_TRIM.box : ""} ${
+      className={`relative block h-[74px] w-full min-w-[60px] overflow-hidden rounded-[10px] bg-[color:var(--surface)] md:h-[84px] ${art ? ART_CROP_TRIM.box : ""} ${
         ring
           ? "[border:1px_solid_var(--accent)] shadow-[0_0_0_1px_var(--accent),0_10px_24px_rgba(0,0,0,.45)]"
           : "[border:1px_solid_rgba(255,255,255,.08)] shadow-[0_10px_24px_rgba(0,0,0,.45)]"

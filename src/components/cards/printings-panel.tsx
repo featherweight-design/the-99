@@ -109,7 +109,7 @@ export function PrintingsPanel({
                     aria-pressed={shown}
                     aria-label={printingStripCopy.thumbAria(p.setName ?? p.setCode, p.collectorNumber, p.mine ? p.quantity : 0, p.pick === true) + (wantedId !== null && p.scryfallId === wantedId ? `, ${wishlistPrintingCopy.panel.wanted(p.setCode.toUpperCase(), p.collectorNumber)}` : "")}
                     onClick={() => onSelect(p)}
-                    className="flex min-w-0 cursor-pointer flex-col items-center gap-[5px] border-0 bg-transparent p-0"
+                    className="flex w-full min-w-0 cursor-pointer flex-col items-center gap-[5px] border-0 bg-transparent p-0"
                   >
                     <span
                       className="relative block w-full overflow-hidden rounded-[4px]"
