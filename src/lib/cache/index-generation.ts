@@ -22,6 +22,7 @@
  */
 import { sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 import { db } from "../../db";
 import { generationKey } from "./catalog-generation";
@@ -143,7 +144,8 @@ export async function readIndexGeneration(
 
 let cached: (() => Promise<string>) | null = null;
 
-export async function indexGeneration(): Promise<string> {
+/** One lookup per request, for the reason `catalogGeneration` gives (THE-99-D). */
+export const indexGeneration: () => Promise<string> = cache(async (): Promise<string> => {
   try {
     cached ??= unstable_cache(readIndexGeneration, ["index-generation"], { revalidate: 60 });
     return await cached();
@@ -151,4 +153,4 @@ export async function indexGeneration(): Promise<string> {
     recordSoftFailure();
     return UNSTAMPED;
   }
-}
+});
