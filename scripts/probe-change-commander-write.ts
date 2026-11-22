@@ -419,6 +419,47 @@ async function main() {
   check("partner add: a deck over 99 cards is not offered the add", (await loadChangeCandidates(readFull, USER))?.partnerAdd, null);
   check("partner add: a pair deck is not offered it", (await loadChangeCandidates(pairDeck, USER))?.partnerAdd, null);
 
+  // ── Adding a Background (#491 PR6) ───────────────────────────────────────────
+  // A commander that prints "Choose a Background" takes a Background from outside the 99 as its second
+  // half. The Background never leads, never pairs with a Partner kind, and no Background is a candidate.
+  const { rows: chooserRows } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id::text from cards
+    where commander_legal and oracle_text ~ '(^|\n)Choose a Background' and type_line ilike 'Legendary Creature%'
+    order by name limit 1
+  `);
+  const { rows: bgRows } = await fixture.execute<{ oracle_id: string }>(sql`
+    select oracle_id::text from cards
+    where commander_legal and type_line ilike 'Legendary Enchantment%Background%' order by name limit 2
+  `);
+  const chooser = chooserRows[0];
+  const [bg1, bg2] = bgRows;
+  if (!chooser || !bg1 || !bg2) throw new Error("catalog holds no Choose a Background fixture");
+  const bgFull = await makeDeck(chooser.oracle_id);
+  await addCard99(bgFull);
+  const bgRead = await loadChangeCandidates(bgFull, USER);
+  const bgOpt = partnersOf(bgRead).find((o) => o.halves[1].oracleId === bg1.oracle_id);
+  check("background: the section is offered with the chooseBackground ability", bgRead?.partnerAdd?.ability, { kind: "chooseBackground" });
+  check("background: every Background is offered, with no pair row", [!!bgOpt, bgOpt?.hasPairRow, bgOpt?.belowFloor], [true, false, true]);
+  check("background: only Backgrounds are offered", partnersOf(bgRead).length > 0 && partnersOf(bgRead).every((o) => o.halves[0].oracleId === chooser.oracle_id), true);
+  check("background: a Background is never a Replace candidate", [...(bgRead?.yours ?? []), ...(bgRead?.toBuy ?? [])].some((cd) => cd.halves.some((h) => h.oracleId === bg1.oracle_id)), false);
+  check("background: a body of 99 needs a cut", bgRead?.partnerAdd?.needsCut, true);
+  check("background: no cut is refused", await write(bgFull, chooser.oracle_id, bg1.oracle_id), { ok: false, reason: "illegal" });
+  check("background: accepted with a cut", await write(bgFull, chooser.oracle_id, bg1.oracle_id, null, fillers[0].oracle_id), { ok: true });
+  check("background: the commander and the Background lead", await live(bgFull), { c: chooser.oracle_id, p: bg1.oracle_id });
+  check("background: one copy left the 99", await bodyOf(bgFull), [`${fillers[0].oracle_id}x98`]);
+  // The same Undo a Partner add takes: the single leads alone again and the cut comes back.
+  const bgUndo = await makeDeck(chooser.oracle_id, bg1.oracle_id);
+  await addCard(bgUndo, fillers[1].oracle_id);
+  check("background: undo restores the single", [await undo(bgUndo, chooser.oracle_id, bg1.oracle_id, fillers[0].oracle_id), await live(bgUndo), await bodyOf(bgUndo)],
+    [{ ok: true }, { c: chooser.oracle_id, p: null }, [fillers[0].oracle_id, fillers[1].oracle_id].sort().map((id) => `${id}x1`)]);
+  const bgRefuse = await makeDeck(chooser.oracle_id);
+  check("background: a Background never leads", await write(bgRefuse, bg1.oracle_id, chooser.oracle_id), { ok: false, reason: "illegal" });
+  check("background: two Backgrounds do not pair", await write(bgRefuse, bg1.oracle_id, bg2.oracle_id), { ok: false, reason: "illegal" });
+  const anchorBg = await makeDeck(anchor.oracle_id);
+  check("background: a Partner-kind commander cannot take one", await write(anchorBg, anchor.oracle_id, bg1.oracle_id), { ok: false, reason: "illegal" });
+  check("background: a chooser cannot take a Partner", await write(bgRefuse, chooser.oracle_id, p2.oracle_id), { ok: false, reason: "illegal" });
+  check("background: refusals wrote nothing", [await live(bgRefuse), await live(anchorBg)], [{ c: chooser.oracle_id, p: null }, { c: anchor.oracle_id, p: null }]);
+
   // ── Undo of a partner add (#491, writeUndoPartnerAdd) ────────────────────────
   // The pair the toast wrote goes back to the single, and the cut comes back, in one write; every
   // fact is read from the live rows.

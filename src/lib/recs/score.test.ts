@@ -106,6 +106,12 @@ describe("isCommanderCandidate", () => {
   it("accepts legendary creatures", () => {
     expect(isCommanderCandidate({ layout: "normal", manaCost: "{1}", typeLine: "Legendary Creature — Elf", oracleText: "" })).toBe(true);
   });
+  it("rejects a Background: it only ever sits beside a Choose a Background commander (#491 PR6)", () => {
+    expect(isCommanderCandidate({
+      layout: "normal", manaCost: "{3}{R}", typeLine: "Legendary Enchantment — Background",
+      oracleText: "Commander creatures you own have base power and toughness 10/10.",
+    })).toBe(false);
+  });
   it("accepts 'can be your commander' cards", () => {
     expect(isCommanderCandidate({
       layout: "normal",

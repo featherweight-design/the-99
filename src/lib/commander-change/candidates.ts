@@ -24,7 +24,7 @@ import { isLandFace } from "../cards/facet";
 import { isBasicLand } from "../decks/grouping";
 import type { PriceFact } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
-import { canPair, partnerAbility } from "../decks/partner";
+import { addAbility, canPair, partnerAbility } from "../decks/partner";
 import { canonicalPair } from "../edhrec/pair-order";
 import { isCommanderCandidate } from "../recs/score";
 import { deckBodySize, landTarget } from "../decks/deck-size";
@@ -437,7 +437,7 @@ export async function loadChangeCandidates(
     return {
       needsCut,
       bodyTotal,
-      ability: partnerAbility(currentCards[0].oracleText, currentCards[0].typeLine) ?? { kind: "generic" },
+      ability: addAbility(currentCards[0].oracleText, currentCards[0].typeLine) ?? { kind: "generic" },
       landCeiling,
       lands: bodyRows.reduce((n, r) => (isLandFace(r.typeLine) ? n + r.quantity : n), 0),
       cutPool: needsCut

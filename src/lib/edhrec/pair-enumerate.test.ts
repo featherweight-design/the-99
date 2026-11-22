@@ -34,6 +34,17 @@ describe("legalPairs", () => {
   const has = (x: PairSource, y: PairSource) =>
     pairs.some((p) => (p.a === x.oracleId && p.b === y.oracleId) || (p.a === y.oracleId && p.b === x.oracleId));
 
+  // #491 PR6: a Background is an Add-a-Background offer only. The sweep never indexes one.
+  it("never pairs a Background with a Choose a Background commander, and never leads with one", () => {
+    const wilson = card("Wilson, Refined Grizzly", "Choose a Background (You can have a Background as a second commander.)");
+    const giants = card("Raised by Giants", "Commander creatures you own have base power and toughness 10/10.", { typeLine: "Legendary Enchantment — Background" });
+    const bgPairs = legalPairs([wilson, giants, thrasios, tymna]);
+    const touches = (x: PairSource) => bgPairs.some((p) => p.a === x.oracleId || p.b === x.oracleId);
+    expect(touches(wilson)).toBe(false);
+    expect(touches(giants)).toBe(false);
+    expect(bgPairs).toHaveLength(1);
+  });
+
   it("pairs each Doctor with a companion, and never two Doctors or a Doctor with a partner", () => {
     expect(has(tenth, rose)).toBe(true);
     expect(has(fourth, rose)).toBe(true);

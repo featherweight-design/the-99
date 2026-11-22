@@ -1,6 +1,10 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Candidate, CandidateHalf } from "./candidates";
-import { byPartnerFit, isBelowFloor, type PartnerOption } from "./partner-add";
+
+const execute = vi.hoisted(() => vi.fn());
+vi.mock("../../db", () => ({ db: { execute } }));
+
+import { byPartnerFit, isBelowFloor, partnerSources, type PartnerOption } from "./partner-add";
 
 const half = (name: string): CandidateHalf => ({
   oracleId: name, name, manaCost: null, cmc: 0, artCropUri: null, imageUri: null,
@@ -23,5 +27,37 @@ describe("isBelowFloor", () => {
     expect(isBelowFloor({ hasPairRow: false, deckCount: 0 })).toBe(true);
     expect(isBelowFloor({ hasPairRow: true, deckCount: 19 })).toBe(true);
     expect(isBelowFloor({ hasPairRow: true, deckCount: 20 })).toBe(false);
+  });
+});
+
+describe("partnerSources, Backgrounds (#491 PR6)", () => {
+  const cmd = (oracleText: string | null, typeLine = "Legendary Creature — Human") =>
+    ({ oracleId: "c", name: "C", typeLine, oracleText, manaCost: "{2}{W}", layout: "normal" });
+  const row = (id: string, typeLine: string) =>
+    ({ oracle_id: id, name: id, type_line: typeLine, oracle_text: null, mana_cost: null, layout: "normal" });
+
+  beforeEach(() => execute.mockReset());
+
+  it("offers every Background to a commander that chooses one, with no pair row, and runs only that query", async () => {
+    execute.mockResolvedValueOnce({ rows: [
+      row("bg1", "Legendary Enchantment — Background"),
+      row("bg2", "Legendary Enchantment — Background"),
+      row("notbg", "Legendary Creature — Elf"),
+    ] });
+    const out = await partnerSources(cmd("Choose a Background"), new Set(["bg2"]));
+    expect(execute).toHaveBeenCalledTimes(1);
+    expect(out).toEqual([{ ids: ["c", "bg1"], deckCount: 0, hasPairRow: false }]);
+  });
+
+  it("never offers a Background to a Partner commander, and runs only the two partner queries", async () => {
+    execute.mockResolvedValue({ rows: [] });
+    const out = await partnerSources(cmd("Partner"), new Set());
+    expect(execute).toHaveBeenCalledTimes(2);
+    expect(out).toEqual([]);
+  });
+
+  it("offers nothing to a commander with no second-commander ability", async () => {
+    expect(await partnerSources(cmd("Flying"), new Set())).toEqual([]);
+    expect(execute).not.toHaveBeenCalled();
   });
 });

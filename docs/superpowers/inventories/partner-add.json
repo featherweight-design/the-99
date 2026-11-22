@@ -1,6 +1,6 @@
 {
-  "feature": "Add a partner to an existing deck (#491, PR 3 and PR 5): the Add a partner section on the Change commander sheet, its confirm with the card that leaves, and the Replace groups under their own heading, and the Second commander box on the commander's card details (PR 5)",
-  "note": "PA_DECK is a single-commander deck of the signed-in account whose commander has a partner ability and whose 99 is full. PA_ROOM is the same with fewer than 98 cards (nothing leaves).",
+  "feature": "Add a partner to an existing deck (#491, PR 3 and PR 5): the Add a partner section on the Change commander sheet, its confirm with the card that leaves, and the Replace groups under their own heading, and the Second commander box on the commander's card details (PR 5), and the same for a commander that chooses a Background (PR 6)",
+  "note": "PA_DECK is a single-commander deck of the signed-in account whose commander has a partner ability and whose 99 is full. PA_ROOM is the same with fewer than 98 cards (nothing leaves). PA_BG_DECK is the same full single-commander deck whose commander prints Choose a Background (#491 PR6); its offers are Backgrounds.",
   "rows": [
     {
       "id": "section",
@@ -218,6 +218,76 @@
       ],
       "widths": [
         "phone"
+      ]
+    },
+    {
+      "id": "bg-section",
+      "label": "/decks/[id] sheet: Add a Background section for a Choose a Background commander",
+      "view": "src/components/decks/partner-add-section.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PA_BG_DECK}",
+          "wait": "[data-testid='change-commander-door']:visible",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Change commander",
+          "settle": 600
+        },
+        {
+          "wait": "[data-partner-section]",
+          "settle": 600
+        }
+      ]
+    },
+    {
+      "id": "bg-confirm-cut",
+      "label": "/decks/[id] sheet: the Background confirm with the card that leaves",
+      "view": "src/components/decks/partner-add-confirm.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PA_BG_DECK}",
+          "wait": "[data-testid='change-commander-door']:visible",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "Change commander",
+          "settle": 600
+        },
+        {
+          "wait": "[data-partner-section]",
+          "settle": 600
+        },
+        {
+          "click": "[data-partner-row] [data-choose]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "bg-details-box",
+      "label": "/decks/[id] card details: the Second commander box for a Choose a Background commander",
+      "view": "src/components/decks/commander-box.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${PA_BG_DECK}",
+          "wait": "[data-testid='change-commander-door']:visible",
+          "settle": 1500
+        },
+        {
+          "clickRole": "button",
+          "name": "View card details",
+          "settle": 1500
+        },
+        {
+          "wait": "[data-commander-box]",
+          "settle": 600
+        }
+      ],
+      "widths": [
+        "desktop"
       ]
     }
   ]

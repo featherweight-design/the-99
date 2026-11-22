@@ -12,7 +12,7 @@ import type { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
 import { deckBodySize } from "../decks/deck-size";
 import { liveLockedIds, pruneOrphanLocks } from "../decks/locks";
-import { canPair, partnerAbility } from "../decks/partner";
+import { backgroundPairs, canAddSecond } from "../decks/partner";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { touchDeck } from "../decks/touch";
 import { isCommanderCandidate } from "../recs/score";
@@ -51,6 +51,20 @@ export function cutAllowed(
 /** Sorted, so two identities compare as sets. */
 function identity(rows: readonly { colorIdentity: string[] }[]): string[] {
   return [...new Set(rows.flatMap((r) => r.colorIdentity))].sort();
+}
+
+type Half = { name: string; typeLine: string; oracleText: string | null; manaCost: string | null; layout: string | null };
+
+/**
+ * The legality of the cards a change would lead the deck with: each half a commander candidate and
+ * a second half one that `canAddSecond` pairs. A Background is only ever the second half beside a
+ * commander that chooses one: it never leads, so `isCommanderCandidate` still gates the first half,
+ * and the second unless it is such a Background.
+ */
+export function pairLegal(a: Half, b: Half | undefined): boolean {
+  if (!isCommanderCandidate(a)) return false;
+  if (b === undefined) return true;
+  return (backgroundPairs(a, b) || isCommanderCandidate(b)) && canAddSecond(a, b);
 }
 
 /** Whether the new leader's identity (both sorted) fits the deck's: equal, or a superset when a
@@ -105,16 +119,9 @@ export async function writeCommanderChange(
 
   // The same legality `createDeck` applies: a request is a crafted one until proved otherwise.
   const incoming = toIds.map((id) => byId.get(id));
-  if (incoming.some((c) => !c || !c.commanderLegal || !isCommanderCandidate(c))) {
-    return { ok: false, reason: "illegal" };
-  }
+  if (incoming.some((c) => !c || !c.commanderLegal)) return { ok: false, reason: "illegal" };
   const [a, b] = incoming as NonNullable<(typeof incoming)[number]>[];
-  if (b && !canPair(
-    { name: a.name, ability: partnerAbility(a.oracleText, a.typeLine) },
-    { name: b.name, ability: partnerAbility(b.oracleText, b.typeLine) },
-  )) {
-    return { ok: false, reason: "illegal" };
-  }
+  if (!pairLegal(a, b)) return { ok: false, reason: "illegal" };
 
   // Exactly this deck's identity, so not one card of the 99 changes legality (ruling 2). A single
   // becoming a pair may widen it instead: a wider identity makes no card illegal, and a partner

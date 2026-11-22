@@ -3,12 +3,14 @@
 // trade the sheet offers elsewhere, so the two lists never repeat a pair). Two sources, merged:
 // pairs EDHREC has a row for (any deck count; a pair below the floor is listed last, never
 // hidden), and the catalog's own pairing rules (`canPair`), so a legal partner EDHREC has not
-// sampled is still found. Backgrounds are not here: `isCommanderCandidate` rejects them.
+// sampled is still found. A Background (#491) is the one second commander that is not a commander
+// candidate: it is read from the catalog by its type line, never from EDHREC (no pair row), and
+// only for a commander that chooses one.
 // Reads only.
 
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { canPair, partnerAbility, type PartnerAbility } from "../decks/partner";
+import { addAbility, canPair, choosesBackground, isBackground, partnerAbility, type PartnerAbility } from "../decks/partner";
 import { isCommanderCandidate } from "../recs/score";
 import { MIN_CANDIDATE_DECKS } from "./fit";
 import type { Candidate } from "./candidates";
@@ -67,8 +69,9 @@ export function byPartnerFit(a: PartnerOption, b: PartnerOption): number {
  * partner ability.
  */
 export async function partnerSources(commander: Pairer, inDeck: ReadonlySet<string>): Promise<PartnerSource[]> {
-  const ability = partnerAbility(commander.oracleText, commander.typeLine);
+  const ability = addAbility(commander.oracleText, commander.typeLine);
   if (!ability) return [];
+  const partners = partnerAbility(commander.oracleText, commander.typeLine);
   const c = commander.oracleId;
   const found = new Map<string, PartnerSource>();
   const put = (other: string, deckCount: number, hasPairRow: boolean) => {
@@ -78,9 +81,12 @@ export async function partnerSources(commander: Pairer, inDeck: ReadonlySet<stri
     found.set(other, { ids: [c, other], deckCount, hasPairRow });
   };
 
-  const [rows, pairers] = await Promise.all([
+  type PairRow = { a: string; b: string; deck_count: number; type_line: string; oracle_text: string | null; mana_cost: string | null; layout: string | null };
+  type CardRow = { oracle_id: string; name: string; type_line: string; oracle_text: string | null; mana_cost: string | null; layout: string | null };
+  const none = { rows: [] };
+  const [rows, pairers, backgrounds] = await Promise.all([
     // The other half's card rides along: a row's partner still has to be able to lead a deck.
-    db.execute<{ a: string; b: string; deck_count: number; type_line: string; oracle_text: string | null; mana_cost: string | null; layout: string | null }>(sql`
+    !partners ? none : db.execute<PairRow>(sql`
       select ps.commander_oracle_id as a, ps.partner_oracle_id as b, ps.deck_count,
              co.type_line, co.oracle_text, co.mana_cost, co.layout
       from commander_pair_support ps
@@ -91,23 +97,30 @@ export async function partnerSources(commander: Pairer, inDeck: ReadonlySet<stri
         and (ps.commander_oracle_id = ${c} or ps.partner_oracle_id = ${c})
         and ca.commander_legal and cb.commander_legal
     `),
-    db.execute<{ oracle_id: string; name: string; type_line: string; oracle_text: string | null; mana_cost: string | null; layout: string | null }>(sql`
+    !partners ? none : db.execute<CardRow>(sql`
       select oracle_id, name, type_line, oracle_text, mana_cost, layout
       from cards
       where commander_legal
         and (oracle_text ilike '%partner%' or oracle_text ilike '%friends forever%'
              or oracle_text ilike '%companion%' or type_line ilike '%doctor%')
     `),
+    // Every Background the catalog holds, owned or not: it needs no EDHREC row and leads nothing.
+    !choosesBackground(commander.oracleText) ? none : db.execute<CardRow>(sql`
+      select oracle_id, name, type_line, oracle_text, mana_cost, layout
+      from cards
+      where commander_legal and type_line ilike '%background%'
+    `),
   ]);
   for (const r of rows.rows) {
     if (!isCommanderCandidate({ typeLine: r.type_line, oracleText: r.oracle_text, manaCost: r.mana_cost, layout: r.layout })) continue;
     put(r.a === c ? r.b : r.a, r.deck_count, true);
   }
-  const mine = { name: commander.name, ability };
+  const mine = { name: commander.name, ability: partners };
   for (const p of pairers.rows) {
     if (!isCommanderCandidate({ typeLine: p.type_line, oracleText: p.oracle_text, manaCost: p.mana_cost, layout: p.layout })) continue;
     if (canPair(mine, { name: p.name, ability: partnerAbility(p.oracle_text, p.type_line) })) put(p.oracle_id, 0, false);
   }
+  for (const p of backgrounds.rows) if (isBackground(p.type_line)) put(p.oracle_id, 0, false);
   return [...found.values()];
 }
 

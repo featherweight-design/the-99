@@ -17,7 +17,11 @@ export type PartnerAbility =
   // Lord Doctor creature that has no other creature types. The Doctor prints no ability at all,
   // so that side is read off its type line.
   | { kind: "doctorsCompanion" }
-  | { kind: "doctor" };
+  | { kind: "doctor" }
+  // "Choose a Background" (CR 702.124k): the commander may be paired with one Background. Only the
+  // Add a partner offer reads this; `partnerAbility` and `canPair` never return or match it, so the
+  // EDHREC pair sweep and every other pairing caller keep their rule (#491 PR6).
+  | { kind: "chooseBackground" };
 
 // The ability is always its own line on a printed card, so anchoring to a line
 // start is what keeps "creature you control with partner" from matching.
@@ -105,7 +109,51 @@ export function partnerAbilityLabel(ability: PartnerAbility): string {
       return "Doctor’s companion";
     case "doctor":
       return "Time Lord Doctor";
+    case "chooseBackground":
+      return "Choose a Background";
   }
+}
+
+const CHOOSE_BACKGROUND = /^Choose a Background\b/m;
+
+/** The commander prints "Choose a Background". */
+export function choosesBackground(oracleText: string | null): boolean {
+  return oracleText !== null && CHOOSE_BACKGROUND.test(oracleText);
+}
+
+/**
+ * A Background: a legendary enchantment whose subtype is Background (front face only). It never
+ * leads a deck alone and is never a single-commander candidate; it is only ever the second half
+ * beside a commander that chooses one.
+ */
+export function isBackground(typeLine: string | null): boolean {
+  if (!typeLine) return false;
+  const [types, subtypes] = typeLine.split(" // ")[0].split(/\s+[—-]\s+/);
+  if (subtypes === undefined) return false;
+  const words = types.split(/\s+/);
+  return words.includes("Legendary") && words.includes("Enchantment") && subtypes.split(/\s+/).includes("Background");
+}
+
+/** What a commander can add as a second commander: its partner ability, else "Choose a Background". */
+export function addAbility(oracleText: string | null, typeLine: string | null): PartnerAbility | null {
+  return partnerAbility(oracleText, typeLine) ?? (choosesBackground(oracleText) ? { kind: "chooseBackground" } : null);
+}
+
+type PairCard = { name: string; oracleText: string | null; typeLine: string | null };
+
+/** `a` chooses a Background and `b` is one: the only way a Background joins a deck, as the second half. */
+export function backgroundPairs(a: { oracleText: string | null }, b: { typeLine: string | null }): boolean {
+  return choosesBackground(a.oracleText) && isBackground(b.typeLine);
+}
+
+/**
+ * `canPair`, plus the Background pairing, for the Add a second commander paths only: `a` is the
+ * commander that stays and `b` the card joining it. A Background pairs only with a commander that
+ * chooses one, never with a Partner kind, in that order (a Background never leads).
+ */
+export function canAddSecond(a: PairCard, b: PairCard): boolean {
+  const side = (c: PairCard) => ({ name: c.name, ability: partnerAbility(c.oracleText, c.typeLine) });
+  return canPair(side(a), side(b)) || backgroundPairs(a, b);
 }
 
 /**
@@ -119,6 +167,6 @@ export function addPartnerOffer(
   bodyTotal: number,
 ): { oracleId: string; ability: PartnerAbility } | null {
   if (paired || bodyTotal > deckBodySize(false)) return null;
-  const ability = partnerAbility(commander.oracleText, commander.typeLine);
+  const ability = addAbility(commander.oracleText, commander.typeLine);
   return ability ? { oracleId: commander.oracleId, ability } : null;
 }
