@@ -10,7 +10,7 @@
  * production logs showed no "would refuse" line): `enforceHit` refuses the hit over the limit, as do the
  * anonymous counters in `anon.ts`. `public-read` stays observe-only (`observeAnonymousHit` logs what WOULD be
  * refused): a page render cannot answer 429. The app's own background fetches are the heaviest honest callers (`/collection` pulls its
- * withheld cards in batches of 200, about 15 for a 3,000-card collection), so a limit below that would
+ * withheld cards in batches of 500, about 6 for a 3,000-card collection), so a limit below that would
  * refuse the app to itself.
  */
 
@@ -19,7 +19,7 @@ export type RateRule = { limit: number; windowMs: number };
 export const RATE_RULES = {
   /** `GET /api/card-detail`: read ahead on hover, so a fast sweep down a decklist is dozens. */
   "card-detail": { limit: 240, windowMs: 60_000 },
-  /** `GET /api/collection-fields` and `GET /api/discovery-fields`: the background batch loops. */
+  /** `GET`/`POST /api/collection-fields` and `GET /api/discovery-fields`: the background batch loops. */
   "draw-fields": { limit: 120, windowMs: 60_000 },
   /** `POST /api/card-scan/match`: at most three lookups per card (`server-scan.ts`), each retried up to twice, at most 2 a second while scanning a stack. */
   "card-scan": { limit: 150, windowMs: 60_000 },

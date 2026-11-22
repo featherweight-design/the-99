@@ -1,7 +1,7 @@
 "use client";
 
-// The draw fields `/collection`'s page withheld (list payload plan, PR 4): the art, the facts and
-// the combo partners ship for the URL's first window only, and the rest arrive from
+// The draw fields `/collection`'s page withheld (list payload plan, PR 4): the art, the cost, the
+// facts and the combo partners ship for the URL's first window only, and the rest arrive from
 // `/api/collection-fields` through the shared loop in `ui/use-withheld-fields.ts`, which holds the
 // rules. Keyed by oracle id. A fetched field sits UNDER the row's own, so a printing the reader
 // picked keeps its art over the one the batch brought.

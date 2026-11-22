@@ -1,6 +1,6 @@
 // The draw fields of `/collection` cards the page withheld (list payload plan, PR 4).
 //
-// The page ships the art, the facts and the combo partners for its URL's first window only; the
+// The page ships the art, the cost, the facts and the combo partners for its URL's first window only; the
 // client fetches the rest from here, in the background, one batch at a time. `/api/card-detail`'s
 // contract, deliberately:
 //   - the reader comes from the Clerk session, never from the request;
