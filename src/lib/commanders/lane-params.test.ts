@@ -20,6 +20,8 @@ describe("parseLaneParams", () => {
       avail: "all",
       order: "fit",
       printedIn: [],
+      themes: [],
+      themeMatch: "any",
     });
     expect(parseLaneParams(sp(""), "discover").order).toBe("bestfit");
   });
@@ -271,7 +273,7 @@ describe("discoverSort", () => {
 
 describe("themes (t, tm)", () => {
   it("reads t as sorted, de-duplicated, lower-case slugs and drops anything not shaped like one", () => {
-    const p = parseLaneParams(new URLSearchParams("t=Tokens,aristocrats,tokens,,bad slug,+1-1-counters"), "discover");
+    const p = parseLaneParams(new URLSearchParams("t=Tokens,aristocrats,tokens,,bad slug,-lead,under_score"), "discover");
     expect(p.themes).toEqual(["aristocrats", "tokens"]);
   });
 
