@@ -23,7 +23,7 @@ const ASPICKED = "as you picked";
  * One cart filter panel's `FilterPanelCopy`, on the pattern of `/decks`' (`deckChassisCopy`), counting cards. A single
  * pick reads `Friend: Chris` (addendum R2 §4); Owned's Any is its rest, so the trigger reads the bare word there.
  */
-function cartPanel(dimension: string, rest?: string): FilterPanelCopy {
+export function cartPanel(dimension: string, rest?: string): FilterPanelCopy {
   return {
     triggerLabel: dimension,
     triggerOne: (name) => (name === rest ? dimension : `${dimension}: ${name}`),

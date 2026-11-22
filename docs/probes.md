@@ -3653,3 +3653,9 @@ Fixture: `scripts/seed-log-reminder-fixture.mts` (needs `RZ_FIXTURE_BRANCH` and 
 ## probe:flag-snapshot-swr
 
 `pnpm probe:flag-snapshot-swr` proves the first request past the switch snapshot's 30-second window does not wait on the snapshot read (`src/lib/flags/snapshot.ts`, stale-while-revalidate). It loads the signed-out landing (`GET /`, where render's `resolveFlags(null)` is the only snapshot reader) in rounds: one request just past the window, then one inside the fresh window, and exits 1 when the median gap exceeds `STALE_BUDGET_MS` (60). On main's memo the gap is the read (2026-11-22, local-dev: 113ms; with the fix 2ms). `PROBE_BASE=http://localhost:3396 pnpm probe:flag-snapshot-swr` against a webpack dev server; it sends no `accept: text/html`, since Clerk's dev instance answers a document request with no dev-browser cookie by a 307 to its handshake. About three minutes for five rounds (`ROUNDS`). Read-only; never production.
+
+## probe:spares-search
+
+`pnpm probe:spares-search` (`SPARES_FRIEND`, the friend's public id; `E2E_AUDIT_USER_EMAIL`; `PROBE_BASE=...`, local dev server) proves a friend's Spares tab (`/friends/<id>/spares`) searches, filters and sorts at 390x844 and 1300x900. It types a name word and a type word into the search box and counts the cards, reloads to check the `?q=` round trip, draws the zero state and presses Clear all, presses a Type filter (the sheet's switch on the phone, the panel's option on desktop), and loads `?sort=name` and `?sort=most` to compare the order of the tiles. It fails on `main`, where the tab has no search box.
+
+Fixture: the friend must share spares and hold at least 16 distinct cards across Creature (a Zombie among them), Saga, Artifact, Instant and Land. `scripts/tmp-seed-spares-9b.mts` made one on a scratch branch (never committed). Mutate on a scratch branch made from local-dev, never on local-dev, staging or production.

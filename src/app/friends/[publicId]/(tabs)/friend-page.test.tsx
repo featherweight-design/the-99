@@ -80,7 +80,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const DECK = { id: "11111111-1111-4111-8111-111111111111", name: named("Thopter Factory"), commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, built: 99, bodySize: 99 };
-const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, spare: 2, onWishlist: true };
+const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, typeLine: "Creature", colorIdentity: ["G"], spare: 2, onWishlist: true };
 
 describe("a friend's page group", () => {
   beforeEach(() => {
@@ -166,7 +166,7 @@ describe("a friend's page group", () => {
 
   it("draws the spares tab: wishlist cards marked and first, each with its count", async () => {
     const html = renderToString(await FriendSparesPage({ params: params() }));
-    expect(html).toContain(plain(p.spares.line([named("Thursday pod")], true)));
+    expect(html).toContain(plain(p.spares.line([named("Thursday pod")])));
     expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
     expect(html.indexOf("Ghalta, Primal Hunger")).toBeLessThan(html.indexOf("Sol Ring"));
     expect(html).toContain("2 spares");

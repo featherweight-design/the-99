@@ -55,6 +55,7 @@
     "db:restamp:prose": "tsx scripts/restamp-prose.ts",
     "push:keys": "node scripts/push-keys.mjs",
     "probe:type-search": "node scripts/probe-type-search.mjs",
+    "probe:spares-search": "node scripts/probe-spares-search.mjs",
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
     "probe:log-reminder": "node scripts/probe-log-reminder.mjs",
     "probe:pending-width": "node scripts/probe-pending-width.mjs",

@@ -10,19 +10,26 @@
 // modal's words. `?spare={oracleId}` opens that card's modal on landing, or, the spare gone, draws the shared toast; the
 // parameter is stripped either way.
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { FriendSpare, FriendSpareLine, FriendSpareList } from "../../lib/social/spares";
 import type { ProfileCommander } from "../../lib/social/commander";
-import { socialCopy, spareCopy } from "../../lib/copy/social";
+import { socialCopy, spareCopy, sparesSearchCopy } from "../../lib/copy/social";
 import { PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { mirrorUrl } from "../../lib/url/mirror";
+import {
+  NO_SPARE_FILTERS, filterSpares, hasSpareFilters, sortSpares, withDeckNeed, writeSpareParams,
+  type SpareBrowseLine, type SpareFilters, type SpareSort,
+} from "../../lib/social/spare-browse";
 import type { PriceFact } from "../../lib/decks/price";
 import { CardDetailProvider, CardDetailTrigger, cardDetailCopy, type SiblingCard } from "../cards/card-detail-provider";
 import { HydratedImg } from "../ui/hydrated-art";
 import { FriendSparesProvider, SparesSheetHost, usePageSpares, type SpareCard } from "./spare-markers";
 import { rowAsk } from "./friend-spares";
 import { SocialToast, type SocialToastState } from "./social-toast";
+import { SparesChassis } from "./spares-chassis";
+import { GhostButton, PrimaryButton } from "../ui/button";
+import { ZERO_PRIMARY, ZERO_SECONDARY, ZeroState } from "../ui/zero-state";
 
 /** Spare requests on this tab (`SOCIAL_FRIENDS_ENABLED` for the reader), decided by the page; absent, the tab is as shipped. */
 export type FriendSparesAsks = {
@@ -39,26 +46,67 @@ export type FriendSparesAsks = {
 const p = socialCopy.friendPage;
 const EAGER_TILES = 4;
 
-export function FriendSparesTab({ name, spares, asks }: { name: string | ThirdPartyName; spares: FriendSpareList | null; asks?: FriendSparesAsks }) {
+/** The tab's search, filters and order as the address carries them (`?q=`, `?colors=`, `?types=`, `?wanted=`, `?sort=`). */
+export type SparesView = { filters: SpareFilters; sort: SpareSort };
+const NO_NEED: Record<string, number> = {};
+const REST_VIEW: SparesView = { filters: NO_SPARE_FILTERS, sort: "wanted" };
+
+export function FriendSparesTab({ name, spares, asks, deckNeed = NO_NEED, initial = REST_VIEW }: {
+  name: string | ThirdPartyName;
+  spares: FriendSpareList | null;
+  asks?: FriendSparesAsks;
+  /** How many of the reader's decks still need each card (oracle id to count); a failed read is `{}`. */
+  deckNeed?: Record<string, number>;
+  initial?: SparesView;
+}) {
   const router = useRouter();
   // A wishlist write from a spare's details moves its mark and its place: refresh the page, as the Wishlist tab does.
   const onWishlistWrite = useCallback(() => router.refresh(), [router]);
+  const [view, setView] = useState(initial);
+  const all = useMemo(() => withDeckNeed(spares?.lines ?? [], deckNeed), [spares, deckNeed]);
+  const visible = useMemo(() => sortSpares(filterSpares(all, view.filters), view.sort), [all, view]);
+  const update = useCallback((next: SparesView) => {
+    setView(next);
+    const url = new URL(window.location.href);
+    writeSpareParams(url, next.filters, next.sort);
+    mirrorUrl(url);
+  }, []);
   if (spares === null || spares.lines.length === 0) {
     const empty = spares === null
       ? <Empty title={p.spares.noneTitle(name)} body={p.spares.noneBody(name)} />
       : <Empty title={p.spares.emptyTitle(name)} body={p.spares.emptyBody(name)} />;
     return asks ? <>{empty}<SpareLanding asks={asks} find={() => null} /></> : empty;
   }
-  const { lines } = spares;
-  const siblings: SiblingCard[] = lines.map((l) => ({ oracleId: l.oracleId, name: l.name, imageUri: l.imageUri }));
-  if (asks) return <AskTab spares={spares} asks={asks} onWishlistWrite={onWishlistWrite} />;
+  const siblings: SiblingCard[] = visible.map((l) => ({ oracleId: l.oracleId, name: l.name, imageUri: l.imageUri }));
+  const frame = (
+    <SparesChassis
+      lines={all}
+      shown={visible.length}
+      filters={view.filters}
+      onFilters={(filters) => update({ ...view, filters })}
+      sort={view.sort}
+      onSort={(sort) => update({ ...view, sort })}
+    />
+  );
+  const none = visible.length === 0 ? (
+    <NoSpares
+      name={name}
+      query={view.filters.search.trim()}
+      filtered={hasSpareFilters({ ...view.filters, search: "" })}
+      onKeepSearch={() => update({ ...view, filters: { ...NO_SPARE_FILTERS, search: view.filters.search } })}
+      onClearAll={() => update({ ...view, filters: NO_SPARE_FILTERS })}
+    />
+  ) : null;
+  if (asks) return <AskTab spares={spares} all={all} lines={visible} frame={frame} none={none} asks={asks} onWishlistWrite={onWishlistWrite} />;
   return (
     <>
-      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]"><PersonText text={p.spares.line(spares.pods, spares.wishlist)} /></p>
+      {frame}
+      <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]"><PersonText text={p.spares.line(spares.pods)} /></p>
+      {none}
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         {/* The board's grid: two columns on a phone, six from desktop. */}
         <ul className="m-0 mt-[12px] grid list-none grid-cols-2 gap-x-[8px] gap-y-[12px] p-0 md:grid-cols-6 md:gap-[20px]">
-          {lines.map((line, i) => {
+          {visible.map((line, i) => {
             const count = p.spares.count(line.spare);
             return (
               <li key={line.oracleId} data-testid="spare-tile" className="flex min-w-0 flex-col gap-[6px]">
@@ -95,6 +143,7 @@ export function FriendSparesTab({ name, spares, asks }: { name: string | ThirdPa
                       {p.spares.onWishlist}
                     </span>
                   )}
+                  {line.deckNeed > 0 && <DeckNeedMark need={line.deckNeed} />}
                 </span>
               </li>
             );
@@ -110,12 +159,17 @@ const TILE_BOX = "relative block w-full cursor-pointer overflow-hidden p-0 [aspe
 const RING = "outline-solid outline-2 outline-offset-[3px] outline-[color:var(--accent)]";
 const RING_ON_FOCUS = "focus:outline-solid focus:outline-2 focus:outline-offset-[3px] focus:outline-[color:var(--accent)]";
 
-function AskTab({ spares, asks, onWishlistWrite }: {
+function AskTab({ spares, all, lines, frame, none, asks, onWishlistWrite }: {
   spares: FriendSpareList; asks: FriendSparesAsks; onWishlistWrite: () => void;
+  /** Every spare the friend offers: the provider reads all of them and `?spare=` finds any, whatever the filters leave. */
+  all: readonly SpareBrowseLine[];
+  /** The spares the filters and the order leave. */
+  lines: readonly SpareBrowseLine[];
+  frame: ReactNode;
+  none: ReactNode;
 }) {
-  const { lines } = spares;
-  const ids = useMemo(() => lines.map((l) => l.oracleId), [lines]);
-  const byId = useMemo(() => new Map(lines.map((l) => [l.oracleId, l])), [lines]);
+  const ids = useMemo(() => all.map((l) => l.oracleId), [all]);
+  const byId = useMemo(() => new Map(all.map((l) => [l.oracleId, l])), [all]);
   const { friend } = asks;
   // What the page already knows of a card's spares (this friend's), drawn until the read of every friend's lands.
   const fallback = useCallback((id: string): FriendSpare[] => {
@@ -126,9 +180,11 @@ function AskTab({ spares, asks, onWishlistWrite }: {
   const tiles = useRef(new Map<string, HTMLButtonElement>());
   return (
     <>
+      {frame}
       <p className="m-0 mt-[12px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-        <PersonText text={p.spares.line(spares.pods, spares.wishlist)} />{p.spares.pressToAsk}
+        <PersonText text={p.spares.line(spares.pods)} />{p.spares.pressToAsk}
       </p>
+      {none}
       <CardDetailProvider onWishlistWrite={onWishlistWrite}>
         <FriendSparesProvider oracleIds={ids} newestAsOf={asks.newestAsOf} requests deckId={null} standalone sparesOnOpen hostSheet={false}>
           <SparesSheetHost first={friend.publicId} kickerFor={kickerFor} fallback={fallback} />
@@ -154,7 +210,7 @@ const asSpareCard = (line: FriendSpareLine, price: PriceFact | null): SpareCard 
 });
 
 function AskTile({ line, price, eager, friend, tileRef }: {
-  line: FriendSpareLine; price: PriceFact | null; eager: boolean; friend: string; tileRef: (el: HTMLButtonElement | null) => void;
+  line: SpareBrowseLine; price: PriceFact | null; eager: boolean; friend: string; tileRef: (el: HTMLButtonElement | null) => void;
 }) {
   const ctx = usePageSpares();
   const open = ctx?.opened?.oracleId === line.oracleId;
@@ -162,7 +218,7 @@ function AskTile({ line, price, eager, friend, tileRef }: {
   // THIS friend's ask for the card, in the modal's words: Requested while open, Accepted after a yes, else nothing.
   const ask = ctx?.requests ? rowAsk(ctx.requests.asksFor(line.oracleId), friend).kind : null;
   const state = ask === "requested" ? spareCopy.request.requested : ask === "accepted" ? spareCopy.request.accepted : null;
-  const aria = [spareCopy.markerAria(line.name), count, line.onWishlist ? p.spares.onWishlist : null, state].filter(Boolean).join(", ");
+  const aria = [spareCopy.markerAria(line.name), count, line.onWishlist ? p.spares.onWishlist : null, line.deckNeed > 0 ? sparesSearchCopy.tile.deck(line.deckNeed) : null, state].filter(Boolean).join(", ");
   return (
     <li data-testid="spare-tile" className="flex min-w-0 flex-col gap-[6px]">
       <button
@@ -201,6 +257,7 @@ function AskTile({ line, price, eager, friend, tileRef }: {
           ) : null}
         </span>
         {line.onWishlist && <WishlistMark />}
+        {line.deckNeed > 0 && <DeckNeedMark need={line.deckNeed} />}
       </span>
     </li>
   );
@@ -213,6 +270,31 @@ function TileArt({ line, eager }: { line: FriendSpareLine; eager: boolean }) {
     <span aria-hidden data-testid="spare-name" className="absolute inset-0 flex items-center justify-center p-[10px] text-center text-[12px] font-semibold leading-[1.3] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">
       {line.name}
     </span>
+  );
+}
+
+/** A hollow dot (the shopping list's "missing" mark) and the decks of the reader's that still need the card. */
+function DeckNeedMark({ need }: { need: number }) {
+  return (
+    <span data-testid="spare-deck-need" className="inline-flex items-center gap-[5px]">
+      <i aria-hidden className="size-[7px] shrink-0 rounded-full border border-dashed border-[color:var(--fg-muted)]" />
+      {sparesSearchCopy.tile.deck(need)}
+    </span>
+  );
+}
+
+/** The filters leave nothing: the shared `ZeroState`, as the Collection draws it. Keep only search leads only when a query and a filter are both on. */
+function NoSpares({ name, query, filtered, onKeepSearch, onClearAll }: {
+  name: string | ThirdPartyName; query: string; filtered: boolean; onKeepSearch: () => void; onClearAll: () => void;
+}) {
+  const c = sparesSearchCopy.none;
+  return (
+    <ZeroState
+      heading={c.heading(query)}
+      body={<PersonText text={c.body(name)} />}
+      primary={query && filtered ? <PrimaryButton type="button" onClick={onKeepSearch} className={ZERO_PRIMARY}>{c.keepSearch}</PrimaryButton> : undefined}
+      secondary={<GhostButton type="button" onClick={onClearAll} className={ZERO_SECONDARY}>{c.clear}</GhostButton>}
+    />
   );
 }
 
