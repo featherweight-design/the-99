@@ -231,6 +231,7 @@ try {
       report(`9 tapping the ${what} keeps the roll open`, open);
       report(`9 tapping the ${what} rolls again`, open && k1 !== k0, `${k0} -> ${k1}, pressed ${at} at ${[b.x + b.width / 2, b.y + b.height / 2].map(Math.round)}`);
     };
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/spine-coin-landed-${viewport.width}.png` });
     if (coinDrawn) await rolledAgain(coin, "coin");
     else report("9 tapping the coin rolls again", false, "no coin drawn");
     await page.locator("[data-testid=dice-roll][data-landed]").waitFor({ timeout: 6000 }).catch(() => {});
@@ -252,7 +253,11 @@ try {
     if ((await dieHit.count()) > 0) await rolledAgain(dieHit, "d20");
     else if (scene3d) report("9 the landed d20 takes a tap", false, "no tap target over the die");
     else console.log("  (no 3D scene: the d20 tap is not checked)");
-    if (SHOTS) await page.screenshot({ path: `${SHOTS}/spine-d20-${viewport.width}.png` });
+    if (SHOTS) {
+      await page.locator("[data-testid=dice-roll][data-landed]").waitFor({ timeout: 8000 }).catch(() => {});
+      await page.waitForTimeout(400);
+      await page.screenshot({ path: `${SHOTS}/spine-d20-${viewport.width}.png` });
+    }
 
     await context.close();
   }
