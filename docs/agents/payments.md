@@ -164,13 +164,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   different: no Welcome lot, the existing `none` state. The claim has no account column and is NOT purged, so deleting an account and
   signing up again on the same address gets nothing. Limits: a custom domain or catch-all cannot be folded; accounts purged
   before the table hold no claim and cannot get one (their address is gone); rotating the key quietly resets every claim (it fails open).
-- **The claim backfill** (`pnpm backfill:welcome-claims`, `scripts/backfill-welcome-claims.ts`, one-off, Hugh runs it on
+- **The claim backfill** (`pnpm db:backfill:welcome-claims`, `scripts/backfill-welcome-claims.ts`, one-off, Hugh runs it on
   production): accounts welcomed before 0260 held a lot but no claim. For every account with a `welcome` lot it reads the verified
   primary address from Clerk and writes the claim `grantWelcome` would have (`primaryVerifiedEmail` + `welcomeEmailHash`, through
   `scripts/lib/welcome-claims-backfill.mts`), `on conflict do nothing`. Dry run by default, counts only (never an address or hash);
   `--apply` writes. Refuses with no usable key, on production with a non-`sk_live_` Clerk key, and on any database but production
-  unless `--target` names it (checked by `neon.branch_id`); `--apply` refuses when the table holds claims and none of the run's match
-  (wrong key; `--no-key-check` skips that alone). It claims the address that is primary TODAY, which may differ from the one at sign-up.
+  unless `--target` names it (checked by `neon.branch_id`); `--apply` refuses when none of the run's claims match one already in the table
+  (a wrong key, or an empty table that cannot confirm it; `--no-key-check` skips that alone), and on a short Clerk page or a user without raw JSON. It claims the address that is primary TODAY, which may differ from the one at sign-up.
 - Proof: `pnpm probe:payments-ledger` section `m` (order, expiry, the index, the check, the purge).
 - **What the reader is told (D2, plan `2026-10-21-welcome-credits.md`).** `readWelcomeLot` (`src/lib/payments/welcome-read.ts`)
   is the one read that tells a lot used up, expired and absent apart (the allowance drops an expired lot and reads a

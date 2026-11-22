@@ -16,7 +16,10 @@ export function parseArgs(argv: readonly string[]): Args {
     if (a === "--apply") args.apply = true;
     else if (a === "--dry-run") dryRun = true;
     else if (a === "--no-key-check") args.keyCheck = false;
-    else if (a.startsWith("--target=") && a.length > "--target=".length) args.target = a.slice("--target=".length);
+    else if (a.startsWith("--target=") && a.length > "--target=".length) {
+      if (args.target !== null) throw new Error("--target given twice: pass it once");
+      args.target = a.slice("--target=".length);
+    }
     else throw new Error(`unknown argument ${JSON.stringify(a)}: use --dry-run (default), --apply, --target=<name|branch id>, --no-key-check`);
   }
   if (args.apply && dryRun) throw new Error("--apply and --dry-run together: pick one");
@@ -77,12 +80,16 @@ export function planClaims(accountIds: readonly string[], users: readonly ClerkU
   return { accounts: new Set(accountIds).size, notInClerk, unclaimable, hashes: [...hashes], sharedMailbox: claimable - hashes.size };
 }
 
+export type KeyCheck = "ok" | "wrong" | "unverifiable";
+
 /**
- * The key check: claims written since migration 0260 used production's key. When the table already holds claims and not
- * one of ours matches, this run's key is almost certainly not production's, and its claims would block nobody.
+ * The key check. Claims written since migration 0260 used production's key, so a right key matches at least one of them.
+ * `wrong`: the table holds claims and not one of ours matches, so this run's claims would block nobody. `unverifiable`: the
+ * table is empty, so nothing can confirm the key. `--apply` refuses both unless `--no-key-check`.
  */
-export function keyLooksWrong(existingClaims: number, matched: number, planned: number): boolean {
-  return existingClaims > 0 && planned > 0 && matched === 0;
+export function keyCheck(existingClaims: number, matched: number, planned: number): KeyCheck {
+  if (planned === 0 || matched > 0) return "ok";
+  return existingClaims > 0 ? "wrong" : "unverifiable";
 }
 
 export function chunks<T>(xs: readonly T[], size: number): T[][] {

@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { welcomeEmailHash } from "../../src/lib/payments/canonical-email";
 import { LOCAL_DEV_BRANCH, PRODUCTION_BRANCH, STAGING_BRANCH } from "./scratch-branch.mjs";
-import { chunks, clerkKeyFits, keyLooksWrong, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./welcome-claims-backfill.mjs";
+import { chunks, clerkKeyFits, keyCheck, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./welcome-claims-backfill.mjs";
 
 const keys = { SENTRY_USER_HASH_KEY: "k".repeat(48) };
 const user = (id: string, email: string, status = "verified", primary = true): ClerkUser => ({
@@ -25,6 +25,7 @@ describe("parseArgs", () => {
     expect(() => parseArgs(["--aply"])).toThrow(/unknown argument/);
     expect(() => parseArgs(["--target="])).toThrow(/unknown argument/);
     expect(() => parseArgs(["--apply", "--dry-run"])).toThrow(/pick one/);
+    expect(() => parseArgs(["--target=staging", "--target=production"])).toThrow(/twice/);
   });
 });
 
@@ -79,12 +80,14 @@ describe("planClaims", () => {
   });
 });
 
-describe("keyLooksWrong", () => {
-  it("flags a run whose claims match none of a non-empty table", () => {
-    expect(keyLooksWrong(5, 0, 10)).toBe(true);
-    expect(keyLooksWrong(5, 1, 10)).toBe(false);
-    expect(keyLooksWrong(0, 0, 10)).toBe(false);
-    expect(keyLooksWrong(5, 0, 0)).toBe(false);
+describe("keyCheck", () => {
+  it("passes when one of the run's claims is already in the table, or there is nothing to write", () => {
+    expect(keyCheck(5, 1, 10)).toBe("ok");
+    expect(keyCheck(5, 0, 0)).toBe("ok");
+  });
+  it("is wrong when the table holds claims and none match, unverifiable when the table is empty", () => {
+    expect(keyCheck(5, 0, 10)).toBe("wrong");
+    expect(keyCheck(0, 0, 10)).toBe("unverifiable");
   });
 });
 

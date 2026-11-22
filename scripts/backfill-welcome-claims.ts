@@ -8,13 +8,14 @@
 //   second run writes nothing and two accounts on one mailbox write one claim.
 // - Fails closed: no usable key, no Clerk key, or a production run on a development Clerk key refuses before reading anything.
 //   It runs on production by default and refuses any other database unless `--target` names it (production, staging,
-//   local-dev, or a `br-…` id), checked against the database's own `neon.branch_id`. `--apply` also refuses when the table
-//   already holds claims and none of this run's match (the key is not production's); `--no-key-check` skips only that.
+//   local-dev, or a `br-…` id), checked against the database's own `neon.branch_id`. `--apply` also refuses when none of this run's
+//   claims match one already in the table (the key is not production's, or the table is empty and nothing can confirm it);
+//   `--no-key-check` skips only that.
 // - Accounts already purged hold no lot and are not read; a purged account's address cannot be recovered.
 //
-//   pnpm backfill:welcome-claims                  # dry run, production
-//   pnpm backfill:welcome-claims --apply
-//   pnpm backfill:welcome-claims --target=br-…    # a scratch branch
+//   pnpm db:backfill:welcome-claims                  # dry run, production
+//   pnpm db:backfill:welcome-claims --apply
+//   pnpm db:backfill:welcome-claims --target=br-…    # a scratch branch
 //
 // First, and on its own line: the helper's import loads `.env`.
 import { requireEnv } from "./lib/env.mjs";
@@ -25,7 +26,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 
 import { creditGrants, welcomeEmailClaims } from "../src/db/schema";
 import { hashKey } from "../src/lib/analytics/funnel-events";
-import { chunks, clerkKeyFits, keyLooksWrong, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./lib/welcome-claims-backfill.mjs";
+import { chunks, clerkKeyFits, keyCheck, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./lib/welcome-claims-backfill.mjs";
 
 const CLERK_PAGE = 100;
 const WRITE_BATCH = 500;
@@ -56,8 +57,13 @@ async function main() {
     const clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY });
     const users: ClerkUser[] = [];
     for (const page of chunks(ids, CLERK_PAGE)) {
-      const { data } = await clerk.users.getUserList({ userId: page, limit: CLERK_PAGE });
-      for (const u of data) users.push({ id: u.id, raw: u.raw });
+      const { data, totalCount } = await clerk.users.getUserList({ userId: page, limit: CLERK_PAGE });
+      // A short page would count real accounts as gone, and a user with no raw JSON as unclaimable: both refuse instead.
+      if (totalCount > data.length) refuse(`Clerk returned ${data.length} of ${totalCount} users for one page`);
+      for (const u of data) {
+        if (!u.raw) refuse("Clerk returned a user without its raw JSON: the SDK's shape has changed, so no claim can be read");
+        users.push({ id: u.id, raw: u.raw });
+      }
     }
 
     const plan = planClaims(ids, users, keys);
@@ -77,14 +83,16 @@ async function main() {
     console.log(`  missing                   ${plan.hashes.length - matched}`);
     console.log(`claims in the table         ${existing}`);
 
-    const wrongKey = keyLooksWrong(existing, matched, plan.hashes.length);
-    if (wrongKey) console.log("WARNING: the table holds claims and none of this run's match: the key is probably not production's");
+    const check = keyCheck(existing, matched, plan.hashes.length);
+    console.log(`key check                   ${check}`);
+    if (check === "wrong") console.log("WARNING: the table holds claims and none of this run's match: the key is probably not production's");
+    if (check === "unverifiable") console.log("WARNING: the table is empty, so nothing confirms this key is production's");
 
     if (!args.apply) {
       console.log(`dry run: ${plan.hashes.length - matched} claim(s) would be written. Re-run with --apply to write.`);
       return;
     }
-    if (wrongKey && args.keyCheck) refuse("key check failed (above); fix the key, or pass --no-key-check if the table's claims belong only to purged accounts");
+    if (check !== "ok" && args.keyCheck) refuse(`key check ${check} (above); fix the key, or pass --no-key-check once you are sure it is production's`);
 
     let written = 0;
     for (const part of chunks(plan.hashes, WRITE_BATCH)) {
