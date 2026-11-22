@@ -1,0 +1,45 @@
+{
+  "feature": "Store choice UI-1b: /decks Stats, the /decks cart entry and Home's To buy in the reader's store (handoff design_handoff_the99_store_choice)",
+  "note": "Needs a server on a scratch branch of local-dev where the audit account (user_3HdjdocERCjunk0zJQFDWyHkTd4) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set to the store being photographed, and printing_store_prices rows for that store (fixtures derived from Mana Pool's until the store ingest runs). Run once per store with preferred_store changed between runs and the out directory copied aside. This inventory writes nothing.",
+  "out": "contact-sheets/store-choice-ui1b",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "stats-worth",
+      "label": "/decks Stats: What each deck is worth, opened; the caption names the store and its figure",
+      "view": "src/components/decks/lineup/worth-card.tsx",
+      "steps": [
+        { "goto": "/decks?view=stats", "wait": "[data-stats-card=\"worth\"]", "settle": 1500 },
+        { "click": "[data-stats-card=\"worth\"] > button[aria-expanded=\"false\"]", "wait": "[data-stats-worth]", "settle": 800, "scrollTo": "[data-stats-card=\"worth\"]" }
+      ]
+    },
+    {
+      "id": "stats-collection",
+      "label": "/decks Stats: Your collection, opened; the caption names the store and its figure",
+      "view": "src/components/decks/lineup/collection-card.tsx",
+      "steps": [
+        { "goto": "/decks?view=stats", "wait": "[data-stats-card=\"collection\"]", "settle": 1500 },
+        { "click": "[data-stats-card=\"collection\"] > button[aria-expanded=\"false\"]", "wait": "[data-stats-card=\"collection\"] [data-unit-in]", "settle": 800, "scrollTo": "[data-stats-card=\"collection\"]" }
+      ]
+    },
+    {
+      "id": "decks-cart-entry",
+      "label": "/decks: the cart entry and the deck tiles' to-buy figures, totalled in the reader's store",
+      "view": "src/components/decks/cart/cart-entry.tsx",
+      "steps": [
+        { "goto": "/decks", "wait": "a[href='/decks/shopping']", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "home-commitments",
+      "label": "Home: Commitments' To buy row, totalled in the reader's store",
+      "view": "src/components/home/commitments-card.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-commitments]", "settle": 2000, "scrollTo": "[data-commitments]" }
+      ]
+    }
+  ]
+}

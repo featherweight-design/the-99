@@ -17,6 +17,7 @@ import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { announcementsEnabled } from "../lib/announcements/flag";
 import { requestFlags } from "../lib/flags/request";
+import { readerStoreForPage } from "../lib/stores/preference";
 import { friendLinksEnabled } from "../lib/friend-links/flag";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
@@ -199,7 +200,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // for why that is correct after any write, from anywhere. The UTC DATE is in the key because
   // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
   // so a pair cached yesterday is never served today.
-  const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10)], async (): Promise<PageLoad<HomePayload>> => {
+  // The reader's store (store choice) prices the Commitments row's To buy figure and keys the entry, so a store
+  // change never serves another store's total. An unreadable preference prices in Mana Pool, the default.
+  const store = await readerStoreForPage(userId, env);
+  const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10), store], async (): Promise<PageLoad<HomePayload>> => {
     const [stats, decks, seen, tourSeen] = await Promise.all([
       perf.timed("collectionStats", () => getCollectionStats(userId)),
       // `name`, which is the CHEAPEST ORDER this reader offers. Home does not use
@@ -244,7 +248,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     // the payload as null/empty for the dashboard's props.
     const [lastUpdated, shopping] = await Promise.all([
       perf.timed("lastUpdated", () => getCollectionLastUpdated(userId)),
-      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, store)),
     ]);
     const ready = null;
     const arrivals = null;

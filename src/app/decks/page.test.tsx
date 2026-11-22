@@ -9,12 +9,16 @@ const stub = vi.hoisted(() => ({ env: {} as Record<string, string> }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
 vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => stub.env as NodeJS.ProcessEnv }));
 vi.mock("../../lib/cache/page-cache", () => ({
-  cachePageForUser: async (_u: string, _p: string, _k: string[], load: (env: NodeJS.ProcessEnv) => Promise<{ value: unknown }>, env: NodeJS.ProcessEnv) =>
-    (await load(env)).value,
+  cachePageForUser: async (_u: string, _p: string, k: string[], load: (env: NodeJS.ProcessEnv) => Promise<{ value: unknown }>, env: NodeJS.ProcessEnv) =>
+    (keys.seen.push(k), (await load(env)).value),
 }));
 vi.mock("../../lib/decks/read", () => ({ listDecksWithStats: async () => [] }));
 vi.mock("../../lib/decks/folders", () => ({ listFolders: async () => [] }));
-vi.mock("../../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: async () => ({}) }));
+const rollup = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => ({})) }));
+vi.mock("../../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: rollup.load }));
+const keys = vi.hoisted(() => ({ seen: [] as string[][] }));
+const reader = vi.hoisted(() => ({ store: vi.fn(async (..._a: unknown[]): Promise<string> => "manapool") }));
+vi.mock("../../lib/stores/preference", () => ({ readerStoreForPage: reader.store }));
 vi.mock("../../lib/recs/ranked-list", () => ({ getRankedList: async () => null }));
 vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ totalCards: 0, uniqueCards: 0 }) }));
 vi.mock("../../lib/precons/summary", () => ({ readPreconSummary: async () => null }));
@@ -31,14 +35,18 @@ const { DecksView } = await import("../../components/decks/decks-view");
 // The page draws the landing's mount beside the view (discovery R2·3): the view is the fragment's last child.
 const visit = async (searchParams: Record<string, string> = {}) => {
   const children = ((await DecksPage({ searchParams: Promise.resolve(searchParams) })) as ReactElement<{ children: ReactElement[] }>).props.children;
-  // The view sits inside the page's ZoneProvider, the fragment's last child.
+  // The view sits inside the page's ZoneProvider (the fragment's last child), then its StoreProvider.
   const provider = children[children.length - 1] as ReactElement<{ children: ReactElement }>;
-  return provider.props.children as ReactElement<{ lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown>; filter?: unknown } | null; failed: boolean } | null }>;
+  return (provider.props.children as ReactElement<{ children: ReactElement }>).props.children as ReactElement<{ lineup?: { data: unknown; view: string; foldServer: string | null } | null; games?: { data: { games: unknown[]; next: string | null; aggregates: Record<string, unknown>; filter?: unknown } | null; failed: boolean } | null }>;
 };
 
 beforeEach(() => {
   stub.env = {};
   lineup.read.mockClear();
+  rollup.load.mockClear();
+  reader.store.mockReset();
+  reader.store.mockResolvedValue("manapool");
+  keys.seen.length = 0;
   history.load.mockReset();
 });
 
@@ -136,5 +144,19 @@ describe("/decks' games prop", () => {
     history.load.mockRejectedValueOnce(new Error("down"));
     const page = await visit({ view: "games" });
     expect(page.props.games).toEqual({ data: null, failed: true });
+  });
+});
+
+// Store choice (#3200): the reader's store prices the tiles' To buy figures and the Stats values, keys the cached
+// payload, and reaches the view's StoreProvider, so every figure and caption on the page is from that one store.
+describe("/decks' store", () => {
+  it("reads every figure in the reader's store and keys the cache on it", async () => {
+    reader.store.mockResolvedValue("tcgplayer");
+    const children = ((await DecksPage({ searchParams: Promise.resolve({ view: "stats" }) })) as ReactElement<{ children: ReactElement[] }>).props.children;
+    const zone = children[children.length - 1] as ReactElement<{ children: ReactElement<{ store: string }> }>;
+    expect(zone.props.children.props.store).toBe("tcgplayer");
+    expect(rollup.load).toHaveBeenCalledWith("user_1", undefined, "tcgplayer");
+    expect(lineup.read).toHaveBeenCalledWith("user_1", expect.anything(), "tcgplayer");
+    expect(keys.seen).toContainEqual(["tcgplayer"]);
   });
 });

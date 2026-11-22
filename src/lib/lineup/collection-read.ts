@@ -15,6 +15,7 @@ import { cards, collectionItems, commanderPairSupport, commanderPairSupportCards
 import { isBasicLand } from "../decks/grouping";
 import { summarisePrices, type PricedCard } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { chainArt } from "../cards/chain-art";
 import { canonicalPair } from "../edhrec/pair-order";
 import type { LineupCollection } from "./types";
@@ -25,7 +26,7 @@ export const WANT_FLOOR_PCT = 20;
 type Need = { deckId: string; oracleId: string; quantity: number };
 type Head = { deckId: string; commander: string; partner: string | null };
 
-export async function readCollection(userId: string, needs: readonly Need[], heads: readonly Head[], brews: ReadonlySet<string>): Promise<{ collection: LineupCollection; asOf: Date | null }> {
+export async function readCollection(userId: string, needs: readonly Need[], heads: readonly Head[], brews: ReadonlySet<string>, store: Store = "manapool"): Promise<{ collection: LineupCollection; asOf: Date | null }> {
   const owned = (await db
     .select({ oracleId: collectionItems.oracleId, name: cards.name, typeLine: cards.typeLine, imageUri: cards.imageUri, copies: sql<string>`sum(${collectionItems.quantity})` })
     .from(collectionItems)
@@ -39,7 +40,7 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
   const singles = heads.filter((h) => !h.partner);
   const pairs = heads.filter((h) => h.partner).map((h) => ({ deckId: h.deckId, ...canonicalPair(h.commander, h.partner!) }));
   const [read, single, pair] = await Promise.all([
-    loadPrices(ids),
+    loadPrices(ids, [], [], store),
     ids.length === 0 || singles.length === 0 ? [] : db
       .select({ commander: commanderSupportCards.commanderOracleId, oracleId: commanderSupportCards.oracleId, inclusion: commanderSupportCards.inclusion })
       .from(commanderSupportCards)

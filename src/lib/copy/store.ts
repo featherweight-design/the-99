@@ -25,5 +25,7 @@ export const storeCopy = {
   // ── The deck's Stats money card ──────────────────────────────────────
   noPriceOne: (s: StoreInfo) => `no price from ${s.name} for this one`,
   noPriceMany: (s: StoreInfo) => `no price from ${s.name} for these`,
+  /** A deck's or the collection's value caption: `Mana Pool prices, 2h ago` or `TCGplayer market prices, 2h ago`. */
+  deckCost: (s: StoreInfo, age: string) => (s.figure === "market" ? `${s.name} market prices, ${age}` : `${s.name} prices, ${age}`),
   moneyCaption: (s: StoreInfo) => `One square per card, owned first. Prices from ${s.name}. Basics are never priced or counted to buy.`,
 } as const;

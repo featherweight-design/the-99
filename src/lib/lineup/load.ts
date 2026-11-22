@@ -20,6 +20,7 @@ import { isBasicLand } from "../decks/grouping";
 import { jobRowsOf, jobTally, type JobRowsByCard } from "../decks/job-tally";
 import { averageManaValue } from "../decks/mana-value";
 import { loadPrices, priceFor, type PriceRead } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { readHeldPricePicks } from "../decks/printings";
 import { primaryRole } from "../decks/read";
 import { moneyStats } from "../decks/stats-money";
@@ -98,10 +99,10 @@ type ListRow = { deckId: string; oracleId: string; typeLine: string };
 
 type Built = { builds: Map<string, LineupBuild> | null; asOf: Date | null; shared: LineupShared[] | null; lists: ListRow[] | null; collection: LineupCollection | null };
 
-async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>): Promise<Built> {
+async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<string>, store: Store): Promise<Built> {
   if (ids.length === 0) {
     try {
-      const { collection, asOf } = await readCollection(userId, [], [], brews);
+      const { collection, asOf } = await readCollection(userId, [], [], brews, store);
       return { builds: new Map(), asOf, shared: [], lists: [], collection };
     } catch (error) {
       recordSoftFailure();
@@ -121,7 +122,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
     const priced = [...new Set(all.filter((c) => !isBasicLand(c.typeLine)).map((c) => c.oracleId))];
     const [labels, read, avail, buyRows] = await Promise.all([
       readLabels([...new Set(lists.list.filter((c) => !isLandFace(c.typeLine)).map((c) => c.oracleId))]),
-      readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks)),
+      readHeldPricePicks(userId, ids).then((picks) => loadPrices(priced, picks, [], store)),
       // The whole collection's claim model, once (lock 3, lock 4).
       loadAvailability(userId),
       // Shopping's own buy rows, so a row's to-buy count is the cart's.
@@ -135,7 +136,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
       const cs = lists.commanders.filter((c) => c.deckId === deckId);
       return { deckId, commander: cs[0].oracleId, partner: cs[1]?.oracleId ?? null };
     });
-    collection = (await readCollection(userId, [...lists.list, ...lists.commanders], heads, brews)).collection;
+    collection = (await readCollection(userId, [...lists.list, ...lists.commanders], heads, brews, store)).collection;
   } catch (error) {
     recordSoftFailure();
     console.warn("loadLineup: the build figures could not be read", error);
@@ -171,7 +172,8 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
   return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every, collection };
 }
 
-export async function loadLineup(userId: string): Promise<LineupData> {
+/** `store` is the reader's (store choice): every value on the Stats cards is read in that one store, so no total mixes two. */
+export async function loadLineup(userId: string, store: Store = "manapool"): Promise<LineupData> {
   // The bracket is always read: the Analysis tab that explains it is always drawn (its switch is retired).
   const decks = await listDecksWithStats(userId, DEFAULT_DECK_SORT, { includeBracket: true });
   const ids = decks.map((d) => d.id);
@@ -184,7 +186,7 @@ export async function loadLineup(userId: string): Promise<LineupData> {
       .where(and(eq(deckGames.userId, userId), inArray(deckGames.deckId, ids)))
       // `listDeckGames`' order, so a deck's games read newest first here as on its Games tab.
       .orderBy(desc(deckGames.playedAt), desc(deckGames.createdAt)),
-  readBuilds(userId, ids, brews)]);
+  readBuilds(userId, ids, brews, store)]);
   const games = new Map<string, LineupGame[]>();
   for (const r of rows) {
     const list = games.get(r.deckId) ?? [];

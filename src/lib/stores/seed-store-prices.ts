@@ -1,6 +1,7 @@
 import { inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { printingStorePrices, printings, tokenPrintings, tokenStorePrices } from "../../db/schema";
+import { stampCatalogRefresh } from "../cache/stamp-catalog";
 import { partitionFeed } from "../manapool/seed-prices";
 import { fetchBulkIndex, streamBulkEntries } from "../scryfall/bulk";
 import { tokenTablesExist } from "../tokens/publish";
@@ -134,7 +135,12 @@ export async function writeStoreRows(store: OtherStore, { rows, asOf, skipped, c
       tokenUpserted += written.length;
     }
   });
-  // No catalog stamp: nothing reads these tables yet. The store-aware reads decide whether a store run retires cached payloads.
+  // The cached list payloads (Home, /decks and its Stats, the all-decks cart) price a reader on another store from this
+  // table, and the catalog generation in their key is what retires them. Stamped after the commit, as the Mana Pool run
+  // is: the daily refresh writes store prices after Mana Pool's, so Mana Pool's stamp alone would leave a payload cached
+  // between the two on yesterday's store prices until the next day's run. A run that wrote nothing (every row held
+  // back by the never-backwards guard) changed no figure, so it retires nothing.
+  if (upserted + tokenUpserted > 0) await stampCatalogRefresh();
   const heldBack = cardRows.length + tokenRows.length - upserted - tokenUpserted;
   return { store, upserted, tokenUpserted, heldBack, skippedOrphan, skipped, collapsed, asOf };
 }
