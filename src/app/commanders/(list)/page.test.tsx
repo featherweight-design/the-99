@@ -23,6 +23,7 @@ vi.mock("../../../lib/sets/lane-printed-in", () => ({
   loadCommanderPrintings: () => Promise.resolve(null),
   lanePrintedInFor: async () => null,
 }));
+vi.mock("../../../lib/themes/lane-themes", () => ({ laneThemesFor: async () => undefined }));
 vi.mock("../../../lib/commanders/hidden", () => ({ loadHiddenIds: async () => ["h2", "h1"] }));
 vi.mock("../../../lib/commanders/rankings", () => ({
   commanderRankingsKey: (hiddenIds: readonly string[]) => ["commander-rankings", hiddenIds.join(",")],
