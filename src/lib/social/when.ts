@@ -66,3 +66,13 @@ export function closesWhen(closes: Date, now: Date, timeZone?: string): string {
   if (days === 1) return ruleZeroCopy.page.closesTomorrow(time);
   return ruleZeroCopy.page.closesOn(time, fmt({ weekday: "short" }, timeZone).format(closes));
 }
+
+/** `Thu, Nov 19`: the day a game was played, or the day its fill-in ends. */
+export function gameDay(d: Date, timeZone?: string): string {
+  return fmt({ weekday: "short", month: "short", day: "numeric" }, timeZone).format(d);
+}
+
+/** `9:14 am`: a clock time in the house's lowercase form (`closesWhen`'s). */
+export function clockTime(d: Date, timeZone?: string): string {
+  return fmt({ hour: "numeric", minute: "2-digit" }, timeZone).format(d).replace(/\s?([AP])M$/, (_, m: string) => ` ${m.toLowerCase()}m`);
+}

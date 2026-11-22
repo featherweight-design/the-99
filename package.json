@@ -52,6 +52,7 @@
     "db:restamp:prose": "tsx scripts/restamp-prose.ts",
     "push:keys": "node scripts/push-keys.mjs",
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
+    "probe:log-reminder": "node scripts/probe-log-reminder.mjs",
     "probe:pending-width": "node scripts/probe-pending-width.mjs",
     "probe:precons-skeleton": "node scripts/probe-precons-skeleton.mjs",
     "probe:launch-scrollbar": "node scripts/probe-launch-scrollbar.mjs",

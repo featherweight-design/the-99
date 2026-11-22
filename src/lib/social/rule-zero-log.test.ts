@@ -70,6 +70,13 @@ describe("resultSeatsQuery (ruling (b))", () => {
     expect(q.sql).not.toContain('dg.created_at');
   });
 
+  it("includeLogged drops the not-logged condition and nothing else (the closed page draws a logged game too)", () => {
+    const all = resultSeatsQuery(VIEWER, TABLE, new Date("2026-11-21T03:00:00.000Z"), undefined, [], true).toSQL();
+    expect(all.sql).not.toContain("dg.rule_zero_game_at");
+    expect(all.sql).toContain("interval '7 days' > now()");
+    expect(all.sql).toContain('"rule_zero_result_seats"."started_at" = $');
+  });
+
   it("draws the deck each seat held at Start, only while it is that player's own", () => {
     expect(q.sql).toContain(`left join "decks" on ("decks"."id" = "rule_zero_result_seats"."deck_id" and "decks"."user_id" = "rule_zero_result_seats"."user_id")`);
     expect(q.sql).not.toContain('"rule_zero_seats"."deck_id"');

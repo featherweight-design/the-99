@@ -10,12 +10,13 @@ import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import { PersonText } from "../../lib/person-name";
 import { logGameHref } from "../../lib/rule-zero/table-view";
 import type { ClosedTable } from "../../lib/social/rule-zero-table";
-import { closesWhen } from "../../lib/social/when";
+import { closesWhen, gameDay } from "../../lib/social/when";
 import { useHydrated } from "../ui/hydrated-art";
 import { Face } from "../social/face";
 import { BackLink } from "./back-link";
 import { GhostButton } from "../ui/button";
 import { GameInProgress, useKeptGame } from "./table-game";
+import { YourGame } from "./table-your-game";
 
 const copy = ruleZeroCopy.expired;
 
@@ -30,15 +31,21 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
   const at = (d: Date) => closesWhen(d, d, utc ? "UTC" : undefined);
   const closer = how.kind === "host" ? (how.byYou ? "you" : (how.by ?? setBy)) : null;
   // A host close names who closed it; with no one to name (their profile is gone) it still says when, never the morning's sentence.
+  // C2: past the keep window nothing fills in; a seated viewer with a deck can still log by hand, on a blank form.
+  const byHand = closed.pastKept && closed.viewerDeckId && closed.viewerDeckName ? `/decks/${encodeURIComponent(closed.viewerDeckId)}?tab=games` : null;
   const body =
-    how.kind === "host" && closer === "you"
+    byHand && closed.viewerDeckName
+      ? copy.pastKept(gameDay(new Date(closed.endedAt), utc ? "UTC" : undefined), closed.viewerDeckName)
+      : how.kind === "host" && closer === "you"
       ? copy.bodyClosedByYou(podName, at(how.at))
       : how.kind === "host" && closer !== null
         ? copy.bodyClosedBy(closer, podName, at(how.at))
         : how.kind === "host"
           ? copy.bodyClosedByUnknown(podName, at(how.at))
           : copy.body(podName, setBy ?? "you");
-  const log = how.kind === "host" && how.logOpen ? logGameHref(closed) : null;
+  // The saved games draw their own Log this game (C1); the host-close one stays for a seat with none saved.
+  const games = closed.games;
+  const log = how.kind === "host" && how.logOpen && games.length === 0 ? logGameHref(closed) : null;
   // S4: a game this device was running when the table closed still plays, and its result still logs, until the morning.
   const tracker = useKeptGame(closed.tableId);
   return (
@@ -66,8 +73,26 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
           <PersonText text={body} />
         </p>
-        {log && tracker.running ? <GameInProgress tableId={closed.tableId} kept={tracker.running} onDiscard={tracker.discard} className="mb-[4px] mt-[6px] w-full" /> : null}
-        {log ? (
+        {how.kind === "host" && how.logOpen && tracker.running ? <GameInProgress tableId={closed.tableId} kept={tracker.running} onDiscard={tracker.discard} className="mb-[4px] mt-[6px] w-full" /> : null}
+        {games.length > 0 ? (
+          <div className="flex w-full flex-col gap-[12px]">
+            {games.map((g) => (
+              <YourGame key={g.gameMs} game={g} tableId={closed.tableId} utc={utc} />
+            ))}
+            <GhostButton href="/friends" className="flex min-h-[44px] items-center justify-center self-center rounded-[10px] border-transparent! hover:border-transparent! px-[18px] text-[14.5px]">
+              {copy.back}
+            </GhostButton>
+          </div>
+        ) : byHand ? (
+          <div className="flex w-full max-w-[300px] flex-col items-center gap-[8px]">
+            <GhostButton href={byHand} className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
+              {copy.logByHand}
+            </GhostButton>
+            <GhostButton href="/friends" className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] border-transparent! hover:border-transparent! px-[18px] text-[14.5px]">
+              {copy.back}
+            </GhostButton>
+          </div>
+        ) : log ? (
           <div className="flex w-full max-w-[300px] flex-col items-center gap-[8px]">
             <GhostButton href={log} className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
               {ruleZeroCopy.page.log}
