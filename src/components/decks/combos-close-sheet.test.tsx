@@ -261,6 +261,8 @@ describe("a row opens its combo inside the sheet", () => {
     const tilted = [...document.querySelectorAll<HTMLElement>("[data-plate] [style*='rotate']")];
     expect(tilted.length).toBe(2);
     for (const t of tilted) expect(t.textContent).toBe("");
+    // As drawn (small items 12): the first plate counter-clockwise, the second clockwise.
+    expect(tilted.map((t) => t.style.transform)).toEqual(["rotate(-2.5deg)", "rotate(2.5deg)"]);
     expect(plateWhere("Searing Touch")!.className).not.toContain("flex-wrap");
   });
 
