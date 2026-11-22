@@ -61,13 +61,17 @@ describe("Spine day/night", () => {
     expect(screen.getByTestId("strip-day-out").className).toContain("text-[color:var(--accent-text)]");
   });
 
-  it("presses every strip button only while enabled", () => {
+  it("presses every strip button only while enabled, with a push and no fill", () => {
     render(<Strip />);
     for (const id of ["strip-monarch", "strip-day", "strip-dice", "strip-undo", "strip-menu"]) {
       const c = screen.getByTestId(id).className;
-      expect(c, id).toContain("enabled:active:bg-[color:var(--accent)]");
       expect(c, id).toContain("motion-safe:enabled:active:[transform:scale(.92)]");
+      // The press is the push alone (addendum press-parity): no accent flash, no ink or ring change.
+      expect(c, id).not.toMatch(/(^|\s)(enabled:)?active:(bg|text|shadow)-/);
       expect(c, id).not.toMatch(/(^|\s)active:/);
+      // 80 ms for the push, 200 ms for the colour changes, in the transition's property order.
+      expect(c, id).toContain("motion-safe:transition-[transform,background-color,color,box-shadow]");
+      expect(c, id).toContain("motion-safe:duration-[80ms,200ms,200ms,200ms]");
     }
     expect((screen.getByTestId("strip-undo") as HTMLButtonElement).disabled).toBe(true);
   });

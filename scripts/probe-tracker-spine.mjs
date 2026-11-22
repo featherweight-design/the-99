@@ -1,5 +1,5 @@
 // The life tracker's centre strip as Hugh tested it (bugs 4 to 10, 2026-11-21), at phone and tablet width:
-//   4. a strip button held down fills with the accent and is pushed in (scaled under 1), easing both ways;
+//   4. a strip button held down is only pushed in (scale .92 over 80 ms): its ground, ink and ring do not change;
 //   5. day/night: the old icon turns out as the new one turns in, 320 ms each; reduced motion draws only the new one;
 //   6. Menu is drawn over the spine, so every part of it takes a press;
 //   7. a real press on End turn passes the turn;
@@ -115,18 +115,21 @@ try {
       report("7 End turn passes the turn", after !== null && after !== before, `${before} -> ${after}`);
     } else report("7 End turn pill drawn", false, "no end-turn");
 
-    // 4. A strip button pressed draws the accent and a push, and eases between them.
+    // 4. A strip button pressed is pushed in and nothing else (addendum press-parity): no accent flash. On main it fills.
     for (const id of ["strip-monarch", "strip-day", "strip-dice", "strip-menu"]) {
       const b = page.getByTestId(id);
       const h = await hitOf(b);
-      const rest = await b.evaluate((el) => ({ t: getComputedStyle(el).transitionProperty, d: getComputedStyle(el).transitionDuration }));
+      const rest = await b.evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return { t: cs.transitionProperty, d: cs.transitionDuration, bg: cs.backgroundColor, fg: cs.color, ring: cs.boxShadow };
+      });
       await page.mouse.move(h.x, h.y);
       await page.mouse.down();
-      // Past the 0.2s ease with room to spare, so the fill is read at rest, not mid-transition.
+      // Past every ease with room to spare, so the held state is read at rest, not mid-transition.
       await page.waitForTimeout(400);
       const held = await b.evaluate((el) => {
         const cs = getComputedStyle(el);
-        return { bg: cs.backgroundColor, tf: cs.transform };
+        return { bg: cs.backgroundColor, fg: cs.color, ring: cs.boxShadow, tf: cs.transform };
       });
       if (SHOTS && id === "strip-dice") await page.screenshot({ path: `${SHOTS}/spine-held-${viewport.width}.png` });
       await page.mouse.up();
@@ -139,9 +142,13 @@ try {
         await page.waitForTimeout(250);
       }
       const scale = held.tf === "none" ? 1 : Number((/matrix\(([^,]+)/.exec(held.tf) ?? [0, 1])[1]);
-      report(`4 ${id} held: accent fill`, held.bg.replace(/\s/g, "") === accent.replace(/\s/g, ""), `${held.bg} vs ${accent}`);
-      report(`4 ${id} held: pushed (scaled under 1)`, scale < 0.99, `${held.tf}`);
-      report(`4 ${id} eases (transform and color transition)`, /transform|all/.test(rest.t) && /background|all/.test(rest.t), `${rest.t} ${rest.d}`);
+      const same = held.bg === rest.bg && held.fg === rest.fg && held.ring === rest.ring;
+      report(`4 ${id} held: no fill (ground, ink and ring unchanged)`, same && held.bg.replace(/\s/g, "") !== accent.replace(/\s/g, ""), `${rest.bg} -> ${held.bg}`);
+      report(`4 ${id} held: pushed to .92`, Math.abs(scale - 0.92) < 0.005, `${held.tf}`);
+      const props = rest.t.split(",").map((x) => x.trim());
+      const durs = rest.d.split(",").map((x) => x.trim());
+      const dur = (p) => durs[props.indexOf(p) % durs.length];
+      report(`4 ${id} push runs 80 ms, colour 200 ms`, dur("transform") === "0.08s" && dur("background-color") === "0.2s", `${rest.t} / ${rest.d}`);
     }
 
     // 5. Day/night (addendum R2, K1): each toggle turns the old icon out and the new one in, both 320 ms, no overshoot.
