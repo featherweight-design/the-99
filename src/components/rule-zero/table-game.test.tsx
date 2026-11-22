@@ -148,7 +148,7 @@ describe("the game this device holds", () => {
 
   it("still plays on a table its host closed (S4)", async () => {
     keep(base);
-    render(<TableClosed closed={{ tableId: "table-1", viewerDeckId: "d1", podName: named("Thursday night"), setBy: null, how: { kind: "host", byYou: true, by: null, at: NOW, logOpen: true }, faces: [], loggedAt: null }} />);
+    render(<TableClosed closed={{ tableId: "table-1", viewerDeckId: "d1", podName: named("Thursday night"), setBy: null, how: { kind: "host", byYou: true, by: null, at: NOW, logOpen: true }, faces: [], loggedAt: null, games: [] }} />);
     await act(async () => {});
     expect(screen.getByRole("region", { name: copy.inProgressAria })).toBeTruthy();
   });

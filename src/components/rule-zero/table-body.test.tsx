@@ -226,7 +226,7 @@ describe("another reader's names are marked", () => {
 
 describe("TableClosed", () => {
   it("says the table closed, why, and that logged games stay, with Back to Friends", () => {
-    render(<TableClosed closed={{ tableId: "table-1", viewerDeckId: VIEWER_DECK_ID, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: NOW }, faces: [{ name: "Hugh", artCropUri: null }, { name: named("Colin"), artCropUri: "https://cards.example/a.jpg" }], loggedAt: null }} />);
+    render(<TableClosed closed={{ tableId: "table-1", viewerDeckId: VIEWER_DECK_ID, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: NOW }, faces: [{ name: "Hugh", artCropUri: null }, { name: named("Colin"), artCropUri: "https://cards.example/a.jpg" }], loggedAt: null, games: [] }} />);
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("This table has closed");
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin"))))).toBeInTheDocument();
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin")))).className).toContain("ph-no-capture");

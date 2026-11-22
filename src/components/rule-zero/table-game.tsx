@@ -89,7 +89,7 @@ export function useKeptGame(tableId: string) {
 const who = (p: PlaySeat | undefined): string | ThirdPartyName => (p?.you ? copy.you : (p?.name ?? ""));
 
 /** A face tile: the seat's art behind its name, rectangular (`.f`). */
-function Tile({ p, h, className, children }: { p: PlaySeat; h: 56 | 64; className: string; children: React.ReactNode }) {
+export function Tile({ p, h, className, children }: { p: PlaySeat; h: 56 | 64; className: string; children: React.ReactNode }) {
   return (
     <div className={`relative overflow-hidden rounded-[9px] bg-[color:var(--surface-sunken)] ${h === 64 ? "h-[64px]" : "h-[56px]"} ${className}`}>
       {p.art ? <FadingImg src={p.art} alt="" className="absolute inset-0 h-full w-full object-cover" /> : null}
@@ -102,7 +102,7 @@ function Tile({ p, h, className, children }: { p: PlaySeat; h: 56 | 64; classNam
 }
 
 /** Four to a row as drawn; five and six seats wrap three to a row, so a name keeps the width it has at four. */
-const grid = (n: number) => (n <= 4 ? ["", "grid-cols-1", "grid-cols-2", "grid-cols-3", "grid-cols-4"][n] : "grid-cols-3");
+export const grid = (n: number) => (n <= 4 ? ["", "grid-cols-1", "grid-cols-2", "grid-cols-3", "grid-cols-4"][n] : "grid-cols-3");
 
 /** S3 and S4: the running game this device holds. */
 export function GameInProgress({ tableId, kept, onDiscard, className = "" }: { tableId: string; kept: Kept; onDiscard: () => void; className?: string }) {

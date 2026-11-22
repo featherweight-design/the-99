@@ -276,6 +276,6 @@ export const trackerCopy = {
     won: (name: Name): PersonParts => personText`${name} won`,
     wonYou: "You won",
     draw: "A draw",
-    notLogged: "Not logged yet: Log this game fills it in.",
+    notLogged: "You haven’t logged it yet: Log this game fills it in.",
   },
 };

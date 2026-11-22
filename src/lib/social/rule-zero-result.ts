@@ -154,10 +154,10 @@ export const pickGameQuery = (viewerId: string, tableId: string, gameMs: number 
     .limit(1);
 
 /** The stored placements of one game for the viewer's prefill (which applies the table's grant): account and place only. */
-export const resultPlacesQuery = (tableId: string, viewerId: string, game: Date, q: Pick<typeof db, "select"> = db) =>
+export const resultPlacesQuery = (tableId: string, viewerId: string, game: Date, q: Pick<typeof db, "select"> = db, includeLogged = false) =>
   q.select({ userId: ruleZeroResultSeats.userId, place: ruleZeroResultSeats.place }).from(ruleZeroResultSeats).where(and(
     gameRows(tableId, game),
-    notLoggedSince(tableId, viewerId),
+    includeLogged ? undefined : notLoggedSince(tableId, viewerId),
   ));
 
 /** Any seat player of the stored result has logged a game from this table since the save: the game this result is. */

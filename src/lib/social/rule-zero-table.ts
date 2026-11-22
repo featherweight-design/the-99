@@ -29,6 +29,7 @@ import {
 } from "../rule-zero/rules";
 import { resolveFlags } from "../flags/snapshot";
 import { ownedDeckArt } from "./rule-zero-art";
+import { tableGamesIn, type TableGame } from "./rule-zero-games";
 import { ruledSeatOwnersOf, SEATS_MAX, seatDeckVisible } from "./rule-zero";
 import { isUuid } from "./rules";
 import { tableEnded, tableKept, tableOpen } from "./rule-zero-open";
@@ -542,7 +543,7 @@ export type ClosedHow =
   | { kind: "morning"; at: Date };
 
 /** What the closed page (L4, H3) draws: the table's id and the viewer's seated deck (Log this game's link while a host-closed table is `logOpen`), the pod, who set the table (null when the viewer did), how it ended, and the seated faces. */
-export type ClosedTable = { tableId: string; viewerDeckId: string | null; podName: ThirdPartyName; setBy: ThirdPartyName | null; how: ClosedHow; faces: { name: string | ThirdPartyName; artCropUri: string | null }[]; loggedAt: Date | null };
+export type ClosedTable = { tableId: string; viewerDeckId: string | null; podName: ThirdPartyName; setBy: ThirdPartyName | null; how: ClosedHow; faces: { name: string | ThirdPartyName; artCropUri: string | null }[]; loggedAt: Date | null; /** The viewer's games at the table, newest first, each with whether it is logged (log reminder C1, L1). */ games: TableGame[] };
 
 /** The viewer's own latest game logged from the table: their own rows only, so no grant beyond the caller's. */
 export async function loggedFromTableIn(q: Pick<typeof db, "select">, viewerId: string, tableId: string): Promise<Date | null> {
@@ -577,10 +578,10 @@ export async function loadClosedTableWith<R>(viewerId: string, tableId: unknown,
   const read = await db.transaction(async (tx) => {
     const [table] = await tableGrantQuery(viewerId, tableId, tx, true);
     if (!table) return null;
-    return { table, rows: await readSeats(viewerId, tableId, tx), loggedAt: await loggedFromTableIn(tx, viewerId, tableId), also: await also(tx) };
+    return { table, rows: await readSeats(viewerId, tableId, tx), loggedAt: await loggedFromTableIn(tx, viewerId, tableId), games: await tableGamesIn(tx, viewerId, tableId), also: await also(tx) };
   }, { isolationLevel: "repeatable read" });
   if (!read) return null;
-  const { table, rows, loggedAt } = read;
+  const { table, rows, loggedAt, games } = read;
   const art = await ownedDeckArt(viewerId, rows.flatMap((r) => (r.deckId ? [r.deckId] : [])));
   const closed: ClosedTable = {
     tableId,
@@ -593,6 +594,7 @@ export async function loadClosedTableWith<R>(viewerId: string, tableId: unknown,
       artCropUri: (r.deckId ? art.get(r.deckId)?.commander : null) ?? r.commanderArt,
     })),
     loggedAt,
+    games,
   };
   return { closed, also: read.also };
 }

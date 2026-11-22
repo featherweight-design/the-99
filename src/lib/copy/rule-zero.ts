@@ -231,6 +231,12 @@ export const ruleZeroCopy = {
     // Copy-reviewed (Close UI), the board's sentence without the closer.
     bodyClosedByUnknown: (pod: Said, time: string) =>
       personText`${pod}’s table was closed at ${time}. Games logged from it stay on each deck’s Games tab.`,
+    // Log reminder C1 and L1 (copy-reviewed with the design): the closed page's Your game card, one per game the viewer played.
+    yourGame: "Your game",
+    /** The note under an unlogged game; the deck is drawn bold between the halves. */
+    unlogged: (until: string) => ({ before: "You haven’t logged it yet. Seats and result are filled in for ", after: ` until ${until}.` }),
+    /** The note under a logged game; `deck` is the viewer's own deck, `Sai Thopters’` or `Mothman’s`. */
+    logged: (day: string, time: string, deck: string) => `You logged this game on ${day} at ${time}. It’s on ${deck.endsWith("s") ? `${deck}’` : `${deck}’s`} Games tab.`,
   },
   // Close the table (Table board C1 to C5, T1, D1, D2). The setter's text button at the table's foot and its confirm.
   close: {

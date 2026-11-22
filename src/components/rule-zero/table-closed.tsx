@@ -16,6 +16,7 @@ import { Face } from "../social/face";
 import { BackLink } from "./back-link";
 import { GhostButton } from "../ui/button";
 import { GameInProgress, useKeptGame } from "./table-game";
+import { YourGame } from "./table-your-game";
 
 const copy = ruleZeroCopy.expired;
 
@@ -38,7 +39,9 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
         : how.kind === "host"
           ? copy.bodyClosedByUnknown(podName, at(how.at))
           : copy.body(podName, setBy ?? "you");
-  const log = how.kind === "host" && how.logOpen ? logGameHref(closed) : null;
+  // The saved games draw their own Log this game (C1); the host-close one stays for a seat with none saved.
+  const games = closed.games;
+  const log = how.kind === "host" && how.logOpen && games.length === 0 ? logGameHref(closed) : null;
   // S4: a game this device was running when the table closed still plays, and its result still logs, until the morning.
   const tracker = useKeptGame(closed.tableId);
   return (
@@ -66,8 +69,17 @@ export function TableClosed({ closed }: { closed: ClosedTable }) {
         <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-muted)] [text-wrap:pretty]">
           <PersonText text={body} />
         </p>
-        {log && tracker.running ? <GameInProgress tableId={closed.tableId} kept={tracker.running} onDiscard={tracker.discard} className="mb-[4px] mt-[6px] w-full" /> : null}
-        {log ? (
+        {(log || games.length > 0) && tracker.running ? <GameInProgress tableId={closed.tableId} kept={tracker.running} onDiscard={tracker.discard} className="mb-[4px] mt-[6px] w-full" /> : null}
+        {games.length > 0 ? (
+          <div className="flex w-full flex-col gap-[12px]">
+            {games.map((g) => (
+              <YourGame key={g.gameMs} game={g} tableId={closed.tableId} utc={utc} />
+            ))}
+            <GhostButton href="/friends" className="flex min-h-[44px] items-center justify-center self-center rounded-[10px] border-transparent! hover:border-transparent! px-[18px] text-[14.5px]">
+              {copy.back}
+            </GhostButton>
+          </div>
+        ) : log ? (
           <div className="flex w-full max-w-[300px] flex-col items-center gap-[8px]">
             <GhostButton href={log} className="flex min-h-[44px] w-full items-center justify-center rounded-[10px] px-[18px] text-[14.5px]">
               {ruleZeroCopy.page.log}

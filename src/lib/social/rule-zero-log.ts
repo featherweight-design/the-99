@@ -111,7 +111,7 @@ export type TableSeatRow = Awaited<ReturnType<typeof tableSeatsQuery>>[number];
  * it and has not logged it since it was saved (`notLoggedSince`). Each seat draws the deck it held at Start, under the
  * same visibility rule. Same row shape as `tableSeatsQuery`, so the prefill and the save treat both alike. Server-only.
  */
-export function resultSeatsQuery(viewerId: string, tableId: string, game: Date, q: Pick<typeof db, "select"> = db, ruledOwners: readonly string[] = []) {
+export function resultSeatsQuery(viewerId: string, tableId: string, game: Date, q: Pick<typeof db, "select"> = db, ruledOwners: readonly string[] = [], includeLogged = false) {
   return q
     .select({
       seat: ruleZeroResultSeats.seat,
@@ -139,7 +139,7 @@ export function resultSeatsQuery(viewerId: string, tableId: string, game: Date, 
     .leftJoin(userPrefs, eq(userPrefs.userId, ruleZeroResultSeats.userId))
     .leftJoin(decks, and(eq(decks.id, ruleZeroResultSeats.deckId), eq(decks.userId, ruleZeroResultSeats.userId), seatDeckVisible(viewerId, ruledOwners)))
     .leftJoin(commanderOf, eq(commanderOf.oracleId, decks.commanderOracleId))
-    .where(and(eq(ruleZeroResultSeats.tableId, tableId), eq(ruleZeroResultSeats.startedAt, game), tableKept, notLoggedSince(tableId, viewerId)))
+    .where(and(eq(ruleZeroResultSeats.tableId, tableId), eq(ruleZeroResultSeats.startedAt, game), tableKept, includeLogged ? undefined : notLoggedSince(tableId, viewerId)))
     .orderBy(asc(ruleZeroResultSeats.seat));
 }
 
