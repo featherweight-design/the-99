@@ -26,7 +26,7 @@ export function storeOf(env: NodeJS.ProcessEnv, preferred: unknown): Store {
 
 type Q = Pick<typeof db, "select" | "insert">;
 
-/** The reader's store. Off for them, Mana Pool with no read at all. */
+/** The reader's store. Off for them, Mana Pool with no read at all. A failed read throws, as every read here does. */
 export async function readerStore(userId: string, env: NodeJS.ProcessEnv, q: Q = db): Promise<Store> {
   if (!storePreferenceEnabled(env)) return "manapool";
   const [row] = await q.select({ preferred: userPrefs.preferredStore }).from(userPrefs).where(eq(userPrefs.userId, userId));

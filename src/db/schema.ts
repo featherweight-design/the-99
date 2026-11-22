@@ -2412,8 +2412,9 @@ export const userPrefs = pgTable(
     friendsSeenAt: timestamp("friends_seen_at", { withTimezone: true }),
     /**
      * The store this reader prices in (store preference plan, 2026-11-22): `manapool`, `tcgplayer` or `cardkingdom`.
-     * Null until they choose, which reads as Mana Pool, so it needs no backfill. Nothing reads it until the store-aware
-     * price reads ship, and the STORE_PREFERENCE switch decides whether it is honored at all.
+     * Null until they choose, which reads as Mana Pool, so it needs no backfill. Read by `readerStore` and written by
+     * `savePreferredStore` (`src/lib/stores/preference.ts`), and honored only while STORE_PREFERENCE_ENABLED is on for
+     * the reader. A save moves the reader's stamp (`user_data_touch`), so `cachePageForUser`'s payloads redraw in the new store.
      */
     preferredStore: text("preferred_store"),
     /**
