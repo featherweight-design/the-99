@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canPair, partnerAbility, partnerAbilityLabel, type PartnerAbility } from "./partner";
+import { addPartnerOffer, canPair, partnerAbility, partnerAbilityLabel, type PartnerAbility } from "./partner";
 
 const LEGEND = "Legendary Creature — Human Soldier";
 const COMPANION_TEXT = "Doctor's companion (You can have two commanders if the other is the Doctor.)";
@@ -174,5 +174,17 @@ describe("partnerAbilityLabel", () => {
     expect(partnerAbilityLabel({ kind: "friendsForever" })).toBe("Friends forever");
     expect(partnerAbilityLabel({ kind: "doctorsCompanion" })).toBe("Doctor’s companion");
     expect(partnerAbilityLabel({ kind: "doctor" })).toBe("Time Lord Doctor");
+  });
+});
+
+describe("addPartnerOffer", () => {
+  const commander = { oracleId: "o1", oracleText: "Partner (You can have two commanders if both have partner.)", typeLine: LEGEND };
+  it("offers the ability for a single commander with room", () => {
+    expect(addPartnerOffer(commander, false, 99)).toEqual({ oracleId: "o1", ability: { kind: "generic" } });
+  });
+  it("offers nothing for a pair, an over-99 body or a commander with no ability", () => {
+    expect(addPartnerOffer(commander, true, 98)).toBeNull();
+    expect(addPartnerOffer(commander, false, 100)).toBeNull();
+    expect(addPartnerOffer({ ...commander, oracleText: "Flying" }, false, 99)).toBeNull();
   });
 });

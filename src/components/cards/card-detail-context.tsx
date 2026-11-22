@@ -157,7 +157,7 @@ export type CardDetailContextValue = {
   registerReceiptLink: (link: ReceiptLink) => () => void;
   /**
    * Declare the box a card draws after its facts for the deck's commander (Second commander, #491), and get back the
-   * call that withdraws it. The deck page registers it for its one commander, so a card opened anywhere else draws none.
+   * call that withdraws it. The deck list registers it for its one commander, so a card opened anywhere else draws none.
    */
   registerCommanderBox: (box: CommanderBox) => () => void;
 };

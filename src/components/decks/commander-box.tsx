@@ -1,7 +1,7 @@
 "use client";
 // Second commander (#491): the box the deck's single commander draws on its card details, after the card's facts.
 // One line naming the ability and a button that closes the card and opens Change commander, whose Add a partner
-// section sits first in the list. Registered once from the deck page, so a card opened anywhere else draws none.
+// section sits first in the list. Registered by the deck list, so a card opened anywhere else draws none.
 
 import { useEffect } from "react";
 import { useCardDetail } from "../cards/card-detail-provider";

@@ -21,7 +21,7 @@ import { readDeckUpgrade } from "../../../lib/precons/upgrade/deck-read";
 import { loadDeckStrategy } from "../../../lib/strategy/load";
 import { requireUserId } from "../../../lib/auth";
 import { getDeckDetail, listDecksWithStats } from "../../../lib/decks/read";
-import { partnerAbility } from "../../../lib/decks/partner";
+import { addPartnerOffer } from "../../../lib/decks/partner";
 import { listFolders } from "../../../lib/decks/folders";
 import { loadCommanderPrintings } from "../../../lib/sets/printed-in-read";
 import { cacheForUser } from "../../../lib/cache/user-lists";
@@ -741,11 +741,7 @@ export default async function DeckBuilderPage({
   const tooled = <SwapToolsProvider deckId={id} deckName={detail.name} storedLimitCents={shoppingLimit}>{bought}</SwapToolsProvider>;
   // Second commander (#491): a single commander with a pair ability, in a deck the add can still write (the body
   // is 99 or fewer, the candidates read's own bound), is offered the box on its card details.
-  const commanderAbility = detail.partner === null ? partnerAbility(detail.commander.oracleText, detail.commander.typeLine) : null;
-  const bodyTotal = detail.cards.reduce((n, c) => n + c.quantity, 0);
-  const addPartner = commanderAbility && bodyTotal <= deckBodySize(false)
-    ? { oracleId: detail.commander.oracleId, ability: commanderAbility }
-    : null;
+  const addPartner = addPartnerOffer(detail.commander, detail.partner !== null, detail.cards.reduce((n, c) => n + c.quantity, 0));
   // Change commander's door and sheet read this context.
   const page = (
     <ChangeCommanderProvider

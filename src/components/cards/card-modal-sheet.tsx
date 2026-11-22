@@ -389,7 +389,7 @@ export function CardModalSheet({
 
         <BracketFactsDetail card={card} />
         {commanderBox}
-        {/* SECOND IN THE STACK: card fact, then PAIR fact, then copy facts. This block is
+        {/* SECOND IN THE STACK: card fact (and the commander box), then PAIR fact, then copy facts. This block is
             the hinge where the reader crosses from what the card IS to what they HAVE,
             which is exactly what a pair fact is. */}
         <ComboPartnersDetail
