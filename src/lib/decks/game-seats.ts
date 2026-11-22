@@ -18,8 +18,11 @@ import type { TablePrefill } from "../social/rule-zero-log";
 import type { OpponentInput } from "./game-opponents";
 import type { OpponentCommanderHit } from "./opponent-commanders";
 
-/** What a seat draws of its commander. The hit's partner reading stays on the search, never in a seat. */
-export type SeatCommander = Pick<OpponentCommanderHit, "oracleId" | "name" | "imageUri">;
+/**
+ * What a seat draws of its commander. The hit's partner reading stays on the search, never in a seat, except the one
+ * fact the picker reopens on: this commander chooses a Background (opponent Background addendum, call 4).
+ */
+export type SeatCommander = Pick<OpponentCommanderHit, "oracleId" | "name" | "imageUri"> & { choosesBackground?: boolean };
 
 /** A friend at a seat: their `publicId` is what is sent, and their name is what the seat is called. */
 export type SeatFriend = { publicId: string; name: string | ThirdPartyName };
@@ -29,6 +32,8 @@ export type Seat = {
   key: string;
   /** Null for a friend seated alone, who has no commander to draw. */
   commander: SeatCommander | null;
+  /** The commander's Background, the second half (opponent Background addendum). Only beside a commander that chooses one. */
+  partner: SeatCommander | null;
   friend: SeatFriend | null;
   /** The friend's deck, when one was picked: today's name, drawn on the seat. Its commander is `commander`. */
   deck: { id: string; name: string | ThirdPartyName } | null;
@@ -54,7 +59,13 @@ export const podSizeHeld = (podSize: number, filled: number) => seatCount(podSiz
 export const hasRoom = (podSize: number, filled: number) => filled < seatCount(podSize);
 
 /** What a picker press names: anyone by commander, or a friend (with a deck, or a commander of their own, or neither). */
-export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: string | ThirdPartyName } | null; commander: SeatCommander | null };
+export type SeatPick = {
+  friend: SeatFriend | null;
+  deck: { id: string; name: string | ThirdPartyName } | null;
+  commander: SeatCommander | null;
+  /** A Background picked in the picker's Background step; absent or null for every other press. */
+  partner?: SeatCommander | null;
+};
 
 /**
  * The seat a picker press fills: a new one at the end, or the named one changed in place (`won` kept). A friend
@@ -62,8 +73,8 @@ export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: st
  */
 export function seatWith(seats: readonly Seat[], at: string | null, pick: SeatPick, key: string): Seat[] {
   // A picker press makes any seat an ordinary one: a seat from the table leaves the table path, label and all.
-  const filled = (s: Seat): Seat => ({ ...s, ...pick, label: pick.friend ? "" : s.label, table: null });
-  if (at === null) return [...seats, filled({ key, commander: null, friend: null, deck: null, label: "", won: false, table: null })];
+  const filled = (s: Seat): Seat => ({ ...s, ...pick, partner: pick.partner ?? null, label: pick.friend ? "" : s.label, table: null });
+  if (at === null) return [...seats, filled({ key, commander: null, partner: null, friend: null, deck: null, label: "", won: false, table: null })];
   return seats.map((s) => (s.key === at ? filled(s) : s));
 }
 
@@ -125,8 +136,12 @@ export function seatsForResult(seats: readonly Seat[], result: string | null): S
 /** The commander's short name, before the comma: `Yuriko` for `Yuriko, the Tiger's Shadow`. */
 export const shortName = (name: string) => name.split(",")[0].trim();
 
-/** The seat's own name for a screen reader and a heading: the table's name for it, the friend, else the label when there is one, else the commander. */
-export const seatName = (s: Seat) => s.table?.name ?? s.friend?.name ?? (cleanLabel(s.label) || shortName(s.commander?.name ?? ""));
+/** A seat's commanders as one name: `Lae’zel + Raised by Giants`, the History row's and Matchups' two-name treatment. */
+export const commandersName = (s: Pick<Seat, "commander" | "partner">) =>
+  s.commander ? (s.partner ? `${shortName(s.commander.name)} + ${shortName(s.partner.name)}` : shortName(s.commander.name)) : "";
+
+/** The seat's own name for a screen reader and a heading: the table's name for it, the friend, else the label when there is one, else the commander(s). */
+export const seatName = (s: Seat) => s.table?.name ?? s.friend?.name ?? (cleanLabel(s.label) || commandersName(s));
 
 /**
  * The seats a table's prefill fills, in seat order: every other seat, a waiting one too. Each draws the table's name
@@ -136,6 +151,7 @@ export function prefillSeats(prefill: Pick<TablePrefill, "seats"> & Partial<Pick
   return prefill.seats.map((t) => ({
     key: key(t.seat),
     commander: null,
+    partner: null,
     friend: null,
     deck: null,
     label: "",
@@ -153,8 +169,10 @@ export function opponentsFor(seats: readonly Seat[], result: string | null): Opp
     if (s.table) return { tableSeat: s.table.seat, ...won };
     // A friend's deck carries its own name and commanders, so none is sent beside it (`parseOpponents` refuses them).
     if (s.friend && s.deck) return { friend: s.friend.publicId, deck: s.deck.id, ...won };
-    if (s.friend) return { friend: s.friend.publicId, ...(s.commander ? { commander: s.commander.oracleId } : {}), ...won };
+    // A Background rides beside its commander as `partner`, the field a deck's pair already sends (#3164 accepts it).
+    const pair = s.commander && s.partner ? { partner: s.partner.oracleId } : {};
+    if (s.friend) return { friend: s.friend.publicId, ...(s.commander ? { commander: s.commander.oracleId, ...pair } : {}), ...won };
     const label = cleanLabel(s.label);
-    return { commander: s.commander?.oracleId, ...(label !== "" ? { label } : {}), ...won };
+    return { commander: s.commander?.oracleId, ...pair, ...(label !== "" ? { label } : {}), ...won };
   });
 }

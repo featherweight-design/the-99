@@ -6,8 +6,8 @@
  *
  * What it offers is commander-legal and `isCommanderCandidate`, a subset of what `opponentCommandersValid` accepts
  * when the game is saved (the save also accepts a Background as a second half beside a commander that chooses one,
- * which this search does not offer). The partner ability rides each hit so the client can offer only the pairs
- * `canPair` allows; the server re-checks the pair at save, and that check is the one that counts.
+ * which `searchOpponentBackgrounds` offers once the picker is on its Background step). The partner ability rides each
+ * hit, "Choose a Background" included, so the client can offer only the pairs `canPair` allows; the server re-checks the pair at save, and that check is the one that counts.
  */
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "../../db";
@@ -16,7 +16,7 @@ import { loadOpeningArt } from "../cards/opening-printing";
 import { nameSearch } from "../cards/name-search";
 import { isGameCardWhere } from "../cards/game-card-where";
 import { isCommanderCandidate } from "../recs/score";
-import { partnerAbility, type PartnerAbility } from "./partner";
+import { addAbility, type PartnerAbility } from "./partner";
 
 export type OpponentCommanderHit = {
   oracleId: string;
@@ -93,7 +93,46 @@ export async function searchOpponentCommanders(query: unknown): Promise<Opponent
     typeLine: r.typeLine,
     manaCost: r.manaCost,
     colorIdentity: WUBRG.filter((c) => r.colorIdentity.includes(c)),
-    partner: partnerAbility(r.oracleText, r.typeLine),
+    partner: addAbility(r.oracleText, r.typeLine),
+    flavorName: match.shownFlavor(r.name, r.flavorName),
+    imageUri: art.get(r.oracleId) ?? r.imageUri,
+  }));
+}
+
+/**
+ * The picker's Background step (opponent Background addendum, G1): a Background by name, for the second half beside a
+ * commander that chooses one. Commander-legal game cards typed Legendary Enchantment — Background, the half `pairLegal`
+ * accepts; the save re-checks the pair, and that check is the one that counts. Same shape as a commander hit.
+ */
+export async function searchOpponentBackgrounds(query: unknown): Promise<OpponentCommanderHit[]> {
+  if (typeof query !== "string") return [];
+  const match = nameSearch(query);
+  if (!match) return [];
+  const { flavorHits } = match;
+  const rows = await db
+    .select({
+      oracleId: cards.oracleId,
+      name: cards.name,
+      typeLine: cards.typeLine,
+      manaCost: cards.manaCost,
+      colorIdentity: cards.colorIdentity,
+      imageUri: cards.imageUri,
+      flavorName: flavorHits.flavorName,
+    })
+    .from(cards)
+    .leftJoin(flavorHits, eq(flavorHits.oracleId, cards.oracleId))
+    .where(and(match.where, eq(cards.commanderLegal, true), isGameCardWhere(), ilike(cards.typeLine, "%Legendary Enchantment%Background%")))
+    .orderBy(...commanderSearchOrder(query))
+    .limit(OPPONENT_COMMANDER_HITS);
+  if (rows.length === 0) return [];
+  const art = await loadOpeningArt(rows.map((r) => r.oracleId)).catch(() => new Map<string, string>());
+  return rows.map((r) => ({
+    oracleId: r.oracleId,
+    name: r.name,
+    typeLine: r.typeLine,
+    manaCost: r.manaCost,
+    colorIdentity: WUBRG.filter((c) => r.colorIdentity.includes(c)),
+    partner: null,
     flavorName: match.shownFlavor(r.name, r.flavorName),
     imageUri: art.get(r.oracleId) ?? r.imageUri,
   }));

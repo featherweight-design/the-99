@@ -67,7 +67,8 @@ export type TableSeat = {
     /** The seat player's deck name: branded on every seat but the viewer's own. */
     name: string | ThirdPartyName;
     commander: { name: string; artCropUri: string | null };
-    partner: { name: string; artCropUri: string | null } | null;
+    /** `background`: the second half is a Background (opponent Background addendum, G4), which deals no combat damage. */
+    partner: { name: string; artCropUri: string | null; background: boolean } | null;
     /** The whole deck, commanders in, so `87 of 100`. */
     cards: number;
     reading: SeatReading | null;
@@ -163,6 +164,7 @@ export function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db,
       commanderArt: commanderOf.artCropUri,
       partnerName: partnerOf.name,
       partnerArt: partnerOf.artCropUri,
+      partnerType: partnerOf.typeLine,
     })
     .from(ruleZeroSeats)
     .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroSeats.tableId))
@@ -389,7 +391,7 @@ async function readTable<R = null>(
           deckId: r.userId === viewerId ? r.deckId : null,
           name: r.userId === viewerId ? r.deckName : named(r.deckName),
           commander: { name: r.commanderName, artCropUri: r.commanderArt },
-          partner: r.partnerName !== null ? { name: r.partnerName, artCropUri: r.partnerArt } : null,
+          partner: r.partnerName !== null ? { name: r.partnerName, artCropUri: r.partnerArt, background: /\bBackground\b/.test(r.partnerType ?? "") } : null,
           cards: legality.built + (100 - legality.size),
           reading: verdict && profile ? readingOf(verdict, profile, declared) : null,
         },

@@ -12,12 +12,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/opponent-actions";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
-import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
+import { commandersName, hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import { joinNames, PersonInitials, PersonName, PersonText, personAttrs, personText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import type { PickerPod } from "../../lib/social/games";
 import { ArtLayer } from "../ui/art-layer";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
-import { SeatPicker } from "./seat-picker";
+import { SeatPicker, type OpenPair } from "./seat-picker";
 import { TrophyIcon } from "./trophy-icon";
 
 const copy = gameSeatsCopy.seats;
@@ -31,8 +31,18 @@ const ART_POSITION = "50% 20%";
 /** A seat's art, or the friend's initials while they were seated with no commander to draw. `crop` marks an art_crop
     (a Rule 0 table's seat) rather than a card face, and takes ArtWash's top trim (`ART_CROP_TRIM`): the box clips the
     crop's top 3%, where some printings carry an arc of the card frame. A card face has its frame on purpose. */
-function Art({ uri, dim = false, initials = null, crop = false }: { uri: string | null; dim?: boolean; initials?: ReactNode; crop?: boolean }) {
+function Art({ uri, pairUri = null, dim = false, initials = null, crop = false }: { uri: string | null; pairUri?: string | null; dim?: boolean; initials?: ReactNode; crop?: boolean }) {
   const trim = crop && uri !== null;
+  // Two commanders split the art in halves with a 2px seam, as the tracker's panel draws a pair (F14).
+  if (uri && pairUri) {
+    return (
+      <span aria-hidden data-seat-pair-art className={`${ART} flex`} style={dim ? { opacity: 0.78 } : undefined}>
+        <span className="relative block h-full w-1/2"><ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} /></span>
+        <span className="relative block h-full w-1/2"><ArtLayer src={pairUri} style={{ backgroundPosition: ART_POSITION }} /></span>
+        <span className="absolute inset-y-0 left-1/2 -ml-px w-[2px] bg-[color:var(--bg)] opacity-80" />
+      </span>
+    );
+  }
   return (
     <span aria-hidden className={`${ART} ${trim ? ART_CROP_TRIM.box : ""} ${uri || initials === null ? "" : "flex items-center justify-center font-mono text-[18px] text-[color:var(--fg-muted)]"}`} style={dim ? { opacity: 0.78 } : undefined}>
       {uri ? <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION, ...(trim ? ART_CROP_TRIM.layer : {}) }} /> : initials}
@@ -41,7 +51,8 @@ function Art({ uri, dim = false, initials = null, crop = false }: { uri: string 
 }
 
 /** The line under a seat's name: the table's deck, the friend's deck, the commander a friend played, or nothing. */
-const seatSub = (s: Seat) => (s.table ? s.table.deckName : s.deck ? s.deck.name : s.friend && s.commander ? shortName(s.commander.name) : null);
+// A labelled seat names its commanders under the label, a pair as `Lae’zel + Raised by Giants` (the History row's treatment).
+const seatSub = (s: Seat) => (s.table ? s.table.deckName : s.deck ? s.deck.name : s.commander && (s.friend || (s.label !== "" && s.partner)) ? commandersName(s) : null);
 
 function SeatView({
   seat, lost, busy, editing, onOpen, onClear, onWon, onLabel,
@@ -77,11 +88,12 @@ function SeatView({
           // A seat from a Rule 0 table (plan §PR 8) draws the table's art for it, or the player's initials while it waits.
           <Art uri={seat.table.artCropUri} crop initials={<PersonInitials n={seat.table.name} />} />
         ) : (
-          <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? <PersonInitials n={seat.friend.name} /> : null} />
+          <Art uri={seat.commander?.imageUri ?? null} pairUri={seat.partner?.imageUri ?? null} initials={seat.friend ? <PersonInitials n={seat.friend.name} /> : null} />
         )}
       </button>
       <span className="min-w-0 flex-1 md:flex-none">
-        <span className="mt-0 block truncate text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px]">
+        {/* A pair's two names take two lines at 124px rather than cutting the Background's name off. */}
+        <span className={`mt-0 block text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px] ${seat.partner && !seat.friend && !labelled ? "truncate md:line-clamp-2 md:whitespace-normal md:[overflow-wrap:anywhere]" : "truncate"}`}>
           <PersonName n={name} />
           {seat.table?.mark && <small className="ml-[6px] font-mono text-[9.5px] text-[color:var(--fg-faint)]">{ruleZeroCopy.log.fromTable}</small>}
         </span>
@@ -185,7 +197,7 @@ export function GameSeats({
   onLabel: (key: string, text: string) => void;
 }) {
   // Which seat the open picker is for (null: a new seat), and the control it hangs from.
-  const [picking, setPicking] = useState<{ at: string | null; anchor: HTMLElement; openAt: SeatFriend | null } | null>(null);
+  const [picking, setPicking] = useState<{ at: string | null; anchor: HTMLElement; openAt: SeatFriend | null; openPair?: OpenPair | null } | null>(null);
   // The reader's pods, for the chips: names and sizes only, read once when the row mounts.
   const [pods, setPods] = useState<PickerPod[]>([]);
   useEffect(() => {
@@ -326,7 +338,11 @@ export function GameSeats({
             lost={lost}
             busy={busy}
             editing={picking?.at === s.key}
-            onOpen={(anchor, deck) => setPicking({ at: s.key, anchor, openAt: deck ? s.friend : null })}
+            onOpen={(anchor, deck) => setPicking({
+              at: s.key, anchor, openAt: deck ? s.friend : null,
+              // A commander that chooses a Background reopens on its step, where the Background can be added, changed or removed.
+              openPair: !deck && !s.deck && s.commander?.choosesBackground ? { commander: s.commander, background: s.partner } : null,
+            })}
             onClear={() => { clearedFocus.current = true; onClear(s.key); }}
             onWon={() => onWon(s.key)}
             onLabel={(text) => onLabel(s.key, text)}
@@ -363,7 +379,7 @@ export function GameSeats({
         </p>
       )}
       {picking && (
-        <SeatPicker anchor={picking.anchor} onClose={() => setPicking(null)} onPick={pick} seated={seatedFriends(seats, picking.at)} openAt={picking.openAt} />
+        <SeatPicker anchor={picking.anchor} onClose={() => setPicking(null)} onPick={pick} seated={seatedFriends(seats, picking.at)} openAt={picking.openAt} openPair={picking.openPair ?? null} />
       )}
     </section>
   );
