@@ -6,7 +6,7 @@ import type { CardCombos } from "../combos/near-combos";
 // rooted in collection_items, and a deck routinely lists cards the user does not own.
 
 import { cache } from "react";
-import { loadWishlistWant } from "../wishlist/wishlist";
+import { loadWishlistLine } from "../wishlist/wishlist";
 import { liveCents, openingScryfallId } from "../cards/opening-printing";
 import type { PrintingPrices } from "../cards/price-lookup";
 import type { BrowseCard, BrowsePrinting, ProxyingDeck } from "./browse";
@@ -413,7 +413,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   });
   // The Wishlist section (always on: its switch is retired): a failed read is no section. Started with the rest and caught here,
   // so a rejection that lands before anyone awaits it is never an unhandled one.
-  const wishlist: Promise<BrowseCard["wishlist"]> = loadWishlistWant(userId, oracleId).then((want) => ({ want }), () => null);
+  const wishlist: Promise<BrowseCard["wishlist"]> = loadWishlistLine(userId, oracleId).then((line) => ({ want: line?.want ?? null, printingId: line?.printingId ?? null }), () => null);
   const assemble = async (base: BrowseCard) => {
     const faced = await withBracketFacts({ ...base, wishlist: await wishlist }, () => unsettle(flags));
     return withCardCombos(faced, () => unsettle(combos));

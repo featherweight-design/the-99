@@ -4,13 +4,21 @@
 // the drawing alone: the tab's view also holds its search, its writes and the card details provider, none of which an
 // inert specimen may reach.
 
-import { wishlistCopy, type CopyPart } from "../../lib/copy/wishlist";
+import { wishlistCopy, wishlistPrintingCopy, type CopyPart } from "../../lib/copy/wishlist";
+import type { WishlistTileLine } from "../../lib/wishlist/tile-line";
 import { TILE_ART_CLIP, TILE_ART_RATIO, TILE_SHELL } from "../ui/card-tile-caption";
 import { HydratedImg } from "../ui/hydrated-art";
 
 /** What a tile draws. The tab's `WishlistViewTile` carries this and more. `have` is null on a friend's tile, which
  * reads `wants N` and never an owned count. */
-export type WishlistTileCard = { name: string; imageUri: string | null; want: number; have: number | null };
+export type WishlistTileCard = {
+  name: string;
+  imageUri: string | null;
+  want: number;
+  have: number | null;
+  /** The third line: the price and the wanted printing (`wishlistTileLine`). Absent on a friend's tile, and where no line is drawn. */
+  line?: WishlistTileLine | null;
+};
 
 /** The tile's outer box: the press on the tab and on a friend's page, a plain box in the specimen. */
 export const WISHLIST_TILE_SHELL = `${TILE_SHELL} w-full text-left bg-[color:var(--surface)] border border-solid border-[color:var(--border)]`;
@@ -23,7 +31,36 @@ function captionParts(tile: WishlistTileCard): CopyPart[] {
 /** The caption as words, for the press's accessible name: the press's own label replaces its content's, so a name
  * without this would never speak the count. */
 export function wishlistCaptionText(tile: WishlistTileCard): string {
-  return captionParts(tile).map((p) => p.text).join("");
+  const printing = tile.line?.printing;
+  const base = captionParts(tile).map((p) => p.text).join("");
+  return printing ? `${base}, ${wishlistPrintingCopy.tile.aria(printing.setCode.toUpperCase(), printing.collectorNumber)}` : base;
+}
+
+/** A bookmark in the accent colour: the wishlist's mark, before the printing it names (the tile line, the strip's thumb). */
+export function WantedMark() {
+  return (
+    <svg aria-hidden width="8" height="10" viewBox="0 0 24 24" fill="currentColor" className="mr-[3px] inline-block align-[-1px] text-[color:var(--accent-text)]">
+      <path d="M6 3h12v18l-6-4-6 4z" />
+    </svg>
+  );
+}
+
+/** The third line: `$24.50 ▮ SLD 2125`. The phone draws the set code alone; the number joins from `md`. */
+function TileLine({ line }: { line: WishlistTileLine }) {
+  const { price, printing } = line;
+  return (
+    <span data-testid="wishlist-tile-printing" className="truncate font-mono text-[9px] leading-[1.2] text-[color:var(--fg-muted)] md:text-[9.5px]">
+      {price}
+      {printing && (
+        <>
+          {price !== null && " "}
+          <WantedMark />
+          {printing.setCode.toUpperCase()}
+          <span className="hidden md:inline"> {printing.collectorNumber}</span>
+        </>
+      )}
+    </span>
+  );
 }
 
 /** Copy parts as the boards draw them: a strong part in the caller's strong class. */
@@ -73,6 +110,7 @@ export function WishlistTileFace({ tile, eager }: { tile: WishlistTileCard; eage
             strong="font-semibold text-[color:var(--fg-body)]"
           />
         </span>
+        {tile.line ? <TileLine line={tile.line} /> : null}
       </span>
     </>
   );

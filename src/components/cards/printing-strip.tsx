@@ -6,6 +6,8 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState, type Keyboar
 import type { BrowsePrinting } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/cards/gradients";
 import { printingStripCopy } from "../../lib/copy/collection";
+import { wishlistPrintingCopy } from "../../lib/copy/wishlist";
+import { WantedMark } from "../wishlist/wishlist-tile";
 import { reveal } from "../../lib/ui/reveal";
 import { ArtLayer } from "../ui/art-layer";
 import { printingKey } from "./printing-region";
@@ -35,7 +37,7 @@ export function orderStrip(
 }
 
 export function PrintingStrip({
-  printings, shownKey, onSelect, onAnnounce, cardName, colorIdentity, paddles = false, panelOpen = false, onPanelOpen, onPanelClose,
+  printings, shownKey, onSelect, onAnnounce, cardName, colorIdentity, paddles = false, panelOpen = false, onPanelOpen, onPanelClose, wantedId = null,
 }: {
   printings: StripPrinting[];
   /** The key (`stripKey`) of the printing on screen. */
@@ -51,6 +53,8 @@ export function PrintingStrip({
   panelOpen?: boolean;
   onPanelOpen?: () => void;
   onPanelClose?: () => void;
+  /** The catalog id of the printing the reader's wishlist line names: its thumb draws the wishlist's mark before its label. */
+  wantedId?: string | null;
 }) {
   const tile = useRef<HTMLButtonElement | null>(null);
   const hasTile = paddles && onPanelOpen !== undefined && onPanelClose !== undefined;
@@ -161,7 +165,7 @@ export function PrintingStrip({
                   ref={(el) => { if (el) thumbs.current.set(key, el); else thumbs.current.delete(key); }}
                   type="button"
                   aria-pressed={shown}
-                  aria-label={printingStripCopy.thumbAria(p.setName ?? p.setCode, p.collectorNumber, p.mine ? p.quantity : 0, p.pick === true)}
+                  aria-label={printingStripCopy.thumbAria(p.setName ?? p.setCode, p.collectorNumber, p.mine ? p.quantity : 0, p.pick === true) + (wantedId !== null && p.scryfallId === wantedId ? `, ${wishlistPrintingCopy.panel.wanted(p.setCode.toUpperCase(), p.collectorNumber)}` : "")}
                   tabIndex={key === stop ? 0 : -1}
                   onClick={() => select(p)}
                   onKeyDown={(e) => move(e, i)}
@@ -182,7 +186,7 @@ export function PrintingStrip({
                     className="whitespace-nowrap font-mono text-[10px] leading-none"
                     style={{ color: shown ? "var(--fg)" : p.mine ? "var(--accent-text)" : "var(--fg-muted)" }}
                   >
-                    {p.pick ? "◆ " : ""}{p.setCode}{p.mine && !p.pick ? ` ×${p.quantity}` : ""}
+                    {wantedId !== null && p.scryfallId === wantedId ? <WantedMark /> : null}{p.pick ? "◆ " : ""}{p.setCode}{p.mine && !p.pick ? ` ×${p.quantity}` : ""}
                   </span>
                 </button>
               </div>

@@ -15,8 +15,11 @@
 // one.)
 
 import { useEffect, useRef, useState } from "react";
-import { addToWishlistAction, removeFromWishlistAction, setWishlistWantAction, type WantOutcome } from "../../app/collection/wishlist/actions";
-import { wishlistCopy } from "../../lib/copy/wishlist";
+import { addToWishlistAction, removeFromWishlistAction, setWishlistPrintingAction, setWishlistWantAction, type WantOutcome } from "../../app/collection/wishlist/actions";
+import { wishlistCopy, wishlistPrintingCopy } from "../../lib/copy/wishlist";
+import type { WishlistPrintingView } from "../../lib/wishlist/printing-line";
+import { wishlistPrintingLabel } from "../../lib/wishlist/printing-label";
+import { ArtLayer } from "../ui/art-layer";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { RECEIPT_LINK_CLASS } from "../cards/card-modal-shared";
 import { WantStepper } from "./want-stepper";
@@ -39,6 +42,8 @@ export function CardWishlist({
   want: initial,
   owned,
   onWrite,
+  printingView = null,
+  onWantedChange,
 }: {
   oracleId: string;
   /** How many copies the reader wants in all, or null when the card is not on the list. */
@@ -47,6 +52,10 @@ export function CardWishlist({
   owned: number;
   /** A write landed: the modal's cached copy of this card is stale. */
   onWrite: () => void;
+  /** The Printing line's read of the card (`wishlistPrintingView`); null draws no line. */
+  printingView?: WishlistPrintingView | null;
+  /** The line's wanted printing moved (a press, `chosen`, or the line going): the modal's strip mark and link-out follow it, and a press is announced. */
+  onWantedChange?: (printingId: string | null, chosen?: boolean) => void;
 }) {
   const [want, setWant] = useState(initial);
   const [have, setHave] = useState(owned);
@@ -93,7 +102,7 @@ export function CardWishlist({
     if (was && want === null && document.activeElement === document.body) addRef.current?.focus();
   }, [want]);
 
-  async function write(run: () => Promise<WantOutcome>, failure: string) {
+  async function write(run: () => Promise<WantOutcome>, failure: string, after?: () => void) {
     if (writing.current) return;
     writing.current = true;
     setBusy(true);
@@ -104,6 +113,9 @@ export function CardWishlist({
       // `held`: the collection already holds what was wanted, so no line stands.
       setWant(out.status === "wanted" ? out.want : null);
       setHeld(null);
+      // A line that stands keeps its printing unless this write chose one; a line that is gone names none.
+      if (out.status !== "wanted") onWantedChange?.(null);
+      else after?.();
       onWrite();
     } catch {
       fail(failure);
@@ -127,6 +139,10 @@ export function CardWishlist({
       const out = await removeFromWishlistAction(oracleId);
       return out.ok ? { ok: true as const, status: "held" as const, want: 0, have } : out;
     }, copy.failedSet);
+
+  // Wanting a printing (or going back to any) is the same write the Want press makes: it never touches the collection's pick.
+  const choose = (id: string | null) =>
+    write(() => setWishlistPrintingAction(oracleId, id), wishlistPrintingCopy.failed, () => onWantedChange?.(id, true));
 
   // A press shows its pending state on the same frame: the control that was pressed (and the count) go busy and dim,
   // and a press made meanwhile is ignored where the reader can see why. Never a spinner over the section.
@@ -180,7 +196,77 @@ export function CardWishlist({
           <span className="font-mono" style={{ color: "var(--fg-muted)" }}>{copy.have(have)}</span>
         </div>
       )}
+      {want !== null && printingView && printingView.count >= 2 ? (
+        <PrintingLine view={printingView} wait={wait} busy={busy} onChoose={(id) => void choose(id)} />
+      ) : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </section>
+  );
+}
+
+/**
+ * The Printing line (wishlist printing D1 to D4): which printing the line wants, and the press to change it. Drawn only
+ * for a card with two or more printings. The wanted printing is the line's `SLD 2125 · $24.50` with its thumb; the
+ * press offers the printing on screen when it is another one, and `Any printing` goes back.
+ */
+function PrintingLine({ view, wait, busy, onChoose }: {
+  view: WishlistPrintingView;
+  wait: string;
+  busy: boolean;
+  onChoose: (printingId: string | null) => void;
+}) {
+  const copy = wishlistPrintingCopy;
+  const { wanted, preview } = view;
+  const wantPress = preview ? (
+    <button
+      type="button"
+      aria-busy={busy || undefined}
+      aria-label={copy.box.wantAria(preview.setName, preview.collectorNumber, view.cardName)}
+      onClick={() => onChoose(preview.id)}
+      className={"flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[12.5px] font-medium text-[color:var(--fg)] pointer-coarse:h-[44px]" + wait}
+    >
+      {copy.box.want(preview.setCode.toUpperCase(), preview.collectorNumber)}
+    </button>
+  ) : null;
+  const anyLink = (
+    <button type="button" aria-busy={busy || undefined} onClick={() => onChoose(null)} className={RECEIPT_LINK_CLASS + wait}>
+      {copy.box.any}
+    </button>
+  );
+  return (
+    <div
+      data-testid="wishlist-printing-line"
+      className="mt-[12px] flex flex-wrap items-center gap-x-[10px] gap-y-[8px] border-0 border-t border-solid pt-[12px] text-[13px]"
+      style={{ borderColor: "var(--border)", color: "var(--fg-body)" }}
+    >
+      <span className="font-mono text-[10px] uppercase tracking-[0.1em]" style={{ color: "var(--fg-faint)" }}>{copy.box.label}</span>
+      {wanted ? (
+        <>
+          <span
+            aria-hidden
+            className="relative block h-[34px] w-[24px] flex-none overflow-hidden rounded-[3px]"
+            style={{ background: "var(--surface-sunken)", opacity: wanted.soldOut ? 0.5 : 1 }}
+          >
+            {wanted.imageUri ? <ArtLayer src={wanted.imageUri} /> : null}
+          </span>
+          <span className="font-mono" style={{ color: "var(--fg)" }}>
+            {wishlistPrintingLabel(wanted)}
+            {wanted.soldOut ? ` · ${copy.box.soldOut}` : wanted.price ? ` · ${wanted.price}` : ""}
+          </span>
+          {wantPress ?? anyLink}
+          {wanted.soldOut && view.anyPrice ? (
+            <span className="basis-full text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{copy.box.soldOutNote(view.anyPrice)}</span>
+          ) : null}
+        </>
+      ) : (
+        <>
+          <span>
+            {copy.box.any}
+            {preview ? null : <span style={{ color: "var(--fg-muted)" }}>{` · ${copy.box.cheapest}`}</span>}
+          </span>
+          {wantPress}
+        </>
+      )}
+    </div>
   );
 }
