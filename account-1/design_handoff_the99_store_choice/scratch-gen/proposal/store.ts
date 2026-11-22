@@ -27,7 +27,21 @@ export const storeCopy = {
   marketNote: "averages of recent sales, so a listing can differ",
 
   // ── No whole-list cart (the strip and the all-decks cart) ────────────
-  noCart: (s: Store) => `${s.name} has no link for a whole list. Buy each card from its details.`,
+  noCart: (s: Store) =>
+    s.paste
+      ? `${s.name} has no link for a whole list. Copy it, then paste it into ${s.name}’s ${s.paste}.`
+      : `${s.name} has no link for a whole list. Buy each card from its details.`,
+  /** Q3: the press beside the no-cart line. Copies `1 Name` lines (the Mana Pool text form), the shown selection only. */
+  copyList: "Copy the list",
+  copied: "Copied",
+  openPaste: (s: Store) => `Open ${s.paste}`,
+  copyAria: (n: number) => `Copy the list, ${n} ${n === 1 ? "card" : "cards"}`,
+
+  // ── First run (onboarding): an unnumbered checklist row ──────────────
+  firstRun: {
+    title: "Where do you buy cards?",
+    line: "Prices and buy links come from this store. Change it any time in Settings.",
+  },
 
   // ── Card details ─────────────────────────────────────────────────────
   linkOut: (s: Store) => `Buy any printing at ${s.name}`,

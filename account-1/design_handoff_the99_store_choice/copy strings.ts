@@ -29,7 +29,22 @@ export const storeCopy = {
   marketNote: "averages of recent sales, so a listing can differ",
 
   // ── No whole-list cart (the strip and the all-decks cart) ────────────
-  noCart: (s: Store) => `${s.name} has no link for a whole list. Buy each card from its details.`,
+  noCart: (s: Store) =>
+    s.paste
+      ? `${s.name} has no link for a whole list. Copy it, then paste it into ${s.name}’s ${s.paste}.`
+      : `${s.name} has no link for a whole list. Buy each card from its details.`,
+  /** Q3: the presses in the link's 44px row. Copies `1 Name` lines of the shown selection; swaps to Copied for 1.5s. */
+  copyList: "Copy the list",
+  copied: "Copied", // also the role=status announcement
+  copyAria: (n: number) => `Copy the list, ${n} ${n === 1 ? "card" : "cards"}`,
+  openPaste: (s: Store) => `Open ${s.paste}`, // ExternalLink, so it gets the link-out icon and the new-tab suffix
+
+  // ── First run (onboarding, Q1): an unnumbered checklist row ──────────
+  firstRun: {
+    title: "Where do you buy cards?",
+    line: "Prices and buy links come from this store. Change it any time in Settings.",
+    // the switch's group label is `groupLabel`; its segments are the store names
+  },
 
   // ── Card details ─────────────────────────────────────────────────────
   linkOut: (s: Store) => `Buy any printing at ${s.name}`,
@@ -53,11 +68,11 @@ export const storeCopy = {
 
 // ── The store list (proposed src/lib/store/stores.ts) ─────────────────
 // export type StoreId = "manapool" | "tcgplayer" | "cardkingdom";
-// export type Store = { id: StoreId; name: string; figure: "listing" | "market"; cart: boolean };
+// export type Store = { id: StoreId; name: string; figure: "listing" | "market"; cart: boolean; paste?: string };  // paste: the store’s own paste-a-list page (Q3)
 // export const STORES = [
 //   { id: "manapool", name: "Mana Pool", figure: "listing", cart: true },
-//   { id: "tcgplayer", name: "TCGplayer", figure: "market", cart: false },
-//   { id: "cardkingdom", name: "Card Kingdom", figure: "listing", cart: false },
+//   { id: "tcgplayer", name: "TCGplayer", figure: "market", cart: false, paste: "Mass Entry" },
+//   { id: "cardkingdom", name: "Card Kingdom", figure: "listing", cart: false, paste: "Deck Builder" },
 // ];
 // export const DEFAULT_STORE: StoreId = "manapool";
 
