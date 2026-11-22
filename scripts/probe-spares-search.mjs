@@ -115,7 +115,11 @@ for (const vp of VIEW) {
   // Sort by name.
   await open("?sort=name");
   const names = await page.locator("[data-testid='spare-tile'] [data-testid='spare-tile-press'], [data-testid='spare-tile'] button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
-  check(`${vp.label}: ?sort=name draws the tiles`, names.length === total, `${names.length}`);
+  const byName = [...names].sort((a, b) => a.localeCompare(b));
+  check(`${vp.label}: ?sort=name orders the tiles by name`, names.length === total && names.every((n, i) => n === byName[i]), `${names.length}`);
+  await open("?sort=most");
+  const most = await page.locator("[data-testid='spare-tile'] [data-testid='spare-tile-press'], [data-testid='spare-tile'] button").evaluateAll((els) => els.map((e) => e.getAttribute("aria-label") ?? ""));
+  check(`${vp.label}: ?sort=most differs from name order`, most.join("|") !== names.join("|"));
   await context.close();
 }
 await browser.close();
