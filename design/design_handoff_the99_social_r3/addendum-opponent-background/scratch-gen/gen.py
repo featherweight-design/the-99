@@ -5,13 +5,14 @@ BLOB = json.load(open(os.path.join(os.path.dirname(__file__), "blobs.json"))) if
 def src(k): return f"/_blob/{BLOB[k]}" if mode == "canvas" else f"art/ob-{k}.webp"
 FONT = '<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">'
 ACC = "#E8A25C"
+SUPPORT = "./support.js" if mode == "canvas" else "../support.js"
 def page(title, w, h, body):
     return f'''<!doctype html>
 <html lang="en">
 <head>
 <meta charset="utf-8">
 <title>{title}</title>
-<script src="../support.js"></script>
+<script src="{SUPPORT}"></script>
 </head>
 <body>
 <x-dc>
