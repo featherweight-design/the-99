@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-22T23:20:00Z"
  },
- "title": "You have it R1",
+ "title": "You have it R2",
  "launch": {
   "view": "canvas"
  },
@@ -14,44 +14,36 @@
    "x": 0,
    "y": 0,
    "w": 1560,
-   "h": 1900,
+   "h": 1740,
    "title": "Main"
   },
   "Wishlist.dc.html": {
    "x": 1680,
    "y": 0,
    "w": 1700,
-   "h": 1560,
+   "h": 2380,
    "title": "Wishlist"
   },
   "Sheet.dc.html": {
    "x": 3500,
    "y": 0,
    "w": 1700,
-   "h": 2860,
+   "h": 2280,
    "title": "Sheet"
   },
-  "Friend-side.dc.html": {
+  "Friends.dc.html": {
    "x": 5320,
    "y": 0,
    "w": 1700,
-   "h": 1300,
-   "title": "Friend side"
-  },
-  "Ideas.dc.html": {
-   "x": 7140,
-   "y": 0,
-   "w": 1700,
-   "h": 2580,
-   "title": "Ideas"
+   "h": 1830,
+   "title": "Friends"
   }
  },
  "order": [
   "Main.dc.html",
   "Wishlist.dc.html",
   "Sheet.dc.html",
-  "Friend-side.dc.html",
-  "Ideas.dc.html"
+  "Friends.dc.html"
  ],
  "notes": {},
  "designSystems": []

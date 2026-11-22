@@ -1,6 +1,6 @@
-# READINESS · You have a card a friend wants R1
+# READINESS · You have a card a friend wants R2
 
-**Verdict: Amber, waiting on Hugh's Q1–Q3.** Green once he picks; every gap below has an answer drawn.
+**Verdict: Amber until Hugh approves R2.** R1's Q1–Q3 are settled (no deck dot; Offer kept; call-out + /friends count, no notice). Every gap below has an answer drawn.
 
 ## Gaps for engineering
 - **G1 · Offers in `spare_requests`.** An offer is a request whose holder sent it: add a direction (`initiated_by`
@@ -14,7 +14,9 @@
 - **G4 · Offer write re-checks** the friendship, that the card is still on their wishlist and still spare for you, in the
   transaction; a refusal draws the shared toast.
 - **G5 · Feed and push.** The friend's item rides the `spare-request` kind (default on) with the offer's title; no new
-  kind. Q3 C, if chosen, would be a new kind (off by default).
+  kind.
+- **G7 · /friends count.** Per friend, how many of their unmet wishlist cards you can spare: the friends list read gains it
+  (one batched query over friends' wishlists joined to your own spare rule, in `src/lib/social/`).
 - **G6 · Names.** The friend's name in the sheet's kicker, foot and ask row is a `ThirdPartyName` through `PersonText`.
 
 ## Checks

@@ -9,7 +9,7 @@ import { FriendsList } from "../src/components/social/friends-list";
 import { CardDetailProvider } from "../src/components/cards/card-detail-provider";
 import { SpareGlyph } from "../src/components/social/spare-key-item";
 import { named } from "../src/lib/person-name/mint";
-import { HavePress, HaveKey, HaveSheet, haveCopy, type HaveKind } from "./friend-have";
+import { HavePress, HaveKey, HaveSheet, HaveCallout, haveCopy, type HaveKind } from "./friend-have";
 mkdirSync("dz/frames", { recursive: true });
 const G = globalThis as any;
 
@@ -25,16 +25,16 @@ const WL: [string, string, number, Have][] = [
   ["Lathliss, Dragon Queen", "lathliss", 2, { kind: "spare" }],
   ["Polyraptor", "polyraptor", 1, null],
   ["Giada, Font of Hope", "giada", 1, { kind: "spare", mark: "requested" }],
-  ["Zimone, Infinite Analyst", "zimone", 1, { kind: "deck" }],
+  ["Zimone, Infinite Analyst", "zimone", 1, null],
   ["Ghoulcaller Gisa", "gisa", 1, null],
   ["Jace, Multiverse Architect", "jace", 1, { kind: "spare", mark: "accepted" }],
   ["The Wise Mothman", "mothman", 1, null],
-  ["Tam, the Possibility", "tam", 2, { kind: "deck" }],
+  ["Tam, the Possibility", "tam", 2, { kind: "spare" }],
   ["Killian, Decisive Mentor", "killian", 1, null],
 ];
 const lines = WL.map(([name, img, q]) => ({ oracleId: "o-" + img, name, quantity: q, imageUri: `art/c-${img}.jpg`, layout: "normal", backImageUri: null }));
 const haveOf = (oracleId: string) => WL.find((w) => "o-" + w[1] === oracleId)?.[3] ?? null;
-const CSS = `<style>li:has([data-dz=have]) [data-testid=wishlist-tile-caption]{padding-right:34px}@media(min-width:768px){li:has([data-dz=have]) [data-testid=wishlist-tile-caption]{padding-right:40px}}</style>`;
+const CSS = `<style>ul:has([data-dz=have]) [data-testid=wishlist-tile-caption]{min-height:26px;line-height:26px}li:has([data-dz=have]) [data-testid=wishlist-tile-caption]{padding-right:34px}@media(min-width:768px){li:has([data-dz=have]) [data-testid=wishlist-tile-caption]{padding-right:40px}}</style>`;
 
 function page(body: any) {
   return (
@@ -45,27 +45,27 @@ function page(body: any) {
     </div>
   );
 }
-function wishlist(name: string, o: { loaded: boolean; open?: string; sheet?: any; dev: "phone" | "desk"; count?: boolean }) {
+function wishlist(name: string, o: { loaded: boolean; open?: string; sheet?: any; dev: "phone" | "desk"; callout?: boolean; filtered?: boolean }) {
   G.__VW = o.dev === "desk" ? 1300 : 390;
-  G.__HAVE = o.loaded ? (l: any) => { const h = haveOf(l.oracleId); return h ? <HavePress kind={h.kind} mark={h.mark ?? null} name={l.name} open={o.open === l.oracleId} /> : null; } : undefined;
-  G.__HAVEKEY = o.loaded ? () => <HaveKey items={["spare", "deck", "asked", "sparing"]} count={o.count ? 4 : undefined} /> : undefined;
-  const html = shell(<>{page(<FriendWishlist name={named("Colin")} lines={lines as any} />)}</>, PATH, o.sheet ? W(<CardDetailProvider>{o.sheet}</CardDetailProvider>, PATH) : null);
+  G.__HAVE = o.loaded ? (l: any) => { const h = haveOf(l.oracleId); return h ? <HavePress kind="spare" mark={h.mark ?? null} name={l.name} open={o.open === l.oracleId} /> : null; } : undefined;
+  G.__HAVEKEY = o.loaded ? () => <>{o.callout === false ? null : <HaveCallout n={4} friend="Colin" names="Lathliss, Giada, Jace and Tam" filtered={o.filtered} />}<HaveKey items={["spare", "asked", "accepted"]} /></> : undefined;
+  G.__HEADN = o.filtered ? lines.length : undefined;
+  const shown = o.filtered ? lines.filter((l) => haveOf(l.oracleId)) : lines;
+  const html = shell(<>{page(<FriendWishlist name={named("Colin")} lines={shown as any} />)}</>, PATH, o.sheet ? W(<CardDetailProvider>{o.sheet}</CardDetailProvider>, PATH) : null);
   writeFileSync(`dz/frames/${name}.html`, CSS + html);
-  G.__HAVE = G.__HAVEKEY = undefined; G.__VW = 0;
+  G.__HAVE = G.__HAVEKEY = G.__HEADN = undefined; G.__VW = 0;
 }
 const card = (img: string, name: string) => ({ oracleId: "o-" + img, name, imageUri: `art/c-${img}.jpg` });
 const deckRow = (deck: string, art: string, copies = 1) => ({ kind: "deck" as const, deck, art: `art/face-${art}.jpg`, copies });
 const sheets = {
   offer: <HaveSheet card={card("lathliss", "Lathliss, Dragon Queen")} friend="Colin" wants={2}
-    rows={[{ kind: "spare", spare: 1, state: "offer" }, deckRow("Ghalta Stomps", "ghalta")]} foot={haveCopy.foot.offer("Colin")} />,
+    rows={[{ kind: "spare", spare: 1, state: "offer" }]} foot={haveCopy.foot.offer("Colin")} />,
   offered: <HaveSheet card={card("lathliss", "Lathliss, Dragon Queen")} friend="Colin" wants={2}
-    rows={[{ kind: "spare", spare: 1, state: "offered", days: 14 }, deckRow("Ghalta Stomps", "ghalta")]} foot={haveCopy.foot.offered("Colin")} />,
+    rows={[{ kind: "spare", spare: 1, state: "offered", days: 14 }]} foot={haveCopy.foot.offered("Colin")} />,
   asked: <HaveSheet card={card("giada", "Giada, Font of Hope")} friend="Colin" wants={1}
     rows={[{ kind: "asked", copies: 1, days: 12, spare: 1 }]} foot={haveCopy.foot.asked("Colin")} />,
-  sparing: <HaveSheet card={card("jace", "Jace, Multiverse Architect")} friend="Colin" wants={1}
-    rows={[{ kind: "spare", spare: 1, state: "sparing" }]} foot={haveCopy.foot.sparing("Colin")} />,
-  deck: <HaveSheet card={card("tam", "Tam, the Possibility")} friend="Colin" wants={2}
-    rows={[deckRow("Possibility Storm", "zimone"), deckRow("Simic Snacks", "rootha")]} foot={haveCopy.foot.deck} />,
+  accepted: <HaveSheet card={card("jace", "Jace, Multiverse Architect")} friend="Colin" wants={1}
+    rows={[{ kind: "spare", spare: 1, state: "accepted" }]} foot={haveCopy.foot.accepted("Colin")} />,
 };
 for (const dev of ["phone", "desk"] as const) {
   const d = dev === "desk" ? "d" : "p";
@@ -74,9 +74,8 @@ for (const dev of ["phone", "desk"] as const) {
   wishlist(`${d}-f2`, { loaded: true, dev, open: "o-lathliss", sheet: sheets.offer });
   wishlist(`${d}-f3`, { loaded: true, dev, open: "o-lathliss", sheet: sheets.offered });
   wishlist(`${d}-f4`, { loaded: true, dev, open: "o-giada", sheet: sheets.asked });
-  wishlist(`${d}-f5`, { loaded: true, dev, open: "o-tam", sheet: sheets.deck });
-  wishlist(`${d}-f6`, { loaded: true, dev, open: "o-jace", sheet: sheets.sparing });
-  wishlist(`${d}-fc`, { loaded: true, dev, count: true });
+  wishlist(`${d}-f6`, { loaded: true, dev, open: "o-jace", sheet: sheets.accepted });
+  wishlist(`${d}-ff`, { loaded: true, dev, filtered: true });
 }
 
 // ---- Colin's side: /friends, Waiting on you with the offer; and ideas ----
@@ -109,10 +108,8 @@ for (const dev of ["phone", "desk"] as const) {
   friends(`${d}-c1`, [offerRow(offerAsk({ kind: haveCopy.waiting.kind, title: haveCopy.waiting.title("Max", "Lathliss"), detail: haveCopy.waiting.detail("Max", 1, 2) }))], dev);
   // I1 · idea: the friends list says how many of each friend's wanted cards you can spare.
   friends(`${d}-i1`, [], dev, (f: any) => f.publicId === COLIN || f.publicId === "p" ? (
-    <span className="relative z-10 inline-flex h-[22px] flex-none items-center gap-[6px] rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]" title="Cards on their wishlist you can spare">
-      <SpareGlyph size={13} />{f.publicId === COLIN ? 2 : 1}
+    <span className="relative z-10 inline-flex h-[22px] flex-none items-center gap-[6px] rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]" aria-label={haveCopy.friendChip(f.publicId === COLIN ? 4 : 1, f.publicId === COLIN ? "Colin" : "Peter")}>
+      <SpareGlyph size={13} />{f.publicId === COLIN ? 4 : 1}
     </span>) : null);
-  // I2 · idea: you are told when a friend wants a card you can spare (the reverse trade match), with Offer on the row.
-  friends(`${d}-i2`, [offerRow({ ...offerAsk({ kind: "You can help", title: "Colin wants Lathliss", detail: "You have 1 spare. Colin wants 2.", press: <span className="flex items-center gap-[8px]"><button type="button" className={ACCENT}>Offer</button></span> }), asker: { ...max, displayName: named("Colin"), commander: face("ghalta", "Ghalta") } })], dev);
 }
 console.log("ok");

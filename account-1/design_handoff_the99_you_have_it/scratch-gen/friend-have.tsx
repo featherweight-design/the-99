@@ -11,17 +11,17 @@ import { HoverPreviewProvider } from "../src/components/decks/hover-preview";
 
 /** Every new string (copy strings.ts holds the same). */
 export const haveCopy = {
-  key: { spare: "you can spare", deck: "in your decks", asked: "asked you", offered: "offered", sparing: "sparing" },
+  key: { spare: "you can spare", asked: "asked you", offered: "offered", accepted: "accepted" },
   aria: (card: string, kind: "spare" | "deck") => (kind === "spare" ? `You can spare ${card}` : `${card} is in your decks`),
   title: "You have this",
   kicker: (friend: string, wants: number) => `on ${friend}’s wishlist · wants ${wants}`,
-  section: (n: number) => `Your copies · ${n}`,
+  section: (n: number) => `Your spares · ${n}`,
   spare: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
   spareSub: "not in a deck or draft",
   offer: "Offer",
   offerAria: (friend: string, card: string) => `Offer ${friend} ${card}`,
   offered: "Offered",
-  sparing: "Sparing",
+  accepted: "Accepted",
   declined: "Declined",
   daysLeft: (n: number) => (n === 1 ? "1 day left" : `${n} days left`),
   asked: (friend: string, n: number) => `${friend} asked for ${n}`,
@@ -30,20 +30,27 @@ export const haveCopy = {
     offer: (friend: string) => `Offer, and ${friend} answers yes or no. The trade (or the goat) is between you.`,
     offered: (friend: string) => `${friend} has been told. You’ll hear when they answer.`,
     asked: (friend: string) => `${friend} asked you for it. Yes tells them it’s theirs.`,
-    sparing: (friend: string) => `${friend} said yes. Hand it over when you meet; your collection stays as it is until you change it.`,
+    accepted: (friend: string) => `${friend} said yes. Hand it over when you meet; your collection stays as it is until you change it.`,
     deck: "Every copy is in a deck, so it isn’t a spare. Free one up and you can offer it here.",
   },
   // The friend's side: a Waiting on you row (kind, title, detail), Yes and No as an ask's.
   waiting: {
     kind: "Spare offer",
-    title: (from: string, card: string) => `${from} can spare you ${card}`,
+    title: (from: string, card: string) => `${from} is offering you ${card}`,
     detail: (from: string, spare: number, want: number) => `${from} has ${spare} spare. You want ${want}.`,
   },
-  // The head line's sentence (idea B).
-  headCount: (n: number) => (n === 1 ? "you have 1" : `you have ${n}`),
+  // The page call-out (the deck page's to-do card row).
+  callout: {
+    eyebrow: "Your spares",
+    title: (n: number, friend: string) => `You have ${n} to spare`,
+    body: (names: string) => `${names}. Offer one from its tile.`,
+    show: "Show", showName: (n: number) => `Show only the ${n} you can spare`,
+    all: "All", allName: "Show the whole wishlist",
+  },
+  friendChip: (n: number, friend: string) => `You can spare ${n} of ${friend}’s wanted cards`,
 };
 
-export type HaveKind = "spare" | "deck";
+export type HaveKind = "spare";
 
 /** The tile's press: the #3202 box, over the caption's lower right, the tile press's sibling. */
 export function HavePress({ kind, mark = null, name, open = false }: { kind: HaveKind; mark?: SpareMark; name: string; open?: boolean }) {
@@ -54,7 +61,7 @@ export function HavePress({ kind, mark = null, name, open = false }: { kind: Hav
         <span aria-hidden
           className={`flex h-[26px] min-w-[26px] items-center justify-center rounded-[6px] px-[5px] [border:1px_solid_var(--border-strong)] ${open ? "outline-solid outline-2 outline-offset-[2px] outline-[color:var(--accent)]" : ""}`}
           style={{ background: "var(--surface)", ["--row-bg" as string]: "var(--surface)" }}>
-          {kind === "spare" ? <MarkedSpareGlyph mark={mark} size={15} /> : <OwnershipDot owned committed size={8} />}
+          <MarkedSpareGlyph mark={mark} size={15} />
         </span>
       </button>
     </span>
@@ -63,17 +70,16 @@ export function HavePress({ kind, mark = null, name, open = false }: { kind: Hav
 
 /** The line under the head: the key, only the items a tile draws. */
 export function HaveKey({ items, count }: { items: (keyof typeof haveCopy.key)[]; count?: number }) {
-  const g = (k: string) => k === "deck" ? <OwnershipDot owned committed size={8} /> : <MarkedSpareGlyph mark={k === "asked" || k === "offered" ? "requested" : k === "sparing" ? "accepted" : null} size={14} />;
+  const g = (k: string) => <MarkedSpareGlyph mark={k === "asked" || k === "offered" ? "requested" : k === "accepted" ? "accepted" : null} size={14} />;
   return (
     <p className="m-0 mt-[10px] flex flex-wrap items-center gap-x-[14px] gap-y-[6px] font-mono text-[11px] text-[color:var(--fg-muted)]" style={{ ["--row-bg" as string]: "var(--bg)" }}>
-      {count != null ? <span className="text-[color:var(--fg-body)]">{haveCopy.headCount(count)}</span> : null}
       {items.map((k) => <span key={k} className="inline-flex items-center gap-[6px]">{g(k)}{haveCopy.key[k]}</span>)}
     </p>
   );
 }
 
 type Row =
-  | { kind: "spare"; spare: number; state: "offer" | "offered" | "sparing" | "declined"; days?: number }
+  | { kind: "spare"; spare: number; state: "offer" | "offered" | "accepted" | "declined"; days?: number }
   | { kind: "asked"; copies: number; days: number; spare: number }
   | { kind: "deck"; deck: string; art: string; copies: number };
 
@@ -118,7 +124,7 @@ export function HaveSheet({ card, friend, wants, rows, foot }: {
                     </>
                   ) : (
                     <>
-                      <Lead><span className="text-[color:var(--fact)]" style={{ ["--row-bg" as string]: "var(--bg)" }}><MarkedSpareGlyph mark={r.kind === "asked" || (r.kind === "spare" && r.state === "offered") ? "requested" : r.kind === "spare" && r.state === "sparing" ? "accepted" : null} size={16} /></span></Lead>
+                      <Lead><span className="text-[color:var(--fact)]" style={{ ["--row-bg" as string]: "var(--bg)" }}><MarkedSpareGlyph mark={r.kind === "asked" || (r.kind === "spare" && r.state === "offered") ? "requested" : r.kind === "spare" && r.state === "accepted" ? "accepted" : null} size={16} /></span></Lead>
                       <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
                         <b className="truncate text-[15px] font-semibold text-[color:var(--fg)]">{r.kind === "asked" ? haveCopy.asked(friend, r.copies) : haveCopy.spare(r.spare)}</b>
                         <span className="font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">
@@ -131,8 +137,8 @@ export function HaveSheet({ card, friend, wants, rows, foot }: {
                         <button type="button" aria-label={haveCopy.offerAria(friend, card.name)} className={`${PRESS} ${ASK_INK}`}>{haveCopy.offer}</button>
                       ) : r.state === "offered" ? (
                         <span className={`${STATUS} text-[color:var(--fg-muted)]`}><MarkedSpareGlyph mark="requested" size={13} />{haveCopy.offered}</span>
-                      ) : r.state === "sparing" ? (
-                        <span className={`${STATUS} text-[color:var(--success)]`}><MarkedSpareGlyph mark="accepted" size={13} />{haveCopy.sparing}</span>
+                      ) : r.state === "accepted" ? (
+                        <span className={`${STATUS} text-[color:var(--success)]`}><MarkedSpareGlyph mark="accepted" size={13} />{haveCopy.accepted}</span>
                       ) : (
                         <span className={`${STATUS} text-[color:var(--fg-muted)]`}>{haveCopy.declined}</span>
                       )}
@@ -150,3 +156,18 @@ export function HaveSheet({ card, friend, wants, rows, foot }: {
 }
 
 export { SpareGlyph };
+
+import { TodoRow } from "../src/components/decks/todo-card";
+/** The page call-out: the deck page's to-do card chassis with one row and one press. */
+export function HaveCallout({ n, friend, names, filtered = false }: { n: number; friend: string; names: string; filtered?: boolean }) {
+  const c = haveCopy.callout;
+  return (
+    <section aria-label={c.eyebrow} className="mt-[12px] overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] [border:1px_solid_var(--border-strong)] md:mt-[16px]">
+      <div className="flex items-center gap-[10px] px-[14px] pt-[12px] pb-[10px]">
+        <span className="min-w-0 truncate font-mono uppercase leading-normal text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)]">{c.eyebrow}</span>
+      </div>
+      <TodoRow tone="action" next={false} mark={<SpareGlyph size={16} />} title={c.title(n, friend)} body={c.body(names)}
+        press={filtered ? { label: c.all, name: c.allName, onPress: () => {}, expanded: true } : { label: c.show, name: c.showName(n), onPress: () => {} }} />
+    </section>
+  );
+}
