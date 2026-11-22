@@ -95,7 +95,7 @@ describe("DiceRoll", () => {
     expect(glyphs(heads)).toEqual(["W", "U", "B", "R", "G"].map(mana));
     expect(glyphs(tails)).toEqual([mana("C")]);
     // The button keeps the coin's only label.
-    expect(coin.getAttribute("aria-label")).toBeTruthy();
+    expect(coin.getAttribute("aria-label")).toBe("Rolled a 4. Tap to roll again");
   });
 
   // jsdom loads no stylesheet, so a renamed or deleted keyframe would pass the class assertions above.
