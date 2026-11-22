@@ -7,7 +7,7 @@
 
 ## Summary
 
-Buildable from shipped parts once Hugh answers Q1–Q3 (defaults drawn). The Spares tab needs three more facts per line and a
+Buildable from shipped parts; Q1–Q3 settled by Hugh (2026-11-22). The Spares tab needs three more facts per line and a
 client-side filter; the Wishlist needs the deck page's spares provider mounted over its tiles. No new table, no migration, no
 switch beyond the shipped `SOCIAL_FRIENDS_ENABLED`. Copy is DRAFT for `/copy-review`. It depends on Collection's type-word
 search for the shared matcher; if this builds first, it adds that matcher and Collection adopts it.
@@ -55,4 +55,4 @@ search for the shared matcher; if this builds first, it adds that matcher and Co
 
 ## Decisions inherited
 
-Calls 1–4 as drawn, pending Q1–Q3. Strings DRAFT. Ships behind the existing switches.
+Calls 1–4 as drawn; Q1 frame always (Hugh), Q2 count and Q3 sort kept as drawn. Strings DRAFT. Ships behind the existing switches.
