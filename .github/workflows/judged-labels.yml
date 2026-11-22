@@ -2,7 +2,7 @@ name: Judged labels
 
 # The four judgement themes (group hug, pillow fort, big mana, politics), judged by a model in two
 # passes and carried to production. Manual dispatch only: there is no schedule, because this spends
-# money and Hugh approves each run (the $20 ceiling is in code, scripts/build-judged-labels.ts).
+# money and Hugh approves each run (the $25 ceiling is in code, scripts/build-judged-labels.ts).
 #
 # STAGING ONLY for the build, then a separate COPY. Pay once (Hugh, 2026-09-26): the build runs on
 # `catalog-staging` and `copy` installs the result on production without calling a model. The copy
@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       action:
-        description: 'dry-run prices the whole run and writes nothing. build submits and collects (spends, up to the $20 cap in code). copy installs staging rows on production (spends nothing).'
+        description: 'dry-run prices the whole run and writes nothing. build submits and collects (spends, up to the $25 cap in code). copy installs staging rows on production (spends nothing).'
         required: true
         type: choice
         options: [dry-run, build, copy]
@@ -128,6 +128,10 @@ jobs:
             exit 1
           fi
       - uses: actions/checkout@v4
+        with:
+          # The SAME commit the build ran: a row's hash folds in the prompt's own text, so a copy
+          # checked out at a newer prompt would call every row mismatched.
+          ref: staging-deployed
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
