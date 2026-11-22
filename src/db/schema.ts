@@ -2412,8 +2412,9 @@ export const userPrefs = pgTable(
     friendsSeenAt: timestamp("friends_seen_at", { withTimezone: true }),
     /**
      * The store this reader prices in (store preference plan, 2026-11-22): `manapool`, `tcgplayer` or `cardkingdom`.
-     * Null until they choose, which reads as Mana Pool, so it needs no backfill. Nothing reads it until the store-aware
-     * price reads ship, and the STORE_PREFERENCE switch decides whether it is honored at all.
+     * Null until they choose, which reads as Mana Pool, so it needs no backfill. Read by `readerStore` and written by
+     * `savePreferredStore` (`src/lib/stores/preference.ts`), and honored only while STORE_PREFERENCE_ENABLED is on for
+     * the reader. A save moves the reader's stamp (`user_data_touch`), so `cachePageForUser`'s payloads redraw in the new store.
      */
     preferredStore: text("preferred_store"),
     /**
@@ -4295,6 +4296,13 @@ export const wishlistItems = pgTable("wishlist_items", {
   /** When the price job last told the reader this card got cheaper (G2: at most once a week per card). */
   priceNoticedAt: timestamp("price_noticed_at", { withTimezone: true }),
   /**
+   * The store `price_at_add_cents` was read from (store preference, design #3200). Null is Mana Pool, which every
+   * baseline written before the column is, so it needs no backfill. When it is not the reader's store, the price job
+   * (store preference PR 3b) re-baselines the line at that store's figure and clears `price_noticed_at` before it
+   * judges a drop, so changing store never reads as a price drop.
+   */
+  priceStore: text("price_store"),
+  /**
    * The one printing the player wants, when they named one (wishlist printing, Hugh, 2026-11-22). Null is "any
    * printing", the card-level want every older line is. Named, only THAT printing collects the line (another
    * printing of the card leaves it on the list), its price is the tile's and the price-drop baseline's, and its
@@ -4305,6 +4313,7 @@ export const wishlistItems = pgTable("wishlist_items", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
   check("wishlist_items_quantity_check", sql`${t.quantity} between 1 and 99`),
+  check("wishlist_items_price_store_check", sql`${t.priceStore} in ('manapool', 'tcgplayer', 'cardkingdom')`),
   // The foreign key's own index: a catalog refresh that deletes a printing finds the lines naming it without a scan.
   index("wishlist_items_scryfall_id_idx").on(t.scryfallId),
 ]);

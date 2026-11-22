@@ -910,6 +910,7 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
   PUBLIC_LANDING_ENABLED: { label: "Public landing page", description: "The signed-out home page: the made-up binder, the launch list and the catalog numbers. Off, a signed-out visitor sees the short sign-in page." },
   PUBLIC_PAGES_ENABLED: { label: "Public pages", description: "The signed-out card and commander pages at /card and /commander. Off, both answer 404." },
   SCAN_LAB_ENABLED: { label: "Card-scan lab", description: "A camera page at /lab/scan that tries the card scanner and records whether each guess was right. Not linked anywhere." },
+  STORE_PREFERENCE_ENABLED: { label: "Store choice", description: "Lets a player price the app at TCGplayer or Card Kingdom instead of Mana Pool. Off, every price is Mana Pool's." },
   PUSH_ENABLED: { label: "Push notifications", description: "Phone and browser push for the news kinds, on top of Home. Sends nothing until the push keys are set." },
   SUGGESTED_CHANGES_V2_ENABLED: { label: "Suggested changes v2", description: "Pick how many changes, ask for something, and see each one as it arrives." },
   WELCOME_CREDITS_ENABLED: { label: "Welcome credits", description: "Gives a new sign-up 15 credits that expire after 30 days. Off stops new grants; a lot already given is still spent." },

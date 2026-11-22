@@ -49,6 +49,7 @@ export const FLAGS = [
   { name: "PUBLIC_LANDING_ENABLED", kind: "plumbing" },
   { name: "PUBLIC_PAGES_ENABLED", kind: "plumbing" },
   { name: "SCAN_LAB_ENABLED", kind: "plumbing" },
+  { name: "STORE_PREFERENCE_ENABLED", kind: "feature" },
   { name: "SUGGESTED_CHANGES_V2_ENABLED", kind: "model" },
   { name: "WELCOME_CREDITS_ENABLED", kind: "feature", needs: "PAYMENTS_ENABLED" },
 ] as const satisfies readonly { name: `${string}_ENABLED`; kind: SwitchKind; needs?: `${string}_ENABLED`; defaultOn?: true; fallback?: "on" }[];
