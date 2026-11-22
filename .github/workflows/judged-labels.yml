@@ -1,0 +1,146 @@
+name: Judged labels
+
+# The four judgement themes (group hug, pillow fort, big mana, politics), judged by a model in two
+# passes and carried to production. Manual dispatch only: there is no schedule, because this spends
+# money and Hugh approves each run (the $25 ceiling is in code, scripts/build-judged-labels.ts).
+#
+# STAGING ONLY for the build, then a separate COPY. Pay once (Hugh, 2026-09-26): the build runs on
+# `catalog-staging` and `copy` installs the result on production without calling a model. The copy
+# is its own dispatch so the pass bar is checked on staging before anything reaches production.
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'dry-run prices the whole run and writes nothing. build submits and collects (spends, up to the $25 cap in code). copy installs staging rows on production (spends nothing).'
+        required: true
+        type: choice
+        options: [dry-run, build, copy]
+        default: dry-run
+      sample:
+        description: 'Build only: the ~200-card grading sample instead of the full candidate set.'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    if: ${{ github.event.inputs.action == 'dry-run' || github.event.inputs.action == 'build' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      # One build at a time, and never cancelled: an abort between submitting a batch and recording
+      # its intent is the one window that costs money twice.
+      group: judged-labels
+      cancel-in-progress: false
+    # Batches are asynchronous and this job polls until they are collected; the API's ceiling is 24
+    # hours but the judged run is a few hundred requests. A run that times out leaves its intents
+    # recorded and nothing is re-submitted: dispatch again to collect.
+    timeout-minutes: 180
+    environment: catalog-staging
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The commit staging has deployed and migrated (`Staging sync` moves this only after the
+          # deploy succeeds), never code ahead of staging's database (docs/agents/ops.md).
+          ref: staging-deployed
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Judge the themes
+        env:
+          DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ACTION: ${{ github.event.inputs.action }}
+          SAMPLE: ${{ github.event.inputs.sample }}
+          # The staging branch, asserted by `neon.branch_id`: the script refuses any other database.
+          STAGING_BRANCH: br-polished-pond-a6e63y0b
+        run: |
+          # One run id for the whole dispatch, so every pass shares one ledger and budget.
+          export JUDGED_RUN_ID="judged-$(date -u +%F)"
+          args=("--branch=$STAGING_BRANCH")
+          [ "$SAMPLE" = "true" ] && args+=("--sample")
+          [ "$ACTION" = "build" ] && args+=("--spend")
+          echo "### Judged labels — \`catalog-staging\` — run \`$JUDGED_RUN_ID\` — $ACTION" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          if [ "$ACTION" = "dry-run" ]; then
+            pnpm --silent db:build:judged "${args[@]}" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+            code=${PIPESTATUS[0]}
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            exit "$code"
+          fi
+          # Branch on the script's EXIT CODE: 0 done, 75 more work (a batch went out or is still
+          # processing: call again), anything else stop and look.
+          for attempt in $(seq 1 40); do
+            echo "--- pass $attempt ---" | tee -a "$GITHUB_STEP_SUMMARY"
+            set +e
+            pnpm --silent db:build:judged "${args[@]}" 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+            code=${PIPESTATUS[0]}
+            set -e
+            case "$code" in
+              0)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              75) ;;
+              *)  echo '```' >> "$GITHUB_STEP_SUMMARY"; exit "$code" ;;
+            esac
+            sleep 120
+          done
+          {
+            echo "gave up after 40 passes (~80 minutes). Intents are recorded under $JUDGED_RUN_ID and"
+            echo "nothing is re-submitted: dispatch build again the same UTC day to collect and carry on."
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+  # Staging's judged rows, installed on production by the catalog copy harness. PAY ONCE: this job
+  # never calls a model, and installs a row only when the verifier finished it and its hash matches
+  # production's own card text.
+  copy:
+    if: ${{ github.event.inputs.action == 'copy' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: catalog-production
+    concurrency:
+      group: judged-labels-copy
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
+    env:
+      CATALOG_COPY_SOURCE_URL: ${{ secrets.CATALOG_COPY_SOURCE_URL }}
+      CATALOG_COPY_TARGET_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+      # Production's Neon branch. A guard, not a credential: the target must report exactly this.
+      CATALOG_COPY_TARGET_BRANCH: br-noisy-violet-a6vw4ess
+      # The harness's stamp module imports `src/db`, which throws at load without this; nothing
+      # queries through it.
+      DATABASE_URL: ${{ secrets.CATALOG_DATABASE_URL }}
+    steps:
+      - name: Fail loudly without the copy secret
+        run: |
+          if [ -z "$CATALOG_COPY_SOURCE_URL" ]; then
+            echo "::error::CATALOG_COPY_SOURCE_URL is not set in the catalog-production environment."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+        with:
+          # The SAME commit the build ran: a row's hash folds in the prompt's own text, so a copy
+          # checked out at a newer prompt would call every row mismatched.
+          ref: staging-deployed
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Copy judged labels to production
+        run: |
+          echo "### Judged copy — staging to \`catalog-production\`" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:copy:judged 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
