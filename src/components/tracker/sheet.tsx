@@ -13,6 +13,7 @@ import { ManaPip } from "../cards/mana-pips";
 import { FadingImg } from "../ui/hydrated-art";
 import { CounterIcon } from "./icons";
 import type { PlaySeat } from "./panel";
+import { damageCommanders } from "../../lib/tracker/seat";
 
 const copy = trackerCopy;
 
@@ -202,19 +203,20 @@ function DamageTab({ seat, seats, state, tablet, onCommit }: { seat: SeatState; 
       <div className={"grid gap-2.5 @[560px]:[grid-template-columns:repeat(var(--n),minmax(0,1fr))]" + (foes.length === 1 ? " grid-cols-1" : " grid-cols-2")} style={{ "--n": Math.max(1, foes.length) } as CSSProperties}>
         {foes.map((foe) => {
           const p = seats.find((x) => x.seat === foe.seat)!;
+          const hitters = damageCommanders(p, foe.commanders);
           return (
             <div key={foe.seat} className={CARD_BOX}>
               <div className="relative flex h-[56px] flex-none">
-                <ArtStrip arts={artsOf(p, foe.commanders)} className="absolute inset-0" />
+                <ArtStrip arts={artsOf(p, hitters)} className="absolute inset-0" />
                 <b className="absolute bottom-1.5 left-2.5 text-[13.5px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
               </div>
               <div className="flex flex-1 flex-col justify-evenly px-2 pb-2 pt-1">
-                {Array.from({ length: foe.commanders }, (_, cmdr) => {
+                {Array.from({ length: hitters }, (_, cmdr) => {
                   const n = seat.damage[`${foe.seat}:${cmdr}`] ?? 0;
                   return (
                     <div key={cmdr} className={"flex flex-col items-center gap-1" + (cmdr > 0 ? " border-t border-[color:var(--border)] pt-2" : "")}>
                       <span className="max-w-full truncate text-[12px] text-[color:var(--fg-body)]">{cmdrName(p, cmdr)}</span>
-                      <Stepper size={foe.commanders === 1 ? "damageOne" : "damage"} count={n} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
+                      <Stepper size={hitters === 1 ? "damageOne" : "damage"} count={n} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
                     </div>
                   );
                 })}
@@ -240,10 +242,12 @@ function DamageArt({ seat, foes, seats, onCommit }: { seat: SeatState; foes: rea
       <div className="grid min-h-0 flex-1 gap-2.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, foes.length)}, minmax(0, 1fr))` }}>
         {foes.map((foe) => {
           const p = seats.find((x) => x.seat === foe.seat)!;
-          const taken = Array.from({ length: foe.commanders }, (_, cmdr) => seat.damage[`${foe.seat}:${cmdr}`] ?? 0);
+          // A Background deals no commander damage: its seat's card is the commander's alone (call 6).
+          const hitters = damageCommanders(p, foe.commanders);
+          const taken = Array.from({ length: hitters }, (_, cmdr) => seat.damage[`${foe.seat}:${cmdr}`] ?? 0);
           return (
             <div key={foe.seat} className={CARD_BOX} data-testid="damage-card">
-              <ArtStrip arts={artsOf(p, foe.commanders)} className="absolute inset-0" />
+              <ArtStrip arts={artsOf(p, hitters)} className="absolute inset-0" />
               <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.55)_0%,rgba(0,0,0,0)_26%,rgba(0,0,0,0)_40%,rgba(0,0,0,.86)_100%)]" />
               <b className="relative px-3 pt-2.5 text-[15px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
               <div className="relative mt-auto flex">

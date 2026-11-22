@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
-  hasRoom, opponentsFor, podSizeHeld, seatCount, seatLabelled, seatName, seatWith, seatWithout, seatWon, seatsForResult,
+  hasRoom, opponentsFor, podSizeHeld, commandersName, seatCount, seatLabelled, seatName, seatWith, seatWithout, seatWon, seatsForResult,
   podFill, prefillSeats, seatedFriends, shortName, SEAT_LABEL_MAX, type Seat, type SeatCommander, type SeatFriend, type SeatPick,
 } from "./game-seats";
 import { OPPONENT_LABEL_MAX, parseOpponents } from "./game-opponents";
@@ -9,7 +9,7 @@ import { named } from "../person-name/mint";
 import { plain } from "../person-name/testing";
 
 const cmd = (id: string, name = `Cmdr ${id}`): SeatCommander => ({ oracleId: id, name, imageUri: null });
-const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), friend: null, deck: null, label: "", won: false, table: null, ...over });
+const seat = (key: string, over: Partial<Seat> = {}): Seat => ({ key, commander: cmd(key), partner: null, friend: null, deck: null, label: "", won: false, table: null, ...over });
 const anyone = (c: SeatCommander): SeatPick => ({ friend: null, deck: null, commander: c });
 
 describe("seats and the pod", () => {
@@ -91,7 +91,7 @@ describe("what is sent", () => {
   // The parser checks ids as uuids, so these seats carry real-shaped ones.
   const A = "00000000-0000-4000-8000-00000000000a";
   const B = "00000000-0000-4000-8000-00000000000b";
-  const uuidSeat = (id: string, over: Partial<Seat> = {}): Seat => ({ key: id, commander: cmd(id), friend: null, deck: null, label: "", won: false, table: null, ...over });
+  const uuidSeat = (id: string, over: Partial<Seat> = {}): Seat => ({ key: id, commander: cmd(id), partner: null, friend: null, deck: null, label: "", won: false, table: null, ...over });
   it("is accepted by the server's own parser, for a loss with a winner", () => {
     const seats = [uuidSeat(A, { label: "Sam", won: true }), uuidSeat(B)];
     expect(parseOpponents(opponentsFor(seats, "loss"), { podSize: 4, result: "loss" })).toHaveLength(2);
@@ -109,6 +109,35 @@ describe("names", () => {
     expect(shortName("Atraxa")).toBe("Atraxa");
     expect(seatName(seat("a", { commander: cmd("a", "Yuriko, the Tiger's Shadow") }))).toBe("Yuriko");
     expect(seatName(seat("a", { label: "  Lee " }))).toBe("Lee");
+  });
+});
+
+describe("a commander with a Background", () => {
+  const lae = cmd("lae", "Lae’zel, Vlaakith's Champion");
+  const bg = cmd("bg", "Raised by Giants");
+  it("names the pair with the History row's two-name treatment, and the commander alone without one", () => {
+    expect(commandersName(seat("a", { commander: lae, partner: bg }))).toBe("Lae’zel + Raised by Giants");
+    expect(commandersName(seat("a", { commander: lae }))).toBe("Lae’zel");
+    expect(commandersName(seat("a", { commander: null, partner: bg }))).toBe("");
+    expect(seatName(seat("a", { commander: lae, partner: bg }))).toBe("Lae’zel + Raised by Giants");
+    expect(seatName(seat("a", { commander: lae, partner: bg, label: "Peter" }))).toBe("Peter");
+  });
+  it("sends the Background as `partner` beside its commander, and nothing without a commander", () => {
+    expect(opponentsFor([seat("a", { commander: lae, partner: bg })], "win")).toEqual([{ commander: "lae", partner: "bg" }]);
+    expect(opponentsFor([seat("a", { commander: lae, partner: bg, label: "Peter", won: true })], "loss")).toEqual([
+      { commander: "lae", partner: "bg", label: "Peter", won: true },
+    ]);
+    expect(opponentsFor([seat("a", { commander: null, partner: bg })], "win")).toEqual([{ commander: undefined }]);
+  });
+  it("sends a friend's own pair, and a picker press fills or clears the Background", () => {
+    const F = { publicId: "f1", name: "Fran" };
+    expect(opponentsFor([seat("a", { friend: F, commander: lae, partner: bg })], "win")).toEqual([
+      { friend: "f1", commander: "lae", partner: "bg" },
+    ]);
+    const paired = seatWith([], null, { friend: null, deck: null, commander: lae, partner: bg }, "k");
+    expect(paired[0].partner).toEqual(bg);
+    const removed = seatWith(paired, "k", { friend: null, deck: null, commander: lae }, "k");
+    expect(removed[0].partner).toBeNull();
   });
 });
 

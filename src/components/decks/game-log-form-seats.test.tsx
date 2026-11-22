@@ -15,7 +15,9 @@ const TYMNA = "00000000-0000-4000-8000-0000000000a2";
 const hit = (oracleId: string, name: string) => ({
   oracleId, name, typeLine: "Legendary Creature", manaCost: null, colorIdentity: ["U", "B"], partner: null, flavorName: null, imageUri: null,
 });
-const search = vi.fn(async (q: string) => (q.toLowerCase().startsWith("y") ? [hit(YURIKO, "Yuriko, the Tiger’s Shadow")] : [hit(TYMNA, "Tymna the Weaver")]));
+const LAE = "00000000-0000-4000-8000-0000000000a3";
+const GIANTS = "00000000-0000-4000-8000-0000000000a4";
+const search = vi.fn(async (q: string) => (q.toLowerCase().startsWith("l") ? [{ ...hit(LAE, "Lae’zel, Vlaakith's Champion"), partner: { kind: "chooseBackground" } }] : q.toLowerCase().startsWith("y") ? [hit(YURIKO, "Yuriko, the Tiger’s Shadow")] : [hit(TYMNA, "Tymna the Weaver")]));
 
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: async () => [] }));
 vi.mock("../../app/decks/actions", () => ({ logGame: (id: string, input: Record<string, unknown>) => logGame(id, input) }));
@@ -25,6 +27,7 @@ const pods = vi.fn(async (): Promise<unknown[]> => []);
 const podSeats = vi.fn(async (_id: string): Promise<unknown[]> => []);
 vi.mock("../../app/decks/[id]/opponent-actions", () => ({
   searchOpponentCommandersAction: (q: string) => search(q),
+  searchOpponentBackgroundsAction: async () => [hit(GIANTS, "Raised by Giants")],
   listPickerFriendsAction: () => friends(),
   listFriendDecksAction: (id: string) => friendDecks(id),
   listPickerPodsAction: () => pods(),
@@ -85,6 +88,24 @@ describe("with the switch", () => {
     save();
     await waitFor(() => expect(logGame).toHaveBeenCalled());
     expect(logGame.mock.calls[0][1].opponents).toEqual([{ commander: YURIKO }]);
+  });
+
+  // Opponent Background addendum: the pair goes out beside the commander, the field the server's parser already takes.
+  it("sends a Background as `partner` beside its commander", async () => {
+    mount(true);
+    fireEvent.click(screen.getByRole("button", { name: seatsCopy.add }));
+    const dialog = await screen.findByRole("dialog", { name: gameSeatsCopy.picker.title });
+    fireEvent.change(within(dialog).getByRole("searchbox"), { target: { value: "lae" } });
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Lae’zel/ }));
+    fireEvent.change(await within(dialog).findByPlaceholderText(gameSeatsCopy.picker.backgroundPlaceholder), { target: { value: "raised" } });
+    fireEvent.click(await within(dialog).findByRole("button", { name: /Raised by Giants/ }));
+    fireEvent.click(await within(dialog).findByRole("button", { name: gameSeatsCopy.picker.seatPair("Lae’zel", "Raised by Giants") }));
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: gameSeatsCopy.picker.title })).toBeNull());
+    expect(screen.getByText("Lae’zel + Raised by Giants")).toBeInTheDocument();
+    result(gameLogCopy.form.won);
+    save();
+    await waitFor(() => expect(logGame).toHaveBeenCalled());
+    expect(logGame.mock.calls[0][1].opponents).toEqual([{ commander: LAE, partner: GIANTS }]);
   });
 
   it("changes a seat in place from its art, keeping its place in the order", async () => {

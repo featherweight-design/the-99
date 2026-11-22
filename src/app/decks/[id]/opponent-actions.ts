@@ -6,13 +6,19 @@
 // names a social table.
 
 import { requireUserId } from "../../../lib/auth";
-import { searchOpponentCommanders, type OpponentCommanderHit } from "../../../lib/decks/opponent-commanders";
+import { searchOpponentBackgrounds, searchOpponentCommanders, type OpponentCommanderHit } from "../../../lib/decks/opponent-commanders";
 import { listFriendDecks, listPickerFriends, listPickerPods, listPodSeats, type FriendDeck, type PickerFriend, type PickerPod, type PodSeat } from "../../../lib/social/games";
 
 /** The commanders an "anyone" seat can name, by card name. Catalog data, but still behind sign-in. */
 export async function searchOpponentCommandersAction(query: string): Promise<OpponentCommanderHit[]> {
   await requireUserId();
   return searchOpponentCommanders(query);
+}
+
+/** The seat picker's Background step: a Background by name (opponent Background addendum, G1). */
+export async function searchOpponentBackgroundsAction(query: string): Promise<OpponentCommanderHit[]> {
+  await requireUserId();
+  return searchOpponentBackgrounds(query);
 }
 
 /** The decks a friend can be seated with, read when the picker opens that friend (G7). */

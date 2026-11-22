@@ -6,14 +6,21 @@
 // and a sheet at 390, one body for both. The friends are read when the picker OPENS, so a form nobody opens the
 // picker from reads nothing social.
 //
+// A commander that chooses a Background is the one press that does not seat at once (opponent Background addendum):
+// it opens the Background step, the deck's second slot in the picker's own rows (search, a result row, the chosen
+// slot with Change and Remove), and one Seat press under it seats the commander alone or the pair. A seat holding such
+// a commander reopens on that step.
+//
 // The search is `searchOpponentCommandersAction`: the whole catalog, commander-legal, no owned filter. A reply
 // that arrives after a newer keystroke is dropped, so a slow answer for "yu" never lands over "yuriko".
 
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
-import { listFriendDecksAction, listPickerFriendsAction, searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
+import { listFriendDecksAction, listPickerFriendsAction, searchOpponentBackgroundsAction, searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
-import { shortName, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
+import { deckImportCopy } from "../../lib/copy/deck-import";
+import { partnerAddCopy } from "../../lib/copy/partner-add";
+import { shortName, type SeatCommander, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
 import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
 import type { FriendDeck, PickerFriend } from "../../lib/social/games";
 import { nameIncludes, PersonInitials, PersonName, PersonText } from "../../lib/person-name";
@@ -21,6 +28,7 @@ import { IdentityPips } from "../commanders/commander-art";
 import { Face } from "../social/face";
 import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
 import { ArtLayer } from "../ui/art-layer";
+import { PrimaryButton } from "../ui/button";
 import { SearchIcon } from "../ui/search-icon";
 import { Sheet, SheetHeader } from "../ui/sheet";
 import { SearchField } from "../ui/text-field";
@@ -32,7 +40,13 @@ const copy = gameSeatsCopy.picker;
 
 type Load<T> = { state: "busy" } | { state: "failed" } | { state: "done"; items: T[] };
 type Search = { state: "idle" } | Load<OpponentCommanderHit>;
-type View = { step: "list" } | { step: "decks" | "commander"; friend: PickerFriend };
+type View =
+  | { step: "list" }
+  | { step: "decks" | "commander"; friend: PickerFriend }
+  | { step: "background"; friend: SeatFriend | null; commander: SeatCommander; background: SeatCommander | null };
+
+/** A seat that reopens on the Background step: its commander chooses one, and its Background, if any. */
+export type OpenPair = { friend: SeatFriend | null; commander: SeatCommander; background: SeatCommander | null };
 
 const ROW = "flex min-h-[52px] w-full cursor-pointer items-center gap-[12px] border-0 bg-transparent px-[14px] py-[6px] text-left hover:bg-[color:var(--surface-raised)]";
 const NOTE = "px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]";
@@ -47,7 +61,7 @@ const HEADING = "m-0 px-[14px] pb-[4px] pt-[10px] font-mono text-[9.5px] upperca
 const SCROLL_BODY = "-mb-[4px] mt-[4px] min-h-0 overflow-y-auto py-[4px]";
 
 /** The catalog search for one query: nothing under two letters, and a reply for an older keystroke is dropped. */
-function useCommanderSearch(query: string) {
+function useCommanderSearch(query: string, run: (q: string) => Promise<OpponentCommanderHit[]> = searchOpponentCommandersAction) {
   const [search, setSearch] = useState<Search>({ state: "idle" });
   const asked = useRef(0);
   useEffect(() => {
@@ -56,38 +70,49 @@ function useCommanderSearch(query: string) {
     if (q.length < 2) return;
     const timer = window.setTimeout(() => {
       setSearch({ state: "busy" });
-      searchOpponentCommandersAction(q)
+      run(q)
         .then((items) => { if (asked.current === ticket) setSearch({ state: "done", items }); })
         .catch(() => { if (asked.current === ticket) setSearch({ state: "failed" }); });
     }, KEYSTROKE_MS);
     return () => window.clearTimeout(timer);
-  }, [query]);
+  }, [query, run]);
   // A new query drops the old answer at once and invalidates any still in flight: until the debounce fires,
   // the previous query's hits would stay on screen, selectable, under a field that no longer names them.
   const reset = () => { asked.current += 1; setSearch({ state: "idle" }); };
   return { search, reset };
 }
 
-function CommanderRows({ query, search, onPick }: { query: string; search: Search; onPick: (hit: OpponentCommanderHit) => void }) {
+function CommanderRows({ query, search, onPick, noMatch = copy.noMatch }: { query: string; search: Search; onPick: (hit: OpponentCommanderHit) => void; noMatch?: string }) {
   if (query.trim().length < 2) return null;
   if (search.state === "failed") return <li role="alert" className={NOTE}>{copy.failed}</li>;
   if (search.state === "busy") return <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>;
   if (search.state !== "done") return null;
-  if (search.items.length === 0) return <li className={NOTE}>{copy.noMatch}</li>;
+  if (search.items.length === 0) return <li className={NOTE}>{noMatch}</li>;
   return search.items.map((hit) => (
     <li key={hit.oracleId}>
       <button type="button" onClick={() => onPick(hit)} className={ROW}>
         <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
           {hit.imageUri && <ArtLayer src={hit.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
+        {hit.partner?.kind === "chooseBackground" ? (
+          // The one hit whose press opens a step rather than seating: its second line says why, as a deck row's does.
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
+            <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.choosesBackground}</span>
+          </span>
+        ) : (
+          <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
+        )}
         <IdentityPips colorIdentity={hit.colorIdentity} size={9} />
       </button>
     </li>
   ));
 }
 
-const asCommander = (hit: OpponentCommanderHit) => ({ oracleId: hit.oracleId, name: hit.name, imageUri: hit.imageUri });
+const asCommander = (hit: OpponentCommanderHit): SeatCommander => ({
+  oracleId: hit.oracleId, name: hit.name, imageUri: hit.imageUri,
+  ...(hit.partner?.kind === "chooseBackground" ? { choosesBackground: true } : {}),
+});
 const asFriend = (f: PickerFriend): SeatFriend => ({ publicId: f.publicId, name: f.displayName });
 
 function Field({ inputRef, value, onChange, placeholder, describedBy }: {
@@ -226,12 +251,98 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
   );
 }
 
+/** The row thumb, 56 × 40, as every picker row draws it. */
+function Thumb({ uri }: { uri: string | null }) {
+  return (
+    <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
+      {uri && <ArtLayer src={uri} style={{ backgroundPosition: "50% 20%" }} />}
+    </span>
+  );
+}
+
+/**
+ * The Background step (opponent Background addendum): the commander on the head, then its second slot. Empty, the slot
+ * is the picker's own field and rows over Backgrounds; chosen, it is the chosen row with Change and Remove (the create
+ * picker's second slot). One Seat press follows, naming what it seats.
+ */
+function BackgroundStep({ commander, background, onChoose, onSeat, onBack, inputRef, describedBy }: {
+  commander: SeatCommander;
+  background: SeatCommander | null;
+  onChoose: (background: SeatCommander | null) => void;
+  onSeat: () => void;
+  onBack: () => void;
+  inputRef: RefObject<HTMLInputElement | null>;
+  describedBy: string;
+}) {
+  const [query, setQuery] = useState("");
+  const [changing, setChanging] = useState(false);
+  const { search, reset } = useCommanderSearch(query, searchOpponentBackgroundsAction);
+  const short = shortName(commander.name);
+  const searching = background === null || changing;
+  const change = (next: string) => { reset(); setQuery(next); };
+  return (
+    <div className="flex min-h-0 flex-col">
+      <div className="flex shrink-0 items-center gap-[10px] px-[12px] pt-[12px] md:pt-[10px]">
+        <button type="button" onClick={onBack} aria-label={copy.backToCommanders} className="flex h-[32px] w-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border)] bg-transparent text-[14px] text-[color:var(--fg-muted)]">
+          ‹
+        </button>
+        <span aria-hidden className="relative block h-[26px] w-[26px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
+          {commander.imageUri && <ArtLayer src={commander.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
+        </span>
+        <h3 className="m-0 min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{commander.name}</h3>
+      </div>
+      {searching && <Field inputRef={inputRef} value={query} onChange={change} placeholder={copy.backgroundPlaceholder} describedBy={describedBy} />}
+      <div data-seat-body className={SCROLL_BODY}>
+        <ul className="m-0 list-none p-0 pb-[6px]">
+          {searching ? (
+            <>
+              {query.trim().length < 2 && <li className={NOTE}>{partnerAddCopy.door.body(short, { kind: "chooseBackground" })}</li>}
+              <CommanderRows
+                query={query}
+                search={search}
+                noMatch={copy.backgroundNoMatch}
+                onPick={(hit) => { onChoose(asCommander(hit)); setChanging(false); change(""); }}
+              />
+            </>
+          ) : (
+            <>
+              <li role="presentation"><h3 className={HEADING}>{copy.background}</h3></li>
+              <li data-background-chosen className="flex min-h-[52px] items-center gap-[12px] px-[14px] py-[6px]">
+                <Thumb uri={background.imageUri} />
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{background.name}</span>
+                  <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.backgroundChosen}</span>
+                </span>
+                <span className="flex shrink-0 gap-[14px]">
+                  <button type="button" onClick={() => setChanging(true)} className="cursor-pointer border-0 border-b border-solid border-b-[color:var(--border-strong)] bg-transparent p-0 font-mono text-[11px] text-[color:var(--fg-body)]">
+                    {deckImportCopy.commander.change}
+                  </button>
+                  <button type="button" onClick={() => onChoose(null)} className="cursor-pointer border-0 border-b border-solid border-b-[color:var(--border)] bg-transparent p-0 font-mono text-[11px] text-[color:var(--fg-faint)]">
+                    {deckImportCopy.commander.remove}
+                  </button>
+                </span>
+              </li>
+            </>
+          )}
+        </ul>
+        <div className="px-[14px] pb-[12px] pt-[4px]">
+          <PrimaryButton data-seat-pair onClick={onSeat} className="w-full min-h-[44px] md:min-h-[38px]">
+            {background ? copy.seatPair(short, shortName(background.name)) : copy.seat(short)}
+          </PrimaryButton>
+        </div>
+        <Foot id={describedBy}>{copy.footBackground}</Foot>
+      </div>
+    </div>
+  );
+}
+
 function Body({
   onPick,
   inputRef,
   describedBy,
   seated,
   openAt,
+  openPair,
 }: {
   onPick: (pick: SeatPick) => void;
   inputRef: RefObject<HTMLInputElement | null>;
@@ -240,9 +351,11 @@ function Body({
   seated: ReadonlySet<string>;
   /** Open on this friend's decks (a friend seated alone, from a pod, asks Which deck?). */
   openAt: SeatFriend | null;
+  /** Open on the Background step: the seat holds a commander that chooses one. */
+  openPair: OpenPair | null;
 }) {
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<View | null>(null);
+  const [view, setView] = useState<View | null>(openPair ? { step: "background", ...openPair } : null);
   const [friends, setFriends] = useState<Load<PickerFriend>>({ state: "busy" });
   const { search, reset } = useCommanderSearch(query);
 
@@ -282,6 +395,24 @@ function Body({
   // Asked to open on a friend: wait for the friends rather than draw the generic list and jump.
   if (openAt && !view && friends.state === "busy") {
     return <p className="m-0 px-[14px] py-[14px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</p>;
+  }
+
+  if (current.step === "background") {
+    const { friend: who, commander, background } = current;
+    return (
+      <BackgroundStep
+        commander={commander}
+        background={background}
+        onChoose={(next) => setView({ ...current, background: next })}
+        onSeat={() => onPick({ friend: who, deck: null, commander, partner: background })}
+        onBack={() => {
+          const back = who && list.find((f) => f.publicId === who.publicId);
+          go(back ? { step: "commander", friend: back } : { step: "list" });
+        }}
+        inputRef={inputRef}
+        describedBy={describedBy}
+      />
+    );
   }
 
   if (current.step === "decks") {
@@ -331,7 +462,10 @@ function Body({
         <CommanderRows
           query={query}
           search={search}
-          onPick={(hit) => onPick({ friend: friend ? asFriend(friend) : null, deck: null, commander: asCommander(hit) })}
+          onPick={(hit) =>
+            hit.partner?.kind === "chooseBackground"
+              ? go({ step: "background", friend: friend ? asFriend(friend) : null, commander: asCommander(hit), background: null })
+              : onPick({ friend: friend ? asFriend(friend) : null, deck: null, commander: asCommander(hit) })}
         />
       </ul>
       <Foot id={describedBy}>{!friend && list.length > 0 ? copy.footFriends : copy.footAnyone}</Foot>
@@ -347,6 +481,7 @@ export function SeatPicker({
   onPick,
   seated,
   openAt = null,
+  openPair = null,
 }: {
   /** The control that opened it: where the panel hangs at 1300, and where focus returns. */
   anchor: HTMLElement;
@@ -356,6 +491,7 @@ export function SeatPicker({
   /** The friends already at the OTHER seats: a friend sits once. */
   seated: ReadonlySet<string>;
   openAt?: SeatFriend | null;
+  openPair?: OpenPair | null;
 }) {
   const desktop = useIsDesktop();
   const footId = useId();
@@ -390,7 +526,7 @@ export function SeatPicker({
   if (!desktop) {
     return (
       <Sheet open portal onDismiss={onClose} ariaLabel={copy.title} panelRef={panelRef} header={<SheetHeader title={copy.title} closeLabel={copy.close} onDismiss={onClose} />}>
-        <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} />
+        <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} openPair={openPair} />
       </Sheet>
     );
   }
@@ -404,7 +540,7 @@ export function SeatPicker({
       className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col`}
       style={{ width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
     >
-      <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} />
+      <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} openPair={openPair} />
     </div>
   );
 }

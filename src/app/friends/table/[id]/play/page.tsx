@@ -70,6 +70,7 @@ export default async function PlayPage({ params, searchParams }: { params: Promi
     partnerArt: s.deck?.partner?.artCropUri ?? null,
     commander: s.deck?.commander.name ?? "",
     partner: s.deck?.partner?.name ?? null,
+    partnerIsBackground: s.deck?.partner?.background ?? false,
     deck: s.deck?.name ?? null,
   }));
 

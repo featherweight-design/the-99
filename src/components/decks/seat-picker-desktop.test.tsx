@@ -1,7 +1,8 @@
 // The picker at 1300: an anchored panel, placed by `useAnchoredPanel`. jsdom has no layout, so the width
 // query is pinned to desktop and the placement is whatever the hook computes from zero rects.
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { gameSeatsCopy } from "../../lib/copy/game-seats";
 import type { ThirdPartyName } from "../../lib/person-name";
 import { named } from "../../lib/person-name/mint";
@@ -11,8 +12,10 @@ import { SeatPicker } from "./seat-picker";
 vi.mock("../ui/use-is-desktop", () => ({ useIsDesktop: () => true }));
 const decksRead = vi.hoisted(() => ({ list: [] as { deckId: string; name: ThirdPartyName; commanderOracleId: string; partnerOracleId: string | null; commanderName: string; commanderImageUri: string | null }[] }));
 const friends = vi.hoisted(() => ({ list: [] as { publicId: string; displayName: ThirdPartyName; commanderArt: string | null; deckCount: number; withheld?: boolean }[] }));
+const found = vi.hoisted(() => ({ commanders: [] as unknown[], backgrounds: [] as unknown[] }));
 vi.mock("../../app/decks/[id]/opponent-actions", () => ({
-  searchOpponentCommandersAction: async () => [],
+  searchOpponentCommandersAction: async () => found.commanders,
+  searchOpponentBackgroundsAction: async () => found.backgrounds,
   listPickerFriendsAction: async () => friends.list,
   listFriendDecksAction: async () => decksRead.list,
 }));
@@ -124,6 +127,55 @@ describe("SeatPicker at desktop width", () => {
     const deck = await screen.findByText("Thopter Factory", { selector: ".ph-no-capture" });
     expect(deck.closest("button")).not.toBeNull();
     decksRead.list = [];
+    anchor.remove();
+  });
+  // Opponent Background addendum: a commander that chooses a Background opens the step instead of seating, and one
+  // Seat press sends the pair (call 4); Remove empties the slot and the same press seats the commander alone.
+  const hit = (oracleId: string, name: string, partner: { kind: string } | null) => ({ oracleId, name, typeLine: "Legendary Creature", manaCost: null, colorIdentity: [], partner, flavorName: null, imageUri: null });
+  it("opens the Background step on a commander that chooses one, and seats the pair with one press", async () => {
+    found.commanders = [hit("lae", "Lae’zel, Vlaakith's Champion", { kind: "chooseBackground" }), hit("sai", "Sai, Master Thopterist", null)];
+    found.backgrounds = [hit("bg", "Raised by Giants", null)];
+    const onPick = vi.fn();
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={onPick} seated={new Set()} />);
+    fireEvent.change(await screen.findByRole("searchbox", { hidden: true }), { target: { value: "lae" } });
+    expect(await screen.findByText(gameSeatsCopy.picker.choosesBackground)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Lae’zel/ }));
+    expect(onPick).not.toHaveBeenCalled();
+    fireEvent.change(await screen.findByPlaceholderText(gameSeatsCopy.picker.backgroundPlaceholder), { target: { value: "raised" } });
+    fireEvent.click(await screen.findByRole("button", { name: /Raised by Giants/ }));
+    const seat = await screen.findByRole("button", { name: gameSeatsCopy.picker.seatPair("Lae’zel", "Raised by Giants") });
+    fireEvent.click(seat);
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({
+      commander: expect.objectContaining({ oracleId: "lae", choosesBackground: true }),
+      partner: expect.objectContaining({ oracleId: "bg" }),
+    }));
+    anchor.remove();
+  });
+
+  it("reopens a seat on the Background step, and Remove seats the commander alone", async () => {
+    const lae = { oracleId: "lae", name: "Lae’zel, Vlaakith's Champion", imageUri: null, choosesBackground: true };
+    const bg = { oracleId: "bg", name: "Raised by Giants", imageUri: null };
+    const onPick = vi.fn();
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={onPick} seated={new Set()} openPair={{ friend: null, commander: lae, background: bg }} />);
+    fireEvent.click(await screen.findByRole("button", { name: deckImportCopy.commander.remove }));
+    fireEvent.click(await screen.findByRole("button", { name: gameSeatsCopy.picker.seat("Lae’zel") }));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ partner: null }));
+    anchor.remove();
+  });
+
+  it("keeps a friend's seat a friend's when it reopens on the Background step", async () => {
+    const lae = { oracleId: "lae", name: "Lae’zel, Vlaakith's Champion", imageUri: null, choosesBackground: true };
+    const friend = { publicId: "pub-1", name: "Colin" };
+    const onPick = vi.fn();
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={onPick} seated={new Set()} openPair={{ friend, commander: lae, background: null }} />);
+    fireEvent.click(await screen.findByRole("button", { name: gameSeatsCopy.picker.seat("Lae’zel") }));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ friend }));
     anchor.remove();
   });
 });

@@ -102,5 +102,24 @@ export const gameSeatsCopy = {
     /** Not drawn either: a search that failed is not a search with no hit. Quick-add's failed search toast says the
      *  same two halves apart (small items 2, item 8), so they are written once, below. */
     failed: `${SEARCH_FAILED} ${SEARCH_RETRY}.`,
+
+    // The Background step (opponent Background addendum): a commander that chooses a Background opens a second slot
+    // before it is seated. The rule line reuses the deck's own (`partnerAddCopy.door.body`), and Change / Remove reuse
+    // the create picker's second slot (`deckImportCopy.commander.change` / `.remove`).
+    /** Under a commander hit that chooses one, so the row says why its press does not seat at once. */
+    choosesBackground: "chooses a Background",
+    /** The ‹ on the step's head. */
+    backToCommanders: "Back to commanders",
+    /** The step's head, under the commander's name. */
+    commanderTag: "commander",
+    background: "Background",
+    backgroundPlaceholder: "Search Backgrounds",
+    backgroundNoMatch: "No Background by that name.",
+    /** The chosen slot's caption. */
+    backgroundChosen: "second commander",
+    /** The one press that seats, which follows the slot. */
+    seat: (commander: string) => `Seat ${commander}`,
+    seatPair: (commander: string, background: string) => `Seat ${commander} + ${background}`,
+    footBackground: "A Background is optional: seat the commander alone if none was played.",
   },
 } as const;

@@ -141,8 +141,8 @@ export async function opponentCommandersValid(parsed: readonly ParsedOpponent[])
     return card !== undefined && card.commanderLegal ? card : null;
   };
   // The rule a deck's own commanders are held to: a Background is only ever the second half beside a commander that
-  // chooses one (`pairLegal`), so the save accepts such a pair. The opponent search (`opponent-commanders.ts`) does not
-  // offer a Background yet, so the seat picker cannot send one until that follows.
+  // chooses one (`pairLegal`), so the save accepts such a pair. The seat picker's Background step
+  // (`searchOpponentBackgrounds` in `opponent-commanders.ts`) is what sends one.
   return named.every(({ commander, partner }) => {
     const a = legal(commander);
     if (a === null) return false;

@@ -9,9 +9,9 @@ const seats: PlaySeat[] = [
   { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null, deck: "Sai Artifacts" },
   { seat: 1, you: false, name: "Colin" as never, art: null, partnerArt: null, commander: "Ishai", partner: "Bruse", deck: "Ishai Ojutai" },
 ];
-const render = (tab: SheetTab, game: Game, tablet = false) =>
+const render = (tab: SheetTab, game: Game, tablet = false, at = seats, seat = 0) =>
   renderToStaticMarkup(
-    <Sheet view={{ seat: 0, tab }} seats={seats} state={replay(game)} game={game} rot={0} tablet={tablet} onView={() => {}} onClose={() => {}} onCommit={() => {}} onUndo={() => {}} />,
+    <Sheet view={{ seat, tab }} seats={at} state={replay(game)} game={game} rot={0} tablet={tablet} onView={() => {}} onClose={() => {}} onCommit={() => {}} onUndo={() => {}} />,
   );
 
 describe("tracker sheet", () => {
@@ -31,6 +31,18 @@ describe("tracker sheet", () => {
     const html = render("damage", game);
     expect(html).toContain("Ishai");
     expect(html).toContain("Bruse");
+  });
+  // Opponent Background addendum, call 7: a Background is cast from the command zone (Tax keeps both rows) but deals no damage.
+  it("gives a Background seat one damage stepper and two Tax rows", () => {
+    const bgSeats = seats.map((p) => (p.seat === 1 ? { ...p, partnerIsBackground: true } : p));
+    const damage = render("damage", game, false, bgSeats);
+    expect(damage).toContain("Ishai");
+    expect(damage).not.toContain("Bruse");
+    expect(render("damage", game, true, bgSeats)).not.toContain("Bruse");
+    const tax = render("tax", game, false, bgSeats, 1);
+    expect(tax).toContain("Ishai");
+    expect(tax).toContain("Bruse");
+    expect(tax.match(/Next cast costs/g)).toHaveLength(2);
   });
   it("offers ten counters and no custom one", () => {
     const html = render("counters", game);
