@@ -184,6 +184,17 @@ describe("loadPrices per store", () => {
     expect(text).toMatch(/facts\.named,\s+facts\.sold_out\s+from newest/);
   });
 
+  it("selects sold_out in every half, so the union lines up for a store", async () => {
+    await loadPrices([CARD], pick, [A], "cardkingdom");
+    const text = state.texts[0];
+    // chosen, picked and named: each half's select list ends named, then sold_out, before its from.
+    expect(text.match(/(false|true) as named, pp\.sold_out\s+from (printings|unnest)/g)).toHaveLength(3);
+    // Mana Pool's halves carry no sold_out at all, so its statement is unchanged.
+    state.texts = [];
+    await loadPrices([CARD], pick, [A]);
+    expect(state.texts[0]).not.toContain("sold_out");
+  });
+
   it("draws a store's sold-out row as sold out, though its as_of is the newest", async () => {
     state.rows = [
       { newest_as_of: NEWEST, deck_id: null, oracle_id: CARD, price_cents: 300, price_cents_foil: null, price_cents_etched: null, as_of: NEWEST, scryfall_id: A, named: false, sold_out: true },
