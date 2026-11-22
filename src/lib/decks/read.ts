@@ -866,6 +866,11 @@ export type DeckListItem = {
   commanderImageUri: string | null;
   commanderArtCropUri: string | null;
   /**
+   * The deck's description (`decks.intent`), carried so the deck page's loading screen draws the header's tagline row in its
+   * place from the first frame. Optional for the reason `commanderPrintedName` is: absent means null.
+   */
+  intent?: string | null;
+  /**
    * The second commander's name, or null for a single-commander deck — which is
    * also the pair signal every list surface reads, because a deck has a partner
    * exactly when this is non-null.
@@ -1243,6 +1248,7 @@ export async function listDecksWithStats(
     .select({
       id: decks.id,
       name: decks.name,
+      intent: decks.intent,
       createdAt: decks.createdAt,
       sortPosition: decks.sortPosition,
       commanderOracleId: decks.commanderOracleId,
@@ -1441,6 +1447,7 @@ export async function listDecksWithStats(
     return {
       id: row.id,
       name: row.name,
+      intent: row.intent,
       createdAt: row.createdAt,
       sortPosition: row.sortPosition,
       commanderName: row.commanderName,

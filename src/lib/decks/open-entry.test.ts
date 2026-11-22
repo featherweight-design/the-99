@@ -46,6 +46,19 @@ describe("parseOpenEntry", () => {
   });
 });
 
+describe("the tagline", () => {
+  it("is carried when the entry holds one and kept as an optional field when it does not", () => {
+    expect(parseOpenEntry(entry({ facts: { ...facts, intent: "Goblins, mostly." } }), 1001)?.facts.intent).toBe("Goblins, mostly.");
+    expect(parseOpenEntry(entry({ facts }), 1001)?.facts.intent).toBeUndefined();
+  });
+
+  it("drops a malformed tagline and keeps the entry", () => {
+    const bad = parseOpenEntry(entry({ facts: { ...facts, intent: 7 } as unknown as OpenFacts }), 1001);
+    expect(bad).not.toBeNull();
+    expect(bad?.facts.intent).toBeUndefined();
+  });
+});
+
 describe("openFactsOf", () => {
   const row = (over: Partial<DeckListItem>) =>
     ({
@@ -68,6 +81,11 @@ describe("openFactsOf", () => {
     expect(f.identity).toEqual(["W", "U", "B"]);
     expect(f.artIdentity).toEqual(["W"]);
     expect(f.partner).toBe(true);
+  });
+
+  it("carries the deck's tagline, and null for a deck without one", () => {
+    expect(openFactsOf(row({ intent: "Goblins, mostly." })).intent).toBe("Goblins, mostly.");
+    expect(openFactsOf(row({ intent: null })).intent).toBeNull();
   });
 
   it("a solo commander is not a partner deck", () => {

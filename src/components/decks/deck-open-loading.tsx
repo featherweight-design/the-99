@@ -16,12 +16,16 @@ import { StallWatch } from "../shell/nav-stall";
 import { PendingReporter } from "../shell/pending-reporter";
 import { BAR } from "../ui/tile-skeleton";
 import Link from "next/link";
-import { ArtWash } from "../ui/art-wash";
-import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS } from "./deck-header-type";
-import { DeckHeaderArt, DECK_HEADER_LABEL_LEFT } from "./deck-header-art";
+import { ArtWash, BlockScrim, COVER_INK_SHADOW } from "../ui/art-wash";
+import { DeckIntentLine } from "./deck-intent-line";
+import { TRUNCATES } from "./truncates";
+import { colorLabel } from "../../lib/decks/format";
+import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS, PHONE_BLOCK_CLASS, PHONE_BLOCK_INSET_X, phoneBlockStyle } from "./deck-header-type";
+import { deckBodySize } from "../../lib/decks/deck-size";
+import { statusBarStyle } from "../../lib/decks/status-style";
+import { DeckHeaderArt, DECK_HEADER_LABEL_INSET, DECK_HEADER_LABEL_LEFT } from "./deck-header-art";
 import { IdentityPips } from "../commanders/commander-art";
 import { StatusPillBadge } from "./status-pill";
-import { deckBodySize } from "../../lib/decks/deck-size";
 import { parseOpenEntry, readOpenRaw, type OpenEntry } from "../../lib/decks/open-entry";
 
 const SH = "rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]";
@@ -121,33 +125,86 @@ function Body({ wide, tab }: { wide: boolean; tab: string }) {
 }
 
 /**
+ * The phone label block, drawn as the loaded header draws it (`spine-mobile`): the same block geometry and ramp (`BlockScrim`),
+ * the inline title with the rename glyph's room, the tagline row, the commander line and the chips row. The controls that arrive
+ * with the page (the pencil, the bracket chip, the notice tag) are not drawn inert; their room is, so nothing moves.
+ */
+function PhoneLabel({ facts }: { facts: OpenEntry["facts"] }) {
+  return (
+    <div data-wash-label className={PHONE_BLOCK_CLASS} style={phoneBlockStyle(6)}>
+      <BlockScrim insetX={PHONE_BLOCK_INSET_X} />
+      <div className="w-full" style={{ maxWidth: "100%", textAlign: "left" }}>
+        <h1
+          className={`m-0 min-w-0 ${DECK_TITLE_CLASS}`}
+          style={{ display: "inline", overflowWrap: "anywhere", ...DECK_TITLE.phone, textAlign: "left", color: "var(--fg)", textShadow: COVER_INK_SHADOW }}
+        >
+          <span data-deck-title>{facts.name}</span>
+        </h1>
+        {"\u00a0"}
+        <span className="relative inline-flex" style={{ width: 14, verticalAlign: "baseline" }} />
+      </div>
+      <DeckIntentLine intent={facts.intent ?? null} width="phone" />
+      <div data-spine-meta className="flex w-full min-w-0 flex-nowrap items-center justify-start" style={{ gap: 8 }}>
+        <IdentityPips colorIdentity={facts.identity} size={10} />
+        <span
+          className="font-mono flex"
+          style={{ fontSize: DECK_COMMANDER_SIZE.phone, color: "var(--fg-body)", textShadow: COVER_INK_SHADOW, gap: 4, minWidth: 0, overflow: "hidden", alignItems: "baseline" }}
+        >
+          <span style={TRUNCATES}>{facts.commander}</span>
+          {facts.partner ? null : <span style={{ flex: "none", whiteSpace: "nowrap" }}>&nbsp;· {colorLabel(facts.identity)}</span>}
+        </span>
+      </div>
+      <div data-spine-chips className="@container flex w-full flex-wrap items-center" style={{ gap: 8 }}>
+        <StatusPillBadge status={facts.status} className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]" />
+      </div>
+    </div>
+  );
+}
+
+/**
  * Skeleton A: the shipped band fed from the facts the press carried. The commander's crop (the shipped no-crop band when the deck
- * has none), the name, colours and commander line, the status chip and `built / 99`. The actions, the bracket chip and the notice
- * tag arrive with the page, so none is drawn inert here; no intent row either, which this list read does not carry.
+ * has none), the name, the tagline, colours and commander line, and the status chip. On a phone the label is the loaded header's
+ * own block (`PhoneLabel`). The actions, the bracket chip and the notice tag arrive with the page, so none is drawn inert here.
  */
 function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["facts"]; strip: React.ReactNode }) {
-  const size = deckBodySize(facts.partner);
   // The page header's own type (`deck-header-type`), so the title and the commander line do not jump when the page lands.
-  const width = wide ? "desktop" : "phone";
+  const size = deckBodySize(facts.partner);
   const label = (
-    <div className="relative flex flex-col gap-[8px]">
-      <h1 className={`m-0 ${DECK_TITLE_CLASS}`} style={{ ...DECK_TITLE[width], color: "var(--fg)" }}>{facts.name}</h1>
-      <div className="flex items-center gap-[8px] font-mono text-[color:var(--fg-body)]" style={{ fontSize: DECK_COMMANDER_SIZE[width] }}>
-        <IdentityPips colorIdentity={facts.identity} size={10} />
-        <span className="min-w-0 truncate">{facts.commander}</span>
+    <div className="flex min-w-0 flex-1 basis-[280px] flex-col">
+      <div className="flex items-center">
+        <h1 className={`flex min-w-0 items-end ${DECK_TITLE_CLASS}`} style={{ ...DECK_TITLE.desktop, color: "var(--fg)", margin: 0 }}>
+          <span data-deck-title className="min-w-0" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{facts.name}</span>
+        </h1>
+        <span className="inline-flex flex-none self-center" style={{ width: 14, marginLeft: 6 }} />
       </div>
-      <div className="flex items-center gap-[10px]">
-        <StatusPillBadge status={facts.status} className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]" />
-        <span className="font-mono text-[13px] text-[color:var(--fg-muted)]">{facts.built} / {size}</span>
+      <DeckIntentLine intent={facts.intent ?? null} width="desktop" />
+      <div data-spine-meta className="flex flex-wrap items-center" style={{ gap: 10, marginTop: 3, minWidth: 0 }}>
+        <IdentityPips colorIdentity={facts.identity} size={10} />
+        <span className="font-mono flex" style={{ fontSize: DECK_COMMANDER_SIZE.desktop, color: "var(--fg-body)", gap: 5, minWidth: 0, overflow: "hidden", alignItems: "baseline" }}>
+          <span style={TRUNCATES}>{facts.commander}</span>
+          {facts.partner ? null : <span style={{ flex: "none" }}>· {colorLabel(facts.identity)}</span>}
+        </span>
+      </div>
+      <div data-spine-chips className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 8 }}>
+        <StatusPillBadge status={facts.status} className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]" />
+      </div>
+      <div className="flex items-center" style={{ gap: 10, marginTop: 9 }}>
+        <div className="min-w-0 flex-1" style={{ maxWidth: 170, height: 6, borderRadius: 999, background: "var(--elevated)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)", overflow: "hidden" }}>
+          <div className="h-full" style={statusBarStyle(facts.status, facts.built, size)} />
+        </div>
+        <div className="flex flex-none items-baseline" style={{ gap: 4 }}>
+          <span className="font-mono font-semibold" style={{ fontSize: 15, color: "var(--fg)" }}>{facts.built}</span>
+          <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>/ {size}</span>
+        </div>
       </div>
     </div>
   );
   if (wide) {
     return (
       <div className="@container hidden md:block">
-        <div className="relative overflow-hidden bg-[color:var(--surface-sunken)]" style={{ height: 288, borderBottom: "1px solid var(--border)" }}>
+        <div className="relative bg-[color:var(--surface-sunken)]" style={{ minHeight: 288, borderBottom: "1px solid var(--border)" }}>
           <DeckHeaderArt artCropUri={facts.artCropUri} colorIdentity={facts.artIdentity ?? facts.identity} />
-          <div className={`absolute ${DECK_HEADER_LABEL_LEFT}`} style={{ bottom: 24, right: 24 }}>{label}</div>
+          <div className={`relative flex min-h-[288px] items-end ${DECK_HEADER_LABEL_INSET}`} style={{ paddingRight: 24, paddingBottom: 18, gap: 18 }}>{label}{/* The loaded header's action column, as room only: the description wraps at the width the loaded column leaves it. */}<div aria-hidden className="shrink-[4] grow-0" style={{ width: 109.5 }} /></div>
         </div>
         <div className="flex" style={{ borderBottom: "1px solid var(--border)", padding: "6px 24px" }}>{strip}</div>
       </div>
@@ -157,7 +214,7 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
     <div className="md:hidden">
       <div className="relative overflow-hidden bg-[color:var(--surface-sunken)]" style={{ height: 288 }}>
         <ArtWash strategy="cover" height={288} labelAtPx="block" artCropUri={facts.artCropUri} colorIdentity={facts.artIdentity ?? facts.identity} />
-        <div className="absolute inset-x-0 bottom-0 px-[18px] pb-[12px]">{label}</div>
+        <PhoneLabel facts={facts} />
       </div>
       <div className="flex flex-col items-center" style={{ borderTop: "1px solid var(--border)", padding: "14px 16px 12px", gap: 8 }}>
         {strip}

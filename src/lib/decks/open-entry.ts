@@ -29,6 +29,8 @@ export type OpenFacts = {
   built: number;
   /** A partner deck's body is 98 (`deckBodySize`), so the count's denominator needs the fact, not the name. */
   partner: boolean;
+  /** The deck's description (`decks.intent`), so the header's tagline row is there from the first frame and the name does not move when the page lands. Absent on an entry from an older build: no row. */
+  intent?: string | null;
 };
 
 export type OpenPlace = { k: number; n: number; caption: string | null };
@@ -54,6 +56,7 @@ export function openFactsOf(d: DeckListItem): OpenFacts {
     status: d.statusPill,
     built: d.built,
     partner: d.partnerName !== null,
+    intent: d.intent,
   };
 }
 
@@ -68,6 +71,7 @@ export function parseOpenEntry(raw: string | null, now: number): OpenEntry | nul
     if (!Array.isArray(f.identity) || !f.identity.every((c) => typeof c === "string")) return null;
     // Optional, so an older entry stays valid; a malformed one is dropped to the deck's identity.
     if (f.artIdentity !== undefined && (!Array.isArray(f.artIdentity) || !f.artIdentity.every((c) => typeof c === "string"))) delete f.artIdentity;
+    if (f.intent !== undefined && f.intent !== null && typeof f.intent !== "string") delete f.intent;
     if (now - v.at > OPEN_TTL_MS || v.facts.id !== v.to) return null;
     return v as OpenEntry;
   } catch {
