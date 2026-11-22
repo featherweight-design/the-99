@@ -76,7 +76,7 @@ describe("the closed table's Your game cards", () => {
 
   it("keeps the host-close Log this game over Back to Friends when the viewer has no saved game", () => {
     const host = { kind: "host", byYou: true, by: null, at: new Date("2026-11-20T04:00:00Z"), logOpen: true } as const;
-    render(<TableClosed closed={wire({ ...closed([]), how: host })} />);
+    render(<TableClosed closed={{ ...wire(closed([])), how: host }} />);
     expect(screen.queryByRole("region", { name: copy.yourGame })).toBeNull();
     expect(screen.getByRole("link", { name: ruleZeroCopy.page.log }).getAttribute("href")).toBe("/decks/d1?tab=games&table=table-1");
     expect(screen.getByRole("link", { name: copy.back })).toBeTruthy();

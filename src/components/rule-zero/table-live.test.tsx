@@ -178,7 +178,7 @@ describe("TableLive", () => {
     fetchMock.mockResolvedValueOnce(open(base));
     render(<TableLive initial={base} now={AT} />);
     await settle();
-    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { tableId: base.tableId, viewerDeckId: null, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [] } }));
+    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { tableId: base.tableId, viewerDeckId: null, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [], games: [], viewerDeckName: null, pastKept: false, endedAt: AT.toISOString() } }));
     await settle(POLL_MS);
     expect(screen.getByTestId("table-closed")).toBeInTheDocument();
     expect(screen.queryByTestId("table-body")).toBeNull();
@@ -188,7 +188,7 @@ describe("TableLive", () => {
     fetchMock.mockResolvedValueOnce(open(base));
     render(<TableLive initial={base} now={AT} />);
     await settle();
-    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { tableId: base.tableId, viewerDeckId: null, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [] } }));
+    fetchMock.mockResolvedValueOnce(json(200, { kind: "closed", closed: { tableId: base.tableId, viewerDeckId: null, podName: named("Thursday night"), setBy: named("Colin"), how: { kind: "morning", at: AT.toISOString() }, faces: [], games: [], viewerDeckName: null, pastKept: false, endedAt: AT.toISOString() } }));
     await settle(POLL_MS);
     expect(screen.getByTestId("table-closed")).toBeInTheDocument();
     const asked = fetchMock.mock.calls.length;
