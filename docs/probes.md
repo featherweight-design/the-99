@@ -2918,6 +2918,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   offers one arrangement and the phone the old names: 5 failures. The fixture seats four, so five and six seats are
   pinned by `layouts.test.ts` (setup draws `layoutsFor` directly). It only reads (setup writes nothing until Start) and
   needs the fixture on a scratch branch.
+- `pnpm probe:tracker-spine` opens the fixture's S4 game at phone (390x844) and tablet (1024x768) width and presses
+  the centre strip. It checks addendum R2's strip: each strip button held down (a real mouse press) draws the accent
+  fill and a transform scaled under 1, with a transform and color transition; each day/night toggle runs `dn-out` on
+  the old icon and `dn-in` on the new one, 320 ms each, and under reduced motion only the new icon is drawn; Menu is
+  drawn over the spine, so a press lands on it at every sampled point; a real press on End turn passes the turn; the
+  dice menu sits over the strip, inside the viewport. On main the press draws nothing, the toggle runs no animation,
+  the phone's Menu sits under the spine and the dice menu opens beside the strip: 23 failures. It writes nothing, needs
+  `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
