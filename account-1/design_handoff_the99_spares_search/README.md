@@ -1,6 +1,6 @@
 # Find a friend's spares · R1
 
-Account 1, 2026-11-22. Status: **R1 for Hugh's review.** Hugh's brief asked for a PR, so this handoff is opened as one.
+Account 1, 2026-11-22. Status: **R1.1, Hugh's answers to Q1–Q3 applied (2026-11-22).** Hugh's brief asked for a PR, so this handoff is opened as one.
 Canvas (Design type): https://claude.ai/artifact/CHPopaSBebABSorfEcLyud (Main, Spares, Wishlist).
 
 Two gaps, one goal: finding a card a friend can spare. A friend's **Spares tab** (menu and Home PR 7, Ask from the signature
@@ -33,7 +33,7 @@ and `design_handoff_the99_filter_chassis`, `design_handoff_the99_wishlist_printi
      `Press one to ask for it.`
    - **No results:** the shared `ZeroState`: `No spares match “saga”.` / the body / `Keep only search` (only when a query and a
      filter are both on) and `Clear all filters`.
-   - **Empty and not sharing:** the shipped tab, unchanged, with no frame. A list of 12 or fewer draws no frame either (Q1).
+   - **Empty and not sharing:** the shipped tab, unchanged, with no frame.
    - Query, filters and sort mirror to the address through `mirrorUrl` (`?q=`, `?colors=`, `?types=`, `?wanted=`, `?sort=`), as
      Collection's do; `?spare=` landing is unchanged.
 2. **Wishlist: the friend-spare press on the tile.**
@@ -57,11 +57,13 @@ and `design_handoff_the99_filter_chassis`, `design_handoff_the99_wishlist_printi
 4. **Phone and desktop:** one design. The phone's differences are the shipped ones: the compact head and Filters sheet on the
    Spares tab, and no Sort on the Wishlist.
 
-## Open for Hugh
+## Settled (Hugh, 2026-11-22)
 
-- **Q1 · When the Spares tab draws its frame** (Spares P1, P5): from 13 spares, more than two desktop rows (recommended), or always.
-- **Q2 · Several friends on a tile** (Wishlist W1, W3): glyph plus count (drawn), or one glyph however many, as deck rows do.
-- **Q3 · Wishlist sort** (Wishlist D4): add `Friends' spares` (drawn), or leave Sort as shipped.
+- **Q1 · The Spares frame shows always**, on any list with a spare, for a consistent experience. Empty and not sharing draw none.
+- **Q2 · Glyph plus count** for two or more friends (Hugh left it to best UX): a tile has room a deck row lacks, and the count
+  says how many people you can ask before you open the modal.
+- **Q3 · `Friends' spares` sort kept** (best UX): it gathers what you can get from a friend without hiding anything, and only
+  moves tiles when chosen.
 
 ## Files
 

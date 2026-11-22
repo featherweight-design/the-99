@@ -78,11 +78,11 @@ boards["Main.dc.html"] = (1560, 1680, "Main", page("Spares search R1: main", 156
  + '<div style="display:flex;gap:20px">' + fig("p-s2", 290, 627, "Spares: a type word", "P2, “wizard”.") + fig("p-wtiles", 300, 346, "Wishlist: the press", "Two friends, none, one friend with a request.", 12) + '</div>'
  + dk("d-s3", "Desktop: Wanted ▾", "D3, A deck needs it.", 620)
  + '</div></div>'
- + '<div style="display:flex;flex-direction:column;gap:10px;padding:20px 24px;border:1px solid #FF6FAE;border-radius:14px">' + label("Open for you")
+ + '<div style="display:flex;flex-direction:column;gap:10px;padding:20px 24px;border:1px solid #FF6FAE;border-radius:14px">' + label("Settled · Hugh, 2026-11-22")
  + '<div style="font-size:14px;line-height:1.6;color:#B1B6C7">' + ul([
-   "<b>Q1 · When the Spares tab shows its filters</b> (Spares board, P5 and P1): from 13 spares, more than two desktop rows (recommended), or on every list. Below 13 the tab stays as shipped.",
-   "<b>Q2 · Several friends on a Wishlist tile</b> (Wishlist board, W1 and the close-up): the glyph plus the count (drawn), or one plain glyph however many, as deck rows do.",
-   "<b>Q3 · The Wishlist sort</b> (Wishlist board, D4): add Friends’ spares to the desktop Sort (drawn), or leave Sort as shipped and let the presses do the work.",
+   "<b>Q1 · When the Spares tab shows its filters:</b> always, on any list with a spare, for a consistent experience (Hugh). Empty and not sharing still draw no frame: there is nothing to filter.",
+   "<b>Q2 · Several friends on a Wishlist tile:</b> the glyph plus the count, as drawn. A tile has room a deck row lacks, and the count tells you how many people you can ask before you open anything.",
+   "<b>Q3 · The Wishlist sort:</b> kept, as drawn. It gathers the cards you can get from a friend without hiding the rest, and it only moves tiles when you choose it.",
  ]) + '</div></div>'))
 
 boards["Spares.dc.html"] = (1780, 2700, "Spares", page("Spares search R1: the Spares tab", 1780, 2700,

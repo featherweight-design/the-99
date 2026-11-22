@@ -4,13 +4,12 @@
 
 | State | Frame | Grid | Result line | Boards |
 |---|---|---|---|---|
-| Rest, 13+ spares | wide chassis ≥1000 / compact head <1000, `No filters on` | Wanted first | `25 spares` | P1, D1 |
+| Rest | wide chassis ≥1000 / compact head <1000, `No filters on` | Wanted first | `25 spares` | P1, D1 |
 | Search by name or type | field holds the query, ✕ clears | matches only | `3 of 25 spares` | P2, D2 |
 | A filter on | chip per value; compact: badge on Filters, chip shelf | matches | `4 of 25 spares` | P3, D3 |
 | Panel open (desktop) | `Wanted ▾` / `Type ▾` popover, counts respect the other filters, 0 dims | live behind it | live | D3, D4 |
 | Filters sheet (phone) | Wanted, Color identity, Type, Done; `4 of 25 match` | behind the scrim | sheet's own status | P3 |
 | No results | frame stays | `ZeroState`: heading, body, Keep only search (query and filter), Clear all filters | `0 of 25 spares` | P4, D5 |
-| 12 or fewer spares (Q1) | none | shipped | shipped line | — |
 | Empty / not sharing | none | shipped empty card | — | P5, D6 |
 | `?spare=` landing | as shipped | modal opens over its tile | — | — |
 
