@@ -50,7 +50,7 @@ describe("cardSignalsSql", () => {
   });
 
   it("marks a wish only while it is unmet", () => {
-    expect(sql).toMatch(/w\.quantity > coalesce\(\(\s+select sum\(ci2\.quantity\)/);
+    expect(sql.replace(/\s+/g, " ")).toMatch(/w\.quantity > \(\s*select coalesce\(sum\(ci\.quantity\), 0\)::int from collection_items ci/);
   });
 
   it("asks for exactly the cards named", () => {

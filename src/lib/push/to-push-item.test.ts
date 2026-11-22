@@ -14,7 +14,7 @@ const friend = { publicId: "p-colin", displayName: named("Colin") };
 describe("a feed view as a push item", () => {
   it("price drop: the card and both figures", () => {
     expect(toPushItem(view({ drop: { fromCents: 840, toCents: 510, printing: null }, opens: "o1" }), "b")).toEqual({
-      kind: "price-drop", key: "k1", batch: "b", oracleId: "o1", card: card.name, wasCents: 840, nowCents: 510, image: "img",
+      kind: "price-drop", key: "k1", batch: "b", oracleId: "o1", card: card.name, wasCents: 840, nowCents: 510, image: "img", printing: null,
     });
   });
   it("trade match: the friend and the card", () => {
