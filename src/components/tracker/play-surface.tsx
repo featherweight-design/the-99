@@ -317,7 +317,6 @@ export function PlaySurface({
         {layout.cells.map((cell, i) => {
           const seat = seatsInPlay[i];
           const s = state.seats.find((x) => x.seat === seat.seat)!;
-          const from = s.out?.reason.kind === "commander" ? bySeat.get(s.out.reason.from) : undefined;
           return (
             <Panel
               key={seat.seat}
@@ -327,10 +326,10 @@ export function PlaySurface({
               state={s}
               active={state.active === seat.seat}
               round={state.round}
-              outFrom={from ? { you: from.you, name: from.name } : null}
+              seats={bySeat}
               monarch={state.monarch === seat.seat}
               initiative={state.initiative === seat.seat}
-              onSheet={(focus) => setSheet({ seat: seat.seat, tab: focus ? "counters" : "damage", focus })}
+              onSheet={(tab, focus) => setSheet({ seat: seat.seat, tab: tab ?? "damage", focus })}
               disabled={over}
               pick={seatPick(seat, i, s.out !== null)}
               onLife={(delta) =>

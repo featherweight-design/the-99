@@ -2931,6 +2931,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   d20 check needs WebGL: with no canvas in `#tracker-dice` it says so and skips, but with one and no tap target it
   fails. Before the dice PR the coin is not drawn and no landed die takes a tap: 6 failures (3 at each width). It writes nothing, needs
   `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch.
+- `pnpm probe:tracker-badges` opens the fixture's S4 game at phone (390x844), desktop (1300x900) and phone under
+  reduced motion, and writes four entries into the device's saved game (localStorage, nothing reaches the database):
+  seat B's commander deals seat A 6, seat A casts its commander once, seat A takes 2 poison, and seat B's commander
+  deals seat C 21. It checks gap T5 (F10, F12, F14): the badge pills in order (damage with the commander's art and
+  name, `Tax +2`, the counter), 24px in the phone's name row and 28px in the desktop foot, mono, translucent, inside
+  their row; each badge opens the sheet on its tab; the Out face (`Out` in Cinzel 26 bold, the cause naming the
+  commander and round, the art at .22 and grey, the front inert, a 44px Undo); the 0.45s rotateY flip, turning back
+  on Undo, and no flip under reduced motion. On main the badges are counters only and the probe stops at the first
+  badge it cannot find, after 4 failures. It writes nothing to the database; needs the fixture on a scratch branch.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
