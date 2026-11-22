@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { welcomeEmailHash } from "../../src/lib/payments/canonical-email";
 import { LOCAL_DEV_BRANCH, PRODUCTION_BRANCH, STAGING_BRANCH } from "./scratch-branch.mjs";
-import { chunks, clerkKeyFits, keyCheck, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./welcome-claims-backfill.mjs";
+import { chunks, clerkKeyFits, clerkPage, keyCheck, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./welcome-claims-backfill.mjs";
 
 const keys = { SENTRY_USER_HASH_KEY: "k".repeat(48) };
 const user = (id: string, email: string, status = "verified", primary = true): ClerkUser => ({
@@ -55,6 +55,17 @@ describe("clerkKeyFits", () => {
     expect(clerkKeyFits("production", "sk_test_x")).toBe(false);
     expect(clerkKeyFits("production", "sk_live_x")).toBe(true);
     expect(clerkKeyFits("br-scratch-123", "sk_test_x")).toBe(true);
+  });
+});
+
+describe("clerkPage", () => {
+  it("passes a full page of users with raw JSON", () => {
+    const u = user("u1", "ab@gmail.com");
+    expect(clerkPage({ data: [u], totalCount: 1 })).toEqual({ ok: true, users: [u] });
+  });
+  it("refuses a short page and a user without raw JSON, so no account is silently skipped", () => {
+    expect(clerkPage({ data: [user("u1", "ab@gmail.com")], totalCount: 2 }).ok).toBe(false);
+    expect(clerkPage({ data: [{ id: "u1", raw: null }], totalCount: 1 }).ok).toBe(false);
   });
 });
 

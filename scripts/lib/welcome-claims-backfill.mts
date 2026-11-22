@@ -55,6 +55,17 @@ export function clerkKeyFits(targetName: string, secretKey: string): boolean {
 type KeyEnv = Parameters<typeof welcomeEmailHash>[1];
 export type ClerkUser = { id: string; raw: { email_addresses?: unknown; primary_email_address_id?: unknown } | null };
 
+/**
+ * One page of Clerk's `getUserList`, checked. A short page would count real accounts as gone, and a user with no raw JSON
+ * as unclaimable, so the backfill would silently skip them: both refuse instead.
+ */
+export function clerkPage(page: { data: readonly { id: string; raw: ClerkUser["raw"] }[]; totalCount: number }):
+  { ok: true; users: ClerkUser[] } | { ok: false; reason: string } {
+  if (page.totalCount > page.data.length) return { ok: false, reason: `Clerk returned ${page.data.length} of ${page.totalCount} users for one page` };
+  if (page.data.some((u) => !u.raw)) return { ok: false, reason: "Clerk returned a user without its raw JSON: the SDK's shape has changed, so no claim can be read" };
+  return { ok: true, users: page.data.map((u) => ({ id: u.id, raw: u.raw })) };
+}
+
 export type Plan = {
   accounts: number;
   notInClerk: number;

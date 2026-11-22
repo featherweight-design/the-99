@@ -6,7 +6,8 @@
 //   from Clerk, folded and keyed by `welcomeEmailHash`. Same key precedence (`SENTRY_USER_HASH_KEY`, else `ANON_KEY_SALT`).
 // - Dry run by default: prints counts only, never an address or a hash. `--apply` writes, `on conflict do nothing`, so a
 //   second run writes nothing and two accounts on one mailbox write one claim.
-// - Fails closed: no usable key, no Clerk key, or a production run on a development Clerk key refuses before reading anything.
+// - Fails closed: no usable key, no Clerk key, or a production run on a development Clerk key refuses before
+//   any Clerk read or any write.
 //   It runs on production by default and refuses any other database unless `--target` names it (production, staging,
 //   local-dev, or a `br-…` id), checked against the database's own `neon.branch_id`. `--apply` also refuses when none of this run's
 //   claims match one already in the table (the key is not production's, or the table is empty and nothing can confirm it);
@@ -26,7 +27,7 @@ import { drizzle } from "drizzle-orm/neon-serverless";
 
 import { creditGrants, welcomeEmailClaims } from "../src/db/schema";
 import { hashKey } from "../src/lib/analytics/funnel-events";
-import { chunks, clerkKeyFits, keyCheck, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./lib/welcome-claims-backfill.mjs";
+import { chunks, clerkKeyFits, clerkPage, keyCheck, parseArgs, planClaims, resolveTarget, type ClerkUser } from "./lib/welcome-claims-backfill.mjs";
 
 const CLERK_PAGE = 100;
 const WRITE_BATCH = 500;
@@ -57,13 +58,9 @@ async function main() {
     const clerk = createClerkClient({ secretKey: CLERK_SECRET_KEY });
     const users: ClerkUser[] = [];
     for (const page of chunks(ids, CLERK_PAGE)) {
-      const { data, totalCount } = await clerk.users.getUserList({ userId: page, limit: CLERK_PAGE });
-      // A short page would count real accounts as gone, and a user with no raw JSON as unclaimable: both refuse instead.
-      if (totalCount > data.length) refuse(`Clerk returned ${data.length} of ${totalCount} users for one page`);
-      for (const u of data) {
-        if (!u.raw) refuse("Clerk returned a user without its raw JSON: the SDK's shape has changed, so no claim can be read");
-        users.push({ id: u.id, raw: u.raw });
-      }
+      const result = clerkPage(await clerk.users.getUserList({ userId: page, limit: CLERK_PAGE }));
+      if (!result.ok) refuse(result.reason);
+      users.push(...result.users);
     }
 
     const plan = planClaims(ids, users, keys);
