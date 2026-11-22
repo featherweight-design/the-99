@@ -75,5 +75,9 @@
  "G-place-pips-tails": "/_blob/ef7c6199013edd61da7c59f389a3aee7",
  "G-place-bare-mid": "/_blob/ad406105580609d740c62e1558240ba7",
  "G-place-bare-heads": "/_blob/97e66deaf27a0e43eb0ecc9c4e2f61d6",
- "G-place-bare-tails": "/_blob/8021fc8cf0a6c7386764c26e50dcbc31"
+ "G-place-bare-tails": "/_blob/8021fc8cf0a6c7386764c26e50dcbc31",
+ "H-tablet-now": "/_blob/c24b593c1a0cc00250ab6c2c2b6080a9",
+ "H-tablet-magic": "/_blob/8f6f1e1a196785ce3a66fcb3ddeb77d6",
+ "H-phone-now": "/_blob/d112bb4009acc50d05f11a1d781ea715",
+ "H-phone-magic": "/_blob/90364aaf4d793a0de94fde151d15d512"
 }

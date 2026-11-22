@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spine day and night</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width:1700px;min-height:1680px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif;color:#E6E8F0">The spine's day/night button, with Magic's markers</h2><p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1240px">Hugh picked coin C (struck pips), so day and night stay off the coin. This board asks whether the spine's day/night button should take Magic's own day and night markers (the ones on the Midnight Hunt day/night card and on daybound and nightbound faces) in place of the shipped SunIcon and MoonIcon. Same button, same states, same colours: faint with the cycle off, accent and ringed by day or night. Only the glyph changes; it is drawn at 19px inside the 22px box so its filled weight sits level with the outlined icons beside it. Copy, motion (the shipped 320 ms swap) and reduced motion are unchanged.</p></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">Tablet · cycle off, day, night (top to bottom)</span><div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:700px;flex:none">
+<img src="/_blob/c24b593c1a0cc00250ab6c2c2b6080a9" alt="Shipped · SunIcon and MoonIcon" style="width:700px;height:351px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Shipped · SunIcon and MoonIcon</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Outlined like the rest of the strip. A generic sun and moon can read as a light/dark theme switch.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:700px;flex:none">
+<img src="/_blob/8f6f1e1a196785ce3a66fcb3ddeb77d6" alt="Proposed · Magic's day and night" style="width:700px;height:351px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed · Magic's day and night</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The marker players see on their daybound and nightbound cards. Filled, so a touch heavier than its neighbours; night is the heaviest.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">Phone · cycle off, day, night (left to right)</span><div style="display:flex;gap:48px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:300px;flex:none">
+<img src="/_blob/d112bb4009acc50d05f11a1d781ea715" alt="Shipped" style="width:300px;height:600px;display:block;border-radius:18px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Shipped</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD"></p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:300px;flex:none">
+<img src="/_blob/90364aaf4d793a0de94fde151d15d512" alt="Proposed" style="width:300px;height:600px;display:block;border-radius:18px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Holds up at phone size; the day ring's points stay distinct at 19px.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A"><p style="margin:0;font:600 17px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#E8A25C">Build</span> · If approved</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Add the two glyphs to <code>icons.tsx</code> as <code>DayMarkIcon</code> / <code>NightMarkIcon</code> (filled, viewBox 32, from mana-font's <code>dfc-day</code> / <code>dfc-night</code>); <code>DayIcon</code> in <code>spine.tsx</code> switches to them.</li><li>Keep <code>SunIcon</code>/<code>MoonIcon</code> only if something else uses them (today only the spine does).</li><li>Tests that look up the icon by test id are unaffected; no copy changes.</li></ul></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":1680}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

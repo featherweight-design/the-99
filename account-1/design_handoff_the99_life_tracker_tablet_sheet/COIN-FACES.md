@@ -2,7 +2,7 @@
 
 Hugh's review of R1: the addendum LGTM; the coin's faces are only text next to very 3D dice. He asked for Magic-adjacent
 imagery on heads and tails, with HEADS / TAILS still curving along the bottom, and a few options to choose from.
-Status: **R3, four options drawn for Hugh's pick** (R2 below is superseded). No PR (review first).
+Status: **Hugh picked C, struck pips (R3, 2026-11-22).** R2 below is superseded. No PR (review first).
 
 Board: `Faces.dc.html` (canvas page "Coin faces · three options (R2)"). The toss, timing, size and reduced motion from
 the Coin board are unchanged; only the two faces are redrawn. Each face is one SVG on a 100×100 box over the shipped
@@ -33,3 +33,10 @@ without colour, and larger. Changes (`scratch-gen/coins/faces2.mjs`, board `Face
 | B · Spark and planeswalker | `dfc-spark` (Origins front) | `dfc-ignite` (planeswalker back) |
 | C · Mana, struck pips | W U B R G as discs cut in the metal, symbol standing, pip 23% of the coin | one {C} pip |
 | D · Mana, bare symbols | the five symbols engraved, no discs, 21% each | {C} alone |
+
+## The spine's day/night button (R3, open question)
+
+With day and night off the coin, Hugh asked whether the spine's day/night button should use Magic's day and night
+markers. Board `Spine.dc.html` draws the shipped SunIcon / MoonIcon beside `dfc-day` / `dfc-night` (19px in the 22px box),
+cycle off, day and night, tablet and phone (`scratch-gen/coins/spine.mjs`, renders `art/ts-H-*`). Recommended: switch.
+Awaiting Hugh.

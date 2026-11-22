@@ -2,6 +2,7 @@
 # Writes the boards twice: for the canvas (/_blob urls from blobs.json) and for the repo (art/).
 import json, sys, os
 FACES_H = 4500
+SPINE_H = 1680
 mode, out = sys.argv[1], sys.argv[2]
 BLOB = json.load(open(os.path.join(os.path.dirname(__file__), "blobs.json"))) if mode == "canvas" else {}
 def src(k): return BLOB[k] if mode == "canvas" else f"art/ts-{k}.webp"
@@ -202,9 +203,19 @@ def optrow(k, t, p, notes):
           fig(f"G-place-{k}-heads", 346, 300, "Landed heads", "1150 ms, the ring still spreading; the result card lands below."),
           fig(f"G-place-{k}-tails", 346, 300, "Landed tails", "Same toss with a half-turn more.")])
       + '</div>')
-boards["Faces.dc.html"] = (1700, FACES_H, "Coin faces · four options (R3)", page("Coin faces", 1700, FACES_H,
- head("Coin faces · four options (R3)", "Hugh on R2: centre the emblems, give HEADS / TAILS room from the ring above it, make day and night Magic's own, and take the colour off the mana pips and let them fill the face. Every emblem now sits in the centre of the inner ring (r 35 of 50); the word has its own band between that ring and the edge (baseline r 43, caps clear of the ring by about 3%). Toss, timing and size are unchanged from the Coin board. The symbols are Magic's own as drawn in the mana-font set (the same family as the app's public/mana); a build would add the two or seven glyphs it uses to the app's icons.")
+boards["Faces.dc.html"] = (1700, FACES_H, "Coin faces · C picked (R3)", page("Coin faces", 1700, FACES_H,
+ head("Coin faces · four options (R3) · Hugh picked C", "Hugh picked C, struck pips (2026-11-22), so day and night are not confused with the spine. Hugh on R2: centre the emblems, give HEADS / TAILS room from the ring above it, make day and night Magic's own, and take the colour off the mana pips and let them fill the face. Every emblem now sits in the centre of the inner ring (r 35 of 50); the word has its own band between that ring and the edge (baseline r 43, caps clear of the ring by about 3%). Toss, timing and size are unchanged from the Coin board. The symbols are Magic's own as drawn in the mana-font set (the same family as the app's public/mana); a build would add the two or seven glyphs it uses to the app's icons.")
  + "".join(optrow(*o) for o in OPTS)))
+
+boards["Spine.dc.html"] = (1700, SPINE_H, "Spine · Magic's day and night markers (R3)", page("Spine day and night", 1700, SPINE_H,
+ head("The spine's day/night button, with Magic's markers", "Hugh picked coin C (struck pips), so day and night stay off the coin. This board asks whether the spine's day/night button should take Magic's own day and night markers (the ones on the Midnight Hunt day/night card and on daybound and nightbound faces) in place of the shipped SunIcon and MoonIcon. Same button, same states, same colours: faint with the cycle off, accent and ringed by day or night. Only the glyph changes; it is drawn at 19px inside the 22px box so its filled weight sits level with the outlined icons beside it. Copy, motion (the shipped 320 ms swap) and reduced motion are unchanged.")
+ + row("Tablet · cycle off, day, night (top to bottom)", [
+   fig("H-tablet-now", 700, 351, "Shipped · SunIcon and MoonIcon", "Outlined like the rest of the strip. A generic sun and moon can read as a light/dark theme switch."),
+   fig("H-tablet-magic", 700, 351, "Proposed · Magic's day and night", "The marker players see on their daybound and nightbound cards. Filled, so a touch heavier than its neighbours; night is the heaviest.")])
+ + row("Phone · cycle off, day, night (left to right)", [
+   fig("H-phone-now", 300, 600, "Shipped", "", 18),
+   fig("H-phone-magic", 300, 600, "Proposed", "Holds up at phone size; the day ring's points stay distinct at 19px.", 18)], gap=48)
+ + call("Build", "If approved", ul(["Add the two glyphs to <code>icons.tsx</code> as <code>DayMarkIcon</code> / <code>NightMarkIcon</code> (filled, viewBox 32, from mana-font's <code>dfc-day</code> / <code>dfc-night</code>); <code>DayIcon</code> in <code>spine.tsx</code> switches to them.", "Keep <code>SunIcon</code>/<code>MoonIcon</code> only if something else uses them (today only the spine does).", "Tests that look up the icon by test id are unaffected; no copy changes."]))))
 
 os.makedirs(out, exist_ok=True)
 canvas = {"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-22T19:00:00Z"}, "title": "Life tracker · tablet sheet and coin", "launch": {"view": "canvas"}, "pages": [], "boards": {}, "order": [], "notes": {}, "designSystems": []}

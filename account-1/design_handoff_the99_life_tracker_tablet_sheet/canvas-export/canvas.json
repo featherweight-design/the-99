@@ -57,7 +57,14 @@
    "y": 0,
    "w": 1700,
    "h": 4500,
-   "title": "Coin faces \u00b7 four options (R3)"
+   "title": "Coin faces \u00b7 C picked (R3)"
+  },
+  "Spine.dc.html": {
+   "x": 12240,
+   "y": 0,
+   "w": 1700,
+   "h": 1680,
+   "title": "Spine \u00b7 Magic's day and night markers (R3)"
   }
  },
  "order": [
@@ -67,7 +74,8 @@
   "Portrait.dc.html",
   "Tabs.dc.html",
   "Coin.dc.html",
-  "Faces.dc.html"
+  "Faces.dc.html",
+  "Spine.dc.html"
  ],
  "notes": {},
  "designSystems": []
