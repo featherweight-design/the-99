@@ -285,14 +285,14 @@ export const verifyRequestWorst = (rates: Rates): number =>
 type Claim = { card: CardRow; theme: JudgedTheme; hash: string };
 
 /**
- * The pass-2 claims still to ask: for each pass-1 row of the current prompt whose answer is still the card's current text
+ * The pass-2 claims still to ask, for EVERY stored pass-1 row (a sample's rows included: `--fresh` leaves them out of the pool, so a pool filter would strand them): for each row of the current prompt whose answer is still the card's current text
  * and that has no verdict, one per theme. Rows whose claims already have an open or failed request are left out (failed
  * ones until --retry-failed), and a re-asked pair gets the next attempt number so its custom id stays unique.
  */
-async function verifyClaims(only: ReadonlySet<string> | null, retryFailed: boolean): Promise<{ claims: Claim[]; attempts: Map<string, number>; dropped: number }> {
+async function verifyClaims(retryFailed: boolean): Promise<{ claims: Claim[]; attempts: Map<string, number>; dropped: number }> {
   const rows = (await db.select().from(judgedLabels).where(and(
     eq(judgedLabels.promptVersion, JUDGED_PROMPT_VERSION), sql`${judgedLabels.verifiedThemes} is null`,
-  ))).filter((r) => r.themes.length > 0 && (only === null || only.has(r.oracleId)));
+  ))).filter((r) => r.themes.length > 0);
   const cards = new Map((await readCardsById(db, rows.map((r) => r.oracleId))).map((c) => [c.oracleId, c]));
   const prior = await db.select({ customId: cardLabelBatches.customId, status: cardLabelBatches.status }).from(cardLabelBatches)
     .where(and(like(cardLabelBatches.runId, `${RUN_PREFIX}%`), like(cardLabelBatches.customId, "vf%")));
@@ -381,7 +381,7 @@ export async function runJudgedBuild(opts: JudgedOptions): Promise<number> {
   const verdict = withinCap(worst, spent, opts.capUsd);
 
   // Pass 2 is submitted only once pass 1 has nothing left to ask, so its claims are the final ones.
-  const pass2 = await verifyClaims(opts.sample ? new Set(cards.map((c) => c.oracleId)) : null, opts.retryFailed ?? false);
+  const pass2 = await verifyClaims(opts.retryFailed ?? false);
   const worst2 = pass2.claims.length * verifyRequestWorst(rates);
   const hits = Object.entries(perTheme).filter(([k]) => k !== "control").reduce((n, [, v]) => n + v, 0);
   const upperLater = Math.max(0, hits - pass2.claims.length) * verifyRequestWorst(rates);

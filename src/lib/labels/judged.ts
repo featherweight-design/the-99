@@ -131,7 +131,7 @@ A first pass was loose on purpose and is often wrong. You are the strict second 
 meets the definition below and you could name the deck that plays it BECAUSE of that theme. Any close call is "no".
 
 ${THEME_DEFINITIONS}
-Apply the definitions above exactly, including their IN and OUT examples and split rules.
+Apply the definitions above exactly, including their IN and OUT examples.
 
 Reply with ONE JSON object and nothing else: {"verdict": "yes" or "no", "reason": "<one short line>"}`;
 
