@@ -71,7 +71,7 @@ The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbat
   workflow. `/prices/singles` is a documented endpoint of the Mana Pool Public API, but those docs
   warn v1 "is subject to change without notice", and the check runs ahead of the daily ingest so a
   shape change is known before that ingest fails on it.
-- `pnpm check:cardkingdom` validates Card Kingdom's pricelist contract (meta, the first entry's fields, a real parse, the share of unusable rows and the parsed printing count) without touching a database, daily in the same workflow. The endpoint is public but undocumented, so this is the only warning of a shape change before the store-prices step fails on it.
+- `pnpm check:cardkingdom` validates Card Kingdom's pricelist contract (meta, each required field present on at least 95% of entries, a real parse, the share of unusable rows and the parsed printing count) without touching a database, daily in the same workflow. The endpoint is public but undocumented, so this is the only warning of a shape change before the store-prices step fails on it.
 - `pnpm check:scryfall` also pins what the TCGplayer store pass reads: `default_cards` entries carry `prices` with `usd`, `usd_foil` and `usd_etched` keys, and the index carries `updated_at` (the store rows' `as_of`).
 - `pnpm check:spellbook` validates Spellbook's LIVE feed contract, no database, daily.
 - `pnpm.overrides` in `package.json` pins seven transitive packages to patched versions. An override can force a version its parent never tested, so exercise it (`brace-expansion@5` broke ESLint; the `esbuild` pin is proved by `pnpm db:generate` and `drizzle-kit check`).
