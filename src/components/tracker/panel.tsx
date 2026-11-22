@@ -290,8 +290,8 @@ export function Panel({
           className={"pointer-events-none absolute inset-0 flex " + (!front ? "opacity-[.22] [filter:grayscale(1)]" : foot ? "opacity-60" : active ? "opacity-[.72]" : "opacity-[.55]")}
           data-testid={front ? "panel-art" : "panel-out-art"}
         >
-          <FadingImg src={seat.art} alt="" className={"h-full object-cover " + (seat.partnerArt ? "w-1/2" : "w-full")} />
-          {seat.partnerArt ? <FadingImg src={seat.partnerArt} alt="" className="h-full w-1/2 object-cover" /> : null}
+          <FadingImg src={seat.art} alt="" className={"h-full object-cover object-top " + (seat.partnerArt ? "w-1/2" : "w-full")} />
+          {seat.partnerArt ? <FadingImg src={seat.partnerArt} alt="" className="h-full w-1/2 object-cover object-top" /> : null}
           {seat.partnerArt ? <span className="absolute inset-y-0 left-1/2 -ml-px w-[2px] bg-[color:var(--bg)] opacity-80" data-testid="panel-seam" /> : null}
         </span>
         <span
