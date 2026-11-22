@@ -344,7 +344,7 @@
 | Context | Copy |
 |---------|------|
 | Mobile placeholder | `Search your cards…` |
-| Desktop placeholder | `Search by card name…` |
+| Desktop placeholder | `Search by name or type…` |
 
 ### Color Filter (ONE pip control, both widths)
 
@@ -2375,7 +2375,7 @@ Reached only by a failed first import (the collection read 0 cards when the prev
 
 ### Filter bar / chips
 - `Search your cards…` (mobile placeholder)
-- `Search by card name…` (desktop placeholder)
+- `Search by name or type…` (desktop placeholder)
 - `Type ▾`, `Set ▾`, `A–Z ▾` (compact filter buttons — `Color` is retired; the pips are drawn inline at both widths)
 - `Type ▾`, `Set ▾`, `Sort: Name ▾` (desktop filter buttons)
 - `FILTERS:` (chip row desktop label — retired with the chip row; the chassis draws row 2 itself)
