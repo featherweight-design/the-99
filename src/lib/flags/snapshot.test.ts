@@ -16,6 +16,26 @@ vi.mock("next/server", () => ({
     kept.calls.push(task);
   },
 }));
+// The data cache, passed through: `built` records how the entry was declared, `lookups` each read through it,
+// `unavailable` stands for a scope with no cache to give, and `retired` each tag a write retired.
+const cache = vi.hoisted(() => ({
+  built: [] as { key: string[]; opts: { tags?: string[]; revalidate?: number } }[],
+  lookups: 0, unavailable: false, retired: [] as unknown[][], renderForbids: false,
+}));
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: () => Promise<unknown>, key: string[], opts: { tags?: string[]; revalidate?: number }) => {
+    cache.built.push({ key, opts });
+    return async () => {
+      if (cache.unavailable) throw new Error("Invariant: incrementalCache missing in unstable_cache");
+      cache.lookups++;
+      return fn();
+    };
+  },
+  revalidateTag: (...args: unknown[]) => {
+    if (cache.renderForbids) throw new Error("Route / used \"revalidateTag flag-snapshot\" during render");
+    cache.retired.push(args);
+  },
+}));
 vi.mock("@neondatabase/serverless", () => ({
   neon: () => ({
     query: async (text: string) => {
@@ -31,13 +51,17 @@ vi.mock("@neondatabase/serverless", () => ({
 }));
 process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
 
-const { clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState, SNAPSHOT_MAX_STALE_MS, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
+const {
+  clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState,
+  SNAPSHOT_CACHE_SECONDS, SNAPSHOT_MAX_STALE_MS, SNAPSHOT_SQL, SNAPSHOT_TAG, SNAPSHOT_TTL_MS,
+} = await import("./snapshot");
 
 describe("switchSnapshot", () => {
   beforeEach(() => {
     clearSwitchSnapshot();
     Object.assign(reads, { n: 0, fail: false, rows: [], members: [], texts: [], gate: null });
     Object.assign(kept, { calls: [], throws: false });
+    Object.assign(cache, { lookups: 0, unavailable: false, retired: [], renderForbids: false });
   });
 
   const row = (value: "on" | "off") => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value });
@@ -209,5 +233,47 @@ describe("switchSnapshot", () => {
     expect((await switchSnapshot(1_000))?.overrides.map((o) => o.switchName)).toEqual(["FEEDBACK_ENABLED"]);
     const env = await resolveFlags("u1", {} as unknown as NodeJS.ProcessEnv);
     expect(env.FEEDBACK_ENABLED).toBe("true");
+  });
+  it("reads through ONE tagged data-cache entry every instance shares, with a ceiling for writes outside the app", async () => {
+    await switchSnapshot(1_000);
+    expect(cache.lookups).toBe(1);
+    expect(cache.built).toEqual([{ key: [SNAPSHOT_TAG], opts: { tags: [SNAPSHOT_TAG], revalidate: SNAPSHOT_CACHE_SECONDS } }]);
+    await switchSnapshot(1_000 + SNAPSHOT_TTL_MS);
+    await settle();
+    expect(cache.built).toHaveLength(1); // declared once, not per read
+  });
+
+  it("never stores a failed read: the cache sees it thrown and the request gets the fallbacks", async () => {
+    reads.fail = true;
+    expect(await switchSnapshot(1_000)).toBeNull();
+    expect(cache.lookups).toBe(1);
+  });
+
+  it("reads Neon directly where there is no data cache to give", async () => {
+    cache.unavailable = true;
+    reads.rows = [row("off")];
+    const snapshot = await switchSnapshot(1_000);
+    expect(snapshot?.overrides).toEqual([row("off")]);
+    expect(reads.n).toBe(1);
+    expect(cache.lookups).toBe(0);
+  });
+
+  it("retires the shared entry on every write, at once, so the next read anywhere is a miss", () => {
+    clearSwitchSnapshot();
+    expect(cache.retired).toEqual([[SNAPSHOT_TAG, { expire: 0 }]]);
+    expect(kept.calls).toHaveLength(0);
+  });
+
+  it("defers the retirement to after() where a render forbids it, and gives up quietly outside a request", () => {
+    cache.renderForbids = true;
+    clearSwitchSnapshot();
+    expect(cache.retired).toHaveLength(0);
+    expect(kept.calls).toHaveLength(1);
+    cache.renderForbids = false;
+    kept.calls[0]();
+    expect(cache.retired).toEqual([[SNAPSHOT_TAG, { expire: 0 }]]);
+    cache.renderForbids = true;
+    kept.throws = true;
+    expect(() => clearSwitchSnapshot()).not.toThrow();
   });
 });

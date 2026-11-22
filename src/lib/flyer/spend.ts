@@ -16,6 +16,7 @@ import { db } from "../../db";
 import { accountTombstones, flagGroupMembers, flyerClaims, flyerCodes, inviteBalances } from "../../db/schema";
 import { tombstoneHash } from "../account/purge";
 import { lockSenderIn } from "../invites/send";
+import { clearSwitchSnapshot } from "../flags/snapshot";
 import { lockSwitchWrites } from "../flags/write-lock";
 import { createProfileIn } from "../social/friends";
 
@@ -51,7 +52,9 @@ export async function spendFlyerOnSignUp(
     .where(and(eq(flyerClaims.userId, newUserId), eq(flyerClaims.state, "spent")));
   if (done) return { spent: false, reason: "already" };
 
-  return db.transaction(async (tx): Promise<FlyerSpendResult> => {
+  let joined = false;
+  const result = await db.transaction(async (tx): Promise<FlyerSpendResult> => {
+    joined = false;
     // Hugh's invite lock and the newcomer's, taken in the DATABASE's user-id order, exactly as the personal spend takes
     // its sender's and newcomer's, so no two writers wait on each other. The time to judge the hold by is read once both
     // are held.
@@ -88,8 +91,9 @@ export async function spendFlyerOnSignUp(
       // A group move is an override change for this account: it waits on the same lock every switch write and group save
       // takes, so a confirmation an admin read against the old membership still holds when it applies.
       await lockSwitchWrites(tx);
-      await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: code.groupId, addedBy: code.createdBy })
-        .onConflictDoNothing();
+      const added = await tx.insert(flagGroupMembers).values({ userId: newUserId, groupId: code.groupId, addedBy: code.createdBy })
+        .onConflictDoNothing().returning({ userId: flagGroupMembers.userId });
+      joined = added.length > 0;
     }
     await createProfileIn(tx, newUserId, offeredName);
     // Never lowers a stock the account already has.
@@ -97,4 +101,8 @@ export async function spendFlyerOnSignUp(
       .onConflictDoNothing();
     return { spent: true };
   });
+  // The new member's group can change their switches, and the snapshot every server holds predates it: retired after
+  // the commit, as an admin's group move is.
+  if (joined) clearSwitchSnapshot();
+  return result;
 }

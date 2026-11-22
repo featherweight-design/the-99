@@ -54,7 +54,20 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   then clears its own instance's memo (its next read waits, and a refresh begun before the write is discarded); the
   proxy's memo, which feeds every page's switches, catches up a refresh after the window. A failed refresh keeps the
   held snapshot. A snapshot five minutes old (`SNAPSHOT_MAX_STALE_MS`, a quiet instance) is not served: that request
-  waits on the read, and a failed read there answers the fallbacks. It serves each switch's
+  waits on the read, and a failed read there answers the fallbacks. Each refresh reads the shared Vercel data cache, not Neon
+  (`readSharedSnapshot`, lane 58 PR2, 2026-11-22): the snapshot is the same for every reader, so one `unstable_cache`
+  entry (about 2 KB, tagged `SNAPSHOT_TAG`) serves every instance, and a cold instance's first read is a cache lookup
+  (p50 ~46ms) instead of a Neon round trip (p50 442ms on GET /). `clearSwitchSnapshot` retires the tag with
+  `revalidateTag(tag, { expire: 0 })` on every write that passes through the app: the admin switch and group writes,
+  and `spendFlyerOnSignUp` when it adds a member. A render cannot retire a tag (Next throws), so the `/friends` flyer
+  recovery defers it to `after()`, and that response's own redirect may draw from the old entry once. Writes made
+  outside the app (the seed, a purge's cascade, hand-run SQL) are caught by the entry's own ceiling,
+  `SNAPSHOT_CACHE_SECONDS` (60), as is a refill that read the pre-write rows while the write committed. A failed read
+  is thrown inside the cached function, so it is never stored; a scope with no data cache (a script, outside a
+  request) reads Neon directly, as before. Under `next dev` the cache is skipped and every refresh reads Neon: the
+  probes write `flag_overrides` with plain SQL, which no tag hears. The proxy runs the same code; whether Vercel backs
+  its `unstable_cache` with the shared cache is not documented, and the worst case there is a miss that reads Neon,
+  as before. It serves each switch's
   compiled fallback when the read fails (it served the environment alone until flags-in-DB PR 2), and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
   never raises its parent. Every page, layout, action and route handler decides a switch from

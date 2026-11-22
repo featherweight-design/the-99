@@ -8,6 +8,9 @@ const h = vi.hoisted(() => ({
   profile: vi.fn(),
   /** What Hugh's decrement `returning()` answers: one row when it moved, none when his balance row is gone. */
   lowered: [{ userId: "hugh" }] as unknown[],
+  /** What the membership insert's `returning()` answers: a row when it joined, none when the account was already in. */
+  joined: [{ userId: "user_new" }] as unknown[],
+  clears: 0,
 }));
 
 function chain(result: () => unknown[]) {
@@ -29,12 +32,19 @@ const fakeTx = {
     }),
   }),
   insert: (table: unknown) => ({
-    values: (values: unknown) => ({ onConflictDoNothing: async () => { h.writes.push({ op: "insert", table, values }); } }),
+    values: (values: unknown) => ({
+      onConflictDoNothing: () => {
+        h.writes.push({ op: "insert", table, values });
+        const done = Promise.resolve(undefined);
+        return Object.assign(done, { returning: async () => (table === flagGroupMembers ? h.joined : []) });
+      },
+    }),
   }),
 };
 vi.mock("../../db", () => ({
   db: { select: () => chain(() => h.reads.shift() ?? []), transaction: async (cb: (tx: unknown) => unknown) => cb(fakeTx) },
 }));
+vi.mock("../flags/snapshot", () => ({ clearSwitchSnapshot: () => { h.clears++; } }));
 vi.mock("../flags/write-lock", () => ({ lockSwitchWrites: async () => undefined }));
 vi.mock("../account/purge", () => ({ tombstoneHash: (id: string) => `hash:${id}` }));
 vi.mock("../invites/send", () => ({ lockSenderIn: async (_tx: unknown, _id: string, given?: Date) => given ?? new Date() }));
@@ -68,6 +78,8 @@ beforeEach(() => {
   h.welcome.mockReset();
   h.profile.mockReset();
   h.lowered = [{ userId: "hugh" }];
+  h.joined = [{ userId: "user_new" }];
+  h.clears = 0;
 });
 
 describe("spendFlyerOnSignUp", () => {
@@ -80,6 +92,16 @@ describe("spendFlyerOnSignUp", () => {
     const balances = wrote(inviteBalances);
     expect(balances).toHaveLength(2);
     expect(balances[1].values).toMatchObject({ userId: "user_new", held: 3 });
+    expect(h.clears).toBe(1); // the new member's group can change their switches: every server's snapshot is retired
+  });
+
+  it("retires no snapshot when the account was already in the group, or the code has none", async () => {
+    script();
+    h.joined = [];
+    await spendFlyerOnSignUp("user_new", CLAIM, "Ana", { now });
+    script({ code: { groupId: null } });
+    await spendFlyerOnSignUp("user_new", CLAIM, "Ana", { now });
+    expect(h.clears).toBe(0);
   });
 
   it("spends nothing when Hugh's decrement moves no row (a purged creator has no balance)", async () => {
@@ -88,6 +110,7 @@ describe("spendFlyerOnSignUp", () => {
     expect(await spendFlyerOnSignUp("user_new", CLAIM, "Ana", { now })).toEqual({ spent: false, reason: "lapsed" });
     expect(wrote(flyerClaims)).toHaveLength(0);
     expect(wrote(flagGroupMembers)).toHaveLength(0);
+    expect(h.clears).toBe(0);
     expect(h.profile).not.toHaveBeenCalled();
     expect(wrote(inviteBalances)).toHaveLength(1);
   });
