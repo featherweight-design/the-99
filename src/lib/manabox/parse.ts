@@ -140,6 +140,25 @@ export function looksLikeCsv(csvText: string): boolean {
   return findHeaderIndex(header, NAME_HEADERS) !== -1 || findHeaderIndex(header, QUANTITY_HEADERS) !== -1;
 }
 
+/** The apps whose export a header can name, by the id their guide in `collection-sources.ts` carries. */
+export type SourceId = "manabox" | "tcgplayer" | "dragonshield" | "delver";
+
+/**
+ * Which app wrote `csvText`, read off its header by columns only that app's export carries (each seen in a real file:
+ * `parse-other-apps.test.ts`), or null when the header names none. Moxfield, Archidekt and Deckbox share their columns
+ * with each other and with plain exports, so none is named. Used only to pick the guide an upload error opens.
+ */
+export function detectSource(csvText: string): SourceId | null {
+  const lines = linesOf(csvText);
+  if (lines.every((l) => l.trim() === "")) return null;
+  const cells = new Set(splitCsvLine(lines[headerLineIndex(lines)]).map((h) => h.trim().toLowerCase()));
+  if (cells.has("manabox id")) return "manabox";
+  if (cells.has("folder name") && cells.has("card name")) return "dragonshield";
+  if (cells.has("simple name")) return "tcgplayer";
+  if (cells.has("acquired price") || cells.has("tcgplayer product id")) return "delver";
+  return null;
+}
+
 /** The header row as both readers take it: where it is, its cells, and where the two required columns sit (-1 when absent). */
 function readHeader(lines: string[]) {
   const headerAt = headerLineIndex(lines);

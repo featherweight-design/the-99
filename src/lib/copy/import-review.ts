@@ -38,6 +38,11 @@ export const importReviewCopy = {
       link: "How to export",
       after: ", or paste the list instead.",
     },
+    /** A failed file whose header names the app it came from (`detectSource`): that app's guide, opened. */
+    fromApp: {
+      lead: (app: string) => `This looks like a ${app} file.`,
+      link: (app: string) => `How to export from ${app}`,
+    },
     unreadable: "We couldn’t read this file.",
     unreadableWhy: (reason: string) => `We couldn’t read this file: ${reason}`,
     noFile: "Choose a CSV file first.",

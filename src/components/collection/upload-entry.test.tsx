@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 const previewUpload = vi.fn();
 vi.mock("../../app/collection/actions", () => ({
@@ -68,6 +68,31 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
     choose(csv("Name,Set\nSol Ring,cmd\n"));
     expect(await screen.findByText("This file has no Quantity column")).toBeTruthy();
+  });
+
+  it("names the app a file came from and opens that app's guide from its link", async () => {
+    render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
+    choose(csv("Name,Acquired Price,Language,Set Code,TCGPlayer Product ID,Number,Foil\n\"Sol Ring\",\"$1\",\"\",\"CMD\",\"1\",\"1\",\"\"\n"));
+    expect(await screen.findByText("This file has no Quantity column")).toBeTruthy();
+    expect(screen.getByText(/This looks like a Delver Lens file\./)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "How to export from Delver Lens" }));
+    const d = screen.getByRole("dialog", { name: "How to export your collection" });
+    expect(within(d).getByRole("button", { name: "Delver Lens" })).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("names the app too when the server refuses a file whose header it read", async () => {
+    previewUpload.mockRejectedValueOnce(new Error("We couldn’t read this file."));
+    render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
+    choose(csv("Quantity,Name,Simple Name,Set,Card Number,Set Code,Printing\n1,Sol Ring,Sol Ring,Commander,1,CMD,Normal\n"));
+    expect(await screen.findByText("We couldn’t read this file.")).toBeTruthy();
+    expect(screen.getByText(/This looks like a TCGplayer file\./)).toBeTruthy();
+  });
+
+  it("names no app for a header that carries none", async () => {
+    render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
+    choose(csv("Title,Amount\nSol Ring,1\n"));
+    await screen.findByText("This file has no Name column");
+    expect(screen.queryByText(/This looks like/)).toBeNull();
   });
 
   it("hides the always-on guides line while the error, which carries its own link, is shown", async () => {
