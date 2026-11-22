@@ -3,8 +3,9 @@
 //   5. day/night: the old icon turns out as the new one turns in, 320 ms each; reduced motion draws only the new one;
 //   6. Menu is drawn over the spine, so every part of it takes a press;
 //   7. a real press on End turn passes the turn;
-//   8. the dice menu pops in over the spine, inside the viewport.
-// (Bugs 9 and 10, the re-roll and the coin, join it with their own PR.)
+//   8. the dice menu pops in over the spine, inside the viewport;
+//   9. a tap on the landed coin, or a landed die, rolls again; only a tap off it closes;
+//  10. a coin flip draws a coin that flips.
 // It only reads and taps: the game lives on the device (localStorage), so it writes nothing to the database. The audit
 // account must sit at the fixture's S4 table; production and staging are refused.
 //
@@ -199,6 +200,48 @@ try {
     report("8 the dice menu sits over the spine", !!overlaps, dm ? [dm.x, dm.y, dm.width, dm.height].map(Math.round).join(",") + ` spine ${[spineBox.x, spineBox.y, spineBox.width, spineBox.height].map(Math.round).join(",")}` : "none");
     report("8 the dice menu lies inside the viewport", !!inside);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/spine-dice-menu-${viewport.width}.png` });
+
+    // 10. Coin: a coin is drawn and flips.
+    await page.getByRole("menuitem").nth(2).evaluate((el) => el.click());
+    await page.waitForTimeout(250);
+    const coin = page.getByTestId("dice-coin");
+    const coinDrawn = (await coin.count()) > 0;
+    report("10 the coin is drawn", coinDrawn);
+    if (coinDrawn) {
+      const spin = await coin.evaluate((el) => el.getAnimations().length);
+      report("10 the coin flips (animates)", spin > 0, `${spin}`);
+      if (SHOTS) await page.screenshot({ path: `${SHOTS}/spine-coin-${viewport.width}.png` });
+    }
+    await page.locator("[data-testid=dice-roll][data-landed]").waitFor({ timeout: 6000 }).catch(() => {});
+
+    // 9. A tap on the coin flips again; only a tap off it closes.
+    const rolledAgain = async (target, what) => {
+      const k0 = await page.getByTestId("dice-roll").getAttribute("data-k");
+      const b = await target.boundingBox();
+      if (!b) return report(`9 the ${what} takes a tap`, false, "not drawn");
+      await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
+      await page.waitForTimeout(300);
+      const open = (await page.getByTestId("dice-roll").count()) > 0;
+      const k1 = open ? await page.getByTestId("dice-roll").getAttribute("data-k") : null;
+      report(`9 tapping the ${what} keeps the roll open`, open);
+      report(`9 tapping the ${what} rolls again`, open && k1 !== k0, `${k0} -> ${k1}`);
+    };
+    if (coinDrawn) await rolledAgain(coin, "coin");
+    await page.locator("[data-testid=dice-roll][data-landed]").waitFor({ timeout: 6000 }).catch(() => {});
+    await page.mouse.click(8, viewport.height / 2);
+    await page.waitForTimeout(300);
+    report("9 a tap off the coin closes the roll", (await page.getByTestId("dice-roll").count()) === 0);
+
+    // 9. A thrown d20: once it lands, a tap where it lies rolls again. Needs the 3D scene (WebGL); without one the
+    // result card alone is drawn, and the check says so rather than failing.
+    await page.getByTestId("strip-dice").evaluate((el) => el.click());
+    await page.waitForTimeout(300);
+    await page.getByRole("menuitem").nth(1).evaluate((el) => el.click());
+    await page.locator("[data-testid=dice-roll][data-landed]").waitFor({ timeout: 8000 }).catch(() => {});
+    const dieHit = page.getByTestId("dice-die").first();
+    if ((await dieHit.count()) > 0) await rolledAgain(dieHit, "d20");
+    else console.log("  (no 3D scene: the d20 tap is not checked)");
+    if (SHOTS) await page.screenshot({ path: `${SHOTS}/spine-d20-${viewport.width}.png` });
 
     await context.close();
   }

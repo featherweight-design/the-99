@@ -411,7 +411,16 @@ export function PlaySurface({
       ) : null}
 
       {roll ? (
-        <DiceRoll roll={roll} onClose={() => setRoll(null)}>
+        <DiceRoll
+          roll={roll}
+          label={
+            roll.kind === "coin"
+              ? copy.dice.flipAgain(roll.values[0] === 1 ? copy.dice.heads : copy.dice.tails)
+              : copy.dice.rollAgain(copy.dice.rolled(roll.values[0]))
+          }
+          onAgain={() => rollDie(roll.kind)}
+          onClose={() => setRoll(null)}
+        >
           <DiceResult value={roll.kind === "coin" ? (roll.values[0] === 1 ? copy.dice.heads : copy.dice.tails) : String(roll.values[0])} />
           <button
             type="button"

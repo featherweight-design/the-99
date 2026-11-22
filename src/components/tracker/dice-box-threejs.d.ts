@@ -5,5 +5,8 @@ declare module "@3d-dice/dice-box-threejs" {
     initialize(): Promise<void>;
     roll(notation: string): Promise<unknown>;
     clearDice(): void;
+    /** The thrown dice: three.js meshes, read for where each one came to rest. */
+    diceList: { position: { clone(): { project(camera: unknown): { x: number; y: number } } } }[];
+    camera: unknown;
   }
 }
