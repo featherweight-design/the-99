@@ -1,0 +1,250 @@
+[
+ {
+  "id": "B1-now-land",
+  "v": 1,
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0
+ },
+ {
+  "id": "B2-now-port",
+  "v": 1,
+  "w": 820,
+  "h": 1180,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0
+ },
+ {
+  "id": "B3-now-table",
+  "v": 1,
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0,
+  "tab": "table"
+ },
+ {
+  "id": "D1-land",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0
+ },
+ {
+  "id": "D2-top",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 1
+ },
+ {
+  "id": "D3-six",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max2",
+   "chris",
+   "sam"
+  ],
+  "layout": "tablet-6",
+  "log": "LOG6",
+  "open": 0
+ },
+ {
+  "id": "D4-two",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin"
+  ],
+  "layout": "tablet-2",
+  "log": "LOG2",
+  "open": 0
+ },
+ {
+  "id": "D5-port",
+  "w": 820,
+  "h": 1180,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0
+ },
+ {
+  "id": "D6-desk",
+  "w": 1440,
+  "h": 900,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0
+ },
+ {
+  "id": "C1-land",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0,
+  "tab": "counters"
+ },
+ {
+  "id": "C2-port",
+  "w": 820,
+  "h": 1180,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0,
+  "tab": "counters"
+ },
+ {
+  "id": "X1-tax",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0,
+  "tab": "tax"
+ },
+ {
+  "id": "X2-mana",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0,
+  "tab": "mana"
+ },
+ {
+  "id": "X3-table",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "open": 0,
+  "tab": "table"
+ },
+ {
+  "id": "X4-closed",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ]
+ },
+ {
+  "id": "P1-phone-table",
+  "w": 390,
+  "h": 844,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "layout": "phone-4-sides",
+  "open": 0,
+  "tab": "table"
+ },
+ {
+  "id": "P0-phone-now",
+  "v": 1,
+  "w": 390,
+  "h": 844,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max"
+  ],
+  "layout": "phone-4-sides",
+  "open": 0,
+  "tab": "table"
+ },
+ {
+  "id": "E1-end",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max",
+   "chris"
+  ],
+  "layout": "tablet-5-end",
+  "open": 3
+ },
+ {
+  "id": "D7-four-partner",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max2"
+  ],
+  "open": 0,
+  "log": "LOG6"
+ }
+]

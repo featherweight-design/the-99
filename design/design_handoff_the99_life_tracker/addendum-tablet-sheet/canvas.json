@@ -1,0 +1,66 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-22T19:00:00Z"
+ },
+ "title": "Life tracker \u00b7 tablet sheet and coin",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1600,
+   "h": 1490,
+   "title": "Main \u00b7 the sheet on a tablet"
+  },
+  "Sheet.dc.html": {
+   "x": 1720,
+   "y": 0,
+   "w": 1600,
+   "h": 2470,
+   "title": "Sheet \u00b7 tablet landscape"
+  },
+  "Damage.dc.html": {
+   "x": 3440,
+   "y": 0,
+   "w": 1600,
+   "h": 2720,
+   "title": "Damage \u00b7 counts and desktop"
+  },
+  "Portrait.dc.html": {
+   "x": 5160,
+   "y": 0,
+   "w": 1600,
+   "h": 1000,
+   "title": "Portrait \u00b7 iPad upright"
+  },
+  "Tabs.dc.html": {
+   "x": 6880,
+   "y": 0,
+   "w": 1600,
+   "h": 1620,
+   "title": "Tabs \u00b7 Table joins the row"
+  },
+  "Coin.dc.html": {
+   "x": 8600,
+   "y": 0,
+   "w": 1700,
+   "h": 2890,
+   "title": "Coin \u00b7 the toss beside the dice"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Sheet.dc.html",
+  "Damage.dc.html",
+  "Portrait.dc.html",
+  "Tabs.dc.html",
+  "Coin.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
