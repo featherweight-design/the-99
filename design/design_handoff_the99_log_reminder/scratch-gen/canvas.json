@@ -1,0 +1,195 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-21T23:07:31Z"
+ },
+ "title": "Log-your-game reminder",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 880,
+   "h": 1195,
+   "title": "R1 · Calls"
+  },
+  "H1-OneGame-Phone.dc.html": {
+   "x": 1040,
+   "y": 240,
+   "w": 390,
+   "h": 1047
+  },
+  "H1-OneGame-Desktop.dc.html": {
+   "x": 1510,
+   "y": 240,
+   "w": 1300,
+   "h": 900
+  },
+  "H2-Several-Phone.dc.html": {
+   "x": 1040,
+   "y": 1687,
+   "w": 390,
+   "h": 844
+  },
+  "H2-Several-Desktop.dc.html": {
+   "x": 1510,
+   "y": 1687,
+   "w": 1300,
+   "h": 900
+  },
+  "H3-Dismissed-Phone.dc.html": {
+   "x": 1040,
+   "y": 2987,
+   "w": 390,
+   "h": 844
+  },
+  "H3-Dismissed-Desktop.dc.html": {
+   "x": 1510,
+   "y": 2987,
+   "w": 1300,
+   "h": 900
+  },
+  "N1-Push-Phone.dc.html": {
+   "x": 1040,
+   "y": 4287,
+   "w": 390,
+   "h": 844
+  },
+  "N1-Push-Desktop.dc.html": {
+   "x": 1510,
+   "y": 4287,
+   "w": 1300,
+   "h": 900
+  },
+  "C1-InWindow-Phone.dc.html": {
+   "x": 1040,
+   "y": 5587,
+   "w": 390,
+   "h": 844
+  },
+  "C1-InWindow-Desktop.dc.html": {
+   "x": 1510,
+   "y": 5587,
+   "w": 1300,
+   "h": 900
+  },
+  "C2-Ended-Phone.dc.html": {
+   "x": 1040,
+   "y": 6887,
+   "w": 390,
+   "h": 844
+  },
+  "C2-Ended-Desktop.dc.html": {
+   "x": 1510,
+   "y": 6887,
+   "w": 1300,
+   "h": 900
+  },
+  "L1-Logged-Phone.dc.html": {
+   "x": 1040,
+   "y": 8187,
+   "w": 390,
+   "h": 844
+  },
+  "L1-Logged-Desktop.dc.html": {
+   "x": 1510,
+   "y": 8187,
+   "w": 1300,
+   "h": 900
+  },
+  "L2-Device-Phone.dc.html": {
+   "x": 1040,
+   "y": 9487,
+   "w": 390,
+   "h": 1587
+  },
+  "L2-Device-Desktop.dc.html": {
+   "x": 1510,
+   "y": 9487,
+   "w": 1300,
+   "h": 900
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "H1-OneGame-Phone.dc.html",
+  "H1-OneGame-Desktop.dc.html",
+  "H2-Several-Phone.dc.html",
+  "H2-Several-Desktop.dc.html",
+  "H3-Dismissed-Phone.dc.html",
+  "H3-Dismissed-Desktop.dc.html",
+  "N1-Push-Phone.dc.html",
+  "N1-Push-Desktop.dc.html",
+  "C1-InWindow-Phone.dc.html",
+  "C1-InWindow-Desktop.dc.html",
+  "C2-Ended-Phone.dc.html",
+  "C2-Ended-Desktop.dc.html",
+  "L1-Logged-Phone.dc.html",
+  "L1-Logged-Desktop.dc.html",
+  "L2-Device-Phone.dc.html",
+  "L2-Device-Desktop.dc.html"
+ ],
+ "notes": {
+  "r0": {
+   "x": 1040,
+   "y": 0,
+   "text": "Home · one game to log",
+   "kind": "title1",
+   "maxW": 1770
+  },
+  "r1": {
+   "x": 1040,
+   "y": 1447,
+   "text": "Home · several games",
+   "kind": "title1",
+   "maxW": 1770
+  },
+  "r2": {
+   "x": 1040,
+   "y": 2747,
+   "text": "Home · dismissed, with Undo",
+   "kind": "title1",
+   "maxW": 1770
+  },
+  "r3": {
+   "x": 1040,
+   "y": 4047,
+   "text": "The push",
+   "kind": "title1",
+   "maxW": 1770
+  },
+  "r4": {
+   "x": 1040,
+   "y": 5347,
+   "text": "Closed table · inside the week",
+   "kind": "title1",
+   "maxW": 1770
+  },
+  "r5": {
+   "x": 1040,
+   "y": 6647,
+   "text": "Closed table · after the week",
+   "kind": "title1",
+   "maxW": 1770
+  },
+  "r6": {
+   "x": 1040,
+   "y": 7947,
+   "text": "Logged",
+   "kind": "title1",
+   "maxW": 1770
+  },
+  "r7": {
+   "x": 1040,
+   "y": 9247,
+   "text": "The device that ran the game",
+   "kind": "title1",
+   "maxW": 1770
+  }
+ },
+ "designSystems": []
+}
