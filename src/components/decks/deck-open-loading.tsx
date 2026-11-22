@@ -17,6 +17,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { BAR } from "../ui/tile-skeleton";
 import Link from "next/link";
 import { ArtWash } from "../ui/art-wash";
+import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS } from "./deck-header-type";
 import { DeckHeaderArt, DECK_HEADER_LABEL_LEFT } from "./deck-header-art";
 import { IdentityPips } from "../commanders/commander-art";
 import { StatusPillBadge } from "./status-pill";
@@ -126,10 +127,12 @@ function Body({ wide, tab }: { wide: boolean; tab: string }) {
  */
 function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["facts"]; strip: React.ReactNode }) {
   const size = deckBodySize(facts.partner);
+  // The page header's own type (`deck-header-type`), so the title and the commander line do not jump when the page lands.
+  const width = wide ? "desktop" : "phone";
   const label = (
     <div className="relative flex flex-col gap-[8px]">
-      <h1 className="m-0 font-serif text-[26px] font-semibold leading-[1.15] text-[color:var(--fg)] md:text-[30px]">{facts.name}</h1>
-      <div className="flex items-center gap-[8px] text-[14px] text-[color:var(--fg-body)]">
+      <h1 className={`m-0 ${DECK_TITLE_CLASS}`} style={{ ...DECK_TITLE[width], color: "var(--fg)" }}>{facts.name}</h1>
+      <div className="flex items-center gap-[8px] font-mono text-[color:var(--fg-body)]" style={{ fontSize: DECK_COMMANDER_SIZE[width] }}>
         <IdentityPips colorIdentity={facts.identity} size={10} />
         <span className="min-w-0 truncate">{facts.commander}</span>
       </div>

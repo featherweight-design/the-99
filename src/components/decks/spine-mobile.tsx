@@ -21,6 +21,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { IdentityPips } from "../commanders/commander-art";
+import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS } from "./deck-header-type";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
@@ -198,7 +199,7 @@ export function SpineMobile({
       <span
         className="font-mono flex"
         style={{
-          fontSize: 10,
+          fontSize: DECK_COMMANDER_SIZE.phone,
           color: onWash ? "var(--fg-body)" : "var(--fg-muted)",
           textShadow: onWash ? COVER_INK_SHADOW : undefined,
           gap: 4,
@@ -426,7 +427,7 @@ export function SpineMobile({
                   // long enough to take a fourth holds its ramp below its own
                   // block, and the browser probe's block-versus-hold check fails
                   // by name if one ever appears — reported rather than hidden.
-                  className="m-0 min-w-0 font-display font-[700]"
+                  className={`m-0 min-w-0 ${DECK_TITLE_CLASS}`}
                   style={{
                     // `inline`, and NON-atomic — which is the whole mechanism.
                     // Its text wraps as ordinary inline content, so the glyph
@@ -441,8 +442,7 @@ export function SpineMobile({
                     // a broken word beats content outside the viewport, which is
                     // the bug this branch also fixes.
                     overflowWrap: "anywhere",
-                    fontSize: 20,
-                    lineHeight: 1.25,
+                    ...DECK_TITLE.phone,
                     textAlign: "left",
                     color: "var(--fg)",
                     textShadow: COVER_INK_SHADOW,
