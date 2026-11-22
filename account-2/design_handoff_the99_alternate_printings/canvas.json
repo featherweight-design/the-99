@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-20T19:26:50Z"
  },
- "title": "Alternate printings R1 + R2",
+ "title": "Alternate printings R1\u2013R3",
  "launch": {
   "view": "canvas"
  },
@@ -65,6 +65,27 @@
    "w": 1672,
    "h": 1374,
    "title": "R2 \u00b7 Desktop"
+  },
+  "R3-PhoneA.dc.html": {
+   "x": 0,
+   "y": 4360,
+   "w": 1732,
+   "h": 1842,
+   "title": "R3 \u00b7 Phone A"
+  },
+  "R3-PhoneB.dc.html": {
+   "x": 1852,
+   "y": 4360,
+   "w": 1036,
+   "h": 1046,
+   "title": "R3 \u00b7 Phone B"
+  },
+  "R3-Desktop.dc.html": {
+   "x": 3008,
+   "y": 4360,
+   "w": 1672,
+   "h": 814,
+   "title": "R3 \u00b7 Desktop"
   }
  },
  "order": [
@@ -75,7 +96,10 @@
   "Single.dc.html",
   "R2-Main.dc.html",
   "R2-Phone.dc.html",
-  "R2-Desktop.dc.html"
+  "R2-Desktop.dc.html",
+  "R3-PhoneA.dc.html",
+  "R3-PhoneB.dc.html",
+  "R3-Desktop.dc.html"
  ],
  "notes": {
   "r2title": {
@@ -84,6 +108,13 @@
    "text": "R2 \u00b7 Pick a printing in place (2026-11-22)",
    "kind": "title1",
    "maxW": 4812
+  },
+  "r3title": {
+   "x": 0,
+   "y": 4100,
+   "text": "R3 \u00b7 A steady shelf, and search by set (2026-11-22)",
+   "kind": "title1",
+   "maxW": 4680
   }
  },
  "designSystems": []
