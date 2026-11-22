@@ -82,7 +82,7 @@ describe("DiceRoll", () => {
     const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
     const box = screen.getByTestId("dice-coin").parentElement!.parentElement as HTMLElement;
     const classes = [...box.querySelectorAll("*")].map((el) => el.getAttribute("class") ?? "").join(" ");
-    const names = [...classes.matchAll(/animate-\[([^\]]+)\]/g)].flatMap((m) => m[1].split(",").map((a) => a.split("_")[0]));
+    const names = [...classes.matchAll(/animate-\[([^\]]+)\]/g)].flatMap((m) => m[1].split(/,(?![^(]*\))/).map((a) => a.split("_")[0]));
     expect(new Set(names)).toEqual(new Set(["coin-shadow", "coin-land", "coin-arc", "coin-spin", "coin-settle"]));
     for (const name of names) expect(css).toMatch(new RegExp(`@keyframes ${name} \\{`));
   });

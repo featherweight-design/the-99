@@ -83,7 +83,8 @@ describe("the stylesheet", () => {
 
   it("keeps every motion rule under no-preference, with --tilt-ease local to the host", () => {
     const still = outside;
-    for (const motion of ["rotateX(", "--tilt-swing", "--tilt-ease", "transition: --tilt", "[data-turning]", "[data-glare] {\n"]) {
+    // The tilt's own turn: the coin toss (tracker) turns about rotateX too, but only through motion-safe: classes.
+    for (const motion of ["rotateX(calc((var(--tilt-y)", "--tilt-swing", "--tilt-ease", "transition: --tilt", "[data-turning]", "[data-glare] {\n"]) {
       expect(still).not.toContain(motion);
     }
     expect(MOTION).toMatch(/\[data-tilt\] \{\s*--tilt-ease: cubic-bezier\(\.22, 1, \.36, 1\);/);
