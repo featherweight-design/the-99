@@ -1,6 +1,7 @@
 // Loaded into a LOCAL dev server with NODE_OPTIONS="--require <this file>" and RESEND_STUB_LOG=<file>: answers Resend's
 // send endpoint with a 200 and appends one JSON line per mail (recipient, subject, template tag) to the log. Nothing leaves the
 // machine, and the key and the bodies are never logged. Every other fetch passes through untouched.
+/* eslint-disable @typescript-eslint/no-require-imports -- a CommonJS preload for NODE_OPTIONS=--require */
 const fs = require("node:fs");
 const real = globalThis.fetch;
 globalThis.fetch = async function stubbed(input, init) {
