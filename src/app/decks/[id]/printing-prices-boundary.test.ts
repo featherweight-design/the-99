@@ -26,8 +26,10 @@ describe("the deck page's prices", () => {
     const [read, ...more] = calls("loadPrices");
     expect(read).toBeDefined();
     expect(more).toHaveLength(0);
-    expect(read.arguments).toHaveLength(2);
+    // Then no extra oracle ids, then the reader's store (store choice), so the picks and the figures come from one store.
+    expect(read.arguments).toHaveLength(4);
     expect(read.arguments[1].getText(src)).toBe("await readHeldPricePicks(userId, [id])");
+    expect(read.arguments[3].getText(src)).toBe("await storeRead");
   });
 
   // The price rule lives in `assembleDeckCards`/`priceRow` (src/lib/decks/assemble-cards.ts) since landing demo 6b-1, so

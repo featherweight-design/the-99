@@ -8,6 +8,7 @@
 import { eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import { recordSoftFailure } from "../cache/soft-failure";
 import { userPrefs } from "../../db/schema";
 import { storePreferenceEnabled } from "./flag";
 import { OTHER_STORES, type Store } from "./rows";
@@ -40,6 +41,8 @@ export async function readerStore(userId: string, env: NodeJS.ProcessEnv, q: Q =
 export function readerStoreForPage(userId: string, env: NodeJS.ProcessEnv): Promise<Store> {
   return readerStore(userId, env).catch((error: unknown): Store => {
     console.error("[store] reader store read failed; drawing Mana Pool", error);
+    // A page drawn on the fallback is not the reader's page, so the list cache must not keep it.
+    recordSoftFailure();
     return "manapool";
   });
 }
