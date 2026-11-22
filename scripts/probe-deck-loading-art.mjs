@@ -24,6 +24,8 @@ const HOLD_MS = 12_000;
 const SHOTS = process.env.PROBE_SHOTS; // a folder: one PNG per width, deck kind and state, for the contact sheet
 const WIDTHS = [
   { label: 390, viewport: { width: 390, height: 844 } },
+  // 1200: the header row is 1138px, under the container query's 1200px, so both draw the 340px portrait.
+  { label: 1200, viewport: { width: 1200, height: 820 } },
   { label: 1300, viewport: { width: 1300, height: 820 } },
 ];
 
