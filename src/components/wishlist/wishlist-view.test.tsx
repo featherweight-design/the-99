@@ -305,3 +305,52 @@ describe("the search", () => {
     expect(within(list).getByRole("button", { name: wishlistCopy.page.search.add })).toBeInTheDocument();
   });
 });
+
+describe("friends' spares", () => {
+  const friend = (name: string) => ({ publicId: `p-${name}`, displayName: name, commander: null, pods: ["Thursday pod"] });
+  const fetchMock = vi.fn();
+  beforeEach(() => {
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockReset();
+  });
+  afterEach(() => vi.unstubAllGlobals());
+  const answer = (spares: unknown[]) => fetchMock.mockResolvedValue({ ok: true, json: async () => ({ spares }) });
+
+  it("draws a press only on a tile a friend has a spare of, with the count from two friends", async () => {
+    answer([
+      { oracleId: SOL, friend: friend("Ana"), spare: 1 },
+      { oracleId: SOL, friend: friend("Bo"), spare: 1 },
+    ]);
+    view({ tiles: [tile(), tile({ oracleId: ARCANE, name: "Arcane Signet" })], hasFriend: true });
+    const press = await screen.findAllByTestId("wishlist-spare-press");
+    expect(press).toHaveLength(1);
+    expect(press[0]).toHaveAccessibleName(wishlistCopy.page.sparePress.aria("Sol Ring", 2));
+    expect(press[0]).toHaveTextContent("2");
+  });
+
+  it("reads nothing, and draws no press or Friends' spares sort, with no friends", () => {
+    view({ tiles: [tile()], hasFriend: false });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.queryByTestId("wishlist-spare-press")).toBeNull();
+    expect(screen.queryByRole("option", { name: wishlistCopy.page.sort.friends })).toBeNull();
+  });
+
+  it("draws nothing when the read fails", async () => {
+    fetchMock.mockRejectedValue(new Error("down"));
+    view({ tiles: [tile()], hasFriend: true });
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+    expect(screen.queryByTestId("wishlist-spare-press")).toBeNull();
+  });
+
+  it("sorts tiles with the most friends first", async () => {
+    answer([
+      { oracleId: ARCANE, friend: friend("Ana"), spare: 1 },
+      { oracleId: ARCANE, friend: friend("Bo"), spare: 1 },
+    ]);
+    view({ tiles: [tile(), tile({ oracleId: ARCANE, name: "Arcane Signet", addedAt: "2026-10-01T00:00:00.000Z" })], hasFriend: true });
+    await screen.findByTestId("wishlist-spare-press");
+    fireEvent.change(screen.getByRole("combobox", { name: wishlistCopy.page.sort.label }), { target: { value: "friends" } });
+    const names = screen.getAllByTestId("wishlist-tile").map((li) => li.textContent);
+    expect(names[0]).toContain("Arcane Signet");
+  });
+});

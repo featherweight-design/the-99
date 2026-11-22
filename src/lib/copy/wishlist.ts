@@ -25,7 +25,12 @@ export const wishlistCopy = {
   page: {
     meta: (wanted: number) => `${wanted} wanted`,
     friendsLine: "Your friends can see this list", // only with at least one friend
-    sort: { label: "Sort", lead: "Sort:", newest: "Newest", name: "Name" }, // desktop only: "Sort: Newest ▾"; `label` names the control
+    sort: { label: "Sort", lead: "Sort:", newest: "Newest", name: "Name", friends: "Friends’ spares" }, // desktop only: "Sort: Newest ▾"; `label` names the control
+    // The tile's friend-spare press (find-a-friend's-spare R1): the modal and its rows are the shipped `spareCopy`.
+    sparePress: {
+      aria: (card: string, friends: number) => `Friends with a spare of ${card}, ${friends === 1 ? "1 friend" : `${friends} friends`}`,
+      kicker: "on your wishlist",
+    },
     search: {
       placeholder: "Add a card to your wishlist…",
       add: "Add to wishlist",

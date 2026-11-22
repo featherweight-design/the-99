@@ -46,10 +46,10 @@ export function WantedMark() {
 }
 
 /** The third line: `$24.50 ▮ SLD 2125`. The phone draws the set code alone; the number joins from `md`. */
-function TileLine({ line }: { line: WishlistTileLine }) {
+function TileLine({ line, room = "" }: { line: WishlistTileLine; room?: string }) {
   const { price, printing } = line;
   return (
-    <span data-testid="wishlist-tile-printing" className="truncate font-mono text-[9px] leading-[1.2] text-[color:var(--fg-muted)] md:text-[9.5px]">
+    <span data-testid="wishlist-tile-printing" className={`truncate font-mono text-[9px] leading-[1.2] text-[color:var(--fg-muted)] md:text-[9.5px]${room}`}>
       {price}
       {printing && (
         <>
@@ -84,7 +84,10 @@ export function Parts({ parts, strong }: { parts: readonly CopyPart[]; strong: s
  * The tile's art and caption, everything inside its shell. Every element is a span, because on the tab the shell is
  * the button that opens card details, and a button holds phrasing content only.
  */
-export function WishlistTileFace({ tile, eager }: { tile: WishlistTileCard; eager: boolean }) {
+export function WishlistTileFace({ tile, eager, pressRoom = 0 }: { tile: WishlistTileCard; eager: boolean; pressRoom?: number }) {
+  // A tile that draws the friend-spare press keeps its caption lines 2 and 3 clear of it: 38px on the phone, 44px from `md`
+  // for the glyph alone; the count of two or more friends widens the box by ~10px, so those lines clear 48px and 54px.
+  const room = pressRoom > 1 ? " pr-[48px] md:pr-[54px]" : pressRoom === 1 ? " pr-[38px] md:pr-[44px]" : "";
   return (
     <>
       <span
@@ -104,13 +107,13 @@ export function WishlistTileFace({ tile, eager }: { tile: WishlistTileCard; eage
       </span>
       <span className="flex min-h-[54px] min-w-0 flex-col justify-center gap-[3px] px-[7px] pb-[8px] pt-[6px] md:min-h-[62px] md:gap-[4px] md:px-[10px] md:pb-[9px] md:pt-[7px]">
         <span className="truncate text-[12px] font-semibold leading-[16px] text-[color:var(--fg)] md:text-[13px] md:leading-[17px]">{tile.name}</span>
-        <span data-testid="wishlist-tile-caption" className="truncate font-mono text-[9px] leading-[1.2] text-[color:var(--fg-faint)] md:text-[9.5px]">
+        <span data-testid="wishlist-tile-caption" className={`truncate font-mono text-[9px] leading-[1.2] text-[color:var(--fg-faint)] md:text-[9.5px]${room}`}>
           <Parts
             parts={captionParts(tile)}
             strong="font-semibold text-[color:var(--fg-body)]"
           />
         </span>
-        {tile.line ? <TileLine line={tile.line} /> : null}
+        {tile.line ? <TileLine line={tile.line} room={room} /> : null}
       </span>
     </>
   );

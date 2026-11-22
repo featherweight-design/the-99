@@ -3659,3 +3659,9 @@ Fixture: `scripts/seed-log-reminder-fixture.mts` (needs `RZ_FIXTURE_BRANCH` and 
 `pnpm probe:spares-search` (`SPARES_FRIEND`, the friend's public id; `E2E_AUDIT_USER_EMAIL`; `PROBE_BASE=...`, local dev server) proves a friend's Spares tab (`/friends/<id>/spares`) searches, filters and sorts at 390x844 and 1300x900. It types a name word and a type word into the search box and counts the cards, reloads to check the `?q=` round trip, draws the zero state and presses Clear all, presses a Type filter (the sheet's switch on the phone, the panel's option on desktop), and loads `?sort=name` and `?sort=most` to compare the order of the tiles. It fails on `main`, where the tab has no search box.
 
 Fixture: the friend must share spares and hold at least 16 distinct cards across Creature (a Zombie among them), Saga, Artifact, Instant and Land. `scripts/tmp-seed-spares-9b.mts` made one on a scratch branch (never committed). Mutate on a scratch branch made from local-dev, never on local-dev, staging or production.
+
+## probe:spares-wishlist
+
+`pnpm probe:spares-wishlist` (`E2E_AUDIT_USER_EMAIL`; `PROBE_BASE=...`, local dev server) proves the Wishlist's friend-spare press (`/collection/wishlist`), at 390 and 1300: a tile a friend holds a spare of draws the press after the one read lands, a tile with none draws none, the meta row names `friend has a spare`, pressing opens the Friends-with-a-spare modal with the kicker `on your wishlist` and the press reports `aria-expanded`, and on desktop the Sort gains `Friends' spares` and puts a press first (the phone has no Sort). It fails on `main`, where no tile draws a press.
+
+Fixture: the account's wishlist must hold a card a friend shares a spare of and one they do not. Read-only; seed on a scratch branch from local-dev, never staging or production.

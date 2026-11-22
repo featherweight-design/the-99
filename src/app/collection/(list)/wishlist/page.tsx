@@ -43,9 +43,11 @@ export default async function CollectionWishlistPage({ searchParams }: { searchP
         have: t.owned,
         addedAt: t.addedAt.toISOString(),
         line: wishlistTileLine(t, newestAsOf),
+        price: t.price ? { cents: t.price.cents, foilCents: t.price.foilCents, etchedCents: t.price.etchedCents, asOf: t.price.asOf.toISOString(), ...(t.price.soldOut && { soldOut: true as const }) } : null,
       }))}
       notices={notices.map((n) => ({ oracleId: n.oracleId, name: n.name, collectedAt: n.collectedAt.toISOString() }))}
       hasFriend={hasFriend}
+      newestAsOf={newestAsOf ? newestAsOf.toISOString() : null}
     />
     </>
   );

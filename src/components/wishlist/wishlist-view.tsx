@@ -14,27 +14,34 @@ import { ArrivalDismiss } from "../decks/arrival-strip";
 import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import { GRID_EAGER_TILES } from "../collection/grid-view";
 import { dismissCollectedAction } from "../../app/collection/wishlist/actions";
+import { FriendSparesProvider, SparesSheetHost, SpareKeyItem, usePageSpares } from "../social/spare-markers";
 import { WishlistSearch } from "./wishlist-search";
+import { WishlistSparePress } from "./wishlist-spare-press";
 import type { WishlistTileLine } from "../../lib/wishlist/tile-line";
 import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace, wishlistCaptionText } from "./wishlist-tile";
 
 const copy = wishlistCopy;
 
 /** A tile as the page hands it over: plain and serializable, `addedAt` an ISO string. */
-export type WishlistViewTile = { oracleId: string; name: string; imageUri: string | null; want: number; have: number; addedAt: string; line?: WishlistTileLine | null };
+export type WishlistViewTile = { oracleId: string; name: string; imageUri: string | null; want: number; have: number; addedAt: string; line?: WishlistTileLine | null;
+  /** The card's price fact for the spares modal's buy tag, `asOf` an ISO string (the tile's own line is already drawn). */
+  price?: { cents: number | null; foilCents: number | null; etchedCents: number | null; asOf: string; soldOut?: true } | null };
 /** A collected notice as the strip draws it and sends it back: `collectedAt` exactly as it was read, an ISO string. */
 export type WishlistViewNotice = { oracleId: string; name: string; collectedAt: string };
 
-type Sort = "newest" | "name";
+type Sort = "newest" | "name" | "friends";
 
 export function WishlistView({
   tiles: served,
   notices,
   hasFriend,
+  newestAsOf = null,
 }: {
   tiles: WishlistViewTile[];
   notices: WishlistViewNotice[];
   hasFriend: boolean;
+  /** The newest price read behind the tiles, for the spares modal's buy tag; null when none. */
+  newestAsOf?: string | null;
 }) {
   const router = useRouter();
   const [sort, setSort] = useState<Sort>("newest");
@@ -57,6 +64,8 @@ export function WishlistView({
     if (sort === "name") return [...served].sort((a, b) => a.name.localeCompare(b.name));
     return [...served].sort((a, b) => b.addedAt.localeCompare(a.addedAt));
   }, [served, sort]);
+  const sparesAsOf = useMemo(() => (newestAsOf ? new Date(newestAsOf) : null), [newestAsOf]);
+  const sparesIds = useMemo(() => served.map((t) => t.oracleId), [served]);
 
   const onWant = useCallback(() => router.refresh(), [router]);
 
@@ -75,12 +84,13 @@ export function WishlistView({
     void dismissCollectedAction(drawn.map((n) => ({ oracleId: n.oracleId, collectedAt: n.collectedAt }))).catch(() => {});
   }
 
-  const siblings: SiblingCard[] = tiles.map((t) => ({ oracleId: t.oracleId, name: t.name, imageUri: t.imageUri }));
   const names = shownNotices.map((n) => n.name);
   const strongStrip = "font-medium text-[color:var(--fg)]";
 
   return (
     <CardDetailProvider onWishlistWrite={onWant} browsePrintings>
+      <FriendSparesProvider oracleIds={sparesIds} newestAsOf={sparesAsOf} requests={hasFriend} deckId={null} standalone noFriends={!hasFriend} hostSheet={false}>
+      <SparesSheetHost kickerFor={() => copy.page.sparePress.kicker} />
       <div className="flex flex-col">
         <div className="flex items-center gap-[12px] px-[14px] pt-[14px] md:px-[34px] md:pt-[18px]">
           <WishlistSearch onOpenChange={setSearching} onWant={onWant} onFailure={onFailure} />
@@ -99,6 +109,7 @@ export function WishlistView({
               >
                 <option value="newest">{copy.page.sort.newest}</option>
                 <option value="name">{copy.page.sort.name}</option>
+                {hasFriend && <option value="friends">{copy.page.sort.friends}</option>}
               </select>
             </label>
           )}
@@ -129,17 +140,13 @@ export function WishlistView({
               <div
                 className={`${searching ? "hidden md:flex" : "flex"} flex-col px-[14px] pt-[12px] font-mono text-[11.5px] md:flex-row md:items-center md:justify-between md:px-[34px] md:pt-[14px] md:text-[12.5px]`}
               >
-                <span className="text-[color:var(--fg-muted)]">{copy.page.meta(tiles.length)}</span>
+                <span className="flex flex-wrap items-center gap-x-[16px] gap-y-[4px] text-[color:var(--fg-muted)]">
+                  {copy.page.meta(tiles.length)}
+                  <SpareKeyItem className="inline-flex items-center gap-[6px] text-[color:var(--fg-faint)]" />
+                </span>
                 {hasFriend && <span className="pt-[6px] text-[color:var(--fg-faint)] md:pt-0">{copy.page.friendsLine}</span>}
               </div>
-              <ul
-                data-testid="wishlist-behind"
-                className={`m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] px-[14px] pb-[14px] pt-[12px] transition-opacity md:gap-[20px] md:px-[34px] md:pb-[34px] md:pt-[18px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`}
-              >
-                {tiles.map((t, i) => (
-                  <WishlistTile key={t.oracleId} tile={t} eager={i < GRID_EAGER_TILES} siblings={siblings} />
-                ))}
-              </ul>
+              <WishlistGrid tiles={tiles} sort={sort} searching={searching} />
             </>
           ) : (
             !searching && <EmptyState />
@@ -155,15 +162,43 @@ export function WishlistView({
           />
         )}
       </div>
+      </FriendSparesProvider>
     </CardDetailProvider>
   );
 }
 
-function WishlistTile({ tile, eager, siblings }: { tile: WishlistViewTile; eager: boolean; siblings: SiblingCard[] }) {
-  // The whole tile, art and caption, is the press that opens card details, so everything inside it is a span: a button
-  // holds phrasing content only.
+/**
+ * The tiles. Inside the spares provider, so `Friends' spares` can order by what the one read found: tiles with a press
+ * first, most friends first, then the newest order the list already holds. Until the read lands every tile has none, so
+ * the order is Newest, and it moves once, when the read lands.
+ */
+function WishlistGrid({ tiles, sort, searching }: { tiles: WishlistViewTile[]; sort: Sort; searching: boolean }) {
+  const ctx = usePageSpares();
+  const ordered = useMemo(() => {
+    if (sort !== "friends" || !ctx) return tiles;
+    const friends = (id: string) => ctx.byCard.get(id)?.length ?? 0;
+    return [...tiles].sort((a, b) => friends(b.oracleId) - friends(a.oracleId));
+  }, [tiles, sort, ctx]);
+  const siblings: SiblingCard[] = ordered.map((t) => ({ oracleId: t.oracleId, name: t.name, imageUri: t.imageUri }));
   return (
-    <li className="flex flex-col" data-testid="wishlist-tile">
+    <ul
+      data-testid="wishlist-behind"
+      className={`m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] px-[14px] pb-[14px] pt-[12px] transition-opacity md:gap-[20px] md:px-[34px] md:pb-[34px] md:pt-[18px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`}
+    >
+      {ordered.map((t, i) => (
+        <WishlistTile key={t.oracleId} tile={t} eager={i < GRID_EAGER_TILES} siblings={siblings} />
+      ))}
+    </ul>
+  );
+}
+
+function WishlistTile({ tile, eager, siblings }: { tile: WishlistViewTile; eager: boolean; siblings: SiblingCard[] }) {
+  const ctx = usePageSpares();
+  const friends = ctx?.byCard.get(tile.oracleId)?.length ?? 0;
+  // The whole tile, art and caption, is the press that opens card details, so everything inside it is a span: a button
+  // holds phrasing content only. The friend-spare press is its sibling, laid over the caption's lower right.
+  return (
+    <li className="relative flex flex-col" data-testid="wishlist-tile">
       <CardDetailTrigger
         oracleId={tile.oracleId}
         name={tile.name}
@@ -172,8 +207,13 @@ function WishlistTile({ tile, eager, siblings }: { tile: WishlistViewTile; eager
         ariaLabel={`${cardDetailCopy.triggerAria(tile.name)}, ${wishlistCaptionText(tile)}`}
         className={`${WISHLIST_TILE_SHELL} art-lift-host md:hover:border-[color:var(--accent)] transition-colors`}
       >
-        <WishlistTileFace tile={tile} eager={eager} />
+        <WishlistTileFace tile={tile} eager={eager} pressRoom={friends} />
       </CardDetailTrigger>
+      <WishlistSparePress
+        card={{ oracleId: tile.oracleId, name: tile.name, printedName: null, layout: null, imageUri: tile.imageUri, price: tile.price ? { ...tile.price, asOf: new Date(tile.price.asOf) } : null }}
+        want={tile.want}
+        have={tile.have}
+      />
     </li>
   );
 }
