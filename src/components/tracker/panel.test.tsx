@@ -39,7 +39,11 @@ describe("tracker panel", () => {
     expect(html).toContain(">Out<");
     expect(html).toContain("0 life · round 3");
     expect(html).toContain("Undo");
-    expect(html).not.toContain("lose 1 life");
+    // The front face stays mounted so the flip can play back on Undo, but it is inert: its tap halves take no press.
+    const front = html.slice(html.indexOf('data-testid="panel-front"') - 200, html.indexOf('data-testid="panel-back"'));
+    expect(front).toMatch(/inert=""[^>]*data-testid="panel-front"/);
+    expect(front).toContain("lose 1 life");
+    expect(html.slice(html.indexOf('data-testid="panel-back"'))).not.toContain("lose 1 life");
   });
   it("draws a badge for each counter in play and for the holder marks", () => {
     const counters = { ...base.counters, poison: 3, energy: 0 } as SeatState["counters"];
