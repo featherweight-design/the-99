@@ -151,7 +151,7 @@ try {
       const rows = [];
       const t0 = Date.now();
       while (Date.now() - t0 < 2800) {
-        rows.push({ t: Date.now() - t0, ...(await sample(half)), fading: await page.getByTestId("life-pending-fade").count(), numAnims: await page.getByTestId("life-number").first().evaluate((el) => el.getAnimations({ subtree: true }).length) });
+        rows.push({ t: Date.now() - t0, ...(await sample(half)), fading: await page.getByTestId("life-pending-fade").count(), numAnims: await page.getByTestId("life-number").first().evaluate((el) => el.getAnimations({ subtree: true }).filter((a) => /^life-(tick|nudge)/.test(a.animationName ?? "")).length) });
         await page.waitForTimeout(40);
       }
       report(`${which}: nothing is held through the window (no wash)`, rows.every((r) => alpha(r.bg) < 0.03), `max ${Math.max(...rows.map((r) => alpha(r.bg))).toFixed(2)}`);
