@@ -5,7 +5,12 @@ export const MANAPOOL_ADD_DECK_URL = "https://manapool.com/add-deck";
 export const MANAPOOL_CARDS_URL = "https://manapool.com/cards";
 
 /** Keyed by the oracle card name, never the printing on screen: the target is
- *  Mana Pool's all-printings grid, so the user picks the printing there. */
+ *  Mana Pool's all-printings grid, so the user picks the printing there.
+ *
+ *  A wishlist entry that names a printing links here too. Measured 2026-11-22 in a browser: Mana Pool has no page for
+ *  one printing, and its `add-deck` cart, given `1 Sol Ring [C21] 263`, opens on the "Any Printing" tab with the
+ *  exact printing one press away on "Exact" (`Exact: (1/1 in stock)`, `(0/1 in stock)` for a printing it does not
+ *  stock). A printing-specific link would still not buy that printing on landing, so the name link stays. */
 export function manapoolCardUrl(name: string): string {
   return `${MANAPOOL_CARDS_URL}?q=${encodeURIComponent(name)}`;
 }

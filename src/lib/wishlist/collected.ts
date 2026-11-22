@@ -2,7 +2,7 @@
  * COLLECTED leaves the wishlist (Social R2 G5, Hugh, 2026-10-15, reversing Q9's "stays until cleared"). A line
  * whose card the collection holds as many copies of as the player wants, deck copies included, is deleted by the
  * write that got it there, in that write's own transaction, and recorded in `wishlist_collected` for the tab's
- * one-time strip. A read never deletes: it filters such a line out (`wishlist.ts`), so a line a path outside the
+ * one-time strip. A line that names a printing counts only that printing's copies (`held.ts`). A read never deletes: it filters such a line out (`wishlist.ts`), so a line a path outside the
  * chokepoints left behind is hidden until the next collection write sweeps it.
  *
  * The chokepoints: `applyCollectionChange` (every ledger write: an upload's Add and Sync, Add cards, an edited
@@ -13,6 +13,7 @@
 import { desc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, wishlistCollected } from "../../db/schema";
+import { heldCopies } from "./held";
 
 type Executor = Pick<typeof db, "execute">;
 
@@ -27,10 +28,7 @@ export async function sweepCollectedIn(tx: Executor, userId: string): Promise<st
     with gone as (
       delete from wishlist_items w
       where w.user_id = ${userId}
-        and w.quantity <= (
-          select coalesce(sum(ci.quantity), 0) from collection_items ci
-          where ci.user_id = ${userId} and ci.oracle_id = w.oracle_id
-        )
+        and w.quantity <= ${heldCopies(sql`w.user_id`, sql`w.oracle_id`, sql`w.scryfall_id`)}
       returning w.oracle_id, w.quantity
     )
     insert into wishlist_collected (user_id, oracle_id, quantity)

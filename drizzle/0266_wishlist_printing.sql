@@ -1,0 +1,3 @@
+ALTER TABLE "wishlist_items" ADD COLUMN "scryfall_id" uuid;--> statement-breakpoint
+ALTER TABLE "wishlist_items" ADD CONSTRAINT "wishlist_items_scryfall_id_printings_scryfall_id_fk" FOREIGN KEY ("scryfall_id") REFERENCES "public"."printings"("scryfall_id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
+CREATE INDEX "wishlist_items_scryfall_id_idx" ON "wishlist_items" USING btree ("scryfall_id");

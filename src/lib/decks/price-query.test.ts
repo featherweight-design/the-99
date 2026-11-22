@@ -137,9 +137,10 @@ describe("loadPrices", () => {
     ];
     const result = await loadPrices([CARD], [{ deckId: DECK, oracleId: CARD, setCode: "KHM", collectorNumber: "31" }]);
     // Both halves select it, in the same column position, so the union lines up.
-    expect(state.texts[0]).toMatch(/pp\.as_of, p\.scryfall_id\s+from unnest/);
-    expect(state.texts[0]).toMatch(/pp\.as_of,\s+p\.scryfall_id\s+from printings p/);
-    expect(state.texts[0]).toMatch(/facts\.as_of,\s+facts\.scryfall_id/);
+    // Each half also tags whether the row is a NAMED printing's (wishlist), after the id, in the same position.
+    expect(state.texts[0]).toMatch(/pp\.as_of, p\.scryfall_id, false as named\s+from unnest/);
+    expect(state.texts[0]).toMatch(/pp\.as_of,\s+p\.scryfall_id,\s+false as named\s+from printings p/);
+    expect(state.texts[0]).toMatch(/facts\.as_of,\s+facts\.scryfall_id,\s+facts\.named/);
     expect(result.prices.get(CARD)?.printing).toEqual({ scryfallId: CHOSEN });
     expect(priceFor(result, DECK, CARD)?.printing).toEqual({ scryfallId: PICK });
     expect(priceFor(result, OTHER_DECK, CARD)?.printing).toEqual({ scryfallId: CHOSEN });

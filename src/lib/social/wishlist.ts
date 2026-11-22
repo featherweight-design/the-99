@@ -12,7 +12,8 @@
  */
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, friendLinks, socialProfiles, wishlistItems } from "../../db/schema";
+import { cards, friendLinks, socialProfiles, wishlistItems } from "../../db/schema";
+import { heldCopies } from "../wishlist/held";
 import type { Reader } from "./access";
 import { isUuid } from "./rules";
 
@@ -28,17 +29,6 @@ export type FriendWishlistLine = {
 
 /** Apart so a test can render its SQL. */
 export function friendWishlistQuery(viewerId: string, friendPublicId: string, q: Reader = db) {
-  const owned = q
-    .select({
-      userId: collectionItems.userId,
-      oracleId: collectionItems.oracleId,
-      n: sql<number>`sum(${collectionItems.quantity})::int`.as("n"),
-    })
-    .from(collectionItems)
-    // Only the named account's collection is grouped, never every player's.
-    .where(sql`${collectionItems.userId} = (select sp.user_id from ${socialProfiles} sp where sp.public_id = ${friendPublicId})`)
-    .groupBy(collectionItems.userId, collectionItems.oracleId)
-    .as("owned");
   return q
     .select({
       oracleId: wishlistItems.oracleId,
@@ -52,10 +42,9 @@ export function friendWishlistQuery(viewerId: string, friendPublicId: string, q:
     .innerJoin(friendLinks, and(eq(friendLinks.friendUserId, wishlistItems.userId), eq(friendLinks.userId, viewerId)))
     .innerJoin(socialProfiles, and(eq(socialProfiles.userId, wishlistItems.userId), eq(socialProfiles.publicId, friendPublicId)))
     .innerJoin(cards, eq(cards.oracleId, wishlistItems.oracleId))
-    .leftJoin(owned, and(eq(owned.userId, wishlistItems.userId), eq(owned.oracleId, wishlistItems.oracleId)))
-    // Still wanted: the owner's collection holds fewer than they want (G5).
-    // Written out qualified: Drizzle emits a subquery's column bare here, and a later join with an `n` would take it.
-    .where(sql`coalesce("owned"."n", 0) < ${wishlistItems.quantity}`)
+    // Still wanted: the owner's collection holds fewer than they want (G5), counted the way the owner's own list counts
+    // it: a line naming a printing counts only that printing's copies (`heldCopies`). The printing itself is never selected.
+    .where(sql`${heldCopies(wishlistItems.userId, wishlistItems.oracleId, wishlistItems.scryfallId)} < ${wishlistItems.quantity}`)
     .orderBy(sql`${wishlistItems.createdAt} desc`, asc(wishlistItems.oracleId));
 }
 

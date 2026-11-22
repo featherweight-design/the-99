@@ -29,15 +29,18 @@ describe("wantFloor", () => {
 describe("wishlistLinesQuery", () => {
   it("reads one owner's lines and only that owner's collection", () => {
     const { sql, params } = wishlistLinesQuery("owner").toSQL();
-    expect(sql).toContain(`where ("wishlist_items"."user_id" = $`);
-    expect(sql).toContain(`where "collection_items"."user_id" = $`);
-    expect(params.filter((p) => p === "owner")).toHaveLength(2);
+    expect(sql).toContain(`"wishlist_items"."user_id" = $`);
+    // The collection is the line owner's own: tied to the line's column, not a second bound id.
+    expect(sql.replace(/\s+/g, " ")).toContain(`ci.user_id = "wishlist_items"."user_id"`);
+    expect(params.filter((p) => p === "owner")).toHaveLength(1);
   });
 
   it("leaves out a line the collection already reaches, rather than deleting it (G5)", () => {
     const { sql } = wishlistLinesQuery("owner").toSQL();
-    // `n` is the owned subquery's alone: `wishlist_items` has no such column, so the bare name cannot collide.
-    expect(sql).toContain(`and coalesce("n", 0) < "wishlist_items"."quantity")`);
+    // The one `heldCopies` expression, qualified on the line's own columns (a single-table select would drop them).
+    const flat = sql.replace(/\s+/g, " ");
+    expect(flat).toContain(`ci.user_id = "wishlist_items"."user_id" and ci.oracle_id = "wishlist_items"."oracle_id"`);
+    expect(flat).toContain(`< "wishlist_items"."quantity"`);
     expect(sql).not.toMatch(/delete/i);
   });
 });
@@ -61,7 +64,10 @@ describe("friendWishlistQuery", () => {
   });
 
   it("leaves out a line the friend's collection already reaches (G5)", () => {
-    expect(sql).toMatch(/where coalesce\("owned"\."n", 0\) < "wishlist_items"\."quantity"/);
+    const flat = sql.replace(/\s+/g, " ");
+    expect(flat).toContain(`ci.user_id = "wishlist_items"."user_id" and ci.oracle_id = "wishlist_items"."oracle_id"`);
+    expect(flat).toContain(`< "wishlist_items"."quantity"`);
+    expect(flat).not.toContain("scryfall_id as");
   });
 
   it("joins the card from the catalog", () => {

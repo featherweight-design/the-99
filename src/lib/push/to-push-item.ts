@@ -37,7 +37,7 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
       return { ...base, kind: "new-precon", name: view.name, owned: view.owned.owned, of: view.owned.of, href: view.href };
     case "price-drop":
       if (!card || !view.drop) return null;
-      return { ...base, kind: "price-drop", oracleId: card.oracleId, card: card.name, wasCents: view.drop.fromCents, nowCents: view.drop.toCents, image: card.image };
+      return { ...base, kind: "price-drop", oracleId: card.oracleId, card: card.name, wasCents: view.drop.fromCents, nowCents: view.drop.toCents, image: card.image, printing: view.drop.printing };
     case "trade-match":
       if (!card || !view.friend) return null;
       return { ...base, kind: "trade-match", friend: reveal(view.friend.displayName), publicId: view.friend.publicId, oracleId: card.oracleId, card: card.name, image: card.image, askable: view.askable };

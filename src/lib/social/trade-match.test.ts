@@ -21,8 +21,10 @@ describe("wishedForMatchQuery", () => {
     expect(q).toContain("coalesce(tup.feed_kinds ->> 'trade-match', tup.push_kinds ->> 'trade-match') as enabled_at");
   });
 
-  it("leaves out a line the collection already reaches, qualified on both sides", () => {
-    expect(q).toContain(`coalesce((select sum(tci.quantity) from "collection_items" tci where tci.user_id = twi.user_id and tci.oracle_id = twi.oracle_id), 0) < twi.quantity`);
+  it("leaves out a line the collection already reaches, as the line counts it (a named printing only by its own copies)", () => {
+    const flat = q.replace(/\s+/g, " ");
+    expect(flat).toContain("ci.user_id = twi.user_id and ci.oracle_id = twi.oracle_id and (twi.scryfall_id::uuid is null");
+    expect(flat).toContain("< twi.quantity");
   });
 });
 

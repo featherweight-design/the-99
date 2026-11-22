@@ -1,6 +1,7 @@
 import { and, asc, eq, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
+import { heldCopies } from "../wishlist/held";
 import { isGameCardWhere } from "../cards/game-card-where";
 import { nameSearch } from "../cards/name-search";
 
@@ -90,10 +91,7 @@ export function cardSignalsSql(userId: string, oracleIds: string[], wishlist: bo
       ${wishlist ? sql`exists (
         select 1 from wishlist_items w
         where w.user_id = ${userId} and w.oracle_id = c.oracle_id
-          and w.quantity > coalesce((
-            select sum(ci2.quantity) from collection_items ci2
-            where ci2.user_id = ${userId} and ci2.oracle_id = c.oracle_id
-          ), 0)
+          and w.quantity > ${heldCopies(sql`w.user_id`, sql`w.oracle_id`, sql`w.scryfall_id`)}
       )` : sql`false`} as wishlist
     from cards c
     where c.oracle_id in (${sql.join(oracleIds.map((id) => sql`${id}::uuid`), sql`, `)})

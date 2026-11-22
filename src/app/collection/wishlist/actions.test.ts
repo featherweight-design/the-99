@@ -9,6 +9,7 @@ const m = vi.hoisted(() => ({
   after: vi.fn(),
   wantOneMore: vi.fn(),
   setWishlistQuantity: vi.fn(),
+  setWishlistPrinting: vi.fn(),
   clearWishlistLine: vi.fn(),
   dismissCollected: vi.fn(),
   searchCollectionCatalog: vi.fn(),
@@ -18,7 +19,7 @@ vi.mock("../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("next/cache", () => ({ revalidatePath: m.revalidatePath }));
 vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("../../../lib/wishlist/wishlist", () => ({
-  wantOneMore: m.wantOneMore, setWishlistQuantity: m.setWishlistQuantity, clearWishlistLine: m.clearWishlistLine,
+  wantOneMore: m.wantOneMore, setWishlistQuantity: m.setWishlistQuantity, setWishlistPrinting: m.setWishlistPrinting, clearWishlistLine: m.clearWishlistLine,
   loadWishlist: m.loadWishlist,
 }));
 vi.mock("../../../lib/collection/catalog-read", () => ({ searchCollectionCatalog: m.searchCollectionCatalog }));
@@ -40,6 +41,7 @@ describe("the reader", () => {
   const calls: [string, () => Promise<unknown>][] = [
     ["addToWishlistAction", () => actions.addToWishlistAction(CARD)],
     ["setWishlistWantAction", () => actions.setWishlistWantAction(CARD, 3)],
+    ["setWishlistPrintingAction", () => actions.setWishlistPrintingAction(CARD, CARD)],
     ["removeFromWishlistAction", () => actions.removeFromWishlistAction(CARD)],
     ["dismissCollectedAction", () => actions.dismissCollectedAction([{ oracleId: CARD, collectedAt: AT }])],
     ["searchWishlistCardsAction", () => actions.searchWishlistCardsAction("sol")],
@@ -151,5 +153,20 @@ describe("searching for a card to want", () => {
       expect(await actions.searchWishlistCardsAction(q)).toEqual({ ok: false, reason: "invalid" });
     }
     expect(m.searchCollectionCatalog).not.toHaveBeenCalled();
+  });
+});
+
+describe("choosing a printing", () => {
+  it("maps the library result to an outcome and refreshes the tab", async () => {
+    m.setWishlistPrinting.mockResolvedValue({ status: "wanted", quantity: 2, held: 1 });
+    expect(await actions.setWishlistPrintingAction(CARD, CARD)).toEqual({ ok: true, status: "wanted", want: 2, have: 1 });
+    expect(m.setWishlistPrinting).toHaveBeenCalledWith("user_1", CARD, CARD);
+    expect(m.revalidatePath).toHaveBeenCalledWith("/collection/wishlist");
+  });
+
+  it("reads a refused choice (a printing of another card, a malformed id) as invalid, and writes nothing", async () => {
+    m.setWishlistPrinting.mockResolvedValue(null);
+    expect(await actions.setWishlistPrintingAction(CARD, "nope")).toEqual({ ok: false, reason: "invalid" });
+    expect(m.revalidatePath).not.toHaveBeenCalled();
   });
 });

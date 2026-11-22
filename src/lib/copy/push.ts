@@ -17,7 +17,7 @@ export const pushCopy = {
     // A set whose printings have no art yet has no card count on Home: the push still goes, without the figure.
     newSet: { title: t.newSet, body: (cards: number | null) => (cards === null ? "See the set." : `${feedCopy.home.line.newSet(cards)} See the set.`) },
     newPrecon: { title: t.newPrecon, body: feedCopy.home.line.newPrecon },
-    priceDrop: { title: t.priceDrop, body: (was: string, now: string) => `Was ${was}, now ${now} at the cheapest printing.` },
+    priceDrop: { title: t.priceDrop, body: (was: string, now: string, printing?: string | null) => `Was ${was}, now ${now} ${printing ? `at ${printing}` : "at the cheapest printing"}.` },
     tradeMatch: {
       title: t.tradeMatch,
       body: feedCopy.home.line.tradeMatch,

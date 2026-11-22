@@ -117,7 +117,7 @@ describe("loadHomeFeed", () => {
       card: { name: "Sai", image: "sai-owned.jpg" },
       outbound: "https://manapool.com/cards?q=Sai",
       opens: null,
-      drop: { fromCents: 640, toCents: 310 },
+      drop: { fromCents: 640, toCents: 310, printing: null },
     });
     expect(feed.items[1]).toMatchObject({ card: { name: "Mythic", image: "set.jpg" }, setSize: 288, href: "/collection/sets/sos", unseen: false });
   });
