@@ -29,7 +29,7 @@ import { filterCopy } from "../../../lib/copy/lanes";
 import { FiltersBoxTrigger } from "../../ui/filters-box-trigger";
 import { useMinWidth } from "../../ui/use-min-width";
 import { AvailabilityControl } from "./availability-control";
-import { chipsFor } from "./chip-line";
+import { chipsFor, themeLabelFromSlug } from "./chip-line";
 import { CHASSIS_WIDE_MIN_PX, FilterChassis, type FilterChip } from "../../ui/filter-chassis";
 import { ColourControl } from "./colour-control";
 import { FilterSheet } from "./filter-sheet";
@@ -180,7 +180,7 @@ export function FilterRack({
   // `chipsFor` already knows every dimension and how to unset one; the chassis
   // needs only a label and a callback, so this is a shape change rather than a
   // second source of truth about what is on.
-  const chassisChips: FilterChip[] = chipsFor(params, lane, (slug) => themeOptions?.find((o) => o.code === slug)?.label ?? slug).map((chip) => ({
+  const chassisChips: FilterChip[] = chipsFor(params, lane, (slug) => themeOptions?.find((o) => o.code === slug)?.label ?? themeLabelFromSlug(slug)).map((chip) => ({
     key: chip.key,
     label: chip.label,
     // The colour chip collapses its values to a count, so the swatches are the

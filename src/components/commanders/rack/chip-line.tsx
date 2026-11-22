@@ -41,13 +41,13 @@ export function printedInLabel(codes: readonly string[]): string {
   return filterCopy.printedIn.manyShort(codes.length);
 }
 
-// Control order, and search first: the row reads in the order the rack above it
-// is laid out, so a chip and the control that made it are on the same sight line.
 /** A slug's label where the lane has no option list to read one from: `rad-counters` → `Rad Counters`. */
 export function themeLabelFromSlug(slug: string): string {
   return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
+// Control order, and search first: the row reads in the order the rack above it
+// is laid out, so a chip and the control that made it are on the same sight line.
 export function chipsFor(
   params: LaneParams,
   lane: Lane,
