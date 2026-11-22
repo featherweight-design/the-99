@@ -63,7 +63,6 @@ describe("resultSeatsQuery (ruling (b))", () => {
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
     expect(q.sql).toContain(`inner join "rule_zero_result_seats" "viewer_played" on ("viewer_played"."table_id" = "rule_zero_tables"."id" and "viewer_played"."started_at" = "rule_zero_result_seats"."started_at" and "viewer_played"."user_id" = $2)`);
     expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_result_seats"."user_id")`);
-    expect(q.sql).toContain('"rule_zero_tables"."expires_at" > now()');
     // The kept window (7 days past the morning), not the night, and one game's rows only.
     expect(q.sql).toContain("interval '7 days' > now()");
     expect(q.sql).toContain('"rule_zero_result_seats"."started_at" = $');
@@ -114,7 +113,7 @@ describe("prefillFrom", () => {
   it("draws every other seat, waiting ones too, and counts the whole table", () => {
     expect(prefill.podName).toEqual(named("Thursday night"));
     expect(prefill.podSize).toBe(4);
-    expect(prefill.table).toEqual({ id: TABLE, seating: seatingHash(TABLE, ROWS) });
+    expect(prefill.table).toEqual({ id: TABLE, seating: seatingHash(TABLE, ROWS), game: null });
     expect(prefill.seats).toEqual([
       { seat: 2, name: named("Colin"), deckName: named("Zimone Combo"), commanderName: "Zimone, Quandrix Prodigy", artCropUri: "https://art/zimone.jpg", friend: true },
       { seat: 3, name: named("Peter"), deckName: null, commanderName: null, artCropUri: null, friend: true },

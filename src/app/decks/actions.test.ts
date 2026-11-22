@@ -494,8 +494,10 @@ vi.mock("../../lib/social/rule-zero-log", async (importActual) => {
   const actual = await importActual<typeof import("../../lib/social/rule-zero-log")>();
   return {
     ...actual,
-    resolveTableSeatsIn: vi.fn(async (_tx: unknown, viewerId: string, table: { id: string; seating: string }, seats: number[]) =>
-      actual.resolveSeatsFrom(tableRows.rows, viewerId, table, seats)),
+    resolveTableSeatsIn: vi.fn(async (_tx: unknown, viewerId: string, table: { id: string; seating: string }, seats: number[]) => {
+      const resolved = actual.resolveSeatsFrom(tableRows.rows, viewerId, table, seats);
+      return resolved === null ? null : { seats: resolved, gameAt: null };
+    }),
   };
 });
 // A friend seat's facts, as `resolveFriendSeatsIn` would read them under the friendship's lock.

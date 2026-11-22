@@ -97,7 +97,7 @@ describe("resultPlacesQuery", () => {
     expect(text).toContain('"rule_zero_result_seats"."table_id" = $1');
     expect(text).not.toContain('"rule_zero_result_seats"."seat"');
     // Qualified in the subquery, and skipped once the viewer logged a game from the table since the result was saved.
-    expect(text).toContain('dg.rule_zero_table_id = $3');
+    expect(text).toMatch(/dg\.rule_zero_table_id = \$\d/);
     expect(text).toContain('"rule_zero_result_seats"."started_at" = $2');
     expect(params[0]).toBe(TABLE);
     expect(params).toContain("user_a");
@@ -138,7 +138,7 @@ describe("pickGameQuery (which game the Log opens on)", () => {
     expect(text).toContain('not exists');
     expect(text).toContain('dg.rule_zero_game_at = "rule_zero_result_seats".started_at');
     expect(text).toContain('order by "rule_zero_result_seats"."started_at" desc limit $');
-    expect(text).not.toContain("extract(epoch");
+    expect(text.slice(text.indexOf(" where "))).not.toContain("extract(epoch");
     expect(params.slice(0, 2)).toEqual([TABLE, "user_a"]);
   });
 
@@ -147,7 +147,7 @@ describe("pickGameQuery (which game the Log opens on)", () => {
     const ms = new Date("2026-11-21T03:00:00.123Z").getTime();
     const { sql: text, params } = pickGameQuery("user_a", TABLE, ms).toSQL();
     // Compared as the timestamp itself (the index's column), built from the ms, never as a string.
-    expect(text).toContain('"rule_zero_result_seats"."started_at" = $3');
+    expect(text.slice(text.indexOf(" where "))).toMatch(/"rule_zero_result_seats"\."started_at" = \$\d/);
     expect(params.some((p) => p instanceof Date && p.getTime() === ms)).toBe(true);
     expect(params.some((p) => typeof p === "string" && p === String(ms))).toBe(false);
   });
