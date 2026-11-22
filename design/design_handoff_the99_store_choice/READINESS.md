@@ -87,3 +87,31 @@ round-trip is needed for that; Q1 to Q3 are Hugh's. Copy is DRAFT for `/copy-rev
 - Hugh's brief, 2026-11-22: stores, replace everywhere, cart only where supported, TCGplayer note, default said once.
 - Hugh, 2026-11-22: the store is also in onboarding; Q2 and Q3 to the best experience (kept Change store; copy and paste).
 - Silence is a state (`price.ts`); one layout for the strip at both widths; the cart's parts (K3); Shopping stays deck-only.
+
+---
+
+Audited 2026-11-22: concur (Yellow), against origin/main c444a93 and lane 58's backend plan. The cold read adds these
+eng-side clarifications for the plan PR; none needs a Design round.
+
+- **Plan conflicts, plan wins on mechanism.** (a) Column is `user_prefs.preferred_store` (plan), not `user_prefs.store`; prices
+  live in a sibling `printing_store_prices` (plan), not a `store` column on `printing_prices` (G2). (b) Re-baseline: the plan's
+  `wishlist_items.price_store` plus a next-run re-baseline replaces G4's "same transaction as the Settings write"; same
+  outcome (a switch never fires a drop), no cross-table write in the settings action. Also settle any price-drop feed item or
+  push already raised under the old store. (c) G3 must not use Scryfall's `purchase_uris` (partner-tagged; no affiliate for
+  now): TCGplayer links come from `tcgplayer_id`, Card Kingdom's from its pricelist `url`. (d) Plan section 6 says the cart
+  shows a Mana Pool total beside the preferred store's figures. That mixes stores and contradicts call 6 (no cart link for a
+  non-cart store). Follow Design: drop it from the plan.
+- **STORE_PREFERENCE switch.** Off means Mana Pool everywhere: no Store section, no first-run row, no Change store link, copy
+  as shipped. Not drawn; the shipped surfaces are the off state.
+- **Stock states per store.** TCGplayer has no stock signal, so "never stocked", "sold out" and discovery's "in stock" cannot
+  occur for it: those cells collapse to priced or `no price from TCGplayer`. Card Kingdom has real stock (`qty_retail` 0 =
+  sold out at Card Kingdom): draw it with the shipped sold-out pattern (`soldOutNote`, set cells' `Sold out at {s}`).
+- **Surfaces named in copy only, not drawn** (each follows its nearest drawn pattern): deck export dialog and commit sheet
+  `Buy these at` links (hidden where no cart), receipt modal, set collections' Send and price cells, deck versioning's Open in
+  Mana Pool, staples `manapoolCardUrl` (mana-improve-door), commander discovery and commander-row stock aria, swap tools foot,
+  mana balance buy link, collection price sort and value, proxies, token rows, the push landing's price-drop press (opens
+  Mana Pool today) and the Home feed's `manapoolCardUrl` link (`feed/home.ts`), the landing demo's card modal.
+- **PR 4 is too big for one PR** (about 25 copy files plus about 25 components). Split, each merging before the next opens:
+  UI-1 store module, `price.ts` and `price-fact` copy as functions of the store, Shopping strip, cart checkout, deck cost
+  and stats; UI-2 card details, tokens, wishlist, Home feed, push landing; UI-3 the remaining surfaces above; UI-4 Settings
+  Store section, first-run row and the Change store link (last, so no door opens before every surface honors the choice).
