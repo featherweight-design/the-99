@@ -8,6 +8,8 @@ import type { Game } from "./engine";
 
 const PREFIX = "the99.tracker.";
 const VERSION = 1;
+/** The What's what guide's seen flag. Its own key, outside `PREFIX`, so `sweepGames` never reads it as a game. */
+const GUIDE_KEY = "the99.trackerGuide.seen";
 
 type Stored = { v: typeof VERSION; game: Game; expiresAt: number };
 
@@ -71,6 +73,23 @@ export function sweepGames(storage: Pick<Storage, "getItem" | "removeItem" | "ke
       const kept = parse(storage.getItem(k), k.slice(PREFIX.length));
       if (!kept || kept.expiresAt <= now) storage.removeItem(k);
     }
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Whether this device has shown the What's what guide. Storage that cannot be read counts as not seen, so the guide shows each visit. */
+export function guideSeen(storage: Pick<Storage, "getItem">): boolean {
+  try {
+    return storage.getItem(GUIDE_KEY) !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function markGuideSeen(storage: Pick<Storage, "setItem">): void {
+  try {
+    storage.setItem(GUIDE_KEY, "1");
   } catch {
     /* storage unavailable */
   }

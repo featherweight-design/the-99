@@ -17,6 +17,7 @@ import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { PersonName, type ThirdPartyName } from "../../lib/person-name";
 import { isOver, placements, replay, type Game, type GameConfig } from "../../lib/tracker/engine";
 import { landLife } from "../../lib/tracker/result";
+import { guideSeen, markGuideSeen } from "../../lib/tracker/storage";
 import { drawnLayout, layoutById, layoutsFor, type Device, type Turn } from "../../lib/tracker/layouts";
 import { rollFair, SIDES, type DieKind } from "./dice";
 import { DiceResult, DiceRoll, type Roll } from "./dice-roll";
@@ -28,6 +29,7 @@ import { Panel, type SeatPick } from "./panel";
 import { Result } from "./result";
 import { Setup } from "./setup";
 import { Sheet, type SheetView } from "./sheet";
+import { WhatsWhat } from "./whats-what";
 import { Spine } from "./spine";
 import { useGame } from "./use-game";
 import { useWakeLock } from "./use-wake-lock";
@@ -119,6 +121,9 @@ export function PlaySurface({
     setPick(null);
     setSheet(null);
   }, []);
+  // What's what: due once per device after Start (and the first-player roll), then from the Menu. `from` is where focus goes on close.
+  const [guide, setGuide] = useState<"start" | "menu" | null>(null);
+  const [guideDue, setGuideDue] = useState(false);
   const [fly, setFly] = useState<{ kind: "monarch" | "initiative"; k: number; from: [number, number]; to: [number, number] } | null>(null);
   const [roll, setRoll] = useState<Roll | null>(null);
   // Random's d20 rounds, on screen over the game that already started on their winner.
@@ -135,6 +140,8 @@ export function PlaySurface({
   /** The seat whose panel takes focus once an Undo has reopened the game (clarification 10). */
   const refocus = useRef<number | null>(null);
   const board = useRef<HTMLDivElement>(null);
+  const canvas = useRef<HTMLDivElement>(null);
+  const guideFrom = useRef<"start" | "menu">("start");
   // A screen that turns mid-game redraws the table turned the matching way, with a 0.2s fade and none under reduced
   // motion (addendum #3115). The first draw does not fade.
   const lastTurn = useRef(turn);
@@ -145,6 +152,34 @@ export function PlaySurface({
   }, [turn]);
 
   const state = useMemo(() => (game ? replay(game) : null), [game]);
+  const over = state ? isOver(state) : false;
+  // The first open: 600 ms after play appears (Start, and the first-player roll once it has landed), and only while no
+  // sheet, die, pick or Menu is open. The flag is spent when the guide shows; storage that cannot be read shows it each visit.
+  useEffect(() => {
+    if (!guideDue || !game || over || firstRoll || guide || sheet || roll || pick || menu) return;
+    const t = setTimeout(() => {
+      if (document.querySelector('[data-testid="dice-menu"]')) return;
+      setGuideDue(false);
+      try {
+        markGuideSeen(window.localStorage);
+      } catch {
+        /* storage unavailable */
+      }
+      guideFrom.current = "start";
+      setGuide("start");
+    }, 600);
+    return () => clearTimeout(t);
+  }, [guideDue, game, over, firstRoll, guide, sheet, roll, pick, menu]);
+  // Focus goes back where it came from once the guide has gone and the board is live again.
+  const hadGuide = useRef(false);
+  useEffect(() => {
+    if (guide) hadGuide.current = true;
+    else if (hadGuide.current) {
+      hadGuide.current = false;
+      if (guideFrom.current === "menu") document.querySelector<HTMLElement>('[data-testid="strip-menu"]')?.focus();
+      else board.current?.focus();
+    }
+  }, [guide]);
   const saved_layout = game ? layoutById(game.config.layout) : undefined;
   // The game's own table, from its Start. A saved game without one, or one that does not fit its layout, is not resumed.
   const snapshot = game?.config.snapshot;
@@ -168,7 +203,6 @@ export function PlaySurface({
   const setupSeats = seats ?? rematch?.players ?? null;
   const nowhere = ready && !game && setupSeats === null;
   useEffect(() => (nowhere ? router.replace(backHref) : undefined), [nowhere, router, backHref]);
-  const over = state ? isOver(state) : false;
   // The change that ended the game, named for the Undo row and its toast (three replays, so once per game, not per render).
   const ending = useMemo(() => (game && over && snapshot ? endingLine(game, snapshot.players) : null), [game, over, snapshot]);
   useWakeLock(!!state && !over);
@@ -176,6 +210,7 @@ export function PlaySurface({
   if (over && sheet) setSheet(null);
   if (over && pick) setPick(null);
   if (over && menu) setMenu(false);
+  if (over && guide) setGuide(null);
 
   useEffect(() => {
     if (over) finish(Date.now());
@@ -298,6 +333,11 @@ export function PlaySurface({
         onStart={({ layout, life, first, order, rolls }) => {
           setRematch(null);
           setFirstRoll(rolls ? { rounds: rolls, first } : null);
+          try {
+            setGuideDue(!guideSeen(window.localStorage));
+          } catch {
+            setGuideDue(true);
+          }
           // The seat map's order is the turn order and the cells' order, so the config and the snapshot both follow it.
           const bySeatNo = new Map(setupSeats.map((s) => [s.seat, s]));
           const seated = order.map((n) => bySeatNo.get(n)!);
@@ -355,8 +395,10 @@ export function PlaySurface({
   return (
     // overflow-clip, not overflow-hidden: both cut at the same edge, but a hidden box can still be scrolled (by focus or
     // scrollIntoView inside a sheet), which slid the whole table sideways under a turned seat's sheet. A clipped box cannot.
-    <div ref={board} className="relative flex w-full flex-1 items-center justify-center overflow-clip" data-testid="tracker-play" data-game-on="">
+    <div ref={board} tabIndex={-1} className="relative flex outline-none w-full flex-1 items-center justify-center overflow-clip" data-testid="tracker-play" data-game-on="">
       <div
+        ref={canvas}
+        inert={guide !== null}
         className="relative"
         style={{ aspectRatio: `${layout.canvas.w} / ${layout.canvas.h}`, width: `min(100%, calc(100dvh * ${layout.canvas.w} / ${layout.canvas.h}))` }}
       >
@@ -421,6 +463,11 @@ export function PlaySurface({
           onDice={rollDie}
           onUndo={undo}
           onMenu={toggleMenu}
+          onGuide={() => {
+            setMenu(false);
+            guideFrom.current = "menu";
+            setGuide("menu");
+          }}
         />
 
         {firstRoll ? <FirstRoll rolls={firstRoll} layout={layout} seats={seatsInPlay} onDone={() => setFirstRoll(null)} /> : null}
@@ -438,6 +485,8 @@ export function PlaySurface({
           </span>
         ) : null}
       </div>
+
+      {guide && !over ? <WhatsWhat canvas={canvas} device={device} onClose={() => setGuide(null)} /> : null}
 
       {sheet && !over ? (
         <Sheet

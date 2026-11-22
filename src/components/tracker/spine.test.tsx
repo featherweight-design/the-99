@@ -36,6 +36,7 @@ function Strip({ canUndo = false, rect = { x: 0, y: 0, w: 56, h: 600 }, canvas =
       onDice={vi.fn()}
       onUndo={vi.fn()}
       onMenu={() => setMenu((m) => !m)}
+      onGuide={() => {}}
     />
   );
 }

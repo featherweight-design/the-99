@@ -12,10 +12,11 @@ import type { Rect } from "../../lib/tracker/layouts";
 import type { DayNight } from "../../lib/tracker/engine";
 import { FadingImg } from "../ui/hydrated-art";
 import { type DieKind, warmDice } from "./dice";
-import { CoinIcon, D20Icon, D6Icon, DoorIcon, InitiativeIcon, MonarchIcon, MoonIcon, MoreIcon, SunIcon, UndoIcon } from "./icons";
+import { CoinIcon, D20Icon, D6Icon, DoorIcon, HelpIcon, InitiativeIcon, MonarchIcon, MoonIcon, MoreIcon, SunIcon, UndoIcon } from "./icons";
 
 const copy = trackerCopy.strip;
 const diceCopy = trackerCopy.dice;
+const guideCopy = trackerCopy.whatsWhat;
 
 export type Holder = { label: string | PersonParts; art: string | null; held: boolean };
 /** The Menu's one row: where Back to the table goes, its line, and what to do first (land any pending life). */
@@ -38,6 +39,7 @@ export function Spine({
   onDice,
   onUndo,
   onMenu,
+  onGuide,
 }: {
   rect: Rect;
   canvas: { w: number; h: number };
@@ -55,6 +57,8 @@ export function Spine({
   onDice: (kind: DieKind) => void;
   onUndo: () => void;
   onMenu: () => void;
+  /** The Menu's What's what row: the play surface closes the Menu and opens the guide. */
+  onGuide: () => void;
 }) {
   const column = rect.h > rect.w;
   const [dice, setDice] = useState(false);
@@ -66,12 +70,15 @@ export function Spine({
   const moreMenu = useRef<HTMLDivElement>(null);
   const moreShift = useClamp(moreMenu, menu);
   const moreButton = useRef<HTMLButtonElement>(null);
-  const backItem = useRef<HTMLAnchorElement>(null);
+  const guideItem = useRef<HTMLButtonElement>(null);
   // The Menu takes focus to its row on open, hands it back to Menu on close, and closes on Esc.
   const wasOpen = useRef(false);
+  // Pressing the guide row closes the Menu, but focus belongs to the guide that opens, not back to the Menu button.
+  const guiding = useRef(false);
   useEffect(() => {
-    if (menu) backItem.current?.focus();
-    else if (wasOpen.current) moreButton.current?.focus();
+    if (menu) guideItem.current?.focus();
+    else if (wasOpen.current && !guiding.current) moreButton.current?.focus();
+    guiding.current = false;
     wasOpen.current = menu;
     if (!menu) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onMenu();
@@ -224,8 +231,26 @@ export function Spine({
                 style={{ marginLeft: moreShift }}
                 data-testid="strip-menu-pop"
               >
+                <button
+                  ref={guideItem}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    guiding.current = true;
+                    onGuide();
+                  }}
+                  className="mb-2 flex min-h-[64px] w-full items-center gap-3 rounded-[10px] bg-[color:var(--surface)] py-2 pl-2 pr-3.5 text-left outline-offset-2 motion-safe:transition-transform motion-safe:duration-75 motion-safe:active:scale-[.98]"
+                  data-testid="strip-menu-guide"
+                >
+                  <span aria-hidden className="grid size-[44px] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] text-[color:var(--fg-body)] shadow-[inset_0_0_0_1px_var(--border-strong)]">
+                    <HelpIcon size={22} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-[15px] leading-[1.3] font-semibold text-[color:var(--fg)]">{guideCopy.menuRow}</span>
+                    <span className="mt-0.5 block text-[12.5px] leading-[1.4] text-[color:var(--fg-muted)]">{guideCopy.menuLine}</span>
+                  </span>
+                </button>
                 <Link
-                  ref={backItem}
                   href={back.href}
                   role="menuitem"
                   onClick={back.onLeave}
