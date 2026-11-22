@@ -1,7 +1,8 @@
 // Asks a model which of the four judgement themes (group hug, pillow fort, big mana, politics) each
 // pre-filtered card serves. See scripts/lib/judged-labels-build.ts and docs/agents/judged-labels.md.
 //
-//   pnpm db:build:judged                     dry run, full candidate set: reads, prices, writes nothing
+//   Every run needs --branch=<br-id>: the database reached must report that Neon branch (require-branch.mjs).
+//   pnpm db:build:judged --branch=<id>       dry run, full candidate set: reads, prices, writes nothing
 //   pnpm db:build:judged --sample            dry run of the ~200-card grading sample
 //   pnpm db:build:judged --sample --spend    submits it (and collects a finished batch)
 //   --sample --fresh                         a new sample: only cards with no judged_labels row, so it cannot overlap the last

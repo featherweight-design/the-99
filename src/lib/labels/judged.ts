@@ -123,7 +123,13 @@ export const buildJudgedRequest = (customId: string, model: string, cards: CardF
 // "this card serves THIS theme", for each theme pass 1 gave a card. Only a "yes" survives into `verified_themes`,
 // the column the app reads. Graded against blind samples it carried pillowFort and bigMana over the precision bar.
 
-const THEME_DEFINITIONS = JUDGED_SYSTEM.slice(JUDGED_SYSTEM.indexOf("THEMES (use"), JUDGED_SYSTEM.indexOf("A card may serve"));
+const THEME_DEFINITIONS = (() => {
+  const from = JUDGED_SYSTEM.indexOf("THEMES (use");
+  const to = JUDGED_SYSTEM.indexOf("A card may serve");
+  // A renamed marker must fail at import, never hand the verifier a truncated or garbage slice.
+  if (from < 0 || to <= from) throw new Error("JUDGED_SYSTEM no longer has the markers VERIFY_SYSTEM cuts its definitions by");
+  return JUDGED_SYSTEM.slice(from, to);
+})();
 
 /** The definitions are pass 1's own text, so the verifier judges against exactly what pass 1 was told. */
 export const VERIFY_SYSTEM = `You check ONE claim about a Magic: the Gathering card in a Commander deck: that the card serves ONE named strategy theme.
