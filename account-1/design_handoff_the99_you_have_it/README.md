@@ -1,6 +1,6 @@
 # You have a card a friend wants · R3
 
-Account 1, 2026-11-22. Status: **R3, the call-out's press replaced (toggle or filter, Q1 open). No PR until Hugh approves.**
+Account 1, 2026-11-22. Status: **R3 APPROVED by Hugh, 2026-11-22 (Q1: B, the filter).**
 Canvas (Design type): https://claude.ai/artifact/3px7adGsuhz7LDqFqHCMtS (Main, Wishlist, Filter, Sheet, Friends).
 
 The mirror of Find a friend's spares (#3202). There, your Wishlist tile shows a friend's spare and opens Ask. Here, a
@@ -21,10 +21,10 @@ Unchanged: Wishlist stays separate from Shopping; your own Collection and Wishli
    Loading: the tab as shipped; call-out, key and presses fade in when the read lands (160ms, none under reduced motion).
 2. **A page call-out and a filter (R3).** The call-out is a statement: the deck page's to-do card row (`TodoRow`'s mark
    tile, title, body) with no press: eyebrow `Your spares`, `You have 4 to spare` / `Lathliss, Giada, Jace and Tam. Offer
-   one from its tile.` (first three and `and N more` past four). The grid narrows by **B (recommended)**: the shipped
+   one from its tile.` (first three and `and N more` past four). The grid narrows by **B (approved)**: the shipped
    `SegmentedSwitch` (`kind="radio"`, neutral, compact, as History's) under the call-out, left edge, `All · 9` /
-   `You can spare · 4`; or **A**: the shipped `Checkbox` labelled `Only these` right after the names (under them on the
-   phone, same line from md). Not mirrored to the URL. No spares: neither. The head's count stays the list's.
+   `You can spare · 4`; (A, not built: the shipped `Checkbox` labelled `Only these` right after the names (under them on the
+   phone, same line from md).) Not mirrored to the URL. No spares: neither. The head's count stays the list's.
 3. **The press opens your spare, with Offer.** `You have this` in the spares modal's shell (`ModalChrome`, 640 / sheet):
    card box `on Colin’s wishlist · wants 2`, `Your spares · N`, one row with **Offer**; then `Offered` (days left),
    `Accepted` (success), `Declined`. If the friend already asked you, the row is their ask with `AnswerPresses`.
@@ -36,10 +36,10 @@ Unchanged: Wishlist stays separate from Shopping; your own Collection and Wishli
    row's). Zero: nothing.
 5. **Phone and desktop:** one design.
 
-## For Hugh
+## Settled (Hugh, 2026-11-22)
 
-- **Q1 · Toggle in the call-out (A) or a filter under it (B)?** Filter board. Recommended: B, so the call-out stays a
-  statement and the control is the list's own.
+- **Q1 · B, the filter.** The call-out stays a statement; the segmented switch under it narrows the grid. A (the toggle)
+  stays on the Filter board as record only.
 
 ## R3 · Hugh's note (2026-11-22)
 
@@ -62,7 +62,7 @@ Unchanged: Wishlist stays separate from Shopping; your own Collection and Wishli
 |---|---|
 | `Main.dc.html` | The calls, the questions |
 | `Wishlist.dc.html` | F0–F2 phone, D0–D2 desktop: loading, loaded, filtered (with B), close up |
-| `Filter.dc.html` | Q1: A (toggle) and B (filter), off and on, phone and desktop |
+| `Filter.dc.html` | Q1: A (toggle, record only) and B (filter, approved), off and on |
 | `Sheet.dc.html` | F3–F6 phone, D3–D6 desktop: Offer, Offered, asked, accepted |
 | `Friends.dc.html` | B1–B2 your /friends count; C1–C2 the offer in the friend's Waiting on you |
 | `STATES.md` · `copy strings.ts` · `READINESS.md` | Every state, every new string, the verdict |

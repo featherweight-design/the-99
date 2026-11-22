@@ -81,7 +81,7 @@ boards["Main.dc.html"] = (1560, 2000, "Main", page("You have it R3: main", 1560,
  + '<div style="display:flex;gap:20px">' + ph("p-b0", "Colin's wishlist", "Call-out, filter, key, presses.") + ph("p-f2", "The sheet", "Lathliss: 1 spare, Offer.") + '</div>'
  + dk("d-b1", "Desktop, filtered", "You can spare · 4 chosen.", 620)
  + '</div></div>'
- + q("Q1", "Toggle in the call-out (A) or a filter under it (B)?", "Both narrow the grid to the cards you can spare; the Filter board draws them side by side, on and off, at both widths.", "B. The call-out stays a plain statement and the control is the list's own, as History's switch is; A puts a control inside a message.")
+ + q("Q1 · settled", "Toggle in the call-out (A) or a filter under it (B)? Hugh: B.", "Both narrow the grid to the cards you can spare; the Filter board draws them side by side, on and off, at both widths.", "B. The call-out stays a plain statement and the control is the list's own, as History's switch is; A puts a control inside a message.")
  + '<div style="display:flex;flex-direction:column;gap:10px;padding:20px 24px;border:1px solid #262A35;border-radius:14px">' + label("R3 · Hugh's note, 2026-11-22")
  + '<div style="font-size:14px;line-height:1.6;color:#B1B6C7">' + ul(["The Show button read wrong and sat far from the text on desktop: replaced by a toggle beside the text (A) or a filter (B)."]) + '</div></div>'
  + '<div style="display:flex;flex-direction:column;gap:10px;padding:20px 24px;border:1px solid #262A35;border-radius:14px">' + label("R2 · Hugh's notes, 2026-11-22")

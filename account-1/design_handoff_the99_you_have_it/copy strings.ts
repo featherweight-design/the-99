@@ -27,9 +27,6 @@ export const haveCopy = {
     filterAria: "Show",
     filterAll: "All ·",
     filterSpare: "You can spare ·",
-    // A (toggle): the checkbox's label and name.
-    only: "Only these",
-    onlyAria: (n: number) => `Show only the ${n} you can spare`,
   },
   // The friend's side (Waiting on you, Home lead, push).
   waiting: {

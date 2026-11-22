@@ -17,8 +17,8 @@
 | State | Draws |
 |---|---|
 | No spares | None of them. |
-| N spares | Call-out row (no press): `You have N to spare`, names. B: `All · 9` / `You can spare · N`, All chosen. A: `Only these` unchecked. Key: only items drawn. |
-| Filtered | B: `You can spare · N` chosen; A: checked. The grid holds those N; head count unchanged. Not in the URL. |
+| N spares | Call-out row (no press): `You have N to spare`, names. B: `All · 9` / `You can spare · N`, All chosen. Key: only items drawn. |
+| Filtered | `You can spare · N` chosen. The grid holds those N; head count unchanged. Not in the URL. |
 | A spare leaves while filtered (an offer accepted elsewhere stays: it is still yours) | The tile stays until the next read. |
 
 ## Sheet rows
