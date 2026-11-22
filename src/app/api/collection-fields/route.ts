@@ -15,7 +15,7 @@ import { auth } from "@clerk/nextjs/server";
 import { NextResponse, type NextRequest } from "next/server";
 import { collectionDrawFieldsFor } from "../../../lib/collection/list-wire";
 import { loadBrowseCardsFor } from "../../../lib/collection/browse-read";
-import { MAX_COLLECTION_FIELDS_BATCH } from "../../../lib/collection/fields-batch";
+import { MAX_COLLECTION_FIELDS_BATCH, MAX_COLLECTION_FIELDS_GET } from "../../../lib/collection/fields-batch";
 import { enforceHit } from "../../../lib/rate/observe";
 import { tooManyRequests } from "../../../lib/rate/refuse";
 
@@ -25,18 +25,40 @@ export const runtime = "nodejs";
 const ORACLE_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const HEADERS = { "Content-Type": "application/json", "Cache-Control": "private, no-store" };
 
+/** The ids one request names, or null when the batch is empty, over `max`, or holds a value that is no oracle id. */
+function validIds(raw: unknown[], max: number): string[] | null {
+  if (raw.length === 0 || raw.length > max) return null;
+  return raw.every((id) => typeof id === "string" && ORACLE_ID.test(id)) ? (raw as string[]) : null;
+}
+
+async function answer(userId: string, ids: string[]) {
+  // Duplicates collapse here (the cap counts them, as it always did), and the read is of THESE
+  // cards of THIS reader only: never the whole list, which a cache miss would rebuild per batch.
+  const asked = new Set(ids);
+  const cards = await loadBrowseCardsFor(userId, [...asked]);
+  return NextResponse.json({ fields: collectionDrawFieldsFor(cards, asked) }, { headers: HEADERS });
+}
+
+/** A batch in the query string, 200 ids at most: what a client that has not reloaded since this changed still sends. */
 export async function GET(req: NextRequest) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
   const wait = await enforceHit(userId, "draw-fields");
   if (wait !== null) return tooManyRequests(wait, HEADERS);
-  const ids = (req.nextUrl.searchParams.get("ids") ?? "").split(",").filter(Boolean);
-  if (ids.length === 0 || ids.length > MAX_COLLECTION_FIELDS_BATCH || !ids.every((id) => ORACLE_ID.test(id))) {
-    return NextResponse.json(null, { status: 400, headers: HEADERS });
-  }
-  // Duplicates collapse here (the cap above counts them, as it always did), and the read is of THESE
-  // cards of THIS reader only: never the whole list, which a cache miss would rebuild per batch.
-  const asked = new Set(ids);
-  const cards = await loadBrowseCardsFor(userId, [...asked]);
-  return NextResponse.json({ fields: collectionDrawFieldsFor(cards, asked) }, { headers: HEADERS });
+  const ids = validIds((req.nextUrl.searchParams.get("ids") ?? "").split(",").filter(Boolean), MAX_COLLECTION_FIELDS_GET);
+  if (!ids) return NextResponse.json(null, { status: 400, headers: HEADERS });
+  return answer(userId, ids);
+}
+
+/** A batch in the body, `{ ids: string[] }`, up to `MAX_COLLECTION_FIELDS_BATCH`. */
+export async function POST(req: NextRequest) {
+  const { userId } = await auth();
+  if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
+  const wait = await enforceHit(userId, "draw-fields");
+  if (wait !== null) return tooManyRequests(wait, HEADERS);
+  const body: unknown = await req.json().catch(() => null);
+  const raw = body !== null && typeof body === "object" && "ids" in body ? (body as { ids: unknown }).ids : null;
+  const ids = Array.isArray(raw) ? validIds(raw, MAX_COLLECTION_FIELDS_BATCH) : null;
+  if (!ids) return NextResponse.json(null, { status: 400, headers: HEADERS });
+  return answer(userId, ids);
 }

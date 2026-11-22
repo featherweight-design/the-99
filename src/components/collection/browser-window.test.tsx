@@ -38,8 +38,8 @@ const pending: { ids: string[]; answer: () => void }[] = [];
 beforeEach(() => {
   pending.length = 0;
   window.localStorage.clear();
-  vi.stubGlobal("fetch", vi.fn((url: string) => new Promise<Response>((resolve) => {
-    const ids = new URL(url, "http://x").searchParams.get("ids")!.split(",");
+  vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((resolve) => {
+    const ids = (JSON.parse(String(init?.body)) as { ids: string[] }).ids;
     pending.push({
       ids,
       answer: () => resolve(new Response(JSON.stringify({ fields: collectionDrawFieldsFor(all, new Set(ids)) }))),

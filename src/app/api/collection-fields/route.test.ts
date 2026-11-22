@@ -10,9 +10,9 @@ vi.mock("../../../lib/rate/observe", () => ({ enforceHit: observe }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: async () => ({ userId: stub.userId }) }));
 vi.mock("../../../lib/collection/browse-read", () => ({ loadBrowseCardsFor: stub.load }));
 
-import { GET } from "./route";
+import { GET, POST } from "./route";
 import type { BrowseListCard } from "../../../lib/collection/browse";
-import { MAX_COLLECTION_FIELDS_BATCH } from "../../../lib/collection/fields-batch";
+import { MAX_COLLECTION_FIELDS_BATCH, MAX_COLLECTION_FIELDS_GET } from "../../../lib/collection/fields-batch";
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -22,6 +22,8 @@ const card = (oracleId: string): BrowseListCard => ({
   setCounts: [["RTR", 1]], primarySetCode: "RTR", comboPartner: { name: "Other" },
 } as BrowseListCard);
 const get = (qs: string) => GET(new NextRequest(`http://localhost/api/collection-fields?${qs}`));
+const post = (body: unknown) =>
+  POST(new NextRequest("http://localhost/api/collection-fields", { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) }));
 
 beforeEach(() => {
   observe.mockReset().mockResolvedValue(null);
@@ -40,6 +42,7 @@ describe("GET /api/collection-fields", () => {
     expect(Object.keys(fields)).toEqual([A, B]);
     expect(fields[A]).toEqual({
       imageUri: `https://cards.example/${A}.jpg`,
+      manaCost: "{U}",
       comboPartner: { name: "Other" },
       art: { printedName: null, primarySetCode: "RTR" },
     });
@@ -59,7 +62,7 @@ describe("GET /api/collection-fields", () => {
   });
 
   it("counts a repeated id against the cap, as it always did", async () => {
-    const full = Array.from({ length: MAX_COLLECTION_FIELDS_BATCH }, () => A).join(",");
+    const full = Array.from({ length: MAX_COLLECTION_FIELDS_GET }, () => A).join(",");
     expect((await get(`ids=${full}`)).status).toBe(200);
     expect((await get(`ids=${full},${A}`)).status).toBe(400);
   });
@@ -79,7 +82,7 @@ describe("GET /api/collection-fields", () => {
   it.each([
     ["no ids", ""],
     ["an id that is not an oracle id", "ids=../etc"],
-    ["one id too many", `ids=${Array.from({ length: MAX_COLLECTION_FIELDS_BATCH + 1 }, () => A).join(",")}`],
+    ["one id too many", `ids=${Array.from({ length: MAX_COLLECTION_FIELDS_GET + 1 }, () => A).join(",")}`],
   ])("refuses %s before reading anything", async (_, qs) => {
     expect((await get(qs)).status).toBe(400);
     expect(stub.load).not.toHaveBeenCalled();
@@ -102,5 +105,43 @@ describe("GET /api/collection-fields", () => {
     stub.userId = null;
     await get(`ids=${A}`);
     expect(observe).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/collection-fields", () => {
+  it("answers the same fields as the GET, from a body", async () => {
+    const res = await post({ ids: [A, B] });
+    expect(res.status).toBe(200);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+    expect(Object.keys((await res.json()).fields)).toEqual([A, B]);
+    expect(stub.load).toHaveBeenCalledWith("user_1", [A, B]);
+  });
+
+  it("carries a full batch of 500, which no query string could", async () => {
+    const ids = Array.from({ length: MAX_COLLECTION_FIELDS_BATCH }, () => A);
+    expect((await post({ ids })).status).toBe(200);
+    expect((await post({ ids: [...ids, A] })).status).toBe(400);
+  });
+
+  it.each([
+    ["no body", ""],
+    ["a body that is not JSON", "{"],
+    ["no ids key", { id: [A] }],
+    ["ids that are not a list", { ids: A }],
+    ["an empty list", { ids: [] }],
+    ["an id that is not an oracle id", { ids: ["../etc"] }],
+    ["a value that is not a string", { ids: [1] }],
+  ])("refuses %s before reading anything", async (_, body) => {
+    expect((await post(body)).status).toBe(400);
+    expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("refuses a reader who is not signed in, and a hit over the rule, before reading anything", async () => {
+    stub.userId = null;
+    expect((await post({ ids: [A] })).status).toBe(401);
+    stub.userId = "user_1";
+    observe.mockResolvedValue(7);
+    expect((await post({ ids: [A] })).status).toBe(429);
+    expect(stub.load).not.toHaveBeenCalled();
   });
 });

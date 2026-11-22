@@ -37,4 +37,19 @@ describe("createFieldsLoop", () => {
     expect(fetch).toHaveBeenCalledTimes(2);
     expect(fetch.mock.calls[1][0]).toContain("ids=b");
   });
+
+  it("sends a batch as a POST carrying the body when the source gives one", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn(async () => ({ ok: true, status: 200, headers: new Headers(), json: async () => ({ fields: { a: {}, b: {}, c: {} } }) }));
+    vi.stubGlobal("fetch", fetch);
+    const post: FieldsSource<Row> = { ...source, url: () => "/api/fields", body: (keys) => ({ ids: keys }) };
+    const loop = createFieldsLoop<Row, object>(() => {});
+    loop.start();
+    loop.update({ source: post, all: rows, wanted: [rows[0]], wantedKey: "w1" });
+    await vi.advanceTimersByTimeAsync(0);
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe("/api/fields");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(String(init.body))).toEqual({ ids: ["a", "b", "c"] });
+  });
 });

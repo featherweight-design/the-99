@@ -39,6 +39,11 @@ export type FieldsSource<Row> = {
   isDrawn: (row: Row) => boolean;
   /** The GET that answers `{ fields: { [key]: fields } }` for these keys. */
   url: (keys: string[]) => string;
+  /**
+   * The JSON body, for a list whose batch is too long for a query string: the request is then a POST
+   * to `url(keys)` carrying it. Absent, the request is the GET.
+   */
+  body?: (keys: string[]) => unknown;
   /** The most keys one request may carry. */
   maxBatch: number;
   /**
@@ -174,7 +179,18 @@ export function createFieldsLoop<Row extends object, Fields extends object>(onLa
       // list nobody is drawing, and acting on it would undo the reset the new payload got.
       const current = () => input.all === all && input.source === source;
       for (const s of batch) asked.add(s);
-      fetch(source.url(batch), { signal: ac.signal, credentials: "same-origin" })
+      fetch(
+        source.url(batch),
+        source.body
+          ? {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(source.body(batch)),
+              signal: ac.signal,
+              credentials: "same-origin",
+            }
+          : { signal: ac.signal, credentials: "same-origin" },
+      )
         .then((r) => {
           if (r.ok) return r.json();
           // A 429 is the route's rate rule: a retry before its window ends would be counted and refused too.

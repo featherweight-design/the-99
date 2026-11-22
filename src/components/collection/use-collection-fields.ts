@@ -15,7 +15,9 @@ const SOURCE: FieldsSource<CollectionRow> = {
   keyOf: (row) => row.oracleId,
   isDrawn: isCollectionDrawn,
   maxBatch: MAX_COLLECTION_FIELDS_BATCH,
-  url: (ids) => `/api/collection-fields?ids=${ids.map(encodeURIComponent).join(",")}`,
+  // A POST: 500 ids is ~18 KB, more than a URL carries.
+  url: () => "/api/collection-fields",
+  body: (ids) => ({ ids }),
   // A batch whose caption differs from the row's: the printing was picked again since the page was
   // read, on another device, so the row's printed name and set code, which search and the sorts
   // read, are out of date, and the page is read once more. A row holding its own art holds the

@@ -25,8 +25,8 @@ const moved = [card(0), card(1, { imageUri: "https://cards.example/sld.jpg", pri
 let answer: (() => void) | null = null;
 beforeEach(() => {
   answer = null;
-  vi.stubGlobal("fetch", vi.fn((url: string) => new Promise<Response>((resolve) => {
-    const ids = new URL(url, "http://x").searchParams.get("ids")!.split(",");
+  vi.stubGlobal("fetch", vi.fn((_url: string, init?: RequestInit) => new Promise<Response>((resolve) => {
+    const ids = (JSON.parse(String(init?.body)) as { ids: string[] }).ids;
     answer = () => resolve(new Response(JSON.stringify({ fields: collectionDrawFieldsFor(moved, new Set(ids)) })));
   })));
 });
