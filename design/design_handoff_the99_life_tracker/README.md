@@ -42,6 +42,12 @@ damage cards carry the commander's art edge to edge; Table joins the tab row on 
 R3 (Hugh's pick): the coin's faces are struck mana pips, W U B R G on heads and {C} on tails, with HEADS / TAILS on the
 bottom arc (Faces board).
 
+## Addendum (2026-11-22): What's what
+
+Boards in [addendum-whats-what/](addendum-whats-what/README.md), approved by Hugh 2026-11-22. A guide that labels every
+strip button and your panel's controls in place over a dimmed board (the tour's spotlight, the moment bubble's labels).
+It shows once per device on the first play and is then the first row of the Menu (⋯), above Back to the table.
+
 ## Boards
 
 | Board | What |
