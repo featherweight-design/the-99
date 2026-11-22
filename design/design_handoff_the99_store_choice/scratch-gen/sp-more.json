@@ -1,0 +1,3 @@
+[{"id":"s-wash","dev":"phone"},{"id":"s-ck","dev":"phone"},{"id":"s-mp","dev":"phone"},{"id":"s-ck","dev":"desk","out":"s-ck-desk"},{"id":"s-wash","dev":"desk","out":"s-wash-desk"},
+{"id":"sh-ck","dev":"phone","vh":1100},{"id":"sh-ck-gap","dev":"phone","vh":1100},{"id":"sh-ck-none","dev":"phone","vh":1100},{"id":"sh-tcg","dev":"desk","out":"sh-tcg-desk"},{"id":"sh-ck-gap","dev":"desk","out":"sh-ck-gap-desk"},
+{"id":"cd-mp","dev":"phone"},{"id":"cd-ck","dev":"phone"},{"id":"cd-ck-none","dev":"phone"},{"id":"cd-mp","dev":"desk","out":"cd-mp-desk"},{"id":"cd-ck","dev":"desk","out":"cd-ck-desk"},{"id":"cd-tcg","dev":"phone"},{"id":"cd-tcg","dev":"desk","out":"cd-tcg-desk"},{"id":"cd-ck-none","dev":"desk","out":"cd-ck-none-desk"}]
