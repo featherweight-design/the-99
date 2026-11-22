@@ -183,6 +183,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:admin-invites-layout` proves the /admin/invites sections share one column and one gap at 390 and 1300: Launch email and Email previews sit on the Flyer codes table's (or, with the flyer switch off, the invite tree's column) left and right edges, and 12px apart. Signs in as the audit account (needs `ADMIN_USER_IDS` and `ADMIN_ENV_LABEL=staging` on the dev server), writes nothing. Fails on main: the cards run to the viewport edges and touch.
 - `pnpm probe:partner-add` (`E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=...`, local dev server only) presses Add a partner (#491) at 390 and 1300, from the deck header door and from the commander's card details box: opens Change commander on a single-commander deck holding 99 cards, chooses the first partner, confirms with the suggested cut, then asserts from the database that the deck holds the pair at 98 cards, and that the toast's Undo restores one commander and 99 cards. It then repeats both doors with a commander that prints Choose a Background (#491 PR6), where the section is titled Add a Background and the pick is a Background. On main it fails at the first wait (no Add a partner section). Its writes are one deck per width, door and kind (`probe:partner-add`, Tormod or a Choose a Background commander, plus cards copied from the account's largest deck), deleted in `finally`; it refuses production and staging by `neon.branch_id`.
 - `pnpm probe:deck-loading-art` (`E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=...`, local dev server only, `PROBE_SHOTS=<dir>` saves a screenshot per state) proves the deck page's loading skeleton draws the commander's art where the loaded header draws it, so the art does not jump on arrival. At 390 and 1300, for a lone commander and a Partner pair, it presses the deck's tile on /decks with the deck route's RSC request held, reads the art layer in the skeleton (its rect inside the band, background-size, background-position, mask), releases the request, reads the loaded header's, and asserts they are equal. Both draw through the shared `DeckHeaderArt` (`src/components/decks/deck-header-art.tsx`). On main it fails at 1300 (the skeleton drew the 340px portrait, the header 560px). It also reads the title and the commander line in both states (font size, weight, family, computed line height, the title's first line box) and asserts they agree; both draw their type from `src/components/decks/deck-header-type.ts`, and on main every title check failed (the skeleton's title was a larger, lighter serif). It then compares the rect of ten parts in both states, within 1px (the gradient behind the label, the name, the tagline, the commander line, the chips row, the Change commander door, the flip strip's previous and next arrows, the progress figure, and on desktop the Export and more-menu action column), at 390, 1200 and 1300; the lone deck carries a tagline and the Partner deck none, so the first proves the description is preloaded and the second that no empty gap is drawn. A part absent from both states is skipped; the commander line's width is compared on a Partner deck too (the partner name and the color name are preloaded). On main it fails 51 checks (no gradient, a different label block, the tagline arriving with the page, and no door, arrows, progress row or action column). Phone and desktop labels draw the loaded header's own block (`PhoneLabel` and the desktop label in `deck-open-loading.tsx`, with geometry from `deck-header-type.ts`); the controls the loaded header draws on arrival (the door, the flip arrows, the progress figure, Export and the more menu) are drawn inert in the loader (`aria-disabled`, not focusable) from `InertChangeCommanderDoor` and `InertFlipSquares`, kept beside their live twins. Its writes are two decks of its own (`probe:deck-loading-art`, no cards), deleted in `finally`; it refuses production and staging by `neon.branch_id`.
+- `pnpm probe:rule-zero-seat-tiles` (`PROBE_BASE=http://localhost:<port>`, `E2E_AUDIT_USER_EMAIL`, `PROBE_SHOTS=<dir>` keeps a screenshot per width; needs the Rule 0 fixture from `scripts/seed-rule-zero-fixture.mts` on a scratch branch the dev server points at; it writes nothing) opens the "Who's playing?" picker in Chromium, WebKit and the `chromium-fit` emulation at 1180x820, 820x1180, 390 and 1300 and checks each tile is as wide as its grid column, its art is at least 60px wide and as wide as the tile, and the checkbox box lies inside the art. It guards the iPad Safari collapse (a `<button>` grid item shrinks to its content there, so the tile lost its width). Playwright's own WebKit stretches the button and passes on main, so a third run, `chromium-fit`, emulates Safari's shrink-to-fit (`justify-self: start` on the tiles): it fails on main (16 failures, tiles 42 to 48px) and passes with `w-full`. Real iPad Safari is not reproduced here.
 - `pnpm tsx scripts/probe-tuning-owned.mts <deck id>` runs Suggested changes on a real STAGING deck,
   READ-ONLY and PAID (about $0.03 a call): the pack the app builds (owned shortlist included), one
   `callModel` call at production's model, effort and ceiling, and `resolveAnswer`, the code the action
@@ -2852,7 +2853,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   and leaves the device's game running without the change. On main there is no Undo row, so it fails at the first
   check. It WRITES, so it refuses staging, production and local-dev by `neon.branch_id`: run the dev server and the
   probe with the env file naming a scratch branch made from local-dev, seeded by `scripts/seed-rule-zero-fixture.mts`
-  for the audit account. `UNDO_TABLE` picks another table, and `SHOTS=<dir>` keeps a photograph of each state.
+  for the audit account. `UNDO_TABLE` picks another table, and `PROBE_SHOTS=<dir>` keeps a photograph of each state.
 - `pnpm probe:tracker-panel` presses the tracker's in-game panel (gap T4) at phone (390x844) and desktop (1300x900)
   width, against the fixture's four-seat S4 (`PANEL_TABLE` picks another). It starts a game and checks pane W on the
   phone (name row on top, End turn in it) and pane F on the tablet grid (name on the outer edge, a 52px foot holding End
@@ -2860,7 +2861,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   cell, the − and + glyphs and their named labels, the pending delta hanging off the number without moving it, the round
   sheet button (44px or 52px) opening the sheet, End turn's height and arrow, the name no longer a button, and the wash
   over the art. On main the halves draw no glyph and there is no sheet button, so it fails. It only reads and taps (the
-  game lives in the device's localStorage), so it may run against local-dev. `SHOTS=<dir>` keeps a photograph of each state.
+  game lives in the device's localStorage), so it may run against local-dev. `PROBE_SHOTS=<dir>` keeps a photograph of each state.
 - `pnpm probe:tracker-sheet` presses the tracker's in-game player sheet (gap T6) at phone (390x844) and desktop (1300x900)
   width, against a real table. It starts a game on the fixture's T5 (you and Colin), opens the sheet from the first
   panel's round sheet button and checks the header (the name in Cinzel, never "Your sheet", life shown and the name not cut short), the
@@ -2872,7 +2873,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   fixture tables throw seat notices over the lower edge (the probe removes them from the page). `SHEET_TABLE` picks
   another table, `SHEET_EXPECT=partner` (two steppers, two art halves, a rule between) or `noart` (no image) names what the
   table's one opponent plays instead of the default single commander with art (a probe-local fixture: on a scratch branch,
-  give the opponent's deck a partner, or clear the seat's deck), and `SHOTS=<dir>` keeps a photograph of each state.
+  give the opponent's deck a partner, or clear the seat's deck), and `PROBE_SHOTS=<dir>` keeps a photograph of each state.
 - `pnpm probe:tracker-setup` presses the tracker's setup screen (F02, F02b, F02c) at phone (390x844) and desktop
   (1300x820) width, on a four-seat table (the fixture's S4). It checks the header ("Set up the game" and a 44px ✕ linking
   back to the table), the lead line naming the phone or the device, the Table row (84px, 64x72 tiles; on a phone two long
@@ -2897,7 +2898,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   table page and setup still draw the notice, and the table draws it again after the game. On main the page is 147px
   (phone) or 129px (tablet) taller than the screen, so the reload lands scrolled. Writes only localStorage; needs the
   fixture from `scripts/seed-rule-zero-fixture.mts` on a scratch branch and `INVITE_CODE_SECRET` on the dev server.
-  `SHOTS=<dir>` keeps a photograph of each width.
+  `PROBE_SHOTS=<dir>` keeps a photograph of each width.
 - `pnpm probe:tracker-seat-map` presses setup's seat map (F02, F02b, F02c) at phone (390x844) and desktop (1300x820)
   width, on a four-seat table (the fixture's S4). It checks the device outline (150x290 on a phone, 290x202 on a tablet)
   and four 64px round faces, each labeled with where it sits; on a phone, F02's faces at 214, 46, 46, 214 and flush
@@ -2926,7 +2927,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   viewport and the × is what a press there hits; and checks the tracker's rect and every scroll offset above it are
   unchanged while the sheet is open and after it closes. On main the phone sheet opens 227px off screen with the table
   scrolled under it, a 180° seat's sheet rises upright, and seat 3's box covers seat 2. It writes nothing, needs
-  `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch. `SHOTS=<dir>` keeps photographs.
+  `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch. `PROBE_SHOTS=<dir>` keeps photographs.
 - `pnpm probe:tracker-life-tap` presses a tracker panel's − and + halves at phone (390x844) and desktop (1300x900) width on
   the fixture's S4 and samples every 40 ms what the half draws (its own ground or its `half-fill` layer, alpha scaled by
   opacity), any panel tint (an animating layer, outside the halves, covering most of the panel) and the pending figure. It

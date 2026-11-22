@@ -429,6 +429,7 @@
     "probe:modal-sweep": "node scripts/probe-modal-sweep.mjs",
     "probe:partner-add": "node scripts/probe-partner-add.mjs",
     "probe:deck-loading-art": "node scripts/probe-deck-loading-art.mjs",
+    "probe:rule-zero-seat-tiles": "node scripts/probe-rule-zero-seat-tiles.mjs",
     "test:clock": "CLOCK_SHIFT_DAYS=${CLOCK_SHIFT_DAYS:-400} pnpm test",
     "probe:nav-pending": "node scripts/probe-nav-pending.mjs",
     "probe:collection-tabs": "node scripts/probe-collection-tabs.mjs",
