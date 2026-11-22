@@ -9,7 +9,8 @@ export const tabletSheetCopy = {
   damageHint: "trackerCopy.sheet.damageHint",
   commanderFallback: "trackerCopy.sheet.commanderFallback", // "Commander", a seat with no deck
   noOpponents: "trackerCopy.sheet.noOpponents",
-  // The coin's faces and its press, unchanged.
+  // The coin's faces and its press, unchanged. R3 draws them in capitals along each face's bottom arc (CSS/SVG
+  // uppercase of the same strings, not new strings).
   heads: "trackerCopy.dice.heads",
   tails: "trackerCopy.dice.tails",
   flipAgain: "trackerCopy.dice.flipAgain",

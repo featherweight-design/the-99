@@ -40,6 +40,10 @@ below (a test that pins the old coin class, the hint copy for partners, and End 
 - ✅ Coin: `DiceRoll` takes `tablet` for the coin's size; new keyframes `coin-spin`, `coin-arc`, `coin-settle`,
   `coin-shadow`, `coin-land`, `sheet-up`, `sheet-veil` replace `coin-flip` and `dice-land` in `globals.css`.
   `.coin-face` stays (faces gain `translateZ` for the rim). `COIN_MS` stays 1150.
+- 🟡 Coin faces (R3, call 5): each `.coin-face` span renders one inline SVG (`CoinFace side="heads" | "tails"`) in place of
+  its text; the glyph paths come from `public/mana/{W,U,B,R,G,C}.svg` (last path), inlined as constants rather than
+  fetched, so the face is drawn on the first frame of the toss. `.coin-face` keeps its gradient and drops its font rules.
+  The word stays `trackerCopy.dice.heads` / `.tails`, uppercased; the SVG is `aria-hidden` (the coin's button keeps its label).
 - 🟡 `dice-roll.test.tsx:49` asserts the old `animate-[coin-flip_1.15s…]` class and line 50 `--ry` (now `--rx`); update both
   with the build. `sheet.test.tsx` gains a tablet case (veil closes, half sheet, damage cards, a partner card's two steppers).
 - 🟡 The veil is a second Close button (`tabIndex={-1}`, `aria-label` = `copy.sheet.close`), the pattern the dice and

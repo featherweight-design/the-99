@@ -49,4 +49,8 @@ Tablet = `device === "tablet"` (short side ≥ 600 px), which includes a desktop
 | Tails | Ends on the back face (`--rx` 180°) | Coin K 1150 |
 | Flip again (tap the coin or the card's button) | New toss from the start (keyed on `roll.k`, shipped) | — |
 | Reduced motion | Coin at rest on its face, result at once | Coin, reduced |
-| Phone | Same toss at 72 px, 5 px rim, 14 px faces | Coin, phone animation |
+| Phone | Same toss at 72 px, 5 px rim | Coin, phone animation |
+| Heads face | Five struck pips (W U B R G) in the ring, HEADS on the bottom arc | Faces C |
+| Tails face | One struck {C}, TAILS on the bottom arc | Faces C |
+| Any theme | Faces recolour with the accent (shade, light, metal mixes) | — |
+| Phone faces | Same drawing at 72 px; each pip about 17 px | Faces, phone |
