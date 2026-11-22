@@ -6,6 +6,7 @@
 
 import { requireUserId } from "../../../../lib/auth";
 import { requestFlags } from "../../../../lib/flags/request";
+import { wishlistTileLine } from "../../../../lib/wishlist/tile-line";
 import { loadWishlistTiles } from "../../../../lib/wishlist/wishlist";
 import { loadCollectedNotices } from "../../../../lib/wishlist/collected";
 import { listFriends } from "../../../../lib/social/access";
@@ -20,7 +21,7 @@ export default async function CollectionWishlistPage({ searchParams }: { searchP
   const env = await requestFlags(userId);
   // Try it's landing (discovery R2·3): `?tool=wishlist` haloes the search; anything else is stripped.
   const { landing, request } = pageLanding((await searchParams)[TOOL_PARAM], env, "wishlist");
-  const [{ tiles }, notices, hasFriend] = await Promise.all([
+  const [{ tiles, newestAsOf }, notices, hasFriend] = await Promise.all([
     loadWishlistTiles(userId),
     loadCollectedNotices(userId),
     // A friends read that fails draws the meta line without `Your friends can see this list`, never a broken page. The
@@ -41,6 +42,7 @@ export default async function CollectionWishlistPage({ searchParams }: { searchP
         want: t.quantity,
         have: t.owned,
         addedAt: t.addedAt.toISOString(),
+        line: wishlistTileLine(t, newestAsOf),
       }))}
       notices={notices.map((n) => ({ oracleId: n.oracleId, name: n.name, collectedAt: n.collectedAt.toISOString() }))}
       hasFriend={hasFriend}

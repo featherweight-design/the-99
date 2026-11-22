@@ -119,18 +119,24 @@ export async function loadWishlistTiles(viewerId: string): Promise<WishlistTiles
 }
 
 /**
- * How many copies the viewer wants of one card, for card details' Wishlist section, or null when the card is not
- * on the list (never put there, cleared, or collected). A malformed id reads as not on the list.
+ * The viewer's wishlist line for one card, for card details' Wishlist section: how many copies they want in all, and
+ * the printing the line names (`null` for "any printing"). Null when the card is not on the list (never put there,
+ * cleared, or collected). A malformed id reads as not on the list.
  */
-export async function loadWishlistWant(viewerId: string, oracleId: string): Promise<number | null> {
+export async function loadWishlistLine(viewerId: string, oracleId: string): Promise<{ want: number; printingId: string | null } | null> {
   if (!UUID.test(oracleId)) return null;
   // Aliased and qualified: the held-copies subquery reads the line's own columns (`held.ts`).
-  const { rows: [row] } = await db.execute<{ quantity: number }>(sql`
-    select w.quantity from ${wishlistItems} w
+  const { rows: [row] } = await db.execute<{ quantity: number; scryfall_id: string | null }>(sql`
+    select w.quantity, w.scryfall_id from ${wishlistItems} w
     where w.user_id = ${viewerId} and w.oracle_id = ${oracleId}::uuid
       and w.quantity > ${heldCopies(sql`w.user_id`, sql`w.oracle_id`, sql`w.scryfall_id`)}
   `);
-  return row?.quantity ?? null;
+  return row ? { want: row.quantity, printingId: row.scryfall_id } : null;
+}
+
+/** How many copies the viewer wants of one card, or null when the card is not on the list (`loadWishlistLine`). */
+export async function loadWishlistWant(viewerId: string, oracleId: string): Promise<number | null> {
+  return (await loadWishlistLine(viewerId, oracleId))?.want ?? null;
 }
 
 /**

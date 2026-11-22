@@ -22,12 +22,15 @@ import { PrintingStrip, orderStrip, stripKey } from "./printing-strip";
 import { PrintingsButton, PrintingsPanel } from "./printings-panel";
 import { PriceTag } from "./price-tag";
 import { priceKeyFor } from "../../lib/cards/price-lookup";
+import { priceState } from "../../lib/cards/price-fact";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp } from "../../lib/a11y/help-over-dialog";
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { useTargets } from "../discovery/targets-provider";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
+import { wishlistPrintingCopy } from "../../lib/copy/wishlist";
+import { wishlistPrintingView } from "../../lib/wishlist/printing-line";
 import { useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
 import type { SheetFooterLayout, SiblingCard, ViewFinish } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
@@ -524,7 +527,17 @@ export function CardModal({
   // a particular printing shows that one; afterwards their choice wins.
   const [picked, setPicked] = useState(false);
   // The printing previewed from the catalog list (alternate printings from search), by catalog id; null shows the card's own.
-  const [previewId, setPreviewId] = useState<string | null>(null);
+  // A card opened from a wishlist line that names a printing opens on it (wishlist printing handoff).
+  const [previewId, setPreviewId] = useState<string | null>(browsePrintings ? card.wishlist?.printingId ?? null : null);
+  // The printing the card's wishlist line names. The box moves it on a press; a re-read card that says otherwise wins.
+  const [wantedId, setWantedId] = useState<string | null>(card.wishlist?.printingId ?? null);
+  // The box moved the line's printing (or the line went): the strip's mark and the link follow, and the move is said.
+  const onWantedChange = (id: string | null, chosen = false) => {
+    setWantedId(id);
+    if (!chosen) return;
+    const p = id === null ? undefined : [...card.printings, ...(card.otherPrintings ?? [])].find((x) => x.scryfallId === id);
+    setAnnouncement(p ? wishlistPrintingCopy.announce(p.setCode.toUpperCase(), p.collectorNumber) : wishlistPrintingCopy.announceAny);
+  };
   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
   // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
   const others = useMemo(
@@ -555,6 +568,8 @@ export function CardModal({
   if (!writing && seeded !== card) {
     setSeeded(card);
     if (!deckScope) setPick(card.preferredPrinting);
+    // The server's line moved to another printing (or went): the box, strip mark and link follow it.
+    if ((seeded.wishlist?.printingId ?? null) !== (card.wishlist?.printingId ?? null)) setWantedId(card.wishlist?.printingId ?? null);
   }
   // The deck's pick re-read (the deck page refreshes after a write), reconciled the same way.
   const [seededDeckPick, setSeededDeckPick] = useState(deckPrinting?.pick ?? null);
@@ -816,7 +831,16 @@ export function CardModal({
   const hasPicker = ownedPrintings.length > 1
     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
-  const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
+  // A wishlist line that names a printing reads it on the link. Mana Pool has no per-printing page, so the URL stays the
+  // card's; a printing that is sold out falls back to the any-printing words, which is what the link is then for.
+  const wantedPrinting = !isToken && browsePrintings && !deckScope && wantedId !== null ? card.printings.find((p) => p.scryfallId === wantedId) ?? (card.otherPrintings ?? []).find((p) => p.scryfallId === wantedId) : undefined;
+  const wantedSoldOut = wantedPrinting?.scryfallId !== undefined && card.prices != null
+    && priceState(card.prices.byScryfallId[wantedPrinting.scryfallId] ?? null, card.prices.newestAsOf) === "soldOut";
+  const buyLabel = isToken
+    ? cardLinkOutCopy.token
+    : wantedPrinting && !wantedSoldOut
+      ? wishlistPrintingCopy.linkOut(wantedPrinting.setCode.toUpperCase(), wantedPrinting.collectorNumber)
+      : cardLinkOutCopy.card;
   // M8 (discovery R1): Find a deck's moment is for a card the reader owns and no deck uses, read off this card's own
   // claims (`fitsDoor` decides only that the door is drawn). A card with no availability read is not counted as unused.
   const fitsMoment = card.quantity > 0 && !deckHolds && card.availability != null
@@ -1051,6 +1075,7 @@ export function CardModal({
           panelOpen={panelOpen && !narrow}
           onPanelOpen={() => setPanelOpen(true)}
           onPanelClose={() => setPanelOpen(false)}
+          wantedId={wantedId}
           // Viewing, never choosing: the printing on screen, and nothing stored.
           onSelect={(p) => setPreviewId(p.scryfallId ?? null)}
           onAnnounce={setAnnouncement}
@@ -1344,6 +1369,10 @@ export function CardModal({
               want={card.wishlist.want}
               owned={card.quantity}
               onWrite={() => { onProxyWrite?.(); onWishlistWrite?.(); }}
+              printingView={browsePrintings && !isToken && !deckScope
+                ? wishlistPrintingView({ cardName: card.name, printings: [...card.printings, ...others], wantedId, previewId, prices: card.prices })
+                : null}
+              onWantedChange={onWantedChange}
             />
           ) : null}
           proxyBox={deckId && deckHolds ? (

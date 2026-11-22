@@ -15,12 +15,13 @@ import { ToastFrame, useToastClock } from "../collection/edit-toast";
 import { GRID_EAGER_TILES } from "../collection/grid-view";
 import { dismissCollectedAction } from "../../app/collection/wishlist/actions";
 import { WishlistSearch } from "./wishlist-search";
+import type { WishlistTileLine } from "../../lib/wishlist/tile-line";
 import { Parts, WISHLIST_TILE_SHELL, WishlistTileFace, wishlistCaptionText } from "./wishlist-tile";
 
 const copy = wishlistCopy;
 
 /** A tile as the page hands it over: plain and serializable, `addedAt` an ISO string. */
-export type WishlistViewTile = { oracleId: string; name: string; imageUri: string | null; want: number; have: number; addedAt: string };
+export type WishlistViewTile = { oracleId: string; name: string; imageUri: string | null; want: number; have: number; addedAt: string; line?: WishlistTileLine | null };
 /** A collected notice as the strip draws it and sends it back: `collectedAt` exactly as it was read, an ISO string. */
 export type WishlistViewNotice = { oracleId: string; name: string; collectedAt: string };
 
@@ -79,7 +80,7 @@ export function WishlistView({
   const strongStrip = "font-medium text-[color:var(--fg)]";
 
   return (
-    <CardDetailProvider onWishlistWrite={onWant}>
+    <CardDetailProvider onWishlistWrite={onWant} browsePrintings>
       <div className="flex flex-col">
         <div className="flex items-center gap-[12px] px-[14px] pt-[14px] md:px-[34px] md:pt-[18px]">
           <WishlistSearch onOpenChange={setSearching} onWant={onWant} onFailure={onFailure} />

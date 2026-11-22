@@ -3,16 +3,19 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { wishlistCopy } from "../../lib/copy/wishlist";
+import type { WishlistPrintingView } from "../../lib/wishlist/printing-line";
 import { CardWishlist } from "./card-wishlist";
 
 const CARD = "00000000-0000-4000-8000-0000000000c1";
 const add = vi.fn();
 const set = vi.fn();
 const remove = vi.fn();
+const choosePrinting = vi.fn();
 vi.mock("../../app/collection/wishlist/actions", () => ({
   addToWishlistAction: (...a: unknown[]) => add(...a),
   setWishlistWantAction: (...a: unknown[]) => set(...a),
   removeFromWishlistAction: (...a: unknown[]) => remove(...a),
+  setWishlistPrintingAction: (...a: unknown[]) => choosePrinting(...a),
 }));
 
 const c = wishlistCopy.details;
@@ -351,5 +354,46 @@ describe("a refresh that lands during a write", () => {
     rerender(view(5, 1));
     await act(async () => answer(wanted(3, 1)));
     expect(screen.getByRole("status", { name: c.want })).toHaveTextContent("3");
+  });
+});
+
+describe("Printing line (wishlist printing)", () => {
+  const view = (over: Partial<WishlistPrintingView> = {}): WishlistPrintingView => ({
+    cardName: "Counterspell",
+    count: 3,
+    wanted: null,
+    preview: { id: "b", setCode: "sta", setName: "Strixhaven Mystical Archive", collectorNumber: "10" },
+    anyPrice: "$1.49",
+    ...over,
+  });
+  const mountLine = (printingView: WishlistPrintingView | null, onWantedChange = vi.fn()) => {
+    render(<CardWishlist oracleId={CARD} want={1} owned={0} onWrite={vi.fn()} printingView={printingView} onWantedChange={onWantedChange} />);
+    return onWantedChange;
+  };
+  beforeEach(() => choosePrinting.mockReset());
+
+  it("draws no line for a card with one printing", () => {
+    mountLine(view({ count: 1 }));
+    expect(screen.queryByTestId("wishlist-printing-line")).toBeNull();
+  });
+
+  it("presses Want for the previewed printing and tells the modal", async () => {
+    choosePrinting.mockResolvedValue({ ok: true, status: "wanted", want: 1, have: 0 });
+    const onWantedChange = mountLine(view());
+    fireEvent.click(screen.getByRole("button", { name: /^Want STA 10, Counterspell from Strixhaven Mystical Archive$/ }));
+    await waitFor(() => expect(choosePrinting).toHaveBeenCalledWith(CARD, "b"));
+    await waitFor(() => expect(onWantedChange).toHaveBeenCalledWith("b", true));
+  });
+
+  it("shows the sold-out note and goes back to any printing", async () => {
+    choosePrinting.mockResolvedValue({ ok: true, status: "wanted", want: 1, have: 0 });
+    const onWantedChange = mountLine(view({
+      preview: null,
+      wanted: { id: "a", setCode: "SLD", collectorNumber: "2125", imageUri: null, price: null, soldOut: true },
+    }));
+    expect(screen.getByText("Mana Pool has none now. Any printing is $1.49.")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Any printing" }));
+    await waitFor(() => expect(choosePrinting).toHaveBeenCalledWith(CARD, null));
+    await waitFor(() => expect(onWantedChange).toHaveBeenCalledWith(null, true));
   });
 });

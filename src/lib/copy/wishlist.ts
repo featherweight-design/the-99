@@ -87,3 +87,27 @@ export const wishlistCopy = {
     emptyBody: (name: string) => `When ${name} adds a card, it shows here with how many they want, until they have them.`,
   },
 };
+
+/** Wishlist printing (handoff R1): a line that names the printing it wants. Reused: `priceCopy.tag.soldOut` for `sold out`. */
+export const wishlistPrintingCopy = {
+  box: {
+    label: "Printing",
+    any: "Any printing", // also the press back to any printing
+    cheapest: "cheapest", // after `Any printing ·` when no other printing is on screen
+    want: (set: string, n: string) => `Want ${set} ${n}`,
+    wantAria: (set: string, n: string, setName: string, card: string) => `Want ${set} ${n}, ${card} from ${setName}`,
+    soldOut: "sold out",
+    soldOutNote: (price: string) => `Mana Pool has none now. Any printing is ${price}.`,
+  },
+  panel: {
+    wantedAny: "Wanted: any printing",
+    wanted: (set: string, n: string) => `Wanted: ${set} ${n}`,
+  },
+  tile: {
+    aria: (set: string, n: string) => `wanted printing ${set} ${n}`,
+  },
+  linkOut: (set: string, n: string) => `Buy ${set} ${n} at Mana Pool`,
+  announce: (set: string, n: string) => `Wanted ${set} ${n}.`,
+  announceAny: "Wanted any printing.",
+  failed: "Couldn’t change the printing. Try again.",
+} as const;

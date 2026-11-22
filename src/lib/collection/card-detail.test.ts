@@ -21,7 +21,7 @@ vi.mock("../cards/prices", () => ({
   loadPrintingPrices: (...args: unknown[]) => loadPrintingPrices(...args),
 }));
 // The Wishlist section is always read now its switch is retired; stood in so no test opens a connection.
-vi.mock("../wishlist/wishlist", () => ({ loadWishlistWant: async () => null }));
+vi.mock("../wishlist/wishlist", () => ({ loadWishlistLine: async () => null }));
 
 import {
   catalogCard,

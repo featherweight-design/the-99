@@ -303,10 +303,11 @@ export type BrowseCard = {
   proxiedBy?: ProxyingDeck[] | null;
   /**
    * Card details' Wishlist section (Social R2 PR 5), set by `loadCardDetail` alone: how many copies the reader wants in
-   * all, or `want: null` when the card is not on the list. Absent, or null, reads as no section: the switch is off for
+   * all, or `want: null` when the card is not on the list, and the catalog id of the printing the line names (`printingId`,
+   * null for "any printing"; wishlist printing handoff). Absent, or null, reads as no section: the switch is off for
    * this reader, or the read failed.
    */
-  wishlist?: { want: number | null } | null;
+  wishlist?: { want: number | null; printingId?: string | null } | null;
   /**
    * The gate on the modal's `Find a deck for it →` door (swap tools, audit F3): the card can be
    * played in Commander, and the reader has at least one deck with a commander to play it in. Only
