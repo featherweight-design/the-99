@@ -48,9 +48,10 @@ const EAGER_TILES = 4;
 
 /** The tab's search, filters and order as the address carries them (`?q=`, `?colors=`, `?types=`, `?wanted=`, `?sort=`). */
 export type SparesView = { filters: SpareFilters; sort: SpareSort };
+const NO_NEED: Record<string, number> = {};
 const REST_VIEW: SparesView = { filters: NO_SPARE_FILTERS, sort: "wanted" };
 
-export function FriendSparesTab({ name, spares, asks, deckNeed = {}, initial = REST_VIEW }: {
+export function FriendSparesTab({ name, spares, asks, deckNeed = NO_NEED, initial = REST_VIEW }: {
   name: string | ThirdPartyName;
   spares: FriendSpareList | null;
   asks?: FriendSparesAsks;

@@ -125,7 +125,8 @@ export function sortSpares(lines: readonly SpareBrowseLine[], sort: SpareSort): 
 
 /** `?q=&colors=WU&match=exactly&types=Creature,Land&wanted=wishlist,deck&sort=name`; absent is the rest state. */
 export function parseSpareParams(params: URLSearchParams): { filters: SpareFilters; sort: SpareSort } {
-  const colors = WUBRG.filter((c) => (params.get("colors") ?? "").toUpperCase().includes(c));
+  const rawColors = (params.get("colors") ?? "").toUpperCase();
+  const colors = /^[WUBRG]*$/.test(rawColors) ? WUBRG.filter((c) => rawColors.includes(c)) : [];
   const types = (params.get("types") ?? "")
     .split(",")
     .map((raw) => AVAILABLE_TYPES.find((t) => t.toLowerCase() === raw.trim().toLowerCase()))

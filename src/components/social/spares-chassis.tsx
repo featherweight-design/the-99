@@ -6,7 +6,7 @@
 // never the search) opening a Spares variant of the Collection sheet, then Sort. Row 2 holds a chip per dimension on
 // and the result line says cards (`3 of 25 spares`), never copies.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
 import { collectionFilterCopy } from "../../lib/copy/collection";
@@ -49,9 +49,9 @@ export function SparesChassis({ lines, shown, filters, onFilters, sort, onSort }
   if (wide && sheet) setSheet(false);
   const term = filters.search.trim();
   const shortTerm = term.length > CHIP_TERM_MAX ? `${term.slice(0, CHIP_TERM_MAX)}…` : term;
-  const typeOptions = buildSpareTypeOptions(lines, filters);
-  const colorOptions = buildSpareColorOptions(lines, filters);
-  const wantedOptions = buildWantedOptions(lines, filters, WANTED_LABEL);
+  const typeOptions = useMemo(() => buildSpareTypeOptions(lines, filters), [lines, filters]);
+  const colorOptions = useMemo(() => buildSpareColorOptions(lines, filters), [lines, filters]);
+  const wantedOptions = useMemo(() => buildWantedOptions(lines, filters, WANTED_LABEL), [lines, filters]);
   const total = lines.length;
   const nameOf = (options: readonly { code: string; label: string }[], code: string) => options.find((o) => o.code === code)?.label ?? code;
   const chips: FilterChip[] = [

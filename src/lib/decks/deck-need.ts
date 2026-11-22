@@ -5,6 +5,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { decks } from "../../db/schema";
+import { captureServerError } from "../sentry/capture";
 import { loadDeckBuyRows, type DeckBuyRow } from "./availability-query";
 
 type DeckSlots = { id: string; commander: string | null; partner: string | null };
@@ -31,7 +32,8 @@ export async function loadDeckNeed(userId: string): Promise<Record<string, numbe
       db.select({ id: decks.id, commander: decks.commanderOracleId, partner: decks.partnerOracleId }).from(decks).where(eq(decks.userId, userId)),
     ]);
     return deckNeedByCard(rows, slots);
-  } catch {
+  } catch (error) {
+    captureServerError("deck-need", error);
     return {};
   }
 }

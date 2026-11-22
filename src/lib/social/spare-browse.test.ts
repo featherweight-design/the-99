@@ -66,6 +66,11 @@ describe("address round trip", () => {
     expect(url.searchParams.get("spare")).toBe("abc");
     expect(parseSpareParams(url.searchParams)).toEqual({ filters: f, sort: "name" });
   });
+
+  it("ignores a colors value that is not WUBRG letters", () => {
+    expect(parseSpareParams(new URLSearchParams("colors=blue")).filters.colors).toEqual([]);
+    expect(parseSpareParams(new URLSearchParams("colors=ug")).filters.colors).toEqual(["U", "G"]);
+  });
   it("writes nothing for the rest state", () => {
     const url = new URL("https://x.test/friends/a/spares?q=x&sort=name&colors=W");
     writeSpareParams(url, NO_SPARE_FILTERS, "wanted");
