@@ -380,7 +380,7 @@ describe("Printing line (wishlist printing)", () => {
   it("presses Want for the previewed printing and tells the modal", async () => {
     choosePrinting.mockResolvedValue({ ok: true, status: "wanted", want: 1, have: 0 });
     const onWantedChange = mountLine(view());
-    fireEvent.click(screen.getByRole("button", { name: /Want Counterspell from Strixhaven Mystical Archive, number 10/ }));
+    fireEvent.click(screen.getByRole("button", { name: /^Want STA 10, Counterspell from Strixhaven Mystical Archive$/ }));
     await waitFor(() => expect(choosePrinting).toHaveBeenCalledWith(CARD, "b"));
     await waitFor(() => expect(onWantedChange).toHaveBeenCalledWith("b", true));
   });

@@ -568,6 +568,8 @@ export function CardModal({
   if (!writing && seeded !== card) {
     setSeeded(card);
     if (!deckScope) setPick(card.preferredPrinting);
+    // The server's line moved to another printing (or went): the box, strip mark and link follow it.
+    if ((seeded.wishlist?.printingId ?? null) !== (card.wishlist?.printingId ?? null)) setWantedId(card.wishlist?.printingId ?? null);
   }
   // The deck's pick re-read (the deck page refreshes after a write), reconciled the same way.
   const [seededDeckPick, setSeededDeckPick] = useState(deckPrinting?.pick ?? null);
@@ -831,7 +833,7 @@ export function CardModal({
   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
   // A wishlist line that names a printing reads it on the link. Mana Pool has no per-printing page, so the URL stays the
   // card's; a printing that is sold out falls back to the any-printing words, which is what the link is then for.
-  const wantedPrinting = !isToken && wantedId !== null ? card.printings.find((p) => p.scryfallId === wantedId) ?? (card.otherPrintings ?? []).find((p) => p.scryfallId === wantedId) : undefined;
+  const wantedPrinting = !isToken && browsePrintings && !deckScope && wantedId !== null ? card.printings.find((p) => p.scryfallId === wantedId) ?? (card.otherPrintings ?? []).find((p) => p.scryfallId === wantedId) : undefined;
   const wantedSoldOut = wantedPrinting?.scryfallId !== undefined && card.prices != null
     && priceState(card.prices.byScryfallId[wantedPrinting.scryfallId] ?? null, card.prices.newestAsOf) === "soldOut";
   const buyLabel = isToken

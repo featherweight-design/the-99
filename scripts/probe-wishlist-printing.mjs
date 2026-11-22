@@ -86,7 +86,7 @@ async function run(viewport, label) {
     await strip.waitFor({ timeout: 20_000 });
     // Preview a printing that is not the one on screen.
     await strip.locator("button[aria-pressed='false']").first().click();
-    const want = dialog.getByRole("button", { name: /^Want .* from .*, number / });
+    const want = dialog.getByRole("button", { name: /^Want [A-Z0-9]+ \S+, .* from / });
     await want.waitFor({ timeout: 10_000 });
     const wantText = (await want.textContent())?.trim() ?? "";
     check(/^Want [A-Z0-9]+ \S+$/.test(wantText), `${label}: the Printing line offers Want <SET> <n>`, wantText);

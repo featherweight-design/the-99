@@ -221,7 +221,7 @@ function PrintingLine({ view, wait, busy, onChoose }: {
     <button
       type="button"
       aria-busy={busy || undefined}
-      aria-label={copy.box.wantAria(preview.setName, preview.collectorNumber, view.cardName)}
+      aria-label={copy.box.wantAria(preview.setCode.toUpperCase(), preview.collectorNumber, preview.setName, view.cardName)}
       onClick={() => onChoose(preview.id)}
       className={"flex h-[32px] cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[12.5px] font-medium text-[color:var(--fg)] pointer-coarse:h-[44px]" + wait}
     >

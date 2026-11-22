@@ -95,7 +95,7 @@ export const wishlistPrintingCopy = {
     any: "Any printing", // also the press back to any printing
     cheapest: "cheapest", // after `Any printing ·` when no other printing is on screen
     want: (set: string, n: string) => `Want ${set} ${n}`,
-    wantAria: (setName: string, n: string, card: string) => `Want ${card} from ${setName}, number ${n}`,
+    wantAria: (set: string, n: string, setName: string, card: string) => `Want ${set} ${n}, ${card} from ${setName}`,
     soldOut: "sold out",
     soldOutNote: (price: string) => `Mana Pool has none now. Any printing is ${price}.`,
   },
