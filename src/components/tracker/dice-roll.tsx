@@ -17,7 +17,7 @@ const COIN_MS = 1150;
  * `label` names the throw for a screen reader and the tap that repeats it ("Rolled a 4. Tap to roll again"); `onAgain`
  * throws again. A tap on a landed die or on the coin rolls again (bug 9); only a tap off them, on the veil, closes.
  */
-export function DiceRoll({ roll, label, onAgain, onClose, children }: { roll: Roll; label: string; onAgain: () => void; onClose: () => void; children: React.ReactNode }) {
+export function DiceRoll({ roll, label, onAgain, onClose, tablet = false, children }: { roll: Roll; label: string; onAgain: () => void; onClose: () => void; tablet?: boolean; children: React.ReactNode }) {
   const [landed, setLanded] = useState<number | null>(null);
   // Where the thrown dice came to rest, for the buttons laid over them. Empty with no 3D scene.
   const [points, setPoints] = useState<{ k: number; at: { x: number; y: number }[] }>({ k: 0, at: [] });
@@ -49,20 +49,27 @@ export function DiceRoll({ roll, label, onAgain, onClose, children }: { roll: Ro
     <div data-testid="dice-roll" data-k={roll.k} data-landed={done ? "" : undefined}>
       <button type="button" aria-label={trackerCopy.dice.close} onClick={onClose} className="fixed inset-0 z-50 cursor-default bg-[rgba(0,0,0,.55)]" />
       {roll.kind === "coin" ? (
-        <div className="pointer-events-none fixed left-1/2 top-[38%] z-[60] size-[72px] -translate-x-1/2 -translate-y-1/2 [perspective:700px]">
-          <button
-            key={roll.k}
-            type="button"
-            aria-label={label}
-            onClick={onAgain}
-            className="pointer-events-auto absolute inset-0 rounded-full [transform-style:preserve-3d] motion-safe:animate-[coin-flip_1.15s_cubic-bezier(.2,.65,.25,1)_both]"
-            style={{ "--ry": roll.values[0] === 1 ? "0deg" : "180deg", "--rz": `${tilt}deg`, transform: `rotateY(${roll.values[0] === 1 ? 0 : 180}deg) rotateZ(${tilt}deg)` } as React.CSSProperties}
-            data-testid="dice-coin"
-          >
-            <span aria-hidden className="coin-face">{trackerCopy.dice.heads}</span>
-            <span aria-hidden className="coin-face [transform:rotateY(180deg)]">{trackerCopy.dice.tails}</span>
-          </button>
-          <span key={`land-${roll.k}`} aria-hidden className="absolute left-1/2 top-1/2 -ml-[60px] -mt-[60px] size-[120px] rounded-full opacity-0 shadow-[0_0_0_2px_var(--accent)] motion-safe:animate-[dice-land_.5s_ease-out_1.15s_forwards]" />
+        // The coin toss (tablet addendum, K1 to K9): a coin with an edge, thrown up off the table and caught by it. It rises
+        // toward you (scale) as it turns end over end about its width (rotateX), falls back, rattles flat and a ring lands
+        // under it, matching the dice's throw, settle and land. Its shadow stays on the table and shrinks while it is up.
+        <div className="pointer-events-none fixed left-1/2 top-[38%] z-[60] -translate-x-1/2 -translate-y-1/2 [perspective:900px]" style={{ width: tablet ? 120 : 72, height: tablet ? 120 : 72 }}>
+          <span key={`shadow-${roll.k}`} aria-hidden className="coin-shadow motion-safe:animate-[coin-shadow_.9s_linear_both]" />
+          <span key={`land-${roll.k}`} aria-hidden className="absolute left-1/2 top-1/2 size-[166%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 shadow-[0_0_0_2px_var(--accent)] motion-safe:animate-[coin-land_.5s_ease-out_.9s_forwards]" />
+          <span key={`arc-${roll.k}`} className="absolute inset-0 [transform-style:preserve-3d] motion-safe:animate-[coin-arc_.9s_linear_both]">
+            <button
+              key={roll.k}
+              type="button"
+              aria-label={label}
+              onClick={onAgain}
+              className="coin pointer-events-auto absolute inset-0 rounded-full motion-safe:animate-[coin-spin_.9s_cubic-bezier(.12,.6,.3,1)_both,coin-settle_.25s_ease-out_.9s_forwards]"
+              style={{ "--rx": roll.values[0] === 1 ? "0deg" : "180deg", "--rz": `${tilt}deg`, "--t": tablet ? "8px" : "5px", transform: `rotateZ(${tilt}deg) rotateX(${roll.values[0] === 1 ? 0 : 180}deg)` } as React.CSSProperties}
+              data-testid="dice-coin"
+            >
+              {[-3, -2, -1, 0, 1, 2, 3].map((i) => <span key={i} aria-hidden className="coin-rim" style={{ "--z": i / 7 } as React.CSSProperties} />)}
+              <span aria-hidden className="coin-face coin-face-front" style={{ fontSize: tablet ? 20 : 14 }}>{trackerCopy.dice.heads}</span>
+              <span aria-hidden className="coin-face coin-face-back" style={{ fontSize: tablet ? 20 : 14 }}>{trackerCopy.dice.tails}</span>
+            </button>
+          </span>
         </div>
       ) : done && points.k === roll.k ? (
         // Each landed die takes a tap where it lies: the 3D layer itself takes no pointer. Over the result card too, so a
