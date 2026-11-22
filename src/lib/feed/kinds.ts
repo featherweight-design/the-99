@@ -46,8 +46,15 @@ export const PUSH_OUTBOX_KINDS = ["new-set", "new-precon", "price-drop", "trade-
  */
 export const SEAT_PUSH_KIND = "rule_zero_seat" as const;
 
-/** Every kind `push_outbox_kind_check` allows: the feed kinds' pushes, then the seat notice (appended, so the constraint's earlier text is unchanged). */
-export const PUSH_OUTBOX_ALL_KINDS = [...PUSH_OUTBOX_KINDS, SEAT_PUSH_KIND] as const;
+/**
+ * The log reminder's push kind (log reminder, PR 3): "log your game" for a game the reader played and has not logged. Like the
+ * seat notice it is a `push_outbox` kind that is NOT a feed kind (no Home row of its own, no Settings tick, no `push_kinds` key;
+ * the master push switch alone), but unlike it, it keeps the overnight hold (`HOLD_EXEMPT_KINDS` leaves it out).
+ */
+export const LOG_PUSH_KIND = "rule_zero_log" as const;
+
+/** Every kind `push_outbox_kind_check` allows: the feed kinds' pushes, then the seat notice and the log reminder (appended, so the constraint's earlier text is unchanged). */
+export const PUSH_OUTBOX_ALL_KINDS = [...PUSH_OUTBOX_KINDS, SEAT_PUSH_KIND, LOG_PUSH_KIND] as const;
 
 /**
  * The kinds ON for a reader who never chose (spare requests G4): "a friend wants your spare" waits on the reader's

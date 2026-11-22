@@ -25,6 +25,8 @@ import { named } from "../person-name/mint";
 import { tableKept, tableLoggable } from "./rule-zero-open";
 import { openRoster, rosterSecret, sealRoster, type RosterSeat } from "./rule-zero-roster";
 import { isUuid } from "./rules";
+import { kickPush } from "../push/kick";
+import { enqueueLogPushQuery } from "../push/log-reminder";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -97,7 +99,9 @@ export async function saveTableResult(viewerId: string, tableId: unknown, roster
   if (opened === null) return "refused";
   const start = opened.seats;
   const startedAt = new Date(opened.startedAt);
-  return db.transaction(async (tx) => {
+  const queued: string[] = [];
+  const saved = await db.transaction(async (tx) => {
+    queued.length = 0;
     // The table row's lock, `tableLoggable`'s window: a reseat or a purge cannot commit between the seat read and the write.
     const [locked] = await tx.select({ id: ruleZeroTables.id }).from(ruleZeroTables).where(and(eq(ruleZeroTables.id, tableId), tableLoggable)).for("update");
     if (!locked) return "refused";
@@ -113,9 +117,19 @@ export async function saveTableResult(viewerId: string, tableId: unknown, roster
     const owned = wanted.length === 0 ? [] : await tx.select({ id: decks.id, userId: decks.userId }).from(decks).where(inArray(decks.id, wanted)).for("share");
     // Only this game's rows: an earlier game at the table stays, loggable for its week (`tableKept`).
     await tx.delete(ruleZeroResultSeats).where(gameRows(tableId, startedAt));
-    await tx.insert(ruleZeroResultSeats).values(rows.map((r) => ({ tableId, ...r, deckId: startDeckOf(start, owned, r), startedAt })));
+    const stored = rows.map((r) => ({ tableId, ...r, deckId: startDeckOf(start, owned, r), startedAt }));
+    await tx.insert(ruleZeroResultSeats).values(stored);
+    // The log reminder's push (PR 3): every other player whose Start seat holds a deck, in this transaction (a rolled-back save sends nothing).
+    // The statement queues nothing for a reader without a device, and a re-save of the same game queues nothing new.
+    for (const r of stored) {
+      if (r.userId === viewerId || r.deckId === null) continue;
+      const { rows: made } = await tx.execute(enqueueLogPushQuery(r.userId, tableId, startedAt.getTime(), new Date()));
+      if (made.length > 0) queued.push(r.userId);
+    }
     return "saved";
   });
+  if (saved === "saved") for (const userId of queued) kickPush(userId);
+  return saved;
 }
 
 /**

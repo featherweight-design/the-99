@@ -202,6 +202,14 @@ The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbat
   seat notice (tagged by its own key).
 - **Seen** is `rule_zero_seats.notice_seen_at` (null = unseen; the setter's seat is born seen). `markSeatNoticeSeen` runs when `/friends/table/<id>` draws.
 
+## Added by the log reminder push (log reminder, PR 3)
+
+- **A second push kind that is not a feed kind.** `LOG_PUSH_KIND` = `rule_zero_log` (`feed/kinds.ts`), allowed by `push_outbox_kind_check` through `PUSH_OUTBOX_ALL_KINDS` (migration 0265). Master switch plus a device only, no Settings tick. Unlike the seat notice it is NOT in `HOLD_EXEMPT_KINDS`: a game saved at 22:00 waits for the morning release.
+- **Send.** `saveTableResult` queues `enqueueLogPushQuery` (`push/log-reminder.ts`) inside the save's transaction for every seated player but the saver whose Start seat holds a deck, then `kickPush` after the commit. `item_key` is `game:<table id>:<epoch ms>` (the game's id in a Log URL), `batch_key` the table: a re-save of the same game queues nothing new.
+- **Words at flush.** The row holds none. `resolvePushItems` reads `loadLogGames(userId, false)` (`social/rule-zero-log-home.ts`, Home's candidate query without the `tableEnded` rule, since a game saved before 21:00 is pushed while its table may still be open). A game logged, hidden (`rule_zero_log_hidden`), undone, left with the pod or with no deck is absent from that read and is dropped at the flush.
+- **Merge.** `collapse` groups one table's games into one push in both live and release modes; two tables are two pushes, tagged `rule_zero_log:<table id>`. One game opens its Log form (`logGameHref`), several open Home. Title 40 characters or fewer, else the split in `pushCopy.one.log`.
+- Proof: `log-reminder.test.ts`, `resolve-log.test.ts`, the log block in `message.test.ts`.
+
 ## The sale-time push (drop alerts)
 
 A Secret Lair drop's own heads-up (`src/lib/push/sale.ts`, `sale-enqueue.ts`), sent when its pre-queue opens, or at the sale when the post names none a quarter hour ahead (`SALE_PUSH_LEAD_MS`, 15 minutes: the words name a time ahead and the cron is 15 minutes, so it always lands before the hour; at 0 a drop with no pre-queue would never send). The times are `wizards_announcements.on_sale_at` and `pre_queue_at`, read from the post's words (`announcements/on-sale.ts`). No model call.

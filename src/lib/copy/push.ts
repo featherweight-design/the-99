@@ -8,6 +8,9 @@ import type { AnnouncementFeedKind } from "../feed/kinds";
 
 const t = feedCopy.home.title;
 
+/** How a game ended as a notification words it: `winner` is `You` for the reader, or a player's name. */
+export type LogResult = { kind: "you" | "won"; winner: string } | { kind: "draw" } | { kind: "unknown" };
+
 export const pushCopy = {
   /** One item of a kind, as the notification reads. */
   one: {
@@ -40,6 +43,26 @@ export const pushCopy = {
       titleMax: 40,
       body: (deck: string | null) => (deck === null ? "Pick your deck at the table." : `You\u2019re seated with ${deck}.`),
       splitBody: (pod: string, deck: string | null) => (deck === null ? `At ${pod}\u2019s table. Pick your deck there.` : `At ${pod}\u2019s table, with ${deck}.`),
+    },
+    // Copy-reviewed (log reminder, push). The board's words (log reminder handoff, N1), kept verbatim, with `unknown` (a winner the
+    // card does not draw) filled from the nearest drawn pattern. `winner` is `You`, a player's name, or null for a draw.
+    // A title of 40 characters or fewer is the shipped one; longer, the title is `{winner} won. Log your game` and the pod moves to the body.
+    // A winner alone past 40 is cut with an ellipsis, the only cut.
+    log: {
+      titleMax: 40,
+      title: (result: LogResult, pod: string) => (result.kind === "draw" ? `A draw at ${pod}\u2019s table` : result.kind === "unknown" ? `Your game at ${pod}\u2019s table` : `${result.winner} won at ${pod}\u2019s table`),
+      splitTitle: (result: LogResult, winner: string) => (result.kind === "draw" ? "A draw. Log your game" : result.kind === "unknown" ? "Log your game" : `${winner} won. Log your game`),
+      body: (deck: string) => `Log your game: ${deck} and every seat are filled in.`,
+      splitBody: (pod: string, deck: string) => `From ${pod}\u2019s table. ${deck} and every seat are filled in.`,
+      many: {
+        title: (n: number, pod: string) => `${n} games at ${pod}\u2019s table`,
+        splitTitle: (n: number) => `${n} games to log`,
+        /** Two games whose winners are both drawn: `You won, then Sam did.` Otherwise, and for three or more, no names. */
+        body: (first: LogResult, second: LogResult | null) => (second && first.kind !== "draw" && first.kind !== "unknown" && second.kind !== "draw" && second.kind !== "unknown"
+          ? `${first.winner} won, then ${second.kind === "you" ? "you" : second.winner} did. Log both: every seat is filled in.`
+          : second ? "Log both: every seat is filled in." : "Log them: every seat is filled in."),
+        splitBody: (pod: string, both: boolean) => `At ${pod}\u2019s table. ${both ? "Log both" : "Log them"}: every seat is filled in.`,
+      },
     },
     /** A Wizards post (Announcements UI 3b): its own title, and its summary, or where a tap goes when it has none. */
     post: { title: (title: string) => title, body: (excerpt: string | null) => excerpt ?? "Read it on Wizards." },

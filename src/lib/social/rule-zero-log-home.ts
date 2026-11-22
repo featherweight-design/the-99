@@ -26,13 +26,13 @@ type Candidate = { tableId: string; ms: number };
  * The viewer's own results at ended, kept tables that carry their deck, are not logged and are not hidden, newest
  * first. Correlated subqueries alias and qualify (Drizzle drops the qualification in a single-table select).
  */
-export const candidateGamesQuery = (viewerId: string) => sql`
+export const candidateGamesQuery = (viewerId: string, ended = true) => sql`
   select distinct rs.table_id as "tableId", round(extract(epoch from rs.started_at) * 1000)::bigint as ms, rs.started_at as at
   from rule_zero_result_seats rs
   join rule_zero_tables on rule_zero_tables.id = rs.table_id
   join pod_members viewer_in on viewer_in.pod_id = rule_zero_tables.pod_id and viewer_in.user_id = ${viewerId}
   where rs.user_id = ${viewerId} and rs.deck_id is not null
-    and ${tableEnded} and ${tableKept}
+    and ${ended ? tableEnded : sql`true`} and ${tableKept}
     and not exists (
       select 1 from deck_games dg
       where dg.user_id = rs.user_id and dg.rule_zero_table_id = rs.table_id and dg.rule_zero_game_at = rs.started_at)
@@ -42,9 +42,15 @@ export const candidateGamesQuery = (viewerId: string) => sql`
   order by rs.started_at desc
   limit ${TABLES_CAP * 4}`;
 
-/** The viewer's games to log, newest first. Empty when there is nothing to remind of. */
-export async function loadHomeLogGames(viewerId: string): Promise<HomeLogGame[]> {
-  const { rows } = await db.execute<{ tableId: string; ms: string | number }>(candidateGamesQuery(viewerId));
+/** The viewer's games to log at ended tables, newest first (Home's card). Empty when there is nothing to remind of. */
+export const loadHomeLogGames = (viewerId: string): Promise<HomeLogGame[]> => loadLogGames(viewerId, true);
+
+/**
+ * The viewer's games to log, newest first. `ended` false also draws a game at a table still open (a game saved at 7 pm is
+ * pushed that evening, before the table's morning): the push's read; Home's card keeps to ended tables.
+ */
+export async function loadLogGames(viewerId: string, ended: boolean): Promise<HomeLogGame[]> {
+  const { rows } = await db.execute<{ tableId: string; ms: string | number }>(candidateGamesQuery(viewerId, ended));
   const found: Candidate[] = rows.map((r) => ({ tableId: r.tableId, ms: Number(r.ms) }));
   if (found.length === 0) return [];
   const tableIds = [...new Set(found.map((c) => c.tableId))].slice(0, TABLES_CAP);
