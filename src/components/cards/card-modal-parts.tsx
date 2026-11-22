@@ -34,6 +34,12 @@ export function underCardRows(twoFaced: boolean, door: boolean): number {
   return 10 + 15 + (twoFaced ? 38 : 0) + 27 + (door ? DOOR_HEIGHT : 0);
 }
 
+/**
+ * The printings strip's height in the phone's teaser (alternate printings R2): its 14px top margin, the 18px head line, the
+ * 67px thumbs, the 5px gap and the 10px set code, plus the 2px under the row. Added to the teaser as the door strip is.
+ */
+export const PRINTING_STRIP_TEASER_HEIGHT = 98;
+
 /** The narrowest card the phone's teaser may leave room for; below it the sheet opens full. */
 export const MIN_TEASER_CARD_WIDTH = 120;
 

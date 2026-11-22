@@ -15,7 +15,7 @@ const card = {
 function props(over: Partial<CardModalSheetProps> = {}): CardModalSheetProps {
   return {
     card, preview: card, resolved: undefined, titleId: "t", caption: "Ravnica Remastered #1", ownedPrintings: [],
-    hasPicker: false, printingTotal: null, isToken: false, tokenNoSet: false, pick: null, deckScope: false, total: 1, position: 1,
+    hasPicker: false, strip: null, isToken: false, tokenNoSet: false, pick: null, deckScope: false, total: 1, position: 1,
     deckPage: false, deckName: null, buyUrl: "https://example.com/buy", buyLabel: "Buy",
     min: false, full: true, zoomed: false, viewOpen: false, cramped: false, gentle: false, sheetFull: true,
     teaserHeight: 280, closeReserve: 0, back: null, onSheetPointerDown: undefined, setSnap: () => {},

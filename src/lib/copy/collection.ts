@@ -12,7 +12,6 @@
 // sentence pluralises on cannot be read back out of its own formatting, which
 // was always true of the option aria labels; it is true of all of them.
 
-import { preconsCopy } from "./precons";
 import { availabilityCopy } from "./availability";
 
 /**
@@ -498,7 +497,7 @@ export type FilterPanelCopy = {
 
 /**
  * The printings strip in card details opened from search (alternate printings R2): every catalog printing of the card
- * as a row of thumbs, selected to see in place and never stored. Replaces `printingBrowseCopy`'s Set-field browse.
+ * as a row of thumbs, selected to see in place and never stored.
  */
 export const printingStripCopy = {
   /** The faint mono head over the strip. */
@@ -517,31 +516,9 @@ export const printingStripCopy = {
     `Showing ${setName}, number ${collectorNumber}.${owned ? "" : " Not in your collection."}`,
 } as const;
 
-/**
- * Card details opened from search (#3002): the catalog's printings of a card the reader may not own,
- * selected to preview and never stored. The Set field's disclosure, region and live line speak here.
- */
+/** Card details opened from search: the Set field of a card with one printing in the catalog says so. */
 export const printingBrowseCopy = {
-  triggerCount: (n: number) => `${count(n)} printings`,
-  triggerAria: (n: number, caption: string) => `Set: ${caption}. ${count(n)} printings. Select one to see it here.`,
-  triggerCollapseAria: "Hide the printings",
-  regionLabel: "Printings",
-  regionIntro: (n: number) => `${count(n)} printings. Select one to see it here.`,
-  /** The tile's meta word for a printing the reader holds none of: the shipped quick-add word. */
-  notOwned: preconsCopy.open.tileNotOwned,
-  /** An owned card: the catalog's printings beside the reader's own. */
-  triggerCountOwned: (total: number, owned: number) => `${count(total)} printings · you own ${count(owned)}`,
-  triggerPickedOfTotal: (total: number) => `· ${count(total)} printings`,
-  triggerAriaOwned: (total: number, owned: number, caption: string) =>
-    `Set: ${caption}. ${count(total)} printings, you own ${count(owned)}. Pick one of yours to represent this card, or select any to see it here.`,
-  regionIntroOwned: (total: number) =>
-    `${count(total)} printings. Pick one of yours to represent this card, or select any to see it here.`,
-  groupYours: (n: number) => `In your collection · ${count(n)}`,
-  groupOthers: (n: number) => `Other printings · ${count(n)}`,
-  /** One printing in the catalog: the plain Set field says so, with no disclosure. */
   onlyPrinting: "The only printing",
-  announceShowing: (setName: string, collectorNumber: string) =>
-    `Showing ${setName}, number ${collectorNumber}. Not in your collection.`,
 } as const;
 
 export const printingPickerCopy = {
