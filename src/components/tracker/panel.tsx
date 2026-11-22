@@ -214,7 +214,7 @@ export function Panel({
         return (
           <Badge key={h.key} foot={foot} text={text} onPress={() => onSheet("damage")} lead={art ? "img" : "none"}>
             {/* eslint-disable-next-line @next/next/no-img-element -- the seat's own art, already loaded by its panel */}
-            {art ? <img src={art} alt="" className={"shrink-0 rounded-full object-cover " + (foot ? "size-5" : "size-[18px]")} /> : null}
+            {art ? <img src={art} alt="" className={"shrink-0 rounded-full object-cover object-top " + (foot ? "size-5" : "size-[18px]")} /> : null}
           </Badge>
         );
       })}

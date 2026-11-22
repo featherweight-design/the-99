@@ -133,7 +133,7 @@ export function Sheet({
           data-testid="tracker-sheet"
         >
           <div className="flex h-[44px] items-center gap-3">
-            {seat.art ? <FadingImg src={seat.art} alt="" className="h-10 w-10 rounded-full object-cover" /> : null}
+            {seat.art ? <FadingImg src={seat.art} alt="" className="h-10 w-10 rounded-full object-cover object-top" /> : null}
             <span id="sheet-title" className="sr-only">{seat.you ? copy.sheet.ariaYou : <PersonText text={copy.sheet.aria(seat.name)} />}</span>
             <b className="max-w-[45%] shrink-0 truncate font-display text-[21px] font-bold">{seat.you ? copy.history.you : <PersonName n={seat.name} />}</b>
             <i className="min-w-0 truncate font-mono text-[12px] not-italic text-[color:var(--fg-muted)]">

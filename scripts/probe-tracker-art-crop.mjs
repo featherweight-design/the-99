@@ -1,11 +1,12 @@
 // The life tracker's seat art crop (Hugh, 2026-11-22: faces cut off on an iPad). Each panel draws its commander's
-// art_crop with `object-cover`; the fix pins the crop to the art's top (`object-top`, ArtWash's "center top"), so a
-// head near the top of the art stays in the tile. It plays a saved four-seat game on the fixture's S4 table with four
+// art_crop with `object-cover`; the fix pins the crop to the art's top (`object-top`, ArtWash's "center top"). The
+// check is the computed position; whether faces read better is the contact sheet's job (SHOTS). It plays a saved four-seat game on the fixture's S4 table with four
 // real commanders' art (Dogmeat, Borg Queen, Clavileño, Black Panther) on "One on each side", so every seat turn
 // (0, 90, 180, -90) draws, at iPad landscape, iPad portrait (the board turned) and phone width. It checks every panel
 // image computes `object-position: 50% 0%`, and with SHOTS=<dir> it writes the same board three ways for the contact
 // sheet: as the app draws it, with the old centered crop, and with "center 25%".
-// Writes only the device's saved game (localStorage), so it may run against local-dev with the fixture seeded.
+// Writes only the device's saved game (localStorage). Needs the fixture seeded on a scratch branch (docs/probes.md) and
+// the dev server started with INVITE_CODE_SECRET set, or the roster cannot seal and the play route answers not found.
 //
 //   PROBE_BASE=http://localhost:3471 node scripts/probe-tracker-art-crop.mjs
 // Optional: SHOTS=<dir>.
@@ -77,9 +78,7 @@ async function signIn(page) {
 
 // The screen's angle, stubbed: Chromium's emulation never turns `screen.orientation`.
 const stubAngle = (deg) => {
-  try {
-    Object.defineProperty(ScreenOrientation.prototype, "angle", { configurable: true, get: () => deg });
-  } catch {}
+  Object.defineProperty(ScreenOrientation.prototype, "angle", { configurable: true, get: () => deg });
 };
 
 await clerkSetup();
@@ -102,6 +101,8 @@ try {
       { table: S4, layout: s.layout, players: PLAYERS },
     );
     await page.reload({ waitUntil: "networkidle" });
+    const angle = await page.evaluate(() => screen.orientation.angle);
+    if (angle !== s.angle) throw new Error(`${s.name}: the orientation stub did not take (angle ${angle}, wanted ${s.angle})`);
     try {
       await page.getByTestId("tracker-play").waitFor({ timeout: 20_000 });
     } catch (error) {
