@@ -3646,6 +3646,14 @@ export const judgedLabels = pgTable("judged_labels", {
   promptVersion: text("prompt_version").notNull(),
   inputHash: text("input_hash").notNull(),
   labelledAt: timestamp("labelled_at", { withTimezone: true }).notNull().defaultNow(),
+  /**
+   * The themes that SURVIVED the verifier: `themes` minus every claim the strict second look answered "no" to. The only
+   * column the app reads. Null until the verifier has answered every claim (and for a row pass 1 gave no theme, which
+   * has nothing to check: written as `[]` with it), so an unverified row serves no theme rather than a loose one. A new
+   * pass-1 answer for the card sets it back to null, because the verdicts described the old claims.
+   */
+  verifiedThemes: jsonb("verified_themes").$type<string[]>(),
+  verifiedAt: timestamp("verified_at", { withTimezone: true }),
 });
 
 /**

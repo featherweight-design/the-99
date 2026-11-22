@@ -2,7 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import {
   JUDGED_PREFILTER, JUDGED_SYSTEM, JUDGED_THEMES, judgedInputHash, judgedSystemHash, parseJudgedReply, renderJudgedBody,
-  buildJudgedRequest, endsAfterCollect, withoutFailed,
+  buildJudgedRequest, buildVerifyRequest, endsAfterCollect, parseVerifyCustomId, parseVerifyReply, VERIFY_SYSTEM,
+  verifyCustomId, withoutFailed,
 } from "./judged";
 
 const card = { oracleId: "a", name: "Howling Mine", mana_cost: "{2}", type_line: "Artifact", oracle_text: "At the beginning of each player's draw step, if Howling Mine is untapped, that player draws an additional card." };
@@ -83,5 +84,37 @@ describe("endsAfterCollect", () => {
   it("lets a sample run that collected nothing plan, and never stops a full run", () => {
     expect(endsAfterCollect(true, { stored: 0, refused: 0 })).toBe(false);
     expect(endsAfterCollect(false, { stored: 500, refused: 0 })).toBe(false);
+  });
+});
+
+describe("the verifier", () => {
+  const oracleId = "0f1e2d3c-4b5a-6978-8796-a5b4c3d2e1f0";
+  it("reads a verdict, and treats anything else as unreadable rather than as no", () => {
+    expect(parseVerifyReply('{"verdict": "yes", "reason": "x"}')).toBe("yes");
+    expect(parseVerifyReply('Here: {"verdict": "no", "reason": "x"} done')).toBe("no");
+    expect(parseVerifyReply('{"verdict": "maybe"}')).toBeNull();
+    expect(parseVerifyReply('{"verdict": "ye')).toBeNull();
+    expect(parseVerifyReply("")).toBeNull();
+  });
+  it("round-trips a custom id, keeps it under the provider's 64 characters, and numbers a re-ask", () => {
+    const id = verifyCustomId(oracleId, "pillowFort");
+    expect(id.length).toBeLessThanOrEqual(64);
+    expect(parseVerifyCustomId(id)).toEqual({ oracleId, theme: "pillowFort" });
+    expect(verifyCustomId(oracleId, "pillowFort", 2)).not.toBe(id);
+    expect(parseVerifyCustomId(verifyCustomId(oracleId, "pillowFort", 2))).toEqual({ oracleId, theme: "pillowFort" });
+    expect(parseVerifyCustomId("judged-abc-0")).toBeNull();
+    expect(parseVerifyCustomId(`vf1-${oracleId}-nonsense`)).toBeNull();
+  });
+  it("judges against pass 1's own theme definitions", () => {
+    for (const t of JUDGED_THEMES) expect(VERIFY_SYSTEM).toContain(`${t} `);
+    expect(VERIFY_SYSTEM).toContain("IN:");
+    expect(VERIFY_SYSTEM).not.toContain("A card may serve several themes");
+  });
+  it("asks one claim per request, with the 5.5 parameters", () => {
+    const { params } = buildVerifyRequest("vf1-x", "claude-sonnet-5-5", "bigMana", card);
+    expect(params).not.toHaveProperty("temperature");
+    expect(params.thinking).toEqual({ type: "between_tools" });
+    expect(params.messages[0].content).toContain("Claimed theme: bigMana");
+    expect(params.messages[0].content).toContain("Howling Mine");
   });
 });
