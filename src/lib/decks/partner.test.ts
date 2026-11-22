@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { addPartnerOffer, canPair, partnerAbility, partnerAbilityLabel, type PartnerAbility } from "./partner";
+import {
+  addAbility, addPartnerOffer, canAddSecond, canPair, choosesBackground, isBackground, partnerAbility, partnerAbilityLabel,
+  type PartnerAbility,
+} from "./partner";
 
 const LEGEND = "Legendary Creature — Human Soldier";
 const COMPANION_TEXT = "Doctor's companion (You can have two commanders if the other is the Doctor.)";
@@ -186,5 +189,56 @@ describe("addPartnerOffer", () => {
     expect(addPartnerOffer(commander, true, 98)).toBeNull();
     expect(addPartnerOffer(commander, false, 100)).toBeNull();
     expect(addPartnerOffer({ ...commander, oracleText: "Flying" }, false, 99)).toBeNull();
+  });
+});
+
+describe("Backgrounds (#491 PR6)", () => {
+  const BG_TYPE = "Legendary Enchantment — Background";
+  const CHOOSER = "Choose a Background (You can have a Background as a second commander.)\nWhenever this attacks, draw a card.";
+  const chooser = { name: "Wilson", oracleText: CHOOSER, typeLine: "Legendary Creature — Human Warrior" };
+  const background = { name: "Raised by Giants", oracleText: "Commander creatures you own have base power and toughness 10/10.", typeLine: BG_TYPE };
+  const partner = { name: "Pir", oracleText: "Partner (You can have two commanders if both have partner.)", typeLine: LEGEND };
+
+  it("reads a Background off its type line, front face only", () => {
+    expect(isBackground(BG_TYPE)).toBe(true);
+    expect(isBackground("Enchantment — Background")).toBe(false);
+    expect(isBackground("Legendary Enchantment — Aura")).toBe(false);
+    expect(isBackground("Legendary Creature — Background Elf")).toBe(false);
+    expect(isBackground("Legendary Creature — Elf // Legendary Enchantment — Background")).toBe(false);
+    expect(isBackground(null)).toBe(false);
+  });
+  it("reads Choose a Background off its own line only", () => {
+    expect(choosesBackground(CHOOSER)).toBe(true);
+    expect(choosesBackground("Creatures you control can choose a Background.")).toBe(false);
+    expect(choosesBackground(null)).toBe(false);
+  });
+  it("addAbility names the chooser, and a partner ability wins", () => {
+    expect(addAbility(CHOOSER, chooser.typeLine)).toEqual({ kind: "chooseBackground" });
+    expect(addAbility(partner.oracleText, partner.typeLine)).toEqual({ kind: "generic" });
+    expect(addAbility("Flying", LEGEND)).toBeNull();
+    expect(partnerAbilityLabel({ kind: "chooseBackground" })).toBe("Choose a Background");
+  });
+  it("never leaks into the shared rule: partnerAbility and canPair ignore it", () => {
+    expect(partnerAbility(CHOOSER, chooser.typeLine)).toBeNull();
+    expect(partnerAbility(background.oracleText, BG_TYPE)).toBeNull();
+    const side = (c: { name: string; oracleText: string | null; typeLine: string | null }) => ({ name: c.name, ability: partnerAbility(c.oracleText, c.typeLine) });
+    expect(canPair(side(chooser), side(background))).toBe(false);
+    expect(canPair(side(background), side(chooser))).toBe(false);
+    expect(canPair({ name: "x", ability: { kind: "chooseBackground" } }, { name: "y", ability: { kind: "chooseBackground" } })).toBe(false);
+  });
+  it("a Background pairs only with a chooser, in that order, never with a Partner kind", () => {
+    expect(canAddSecond(chooser, background)).toBe(true);
+    expect(canAddSecond(background, chooser)).toBe(false);
+    expect(canAddSecond(partner, background)).toBe(false);
+    expect(canAddSecond(background, partner)).toBe(false);
+    expect(canAddSecond(chooser, partner)).toBe(false);
+    expect(canAddSecond(chooser, { ...background, typeLine: "Legendary Enchantment — Aura" })).toBe(false);
+    expect(canAddSecond(partner, { ...partner, name: "Other" })).toBe(true);
+  });
+  it("offers Add a Background for a single chooser with room", () => {
+    const c = { oracleId: "o2", oracleText: CHOOSER, typeLine: chooser.typeLine };
+    expect(addPartnerOffer(c, false, 99)).toEqual({ oracleId: "o2", ability: { kind: "chooseBackground" } });
+    expect(addPartnerOffer(c, true, 98)).toBeNull();
+    expect(addPartnerOffer(c, false, 100)).toBeNull();
   });
 });

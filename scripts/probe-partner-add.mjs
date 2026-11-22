@@ -57,11 +57,15 @@ async function signIn(page) {
 }
 
 /** The probe's own deck: a lone partner-capable commander over a full 99. */
-async function makeDeck(userId) {
+async function makeDeck(userId, kind = "partner") {
   const [source] = await sql`select d.id from decks d where d.user_id = ${userId} and d.name <> ${NAME}
     order by (select coalesce(sum(quantity), 0) from deck_cards dc where dc.deck_id = d.id) desc limit 1`;
   if (!source) throw new Error("The signed-in account owns no deck to copy cards from.");
-  const [tormod] = await sql`select oracle_id from cards where name = 'Tormod, the Desecrator' limit 1`;
+  // kind "background": a commander that prints Choose a Background (#491 PR6); its offers are Backgrounds.
+  const [tormod] = kind === "background"
+    ? await sql`select oracle_id from cards where commander_legal and oracle_text ~ '(^|\n)Choose a Background' and type_line ilike 'Legendary Creature%' order by name limit 1`
+    : await sql`select oracle_id from cards where name = 'Tormod, the Desecrator' limit 1`;
+  if (!tormod) throw new Error(`The catalog holds no ${kind} commander.`);
   const [swamp] = await sql`select oracle_id from cards where name = 'Swamp' limit 1`;
   const [deck] = await sql`insert into decks (user_id, name, commander_oracle_id) values (${userId}, ${NAME}, ${tormod.oracle_id}) returning id`;
   await sql`insert into deck_cards (deck_id, oracle_id, quantity) select ${deck.id}, oracle_id, 1 from deck_cards
@@ -87,10 +91,10 @@ async function until(deckId, want, ms = 20_000) {
   return s;
 }
 
-async function walk(browser, width, userId, deckId, via) {
+async function walk(browser, width, userId, deckId, via, kind) {
   const context = await browser.newContext({ viewport: width.viewport });
   const page = await context.newPage();
-  const L = (s) => `${width.label} via ${via}: ${s}`;
+  const L = (s) => `${width.label} ${kind} via ${via}: ${s}`;
   try {
     await signIn(page);
     await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded", timeout: 180_000 });
@@ -113,7 +117,11 @@ async function walk(browser, width, userId, deckId, via) {
     }
     const section = page.locator("[data-choose]");
     const opened = await section.first().waitFor({ timeout: 60_000 }).then(() => true, () => false);
-    if (!report(L("Add a partner section draws on the sheet"), opened, opened ? "" : (await page.locator("[role=dialog]").first().innerText().catch(() => "no dialog")).replace(/\s+/g, " ").slice(0, 300))) return;
+    if (!report(L(kind === "background" ? "Add a Background section draws on the sheet" : "Add a partner section draws on the sheet"), opened, opened ? "" : (await page.locator("[role=dialog]").first().innerText().catch(() => "no dialog")).replace(/\s+/g, " ").slice(0, 300))) return;
+    if (kind === "background") {
+      const titled = (await page.getByText("Add a Background", { exact: true }).count()) > 0;
+      report(L("the section is titled Add a Background"), titled);
+    }
     await section.first().click();
     const make = page.getByRole("button", { name: /^Make .+ commanders$/ });
     await make.waitFor({ timeout: 30_000 });
@@ -145,10 +153,10 @@ try {
   const userId = await signIn(page);
   await context.close();
   for (const width of WIDTHS) {
-    for (const via of ["header", "details"]) {
-      deckId = await makeDeck(userId);
+    for (const [kind, via] of [["partner", "header"], ["partner", "details"], ["background", "header"], ["background", "details"]]) {
+      deckId = await makeDeck(userId, kind);
       try {
-        await walk(browser, width, userId, deckId, via);
+        await walk(browser, width, userId, deckId, via, kind);
       } finally {
         await sql`delete from decks where id = ${deckId}`;
         deckId = null;

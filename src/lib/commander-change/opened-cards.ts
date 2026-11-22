@@ -8,7 +8,7 @@ import { db } from "../../db";
 import {
   cards, collectionItems, commanderPairSupport, commanderPairSupportCards, commanderSupportCards, deckCards, decks,
 } from "../../db/schema";
-import { canPair, partnerAbility } from "../decks/partner";
+import { canAddSecond } from "../decks/partner";
 import { canonicalPair } from "../edhrec/pair-order";
 
 export type OpenedCard = { oracleId: string; name: string; imageUri: string | null };
@@ -32,8 +32,7 @@ export async function loadOpenedCards(
   const mine = halves.find((c) => c.oracleId === deck.commander);
   const theirs = halves.find((c) => c.oracleId === partnerOracleId);
   if (!mine || !theirs || !theirs.commanderLegal) return null;
-  const side = (c: typeof mine) => ({ name: c.name, ability: partnerAbility(c.oracleText, c.typeLine) });
-  if (!canPair(side(mine), side(theirs))) return null;
+  if (!canAddSecond(mine, theirs)) return null;
 
   const opened = theirs.colorIdentity.filter((c) => !mine.colorIdentity.includes(c)).sort();
   if (opened.length === 0) return { colors: [], cards: [] };

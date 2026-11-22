@@ -12,7 +12,7 @@ import type { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
 import { deckBodySize } from "../decks/deck-size";
 import { liveLockedIds, pruneOrphanLocks } from "../decks/locks";
-import { canPair, partnerAbility } from "../decks/partner";
+import { canAddSecond, choosesBackground, isBackground } from "../decks/partner";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { touchDeck } from "../decks/touch";
 import { isCommanderCandidate } from "../recs/score";
@@ -105,16 +105,15 @@ export async function writeCommanderChange(
 
   // The same legality `createDeck` applies: a request is a crafted one until proved otherwise.
   const incoming = toIds.map((id) => byId.get(id));
-  if (incoming.some((c) => !c || !c.commanderLegal || !isCommanderCandidate(c))) {
-    return { ok: false, reason: "illegal" };
-  }
+  if (incoming.some((c) => !c || !c.commanderLegal)) return { ok: false, reason: "illegal" };
   const [a, b] = incoming as NonNullable<(typeof incoming)[number]>[];
-  if (b && !canPair(
-    { name: a.name, ability: partnerAbility(a.oracleText, a.typeLine) },
-    { name: b.name, ability: partnerAbility(b.oracleText, b.typeLine) },
-  )) {
+  // A Background is only ever the second half beside a commander that chooses one: it never leads, so
+  // `isCommanderCandidate` still gates the first half, and the second unless it is such a Background.
+  const backgroundSecond = b !== undefined && choosesBackground(a.oracleText) && isBackground(b.typeLine);
+  if (!isCommanderCandidate(a) || (b !== undefined && !backgroundSecond && !isCommanderCandidate(b))) {
     return { ok: false, reason: "illegal" };
   }
+  if (b && !canAddSecond(a, b)) return { ok: false, reason: "illegal" };
 
   // Exactly this deck's identity, so not one card of the 99 changes legality (ruling 2). A single
   // becoming a pair may widen it instead: a wider identity makes no card illegal, and a partner

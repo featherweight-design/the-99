@@ -17,13 +17,14 @@ export const partnerAddCopy = {
         case "doctorsCompanion": return `${short} is a Doctor’s companion, so this deck can add a Doctor.`;
         case "doctor": return `${short} is a Doctor, so this deck can add a companion.`;
         case "restricted": return `${short} has ${ability.label}, so this deck can add a second commander.`;
+        case "chooseBackground": return `${short} can choose a Background as a second commander.`;
         default: return `${short} has Partner, so this deck can add a second commander.`;
       }
     },
   },
   section: {
     title: (kind: PartnerAbility["kind"]): string =>
-      kind === "doctorsCompanion" ? "Add a Doctor" : kind === "doctor" ? "Add a companion" : "Add a partner",
+      kind === "doctorsCompanion" ? "Add a Doctor" : kind === "doctor" ? "Add a companion" : kind === "chooseBackground" ? "Add a Background" : "Add a partner",
     replaceTitle: (short: string) => `Replace ${short}`,
     lede: (short: string, needsCut: boolean) =>
       needsCut
@@ -37,6 +38,7 @@ export const partnerAddCopy = {
         case "doctorsCompanion": return "Any Doctor: a legendary Time Lord Doctor with no other creature types.";
         case "doctor": return "Any commander with Doctor’s companion.";
         case "restricted": return `Any other commander with ${ability.label}.`;
+        case "chooseBackground": return "Any Background. It leads beside the commander and isn’t a creature.";
         default: return "Any other commander with Partner.";
       }
     },
