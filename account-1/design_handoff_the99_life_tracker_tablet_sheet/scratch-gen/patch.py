@@ -56,10 +56,12 @@ function DamageArt({ seat, foes, seats, onCommit }: { seat: SeatState; foes: rea
               <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.55)_0%,rgba(0,0,0,0)_26%,rgba(0,0,0,0)_40%,rgba(0,0,0,.86)_100%)]" />
               <b className="relative px-3 pt-2.5 text-[15px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
               <div className="relative mt-auto flex">
+                {/* A partner half can be ~100px wide (five across), too narrow for the 140px row stepper: each half stacks
+                    its count over − and + (the Mana tab's stacked stepper), its own container keeping it stacked. */}
                 {taken.map((n, cmdr) => (
-                  <div key={cmdr} className="flex min-w-0 flex-1 flex-col items-center gap-1 px-2 pb-3">
+                  <div key={cmdr} className={"flex min-w-0 flex-1 flex-col items-center gap-1 px-1.5 pb-3" + (taken.length > 1 ? " @container" : "")}>
                     <span className="max-w-full truncate text-[12.5px] text-[color:var(--fg)] [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{cmdrName(p, cmdr)}</span>
-                    <Stepper size="damageOne" count={n} tone={n > 0 ? "set" : undefined} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
+                    <Stepper size="damageOne" stacked={taken.length > 1} count={n} tone={n > 0 ? "set" : undefined} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
                   </div>
                 ))}
               </div>

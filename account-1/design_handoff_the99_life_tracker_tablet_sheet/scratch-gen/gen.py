@@ -78,7 +78,7 @@ boards["Main.dc.html"] = (1600, 1490, "Main · the sheet on a tablet", page("Tab
  ]))
  + call("2", "Commander damage: the art fills the card", ul([
    "On a tablet each opponent's card is their commander's art edge to edge, like their panel: the name at the top, the commander's name and the stepper over a dark foot. Steppers and counts are the shipped ones.",
-   "One card per opponent, all in one row (3 at four seats, 5 at six). A partner pair splits the art, and each half carries its own name and stepper under its own art (D3).",
+   "One card per opponent, all in one row (3 at four seats, 5 at six). A partner pair splits the art, and each half carries its own name and stepper under its own art, the count stacked over − and + so it fits at five across (D3, D7).",
    "A seat with no deck gets the plain card surface (D3, Alex). The phone keeps its drawn F06 cards.",
  ]))
  + call("3", "Table joins the tab row", ul([
@@ -109,11 +109,13 @@ boards["Sheet.dc.html"] = (1600, 2470, "Sheet · tablet landscape", page("Tablet
    land("X3-table", "X3 · Table", "Table sits beside Mana in the row. Its three rows fit; History opens and scrolls inside the panel.")])
  + row("For reference", [land("X4-closed", "The table with no sheet open", "The F18 layout the sheet rises over.", 460)])))
 
-boards["Damage.dc.html"] = (1600, 2100, "Damage · counts and desktop", page("Tablet sheet: commander damage", 1600, 2100,
+boards["Damage.dc.html"] = (1600, 2720, "Damage · counts and desktop", page("Tablet sheet: commander damage", 1600, 2720,
  head("Commander damage across seat counts", "One row of cards at every count, the art filling each. Partners split their card; a seat with no deck gets the plain surface.")
  + row("Six seats and two", [
-   land("D3-six", "D3 · Six seats, a partner and a seat with no deck", "Max plays Bruse Tarl and Ishai: split art, a stepper under each half, 4 from Ishai. Alex has no deck: the plain card and the shipped Commander fallback."),
+   land("D3-six", "D3 · Six seats, a partner and a seat with no deck", "Max plays Bruse Tarl and Ishai: split art, and each half stacks its count over − and + (the Mana tab's stacked stepper), so both fit at five across (about 104px a half). 4 from Ishai. Alex has no deck: the plain card and the shipped Commander fallback."),
    land("D4-two", "D4 · Two seats (Face to face)", "One opponent: the card spans the sheet.")])
+ + row("A partner at four seats", [
+   land("D7-four-partner", "D7 · Four seats, Max on partners", "Three across: the partner halves stack the same way, so a partner card reads the same at every count.")])
  + row("A seat at the short end", [
    land("E1-end", "E1 · Five seats, One at the end: Max's sheet", "Max sits at the right end (rot −90). His sheet rises from that edge, 590 deep (half of 1180) and 820 long, so the four cards stack along it. The narrowest damage row of any layout.")])
  + row("Desktop (drawn as a tablet, as shipped)", [

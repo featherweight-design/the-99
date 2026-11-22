@@ -27,7 +27,7 @@ Tablet = `device === "tablet"` (short side ≥ 600 px), which includes a desktop
 |---|---|---|
 | Opponent, one commander, no damage | Art fills the card; name top left; commander name and `0` stepper (− disabled) | D1 Max |
 | Opponent, damage taken | Count in the accent | D1 Colin, Peter |
-| Partner pair | Split art; a name and stepper under each half | D3 Max |
+| Partner pair | Split art; under each half its name and a stacked stepper (count over − and +), so it fits at 4 and 5 across | D3, D7 Max |
 | Seat with no deck | Plain card surface; shipped fallback name `Commander` | D3 Alex |
 | One opponent (2 seats) | One card across the sheet | D4 |
 | Five opponents (6 seats) | Five across | D3 |

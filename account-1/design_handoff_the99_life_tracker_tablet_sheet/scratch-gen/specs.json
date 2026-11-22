@@ -233,5 +233,18 @@
   ],
   "layout": "tablet-5-end",
   "open": 3
+ },
+ {
+  "id": "D7-four-partner",
+  "w": 1180,
+  "h": 820,
+  "seats": [
+   "you",
+   "colin",
+   "peter",
+   "max2"
+  ],
+  "open": 0,
+  "log": "LOG6"
  }
 ]
