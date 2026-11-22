@@ -153,7 +153,27 @@ const FIT_CHIP_STYLE = {
  * note and never `allPlayed`, which would assert something about a commander
  * with nothing on file.
  */
-function GapLine({ slot }: { slot: GapSlot }) {
+function GapLine({ slot, picked }: { slot: GapSlot; picked?: string[] }) {
+  // Themes ▾ on: the picked themes lead, in accent ink, so the reason this row survived the filter
+  // is on the row itself.
+  if (picked && picked.length > 0) {
+    // A commander with no mechanic sentence of its own (a creature-type theme alone) still leads
+    // with the pick: the filter kept it for that theme.
+    const parts = commanderRowCopy.pickedStylesParts(picked, slot.kind === "noMechanics" ? [] : slot.labels);
+    return (
+      <p data-testid="row-gap" className="font-sans" style={{ fontSize: 12.5, lineHeight: 1.45, color: "var(--fg-muted)" }}>
+        {parts.map((part, i) =>
+          typeof part === "string" ? (
+            part
+          ) : (
+            <b key={i} style={{ color: part.picked ? "var(--accent-text)" : "var(--fg)", fontWeight: 600 }}>
+              {part.label}
+            </b>
+          ),
+        )}
+      </p>
+    );
+  }
   if (slot.kind === "noMechanics") {
     return (
       <p
@@ -262,7 +282,10 @@ export function CommanderRow({
   position = 0,
   onHide,
   hideRef,
+  pickedThemes,
 }: {
+  /** `Themes ▾`'s picked labels this commander carries (#159). Absent or empty: the shipped sentence. */
+  pickedThemes?: string[];
   item: CommanderRowView;
   position?: number;
   /** Hide this commander (README §1). Absent, the row draws no glyph and its foot is as it shipped. */
@@ -447,7 +470,7 @@ export function CommanderRow({
           </p>
         )}
 
-        <GapLine slot={item.gapSlot} />
+        <GapLine slot={item.gapSlot} picked={pickedThemes} />
 
         {/* ONE LIST, JOINED — never a separator whose condition is spelled
             beside the figure's. The previous form rendered the price's separator

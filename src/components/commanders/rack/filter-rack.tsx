@@ -35,6 +35,7 @@ import { ColourControl } from "./colour-control";
 import { FilterSheet } from "./filter-sheet";
 import { OrderControl } from "./order-control";
 import { PrintedInControl } from "./printed-in-control";
+import { ThemeControl, type ThemeOption } from "./theme-control";
 import type { PrintedInOption } from "../../../lib/commanders/printed-in-lane";
 import { ORDER_OPTIONS } from "./order-options";
 import { resultLineWithAside } from "./result-line";
@@ -52,7 +53,11 @@ export function FilterRack({
   forceWide,
   chooseLink = false,
   printedInOptions,
+  themeOptions,
 }: {
+  /** `Themes ▾`'s rows, most commanders first, counted under the other controls. Discover only;
+      absent, the control is not drawn. */
+  themeOptions?: ThemeOption[];
   /** `Printed in ▾`'s rows: the sets this lane's rows were printed in, counted under the other
       controls. Absent where the lane shipped no index (`/about`'s specimens), and then the
       control is not drawn at all rather than drawn empty. */
@@ -175,7 +180,7 @@ export function FilterRack({
   // `chipsFor` already knows every dimension and how to unset one; the chassis
   // needs only a label and a callback, so this is a shape change rather than a
   // second source of truth about what is on.
-  const chassisChips: FilterChip[] = chipsFor(params, lane).map((chip) => ({
+  const chassisChips: FilterChip[] = chipsFor(params, lane, (slug) => themeOptions?.find((o) => o.code === slug)?.label ?? slug).map((chip) => ({
     key: chip.key,
     label: chip.label,
     // The colour chip collapses its values to a count, so the swatches are the
@@ -242,6 +247,19 @@ export function FilterRack({
             onMatchChange={(match) => onChange({ ...params, match })}
             wide
           />
+          {themeOptions && (
+            <ThemeControl
+              form="wide"
+              options={themeOptions}
+              selected={params.themes}
+              match={params.themeMatch}
+              onChange={(themes) => onChange({ ...params, themes })}
+              onMatchChange={(themeMatch) => onChange({ ...params, themeMatch })}
+              coloursLit={params.colors.length > 0}
+              shown={shown}
+              total={total}
+            />
+          )}
           {/* Before score-against: the owned lane reads search · colour · printed-in ·
               score-against (STATES, the dimension list per route). */}
           {printedInOptions && (
@@ -291,6 +309,7 @@ export function FilterRack({
               total={total}
               resultLine={resultLine}
               printedInOptions={printedInOptions}
+              themeOptions={themeOptions}
             />
           )}
         </>

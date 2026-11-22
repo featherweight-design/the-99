@@ -43,7 +43,16 @@ export function printedInLabel(codes: readonly string[]): string {
 
 // Control order, and search first: the row reads in the order the rack above it
 // is laid out, so a chip and the control that made it are on the same sight line.
-export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
+/** A slug's label where the lane has no option list to read one from: `rad-counters` → `Rad Counters`. */
+export function themeLabelFromSlug(slug: string): string {
+  return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+export function chipsFor(
+  params: LaneParams,
+  lane: Lane,
+  themeLabel: (slug: string) => string = themeLabelFromSlug,
+): ChipSpec[] {
   const chips: ChipSpec[] = [];
 
   if (params.q !== "") {
@@ -86,6 +95,28 @@ export function chipsFor(params: LaneParams, lane: Lane): ChipSpec[] {
         label: filterCopy.match.exactlyShort,
         removeAria: `Remove ${filterCopy.match.exactly} filter`,
         next: { match: "contains" },
+      });
+    }
+  }
+
+  // Themes sit between colour and Printed in, as the rack draws them. One chip for the pick, and
+  // the All modifier as its own chip, the way Exactly follows the colours.
+  if (params.themes.length > 0) {
+    const labels = params.themes.map(themeLabel);
+    const label = filterCopy.themes.chip(labels);
+    chips.push({
+      key: "themes",
+      label,
+      spoken: labels.length > 2 ? labels.join(", ") : undefined,
+      removeAria: filterCopy.themes.removeAria,
+      next: { themes: [], themeMatch: "any" },
+    });
+    if (params.themes.length > 1 && params.themeMatch === "all") {
+      chips.push({
+        key: "themeMatch",
+        label: filterCopy.themes.match.chip,
+        removeAria: filterCopy.themes.match.removeAria,
+        next: { themeMatch: "any" },
       });
     }
   }

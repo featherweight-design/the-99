@@ -35,6 +35,7 @@ import { commandersCopy, filterCopy } from "../../../lib/copy/lanes";
 import { PrimaryButton } from "../../ui/button";
 import { AvailabilityControl } from "./availability-control";
 import { PrintedInControl } from "./printed-in-control";
+import { ThemeControl, type ThemeOption } from "./theme-control";
 import type { PrintedInOption } from "../../../lib/commanders/printed-in-lane";
 import { ColourControl } from "./colour-control";
 
@@ -52,7 +53,9 @@ export function FilterSheet({
   total,
   resultLine,
   printedInOptions,
+  themeOptions,
 }: {
+  themeOptions?: ThemeOption[];
   /** The lane's whole list, for the set layer's announcement. Defaults to `shown`. */
   total?: number;
   /** `Printed in ▾`'s rows; absent where the lane shipped no index. */
@@ -266,6 +269,20 @@ export function FilterSheet({
           {colour}
           {/* Before Build from, whose explainer is a hint line: sheet order rule 4 puts a
               control carrying a hint last, and Printed in's hint lives in its own layer. */}
+          {themeOptions && (
+            <ThemeControl
+              form="sheet"
+              options={themeOptions}
+              selected={params.themes}
+              match={params.themeMatch}
+              onChange={(themes) => onChange({ ...params, themes })}
+              onMatchChange={(themeMatch) => onChange({ ...params, themeMatch })}
+              coloursLit={params.colors.length > 0}
+              shown={shown}
+              total={total ?? shown}
+              onLayerChange={setLayered}
+            />
+          )}
           {printedInOptions && (
             <PrintedInControl
               form="sheet"

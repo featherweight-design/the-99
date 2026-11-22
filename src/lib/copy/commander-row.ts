@@ -70,7 +70,20 @@ function topStylesParts(labels: string[], capped: boolean): GapPart[] {
   ];
 }
 
+/**
+ * The sentence while `Themes ▾` is on (#159): the picked themes this commander has lead, then its
+ * own top themes fill to three. "include", never "top three": the picked ones are named because
+ * they were picked, not because they rank first. Picked names carry `picked`, drawn in accent ink.
+ */
+function pickedStylesParts(picked: string[], rest: string[]): (string | { label: string; picked?: boolean })[] {
+  const names = [...picked.map((label) => ({ label, picked: true })), ...rest.filter((r) => !picked.includes(r)).map((label) => ({ label }))].slice(0, 3);
+  if (names.length === 1) return ["This commander’s play styles include ", names[0]!, "."];
+  if (names.length === 2) return ["This commander’s play styles include ", names[0]!, " and ", names[1]!, "."];
+  return ["This commander’s play styles include ", names[0]!, ", ", names[1]!, " and ", names[2]!, "."];
+}
+
 export const commanderRowCopy = {
+  pickedStylesParts,
   /**
    * The gap line. TEMPLATED, never generated: per-player generation was priced
    * at ~3,300 model calls per collection change and rejected in the spec.

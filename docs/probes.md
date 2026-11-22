@@ -2142,6 +2142,18 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   With the predicate's correlation broken to `pi.oracle_id = pi.oracle_id` it reads every
   candidate in every set and fails three more. It makes no writes, so it can point at staging.
 
+- `pnpm probe:themes-filter` presses `Themes ▾` on `/commanders/discover` at 390x844 and 1300x900
+  (#159, build T2). At 1300 it opens the rack's popover; at 390 it presses a pill in the filter
+  sheet, reads the six-pill cap and the `All N themes` row, and opens the whole list as a second
+  layer that must leave the sheet inert and close alone on `Back to filters`. It picks the enabled
+  theme with the most rows by ASKING THE PANEL. It then asserts `?t=`, the chip, that the result line
+  holds exactly the count the option promised, that every row on screen carries the theme in
+  `commander_support.tags` at the floor (the DATABASE, never the index the page shipped), that the
+  row's sentence leads with the pick, and that removing the chip gives the rows back. Two themes
+  with All must write `tm=all`, and every row must then carry both. With the control omitted (the
+  `themeOptions` prop dropped), it fails at 390 (`0 pills`) and at 1300 (no trigger). It writes only
+  the account's About row, captured and restored. Point it at `local-dev`, **never production**.
+  A cold webpack dev server compiles slowly, so its first goto waits up to 120 s.
 - `pnpm probe:printed-in-lanes` presses `Printed in ▾` on `/commanders` and `/discover` at
   390x844 and 1300x900 (filter-chassis decision 9). At 1300 it opens the rack's popover. At 390 it
   opens the filter sheet, then the set list as a SECOND layer over it (decision 23), and asserts the

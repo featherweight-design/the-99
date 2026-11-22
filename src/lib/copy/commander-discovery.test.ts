@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { discoveryCopy } from "./commander-discovery";
+import { discoveryCopy, themeWords } from "./commander-discovery";
 
 describe("discoveryCopy", () => {
   it("locale-formats four-digit counts", () => {
@@ -46,6 +46,14 @@ describe("discoveryCopy", () => {
   // row. The rule itself did not: the shared row prints Fit over
   // `measurableTotal`, and `commandersCopy.row.fitDenominator` /
   // `fitDenominatorMeasurable` are where that now lives.
+
+  it("names picked themes as a phrase, then a count", () => {
+    expect(themeWords([])).toBe("");
+    expect(themeWords(["Tokens"])).toBe("Tokens");
+    expect(themeWords(["Aristocrats", "Tokens"])).toBe("Aristocrats and Tokens");
+    expect(themeWords(["Blink", "Tokens", "Treasure"])).toBe("Blink, Tokens and Treasure");
+    expect(themeWords(["a", "b", "c", "d"])).toBe("4 themes");
+  });
 
   it("never says buy", () => {
     const all = JSON.stringify(discoveryCopy, (_k, v) =>

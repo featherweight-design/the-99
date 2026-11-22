@@ -217,6 +217,14 @@ describe("activeControlCount", () => {
     expect(activeControlCount({ ...defaultParams("owned"), order: "name" }, "owned")).toBe(0);
   });
 
+  it("counts the themes as one control however many are picked, and All as a second, as Exactly is", () => {
+    const one = { ...defaultParams("discover"), themes: ["tokens"] };
+    const two = { ...defaultParams("discover"), themes: ["tokens", "blink"], themeMatch: "all" as const };
+    expect(activeControlCount(one, "discover")).toBe(1);
+    expect(activeControlCount({ ...two, themeMatch: "any" }, "discover")).toBe(1);
+    expect(activeControlCount(two, "discover")).toBe(2);
+  });
+
   it("counts the colour set as one control however many pips are lit", () => {
     expect(activeControlCount({ ...defaultParams("owned"), colors: ["b", "g", "r"] }, "owned")).toBe(1);
   });
