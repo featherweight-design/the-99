@@ -31,7 +31,7 @@ vi.mock("@neondatabase/serverless", () => ({
 }));
 process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
 
-const { clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
+const { clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState, SNAPSHOT_MAX_STALE_MS, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
 
 describe("switchSnapshot", () => {
   beforeEach(() => {
@@ -111,13 +111,31 @@ describe("switchSnapshot", () => {
     reads.rows = [row("on")];
     await switchSnapshot(1_000);
     const release = gated();
-    await switchSnapshot(1_000 + SNAPSHOT_TTL_MS); // a refresh reading the pre-write rows, held at the gate
+    await switchSnapshot(1_000 + SNAPSHOT_TTL_MS); // a refresh that read the pre-write rows, held at the gate
     clearSwitchSnapshot(); // the write commits
     reads.rows = [row("off")];
-    release();
+    reads.gate = null; // the post-write read answers at once, BEFORE the pre-write one
     expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS + 1))?.overrides[0]?.value).toBe("off");
+    release(); // the pre-write read lands last
     await kept.calls[0]();
     expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS + 2))?.overrides[0]?.value).toBe("off");
+  });
+
+  it("waits on the read past the staleness cap, and answers the fallbacks when it fails there", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    reads.rows = [row("on")];
+    await switchSnapshot(1_000);
+    reads.rows = [row("off")];
+    const release = gated();
+    let answered = false;
+    const late = switchSnapshot(1_000 + SNAPSHOT_MAX_STALE_MS).then((s) => (answered = true, s));
+    await settle();
+    expect(answered).toBe(false); // too old to serve: it waits
+    release();
+    expect((await late)?.overrides[0]?.value).toBe("off");
+    reads.fail = true;
+    expect(await switchSnapshot(1_000 + 3 * SNAPSHOT_MAX_STALE_MS)).toBeNull();
+    expect(switchSnapshotState(1_000 + 3 * SNAPSHOT_MAX_STALE_MS)).toBe("miss");
   });
 
   it("reports a read as a miss, pending while another's is in flight, a hit once held, stale past the window", async () => {

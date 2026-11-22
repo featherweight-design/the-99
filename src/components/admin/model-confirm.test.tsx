@@ -21,7 +21,7 @@ describe("ModelConfirm", () => {
       "Mara, Theo",
       "Overview: each run reserves up to $0.240. Priced runs so far average $0.012. Suggested changes: each run reserves up to $0.500. No run has been priced yet, so there is no mean to go on. Each run uses one of the account’s 5 or 10 credits in a rolling 24 hours.",
       "The 2 accounts see Analysis tab in About’s line on Home on their next visit.",
-      "Within 30 seconds, on every server.",
+      "Each server picks it up after 30 seconds and one more request.",
     ]);
     expect(screen.getByRole("button", { name: "Turn on for 2" })).toBeInTheDocument();
     // A flex item that clips its overflow would shrink under the cap and cut the lower facts off; it must keep

@@ -16,7 +16,7 @@ describe("KillConfirm", () => {
     expect([...dialog.querySelectorAll("dd")].map((d) => d.textContent)).toEqual([
       WHO,
       "Kept, and refused while killed. Lifting the kill brings them back.",
-      "Within 30 seconds, on every server.",
+      "Each server picks it up after 30 seconds and one more request.",
     ]);
     expect(within(dialog).getByRole("textbox", { name: "Note (optional)" })).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Cancel" })).toBe(document.activeElement);

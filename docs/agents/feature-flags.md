@@ -53,7 +53,8 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   waits and a flip lands one request after the window ends. An admin write, `src/lib/admin/flag-writes.ts`, commits and
   then clears its own instance's memo (its next read waits, and a refresh begun before the write is discarded); the
   proxy's memo, which feeds every page's switches, catches up a refresh after the window. A failed refresh keeps the
-  held snapshot. It serves each switch's
+  held snapshot. A snapshot five minutes old (`SNAPSHOT_MAX_STALE_MS`, a quiet instance) is not served: that request
+  waits on the read, and a failed read there answers the fallbacks. It serves each switch's
   compiled fallback when the read fails (it served the environment alone until flags-in-DB PR 2), and returns an env-shaped object every
   flag function takes as it takes `process.env`; parents stay checked inside the flag functions, so a child override
   never raises its parent. Every page, layout, action and route handler decides a switch from

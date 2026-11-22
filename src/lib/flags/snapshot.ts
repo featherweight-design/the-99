@@ -11,17 +11,22 @@ import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
  * - Past it, the held snapshot is STILL served at once, and one read refreshes it behind the response (`after()`). So a
  *   flip or a kill reaches an instance one request after its window ends, not on that request: the tradeoff Hugh took
  *   for taking the read off the request's path (cold instances paid it at p50 442ms on GET /).
- * - Only an instance's first read, or the first after an admin write clears it, makes a request wait.
+ * - Past `SNAPSHOT_MAX_STALE_MS` (an instance quiet for five minutes) the held snapshot is too old to decide a kill
+ *   with, so the request waits on the read as a first read does, and a failed read there falls back as below.
+ * - Otherwise only an instance's first read, or the first after an admin write clears it, makes a request wait.
  * An admin write clears the memo on its own instance; every other instance catches up a refresh after the window, and
  * the Switches UI says so rather than promising instant.
  *
  * A read that fails is never held. With nothing held it resolves every switch to its compiled fallback
  * (`switchFallbackOn`; the model-call switch's variable still stops it), and the next request asks again. With a snapshot
- * held, a failed refresh keeps serving it (the last state the admin wrote beats the fallbacks) and the next request past
- * the window asks again. A switch the database names and this build does not know (a row written by a newer build) is
+ * held, a failed refresh keeps serving it until it is `SNAPSHOT_MAX_STALE_MS` old (the last state the admin wrote beats
+ * the fallbacks for a blip) and the next request past the window asks again; past that a failed read answers the
+ * fallbacks, as with nothing held, so a long outage ends where it did before the stale memo. A switch the database names and this build does not know (a row written by a newer build) is
  * skipped rather than trusted.
  */
 export const SNAPSHOT_TTL_MS = 30_000;
+/** How old a held snapshot may be and still be served without waiting: ten windows. */
+export const SNAPSHOT_MAX_STALE_MS = 5 * 60_000;
 
 /** The last good read and when it was asked for. Never a failed one. */
 let held: { at: number; snapshot: SwitchSnapshot } | null = null;
@@ -76,7 +81,7 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
 
 export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null> {
   if (held && now - held.at < SNAPSHOT_TTL_MS) return Promise.resolve(held.snapshot);
-  if (held) {
+  if (held && now - held.at < SNAPSHOT_MAX_STALE_MS) {
     keepAlive(refresh(now));
     return Promise.resolve(held.snapshot);
   }
@@ -114,10 +119,13 @@ function keepAlive(read: Promise<unknown>): void {
 /**
  * How a read now would be answered, for the proxy's `[perf]` line: `hit` from a held snapshot inside its window (no
  * query), `stale` from one past it while a read refreshes it behind the response (no wait), `pending` by waiting on
- * another request's first read still in flight, `miss` by a first read of its own.
+ * another request's waited read still in flight, `miss` by a waited read of its own (a first read, or one
+ * past `SNAPSHOT_MAX_STALE_MS`).
  */
 export function switchSnapshotState(now = Date.now()): "hit" | "stale" | "pending" | "miss" {
-  if (held) return now - held.at < SNAPSHOT_TTL_MS ? "hit" : "stale";
+  const age = held ? now - held.at : Infinity;
+  if (age < SNAPSHOT_TTL_MS) return "hit";
+  if (age < SNAPSHOT_MAX_STALE_MS) return "stale";
   return inflight ? "pending" : "miss";
 }
 

@@ -12,7 +12,9 @@
 // Usage: PROBE_BASE=http://localhost:3396 node scripts/probe-flag-snapshot-swr.mjs   (ROUNDS=5, STALE_BUDGET_MS=60)
 // Read-only: it only loads the signed-out landing. Never point it at production.
 const base = process.env.PROBE_BASE ?? "http://localhost:3000";
-if (/the-99\.(app|com)|vercel\.app/.test(base) && !/staging/.test(base)) throw new Error("probe:flag-snapshot-swr never runs against production");
+// An allowlist, not a production denylist: a local dev server or staging, nothing else.
+const host = new URL(base).hostname;
+if (!["localhost", "127.0.0.1", "staging.the-99.dev"].includes(host)) throw new Error(`probe:flag-snapshot-swr runs against a local dev server or staging only, not ${host}`);
 const rounds = Number(process.env.ROUNDS ?? 5);
 const budget = Number(process.env.STALE_BUDGET_MS ?? 60);
 const TTL_MS = 30_000;

@@ -23,7 +23,7 @@ vi.mock("@clerk/nextjs/server", async (importActual) => ({
 }));
 // No overrides: the reader's switches are the environment's, as they were before the resolver.
 const resolveFlags = vi.hoisted(() => vi.fn(async (): Promise<NodeJS.ProcessEnv> => (await import("@/test/env-view")).ENV_VIEW));
-const switchSnapshotState = vi.hoisted(() => vi.fn((): "hit" | "pending" | "miss" => "hit"));
+const switchSnapshotState = vi.hoisted(() => vi.fn((): "hit" | "stale" | "pending" | "miss" => "hit"));
 vi.mock("./lib/flags/snapshot", () => ({ resolveFlags, switchSnapshotState }));
 // The proxy reads no About state now; the mock is here so a test can say it was never asked.
 vi.mock("./lib/about/read", () => ({

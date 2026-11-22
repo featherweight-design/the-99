@@ -136,7 +136,7 @@ describe("AppWideControl", () => {
     expect([...dialog.querySelectorAll("dd")].map((d) => d.textContent)).toEqual([
       WHO,
       "Kept, and refused while killed. Lifting the kill brings them back.",
-      "Within 30 seconds, on every server.",
+      "Each server picks it up after 30 seconds and one more request.",
     ]);
     expect(within(dialog).getByText("Note (optional)")).toBeInTheDocument();
     const action = within(dialog).getByRole("button", { name: "Kill for everyone" });
