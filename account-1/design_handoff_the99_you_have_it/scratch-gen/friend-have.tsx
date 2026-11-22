@@ -171,3 +171,49 @@ export function HaveCallout({ n, friend, names, filtered = false }: { n: number;
     </section>
   );
 }
+
+import { Checkbox } from "../src/components/ui/checkbox";
+import { SegmentedSwitch } from "../src/components/ui/segmented-switch";
+export const filterCopy = {
+  only: "Only these",
+  onlyAria: (n: number) => `Show only the ${n} you can spare`,
+  all: "All", spare: "You can spare", aria: "Show",
+  body: (names: string) => `${names}.`,
+};
+/**
+ * R3 · the call-out's row without a press: the to-do row's mark tile, title and body (TodoRow's classes). `toggle`
+ * puts the shipped Checkbox right under the body on the phone and on the same line, after it, from md.
+ */
+export function HaveCalloutR3({ n, names, toggle, on = false }: { n: number; names: string; toggle?: boolean; on?: boolean }) {
+  const c = haveCopy.callout;
+  return (
+    <section aria-label={c.eyebrow} className="mt-[12px] overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] [border:1px_solid_var(--border-strong)] md:mt-[16px]">
+      <div className="flex items-center gap-[10px] px-[14px] pt-[12px] pb-[10px]">
+        <span className="min-w-0 truncate font-mono uppercase leading-normal text-[9.5px] tracking-[0.14em] text-[color:var(--fg-faint)]">{c.eyebrow}</span>
+      </div>
+      <div className="relative flex items-start gap-[11px] px-[14px] py-[11px] md:items-center md:px-[16px] md:py-[10px] [border-top:1px_solid_var(--border)]">
+        <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--bg))] text-[color:var(--accent-text)]"><SpareGlyph size={16} /></span>
+        <div className="min-w-0 flex-1 md:flex md:flex-wrap md:items-baseline md:gap-x-[12px]">
+          <p className="m-0 text-[13.5px] font-semibold leading-[1.4] text-[color:var(--fg)]">{c.title(n, "")}</p>
+          <p className="m-0 mt-[2px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)] md:mt-0 md:text-[12.5px]">{c.body(names)}</p>
+          {toggle ? (
+            <label className="mt-[8px] inline-flex min-h-[44px] cursor-pointer items-center gap-[9px] md:mt-0 md:min-h-[28px] md:self-center md:pl-[4px]">
+              <Checkbox checked={on} onChange={() => {}} ariaLabel={filterCopy.onlyAria(n)} />
+              <span className="text-[13px] font-medium text-[color:var(--fg-body)]">{filterCopy.only}</span>
+            </label>
+          ) : null}
+        </div>
+      </div>
+    </section>
+  );
+}
+/** R3 · B: the filter over the grid, the shipped SegmentedSwitch (compact, neutral), as History's tabs. */
+export function HaveFilter({ all, n, on = false }: { all: number; n: number; on?: boolean }) {
+  return (
+    <div className="mt-[12px] md:mt-[16px]">
+      <SegmentedSwitch<"all" | "spare"> kind="radio" tone="neutral" size="compact" ariaLabel={filterCopy.aria}
+        segments={[{ value: "all", label: `${filterCopy.all} ·`, count: String(all) }, { value: "spare", label: `${filterCopy.spare} ·`, count: String(n) }]}
+        value={on ? "spare" : "all"} onChange={() => {}} />
+    </div>
+  );
+}

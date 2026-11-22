@@ -1,4 +1,4 @@
-// You have a card a friend wants R2: every NEW string (placeholders for /copy-review). Shipped strings are reused as named.
+// You have a card a friend wants R3: every NEW string (placeholders for /copy-review). Shipped strings are reused as named.
 export const haveCopy = {
   key: { spare: "you can spare", asked: "asked you", offered: "offered", accepted: "accepted" /* = spareCopy.request.keyAccepted */ },
   aria: (card: string) => `You can spare ${card}`,
@@ -23,8 +23,13 @@ export const haveCopy = {
     eyebrow: "Your spares",
     title: (n: number) => `You have ${n} to spare`,
     body: (names: string) => `${names}. Offer one from its tile.`,
-    show: "Show", showName: (n: number) => `Show only the ${n} you can spare`,
-    all: "All", allName: "Show the whole wishlist",
+    // B (filter): the segmented switch's two segments, counts drawn after them.
+    filterAria: "Show",
+    filterAll: "All ·",
+    filterSpare: "You can spare ·",
+    // A (toggle): the checkbox's label and name.
+    only: "Only these",
+    onlyAria: (n: number) => `Show only the ${n} you can spare`,
   },
   // The friend's side (Waiting on you, Home lead, push).
   waiting: {

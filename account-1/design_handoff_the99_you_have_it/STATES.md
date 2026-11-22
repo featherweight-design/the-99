@@ -1,4 +1,4 @@
-# States · You have a card a friend wants R2
+# States · You have a card a friend wants R3
 
 ## Tile press (friend's Wishlist tab)
 | State | Draws |
@@ -13,12 +13,13 @@
 | Sheet open | Box ringed (`--accent` outline 2px, offset 2). |
 | Any tile has a press | Every tile's wants line is 26px tall (no overlap with the name; even grid). |
 
-## Call-out and key (under the head)
+## Call-out, filter and key (under the head)
 | State | Draws |
 |---|---|
-| No spares | Neither. |
-| N spares | `Your spares` to-do row: `You have N to spare`, names (first three and `and N more` past four), `Show ›`. Key: only items drawn. |
-| Show pressed | Grid holds those N; press `All ›` (`aria-expanded`). Head count unchanged. Not mirrored to the URL. |
+| No spares | None of them. |
+| N spares | Call-out row (no press): `You have N to spare`, names. B: `All · 9` / `You can spare · N`, All chosen. A: `Only these` unchecked. Key: only items drawn. |
+| Filtered | B: `You can spare · N` chosen; A: checked. The grid holds those N; head count unchanged. Not in the URL. |
+| A spare leaves while filtered (an offer accepted elsewhere stays: it is still yours) | The tile stays until the next read. |
 
 ## Sheet rows
 | Row | Right side | Foot |

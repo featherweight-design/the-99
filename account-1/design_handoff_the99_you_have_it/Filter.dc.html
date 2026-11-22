@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>You have it R3: toggle or filter</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF6FAE}a:hover{color:#FF9AC6}
+</style>
+</helmet>
+<div style="width:1700px;min-height:2840px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif;color:#E6E8F0">Q1 · A toggle in the call-out, or a filter under it</h2><p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1200px">Both do one thing: narrow Colin's wishlist to the four you can spare. A keeps the control beside the text it answers; B makes it the list's own filter and leaves the call-out a plain statement.</p></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">A · Toggle (shipped checkbox), phone</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/yh3-p-a0.webp" alt="A · Off" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">A · Off</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Only these, under the names.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/yh3-p-a1.webp" alt="A · On" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">A · On</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The grid holds the four.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">B · Filter (shipped segmented switch), phone</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/yh3-p-b0.webp" alt="B · All" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">B · All</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">All · 9 chosen.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/yh3-p-b1.webp" alt="B · You can spare" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">B · You can spare</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">You can spare · 4 chosen.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Desktop 1300</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:650px;flex:none">
+<img src="art/yh3-d-a0.webp" alt="A · Off" style="width:650px;height:450px;display:block;border-radius:12px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">A · Off</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The checkbox on the text's line, right after the names.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:650px;flex:none">
+<img src="art/yh3-d-b0.webp" alt="B · All" style="width:650px;height:450px;display:block;border-radius:12px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">B · All</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The switch under the call-out, on the left.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Desktop, on</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:650px;flex:none">
+<img src="art/yh3-d-a1.webp" alt="A · On" style="width:650px;height:450px;display:block;border-radius:12px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">A · On</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD"></p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:650px;flex:none">
+<img src="art/yh3-d-b1.webp" alt="B · You can spare" style="width:650px;height:450px;display:block;border-radius:12px;border:1px solid #262A35;object-fit:cover;object-position:top">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">B · You can spare</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD"></p>
+</figcaption>
+</figure></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":2840}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

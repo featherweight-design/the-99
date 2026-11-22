@@ -1,6 +1,6 @@
-# READINESS · You have a card a friend wants R2
+# READINESS · You have a card a friend wants R3
 
-**Verdict: Amber until Hugh approves R2.** R1's Q1–Q3 are settled (no deck dot; Offer kept; call-out + /friends count, no notice). Every gap below has an answer drawn.
+**Verdict: Amber until Hugh picks Q1 (toggle or filter) and approves R3.** R1's Q1–Q3 are settled (no deck dot; Offer kept; call-out + /friends count, no notice). Every gap below has an answer drawn.
 
 ## Gaps for engineering
 - **G1 · Offers in `spare_requests`.** An offer is a request whose holder sent it: add a direction (`initiated_by`

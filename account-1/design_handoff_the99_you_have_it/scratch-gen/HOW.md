@@ -9,4 +9,4 @@ override, clerk stub, playwright symlink, export `HelpContext` / `CardSearchCont
 - `social/friend-wishlist.tsx` head count reads `globalThis.__HEADN` when set.
 - `social/friends-list.tsx` `FriendRow`: `{globalThis.__FROW?.(friend)}` before the since date.
 Then `node dz/css.mjs`; `DATABASE_URL=postgres://s:s@localhost/s npx tsx dz/r-have.tsx`; `node dz/shot.mjs dz/specs.json`;
-PNG → `art/yh2-*.webp`; `python3 gen.py repo|canvas <out>`; `node measure2.mjs <copy with support.js stripped>`.
+PNG → `art/yh3-*.webp`; `python3 gen.py repo|canvas <out>`; `node measure2.mjs <copy with support.js stripped>`.

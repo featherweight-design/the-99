@@ -1,7 +1,7 @@
-# You have a card a friend wants · R2
+# You have a card a friend wants · R3
 
-Account 1, 2026-11-22. Status: **R2, Hugh's R1 notes applied; for his review. No PR until he approves.**
-Canvas (Design type): https://claude.ai/artifact/3px7adGsuhz7LDqFqHCMtS (Main, Wishlist, Sheet, Friends).
+Account 1, 2026-11-22. Status: **R3, the call-out's press replaced (toggle or filter, Q1 open). No PR until Hugh approves.**
+Canvas (Design type): https://claude.ai/artifact/3px7adGsuhz7LDqFqHCMtS (Main, Wishlist, Filter, Sheet, Friends).
 
 The mirror of Find a friend's spares (#3202). There, your Wishlist tile shows a friend's spare and opens Ask. Here, a
 **friend's Wishlist tab** marks the cards on it that you have, and the press opens your copies with **Offer**, an ask
@@ -19,10 +19,12 @@ Unchanged: Wishlist stays separate from Shopping; your own Collection and Wishli
    **No overlap (R2):** once any tile draws a press, every tile's wants line takes the press's 26px height
    (`min-height:26px; line-height:26px`), so the press sits beside it, never under the name, and the grid stays even.
    Loading: the tab as shipped; call-out, key and presses fade in when the read lands (160ms, none under reduced motion).
-2. **A page call-out (R2): the deck page's to-do card, one row.** Under the head: eyebrow `Your spares`, the spare
-   glyph's 30px tile, `You have 4 to spare` / `Lathliss, Giada, Jace and Tam. Offer one from its tile.` and one press
-   (`TodoRow`): `Show ›` narrows the grid to those cards and turns to `All ›`. The head's count stays the list's. No
-   spares: no call-out.
+2. **A page call-out and a filter (R3).** The call-out is a statement: the deck page's to-do card row (`TodoRow`'s mark
+   tile, title, body) with no press: eyebrow `Your spares`, `You have 4 to spare` / `Lathliss, Giada, Jace and Tam. Offer
+   one from its tile.` (first three and `and N more` past four). The grid narrows by **B (recommended)**: the shipped
+   `SegmentedSwitch` (`kind="radio"`, neutral, compact, as History's) under the call-out, left edge, `All · 9` /
+   `You can spare · 4`; or **A**: the shipped `Checkbox` labelled `Only these` right after the names (under them on the
+   phone, same line from md). Not mirrored to the URL. No spares: neither. The head's count stays the list's.
 3. **The press opens your spare, with Offer.** `You have this` in the spares modal's shell (`ModalChrome`, 640 / sheet):
    card box `on Colin’s wishlist · wants 2`, `Your spares · N`, one row with **Offer**; then `Offered` (days left),
    `Accepted` (success), `Declined`. If the friend already asked you, the row is their ask with `AnswerPresses`.
@@ -33,6 +35,15 @@ Unchanged: Wishlist stays separate from Shopping; your own Collection and Wishli
    friend's row when you can spare any of their wanted cards; it links to their Wishlist tab (its own link, above the
    row's). Zero: nothing.
 5. **Phone and desktop:** one design.
+
+## For Hugh
+
+- **Q1 · Toggle in the call-out (A) or a filter under it (B)?** Filter board. Recommended: B, so the call-out stays a
+  statement and the control is the list's own.
+
+## R3 · Hugh's note (2026-11-22)
+
+- The `Show ›` button read wrong, and on desktop sat far from the text: replaced by A (toggle beside the text) or B (filter).
 
 ## R2 · Hugh's notes (2026-11-22)
 
@@ -50,9 +61,10 @@ Unchanged: Wishlist stays separate from Shopping; your own Collection and Wishli
 | File | What |
 |---|---|
 | `Main.dc.html` | The calls, the questions |
-| `Wishlist.dc.html` | F0–F2 phone, D0–D2 desktop: loading, loaded with the call-out, Show pressed, close up |
+| `Wishlist.dc.html` | F0–F2 phone, D0–D2 desktop: loading, loaded, filtered (with B), close up |
+| `Filter.dc.html` | Q1: A (toggle) and B (filter), off and on, phone and desktop |
 | `Sheet.dc.html` | F3–F6 phone, D3–D6 desktop: Offer, Offered, asked, accepted |
 | `Friends.dc.html` | B1–B2 your /friends count; C1–C2 the offer in the friend's Waiting on you |
 | `STATES.md` · `copy strings.ts` · `READINESS.md` | Every state, every new string, the verdict |
-| `art/yh2-*.webp` | The frames (2x), rendered from main f17ab2a |
+| `art/yh3-*.webp` | The frames (2x), rendered from main f17ab2a |
 | `scratch-gen/` | How the frames were made (`HOW.md`). Reference only; never import. |

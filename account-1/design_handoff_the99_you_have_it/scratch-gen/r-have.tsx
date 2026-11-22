@@ -9,7 +9,7 @@ import { FriendsList } from "../src/components/social/friends-list";
 import { CardDetailProvider } from "../src/components/cards/card-detail-provider";
 import { SpareGlyph } from "../src/components/social/spare-key-item";
 import { named } from "../src/lib/person-name/mint";
-import { HavePress, HaveKey, HaveSheet, HaveCallout, haveCopy, type HaveKind } from "./friend-have";
+import { HavePress, HaveKey, HaveSheet, HaveCallout, HaveCalloutR3, HaveFilter, haveCopy, type HaveKind } from "./friend-have";
 mkdirSync("dz/frames", { recursive: true });
 const G = globalThis as any;
 
@@ -45,10 +45,13 @@ function page(body: any) {
     </div>
   );
 }
-function wishlist(name: string, o: { loaded: boolean; open?: string; sheet?: any; dev: "phone" | "desk"; callout?: boolean; filtered?: boolean }) {
+function wishlist(name: string, o: { loaded: boolean; open?: string; sheet?: any; dev: "phone" | "desk"; callout?: boolean; filtered?: boolean; v?: "a" | "b" }) {
   G.__VW = o.dev === "desk" ? 1300 : 390;
   G.__HAVE = o.loaded ? (l: any) => { const h = haveOf(l.oracleId); return h ? <HavePress kind="spare" mark={h.mark ?? null} name={l.name} open={o.open === l.oracleId} /> : null; } : undefined;
-  G.__HAVEKEY = o.loaded ? () => <>{o.callout === false ? null : <HaveCallout n={4} friend="Colin" names="Lathliss, Giada, Jace and Tam" filtered={o.filtered} />}<HaveKey items={["spare", "asked", "accepted"]} /></> : undefined;
+  const NAMES = "Lathliss, Giada, Jace and Tam"; const v = o.v ?? "b";
+  G.__HAVEKEY = o.loaded ? () => <>{v === "a" ? <HaveCalloutR3 n={4} names={NAMES} toggle on={o.filtered} />
+    : v === "b" ? <><HaveCalloutR3 n={4} names={NAMES} /><HaveFilter all={lines.length} n={4} on={o.filtered} /></>
+    : <HaveCallout n={4} friend="Colin" names={NAMES} filtered={o.filtered} />}<HaveKey items={["spare", "asked", "accepted"]} /></> : undefined;
   G.__HEADN = o.filtered ? lines.length : undefined;
   const shown = o.filtered ? lines.filter((l) => haveOf(l.oracleId)) : lines;
   const html = shell(<>{page(<FriendWishlist name={named("Colin")} lines={shown as any} />)}</>, PATH, o.sheet ? W(<CardDetailProvider>{o.sheet}</CardDetailProvider>, PATH) : null);
@@ -76,6 +79,10 @@ for (const dev of ["phone", "desk"] as const) {
   wishlist(`${d}-f4`, { loaded: true, dev, open: "o-giada", sheet: sheets.asked });
   wishlist(`${d}-f6`, { loaded: true, dev, open: "o-jace", sheet: sheets.accepted });
   wishlist(`${d}-ff`, { loaded: true, dev, filtered: true });
+  wishlist(`${d}-a0`, { loaded: true, dev, v: "a" });
+  wishlist(`${d}-a1`, { loaded: true, dev, v: "a", filtered: true });
+  wishlist(`${d}-b0`, { loaded: true, dev, v: "b" });
+  wishlist(`${d}-b1`, { loaded: true, dev, v: "b", filtered: true });
 }
 
 // ---- Colin's side: /friends, Waiting on you with the offer; and ideas ----
