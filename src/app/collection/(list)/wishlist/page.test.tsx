@@ -48,9 +48,10 @@ const props = async () => (await view()).props;
 describe("/collection/wishlist", () => {
   it("hands the view plain props, with dates as ISO strings", async () => {
     expect(await props()).toEqual({
-      tiles: [{ oracleId: CARD, name: "Sol Ring", imageUri: "https://img", want: 2, have: 1, addedAt: AT, line: null }],
+      tiles: [{ oracleId: CARD, name: "Sol Ring", imageUri: "https://img", want: 2, have: 1, addedAt: AT, line: null, price: null }],
       notices: [{ oracleId: CARD, name: "Sol Ring", collectedAt: AT }],
       hasFriend: true,
+      newestAsOf: null,
     });
   });
 

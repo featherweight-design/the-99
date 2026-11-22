@@ -747,6 +747,11 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
 }
 
 /* Life tracker (PR 5): the sheet slides up, the life number ticks, and a committed life change tints its panel. */
+/* Wishlist friend-spare presses: they land after the page, so they fade in rather than pop (160ms, motion-safe only). */
+@keyframes spare-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 @keyframes sheet-in {
   from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: none; }
