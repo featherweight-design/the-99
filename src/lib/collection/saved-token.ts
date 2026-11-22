@@ -5,7 +5,7 @@
  * this token. A repeat visit that is handed the SAME token knows nothing the fields depend on has
  * moved, and draws from the copy instead of asking `/api/collection-fields` again.
  *
- * It is the page cache's own key, so it is true for the same reasons (`cache/page-cache.ts`): the
+ * It is built from the page cache's own key parts, so it is true for the same reasons (`cache/page-cache.ts`): the
  * reader's data stamp, which the database moves at commit for every write that can change a field
  * (an import, a scan, an edit, a printing pick, a deck write); the catalog generation; the
  * deployment, so a build that changes a field's shape never meets the last build's copy; and the
