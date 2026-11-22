@@ -15,7 +15,7 @@ import { enforceHit } from "../../../lib/rate/observe";
 // `sendMail`. Only the `*EmailParts` builders and `sendMail` run: no claim, token, code or mailing-list row is written.
 
 export type EmailPreviewResult =
-  | { ok: true; sent: number; total: number; stoppedBy: "capped" | "limited" | "failed" | null }
+  | { ok: true; sent: string[]; total: number; stoppedBy: "capped" | "limited" | "failed" | null }
   | { ok: false; reason: "cooldown"; waitSec: number }
   | { ok: false; reason: "unconfigured" | "no-address" | "failed" };
 
@@ -30,19 +30,19 @@ export async function sendEmailPreviews(): Promise<EmailPreviewResult> {
     const wait = await enforceHit(userId, "admin-mail-preview");
     if (wait !== null) return { ok: false, reason: "cooldown", waitSec: wait };
     const mails = previewMails(to, config.origin);
-    let sent = 0;
+    const sent: string[] = [];
     let stoppedBy: "capped" | "limited" | "failed" | null = null;
     for (const mail of mails) {
       const r = await sendMail(config, mail);
       if (r.ok) {
-        sent += 1;
+        sent.push(mail.template ?? "");
         continue;
       }
       stoppedBy = r.reason === "capped" ? "capped" : r.reason === "limited" ? "limited" : "failed";
       // A cap or a recipient wall refuses the rest too; anything else may be one template's failure, so try the next.
       if (stoppedBy !== "failed") break;
     }
-    console.info(`[email-preview] by=${userId} sent=${sent} of=${mails.length} stoppedBy=${stoppedBy ?? "none"}`);
+    console.info(`[email-preview] by=${userId} sent=${sent.length} of=${mails.length} stoppedBy=${stoppedBy ?? "none"}`);
     return { ok: true, sent, total: mails.length, stoppedBy };
   } catch (error) {
     console.error("admin: email preview failed", error instanceof Error ? error.name : "unknown");

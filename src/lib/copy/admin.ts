@@ -915,17 +915,16 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
   WELCOME_CREDITS_ENABLED: { label: "Welcome credits", description: "Gives a new sign-up 15 credits that expire after 30 days. Off stops new grants; a lot already given is still spent." },
 };
 
-/**
- * The launch email's admin card on /admin/invites (launch email R2c G3; eng-drawn admin tooling, orchestrator ruling
- * 2026-11-20): a dry run first, then Send next N behind a confirm that names the count. Shown whatever the flyer switch says.
- */
+/** The Email previews card on /admin/invites: one press sends every email template the app sends to the signed-in admin. */
 export const emailPreviewAdminCopy = {
   title: "Email previews",
   meta: "Every email The 99 sends, to your own address. Subjects start with [Preview].",
   send: "Send to me",
   sending: "Sending…",
   // The flyer code is the same email as the sign-in code, so three emails stand for four templates. Clerk sends its own.
-  result: (sent: number, total: number) => `Sent ${sent} of ${total}: the invite, the sign-up code (also the flyer code) and the launch email. Clerk's sign-in and reset emails come from Clerk and aren't included.`,
+  names: { invite: "the invite", code: "the sign-up code (also the flyer code)", launch: "the launch email" },
+  result: (sent: readonly string[], total: number) => `Sent ${sent.length} of ${total}${sent.length ? `: ${sent.join(", ")}` : ""}. Clerk's sign-in and reset emails come from Clerk and aren't included.`,
+  failed: "The rest didn't go through.",
   capped: "Today's mail cap is reached, so the rest weren't sent.",
   limited: "Your address hit its hourly mail limit, so the rest weren't sent.",
   cooldown: (sec: number) => `Sent a moment ago. Try again in ${sec < 90 ? `${sec} seconds` : `${Math.ceil(sec / 60)} minutes`}.`,
@@ -936,6 +935,10 @@ export const emailPreviewAdminCopy = {
   },
 } as const;
 
+/**
+ * The launch email's admin card on /admin/invites (launch email R2c G3; eng-drawn admin tooling, orchestrator ruling
+ * 2026-11-20): a dry run first, then Send next N behind a confirm that names the count. Shown whatever the flyer switch says.
+ */
 export const launchEmailAdminCopy = {
   title: "Launch email",
   meta: "One email to everyone on the launch list, sent in batches.",

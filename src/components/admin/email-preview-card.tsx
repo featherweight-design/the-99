@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 
-import { sendEmailPreviews, type EmailPreviewResult } from "../../app/admin/invites/email-preview-actions";
+import { sendEmailPreviews } from "../../app/admin/invites/email-preview-actions";
 import { emailPreviewAdminCopy as copy } from "../../lib/copy/admin";
+import { lineFor } from "../../lib/admin/email-preview-line";
 import { SteadyLabel } from "../ui/steady-label";
 
 // The "send every email template to me" card on /admin/invites. Eng-drawn admin tooling, styled as the launch email card
@@ -13,12 +14,6 @@ const MONO_FAINT = "font-mono text-[11px] text-[color:var(--fg-faint)]";
 const TEXT_BUTTON =
   "inline-flex min-h-[44px] cursor-pointer items-center whitespace-nowrap border-0 bg-transparent px-[6px] text-[13px] font-medium text-[color:var(--accent-text)] disabled:cursor-default disabled:opacity-60";
 const LINE = "m-0 px-[14px] pb-[12px] text-[12.5px] leading-[1.5] md:px-[16px]";
-
-export function lineFor(r: EmailPreviewResult): { text: string; danger: boolean } {
-  if (!r.ok) return { text: r.reason === "cooldown" ? copy.cooldown(r.waitSec) : copy.refused[r.reason], danger: true };
-  const tail = r.stoppedBy === "capped" ? ` ${copy.capped}` : r.stoppedBy === "limited" ? ` ${copy.limited}` : "";
-  return { text: copy.result(r.sent, r.total) + tail, danger: r.sent < r.total };
-}
 
 export function EmailPreviewCard() {
   const [pending, setPending] = useState(false);

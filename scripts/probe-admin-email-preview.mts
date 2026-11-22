@@ -101,7 +101,7 @@ try {
       const line = page.locator('[data-testid="email-preview-line"]');
       await line.waitFor({ state: "visible", timeout: 60_000 });
       const text = (await line.textContent()) ?? "";
-      report(`${tag}: the line says 3 of 3 and names Clerk's emails as excluded`, /Sent 3 of 3/.test(text) && /Clerk/.test(text), text);
+      report(`${tag}: the line says 3 of 3 and names Clerk's emails as excluded`, /Sent 3 of 3: the invite/.test(text) && /Clerk/.test(text), text);
       const sent = lines().slice(before);
       report(`${tag}: three mails reached the stub`, sent.length === 3, `${sent.length}`);
       report(`${tag}: every mail is to the admin's own address`, sent.every((m) => m.to.length === 1 && m.to[0].toLowerCase() === EMAIL.toLowerCase()));

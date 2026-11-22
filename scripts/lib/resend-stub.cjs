@@ -6,7 +6,7 @@ const fs = require("node:fs");
 const real = globalThis.fetch;
 globalThis.fetch = async function stubbed(input, init) {
   const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
-  if (url === "https://api.resend.com/emails" && process.env.RESEND_STUB_LOG) {
+  if (url.startsWith("https://api.resend.com/") && process.env.RESEND_STUB_LOG) {
     const body = JSON.parse(String(init?.body ?? "{}"));
     fs.appendFileSync(process.env.RESEND_STUB_LOG, JSON.stringify({ to: body.to, subject: body.subject, template: body.tags?.[0]?.value ?? null }) + "\n");
     return new Response(JSON.stringify({ id: "stub" }), { status: 200, headers: { "Content-Type": "application/json" } });
