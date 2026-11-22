@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tablet sheet: tab row</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width:1600px;min-height:1620px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif;color:#E6E8F0">The tab row</h2><p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1240px">Table was pushed to the far right edge with ml-auto, away from the other four. It now follows Mana, in the drawn order. The tab labels and their counts are unchanged.</p></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">Tablet landscape · Table tab open</span><div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:700px;flex:none">
+<img src="/_blob/4d2a4ab00dee7c5dbeddc351a34496f3" alt="Now" style="width:700px;height:486px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Now</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Table alone at the right edge, 1,100px from Mana.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:700px;flex:none">
+<img src="/_blob/1597628d3196f6970e5e89531a89c7a0" alt="X3 · Drawn" style="width:700px;height:486px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">X3 · Drawn</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Table follows Mana.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">Phone · unchanged in the drawing</span><div style="display:flex;gap:36px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:300px;flex:none">
+<img src="/_blob/d4aafc0deb799d882cf2668a6cbe5dc5" alt="Phone now" style="width:300px;height:649px;display:block;border-radius:26px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Phone now</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The five tabs fill the phone's row, so Table already sat next to Mana.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:300px;flex:none">
+<img src="/_blob/e0baa4c074392bf8ce1204fe93c952a5" alt="Phone drawn" style="width:300px;height:649px;display:block;border-radius:26px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Phone drawn</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The same. The change matters only where the row has room to spare.</p>
+</figcaption>
+</figure></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1620}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

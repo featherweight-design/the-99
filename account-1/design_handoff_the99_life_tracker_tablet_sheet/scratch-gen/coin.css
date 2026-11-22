@@ -1,0 +1,51 @@
+
+/* Tablet addendum (sheet): the half sheet rises from its seat's edge, over a veil that leaves the table readable. */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+@keyframes sheet-veil {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Tablet addendum (K): the coin toss. 0 to 900 ms the coin turns five times and a half-turn more if it lands tails
+   (`--rx`), easing out like a die losing speed; the arc lifts it toward you (scale 1 to 1.8, up 55% of its width) and drops it back,
+   ease-out up and ease-in down; then 250 ms of rattle as it lies flat, and the ring lands at 900 ms. */
+@keyframes coin-spin {
+  from { transform: rotateZ(calc(var(--rz) - 50deg)) rotateX(0); }
+  to { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) + 1800deg)); }
+}
+@keyframes coin-arc {
+  0% { transform: translateY(0) scale(1); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
+  46% { transform: translateY(-55%) scale(1.8); animation-timing-function: cubic-bezier(.6,0,.9,.45); }
+  100% { transform: translateY(0) scale(1); }
+}
+@keyframes coin-settle {
+  0% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) + 18deg)); }
+  35% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) - 9deg)); }
+  65% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) + 4deg)); }
+  85% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) - 1.5deg)); }
+  100% { transform: rotateZ(var(--rz)) rotateX(var(--rx)); }
+}
+@keyframes coin-shadow {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: .55; filter: blur(3px); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
+  46% { transform: translate(-50%, -50%) scale(.55); opacity: .18; filter: blur(10px); animation-timing-function: cubic-bezier(.6,0,.9,.45); }
+  100% { transform: translate(-50%, -50%) scale(1); opacity: .55; filter: blur(3px); }
+}
+@keyframes coin-land {
+  from { opacity: .9; transform: scale(.55); }
+  to { opacity: 0; transform: scale(1.2); }
+}
+.coin { transform-style: preserve-3d; }
+.coin-rim {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: color-mix(in oklab, var(--accent) 55%, black);
+  transform: translateZ(calc(var(--z) * var(--t)));
+}
+.coin-face-front { transform: translateZ(calc(var(--t) / 2)); }
+.coin-face-back { transform: rotateX(180deg) translateZ(calc(var(--t) / 2)); }
+.coin-shadow {
+  position: absolute; left: 50%; top: 58%; width: 96%; height: 70%; border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0,0,0,.85), rgba(0,0,0,0));
+  transform: translate(-50%, -50%); opacity: .55; filter: blur(3px);
+}
