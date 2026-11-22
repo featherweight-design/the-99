@@ -138,7 +138,7 @@ export function tableGrantQuery(viewerId: string, tableId: string, q: Pick<typeo
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
     .leftJoin(socialProfiles, eq(socialProfiles.userId, ruleZeroTables.setBy))
     .leftJoin(closer, eq(closer.userId, ruleZeroTables.closedBy))
-    .where(and(eq(ruleZeroTables.id, tableId), closed ? and(tableEnded, tableKept) : tableOpen));
+    .where(and(eq(ruleZeroTables.id, tableId), closed ? tableEnded : tableOpen));
 }
 
 const viewerFriend = alias(friendLinks, "viewer_friend");
@@ -543,7 +543,7 @@ export type ClosedHow =
   | { kind: "morning"; at: Date };
 
 /** What the closed page (L4, H3) draws: the table's id and the viewer's seated deck (Log this game's link while a host-closed table is `logOpen`), the pod, who set the table (null when the viewer did), how it ended, and the seated faces. */
-export type ClosedTable = { tableId: string; viewerDeckId: string | null; podName: ThirdPartyName; setBy: ThirdPartyName | null; how: ClosedHow; faces: { name: string | ThirdPartyName; artCropUri: string | null }[]; loggedAt: Date | null; /** The viewer's games at the table, newest first, each with whether it is logged (log reminder C1, L1). */ games: TableGame[] };
+export type ClosedTable = { tableId: string; viewerDeckId: string | null; /** The viewer's seated deck's name, for C2's `Your game with {deck}`. */ viewerDeckName: string | null; /** Past the keep window (`tableKept` is false) while the row still exists: nothing fills in now, and the page says so (log reminder C2). */ pastKept: boolean; /** The table's 6 am: when its night ended, whoever closed it sooner. */ endedAt: Date; podName: ThirdPartyName; setBy: ThirdPartyName | null; how: ClosedHow; faces: { name: string | ThirdPartyName; artCropUri: string | null }[]; loggedAt: Date | null; /** The viewer's games at the table, newest first, each with whether it is logged (log reminder C1, L1). */ games: TableGame[] };
 
 /** The viewer's own latest game logged from the table: their own rows only, so no grant beyond the caller's. */
 export async function loggedFromTableIn(q: Pick<typeof db, "select">, viewerId: string, tableId: string): Promise<Date | null> {
@@ -566,7 +566,8 @@ export function closedHow(viewerId: string, table: ClosedGrant): ClosedHow {
 /**
  * The viewer's own table after its night ended, or null: not found, still open, not seated, or no longer in the pod.
  * The same grant as `loadTable` on the other side of the clock, and the same seats; nothing but names and art leaves.
- * An ended table answers for a week past its morning (`tableKept`), then reads as nothing, deleted or not.
+ * An ended table answers while its row exists: a week past its morning it still draws, as C2 (`pastKept`: nothing is
+ * filled in, log by hand); once a pod's next setup deletes the row it is not found.
  */
 export async function loadClosedTable(viewerId: string, tableId: unknown): Promise<ClosedTable | null> {
   return (await loadClosedTableWith(viewerId, tableId, async () => null))?.closed ?? null;
@@ -586,6 +587,9 @@ export async function loadClosedTableWith<R>(viewerId: string, tableId: unknown,
   const closed: ClosedTable = {
     tableId,
     viewerDeckId: rows.find((r) => r.userId === viewerId)?.deckId ?? null,
+    viewerDeckName: rows.find((r) => r.userId === viewerId)?.deckName ?? null,
+    pastKept: !table.loggable,
+    endedAt: table.closesAt,
     podName: named(table.podName),
     setBy: table.setBy === viewerId || table.setByName === null ? null : named(table.setByName),
     how: closedHow(viewerId, table),

@@ -46,7 +46,7 @@ export default async function PlayPage({ params, searchParams }: { params: Promi
           expiresAt={night.closesAt.getTime()}
           seats={null}
           backHref="/friends"
-          logHref={logGameHref(closed, closed.games[0]?.gameMs ?? null)}
+          logHref={logGameHref(closed, closed.games.find((g) => g.loggedAt === null)?.gameMs ?? null)}
           podName={closed.podName}
           closed={{ by: how.byYou ? "you" : how.by, at: how.at.getTime() }}
           undoNow={undoNow}

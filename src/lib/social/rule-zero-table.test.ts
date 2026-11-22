@@ -55,7 +55,9 @@ describe("tableGrantQuery, closed", () => {
   it("asks the same grant of a table whose night has ended, on the database's clock", () => {
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
     expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
-    expect(q.sql).toMatch(/where \("rule_zero_tables"\."id" = \$3 and \(\("rule_zero_tables"\."closed_at" is not null or "rule_zero_tables"\."expires_at" <= now\(\)\) and \("rule_zero_tables"\."expires_at" \+ interval '7 days' > now\(\)\)\)\)$/);
+    // The grant stops at the table's end: a table past its keep window still answers, as C2 (`pastKept`); only deletion ends it.
+    expect(q.sql).toMatch(/where \("rule_zero_tables"\."id" = \$3 and \("rule_zero_tables"\."closed_at" is not null or "rule_zero_tables"\."expires_at" <= now\(\)\)\)$/);
+    expect(q.sql).not.toMatch(/where .*interval '7 days'/);
   });
 
   it("names who closed it and when, and whether the log is still open, never a closer's account", () => {
