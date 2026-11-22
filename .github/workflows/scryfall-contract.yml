@@ -38,6 +38,13 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=4096
         run: pnpm check:manapool
+      # always(), as below: Card Kingdom's pricelist is another independent upstream (the store prices). Its ~69MB
+      # body is parsed whole, so it needs the same headroom as ManaPool's.
+      - name: Check the Card Kingdom contract
+        if: always()
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: pnpm check:cardkingdom
       # always(), so a Scryfall or ManaPool failure does not hide a Spellbook one — the three
       # upstreams are independent and one alert should report the whole picture.
       - name: Check the Commander Spellbook contract

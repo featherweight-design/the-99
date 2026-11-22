@@ -34,8 +34,14 @@ const REQUIRED: Record<BulkType, readonly string[]> = {
   default_cards: [
     "oracle_id", "id", "name", "set", "collector_number", "layout", "digital",
     "booster", "rarity",
+    // TCGplayer's store prices (`lib/stores/tcgplayer.ts`). `tcgplayer_id` is absent on some entries, so only `prices`
+    // is required here; its keys are checked below, because an object that lost `usd` still passes `in`.
+    "prices",
   ],
 };
+
+/** The price keys the TCGplayer store pass reads. Each may be null on a healthy entry; only the key must exist. */
+const PRICE_KEYS = ["usd", "usd_foil", "usd_etched"] as const;
 
 /** Never rejects: a thrown fetch/parse failure is reported as a type-prefixed failure. */
 async function check(type: BulkType): Promise<string[]> {
@@ -61,6 +67,18 @@ async function run(type: BulkType): Promise<string[]> {
 
   for (const field of REQUIRED[type]) {
     if (!(field in first)) failures.push(`${type}: entry missing required field \`${field}\``);
+  }
+  if (type === "default_cards") {
+    // The store rows take their `as_of` from the index; without it the TCGplayer pass refuses to write.
+    if (!index.updatedAt) failures.push(`${type}: bulk index has no usable updated_at`);
+    const prices = first.prices;
+    if (prices !== null && typeof prices === "object") {
+      for (const key of PRICE_KEYS) {
+        if (!(key in prices)) failures.push(`${type}: entry prices missing \`${key}\``);
+      }
+    } else if ("prices" in first) {
+      failures.push(`${type}: entry prices is not an object`);
+    }
   }
   if (failures.length === 0) {
     const name = typeof first.name === "string" ? first.name : "<unnamed>";

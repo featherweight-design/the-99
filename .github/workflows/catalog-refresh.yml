@@ -26,7 +26,7 @@ on:
         # are filtered out as FK orphans, so that run reports its orphan count loudly.
         description: Which ingest to run (`printings` alone assumes a current oracle catalog)
         type: choice
-        options: [all, sets, printings, oracle, precons, prices]
+        options: [all, sets, printings, oracle, precons, prices, store-prices]
         default: all
 
 permissions:
@@ -167,6 +167,8 @@ jobs:
             oracle) echo "SOURCES=oracle_cards" >> "$GITHUB_ENV" ;;
             printings) echo "SOURCES=default_cards" >> "$GITHUB_ENV" ;;
             prices) echo "SOURCES=prices" >> "$GITHUB_ENV" ;;
+            # The TCGplayer pass reads the artifact's default_cards; Card Kingdom is fetched live by its step.
+            store-prices) echo "SOURCES=default_cards" >> "$GITHUB_ENV" ;;
             precons) echo "SOURCES=precons" >> "$GITHUB_ENV" ;;
             *) echo "Unrecognised job: $JOB" >&2; exit 1 ;;
           esac
@@ -227,4 +229,17 @@ jobs:
           pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Record what was ingested
+        # A store-prices run read default_cards for its prices only; recording it would claim printings were ingested.
+        if: env.JOB != 'store-prices'
         run: pnpm --silent db:catalog-sources record $SOURCES | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Refresh store prices
+        # TCGplayer and Card Kingdom (docs/agents/catalog-prices-precons.md, "Store prices"). After the record, so a
+        # store failure (Card Kingdom is a live fetch outside the artifact) fails the leg loudly but skips nothing
+        # the catalog needs. Each store is its own transaction; one failing leaves the other written.
+        if: env.JOB == 'all' || env.JOB == 'store-prices'
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: |
+          echo "### Store prices" >> "$GITHUB_STEP_SUMMARY"
+          pnpm --silent db:seed:store-prices | tee -a "$GITHUB_STEP_SUMMARY"

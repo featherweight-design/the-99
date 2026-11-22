@@ -43,15 +43,16 @@ export function filterKnownPrintings(
 /**
  * Splits feed rows three ways: a card printing, a token printing, or neither. A printing is one or
  * the other (a token has no `cards` row, and a card is never a token printing), so the order of the
- * two lookups is not a rule. Pure, for the same reason as `filterKnownPrintings`.
+ * two lookups is not a rule. Pure, for the same reason as `filterKnownPrintings`. The store prices
+ * (`lib/stores/seed-store-prices.ts`) split their rows with it too.
  */
-export function partitionFeed(
-  rows: PriceRow[],
+export function partitionFeed<T extends { scryfallId: string }>(
+  rows: T[],
   knownCards: Set<string>,
   knownTokens: Set<string>,
-): { cardRows: PriceRow[]; tokenRows: PriceRow[]; skippedOrphan: number } {
-  const cardRows: PriceRow[] = [];
-  const tokenRows: PriceRow[] = [];
+): { cardRows: T[]; tokenRows: T[]; skippedOrphan: number } {
+  const cardRows: T[] = [];
+  const tokenRows: T[] = [];
   let skippedOrphan = 0;
   for (const row of rows) {
     if (knownCards.has(row.scryfallId)) cardRows.push(row);

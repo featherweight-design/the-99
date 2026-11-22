@@ -1856,6 +1856,13 @@
       "when": 1795367394363,
       "tag": "0266_wishlist_printing",
       "breakpoints": true
+    },
+    {
+      "idx": 267,
+      "version": "7",
+      "when": 1795380582307,
+      "tag": "0267_store_prices",
+      "breakpoints": true
     }
   ]
 }

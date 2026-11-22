@@ -255,6 +255,63 @@ export const tokenPrintingPrices = pgTable("token_printing_prices", {
 ]);
 
 /**
+ * One store's price for one printing, in the shape of `printing_prices` with a store in the key.
+ * Columns are built fresh per table (drizzle builders cannot be shared between two tables).
+ *
+ * - A price column is null where the store has no price for that finish; never 0.
+ * - A quantity column is null where the store gives no stock signal at all (TCGplayer, whose figure
+ *   is Scryfall's market price, not a listing). 0 is a real "sold out at this store" (Card Kingdom
+ *   lists a printing with a price and `qty_retail` 0).
+ * - Card Kingdom sells each finish on its own page, so the foil and etched links are their own
+ *   columns; null falls back to `buy_url` (a TCGplayer product page carries every finish but etched).
+ * - `buy_url` is the store's plain page. An affiliate id, if one is ever added, goes on at the read,
+ *   so it needs no schema change.
+ * - `as_of` is the SOURCE's own time (Scryfall's bulk `updated_at`, Card Kingdom's `meta.created_at`),
+ *   never the ingest's clock. Liveness is per store: a row is live when its `as_of` is the newest for
+ *   its store, and a printing the store dropped keeps its last row behind that mark, as on
+ *   `printing_prices`.
+ */
+function storePriceColumns() {
+  return {
+    store: text("store").notNull(),
+    priceCents: integer("price_cents"),
+    priceCentsFoil: integer("price_cents_foil"),
+    priceCentsEtched: integer("price_cents_etched"),
+    quantity: integer("quantity"),
+    quantityFoil: integer("quantity_foil"),
+    quantityEtched: integer("quantity_etched"),
+    buyUrl: text("buy_url"),
+    buyUrlFoil: text("buy_url_foil"),
+    buyUrlEtched: text("buy_url_etched"),
+    asOf: timestamp("as_of").notNull(),
+  };
+}
+
+/** TCGplayer's and Card Kingdom's prices for each card printing. See `storePriceColumns`. */
+export const printingStorePrices = pgTable("printing_store_prices", {
+  scryfallId: uuid("scryfall_id").notNull()
+    .references(() => printings.scryfallId, { onDelete: "cascade" }),
+  ...storePriceColumns(),
+}, (t) => [
+  primaryKey({ columns: [t.scryfallId, t.store] }),
+  check("printing_store_prices_store_check", sql`${t.store} in ('tcgplayer', 'cardkingdom')`),
+  // Liveness reads `max(as_of)` per store.
+  index("printing_store_prices_store_as_of_idx").on(t.store, t.asOf),
+]);
+
+/** The same for each TOKEN printing, as `token_printing_prices` is to `printing_prices`. */
+export const tokenStorePrices = pgTable("token_store_prices", {
+  scryfallId: uuid("scryfall_id").notNull(),
+  ...storePriceColumns(),
+}, (t) => [
+  primaryKey({ columns: [t.scryfallId, t.store] }),
+  check("token_store_prices_store_check", sql`${t.store} in ('tcgplayer', 'cardkingdom')`),
+  index("token_store_prices_store_as_of_idx").on(t.store, t.asOf),
+  foreignKey({ name: "token_store_prices_printing_fk", columns: [t.scryfallId], foreignColumns: [tokenPrintings.scryfallId] })
+    .onDelete("cascade"),
+]);
+
+/**
  * The tokens a player holds (plan `2026-10-11-tokens-for-my-deck.md`, PR 3). Keyed by the token's own
  * oracle id: any printing counts, and one Treasure on the shelf is owned in every deck that makes one.
  * `collection_items` cannot hold a token (its `oracle_id` is a foreign key to `cards`), so this is the
@@ -2354,6 +2411,12 @@ export const userPrefs = pgTable(
      */
     friendsSeenAt: timestamp("friends_seen_at", { withTimezone: true }),
     /**
+     * The store this reader prices in (store preference plan, 2026-11-22): `manapool`, `tcgplayer` or `cardkingdom`.
+     * Null until they choose, which reads as Mana Pool, so it needs no backfill. Nothing reads it until the store-aware
+     * price reads ship, and the STORE_PREFERENCE switch decides whether it is honored at all.
+     */
+    preferredStore: text("preferred_store"),
+    /**
      * When this reader first opened the installed app, signed in, on a phone (install onboarding call 7, Hugh
      * 2026-11-15, `lib/pwa/installed.ts`). Set, the header's Install slot draws nothing in any browser of this account,
      * and so neither does any ask that hangs off the slot. Written once, only while null (`markInstalledWrite`), because of the
@@ -2363,6 +2426,7 @@ export const userPrefs = pgTable(
   },
   (t) => [
     check("user_prefs_commanders_avail_check", sql`${t.commandersAvail} in ('all', 'free')`),
+    check("user_prefs_preferred_store_check", sql`${t.preferredStore} in ('manapool', 'tcgplayer', 'cardkingdom')`),
     check("user_prefs_spare_min_check", sql`${t.spareMin} between 1 and 9`),
   ],
 );
