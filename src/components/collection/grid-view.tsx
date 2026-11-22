@@ -154,7 +154,7 @@ export function GridView({
           // §Grid Tile Container: radius 9/10px, overflow hidden, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: an inline
           // border outranks the hover: variant and the accent hover never lands.
-          className={`art-lift-host text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border} ${reveal.className ?? ""}`}
+          className={`art-lift-host w-full min-w-0 text-left overflow-hidden rounded-[9px] md:rounded-[10px] md:cursor-pointer bg-[color:var(--surface)] ${border} ${reveal.className ?? ""}`}
         >
           {/* Art region — §Grid Tile: Art Region */}
           <div

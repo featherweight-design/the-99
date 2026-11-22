@@ -255,13 +255,17 @@ function MemberTile({ member, on, off, noDecks, onToggle }: { member: SetupMembe
   const tag = member.kind === "you" ? null : member.isOwner ? pods.ownerTag : member.kind === "picksOwn" ? pods.notFriendTag : null;
   const sub = noDecks ? copy.noDecks : member.kind === "picksOwn" ? copy.picksOwn : copy.decks(member.decks.length);
   return (
+    // The grid item is a div, which a grid always stretches to its cell; a <button> grid item is sized by its content in
+    // iPad Safari (the tile drew ~50px wide, left-aligned, in a 167px cell), so the button sits inside the cell and
+    // fills it as a plain block, not as a flex container.
+    <div className="min-w-0 justify-self-stretch">
     <button
       type="button"
       role="checkbox"
       aria-checked={on}
       aria-disabled={off || member.kind === "you" || undefined}
       onClick={onToggle}
-      className={`relative flex w-full min-w-0 cursor-pointer flex-col gap-[6px] border-0 bg-transparent p-0 text-left text-[color:var(--fg)] aria-disabled:cursor-default ${off ? "opacity-[.42]" : ""}`}
+      className={`relative block w-full min-w-0 cursor-pointer border-0 bg-transparent p-0 text-left text-[color:var(--fg)] aria-disabled:cursor-default ${off ? "opacity-[.42]" : ""}`}
     >
       <SeatArt art={member.commander?.artCropUri ?? null} name={member.displayName} ring={on}>
         {noDecks ? null : (
@@ -280,12 +284,13 @@ function MemberTile({ member, on, off, noDecks, onToggle }: { member: SetupMembe
           </span>
         )}
       </SeatArt>
-      <span className="flex min-w-0 items-baseline gap-[5px] font-sans text-[13px] font-medium">
+      <span className="mt-[6px] flex w-full min-w-0 items-baseline gap-[5px] font-sans text-[13px] font-medium">
         <span className="min-w-0 truncate"><PersonName n={member.kind === "you" ? pods.you : member.displayName} /></span>
         {tag ? <small className="flex-none whitespace-nowrap font-mono text-[10px] font-normal text-[color:var(--fg-muted)]">{tag}</small> : null}
       </span>
-      <span className="truncate whitespace-nowrap font-mono text-[10px] text-[color:var(--fg-faint)]">{sub}</span>
+      <span className="mt-[6px] block w-full truncate whitespace-nowrap font-mono text-[10px] text-[color:var(--fg-faint)]">{sub}</span>
     </button>
+    </div>
   );
 }
 
