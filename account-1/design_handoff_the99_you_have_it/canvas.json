@@ -1,0 +1,58 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-22T23:20:00Z"
+ },
+ "title": "You have it R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1560,
+   "h": 1900,
+   "title": "Main"
+  },
+  "Wishlist.dc.html": {
+   "x": 1680,
+   "y": 0,
+   "w": 1700,
+   "h": 1560,
+   "title": "Wishlist"
+  },
+  "Sheet.dc.html": {
+   "x": 3500,
+   "y": 0,
+   "w": 1700,
+   "h": 2860,
+   "title": "Sheet"
+  },
+  "Friend-side.dc.html": {
+   "x": 5320,
+   "y": 0,
+   "w": 1700,
+   "h": 1300,
+   "title": "Friend side"
+  },
+  "Ideas.dc.html": {
+   "x": 7140,
+   "y": 0,
+   "w": 1700,
+   "h": 2580,
+   "title": "Ideas"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Wishlist.dc.html",
+  "Sheet.dc.html",
+  "Friend-side.dc.html",
+  "Ideas.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
