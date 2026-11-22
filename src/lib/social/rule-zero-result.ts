@@ -125,11 +125,13 @@ export async function saveTableResult(viewerId: string, tableId: unknown, roster
 export const notLoggedSince = (tableId: string, viewerId: string) => sql`not ${loggedSinceSave(viewerId, tableId)}`;
 
 /**
- * A log of the stored row's game: `rule_zero_game_at` names it, or, for a log made before games were addressable, the
- * log was made at or after the result's save. `created_at` is a UTC wall time without a zone; `saved_at` has one.
+ * A log of the stored row's game: `rule_zero_game_at` names it, or, for a result saved before games were addressable
+ * (migration 0262 backfilled its `started_at` to its save, to the millisecond), a log made at or after the save. A
+ * game from a roster never takes the legacy branch, so a log from live seats cannot mark it logged.
+ * `created_at` is a UTC wall time without a zone; `saved_at` has one.
  */
 const logsThisGame = (gameAt: SQL, createdAt: SQL) =>
-  sql`(${gameAt} = ${ruleZeroResultSeats}.started_at or (${gameAt} is null and (${createdAt} at time zone 'UTC') >= ${ruleZeroResultSeats}.saved_at))`;
+  sql`(${gameAt} = ${ruleZeroResultSeats}.started_at or (${gameAt} is null and ${ruleZeroResultSeats}.started_at = date_trunc('milliseconds', ${ruleZeroResultSeats}.saved_at) and (${createdAt} at time zone 'UTC') >= ${ruleZeroResultSeats}.saved_at))`;
 
 /** A game from `table` by `user` that logged this row's game. Aliased and qualified, as a correlated subquery must be. */
 const loggedSinceSave = (user: SQL | string, table: SQL | string) => sql`exists (

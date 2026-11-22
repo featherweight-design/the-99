@@ -61,7 +61,7 @@ describe("resultSeatsQuery (ruling (b))", () => {
   it("reads the stored result's seats under the live grant, only while the viewer played and has not logged it", () => {
     expect(q.sql).toContain('from "rule_zero_result_seats" inner join "rule_zero_tables"');
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
-    expect(q.sql).toContain(`inner join "rule_zero_result_seats" "viewer_played" on ("viewer_played"."table_id" = "rule_zero_tables"."id" and "viewer_played"."user_id" = $2)`);
+    expect(q.sql).toContain(`inner join "rule_zero_result_seats" "viewer_played" on ("viewer_played"."table_id" = "rule_zero_tables"."id" and "viewer_played"."started_at" = "rule_zero_result_seats"."started_at" and "viewer_played"."user_id" = $2)`);
     expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_result_seats"."user_id")`);
     expect(q.sql).toContain('"rule_zero_tables"."expires_at" > now()');
     expect(q.sql).toContain('>= "rule_zero_result_seats".saved_at');
@@ -69,6 +69,8 @@ describe("resultSeatsQuery (ruling (b))", () => {
     expect(q.sql).toContain("interval '7 days' > now()");
     expect(q.sql).toContain('"rule_zero_result_seats"."started_at" = $');
     expect(q.sql).toContain('dg.rule_zero_game_at = "rule_zero_result_seats".started_at');
+    // The legacy branch (a log at or after the save) is only for a backfilled row, whose started_at is its save.
+    expect(q.sql).toContain(`started_at = date_trunc('milliseconds', "rule_zero_result_seats".saved_at)`);
   });
 
   it("draws the deck each seat held at Start, only while it is that player's own", () => {

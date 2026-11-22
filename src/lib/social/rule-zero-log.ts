@@ -130,7 +130,7 @@ export function resultSeatsQuery(viewerId: string, tableId: string, game: Date, 
     .from(ruleZeroResultSeats)
     .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroResultSeats.tableId))
     .innerJoin(viewerSeat, and(eq(viewerSeat.tableId, ruleZeroTables.id), eq(viewerSeat.userId, viewerId)))
-    .innerJoin(viewerPlayed, and(eq(viewerPlayed.tableId, ruleZeroTables.id), eq(viewerPlayed.userId, viewerId)))
+    .innerJoin(viewerPlayed, and(eq(viewerPlayed.tableId, ruleZeroTables.id), eq(viewerPlayed.startedAt, ruleZeroResultSeats.startedAt), eq(viewerPlayed.userId, viewerId)))
     .innerJoin(viewerIn, and(eq(viewerIn.podId, ruleZeroTables.podId), eq(viewerIn.userId, viewerId)))
     .innerJoin(podMembers, and(eq(podMembers.podId, ruleZeroTables.podId), eq(podMembers.userId, ruleZeroResultSeats.userId)))
     .innerJoin(pods, eq(pods.id, ruleZeroTables.podId))
@@ -233,6 +233,8 @@ export async function tablePrefill(viewerId: string, tableId: unknown, deckId: s
   if (!isUuid(tableId) || !isUuid(deckId)) return null;
   // One snapshot for the owners and the seats, so a reseat between the two reads cannot draw a deck its owner's rules hide.
   const { rows, placed, gameMs: game } = await db.transaction((tx) => logSeatsIn(viewerId, tableId, tx, gameMs), { isolationLevel: "repeatable read" });
+  // A named game that is not there to log (already logged, not played, past its week): no prefill, never the live seats.
+  if (gameMs !== null && game === null) return null;
   const prefill = prefillFrom(rows, viewerId, tableId, deckId, placed, game);
   if (!prefill) return null;
   // Each seat's art from the copy its deck's owner holds, as the table draws it (`ownedDeckArt`), else the oracle art.
