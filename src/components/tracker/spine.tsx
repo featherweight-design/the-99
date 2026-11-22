@@ -61,14 +61,15 @@ export function Spine({
   const [menuShift, setMenuShift] = useState(0);
   useLayoutEffect(() => {
     const el = diceMenu.current;
-    if (!dice || !el) return setMenuShift(0);
-    const r = el.getBoundingClientRect();
-    const left = r.left - menuShift;
-    const right = left + r.width;
+    const anchor = el?.offsetParent;
+    if (!dice || !el || !anchor) return setMenuShift(0);
+    // From the layout box, not the drawn one: the pop starts the menu scaled to .4, so its drawn rect is too narrow. It
+    // is centred on its anchor (the dice button's wrapper), which the pop does not transform.
+    const a = anchor.getBoundingClientRect();
+    const left = a.left + a.width / 2 - el.offsetWidth / 2;
+    const right = left + el.offsetWidth;
     const vw = document.documentElement.clientWidth;
     setMenuShift(right > vw - 8 ? vw - 8 - right : left < 8 ? 8 - left : 0);
-    // Measured once per opening: the shift itself moves the box.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dice]);
   // Down a column: the round (1.04 buttons), six buttons and eight gaps of a quarter button make 9.04 buttons, plus two
   // 1px rules and 6px clear at each end. The buttons take what that leaves, up to 48px.
