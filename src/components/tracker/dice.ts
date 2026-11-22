@@ -18,7 +18,12 @@ export function rollFair(sides: number): number {
   }
 }
 
-type Box = { roll: (notation: string) => Promise<unknown>; clearDice: () => void };
+type Box = {
+  roll: (notation: string) => Promise<unknown>;
+  clearDice: () => void;
+  diceList: { position: { clone(): { project(camera: unknown): { x: number; y: number } } } }[];
+  camera: unknown;
+};
 type Scene = { el: HTMLDivElement; box: Box };
 
 let scene: Promise<Scene | null> | null = null;
@@ -102,5 +107,19 @@ export function hideDice() {
     if (!s) return;
     s.box.clearDice();
     s.el.style.visibility = "hidden";
+  });
+}
+
+/**
+ * Where each thrown die came to rest, in viewport pixels: its centre projected through the scene's camera onto the
+ * fixed full-screen layer. Empty with no scene. Read once the throw settles, so a tap on a die can roll again (bug 9).
+ */
+export async function diePoints(): Promise<{ x: number; y: number }[]> {
+  const s = await scene;
+  if (!s) return [];
+  const r = s.el.getBoundingClientRect();
+  return s.box.diceList.map((d) => {
+    const p = d.position.clone().project(s.box.camera);
+    return { x: r.left + ((p.x + 1) / 2) * r.width, y: r.top + ((1 - p.y) / 2) * r.height };
   });
 }

@@ -2924,8 +2924,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   fill and a transform scaled under 1, with a transform and color transition; each day/night toggle runs `dn-out` on
   the old icon and `dn-in` on the new one, 320 ms each, and under reduced motion only the new icon is drawn; Menu is
   drawn over the spine, so a press lands on it at every sampled point; a real press on End turn passes the turn; the
-  dice menu sits over the strip, inside the viewport. On main the press draws nothing, the toggle runs no animation,
-  the phone's Menu sits under the spine and the dice menu opens beside the strip: 23 failures. It writes nothing, needs
+  dice menu sits over the strip, inside the viewport. On #3139's merge the press draws nothing, the toggle runs no
+  animation, the phone's Menu sits under the spine and the dice menu opens beside the strip: 23 failures. Bugs 9 and 10
+  (the dice PR) added: a coin flip draws a coin that animates; a tap on the coin, and on a thrown d20 where it lies
+  (`dice-die`, projected from the 3D scene), rolls again, with the roll's `data-k` stepping; a tap off them closes. The
+  d20 check needs WebGL: with no canvas in `#tracker-dice` it says so and skips, but with one and no tap target it
+  fails. Before the dice PR the coin is not drawn and no landed die takes a tap: 6 failures (3 at each width). It writes nothing, needs
   `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
