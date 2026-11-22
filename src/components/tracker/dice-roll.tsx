@@ -62,7 +62,7 @@ export function DiceRoll({ roll, label, onAgain, onClose, children }: { roll: Ro
             <span aria-hidden className="coin-face">{trackerCopy.dice.heads}</span>
             <span aria-hidden className="coin-face [transform:rotateY(180deg)]">{trackerCopy.dice.tails}</span>
           </button>
-          <span key={`land-${roll.k}`} aria-hidden className="absolute left-1/2 top-1/2 -ml-[60px] -mt-[60px] size-[120px] rounded-full opacity-0 shadow-[0_0_0_2px_var(--accent)] motion-safe:animate-[dice-land_.5s_ease-out_1.15s_both]" />
+          <span key={`land-${roll.k}`} aria-hidden className="absolute left-1/2 top-1/2 -ml-[60px] -mt-[60px] size-[120px] rounded-full opacity-0 shadow-[0_0_0_2px_var(--accent)] motion-safe:animate-[dice-land_.5s_ease-out_1.15s_forwards]" />
         </div>
       ) : done && points.k === roll.k ? (
         // Each landed die takes a tap where it lies: the 3D layer itself takes no pointer. Over the result card too, so a
