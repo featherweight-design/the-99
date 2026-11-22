@@ -9,9 +9,9 @@ const seats: PlaySeat[] = [
   { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null, deck: "Sai Artifacts" },
   { seat: 1, you: false, name: "Colin" as never, art: null, partnerArt: null, commander: "Ishai", partner: "Bruse", deck: "Ishai Ojutai" },
 ];
-const render = (tab: SheetTab, game: Game) =>
+const render = (tab: SheetTab, game: Game, tablet = false) =>
   renderToStaticMarkup(
-    <Sheet view={{ seat: 0, tab }} seats={seats} state={replay(game)} game={game} rot={0} onView={() => {}} onClose={() => {}} onCommit={() => {}} onUndo={() => {}} />,
+    <Sheet view={{ seat: 0, tab }} seats={seats} state={replay(game)} game={game} rot={0} tablet={tablet} onView={() => {}} onClose={() => {}} onCommit={() => {}} onUndo={() => {}} />,
   );
 
 describe("tracker sheet", () => {
@@ -59,5 +59,24 @@ describe("tracker sheet", () => {
   it("renders the six mana colours", () => {
     const html = render("mana", game);
     for (const c of ["White", "Blue", "Black", "Red", "Green", "Colorless"]) expect(html).toContain(`Fewer ${c} mana`.replace(" mana", ""));
+  });
+  it("on a tablet, takes the half of the table nearest its seat over a veil, and draws damage as art cards", () => {
+    const html = render("damage", game, true);
+    expect(html).toContain('data-testid="sheet-veil"');
+    expect(html).toMatch(/class="absolute inset-x-0 bottom-0 flex h-1\/2 min-h-\[380px\][^"]*rounded-t-\[20px\][^"]*sheet-up_/);
+    // One art card for the one opponent; a partner pair carries a stacked stepper under each half, each its own container.
+    expect(html.match(/data-testid="damage-card"/g)).toHaveLength(1);
+    expect(html.match(/class="flex min-w-0 flex-1 flex-col items-center gap-1 px-1\.5 pb-3 @container"/g)).toHaveLength(2);
+    expect(html.match(/grid grid-cols-2 justify-items-center/g)).toHaveLength(2);
+    expect(html).toContain("Ishai");
+    expect(html).toContain("Bruse");
+    // The Table tab sits in the row with the others, not pushed to the far end.
+    expect(html).not.toMatch(/ml-auto[^"]*"[^>]*>Table/);
+  });
+  it("on a phone, keeps the full-height sheet with no veil", () => {
+    const html = render("damage", game);
+    expect(html).not.toContain('data-testid="sheet-veil"');
+    expect(html).not.toContain('data-testid="damage-card"');
+    expect(html).toContain("flex h-full w-full flex-col");
   });
 });

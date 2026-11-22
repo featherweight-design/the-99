@@ -74,6 +74,7 @@ export function Sheet({
   state,
   game,
   rot,
+  tablet = false,
   onView,
   onClose,
   onCommit,
@@ -84,6 +85,8 @@ export function Sheet({
   state: GameState;
   game: Game;
   rot: Cell["rot"];
+  /** A tablet (and a desktop window, which the tracker draws as one): the sheet takes the half of the table nearest its seat (tablet addendum). */
+  tablet?: boolean;
   onView: (view: SheetView) => void;
   onClose: () => void;
   onCommit: (action: Action) => void;
@@ -108,7 +111,7 @@ export function Sheet({
   const em = (t: SheetTab) => (t === "damage" && topDamage > 0 ? String(topDamage) : t === "counters" && counting > 0 ? String(counting) : t === "tax" && topTax > 0 ? `+${topTax}` : null);
 
   const body: Record<SheetTab, ReactNode> = {
-    damage: <DamageTab seat={mine} seats={seats} state={state} onCommit={onCommit} />,
+    damage: <DamageTab seat={mine} seats={seats} state={state} tablet={tablet} onCommit={onCommit} />,
     counters: <CountersTab seat={mine} focus={view.focus} onCommit={onCommit} />,
     tax: <TaxTab seat={mine} player={seat} onCommit={onCommit} />,
     mana: <ManaTab seat={mine} onCommit={onCommit} />,
@@ -121,6 +124,7 @@ export function Sheet({
 
   return (
     <div className="absolute inset-0 z-30" style={{ containerType: "size" }}>
+      {tablet ? <button type="button" tabIndex={-1} aria-label={copy.sheet.close} onClick={onClose} className="absolute inset-0 cursor-default bg-[rgba(0,0,0,.42)] motion-safe:animate-[sheet-veil_.26s_ease-out_both]" data-testid="sheet-veil" /> : null}
       {/* The seat's turn sits on this wrapper, not on the dialog: the dialog's sheet-in keyframe animates `transform`, and
           would replace a rotation drawn there until it ends, so a sheet opened from an upside-down seat rose upright. */}
       <div className="absolute left-1/2 top-1/2" style={{ width: sideways ? "100cqh" : "100%", height: sideways ? "100cqw" : "100%", transform: `translate(-50%, -50%) rotate(${rot}deg)` }}>
@@ -129,7 +133,11 @@ export function Sheet({
           aria-modal="true"
           aria-labelledby="sheet-title"
           onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
-          className="flex h-full w-full flex-col gap-2 bg-[color:var(--surface-raised)] px-4 pb-3 pt-2 text-[color:var(--fg)] motion-safe:animate-[sheet-in_.26s_cubic-bezier(.2,.8,.2,1)]"
+          className={
+            tablet
+              ? "absolute inset-x-0 bottom-0 flex h-1/2 min-h-[380px] flex-col gap-2 rounded-t-[20px] bg-[color:var(--surface-raised)] px-5 pb-4 pt-2 text-[color:var(--fg)] shadow-[0_-12px_40px_rgba(0,0,0,.45),inset_0_1px_0_var(--border-strong)] motion-safe:animate-[sheet-up_.26s_cubic-bezier(.2,.8,.2,1)_both]"
+              : "flex h-full w-full flex-col gap-2 bg-[color:var(--surface-raised)] px-4 pb-3 pt-2 text-[color:var(--fg)] motion-safe:animate-[sheet-in_.26s_cubic-bezier(.2,.8,.2,1)]"
+          }
           data-testid="tracker-sheet"
         >
           <div className="flex h-[44px] items-center gap-3">
@@ -165,7 +173,7 @@ export function Sheet({
                 aria-controls="sheet-panel"
                 tabIndex={view.tab === t ? 0 : -1}
                 onClick={() => { onView({ seat: view.seat, tab: t }); setEnding(false); }}
-                className={"-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b-2 px-3 text-[14px] font-semibold " + (t === "table" ? "ml-auto " : "") + (view.tab === t ? "border-[color:var(--accent)] text-[color:var(--fg)]" : "border-transparent text-[color:var(--fg-muted)]")}
+                className={"-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b-2 px-3 text-[14px] font-semibold " + (view.tab === t ? "border-[color:var(--accent)] text-[color:var(--fg)]" : "border-transparent text-[color:var(--fg-muted)]")}
               >
                 {tabLabel(t)}
                 {em(t) ? <em className="ml-1.5 font-mono text-[11.5px] not-italic text-[color:var(--accent-text)]">{em(t)}</em> : null}
@@ -183,8 +191,9 @@ export function Sheet({
 
 const cmdrName = (p: PlaySeat, cmdr: number) => (cmdr === 1 && p.partner ? p.partner : p.commander || copy.sheet.commanderFallback);
 
-function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: readonly PlaySeat[]; state: GameState; onCommit: (a: Action) => void }) {
+function DamageTab({ seat, seats, state, tablet, onCommit }: { seat: SeatState; seats: readonly PlaySeat[]; state: GameState; tablet?: boolean; onCommit: (a: Action) => void }) {
   const foes = state.seats.filter((s) => s.seat !== seat.seat);
+  if (tablet) return <DamageArt seat={seat} foes={foes} seats={seats} onCommit={onCommit} />;
   return (
     <div className="flex flex-col gap-2">
       {foes.length === 0 ? <p className="text-[13px] text-[color:var(--fg-muted)]">{copy.sheet.noOpponents}</p> : null}
@@ -208,6 +217,43 @@ function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: r
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[12px] text-[color:var(--fg-muted)]">{copy.sheet.damageHint}</p>
+    </div>
+  );
+}
+
+/**
+ * Commander damage on a tablet (tablet addendum, D1 to D4): one card per opponent across the sheet, the commander's art
+ * filling the card the way it fills their panel, the count over the art's foot. A partner pair splits the art and each
+ * half carries its own name and stepper, so each commander's count sits under its own art.
+ */
+function DamageArt({ seat, foes, seats, onCommit }: { seat: SeatState; foes: readonly SeatState[]; seats: readonly PlaySeat[]; onCommit: (a: Action) => void }) {
+  return (
+    <div className="flex h-full min-h-[236px] flex-col gap-2">
+      {foes.length === 0 ? <p className="text-[13px] text-[color:var(--fg-muted)]">{copy.sheet.noOpponents}</p> : null}
+      <div className="grid min-h-0 flex-1 gap-2.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, foes.length)}, minmax(0, 1fr))` }}>
+        {foes.map((foe) => {
+          const p = seats.find((x) => x.seat === foe.seat)!;
+          const taken = Array.from({ length: foe.commanders }, (_, cmdr) => seat.damage[`${foe.seat}:${cmdr}`] ?? 0);
+          return (
+            <div key={foe.seat} className={CARD_BOX} data-testid="damage-card">
+              <ArtStrip arts={artsOf(p, foe.commanders)} className="absolute inset-0" />
+              <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.55)_0%,rgba(0,0,0,0)_26%,rgba(0,0,0,0)_40%,rgba(0,0,0,.86)_100%)]" />
+              <b className="relative px-3 pt-2.5 text-[15px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
+              <div className="relative mt-auto flex">
+                {/* A partner half can be ~100px wide (five across), too narrow for the 140px row stepper: each half stacks
+                    its count over − and + (the Mana tab's stacked stepper), its own container keeping it stacked. */}
+                {taken.map((n, cmdr) => (
+                  <div key={cmdr} className={"flex min-w-0 flex-1 flex-col items-center gap-1 px-1.5 pb-3" + (taken.length > 1 ? " @container" : "")}>
+                    <span className="max-w-full truncate text-[12.5px] text-[color:var(--fg)] [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{cmdrName(p, cmdr)}</span>
+                    <Stepper size="damageOne" stacked={taken.length > 1} count={n} tone={n > 0 ? "set" : undefined} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
+                  </div>
+                ))}
               </div>
             </div>
           );
