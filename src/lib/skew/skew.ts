@@ -14,7 +14,7 @@ export const SKEW_RELOAD_KEY = "the99:skew-reload-at";
 /** A tab reloads for skew at most once in this long, so a mismatch that a reload does not clear cannot loop. */
 export const SKEW_RELOAD_GAP_MS = 60_000;
 
-/** The deployment check runs at most once in this long per tab: it reads `/api/health`, which reads the database. */
+/** The deployment check runs at most once in this long per tab (`/api/live`, which reads no database). */
 export const SKEW_CHECK_GAP_MS = 5 * 60_000;
 
 /** Whether an error is the browser's or Next's report that this tab's code no longer matches the server's. */
@@ -39,6 +39,7 @@ export function mayReload(read: () => string | null, now: number): boolean {
   } catch {
     return false;
   }
+  // A value that is not a number (a corrupt store) counts as no reload yet; the reload then rewrites it.
   const at = last === null ? Number.NaN : Number(last);
   return Number.isNaN(at) || now - at >= SKEW_RELOAD_GAP_MS;
 }
@@ -48,8 +49,8 @@ export type Busy = { editing: boolean; dirtyForm: boolean };
 
 /**
  * When a pending skew reload may fire. A route change leaves the page anyway, so it always may; a blur or
- * the moment of detection may only when nothing typed would be lost: no field has focus and no form holds
- * an edit (a dirty form waits for the next route change).
+ * the moment of detection may only when nothing typed would be lost: no focused field holds text and no
+ * field on the page does (typed text waits for the next route change).
  */
 export function mayReloadNow(busy: Busy, trigger: "detected" | "blur" | "route"): boolean {
   if (trigger === "route") return true;

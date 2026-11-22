@@ -32,19 +32,6 @@ describe("GET /api/health", () => {
     expect(typeof body.checkedAt).toBe("string");
   });
 
-  it("names the deployment answering, null where there is none", async () => {
-    const was = process.env.VERCEL_DEPLOYMENT_ID;
-    try {
-      process.env.VERCEL_DEPLOYMENT_ID = "dpl_test123";
-      expect((await statusFor({ status: "error" })).body.deploymentId).toBe("dpl_test123");
-      delete process.env.VERCEL_DEPLOYMENT_ID;
-      expect((await statusFor({ status: "error" })).body.deploymentId).toBeNull();
-    } finally {
-      if (was === undefined) delete process.env.VERCEL_DEPLOYMENT_ID;
-      else process.env.VERCEL_DEPLOYMENT_ID = was;
-    }
-  });
-
   it("returns 503 when the schema is behind, the #70 condition", async () => {
     const { code } = await statusFor({
       status: "behind",

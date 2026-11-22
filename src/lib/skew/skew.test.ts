@@ -35,6 +35,9 @@ describe("mayReload", () => {
     expect(mayReload(() => String(1_000_000 - 1000), 1_000_000)).toBe(false);
     expect(mayReload(() => String(1_000_000 - SKEW_RELOAD_GAP_MS), 1_000_000)).toBe(true);
   });
+  it("treats a corrupt stamp as no reload yet", () => {
+    expect(mayReload(() => "abc", 1_000_000)).toBe(true);
+  });
   it("refuses when the store cannot be read", () => {
     expect(
       mayReload(() => {

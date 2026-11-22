@@ -4,7 +4,7 @@
 // Skew Protection covers 12 hours and a navigation; this covers the tab left open longer, or never
 // navigating, whose next Server Action or lazy chunk would fail. It draws nothing.
 //
-// When a tab becomes visible it asks `/api/health` which deployment answers. On a mismatch it holds a
+// When a tab becomes visible it asks `/api/live` (no database read) which deployment answers. On a mismatch it holds a
 // pending reload and fires it at the first moment that loses nothing: a route change, or a blur with no
 // field holding typed text. Typed text in any field on the page keeps the tab where it is.
 import { usePathname } from "next/navigation";
@@ -62,6 +62,7 @@ function busy(): Busy {
 export function SkewGuard({ deploymentId }: { deploymentId: string | null }) {
   const pathname = usePathname();
   const pending = useRef(false);
+  // A freshly loaded document is current, so the first check waits out the gap rather than running on mount.
   const lastCheck = useRef(0);
   const firstPath = useRef(pathname);
 
@@ -74,41 +75,50 @@ export function SkewGuard({ deploymentId }: { deploymentId: string | null }) {
 
   useEffect(() => {
     if (!deploymentId) return;
+    lastCheck.current = Date.now();
     const settle = (trigger: "detected" | "blur") => {
-      if (pending.current && mayReloadNow(busy(), trigger)) reloadForSkew();
+      if (!pending.current || !mayReloadNow(busy(), trigger)) return;
+      // Refused by the loop guard: drop the verdict, so the next check re-reads the server instead of
+      // reloading on every blur for a mismatch a reload did not clear.
+      if (!reloadForSkew()) pending.current = false;
     };
     const check = async () => {
       if (document.visibilityState !== "visible" || pending.current) return;
       const now = Date.now();
       if (now - lastCheck.current < SKEW_CHECK_GAP_MS) return;
-      lastCheck.current = now;
       try {
-        const res = await fetch("/api/health", { cache: "no-store" });
+        const res = await fetch("/api/live", { cache: "no-store" });
         const body = (await res.json()) as { deploymentId?: string | null };
+        lastCheck.current = now;
         if (deploymentsDiffer(deploymentId, body.deploymentId)) {
           pending.current = true;
           settle("detected");
         }
       } catch {
-        // Offline or a failed read: no verdict, and the next visible tab asks again.
+        // Offline or a failed read: no verdict and no stamp, so the next time the tab is visible it asks again.
       }
     };
+    let blurTimer: ReturnType<typeof setTimeout> | undefined;
     const onFocusOut = () => {
       // After the browser has moved focus, so a jump between two fields is not a blur.
-      setTimeout(() => settle("blur"), 0);
+      clearTimeout(blurTimer);
+      blurTimer = setTimeout(() => settle("blur"), 0);
     };
-    const onError = (e: ErrorEvent) => {
-      if (isSkewError(e.error ?? e.message)) reloadForSkew();
+    // A failed chunk or action is skew only while online (offline it is the network), and it waits for typed text
+    // the same way a version mismatch does.
+    const onSkewError = (error: unknown) => {
+      if (!navigator.onLine || !isSkewError(error)) return;
+      pending.current = true;
+      settle("detected");
     };
-    const onRejection = (e: PromiseRejectionEvent) => {
-      if (isSkewError(e.reason)) reloadForSkew();
-    };
-    void check();
+    const onError = (e: ErrorEvent) => onSkewError(e.error ?? e.message);
+    const onRejection = (e: PromiseRejectionEvent) => onSkewError(e.reason);
     document.addEventListener("visibilitychange", check);
     document.addEventListener("focusout", onFocusOut);
     window.addEventListener("error", onError);
     window.addEventListener("unhandledrejection", onRejection);
     return () => {
+      clearTimeout(blurTimer);
       document.removeEventListener("visibilitychange", check);
       document.removeEventListener("focusout", onFocusOut);
       window.removeEventListener("error", onError);

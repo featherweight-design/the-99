@@ -40,12 +40,18 @@ export function ErrorNotice({
   const eventId = useRef<string | null>(null);
   // Each error is captured once, however many times the effect runs (Strict Mode, a changed boundary prop).
   const captured = useRef(new WeakSet<Error>());
+  const skewTried = useRef(new WeakSet<Error>());
   const reportable = useReportable();
   const [reporting, setReporting] = useState<{ eventId: string | null } | null>(null);
   useEffect(() => {
     // A stale chunk or Server Action id is the tab being a deployment behind, not a bug: one reload (under the
     // loop guard) puts it on the current build. If the guard refuses, the notice below is drawn as usual.
-    if (isSkewError(error) && reloadForSkew()) return;
+    // Once per error: Strict Mode runs this twice, and the second run must not read the first's stamp as a refusal.
+    if (isSkewError(error)) {
+      if (skewTried.current.has(error)) return;
+      skewTried.current.add(error);
+      if (reloadForSkew()) return;
+    }
     logBoundaryError(boundary, error.digest);
     // A server error carries a digest and was reported where it happened (`onRequestError`); only a
     // browser-side throw is new here.

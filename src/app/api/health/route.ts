@@ -19,14 +19,7 @@ export async function GET() {
   const ok = report.status === "ok" || report.status === "ahead";
 
   return NextResponse.json(
-    // `deploymentId`: the build answering, which an open tab compares with its own (`skew-guard.tsx`). Public, and
-    // null on a local server, where no tab can be behind.
-    {
-      ...report,
-      modelCalls,
-      deploymentId: process.env.VERCEL_DEPLOYMENT_ID ?? null,
-      checkedAt: new Date().toISOString(),
-    },
+    { ...report, modelCalls, checkedAt: new Date().toISOString() },
     { status: ok ? 200 : 503 },
   );
 }

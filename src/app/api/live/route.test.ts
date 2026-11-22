@@ -8,8 +8,21 @@ describe("GET /api/live", () => {
   it("answers 200 {status: ok} and is never cached", async () => {
     const res = GET();
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ status: "ok" });
+    expect(await res.json()).toMatchObject({ status: "ok" });
     expect(dynamic).toBe("force-dynamic");
+  });
+
+  it("names the deployment answering, null where there is none", async () => {
+    const was = process.env.VERCEL_DEPLOYMENT_ID;
+    try {
+      process.env.VERCEL_DEPLOYMENT_ID = "dpl_test123";
+      expect((await GET().json()).deploymentId).toBe("dpl_test123");
+      delete process.env.VERCEL_DEPLOYMENT_ID;
+      expect((await GET().json()).deploymentId).toBeNull();
+    } finally {
+      if (was === undefined) delete process.env.VERCEL_DEPLOYMENT_ID;
+      else process.env.VERCEL_DEPLOYMENT_ID = was;
+    }
   });
 
   // The whole point of the route: no import, direct or transitive, may reach the database or the health check. The
