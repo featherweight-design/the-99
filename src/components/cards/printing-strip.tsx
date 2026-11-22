@@ -9,6 +9,7 @@ import { printingStripCopy } from "../../lib/copy/collection";
 import { reveal } from "../../lib/ui/reveal";
 import { ArtLayer } from "../ui/art-layer";
 import { printingKey } from "./printing-region";
+import { PrintingsPanel, SearchTile } from "./printings-panel";
 
 /** A printing in the strip: `mine` is one the reader holds, `pick` the one that represents the card. */
 export type StripPrinting = BrowsePrinting & { mine?: boolean; pick?: boolean };
@@ -34,7 +35,7 @@ export function orderStrip(
 }
 
 export function PrintingStrip({
-  printings, shownKey, onSelect, onAnnounce, cardName, colorIdentity, paddles = false,
+  printings, shownKey, onSelect, onAnnounce, cardName, colorIdentity, paddles = false, panelOpen = false, onPanelOpen, onPanelClose,
 }: {
   printings: StripPrinting[];
   /** The key (`stripKey`) of the printing on screen. */
@@ -46,7 +47,19 @@ export function PrintingStrip({
   colorIdentity: string[];
   /** Desktop: ▸ and ◂ at the ends while the row overflows (a mouse wheel does not scroll sideways). */
   paddles?: boolean;
+  /** Desktop (with `paddles`): the printings panel's state, owned by the modal so Escape can close it before the dialog. */
+  panelOpen?: boolean;
+  onPanelOpen?: () => void;
+  onPanelClose?: () => void;
 }) {
+  const tile = useRef<HTMLButtonElement | null>(null);
+  const hasTile = paddles && onPanelOpen !== undefined && onPanelClose !== undefined;
+  const wasOpen = useRef(false);
+  // Focus goes back to the tile that opened the panel when it closes.
+  useEffect(() => {
+    if (wasOpen.current && !panelOpen) tile.current?.focus();
+    wasOpen.current = panelOpen;
+  }, [panelOpen]);
   const row = useRef<HTMLDivElement>(null);
   const thumbs = useRef(new Map<string, HTMLButtonElement>());
   const [more, setMore] = useState({ back: false, forward: false });
@@ -94,6 +107,7 @@ export function PrintingStrip({
 
   const move = (e: KeyboardEvent, i: number) => {
     if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (e.key === "ArrowLeft" && i === 0 && hasTile) { e.preventDefault(); tile.current?.focus(); return; }
     const to = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : e.key === "Home" ? 0 : e.key === "End" ? printings.length - 1 : null;
     if (to === null || to < 0 || to >= printings.length) return;
     e.preventDefault();
@@ -119,6 +133,20 @@ export function PrintingStrip({
           className="relative flex gap-[8px] overflow-x-auto pb-[2px]"
           style={{ scrollbarWidth: "none" }}
         >
+          {hasTile ? (
+            <SearchTile
+              tileRef={(el) => { tile.current = el; }}
+              onPress={() => onPanelOpen()}
+              onKeyDown={(e) => {
+                if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+                if (e.key === "ArrowRight" || e.key === "End" || e.key === "Home") {
+                  const k = e.key === "End" ? printings.length - 1 : 0;
+                  const next = printings[k] ? thumbs.current.get(stripKey(printings[k])) : undefined;
+                  if (next) { e.preventDefault(); next.focus(); reveal(next, "nearest", "nearest"); }
+                }
+              }}
+            />
+          ) : null}
           {printings.map((p, i) => {
             const key = stripKey(p);
             const shown = key === shownKey;
@@ -159,6 +187,20 @@ export function PrintingStrip({
             );
           })}
         </div>
+        {hasTile && panelOpen ? (
+          // Over the details column, under the strip: its height is the column's own, and it scrolls inside.
+          <div className="absolute inset-x-0 top-full z-[5] mt-[8px] flex max-h-[min(420px,34vh)] flex-col overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[10px] shadow-[0_14px_34px_rgba(0,0,0,0.45)]">
+            <PrintingsPanel
+              printings={printings}
+              shownKey={shownKey}
+              cardName={cardName}
+              colorIdentity={colorIdentity}
+              cols={6}
+              onClose={onPanelClose}
+              onSelect={select}
+            />
+          </div>
+        ) : null}
         {paddles && more.back ? <Paddle side="back" onPress={() => step(-1)} /> : null}
         {paddles && more.forward ? <Paddle side="forward" onPress={() => step(1)} /> : null}
       </div>

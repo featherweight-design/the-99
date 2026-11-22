@@ -139,6 +139,47 @@ async function run(browser, name, { width, height, touch }) {
       check(name, "ArrowLeft moves focus along the strip", focusedIdx === target - 1 || target === 0, `focus ${focusedIdx} from ${target}`);
     }
 
+    // R3 (desktop): the strip's Search tile opens the printings panel over the details column; selecting views a
+    // printing and keeps the panel open; Escape closes the panel first (the card stays), then the card.
+    if (!touch) {
+      const tile = strip().getByRole("button", { name: "Search printings" });
+      const hasTile = (await tile.count()) === 1;
+      check(name, "the strip leads with a Search tile", hasTile, hasTile ? "tile present" : "no Search tile");
+      if (hasTile) {
+        await tile.click();
+        const panel = card(page).getByTestId("printings-panel");
+        const open = await panel.waitFor({ timeout: 5_000 }).then(() => true, () => false);
+        check(name, "pressing the tile opens the panel", open, open ? "panel visible" : "no panel");
+        if (open) {
+          const focusOk = await page.evaluate(() => document.activeElement?.getAttribute("placeholder")?.startsWith("Search ") === true);
+          check(name, "focus moves to the search field", focusOk, "placeholder-focused");
+          const box = await panel.boundingBox();
+          const sBox = await strip().boundingBox();
+          check(name, "the panel sits under the strip", !!box && !!sBox && box.y >= sBox.y + sBox.height - 2, `panel y ${Math.round(box?.y ?? -1)}, strip bottom ${Math.round((sBox?.y ?? 0) + (sBox?.height ?? 0))}`);
+          const row = panel.getByRole("button", { name: /number/ });
+          const rn = await row.count();
+          check(name, "the panel lists every printing", rn === n, `panel=${rn} strip=${n}`);
+          await shot("panel-open");
+          await page.keyboard.type("beta");
+          await shot("panel-query");
+          await panel.getByRole("searchbox").or(panel.getByRole("textbox")).first().fill("");
+          await page.keyboard.type("zzzzzz");
+          const empty = await panel.getByText(/No printings match/).isVisible().catch(() => false);
+          check(name, "a query with no match says so", empty, empty ? "empty head" : "no empty head");
+          await panel.getByRole("searchbox").or(panel.getByRole("textbox")).first().fill("");
+          const pick = row.nth(rn > 1 ? 1 : 0);
+          const pLabel = (await pick.getAttribute("aria-label")) ?? "";
+          await pick.click();
+          check(name, "selecting in the panel views it and keeps the panel open", (await pick.getAttribute("aria-pressed")) === "true" && (await panel.isVisible()), pLabel.slice(0, 40));
+          await page.keyboard.press("Escape");
+          const gone = !(await panel.isVisible().catch(() => false));
+          check(name, "Escape closes the panel and not the card", gone && (await card(page).first().isVisible()), gone ? "panel closed, card open" : "panel still open");
+          const back = await page.evaluate(() => document.activeElement?.getAttribute("aria-label") === "Search printings");
+          check(name, "focus returns to the tile", back, "tile focused");
+        }
+      }
+    }
+
     // Add to collection opens Edit copies at the printing on screen.
     if (!touch) await thumbs().nth(target).click();
     const more = card(page).getByRole("button", { name: /All details/ }).locator("visible=true").first();
