@@ -112,7 +112,8 @@ function keepAlive(read: Promise<unknown>): void {
   try {
     after(() => read);
   } catch {
-    // outside a request scope
+    // not a fallback: outside a request scope there is no response to outlive, and the read runs either way; nothing a
+    // page draws changes.
   }
 }
 
