@@ -21,6 +21,8 @@ type Row = {
   as_of: Timestamp | null;
   /** The printing the figure belongs to; null only on the placeholder row. */
   scryfall_id: string | null;
+  /** True on a row answering for a printing the caller named (`printingIds`); false on every other row. */
+  named: boolean | null;
 };
 
 /**
@@ -40,6 +42,12 @@ export type PriceRead = {
    * through `priceFor`, which decides between it and `prices`; absent when no picks were passed.
    */
   picked?: Map<string, PriceFact>;
+  /**
+   * Each NAMED printing's own fact by its `scryfall_id`, live or not (a wishlist line that chose a printing): the
+   * figure is that printing's, so a sold-out one reads `soldOut` here instead of falling back to the cheapest.
+   * Present only when printing ids were passed; a printing with no price row is absent.
+   */
+  named?: Map<string, PriceFact>;
 };
 
 /**
@@ -82,8 +90,8 @@ export type PriceRead = {
  * them at zero, so a printing that has never been stocked in any run has never
  * appeared. `priceState` renders that as today's bare tag.
  */
-export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []): Promise<PriceRead> {
-  if (oracleIds.length === 0) return { prices: new Map(), newestAsOf: null };
+export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = [], printingIds: string[] = []): Promise<PriceRead> {
+  if (oracleIds.length === 0 && printingIds.length === 0) return { prices: new Map(), newestAsOf: null };
   // Only the picks of cards this read prices: a caller passes every held pick of its decks, and
   // the roll-up's buy rows are a handful of each deck's cards.
   const asked = new Set(oracleIds);
@@ -105,7 +113,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
   const pickedCte = picks.length === 0 ? sql`` : sql`,
     picked as (
       select w.deck_id, p.oracle_id,
-             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id
+             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id, false as named
       from unnest(
         ${sql.param(picks.map((k) => k.deckId))}::uuid[],
         ${sql.param(picks.map((k) => k.oracleId))}::uuid[],
@@ -125,6 +133,17 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       ) = 1
     )`;
   const pickedRows = picks.length === 0 ? sql`` : sql`union all select * from picked`;
+  // NAMED PRINTINGS ride in the same statement for the same reason: a wishlist line that chose one is measured
+  // against the one `newest`, and its own row comes back live or stale so `priceState` can say `sold out`.
+  const namedCte = printingIds.length === 0 ? sql`` : sql`,
+    named as (
+      select null::uuid as deck_id, p.oracle_id,
+             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id, true as named
+      from printings p
+      join printing_prices pp on pp.scryfall_id = p.scryfall_id
+      where p.scryfall_id = any(${sql.param(printingIds)}::uuid[])
+    )`;
+  const namedRows = printingIds.length === 0 ? sql`` : sql`union all select * from named`;
 
   const rows = await db.execute<Row>(sql`
     with newest as (
@@ -138,7 +157,8 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
         pp.price_cents_foil,
         pp.price_cents_etched,
         pp.as_of,
-        p.scryfall_id
+        p.scryfall_id,
+        false as named
       from printings p
       join printing_prices pp on pp.scryfall_id = p.scryfall_id
       where p.oracle_id = any(${only}::uuid[])
@@ -148,10 +168,11 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
         (pp.price_cents is null),
         coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched) asc,
         pp.scryfall_id
-    )${pickedCte},
+    )${pickedCte}${namedCte},
     facts as (
       select * from chosen
       ${pickedRows}
+      ${namedRows}
     )
     select
       newest.as_of as newest_as_of,
@@ -161,13 +182,15 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       facts.price_cents_foil,
       facts.price_cents_etched,
       facts.as_of,
-      facts.scryfall_id
+      facts.scryfall_id,
+      facts.named
     from newest
     left join facts on true
   `);
 
   const prices = new Map<string, PriceFact>();
   const picked = new Map<string, PriceFact>();
+  const named = new Map<string, PriceFact>();
   for (const row of rows.rows) {
     // The placeholder row of a none-priced deck: a newest timestamp and no card.
     if (row.oracle_id === null || row.as_of === null) continue;
@@ -178,7 +201,8 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       asOf: parseAsOf(row.as_of),
       ...(row.scryfall_id ? { printing: { scryfallId: row.scryfall_id } } : {}),
     };
-    if (row.deck_id === null) prices.set(row.oracle_id, fact);
+    if (row.named && row.scryfall_id) named.set(row.scryfall_id, fact);
+    else if (row.deck_id === null) prices.set(row.oracle_id, fact);
     else picked.set(pickKey(row.deck_id, row.oracle_id), fact);
   }
 
@@ -187,6 +211,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
     prices,
     newestAsOf: newestRaw ? parseAsOf(newestRaw) : null,
     ...(picks.length > 0 ? { picked } : {}),
+    ...(printingIds.length > 0 ? { named } : {}),
   };
 }
 

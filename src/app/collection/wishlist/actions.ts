@@ -10,7 +10,7 @@
 import { after } from "next/server";
 import { revalidatePath } from "next/cache";
 import { requireUserId } from "../../../lib/auth";
-import { clearWishlistLine, loadWishlist, setWishlistQuantity, wantOneMore } from "../../../lib/wishlist/wishlist";
+import { clearWishlistLine, loadWishlist, setWishlistPrinting, setWishlistQuantity, wantOneMore } from "../../../lib/wishlist/wishlist";
 import { searchCollectionCatalog } from "../../../lib/collection/catalog-read";
 import { MAX_COLLECTED_NOTICES, dismissCollected } from "../../../lib/wishlist/collected";
 import { isUuid } from "../../../lib/uuid";
@@ -41,6 +41,19 @@ export async function addToWishlistAction(oracleId: unknown): Promise<WantOutcom
 export async function setWishlistWantAction(oracleId: unknown, quantity: unknown): Promise<WantOutcome> {
   const userId = await requireUserId();
   const result = await setWishlistQuantity(userId, oracleId, quantity);
+  if (!result) return { ok: false, reason: "invalid" };
+  refreshLater();
+  return { ok: true, status: result.status, want: result.quantity, have: result.held };
+}
+
+/**
+ * The printing choice: which printing of the card the reader wants, or `null` for any printing. Adds the card when it
+ * is not on the list yet (a choice is a want). Moving the choice re-baselines the price drop to the new printing's own
+ * price. A printing of another card, or a malformed id, is `invalid`.
+ */
+export async function setWishlistPrintingAction(oracleId: unknown, scryfallId: unknown): Promise<WantOutcome> {
+  const userId = await requireUserId();
+  const result = await setWishlistPrinting(userId, oracleId, scryfallId);
   if (!result) return { ok: false, reason: "invalid" };
   refreshLater();
   return { ok: true, status: result.status, want: result.quantity, have: result.held };

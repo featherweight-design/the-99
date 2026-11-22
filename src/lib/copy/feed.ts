@@ -195,6 +195,8 @@ export const feedCopy = {
       newPrecon: (owned: number, of: number) => `You own ${owned} of its ${of} cards.`,
       /** Follows the struck old price and the new one, both formatted. */
       priceDrop: "at the cheapest printing.",
+      /** The same line for a wishlist entry that names a printing; `printing` is `SLD 2125` (`wishlistPrintingLabel`). */
+      priceDropAt: (printing: string) => `at ${printing}.`,
       tradeMatch: "It’s on your wishlist.",
       spareRequest: "Answer in Friends.",
       /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */

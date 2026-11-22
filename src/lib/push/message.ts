@@ -19,7 +19,7 @@ import { logGameHref } from "../rule-zero/table-view";
 export type PushItem =
   | { kind: "new-set"; key: string; batch: string; name: string; cards: number | null; href: string }
   | { kind: "new-precon"; key: string; batch: string; name: string; owned: number; of: number; href: string }
-  | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null }
+  | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null; printing?: string | null }
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; oracleId: string; card: string; image: string | null; askable: boolean }
   | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no" }
   | { kind: "combo"; key: string; batch: string; oracleId: string; variantId: string | null; a: string; b: string; added: string; image: string | null }
@@ -95,7 +95,7 @@ export function toMessage(group: readonly PushItem[], device: SaleDevice = NO_DE
     case "price-drop": {
       const drops = group as (typeof first)[];
       if (n === 1) {
-        return home("price-drop", keys, c.one.priceDrop.title(first.card), c.one.priceDrop.body(formatCents(first.wasCents), formatCents(first.nowCents)), { openCard: first.oracleId, image: first.image });
+        return home("price-drop", keys, c.one.priceDrop.title(first.card), c.one.priceDrop.body(formatCents(first.wasCents), formatCents(first.nowCents), first.printing), { openCard: first.oracleId, image: first.image });
       }
       return home("price-drop", keys, c.many.priceDrop.title(n), c.many.priceDrop.body(c.names(drops.map((d) => d.card))));
     }

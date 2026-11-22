@@ -9,9 +9,10 @@
  */
 import { and, asc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, collectionItems, wishlistItems } from "../../db/schema";
+import { cards, printings, wishlistItems } from "../../db/schema";
 import { cheapestNow, loadPrices } from "../decks/price-query";
-import type { PriceFact } from "../decks/price";
+import { priceOf, priceState, type PriceFact } from "../decks/price";
+import { heldCopies } from "./held";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const MAX_WISHLIST_QUANTITY = 99;
@@ -23,7 +24,8 @@ export function cleanQuantity(raw: unknown): number | null {
   return n;
 }
 
-export type WishlistLine = { oracleId: string; quantity: number; owned: number; addedAt: Date };
+/** `scryfallId`: the one printing the line names, or null for "any printing" (only that printing collects it). */
+export type WishlistLine = { oracleId: string; scryfallId: string | null; quantity: number; owned: number; addedAt: Date };
 
 /**
  * One owner's lines still WANTED (the collection holds fewer than wanted), with what it holds of each, newest
@@ -31,22 +33,21 @@ export type WishlistLine = { oracleId: string; quantity: number; owned: number; 
  * render it.
  */
 export function wishlistLinesQuery(ownerId: string, q: Pick<typeof db, "select"> = db) {
-  const owned = q
-    .select({ oracleId: collectionItems.oracleId, n: sql<number>`sum(${collectionItems.quantity})::int`.as("n") })
-    .from(collectionItems)
-    .where(eq(collectionItems.userId, ownerId))
-    .groupBy(collectionItems.oracleId)
-    .as("owned");
+  // What the collection holds of the line, as the line counts it (`held.ts`). The join to `cards` (a foreign key, so
+  // it never drops a row) keeps the table qualification Drizzle drops in a single-table select, which the correlated
+  // subquery needs: bare, its `user_id` would read the collection row's own.
+  const owned = heldCopies(wishlistItems.userId, wishlistItems.oracleId, wishlistItems.scryfallId);
   return q
     .select({
       oracleId: wishlistItems.oracleId,
+      scryfallId: wishlistItems.scryfallId,
       quantity: wishlistItems.quantity,
-      owned: sql<number>`coalesce(${owned.n}, 0)::int`,
+      owned,
       addedAt: wishlistItems.createdAt,
     })
     .from(wishlistItems)
-    .leftJoin(owned, eq(owned.oracleId, wishlistItems.oracleId))
-    .where(and(eq(wishlistItems.userId, ownerId), sql`coalesce(${owned.n}, 0) < ${wishlistItems.quantity}`))
+    .innerJoin(cards, eq(cards.oracleId, wishlistItems.oracleId))
+    .where(and(eq(wishlistItems.userId, ownerId), sql`${owned} < ${wishlistItems.quantity}`))
     .orderBy(sql`${wishlistItems.createdAt} desc`, asc(wishlistItems.oracleId));
 }
 
@@ -61,8 +62,14 @@ export type WishlistTile = WishlistLine & {
   imageUri: string | null;
   layout: string;
   backImageUri: string | null;
-  /** What one copy costs, from the price read every buy tag uses; null when the card has never been stocked. */
+  /**
+   * What one copy costs, from the price read every buy tag uses; null when the card has never been stocked. A line
+   * that names a printing carries THAT printing's figure (live or its last, which `priceState` reads as sold out),
+   * never the cheapest's.
+   */
   price: PriceFact | null;
+  /** The printing the line names, as the tile draws it (lowercase set, as the catalog stores it); null for "any printing". */
+  printing: { scryfallId: string; setCode: string; collectorNumber: string } | null;
 };
 
 /**
@@ -77,16 +84,36 @@ export async function loadWishlistTiles(viewerId: string): Promise<WishlistTiles
   const lines = await wishlistLinesQuery(viewerId);
   if (lines.length === 0) return { tiles: [], newestAsOf: null };
   const ids = lines.map((l) => l.oracleId);
-  const [faces, read] = await Promise.all([
+  const chosen = lines.flatMap((l) => (l.scryfallId ? [l.scryfallId] : []));
+  const [faces, named, read] = await Promise.all([
     db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, layout: cards.layout, backImageUri: cards.backImageUri })
       .from(cards)
       .where(inArray(cards.oracleId, ids)),
-    loadPrices(ids),
+    chosen.length === 0
+      ? Promise.resolve([])
+      : db.select({ scryfallId: printings.scryfallId, setCode: printings.setCode, collectorNumber: printings.collectorNumber, imageUri: printings.imageUri, backImageUri: printings.backImageUri })
+        .from(printings)
+        .where(inArray(printings.scryfallId, chosen)),
+    loadPrices(ids, [], chosen),
   ]);
   const byId = new Map(faces.map((f) => [f.oracleId, f]));
+  const byPrinting = new Map(named.map((p) => [p.scryfallId, p]));
   const tiles = lines.flatMap((l) => {
     const f = byId.get(l.oracleId);
-    return f ? [{ ...l, name: f.name, imageUri: f.imageUri, layout: f.layout, backImageUri: f.backImageUri, price: read.prices.get(l.oracleId) ?? null }] : [];
+    if (!f) return [];
+    const p = l.scryfallId ? byPrinting.get(l.scryfallId) : undefined;
+    // A printing the catalog no longer holds was nulled by the foreign key, so `p` is only missing for a read that
+    // raced the delete: the tile falls back to the card's own face and price for that one read.
+    return [{
+      ...l,
+      name: f.name,
+      // This printing's face: its own image, and its back where the layout has one, else the oracle card's.
+      imageUri: p?.imageUri ?? f.imageUri,
+      layout: f.layout,
+      backImageUri: p ? (p.backImageUri ?? f.backImageUri) : f.backImageUri,
+      price: p ? (read.named?.get(p.scryfallId) ?? null) : (read.prices.get(l.oracleId) ?? null),
+      printing: p ? { scryfallId: p.scryfallId, setCode: p.setCode, collectorNumber: p.collectorNumber } : null,
+    }];
   });
   return { tiles, newestAsOf: read.newestAsOf };
 }
@@ -97,17 +124,12 @@ export async function loadWishlistTiles(viewerId: string): Promise<WishlistTiles
  */
 export async function loadWishlistWant(viewerId: string, oracleId: string): Promise<number | null> {
   if (!UUID.test(oracleId)) return null;
-  const [row] = await db
-    .select({ quantity: wishlistItems.quantity })
-    .from(wishlistItems)
-    .where(and(
-      eq(wishlistItems.userId, viewerId),
-      eq(wishlistItems.oracleId, oracleId),
-      sql`${wishlistItems.quantity} > (
-        select coalesce(sum(ci.quantity), 0) from ${collectionItems} ci
-        where ci.user_id = ${viewerId} and ci.oracle_id = ${oracleId}
-      )`,
-    ));
+  // Aliased and qualified: the held-copies subquery reads the line's own columns (`held.ts`).
+  const { rows: [row] } = await db.execute<{ quantity: number }>(sql`
+    select w.quantity from ${wishlistItems} w
+    where w.user_id = ${viewerId} and w.oracle_id = ${oracleId}::uuid
+      and w.quantity > ${heldCopies(sql`w.user_id`, sql`w.oracle_id`, sql`w.scryfall_id`)}
+  `);
   return row?.quantity ?? null;
 }
 
@@ -167,13 +189,13 @@ async function writeWant(
   const atAdd = cheapestNow(await loadPrices([oracleId]), oracleId);
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
+    // `held` is what the collection holds as THIS line counts it (`held.ts`): a line naming a printing counts that
+    // printing's copies alone, a new line or an "any printing" one counts every copy of the card.
     const { rows: [card] } = await tx.execute<{ held: number; current: number | null }>(sql`
-      select coalesce((
-        select sum(ci.quantity) from ${collectionItems} ci where ci.user_id = ${viewerId} and ci.oracle_id = c.oracle_id
-      ), 0)::int as held, (
-        select wi.quantity from ${wishlistItems} wi where wi.user_id = ${viewerId} and wi.oracle_id = c.oracle_id
-      ) as current
-      from ${cards} c where c.oracle_id = ${oracleId}
+      select ${heldCopies(viewerId, sql`c.oracle_id`, sql`w.scryfall_id`)} as held, w.quantity as current
+      from ${cards} c
+      left join ${wishlistItems} w on w.user_id = ${viewerId} and w.oracle_id = c.oracle_id
+      where c.oracle_id = ${oracleId}
     `);
     if (!card) return null;
     const quantity = want(card.held, card.current);
@@ -185,6 +207,56 @@ async function writeWant(
       insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents)
       values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int)
       on conflict (user_id, oracle_id) do update set quantity = excluded.quantity
+    `);
+    return { status: "wanted", quantity, held: card.held };
+  });
+}
+
+/**
+ * Name the printing a wishlist line wants, or null for "any printing" again (wishlist printing, Hugh, 2026-11-22).
+ * One write under the player's collection lock: it sets `scryfall_id` and rewrites the price-drop baseline to THAT
+ * printing's figure (or the cheapest's, for null) and clears the notice stamp, so the alert never compares a new
+ * printing against another's price and a fresh choice can be told about at once. A card not yet on the list is put
+ * on it wanting one more than the printing is held in, which is what "Want SLD 2125" means from a card that is not
+ * wanted. The printing must be one of the card's own (checked in the statement); anything else writes nothing and
+ * answers null.
+ *
+ * Collected is decided by the NEW printing: a line the player already holds enough copies of in it has nothing left
+ * to want, so it is removed (`held`), as `writeWant` removes a want set at or below what is held. The baseline is
+ * null when the printing has no live price (the price job fills it on its next run); a named printing that is sold
+ * out sets no alert until it returns.
+ */
+export async function setWishlistPrinting(viewerId: string, oracleId: unknown, rawPrintingId: unknown): Promise<WantResult | null> {
+  if (typeof oracleId !== "string" || !UUID.test(oracleId)) return null;
+  const printingId = rawPrintingId === null ? null : typeof rawPrintingId === "string" && UUID.test(rawPrintingId) ? rawPrintingId : undefined;
+  if (printingId === undefined) return null;
+  const read = await loadPrices([oracleId], [], printingId ? [printingId] : []);
+  const fact = printingId ? read.named?.get(printingId) : undefined;
+  const atAdd = printingId ? (fact ? priceOf(fact, priceState(fact, read.newestAsOf)) : null) : cheapestNow(read, oracleId);
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
+    const { rows: [card] } = await tx.execute<{ held: number; current: number | null; chosen: string | null }>(sql`
+      select ${heldCopies(viewerId, sql`c.oracle_id`, sql`${printingId}::uuid`)} as held,
+        w.quantity as current, w.scryfall_id as chosen
+      from ${cards} c
+      left join ${wishlistItems} w on w.user_id = ${viewerId} and w.oracle_id = c.oracle_id
+      where c.oracle_id = ${oracleId}
+        and (${printingId}::uuid is null
+          or exists (select 1 from ${printings} p where p.scryfall_id = ${printingId}::uuid and p.oracle_id = c.oracle_id))
+    `);
+    if (!card) return null;
+    // The same printing again changes nothing, baseline and notice included.
+    if (card.current !== null && card.chosen === printingId) return { status: "wanted", quantity: card.current, held: card.held };
+    const quantity = card.current ?? Math.min(card.held + 1, MAX_WISHLIST_QUANTITY);
+    if (quantity <= card.held) {
+      await tx.delete(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), eq(wishlistItems.oracleId, oracleId)));
+      return { status: "held", quantity, held: card.held };
+    }
+    await tx.execute(sql`
+      insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents, scryfall_id)
+      values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int, ${printingId}::uuid)
+      on conflict (user_id, oracle_id) do update set
+        scryfall_id = excluded.scryfall_id, price_at_add_cents = excluded.price_at_add_cents, price_noticed_at = null
     `);
     return { status: "wanted", quantity, held: card.held };
   });

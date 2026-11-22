@@ -22,6 +22,7 @@ import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
 import { manapoolCardUrl } from "../manapool/links";
+import { wishlistPrintingLabel } from "../wishlist/printing-label";
 import { compareNames } from "../person-name";
 import type { ThirdPartyName } from "../person-name/brand";
 import { answerStandalone, type Answer } from "../social/spare-request-rules";
@@ -78,7 +79,7 @@ export type FeedView = {
   /** A new precon's cards the reader owns, of its total. */
   owned: { owned: number; of: number } | null;
   /** A price drop's two figures, in cents. */
-  drop: { fromCents: number; toCents: number } | null;
+  drop: { fromCents: number; toCents: number; /** `SLD 2125` when the wishlist entry named a printing; null for "any printing". */ printing: string | null } | null;
   /** A combo's two pieces by name, the piece the reader's write added, and its Spellbook variant (what the press opens the sheet for). */
   combo: { pieces: [string, string]; added: string; variantId: string | null } | null;
   /**
@@ -284,9 +285,13 @@ export function toViews(
       case "price-drop": {
         const from = num(item.data.fromCents);
         const to = num(item.data.toCents);
-        const drop = from !== null && to !== null ? { fromCents: from, toCents: to } : null;
-        // The card on Mana Pool, every printing (the card details link). A card the catalog no longer holds has no name
-        // to send, and draws no press.
+        const set = typeof item.data.setCode === "string" ? item.data.setCode : null;
+        const number = typeof item.data.collectorNumber === "string" ? item.data.collectorNumber : null;
+        const printing = set !== null && number !== null ? wishlistPrintingLabel({ setCode: set, collectorNumber: number }) : null;
+        const drop = from !== null && to !== null ? { fromCents: from, toCents: to, printing } : null;
+        // The card on Mana Pool, every printing (the card details link): Mana Pool has no card page for one printing
+        // (measured 2026-11-22, `manapool/links.ts`), so a drop on a named printing links the same grid. A card the
+        // catalog no longer holds has no name to send, and draws no press.
         return { ...base, card, outbound: card ? manapoolCardUrl(card.name) : null, drop };
       }
       case "trade-match":

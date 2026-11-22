@@ -64,7 +64,7 @@ export function feedText(item: FeedView): { title: string | PersonParts; line: R
               <s className="text-[color:var(--fg-faint)]">{formatCents(item.drop.fromCents)}</s>{" "}
               <span data-feed-drop className="text-[color:var(--success)]">↓ {formatCents(item.drop.toCents)}</span>
             </span>{" "}
-            {c.line.priceDrop}
+            {item.drop.printing ? c.line.priceDropAt(item.drop.printing) : c.line.priceDrop}
           </>
         ) : null,
         // Only with somewhere to go: a card the catalog no longer holds has no name to send to Mana Pool.

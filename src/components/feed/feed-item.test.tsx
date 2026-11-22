@@ -94,7 +94,7 @@ describe("FeedItemRow", () => {
   });
 
   it("writes a price drop as the struck old price and the new one", () => {
-    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 640, toCents: 310 } })} now={NOW} />);
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 640, toCents: 310, printing: null } })} now={NOW} />);
     expect(container.querySelector("s")?.textContent).toBe("$6.40");
     expect(container.querySelector("[data-feed-drop]")?.textContent).toBe("↓ $3.10");
   });
@@ -134,7 +134,7 @@ describe("FeedItemRow", () => {
   });
 
   it("lifts the picture above the stretched press so it can be hovered", () => {
-    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", outbound: "https://manapool.com/cards?q=Sai", drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", outbound: "https://manapool.com/cards?q=Sai", drop: { fromCents: 500, toCents: 300, printing: null } })} now={NOW} />);
     expect(container.querySelector<HTMLElement>("[data-feed-picture]")!.className).toContain("z-[1]");
   });
 
@@ -143,7 +143,7 @@ describe("FeedItemRow", () => {
   it("opens a price drop's card on Mana Pool in a new tab, never its detail", () => {
     open.mockClear();
     const url = "https://manapool.com/cards?q=Sai";
-    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", outbound: url, drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", outbound: url, drop: { fromCents: 500, toCents: 300, printing: null } })} now={NOW} />);
     const press = screen.getByRole("link", { name: /^Buy at Mana Pool\s*\(opens in a new tab\)$/ });
     expect(press.getAttribute("href")).toBe(url);
     expect(press.getAttribute("target")).toBe("_blank");
@@ -163,7 +163,7 @@ describe("FeedItemRow", () => {
   });
 
   it("draws no press for a price drop whose card the catalog no longer holds", () => {
-    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", card: null, outbound: null, drop: { fromCents: 500, toCents: 300 } })} now={NOW} />);
+    const { container } = list(<FeedItemRow item={view({ kind: "price-drop", card: null, outbound: null, drop: { fromCents: 500, toCents: 300, printing: null } })} now={NOW} />);
     expect(document.querySelector("[data-feed-press]")).toBeNull();
     // No press and no ✕, so the action line is not drawn either (no empty, spaced wrapper under the line on a phone).
     expect(container.querySelector("[data-feed-actions]")).toBeNull();

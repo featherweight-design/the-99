@@ -4230,6 +4230,14 @@ export const wishlistItems = pgTable("wishlist_items", {
   priceAtAddCents: integer("price_at_add_cents"),
   /** When the price job last told the reader this card got cheaper (G2: at most once a week per card). */
   priceNoticedAt: timestamp("price_noticed_at", { withTimezone: true }),
+  /**
+   * The one printing the player wants, when they named one (wishlist printing, Hugh, 2026-11-22). Null is "any
+   * printing", the card-level want every older line is. Named, only THAT printing collects the line (another
+   * printing of the card leaves it on the list), its price is the tile's and the price-drop baseline's, and its
+   * set and number name it in the feed and the push. A printing the catalog later drops sets this null (any
+   * printing again), never deletes the line.
+   */
+  scryfallId: uuid("scryfall_id").references(() => printings.scryfallId, { onDelete: "set null" }),
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
   check("wishlist_items_quantity_check", sql`${t.quantity} between 1 and 99`),
