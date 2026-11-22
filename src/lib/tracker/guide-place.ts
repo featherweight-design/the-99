@@ -41,8 +41,9 @@ export function placeLabels(bounds: Box, avoid: readonly Box[], items: readonly 
     let fallbackCost = Infinity;
     const x0 = field.x;
     const y0 = field.y;
-    const maxX = field.x + field.w - w;
-    const maxY = field.y + field.h - h;
+    // A label larger than the field is pinned to its top-left corner rather than placed outside the bounds.
+    const maxX = Math.max(x0, field.x + field.w - w);
+    const maxY = Math.max(y0, field.y + field.h - h);
     for (let y = y0; y <= maxY + STEP - 1; y += STEP) {
       const yy = Math.min(y, maxY);
       for (let x = x0; x <= maxX + STEP - 1; x += STEP) {

@@ -157,8 +157,13 @@ export function PlaySurface({
   // sheet, die, pick or Menu is open. The flag is spent when the guide shows; storage that cannot be read shows it each visit.
   useEffect(() => {
     if (!guideDue || !game || over || firstRoll || guide || sheet || roll || pick || menu) return;
-    const t = setTimeout(() => {
-      if (document.querySelector('[data-testid="dice-menu"]')) return;
+    let t: ReturnType<typeof setTimeout>;
+    // The Dice pop keeps its state inside the Spine, so an open one is read from the page and waited out.
+    const fire = () => {
+      if (document.querySelector('[data-testid="dice-menu"]')) {
+        t = setTimeout(fire, 600);
+        return;
+      }
       setGuideDue(false);
       try {
         markGuideSeen(window.localStorage);
@@ -167,7 +172,8 @@ export function PlaySurface({
       }
       guideFrom.current = "start";
       setGuide("start");
-    }, 600);
+    };
+    t = setTimeout(fire, 600);
     return () => clearTimeout(t);
   }, [guideDue, game, over, firstRoll, guide, sheet, roll, pick, menu]);
   // Focus goes back where it came from once the guide has gone and the board is live again.

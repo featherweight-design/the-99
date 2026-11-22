@@ -42,6 +42,13 @@ describe("placeLabels", () => {
   });
 });
 
+describe("placeLabels, a label larger than the field", () => {
+  it("is pinned to the field's corner, never placed outside the bounds", () => {
+    const a = placeLabels(bounds, [], [{ id: "a", size: { w: 500, h: 40 }, ideal: { x: 200, y: 300 } }]).get("a")!;
+    expect(a.x).toBeGreaterThanOrEqual(bounds.x);
+  });
+});
+
 describe("edgePoint", () => {
   it("is where the ray from the box centre toward the point leaves the box", () => {
     const p = edgePoint({ x: 0, y: 0, w: 100, h: 40 }, { x: 300, y: 20 });
