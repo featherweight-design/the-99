@@ -48,6 +48,7 @@ export function demoCardDetail({ onOpen, onClose, openOracleId }: DemoCardWiring
     registerSheet: noopRelease,
     registerDoor: noopRelease,
     registerReceiptLink: noopRelease,
+    registerCommanderBox: noopRelease,
   };
 }
 

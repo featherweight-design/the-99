@@ -99,6 +99,7 @@ export function CardModal({
   onEditCopies = null,
   browsePrintings = false,
   receiptLink = null,
+  commanderBox = null,
   fitsOpen = false,
   fitsReading = false,
   view = null,
@@ -184,6 +185,8 @@ export function CardModal({
    * The provider never passes both.
    */
   receiptLink?: ReactNode;
+  /** The deck page's Second commander box for this card (#491), drawn after the card's facts, or null. */
+  commanderBox?: ReactNode;
   /** The picker the door opened is up, so its close hands focus back to the door. */
   fitsOpen?: boolean;
   /**
@@ -1303,7 +1306,7 @@ export function CardModal({
           fitsDoor={onFindDeck ? (layout) => (
             <FitsDoor cardName={card.name} onPress={onFindDeck} pickerOpen={fitsOpen} moment={fitsMoment} layout={layout} reading={fitsReading} />
           ) : null}
-          onEditCopies={onEditCopies ? () => onEditCopies(previewAt?.scryfallId) : null} receiptLink={receiptLink} onPrev={onPrev} onNext={onNext}
+          onEditCopies={onEditCopies ? () => onEditCopies(previewAt?.scryfallId) : null} receiptLink={receiptLink} commanderBox={commanderBox} onPrev={onPrev} onNext={onNext}
           sheetRef={sheetRef} gripRef={gripRef} doorRef={doorRef} sheetBodyRef={sheetBodyRef}
           mobileTriggerRef={mobileTriggerRef} desktopTriggerRef={desktopTriggerRef}
           prevButtonRef={prevButtonRef} nextButtonRef={nextButtonRef}

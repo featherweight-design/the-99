@@ -46,7 +46,7 @@ import {
 } from "./card-detail-paging";
 import {
   CardDetailContext, cardDetailCopy, siblingCards,
-  type CardDetailContextValue, type CardDoor, type ReceiptLink, type SheetFooter, type Sibling, type SiblingCard, type ViewPrinting,
+  type CardDetailContextValue, type CardDoor, type CommanderBox, type ReceiptLink, type SheetFooter, type Sibling, type SiblingCard, type ViewPrinting,
 } from "./card-detail-context";
 
 export {
@@ -1110,6 +1110,11 @@ export function CardDetailProvider({
   }, []);
 
   const [receiptLinkRender, setReceiptLinkRender] = useState<ReceiptLink | null>(null);
+  const [commanderBoxRender, setCommanderBoxRender] = useState<CommanderBox | null>(null);
+  const registerCommanderBox = useCallback((render: CommanderBox) => {
+    setCommanderBoxRender(() => render);
+    return () => setCommanderBoxRender((current: CommanderBox | null) => (current === render ? null : current));
+  }, []);
   const registerReceiptLink = useCallback((render: ReceiptLink) => {
     setReceiptLinkRender(() => render);
     return () => setReceiptLinkRender((current: ReceiptLink | null) => (current === render ? null : current));
@@ -1300,8 +1305,9 @@ export function CardDetailProvider({
       registerSheet,
       registerDoor,
       registerReceiptLink,
+      registerCommanderBox,
     }),
-    [open, prefetch, shownPending, card, sessionActive, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink],
+    [open, prefetch, shownPending, card, sessionActive, leaving, evict, close, deckId, deckOracleIds, registerSheet, registerDoor, registerReceiptLink, registerCommanderBox],
   );
 
   const index = card ? siblingIds.indexOf(card.oracleId) : -1;
@@ -1478,6 +1484,7 @@ export function CardDetailProvider({
           covered
           door={held.door && doorRender ? (layout) => doorRender(held.card.oracleId, layout) : null}
           receiptLink={held.door && receiptLinkRender ? receiptLinkRender(held.card.oracleId) : null}
+          commanderBox={commanderBoxRender ? commanderBoxRender(held.card.oracleId) : null}
           // Kept mounted under the picker it opened, so its close can hand focus back to the door.
           onFindDeck={fitsDoor(held.card)}
           fitsOpen={fitsFor !== null}
@@ -1553,6 +1560,7 @@ export function CardDetailProvider({
           // The receipt's one link slot (A11, READINESS O2): a Shopping row's `Bought this card?` wins it, because
           // I got it puts the copy in the collection and marks it bought; every other open draws Add to collection.
           receiptLink={liveReceiptLink}
+          commanderBox={card && commanderBoxRender ? commanderBoxRender(card.oracleId) : null}
           // The combo block's partner name, through the same `load` that pages Prev/Next —
           // so a partner replaces the open card exactly as a sibling does, and the back
           // gesture returns to the card the reader started from. It arrives without the

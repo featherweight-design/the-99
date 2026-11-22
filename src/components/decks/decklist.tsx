@@ -7,6 +7,7 @@
 import { PublishDeckSiblings } from "./deck-siblings";
 import { useSwapTools } from "../../lib/swaps/context";
 import { GotItDoorRegistration } from "./got-it-door";
+import { CommanderBoxRegistration } from "./commander-box";
 import { StandInsSheet } from "./stand-ins-sheet";
 import { StandInDoorRegistration } from "./stand-in-door";
 import { SwapReceiptRow } from "./swap-receipt";
@@ -585,6 +586,8 @@ export function Decklist({
   // the sheet has to stay to say so. Both views mount it, since a take moves the reader nowhere.
   // I got it's link in the card modal, for a card a Shopping row opened (A11): commander rows too.
   const gotItDoor = gotIt ? <GotItDoorRegistration shoppingCards={shoppingCards} newestAsOf={newestAsOf} /> : null;
+  // Second commander's box on the commander's card details (#491); draws nothing unless the page offered it.
+  const commanderBox = <CommanderBoxRegistration commanderName={commander?.name ?? ""} />;
   const standInsSheet = swapTools ? (
     <>
       {swapTools.standIns ? (
@@ -1074,6 +1077,7 @@ export function Decklist({
         <PublishDeckSiblings list={shoppingOrderedIds} />
         {standInsSheet}
         {gotItDoor}
+        {commanderBox}
         <GroupToggle
           key="deck-bar"
           panels
@@ -1223,6 +1227,7 @@ export function Decklist({
       <PublishDeckSiblings list={orderedIds} />
       {standInsSheet}
       {gotItDoor}
+        {commanderBox}
       {/* Toggle bar */}
       <GroupToggle
         key="deck-bar"
