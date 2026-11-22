@@ -17,7 +17,8 @@ import { feedOrPushWanted } from "../push/kind-gate";
 import { createHash } from "node:crypto";
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
-import { collectionItems, userPrefs, wishlistItems } from "../../db/schema";
+import { userPrefs, wishlistItems } from "../../db/schema";
+import { heldCopies } from "../wishlist/held";
 import { availableFeedKinds } from "../feed/flag";
 import { recordFeedItem } from "./feed-write";
 import { MAX_SPARES_BATCH } from "./client-rules";
@@ -30,8 +31,7 @@ export function wishedForMatchQuery(viewerId: string) {
     join ${userPrefs} tup on tup.user_id = twi.user_id
     where twi.user_id = ${viewerId}
       and ${feedOrPushWanted(sql`tup`, sql`twi.user_id`, "trade-match")}
-      and coalesce((select sum(tci.quantity) from ${collectionItems} tci
-                    where tci.user_id = twi.user_id and tci.oracle_id = twi.oracle_id), 0) < twi.quantity
+      and ${heldCopies(sql`twi.user_id`, sql`twi.oracle_id`, sql`twi.scryfall_id`)} < twi.quantity
     order by twi.oracle_id`;
 }
 

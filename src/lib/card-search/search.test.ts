@@ -30,8 +30,9 @@ describe("cardSignalsSql", () => {
     expect(sql).toMatch(/from collection_items ci\s+where ci\.user_id = \$1/);
     expect(sql).toMatch(/from decks d\s+where d\.user_id = \$2/);
     expect(sql).toMatch(/from wishlist_items w\s+where w\.user_id = \$3/);
-    expect(sql).toMatch(/from collection_items ci2\s+where ci2\.user_id = \$4/);
-    expect(params.slice(0, 4)).toEqual(["user_1", "user_1", "user_1", "user_1"]);
+    // The wishlist's "still unmet" test is the line's own `heldCopies`, tied to the line's columns (no second bound id).
+    expect(sql.replace(/\s+/g, " ")).toContain("ci.user_id = w.user_id and ci.oracle_id = w.oracle_id and (w.scryfall_id::uuid is null");
+    expect(params.slice(0, 3)).toEqual(["user_1", "user_1", "user_1"]);
   });
 
   it("correlates on the outer card by alias, and counts the commander and the partner", () => {
@@ -53,8 +54,8 @@ describe("cardSignalsSql", () => {
   });
 
   it("asks for exactly the cards named", () => {
-    expect(sql).toMatch(/where c\.oracle_id in \(\$5::uuid, \$6::uuid\)/);
-    expect(params.slice(4)).toEqual([A, B]);
+    expect(sql).toMatch(/where c\.oracle_id in \(\$4::uuid, \$5::uuid\)/);
+    expect(params.slice(3)).toEqual([A, B]);
   });
 
   it("reads no wishlist row while the wishlist is off", () => {

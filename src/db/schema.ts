@@ -4241,6 +4241,8 @@ export const wishlistItems = pgTable("wishlist_items", {
 }, (t) => [
   primaryKey({ columns: [t.userId, t.oracleId] }),
   check("wishlist_items_quantity_check", sql`${t.quantity} between 1 and 99`),
+  // The foreign key's own index: a catalog refresh that deletes a printing finds the lines naming it without a scan.
+  index("wishlist_items_scryfall_id_idx").on(t.scryfallId),
 ]);
 
 /**

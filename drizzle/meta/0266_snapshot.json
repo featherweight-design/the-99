@@ -1,5 +1,5 @@
 {
-  "id": "76eecf04-7041-4f39-9c53-94564fad3bf4",
+  "id": "fec3390f-d432-4ada-b893-30fa46ec79a3",
   "prevId": "e9c390da-9bff-442a-b34f-38ac61f0ed62",
   "version": "7",
   "dialect": "postgresql",
@@ -13970,7 +13970,23 @@
           "notNull": false
         }
       },
-      "indexes": {},
+      "indexes": {
+        "wishlist_items_scryfall_id_idx": {
+          "name": "wishlist_items_scryfall_id_idx",
+          "columns": [
+            {
+              "expression": "scryfall_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
       "foreignKeys": {
         "wishlist_items_oracle_id_cards_oracle_id_fk": {
           "name": "wishlist_items_oracle_id_cards_oracle_id_fk",

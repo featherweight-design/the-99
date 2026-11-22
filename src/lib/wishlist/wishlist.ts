@@ -245,6 +245,8 @@ export async function setWishlistPrinting(viewerId: string, oracleId: unknown, r
           or exists (select 1 from ${printings} p where p.scryfall_id = ${printingId}::uuid and p.oracle_id = c.oracle_id))
     `);
     if (!card) return null;
+    // Clearing a choice resets a line that is there; it never adds one (a choice of a printing does).
+    if (printingId === null && card.current === null) return null;
     // The same printing again changes nothing, baseline and notice included.
     if (card.current !== null && card.chosen === printingId) return { status: "wanted", quantity: card.current, held: card.held };
     const quantity = card.current ?? Math.min(card.held + 1, MAX_WISHLIST_QUANTITY);
