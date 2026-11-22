@@ -53,3 +53,5 @@ R1.1 replaced Lae’zel's stand-in art with the card image Hugh supplied.
 
 - Only commanders with "Choose a Background" get the slot (Hugh, the brief).
 - Calls 1 to 7 as drawn (Hugh, 2026-11-22: "This LGTM").
+
+Audited 2026-11-22: concur
