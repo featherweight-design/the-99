@@ -1,0 +1,63 @@
+<style>
+#ww{position:fixed;inset:0;z-index:100;font-family:var(--font-plex-sans),sans-serif}
+#ww svg{position:absolute;inset:0;width:100%;height:100%}
+.ww-halo{position:absolute;box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 75%,transparent),0 0 0 6px color-mix(in srgb,var(--accent) 20%,transparent);pointer-events:none}
+.ww-c{position:absolute;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border-strong);border-radius:10px;box-shadow:0 12px 30px rgba(0,0,0,.45);padding:8px 11px 9px 11px;color:var(--fg-body)}
+.ww-c b{display:flex;align-items:center;gap:7px;font-weight:600;color:var(--fg);font-size:var(--wt,14px);line-height:1.3}
+.ww-c b:before{content:"";width:6px;height:6px;background:var(--accent);transform:rotate(45deg);flex:none}
+.ww-c span{display:block;margin-top:2px;font-size:var(--wl,13px);line-height:1.38}
+.ww-h{position:absolute;box-sizing:border-box;background:var(--elevated);border:1px solid var(--border-strong);border-radius:16px;box-shadow:0 14px 36px rgba(0,0,0,.5);padding:14px 10px 14px 18px;display:flex;gap:10px;align-items:flex-start}
+.ww-h h2{margin:0;font-family:var(--font-display-face),serif;font-weight:600;color:var(--fg);font-size:var(--ht,22px);line-height:1.2}
+.ww-h p{margin:4px 0 0;font-size:var(--hl,13.5px);line-height:1.45;color:var(--fg-body)}
+.ww-x{flex:none;width:44px;height:44px;display:grid;place-items:center;border-radius:999px;color:var(--fg);margin:-6px 0 0 auto}
+</style>
+<script>
+window.WW = (o) => {
+  const root = document.createElement("div"); root.id = "ww"; document.body.appendChild(root);
+  const W = innerWidth, H = innerHeight;
+  const find = (it) => {
+    let scope = document;
+    if (it.panel !== undefined) scope = document.querySelectorAll('[data-testid="tracker-panel"]')[it.panel];
+    const els = scope.querySelectorAll(it.sel); const el = els[it.n ?? 0];
+    if (!el) { console.error("missing " + it.sel); return null; }
+    return el.getBoundingClientRect();
+  };
+  const holes = []; let svg = "";
+  const ns = "http://www.w3.org/2000/svg";
+  const lines = [];
+  for (const it of o.items) {
+    const rects = (it.targets ?? [it]).map(find).filter(Boolean);
+    const p = it.pad ?? 5;
+    const hr = rects.map((r) => ({ x: r.left - p, y: r.top - p, w: r.width + 2 * p, h: r.height + 2 * p, r: it.round ? (Math.min(r.width, r.height) / 2 + p) : (it.r ?? 12) }));
+    holes.push(...hr);
+    const c = document.createElement("div"); c.className = "ww-c";
+    c.style.left = it.x + "px"; c.style.top = it.y + "px"; c.style.width = it.w + "px";
+    if (o.small) { c.style.setProperty("--wt", "13px"); c.style.setProperty("--wl", "12px"); c.style.padding = "6px 9px 7px"; }
+    c.innerHTML = `<b>${it.t}</b>` + (it.l ? `<span>${it.l}</span>` : "");
+    root.appendChild(c);
+    const cr = c.getBoundingClientRect();
+    for (const h of hr) {
+      if (it.noLine) continue;
+      // nearest point on hole to callout centre, nearest point on callout to that
+      const cx = cr.left + cr.width / 2, cy = cr.top + cr.height / 2;
+      const tx = Math.max(h.x, Math.min(cx, h.x + h.w)), ty = Math.max(h.y, Math.min(cy, h.y + h.h));
+      const sx = Math.max(cr.left, Math.min(tx, cr.right)), sy = Math.max(cr.top, Math.min(ty, cr.bottom));
+      lines.push([sx, sy, tx, ty]);
+    }
+  }
+  const mask = holes.map((h) => `<rect x="${h.x}" y="${h.y}" width="${h.w}" height="${h.h}" rx="${h.r}" fill="#000"/>`).join("");
+  const ln = lines.map(([a, b, c2, d]) => `<line x1="${a}" y1="${b}" x2="${c2}" y2="${d}" stroke="var(--accent)" stroke-opacity=".8" stroke-width="1.5"/><circle cx="${c2}" cy="${d}" r="3" fill="var(--accent)"/>`).join("");
+  const s = document.createElementNS(ns, "svg");
+  s.innerHTML = `<defs><mask id="wwm"><rect width="${W}" height="${H}" fill="#fff"/>${mask}</mask></defs><rect width="${W}" height="${H}" fill="rgba(0,0,0,${o.scrim ?? 0.66})" mask="url(#wwm)"/>${ln}`;
+  root.prepend(s);
+  for (const h of holes) { const d = document.createElement("div"); d.className = "ww-halo"; Object.assign(d.style, { left: h.x + "px", top: h.y + "px", width: h.w + "px", height: h.h + "px", borderRadius: h.r + "px" }); root.insertBefore(d, s.nextSibling); }
+  if (o.head) {
+    const h = document.createElement("div"); h.className = "ww-h"; Object.assign(h.style, { left: o.head.x + "px", top: o.head.y + "px", width: o.head.w + "px" });
+    if (o.small) { h.style.setProperty("--ht", "19px"); h.style.setProperty("--hl", "12.5px"); h.style.padding = "11px 6px 12px 14px"; }
+    h.innerHTML = `<div><h2>${o.head.t}</h2><p>${o.head.l}</p></div><span class="ww-x" aria-label="Close"><svg width="20" height="20" viewBox="0 0 20 20" style="position:static"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg></span>`;
+    root.appendChild(h);
+  }
+  // print rects for layout help
+  if (o.debug) for (const it of o.items) { const r = (it.targets ?? [it]).map(find); console.log(it.t, JSON.stringify(r.map(x => x && [x.left|0, x.top|0, x.width|0, x.height|0]))); }
+};
+</script>

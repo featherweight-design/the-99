@@ -40,6 +40,12 @@ window, which the tracker draws as one) the sheet takes half the table from the 
 damage cards carry the commander's art edge to edge; Table joins the tab row on every device; the coin gets a 3D toss
 (rim, arc, end-over-end spin, rattle, landing ring) with the result still at 1.15 s. The phone sheet is unchanged.
 
+## Addendum (2026-11-22): What's what
+
+Boards in [addendum-whats-what/](addendum-whats-what/README.md), approved by Hugh 2026-11-22. A guide that labels every
+strip button and your panel's controls in place over a dimmed board (the tour's spotlight, the moment bubble's labels).
+It shows once per device on the first play and is then the first row of the Menu (⋯), above Back to the table.
+
 ## Boards
 
 | Board | What |

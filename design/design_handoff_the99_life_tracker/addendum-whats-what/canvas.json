@@ -1,0 +1,42 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-22T19:45:00Z"
+ },
+ "title": "Life tracker · What's what",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1600,
+   "h": 1720,
+   "title": "Main · in place, or a list"
+  },
+  "Tablet.dc.html": {
+   "x": 1680,
+   "y": 0,
+   "w": 1600,
+   "h": 2840,
+   "title": "Tablet · first open, the Menu, mid-game"
+  },
+  "Phone.dc.html": {
+   "x": 3360,
+   "y": 0,
+   "w": 1040,
+   "h": 1220,
+   "title": "Phone · first open and the Menu"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Tablet.dc.html",
+  "Phone.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
