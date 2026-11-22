@@ -13,6 +13,9 @@ import { CartView } from "../../../components/decks/cart/cart-view";
 import { parseQuery } from "../../../lib/decks/cart-sort";
 import { requestFlags } from "../../../lib/flags/request";
 import { hasFriend } from "../../../lib/social/has-friend";
+import { readerStore } from "../../../lib/stores/preference";
+import type { Store } from "../../../lib/stores/rows";
+import { StoreProvider } from "../../../components/stores/store-provider";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
 
@@ -38,8 +41,11 @@ export default async function AllDecksShoppingPage({
   const initialView = params.view === "deck" || deck ? "deck" : friendView ? "friend" : "card";
   // Cached per reader on the database's stamp, as `/decks` is, so a write anywhere retires it.
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
-  const cart = await cachePageForUser(userId, "cart", [], async () => {
-    const value = await loadCart(userId);
+  // The reader's store keys the entry as well as pricing it, so a store change can never serve another store's figures
+  // (the `user_prefs` stamp retires it too). An unreadable preference prices in Mana Pool, the default.
+  const store = await readerStore(userId, env).catch((): Store => "manapool");
+  const cart = await cachePageForUser(userId, "cart", [store], async () => {
+    const value = await loadCart(userId, store);
     return { value, store: value.priced };
   }, env);
   // Whether the reader has a friend decides By friend's empty block (v2 Empty-One B or C) and whether the spares read
@@ -54,6 +60,7 @@ export default async function AllDecksShoppingPage({
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;
   const provenance = newest ? provenanceForm(newest, await readNow()) : null;
   return (
+    <StoreProvider store={store}>
     <CartView
       cart={cart}
       provenance={provenance}
@@ -66,5 +73,6 @@ export default async function AllDecksShoppingPage({
       initialOwned={typeof params.owned === "string" ? params.owned : null}
       hasFriends={friends}
     />
+    </StoreProvider>
   );
 }

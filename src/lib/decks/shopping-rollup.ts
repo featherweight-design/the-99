@@ -33,6 +33,7 @@
 import { loadDeckBuyRows, type DeckBuyRow } from "./availability-query";
 import { summarisePrices, type PricedCard } from "./price";
 import { loadPrices, priceFor, type PriceRead } from "./price-query";
+import type { Store } from "../stores/rows";
 import { readHeldPricePicks } from "./printings";
 
 export type DeckShopping = { copies: number; cents: number; pricedCopies: number };
@@ -71,10 +72,11 @@ export function sumShopping(values: Iterable<DeckShopping>): DeckShopping {
 export async function loadShoppingRollup(
   userId: string,
   deckIds?: string[],
+  store: Store = "manapool",
 ): Promise<ShoppingRollup> {
   const rows = await loadDeckBuyRows(userId, deckIds);
   if (rows.length === 0) return { byDeck: new Map(), total: empty() };
-  return rollupBuyRows(rows, await readBuyRowPrices(userId, rows));
+  return rollupBuyRows(rows, await readBuyRowPrices(userId, rows, store));
 }
 
 /**
@@ -87,9 +89,11 @@ export async function loadShoppingRollup(
 export async function readBuyRowPrices(
   userId: string,
   rows: DeckBuyRow[],
+  /** The reader's store (store choice): every row of one read is priced in one store, so no total mixes two. */
+  store: Store = "manapool",
 ): Promise<PriceRead> {
   const picks = await readHeldPricePicks(userId, [...new Set(rows.map((r) => r.deckId))]);
-  return loadPrices([...new Set(rows.map((r) => r.oracleId))], picks);
+  return loadPrices([...new Set(rows.map((r) => r.oracleId))], picks, [], store);
 }
 
 /** The roll-up over rows already priced: one summary per deck, and their sum. */

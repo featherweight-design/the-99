@@ -3,6 +3,7 @@ import { chooseTokenPrinting, loadDeckTokenPicks, loadHeldTokenPrintings, type H
 import { db } from "../../db";
 import { cardTokens, cards, deckCards, decks, tokenPrintings, tokens } from "../../db/schema";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
+import type { Store } from "../stores/rows";
 import { tokenOwnershipTablesExist, type TokenOwnership } from "./ownership";
 import { tokenPriceTablesExist, tokenTablesExist } from "./publish";
 import { collidingTokenIds, sortMakers, tokenState, type TokenSource } from "./rules";
@@ -247,6 +248,8 @@ export async function loadDeckTokens(
   deckId: string,
   userId: string,
   art?: ReadonlyMap<string, DeckArt>,
+  /** The reader's store (store choice): the tokens are priced in it, so the buy box never mixes two stores. */
+  store: Store = "manapool",
 ): Promise<DeckTokensRead> {
   try {
     if (!(await tokenTablesExist())) return { status: "absent" };
@@ -271,7 +274,7 @@ export async function loadDeckTokens(
         setCode: tokenPrintings.setCode, collectorNumber: tokenPrintings.collectorNumber,
         imageUri: tokenPrintings.imageUri, imageUriSmall: tokenPrintings.imageUriSmall, artCropUri: tokenPrintings.artCropUri,
       }).from(tokenPrintings).where(inArray(tokenPrintings.tokenOracleId, tokenIds)),
-      (await tokenPriceTablesExist()) ? loadTokenPrices(tokenIds) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
+      (await tokenPriceTablesExist()) ? loadTokenPrices(tokenIds, store) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
       // 0118's tables are checked with the ownership ones (`tokenOwnershipTablesExist`).
       ownershipReady ? loadHeldTokenPrintings(userId, tokenIds) : Promise.resolve(new Map<string, HeldTokenPrinting[]>()),
       ownershipReady ? loadDeckTokenPicks(deckId, userId) : Promise.resolve(new Map<string, string>()),

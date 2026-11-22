@@ -8,6 +8,7 @@ import type { CartDeck, CartHolding, CartLine, CartPayload } from "./cart";
 import { priceOf, priceState } from "./price";
 import { priceFor, type PriceRead } from "./price-query";
 import { readBuyRowPrices, rollupBuyRows } from "./shopping-rollup";
+import type { Store } from "../stores/rows";
 import { chainArt } from "../cards/chain-art";
 
 /**
@@ -25,6 +26,8 @@ import { chainArt } from "../cards/chain-art";
  */
 export async function loadCart(
   userId: string,
+  /** The reader's store (store choice): the cart's figures are that store's, never a mix. */
+  store: Store = "manapool",
 ): Promise<CartPayload> {
   const [rows, [{ total }]] = await Promise.all([
     loadDeckBuyRows(userId),
@@ -37,7 +40,7 @@ export async function loadCart(
   // All four reads at once, and only the price read caught: a failure there degrades the cart to
   // its rows (T2), while a failure in any other read is the page's own error.
   const [read, deckRows, cardRows, availability, ownedArt] = await Promise.all([
-    readBuyRowPrices(userId, rows).catch((err): PriceRead | null => {
+    readBuyRowPrices(userId, rows, store).catch((err): PriceRead | null => {
       // A fallback, so a cached page never stores it: the next visit reads the prices again.
       recordSoftFailure();
       console.error("[cart] price read failed; drawing rows without figures", err);

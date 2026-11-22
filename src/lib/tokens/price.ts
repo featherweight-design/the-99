@@ -1,6 +1,8 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { parseAsOf, type PriceFact } from "../decks/price";
+import { storeRows } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 
 /**
  * A token's price: the deck price rule (`src/lib/decks/price-query.ts`, `loadPrices`) applied to a
@@ -91,12 +93,29 @@ type Row = {
  * newest row when nothing matched. It does NOT filter to live rows, or `soldOut` would be
  * unreachable and its test vacuous.
  */
-export function tokenPriceQuery(tokenOracleIds: string[]) {
+export function tokenPriceQuery(tokenOracleIds: string[], store: Store = "manapool") {
   // sql.param, as in `loadPrices`: a bare array in a drizzle template expands to a parenthesised list.
   const only = sql.param(tokenOracleIds);
+  // THE STORE NAMES THE TABLE, as in `loadPrices`: Mana Pool renders the text this statement had before stores, byte
+  // for byte. Another store reads its rows of `token_store_prices` through the cards' `storeRows` (the same stock
+  // rule), liveness is its own newest `as_of` and not sold out, and the `product*` fields are null: they are Mana
+  // Pool's identity for a token, which only its cart link names.
+  const other = store === "manapool" ? null : store;
+  const source = other ? storeRows(other, sql`token_store_prices`) : sql`token_printing_prices`;
+  const newestFrom = other ? sql`token_store_prices where store = ${other}` : sql`token_printing_prices`;
+  const live = other
+    ? sql`(pp.as_of = (select as_of from newest) and not pp.sold_out)`
+    : sql`(pp.as_of = (select as_of from newest))`;
+  const product = other
+    ? sql`null::text as product_name,
+        null::text as product_set,
+        null::text as product_number`
+    : sql`pp.product_name,
+        pp.product_set,
+        pp.product_number`;
   return sql`
     with newest as (
-      select max(as_of) as as_of from token_printing_prices
+      select max(as_of) as as_of from ${newestFrom}
     ),
     chosen as (
       select distinct on (tp.token_oracle_id)
@@ -108,15 +127,13 @@ export function tokenPriceQuery(tokenOracleIds: string[]) {
         tp.scryfall_id,
         tp.set_code,
         tp.collector_number,
-        pp.product_name,
-        pp.product_set,
-        pp.product_number
+        ${product}
       from token_printings tp
-      join token_printing_prices pp on pp.scryfall_id = tp.scryfall_id
+      join ${source} pp on pp.scryfall_id = tp.scryfall_id
       where tp.token_oracle_id = any(${only}::uuid[])
       order by
         tp.token_oracle_id,
-        (pp.as_of = (select as_of from newest)) desc,
+        ${live} desc,
         (pp.price_cents is null),
         coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched) asc,
         pp.scryfall_id
@@ -127,9 +144,9 @@ export function tokenPriceQuery(tokenOracleIds: string[]) {
   `;
 }
 
-export async function loadTokenPrices(tokenOracleIds: string[]): Promise<TokenPriceRead> {
+export async function loadTokenPrices(tokenOracleIds: string[], store: Store = "manapool"): Promise<TokenPriceRead> {
   if (tokenOracleIds.length === 0) return { prices: new Map(), newestAsOf: null };
-  const { rows } = await db.execute<Row>(tokenPriceQuery(tokenOracleIds));
+  const { rows } = await db.execute<Row>(tokenPriceQuery(tokenOracleIds, store));
   const prices = new Map<string, TokenPriceFact>();
   for (const row of rows) {
     // The placeholder row of nothing-priced: a newest timestamp and no token.

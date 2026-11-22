@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import { compareTokenOffers, tokenManapoolLine, tokenPriceQuery, type TokenOffer, type TokenPriceFact } from "./price";
@@ -53,6 +55,30 @@ describe("tokenPriceQuery", () => {
   it("reads token tables only", () => {
     expect(text).not.toMatch(/\bprinting_prices\b(?<!token_printing_prices)/);
     expect(text).not.toMatch(/from printings\b/);
+  });
+});
+
+describe("tokenPriceQuery, by store (store choice)", () => {
+  const ID = "00000000-0000-4000-8000-000000000001";
+  const render = (store?: "manapool" | "tcgplayer" | "cardkingdom") => new PgDialect().sqlToQuery(tokenPriceQuery([ID], store));
+
+  it("reads Mana Pool byte for byte as it did before stores, with or without the argument", () => {
+    // The fixture is the statement main issued before stores. Read from the repository root (`process.cwd()` under
+    // Vitest): under jsdom `import.meta.url` is not a file URL.
+    const before = readFileSync(join(process.cwd(), "src/lib/tokens/price.manapool.sql"), "utf8");
+    expect(render().sql).toBe(before);
+    expect(render("manapool").sql).toBe(before);
+  });
+
+  it("reads another store's own token rows and its own newest, live only when not sold out", () => {
+    const { sql: text, params } = render("tcgplayer");
+    expect(text).not.toContain("token_printing_prices");
+    expect(text).toMatch(/select max\(as_of\) as as_of from token_store_prices where store = \$\d+/);
+    expect(text).toMatch(/from token_store_prices\s+where store = \$\d+/);
+    expect(text).toContain("(pp.as_of = (select as_of from newest) and not pp.sold_out) desc");
+    // Mana Pool's product identity is not another store's: it is null there.
+    expect(text).toContain("null::text as product_name");
+    expect(params.filter((p) => p === "tcgplayer")).toHaveLength(2);
   });
 });
 

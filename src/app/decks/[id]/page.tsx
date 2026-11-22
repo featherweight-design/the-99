@@ -93,6 +93,9 @@ import { readShoppingLimit } from "../../../lib/swaps/read";
 import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestFlags } from "../../../lib/flags/request";
+import { readerStore } from "../../../lib/stores/preference";
+import type { Store } from "../../../lib/stores/rows";
+import { StoreProvider } from "../../../components/stores/store-provider";
 import { preconUpgradeEnabled } from "../../../lib/precons/upgrade/flag";
 import { GuidedRunLine } from "../../../components/decks/guided/guided-run-line";
 import { GUIDED_REFUSED_PARAM, GUIDED_REFUSED_VALUE } from "../../../lib/guided/sheet";
@@ -207,6 +210,10 @@ async function DeckBuilderBody({
   // fatal in Node. The marking does not swallow anything: the promise itself still rejects for
   // the `Promise.all` that awaits it.
   const early = <T,>(p: Promise<T>): Promise<T> => { p.catch(() => {}); return p; };
+  // The reader's store (store choice, design #3200): Mana Pool unless the switch is on and they chose another. The
+  // deck's prices and its tokens' are read in it, and every price surface below draws its name. An
+  // unreadable preference prices in Mana Pool, the default, rather than failing the page.
+  const storeRead = readerStore(userId, env).catch((): Store => "manapool");
   // ONE availability read for the page, from this deck's vantage over the whole collection.
   // `getDeckDetail` (its own rows and commanders) and the candidate pool below both used to run
   // the claim model separately, ~150ms each on staging, the second only after the detail had
@@ -378,11 +385,11 @@ async function DeckBuilderBody({
     console.error("precons: the deck's link could not be read", error);
     return null;
   }));
-  const tokensRead = early(detailRead.then((d) => (d
+  const tokensRead = early(Promise.all([detailRead, storeRead]).then(([d, store]) => (d
     ? perf.timed("deckTokens", () => loadDeckTokens(id, userId, new Map([
       ...d.cards.map((c) => [c.oracleId, { imageUri: c.imageUri ?? null, name: printedNameOf(c) }] as const),
       ...[d.commander, d.partner].filter((c) => !!c).map((c) => [c!.oracleId, { imageUri: c!.imageUri ?? null, name: c!.printedName ?? c!.name }] as const),
-    ])))
+    ]), store))
     : ({ status: "absent" } as const))));
   // The swap tools (retired switch, always on) reach every surface through one provider, which marks
   // against this limit.
@@ -526,7 +533,7 @@ async function DeckBuilderBody({
         ...suggestions.map((s) => s.oracleId),
         ...candidateCards.filter((c) => !c.owned).map((c) => c.oracleId),
       ]),
-    ], await readHeldPricePicks(userId, [id]))).catch(() => null),
+    ], await readHeldPricePicks(userId, [id]), [], await storeRead)).catch(() => null),
     // The page's one read, started with the request (above); only `.get` is used on it.
     ownedIds.length > 0 ? availabilityRead : null,
     // BOTH POOLS IN ONE READ, which is 8b widening the read 8a scoped to the candidates.
@@ -807,7 +814,9 @@ async function DeckBuilderBody({
     >
       {/* The guided build's line (G6): drawn from its own read, so the cached payload above never carries a run. */}
       {preconUpgradeEnabled(env) && <GuidedRunLine deckId={id} deckName={detail.name} refused={query[GUIDED_REFUSED_PARAM] === GUIDED_REFUSED_VALUE} />}
-      <ZoneProvider zone={await resolveZone()}>{landed}</ZoneProvider>
+      <StoreProvider store={await storeRead}>
+        <ZoneProvider zone={await resolveZone()}>{landed}</ZoneProvider>
+      </StoreProvider>
     </DeckTokensProvider>
   );
 }

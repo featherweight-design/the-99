@@ -18,6 +18,9 @@ import { exportLinkOutCopy } from "../../lib/copy/decks-builder";
 import { formatCents, type PriceSummary, type ProvenanceForm } from "../../lib/decks/price";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { ExternalLink } from "../ui/external-link";
+import { storeCopy } from "../../lib/copy/store";
+import { StorePasteRow } from "../stores/store-paste-row";
+import { useStoreInfo } from "../stores/store-provider";
 
 export function PriceStrip({
   summary,
@@ -47,6 +50,7 @@ export function PriceStrip({
   /** The tokens' own price date: what dates a figure the cards contribute no priced copy to. */
   tokenOwnProvenance?: ProvenanceForm | null;
 }) {
+  const store = useStoreInfo();
   // The figure includes priced tokens, so it is as old as the oldest price in it. A deck whose card prices are
   // unreadable (or whose table is empty) still dates a token total by the tokens' own feed.
   // Which feeds the figure draws on: the rows that carry a price when any does, else the rows themselves.
@@ -85,7 +89,9 @@ export function PriceStrip({
   // Derived on every render from the list on screen. Not memoised: the row ✕
   // has no sync to perform, so the basket, the total and this href move
   // together or the link buys a card the player just removed.
-  const buyHref = manapoolAddDeckUrl([...shoppingCards, ...(tokens?.lines ?? [])]);
+  // A store with no whole-list link (store choice, call 6) gets no buy link: the paste row stands in, cards only, since
+  // its paste page reads names and a token's name can be a card's.
+  const buyHref = store.cart ? manapoolAddDeckUrl([...shoppingCards, ...(tokens?.lines ?? [])]) : null;
 
   return (
     // ONE LAYOUT, both widths (Hugh's ruling, #1222 follow-up): the figure
@@ -137,10 +143,12 @@ export function PriceStrip({
             on something nothing here can act on. */}
         <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
           {[
-            showFigure ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced,
+            showFigure ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store),
+            // A market figure is an average of sales, said beside the figure it qualifies (call 4).
+            ...(showFigure && store.figure === "market" ? [storeCopy.marketNote] : []),
             priceCopy.strip.lastChecked(dated.when),
             ...(dated.behind ? [priceCopy.strip.behind] : []),
-            ...(showFigure ? [priceCopy.strip.cartNote] : []),
+            ...(showFigure && store.cart ? [priceCopy.strip.cartNote] : []),
           ].join(" · ")}
         </p>
         {/* The 44px is the ROW's height, never the link's box — the link stays
@@ -160,6 +168,14 @@ export function PriceStrip({
             condition on the link, but only as long as that holds: a caller
             passing a summary from one list and rows from another would render a
             strip with nothing to buy from. */}
+        {!store.cart && shoppingCards.length > 0 ? (
+          <>
+            <p data-no-cart="" className={`m-0 mt-[6px] text-[12.5px] leading-[1.5] ${store.paste ? "" : "pb-[11px]"}`} style={{ color: "var(--fg-muted)" }}>
+              {storeCopy.noCart(store)}
+            </p>
+            <StorePasteRow store={store} lines={shoppingCards} />
+          </>
+        ) : null}
         {buyHref ? (
           <div className="mt-[9px] flex min-h-[44px] items-center">
             <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />

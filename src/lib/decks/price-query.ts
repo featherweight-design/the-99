@@ -242,7 +242,8 @@ export async function loadPrices(
 }
 
 /**
- * One store's rows of `printing_store_prices`, in `printing_prices`' columns plus `sold_out`.
+ * One store's rows of `printing_store_prices`, in `printing_prices`' columns plus `sold_out`. `table` names the
+ * token twin, `token_store_prices`, for the token read (`tokenPriceQuery`), which applies the same stock rule.
  *
  * STOCK BECOMES THE SHAPE MANA POOL'S FEED ALREADY HAS. Mana Pool omits a sold-out printing, so a
  * finish it prices is a finish in stock. Card Kingdom lists a sold-out finish at `quantity` 0, so a
@@ -252,7 +253,7 @@ export async function loadPrices(
  * as Mana Pool's stale row keeps its last ones; the read sorts it behind every live printing and
  * `priceState` draws it as sold out.
  */
-function storeRows(store: OtherStore) {
+export function storeRows(store: OtherStore, table = sql`printing_store_prices`) {
   return sql`(
         select scryfall_id, as_of, sold_out,
                case when sold_out or coalesce(quantity, 1) <> 0 then price_cents end as price_cents,
@@ -264,7 +265,7 @@ function storeRows(store: OtherStore) {
                    and (price_cents is null or coalesce(quantity, 1) = 0)
                    and (price_cents_foil is null or coalesce(quantity_foil, 1) = 0)
                    and (price_cents_etched is null or coalesce(quantity_etched, 1) = 0) as sold_out
-          from printing_store_prices
+          from ${table}
           where store = ${store}
         ) s
       )`;

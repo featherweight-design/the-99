@@ -1,9 +1,11 @@
 "use client";
 
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
+import { storeCopy } from "../../lib/copy/store";
 import { formatCents } from "../../lib/decks/price";
 import type { MoneyGroup, MoneyStats } from "../../lib/decks/stats-money";
 import { Shell } from "./deck-stats-shell";
+import { useStoreInfo } from "../stores/store-provider";
 
 const copy = deckStatsCopy.money;
 
@@ -39,6 +41,8 @@ export function MoneyCard({
   overLimit?: MoneyOverLimit | null;
 }) {
   const { value, owned, toBuy, basics, total, priciest } = money;
+  // The store the deck page priced it in: its name is on the no-price line and the caption (design #3200).
+  const store = useStoreInfo();
   const denom = copy.denom(total);
   const nothingToBuy = toBuy.copies === 0;
 
@@ -49,7 +53,7 @@ export function MoneyCard({
   const toBuySub = nothingToBuy
     ? copy.toBuyNoneSub
     : toBuy.pricedCopies === 0
-      ? toBuy.copies === 1 ? copy.noPriceOne : copy.noPriceMany
+      ? toBuy.copies === 1 ? storeCopy.noPriceOne(store) : storeCopy.noPriceMany(store)
       : toBuy.pricedCopies < toBuy.copies
         ? copy.toBuyPartial(toBuy.pricedCopies, toBuy.copies)
         : copy.toBuySub(toBuy.copies);
@@ -141,7 +145,7 @@ export function MoneyCard({
           </ul>
         </div>
       ) : null}
-      <span className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{copy.caption}</span>
+      <span className="font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{storeCopy.moneyCaption(store)}</span>
     </Shell>
   );
 }
