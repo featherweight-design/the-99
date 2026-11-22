@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>What's what: main</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width:1600px;min-height:1720px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif;color:#E6E8F0">What's what · the life tracker explains itself</h2>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1300px">Players don't always know what the strip's icons and the panel's controls do. This draws a guide that labels each control where it sits, shown once the first time the tracker opens on a device and kept in the Menu (⋯) after that. Every frame is the shipped tracker rendered in a browser at the real size, with the guide drawn over it. Four seats: you (Chris) play Sai; Colin Ghalta, Peter Giada, Max Gisa.</p>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">Overlay or modal · iPad landscape, mid-game</span>
+<div style="display:flex;gap:36px;align-items:flex-start">
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:726px;flex:none">
+<img src="art/ww-T3-mid.webp" alt="A, labels in place" style="width:726px;height:505px;display:block;border-radius:14px;border:2px solid #E8A25C">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">A · Labels in place (recommended)</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The board dims and each control is lit where it sits, with a short label and a line to it. It teaches where a thing is as well as what it does, which a list can't. All at once on one screen, not a stepped tour.</p>
+</figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:726px;flex:none">
+<img src="art/ww-B1-modal.webp" alt="B, a list in a modal" style="width:726px;height:505px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">B · A list in a modal (for comparison)</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The same eleven lines as an icon key. Easier to build and to scan, but it covers the controls it describes, and an icon in a list doesn't say which panel or button it is on the table. This is the "snippets without context" problem the About reference was redrawn to fix.</p>
+</figcaption>
+</figure>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:14px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">The calls</span>
+<div style="display:grid;grid-template-columns:repeat(2, minmax(0, 1fr));gap:16px">
+<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A">
+<p style="margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0">1 · In place, over the board</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7">Option A. A 66% scrim over the whole tracker with a cutout around each control, ringed in the halo (2px accent at 75%, 6px at 20%). That is the first-run tour's spotlight (Discovery R3, C4), lighting every stop at once. Each label is the moment bubble's surface (R1, Q1): elevated, 1px strong border, radius 10, the accent diamond, the name in semibold and one line. A 1.5px accent leader ends in a dot on the cutout.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A">
+<p style="margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0">2 · What it labels</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7">All seven strip buttons: Round, Monarch, Initiative, Day and night, Dice, Undo, Menu. On your panel: Life (the − and + halves), End turn when it is on your panel, your sheet (the chevron), and the badges once you carry any. The header says every panel works like yours, so the other panels aren't labelled. The spine keeps the shipped sun and moon.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A">
+<p style="margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0">3 · Shown once, the first time on this device</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7">When play first appears (after Start, once the first-player roll has landed) plus 600 ms, R1's arrival rule. A flag in local storage, beside the saved game, since the tracker keeps nothing on the server. Spent once it shows, however it closes. Resuming, Rematch and later games don't show it again.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A">
+<p style="margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0">4 · Then from the Menu</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7">The Menu (⋯) gains a first row, What's what, above Back to the table, in the same row shape with a ? in the circle. No ? button joins the strip: it already holds seven, and the app's own ? (Discovery R2) sits in the chrome the full-screen tracker hides.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A">
+<p style="margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0">5 · Closing</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7">A bare ✕ on the header card (44px hit), a tap anywhere, or Esc. Nothing under the scrim is live while it shows, the lit controls included, as in the tour, so a tap to close never also changes a life total. It fades in over 200 ms and out over 140 ms; under reduced motion it appears and goes at once.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A">
+<p style="margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E6E8F0">6 · Placement</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7">The guide reads from the screen's foot, as Setup and the Menu do. Strip labels sit on the side of the strip away from your panel: a row above it on a tablet, two columns either side on a phone. Your panel's labels sit inside it. The phone uses shorter lines (Phone board); every line is a placeholder for /copy-review.</p>
+</div>
+</div>
+</div>
+
+<div style="display:flex;flex-direction:column;gap:10px;padding:20px 24px;border:1px solid #3A2E22;border-radius:14px;background:#15120E">
+<p style="margin:0;font:600 16px 'IBM Plex Sans',sans-serif;color:#E8A25C">For you to call</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7"><b style="color:#E6E8F0">Q1 · A or B.</b> A is drawn throughout; B is the Main board's right frame only.</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7"><b style="color:#E6E8F0">Q2 · The far side of the table.</b> The guide faces the screen's foot, so on a tablet in the middle of the table the far seats read it upside down. Proposed: leave it, since whoever opens the Menu is usually at the foot. The alternative is a ↻ beside the ✕ that turns the whole guide to face the far edge.</p>
+<p style="margin:0;font-size:13.5px;line-height:1.6;color:#B1B6C7"><b style="color:#E6E8F0">Q3 · Name.</b> "What's what" as the coordinator suggested, or "What does what".</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":1720}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
