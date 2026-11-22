@@ -497,6 +497,27 @@ export type FilterPanelCopy = {
 // than deleting these.
 
 /**
+ * The printings strip in card details opened from search (alternate printings R2): every catalog printing of the card
+ * as a row of thumbs, selected to see in place and never stored. Replaces `printingBrowseCopy`'s Set-field browse.
+ */
+export const printingStripCopy = {
+  /** The faint mono head over the strip. */
+  head: (total: number) => `${count(total)} printings`,
+  headOwned: (total: number, owned: number) => `${count(total)} printings · you own ${count(owned)}`,
+  /** The group's name for assistive tech. */
+  groupLabel: (cardName: string) => `Printings of ${cardName}`,
+  /** One thumb: the set, its number, then what the reader holds of it and whether it is their pick. */
+  thumbAria: (setName: string, collectorNumber: string, owned: number, pick: boolean) =>
+    `${setName}, number ${collectorNumber}${owned > 0 ? `, ${count(owned)} in your collection` : ""}${pick ? ", your pick" : ""}`,
+  /** The paddles at the strip's ends on desktop, while it overflows. */
+  forward: "More printings",
+  back: "Previous printings",
+  /** The live line when a thumb is selected: the shipped wording, with the holding said only when there is none. */
+  announceShowing: (setName: string, collectorNumber: string, owned: boolean) =>
+    `Showing ${setName}, number ${collectorNumber}.${owned ? "" : " Not in your collection."}`,
+} as const;
+
+/**
  * Card details opened from search (#3002): the catalog's printings of a card the reader may not own,
  * selected to preview and never stored. The Set field's disclosure, region and live line speak here.
  */
