@@ -77,9 +77,13 @@ function ratesFor(model: string): Rates {
 
 const anyPattern = JUDGED_THEMES.map((t) => `(${JUDGED_PREFILTER[t]})`).join("|");
 
-/** The `--fresh` clause: leaves out any card that already has a stored answer. */
+/** The `--fresh` clause: leaves out any card that already has a stored answer, and any card the definitions name as an example (a grader must not score the cards it was taught from). */
 const notJudged = (fresh: boolean) =>
-  fresh ? sql`and not exists (select 1 from judged_labels jl where jl.oracle_id = cards.oracle_id)` : sql``;
+  fresh
+    ? sql`and not exists (select 1 from judged_labels jl where jl.oracle_id = cards.oracle_id)
+          and not exists (select 1 from unnest(string_to_array(cards.name, ' // ')) face
+                           where position(lower(replace(face, ',', '')) in lower(replace(${JUDGED_SYSTEM}, ',', ''))) > 0)`
+    : sql``;
 
 /** Non-land, Commander-legal cards whose text matches the theme's pre-filter, in oracle id order. */
 async function candidatesFor(theme: JudgedTheme, limit: number | null, fresh: boolean): Promise<CardRow[]> {

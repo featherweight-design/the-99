@@ -20,7 +20,7 @@ export type JudgedTheme = (typeof JUDGED_THEMES)[number];
  * `JUDGED_SYSTEM` edited, together: a stored row also records the SYSTEM hash, so an edit without a
  * bump still stales the rows it describes, and nothing here needs a registry.
  */
-export const JUDGED_PROMPT_VERSION = "j3";
+export const JUDGED_PROMPT_VERSION = "j4";
 
 export const JUDGED_SYSTEM = `You decide which of four STRATEGY THEMES a Magic: the Gathering card serves in a Commander deck.
 You are given cards, each under a "Key:" number. Reply with ONE JSON object and nothing else: each key
@@ -49,22 +49,24 @@ THEMES (use these exact names). Judge from what the card text DOES.
                Promise of Loyalty (lasting "can't attack you" counters).
                OUT: activated Fogs (Dawnstrider, Spike Weaver, Sunstone); a creature's own shroud or
                hexproof (Deft Duelist); a single soft counter (Mana Tithe).
-  bigMana    — judge by the amount the TEXT guarantees, never by a count that depends on the deck. IN
-               when one tap, trigger or cast adds 5 or more mana (restrictions do not matter), when the
-               card doubles or adds extra mana whenever a land or permanent taps, or when it untaps all
-               your lands or most of your permanents. OUT when the amount scales with a variable
-               (devotion, power, counters, allies, colors, life gained, creature types), however large
-               it can get.
+  bigMana    — judge by the amount the card makes in the decks that play it. IN when one tap, trigger or
+               cast adds 5 or more mana (restrictions do not matter), when the card doubles or adds extra
+               mana whenever a land or permanent taps, when it untaps all your lands or most of your
+               permanents, or when it scales with something a deck that plays it normally grows large, so
+               its usual output is 5 or more (a land, creature or artifact count, devotion, a big power).
+               OUT when the usual output is 2 or 3, even if a freak board could make more: small scalers
+               are ordinary ramp.
                IN: Nyxbloom Ancient; Mana Reflection; Seedborn Muse; Timeless Lotus (five per tap);
                Savage Ventmaw (six on attack); Avatar Roku (six on attack); Irencrag Feat (seven);
                Geosurge (seven, restricted); Su-Chi Cave Guard (eight); Overgrowth (two extra per land
                tap); Extraplanar Lens; Rude Awakening (untap all lands); Bear Umbra (untap all lands on
-               attack).
-               OUT: Karametra's Acolyte, Topiary Lecturer, Harabaz Druid, Heronblade Elite, Mona Lisa,
-               Marwyn, Cradle Clearcutter, Rainveil Rejuvenator (X = power, devotion or a count); Arbor
-               Adherent, Faeburrow Elder, Bloom Tender, White Lotus Tile, Immortus, Accomplished
-               Alchemist, Redshift, Seance Board, Rotating Fireplace, The Eternity Elevator (X mana from
-               a count); Somberwald Sage (three, restricted); Master of Dark Rites.
+               attack); Gaea's Cradle, Cabal Coffers, Nykthos Shrine to Nyx, Selvala Heart of the Wilds
+               and Marwyn the Nurturer (scalers whose usual output is 5 or more).
+               OUT: Elvish Archdruid, Priest of Titania, Karametra's Acolyte, Topiary Lecturer, Harabaz
+               Druid, Heronblade Elite (small scalers, usually 2 or 3); Arbor Adherent, Faeburrow Elder,
+               Bloom Tender, White Lotus Tile, Immortus, Accomplished Alchemist, Redshift, Seance Board,
+               Rotating Fireplace, The Eternity Elevator (X mana from a count that stays small);
+               Somberwald Sage (three, restricted); Master of Dark Rites.
   politics   — another player's DECISION is the value, and that decision is an accept or decline, a
                vote, or a deal. A forced pick between piles or cards, with nothing offered, is not
                politics. Monarch alone is not politics.

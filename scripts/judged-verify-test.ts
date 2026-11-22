@@ -17,7 +17,7 @@ import { renderCard } from "../src/lib/labels/prompt";
 neonConfig.webSocketConstructor = ws;
 const DIR = process.env.MODEL_TEST_DIR!;
 const DB_FILE = process.env.MODEL_TEST_DB_FILE!;
-const CAP_USD = 1;
+const CAP_USD = Number(process.env.VERIFY_CAP_USD ?? 0.15);
 const args = process.argv.slice(2);
 const SPEND = args.includes("--spend");
 const SCORE = args.includes("--score");
@@ -49,7 +49,7 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL ?? readFileSy
 async function loadPairs(): Promise<Pair[]> {
   const rows = (await pool.query(
     `select c.oracle_id as "oracleId", c.name, c.mana_cost, c.type_line, c.oracle_text, c.layout, j.themes
-       from cards c join judged_labels j on j.oracle_id = c.oracle_id and j.prompt_version = 'j3'
+       from cards c join judged_labels j on j.oracle_id = c.oracle_id and j.prompt_version = 'j4'
       where c.name = any($1::text[]) and jsonb_array_length(j.themes) > 0`, [key.map((k) => k.name)])).rows;
   const pairs: Pair[] = [];
   for (const r of rows) {
