@@ -153,7 +153,7 @@ export function Spine({
             }}
             aria-label={copy.dice}
             aria-expanded={dice}
-            className={sb + (dice ? " bg-[color:var(--accent)] text-[color:var(--bg)]" : " text-[color:var(--fg)]")}
+            className={sb + " text-[color:var(--fg)]"}
             data-testid="strip-dice"
           >
             <D6Icon size={22} />
@@ -204,7 +204,7 @@ export function Spine({
             aria-label={copy.menu}
             aria-haspopup="menu"
             aria-expanded={menu}
-            className={sb + (menu ? " bg-[color:var(--accent)] text-[color:var(--bg)]" : " text-[color:var(--fg)]")}
+            className={sb + " text-[color:var(--fg)]"}
             data-testid="strip-menu"
           >
             <MoreIcon size={22} />
@@ -236,7 +236,7 @@ export function Spine({
                     <DoorIcon size={22} />
                   </span>
                   <span className="min-w-0">
-                    <span className="block text-[15px] font-semibold text-[color:var(--fg)]">{copy.back}</span>
+                    <span className="block text-[15px] leading-[1.3] font-semibold text-[color:var(--fg)]">{copy.back}</span>
                     <span className="mt-0.5 block text-[12.5px] leading-[1.4] text-[color:var(--fg-muted)]">{back.line}</span>
                   </span>
                 </Link>
@@ -252,10 +252,12 @@ export function Spine({
 /**
  * A strip button (`.sb`): a circle sized by the strip, on the elevated surface. Held down it fills with the accent, drops
  * its ring and is pushed in, easing both ways on `--motion-quick` (addendum R2, Hugh ruling 11-22). A disabled Undo does
- * not press; reduced motion keeps the fill and drops the push.
+ * not press; reduced motion keeps the fill and drops the push. An open popover's button (dice, Menu) and a monarch or
+ * initiative pick are lit the same way, from their `aria-expanded` / `aria-pressed`: as variants they outrank the
+ * resting fill, where a plain accent class appended after it lost to it in Tailwind's order.
  */
 const sb =
-  "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] enabled:active:bg-[color:var(--accent)] enabled:active:text-[color:var(--bg)] enabled:active:shadow-none motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:enabled:active:[transform:scale(.92)]";
+  "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] aria-expanded:bg-[color:var(--accent)] aria-expanded:text-[color:var(--bg)] aria-pressed:bg-[color:var(--accent)] aria-pressed:text-[color:var(--bg)] aria-pressed:shadow-none enabled:active:bg-[color:var(--accent)] enabled:active:text-[color:var(--bg)] enabled:active:shadow-none motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:enabled:active:[transform:scale(.92)]";
 
 /**
  * How far a strip popover moves sideways to stay 8px inside the viewport (a strip near the screen's edge). From the
@@ -289,7 +291,7 @@ function Rule({ column }: { column: boolean }) {
 /** Monarch or initiative: lit while someone holds it, filled while picking who gets it, with the holder's art in the corner. */
 function HolderButton({ kind, holder, picking, onPress, children }: { kind: "monarch" | "initiative"; holder: Holder; picking: boolean; onPress: () => void; children: React.ReactNode }) {
   const tone = picking
-    ? " bg-[color:var(--accent)] text-[color:var(--bg)]"
+    ? ""
     : holder.held
       ? " text-[color:var(--accent-text)] shadow-[inset_0_0_0_1.5px_var(--accent)]"
       : " text-[color:var(--fg-faint)]";

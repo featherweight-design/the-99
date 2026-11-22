@@ -91,7 +91,7 @@ describe("Spine Menu", () => {
     fireEvent.click(screen.getByTestId("strip-menu"));
     const b = screen.getByTestId("strip-menu");
     expect(b.getAttribute("aria-expanded")).toBe("true");
-    expect(b.className).toContain("bg-[color:var(--accent)]");
+    expect(b.className).toContain("aria-expanded:bg-[color:var(--accent)]");
     const menu = screen.getByRole("menu", { name: "Menu" });
     const items = screen.getAllByRole("menuitem");
     expect(items).toHaveLength(1);

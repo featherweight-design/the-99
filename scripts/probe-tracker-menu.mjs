@@ -115,13 +115,26 @@ try {
     check("open: centred on Menu, or clamped 8px inside the screen", centred || clamped, mb && `menu ${Math.round(mb.x)}..${Math.round(mb.x + mb.width)}, button centre ${Math.round(bb.x + bb.width / 2)}`);
     check("open: the menu lies inside the screen", !!mb && mb.x >= 8 - 0.5 && mb.x + mb.width <= viewport.width - 8 + 0.5 && mb.y >= 0);
     const row = page.getByRole("menuitem");
-    const rowInfo = await row.evaluateAll((els) => els.map((el) => ({ href: el.getAttribute("href"), text: el.textContent, h: el.getBoundingClientRect().height })));
+    const rowInfo = await row.evaluateAll((els) => els.map((el) => ({ href: el.getAttribute("href"), text: el.textContent, h: el.getBoundingClientRect().height, min: getComputedStyle(el).minHeight })));
     check("open: one row, back to the table", rowInfo.length === 1 && rowInfo[0].href === `/friends/table/${S4}`, JSON.stringify(rowInfo.map((r) => r.href)));
-    check("open: the row is 64px tall", rowInfo.length === 1 && Math.round(rowInfo[0].h) === 64, rowInfo[0] && String(rowInfo[0].h));
+    // M1's `.mi`: at least 64px, taller when its line wraps (it does at 300px, as drawn).
+    check("open: the row is at least 64px tall", rowInfo.length === 1 && rowInfo[0].min === "64px" && rowInfo[0].h >= 64, rowInfo[0] && `${rowInfo[0].min}, ${rowInfo[0].h}`);
     check(`open: Back to the table, and its line names this ${device}`, rowInfo.length === 1 && rowInfo[0].text.includes("Back to the table") && rowInfo[0].text.includes(`The game stays on this ${device}. Back to the game picks it up.`), rowInfo[0]?.text);
     check("open: focus is on the row", await row.first().evaluate((el) => document.activeElement === el));
     check("open: no bottom-bar dialog", (await page.getByRole("dialog").count()) === 0);
     await shot(page, `menu-open-${device}`);
+
+    await page.keyboard.press("Escape");
+    await page.waitForTimeout(200);
+    // The dice button lights the same way while its menu is open (the same strip rule).
+    await page.getByTestId("strip-dice").evaluate((el) => el.click());
+    await page.waitForTimeout(350);
+    const diceBg = await page.getByTestId("strip-dice").evaluate((el) => getComputedStyle(el).backgroundColor);
+    check("the dice button is lit with the accent while its menu is open", diceBg === accent, `${diceBg} vs ${accent}`);
+    await page.getByTestId("strip-dice").evaluate((el) => el.click());
+    await page.waitForTimeout(200);
+    await btn.evaluate((el) => el.click());
+    await page.waitForTimeout(350);
 
     // Closing: Esc, a tap outside, Menu again; focus back on Menu.
     await page.keyboard.press("Escape");
