@@ -122,7 +122,8 @@ try {
       const rest = await b.evaluate((el) => ({ t: getComputedStyle(el).transitionProperty, d: getComputedStyle(el).transitionDuration }));
       await page.mouse.move(h.x, h.y);
       await page.mouse.down();
-      await page.waitForTimeout(220);
+      // Past the 0.2s ease with room to spare, so the fill is read at rest, not mid-transition.
+      await page.waitForTimeout(400);
       const held = await b.evaluate((el) => {
         const cs = getComputedStyle(el);
         return { bg: cs.backgroundColor, tf: cs.transform };
@@ -227,19 +228,25 @@ try {
       report(`9 tapping the ${what} rolls again`, open && k1 !== k0, `${k0} -> ${k1}`);
     };
     if (coinDrawn) await rolledAgain(coin, "coin");
+    else report("9 tapping the coin rolls again", false, "no coin drawn");
     await page.locator("[data-testid=dice-roll][data-landed]").waitFor({ timeout: 6000 }).catch(() => {});
     await page.mouse.click(8, viewport.height / 2);
     await page.waitForTimeout(300);
     report("9 a tap off the coin closes the roll", (await page.getByTestId("dice-roll").count()) === 0);
 
-    // 9. A thrown d20: once it lands, a tap where it lies rolls again. Needs the 3D scene (WebGL); without one the
-    // result card alone is drawn, and the check says so rather than failing.
+    // 9. A thrown d20: once it lands, a tap where it lies rolls again. Needs the 3D scene (WebGL): with no canvas in the
+    // dice layer the result card alone is drawn, and the check says so rather than failing.
     await page.getByTestId("strip-dice").evaluate((el) => el.click());
     await page.waitForTimeout(300);
     await page.getByRole("menuitem").nth(1).evaluate((el) => el.click());
     await page.locator("[data-testid=dice-roll][data-landed]").waitFor({ timeout: 8000 }).catch(() => {});
     const dieHit = page.getByTestId("dice-die").first();
+    const scene3d = await page.evaluate(() => {
+      const c = document.querySelector("#tracker-dice canvas");
+      return !!c && getComputedStyle(document.getElementById("tracker-dice")).visibility === "visible";
+    });
     if ((await dieHit.count()) > 0) await rolledAgain(dieHit, "d20");
+    else if (scene3d) report("9 the landed d20 takes a tap", false, "no tap target over the die");
     else console.log("  (no 3D scene: the d20 tap is not checked)");
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/spine-d20-${viewport.width}.png` });
 
