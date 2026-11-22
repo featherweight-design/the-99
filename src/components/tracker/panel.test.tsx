@@ -49,4 +49,17 @@ describe("tracker panel", () => {
     expect(html).not.toContain("Energy");
     expect(html).toContain('aria-label="Monarch"');
   });
+  it("draws End turn icon-only, named for a screen reader, in a name row under 240 px (phone 6 Ends' sides)", () => {
+    const at = (c: { x: number; y: number; w: number; h: number; rot: 0 | 90 | 180 | -90 }) =>
+      renderToStaticMarkup(
+        <Panel cell={c} canvas={{ w: 390, h: 844 }} seat={seat} state={base} active round={1} outFrom={null} monarch={false} initiative={false} onSheet={() => {}} disabled={false} onLife={() => {}} onEndTurn={() => {}} onUndo={() => {}} />,
+      );
+    const short = at({ x: 6, y: 425, w: 155, h: 217, rot: 90 });
+    expect(short).toContain('aria-label="End turn"');
+    expect(short).toContain("size-11");
+    expect(short).not.toMatch(/>End turn</);
+    const long = at({ x: 6, y: 425, w: 155, h: 273, rot: 90 });
+    expect(long).toMatch(/>End turn</);
+    expect(long).not.toContain('aria-label="End turn"');
+  });
 });

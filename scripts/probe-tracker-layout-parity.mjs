@@ -1,6 +1,7 @@
 // Opens the life tracker's setup for a four-seat table at phone width and at both tablet widths and reads the Table
-// arrangements each offers (the radio group's labels). Hugh's ruling: layouts are the same on every device, so every
-// width must offer the same arrangements, by the same names.
+// arrangements each offers (the radio group's labels). Hugh's ruling and addendum R2: layouts are the same on every
+// device, so every width must offer the same arrangements, by the same names and in the same order, the default first.
+// The fixture's tables seat four; five and six are pinned by layouts.test.ts, since setup draws layoutsFor directly.
 // It only reads: setup writes nothing until Start. The audit account must sit at the table
 // (`scripts/seed-rule-zero-fixture.mts`'s S4); production and staging are refused.
 //
@@ -77,8 +78,9 @@ try {
 }
 const [base, ...rest] = [...offered.entries()];
 for (const [label, names] of rest) {
-  report(`${label} offers what ${base[0]} offers`, names.length === base[1].length && names.every((n) => base[1].includes(n)), `${names.length} vs ${base[1].length}`);
+  report(`${label} offers what ${base[0]} offers, in its order`, names.join("|") === base[1].join("|"), `${names.join(" | ")} vs ${base[1].join(" | ")}`);
 }
-report("a four-seat table offers more than one arrangement on every device", [...offered.values()].every((n) => n.length >= 2));
+const DRAWN = ["Two and two", "One on each side"];
+for (const [label, names] of offered) report(`${label} offers R2's four-seat names, default first`, names.join("|") === DRAWN.join("|"), names.join(" | "));
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exitCode = failures ? 1 : 0;
