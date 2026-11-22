@@ -191,7 +191,7 @@ export function PrintingStrip({
         </div>
         {hasTile && panelOpen ? (
           // Over the details column, under the strip: its height is the column's own, and it scrolls inside.
-          <div className="absolute inset-x-0 top-full z-[5] mt-[8px] flex max-h-[min(420px,34vh)] flex-col overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[10px] shadow-[0_14px_34px_rgba(0,0,0,0.45)]">
+          <div className="absolute inset-x-0 top-full z-[5] mt-[8px] flex max-h-[min(420px,34dvh)] flex-col overflow-hidden rounded-[12px] border border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[10px] shadow-[0_14px_34px_rgba(0,0,0,0.45)]">
             <PrintingsPanel
               printings={printings}
               shownKey={shownKey}
