@@ -2,7 +2,7 @@
 // end, toward you and back down, then rattles flat and a ring lands under it; the result still shows at 1150 ms. It plays
 // a saved four-seat game on the fixture's S4 table, presses the strip's dice button and its "Flip a coin" item, and
 // samples the toss mid-air and at rest on a tablet (1180x820, 820x1180) and a phone (390x844):
-//   - mid-toss (~400 ms) the coin turns about its width (a rotateX: its x axis stays in the screen plane) and the arc has lifted
+//   - mid-toss (~380 ms) the coin turns about its width (a rotateX: its x axis stays in the screen plane) and the arc has lifted
 //     it toward you (scale over 1.3) and up off its rest;
 //   - the coin has seven rim discs and a shadow, and is 120px on a tablet and 72px on a phone;
 //   - the result card shows by about 1150 ms, with the coin back at rest on its face;
