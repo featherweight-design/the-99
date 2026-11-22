@@ -29,6 +29,7 @@ export const ALLOW = {
   "src/components/cards/card-modal.tsx": "The card modal's stack-rise is its own drawn motion.",
   "src/components/decks/guided/guided-run-view.tsx": "The guided run view draws its own motion.",
   "src/components/tracker/sheet.tsx": "Drawn motion in the seat's rotated frame; lane 58 owns the tracker.",
+  "src/components/tracker/whats-what.tsx": "A full-board scrim that fades in place (200 ms in, 140 ms out), not a bottom sheet; its labels sit over the board.",
   "src/components/tracker/result.tsx": "Drawn motion in the seat's rotated frame; lane 58 owns the tracker.",
   "src/components/card-search/card-search.tsx": "A full-screen search surface that rises with the keyboard (visual-viewport frame), not a bottom sheet; it is mounted hidden and toggled, so an entry would replay on every veil.",
   "src/components/decks/shelf-menu.tsx": "An anchored popover placed with position: fixed beside its trigger, not a sheet.",
