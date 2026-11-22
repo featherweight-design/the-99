@@ -5,6 +5,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { identityGradient } from "../../lib/cards/gradients";
 import { printingStripCopy } from "../../lib/copy/collection";
+import { cardSheetCopy } from "../../lib/copy/card-carousel";
 import { SearchGlyph } from "../card-search/card-search";
 import { ArtLayer } from "../ui/art-layer";
 import { SearchField } from "../ui/text-field";
@@ -58,7 +59,7 @@ export function PrintingsPanel({
   useEffect(() => { field.current?.focus(); }, []);
 
   return (
-    <div role="group" aria-label={printingStripCopy.panelLabel(cardName)} data-testid="printings-panel" className="flex max-h-full min-h-0 flex-col">
+    <div role="group" aria-label={printingStripCopy.panelLabel(cardName)} data-testid="printings-panel" className="flex h-full max-h-full min-h-0 flex-col">
       <div className="flex flex-none items-center gap-[6px] pl-[16px] pr-[6px] md:pl-[18px]">
         <SearchField
           ref={field}
@@ -81,7 +82,7 @@ export function PrintingsPanel({
           ✕
         </button>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-[16px] pb-[16px] pt-[14px] md:px-[18px]" style={{ scrollbarWidth: "none" }}>
+      <div className="min-h-0 flex-1 touch-pan-y overflow-y-auto px-[16px] pb-[16px] pt-[14px] md:px-[18px]" style={{ scrollbarWidth: "none" }}>
         {q !== "" && hits.length > 0 ? (
           <p className={HEAD + " mb-[12px]"} style={{ color: "var(--fg-faint)" }}>{printingStripCopy.panelMatches(hits.length, printings.length)}</p>
         ) : null}
@@ -128,6 +129,34 @@ export function PrintingsPanel({
         ))}
       </div>
     </div>
+  );
+}
+
+/** The phone's printings button (alternate printings R3): the Set line at 2+ printings, a plate like the price, `STA · 10 | 22 printings ▾`. */
+export function PrintingsButton({
+  setCode, collectorNumber, total, open, onPress, buttonRef,
+}: {
+  setCode: string;
+  collectorNumber: string;
+  total: number;
+  open: boolean;
+  onPress: () => void;
+  buttonRef: (el: HTMLButtonElement | null) => void;
+}) {
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      data-testid="printings-button"
+      aria-expanded={open}
+      aria-label={printingStripCopy.buttonAria(setCode, collectorNumber, total)}
+      onClick={onPress}
+      className="inline-flex h-[28px] cursor-pointer items-center gap-[8px] rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--bg)] px-[9px] font-mono text-[12px]"
+    >
+      <span aria-hidden style={{ color: "var(--fg-muted)" }}>{cardSheetCopy.printing(setCode, collectorNumber)}</span>
+      <span aria-hidden className="h-[14px] w-px" style={{ background: "var(--border-strong)" }} />
+      <span aria-hidden style={{ color: "var(--accent-text)" }}>{printingStripCopy.button(total)} ▾</span>
+    </button>
   );
 }
 

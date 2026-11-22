@@ -14,11 +14,12 @@ import {
   cardArt,
   type CardArt,
 } from "../../lib/collection/browse";
-import { printingPickerCopy } from "../../lib/copy/collection";
+import { printingPickerCopy, printingStripCopy } from "../../lib/copy/collection";
 import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
 import type { CardCombo } from "../../lib/combos/near-combos";
 import { PrintingRegion, printingKey } from "./printing-region";
 import { PrintingStrip, orderStrip, stripKey } from "./printing-strip";
+import { PrintingsButton, PrintingsPanel } from "./printings-panel";
 import { PriceTag } from "./price-tag";
 import { priceKeyFor } from "../../lib/cards/price-lookup";
 import { useDialogA11y } from "../../lib/a11y/dialog";
@@ -27,7 +28,7 @@ import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp } from "..
 import { manapoolCardUrl } from "../../lib/manapool/links";
 import { useTargets } from "../discovery/targets-provider";
 import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
-import { useCardSheetGestures } from "./card-sheet-gesture";
+import { useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
 import type { SheetFooterLayout, SiblingCard, ViewFinish } from "./card-detail-provider";
 import { useMinWidth } from "../ui/use-min-width";
 import { ProxyControl } from "../decks/proxy-control";
@@ -40,7 +41,7 @@ import { FitsDoor } from "./fits-door";
 import { CardModalSheet } from "./card-modal-sheet";
 import { CardModalArtSide } from "./card-modal-art-side";
 import { runEscapeLadder, useCardTurnHandlers, useFocusReturns, usePagedInitialFocus, usePagingKeys, useSheetSnap } from "./card-modal-hooks";
-import { CardZoomLayer, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, underCardRows, useOwnHeight, PRINTING_STRIP_TEASER_HEIGHT } from "./card-modal-parts";
+import { CardZoomLayer, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, underCardRows, useOwnHeight } from "./card-modal-parts";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { FoilFilm } from "../ui/foil-film";
 import { Glare } from "./card-turn";
@@ -424,14 +425,31 @@ export function CardModal({
     ? card.printings.length + (card.quantity > 0 ? card.otherPrintings?.length ?? 0 : 0)
     : 0;
   const hasStrip = stripCount > 1;
-  const { setSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min } = useSheetSnap({
+  // Alternate printings R3: the printings panel (the desktop popover under the strip, the phone's taller shelf). Escape closes
+  // it before the sheet or the dialog; so does paging, a pull down and a move to another snap.
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelFor, setPanelFor] = useState(card.oracleId);
+  if (panelFor !== card.oracleId) {
+    setPanelFor(card.oracleId);
+    setPanelOpen(false);
+  }
+  const { setSnap: setSheetSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min, panelRoom, panelUp } = useSheetSnap({
     startMinimized,
     forceFull: landsFull || startsFull,
     onMinimizedChange,
     narrow,
-    doorHeight: doorHeight + (narrow && hasStrip ? PRINTING_STRIP_TEASER_HEIGHT : 0),
+    doorHeight,
+    panelOpen,
     dialogRef,
   });
+  // A pull down with the panel up closes the panel, not the sheet; any other snap closes it as the sheet moves.
+  const setSnap = (next: SheetSnap) => {
+    if (panelOpen) {
+      setPanelOpen(false);
+      if (next === "min") return;
+    }
+    setSheetSnap(next);
+  };
   // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
   // rise (a beat, then `--motion-duration`) reverses it rather than snapping the card to the top first (#1268). The rise class
   // stays on, still running, and this animation, being script-made, composites over it.
@@ -507,13 +525,6 @@ export function CardModal({
   const [picked, setPicked] = useState(false);
   // The printing previewed from the catalog list (alternate printings from search), by catalog id; null shows the card's own.
   const [previewId, setPreviewId] = useState<string | null>(null);
-  // Alternate printings R3: the desktop printings panel. Escape closes it before the dialog; so does paging.
-  const [panelOpen, setPanelOpen] = useState(false);
-  const [panelFor, setPanelFor] = useState(card.oracleId);
-  if (panelFor !== card.oracleId) {
-    setPanelFor(card.oracleId);
-    setPanelOpen(false);
-  }
   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
   // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
   const others = useMemo(
@@ -1037,7 +1048,7 @@ export function CardModal({
           cardName={card.name}
           colorIdentity={card.colorIdentity}
           paddles={paddles}
-          panelOpen={panelOpen}
+          panelOpen={panelOpen && !narrow}
           onPanelOpen={() => setPanelOpen(true)}
           onPanelClose={() => setPanelOpen(false)}
           // Viewing, never choosing: the printing on screen, and nothing stored.
@@ -1045,6 +1056,46 @@ export function CardModal({
           onAnnounce={setAnnouncement}
         />
       )
+    : null;
+  // THE PHONE'S PRINTINGS BUTTON AND PANEL (alternate printings R3): the Set line becomes `{n} printings ▾` at 2+ printings,
+  // and the panel takes the sheet's shelf at 400 while it is open. Where the phone is too short for the taller shelf the
+  // button is not offered and the plain line stays.
+  const printingsButtonRef = useRef<HTMLButtonElement | null>(null);
+  const wasPanelUp = useRef(false);
+  useEffect(() => {
+    // Focus returns to the button only when it was lost with the panel (its ✕, Escape), not when a swipe or a snap closed it.
+    if (wasPanelUp.current && !panelUp && (document.activeElement === null || document.activeElement === document.body)) {
+      printingsButtonRef.current?.focus();
+    }
+    wasPanelUp.current = panelUp;
+  }, [panelUp]);
+  const printingsButton = hasStrip && panelRoom && resolved
+    ? (
+      <PrintingsButton
+        setCode={resolved.setCode}
+        collectorNumber={resolved.collectorNumber}
+        total={stripPrintings.length}
+        open={panelUp}
+        onPress={() => setPanelOpen(true)}
+        buttonRef={(el) => { printingsButtonRef.current = el; }}
+      />
+    )
+    : null;
+  const printingsPanel = hasStrip && panelUp
+    ? (
+      <PrintingsPanel
+        printings={stripPrintings}
+        shownKey={shownKey}
+        cardName={card.name}
+        colorIdentity={card.colorIdentity}
+        cols={5}
+        onClose={() => setPanelOpen(false)}
+        onSelect={(p) => {
+          setPreviewId(p.scryfallId ?? null);
+          setAnnouncement(printingStripCopy.announceShowing(p.setName ?? p.setCode, p.collectorNumber, p.mine === true));
+        }}
+      />
+    )
     : null;
   const triggerAria = deckScope
     ? deckPrintingsCopy.picker.triggerAria(ownedPrintings.length, caption, isToken ? card.name : undefined)
@@ -1278,7 +1329,7 @@ export function CardModal({
             over the snap until the release, and the top transitions to whichever snap it chose. */}
         <CardModalSheet
           card={card} preview={preview} resolved={resolved} titleId={titleId} caption={caption} ownedPrintings={ownedPrintings}
-          onlyPrinting={onlyPrinting} strip={strip}
+          onlyPrinting={onlyPrinting} strip={strip} printingsButton={printingsButton} printingsPanel={printingsPanel}
           hasPicker={hasPicker} isToken={isToken} tokenNoSet={tokenNoSet} pick={pick} deckScope={deckScope} total={total} position={position}
           deckPage={deckPage} deckName={deckName} buyUrl={buyUrl} buyLabel={buyLabel}
           min={min} full={full} zoomed={zoomed} viewOpen={viewOpen} cramped={cramped} gentle={gentle} sheetFull={sheetFull}

@@ -79,6 +79,39 @@ async function run(browser, name, { width, height, touch }) {
     await signIn(page);
     await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded" });
     await openCard();
+    // R3 (phone): no strip. The Set line is the "N printings" button; it opens the panel over a taller shelf, and the
+    // panel closes by its ✕ and by Escape (the card stays).
+    if (touch) {
+      const button = card(page).getByTestId("printings-button");
+      const there = await button.waitFor({ timeout: 15_000 }).then(() => true, () => false);
+      check(name, "the Set line is a printings button", there, there ? (await button.innerText()).replace(/\s+/g, " ") : "no printings-button");
+      check(name, "no strip is drawn on the phone", (await card(page).getByTestId("printing-strip").locator("visible=true").count()) === 0, "strip absent");
+      if (!there) return;
+      const height = async () => Math.round((await card(page).getByTestId("card-sheet").boundingBox()).height);
+      const h0 = await height();
+      await shot("rest");
+      await button.click();
+      const panel = card(page).getByTestId("printings-panel");
+      const open = await panel.waitFor({ timeout: 5_000 }).then(() => true, () => false);
+      check(name, "pressing the button opens the panel", open, open ? "panel visible" : "no panel");
+      if (!open) return;
+      await page.waitForTimeout(500);
+      const h1 = await height();
+      check(name, "the shelf grows for the panel", h1 > h0, `sheet ${h0} -> ${h1}`);
+      check(name, "the field has focus", await panel.getByRole("searchbox").or(panel.getByRole("textbox")).first().evaluate((el) => el === document.activeElement).catch(() => false), "search field focused");
+      await shot("panel");
+      await panel.getByRole("button", { name: /^Close/ }).click();
+      await panel.waitFor({ state: "detached", timeout: 3_000 }).catch(() => {});
+      await page.waitForTimeout(500);
+      check(name, "the ✕ closes the panel and the shelf returns", (await panel.count()) === 0 && (await height()) === h0, `sheet ${await height()} (was ${h0})`);
+      check(name, "focus returns to the button", await button.evaluate((el) => el === document.activeElement), "button focused");
+      await button.click();
+      await panel.waitFor({ timeout: 5_000 });
+      await page.keyboard.press("Escape");
+      await page.waitForTimeout(500);
+      check(name, "Escape closes the panel and not the card", (await panel.count()) === 0 && (await card(page).first().isVisible()), "panel closed, card open");
+      return;
+    }
     // An absent strip is a failed check, not a thrown timeout: the probe must fail on the strip itself.
     const drawn = await strip().waitFor({ timeout: 15_000 }).then(() => true, () => false);
     check(name, "the strip is drawn under the card", drawn, drawn ? "visible" : "no printing-strip on screen");

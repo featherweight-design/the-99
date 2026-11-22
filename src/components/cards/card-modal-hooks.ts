@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { SHEET, type SheetSnap } from "./card-sheet-gesture";
 import { dropTilt, liftTilt, tiltsOnHover } from "./card-tilt";
 import { prefersReducedMotion } from "../../lib/ui/motion";
-import { MIN_TEASER_CARD_WIDTH, ZOOM_REGION, useOwnHeight } from "./card-modal-parts";
+import { MIN_TEASER_CARD_WIDTH, PRINTING_PANEL_SHELF, ZOOM_REGION, useOwnHeight } from "./card-modal-parts";
 
 type Ref<T> = React.RefObject<T>;
 
@@ -25,7 +25,9 @@ type PageHandler = ((offset?: number, progress?: number, leftFace?: string | nul
  *
  * `forceFull` opens the sheet at full whatever it was handed (the signed-in modal's pending Find a deck landing and its
  * combo open); it is read at construction only. `doorHeight` is the measured stand-ins door strip at the sheet's head, 0
- * where a card carries none.
+ * where a card carries none. `panelOpen` is the printings panel (alternate printings R3): while it is open at the teaser the
+ * shelf grows to `PRINTING_PANEL_SHELF`, capped so the card keeps `MIN_TEASER_CARD_WIDTH`; the sheet's rest height, and so
+ * `cramped`, never reads it. `panelRoom` is false where the cap leaves no more than the teaser (a short phone): no panel there.
  */
 export function useSheetSnap({
   startMinimized,
@@ -33,6 +35,7 @@ export function useSheetSnap({
   onMinimizedChange,
   narrow,
   doorHeight = 0,
+  panelOpen = false,
   dialogRef,
 }: {
   startMinimized: boolean;
@@ -40,6 +43,7 @@ export function useSheetSnap({
   onMinimizedChange?: (minimized: boolean) => void;
   narrow: boolean;
   doorHeight?: number;
+  panelOpen?: boolean;
   dialogRef: Ref<HTMLElement | null>;
 }) {
   const [snap, setSnapState] = useState<SheetSnap>(forceFull ? "full" : startMinimized ? "min" : "teaser");
@@ -65,7 +69,7 @@ export function useSheetSnap({
 
   // THE TEASER'S HEIGHT, which places the sheet and sizes the card band above it. A fixed 280
   // (README R2 "States"), plus the door's strip where the card carries one, as the caller measured it.
-  const teaserHeight = SHEET.teaserHeight + doorHeight;
+  const restHeight = SHEET.teaserHeight + doorHeight;
 
   // A TEASER THAT WOULD CRUSH THE CARD IS NOT OFFERED. A short screen (or a teaser grown by a
   // door strip) can leave the band so little room that the card would
@@ -73,7 +77,14 @@ export function useSheetSnap({
   // sheet drew its details before R2, and Escape closes it. 120 keeps the card at least the
   // size of a readable thumbnail. Stacked sheets' own spec check is the carousel's PR 4.
   const dialogHeight = useOwnHeight(dialogRef, narrow, dialogRef);
-  const cramped = dialogHeight > 0 && (dialogHeight - teaserHeight - 85) * 0.7159 < MIN_TEASER_CARD_WIDTH;
+  const cramped = dialogHeight > 0 && (dialogHeight - restHeight - 85) * 0.7159 < MIN_TEASER_CARD_WIDTH;
+  // THE PRINTINGS PANEL'S SHELF: 400, or less where the card band would fall under the minimum card width.
+  const panelShelf = dialogHeight > 0
+    ? Math.min(PRINTING_PANEL_SHELF, Math.floor(dialogHeight - 85 - MIN_TEASER_CARD_WIDTH / 0.7159))
+    : PRINTING_PANEL_SHELF;
+  const panelRoom = narrow && !cramped && panelShelf > restHeight;
+  const panelUp = panelOpen && panelRoom && snap === "teaser";
+  const teaserHeight = panelUp ? panelShelf : restHeight;
   // What the sheet DRAWS: full when the reader raised it, or when the teaser is not offered.
   const full = sheetFull || cramped;
   // What Escape and the arrow keys read. Phone width only: a window widened with the sheet up
@@ -84,7 +95,7 @@ export function useSheetSnap({
   // the band, much like the retired zoom. Phone width only, and never where the teaser itself is
   // not offered.
   const min = narrow && snap === "min" && !cramped;
-  return { snap, setSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min };
+  return { snap, setSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min, panelRoom, panelUp };
 }
 
 /**
