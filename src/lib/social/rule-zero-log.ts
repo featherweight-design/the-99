@@ -18,7 +18,7 @@ import { createHash } from "node:crypto";
 import { and, asc, eq } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
-import { tableKept } from "./rule-zero-open";
+import { tableKept, tableLoggable } from "./rule-zero-open";
 import { cards, decks, friendLinks, podMembers, pods, ruleZeroResultSeats, ruleZeroSeats, ruleZeroTables, socialProfiles, userPrefs } from "../../db/schema";
 // `SEAT_LABEL_MAX` is `OPPONENT_LABEL_MAX`: that module is read only by the game log's own (game-opponents.test.ts).
 import type { ThirdPartyName } from "../person-name/brand";
@@ -99,7 +99,7 @@ export function tableSeatsQuery(viewerId: string, tableId: string, q: Pick<typeo
     .leftJoin(userPrefs, eq(userPrefs.userId, ruleZeroSeats.userId))
     .leftJoin(decks, and(eq(decks.id, ruleZeroSeats.deckId), eq(decks.userId, ruleZeroSeats.userId), seatDeckVisible(viewerId, ruledOwners)))
     .leftJoin(commanderOf, eq(commanderOf.oracleId, decks.commanderOracleId))
-    .where(and(eq(ruleZeroSeats.tableId, tableId), tableKept))
+    .where(and(eq(ruleZeroSeats.tableId, tableId), tableLoggable))
     .orderBy(asc(ruleZeroSeats.seat));
 }
 
@@ -305,5 +305,7 @@ export async function resolveTableSeatsIn(
   // `resolveSeatsFrom` refuses the save against the prefill's hash rather than logging a deck the owner hides.
   const { rows, gameAt } = await logSeatsIn(viewerId, table.id, tx, table.game ?? null);
   const resolved = resolveSeatsFrom(rows, viewerId, table, seats);
-  return resolved === null ? null : { seats: resolved, gameAt };
+  // A named game that is not there to log refuses the save, never a live-seat log under another game's name.
+  if (resolved === null || (table.game != null && gameAt === null)) return null;
+  return { seats: resolved, gameAt };
 }

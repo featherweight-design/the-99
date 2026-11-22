@@ -98,7 +98,6 @@ describe("resultPlacesQuery", () => {
     expect(text).not.toContain('"rule_zero_result_seats"."seat"');
     // Qualified in the subquery, and skipped once the viewer logged a game from the table since the result was saved.
     expect(text).toContain('dg.rule_zero_table_id = $3');
-    expect(text).toContain('>= "rule_zero_result_seats".saved_at');
     expect(text).toContain('"rule_zero_result_seats"."started_at" = $2');
     expect(params[0]).toBe(TABLE);
     expect(params).toContain("user_a");
@@ -114,7 +113,7 @@ describe("gameLoggedQuery (Undo's refusal)", () => {
     // Unqualified, these would compare a column to itself and never find a log (AGENTS.md, correlated subqueries).
     expect(text).toContain('dg.user_id = "rule_zero_result_seats".user_id');
     expect(text).toContain('dg.rule_zero_table_id = "rule_zero_result_seats".table_id');
-    expect(text).toContain('>= "rule_zero_result_seats".saved_at');
+    expect(text).toContain('dg.rule_zero_game_at = "rule_zero_result_seats".started_at');
     expect(params[0]).toBe(TABLE);
   });
 });
@@ -147,9 +146,9 @@ describe("pickGameQuery (which game the Log opens on)", () => {
     // 2026-11-21T03:00:00.123Z: the tracker stores `new Date(ms)`, which Postgres keeps as microseconds.
     const ms = new Date("2026-11-21T03:00:00.123Z").getTime();
     const { sql: text, params } = pickGameQuery("user_a", TABLE, ms).toSQL();
-    expect(text).toContain("round(extract(epoch from");
-    expect(text).toContain("* 1000))::float8");
-    expect(params).toContain(ms);
+    // Compared as the timestamp itself (the index's column), built from the ms, never as a string.
+    expect(text).toContain('"rule_zero_result_seats"."started_at" = $3');
+    expect(params.some((p) => p instanceof Date && p.getTime() === ms)).toBe(true);
     expect(params.some((p) => typeof p === "string" && p === String(ms))).toBe(false);
   });
 

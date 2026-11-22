@@ -125,18 +125,15 @@ export async function saveTableResult(viewerId: string, tableId: unknown, roster
 export const notLoggedSince = (tableId: string, viewerId: string) => sql`not ${loggedSinceSave(viewerId, tableId)}`;
 
 /**
- * A log of the stored row's game: `rule_zero_game_at` names it, or, for a result saved before games were addressable
- * (migration 0262 backfilled its `started_at` to its save, to the millisecond), a log made at or after the save. A
- * game from a roster never takes the legacy branch, so a log from live seats cannot mark it logged.
- * `created_at` is a UTC wall time without a zone; `saved_at` has one.
+ * A log of the stored row's game: `rule_zero_game_at` names it. Migration 0262 backfilled the column for every log made
+ * from a table before it existed (one game per table then), so there is no other rule.
  */
-const logsThisGame = (gameAt: SQL, createdAt: SQL) =>
-  sql`(${gameAt} = ${ruleZeroResultSeats}.started_at or (${gameAt} is null and ${ruleZeroResultSeats}.started_at = date_trunc('milliseconds', ${ruleZeroResultSeats}.saved_at) and (${createdAt} at time zone 'UTC') >= ${ruleZeroResultSeats}.saved_at))`;
+const logsThisGame = (gameAt: SQL) => sql`${gameAt} = ${ruleZeroResultSeats}.started_at`;
 
 /** A game from `table` by `user` that logged this row's game. Aliased and qualified, as a correlated subquery must be. */
 const loggedSinceSave = (user: SQL | string, table: SQL | string) => sql`exists (
       select 1 from ${deckGames} dg
-      where dg.user_id = ${user} and dg.rule_zero_table_id = ${table} and ${logsThisGame(sql`dg.rule_zero_game_at`, sql`dg.created_at`)}
+      where dg.user_id = ${user} and dg.rule_zero_table_id = ${table} and ${logsThisGame(sql`dg.rule_zero_game_at`)}
     )`;
 
 /** A game's id in a URL and a payload: whole milliseconds since the epoch, the precision a JavaScript Date (and the tracker's roster) carries. Rounded, because `extract` is not exact in a double. */
@@ -151,7 +148,7 @@ export const pickGameQuery = (viewerId: string, tableId: string, gameMs: number 
       eq(ruleZeroResultSeats.userId, viewerId),
       tableKept,
       notLoggedSince(tableId, viewerId),
-      gameMs === null ? undefined : sql`${gameMsOf(ruleZeroResultSeats.startedAt)} = ${gameMs}`,
+      gameMs === null ? undefined : eq(ruleZeroResultSeats.startedAt, new Date(gameMs)),
     ))
     .orderBy(desc(ruleZeroResultSeats.startedAt))
     .limit(1);
@@ -235,7 +232,7 @@ export const gameLoggerQuery = (viewerId: string, tableId: string, startedAt: Da
     .innerJoin(deckGames, and(
       eq(deckGames.userId, ruleZeroResultSeats.userId),
       eq(deckGames.ruleZeroTableId, ruleZeroResultSeats.tableId),
-      logsThisGame(sql`${deckGames.ruleZeroGameAt}`, sql`${deckGames.createdAt}`),
+      logsThisGame(sql`${deckGames.ruleZeroGameAt}`),
     ))
     .where(and(gameRows(tableId, startedAt), tableLoggable))
     .groupBy(ruleZeroResultSeats.seat, ruleZeroResultSeats.userId, socialProfiles.publicId, socialProfiles.displayName)

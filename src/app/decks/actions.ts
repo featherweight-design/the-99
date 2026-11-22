@@ -1222,7 +1222,7 @@ const isTableRef = (v: unknown): v is { id: string; seating: string; game?: numb
   if (typeof v !== "object" || v === null || !isUuid((v as { id?: unknown }).id)) return false;
   const { seating, game } = v as { seating?: unknown; game?: unknown };
   // The game is the tracked game's id (epoch milliseconds): a whole number or absent; the server re-reads it under the grant.
-  return typeof seating === "string" && /^[0-9a-f]{64}$/.test(seating) && (game === undefined || game === null || Number.isSafeInteger(game));
+  return typeof seating === "string" && /^[0-9a-f]{64}$/.test(seating) && (game === undefined || game === null || (Number.isSafeInteger(game) && (game as number) >= 0));
 };
 
 const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
