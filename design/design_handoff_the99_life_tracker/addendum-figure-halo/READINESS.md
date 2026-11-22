@@ -76,3 +76,5 @@ None.
 
 - The Nudge press (2026-11-22): wash only while pressed, ±N inks, fades, hold timings.
 - #3191: loss ink `--critical-fg`, gain ink `--success`.
+
+Audited 2026-11-22: concur
