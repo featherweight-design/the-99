@@ -1,0 +1,42 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-22T21:00:00Z"
+ },
+ "title": "Spares search R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1560,
+   "h": 1680,
+   "title": "Main"
+  },
+  "Spares.dc.html": {
+   "x": 1680,
+   "y": 0,
+   "w": 1780,
+   "h": 2700,
+   "title": "Spares"
+  },
+  "Wishlist.dc.html": {
+   "x": 3580,
+   "y": 0,
+   "w": 1700,
+   "h": 2140,
+   "title": "Wishlist"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Spares.dc.html",
+  "Wishlist.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
