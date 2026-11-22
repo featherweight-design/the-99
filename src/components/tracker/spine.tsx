@@ -4,7 +4,7 @@
 // gap the layout leaves between the seats (`Layout.spine`). A column on a phone, a row on a tablet. Its buttons shrink
 // with the gap, so a short phone screen still fits all of them.
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { personAttrs, type PersonParts } from "../../lib/person-name";
 import type { Rect } from "../../lib/tracker/layouts";
@@ -53,6 +53,24 @@ export function Spine({
 }) {
   const column = rect.h > rect.w;
   const [dice, setDice] = useState(false);
+  // Each day/night toggle re-keys the pair: the icon it leaves turns out while the new one turns in (addendum R2, K1). A
+  // tap mid-turn starts the next pair from the icon showing. `n` 0 is the first draw, with nothing turning.
+  const [dayTurn, setDayTurn] = useState<{ n: number; from: DayNight | null }>({ n: 0, from: null });
+  // How far the dice menu moves sideways to stay 8px inside the viewport (a strip near the screen's edge).
+  const diceMenu = useRef<HTMLDivElement>(null);
+  const [menuShift, setMenuShift] = useState(0);
+  useLayoutEffect(() => {
+    const el = diceMenu.current;
+    const anchor = el?.offsetParent;
+    if (!dice || !el || !anchor) return setMenuShift(0);
+    // From the layout box, not the drawn one: the pop starts the menu scaled to .4, so its drawn rect is too narrow. It
+    // is centred on its anchor (the dice button's wrapper), which the pop does not transform.
+    const a = anchor.getBoundingClientRect();
+    const left = a.left + a.width / 2 - el.offsetWidth / 2;
+    const right = left + el.offsetWidth;
+    const vw = document.documentElement.clientWidth;
+    setMenuShift(right > vw - 8 ? vw - 8 - right : left < 8 ? 8 - left : 0);
+  }, [dice]);
   // Down a column: the round (1.04 buttons), six buttons and eight gaps of a quarter button make 9.04 buttons, plus two
   // 1px rules and 6px clear at each end. The buttons take what that leaves, up to 48px.
   const size = column ? "min(48px, calc((100cqh - 14px) / 9.04))" : "min(48px, calc(100cqh - 12px))";
@@ -92,12 +110,30 @@ export function Spine({
         </HolderButton>
         <button
           type="button"
-          onClick={onDay}
+          onClick={() => {
+            setDayTurn((t) => ({ n: t.n + 1, from: day }));
+            onDay();
+          }}
           aria-label={day === null ? copy.dayNightOff : copy.dayNightIs(day)}
           className={sb + (day === null ? " text-[color:var(--fg-faint)]" : " text-[color:var(--accent-text)] shadow-[inset_0_0_0_1.5px_var(--accent)]")}
           data-testid="strip-day"
         >
-          {day === "night" ? <MoonIcon size={22} /> : <SunIcon size={22} />}
+          <span className="relative grid size-[22px]">
+            {dayTurn.n ? (
+              // The outgoing icon keeps its own ink (the faint sun when the cycle was off). Reduced motion draws only the new one.
+              <span
+                key={`out-${dayTurn.n}`}
+                aria-hidden
+                className={"absolute inset-0 motion-safe:animate-[dn-out_320ms_var(--motion-ease-out)_both] motion-reduce:hidden " + (dayTurn.from === null ? "text-[color:var(--fg-faint)]" : "text-[color:var(--accent-text)]")}
+                data-testid="strip-day-out"
+              >
+                <DayIcon day={dayTurn.from} />
+              </span>
+            ) : null}
+            <span key={`in-${dayTurn.n}`} className={"absolute inset-0" + (dayTurn.n ? " motion-safe:animate-[dn-in_320ms_var(--motion-ease-out)_both]" : "")} data-testid="strip-day-icon">
+              <DayIcon day={day} />
+            </span>
+          </span>
         </button>
         <span className="relative shrink-0">
           <button
@@ -117,8 +153,11 @@ export function Spine({
             <>
               <button type="button" aria-label={diceCopy.close} tabIndex={-1} onClick={() => setDice(false)} className="fixed inset-0 z-30 cursor-default" />
               <div
+                ref={diceMenu}
                 role="menu"
-                className={"absolute z-40 flex w-[128px] flex-col gap-1.5 rounded-[16px] bg-[color:var(--elevated)] p-2 shadow-[0_12px_32px_rgba(0,0,0,.45)] " + (column ? "right-[calc(100%+10px)] top-1/2 -translate-y-1/2" : "bottom-[calc(100%+10px)] left-1/2 -translate-x-1/2")}
+                // P1 `.dmenu`: centred over the strip, just above the dice, popping up from its foot.
+                className="absolute bottom-[calc(100%+4px)] left-1/2 z-40 flex w-[128px] origin-bottom -translate-x-1/2 flex-col gap-1.5 rounded-[16px] bg-[color:var(--elevated)] p-2 shadow-[0_10px_30px_rgba(0,0,0,.55),inset_0_0_0_1px_var(--border-strong)] motion-safe:animate-[end-turn-pop_.22s_cubic-bezier(.3,1.4,.5,1)]"
+                style={{ marginLeft: menuShift }}
                 data-testid="dice-menu"
               >
                 {(["d6", "d20", "coin"] as const).map((k) => (
@@ -131,7 +170,7 @@ export function Spine({
                       setDice(false);
                       onDice(k);
                     }}
-                    className="flex h-[52px] items-center gap-2.5 rounded-[10px] bg-[color:var(--surface)] px-3 text-[15px] font-semibold text-[color:var(--fg)]"
+                    className="flex h-[52px] items-center gap-2.5 rounded-[10px] bg-[color:var(--surface)] px-3 text-[15px] font-semibold text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border)] motion-safe:transition-transform motion-safe:duration-75 motion-safe:active:scale-[.96]"
                   >
                     {k === "d6" ? <D6Icon size={20} /> : k === "d20" ? <D20Icon size={20} /> : <CoinIcon size={20} />}
                     {diceCopy[k]}
@@ -153,8 +192,18 @@ export function Spine({
   );
 }
 
-/** A strip button (`.sb`): a circle sized by the strip, on the elevated surface. */
-const sb = "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)]";
+/**
+ * A strip button (`.sb`): a circle sized by the strip, on the elevated surface. Held down it fills with the accent, drops
+ * its ring and is pushed in, easing both ways on `--motion-quick` (addendum R2, Hugh ruling 11-22). A disabled Undo does
+ * not press; reduced motion keeps the fill and drops the push.
+ */
+const sb =
+  "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] enabled:active:bg-[color:var(--accent)] enabled:active:text-[color:var(--bg)] enabled:active:shadow-none motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:enabled:active:[transform:scale(.92)]";
+
+/** The day/night button's icon: the moon at night, else the sun (lit by day, faint with the cycle off). */
+function DayIcon({ day }: { day: DayNight | null }) {
+  return day === "night" ? <MoonIcon size={22} /> : <SunIcon size={22} />;
+}
 
 function Rule({ column }: { column: boolean }) {
   return <span aria-hidden className={"shrink-0 bg-[color:var(--border-strong)] " + (column ? "h-px w-[26px]" : "h-[26px] w-px")} />;

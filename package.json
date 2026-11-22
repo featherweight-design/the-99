@@ -89,6 +89,7 @@
     "probe:tracker-sheet-seats": "node scripts/probe-tracker-sheet-seats.mjs",
     "probe:tracker-life-tap": "node scripts/probe-tracker-life-tap.mjs",
     "probe:tracker-layout-parity": "node scripts/probe-tracker-layout-parity.mjs",
+    "probe:tracker-spine": "node scripts/probe-tracker-spine.mjs",
     "probe:admin-pii": "node scripts/probe-admin-pii.mjs",
     "probe:admin-payments": "node scripts/probe-admin-payments.mjs",
     "seed:admin-pii-fixture": "node scripts/seed-admin-pii-fixture.mjs",

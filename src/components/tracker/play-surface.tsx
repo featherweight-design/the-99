@@ -404,7 +404,7 @@ export function PlaySurface({
       </p>
 
       {menu ? (
-        <div role="dialog" aria-label={copy.strip.menu} className="absolute bottom-4 left-1/2 flex -translate-x-1/2 gap-3 rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] p-3">
+        <div role="dialog" aria-label={copy.strip.menu} className="absolute bottom-4 left-1/2 z-40 flex -translate-x-1/2 gap-3 rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] p-3">
           <Link href={backHref} className="min-h-[44px] px-3 py-3 text-[14px] text-[color:var(--fg)]">{copy.strip.back}</Link>
           <button type="button" onClick={() => setMenu(false)} className="min-h-[44px] px-3 text-[14px] text-[color:var(--fg-body)]">{copy.strip.close}</button>
         </div>
