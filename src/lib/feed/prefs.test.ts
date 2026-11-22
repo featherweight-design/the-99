@@ -203,6 +203,15 @@ describe("the two seen cursors", () => {
     const { q } = recorder(0);
     expect(await markFeedSeen("u", all, NOW, q)).toBe(false);
   });
+
+  it("a Home visit counts a price drop unseen only in the reader's store, which is theirs only while the switch is on", async () => {
+    const off = recorder(1);
+    await markFeedSeen("u", all, NOW, off.q);
+    expect(render(off.ran[0]).sql).not.toContain("sup.preferred_store");
+    const on = recorder(1);
+    await markFeedSeen("u", { ...all, STORE_PREFERENCE_ENABLED: "true" }, NOW, on.q);
+    expect(render(on.ran[0]).sql).toContain("sup.preferred_store");
+  });
 });
 
 describe("loadNewsSettings (Settings' news section)", () => {

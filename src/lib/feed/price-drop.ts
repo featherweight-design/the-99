@@ -17,8 +17,8 @@
  *    wishlist (`availableFeedKinds`), as the read does.
  * 4. Today's cheapest is the figure every buy tag draws (`loadPrices`, `priceState`, `priceOf`), never a second rule;
  *    a line that names a printing watches THAT printing's figure (`lineNowCents`), and has none while it is sold out.
- *    It is read in the reader's store, and a line whose baseline is not in that store (step 1 found no figure to
- *    re-baseline it with) is skipped: two stores' figures are never compared.
+ *    It is read in the reader's store, and a line whose baseline is not in that store (the reader changed store after
+ *    step 1 read their choice) is skipped: two stores' figures are never compared.
  * 5. `priceDropped` decides; a drop is one `recordFeedItem` (dedupe: card and ISO week) and `price_noticed_at`, in
  *    one transaction. The item records its store (`data.store`), and the feed and the push show it only while it is
  *    the reader's (`storedFeedBranch`).
@@ -68,18 +68,22 @@ export function needsBaseline(line: { missing: boolean; price_store: string }, s
  * `is not distinct from`, null names "any printing"). Only where the line still needs it, so a line an add wrote
  * meanwhile in that same store keeps its own. A line moving store also loses its notice stamp, so its first drop in
  * the new store can be told; a line merely filled keeps it. `cents` is null for a line moving to a store with no
- * live figure for it: emptied, the next run fills it.
+ * live figure for it: emptied, the next run fills it. `preferred` is each reader's `preferred_store` as the run read
+ * it: a reader who changed store since (and may have added a line in the new one) is left for the next run, never
+ * written in the store the old choice named.
  */
 export function baselineQuery(
   userIds: readonly string[], ids: readonly string[], printingIds: readonly (string | null)[],
-  cents: readonly (number | null)[], stores: readonly Store[],
+  cents: readonly (number | null)[], stores: readonly Store[], preferred: readonly (string | null)[],
 ) {
   return sql`update ${wishlistItems} wi set price_at_add_cents = v.cents, price_store = v.store,
       price_noticed_at = case when coalesce(wi.price_store, 'manapool') = v.store then wi.price_noticed_at end
     from unnest(${sql.param([...userIds])}::text[], ${sql.param([...ids])}::uuid[], ${sql.param([...printingIds])}::uuid[],
-      ${sql.param([...cents])}::int[], ${sql.param([...stores])}::text[]) as v(user_id, oracle_id, scryfall_id, cents, store)
+      ${sql.param([...cents])}::int[], ${sql.param([...stores])}::text[], ${sql.param([...preferred])}::text[])
+      as v(user_id, oracle_id, scryfall_id, cents, store, preferred)
     where wi.user_id = v.user_id and wi.oracle_id = v.oracle_id and wi.scryfall_id is not distinct from v.scryfall_id
-      and (wi.price_at_add_cents is null or coalesce(wi.price_store, 'manapool') <> v.store)`;
+      and (wi.price_at_add_cents is null or coalesce(wi.price_store, 'manapool') <> v.store)
+      and (select bp.preferred_store from ${userPrefs} bp where bp.user_id = wi.user_id) is not distinct from v.preferred`;
 }
 
 /** One `loadPrices` per store, over the lines priced in it. Mana Pool alone while nobody has chosen a store. */
@@ -127,9 +131,10 @@ export function lineNowCents(read: PriceRead, line: { oracle_id: string; scryfal
   return fact ? priceOf(fact, priceState(fact, read.newestAsOf)) : null;
 }
 
-/** `backfilled` counts every baseline written (a fill, or a move to the reader's store); `otherStore`, the lines skipped
-    because their baseline is still another store's. */
-export type PriceDropRun = { backfilled: number; candidates: number; switchedOff: number; otherStore: number; noticed: number; failed: number };
+/** `backfilled` counts every baseline written (a fill, or a move to the reader's store); `awaiting`, the lines whose
+    store has no live figure for them (kept or left empty, so no drop is judged); `otherStore`, the baselined lines
+    skipped because their baseline is still another store's (the reader changed store after this run's first step). */
+export type PriceDropRun = { backfilled: number; awaiting: number; candidates: number; switchedOff: number; otherStore: number; noticed: number; failed: number };
 
 type Candidate = {
   user_id: string; oracle_id: string; scryfall_id: string | null; at_add_cents: number; noticed_at: Date | string | null;
@@ -141,7 +146,7 @@ type Candidate = {
  * reader's switches are resolved on top of it.
  */
 export async function noticePriceDrops(base: NodeJS.ProcessEnv, clock: () => Date = () => new Date()): Promise<PriceDropRun> {
-  const run: PriceDropRun = { backfilled: 0, candidates: 0, switchedOff: 0, otherStore: 0, noticed: 0, failed: 0 };
+  const run: PriceDropRun = { backfilled: 0, awaiting: 0, candidates: 0, switchedOff: 0, otherStore: 0, noticed: 0, failed: 0 };
   // One overrides snapshot for the run; each reader's switches resolved once on top of `base`.
   let snapshot: Awaited<ReturnType<typeof readSwitchSnapshot>> | null = null;
   const envs = new Map<string, NodeJS.ProcessEnv>();
@@ -165,13 +170,16 @@ export async function noticePriceDrops(base: NodeJS.ProcessEnv, clock: () => Dat
     const printingIds: (string | null)[] = [];
     const cents: (number | null)[] = [];
     const stores: Store[] = [];
+    const preferred: (string | null)[] = [];
     for (const { line, store } of due) {
       const c = lineNowCents(reads.get(store)!, line);
+      if (c === null) run.awaiting += 1;
       // An empty line with no figure stays empty; a line in another store is emptied, never left in that store.
       if (c === null && line.missing) continue;
       userIds.push(line.user_id); ids.push(line.oracle_id); printingIds.push(line.scryfall_id); cents.push(c); stores.push(store);
+      preferred.push(line.preferred_store);
     }
-    if (ids.length > 0) run.backfilled = (await db.execute(baselineQuery(userIds, ids, printingIds, cents, stores))).rowCount ?? 0;
+    if (ids.length > 0) run.backfilled = (await db.execute(baselineQuery(userIds, ids, printingIds, cents, stores, preferred))).rowCount ?? 0;
   }
 
   const rows = (await db.execute<Candidate>(priceDropCandidatesQuery())).rows;

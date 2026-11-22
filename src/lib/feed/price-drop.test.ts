@@ -17,13 +17,15 @@ describe("the price-drop job's SQL", () => {
   });
 
   it("writes each baseline in its reader's store, only where still needed, and clears the notice only on a move", () => {
-    const { q, params } = render(baselineQuery(["u1", "u2"], ["a", "b"], [null, "p"], [100, null], ["manapool", "tcgplayer"]));
+    const { q, params } = render(baselineQuery(["u1", "u2"], ["a", "b"], [null, "p"], [100, null], ["manapool", "tcgplayer"], [null, "tcgplayer"]));
     expect(q).toContain(`update "wishlist_items" wi set price_at_add_cents = v.cents, price_store = v.store, price_noticed_at = case when coalesce(wi.price_store, 'manapool') = v.store then wi.price_noticed_at end`);
-    expect(q).toContain("from unnest($1::text[], $2::uuid[], $3::uuid[], $4::int[], $5::text[]) as v(user_id, oracle_id, scryfall_id, cents, store)");
+    expect(q).toContain("from unnest($1::text[], $2::uuid[], $3::uuid[], $4::int[], $5::text[], $6::text[]) as v(user_id, oracle_id, scryfall_id, cents, store, preferred)");
     // One reader's line, by its card AND its chosen printing (null names "any printing").
     expect(q).toContain("where wi.user_id = v.user_id and wi.oracle_id = v.oracle_id and wi.scryfall_id is not distinct from v.scryfall_id");
     expect(q).toContain("and (wi.price_at_add_cents is null or coalesce(wi.price_store, 'manapool') <> v.store)");
-    expect(params).toEqual([["u1", "u2"], ["a", "b"], [null, "p"], [100, null], ["manapool", "tcgplayer"]]);
+    // A reader who changed store since the run read their choice is left for the next run.
+    expect(q).toContain(`and (select bp.preferred_store from "user_prefs" bp where bp.user_id = wi.user_id) is not distinct from v.preferred`);
+    expect(params).toEqual([["u1", "u2"], ["a", "b"], [null, "p"], [100, null], ["manapool", "tcgplayer"], [null, "tcgplayer"]]);
   });
 
   it("a line needs a baseline when it has none, or has another store's", () => {
