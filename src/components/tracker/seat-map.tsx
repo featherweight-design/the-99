@@ -290,7 +290,7 @@ export function SeatMap({
               }}
             >
               {seat.art ? (
-                <FadingImg src={seat.art} alt="" draggable={false} className="pointer-events-none h-full w-full object-cover" />
+                <FadingImg src={seat.art} alt="" draggable={false} className="pointer-events-none h-full w-full object-cover object-top" />
               ) : (
                 <span className="flex h-full w-full items-center justify-center text-[18px] font-semibold text-[color:var(--fg-body)]">
                   <PersonInitials n={seat.name} />

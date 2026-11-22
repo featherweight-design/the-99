@@ -30,7 +30,7 @@ function andList(seats: readonly PlaySeat[]): PersonParts {
 
 function Art({ src, className }: { src: string | null; className: string }) {
   return src ? (
-    <FadingImg src={src} alt="" className={className + " object-cover"} />
+    <FadingImg src={src} alt="" className={className + " object-cover object-top"} />
   ) : (
     <span aria-hidden className={className + " block bg-[radial-gradient(var(--elevated),var(--surface))]"} />
   );
