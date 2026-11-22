@@ -19,7 +19,8 @@ import { clearCardArtPreference, setCardArtPreference } from "../../app/collecti
 import type { CardCombo } from "../../lib/combos/near-combos";
 import { PrintingRegion, printingKey } from "./printing-region";
 import { PrintingStrip, orderStrip, stripKey } from "./printing-strip";
-import { PrintingsButton, PrintingsPanel } from "./printings-panel";
+import { PanelWishlistFoot, PrintingsButton, PrintingsPanel } from "./printings-panel";
+import { setWishlistPrintingAction } from "../../app/collection/wishlist/actions";
 import { PriceTag } from "./price-tag";
 import { priceKeyFor } from "../../lib/cards/price-lookup";
 import { priceState } from "../../lib/cards/price-fact";
@@ -537,6 +538,27 @@ export function CardModal({
     if (!chosen) return;
     const p = id === null ? undefined : [...card.printings, ...(card.otherPrintings ?? [])].find((x) => x.scryfallId === id);
     setAnnouncement(p ? wishlistPrintingCopy.announce(p.setCode.toUpperCase(), p.collectorNumber) : wishlistPrintingCopy.announceAny);
+  };
+  // The panel foot's own write (the box keeps its own): one at a time, the same action, and the box and strip follow `wantedId`.
+  const [footBusy, setFootBusy] = useState(false);
+  const footWriting = useRef(false);
+  const chooseFromFoot = async (id: string | null) => {
+    if (footWriting.current) return;
+    footWriting.current = true;
+    setFootBusy(true);
+    try {
+      const out = await setWishlistPrintingAction(card.oracleId, id);
+      if (!out.ok) return setAnnouncement(wishlistPrintingCopy.failed);
+      if (out.status === "wanted") onWantedChange(id, true);
+      else onWantedChange(null);
+      onProxyWrite?.();
+      onWishlistWrite?.();
+    } catch {
+      setAnnouncement(wishlistPrintingCopy.failed);
+    } finally {
+      footWriting.current = false;
+      setFootBusy(false);
+    }
   };
   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
   // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
@@ -1064,6 +1086,13 @@ export function CardModal({
     [hasStrip, card.quantity, card.printings, ownedPrintings, others, pick],
   );
   const shownKey = resolved ? stripKey(resolved) : null;
+  // The panel's wishlist foot: the same Printing line the box draws, for a card on the wishlist that browses printings.
+  const footView = card.wishlist && browsePrintings && !isToken && !deckScope
+    ? wishlistPrintingView({ cardName: card.name, printings: [...card.printings, ...others], wantedId, previewId, prices: card.prices })
+    : null;
+  const panelFoot = footView && footView.count >= 2
+    ? <PanelWishlistFoot view={footView} busy={footBusy} onChoose={(id) => void chooseFromFoot(id)} />
+    : null;
   const strip = hasStrip
     ? (paddles: boolean) => (
         <PrintingStrip
@@ -1076,6 +1105,7 @@ export function CardModal({
           onPanelOpen={() => setPanelOpen(true)}
           onPanelClose={() => setPanelOpen(false)}
           wantedId={wantedId}
+          panelFoot={panelFoot}
           // Viewing, never choosing: the printing on screen, and nothing stored.
           onSelect={(p) => setPreviewId(p.scryfallId ?? null)}
           onAnnounce={setAnnouncement}
@@ -1114,6 +1144,8 @@ export function CardModal({
         cardName={card.name}
         colorIdentity={card.colorIdentity}
         cols={5}
+        wantedId={wantedId}
+        foot={panelFoot}
         onClose={() => setPanelOpen(false)}
         onSelect={(p) => {
           setPreviewId(p.scryfallId ?? null);

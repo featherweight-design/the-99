@@ -2,10 +2,13 @@
 // Alternate printings R3: the printings panel. Opened from the strip's Search tile (desktop) or the Set line's
 // printings button (phone). Searches the card's printings by set name, set code or collector number; selecting one
 // shows it in place through the parent's preview (`onSelect`), and the panel stays open. Nothing is stored here.
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { identityGradient } from "../../lib/cards/gradients";
 import { printingStripCopy } from "../../lib/copy/collection";
 import { cardSheetCopy } from "../../lib/copy/card-carousel";
+import { wishlistPrintingCopy } from "../../lib/copy/wishlist";
+import type { WishlistPrintingView } from "../../lib/wishlist/printing-line";
+import { WantedMark } from "../wishlist/wishlist-tile";
 import { SearchGlyph } from "../card-search/card-search";
 import { ArtLayer } from "../ui/art-layer";
 import { SearchField } from "../ui/text-field";
@@ -39,7 +42,7 @@ export function panelGroups(printings: StripPrinting[], query: string): { hits: 
 // Not role="dialog": the card modal's trap (`useDialogA11y`) defers every key pressed inside a nested dialog, which would
 // swallow Escape and Tab here. The panel is a group inside the modal's own dialog.
 export function PrintingsPanel({
-  printings, shownKey, onSelect, onClose, cardName, colorIdentity, cols,
+  printings, shownKey, onSelect, onClose, cardName, colorIdentity, cols, wantedId = null, foot = null,
 }: {
   printings: StripPrinting[];
   shownKey: string | null;
@@ -49,6 +52,10 @@ export function PrintingsPanel({
   colorIdentity: string[];
   /** Thumbs across: 6 on desktop, 5 on the phone. */
   cols: number;
+  /** The printing the reader's wishlist line names: its thumb carries the bookmark. */
+  wantedId?: string | null;
+  /** The wishlist foot (`PanelWishlistFoot`), drawn only for a card on the wishlist. */
+  foot?: ReactNode;
 }) {
   const [query, setQuery] = useState("");
   const field = useRef<HTMLInputElement>(null);
@@ -100,7 +107,7 @@ export function PrintingsPanel({
                     key={stripKey(p)}
                     type="button"
                     aria-pressed={shown}
-                    aria-label={printingStripCopy.thumbAria(p.setName ?? p.setCode, p.collectorNumber, p.mine ? p.quantity : 0, p.pick === true)}
+                    aria-label={printingStripCopy.thumbAria(p.setName ?? p.setCode, p.collectorNumber, p.mine ? p.quantity : 0, p.pick === true) + (wantedId !== null && p.scryfallId === wantedId ? `, ${wishlistPrintingCopy.panel.wanted(p.setCode.toUpperCase(), p.collectorNumber)}` : "")}
                     onClick={() => onSelect(p)}
                     className="flex min-w-0 cursor-pointer flex-col items-center gap-[5px] border-0 bg-transparent p-0"
                   >
@@ -119,6 +126,7 @@ export function PrintingsPanel({
                       className="whitespace-nowrap font-mono text-[10px] leading-none"
                       style={{ color: shown ? "var(--fg)" : p.mine ? "var(--accent-text)" : "var(--fg-muted)" }}
                     >
+                      {wantedId !== null && p.scryfallId === wantedId ? <WantedMark /> : null}
                       {printingStripCopy.panelThumbLabel(p.setCode, p.collectorNumber, p.mine ? p.quantity : 0, p.pick === true)}
                     </span>
                   </button>
@@ -128,6 +136,45 @@ export function PrintingsPanel({
           </div>
         ))}
       </div>
+      {foot}
+    </div>
+  );
+}
+
+/**
+ * The panel's wishlist foot (wishlist printing D5): which printing the line wants, and the press for the printing on
+ * screen. Drawn only for a card on the wishlist. `Wanted: any printing` or `Wanted: SLD 2125`; another printing on screen
+ * offers `Want STA 10`, and the wanted one on screen offers `Any printing` back.
+ */
+export function PanelWishlistFoot({ view, busy, onChoose }: { view: WishlistPrintingView; busy: boolean; onChoose: (printingId: string | null) => void }) {
+  const copy = wishlistPrintingCopy;
+  const { wanted, preview } = view;
+  const press = "flex h-[44px] flex-none cursor-pointer items-center rounded-[8px] border border-solid border-[color:var(--border-strong)] bg-transparent px-[12px] text-[12.5px] font-medium text-[color:var(--fg)]" + (busy ? " opacity-60 cursor-progress" : "");
+  return (
+    <div
+      data-testid="panel-wishlist-foot"
+      className="flex flex-none items-center justify-between gap-[10px] border-0 border-t border-solid px-[16px] pt-[10px] md:px-[18px]"
+      style={{ borderColor: "var(--border)" }}
+    >
+      <span className="min-w-0 font-mono text-[12px]" style={{ color: "var(--fg-body)" }}>
+        <WantedMark />
+        {wanted ? copy.panel.wanted(wanted.setCode.toUpperCase(), wanted.collectorNumber) : copy.panel.wantedAny}
+      </span>
+      {preview ? (
+        <button
+          type="button"
+          aria-busy={busy || undefined}
+          aria-label={copy.box.wantAria(preview.setCode.toUpperCase(), preview.collectorNumber, preview.setName, view.cardName)}
+          onClick={() => onChoose(preview.id)}
+          className={press}
+        >
+          {copy.box.want(preview.setCode.toUpperCase(), preview.collectorNumber)}
+        </button>
+      ) : wanted ? (
+        <button type="button" aria-busy={busy || undefined} onClick={() => onChoose(null)} className={press}>
+          {copy.box.any}
+        </button>
+      ) : null}
     </div>
   );
 }
