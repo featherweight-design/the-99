@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { useCollectionFields } from "./use-collection-fields";
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { collectionDrawFieldsFor, cutCollectionWindow, decodeCollection, encodeCollection, type CollectionRow } from "../../lib/collection/list-wire";
+import { collectionDrawFieldsFor, decodeCollection, encodeCollection, type CollectionRow } from "../../lib/collection/list-wire";
 
 // A card's art, printed name and set code come off one printing. The fields batch carries all
 // three, so a withheld card draws them from ONE read, and a card picked here keeps its own.
@@ -17,7 +17,7 @@ const card = (i: number, over: Partial<BrowseListCard> = {}): BrowseListCard =>
 const served = [card(0), card(1)];
 // The page served card 1 withheld; it holds the list's columns and none of its draw fields.
 const rows = (): CollectionRow[] =>
-  decodeCollection(cutCollectionWindow(encodeCollection(served, null), new Set([served[0].oracleId])));
+  decodeCollection(encodeCollection(served, null, new Set([served[0].oracleId])));
 // The route answers from a list that moved since: card 1 was picked onto a Secret Lair printing
 // on another device, which moves its art, its printed name and its set code together.
 const moved = [card(0), card(1, { imageUri: "https://cards.example/sld.jpg", printedName: "Renamed", primarySetCode: "SLD" })];

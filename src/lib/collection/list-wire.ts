@@ -13,10 +13,16 @@
 //     rest back. The stamp stays: it is what makes a re-scanned image reload, and Scryfall
 //     sends a one-year `max-age`. A URL of any other shape crosses unchanged.
 //
+//   - THE CARDS CROSS AS COLUMNS (`cache/columns.ts`), one array per key: no key name repeated per
+//     card, repeated strings (type lines, rarities, set codes) said once, UUIDs at 22 characters
+//     rather than 36. The cached entry is the same encoding, compressed (`packed-list.ts`), so one
+//     form is measured and kept correct, and a collection of 24,000 cards fits the data cache.
+//
 // Decoding restores exactly what was encoded, nothing invented: `decodeCollection(encode…)`
 // equals the list it started from, which `list-wire.test.ts` asserts on every field. One
 // deliberate exception: the claim bit carries `holdsCopy`, so a brew the player gave a copy to
 // decodes as `mature: true` without its `granted` (a marker asks only whether the deck holds it).
+import { fromColumns, toColumns, type ColumnTable } from "../cache/columns";
 import { holdsCopy, type AvailabilitySummary } from "../decks/availability";
 import type { BrowseListCard } from "./browse";
 
@@ -86,13 +92,20 @@ export const isCollectionDrawn = (row: CollectionRow): row is BrowseListCard => 
 export type CollectionWire = {
   /** Each deck a claim names, once: `[id, name]`. */
   decks: [string, string][];
-  cards: WireCard[];
+  /** The cards, as columns of `WireCard`'s keys. */
+  cards: ColumnTable;
 };
 
+/**
+ * `keep`, when given, is the cards whose draw fields ship (the URL's first window): every other
+ * card is cut to the columns filtering, search and sort read, and the rest arrive from
+ * `/api/collection-fields`. Without it every card ships whole, which is the cached entry's form.
+ */
 export function encodeCollection(
   cards: BrowseListCard[],
   // A full `Availability` is one of these; only what a marker reads is shipped.
   availability: Map<string, AvailabilitySummary> | null,
+  keep?: ReadonlySet<string>,
 ): CollectionWire {
   const decks: [string, string][] = [];
   const index = new Map<string, number>();
@@ -105,30 +118,29 @@ export function encodeCollection(
     }
     return i;
   };
-  return {
-    decks,
-    cards: cards.map((card) => {
-      // The list never carries an availability of its own (the page reads it alongside), so the
-      // one on `card`, if a caller set it, is dropped rather than shipped twice.
+  const rows = cards.map((card) => {
+    // The list never carries an availability of its own (the page reads it alongside), so the
+    // one on `card`, if a caller set it, is dropped rather than shipped twice.
 
-      const { availability: _own, price, added, since, ...rest } = card;
-      const wire: WireCard = { ...rest, imageUri: card.imageUri === null ? null : stemImage(card.imageUri) };
-      if (price !== undefined) wire.p = price;
-      if (added !== undefined) wire.ad = added;
-      if (since !== undefined) wire.sn = since;
-      const a = availability?.get(card.oracleId);
-      if (a) {
-        // The bit is `holdsCopy`, the one question a marker asks of it: a brew the player gave a
-        // copy to holds it as a committed deck does, so it decodes as `mature`.
-        wire.a = [a.owned, a.hard, a.soft, a.free, a.claims.map((c) => deck(c.id, c.name) * 2 + (holdsCopy(c) ? 1 : 0))];
-      }
-      return wire;
-    }),
-  };
+    const { availability: _own, price, added, since, ...rest } = card;
+    const wire: WireCard = { ...rest, imageUri: card.imageUri === null ? null : stemImage(card.imageUri) };
+    if (price !== undefined) wire.p = price;
+    if (added !== undefined) wire.ad = added;
+    if (since !== undefined) wire.sn = since;
+    const a = availability?.get(card.oracleId);
+    if (a) {
+      // The bit is `holdsCopy`, the one question a marker asks of it: a brew the player gave a
+      // copy to holds it as a committed deck does, so it decodes as `mature`.
+      wire.a = [a.owned, a.hard, a.soft, a.free, a.claims.map((c) => deck(c.id, c.name) * 2 + (holdsCopy(c) ? 1 : 0))];
+    }
+    if (keep && !keep.has(card.oracleId)) for (const key of COLLECTION_DRAW_KEYS) delete wire[key];
+    return wire;
+  });
+  return { decks, cards: toColumns(rows) };
 }
 
 export function decodeCollection(wire: CollectionWire): CollectionRow[] {
-  return wire.cards.map((card) => {
+  return fromColumns<WireCard>(wire.cards).map((card) => {
     // `imageUri` is on every whole card, null or not, and on no withheld one.
     const whole = Object.hasOwn(card, "imageUri");
     const { imageUri, p, ad, sn, a, ...rest } = card;
@@ -155,23 +167,6 @@ export function decodeCollection(wire: CollectionWire): CollectionRow[] {
     }
     return list;
   });
-}
-
-/**
- * The wire with every card outside `keep` cut to the columns filtering, search and sort read. The
- * entry it was given is not touched: the cached list is shared by every URL, and the window
- * belongs to one.
- */
-export function cutCollectionWindow(wire: CollectionWire, keep: ReadonlySet<string>): CollectionWire {
-  return {
-    ...wire,
-    cards: wire.cards.map((card) => {
-      if (keep.has(card.oracleId)) return card;
-      const cut = { ...card };
-      for (const key of COLLECTION_DRAW_KEYS) delete cut[key];
-      return cut;
-    }),
-  };
 }
 
 /** The draw fields of the cards named, as the fields route answers them: an id not in `cards` is absent. */

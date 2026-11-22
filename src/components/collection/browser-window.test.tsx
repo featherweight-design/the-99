@@ -11,7 +11,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import type { BrowseListCard } from "../../lib/collection/browse";
-import { collectionDrawFieldsFor, cutCollectionWindow, decodeCollection, encodeCollection } from "../../lib/collection/list-wire";
+import { collectionDrawFieldsFor, decodeCollection, encodeCollection } from "../../lib/collection/list-wire";
 import { PAGE_SIZE, firstWindowIds, parseBrowseParams } from "../../lib/collection/window";
 
 // `/collection`'s first window (list payload plan, PR 4): the page cuts every card outside its
@@ -56,7 +56,7 @@ afterEach(() => {
 function mount() {
   const q = new URLSearchParams(window.location.search);
   const keep = firstWindowIds(all, parseBrowseParams((k) => q.get(k), true));
-  const rows = decodeCollection(cutCollectionWindow(encodeCollection(all, null), keep));
+  const rows = decodeCollection(encodeCollection(all, null, keep));
   return render(
     <CardDetailProvider fetchCard={async () => null}>
       <CollectionBrowser cards={rows} ownedSets={[]} availabilityOk />

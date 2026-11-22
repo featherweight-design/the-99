@@ -19,7 +19,7 @@ import { getCollectionStats } from "../../../lib/home/summary";
 import { loadOwnedSetMeta } from "../../../lib/collection/browse-read";
 import { CardFan } from "../../../components/marks";
 import { CollectionClient } from "../../../components/collection/collection-client";
-import { cutCollectionWindow, encodeCollection } from "../../../lib/collection/list-wire";
+import { encodeCollection } from "../../../lib/collection/list-wire";
 import { loadCollectionList } from "../../../lib/collection/payload";
 import { pageWindowIds } from "../../../lib/collection/window";
 import { parseSortCookie, withStoredSort } from "../../../lib/collection/sort-options";
@@ -67,7 +67,10 @@ export default async function CollectionPage({
     // (`cache/deployment.ts`), a deploy retires the previous build's entry on its own, and
     // a new field needs no new `browse-N`. The record of why each one moved:
     //
-    // "browse-5" because the payload gained `comboOtherPartners`, the figure the marker's
+    // "browse-6" because the entry became columns under brotli (`packCollection`), a shape the
+    // previous deploy's reader cannot open; the deployment id retires its entries all the same.
+    //
+    // "browse-5" before it, because the payload gained `comboOtherPartners`, the figure the marker's
     // tooltip counts. An entry written by the previous deploy carries no such field, so every
     // marker would say `You own both` where it should say `and 3 others` until the hour
     // ceiling expired it, with the loader never running.
@@ -123,7 +126,7 @@ export default async function CollectionPage({
   }
   const strip = receipt ? <PreconPickReceipt receipt={receipt} /> : null;
   const keep = pageWindowIds(cards, availability, withStoredSort((key) => query.get(key), viewHint.sort));
-  const wire = await perf.timed("encode", async () => cutCollectionWindow(encodeCollection(cards, availability), keep));
+  const wire = await perf.timed("encode", async () => encodeCollection(cards, availability, keep));
 
   // Empty collection — the shell's state, kept intact, under the group's place head (shared
   // `(list)/layout.tsx`) same as every other state of this route. The head's strip is how
