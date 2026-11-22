@@ -1,4 +1,5 @@
 // @vitest-environment node
+import { readFileSync } from "node:fs";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { SeatState } from "@/lib/tracker/engine";
@@ -87,5 +88,8 @@ describe("tracker panel", () => {
     expect(HALO).toContain("before:-z-10");
     expect(HALO).toContain("before:pointer-events-none");
     expect(HALO.match(/color-mix\(in_srgb,var\(--bg\)_60%,transparent\)/g)).toHaveLength(2);
+    // Both the figure and its fading copy wear it: the pending figure has no static render, so read the two class strings.
+    const source = readFileSync(new URL("./panel.tsx", import.meta.url), "utf8");
+    expect(source.match(/\+ HALO \+/g)).toHaveLength(2);
   });
 });
