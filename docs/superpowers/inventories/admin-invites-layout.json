@@ -1,0 +1,17 @@
+{
+  "feature": "Admin invites column and gap",
+  "rows": [
+    {
+      "id": "admin-invites",
+      "label": "/admin/invites, every section",
+      "view": "src/app/admin/invites/page.tsx",
+      "steps": [
+        {
+          "goto": "/admin/invites",
+          "wait": "[data-testid='email-preview-card']",
+          "settle": 500
+        }
+      ]
+    }
+  ]
+}
