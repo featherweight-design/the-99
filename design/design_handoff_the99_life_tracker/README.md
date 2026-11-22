@@ -33,6 +33,13 @@ Boards T1–T3, V2–V6 and M1, approved by Hugh 2026-11-21. See
 (One at the end, default, or Along one side); an upright tablet draws each layout turned a quarter, so seats stay on
 their edges (no rotate prompt); the strip's last button, Menu (⋯), opens one row, **Back to the table**, with no confirm.
 
+## Addendum (2026-11-22): the player sheet on a tablet, and the coin toss
+
+Boards in [addendum-tablet-sheet/](addendum-tablet-sheet/README.md), drawn for Hugh's review. On a tablet (and a desktop
+window, which the tracker draws as one) the sheet takes half the table from the opener's edge over a veil; Commander
+damage cards carry the commander's art edge to edge; Table joins the tab row on every device; the coin gets a 3D toss
+(rim, arc, end-over-end spin, rattle, landing ring) with the result still at 1.15 s. The phone sheet is unchanged.
+
 ## Boards
 
 | Board | What |

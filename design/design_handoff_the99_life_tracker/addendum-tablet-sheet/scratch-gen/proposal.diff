@@ -1,0 +1,253 @@
+diff -ru src/app/globals.css src2/app/globals.css
+--- src/app/globals.css	2026-11-22 17:11:35.322877074 +0000
++++ src2/app/globals.css	2026-11-22 17:29:27.842938028 +0000
+@@ -778,16 +778,57 @@
+   from { transform: scale(0.4); opacity: 0; }
+   to { transform: none; opacity: 1; }
+ }
+-/* The coin flip (P1 `.coin`, bug 10): five turns and the face it lands on (`--ry` 0 heads, 180deg tails), tilted by
+-   `--rz`. Then a ring lands under it (P1 `.dres`). */
+-@keyframes coin-flip {
+-  from { transform: rotateY(0); }
+-  to { transform: rotateY(calc(var(--ry) + 1800deg)) rotateZ(var(--rz)); }
++/* Tablet addendum (sheet): the half sheet rises from its seat's edge, over a veil that leaves the table readable. */
++@keyframes sheet-up {
++  from { transform: translateY(100%); }
++  to { transform: none; }
+ }
+-@keyframes dice-land {
+-  from { opacity: 0.9; transform: scale(0.55); }
++@keyframes sheet-veil {
++  from { opacity: 0; }
++  to { opacity: 1; }
++}
++/* Tablet addendum (K): the coin toss. 0 to 900 ms the coin turns five times and a half-turn more if it lands tails
++   (`--rx`), easing out like a die losing speed; the arc lifts it toward you (scale 1 to 1.8, up 55% of its width) and drops it back,
++   ease-out up and ease-in down; then 250 ms of rattle as it lies flat, and the ring lands at 900 ms. */
++@keyframes coin-spin {
++  from { transform: rotateZ(calc(var(--rz) - 50deg)) rotateX(0); }
++  to { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) + 1800deg)); }
++}
++@keyframes coin-arc {
++  0% { transform: translateY(0) scale(1); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
++  46% { transform: translateY(-55%) scale(1.8); animation-timing-function: cubic-bezier(.6,0,.9,.45); }
++  100% { transform: translateY(0) scale(1); }
++}
++@keyframes coin-settle {
++  0% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) + 18deg)); }
++  35% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) - 9deg)); }
++  65% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) + 4deg)); }
++  85% { transform: rotateZ(var(--rz)) rotateX(calc(var(--rx) - 1.5deg)); }
++  100% { transform: rotateZ(var(--rz)) rotateX(var(--rx)); }
++}
++@keyframes coin-shadow {
++  0% { transform: translate(-50%, -50%) scale(1); opacity: .55; filter: blur(3px); animation-timing-function: cubic-bezier(.2,.7,.35,1); }
++  46% { transform: translate(-50%, -50%) scale(.55); opacity: .18; filter: blur(10px); animation-timing-function: cubic-bezier(.6,0,.9,.45); }
++  100% { transform: translate(-50%, -50%) scale(1); opacity: .55; filter: blur(3px); }
++}
++@keyframes coin-land {
++  from { opacity: .9; transform: scale(.55); }
+   to { opacity: 0; transform: scale(1.2); }
+ }
++.coin { transform-style: preserve-3d; }
++.coin-rim {
++  position: absolute; inset: 0; border-radius: 50%;
++  background: color-mix(in oklab, var(--accent) 55%, black);
++  transform: translateZ(calc(var(--z) * var(--t)));
++}
++.coin-face-front { transform: translateZ(calc(var(--t) / 2)); }
++.coin-face-back { transform: rotateX(180deg) translateZ(calc(var(--t) / 2)); }
++.coin-shadow {
++  position: absolute; left: 50%; top: 58%; width: 96%; height: 70%; border-radius: 50%;
++  background: radial-gradient(closest-side, rgba(0,0,0,.85), rgba(0,0,0,0));
++  transform: translate(-50%, -50%); opacity: .55; filter: blur(3px);
++}
++
+ .coin-face {
+   position: absolute;
+   inset: 0;
+diff -ru src/components/tracker/dice-roll.tsx src2/components/tracker/dice-roll.tsx
+--- src/components/tracker/dice-roll.tsx	2026-11-22 17:11:35.460743370 +0000
++++ src2/components/tracker/dice-roll.tsx	2026-11-22 17:17:43.703250549 +0000
+@@ -17,7 +17,7 @@
+  * `label` names the throw for a screen reader and the tap that repeats it ("Rolled a 4. Tap to roll again"); `onAgain`
+  * throws again. A tap on a landed die or on the coin rolls again (bug 9); only a tap off them, on the veil, closes.
+  */
+-export function DiceRoll({ roll, label, onAgain, onClose, children }: { roll: Roll; label: string; onAgain: () => void; onClose: () => void; children: React.ReactNode }) {
++export function DiceRoll({ roll, label, onAgain, onClose, tablet = false, children }: { roll: Roll; label: string; onAgain: () => void; onClose: () => void; tablet?: boolean; children: React.ReactNode }) {
+   const [landed, setLanded] = useState<number | null>(null);
+   // Where the thrown dice came to rest, for the buttons laid over them. Empty with no 3D scene.
+   const [points, setPoints] = useState<{ k: number; at: { x: number; y: number }[] }>({ k: 0, at: [] });
+@@ -49,20 +49,27 @@
+     <div data-testid="dice-roll" data-k={roll.k} data-landed={done ? "" : undefined}>
+       <button type="button" aria-label={trackerCopy.dice.close} onClick={onClose} className="fixed inset-0 z-50 cursor-default bg-[rgba(0,0,0,.55)]" />
+       {roll.kind === "coin" ? (
+-        <div className="pointer-events-none fixed left-1/2 top-[38%] z-[60] size-[72px] -translate-x-1/2 -translate-y-1/2 [perspective:700px]">
+-          <button
+-            key={roll.k}
+-            type="button"
+-            aria-label={label}
+-            onClick={onAgain}
+-            className="pointer-events-auto absolute inset-0 rounded-full [transform-style:preserve-3d] motion-safe:animate-[coin-flip_1.15s_cubic-bezier(.2,.65,.25,1)_both]"
+-            style={{ "--ry": roll.values[0] === 1 ? "0deg" : "180deg", "--rz": `${tilt}deg`, transform: `rotateY(${roll.values[0] === 1 ? 0 : 180}deg) rotateZ(${tilt}deg)` } as React.CSSProperties}
+-            data-testid="dice-coin"
+-          >
+-            <span aria-hidden className="coin-face">{trackerCopy.dice.heads}</span>
+-            <span aria-hidden className="coin-face [transform:rotateY(180deg)]">{trackerCopy.dice.tails}</span>
+-          </button>
+-          <span key={`land-${roll.k}`} aria-hidden className="absolute left-1/2 top-1/2 -ml-[60px] -mt-[60px] size-[120px] rounded-full opacity-0 shadow-[0_0_0_2px_var(--accent)] motion-safe:animate-[dice-land_.5s_ease-out_1.15s_forwards]" />
++        // The coin toss (tablet addendum, K1 to K9): a coin with an edge, thrown up off the table and caught by it. It rises
++        // toward you (scale) as it turns end over end about its width (rotateX), falls back, rattles flat and a ring lands
++        // under it, matching the dice's throw, settle and land. Its shadow stays on the table and shrinks while it is up.
++        <div className="pointer-events-none fixed left-1/2 top-[38%] z-[60] -translate-x-1/2 -translate-y-1/2 [perspective:900px]" style={{ width: tablet ? 120 : 72, height: tablet ? 120 : 72 }}>
++          <span key={`shadow-${roll.k}`} aria-hidden className="coin-shadow motion-safe:animate-[coin-shadow_.9s_linear_both]" />
++          <span key={`land-${roll.k}`} aria-hidden className="absolute left-1/2 top-1/2 size-[166%] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 shadow-[0_0_0_2px_var(--accent)] motion-safe:animate-[coin-land_.5s_ease-out_.9s_forwards]" />
++          <span key={`arc-${roll.k}`} className="absolute inset-0 [transform-style:preserve-3d] motion-safe:animate-[coin-arc_.9s_linear_both]">
++            <button
++              key={roll.k}
++              type="button"
++              aria-label={label}
++              onClick={onAgain}
++              className="coin pointer-events-auto absolute inset-0 rounded-full motion-safe:animate-[coin-spin_.9s_cubic-bezier(.12,.6,.3,1)_both,coin-settle_.25s_ease-out_.9s_forwards]"
++              style={{ "--rx": roll.values[0] === 1 ? "0deg" : "180deg", "--rz": `${tilt}deg`, "--t": tablet ? "8px" : "5px", transform: `rotateZ(${tilt}deg) rotateX(${roll.values[0] === 1 ? 0 : 180}deg)` } as React.CSSProperties}
++              data-testid="dice-coin"
++            >
++              {[-3, -2, -1, 0, 1, 2, 3].map((i) => <span key={i} aria-hidden className="coin-rim" style={{ "--z": i / 7 } as React.CSSProperties} />)}
++              <span aria-hidden className="coin-face coin-face-front" style={{ fontSize: tablet ? 20 : 14 }}>{trackerCopy.dice.heads}</span>
++              <span aria-hidden className="coin-face coin-face-back" style={{ fontSize: tablet ? 20 : 14 }}>{trackerCopy.dice.tails}</span>
++            </button>
++          </span>
+         </div>
+       ) : done && points.k === roll.k ? (
+         // Each landed die takes a tap where it lies: the 3D layer itself takes no pointer. Over the result card too, so a
+diff -ru src/components/tracker/play-surface.tsx src2/components/tracker/play-surface.tsx
+--- src/components/tracker/play-surface.tsx	2026-11-22 17:11:35.460743370 +0000
++++ src2/components/tracker/play-surface.tsx	2026-11-22 17:17:43.702576910 +0000
+@@ -446,6 +446,7 @@
+           state={state}
+           game={game}
+           rot={layout.cells[seatsInPlay.findIndex((s) => s.seat === sheet.seat)].rot}
++          tablet={device === "tablet"}
+           onView={setSheet}
+           onClose={() => setSheet(null)}
+           onCommit={commit}
+@@ -467,6 +468,7 @@
+           }
+           onAgain={() => rollDie(roll.kind)}
+           onClose={() => setRoll(null)}
++          tablet={device === "tablet"}
+         >
+           <DiceResult value={roll.kind === "coin" ? (roll.values[0] === 1 ? copy.dice.heads : copy.dice.tails) : String(roll.values[0])} />
+           <button
+diff -ru src/components/tracker/sheet.tsx src2/components/tracker/sheet.tsx
+--- src/components/tracker/sheet.tsx	2026-11-22 17:11:35.460743370 +0000
++++ src2/components/tracker/sheet.tsx	2026-11-22 17:17:43.702243376 +0000
+@@ -74,6 +74,7 @@
+   state,
+   game,
+   rot,
++  tablet = false,
+   onView,
+   onClose,
+   onCommit,
+@@ -84,6 +85,8 @@
+   state: GameState;
+   game: Game;
+   rot: Cell["rot"];
++  /** A tablet (and a desktop window, which the tracker draws as one): the sheet takes the half of the table nearest its seat (tablet addendum). */
++  tablet?: boolean;
+   onView: (view: SheetView) => void;
+   onClose: () => void;
+   onCommit: (action: Action) => void;
+@@ -108,7 +111,7 @@
+   const em = (t: SheetTab) => (t === "damage" && topDamage > 0 ? String(topDamage) : t === "counters" && counting > 0 ? String(counting) : t === "tax" && topTax > 0 ? `+${topTax}` : null);
+ 
+   const body: Record<SheetTab, ReactNode> = {
+-    damage: <DamageTab seat={mine} seats={seats} state={state} onCommit={onCommit} />,
++    damage: <DamageTab seat={mine} seats={seats} state={state} tablet={tablet} onCommit={onCommit} />,
+     counters: <CountersTab seat={mine} focus={view.focus} onCommit={onCommit} />,
+     tax: <TaxTab seat={mine} player={seat} onCommit={onCommit} />,
+     mana: <ManaTab seat={mine} onCommit={onCommit} />,
+@@ -121,6 +124,7 @@
+ 
+   return (
+     <div className="absolute inset-0 z-30" style={{ containerType: "size" }}>
++      {tablet ? <button type="button" tabIndex={-1} aria-label={copy.sheet.close} onClick={onClose} className="absolute inset-0 cursor-default bg-[rgba(0,0,0,.42)] motion-safe:animate-[sheet-veil_.26s_ease-out_both]" data-testid="sheet-veil" /> : null}
+       {/* The seat's turn sits on this wrapper, not on the dialog: the dialog's sheet-in keyframe animates `transform`, and
+           would replace a rotation drawn there until it ends, so a sheet opened from an upside-down seat rose upright. */}
+       <div className="absolute left-1/2 top-1/2" style={{ width: sideways ? "100cqh" : "100%", height: sideways ? "100cqw" : "100%", transform: `translate(-50%, -50%) rotate(${rot}deg)` }}>
+@@ -129,7 +133,11 @@
+           aria-modal="true"
+           aria-labelledby="sheet-title"
+           onKeyDown={(e) => { if (e.key === "Escape") onClose(); }}
+-          className="flex h-full w-full flex-col gap-2 bg-[color:var(--surface-raised)] px-4 pb-3 pt-2 text-[color:var(--fg)] motion-safe:animate-[sheet-in_.26s_cubic-bezier(.2,.8,.2,1)]"
++          className={
++            tablet
++              ? "absolute inset-x-0 bottom-0 flex h-1/2 min-h-[380px] flex-col gap-2 rounded-t-[20px] bg-[color:var(--surface-raised)] px-5 pb-4 pt-2 text-[color:var(--fg)] shadow-[0_-12px_40px_rgba(0,0,0,.45),inset_0_1px_0_var(--border-strong)] motion-safe:animate-[sheet-up_.26s_cubic-bezier(.2,.8,.2,1)_both]"
++              : "flex h-full w-full flex-col gap-2 bg-[color:var(--surface-raised)] px-4 pb-3 pt-2 text-[color:var(--fg)] motion-safe:animate-[sheet-in_.26s_cubic-bezier(.2,.8,.2,1)]"
++          }
+           data-testid="tracker-sheet"
+         >
+           <div className="flex h-[44px] items-center gap-3">
+@@ -165,7 +173,7 @@
+                 aria-controls="sheet-panel"
+                 tabIndex={view.tab === t ? 0 : -1}
+                 onClick={() => { onView({ seat: view.seat, tab: t }); setEnding(false); }}
+-                className={"-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b-2 px-3 text-[14px] font-semibold " + (t === "table" ? "ml-auto " : "") + (view.tab === t ? "border-[color:var(--accent)] text-[color:var(--fg)]" : "border-transparent text-[color:var(--fg-muted)]")}
++                className={"-mb-px min-h-[44px] shrink-0 whitespace-nowrap border-b-2 px-3 text-[14px] font-semibold " + (view.tab === t ? "border-[color:var(--accent)] text-[color:var(--fg)]" : "border-transparent text-[color:var(--fg-muted)]")}
+               >
+                 {tabLabel(t)}
+                 {em(t) ? <em className="ml-1.5 font-mono text-[11.5px] not-italic text-[color:var(--accent-text)]">{em(t)}</em> : null}
+@@ -183,8 +191,9 @@
+ 
+ const cmdrName = (p: PlaySeat, cmdr: number) => (cmdr === 1 && p.partner ? p.partner : p.commander || copy.sheet.commanderFallback);
+ 
+-function DamageTab({ seat, seats, state, onCommit }: { seat: SeatState; seats: readonly PlaySeat[]; state: GameState; onCommit: (a: Action) => void }) {
++function DamageTab({ seat, seats, state, tablet, onCommit }: { seat: SeatState; seats: readonly PlaySeat[]; state: GameState; tablet?: boolean; onCommit: (a: Action) => void }) {
+   const foes = state.seats.filter((s) => s.seat !== seat.seat);
++  if (tablet) return <DamageArt seat={seat} foes={foes} seats={seats} onCommit={onCommit} />;
+   return (
+     <div className="flex flex-col gap-2">
+       {foes.length === 0 ? <p className="text-[13px] text-[color:var(--fg-muted)]">{copy.sheet.noOpponents}</p> : null}
+@@ -211,6 +220,41 @@
+               </div>
+             </div>
+           );
++        })}
++      </div>
++      <p className="text-[12px] text-[color:var(--fg-muted)]">{copy.sheet.damageHint}</p>
++    </div>
++  );
++}
++
++/**
++ * Commander damage on a tablet (tablet addendum, D1 to D4): one card per opponent across the sheet, the commander's art
++ * filling the card the way it fills their panel, the count over the art's foot. A partner pair splits the art and each
++ * half carries its own name and stepper, so each commander's count sits under its own art.
++ */
++function DamageArt({ seat, foes, seats, onCommit }: { seat: SeatState; foes: readonly SeatState[]; seats: readonly PlaySeat[]; onCommit: (a: Action) => void }) {
++  return (
++    <div className="flex h-full min-h-[236px] flex-col gap-2">
++      {foes.length === 0 ? <p className="text-[13px] text-[color:var(--fg-muted)]">{copy.sheet.noOpponents}</p> : null}
++      <div className="grid min-h-0 flex-1 gap-2.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, foes.length)}, minmax(0, 1fr))` }}>
++        {foes.map((foe) => {
++          const p = seats.find((x) => x.seat === foe.seat)!;
++          const taken = Array.from({ length: foe.commanders }, (_, cmdr) => seat.damage[`${foe.seat}:${cmdr}`] ?? 0);
++          return (
++            <div key={foe.seat} className={CARD_BOX} data-testid="damage-card">
++              <ArtStrip arts={artsOf(p, foe.commanders)} className="absolute inset-0" />
++              <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.55)_0%,rgba(0,0,0,0)_26%,rgba(0,0,0,0)_40%,rgba(0,0,0,.86)_100%)]" />
++              <b className="relative px-3 pt-2.5 text-[15px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
++              <div className="relative mt-auto flex">
++                {taken.map((n, cmdr) => (
++                  <div key={cmdr} className="flex min-w-0 flex-1 flex-col items-center gap-1 px-2 pb-3">
++                    <span className="max-w-full truncate text-[12.5px] text-[color:var(--fg)] [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{cmdrName(p, cmdr)}</span>
++                    <Stepper size="damageOne" count={n} tone={n > 0 ? "set" : undefined} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
++                  </div>
++                ))}
++              </div>
++            </div>
++          );
+         })}
+       </div>
+       <p className="text-[12px] text-[color:var(--fg-muted)]">{copy.sheet.damageHint}</p>
