@@ -109,7 +109,7 @@
     {
       "id": "deck-header-desktop",
       "label": "/decks/<id> — the desktop spine (`md:block`, both its portrait widths)",
-      "view": "src/components/decks/spine-desktop.tsx",
+      "view": "src/components/decks/deck-header-art.tsx",
       "steps": [
         {
           "goto": "/decks",

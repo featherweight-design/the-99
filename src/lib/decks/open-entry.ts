@@ -23,6 +23,8 @@ export type OpenFacts = {
   /** Both commanders' colours in WUBRG order (`deckIdentity`). */
   identity: string[];
   artCropUri: string | null;
+  /** The commander's own colours, which the art's no-crop gradient draws (the loaded header passes the commander's, not the pair's). Absent on an entry from an older build: the pair's `identity` stands in. */
+  artIdentity?: string[];
   status: StatusPill;
   built: number;
   /** A partner deck's body is 98 (`deckBodySize`), so the count's denominator needs the fact, not the name. */
@@ -48,6 +50,7 @@ export function openFactsOf(d: DeckListItem): OpenFacts {
     commander: d.partnerName ? `${commander} + ${d.partnerName}` : commander,
     identity: deckIdentity(d.commanderColorIdentity, d.partnerColorIdentity),
     artCropUri: d.commanderArtCropUri,
+    artIdentity: d.commanderColorIdentity,
     status: d.statusPill,
     built: d.built,
     partner: d.partnerName !== null,
@@ -63,6 +66,8 @@ export function parseOpenEntry(raw: string | null, now: number): OpenEntry | nul
     // Every field the skeleton draws: an entry from an older build must fall back to shapes, not throw in the fallback.
     if (typeof f.name !== "string" || typeof f.commander !== "string" || typeof f.built !== "number" || typeof f.status !== "string" || typeof f.partner !== "boolean") return null;
     if (!Array.isArray(f.identity) || !f.identity.every((c) => typeof c === "string")) return null;
+    // Optional, so an older entry stays valid; a malformed one is dropped to the deck's identity.
+    if (f.artIdentity !== undefined && (!Array.isArray(f.artIdentity) || !f.artIdentity.every((c) => typeof c === "string"))) delete f.artIdentity;
     if (now - v.at > OPEN_TTL_MS || v.facts.id !== v.to) return null;
     return v as OpenEntry;
   } catch {

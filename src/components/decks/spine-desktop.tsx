@@ -13,7 +13,7 @@ import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { useCommanderSiblings } from "./deck-siblings";
 import { IdentityPips } from "../commanders/commander-art";
 import { ChangeCommanderDoor } from "./change-commander-door";
-import { ArtWash } from "../ui/art-wash";
+import { DeckHeaderArt, DECK_HEADER_LABEL_INSET } from "./deck-header-art";
 import { DeckCardOverflow, type DeckMove } from "./deck-card-overflow";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
@@ -231,26 +231,7 @@ export function SpineDesktop({
           `labelAtPx="flat"`: this band's ink starts past the portrait's flat stop
           and stands on the row's own ground, so a vertical ramp would darken the
           header for nothing. */}
-      <div className="hidden @min-[1200px]:block">
-        <ArtWash
-          strategy="left-portrait"
-          height={288}
-          portrait={560}
-          labelAtPx="flat"
-          artCropUri={commander.artCropUri}
-          colorIdentity={commander.colorIdentity}
-        />
-      </div>
-      <div className="@min-[1200px]:hidden">
-        <ArtWash
-          strategy="left-portrait"
-          height={288}
-          portrait={340}
-          labelAtPx="flat"
-          artCropUri={commander.artCropUri}
-          colorIdentity={commander.colorIdentity}
-        />
-      </div>
+      <DeckHeaderArt artCropUri={commander.artCropUri} colorIdentity={commander.colorIdentity} />
       {/* §G — with no crop there is no printing to open, so the pill is absent (the door then
           draws its ⇄ half alone, or nothing outside the provider). It is absolutely
           positioned, so its absence shifts nothing. Hidden while editing (STATES §2, state 3:
@@ -272,7 +253,7 @@ export function SpineDesktop({
         // identity block reads up from the bottom edge and the actions sit in the
         // bottom-right corner. `items-center` floated both in the middle of a
         // 288px band with the art's subject behind them.
-        className="relative flex min-h-[288px] items-end pl-[364px] @min-[1200px]:pl-[592px]"
+        className={`relative flex min-h-[288px] items-end ${DECK_HEADER_LABEL_INSET}`}
         // `paddingRight` alone: a `padding` shorthand here would set
         // `padding-left` too, and an inline declaration outranks the `pl-`
         // classes above — the inset would silently stay at 24px and the title

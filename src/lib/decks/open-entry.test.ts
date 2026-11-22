@@ -37,6 +37,13 @@ describe("parseOpenEntry", () => {
     expect(parseOpenEntry(entry({ facts: { ...facts, identity: undefined } as unknown as OpenFacts }), 1001)).toBeNull();
     expect(parseOpenEntry(entry({ facts: { ...facts, name: undefined } as unknown as OpenFacts }), 1001)).toBeNull();
   });
+
+  it("keeps an entry from an older build and drops a malformed artIdentity", () => {
+    expect(parseOpenEntry(entry({ facts }), 1001)?.facts.artIdentity).toBeUndefined();
+    const bad = parseOpenEntry(entry({ facts: { ...facts, artIdentity: "W" } as unknown as OpenFacts }), 1001);
+    expect(bad).not.toBeNull();
+    expect(bad?.facts.artIdentity).toBeUndefined();
+  });
 });
 
 describe("openFactsOf", () => {
@@ -59,6 +66,7 @@ describe("openFactsOf", () => {
     const f = openFactsOf(row({ partnerName: "Kraum, Ludevic's Opus", partnerColorIdentity: ["U", "B"] }));
     expect(f.commander).toBe("Tymna the Weaver + Kraum, Ludevic's Opus");
     expect(f.identity).toEqual(["W", "U", "B"]);
+    expect(f.artIdentity).toEqual(["W"]);
     expect(f.partner).toBe(true);
   });
 
