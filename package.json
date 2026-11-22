@@ -126,6 +126,7 @@
     "probe:admin-switches": "tsx scripts/probe-admin-switches.mts",
     "probe:admin-groups": "tsx scripts/probe-admin-groups.mts",
     "probe:admin-email-preview": "tsx scripts/probe-admin-email-preview.mts",
+    "probe:admin-invites-layout": "tsx scripts/probe-admin-invites-layout.mts",
     "probe:group-allowance": "tsx scripts/probe-group-allowance.mts",
     "measure:friend-spares": "tsx scripts/measure-friend-spares.mts",
     "probe:manapool-token-link": "tsx scripts/probe-manapool-token-link.mts",
