@@ -17,6 +17,7 @@
  */
 import { eq, sql } from "drizzle-orm";
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 
 import { db } from "../../db";
 import { catalogRefreshes, CATALOG_ROW_ID } from "../../db/schema";
@@ -81,7 +82,14 @@ export async function readCatalogGeneration(): Promise<string> {
  */
 let cached: (() => Promise<string>) | null = null;
 
-export async function catalogGeneration(): Promise<string> {
+/**
+ * One lookup per request. `unstable_cache` asks Next's data cache on every call, and one page
+ * render reaches this from several readers (the page cache key, the public loaders, the
+ * strategy and theme reads), so Sentry saw a dozen identical cache-store round trips on Home
+ * (THE-99-D). React's `cache` shares the first answer across a render and, outside a render
+ * (a script, a test), calls straight through.
+ */
+export const catalogGeneration: () => Promise<string> = cache(async (): Promise<string> => {
   try {
     cached ??= unstable_cache(
       readCatalogGeneration,
@@ -100,4 +108,4 @@ export async function catalogGeneration(): Promise<string> {
     // rather than taking a page down for a freshness optimisation.
     return UNSTAMPED;
   }
-}
+});
