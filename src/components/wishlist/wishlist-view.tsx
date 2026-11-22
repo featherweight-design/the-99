@@ -194,7 +194,7 @@ function WishlistGrid({ tiles, sort, searching }: { tiles: WishlistViewTile[]; s
 
 function WishlistTile({ tile, eager, siblings }: { tile: WishlistViewTile; eager: boolean; siblings: SiblingCard[] }) {
   const ctx = usePageSpares();
-  const pressed = (ctx?.byCard.get(tile.oracleId)?.length ?? 0) > 0;
+  const friends = ctx?.byCard.get(tile.oracleId)?.length ?? 0;
   // The whole tile, art and caption, is the press that opens card details, so everything inside it is a span: a button
   // holds phrasing content only. The friend-spare press is its sibling, laid over the caption's lower right.
   return (
@@ -207,7 +207,7 @@ function WishlistTile({ tile, eager, siblings }: { tile: WishlistViewTile; eager
         ariaLabel={`${cardDetailCopy.triggerAria(tile.name)}, ${wishlistCaptionText(tile)}`}
         className={`${WISHLIST_TILE_SHELL} art-lift-host md:hover:border-[color:var(--accent)] transition-colors`}
       >
-        <WishlistTileFace tile={tile} eager={eager} pressRoom={pressed} />
+        <WishlistTileFace tile={tile} eager={eager} pressRoom={friends} />
       </CardDetailTrigger>
       <WishlistSparePress
         card={{ oracleId: tile.oracleId, name: tile.name, printedName: null, layout: null, imageUri: tile.imageUri, price: tile.price ? { ...tile.price, asOf: new Date(tile.price.asOf) } : null }}

@@ -84,9 +84,10 @@ export function Parts({ parts, strong }: { parts: readonly CopyPart[]; strong: s
  * The tile's art and caption, everything inside its shell. Every element is a span, because on the tab the shell is
  * the button that opens card details, and a button holds phrasing content only.
  */
-export function WishlistTileFace({ tile, eager, pressRoom = false }: { tile: WishlistTileCard; eager: boolean; pressRoom?: boolean }) {
-  // A tile that draws the friend-spare press keeps its caption lines 2 and 3 clear of it: 38px on the phone, 44px from `md`.
-  const room = pressRoom ? " pr-[38px] md:pr-[44px]" : "";
+export function WishlistTileFace({ tile, eager, pressRoom = 0 }: { tile: WishlistTileCard; eager: boolean; pressRoom?: number }) {
+  // A tile that draws the friend-spare press keeps its caption lines 2 and 3 clear of it: 38px on the phone, 44px from `md`
+  // for the glyph alone; the count of two or more friends widens the box by ~10px, so those lines clear 48px and 54px.
+  const room = pressRoom > 1 ? " pr-[48px] md:pr-[54px]" : pressRoom === 1 ? " pr-[38px] md:pr-[44px]" : "";
   return (
     <>
       <span
