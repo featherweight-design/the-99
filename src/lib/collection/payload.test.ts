@@ -31,9 +31,9 @@ describe("loadCollectionList", () => {
   it("serves a list whose price read failed, says so, and stores nothing", async () => {
     loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a" }], pricesFailed: true });
     expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a" }], pricesFailed: true });
-    loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a", price: 80, imageUri: null }], pricesFailed: false });
     // A filed list comes back as the wire reads it: availability is the page's to join, so null here.
-    expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a", price: 80, availability: null }], pricesFailed: false });
+    expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a", price: 80, imageUri: null, availability: null }], pricesFailed: false });
     expect(loadBrowseCards).toHaveBeenCalledTimes(2);
   });
 
