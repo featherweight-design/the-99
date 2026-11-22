@@ -80,7 +80,7 @@ beforeEach(() => {
 afterEach(cleanup);
 
 const DECK = { id: "11111111-1111-4111-8111-111111111111", name: named("Thopter Factory"), commanderName: "Sai, Master Thopterist", partnerName: null, colorIdentity: ["U"], artCropUri: null, built: 99, bodySize: 99 };
-const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, spare: 2, onWishlist: true };
+const SPARE = { oracleId: "00000000-0000-4000-8000-0000000000c1", name: "Ghalta, Primal Hunger", imageUri: null, typeLine: "Creature", colorIdentity: ["G"], spare: 2, onWishlist: true };
 
 describe("a friend's page group", () => {
   beforeEach(() => {

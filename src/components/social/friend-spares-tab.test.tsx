@@ -29,8 +29,8 @@ const SPARES: FriendSpareList = {
   friend: { ...COLIN, displayName: named("Colin"), pods: [named("Thursday pod")] },
   wishlist: true,
   lines: [
-    { oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null, spare: 1, onWishlist: true },
-    { oracleId: SAI, name: "Sai, Master Thopterist", imageUri: null, spare: 2, onWishlist: false },
+    { oracleId: GHALTA, name: "Ghalta, Primal Hunger", imageUri: null, typeLine: "Creature", colorIdentity: ["G"], spare: 1, onWishlist: true },
+    { oracleId: SAI, name: "Sai, Master Thopterist", imageUri: null, typeLine: "Creature", colorIdentity: ["U"], spare: 2, onWishlist: false },
   ],
 };
 const friend = (name: string, publicId: string) => ({ publicId, displayName: named(name), commander: null, pods: [named("Cube night")] });

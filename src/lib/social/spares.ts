@@ -281,6 +281,10 @@ export type FriendSpareLine = {
   spare: number;
   /** The viewer wants this card (a line on their own wishlist). */
   onWishlist: boolean;
+  /** The catalog's type line, whole: the Spares search reads it and the Type filter reads its front face. */
+  typeLine: string;
+  /** WUBRG letters, uppercase; empty for a colorless card. */
+  colorIdentity: string[];
 };
 
 /** The Spares tab's order: cards on the viewer's wishlist first, then by name, then by id so a tie is stable. */
@@ -333,7 +337,7 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown, w
   const shown = spareFriendOf(read.grant);
   if (ids.length === 0) return { pods: shown.pods, friend: shown, lines: [], wishlist };
   const [info, wanted] = await Promise.all([
-    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, ids)),
+    db.select({ oracleId: cards.oracleId, name: cards.name, imageUri: cards.imageUri, typeLine: cards.typeLine, colorIdentity: cards.colorIdentity }).from(cards).where(inArray(cards.oracleId, ids)),
     wishlist
       ? db.select({ oracleId: wishlistItems.oracleId }).from(wishlistItems).where(and(eq(wishlistItems.userId, viewerId), inArray(wishlistItems.oracleId, ids)))
       : Promise.resolve([]),
@@ -342,7 +346,7 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown, w
   const onList = new Set(wanted.map((w) => w.oracleId));
   const lines = read.offered.flatMap((o) => {
     const c = byId.get(o.oracleId);
-    return c ? [{ oracleId: o.oracleId, name: c.name, imageUri: c.imageUri, spare: o.spare, onWishlist: onList.has(o.oracleId) }] : [];
+    return c ? [{ oracleId: o.oracleId, name: c.name, imageUri: c.imageUri, spare: o.spare, onWishlist: onList.has(o.oracleId), typeLine: c.typeLine, colorIdentity: c.colorIdentity }] : [];
   });
   lines.sort(spareLineOrder);
   return { pods: shown.pods, friend: shown, lines, wishlist };

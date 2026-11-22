@@ -88,7 +88,7 @@ describe("spareCount (Q12)", () => {
 });
 
 describe("spareLineOrder", () => {
-  const line = (name: string, onWishlist: boolean, oracleId = name) => ({ oracleId, name, imageUri: null, spare: 1, onWishlist });
+  const line = (name: string, onWishlist: boolean, oracleId = name) => ({ oracleId, name, imageUri: null, typeLine: "Creature", colorIdentity: [], spare: 1, onWishlist });
 
   it("puts the viewer's wishlist cards first, then orders by name", () => {
     const lines = [line("Arcane Signet", false), line("Sol Ring", true), line("Birds of Paradise", false), line("Ghalta", true)];
