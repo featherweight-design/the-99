@@ -12,6 +12,8 @@ import { shellCopy } from "../../lib/copy/shell";
 import { reportCopy } from "../../lib/copy/report";
 import { useReportable } from "../feedback/feedback-provider";
 import { ReportForm } from "../feedback/report-form";
+import { isSkewError } from "../../lib/skew/skew";
+import { reloadForSkew } from "./skew-guard";
 
 const copy = shellCopy.errorBoundary;
 const BUTTON = "text-[13px] md:text-[14px] px-[22px] py-[12px]";
@@ -41,6 +43,9 @@ export function ErrorNotice({
   const reportable = useReportable();
   const [reporting, setReporting] = useState<{ eventId: string | null } | null>(null);
   useEffect(() => {
+    // A stale chunk or Server Action id is the tab being a deployment behind, not a bug: one reload (under the
+    // loop guard) puts it on the current build. If the guard refuses, the notice below is drawn as usual.
+    if (isSkewError(error) && reloadForSkew()) return;
     logBoundaryError(boundary, error.digest);
     // A server error carries a digest and was reported where it happened (`onRequestError`); only a
     // browser-side throw is new here.
