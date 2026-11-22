@@ -123,15 +123,16 @@ export function toMessage(group: readonly PushItem[], device: SaleDevice = NO_DE
     }
     case "rule_zero_log": {
       // One table's games (the batch is the table, live and release alike), oldest first. One game opens its Log form; several open Home, where the card lists them.
-      const games = [...(group as (typeof first)[])].sort((a, b) => a.gameMs - b.gameMs);
       const log = c.one.log;
       const tag = `rule_zero_log:${first.tableId}`;
       if (n === 1) {
-        const [title, body] = Array.from(log.title(first.result, first.pod)).length <= log.titleMax
-          ? [log.title(first.result, first.pod), log.body(first.deck)]
+        const whole = log.title(first.result, first.pod);
+        const [title, body] = Array.from(whole).length <= log.titleMax
+          ? [whole, log.body(first.deck)]
           : [fitWinnerTitle(log.splitTitle, first.result, log.titleMax), log.splitBody(first.pod, first.deck)];
         return home(tag, keys, title, body, { route: logGameHref({ tableId: first.tableId, viewerDeckId: first.deckId }, first.gameMs) ?? "/" });
       }
+      const games = [...(group as (typeof first)[])].sort((a, b) => a.gameMs - b.gameMs);
       const many = log.many;
       const full = many.title(n, first.pod);
       const [title, body] = Array.from(full).length <= log.titleMax

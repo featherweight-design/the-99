@@ -79,7 +79,7 @@ export async function resolvePushItems(
     }
     if (ref.kind === LOG_PUSH_KIND) {
       const parsed = parseLogKey(ref.key);
-      const game = parsed ? logById.get(ref.key) : undefined;
+      const game = parsed ? logById.get(logItemKey(parsed.tableId, parsed.gameMs)) : undefined;
       if (game) items.push(logPushItem(game, ref.key));
       else dropped.push(ref);
       continue;
