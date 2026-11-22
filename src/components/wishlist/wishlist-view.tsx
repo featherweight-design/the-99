@@ -89,7 +89,7 @@ export function WishlistView({
 
   return (
     <CardDetailProvider onWishlistWrite={onWant} browsePrintings>
-      <FriendSparesProvider oracleIds={sparesIds} newestAsOf={sparesAsOf} requests deckId={null} standalone noFriends={!hasFriend} hostSheet={false}>
+      <FriendSparesProvider oracleIds={sparesIds} newestAsOf={sparesAsOf} requests={hasFriend} deckId={null} standalone noFriends={!hasFriend} hostSheet={false}>
       <SparesSheetHost kickerFor={() => copy.page.sparePress.kicker} />
       <div className="flex flex-col">
         <div className="flex items-center gap-[12px] px-[14px] pt-[14px] md:px-[34px] md:pt-[18px]">
