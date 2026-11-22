@@ -113,7 +113,7 @@ describe("encodeCollection / decodeCollection", () => {
 
   it("ships availability as a short-keyed tuple, and none at all for a card with none", () => {
     const wire = encodeCollection(cards, availability);
-    expect(wire.cards[0].a).toEqual([2, 1, 1, 1, [0, 1]]);
+    expect(wire.cards[0].a).toEqual([2, 1, 1, 1, [1, 2]]);
     expect(Object.hasOwn(wire.cards[2], "a")).toBe(false);
     expect(JSON.stringify(wire)).not.toContain('"availability"');
   });
