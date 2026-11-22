@@ -7,6 +7,7 @@ import {
   cssUrl,
   filterCards,
   formatLastUpdated,
+  matchesSearch,
   printedFaceName,
   printedNameOf,
   printingCaption,
@@ -773,6 +774,30 @@ describe("toListCards", () => {
   it("uppercases set codes, which is what buildSetOptions looks them up by", () => {
     const [list] = toListCards([card({ printings: [printing({ setCode: "c21", quantity: 2 })] })]);
     expect(list.setCounts).toEqual([["C21", 2]]);
+  });
+});
+
+describe("matchesSearch: type words", () => {
+  const c = (name: string, typeLine: string, printedName: string | null = null) => ({ name, printedName, typeLine });
+  it("finds a card by a whole word of its type line", () => {
+    expect(matchesSearch(c("Doom Blade Zed", "Creature — Zombie Wizard"), "zombie")).toBe(true);
+    expect(matchesSearch(c("The Eldest Reborn", "Enchantment — Saga"), "saga")).toBe(true);
+    expect(matchesSearch(c("Sword of Fire", "Artifact — Equipment"), "equipment")).toBe(true);
+  });
+  it("never matches part of a word: art is not Artifact", () => {
+    expect(matchesSearch(c("Sol Ring", "Artifact"), "art")).toBe(false);
+    expect(matchesSearch(c("Sol Ring", "Artifact"), "artifact")).toBe(true);
+  });
+  it("needs every typed word in the type line", () => {
+    expect(matchesSearch(c("Llanowar Elves", "Creature — Elf Druid"), "creature elf")).toBe(true);
+    expect(matchesSearch(c("Llanowar Elves", "Creature — Elf Druid"), "creature zombie")).toBe(false);
+  });
+  it("reads the front face only", () => {
+    expect(matchesSearch(c("Shatterskull Smashing", "Sorcery // Land"), "land")).toBe(false);
+  });
+  it("keeps name matching, substring and either name", () => {
+    expect(matchesSearch(c("Sol Ring", "Artifact"), "ol ri")).toBe(true);
+    expect(matchesSearch(c("Teferi's Ageless Insight", "Enchantment", "Mimir's Ancient Wisdom"), "mimir")).toBe(true);
   });
 });
 
