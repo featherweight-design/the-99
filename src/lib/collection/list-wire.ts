@@ -40,10 +40,12 @@ export function unstemImage(wire: string): string {
   return `${HOST}${id[0]}/${id[1]}/${id}.jpg${m[2] ?? ""}`;
 }
 
-type WireAvailability = Omit<AvailabilitySummary, "claims"> & { claims: number[] };
+/** `[owned, hard, soft, free, claims]`: a tuple, because the five keys' names were ~45 bytes of every card's ~70. */
+type WireAvailability = [owned: number, hard: number, soft: number, free: number, claims: number[]];
 type WireCard = Omit<BrowseListCard, "availability" | "price" | "added" | "since" | CollectionDrawKey> &
   Partial<Pick<BrowseListCard, CollectionDrawKey>> & {
-    availability?: WireAvailability | null;
+    /** `availability`: absent when the card has none (the decoder answers `null`), else the tuple above. */
+    a?: WireAvailability;
     /** `price`, under one letter: it rides every card, and its key alone was ~12KB of the wire. */
     p?: number;
     /** `added` and `since` (the Date added sort's figures), under short keys for the same reason. */
@@ -116,18 +118,9 @@ export function encodeCollection(
       if (since !== undefined) wire.sn = since;
       const a = availability?.get(card.oracleId);
       if (a) {
-        const { claims, ...figures } = a;
-        wire.availability = {
-          owned: figures.owned,
-          hard: figures.hard,
-          soft: figures.soft,
-          free: figures.free,
-          // The bit is `holdsCopy`, the one question a marker asks of it: a brew the player gave a
-          // copy to holds it as a committed deck does, so it decodes as `mature`.
-          claims: claims.map((c) => deck(c.id, c.name) * 2 + (holdsCopy(c) ? 1 : 0)),
-        };
-      } else {
-        wire.availability = null;
+        // The bit is `holdsCopy`, the one question a marker asks of it: a brew the player gave a
+        // copy to holds it as a committed deck does, so it decodes as `mature`.
+        wire.a = [a.owned, a.hard, a.soft, a.free, a.claims.map((c) => deck(c.id, c.name) * 2 + (holdsCopy(c) ? 1 : 0))];
       }
       return wire;
     }),
@@ -138,7 +131,7 @@ export function decodeCollection(wire: CollectionWire): CollectionRow[] {
   return wire.cards.map((card) => {
     // `imageUri` is on every whole card, null or not, and on no withheld one.
     const whole = Object.hasOwn(card, "imageUri");
-    const { imageUri, p, ad, sn, ...rest } = card;
+    const { imageUri, p, ad, sn, a, ...rest } = card;
     const list = {
       ...rest,
       ...(p === undefined ? {} : { price: p }),
@@ -147,10 +140,13 @@ export function decodeCollection(wire: CollectionWire): CollectionRow[] {
       ...(whole ? { imageUri: imageUri == null ? null : unstemImage(imageUri) } : { withheld: true as const }),
       availability: null,
     } as CollectionRow;
-    if (card.availability) {
-      const { claims, ...figures } = card.availability;
+    if (a) {
+      const [owned, hard, soft, free, claims] = a;
       list.availability = {
-        ...figures,
+        owned,
+        hard,
+        soft,
+        free,
         claims: claims.map((code) => {
           const [id, name] = wire.decks[code >> 1];
           return { id, name, mature: (code & 1) === 1 };
