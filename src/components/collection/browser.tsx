@@ -243,6 +243,7 @@ export function CollectionBrowser({
   availabilityOk,
   pricesFailed = false,
   viewHint = NO_VIEW_HINT,
+  savedToken = null,
 }: {
   /**
    * The list, whole cards and WITHHELD ones (list payload plan, PR 4): the page ships the draw
@@ -275,6 +276,8 @@ export function CollectionBrowser({
    * first render draws both views. A test that does not care passes nothing.
    */
   viewHint?: ViewHint;
+  /** What the browser's saved copy of the fetched draw fields is good for (`lib/collection/saved-token`); null keeps no copy. */
+  savedToken?: string | null;
 }) {
   const search = useSearchParams();
   // A withheld row lacks only draw fields, which none of the filters, sorts, counts or options
@@ -555,7 +558,7 @@ export function CollectionBrowser({
   const wanted = useMemo(() => (sorted as CollectionRow[]).slice(0, shown), [sorted, shown]);
   const router = useRouter();
   const refreshStale = useCallback(() => router.refresh(), [router]);
-  const { resolve } = useCollectionFields(served, wanted, refreshStale);
+  const { resolve } = useCollectionFields(served, wanted, refreshStale, savedToken);
   const resolvedWanted = wanted.map(resolve);
   const complete = resolvedWanted.every((r) => r !== null);
   // The last rows drawn WHOLE, kept as drawn.

@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { createFieldsLoop, type FieldsSource } from "./use-withheld-fields";
 
+const disk = vi.hoisted(() => ({ read: vi.fn(), write: vi.fn() }));
+vi.mock("./saved-fields", () => ({ readSavedFields: disk.read, writeSavedFields: disk.write }));
+
 type Row = { id: string };
 const source: FieldsSource<Row> = {
   keyOf: (r) => r.id,
@@ -65,5 +68,68 @@ describe("createFieldsLoop", () => {
     await vi.advanceTimersByTimeAsync(0);
     const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
     expect(JSON.parse(String(init.body)).ids).toHaveLength(200);
+  });
+
+  describe("the saved copy", () => {
+    const saved = { list: "collection", token: "tok-1" };
+    const answer = () => vi.fn(async () => ({ ok: true, status: 200, headers: new Headers(), json: async () => ({ fields: { a: { n: 1 }, b: { n: 2 }, c: { n: 3 } } }) }));
+
+    it("draws from a copy whose token is the page's, and asks the route for nothing", async () => {
+      vi.useFakeTimers();
+      disk.read.mockResolvedValue({ token: "tok-1", fields: { a: { n: 1 }, b: { n: 2 }, c: { n: 3 } } });
+      const fetch = answer();
+      vi.stubGlobal("fetch", fetch);
+      const landed = vi.fn();
+      const loop = createFieldsLoop<Row, object>(landed);
+      loop.start();
+      loop.update({ source, all: rows, wanted: [rows[0]], wantedKey: "w1", saved });
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(fetch).not.toHaveBeenCalled();
+      expect(loop.get(rows, "c")).toEqual({ n: 3 });
+      expect(landed).toHaveBeenCalled();
+      expect(disk.write).not.toHaveBeenCalled();
+    });
+
+    it("ignores a copy filed under another token, fetches, and keeps what arrived once every card has its fields", async () => {
+      vi.useFakeTimers();
+      disk.write.mockClear();
+      disk.read.mockResolvedValue({ token: "someone-elses", fields: { a: { n: 99 } } });
+      const fetch = answer();
+      vi.stubGlobal("fetch", fetch);
+      const loop = createFieldsLoop<Row, object>(() => {});
+      loop.start();
+      loop.update({ source, all: rows, wanted: [rows[0]], wantedKey: "w1", saved });
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(loop.get(rows, "a")).toEqual({ n: 1 });
+      expect(disk.write).toHaveBeenCalledWith("collection", { token: "tok-1", fields: { a: { n: 1 }, b: { n: 2 }, c: { n: 3 } } });
+    });
+
+    it("keeps nothing while a card is still missing its fields", async () => {
+      vi.useFakeTimers();
+      disk.write.mockClear();
+      disk.read.mockResolvedValue(null);
+      vi.stubGlobal("fetch", vi.fn(async () => ({ ok: true, status: 200, headers: new Headers(), json: async () => ({ fields: { a: {} } }) })));
+      const loop = createFieldsLoop<Row, object>(() => {});
+      loop.start();
+      loop.update({ source, all: rows, wanted: [rows[0]], wantedKey: "w1", saved });
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(disk.write).not.toHaveBeenCalled();
+    });
+
+    it("reads and writes nothing when the page handed no token", async () => {
+      vi.useFakeTimers();
+      disk.read.mockClear();
+      disk.write.mockClear();
+      const fetch = answer();
+      vi.stubGlobal("fetch", fetch);
+      const loop = createFieldsLoop<Row, object>(() => {});
+      loop.start();
+      loop.update({ source, all: rows, wanted: [rows[0]], wantedKey: "w1", saved: null });
+      await vi.advanceTimersByTimeAsync(1_000);
+      expect(fetch).toHaveBeenCalledTimes(1);
+      expect(disk.read).not.toHaveBeenCalled();
+      expect(disk.write).not.toHaveBeenCalled();
+    });
   });
 });

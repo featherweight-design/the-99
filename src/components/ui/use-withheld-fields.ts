@@ -17,6 +17,7 @@
 // Fields are held per payload, never per parameter: a fresh payload of the same list (a refresh,
 // a navigation back) may have moved them.
 import { useCallback, useEffect, useState } from "react";
+import { readSavedFields, writeSavedFields } from "./saved-fields";
 
 /** How long the background waits for an idle moment where the browser has no `requestIdleCallback`. */
 const IDLE_FALLBACK_MS = 200;
@@ -57,7 +58,19 @@ export type FieldsSource<Row> = {
   disagrees?: (row: Row, fields: object) => boolean;
 };
 
-type LoopInput<Row> = { source: FieldsSource<Row> | null; all: Row[]; wanted: Row[]; wantedKey: string };
+/**
+ * A saved copy of the fetched fields (`saved-fields.ts`): `list` names the entry, `token` is what the
+ * server says the fields are good for. Absent, nothing is read or kept.
+ */
+export type SavedCopy = { list: string; token: string };
+
+type LoopInput<Row> = {
+  source: FieldsSource<Row> | null;
+  all: Row[];
+  wanted: Row[];
+  wantedKey: string;
+  saved?: SavedCopy | null;
+};
 
 /**
  * The fetch loop, held OUTSIDE React state. A render is asked for only when a batch lands rows the
@@ -72,14 +85,23 @@ export function createFieldsLoop<Row extends object, Fields extends object>(onLa
   // go takes its fields with it.
   const lists = new WeakMap<
     Row[],
-    { store: Map<string, Fields>; asked: Set<string>; gone: Set<string>; refreshed: boolean }
+    {
+      store: Map<string, Fields>;
+      asked: Set<string>;
+      gone: Set<string>;
+      refreshed: boolean;
+      /** The saved copy: not yet asked for, being read, or settled (read, or nothing to read). */
+      restore: "idle" | "reading" | "done";
+      /** How many fields the copy on disk holds, so a copy is written again only when it grew. */
+      kept: number;
+    }
   >();
   const forList = (all: Row[]) => {
     let entry = lists.get(all);
     if (!entry) {
       // `asked`: keys already asked for, whatever came back, so a key is not asked twice.
       // `gone`: keys the route left out, which only a fresh payload can draw.
-      entry = { store: new Map(), asked: new Set(), gone: new Set(), refreshed: false };
+      entry = { store: new Map(), asked: new Set(), gone: new Set(), refreshed: false, restore: "idle", kept: 0 };
       lists.set(all, entry);
     }
     return entry;
@@ -138,6 +160,25 @@ export function createFieldsLoop<Row extends object, Fields extends object>(onLa
     if (!list.refreshed && (wanted.some(gone) || all.some(disagreesNow))) {
       list.refreshed = true;
       onStale();
+      return;
+    }
+    // THE SAVED COPY IS READ BEFORE ANY BATCH GOES: a few milliseconds of waiting against a request
+    // for fields the browser already holds. It settles whatever happens (`readSavedFields` never
+    // rejects), and is used only when its token is the one the server just handed this page.
+    if (input.saved && list.restore !== "done") {
+      if (list.restore === "idle") {
+        list.restore = "reading";
+        const { list: name, token } = input.saved;
+        void readSavedFields(name).then((copy) => {
+          list.restore = "done";
+          if (copy && copy.token === token) {
+            for (const [key, f] of Object.entries(copy.fields)) if (!store.has(key)) store.set(key, f as Fields);
+            list.kept = store.size;
+            if (input.all === all && input.wanted.some((r) => !isDrawn(r) && store.has(keyOf(r)))) onLanded();
+          }
+          if (input.all === all) pump();
+        });
+      }
       return;
     }
     // A list already sent for a fresh read asks for nothing more: what it would fetch belongs to a
@@ -208,6 +249,21 @@ export function createFieldsLoop<Row extends object, Fields extends object>(onLa
           // page the moment one of them is wanted, now or later.
           for (const s of batch) if (!Object.hasOwn(body.fields, s)) forList(all).gone.add(s);
           if (input.all === all && input.wanted.some((r) => !isDrawn(r) && Object.hasOwn(body.fields, keyOf(r)))) onLanded();
+          // Every withheld card now has its fields, and the copy on disk has fewer: keep this one. Never
+          // from a list that was sent for a fresh read, or that has a card the route no longer knows.
+          const list2 = forList(all);
+          const saved = input.saved;
+          if (
+            saved &&
+            input.all === all &&
+            !list2.refreshed &&
+            list2.gone.size === 0 &&
+            store.size > list2.kept &&
+            all.every((r) => isDrawn(r) || store.has(keyOf(r)))
+          ) {
+            list2.kept = store.size;
+            void writeSavedFields(saved.list, { token: saved.token, fields: Object.fromEntries(store) });
+          }
         })
         .catch(() => {
           // Unasked whatever stopped it, so the rows can be asked for again: an abort included,
@@ -302,11 +358,15 @@ export function useWithheldFields<Row extends object, Item>(
   all: Row[],
   wanted: Row[],
   onStale: () => void = () => {},
+  saved: SavedCopy | null = null,
 ) {
   const [landed, setLanded] = useState(0);
   const [loop] = useState(() => createFieldsLoop<Row, object>(() => setLanded((n) => n + 1)));
   useEffect(() => loop.onStale(onStale), [loop, onStale]);
   const wantedKey = wanted.map(source.keyOf).join(",");
+  // Held by its parts: a caller's object literal is a new one on every render.
+  const savedList = saved?.list ?? null;
+  const savedToken = saved?.token ?? null;
 
   const resolve = useCallback(
     (row: Row): Item | null => {
@@ -320,11 +380,11 @@ export function useWithheldFields<Row extends object, Item>(
   );
 
   useEffect(() => {
-    loop.update({ source, all, wanted, wantedKey });
+    loop.update({ source, all, wanted, wantedKey, saved: savedList && savedToken ? { list: savedList, token: savedToken } : null });
     // `wanted` is memoized by both callers and changes reference only when its rows do — a
     // local pick can replace a row without moving its keys or order, and without `wanted` here
     // the loop would keep holding the pre-pick row across that pick.
-  }, [loop, source, all, wanted, wantedKey]);
+  }, [loop, source, all, wanted, wantedKey, savedList, savedToken]);
 
   // Leaving: abort the batch in flight and start no other.
   useEffect(() => {
