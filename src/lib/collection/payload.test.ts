@@ -61,15 +61,17 @@ describe("loadCollectionList", () => {
   });
 
   // The data cache refuses a JSON entry over 2 MB, so what it is handed is the packed string, and the
-  // list a reader gets back is the one the loader built.
+  // list a reader gets back is the one the loader built (each card, as the wire reads it back, with the
+  // availability the page joins in later still null).
   it("files the list packed, and hands back exactly what the loader built", async () => {
-    const built = [{ oracleId: "a", name: "Æther Vial", printedName: null, price: 80 }];
+    const built = [{ oracleId: "a", name: "Æther Vial", printedName: null, imageUri: null, price: 80 }];
+    const back = built.map((c) => ({ ...c, availability: null }));
     loadBrowseCards.mockResolvedValue({ cards: built, pricesFailed: false });
-    expect((await loadCollectionList("u")).cards).toEqual(built);
+    expect((await loadCollectionList("u")).cards).toEqual(back);
     const filed = [...store.values()];
     expect(filed).toHaveLength(1);
     expect(typeof filed[0]).toBe("string");
-    expect((await loadCollectionList("u")).cards).toEqual(built);
+    expect((await loadCollectionList("u")).cards).toEqual(back);
   });
 
   it("rethrows any other failure", async () => {

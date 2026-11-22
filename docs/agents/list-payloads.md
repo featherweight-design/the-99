@@ -50,7 +50,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   shape as `/discover`'s and through the same loop. The page reads its URL (`q c t s avail sort
   dir`), finds the first 200 with `lib/collection/window` (`parseBrowseParams`, then the pure
   `filterCards` and `sortCards` the browser runs), and cuts every other card to the columns a
-  filter, a search or a sort reads (`cutCollectionWindow`). The art, the cost, the facts and the combo
+  filter, a search or a sort reads (`encodeCollection`'s `keep` window). The art, the cost, the facts and the combo
   partners (`COLLECTION_DRAW_KEYS`) arrive from `POST /api/collection-fields` (`{ ids }`) in batches of up
   to 500 oracle ids (500 ids is ~18 KB, too long for a query string; the GET stays at 200 for a client
   that has not reloaded), read for THOSE ids only (`loadBrowseCardsFor`: the reader's rows of those cards,
@@ -72,6 +72,19 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   163.5KB gzipped; the card's availability rides as a short-keyed tuple `a`, absent when null, which
   took it from 1.058MB).
 
+  **One columnar encoding serves the wire AND the cached entry** (`lib/cache/columns.ts`,
+  `list-wire.ts`). `toColumns` stores each key once as an array (`{ v, x?, d?, u? }`): `x` lists the
+  rows that have the key at all (a withheld card has no `imageUri`, and absent is not null), `d` is a
+  dictionary when a column repeats (distinct x 2 <= rows), and `u:1` marks a column of UUIDs (or
+  `uuid?stamp`) stored as 22-character base64url. The cached entry is `packCollection` (every card
+  whole, columns, brotli q6, base64, `cache/packed.ts`); the page decodes it and re-encodes with
+  availability and the first window. Measured at 23,960 unique cards (a scratch branch from
+  local-dev, 50k seeded rows): plain rows 9.97MB, the old gzipped-rows entry 2.92MB (over the 2MB
+  data-cache limit, so the loader reran on every request), the columnar entry 1.83MB (about 9% under
+  the 2 MiB limit: headroom is thin, and the next lever is dropping the draw keys from the entry and
+  reading the first window's from the database). Pack 190ms, unpack 55ms. The real largest account
+  is 8.4k cards, ~0.7MB. Cache key `browse-6`.
+
   **Its grid's art waits for the page**, except the first screen's: once the server draws the grid
   (`?view=grid`, or a desktop default), a lazy img still starts on the HTML parse, and on the slow
   profile ~2.4MB of art landed before hydration and held the page at ~20s against ~6s. The tile
@@ -86,4 +99,4 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
 - **`/discover` ships whole rows for its first window only** (25): `cutToWindow` cuts the rest to list columns and the draw fields arrive from `GET /api/discovery-fields?sort=&b=&s=` (signed in, at most `MAX_FIELDS_BATCH` 200, `private, no-store`). The server's window must be the client's (`lib/discovery/window`). `probe:payload` holds the wire to 0.3MB.
-- **`/collection` ships whole cards for its first window only** (200), the same shape: `cutCollectionWindow`, fields from `POST /api/collection-fields`, a withheld card marked by the decoder (`withheld: true`). The page cuts through `pageWindowIds`, which joins availability first. Its grid's art waits for the page except `GRID_EAGER_TILES` (4). `probe:payload` holds the wire to 1.05MB.
+- **`/collection` ships whole cards for its first window only** (200), the same shape: `encodeCollection`'s `keep` window, fields from `POST /api/collection-fields`, a withheld card marked by the decoder (`withheld: true`). The page cuts through `pageWindowIds`, which joins availability first. Its grid's art waits for the page except `GRID_EAGER_TILES` (4). `probe:payload` holds the wire to 1.05MB.

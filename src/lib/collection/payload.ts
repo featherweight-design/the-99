@@ -13,10 +13,10 @@
 // read FAILED is served and never stored: the loader throws it past `unstable_cache`, which stores
 // nothing for a throw, and it is caught here, so the next visit asks again rather than reading
 // `Prices didn't load` until the catalog moves.
-import { packJson, unpackJson } from "../cache/packed";
 import { cacheForUser } from "../cache/user-lists";
 import { type BrowseListCard } from "./browse";
 import { loadBrowseCards } from "./browse-read";
+import { packCollection, unpackCollection } from "./list-wire";
 
 class PricesUnread extends Error {
   constructor(readonly cards: BrowseListCard[]) {
@@ -42,21 +42,22 @@ export async function loadCollectionList(userId: string): Promise<CollectionList
     let rebuilt: number | null = null;
     const packed = await cacheForUser(
       userId,
-      ["browse-5"],
+      ["browse-6"],
       async () => {
         const started = performance.now();
         const { cards, pricesFailed } = await loadBrowseCards(userId);
         rebuilt = Math.round(performance.now() - started);
         if (pricesFailed) throw new PricesUnread(cards);
         // PACKED: the data cache refuses an entry over 2 MB, which the plain list passes at about
-        // 5,400 cards (a 7,256-card reader rebuilt it on every visit). See `cache/packed.ts`.
-        return packJson(cards);
+        // 5,400 cards (a 7,256-card reader rebuilt it on every visit). As columns under brotli
+        // (`packCollection`) a 23,960-card list is 1.8 MB. The key moved to `browse-6` with that shape.
+        return packCollection(cards);
       },
       { ceilingSeconds: LIST_CEILING_SECONDS },
     );
     // A miss is the only line, with no id or count in it; a visit with none was served from the cache.
     if (rebuilt !== null) console.log(`[collection] list rebuilt ${rebuilt}ms`);
-    return { cards: unpackJson<BrowseListCard[]>(packed), pricesFailed: false };
+    return { cards: unpackCollection(packed), pricesFailed: false };
   } catch (error) {
     if (!(error instanceof PricesUnread)) throw error;
     return { cards: error.cards, pricesFailed: true };

@@ -2302,8 +2302,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
 - `pnpm probe:payload` holds the big list payloads to budgets, over EVERY account in the database
   it is pointed at: `/discover` and the `/commanders` owned lane against 1.6MB of the data cache's
   2MB per-entry ceiling (an entry over it is silently never stored), and since the list payload
-  plan's PR 2, `/collection` twice. Its CACHE ENTRY (the list `cacheForUser` stores) is held to the
-  same 1.6MB. Its SHIPPED WIRE (`encodeCollection`: each deck a claim names crosses once, each image
+  plan's PR 2, `/collection` twice. Its CACHE ENTRY (`packCollection`, the list `cacheForUser` stores: columns under brotli; 1.83MB at 24k cards, where gzipped rows were 2.92MB) is held to the
+  same 1.6MB. Its SHIPPED WIRE (`encodeCollection`: columns, each deck a claim names crosses once, each image
   as its Scryfall id and stamp) is held to 1.25MB, a little over the 1.129MB (228.8KB gzipped) the
   staging-shaped account measured when it landed. The wire budget fails on the pre-trim shape
   (1.439MB with each card's full availability). Makes no writes.

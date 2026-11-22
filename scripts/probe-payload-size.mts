@@ -31,11 +31,10 @@ import { discoveryRows } from "../src/lib/discovery/window";
 import { REVEAL_STEP } from "../src/lib/commanders/reveal-step";
 import { loadCommanderRankings } from "../src/lib/commanders/rankings";
 import { loadBrowseCards } from "../src/lib/collection/browse-read";
-import { cutCollectionWindow, encodeCollection } from "../src/lib/collection/list-wire";
+import { encodeCollection, packCollection } from "../src/lib/collection/list-wire";
 import { firstWindowIds, parseBrowseParams } from "../src/lib/collection/window";
 import { loadAvailability } from "../src/lib/decks/availability-query";
 import { gzipSync } from "node:zlib";
-import { packJson } from "../src/lib/cache/packed";
 import { resolveFlagsStrict } from "../src/lib/flags/snapshot";
 // Each account's switches resolve from the override rows (`resolveFlagsStrict`), once per account, as its page would.
 const flagsOf = new Map<string, Promise<NodeJS.ProcessEnv>>();
@@ -276,10 +275,10 @@ async function main() {
       const { cards: list } = await loadBrowseCards(account.user_id);
       const availability = await loadAvailability(account.user_id);
       // What `cacheForUser` stores for this list: the packed string (`cache/packed.ts`), JSON-quoted.
-      const entry = Buffer.byteLength(JSON.stringify(packJson(list)));
+      const entry = Buffer.byteLength(JSON.stringify(packCollection(list)));
       // The page's own cut, for a URL with no filter.
       const keep = firstWindowIds(list, parseBrowseParams(() => null, availability !== null));
-      const wireText = JSON.stringify(cutCollectionWindow(encodeCollection(list, availability), keep));
+      const wireText = JSON.stringify(encodeCollection(list, availability, keep));
       const wire = Buffer.byteLength(wireText);
       if (entry > worstEntry.bytes) worstEntry = { bytes: entry, cards: list.length };
       if (wire > worstWire.bytes) worstWire = { bytes: wire, gzip: gzipSync(wireText, { level: 9 }).length, cards: list.length };
