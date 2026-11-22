@@ -15,14 +15,13 @@ import { and, asc, eq, inArray } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
 import { cards, deckGameOpponents, deckGames } from "../../db/schema";
-import { isCommanderCandidate } from "../recs/score";
 import { resolveFriendSeatsIn, type FriendSeatAsk, type FriendSeatFacts } from "../social/games";
 import { SEATS_MAX } from "../social/client-rules";
 import { savedName } from "../social/opponent-names";
 import type { ThirdPartyName } from "../person-name/brand";
 import type { TableSeatResolution } from "../social/rule-zero-log";
 import { cleanName, isUuid } from "../social/rules";
-import { canPair, partnerAbility } from "./partner";
+import { pairLegal } from "../commander-change/write";
 
 export const OPPONENT_LABEL_MAX = 30;
 
@@ -137,19 +136,19 @@ export async function opponentCommandersValid(parsed: readonly ParsedOpponent[])
     .from(cards)
     .where(inArray(cards.oracleId, ids));
   const byId = new Map(rows.map((r) => [r.oracleId, r]));
-  const leads = (id: string) => {
+  const legal = (id: string) => {
     const card = byId.get(id);
-    return card !== undefined && card.commanderLegal && isCommanderCandidate(card) ? card : null;
+    return card !== undefined && card.commanderLegal ? card : null;
   };
+  // The rule a deck's own commanders are held to: a Background is only ever the second half beside a commander that
+  // chooses one (`pairLegal`), so the save accepts such a pair. The opponent search (`opponent-commanders.ts`) does not
+  // offer a Background yet, so the seat picker cannot send one until that follows.
   return named.every(({ commander, partner }) => {
-    const a = leads(commander);
+    const a = legal(commander);
     if (a === null) return false;
-    if (partner === null) return true;
-    const b = leads(partner);
-    return b !== null && canPair(
-      { name: a.name, ability: partnerAbility(a.oracleText, a.typeLine) },
-      { name: b.name, ability: partnerAbility(b.oracleText, b.typeLine) },
-    );
+    if (partner === null) return pairLegal(a, undefined);
+    const b = legal(partner);
+    return b !== null && pairLegal(a, b);
   });
 }
 
