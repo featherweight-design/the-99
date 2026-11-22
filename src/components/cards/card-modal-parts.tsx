@@ -35,8 +35,8 @@ export function underCardRows(twoFaced: boolean, door: boolean): number {
 }
 
 /**
- * The printings strip's height in the phone's teaser (alternate printings R2): its 14px top margin, the 18px head line, the
- * 67px thumbs, the 5px gap and the 10px set code, plus the 2px under the row. Added to the teaser as the door strip is.
+ * The printings strip's height in the phone's teaser (alternate printings R2): the design's +98px (README-R2, "the door-strip
+ * pattern"), which the card band gives up as it does for the door strip. Added to the teaser in `useSheetSnap`.
  */
 export const PRINTING_STRIP_TEASER_HEIGHT = 98;
 

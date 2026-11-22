@@ -13,7 +13,10 @@ vi.mock("../../app/collection/actions", () => ({
 const { CardModal } = await import("./card-modal");
 const { setCardArtPreference } = await import("../../app/collection/actions");
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.clearAllMocks();
+});
 
 const printing = (setCode: string, collectorNumber: string, quantity = 0): BrowsePrinting => ({
   setCode,
@@ -81,6 +84,9 @@ describe("CardModal printings strip", () => {
     expect(within(strip).getByText(printingStripCopy.headOwned(2, 1))).toBeTruthy();
     const thumb = within(strip).getAllByRole("button").find((b) => /ELD Set/.test(b.getAttribute("aria-label") ?? ""))!;
     fireEvent.click(thumb);
+    // Viewed, not picked: the view moved to the other printing and nothing was written.
+    expect(thumb.getAttribute("aria-pressed")).toBe("true");
+    expect(within(strip).getAllByRole("button", { pressed: true })).toHaveLength(1);
     expect(setCardArtPreference).not.toHaveBeenCalled();
   });
 });
