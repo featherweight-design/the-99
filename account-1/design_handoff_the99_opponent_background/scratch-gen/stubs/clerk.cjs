@@ -1,0 +1,1 @@
+module.exports = { useClerk: () => ({ signOut() {}, openUserProfile() {} }), useUser: () => ({ isLoaded: true, user: null }), useAuth: () => ({ isLoaded: true, userId: "u1" }), SignedIn: ({ children }) => children, SignedOut: () => null, UserButton: () => null, ClerkProvider: ({ children }) => children };
