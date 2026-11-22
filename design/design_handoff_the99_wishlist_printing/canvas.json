@@ -1,0 +1,50 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-22T16:50:00Z"
+ },
+ "title": "Wishlist printing R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1500,
+   "h": 1540,
+   "title": "Main"
+  },
+  "Tile.dc.html": {
+   "x": 1620,
+   "y": 0,
+   "w": 1700,
+   "h": 1640,
+   "title": "Tile"
+  },
+  "Phone.dc.html": {
+   "x": 3440,
+   "y": 0,
+   "w": 1100,
+   "h": 1840,
+   "title": "Phone"
+  },
+  "Desktop.dc.html": {
+   "x": 4660,
+   "y": 0,
+   "w": 1520,
+   "h": 1370,
+   "title": "Desktop"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Tile.dc.html",
+  "Phone.dc.html",
+  "Desktop.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
