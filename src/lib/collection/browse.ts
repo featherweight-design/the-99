@@ -956,6 +956,25 @@ function matchesName(card: Pick<BrowseCard, "name" | "printedName">, search: str
     || card.name.toLowerCase().includes(search);
 }
 
+/**
+ * Does this card answer to `search`: by either name (a substring, as ever), or by its type line, word by word? Every
+ * typed word must START a word of the FRONT face's type line, the face the Type filter reads, so "zom" finds a Zombie as
+ * you type, "saga" and "equipment" find those cards, and "legendary elf" finds a Legendary Creature - Elf. The one
+ * predicate the server's window and the browser both run, so they cut the same list.
+ *
+ * `search` arrives trimmed and lowercased, as for `matchesName`.
+ */
+export function matchesSearch(
+  card: Pick<BrowseCard, "name" | "printedName" | "typeLine">,
+  search: string,
+): boolean {
+  if (matchesName(card, search)) return true;
+  const typed = search.split(/\s+/).filter(Boolean);
+  if (typed.length === 0) return false;
+  const words = frontFace(card.typeLine ?? "").toLowerCase().split(/[\s\u2014-]+/).filter(Boolean);
+  return typed.every((w) => words.some((word) => word.startsWith(w)));
+}
+
 export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseListCard[] {
   const search = f.search.trim().toLowerCase();
   // Types and sets each OR internally and AND with every other filter.
@@ -972,7 +991,7 @@ export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseLis
     // called, what the rules text is filed under, and what a player who knows the card
     // by its real name will type. Neither name is the truer one, so the filter takes
     // either.
-    if (search && !matchesName(c, search)) return false;
+    if (search && !matchesSearch(c, search)) return false;
     if (!matchesColors(c.colorIdentity, f.colors, f.match ?? "contains")) return false;
     if (types.length > 0) {
       const line = frontFace(c.typeLine).toLowerCase();

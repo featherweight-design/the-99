@@ -63,7 +63,7 @@ export const collectionChassisCopy = {
    * narrower breakpoint governs.
    */
   searchPlaceholder: {
-    wide: "Search by card name…",
+    wide: "Search by name or type…",
     compact: "Search your cards…",
   },
   /**
