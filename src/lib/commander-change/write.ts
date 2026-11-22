@@ -12,7 +12,7 @@ import type { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
 import { deckBodySize } from "../decks/deck-size";
 import { liveLockedIds, pruneOrphanLocks } from "../decks/locks";
-import { canAddSecond, choosesBackground, isBackground } from "../decks/partner";
+import { backgroundPairs, canAddSecond } from "../decks/partner";
 import { pruneOrphanProxies } from "../decks/prune-proxies";
 import { touchDeck } from "../decks/touch";
 import { isCommanderCandidate } from "../recs/score";
@@ -109,7 +109,7 @@ export async function writeCommanderChange(
   const [a, b] = incoming as NonNullable<(typeof incoming)[number]>[];
   // A Background is only ever the second half beside a commander that chooses one: it never leads, so
   // `isCommanderCandidate` still gates the first half, and the second unless it is such a Background.
-  const backgroundSecond = b !== undefined && choosesBackground(a.oracleText) && isBackground(b.typeLine);
+  const backgroundSecond = b !== undefined && backgroundPairs(a, b);
   if (!isCommanderCandidate(a) || (b !== undefined && !backgroundSecond && !isCommanderCandidate(b))) {
     return { ok: false, reason: "illegal" };
   }

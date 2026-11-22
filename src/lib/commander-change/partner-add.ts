@@ -3,8 +3,9 @@
 // trade the sheet offers elsewhere, so the two lists never repeat a pair). Two sources, merged:
 // pairs EDHREC has a row for (any deck count; a pair below the floor is listed last, never
 // hidden), and the catalog's own pairing rules (`canPair`), so a legal partner EDHREC has not
-// sampled is still found. A Background (#491) is the one second commander that is not a commander candidate: it is read from the catalog by
-// its type line, never from EDHREC (no pair row), and only for a commander that chooses one.
+// sampled is still found. A Background (#491) is the one second commander that is not a commander
+// candidate: it is read from the catalog by its type line, never from EDHREC (no pair row), and
+// only for a commander that chooses one.
 // Reads only.
 
 import { sql } from "drizzle-orm";

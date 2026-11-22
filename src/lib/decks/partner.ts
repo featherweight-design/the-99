@@ -141,6 +141,11 @@ export function addAbility(oracleText: string | null, typeLine: string | null): 
 
 type PairCard = { name: string; oracleText: string | null; typeLine: string | null };
 
+/** `a` chooses a Background and `b` is one: the only way a Background joins a deck, as the second half. */
+export function backgroundPairs(a: { oracleText: string | null }, b: { typeLine: string | null }): boolean {
+  return choosesBackground(a.oracleText) && isBackground(b.typeLine);
+}
+
 /**
  * `canPair`, plus the Background pairing, for the Add a second commander paths only: `a` is the
  * commander that stays and `b` the card joining it. A Background pairs only with a commander that
@@ -148,7 +153,7 @@ type PairCard = { name: string; oracleText: string | null; typeLine: string | nu
  */
 export function canAddSecond(a: PairCard, b: PairCard): boolean {
   const side = (c: PairCard) => ({ name: c.name, ability: partnerAbility(c.oracleText, c.typeLine) });
-  return canPair(side(a), side(b)) || (choosesBackground(a.oracleText) && isBackground(b.typeLine));
+  return canPair(side(a), side(b)) || backgroundPairs(a, b);
 }
 
 /**
