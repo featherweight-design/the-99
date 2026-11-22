@@ -164,6 +164,27 @@ boards["Coin.dc.html"] = (1700, 2890, "Coin · the toss beside the dice", page("
    land("kR", "Reduced motion", "No toss, no rattle, no ring animation: the coin lies on its face and the result card shows at once. Same as shipped.", 560),
    land("kF", "Landed (motion on)", "1.7 s in: identical to the reduced frame, so both end the same way.", 560)])))
 
+OPTS = [
+ ("daynight", "A · Day and night", "Heads is the sun, tails the moon and two stars: Magic's own day and night (Innistrad), drawn with the tracker's shipped SunIcon and MoonIcon, which already mean day and night on the table strip. Reads at a glance at 72px; the most Magic-literal of the three without borrowing a card.",
+  ["Matches the day/night control the tracker already ships, so the coin feels part of the same table.", "Two clear, opposite silhouettes: you can tell which side landed before reading the word."]),
+ ("crowned", "B · The crowned 99", "Heads is the brand's crowned 99 (the three CrownDiamonds over a Cinzel 900 99), tails the XCIX seal. A minted The 99 coin: the most ownable and the least Magic, since it is our mark rather than the game's.",
+  ["Feels like a souvenir token of the app.", "Heads and tails are both type, so at 72px they read as two badges rather than two pictures."]),
+ ("mana", "C · Mana", "Heads is the five colours of mana set in the metal as enamel, using the official symbols the app already ships (public/mana); tails is a single colorless {C}. The most colourful, and the closest in feel to the dice.",
+  ["The only option with colour on the coin; the brand keeps WUBRG to identity and tags, so this stretches that rule on a 120px object.", "Five pips are small at 72px on the phone (each about 11px)."]),
+]
+def optrow(k, t, p, notes):
+    return ('<div style="display:flex;flex-direction:column;gap:18px;padding:28px 0 8px;border-top:1px solid #262A35">'
+      + f'<div style="display:flex;flex-direction:column;gap:8px"><h3 style="margin:0;font:700 24px \'Chakra Petch\',sans-serif;color:#E6E8F0">{t}</h3><p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1240px">{p}</p>{ul(notes).replace("color:", "color:")}</div>'
+      + row("Faces · heads, tails, and tilted to show the rim", [fig(f"F-studio-{k}", 1180, 340, "Heads · Tails · tilted heads · tilted tails", "Drawn on the shipped coin: the same metal, the 8px rim of 7 discs, HEADS / TAILS in Cinzel 700 along the bottom arc, the emblem cut into the face.")])
+      + row("On the tablet table, 120px", [
+          fig(f"F-place-{k}-mid", 300, 300, "450 ms · at the top of the toss", "Up 55% at 1.8×, mid-turn."),
+          fig(f"F-place-{k}-heads", 346, 300, "Landed heads", "1150 ms, the ring still spreading; the result card lands below."),
+          fig(f"F-place-{k}-tails", 346, 300, "Landed tails", "Same toss with a half-turn more.")])
+      + '</div>')
+boards["Faces.dc.html"] = (1700, 3440, "Coin faces · three options (R2)", page("Coin faces", 1700, 3440,
+ head("Coin faces · three options", "Hugh, R2: the coin needs imagery on each side that feels Magic, with HEADS and TAILS still curving along the bottom. Each option keeps the toss, timing and size from the Coin board unchanged and only redraws the two faces: a reeded edge, an inner ring, the emblem engraved in the shade of the accent (a 1px light lip below it), and the word on the arc. Theme is Low Sun; every theme recolours with its accent. No card art: that would need rights and a fetch per printing, so these use only marks and symbols the app already ships.")
+ + "".join(optrow(*o) for o in OPTS)))
+
 os.makedirs(out, exist_ok=True)
 canvas = {"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-22T19:00:00Z"}, "title": "Life tracker · tablet sheet and coin", "launch": {"view": "canvas"}, "pages": [], "boards": {}, "order": [], "notes": {}, "designSystems": []}
 x = 0

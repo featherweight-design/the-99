@@ -51,6 +51,13 @@
    "w": 1700,
    "h": 2890,
    "title": "Coin \u00b7 the toss beside the dice"
+  },
+  "Faces.dc.html": {
+   "x": 10420,
+   "y": 0,
+   "w": 1700,
+   "h": 3440,
+   "title": "Coin faces \u00b7 three options (R2)"
   }
  },
  "order": [
@@ -59,7 +66,8 @@
   "Damage.dc.html",
   "Portrait.dc.html",
   "Tabs.dc.html",
-  "Coin.dc.html"
+  "Coin.dc.html",
+  "Faces.dc.html"
  ],
  "notes": {},
  "designSystems": []
