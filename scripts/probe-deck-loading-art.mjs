@@ -185,7 +185,8 @@ async function walk(browser, width, deck) {
     await link.evaluate((el) => el.click()); // a seat notice stack can sit over the tile on the fixture account
     const shown = await page.locator("[data-loading-screen]").first().waitFor({ timeout: 30_000 }).then(() => true, () => false);
     if (!report(L("the loading skeleton draws"), shown)) return;
-    await page.waitForTimeout(600);
+    // The skeleton shows only while the page renders after the held request is released (about a second on a lean deck), so read it at once.
+    await page.waitForTimeout(100);
     const loading = await page.evaluate(READ_ART, "[data-loading-screen]");
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/${width.label}-${deck.kind}-loading.png` });
     report(L("the skeleton draws the commander's art"), loading.image === "url", JSON.stringify(loading));
