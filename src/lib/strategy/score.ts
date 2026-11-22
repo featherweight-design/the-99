@@ -5,14 +5,18 @@
 // DESCRIPTIVE, NEVER A VERDICT. Validated on staging, the score does not separate precons from tuned decks and has no
 // tested "focused vs spread" threshold, so nothing here returns one: no grade, no target, no comparison with another
 // deck. A figure is only meaningful against the deck's other axes.
+import type { JudgedTheme } from "../labels/judged-themes";
 import type { LabelTheme } from "../labels/types";
 import { BASELINE_FLOOR, FIXED_AXES, axisCounts, axisScore, baselineShare, deckAxes, onAxis, type AxisCard, type AxisKey } from "./axes";
 
+/** A label theme or a verified judgement theme (`judged_labels`): what a card can carry as a strategy theme. */
+export type StrategyTheme = LabelTheme | JudgedTheme;
+
 /** One nonland card of a list, with the label themes it carries. The caller drops lands and the commanders. */
-export type StrategyCard = AxisCard & { themes: readonly LabelTheme[] };
+export type StrategyCard = AxisCard & { themes: readonly StrategyTheme[] };
 
 /** A strategy: a type-line axis (`typal:<Type>` included) or a label theme. What a deck's focus names. */
-export type StrategyKey = AxisKey | LabelTheme;
+export type StrategyKey = AxisKey | StrategyTheme;
 
 /** How many axes the radar draws at most. */
 export const TOP_AXES = 5;
@@ -24,10 +28,10 @@ export const TOP_AXES = 5;
 export const MIN_NONLAND = 30;
 
 /** The catalog's counts, one copy per commander-legal nonland game card. Built by `catalogBaseline`. */
-export type StrategyBaseline = { axes: ReturnType<typeof axisCounts>; themes: ReadonlyMap<LabelTheme, number> };
+export type StrategyBaseline = { axes: ReturnType<typeof axisCounts>; themes: ReadonlyMap<StrategyTheme, number> };
 
 export type StrategyAxis = {
-  key: AxisKey | LabelTheme;
+  key: AxisKey | StrategyTheme;
   family: "type" | "theme";
   copies: number;
   score: number;
@@ -40,8 +44,8 @@ export type DeckStrategy =
   | { state: "tooSmall"; nonland: number };
 
 /** Copies per label theme, a card counted once per theme it carries. */
-export function themeCounts(cards: readonly StrategyCard[]): Map<LabelTheme, number> {
-  const out = new Map<LabelTheme, number>();
+export function themeCounts(cards: readonly StrategyCard[]): Map<StrategyTheme, number> {
+  const out = new Map<StrategyTheme, number>();
   for (const c of cards) for (const t of new Set(c.themes)) out.set(t, (out.get(t) ?? 0) + c.quantity);
   return out;
 }
@@ -51,7 +55,7 @@ export function catalogBaseline(cards: readonly StrategyCard[]): StrategyBaselin
   return { axes: axisCounts(cards), themes: themeCounts(cards) };
 }
 
-const themeShare = (b: StrategyBaseline, theme: LabelTheme) =>
+const themeShare = (b: StrategyBaseline, theme: StrategyTheme) =>
   b.axes.total === 0 ? BASELINE_FLOOR : Math.max((b.themes.get(theme) ?? 0) / b.axes.total, BASELINE_FLOOR);
 
 /** Every axis that scores above 0, best first (ties by copies, then key), before the top-N cut. */
@@ -81,7 +85,7 @@ export function deckStrategy(cards: readonly StrategyCard[], baseline: StrategyB
 }
 
 
-const isTheme = (key: StrategyKey): key is LabelTheme => !(FIXED_KEYS.has(key) || key.startsWith("typal:"));
+const isTheme = (key: StrategyKey): key is StrategyTheme => !(FIXED_KEYS.has(key) || key.startsWith("typal:"));
 const FIXED_KEYS: ReadonlySet<string> = new Set(FIXED_AXES);
 
 /** Whether one card counts toward a strategy, by the rule its copies are counted with. */

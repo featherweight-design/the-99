@@ -4,11 +4,12 @@
 // grid, no fill, a 1.6 stroke in `currentColor` with round caps and joins, one to four shapes each. A strategy with no
 // glyph of its own (a theme added later) draws the dashed fallback until it gets one.
 import type { ReactNode } from "react";
+import type { JudgedTheme } from "@/lib/labels/judged-themes";
 import type { LabelTheme } from "@/lib/labels/types";
 import type { FixedAxis } from "@/lib/strategy/axes";
 import type { StrategyKey } from "@/lib/strategy/score";
 
-type Glyph = LabelTheme | FixedAxis | "typal" | "fallback";
+type Glyph = LabelTheme | JudgedTheme | FixedAxis | "typal" | "fallback";
 
 /** The spears every creature type is drawn with, and the `tribal` theme a creature type replaces. */
 const SPEARS = <path d="M7 4l-2.5 15M12 3v17M17 4l2.5 15" />;
@@ -68,6 +69,12 @@ export const STRATEGY_GLYPHS: Record<Glyph, ReactNode> = {
   planeswalkers: (<><circle cx="12" cy="11" r="3" /><path d="M5.5 21a6.5 6.5 0 0 1 13 0" /><path d="M12 2.5v2.5M6.5 4.5l1.6 1.9M17.5 4.5l-1.6 1.9" /></>),
   sagas: (<><path d="M12 6.5C10 5 7 4.5 3.5 5v13c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5c-3.5-.5-6.5 0-8.5 1.5z" /><path d="M12 6.5v13" /></>),
   proliferate: (<><path d="M12 3v6M9 6h6" /><path d="M6.5 13v6M3.5 16h6" /><path d="M17.5 13v6M14.5 16h6" /></>),
+
+  // The four judgement themes (`judged_labels`), drawn in the theme-glyphs addendum.
+  groupHug: (<><path d="M4 10h16v3H4z" /><path d="M5.5 13v7.5h13V13M12 10v10.5" /><path d="M12 10c-1.5-3-5.5-4.5-5.5-2S9.5 10 12 10c2.5 0 5.5.5 5.5-2s-4-1-5.5 2z" /></>),
+  pillowFort: (<><path d="M4.5 21V8h3v2.5h3V8h3v2.5h3V8h3v13z" /><path d="M10 21v-4a2 2 0 0 1 4 0v4" /></>),
+  bigMana: (<><path d="M3 19.5h18V8.5z" /><path d="M4.5 12L13 4.5M9 4.5h4v4" /></>),
+  politics: (<><path d="M4 3.5h9.5A1.5 1.5 0 0 1 15 5v5a1.5 1.5 0 0 1-1.5 1.5H9l-3.5 3v-3H4A1.5 1.5 0 0 1 2.5 10V5A1.5 1.5 0 0 1 4 3.5z" /><path d="M18 8.5h2A1.5 1.5 0 0 1 21.5 10v5a1.5 1.5 0 0 1-1.5 1.5h-1v3l-3.5-3H11a1.5 1.5 0 0 1-1.5-1.5v-1" /></>),
 
   fallback: <circle cx="12" cy="12" r="8" strokeDasharray="2.5 3" />,
 };

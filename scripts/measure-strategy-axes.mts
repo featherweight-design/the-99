@@ -79,6 +79,8 @@ async function main() {
         oracleId: c.oracle_id, name: c.name, manaCost: c.mana_cost, oracleText: c.oracle_text, layout: c.layout, typeLine: c.type_line,
         manaValue: c.cmc, keywords: c.keywords ?? [], quantity,
         labels: c.labels, labelModel: c.model, promptVersion: c.prompt_version, inputHash: c.input_hash,
+        // Measured on the 30 label themes alone; the judgement themes are not read here.
+        verifiedThemes: null, judgedModel: null, judgedVersion: null, judgedHash: null,
       }) : null;
     };
 

@@ -8,7 +8,7 @@
 import { eq, inArray } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cardLabels, cards } from "../../db/schema";
+import { cardLabels, cards, judgedLabels } from "../../db/schema";
 import { deckTuningCopy } from "../copy/deck-tuning";
 import { strategyName } from "../copy/strategy-focus";
 import type { ProfileHead } from "../profile/load";
@@ -26,6 +26,7 @@ export function cardRowsQuery(q: Reader, oracleIds: readonly string[]) {
     .select({ ...cardColumns, quantity: cards.cmc })
     .from(cards)
     .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
+    .leftJoin(judgedLabels, eq(judgedLabels.oracleId, cards.oracleId))
     .where(inArray(cards.oracleId, [...oracleIds]));
 }
 

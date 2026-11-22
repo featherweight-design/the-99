@@ -40,6 +40,10 @@ const FOCUS_SLUGS: Readonly<Record<string, readonly string[]>> = {
   bigCreatures: ["stompy"],
   pump: ["anthems"],
   castFree: ["cascade"],
+  groupHug: ["group-hug"],
+  pillowFort: ["pillow-fort"],
+  bigMana: ["big-mana"],
+  politics: ["politics"],
 };
 
 /** The EDHREC slugs a focus key names: the map's, or a creature type's plural (`typal:Dragon` → `dragons`). */

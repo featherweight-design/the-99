@@ -88,6 +88,7 @@ describe("cardRowsQuery", () => {
     const { sql, params } = cardRowsQuery(db, ["a", "b"]).toSQL();
     expect(sql).toContain('"cards"."oracle_id" in ($');
     expect(sql).toContain('"card_labels"."input_hash"');
+    expect(sql).toContain('left join "judged_labels" on "judged_labels"."oracle_id" = "cards"."oracle_id"');
     expect(params).toEqual(expect.arrayContaining(["a", "b"]));
   });
 });

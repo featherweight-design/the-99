@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { FIXED_AXES } from "../strategy/axes";
 import { CREATURE_TYPES } from "../strategy/creature-types.generated";
+import { JUDGED_THEMES } from "../labels/judged-themes";
 import { THEMES } from "../labels/types";
 import { creatureTypePlural, strategyName } from "./strategy-focus";
 
@@ -11,13 +12,14 @@ describe("strategyName", () => {
     expect(strategyName("counters")).toBe("+1/+1 counters");
     expect(strategyName("voltron")).toBe("Equipment and Auras");
     expect(strategyName("bigCreatures")).toBe("Creatures costing 6+");
+    expect(JUDGED_THEMES.map(strategyName)).toEqual(["Group hug", "Pillow fort", "Big mana", "Politics"]);
     expect(strategyName("typal:Ally")).toBe("Allies");
     expect(strategyName("typal:Elf")).toBe("Elves");
     expect(strategyName("typal:Insect")).toBe("Insects");
   });
 
   it("names every strategy, with no em dash", () => {
-    const keys = [...THEMES, ...FIXED_AXES, ...CREATURE_TYPES.map((t) => `typal:${t}` as const)];
+    const keys = [...THEMES, ...JUDGED_THEMES, ...FIXED_AXES, ...CREATURE_TYPES.map((t) => `typal:${t}` as const)];
     for (const k of keys) expect(strategyName(k)).toMatch(/^[^—]+$/);
   });
 });

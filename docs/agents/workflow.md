@@ -48,3 +48,7 @@ The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbat
 ## The commit hook
 
 `.husky/pre-commit` (husky 9, `prepare` installs it) refuses a commit when the branch is `main` and runs `lint-staged`, which is `eslint --fix` on staged `*.{ts,tsx,mts}` with `--no-stash`: lint-staged's backup stash would sit on the repo-global stash stack that every worktree shares. husky sets `core.hooksPath` to `.husky/_` in the shared git config, and each worktree reads it from its own checkout, so a worktree has the hook only after a rebase onto the PR that added it and a `pnpm install` there (git ignores a missing hooks directory, so before that nothing runs). A rebase's own commits run on a detached HEAD, so the `main` guard looks at the branch name only and a rebase is not blocked. `HUSKY=0 git commit` skips the hook once.
+
+## Dev server on this machine: "unable to start FSEvent stream"
+
+Turbopack (`pnpm dev`) can panic with `unable to start FSEvent stream`. Run webpack with polling instead: `WS_NO_BUFFER_UTIL=1 WATCHPACK_POLLING=true pnpm dev --webpack -p <port>`. Webpack alone fails with `bufferUtil.mask is not a function`, which is why `WS_NO_BUFFER_UTIL=1` is there; pages then render "That didn't load". The dev server writes `.next/dev/types`, which makes `pnpm typecheck` fail: stop the server by PID, then `rm -rf .next/dev/types` before typechecking.

@@ -4,17 +4,18 @@
  * draws (Tokens, Spells matter, +1/+1 counters, Equipment and Auras, Creatures costing 6+) are taken as drawn; the rest
  * through /copy-review.
  */
-import type { LabelTheme } from "../labels/types";
+import type { StrategyTheme } from "../strategy/score";
 import type { FixedAxis } from "../strategy/axes";
 import type { StrategyKey } from "../strategy/score";
 
-const THEME_NAMES: Record<LabelTheme, string> = {
+const THEME_NAMES: Record<StrategyTheme, string> = {
   counters: "+1/+1 counters", pump: "Pump", haste: "Haste", evasion: "Evasion", etbDraw: "Draws on entering",
   draw: "Card draw", tokens: "Tokens", treasure: "Treasure", protection: "Protection", recursion: "Recursion",
   blink: "Blink", finisher: "Finishers", castFree: "Free casts", mill: "Mill", sacOutlet: "Sacrifice outlets",
   deathTrigger: "Death triggers", lifegain: "Life gain", drain: "Drain", spellslinger: "Spells matter",
   landfall: "Landfall", tribal: "Tribal", graveyardHate: "Graveyard hate", discard: "Discard", stax: "Stax",
   clones: "Clones", theft: "Theft", poison: "Poison", goad: "Goad", doublers: "Doublers", fog: "Fogs",
+  groupHug: "Group hug", pillowFort: "Pillow fort", bigMana: "Big mana", politics: "Politics",
 };
 
 const AXIS_NAMES: Record<FixedAxis, string> = {
@@ -48,7 +49,7 @@ export function creatureTypePlural(type: string): string {
 /** A strategy's name, as the legend, the focus line and the focus chip write it. */
 export function strategyName(key: StrategyKey): string {
   if (key.startsWith("typal:")) return creatureTypePlural(key.slice("typal:".length));
-  return key in AXIS_NAMES ? AXIS_NAMES[key as FixedAxis] : THEME_NAMES[key as LabelTheme];
+  return key in AXIS_NAMES ? AXIS_NAMES[key as FixedAxis] : THEME_NAMES[key as StrategyTheme];
 }
 
 /**

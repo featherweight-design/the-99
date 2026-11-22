@@ -19,7 +19,7 @@
 import { and, eq, sql } from "drizzle-orm";
 
 import { db } from "../../db";
-import { cardLabels, cards, collectionItems, commanderSupportCards, formatStaples } from "../../db/schema";
+import { cardLabels, cards, collectionItems, commanderSupportCards, formatStaples, judgedLabels } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { ownedCopyOffered, spareBeforeHeld, tieClosed } from "../tuning/limits";
 import { priceOf, priceState } from "../decks/price";
@@ -74,6 +74,7 @@ export function candidateQuery(q: Reader, args: CandidateArgs) {
     })
     .from(cards)
     .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
+    .leftJoin(judgedLabels, eq(judgedLabels.oracleId, cards.oracleId))
     .where(and(
       eq(cards.commanderLegal, true),
       // `isBasicLand`'s own word test (grouping.ts): "Basic Snow Land" is a basic too.
@@ -120,6 +121,7 @@ export async function loadCardRoles(oracleIds: readonly string[], basis: RoleBas
     .select({ ...cardColumns, quantity: sql<number>`1` })
     .from(cards)
     .leftJoin(cardLabels, eq(cardLabels.oracleId, cards.oracleId))
+    .leftJoin(judgedLabels, eq(judgedLabels.oracleId, cards.oracleId))
     .where(sql`${cards.oracleId} = any(${sql.param([...oracleIds])}::uuid[])`);
   return new Map(rows.map((r) => [r.oracleId, rolesOf(r, basis)]));
 }
