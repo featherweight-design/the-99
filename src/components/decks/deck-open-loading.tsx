@@ -27,10 +27,10 @@ import { colorLabel } from "../../lib/decks/format";
 import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS, PHONE_BLOCK_CLASS, PHONE_BLOCK_INSET_X, phoneBlockStyle } from "./deck-header-type";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { statusBarStyle } from "../../lib/decks/status-style";
-import { DeckHeaderArt, DECK_HEADER_LABEL_INSET, DECK_HEADER_LABEL_LEFT } from "./deck-header-art";
+import { DeckHeaderArt, DECK_HEADER_LABEL_INSET } from "./deck-header-art";
 import { IdentityPips } from "../commanders/commander-art";
 import { StatusPillBadge } from "./status-pill";
-import { parseOpenEntry, readOpenRaw, type OpenEntry } from "../../lib/decks/open-entry";
+import { parseOpenEntry, readOpenRaw, type HeaderFacts, type LeanOpenFacts, type OpenPlace } from "../../lib/decks/open-entry";
 
 const SH = "rounded-[8px] border border-solid border-[color:var(--border)] bg-[color:var(--surface-sunken)]";
 const NAME = [62, 48, 74, 55, 68, 44, 80, 58, 66, 50, 72, 46];
@@ -133,7 +133,7 @@ function Body({ wide, tab }: { wide: boolean; tab: string }) {
  * the inline title with the rename glyph's room, the tagline row, the commander line and the chips row. The controls that arrive
  * with the page (the pencil, the bracket chip, the notice tag) are not drawn inert; their room is, so nothing moves.
  */
-function PhoneLabel({ facts }: { facts: OpenEntry["facts"] }) {
+function PhoneLabel({ facts }: { facts: HeaderFacts }) {
   return (
     <div data-wash-label className={PHONE_BLOCK_CLASS} style={phoneBlockStyle(6)}>
       <BlockScrim insetX={PHONE_BLOCK_INSET_X} />
@@ -168,7 +168,7 @@ function PhoneLabel({ facts }: { facts: OpenEntry["facts"] }) {
         </span>
       </div>
       <div data-spine-chips className="@container flex w-full flex-wrap items-center" style={{ gap: 8 }}>
-        <StatusPillBadge status={facts.status} className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]" />
+        {facts.status ? <StatusPillBadge status={facts.status} className="flex h-[22px] flex-none items-center rounded-[6px] px-[7px] font-mono text-[10px]" /> : <span aria-hidden className={`anim-skeleton ${BAR} h-[22px] w-[64px]`} />}
       </div>
     </div>
   );
@@ -179,7 +179,7 @@ function PhoneLabel({ facts }: { facts: OpenEntry["facts"] }) {
  * has none), the name, the tagline, colours and commander line, and the status chip. On a phone the label is the loaded header's
  * own block (`PhoneLabel`). The actions, the bracket chip and the notice tag arrive with the page, so none is drawn inert here.
  */
-function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["facts"]; strip: React.ReactNode }) {
+function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: HeaderFacts; strip: React.ReactNode }) {
   // The page header's own type (`deck-header-type`), so the title and the commander line do not jump when the page lands.
   const size = deckBodySize(facts.partner);
   const label = (
@@ -205,14 +205,14 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
         </span>
       </div>
       <div data-spine-chips className="flex flex-wrap items-center" style={{ gap: 8, marginTop: 8 }}>
-        <StatusPillBadge status={facts.status} className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]" />
+        {facts.status ? <StatusPillBadge status={facts.status} className="flex flex-none items-center rounded-[6px] px-[8px] py-[3px] font-mono text-[11px]" /> : <span aria-hidden className={`anim-skeleton ${BAR} h-[24.5px] w-[72px]`} />}
       </div>
       <div className="flex items-center" style={{ gap: 10, marginTop: 9 }}>
         <div className="min-w-0 flex-1" style={{ maxWidth: 170, height: 6, borderRadius: 999, background: "var(--elevated)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)", overflow: "hidden" }}>
-          <div className="h-full" style={statusBarStyle(facts.status, facts.built, size)} />
+          {facts.status !== null && facts.built !== null ? <div className="h-full" style={statusBarStyle(facts.status, facts.built, size)} /> : null}
         </div>
         <div data-spine-count className="flex flex-none items-baseline" style={{ gap: 4 }}>
-          <span className="font-mono font-semibold" style={{ fontSize: 15, color: "var(--fg)" }}>{facts.built}</span>
+          {facts.built !== null ? <span className="font-mono font-semibold" style={{ fontSize: 15, color: "var(--fg)" }}>{facts.built}</span> : <span aria-hidden className="font-mono font-semibold" style={{ fontSize: 15, visibility: "hidden" }}>0</span>}
           <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>{overCopy.figure.denominator(size)}</span>
         </div>
       </div>
@@ -223,10 +223,12 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
   const actions = (
     <div className="min-w-0 shrink-[4] grow-0 basis-auto" aria-hidden="true" data-inert-actions>
       <div className="flex flex-wrap items-center justify-end" style={{ gap: 9 }}>
-        {facts.built > 0 ? (
+        {facts.built !== null && facts.built > 0 ? (
           <GhostButton disabled tabIndex={-1} className="flex h-[32px] items-center px-[14px] font-sans text-[12.5px]">{deckImportCopy.update.entryLabel}</GhostButton>
         ) : null}
-        {facts.built === 0 ? (
+        {facts.built === null ? (
+          <span aria-hidden className={`anim-skeleton ${BAR} h-[32px] w-[68.5px]`} />
+        ) : facts.built === 0 ? (
           <button
             type="button"
             disabled
@@ -273,10 +275,10 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
         {strip}
         <div className="flex w-full items-center" style={{ gap: 10 }}>
           <div className="min-w-0 flex-1" style={{ height: 6, borderRadius: 999, background: "var(--elevated)", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)", overflow: "hidden" }}>
-            <div className="h-full" style={statusBarStyle(facts.status, facts.built, size)} />
+            {facts.status !== null && facts.built !== null ? <div className="h-full" style={statusBarStyle(facts.status, facts.built, size)} /> : null}
           </div>
           <div data-spine-count className="flex flex-none items-baseline" style={{ gap: 4 }}>
-            <span className="font-mono font-semibold" style={{ fontSize: 14, color: "var(--fg)" }}>{facts.built}</span>
+            {facts.built !== null ? <span className="font-mono font-semibold" style={{ fontSize: 14, color: "var(--fg)" }}>{facts.built}</span> : <span aria-hidden className="font-mono font-semibold" style={{ fontSize: 14, visibility: "hidden" }}>0</span>}
             <span data-spine-denominator className="font-mono" style={{ fontSize: 14, color: "var(--fg-faint)" }}>{overCopy.figure.denominator(size)}</span>
           </div>
         </div>
@@ -286,9 +288,7 @@ function FactsHeader({ wide, facts, strip }: { wide: boolean; facts: OpenEntry["
 }
 
 /** The band at its shipped height on the sunken ground, then what sits under it, drawn once per width. */
-function Header({ wide, entry }: { wide: boolean; entry: OpenEntry | null }) {
-  const facts = entry?.facts;
-  const place = entry?.place ?? null;
+function Header({ wide, facts, place }: { wide: boolean; facts: HeaderFacts | null; place: OpenPlace | null }) {
   const strip = (
     <nav aria-label={deckFlipCopy.region} className={`flex w-full items-center justify-between ${wide ? "min-h-[36px]" : "min-h-[44px]"}`}>
       <Link href="/decks" className={`flex min-h-[44px] items-center gap-[6px] text-[color:var(--fg-body)] ${wide ? "text-[14px]" : "text-[15px]"}`}>
@@ -309,12 +309,6 @@ function Header({ wide, entry }: { wide: boolean; entry: OpenEntry | null }) {
     return (
       <div aria-hidden={undefined} className="@container hidden md:block">
         <div className="relative anim-skeleton bg-[color:var(--surface-sunken)]" style={{ minHeight: 288, borderBottom: "1px solid var(--border)" }}>
-          <div className={`absolute flex flex-col gap-[10px] ${DECK_HEADER_LABEL_LEFT}`} style={{ bottom: 24 }}>
-            <span className={`${BAR} h-[30px] w-[320px]`} />
-            <span className={`${BAR} h-[14px] w-[240px]`} />
-            <span className={`${BAR} h-[29px] w-[88px]`} />
-            <span className={`${BAR} h-[10px] w-[260px]`} />
-          </div>
         </div>
         <div className="flex" style={{ borderBottom: "1px solid var(--border)", padding: "6px 24px" }}>{strip}</div>
       </div>
@@ -323,11 +317,6 @@ function Header({ wide, entry }: { wide: boolean; entry: OpenEntry | null }) {
   return (
     <div className="md:hidden">
       <div className="anim-skeleton bg-[color:var(--surface-sunken)]" style={{ height: 288 }}>
-        <div className="flex h-full flex-col justify-end gap-[10px] px-[18px] pb-[12px]">
-          <span className={`${BAR} h-[26px] w-[62%]`} />
-          <span className={`${BAR} h-[14px] w-[48%]`} />
-          <span className={`${BAR} h-[29px] w-[84px]`} />
-        </div>
       </div>
       <div className="flex flex-col items-center" style={{ borderTop: "1px solid var(--border)", padding: "14px 16px 12px", gap: 8 }}>
         {strip}
@@ -344,7 +333,12 @@ function Header({ wide, entry }: { wide: boolean; entry: OpenEntry | null }) {
 const noopSubscribe = () => () => {};
 const serverNull = () => null;
 
-export function DeckOpenLoading() {
+/**
+ * `lean` is a direct load's header facts (`readDeckOpenFacts`), which the deck page passes once it has them: the name, tagline and
+ * commander line are placed once, and the two stats a press carries stay shapes until the page lands. Without it and without a
+ * press entry the band draws its art ground alone, no text shapes, so the first flush has no line to place twice.
+ */
+export function DeckOpenLoading({ lean }: { lean?: LeanOpenFacts }) {
   const params = useSearchParams();
   const id = usePathname().split("/").filter(Boolean)[1];
   // A press wrote this deck's header facts (`open-entry`); a skeleton for any other deck, or for an entry older than a minute, draws its shapes alone.
@@ -353,14 +347,16 @@ export function DeckOpenLoading() {
   const [now] = useState(Date.now);
   const parsed = parseOpenEntry(raw, now);
   const entry = parsed && parsed.to === id ? parsed : null;
+  const facts: HeaderFacts | null = entry?.facts ?? (lean ? { ...lean, status: null, built: null } : null);
+  const place = entry?.place ?? null;
   const rawTab = params.get(TAB_PARAM);
   const tab = TABS.some((t) => t.id === rawTab) ? (rawTab as string) : "deck";
   return (
     <div data-loading-screen>
-      <span role="status" className="sr-only">{entry ? deckOpenLoadingCopy.opening(entry.facts.name) : deckOpenLoadingCopy.status}</span>
+      <span role="status" className="sr-only">{facts ? deckOpenLoadingCopy.opening(facts.name) : deckOpenLoadingCopy.status}</span>
       <StallWatch />
-      <Header wide={false} entry={entry} />
-      <Header wide entry={entry} />
+      <Header wide={false} facts={facts} place={place} />
+      <Header wide facts={facts} place={place} />
       <Body wide={false} tab={tab} />
       <Body wide tab={tab} />
     </div>

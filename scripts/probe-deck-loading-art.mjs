@@ -14,6 +14,8 @@
 // width of the commander line excepted on a partner pair, whose loaded row draws the partner as its own control; its left, top and
 // height still agree). On main the skeleton draws no gradient and no description row, and its label is a parallel block, so these fail.
 //
+// A direct-load case (a typed address, a refresh) reads the document stream itself: see `directLoad`.
+//
 // Its writes: two decks of its own (`probe:deck-loading-art`, no cards; the lone one carries a description, the pair none) on the signed-in account, deleted in `finally`.
 // Production and staging are refused by `neon.branch_id`. DATABASE_URL must be the database the dev server reads.
 //   E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=http://localhost:3291 node scripts/probe-deck-loading-art.mjs
@@ -180,10 +182,11 @@ async function walk(browser, width, deck) {
       await route.continue().catch(() => {});
     });
     await link.scrollIntoViewIfNeeded();
-    await link.click();
+    await link.evaluate((el) => el.click()); // a seat notice stack can sit over the tile on the fixture account
     const shown = await page.locator("[data-loading-screen]").first().waitFor({ timeout: 30_000 }).then(() => true, () => false);
     if (!report(L("the loading skeleton draws"), shown)) return;
-    await page.waitForTimeout(600);
+    // The skeleton shows only while the page renders after the held request is released (about a second on a lean deck), so read it at once.
+    await page.waitForTimeout(100);
     const loading = await page.evaluate(READ_ART, "[data-loading-screen]");
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/${width.label}-${deck.kind}-loading.png` });
     report(L("the skeleton draws the commander's art"), loading.image === "url", JSON.stringify(loading));
@@ -222,6 +225,72 @@ async function walk(browser, width, deck) {
   }
 }
 
+/**
+ * A DIRECT LOAD (typed address, refresh): no press carried facts, so the document stream is all there is. It reads the stream
+ * with the session's cookies and cuts it at the first flush that draws the loading screen (the bars phase), at the first flush
+ * that carries the deck's name (the facts phase) and takes the whole body (loaded), then draws each in a page whose own scripts
+ * are blocked (the inline swap scripts still run, nothing hydrates) and reads the header's rects. Bars draw no text at all; the facts
+ * phase draws the name, tagline and commander line where the loaded header does, so no line in the header text area moves.
+ * On main the bars draw text placeholders (no name until the body lands), so these fail there.
+ */
+async function directLoad(browser, width, deck) {
+  const context = await browser.newContext({ viewport: width.viewport });
+  const page = await context.newPage();
+  const L = (s) => `${width.label} ${deck.kind} direct load: ${s}`;
+  try {
+    await signIn(page);
+    const cookie = (await context.cookies(BASE)).map((c) => `${c.name}=${c.value}`).join("; ");
+    const res = await fetch(`${BASE}/decks/${deck.id}`, { headers: { cookie, accept: "text/html" } });
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    const chunks = [];
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(decoder.decode(value, { stream: true }));
+    }
+    const upTo = (test) => {
+      const i = chunks.findIndex((_, k) => test(chunks.slice(0, k + 1).join("")));
+      return i === -1 ? null : chunks.slice(0, i + 1).join("");
+    };
+    const bars = upTo((t) => t.includes("data-loading-screen"));
+    // The facts phase: the stream's first point holding the deck's name inside the loading screen, with the swap that shows it.
+    const facts = upTo((t) => {
+      const at = t.indexOf("data-deck-title");
+      return at !== -1 && /\$RC\("B:\d+","S:\d+"\)/.test(t.slice(at));
+    });
+    const whole = chunks.join("");
+    if (!report(L("the stream flushes the loading screen before the body"), bars !== null && bars.length < whole.length, `${chunks.length} chunks`)) return;
+    const draw = async (html, scope, tag) => {
+      const ctx = await browser.newContext({ viewport: width.viewport });
+      const p = await ctx.newPage();
+      await p.route("**/_next/**/*.js*", (r) => (r.request().resourceType() === "script" ? r.abort() : r.continue()));
+      await p.route(`${BASE}/decks/${deck.id}`, (r) => r.fulfill({ status: 200, contentType: "text/html", body: html }));
+      await p.goto(`${BASE}/decks/${deck.id}`, { waitUntil: "load", timeout: 60_000 });
+      await p.waitForTimeout(400);
+      const rects = await p.evaluate(READ_RECTS, scope);
+      const text = await p.evaluate((sc) => !!document.querySelector(`${sc} h1, ${sc} [data-deck-title]`), scope);
+      if (SHOTS) await p.screenshot({ path: `${SHOTS}/${width.label}-${deck.kind}-direct-${tag}.png` });
+      await ctx.close();
+      return { rects, text };
+    };
+    const a = await draw(bars, "[data-loading-screen]", "bars");
+    report(L("the first flush draws no name or title (art and gradient only)"), a.text === false);
+    if (facts === null) return report(L("a flush carries the deck's name before the body"), false, "no such chunk");
+    const f = await draw(facts, "[data-loading-screen]", "facts");
+    const l = await draw(whole, "main", "loaded");
+    report(L("the facts phase draws the name"), f.text === true, f.rects.missing ?? "");
+    for (const part of ["gradient", "name", "description", "commander", "chips", "count", "actions"]) {
+      const x = f.rects[part], y = l.rects[part];
+      if (x === null && y === null) continue;
+      const same = x && y && ["x", "y", "w", "h"].every((k) => Math.abs(x[k] - y[k]) <= 1);
+      report(L(`the facts phase and the loaded header draw the ${part} in the same place`), Boolean(same), `facts ${JSON.stringify(x)} vs loaded ${JSON.stringify(y)}`);
+    }
+  } finally {
+    await context.close();
+  }
+}
+
 await clerkSetup();
 const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
 await assertNotSharedBranch(branch, "probe-deck-loading-art");
@@ -233,7 +302,7 @@ try {
   ownerId = await signIn(page);
   await context.close();
   const decks = await makeDecks(ownerId);
-  for (const width of WIDTHS) for (const deck of decks) await walk(browser, width, deck);
+  for (const width of WIDTHS) for (const deck of decks) { await walk(browser, width, deck); await directLoad(browser, width, deck); }
 } finally {
   if (ownerId) await sql`delete from decks where name = ${NAME} and user_id = ${ownerId}`;
   await browser.close();

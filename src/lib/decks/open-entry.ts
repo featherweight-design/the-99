@@ -35,6 +35,12 @@ export type OpenFacts = {
   intent?: string | null;
 };
 
+/** What a direct load knows before the body's reads land: the header's text and art, no stats (`readDeckOpenFacts`). */
+export type LeanOpenFacts = Omit<OpenFacts, "status" | "built">;
+
+/** The facts a header draws: a press carries every field, a direct load carries none of the two stats. */
+export type HeaderFacts = LeanOpenFacts & { status: StatusPill | null; built: number | null };
+
 export type OpenPlace = { k: number; n: number; caption: string | null };
 
 export type OpenEntry = {
