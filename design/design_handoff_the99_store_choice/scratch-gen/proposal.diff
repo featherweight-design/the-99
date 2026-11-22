@@ -1,0 +1,287 @@
+diff -ruN src.orig/components/card-search/card-search.tsx src/components/card-search/card-search.tsx
+--- src.orig/components/card-search/card-search.tsx	2026-11-22 19:51:53.124987455 +0000
++++ src/components/card-search/card-search.tsx	2026-11-22 19:51:53.234623020 +0000
+@@ -99,7 +99,7 @@
+   retry: () => void;
+ };
+ 
+-const CardSearchContext = createContext<CardSearchContextValue | null>(null);
++export const CardSearchContext = createContext<CardSearchContextValue | null>(null);
+ 
+ /** The search, or null where the shell mounted none (the switch off, or signed out). */
+ export function useCardSearch(): CardSearchContextValue | null {
+diff -ruN src.orig/components/decks/cart/cart-checkout.tsx src/components/decks/cart/cart-checkout.tsx
+--- src.orig/components/decks/cart/cart-checkout.tsx	2026-11-22 19:51:53.138279720 +0000
++++ src/components/decks/cart/cart-checkout.tsx	2026-11-22 19:56:47.445041249 +0000
+@@ -8,6 +8,9 @@
+ import { formatCents, type ProvenanceForm } from "../../../lib/decks/price";
+ import type { CartFigures } from "../../../lib/decks/cart";
+ import { ExternalLink } from "../../ui/external-link";
++import { currentStore } from "../../../lib/store/stores";
++import { storeCopy } from "../../../lib/copy/store";
++import { StoreDoor } from "../store-door";
+ 
+ export function CartCheckout({
+   total,
+@@ -28,11 +31,13 @@
+   const anyPriced = priced && total.pricedCopies > 0;
+   const showFigure = anyPriced && total.cents > 0;
+   const showClause = showFigure && total.pricedCopies < total.copies;
++  const store = currentStore();
+   const first = !priced
+     ? copy.checkout.unread
+-    : anyPriced ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced;
++    : anyPriced ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store);
+   const provenanceLine = [
+     first,
++    ...(priced && anyPriced && store.figure === "market" ? [storeCopy.marketNote] : []),
+     ...(priced && provenance ? [priceCopy.strip.lastChecked(provenance.when)] : []),
+     ...(priced && provenance?.behind ? [priceCopy.strip.behind] : []),
+   ].join(" · ");
+@@ -68,22 +73,23 @@
+             {copy.checkout.copiesLine(total.copies, deckCount)}
+           </p>
+           <div>
+-            <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}</p>
+-            {links.map((link, i) => (
++            <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}<StoreDoor /></p>
++            {!store.cart ? <p data-no-cart="" className="m-0 mt-[6px] pb-[12px] text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]">{storeCopy.noCart(store)}</p> : null}
++            {(store.cart ? links : []).map((link, i) => (
+               // K3: one row per part, the part inside the link's own label, so each of several links
+               // has a name of its own rather than five that all read `Buy these at Mana Pool`.
+               <div key={link.href} className="mt-[4px] flex min-h-[44px] items-center">
+                 <ExternalLink
+                   href={link.href}
+                   label={links.length > 1
+-                    ? `${exportLinkOutCopy.shopping} · ${copy.checkout.part(i + 1, links.length, link.lineCount)}`
+-                    : exportLinkOutCopy.shopping}
++                    ? `Buy these at ${store.name} · ${copy.checkout.part(i + 1, links.length, link.lineCount)}`
++                    : `Buy these at ${store.name}`}
+                 />
+               </div>
+             ))}
+-            <p className="m-0 pb-[12px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)]">
++            {store.cart ? <p className="m-0 pb-[12px] text-[11.5px] leading-[1.5] text-[color:var(--fg-faint)]">
+               {copy.checkout.sends(links.reduce((n, l) => n + l.lineCount, 0))}
+-            </p>
++            </p> : null}
+           </div>
+         </>
+       )}
+diff -ruN src.orig/components/decks/lineup/worth-card.tsx src/components/decks/lineup/worth-card.tsx
+--- src.orig/components/decks/lineup/worth-card.tsx	2026-11-22 19:51:53.145531162 +0000
++++ src/components/decks/lineup/worth-card.tsx	2026-11-22 19:55:58.959027536 +0000
+@@ -11,6 +11,8 @@
+ import { SegmentedSwitch } from "../../ui/segmented-switch";
+ import { DeckName } from "./deck-link";
+ 
++import { currentStore } from "../../../lib/store/stores";
++import { storeCopy } from "../../../lib/copy/store";
+ const copy = decksStatsCopy.worth;
+ const pct = (x: number) => `${(x * 100).toFixed(3)}%`;
+ 
+@@ -61,7 +63,7 @@
+         <span className="inline-flex items-center gap-[6px]"><span aria-hidden="true" className="h-[12px] border-l border-dashed border-l-[color:var(--fg-body)]" />{copy.median(w.medianCents)}</span>
+       </div>
+       {pricesAsOf ? (
+-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(copy.age((Date.parse(now) - Date.parse(pricesAsOf)) / 60_000))}</span>
++        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{storeCopy.deckCost(currentStore(), copy.age((Date.parse(now) - Date.parse(pricesAsOf)) / 60_000))}</span>
+       ) : null}
+     </>
+   );
+diff -ruN src.orig/components/decks/price-strip.tsx src/components/decks/price-strip.tsx
+--- src.orig/components/decks/price-strip.tsx	2026-11-22 19:51:53.148049589 +0000
++++ src/components/decks/price-strip.tsx	2026-11-22 19:52:50.590831657 +0000
+@@ -18,6 +18,9 @@
+ import { formatCents, type PriceSummary, type ProvenanceForm } from "../../lib/decks/price";
+ import { manapoolAddDeckUrl } from "../../lib/manapool/links";
+ import { ExternalLink } from "../ui/external-link";
++import { currentStore } from "../../lib/store/stores";
++import { storeCopy } from "../../lib/copy/store";
++import { StoreDoor } from "./store-door";
+ 
+ export function PriceStrip({
+   summary,
+@@ -85,7 +88,8 @@
+   // Derived on every render from the list on screen. Not memoised: the row ✕
+   // has no sync to perform, so the basket, the total and this href move
+   // together or the link buys a card the player just removed.
+-  const buyHref = manapoolAddDeckUrl([...shoppingCards, ...(tokens?.lines ?? [])]);
++  const store = currentStore();
++  const buyHref = !store.cart ? null : manapoolAddDeckUrl([...shoppingCards, ...(tokens?.lines ?? [])]);
+ 
+   return (
+     // ONE LAYOUT, both widths (Hugh's ruling, #1222 follow-up): the figure
+@@ -137,11 +141,13 @@
+             on something nothing here can act on. */}
+         <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>
+           {[
+-            showFigure ? priceCopy.strip.provenance : priceCopy.strip.provenanceUnpriced,
++            showFigure ? storeCopy.provenance(store) : storeCopy.provenanceUnpriced(store),
++            ...(showFigure && store.figure === "market" ? [storeCopy.marketNote] : []),
+             priceCopy.strip.lastChecked(dated.when),
+             ...(dated.behind ? [priceCopy.strip.behind] : []),
+-            ...(showFigure ? [priceCopy.strip.cartNote] : []),
++            ...(showFigure && store.cart ? [priceCopy.strip.cartNote] : []),
+           ].join(" · ")}
++          <StoreDoor />
+         </p>
+         {/* The 44px is the ROW's height, never the link's box — the link stays
+             inline text, so the words get a full-height target vertically while
+@@ -160,9 +166,12 @@
+             condition on the link, but only as long as that holds: a caller
+             passing a summary from one list and rows from another would render a
+             strip with nothing to buy from. */}
++        {!store.cart && shoppingCards.length > 0 ? (
++          <p data-no-cart="" className="m-0 mt-[6px] pb-[11px] text-[12.5px] leading-[1.5]" style={{ color: "var(--fg-muted)" }}>{storeCopy.noCart(store)}</p>
++        ) : null}
+         {buyHref ? (
+           <div className="mt-[9px] flex min-h-[44px] items-center">
+-            <ExternalLink href={buyHref} label={exportLinkOutCopy.shopping} />
++            <ExternalLink href={buyHref} label={`Buy these at ${store.name}`} />
+           </div>
+         ) : null}
+         {/* What the link sends, said once: cards by name and quantity, tokens by set and number. */}
+diff -ruN src.orig/components/decks/store-door.tsx src/components/decks/store-door.tsx
+--- src.orig/components/decks/store-door.tsx	1970-01-01 00:00:00.000000000 +0000
++++ src/components/decks/store-door.tsx	2026-11-22 19:52:50.594258582 +0000
+@@ -0,0 +1,17 @@
++// Store choice R1 PROPOSAL: the in-context door. Trails the provenance line as ` · Change store`, inline text in the line's
++// own mono 9.5 and ink, underlined; to /settings#settings-store. A coarse pointer gets the inline 44px hit.
++import { storeCopy } from "../../lib/copy/store";
++import { currentStore } from "../../lib/store/stores";
++import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
++export function StoreDoor() {
++  const s = currentStore();
++  return (
++    <>
++      <span aria-hidden="true">{" · "}</span>
++      <a href="/settings#settings-store" aria-label={storeCopy.changeAria(s)} data-store-door=""
++        className={`${TOUCH_HIT_INLINE} rounded-[3px] text-[color:var(--fg-muted)] underline decoration-1 underline-offset-[2px] decoration-[color-mix(in_srgb,var(--fg-muted)_50%,transparent)] hover:text-[color:var(--fg)]`}>
++        {storeCopy.change}
++      </a>
++    </>
++  );
++}
+diff -ruN src.orig/components/feed/feed-item.tsx src/components/feed/feed-item.tsx
+--- src.orig/components/feed/feed-item.tsx	2026-11-22 19:51:53.154215439 +0000
++++ src/components/feed/feed-item.tsx	2026-11-22 19:55:58.958725043 +0000
+@@ -37,6 +37,8 @@
+ import { feedAge } from "../../lib/feed/age";
+ import { dropLines, saleAhead } from "../../lib/feed/drop-lines";
+ 
++import { currentStore } from "../../lib/store/stores";
++import { storeCopy } from "../../lib/copy/store";
+ const c = feedCopy.home;
+ 
+ /** A friend's face, by public id: the Home friends read's own faces, so no new read draws them. */
+@@ -68,7 +70,7 @@
+           </>
+         ) : null,
+         // Only with somewhere to go: a card the catalog no longer holds has no name to send to Mana Pool.
+-        press: item.outbound ? c.press.priceDrop : null,
++        press: item.outbound ? storeCopy.feedBuy(currentStore()) : null,
+       };
+     case "trade-match":
+       return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: item.askable ? c.press.tradeMatchAsk(friend) : c.press.tradeMatch(friend) };
+diff -ruN src.orig/components/help/help-root.tsx src/components/help/help-root.tsx
+--- src.orig/components/help/help-root.tsx	2026-11-22 19:51:53.154690667 +0000
++++ src/components/help/help-root.tsx	2026-11-22 19:51:53.237794480 +0000
+@@ -27,7 +27,7 @@
+   go: () => void;
+ };
+ 
+-const HelpContext = createContext<HelpCtx | null>(null);
++export const HelpContext = createContext<HelpCtx | null>(null);
+ 
+ /** The md breakpoint, read at the press: card details is answered only where its ? can be pressed. */
+ const DESKTOP = "(min-width: 768px)";
+diff -ruN src.orig/components/landing/demo/demo-card-modal.tsx src/components/landing/demo/demo-card-modal.tsx
+--- src.orig/components/landing/demo/demo-card-modal.tsx	2026-11-22 19:51:53.157690175 +0000
++++ src/components/landing/demo/demo-card-modal.tsx	2026-11-22 19:55:13.362505295 +0000
+@@ -25,6 +25,8 @@
+ import { printingPickerCopy } from "../../../lib/copy/collection";
+ import { cardLinkOutCopy } from "../../../lib/copy/collection-browse";
+ import { manapoolCardUrl } from "../../../lib/manapool/links";
++import { currentStore } from "../../../lib/store/stores";
++import { storeCopy } from "../../../lib/copy/store";
+ import { DemoFitsDoor } from "./demo-fits-door";
+ import { useDialogA11y } from "../../../lib/a11y/dialog";
+ import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
+@@ -218,8 +220,14 @@
+   const zoomWashStyle = artStyleOf(zoomFlipped ? backImage : resolved?.imageUri);
+ 
+   const { price, fromCents, figured } = cardPrice(card, resolved);
+-  const priceTag = price ? <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone /> : null;
+-  const fromLine = (phone: boolean) => (fromCents === null ? null : <PriceFrom cents={fromCents} phone={phone} />);
++  // Store choice R1 PROPOSAL: the market qualifier beside a TCGplayer figure; in the tag's place, no price from the store.
++  const store = currentStore();
++  const priceTag = price ? (
++<PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone />
++  ) : <span data-no-price="" className="font-mono text-[10px] text-[color:var(--fg-muted)]">{storeCopy.noPrice(store)}</span>;
++  const market = price && store.figure === "market"
++    ? <span data-market-note="" className="font-mono text-[10px] text-[color:var(--fg-muted)]">{storeCopy.marketTag}</span> : null;
++  const fromLine = (phone: boolean) => (fromCents === null ? market : <>{<PriceFrom cents={fromCents} phone={phone} />}{market ? <span aria-hidden className="font-mono text-[10px] text-[color:var(--fg-faint)]">·</span> : null}{market}</>);
+ 
+   const turningArt = (radius: string) => (twoFaced ? <TurningArt radius={radius} face={face} onTurnSettled={onArtTurnSettled} /> : null);
+ 
+@@ -271,7 +279,7 @@
+         <CardModalSheet
+           card={card} preview={preview} resolved={resolved} titleId={TITLE_ID} caption={caption} ownedPrintings={ownedPrintings}
+           onlyPrinting={false} strip={null} printingsButton={null} printingsPanel={null} hasPicker={false} isToken={isToken} tokenNoSet={tokenNoSet} pick={card.preferredPrinting} deckScope={false} total={total} position={position}
+-          deckPage={false} deckName={null} buyUrl={manapoolCardUrl(card.name)} buyLabel={cardLinkOutCopy.card}
++          deckPage={false} deckName={null} buyUrl={manapoolCardUrl(card.name)} buyLabel={price?.fact ? storeCopy.linkOut(store) : storeCopy.lookFor(store)}
+           min={min} full={full} zoomed={zoomed} viewOpen={false} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
+           teaserHeight={teaserHeight} closeReserve={46} back={null}
+           onSheetPointerDown={narrow ? gestures.onSheetPointerDown : undefined} setSnap={setSnap}
+diff -ruN src.orig/components/settings/store-section.tsx src/components/settings/store-section.tsx
+--- src.orig/components/settings/store-section.tsx	2026-11-22 19:51:53.162352894 +0000
++++ src/components/settings/store-section.tsx	2026-11-22 19:52:50.590187853 +0000
+@@ -24,10 +24,9 @@
+         {STORES.map((s, i) => {
+           const picked = on === s.id;
+           return (
+-            <label
+-              key={s.id}
++            <div key={s.id} className={i > 0 ? "[border-top:1px_solid_var(--border)]" : ""}><label
+               data-store-row={s.id}
+-              className={`flex min-h-[44px] cursor-pointer items-start gap-[12px] rounded-[8px] py-[9px] ${i > 0 ? "[border-top:1px_solid_var(--border)]" : ""}`}
++              className="flex min-h-[44px] cursor-pointer items-start gap-[12px] rounded-[8px] py-[9px]"
+             >
+               <input type="radio" name="store" value={s.id} checked={picked} disabled={saving !== null} onChange={() => setOn(s.id)} className="sr-only" />
+               <span
+@@ -40,7 +39,7 @@
+                 <b className="font-sans text-[14px] font-medium text-[color:var(--fg)]">{s.name}</b>
+                 <span className="text-[12.5px] leading-[1.45] text-[color:var(--fg-muted)]">{c.rows[s.id]}</span>
+               </span>
+-            </label>
++            </label></div>
+           );
+         })}
+       </div>
+diff -ruN src.orig/components/wishlist/wishlist-view.tsx src/components/wishlist/wishlist-view.tsx
+--- src.orig/components/wishlist/wishlist-view.tsx	2026-11-22 19:51:53.172314296 +0000
++++ src/components/wishlist/wishlist-view.tsx	2026-11-22 19:57:41.719315634 +0000
+@@ -137,7 +137,7 @@
+                 className={`m-0 grid list-none ${CARD_GRID_TRACKS} gap-[8px] px-[14px] pb-[14px] pt-[12px] transition-opacity md:gap-[20px] md:px-[34px] md:pb-[34px] md:pt-[18px] ${searching ? "mt-[30px] opacity-[.35] md:mt-0 md:opacity-[.4]" : ""}`}
+               >
+                 {tiles.map((t, i) => (
+-                  <WishlistTile key={t.oracleId} tile={t} eager={i < GRID_EAGER_TILES} siblings={siblings} />
++                  <WishlistTile key={t.oracleId} tile={t} eager siblings={siblings} />
+                 ))}
+               </ul>
+             </>
+diff -ruN src.orig/lib/copy/store.ts src/lib/copy/store.ts
+--- src.orig/lib/copy/store.ts	2026-11-22 19:51:53.192506450 +0000
++++ src/lib/copy/store.ts	2026-11-22 19:54:27.283420967 +0000
+@@ -32,8 +32,8 @@
+   // ── Card details ─────────────────────────────────────────────────────
+   linkOut: (s: Store) => `Buy any printing at ${s.name}`,
+   linkOutPrinting: (s: Store, set: string, n: string) => `Buy ${set} ${n} at ${s.name}`,
+-  /** THE accuracy note, card form: one faint line under the link, market stores only. */
+-  marketLine: "Market price: an average of recent sales.",
++  /** THE accuracy note, card form: beside the tag, market stores only. Its accessible form rides the tag's sentence. */
++  marketTag: "market price",
+   /** No price from this store (item 7): in the tag's place. */
+   noPrice: (s: Store) => `no price from ${s.name}`,
+   /** The link's words when the store has no figure for the card: a search, not a claim it sells it. */

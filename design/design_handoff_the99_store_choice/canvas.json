@@ -1,0 +1,66 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-22T20:40:00Z"
+ },
+ "title": "Store choice R1",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 2260,
+   "title": "Main"
+  },
+  "Setting.dc.html": {
+   "x": 1820,
+   "y": 0,
+   "w": 1700,
+   "h": 1660,
+   "title": "Setting"
+  },
+  "Shopping.dc.html": {
+   "x": 3640,
+   "y": 0,
+   "w": 2240,
+   "h": 2100,
+   "title": "Shopping"
+  },
+  "Card.dc.html": {
+   "x": 6000,
+   "y": 0,
+   "w": 2240,
+   "h": 1560,
+   "title": "Card"
+  },
+  "Elsewhere.dc.html": {
+   "x": 8360,
+   "y": 0,
+   "w": 2240,
+   "h": 1860,
+   "title": "Elsewhere"
+  },
+  "Empty.dc.html": {
+   "x": 10720,
+   "y": 0,
+   "w": 2240,
+   "h": 1920,
+   "title": "Empty"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Setting.dc.html",
+  "Shopping.dc.html",
+  "Card.dc.html",
+  "Elsewhere.dc.html",
+  "Empty.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
