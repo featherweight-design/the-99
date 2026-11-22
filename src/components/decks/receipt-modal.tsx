@@ -574,7 +574,8 @@ export function ReceiptTile({
         style={{
           aspectRatio: "63 / 88",
           backgroundColor: "var(--elevated)",
-          ...(tilt ? { transform: `rotate(${tilt}deg)` } : null),
+          // Each card turns about its inner bottom corner (the drawn design's origin), so the pair meets at the + disc.
+          ...(tilt ? { transform: `rotate(${tilt}deg)`, transformOrigin: tilt < 0 ? "bottom right" : "bottom left" } : null),
         }}
       >
         {drawn?.imageUri ? <ArtLayer src={drawn.imageUri} /> : null}

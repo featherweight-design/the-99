@@ -92,9 +92,19 @@ async function measure(browser, win, search) {
         const art = [...p.querySelectorAll("span")].find((s) => getComputedStyle(s).transform !== "none");
         return art ? angle(art) : null;
       }),
+      // Which bottom corner each art turns about: "right" / "left" when the origin sits on that edge of its own box, else "other".
+      origins: plates.map((p) => {
+        const art = [...p.querySelectorAll("span")].find((s) => getComputedStyle(s).transform !== "none");
+        if (!art) return null;
+        const [ox, oy] = getComputedStyle(art).transformOrigin.split(" ").map(parseFloat);
+        
+        const bottom = Math.abs(oy - art.offsetHeight) < 1.5;
+        return bottom && Math.abs(ox - art.offsetWidth) < 1.5 ? "bottom right" : bottom && ox < 1.5 ? "bottom left" : "other";
+      }),
       leaked: plates.flatMap((p) => [...p.querySelectorAll("*")].filter((e) => getComputedStyle(e).transform !== "none" && e.textContent.trim() !== "")).length,
     };
   });
+  if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/combo-tilt-${win.label.split(" ")[0]}.png` });
   await ctx.close();
   return seen;
 }
@@ -119,6 +129,7 @@ try {
     await page.waitForTimeout(31_000);
     await page.goto(`${BASE}/?push-card=${CARD}&push-combo=1`, { waitUntil: "domcontentloaded", timeout: 180_000 });
     await page.waitForSelector("[data-combo-line]", { state: "attached", timeout: 60_000 }).catch(() => {});
+    await page.waitForTimeout(2500);
     const line = await page.evaluate(() => document.querySelector("[data-combo-line]")?.getAttribute("data-combo-line") ?? null);
     await ctx.close();
     return line;
@@ -128,6 +139,7 @@ try {
     const m = await measure(browser, win, `?push-card=${CARD}&push-combo=1&push-variant=${encodeURIComponent(first)}`);
     const [left, right] = m.angles;
     check(left === -2.5 && right === 2.5, `${win.label}: the first plate leans -2.5deg and the second +2.5deg, as drawn`, `angles ${JSON.stringify(m.angles)}`);
+    check(m.origins[0] === "bottom right" && m.origins[1] === "bottom left", `${win.label}: the plates turn about their inner bottom corners, as drawn`, `origins ${JSON.stringify(m.origins)}`);
     check(m.leaked === 0, `${win.label}: no plate text sits inside a rotated box`, `leaked ${m.leaked}`);
   }
 } finally {
