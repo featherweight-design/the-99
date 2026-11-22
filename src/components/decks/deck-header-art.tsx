@@ -23,4 +23,3 @@ export function DeckHeaderArt({ artCropUri, colorIdentity }: { artCropUri: strin
 
 /** The label column's left inset on the same two geometries: past each portrait's flat stop (356px for 340, 560 for 560). */
 export const DECK_HEADER_LABEL_INSET = "pl-[364px] @min-[1200px]:pl-[592px]";
-export const DECK_HEADER_LABEL_LEFT = "left-[364px] @min-[1200px]:left-[592px]";
