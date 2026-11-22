@@ -1,0 +1,125 @@
+<title>Strip Press Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: two life tracker strips side by side (stacked on phone), today's build vs the demo spec. Single dark look, as the tracker. */
+:root{
+  --bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;
+  --fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--accent:#CF8745;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;--display:"Cinzel",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+body{background:var(--bg);color:var(--fg-body);font-family:var(--sans);font-size:15px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 40px}
+.wrap{max-width:860px;margin:0 auto;display:flex;flex-direction:column;gap:22px}
+h1{font-family:var(--display);color:var(--fg);font-size:24px;margin:0;text-wrap:balance}
+p{margin:0;max-width:64ch}
+.opts{display:flex;flex-wrap:wrap;gap:16px;align-items:center;font-size:14px}
+.opts label{display:flex;gap:8px;align-items:center;cursor:pointer}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.col{background:var(--surface);border-radius:16px;box-shadow:inset 0 0 0 1px var(--border);padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.col h2{margin:0;font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-muted);font-weight:600}
+.col h2 b{color:var(--accent);font-weight:600}
+.col .note{font-size:13px;color:var(--fg-muted)}
+.strip{align-self:center;display:flex;gap:12px;align-items:center;padding:12px 14px;border-radius:16px;background:var(--surface);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.tn{width:50px;height:50px;border-radius:50%;display:grid;place-items:center;color:var(--accent);box-shadow:inset 0 0 0 2px var(--accent);font-family:var(--display);font-size:22px}
+button.sb{position:relative;width:48px;height:48px;border-radius:50%;border:0;padding:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg-body);display:grid;place-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button.sb svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+button.sb:disabled{opacity:.4;cursor:default}
+button.sb:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+
+/* On main now (bd67b89): accent fill on press and when lit, 200 ms */
+.now button.sb{transition:transform 200ms ease,background-color 200ms ease,color 200ms ease,box-shadow 200ms ease}
+.now button.sb:enabled:active{background:var(--accent);color:var(--bg);box-shadow:none;transform:scale(.92)}
+
+/* Demo (P1) = new spec: scale .92 over 80 ms only; lit = accent ink + 1.5px accent ring */
+.demo button.sb{transition:transform .08s ease,background-color .2s,color .2s,box-shadow .2s}
+.demo button.sb:enabled:active{transform:scale(.92)}
+
+/* Lit states, the same in the demo and on main: picking / open = held accent fill; held by someone = accent ring; nobody = faint */
+button.sb.off{color:#6F6758}
+button.sb.on{color:var(--accent);box-shadow:inset 0 0 0 1.5px var(--accent)}
+button.sb.act{background:var(--accent);color:var(--bg);box-shadow:none}
+.seats{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.seats button{height:36px;padding:0 14px;border-radius:999px;border:0;background:var(--elevated);box-shadow:inset 0 0 0 1px var(--border-strong);color:var(--fg);font:600 13px var(--sans);cursor:pointer}
+.seats button:disabled{opacity:.35;cursor:default}
+.seats button.pick{box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent)}
+/* Reduced motion (real setting or the switch): no scale */
+.rm button.sb:enabled:active{transform:none}
+@media (prefers-reduced-motion:reduce){button.sb:enabled:active{transform:none!important}}
+.slow button.sb{transition-duration:1.2s!important}
+.key{font-family:var(--mono);font-size:12px;color:var(--fg-muted)}
+</style>
+
+<div class="wrap">
+  <h1>Strip press test</h1>
+  <p>Press and hold each strip button, on a phone or with a mouse. The left strip is what's on main now. The right strip is the demo's press, which the new spec copies. Tap Crown or Initiative to start picking (the button holds the accent fill), then tap a player below to hand it over (the button keeps an accent ring). The dice button holds the fill while its menu would be open.</p>
+  <div class="opts">
+    <label><input type="checkbox" id="slow"> Slow motion (1.2 s)</label>
+    <label><input type="checkbox" id="rm"> Reduced motion</label>
+    <label><input type="checkbox" id="undo"> Undo disabled</label>
+  </div>
+  <div class="cols">
+    <section class="col now">
+      <h2>On main now</h2>
+      <div class="strip"></div><div class="seats"></div>
+      <div class="note">Every press flashes the accent fill and shrinks to 92%, over 200 ms.</div>
+    </section>
+    <section class="col demo">
+      <h2><b>Demo</b> · new spec</h2>
+      <div class="strip"></div><div class="seats"></div>
+      <div class="note">A press only shrinks to 92% over 80 ms. The fill shows only while picking or while the dice menu is open; a holder gets the ring.</div>
+    </section>
+  </div>
+  <p class="key">Source: P1-Prototype.dc.html <code>.sb</code>, <code>.sb:active</code>, <code>.sb.act</code>, <code>.sb.on</code>, <code>.sb.off</code>; main bd67b89 spine.tsx <code>sb</code>.</p>
+</div>
+
+<script>
+const icons={
+  crown:'<path d="M3 18l2-10 4.5 4L12 5l2.5 7L19 8l2 10z"/>',
+  init:'<path d="M12 3l7 4v5c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V7z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+  dice:'<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="9" cy="9" r="1" fill="currentColor"/><circle cx="15" cy="15" r="1" fill="currentColor"/><circle cx="15" cy="9" r="1" fill="currentColor"/><circle cx="9" cy="15" r="1" fill="currentColor"/>',
+  undo:'<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 010 12h-3"/>'
+};
+const labels={crown:'Monarch',init:'Initiative',sun:'Day and night',dice:'Roll dice',undo:'Undo'};
+document.querySelectorAll('.col').forEach(col=>{
+  const st={mode:null,crown:null,init:null,dice:false,sun:true};
+  const strip=col.querySelector('.strip'),seats=col.querySelector('.seats');
+  strip.insertAdjacentHTML('beforeend','<div class="tn" aria-label="Round 1">1</div>');
+  const b={};
+  Object.keys(icons).forEach(k=>{
+    const e=document.createElement('button');e.className='sb';e.type='button';e.setAttribute('aria-label',labels[k]);e.dataset.k=k;
+    e.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+icons[k]+'</svg>';
+    e.addEventListener('contextmenu',ev=>ev.preventDefault());
+    e.addEventListener('click',()=>{
+      if(k==='crown'||k==='init'){st.mode=st.mode===k?null:k;st.dice=false}
+      else if(k==='dice'){st.dice=!st.dice;st.mode=null}
+      else if(k==='sun'){st.sun=!st.sun}
+      draw();
+    });
+    strip.appendChild(e);b[k]=e;
+  });
+  ['Colin','Peter','You','Max'].forEach(n=>{
+    const e=document.createElement('button');e.type='button';e.textContent=n;
+    e.addEventListener('click',()=>{if(st.mode){st[st.mode]=n;st.mode=null;draw()}});
+    seats.appendChild(e);
+  });
+  function draw(){
+    const cls=(k)=>st.mode===k?'act':st[k]?'on':'off';
+    b.crown.className='sb '+cls('crown');b.init.className='sb '+cls('init');
+    b.crown.setAttribute('aria-pressed',st.mode==='crown');b.init.setAttribute('aria-pressed',st.mode==='init');
+    b.crown.setAttribute('aria-label','Monarch'+(st.crown?': '+st.crown:''));b.init.setAttribute('aria-label','Initiative'+(st.init?': '+st.init:''));
+    b.sun.className='sb '+(st.sun?'on':'off');
+    b.dice.className='sb'+(st.dice?' act':'');b.dice.setAttribute('aria-expanded',st.dice);
+    seats.querySelectorAll('button').forEach(e=>{e.disabled=!st.mode;e.classList.toggle('pick',!!st.mode)});
+  }
+  draw();
+});
+const sync=()=>{
+  document.body.classList.toggle('slow',document.getElementById('slow').checked);
+  document.body.classList.toggle('rm',document.getElementById('rm').checked);
+  document.querySelectorAll('[data-k="undo"]').forEach(b=>b.disabled=document.getElementById('undo').checked);
+};
+['slow','rm','undo'].forEach(id=>document.getElementById(id).addEventListener('change',sync));sync();
+</script>
