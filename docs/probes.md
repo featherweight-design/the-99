@@ -2942,8 +2942,9 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   pinned by `layouts.test.ts` (setup draws `layoutsFor` directly). It only reads (setup writes nothing until Start) and
   needs the fixture on a scratch branch.
 - `pnpm probe:tracker-spine` opens the fixture's S4 game at phone (390x844) and tablet (1024x768) width and presses
-  the centre strip. It checks addendum R2's strip: each strip button held down (a real mouse press) draws the accent
-  fill and a transform scaled under 1, with a transform and color transition; each day/night toggle runs `dn-out` on
+  the centre strip. It checks addendum R2's strip: each strip button held down (a real mouse press) is pushed to
+  `scale(.92)` with its ground, ink and ring unchanged, the push over 80 ms and the colour over 200 ms (addendum
+  press-parity, which replaced R2's accent flash; before it, the held fill fails at each button); each day/night toggle runs `dn-out` on
   the old icon and `dn-in` on the new one, 320 ms each, and under reduced motion only the new icon is drawn; Menu is
   drawn over the spine, so a press lands on it at every sampled point; a real press on End turn passes the turn; the
   dice menu sits over the strip, inside the viewport. On #3139's merge the press draws nothing, the toggle runs no

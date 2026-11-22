@@ -250,14 +250,15 @@ export function Spine({
 }
 
 /**
- * A strip button (`.sb`): a circle sized by the strip, on the elevated surface. Held down it fills with the accent, drops
- * its ring and is pushed in, easing both ways on `--motion-quick` (addendum R2, Hugh ruling 11-22). A disabled Undo does
- * not press; reduced motion keeps the fill and drops the push. An open popover's button (dice, Menu) and a monarch or
+ * A strip button (`.sb`): a circle sized by the strip, on the elevated surface. A press only pushes it in, `scale(.92)`
+ * over 80 ms, with no change of ground, ink or ring (the P1 demo, addendum press-parity, replacing R2's accent flash
+ * that read as a blink). Colour changes between states still ease over `--motion-quick` (200 ms), hence one duration per
+ * transitioned property, in order. A disabled Undo does not press; reduced motion draws no press at all. An open popover's button (dice, Menu) and a monarch or
  * initiative pick are lit the same way, from their `aria-expanded` / `aria-pressed`: as variants they outrank the
  * resting fill, where a plain accent class appended after it lost to it in Tailwind's order.
  */
 const sb =
-  "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] aria-expanded:bg-[color:var(--accent)] aria-expanded:text-[color:var(--bg)] aria-pressed:bg-[color:var(--accent)] aria-pressed:text-[color:var(--bg)] aria-pressed:shadow-none enabled:active:bg-[color:var(--accent)] enabled:active:text-[color:var(--bg)] enabled:active:shadow-none motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:enabled:active:[transform:scale(.92)]";
+  "relative grid size-[var(--sb)] shrink-0 place-items-center rounded-full bg-[color:var(--elevated)] aria-expanded:bg-[color:var(--accent)] aria-expanded:text-[color:var(--bg)] aria-pressed:bg-[color:var(--accent)] aria-pressed:text-[color:var(--bg)] aria-pressed:shadow-none motion-safe:transition-[transform,background-color,color,box-shadow] motion-safe:duration-[80ms,200ms,200ms,200ms] motion-safe:enabled:active:[transform:scale(.92)]";
 
 /**
  * How far a strip popover moves sideways to stay 8px inside the viewport (a strip near the screen's edge). From the
