@@ -148,7 +148,7 @@ describe("pickGameQuery (which game the Log opens on)", () => {
     const { sql: text, params } = pickGameQuery("user_a", TABLE, ms).toSQL();
     // Compared as the timestamp itself (the index's column), built from the ms, never as a string.
     expect(text.slice(text.indexOf(" where "))).toMatch(/"rule_zero_result_seats"\."started_at" = \$\d/);
-    expect(params.some((p) => p instanceof Date && p.getTime() === ms)).toBe(true);
+    expect(params.some((p) => (p instanceof Date ? p.getTime() : typeof p === "string" ? Date.parse(p) : NaN) === ms)).toBe(true);
     expect(params.some((p) => typeof p === "string" && p === String(ms))).toBe(false);
   });
 
