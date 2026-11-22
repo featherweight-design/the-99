@@ -141,6 +141,16 @@ try {
       return r.left >= row.left - 1 && r.right <= row.right + 1;
     });
     check("badges stay inside their row", fits);
+    // The pill's hit area reaches past its edge (P1 44px target): a press 6px above it still lands on it, on the
+    // unturned desktop seat (a turned phone seat's "above" is sideways on screen).
+    if (w.badge === 28) {
+      const reach = await a.getByRole("button", { name: "Tax +2. Open it in the sheet", exact: true }).first().evaluate((el) => {
+        const r = el.getBoundingClientRect();
+        const hit = document.elementFromPoint(r.left + r.width / 2, r.top - 6);
+        return hit === el || el.contains(hit);
+      });
+      check("a press just above a pill lands on it", reach);
+    }
 
     // Each pill opens the sheet on its tab.
     for (const [label, tab] of [[dmg, /damage/i], ["Tax +2. Open it in the sheet", /tax/i], ["Poison 2. Open it in the sheet", /counter/i]]) {

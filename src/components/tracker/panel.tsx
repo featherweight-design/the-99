@@ -213,7 +213,7 @@ export function Panel({
   const setCounters = COUNTER_KEYS.filter((k) => state.counters[k] > 0);
   const hasBadges = hits.length > 0 || topTax > 0 || setCounters.length > 0 || monarch || initiative;
   const badges = hasBadges ? (
-    <div className={"flex min-w-0 items-center overflow-hidden " + (foot ? "gap-[6px]" : "shrink gap-[5px]")} data-testid="panel-badges">
+    <div className={"-my-[10px] flex min-w-0 items-center overflow-hidden py-[10px] " + (foot ? "gap-[6px]" : "shrink gap-[5px]")} data-testid="panel-badges">
       {hits.map((h) => {
         const art = commanderArt(h.p, h.cmdr);
         const text = copy.badge(commanderOf(h.p, h.cmdr) ?? trackerCopy.sheet.commanderFallback, h.n);
