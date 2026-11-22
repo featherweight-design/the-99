@@ -134,7 +134,7 @@ try {
       // Undo whatever the press did, so the next button starts from rest.
       if (id === "strip-dice" || id === "strip-menu" || id === "strip-monarch") await page.keyboard.press("Escape");
       if (id === "strip-dice" || id === "strip-menu" || id === "strip-monarch") {
-        const open = await page.locator("[data-testid=dice-menu], [role=dialog]").count();
+        const open = await page.locator("[role=menu]").count();
         if (open) await b.evaluate((el) => el.click());
         await page.waitForTimeout(250);
       }
@@ -175,7 +175,7 @@ try {
     const menuBtn = page.getByTestId("strip-menu");
     await menuBtn.evaluate((el) => el.click());
     await page.waitForTimeout(300);
-    const menu = page.getByRole("dialog", { name: /menu/i });
+    const menu = page.getByRole("menu", { name: "Menu" });
     if (await menu.count()) {
       const pts = await menu.evaluate((el) => {
         const r = el.getBoundingClientRect();
@@ -190,7 +190,7 @@ try {
       await menuBtn.evaluate((el) => el.click()).catch(() => {});
       await page.keyboard.press("Escape");
       await page.waitForTimeout(250);
-    } else report("6 Menu opens", false, "no dialog");
+    } else report("6 Menu opens", false, "no menu");
 
     // 8. The dice menu pops in over the spine, as drawn.
     await page.getByTestId("strip-dice").evaluate((el) => el.click());

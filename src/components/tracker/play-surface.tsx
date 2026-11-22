@@ -6,9 +6,8 @@
 // never the live one, so a reseat, a deck change or a close does not touch it (addendum, Snapshot rule). Undo the last
 // change takes a mistaken ending back (Undo addendum): it deletes the saved result, then reopens the game on this device.
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { gameLoggedAction, saveTableResultAction, undoTableResultAction } from "../../app/friends/table/result-actions";
 import { trackerCopy } from "../../lib/copy/tracker";
 import type { GameLogged } from "../../lib/social/rule-zero-result";
@@ -114,6 +113,12 @@ export function PlaySurface({
   const [sheet, setSheet] = useState<SheetView | null>(null);
   const [saved, setSaved] = useState<"saving" | "saved" | "failed" | null>(null);
   const [pick, setPick] = useState<"monarch" | "initiative" | null>(null);
+  // One popover at a time: opening the Menu ends a monarch or initiative pick and closes any sheet (M1).
+  const toggleMenu = useCallback(() => {
+    setMenu((m) => !m);
+    setPick(null);
+    setSheet(null);
+  }, []);
   const [fly, setFly] = useState<{ kind: "monarch" | "initiative"; k: number; from: [number, number]; to: [number, number] } | null>(null);
   const [roll, setRoll] = useState<Roll | null>(null);
   // Random's d20 rounds, on screen over the game that already started on their winner.
@@ -170,6 +175,7 @@ export function PlaySurface({
   // A game that ends under an open sheet closes it, so an Undo that reopens the game does not bring the sheet back.
   if (over && sheet) setSheet(null);
   if (over && pick) setPick(null);
+  if (over && menu) setMenu(false);
 
   useEffect(() => {
     if (over) finish(Date.now());
@@ -401,11 +407,20 @@ export function PlaySurface({
           pick={pick}
           canUndo={state.entries > 0}
           menu={menu}
+          back={{
+            href: backHref,
+            line: copy.strip.backLine(device),
+            // Leaving lands any life still counting on a panel; the game stays in this device's storage for Back to the game.
+            onLeave: () => {
+              const pending = [...pendingFrom.current].map(([seat, take]) => ({ t: "life" as const, seat, delta: take() })).filter((c) => c.delta !== 0);
+              if (pending.length) commit(pending.length === 1 ? pending[0] : { t: "batch", actions: pending });
+            },
+          }}
           onPick={(kind) => setPick((p) => (p === kind ? null : kind))}
           onDay={() => commit({ t: "day", value: state.day === "day" ? "night" : "day" })}
           onDice={rollDie}
           onUndo={undo}
-          onMenu={() => setMenu((m) => !m)}
+          onMenu={toggleMenu}
         />
 
         {firstRoll ? <FirstRoll rolls={firstRoll} layout={layout} seats={seatsInPlay} onDone={() => setFirstRoll(null)} /> : null}
@@ -441,13 +456,6 @@ export function PlaySurface({
       <p className="sr-only" aria-live="polite" role="status">
         {activeName ? (activeName.you ? copy.panel.yourTurn : <PersonName n={activeName.name} />) : null}
       </p>
-
-      {menu ? (
-        <div role="dialog" aria-label={copy.strip.menu} className="absolute bottom-4 left-1/2 z-40 flex -translate-x-1/2 gap-3 rounded-[14px] border border-[color:var(--border-strong)] bg-[color:var(--elevated)] p-3">
-          <Link href={backHref} className="min-h-[44px] px-3 py-3 text-[14px] text-[color:var(--fg)]">{copy.strip.back}</Link>
-          <button type="button" onClick={() => setMenu(false)} className="min-h-[44px] px-3 text-[14px] text-[color:var(--fg-body)]">{copy.strip.close}</button>
-        </div>
-      ) : null}
 
       {roll ? (
         <DiceRoll

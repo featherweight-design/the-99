@@ -140,7 +140,8 @@ export const trackerCopy = {
     dice: "Roll dice or flip a coin",
     menu: "Menu",
     back: "Back to the table",
-    close: "Close",
+    menuClose: "Close the menu",
+    backLine: (device: "phone" | "tablet") => `The game stays on this ${device}. Back to the game picks it up.`,
   },
   pick: {
     monarchNow: "Monarch now",

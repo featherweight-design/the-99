@@ -2950,6 +2950,15 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   phone's layouts, the board never turns and phone-2 draws portrait. The device class reads the screen's short side
   (600px or more is a tablet), so the probe sets Playwright's `screen` as well as the viewport. It writes only
   localStorage and needs the fixture on a scratch branch.
+- `pnpm probe:tracker-menu` presses the tracker strip's Menu (addendum #3115, gap T7b, board M1) at 390x844 and
+  1180x820 on the fixture's S4. Menu must be the strip's last button, after Undo: the ⋯ icon with no text, named Menu,
+  `aria-haspopup="menu"`. A press lights it with the accent and opens a 300px `role="menu"` above it, centred on it or
+  clamped 8px inside the screen, with one 64px row linking to the table: "Back to the table" and its line naming this
+  phone or tablet. Focus moves to the row, and Esc, a tap outside and Menu again each close it with focus back on Menu;
+  no bottom-bar dialog remains. Opening it ends a monarch pick. A tap on a panel's plus, then Back to the table, must land
+  that +1 in the saved game before the table page loads and offers "Back to the game". On the tablet's T10 "Along one
+  side" (a strip on the top edge) the menu opens below the button. On main Menu is a text pill opening a bottom-bar
+  dialog. It writes only localStorage and needs the fixture on a scratch branch.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a

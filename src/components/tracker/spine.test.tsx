@@ -1,7 +1,9 @@
 // The centre strip's day/night button (addendum R2, K1): the first draw turns nothing; each toggle draws the icon it
 // leaves turning out (`dn-out`) over the new one turning in (`dn-in`), 320 ms each, and reduced motion hides the
-// outgoing one. The strip press is on every strip button but never a disabled Undo.
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+// outgoing one. The strip press is on every strip button but never a disabled Undo. The Menu (undrawn-tablet addendum,
+// M1) is the strip's last button: one row back to the table, opened above the button (below a strip on the top edge),
+// closed by Menu again, a tap outside or Esc, with focus moving to the row and back.
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DayNight } from "../../lib/tracker/engine";
@@ -11,12 +13,15 @@ afterEach(cleanup);
 
 const holder = { label: "Nobody", art: null, held: false };
 
-function Strip({ canUndo = false }: { canUndo?: boolean }) {
+const onLeave = vi.fn();
+
+function Strip({ canUndo = false, rect = { x: 0, y: 0, w: 56, h: 600 }, canvas = { w: 390, h: 844 } }: { canUndo?: boolean; rect?: { x: number; y: number; w: number; h: number }; canvas?: { w: number; h: number } }) {
   const [day, setDay] = useState<DayNight | null>(null);
+  const [menu, setMenu] = useState(false);
   return (
     <Spine
-      rect={{ x: 0, y: 0, w: 56, h: 600 }}
-      canvas={{ w: 390, h: 844 }}
+      rect={rect}
+      canvas={canvas}
       round={1}
       roundLabel="Round 1"
       monarch={holder}
@@ -24,12 +29,13 @@ function Strip({ canUndo = false }: { canUndo?: boolean }) {
       day={day}
       pick={null}
       canUndo={canUndo}
-      menu={false}
+      menu={menu}
+      back={{ href: "/friends/table/t1", line: "The game stays on this phone. Back to the game picks it up.", onLeave }}
       onPick={vi.fn()}
       onDay={() => setDay((d) => (d === "day" ? "night" : "day"))}
       onDice={vi.fn()}
       onUndo={vi.fn()}
-      onMenu={vi.fn()}
+      onMenu={() => setMenu((m) => !m)}
     />
   );
 }
@@ -64,5 +70,77 @@ describe("Spine day/night", () => {
       expect(c, id).not.toMatch(/(^|\s)active:/);
     }
     expect((screen.getByTestId("strip-undo") as HTMLButtonElement).disabled).toBe(true);
+  });
+});
+
+describe("Spine Menu", () => {
+  afterEach(() => onLeave.mockClear());
+
+  it("draws Menu as the ⋯ strip button, named Menu, with a menu popup", () => {
+    render(<Strip />);
+    const b = screen.getByTestId("strip-menu");
+    expect(b).toHaveAccessibleName("Menu");
+    expect(b.getAttribute("aria-haspopup")).toBe("menu");
+    expect(b.getAttribute("aria-expanded")).toBe("false");
+    expect(b.textContent).toBe("");
+    expect(b.querySelector("svg")).not.toBeNull();
+  });
+
+  it("opens one row back to the table, lit while open, with focus on the row", () => {
+    render(<Strip />);
+    fireEvent.click(screen.getByTestId("strip-menu"));
+    const b = screen.getByTestId("strip-menu");
+    expect(b.getAttribute("aria-expanded")).toBe("true");
+    expect(b.className).toContain("aria-expanded:bg-[color:var(--accent)]");
+    const menu = screen.getByRole("menu", { name: "Menu" });
+    const items = screen.getAllByRole("menuitem");
+    expect(items).toHaveLength(1);
+    expect(menu.contains(items[0])).toBe(true);
+    expect(items[0].getAttribute("href")).toBe("/friends/table/t1");
+    expect(items[0].textContent).toContain("Back to the table");
+    expect(items[0].textContent).toContain("The game stays on this phone. Back to the game picks it up.");
+    expect(document.activeElement).toBe(items[0]);
+  });
+
+  it("closes on Menu again, on Esc and on a tap outside, handing focus back to Menu", () => {
+    render(<Strip />);
+    const b = () => screen.getByTestId("strip-menu");
+    fireEvent.click(b());
+    fireEvent.click(b());
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(b());
+    fireEvent.click(b());
+    act(() => void document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(b());
+    fireEvent.click(b());
+    fireEvent.click(screen.getByRole("button", { name: "Close the menu" }));
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
+
+  it("closes the dice picker when it opens", () => {
+    render(<Strip />);
+    fireEvent.click(screen.getByTestId("strip-dice"));
+    expect(screen.getByTestId("dice-menu")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("strip-menu"));
+    expect(screen.queryByTestId("dice-menu")).toBeNull();
+    expect(screen.getByRole("menu", { name: "Menu" })).toBeTruthy();
+  });
+
+  it("lands pending life before leaving", () => {
+    render(<Strip />);
+    fireEvent.click(screen.getByTestId("strip-menu"));
+    fireEvent.click(screen.getByRole("menuitem"));
+    expect(onLeave).toHaveBeenCalledTimes(1);
+  });
+
+  it("opens above Menu, and below it on a strip along the top edge", () => {
+    render(<Strip rect={{ x: 10, y: 378, w: 1160, h: 64 }} canvas={{ w: 1180, h: 820 }} />);
+    fireEvent.click(screen.getByTestId("strip-menu"));
+    expect(screen.getByTestId("strip-menu-pop").className).toContain("bottom-[calc(100%+10px)]");
+    cleanup();
+    render(<Strip rect={{ x: 10, y: 10, w: 1160, h: 64 }} canvas={{ w: 1180, h: 820 }} />);
+    fireEvent.click(screen.getByTestId("strip-menu"));
+    expect(screen.getByTestId("strip-menu-pop").className).toContain("top-[calc(100%+10px)]");
   });
 });
