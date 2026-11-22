@@ -33,5 +33,6 @@ describe("hideLogReminder", () => {
     expect(sql).toContain("rs.user_id = $");
     expect(sql).toContain("pod_members viewer_in");
     expect(sql).toContain("on conflict do nothing");
+    expect(sql).toContain("interval '7 days' > now()");
   });
 });

@@ -169,24 +169,34 @@ export function HomeLogCard({ games, now }: { games: HomeLogGame[]; now: Date })
       else next.delete(keyOf(g));
       return next;
     });
-  const hide = (g: HomeLogGame) => {
-    flip(g, true);
-    const id = ++toastId.current;
+  // The hide each game last sent: Undo waits on it, so its delete can never overtake the insert it undoes.
+  const sent = useRef(new Map<string, Promise<boolean>>());
+  const send = (g: HomeLogGame, act: typeof hideLogReminderAction) => {
+    const p = (sent.current.get(keyOf(g)) ?? Promise.resolve(true)).then(() => act(g.tableId, g.gameMs)).catch(() => false);
+    sent.current.set(keyOf(g), p);
+    return p;
+  };
+  const offerUndo = (g: HomeLogGame) =>
     setToast({
-      id,
+      id: ++toastId.current,
       text: copy.hidden(gameDay(new Date(g.until), tz)),
       retry: {
         label: copy.undo,
         run: () => {
           flip(g, false);
           setToast(null);
-          void unhideLogReminderAction(g.tableId, g.gameMs).then((ok) => {
-            if (!ok) flip(g, true);
+          void send(g, unhideLogReminderAction).then((ok) => {
+            if (ok) return;
+            flip(g, true);
+            offerUndo(g);
           });
         },
       },
     });
-    void hideLogReminderAction(g.tableId, g.gameMs).then((ok) => {
+  const hide = (g: HomeLogGame) => {
+    flip(g, true);
+    offerUndo(g);
+    void send(g, hideLogReminderAction).then((ok) => {
       if (ok) return;
       flip(g, false);
       setToast({ id: ++toastId.current, text: copy.hideFailed, retry: { label: ruleZeroCopy.close.retry, run: () => hide(g) } });

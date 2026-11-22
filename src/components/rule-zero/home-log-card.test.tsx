@@ -60,12 +60,24 @@ describe("one game", () => {
     expect(screen.getByTestId("home-log-card")).toBeTruthy();
   });
 
+  it("hides again and offers Undo again when the Undo is refused", async () => {
+    m.unhide.mockResolvedValueOnce(false);
+    render(<HomeLogCard games={[game(1)]} now={NOW} />);
+    await act(async () => fireEvent.click(screen.getByTestId("home-log-hide")));
+    await act(async () => fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: copy.undo })));
+    expect(screen.queryByTestId("home-log-card")).toBeNull();
+    expect(within(screen.getByRole("status")).getByRole("button", { name: copy.undo })).toBeTruthy();
+  });
+
   it("puts the card back, with a retry, when the server refuses the hide", async () => {
     m.hide.mockResolvedValueOnce(false);
     render(<HomeLogCard games={[game(1)]} now={NOW} />);
     await act(async () => fireEvent.click(screen.getByTestId("home-log-hide")));
     expect(screen.getByTestId("home-log-card")).toBeTruthy();
     expect(screen.getByRole("status").textContent).toContain(copy.hideFailed);
+    await act(async () => fireEvent.click(within(screen.getByRole("status")).getByRole("button", { name: ruleZeroCopy.close.retry })));
+    expect(m.hide).toHaveBeenCalledTimes(2);
+    expect(screen.queryByTestId("home-log-card")).toBeNull();
   });
 });
 

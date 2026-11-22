@@ -4196,8 +4196,8 @@ export const ruleZeroSeen = pgTable("rule_zero_seen", {
 
 /**
  * A player's hidden reminder to log one game (log reminder, Home card's ✕): one row per (player, game), the game named
- * as the URL names it (`game_ms`, whole milliseconds of the result's `started_at`). Hides the Home card's row and a push
- * still waiting for that game, for that player only; Undo deletes the row. The table's own deletion (a week past its
+ * as the URL names it (`game_ms`, whole milliseconds of the result's `started_at`). Hides the Home card's row (and, from PR 3, a push
+ * still waiting for that game), for that player only; Undo deletes the row. The table's own deletion (a week past its
  * morning) cascades it, so no sweep is needed.
  */
 export const ruleZeroLogHidden = pgTable("rule_zero_log_hidden", {
