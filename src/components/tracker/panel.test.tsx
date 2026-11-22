@@ -2,7 +2,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import type { SeatState } from "@/lib/tracker/engine";
-import { Panel, type PlaySeat } from "./panel";
+import { HALO, Panel, type PlaySeat } from "./panel";
 
 const seat: PlaySeat = { seat: 0, you: true, name: "Hugh", art: null, partnerArt: null, commander: "Sai", partner: null, deck: "Sai Artifacts" };
 const base: SeatState = {
@@ -81,5 +81,11 @@ describe("tracker panel", () => {
       <Panel cell={cell} canvas={{ w: 390, h: 844 }} seat={seat} state={{ ...base, out: { reason: { kind: "commander", from: 2, cmdr: 0 }, round: 3, entry: 4 } }} active={false} round={3} seats={new Map([[2, from]])} monarch={false} initiative={false} onSheet={() => {}} disabled={false} onLife={() => {}} onEndTurn={() => {}} onUndo={() => {}} />,
     );
     expect(html).toContain("21 commander damage from Ghalta, Primal Hunger · round 3");
+  });
+  it("puts one halo of the theme's own ground behind the pending figure, behind its glyphs", () => {
+    expect(HALO).toContain("isolate");
+    expect(HALO).toContain("before:-z-10");
+    expect(HALO).toContain("before:pointer-events-none");
+    expect(HALO.match(/color-mix\(in_srgb,var\(--bg\)_60%,transparent\)/g)).toHaveLength(2);
   });
 });

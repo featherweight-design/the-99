@@ -1,12 +1,13 @@
-// The life tracker's pending loss figure (−N) is drawn over the seat's commander art, so its ink has to read on the
-// pixels actually behind it, not only on the theme's flat grounds. This presses the real control (the minus half) on
-// every seat of the fixture's four-seat S4 table at 390 and 1180x820, then:
-//   1. reads the figure's computed ink and its rect;
-//   2. hides the figure and screenshots that rect, so the pixels are the art, wash and panel behind the glyph;
-//   3. computes the WCAG contrast of the ink against every pixel there (worst, 5th percentile, median, share under 4.5);
-//   4. repeats with the old `--danger` ink forced, for the before figure on the same pixels.
-// It asserts the shipped ink is `--critical-fg` (it fails on main, where the figure is `--danger`) and prints the
-// measured contrast either way. With SHOTS=<dir> it writes the board with the figures showing, per width.
+// The life tracker's pending figure (-N and +N) is drawn over the seat's commander art, so it has to read on the pixels
+// actually behind it, not only on the theme's flat grounds. This presses the real control (the minus half, then the plus
+// half) on every seat of the fixture's four-seat S4 table at 390 and 1180x820, then:
+//   1. reads the figure's computed ink, its rect and its ::before halo;
+//   2. hides only the glyphs (color: transparent !important; visibility would hide the halo with them) and screenshots
+//      that rect, so the pixels are the art, wash, halo and panel behind the ink;
+//   3. computes the WCAG contrast of the ink against every pixel there (worst, 5th percentile, median, share under 3).
+// It asserts the ink (--critical-fg for a loss, --success for a gain), that the halo draws, and that the worst pixel on
+// every seat, Clavileño included, holds 3:1. It fails on main, where there is no halo and the light art dips under 3:1.
+// With SHOTS=<dir> it writes the board with the figures showing, per width.
 // The art crop's S4 table, so the same setup applies: the fixture seeded on a scratch branch (docs/probes.md) and the dev
 // server started with INVITE_CODE_SECRET set. Writes only the device's saved game (localStorage).
 //
@@ -97,7 +98,7 @@ const scorePixels = ({ png, ink }) =>
       }
       ratios.sort((a, b) => a - b);
       const at = (p) => ratios[Math.min(ratios.length - 1, Math.floor(p * ratios.length))];
-      resolve({ n: ratios.length, min: ratios[0], p5: at(0.05), median: at(0.5), under: ratios.filter((r) => r < 4.5).length / ratios.length });
+      resolve({ n: ratios.length, min: ratios[0], p5: at(0.05), median: at(0.5), under: ratios.filter((r) => r < 3).length / ratios.length });
     };
     img.src = `data:image/png;base64,${png}`;
   });
@@ -132,53 +133,59 @@ try {
     await page.addStyleTag({ content: "[data-seat-notice-stack]{display:none !important}" });
     await page.waitForTimeout(600);
 
-    const halves = page.getByTestId("half-minus");
-    const count = await halves.count();
-    check(`${s.name}: four seats draw a minus half`, count === 4, String(count));
-    for (let seat = 0; seat < count; seat++) {
-      for (let k = 0; k < TAPS; k++) await halves.nth(seat).click({ force: true, delay: 20 });
-      await page.waitForTimeout(220);
-      const pending = page.getByTestId("life-pending").nth(0);
-      // The seat's own figure: the one whose panel holds this half.
-      const info = await halves.nth(seat).evaluate((el) => {
-        const panel = el.closest("[data-testid=panel-front]") ?? el.closest("[data-testid=tracker-panel]") ?? el.parentElement.parentElement;
-        const n = panel.querySelector("[data-testid=life-pending]");
-        if (!n) return null;
-        const r = n.getBoundingClientRect();
-        const cs = getComputedStyle(n);
-        return { text: n.textContent, color: cs.color, rect: { x: r.x, y: r.y, width: r.width, height: r.height } };
-      });
-      if (!info) {
-        check(`${s.name} seat ${seat}: the loss figure draws`, false, "no life-pending in the seat's panel");
-        continue;
-      }
-      void pending;
-      const clip = { x: Math.max(0, info.rect.x), y: Math.max(0, info.rect.y), width: Math.max(1, info.rect.width), height: Math.max(1, info.rect.height) };
-      const hide = await page.addStyleTag({ content: "[data-testid=life-pending],[data-testid=life-pending-fade]{visibility:hidden !important}" });
-      const behind = (await page.screenshot({ clip })).toString("base64");
-      await hide.evaluate((el) => el.remove());
-      const ink = await page.evaluate(() => {
-        const probe = document.createElement("span");
-        document.body.append(probe);
-        const read = (name) => {
+    // Loss (minus half) then gain (plus half): each seat's pending figure, scored on the pixels behind its glyphs.
+    for (const [kind, testid, inkVar] of [["loss", "half-minus", "--critical-fg"], ["gain", "half-plus", "--success"]]) {
+      // The losses must commit (2 s idle) before the gains, or three taps up only cancel the pending −3 and no figure draws.
+      await page.getByTestId("life-pending").first().waitFor({ state: "detached", timeout: 8_000 }).catch(() => {});
+      await page.waitForTimeout(600);
+      const halves = page.getByTestId(testid);
+      const count = await halves.count();
+      check(`${s.name} ${kind}: four seats draw a ${testid}`, count === 4, String(count));
+      for (let seat = 0; seat < count; seat++) {
+        for (let k = 0; k < TAPS; k++) await halves.nth(seat).click({ force: true, delay: 20 });
+        await page.waitForTimeout(220);
+        // The seat's own figure: the one whose panel holds this half.
+        const info = await halves.nth(seat).evaluate((el) => {
+          const panel = el.closest("[data-testid=panel-front]") ?? el.closest("[data-testid=tracker-panel]") ?? el.parentElement.parentElement;
+          const n = panel.querySelector("[data-testid=life-pending]");
+          if (!n) return null;
+          const r = n.getBoundingClientRect();
+          const cs = getComputedStyle(n);
+          const halo = getComputedStyle(n, "::before");
+          return { text: n.textContent, color: cs.color, haloShadow: halo.boxShadow, haloPos: halo.position, rect: { x: r.x, y: r.y, width: r.width, height: r.height } };
+        });
+        const who = `${s.name} ${kind} seat ${seat}`;
+        if (!info) {
+          check(`${who}: the figure draws`, false, "no life-pending in the seat's panel");
+          continue;
+        }
+        const clip = { x: Math.max(0, info.rect.x), y: Math.max(0, info.rect.y), width: Math.max(1, info.rect.width), height: Math.max(1, info.rect.height) };
+        // Hide only the glyphs (color: transparent, not visibility, which would hide the halo's ::before too), so the pixels are the art,
+        // wash, halo and panel behind the ink.
+        const hide = await page.addStyleTag({ content: "[data-testid=life-pending],[data-testid=life-pending-fade]{color:transparent !important}" });
+        const behind = (await page.screenshot({ clip })).toString("base64");
+        await hide.evaluate((el) => el.remove());
+        const ink = await page.evaluate((name) => {
+          const probe = document.createElement("span");
+          document.body.append(probe);
           probe.style.color = `var(${name})`;
           const value = getComputedStyle(probe).color;
+          probe.remove();
           return value;
-        };
-        const out = { critical: read("--critical-fg"), danger: read("--danger") };
-        probe.remove();
-        return out;
-      });
-      const now = await page.evaluate(scorePixels, { png: behind, ink: rgb(info.color) });
-      const old = await page.evaluate(scorePixels, { png: behind, ink: rgb(ink.danger) });
-      const fmt = (m) => `min ${m.min.toFixed(2)} p5 ${m.p5.toFixed(2)} median ${m.median.toFixed(2)} under4.5 ${(m.under * 100).toFixed(0)}%`;
-      console.log(`      ${s.name} seat ${seat} ${PLAYERS[seat].commander.split(",")[0]} ${info.text}  ink ${info.color}\n        before --danger   ${fmt(old)}\n        after  shipped    ${fmt(now)}`);
-      table.push({ screen: s.name, seat, commander: PLAYERS[seat].commander.split(",")[0], before: old, after: now });
-      check(`${s.name} seat ${seat}: the loss figure is --critical-fg`, info.color === ink.critical, `${info.color} vs ${ink.critical}`);
+        }, inkVar);
+        const now = await page.evaluate(scorePixels, { png: behind, ink: rgb(info.color) });
+        const fmt = (m) => `min ${m.min.toFixed(2)} p5 ${m.p5.toFixed(2)} median ${m.median.toFixed(2)} under3 ${(m.under * 100).toFixed(0)}%`;
+        console.log(`      ${who} ${PLAYERS[seat].commander.split(",")[0]} ${info.text}  ink ${info.color}  ${fmt(now)}`);
+        table.push({ screen: s.name, kind, seat, commander: PLAYERS[seat].commander.split(",")[0], after: now });
+        check(`${who}: the figure is ${inkVar}`, info.color === ink, `${info.color} vs ${ink}`);
+        check(`${who}: the figure draws its halo`, info.haloPos === "absolute" && info.haloShadow !== "none", `${info.haloPos} ${info.haloShadow}`);
+        check(`${who}: worst pixel behind the figure holds 3:1`, now.min >= 3, now.min.toFixed(2));
+      }
     }
     if (SHOTS) {
       // Every figure showing at once for the contact sheet: tap every seat, then shoot before the ink fades.
-      for (let seat = 0; seat < count; seat++) for (let k = 0; k < TAPS; k++) await halves.nth(seat).click({ force: true, delay: 20 });
+      const minus = page.getByTestId("half-minus");
+      for (let seat = 0; seat < (await minus.count()); seat++) for (let k = 0; k < TAPS; k++) await minus.nth(seat).click({ force: true, delay: 20 });
       await page.waitForTimeout(200);
       await page.screenshot({ path: `${SHOTS}/${s.name}-loss.png` });
     }
