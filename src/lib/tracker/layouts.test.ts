@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { LAYOUTS, layoutById, layoutsFor } from "./layouts";
+import { drawnLayout, LAYOUTS, layoutById, layoutsFor, turned } from "./layouts";
 
 describe("layouts", () => {
   it("gives every layout one cell per seat, inside its canvas", () => {
@@ -32,8 +32,9 @@ describe("layouts", () => {
 
   it("offers the same arrangements, by the same names and in the same order, on both devices (addendum R2)", () => {
     const names = (device: "phone" | "tablet", n: number) => layoutsFor(device, n).map((l) => l.label);
-    // Tablet 2 and 3 seats arrive with the undrawn-tablet addendum (#3115); until then only 4 to 6 are compared.
-    for (const n of [4, 5, 6]) expect(names("phone", n), `${n} seats`).toEqual(names("tablet", n));
+    for (const n of [2, 3, 4, 5, 6]) expect(names("phone", n), `${n} seats`).toEqual(names("tablet", n));
+    expect(names("phone", 2)).toEqual(["Face to face"]);
+    expect(names("phone", 3)).toEqual(["One at the end", "Along one side"]);
     expect(names("phone", 4)).toEqual(["Two and two", "One on each side"]);
     expect(names("phone", 5)).toEqual(["Three and two", "One at the end"]);
     expect(names("phone", 6)).toEqual(["Three and three", "Ends"]);
@@ -62,9 +63,45 @@ describe("layouts", () => {
       );
   });
 
-  it("has unique ids and offers phone 2 to 6 and tablet 4 to 6", () => {
+  it("has unique ids and offers 2 to 6 seats on both devices", () => {
     expect(new Set(LAYOUTS.map((l) => l.id)).size).toBe(LAYOUTS.length);
-    for (const device of ["phone", "tablet"] as const) for (const n of [2, 3, 4, 5, 6]) if (!(device === "tablet" && (n === 2 || n === 3))) expect(layoutsFor(device, n).length).toBeGreaterThan(0);
+    for (const device of ["phone", "tablet"] as const) for (const n of [2, 3, 4, 5, 6]) expect(layoutsFor(device, n).length).toBeGreaterThan(0);
+  });
+
+  it("lays tablet 2 (T1) and tablet 3 (T2, T3) out as drawn", () => {
+    const at = (id: string) => layoutById(id)!.cells.map((c) => [c.x, c.y, c.w, c.h, c.rot]);
+    expect(at("tablet-2")).toEqual([[10, 452, 1160, 358, 0], [10, 10, 1160, 358, 180]]);
+    expect(at("tablet-3-end")).toEqual([[10, 452, 900, 358, 0], [10, 10, 900, 358, 180], [920, 10, 250, 800, -90]]);
+    expect(at("tablet-3-side")).toEqual([[790, 84, 380, 726, 0], [400, 84, 380, 726, 0], [10, 84, 380, 726, 0]]);
+    expect(layoutById("tablet-3-side")!.spine).toEqual({ x: 10, y: 10, w: 1160, h: 64 });
+  });
+
+  it("turns a layout a quarter as the upright boards draw it: V3 one way, V5 the other", () => {
+    const cells = (l: ReturnType<typeof turned>) => l.cells.map((c) => [c.x, c.y, c.w, c.h, c.rot]);
+    const v3 = turned(layoutById("tablet-3-end")!, 1);
+    expect(v3.canvas).toEqual({ w: 820, h: 1180 });
+    expect(cells(v3)).toEqual([[10, 10, 358, 900, 90], [452, 10, 358, 900, -90], [10, 920, 800, 250, 0]]);
+    expect(v3.spine).toEqual({ x: 378, y: 10, w: 64, h: 900 });
+    const v5 = turned(layoutById("tablet-5")!, 3);
+    expect(cells(v5)).toEqual([[452, 595, 358, 575, -90], [10, 790, 358, 380, 90], [10, 400, 358, 380, 90], [10, 10, 358, 380, 90], [452, 10, 358, 575, -90]]);
+    expect(v5.spine).toEqual({ x: 378, y: 10, w: 64, h: 1160 });
+    for (const l of LAYOUTS) for (const q of [0, 1, 2, 3] as const) {
+      const t = turned(l, q);
+      for (const c of t.cells) expect(c.x >= 0 && c.y >= 0 && c.x + c.w <= t.canvas.w && c.y + c.h <= t.canvas.h, `${l.id} turned ${q}`).toBe(true);
+    }
+    expect(turned(turned(layoutById("tablet-6")!, 1), 3)).toEqual(layoutById("tablet-6"));
+  });
+
+  it("keeps a game saved on the old tablet fallback where its seats were", () => {
+    // Before tablet 2 and 3 existed a tablet fell back to the phone's layouts. phone-2's seats face the same edges as
+    // tablet-2's, in the same order, so it draws as tablet-2; phone-3's have no tablet twin and draw as before, unturned.
+    const ids = (id: string, q: 0 | 1) => drawnLayout(layoutById(id)!, "tablet", q);
+    expect(ids("phone-2", 0).id).toBe("tablet-2");
+    expect(ids("phone-2", 0).cells.map((c) => c.rot)).toEqual([0, 180]);
+    expect(ids("phone-3-end", 0)).toBe(layoutById("phone-3-end"));
+    expect(ids("phone-3-side", 0)).toBe(layoutById("phone-3-side"));
+    expect(ids("phone-2", 1)).toBe(layoutById("phone-2"));
+    expect(drawnLayout(layoutById("tablet-4")!, "tablet", 1)).toEqual(turned(layoutById("tablet-4")!, 1));
   });
   it("finds a layout by id", () => {
     expect(layoutById("phone-4-around")?.seats).toBe(4);

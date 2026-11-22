@@ -9,6 +9,8 @@
  * parity: four, five and six seats offer the same arrangements, by the same names and in the same order, on both
  * devices, the first being the default (R1 for phone 5 and 6, R2 for tablet 4 One on each side). Phone 2 and tablet 6
  * as 3+3 follow the same grammar: full-width rows for the faces at the ends, 155 px columns for the sides on a phone.
+ * The undrawn-tablet addendum (#3115) draws tablet 2 (T1) and tablet 3 (T2, T3), so every count has a layout on both
+ * devices, and the upright boards (V2 to V6): each layout turned a quarter (`turned`).
  */
 export type Device = "phone" | "tablet";
 export type Cell = { x: number; y: number; w: number; h: number; rot: 0 | 90 | 180 | -90 };
@@ -56,6 +58,9 @@ export const LAYOUTS: readonly Layout[] = [
   { id: "phone-5", retired: true, device: "phone", seats: 5, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
   { id: "phone-6-sides", device: "phone", seats: 6, canvas: PHONE, label: "Three and three", cells: [c(6, 565, 155, 273, 90), c(6, 285, 155, 274, 90), c(6, 6, 155, 273, 90), c(229, 6, 155, 273, -90), c(229, 285, 155, 274, -90), c(229, 565, 155, 273, -90)], spine: r(167, 6, 56, 832) },
   { id: "phone-6", device: "phone", seats: 6, canvas: PHONE, label: "Ends", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 217, -90), c(229, 425, 155, 217, -90)], spine: PHONE_SPINE },
+  { id: "tablet-2", foot: true, device: "tablet", seats: 2, canvas: TABLET, label: "Face to face", cells: [c(10, 452, 1160, 358, 0), c(10, 10, 1160, 358, 180)], spine: TABLET_SPINE },
+  { id: "tablet-3-end", foot: true, device: "tablet", seats: 3, canvas: TABLET, label: "One at the end", cells: [c(10, 452, 900, 358, 0), c(10, 10, 900, 358, 180), c(920, 10, 250, 800, -90)], spine: r(10, 378, 900, 64) },
+  { id: "tablet-3-side", foot: true, device: "tablet", seats: 3, canvas: TABLET, label: "Along one side", cells: [c(790, 84, 380, 726, 0), c(400, 84, 380, 726, 0), c(10, 84, 380, 726, 0)], spine: r(10, 10, 1160, 64) },
   { id: "tablet-4", foot: true, device: "tablet", seats: 4, canvas: TABLET, label: "Two and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 575, 358, 180), c(595, 10, 575, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
   { id: "tablet-4-around", device: "tablet", seats: 4, canvas: TABLET, label: "One on each side", cells: [c(270, 452, 640, 358, 0), c(10, 10, 250, 800, 90), c(270, 10, 640, 358, 180), c(920, 10, 250, 800, -90)], spine: r(270, 378, 640, 64) },
   { id: "tablet-5", foot: true, device: "tablet", seats: 5, canvas: TABLET, label: "Three and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 380, 358, 180), c(400, 10, 380, 358, 180), c(790, 10, 380, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
@@ -81,4 +86,38 @@ export function lifeSize(device: Device, cell: Cell): number {
   if (short >= 270) return 110;
   if (short >= 180) return 106;
   return long === 413 ? 88 : 86;
+}
+
+/** Quarter turns clockwise, on screen: 1 puts the layout's bottom edge on the left (the addendum's `turned`), 3 on the right. */
+export type Turn = 0 | 1 | 2 | 3;
+const norm = (rot: number): Cell["rot"] => {
+  const v = ((rot % 360) + 360) % 360;
+  return (v === 270 ? -90 : v) as Cell["rot"];
+};
+/** One clockwise quarter: canvas { w: h, h: w }; a box's x is the canvas height less its bottom, its y its old x. */
+function quarter(l: Layout): Layout {
+  const H = l.canvas.h;
+  const box = (b: Rect): Rect => ({ x: H - (b.y + b.h), y: b.x, w: b.h, h: b.w });
+  return { ...l, canvas: { w: l.canvas.h, h: l.canvas.w }, cells: l.cells.map((c) => ({ ...box(c), rot: norm(c.rot + 90) })), spine: box(l.spine) };
+}
+/**
+ * The layout drawn on a screen held the other way (addendum #3115, V2 to V6): the same seats on the same edges of the
+ * glass, the canvas turned `q` quarters. The strip becomes a column, which the spine already draws. Decided at draw time,
+ * never stored: a saved game keeps its layout id.
+ */
+export function turned(l: Layout, q: Turn): Layout {
+  let out = l;
+  for (let i = 0; i < q; i++) out = quarter(out);
+  return out;
+}
+
+/**
+ * The layout a saved game draws with on this device. A game started before tablet 2 and 3 existed saved a phone layout
+ * on a tablet (the old fallback). It keeps every seat on its edge: drawn upright as before it is the tablet layout whose
+ * seats face the same edges in the same order (phone-2 is tablet-2), and otherwise the phone layout itself, unturned.
+ */
+export function drawnLayout(saved: Layout, device: Device, q: Turn): Layout {
+  if (saved.device === device) return turned(saved, q);
+  const twin = q === 0 ? LAYOUTS.find((l) => l.device === device && l.seats === saved.seats && !l.retired && l.cells.every((c, i) => c.rot === saved.cells[i].rot)) : undefined;
+  return twin ?? saved;
 }

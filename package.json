@@ -92,6 +92,7 @@
     "probe:tracker-layout-parity": "node scripts/probe-tracker-layout-parity.mjs",
     "probe:tracker-spine": "node scripts/probe-tracker-spine.mjs",
     "probe:tracker-badges": "node scripts/probe-tracker-badges.mjs",
+    "probe:tracker-tablet": "node scripts/probe-tracker-tablet.mjs",
     "probe:admin-pii": "node scripts/probe-admin-pii.mjs",
     "probe:admin-payments": "node scripts/probe-admin-payments.mjs",
     "seed:admin-pii-fixture": "node scripts/seed-admin-pii-fixture.mjs",

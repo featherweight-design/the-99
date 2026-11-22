@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { rollForFirst, type FirstRoll } from "../../lib/tracker/first-roll";
-import type { Layout } from "../../lib/tracker/layouts";
+import { turned, type Layout, type Turn } from "../../lib/tracker/layouts";
 import { PendingReporter } from "../shell/pending-reporter";
 import { rollFair, warmDice } from "./dice";
 import type { PlaySeat } from "./panel";
@@ -20,14 +20,17 @@ const LIFE_MAX = 999;
 
 /**
  * A layout drawn small (F02 `.mini`): the device's outline, 1.5px, with one block per seat where its panel sits. A phone
- * is a 32x56 portrait; a tablet the same 1.5px outline turned landscape, 56x40. Drawn from the layout's own cells, so a
+ * is a 32x56 portrait; a tablet the same 1.5px outline turned landscape, 56x40; either turned when the screen is held the other way. Drawn from the layout's own cells, so a
  * mini always matches the table it starts.
  */
-function Mini({ layout, on }: { layout: Layout; on: boolean }) {
+function Mini({ layout: natural, turn, on }: { layout: Layout; turn: Turn; on: boolean }) {
   // An ink, not text: the drawing reads --accent like a ring does.
   const ink = on ? "var(--accent)" : "var(--fg-faint)";
-  const W = layout.device === "phone" ? 32 : 56;
-  const H = layout.device === "phone" ? 56 : 40;
+  // Drawn the way the screen is held now (addendum #3115): a turned layout draws the device's outline turned too.
+  const layout = turned(natural, turn);
+  const short = layout.device === "phone" ? 32 : 40;
+  const W = layout.canvas.w > layout.canvas.h ? 56 : short;
+  const H = layout.canvas.w > layout.canvas.h ? short : 56;
   const pad = 3;
   const sx = (W - pad * 2) / layout.canvas.w;
   const sy = (H - pad * 2) / layout.canvas.h;
@@ -55,9 +58,12 @@ export function Setup({
   onStart,
   initial,
   backHref,
+  turn = 0,
 }: {
   seats: readonly PlaySeat[];
   layouts: readonly Layout[];
+  /** Quarter turns the table is drawn at, for the minis (the screen held the other way). */
+  turn?: Turn;
   /** A rematch opens on last game's table and life. */
   initial?: { layout: string; life: number };
   /** The ✕: back to the table this game is for. */
@@ -133,7 +139,7 @@ export function Setup({
                     : "bg-transparent shadow-[inset_0_0_0_1px_var(--border-strong)]"
                 }`}
               >
-                <Mini layout={l} on={on} />
+                <Mini layout={l} turn={turn} on={on} />
               </button>
             );
           })}
