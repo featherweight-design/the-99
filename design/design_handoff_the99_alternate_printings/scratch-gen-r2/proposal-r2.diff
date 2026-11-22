@@ -1,0 +1,210 @@
+diff -ruN a/src/components/cards/card-modal-sheet.tsx b/src/components/cards/card-modal-sheet.tsx
+--- a/src/components/cards/card-modal-sheet.tsx	2026-11-22 06:16:41.662114304 +0000
++++ b/src/components/cards/card-modal-sheet.tsx	2026-11-22 06:20:02.000004747 +0000
+@@ -85,6 +85,7 @@
+   priceTag: ReactNode;
+   fromLine: (phone: boolean) => ReactNode;
+   doorStrip: ReactNode;
++  strip?: ((paddles: boolean) => ReactNode) | null;
+   footer: ((layout: SheetFooterLayout, priced?: boolean) => ReactNode) | null;
+   figured: boolean;
+   /** The expanded printing region for one instance. The node MUST carry the given `id`: the picker trigger's `aria-controls` points at it. */
+@@ -121,7 +122,7 @@
+ export function CardModalSheet({
+   card, preview, resolved, titleId, caption, ownedPrintings, browse, printingTotal, onlyPrinting, hasPicker, isToken, tokenNoSet, pick, deckScope, total, position,
+   deckPage, deckName, buyUrl, buyLabel, min, full, zoomed, viewOpen, cramped, gentle, sheetFull, teaserHeight, closeReserve, back,
+-  onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
++  onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, strip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
+   openCombo, onOpenCombo, onSelectCard, expanded, triggerAria, onToggleExpanded, fitsDoor,
+   onEditCopies, receiptLink, commanderBox, onPrev, onNext, sheetRef, gripRef, doorRef, sheetBodyRef, mobileTriggerRef, desktopTriggerRef,
+   prevButtonRef, nextButtonRef, registerCloseRef, registerBackRef, onClose,
+@@ -317,6 +318,8 @@
+         {/* A token has no owned count here (its holding is the deck row's own mark). */}
+         {isToken ? null : <OwnedLine card={card} deckPage={deckPage} />}
+       </div>
++      {strip && !full ? <div inert={min} className="md:hidden mt-[14px]">{strip(false)}</div> : null}
++      {strip ? <div className="hidden md:block mt-[20px]">{strip(true)}</div> : null}
+ 
+       {/* THE TEASER (README R2): three lines of oracle text under a fade, then `All details`,
+           pinned above the home inset. A short text leaves its slack above the button, which
+diff -ruN a/src/components/cards/card-modal.tsx b/src/components/cards/card-modal.tsx
+--- a/src/components/cards/card-modal.tsx	2026-11-22 06:16:41.662114304 +0000
++++ b/src/components/cards/card-modal.tsx	2026-11-22 06:20:15.646621187 +0000
+@@ -18,6 +18,7 @@
+ import { clearCardArtPreference, setCardArtPreference } from "../../app/collection/actions";
+ import type { CardCombo } from "../../lib/combos/near-combos";
+ import { PrintingRegion, printingKey } from "./printing-region";
++import { PrintingStrip, type StripPrinting } from "./printing-strip";
+ import { PriceTag } from "./price-tag";
+ import { priceKeyFor } from "../../lib/cards/price-lookup";
+ import { useDialogA11y } from "../../lib/a11y/dialog";
+@@ -345,7 +346,7 @@
+   // display:none one is a no-op, so Escape hands focus to whichever is actually on screen.
+   const mobileTriggerRef = useRef<HTMLButtonElement>(null);
+   const desktopTriggerRef = useRef<HTMLButtonElement>(null);
+-  const [expanded, setExpanded] = useState(false);
++  const [expanded, setExpanded] = useState<boolean>((globalThis as any).__EXPANDED ?? false);
+   // The zoom is a layer inside this dialog, never a dialog of its own (table §3.1).
+   const [zoomed, setZoomed] = useState(false);
+   // The neighbor plates' own threshold: see `NEIGHBOR_MIN_WIDTH`.
+@@ -418,10 +419,10 @@
+   const doorHeight = useOwnHeight(doorRef, doorStrip !== null, dialogRef);
+   const { setSnap, gentle, sheetFull, teaserHeight, cramped, full, sheetOpen, min } = useSheetSnap({
+     startMinimized,
+-    forceFull: landsFull || startsFull,
++    forceFull: landsFull || startsFull || !!(globalThis as any).__FULL,
+     onMinimizedChange,
+     narrow,
+-    doorHeight,
++    doorHeight: doorHeight + ((globalThis as any).__STRIPH ?? 0),
+     dialogRef,
+   });
+   // THE DROP (stacked sheets R1, motion): from wherever the card is, so a dismissal during the
+@@ -498,7 +499,7 @@
+   // a particular printing shows that one; afterwards their choice wins.
+   const [picked, setPicked] = useState(false);
+   // The printing previewed from the catalog list (alternate printings from search), by catalog id; null shows the card's own.
+-  const [previewId, setPreviewId] = useState<string | null>(null);
++  const [previewId, setPreviewId] = useState<string | null>((globalThis as any).__PREVIEW ?? null);
+   const browse = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length > 1;
+   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
+   // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
+@@ -508,7 +509,7 @@
+   );
+   const browseOwned = others.length > 0;
+   const previewAt = useMemo(() => {
+-    const p = previewId === null ? undefined : browse ? card.printings.find((x) => x.scryfallId === previewId) : others.find((x) => x.scryfallId === previewId);
++    const p = previewId === null ? undefined : browse ? card.printings.find((x) => x.scryfallId === previewId) : [...card.printings, ...others].find((x) => x.scryfallId === previewId);
+     return p === undefined
+       ? null
+       : { setCode: p.setCode, collectorNumber: p.collectorNumber, scryfallId: p.scryfallId, imageUri: p.imageUri, backImageUri: p.backImageUri, finish: undefined };
+@@ -789,7 +790,7 @@
+   const isToken = card.kind === "token";
+   // A token has no Collection-wide printing preference to write, so its picker is the DECK's alone (token
+   // printings TP2): drawn only where a deck can save the pick.
+-  const hasPicker = browse || browseOwned || ownedPrintings.length > 1
++  const hasPicker = ownedPrintings.length > 1
+     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
+   const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
+   const buyLabel = isToken ? cardLinkOutCopy.token : cardLinkOutCopy.card;
+@@ -1003,6 +1004,16 @@
+   // The base resolves off `preview`, so it names the printing actually on screen; the count
+   // is of what the reader OWNS, so an injected row is art and not a holding.
+   const caption = printingCaption(preview, ownedPrintings);
++  // R2: every printing as a strip of thumbs; selecting one shows it here and stores nothing.
++  const stripPrintings: StripPrinting[] | null = browse ? card.printings : browseOwned ? [
++    ...[...ownedPrintings].sort((a, b) => Number(pick !== null && printingKey(b) === `${pick.setCode}|${pick.collectorNumber}`) - Number(pick !== null && printingKey(a) === `${pick.setCode}|${pick.collectorNumber}`))
++      .map((p) => ({ ...p, mine: true, pick: pick !== null && printingKey(p) === `${pick.setCode}|${pick.collectorNumber}` })),
++    ...others,
++  ] : null;
++  const shownKey = resolved ? resolved.scryfallId ?? printingKey(resolved) : null;
++  const strip = stripPrintings ? (paddles: boolean) => (
++    <PrintingStrip printings={stripPrintings} shownKey={shownKey} cardName={card.name} paddles={paddles} onSelect={(p) => setPreviewId(p.scryfallId ?? null)} />
++  ) : null;
+   // A token's details show no card, so the button names the token; in a deck the pick is the deck's.
+   const triggerAria = browseOwned
+     ? printingBrowseCopy.triggerAriaOwned(ownedPrintings.length + others.length, ownedPrintings.length, caption)
+@@ -1037,11 +1048,11 @@
+       onForget={() => { setPreviewId(null); onClearPick(); }}
+       onAnnounce={setAnnouncement}
+       // Under the modal's own intro and head, with the finish chips stepped aside, when other printings follow.
+-      {...(browseOwned ? { intro: null, finishChips: false } : {})}
++
+     />
+   );
+   const renderRegion = (id: string) => hasPicker && expanded ? (
+-    browseOwned ? (
++    false ? (
+       <div>
+         <p className="mt-[14px] mb-0 text-[13.5px] md:mt-[22px]" style={{ color: "var(--fg-muted)" }}>
+           {printingBrowseCopy.regionIntroOwned(ownedPrintings.length + others.length)}
+@@ -1271,7 +1282,7 @@
+             over the snap until the release, and the top transitions to whichever snap it chose. */}
+         <CardModalSheet
+           card={card} preview={preview} resolved={resolved} titleId={titleId} caption={caption} ownedPrintings={browse ? card.printings : ownedPrintings}
+-          browse={browse} printingTotal={browseOwned ? ownedPrintings.length + others.length : null} onlyPrinting={onlyPrinting}
++          browse={false} printingTotal={null} onlyPrinting={onlyPrinting} strip={strip}
+           hasPicker={hasPicker} isToken={isToken} tokenNoSet={tokenNoSet} pick={pick} deckScope={deckScope} total={total} position={position}
+           deckPage={deckPage} deckName={deckName} buyUrl={buyUrl} buyLabel={buyLabel}
+           min={min} full={full} zoomed={zoomed} viewOpen={viewOpen} cramped={cramped} gentle={gentle} sheetFull={sheetFull}
+diff -ruN a/src/components/cards/printing-strip.tsx b/src/components/cards/printing-strip.tsx
+--- a/src/components/cards/printing-strip.tsx	1970-01-01 00:00:00.000000000 +0000
++++ b/src/components/cards/printing-strip.tsx	2026-11-22 06:19:38.174709141 +0000
+@@ -0,0 +1,77 @@
++"use client";
++// Alternate printings R2 (account 2, 2026-11-22): the card's printings as a row of card-shaped thumbs in the card
++// details opened from search. Selecting one shows it in place (art, Set caption, price follow); nothing is stored.
++// Phone: in the sheet's teaser under the price line, so the art above stays in view. Desktop: under the title.
++import type { BrowsePrinting } from "@/lib/collection/browse";
++import { printingKey } from "./printing-region";
++
++export type StripPrinting = BrowsePrinting & { mine?: boolean; pick?: boolean };
++
++export function PrintingStrip({
++  printings, shownKey, onSelect, cardName, paddles = false,
++}: {
++  printings: StripPrinting[];
++  /** The key of the printing on screen. */
++  shownKey: string | null;
++  onSelect: (p: StripPrinting) => void;
++  cardName: string;
++  /** Desktop: ◂ ▸ at the ends while the row overflows (a mouse wheel does not scroll sideways). */
++  paddles?: boolean;
++}) {
++  const keyOf = (p: StripPrinting) => p.scryfallId ?? printingKey(p);
++  const mine = printings.filter((p) => p.mine).length;
++  return (
++    <div role="group" aria-label={`Printings of ${cardName}`} data-testid="printing-strip">
++      <p className="m-0 mb-[8px] font-mono uppercase text-[10px] tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>
++        {printings.length} printings{mine > 0 ? ` · you own ${mine}` : ""}
++      </p>
++      <div className="relative">
++        <div className="flex gap-[8px] overflow-x-auto pb-[2px]" style={{ scrollbarWidth: "none", paddingRight: paddles ? 34 : 0 }}>
++          {printings.map((p, i) => {
++            const shown = keyOf(p) === shownKey;
++            const divider = i > 0 && printings[i - 1].mine && !p.mine;
++            return (
++              <div key={keyOf(p)} className="flex flex-none items-stretch gap-[8px]">
++                {divider ? <span aria-hidden className="w-px flex-none self-stretch my-[6px]" style={{ background: "var(--border-strong)" }} /> : null}
++                <button
++                  type="button"
++                  aria-pressed={shown}
++                  aria-label={`${p.setName ?? p.setCode}, number ${p.collectorNumber}${p.mine ? `, ${p.quantity} in your collection` : ""}${p.pick ? ", your pick" : ""}`}
++                  onClick={() => onSelect(p)}
++                  className="flex w-[48px] flex-none flex-col items-center gap-[5px] border-0 bg-transparent p-0 cursor-pointer"
++                >
++                  <span
++                    className="block w-[48px] rounded-[4px] overflow-hidden"
++                    style={{
++                      aspectRatio: "63/88",
++                      boxShadow: shown ? "0 0 0 2px var(--bg), 0 0 0 4px var(--accent)" : "0 0 0 1px var(--border-strong)",
++                      opacity: shown ? 1 : 0.82,
++                    }}
++                  >
++                    {p.imageUri ? <img src={p.imageUri} alt="" className="block h-full w-full object-cover" /> : null}
++                  </span>
++                  <span
++                    className="font-mono text-[10px] leading-none whitespace-nowrap"
++                    style={{ color: shown ? "var(--fg)" : p.mine ? "var(--accent)" : "var(--fg-muted)" }}
++                  >
++                    {p.pick ? "◆ " : ""}{p.setCode}{p.mine && !p.pick ? ` ×${p.quantity}` : ""}
++                  </span>
++                </button>
++              </div>
++            );
++          })}
++        </div>
++        {paddles ? (
++          <button
++            type="button"
++            aria-label="More printings"
++            className="absolute right-0 top-[18px] flex h-[34px] w-[30px] items-center justify-center rounded-[8px] text-[13px] cursor-pointer"
++            style={{ background: "var(--surface-raised)", border: "1px solid var(--border-strong)", color: "var(--fg)", boxShadow: "-14px 0 14px var(--surface-rail)" }}
++          >
++            ▸
++          </button>
++        ) : null}
++      </div>
++    </div>
++  );
++}
