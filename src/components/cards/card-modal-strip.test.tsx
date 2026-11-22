@@ -89,4 +89,44 @@ describe("CardModal printings strip", () => {
     expect(within(strip).getAllByRole("button", { pressed: true })).toHaveLength(1);
     expect(setCardArtPreference).not.toHaveBeenCalled();
   });
+
+  // Alternate printings R3: the phone has no strip. Its Set line becomes the printings button at two or more printings, and
+  // the button opens the panel over the shelf.
+  it("phone: the Set line is a printings button at two printings, and a plain line at one", () => {
+    const { unmount } = mount({ ...base, printings: [printing("RVR", "24"), printing("ELD", "8")] });
+    const button = screen.getByTestId("printings-button");
+    expect(button.getAttribute("aria-expanded")).toBe("false");
+    expect(button.textContent).toContain("2 printings");
+    expect(screen.queryByTestId("teaser-set")).toBeNull();
+    unmount();
+    mount({ ...base, printings: [printing("RVR", "24")] });
+    expect(screen.queryByTestId("printings-button")).toBeNull();
+    expect(screen.getByTestId("teaser-set")).toBeTruthy();
+  });
+
+  it("phone: the button opens the panel, a thumb views its printing and keeps the panel open, Escape closes the panel first", () => {
+    const onClose = vi.fn();
+    render(
+      <CardModal
+        card={{ ...base, printings: [printing("RVR", "24"), printing("ELD", "8")] }}
+        position={1}
+        total={1}
+        onClose={onClose}
+        onPrev={null}
+        onNext={null}
+        browsePrintings
+      />,
+    );
+    fireEvent.click(screen.getByTestId("printings-button"));
+    const panel = screen.getByTestId("printings-panel");
+    expect(screen.getByTestId("printings-button").getAttribute("aria-expanded")).toBe("true");
+    const thumb = within(panel).getAllByRole("button").find((b) => /ELD Set/.test(b.getAttribute("aria-label") ?? ""))!;
+    fireEvent.click(thumb);
+    expect(thumb.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByTestId("printings-panel")).toBeTruthy();
+    expect(setCardArtPreference).not.toHaveBeenCalled();
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(screen.queryByTestId("printings-panel")).toBeNull();
+    expect(onClose).not.toHaveBeenCalled();
+  });
 });

@@ -3,7 +3,7 @@ import type React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { SHEET } from "./card-sheet-gesture";
-import { ZOOM_REGION } from "./card-modal-parts";
+import { PRINTING_PANEL_SHELF, ZOOM_REGION } from "./card-modal-parts";
 import { runEscapeLadder, useCardTurnHandlers, useFocusReturns, usePagedInitialFocus, usePagingKeys, useSheetSnap } from "./card-modal-hooks";
 
 afterEach(() => {
@@ -74,6 +74,28 @@ describe("useSheetSnap", () => {
     act(() => result.current.setSnap("full"));
     expect(result.current.sheetFull).toBe(true);
     expect(result.current.sheetOpen).toBe(false);
+  });
+});
+
+describe("useSheetSnap, the printings panel", () => {
+  const nullDialog = { current: null };
+
+  it("grows the shelf to the panel's while it is open at the teaser, and leaves it at the teaser's otherwise", () => {
+    const closed = renderHook(() => useSheetSnap({ startMinimized: false, narrow: true, panelOpen: false, dialogRef: nullDialog }));
+    expect(closed.result.current.teaserHeight).toBe(SHEET.teaserHeight);
+    const open = renderHook(() => useSheetSnap({ startMinimized: false, narrow: true, panelOpen: true, dialogRef: nullDialog }));
+    expect(open.result.current.teaserHeight).toBe(PRINTING_PANEL_SHELF);
+    expect(open.result.current.panelUp).toBe(true);
+    expect(open.result.current.cramped).toBe(false);
+    act(() => open.result.current.setSnap("full"));
+    expect(open.result.current.panelUp).toBe(false);
+    expect(open.result.current.teaserHeight).toBe(SHEET.teaserHeight);
+  });
+
+  it("opens no panel on desktop widths", () => {
+    const { result } = renderHook(() => useSheetSnap({ startMinimized: false, narrow: false, panelOpen: true, dialogRef: nullDialog }));
+    expect(result.current.panelRoom).toBe(false);
+    expect(result.current.teaserHeight).toBe(SHEET.teaserHeight);
   });
 });
 

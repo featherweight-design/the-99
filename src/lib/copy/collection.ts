@@ -519,6 +519,10 @@ export const printingStripCopy = {
   searchTileAria: "Search printings",
   panelSearchAria: (total: number) => `Search ${count(total)} printings`,
   panelPlaceholder: (total: number) => `Search ${count(total)} printings by set`,
+  /** The phone's printings button: the Set line at two or more printings. */
+  button: (total: number) => `${count(total)} printings`,
+  buttonAria: (setCode: string, collectorNumber: string, total: number) =>
+    `${setCode.toUpperCase()} ${collectorNumber}. ${count(total)} printings. Search and view them.`,
   panelLabel: (cardName: string) => `Search printings of ${cardName}`,
   panelClose: "Close printings",
   panelMatches: (hits: number, total: number) => `${count(hits)} of ${count(total)} printings`,

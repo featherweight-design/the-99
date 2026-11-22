@@ -83,6 +83,10 @@ export type CardModalSheetProps = {
   doorStrip: ReactNode;
   /** The printings strip (alternate printings R2) for a card opened from search, drawn under the price line on the phone and under the title on desktop; null where there is none. */
   strip: ((paddles: boolean) => ReactNode) | null;
+  /** The phone's printings button (alternate printings R3), in place of the plain Set line; null at one printing or where the phone is too short. */
+  printingsButton: ReactNode | null;
+  /** The printings panel on the phone, over the shelf while it is open; null otherwise. */
+  printingsPanel: ReactNode | null;
   footer: ((layout: SheetFooterLayout, priced?: boolean) => ReactNode) | null;
   figured: boolean;
   /** The expanded printing region for one instance. The node MUST carry the given `id`: the picker trigger's `aria-controls` points at it. */
@@ -119,7 +123,7 @@ export type CardModalSheetProps = {
 export function CardModalSheet({
   card, preview, resolved, titleId, caption, ownedPrintings, onlyPrinting, hasPicker, isToken, tokenNoSet, pick, deckScope, total, position,
   deckPage, deckName, buyUrl, buyLabel, min, full, zoomed, viewOpen, cramped, gentle, sheetFull, teaserHeight, closeReserve, back,
-  onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, strip, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
+  onSheetPointerDown, setSnap, priceTag, fromLine, doorStrip, strip, printingsButton, printingsPanel, footer, figured, printingRegion, wishlistBox, proxyBox, tokenDeckBox,
   openCombo, onOpenCombo, onSelectCard, expanded, triggerAria, onToggleExpanded, fitsDoor,
   onEditCopies, receiptLink, commanderBox, onPrev, onNext, sheetRef, gripRef, doorRef, sheetBodyRef, mobileTriggerRef, desktopTriggerRef,
   prevButtonRef, nextButtonRef, registerCloseRef, registerBackRef, onClose,
@@ -171,6 +175,16 @@ export function CardModalSheet({
         <span aria-hidden className="block h-[4px] w-[36px] rounded-[2px]" style={{ background: "var(--border-strong)" }} />
       </button>
     )}
+    {/* THE PRINTINGS PANEL (alternate printings R3, phone): over the shelf below the grip while it is open, the shelf grown to
+        400 by `useSheetSnap`. Its own scroll and its own pointer: a drag in it scrolls the list and never moves the sheet. */}
+    {printingsPanel ? (
+      <div
+        onPointerDown={(e) => e.stopPropagation()}
+        className="md:hidden absolute inset-x-0 top-[22px] bottom-[34px] z-[3] flex flex-col bg-[color:var(--surface-rail)] pt-[6px]"
+      >
+        {printingsPanel}
+      </div>
+    ) : null}
     {/* The stand-ins door (swap tools), which sat under the retired art header: at the
         sheet's head, at both snaps, with the teaser grown by its 44px to hold it. */}
     {/* Not at the min snap, whose shelf is the title row alone: there it leaves the flow and
@@ -307,17 +321,16 @@ export function CardModalSheet({
             </span>
           </div>
         )}
-        {resolved && (
+        {printingsButton ?? (resolved && (
           <span data-testid="teaser-set" className="font-mono text-[12px]" style={{ color: "var(--fg-muted)" }}>
             {cardSheetCopy.printing(resolved.setCode, resolved.collectorNumber)}
           </span>
-        )}
+        ))}
         {/* A token has no owned count here (its holding is the deck row's own mark). */}
         {isToken ? null : <OwnedLine card={card} deckPage={deckPage} />}
       </div>
-      {/* THE PRINTINGS STRIP (alternate printings R2), under the price line. Not in the full sheet, which has the Set
-          field; its height is in the teaser's (`PRINTING_STRIP_TEASER_HEIGHT`). */}
-      {strip && !full ? <div inert={min} className="md:hidden mt-[14px]">{strip(false)}</div> : null}
+      {/* THE PRINTINGS STRIP (alternate printings R2), desktop only since R3: the phone's is the printings button on the Set
+          line, and its panel (below) takes the shelf. */}
       {strip ? <div className="hidden md:block mt-[20px]">{strip(true)}</div> : null}
 
       {/* THE TEASER (README R2): three lines of oracle text under a fade, then `All details`,
