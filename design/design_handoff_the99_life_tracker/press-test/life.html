@@ -1,0 +1,176 @@
+<title>Life Press Test</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=IBM+Plex+Sans:wght@400;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: theme chips, then a grid of life panels, one per press option; "every theme" adds one row per theme. Colors are the app's six themes (globals.css). */
+:root{
+  --bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border-strong:#3A3229;--fg:#EDE6D8;--fg-muted:#A59C89;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368;--danger:#C6533F;
+  --sans:"IBM Plex Sans",system-ui,sans-serif;--display:"Cinzel",Georgia,serif;--mono:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:dark;
+}
+.t-amonkhet{--bg:#14110E;--surface:#1E1A15;--elevated:#29241F;--border-strong:#3A3229;--fg:#EDE6D8;--fg-muted:#A59C89;--accent:#CF8745;--accent-text:#CF8745;--success:#6FA368}
+.t-kamigawa{--bg:#0E0F14;--surface:#16181F;--elevated:#20222A;--border-strong:#262A35;--fg:#E6E8F0;--fg-muted:#959AAD;--accent:#FF4D9A;--accent-text:#FF4D9A;--success:#6FA368}
+.t-ixalan{--bg:#0E1310;--surface:#171E19;--elevated:#212A23;--border-strong:#2C3830;--fg:#E0E7DE;--fg-muted:#98A695;--accent:#A3C445;--accent-text:#A3C445;--success:#5EA990}
+.t-phyrexia{--bg:#0D0B0E;--surface:#151317;--elevated:#1E1C20;--border-strong:#262329;--fg:#E4E2E6;--fg-muted:#9A96A0;--accent:#52827A;--accent-text:#5D8E85;--success:#6FA368}
+.t-eldraine{--bg:#120E17;--surface:#1B1821;--elevated:#26232C;--border-strong:#342C41;--fg:#E4DEEE;--fg-muted:#9C95A8;--accent:#AE88E6;--accent-text:#AE88E6;--success:#6FA368}
+.t-kaldheim{--bg:#121217;--surface:#1E1F26;--elevated:#2D2E35;--border-strong:#2E3340;--fg:#C6D2D3;--fg-muted:#95A4A6;--accent:#6C97DB;--accent-text:#6C97DB;--success:#6FA368}
+body{background:var(--bg);color:var(--fg-muted);font-family:var(--sans);font-size:15px;line-height:1.5;transition:background .3s;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:28px 40px}
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1{font-family:var(--display);color:var(--fg);font-size:24px;margin:0}
+p{margin:0;max-width:70ch}
+.bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chip{height:34px;padding:0 14px;border-radius:999px;border:0;background:var(--elevated);color:var(--fg);box-shadow:inset 0 0 0 1px var(--border-strong);font:600 13px var(--sans);cursor:pointer;display:flex;gap:8px;align-items:center}
+.chip i{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+.chip[aria-pressed="true"]{box-shadow:inset 0 0 0 1.5px var(--accent);color:var(--accent-text)}
+.opts{display:flex;flex-wrap:wrap;gap:16px;font-size:14px;color:var(--fg)}
+.opts label{display:flex;gap:8px;align-items:center;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px}
+.cell{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cell h2{margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg);font-weight:600}
+.cell h2 small{color:var(--fg-muted);font-weight:400;letter-spacing:0;text-transform:none;font-size:12px}
+.note{font-size:12.5px;line-height:1.45}
+.row{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.row>h3{margin:0;font-size:13px;color:var(--fg);font-weight:600}
+.panel{position:relative;height:220px;border-radius:18px;overflow:hidden;box-shadow:inset 0 0 0 1px var(--border-strong);
+  background:radial-gradient(120% 90% at 30% 20%,color-mix(in srgb,var(--accent) 22%,var(--elevated)) 0%,var(--surface) 50%,var(--bg) 100%);user-select:none;-webkit-user-select:none}
+.all .panel{height:150px}.all .num{font-size:60px}
+.who{position:absolute;left:14px;top:8px;z-index:3;font-weight:600;color:var(--fg);font-size:14px}
+.life{position:absolute;inset:36px 6px 6px 10px;display:flex;align-items:center;justify-content:center}
+.num{position:relative;font-family:var(--display);font-size:76px;line-height:1;color:var(--fg);text-shadow:0 2px 12px rgba(0,0,0,.6);pointer-events:none;z-index:2;font-variant-numeric:tabular-nums}
+.delta{position:absolute;left:100%;top:6px;margin-left:6px;font-family:var(--mono);font-size:17px;color:var(--accent-text);text-shadow:none}
+.half{position:absolute;top:0;bottom:0;width:50%;z-index:1;border:0;background:none;color:var(--fg-muted);font:28px var(--sans);padding:0 4px;display:flex;align-items:center;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation;overflow:hidden}
+.half:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.minus{left:0;justify-content:flex-start}.plus{right:0;justify-content:flex-end}
+.half .g{position:relative;display:inline-block}
+.pl{position:absolute;inset:0;pointer-events:none;opacity:0;z-index:0}
+.fill{position:absolute;inset:0;opacity:0;pointer-events:none}
+
+/* 1 · On main now */
+.k-now .fill{background:color-mix(in srgb,var(--accent) 18%,transparent);transition:opacity 120ms}
+.k-now .half.lit .fill{opacity:1;transition:none}
+.k-now .half.lit{color:var(--accent-text)}
+/* 2 · Demo */
+.k-demo .half{transition:background .12s}
+.k-demo .half:active{background:color-mix(in srgb,var(--fg) 6%,transparent)}
+/* 3 · Glyph pop */
+.k-pop .half:active{background:color-mix(in srgb,var(--fg) 6%,transparent)}
+.k-pop .g.go{animation:gpop .22s cubic-bezier(.3,1.6,.5,1)}
+@keyframes gpop{0%{transform:scale(1.45);color:var(--accent-text)}60%{color:var(--accent-text)}100%{transform:scale(1)}}
+/* 4 · Ripple */
+.rip{position:absolute;width:24px;height:24px;margin:-12px 0 0 -12px;border-radius:50%;background:color-mix(in srgb,var(--accent) 30%,transparent);pointer-events:none;animation:rip .45s ease-out forwards}
+@keyframes rip{0%{transform:scale(1);opacity:1}100%{transform:scale(9);opacity:0}}
+/* 6 · Nudge + soft ripple */
+.rip.soft{background:color-mix(in srgb,var(--accent) 16%,transparent);animation:ripS .35s ease-out forwards}
+@keyframes ripS{0%{transform:scale(1);opacity:1}100%{transform:scale(5);opacity:0}}
+.k-nudgerip .delta.gain{color:var(--success)}.k-nudgerip .delta.loss{color:var(--danger)}
+.delta.out{animation:fadeout .4s ease-out forwards}
+@keyframes fadeout{0%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-6px)}}
+/* 5 · Nudge */
+.k-nudge .half:active .fill{opacity:1;transition:opacity 80ms}
+.k-nudge .fill{background:color-mix(in srgb,var(--accent) 10%,transparent);transition:opacity .2s}
+.num.up{animation:nUp .18s ease-out}.num.dn{animation:nDn .18s ease-out}
+@keyframes nUp{0%{transform:translateY(-5px)}100%{transform:none}}
+@keyframes nDn{0%{transform:translateY(5px)}100%{transform:none}}
+.k-nudge .delta.gain{color:var(--success)}.k-nudge .delta.loss{color:var(--danger)}
+
+.tickA{animation:tickA .12s ease-out}.tickB{animation:tickB .12s ease-out}
+@keyframes tickA{0%{opacity:.7}100%{opacity:1}}@keyframes tickB{0%{opacity:.7}100%{opacity:1}}
+.fadein{animation:fadein .15s ease-out}
+@keyframes fadein{0%{opacity:0;transform:translateY(4px)}100%{opacity:1;transform:none}}
+.lossA{animation:lossA .6s ease-out}.lossB{animation:lossB .6s ease-out}.gainA{animation:gainA .6s ease-out}.gainB{animation:gainB .6s ease-out}
+@keyframes lossA{0%{opacity:.3;background:rgba(198,83,63,.35)}100%{opacity:0;background:rgba(198,83,63,.35)}}
+@keyframes lossB{0%{opacity:.3;background:rgba(198,83,63,.35)}100%{opacity:0;background:rgba(198,83,63,.35)}}
+@keyframes gainA{0%{opacity:.3;background:rgba(143,166,190,.35)}100%{opacity:0;background:rgba(143,166,190,.35)}}
+@keyframes gainB{0%{opacity:.3;background:rgba(143,166,190,.35)}100%{opacity:0;background:rgba(143,166,190,.35)}}
+.slow *{animation-duration:1.2s!important;transition-duration:1.2s!important}
+@media (prefers-reduced-motion:reduce){.out,.tickA,.tickB,.fadein,.lossA,.lossB,.gainA,.gainB,.go,.up,.dn,.rip{animation:none!important}.rip{display:none}}
+</style>
+
+<div class="wrap">
+  <h1>Life press test</h1>
+  <p>Tap the left or right half of a panel to lose or gain a life, or hold to step by ten. A change saves 2 seconds after your last tap. Pick a theme below, or show every theme at once.</p>
+  <div class="bar" id="themes"></div>
+  <div class="opts">
+    <label><input type="checkbox" id="all"> Show every theme</label>
+    <label><input type="checkbox" id="slow"> Slow motion (1.2 s)</label>
+    <label><input type="checkbox" id="nofade"> ±N vanishes at save (no fade)</label>
+  </div>
+  <div id="out"></div>
+</div>
+
+<script>
+const THEMES=[['amonkhet','Amonkhet'],['kamigawa','Kamigawa'],['ixalan','Ixalan'],['phyrexia','Phyrexia'],['eldraine','Eldraine'],['kaldheim','Kaldheim']];
+const KINDS=[
+  ['now','1 · On main now','The tapped half lights an 18% accent block and accent glyph for the whole 2 s, then drops. Number dims once at save.'],
+  ['demo','2 · Demo','Faint wash only while pressed. Each tap: number dims for a beat, panel washes red or blue-grey over 0.6 s, ±N fades in.'],
+  ['pop','3 · Glyph pop','Faint wash while pressed. Each tap: the − or + springs up in the accent and settles; number dims for a beat. No panel wash.'],
+  ['ripple','4 · Ripple','Each tap sends a soft accent ring out from your finger, gone in 0.45 s; number dims for a beat.'],
+  ['nudge','5 · Nudge','Light accent wash while pressed. Each tap nudges the number up (gain) or down (loss); ±N in green or red.'],
+  ['nudgerip','6 · Nudge + soft ripple','Nudge, with a smaller, fainter ripple from your finger (0.35 s) and no wash.']
+];
+let theme='amonkhet';
+const tb=document.getElementById('themes');
+THEMES.forEach(([id,name])=>{const b=document.createElement('button');b.type='button';b.className='chip t-'+id;b.innerHTML='<i></i>'+name;b.dataset.t=id;
+  b.addEventListener('click',()=>{theme=id;document.getElementById('all').checked=false;draw()});tb.appendChild(b)});
+function panel(kind){
+  const p=document.createElement('div');p.className='panel k-'+kind;
+  const demo=kind==='demo',now=kind==='now';
+  const HOLD=now?450:480,REPEAT=now?280:380,COMMIT=2000;
+  p.innerHTML='<div class="pl"></div><div class="who">Peter</div><div class="life"><span class="num"><span class="v">40</span></span>'
+    +'<button type="button" class="half minus" aria-label="Lose a life"><span class="fill"></span><span class="g">−</span></button>'
+    +'<button type="button" class="half plus" aria-label="Gain a life"><span class="fill"></span><span class="g">+</span></button></div>';
+  const num=p.querySelector('.num'),v=p.querySelector('.v'),pl=p.querySelector('.pl');
+  const halves={'-1':p.querySelector('.minus'),'1':p.querySelector('.plus')};
+  let life=40,pend=0,ticks=0,commitT=null,holdT=null,rep=null,held=false,down=null,pt=null;
+  const restart=(el,cls)=>{el.classList.remove(...cls);void el.offsetWidth};
+  const tick=()=>{ticks++;restart(num,['tickA','tickB']);num.classList.add(ticks%2?'tickA':'tickB')};
+  const light=s=>{if(!now)return;Object.entries(halves).forEach(([k,h])=>h.classList.toggle('lit',s!==null&&+k===s))};
+  function render(){
+    v.textContent=life+pend;let d=num.querySelector('.delta');
+    if(d&&d.classList.contains('out')){d.remove();d=null}
+    if(pend){if(!d){d=document.createElement('span');d.className='delta'+(now?'':' fadein');num.appendChild(d)}
+      d.textContent=(pend>0?'+':'−')+Math.abs(pend);d.classList.toggle('gain',pend>0);d.classList.toggle('loss',pend<0)}
+    else if(d){if(now||document.getElementById('nofade').checked)d.remove();else if(!d.classList.contains('out')){d.classList.add('out');setTimeout(()=>d.remove(),420)}}
+  }
+  function add(delta,s){
+    pend+=delta;render();
+    if(now){light(Math.sign(pend)||null)}else tick();
+    if(demo){const c=(delta<0?'loss':'gain')+(ticks%2?'A':'B');pl.className='pl';void pl.offsetWidth;pl.className='pl '+c}
+    if(kind==='pop'){const g=halves[s].querySelector('.g');restart(g,['go']);g.classList.add('go')}
+    if(kind==='ripple'&&pt){const r=document.createElement('span');r.className='rip';r.style.left=pt[0]+'px';r.style.top=pt[1]+'px';halves[s].appendChild(r);setTimeout(()=>r.remove(),1300)}
+    if(kind==='nudge'||kind==='nudgerip'){restart(num,['up','dn']);num.classList.add(delta>0?'up':'dn')}
+    if(kind==='nudgerip'&&pt){const r=document.createElement('span');r.className='rip soft';r.style.left=pt[0]+'px';r.style.top=pt[1]+'px';halves[s].appendChild(r);setTimeout(()=>r.remove(),1300)}
+    clearTimeout(commitT);commitT=setTimeout(commit,COMMIT);
+  }
+  function commit(){life+=pend;pend=0;render();if(now){light(null);tick()}}
+  const stop=()=>{clearTimeout(holdT);clearInterval(rep);holdT=rep=null};
+  Object.entries(halves).forEach(([k,h])=>{
+    const s=+k;
+    h.addEventListener('pointerdown',e=>{stop();held=false;down=s;const r=h.getBoundingClientRect();pt=[e.clientX-r.left,e.clientY-r.top];if(now)light(s);
+      holdT=setTimeout(()=>{held=true;add(s*10,s);rep=setInterval(()=>add(s*10,s),REPEAT)},HOLD)});
+    h.addEventListener('pointerup',()=>{if(down!==s)return;const wh=held;stop();down=null;if(!wh)add(s,s)});
+    const cancel=()=>{if(down===null)return;const stepless=!held;stop();down=null;if(stepless&&now)light(pend?Math.sign(pend):null)};
+    h.addEventListener('pointerleave',cancel);h.addEventListener('pointercancel',cancel);
+    h.addEventListener('contextmenu',e=>e.preventDefault());
+    h.addEventListener('keydown',e=>{if((e.key==='Enter'||e.key===' ')&&!e.repeat){e.preventDefault();const r=h.getBoundingClientRect();pt=[r.width/2,r.height/2];add(s,s)}});
+  });
+  return p;
+}
+function grid(t,withNotes){
+  const g=document.createElement('div');g.className='grid t-'+t;
+  KINDS.forEach(([k,label,note])=>{const c=document.createElement('div');c.className='cell';
+    c.innerHTML='<h2>'+label+'</h2>';c.appendChild(panel(k));if(withNotes)c.insertAdjacentHTML('beforeend','<div class="note">'+note+'</div>');g.appendChild(c)});
+  return g;
+}
+function draw(){
+  const all=document.getElementById('all').checked,out=document.getElementById('out');out.innerHTML='';out.className=all?'all':'';
+  document.body.className=(document.getElementById('slow').checked?'slow ':'')+'t-'+(all?'amonkhet':theme);
+  tb.querySelectorAll('.chip').forEach(b=>b.setAttribute('aria-pressed',!all&&b.dataset.t===theme));
+  if(!all){out.appendChild(grid(theme,true));return}
+  const wrap=document.createElement('div');wrap.style.cssText='display:flex;flex-direction:column;gap:14px';
+  THEMES.forEach(([id,name])=>{const r=document.createElement('div');r.className='row t-'+id;r.innerHTML='<h3>'+name+'</h3>';r.appendChild(grid(id,false));wrap.appendChild(r)});
+  out.appendChild(wrap);
+}
+['all','slow'].forEach(id=>document.getElementById(id).addEventListener('change',draw));draw();
+</script>
