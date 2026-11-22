@@ -26,7 +26,9 @@ import { rankMap } from "../../lib/commanders/rank-maps";
 import { nearestFix } from "../../lib/commanders/nearest-fix";
 import { laneOracleIds, printedInOptions } from "../../lib/commanders/printed-in-lane";
 import { filePrintedIn, isPrintedIn, type LanePrintedIn } from "../../lib/sets/printed-in";
-import { printedInLabel } from "./rack/chip-line";
+import { printedInLabel, themeLabelFromSlug } from "./rack/chip-line";
+import type { ThemeOption } from "./rack/theme-control";
+import { fileThemes, hasThemes, type LaneThemes } from "../../lib/themes/commander-themes";
 import { filterCopy } from "../../lib/copy/lanes";
 import { availabilityCopy } from "../../lib/copy/availability";
 import {
@@ -73,6 +75,7 @@ const upper = (colors: string[]) => colors.map((c) => c.toUpperCase());
 
 /** One empty selection, so a memo reading it holds still across renders. */
 const NO_SETS: string[] = [];
+const NO_THEMES: string[] = [];
 
 /** The reader's word for one pip. The catalog's hues are upper-case and the copy
     module keys on the URL's lower-case form, so the lift happens here. */
@@ -130,6 +133,9 @@ export type CommandersViewProps = {
   /** `Printed in ▾`'s index, aligned to `laneOracleIds(results)`. Absent when the read failed,
       and then the control is not drawn and a `?p=` is not applied. */
   printedIn?: LanePrintedIn;
+  /** `Themes ▾`'s index, counted over this payload's own rows and aligned to `laneOracleIds(results)`. Absent when
+      the read failed, and then the control is not drawn and a `?t=` is not applied. */
+  themes?: LaneThemes;
   /** The mode the reader last chose, saved per account: what the page opens in when the URL
       names none, and what the URL is written against, so `a=` appears only where the mode
       on screen differs from it. `all` for an account that has never chosen. */
@@ -148,6 +154,7 @@ export function CommandersView({
   freeRanking,
   availOk,
   printedIn,
+  themes,
   savedAvail = "all",
   helpMeChoose = false,
 }: CommandersViewProps) {
@@ -382,11 +389,21 @@ export function CommandersView({
     [printedIn, results],
   );
   const setCodes = codesByOracle ? params.printedIn : NO_SETS;
+  // `Themes` likewise: each row's themes filed once per payload; with no index the pick filters nothing.
+  const themesByOracle = useMemo(
+    () => (themes ? fileThemes(new Map(), laneOracleIds(results), themes) : null),
+    [themes, results],
+  );
+  const themeCodes = themesByOracle ? params.themes : NO_THEMES;
   // With no index the selection filters nothing, so the rack must not draw its chip or count it on
   // the badge either: a chip over an unfiltered list says the list was narrowed when it was not.
   const rackParams = useMemo(
-    () => (codesByOracle || params.printedIn.length === 0 ? params : { ...params, printedIn: NO_SETS }),
-    [codesByOracle, params],
+    () => ({
+      ...params,
+      printedIn: codesByOracle ? params.printedIn : NO_SETS,
+      themes: themesByOracle ? params.themes : NO_THEMES,
+    }),
+    [codesByOracle, themesByOracle, params],
   );
   const inSets = useCallback(
     <T extends { oracleId: string }>(rows: T[]): T[] =>
@@ -395,9 +412,16 @@ export function CommandersView({
         : rows.filter((r) => isPrintedIn(codesByOracle, r.oracleId, setCodes)),
     [codesByOracle, setCodes],
   );
-  // Search, then sets, then colour: every figure below counts over the list the other
+  const inThemes = useCallback(
+    <T extends { oracleId: string }>(rows: T[]): T[] =>
+      themeCodes.length === 0 || !themesByOracle
+        ? rows
+        : rows.filter((r) => hasThemes(themesByOracle, r.oracleId, themeCodes, params.themeMatch)),
+    [themesByOracle, themeCodes, params.themeMatch],
+  );
+  // Search, then sets, then themes, then colour: every figure below counts over the list the other
   // controls left, which is what makes each one answer for a single control.
-  const narrowed = useMemo(() => inSets(searched), [inSets, searched]);
+  const narrowed = useMemo(() => inThemes(inSets(searched)), [inThemes, inSets, searched]);
 
   const filtered = useMemo(
     () => ordered(filterByColors(narrowed, colors, params.match), params.order),
@@ -418,6 +442,43 @@ export function CommandersView({
           )
         : undefined,
     [printedIn, codesByOracle, results, active, colors, params.match, setCodes],
+  );
+
+  // `Themes`'s rows: this payload's themes, each counting the rows the OTHER controls leave (search, colors and
+  // sets; not the themes, so a pick never zeroes its siblings under Any). Most commanders first, ties
+  // alphabetical. A theme at 0 stays in place and cannot be picked, unless it is picked already.
+  const themeOptions = useMemo((): ThemeOption[] | undefined => {
+    if (!themes || !themesByOracle || themes.themes.length === 0) return undefined;
+    const counts = new Map<string, number>();
+    for (const r of filterByColors(inSets(searched), colors, params.match)) {
+      for (const slug of themesByOracle.get(r.oracleId) ?? []) counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    }
+    return themes.themes
+      .map((t) => {
+        const count = counts.get(t.slug) ?? 0;
+        return {
+          code: t.slug,
+          label: t.label,
+          hint: t.typal ? filterCopy.themes.typal : undefined,
+          count,
+          disabled: count === 0 && !params.themes.includes(t.slug),
+        };
+      })
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+  }, [themes, themesByOracle, inSets, searched, colors, params.match, params.themes]);
+  const themeLabel = useCallback(
+    (slug: string) => themes?.themes.find((t) => t.slug === slug)?.label ?? themeLabelFromSlug(slug),
+    [themes],
+  );
+  // The picked themes a row carries, in the order they were picked, as the labels its sentence leads with.
+  const pickedThemesOf = useCallback(
+    (oracleId: string): string[] | undefined => {
+      if (themeCodes.length === 0) return undefined;
+      const mine = themesByOracle?.get(oracleId);
+      const hit = themeCodes.filter((t) => mine?.includes(t));
+      return hit.length > 0 ? hit.map(themeLabel) : undefined;
+    },
+    [themeCodes, themesByOracle, themeLabel],
   );
 
   // What `Exactly` costs against `Any`, counted over the same searched list so
@@ -445,10 +506,10 @@ export function CommandersView({
   const sleevedByFree = useMemo(() => {
     if (avail !== "free" || !freeItems) return null;
     const q = params.q.trim().toLowerCase();
-    const searchedAll = inSets(q === "" ? canonical : canonical.filter((r) => matchesQuery(r, q)));
+    const searchedAll = inThemes(inSets(q === "" ? canonical : canonical.filter((r) => matchesQuery(r, q))));
     const hidden = filterByColors(searchedAll, colors, params.match).length - filtered.length;
     return hidden > 0 ? hidden : null;
-  }, [avail, freeItems, canonical, params.q, inSets, colors, params.match, filtered.length]);
+  }, [avail, freeItems, canonical, params.q, inSets, inThemes, colors, params.match, filtered.length]);
 
   // Two rank maps, each built once over the FULL candidate set in that mode's
   // ordering. Both are pre-filter, so filtering still never renumbers: a hidden
@@ -545,7 +606,14 @@ export function CommandersView({
     // named as its chip names it. Last in the map, so a tie goes to a pip: `changedAt` is 0 for
     // every candidate, and `nearestFix` keeps the first of equals.
     if (setCodes.length > 0) {
-      returned.set(printedInLabel(setCodes), filterByColors(searched, colors, params.match));
+      returned.set(printedInLabel(setCodes), filterByColors(inThemes(searched), colors, params.match));
+    }
+    // Likewise `Themes`, named as its chip names it; last, so a tie still goes to a pip or the set.
+    if (themeCodes.length > 0) {
+      returned.set(
+        filterCopy.themes.chip(themeCodes.map(themeLabel)),
+        filterByColors(inSets(searched), colors, params.match),
+      );
     }
     const best = nearestFix(
       [...returned].map(([control, rows]) => ({ control, rows: rows.length, changedAt: 0 })),
@@ -554,16 +622,24 @@ export function CommandersView({
     const back = ordered(returned.get(best.control) as typeof searched, params.order);
     // The DRAWN name: this sentence offers to bring a row back, and naming it by the
     // oracle name would promise a commander no row on this lane is captioned with.
-    const kind: "color" | "sets" =
-      setCodes.length > 0 && best.control === printedInLabel(setCodes) ? "sets" : "color";
+    const kind: "color" | "sets" | "themes" =
+      themeCodes.length > 0 && best.control === filterCopy.themes.chip(themeCodes.map(themeLabel))
+        ? "themes"
+        : setCodes.length > 0 && best.control === printedInLabel(setCodes)
+          ? "sets"
+          : "color";
     return { name: commanderDisplayName(back[0]), control: best.control, rows: best.rows, kind };
-  }, [colors, narrowed, searched, setCodes, params.match, params.order]);
+  }, [colors, narrowed, searched, setCodes, themeCodes, themeLabel, inSets, inThemes, params.match, params.order]);
 
   // The named correction, and only it: one pip goes out and every other control
   // stays where the reader put it. The control is carried as the reader's word
   // for it, so the pip it names is found by that word rather than by index.
   const handleDropColour = useCallback(() => {
     if (nearest === null) return;
+    if (nearest.kind === "themes") {
+      update({ ...params, themes: [], themeMatch: "any" });
+      return;
+    }
     if (setCodes.length > 0 && nearest.control === printedInLabel(setCodes)) {
       update({ ...params, printedIn: [] });
       return;
@@ -766,6 +842,7 @@ export function CommandersView({
         excludedByExactly={excludedByExactly}
         sleevedByFree={sleevedByFree}
         printedInOptions={setOptions}
+        themeOptions={themeOptions}
       />
 
       {/* ── Main content: list (or filtered-empty) ── */}
@@ -811,12 +888,12 @@ export function CommandersView({
           <SearchPending />
         ) : allHidden ? (
           <AllHiddenEmpty lane="owned" hidden={hiddenCount} hiddenHref={HIDDEN_PATH} />
-        ) : filtered.length === 0 && colors.length === 0 && setCodes.length === 0 && sleevedByFree ? (
+        ) : filtered.length === 0 && colors.length === 0 && setCodes.length === 0 && themeCodes.length === 0 && sleevedByFree ? (
           <FreeEmpty
             query={params.q.trim() || undefined}
             onShowAll={() => update({ ...params, avail: "all" })}
           />
-        ) : filtered.length === 0 && (colors.length > 0 || setCodes.length > 0) ? (
+        ) : filtered.length === 0 && (colors.length > 0 || setCodes.length > 0 || themeCodes.length > 0) ? (
           <FilteredEmpty
             nearest={nearest}
             onDrop={handleDropColour}
@@ -868,6 +945,7 @@ export function CommandersView({
                   }),
                 hideRef: hides.register("hide", r.slug),
               })}
+              pickedThemes={(r) => pickedThemesOf(r.oracleId)}
               trailing={remaining > 0 ? <RevealControl remaining={remaining} onReveal={handleReveal} /> : null}
             />
             {/* Mobile: clear the bottom tab bar so the control isn't half-covered. */}

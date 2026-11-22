@@ -22,6 +22,7 @@ export function CommandersList({
   hideProps,
   trailing,
   hrefFor,
+  pickedThemes,
 }: {
   rows: readonly CommanderRowItem[];
   /** Each slug's place in the whole ranking, which the windowed rows do not carry. */
@@ -38,6 +39,8 @@ export function CommandersList({
   hideProps?: (r: CommanderRowItem, i: number) => Hide;
   /** One last item after the rows (the reveal control). */
   trailing?: ReactNode;
+  /** The picked `Themes ▾` labels a row carries, which its sentence leads with. Absent, the shipped sentence. */
+  pickedThemes?: (r: CommanderRowItem) => string[] | undefined;
 }) {
   return (
     <ArrivalOrder>
@@ -66,6 +69,7 @@ export function CommandersList({
             {hideSlot?.(r, i) ?? (
               <CommanderRow
                 position={i}
+                pickedThemes={pickedThemes?.(r)}
                 {...hideProps?.(r, i)}
                 item={{
                   slug: r.slug,

@@ -58,7 +58,7 @@ export function FilteredEmpty({
   onDrop,
   onClearAll,
 }: {
-  nearest: { name: string; control: string; rows: number; kind?: "color" | "sets" } | null;
+  nearest: { name: string; control: string; rows: number; kind?: "color" | "sets" | "themes" } | null;
   onDrop: () => void;
   onClearAll: () => void;
 }) {

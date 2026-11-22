@@ -238,9 +238,9 @@ export const commandersCopy = {
     // One control named, one row count promised. Only when a single control fixes it.
     // `kind` says which control is named, because the sentence says what to drop: a color is
     // one pip, and Printed in is one control however many sets it names.
-    bodyOneFix: (name: string, control: string, rows: number, kind: "color" | "sets" = "color") =>
+    bodyOneFix: (name: string, control: string, rows: number, kind: "color" | "sets" | "themes" = "color") =>
       `${name} is in your commanders, but ${control} excludes it. Drop the ${
-        kind === "sets" ? "set filter" : "color"
+        kind === "sets" ? "set filter" : kind === "themes" ? "theme filter" : "color"
       } and you get ${rows === 1 ? "one row" : `${rows} rows`} back.`,
     bodyMode: (q: string, control: string) =>
       `Two commanders match “${q}”, but ${control} rules both out.`,

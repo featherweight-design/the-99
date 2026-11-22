@@ -1,0 +1,55 @@
+{
+  "feature": "Themes ▾ on For you",
+  "note": "The For you lane (/commanders) now mounts the Themes control Discover already had, counting options from its own rows. Rows: the wide popover, the phone sheet section, one theme lit (chip, badge, lead), two themes under All, and the combined empty state.",
+  "shares": {
+    "module": "src/components/commanders/rack/theme-control.tsx",
+    "binding": "ThemeControl",
+    "note": "One rack serves both lanes and both widths, so the view is the rack that imports it."
+  },
+  "rows": [
+    {
+      "id": "foryou-open",
+      "label": "/commanders: Themes opened (wide popover)",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/commanders", "wait": "[data-testid='themes'] button:visible", "settle": 1500 },
+        { "click": "[data-testid='themes'] button", "settle": 600 }
+      ]
+    },
+    {
+      "id": "foryou-open-phone",
+      "label": "/commanders phone: the sheet's Themes section",
+      "view": "src/components/commanders/rack/filter-sheet.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/commanders", "settle": 1500 },
+        { "clickRole": "button", "name": "Filters", "settle": 600 }
+      ]
+    },
+    {
+      "id": "foryou-one",
+      "label": "/commanders?t=combo: one theme, the chip, the lead",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders?t=combo", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "foryou-all",
+      "label": "/commanders?t=combo,tokens&tm=all: two themes under All",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders?t=combo,tokens&tm=all", "settle": 2000 }
+      ]
+    },
+    {
+      "id": "foryou-empty",
+      "label": "/commanders?t=combo,tokens,blink,treasure&tm=all&c=wubrg&p=lea: the empty state naming the nearest fix",
+      "view": "src/components/commanders/rack/filter-rack.tsx",
+      "steps": [
+        { "goto": "/commanders?t=combo,tokens,blink,treasure&tm=all&c=wubrg&p=lea", "settle": 2000 }
+      ]
+    }
+  ]
+}
