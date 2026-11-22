@@ -1,6 +1,9 @@
 // /decks/[id] — Builder page.
 // §Builder Spine, §Role Counter Strip, §Guided Banner, §Degraded Suggestions Banner.
+import { Suspense } from "react";
 import { openFactsOf } from "../../../lib/decks/open-entry";
+import { readDeckOpenFacts } from "../../../lib/decks/open-facts-read";
+import { DeckOpenLoading } from "../../../components/decks/deck-open-loading";
 import { ZoneProvider } from "../../../components/zone-context";
 import { resolveZone } from "../../../lib/zone/server";
 import { perfRoute } from "../../../lib/perf/timing";
@@ -135,13 +138,41 @@ const SUGGESTIONS_KEY = ["deck-suggestions", "3"];
 // fails if any of them stops fitting under this figure.
 export const maxDuration = 600;
 
-export default async function DeckBuilderPage({
-  params,
-  searchParams,
-}: {
+type DeckPageProps = {
   params: Promise<{ id: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+};
+
+/**
+ * A DIRECT LOAD's header (a typed address, a refresh, a shared link): `loading.tsx` draws the band's art ground alone while this
+ * awaits one lean read of the deck's header facts, then the body renders inside its own boundary whose fallback is the header
+ * skeleton with the name, tagline and commander line placed once. The body's reads start with the facts read, not after it: the
+ * facts promise is created here and only the FALLBACK waits on it, a fallback that suspends handing the screen back to
+ * `loading.tsx`. A press still carries its own facts (`open-entry`) and never waits on this. The ownership guard stays in the
+ * body: a deck that is not the reader's draws `notFound()` there, and its facts read answers null (the bars stay).
+ */
+async function DirectLoadFacts({ read }: { read: Promise<Awaited<ReturnType<typeof readDeckOpenFacts>>> }) {
+  const lean = await read;
+  return <DeckOpenLoading lean={lean ?? undefined} />;
+}
+
+export default async function DeckBuilderPage(props: DeckPageProps) {
+  const { id } = await props.params;
+  if (!isUuid(id)) notFound();
+  const userId = await requireUserId();
+  // Fail-soft: a failed facts read leaves the bars, the page itself is unaffected.
+  const facts = readDeckOpenFacts(id, userId).catch(() => null);
+  return (
+    <Suspense fallback={<DirectLoadFacts read={facts} />}>
+      <DeckBuilderBody {...props} />
+    </Suspense>
+  );
+}
+
+async function DeckBuilderBody({
+  params,
+  searchParams,
+}: DeckPageProps) {
   const { id } = await params;
   const query = await searchParams;
   // A malformed segment reaching a uuid column is a 500 where the route means
