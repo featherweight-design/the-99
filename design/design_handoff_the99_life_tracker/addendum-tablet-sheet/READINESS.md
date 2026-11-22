@@ -21,8 +21,11 @@ below (a test that pins the old coin class, the hint copy for partners, and End 
 
 ### 🎭 State coverage
 - ✅ All five tabs at tablet landscape (D1, C1, X1, X2, X3), a sheet opened from the far side (D2), portrait (D5, C2),
-  2 and 6 seats with a partner and a seat with no deck (D3, D4), a short-end seat (E1), desktop (D6), the coin's toss frames, shipped frames,
+  2, 4 and 6 seats with a partner and a seat with no deck (D3, D4, D7), a short-end seat (E1), desktop (D6), the coin's toss frames, shipped frames,
   phone, reduced motion and the landed state.
+- ✅ Partner card at five and four across (READINESS-audit, Orange): resolved in R1.1. Each half now stacks its count over
+  − and + (the shipped `stacked` stepper the Mana tab uses, 94 px wide), the half its own `@container` so it stays stacked;
+  both halves fit at about 104 px (D3) and 137 px (D7).
 - ✅ A sheet from a short-end seat (E1, tablet 5 One at the end): 590 deep, 820 long, four cards stacked along it, the narrowest damage row of any layout.
 - 🟡 Not drawn: End game's "How did it end?" inside the half sheet. The shipped grid (four across from 900 px) fits in
   the 285 px body at six seats (two rows of 64 px plus the back press).
@@ -37,7 +40,8 @@ below (a test that pins the old coin class, the hint copy for partners, and End 
 - ✅ Coin: `DiceRoll` takes `tablet` for the coin's size; new keyframes `coin-spin`, `coin-arc`, `coin-settle`,
   `coin-shadow`, `coin-land`, `sheet-up`, `sheet-veil` replace `coin-flip` and `dice-land` in `globals.css`.
   `.coin-face` stays (faces gain `translateZ` for the rim). `COIN_MS` stays 1150.
-- 🟡 `dice-roll.test.tsx:49` asserts the old `animate-[coin-flip_1.15s…]` class; update it with the build.
+- 🟡 `dice-roll.test.tsx:49` asserts the old `animate-[coin-flip_1.15s…]` class and line 50 `--ry` (now `--rx`); update both
+  with the build. `sheet.test.tsx` gains a tablet case (veil closes, half sheet, damage cards, a partner card's two steppers).
 - 🟡 The veil is a second Close button (`tabIndex={-1}`, `aria-label` = `copy.sheet.close`), the pattern the dice and
   Menu backdrops use; focus still lands on the ✕.
 - 🟡 `scratch-gen/` is reference only: it bundles the shipped `PlaySurface` with stubs for `next/navigation`,

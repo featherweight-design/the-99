@@ -36,3 +36,10 @@ None. Game state, engine, storage and the one result write are untouched.
 ## PR split
 
 Under ~250 lines, so one PR is allowed; cleaner as two independent PRs (no stack): (1) coin toss: dice-roll, its test, play-surface props, coin keyframes; (2) tablet sheet: sheet, its test, sheet keyframes, tab row fix. Tab row fix may ride in either.
+
+## Design response (R1.1, 2026-11-22)
+
+- Partner card: resolved. Each half stacks its count over − and + (the shipped `stacked` stepper, as Mana), 94 px wide,
+  inside its own `@container` so it stays stacked. Redrawn at five across (D3, ~104 px a half) and four seats (D7, new
+  board, ~137 px a half). `scratch-gen/proposal.diff` carries the change.
+- The `--ry` → `--rx` test line and the `sheet.test.tsx` tablet case are now in READINESS.md.

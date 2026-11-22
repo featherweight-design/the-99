@@ -28,7 +28,8 @@ Sam on Killian and Alex with no deck.
    count. The commander's art fills the card edge to edge (255 px tall at four seats, against 56), under a top and foot
    scrim; the player's name top left; the commander's name and the shipped `damageOne` stepper over the foot. A count
    above 0 is in the accent (`tone="set"`, as Counters). A partner pair splits the art and **each half carries its own
-   name and stepper** under its own art. A seat with no deck draws the plain card surface. The phone keeps F06.
+   name and stepper** under its own art, the count stacked over − and + (the Mana tab's stacked stepper) so a half fits
+   at five across (R1.1, after the readiness audit). A seat with no deck draws the plain card surface. The phone keeps F06.
 3. **Table joins the tab row (every device).** The `ml-auto` on the Table tab goes; the five tabs sit together in the
    drawn order. Nothing changes on the phone's drawing, because its tabs already fill the row.
 4. **The coin toss (every device).** The coin gets a rim (7 stacked discs), a toss arc (rises toward you to 1.8× and up
@@ -66,7 +67,7 @@ drawn at rest. The dice frames on the Coin board are the shipped `@3d-dice/dice-
 |---|---|
 | Main | Before and after (landscape), the four calls, phone and desktop |
 | Sheet | Landscape, all five tabs at half height (D1, C1, X1, X2, X3), a sheet opened from the far side (D2), the table at rest |
-| Damage | Six seats with a partner and a seat with no deck (D3), two seats (D4), a seat at the short end (E1), desktop 1440×900 (D6) |
+| Damage | Six seats with a partner and a seat with no deck (D3), two seats (D4), a partner at four seats (D7), a seat at the short end (E1), desktop 1440×900 (D6) |
 | Portrait | 820×1180: now (B2), Commander damage (D5), Counters (C2) |
 | Tabs | The tab row before and after on the tablet; the phone before and after |
 | Coin | The toss animated (tablet, shipped, phone), 12 frames with times, shipped frames, the d20 beside it, timing table, reduced motion |
