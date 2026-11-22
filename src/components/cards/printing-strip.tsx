@@ -57,7 +57,8 @@ export function PrintingStrip({
   const wasOpen = useRef(false);
   // Focus goes back to the tile that opened the panel when it closes.
   useEffect(() => {
-    if (wasOpen.current && !panelOpen) tile.current?.focus();
+    // Only when focus was lost with the panel (its ✕ or Escape): a paddle or arrow that paged the card keeps its focus.
+    if (wasOpen.current && !panelOpen && (document.activeElement === null || document.activeElement === document.body)) tile.current?.focus();
     wasOpen.current = panelOpen;
   }, [panelOpen]);
   const row = useRef<HTMLDivElement>(null);
@@ -135,6 +136,7 @@ export function PrintingStrip({
         >
           {hasTile ? (
             <SearchTile
+              open={panelOpen}
               tileRef={(el) => { tile.current = el; }}
               onPress={() => onPanelOpen()}
               onKeyDown={(e) => {

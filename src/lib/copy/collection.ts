@@ -519,6 +519,7 @@ export const printingStripCopy = {
   searchTileAria: "Search printings",
   panelSearchAria: (total: number) => `Search ${count(total)} printings`,
   panelPlaceholder: (total: number) => `Search ${count(total)} printings by set`,
+  panelLabel: (cardName: string) => `Search printings of ${cardName}`,
   panelClose: "Close printings",
   panelMatches: (hits: number, total: number) => `${count(hits)} of ${count(total)} printings`,
   panelOwnedHead: (owned: number) => `In your collection · ${count(owned)}`,

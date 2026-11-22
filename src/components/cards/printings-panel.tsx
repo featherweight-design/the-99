@@ -58,7 +58,7 @@ export function PrintingsPanel({
   useEffect(() => { field.current?.focus(); }, []);
 
   return (
-    <div role="group" aria-label={printingStripCopy.groupLabel(cardName)} data-testid="printings-panel" className="flex max-h-full min-h-0 flex-col">
+    <div role="group" aria-label={printingStripCopy.panelLabel(cardName)} data-testid="printings-panel" className="flex max-h-full min-h-0 flex-col">
       <div className="flex flex-none items-center gap-[6px] pl-[16px] pr-[6px] md:pl-[18px]">
         <SearchField
           ref={field}
@@ -132,13 +132,13 @@ export function PrintingsPanel({
 }
 
 /** The strip's leading tile (desktop): a dashed card-shaped Search tile that opens the panel. */
-export function SearchTile({ onPress, onKeyDown, tileRef }: { onPress: () => void; onKeyDown: (e: KeyboardEvent) => void; tileRef: (el: HTMLButtonElement | null) => void }) {
+export function SearchTile({ open, onPress, onKeyDown, tileRef }: { open: boolean; onPress: () => void; onKeyDown: (e: KeyboardEvent) => void; tileRef: (el: HTMLButtonElement | null) => void }) {
   return (
     <button
       ref={tileRef}
       type="button"
       aria-label={printingStripCopy.searchTileAria}
-      aria-haspopup="dialog"
+      aria-expanded={open}
       tabIndex={-1}
       onClick={onPress}
       onKeyDown={onKeyDown}
