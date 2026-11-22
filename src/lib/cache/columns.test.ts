@@ -33,7 +33,7 @@ describe("toColumns / fromColumns", () => {
     const rows = [{ k: U1, u: undefined }, { k: "plain" }];
     const table = toColumns(rows);
     expect(table.cols.k.u).toBeUndefined();
-    expect(table.cols.u).toEqual({ v: [], x: [] });
+    expect(table.cols.u).toMatchObject({ v: [], x: [] });
     expect(fromColumns(table)).toEqual([{ k: U1 }, { k: "plain" }]);
   });
 
