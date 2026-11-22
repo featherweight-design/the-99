@@ -755,6 +755,24 @@ html { --modal-shadow: 0 40px 100px rgba(0, 0, 0, 0.7); }
   from { opacity: 0.7; }
   to { opacity: 1; }
 }
+/* The life press (Nudge): the number settles from 5px above (a gain) or below (a loss) on every step; the pending ±N rises in over
+   150 ms and, at the commit, drifts 6px up and fades over 400 ms. Reduced motion gates all of it with `motion-safe:`. */
+@keyframes life-nudge-up {
+  from { transform: translateY(-5px); }
+  to { transform: none; }
+}
+@keyframes life-nudge-down {
+  from { transform: translateY(5px); }
+  to { transform: none; }
+}
+@keyframes life-pending-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes life-pending-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateY(-6px); }
+}
 /* End turn arrives on the new active seat, and the dice menu pops up over the strip (P1 `pop`). */
 @keyframes end-turn-pop {
   from { transform: scale(0.4); opacity: 0; }

@@ -1,8 +1,8 @@
-// Taps a life tracker panel's − and + halves three times, 300 ms apart, and samples every 40 ms through the commit
-// (2 s after the last tap) what the player sees: the pressed half's background and glyph color, the panel's gain/loss
-// tint and the pending figure. It asserts the cue A of addendum R2: the pressed color shows from the first tap and
-// holds through the whole commit window with no gap between taps, it is gone within 250 ms of the commit, and no tint
-// flashes across the panel when the change commits. A press that slides off hands the light back to the pending half.
+// Presses a life tracker panel's − and + halves and samples every 40 ms what the player sees (the half's wash, the panel's
+// tint, the pending figure). It asserts the life press of ADDENDUM-life-press ("Nudge"): a 10% accent wash only while a finger
+// is down and gone within 250 ms of release, the glyph staying muted, the number ticking and nudging on every step, the pending
+// figure in the gain or loss ink fading out at the commit, nothing held through the 2 s window, no panel tint, a hold that steps
+// by ten after 480 ms, and a slid-off press that ends its wash and hands nothing on.
 // It only reads and taps: the game lives on the device (localStorage), so it writes nothing to the database. The audit
 // account must sit at the table (`scripts/seed-rule-zero-fixture.mts`'s S4); production and staging are refused.
 //
@@ -21,7 +21,7 @@ if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(BASE)) throw new Error("T
 const TABLE = process.env.SETUP_TABLE ?? "7a0e0000-0000-4000-8000-000000000013";
 const WIDTHS = [
   { label: "phone 390x844", viewport: { width: 390, height: 844 } },
-  { label: "tablet 1024x768", viewport: { width: 1024, height: 768 } },
+  { label: "desktop 1300x900", viewport: { width: 1300, height: 900 } },
 ];
 
 let failures = 0;
@@ -77,6 +77,13 @@ const sample = (half) =>
       fg: getComputedStyle(el).color,
       tint: tint ? `${getComputedStyle(tint).backgroundColor}@${Number(getComputedStyle(tint).opacity).toFixed(2)}` : "none",
       pending: panel.querySelector("[data-testid=life-pending]")?.textContent ?? "",
+      // The pending figure's ink against the theme's --success and --danger, resolved to rgb by a probe element.
+      pendingInk: (() => {
+        const n = panel.querySelector("[data-testid=life-pending]");
+        return n ? getComputedStyle(n).color : "";
+      })(),
+      success: (() => { const t = document.createElement("i"); t.style.color = "var(--success)"; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; })(),
+      danger: (() => { const t = document.createElement("i"); t.style.color = "var(--danger)"; document.body.append(t); const c = getComputedStyle(t).color; t.remove(); return c; })(),
     };
   });
 const alpha = (c) => {
@@ -111,67 +118,117 @@ try {
     await page.getByTestId("first-roll").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
     await page.waitForTimeout(800);
 
+    // The life press (addendum "life press = Nudge"): a 10% accent wash only while a finger is down, the number ticking and
+    // nudging on every step, the pending figure in --success / --danger ink fading out at the commit, nothing held through the window.
     for (const which of ["half-minus", "half-plus"]) {
       const half = page.getByTestId(which).first();
       const box = await half.boundingBox();
       const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
-      const t0 = Date.now();
+      // Two short presses (under the 480 ms hold), 700 ms apart, each sampled while down and after release.
+      await page.mouse.move(at.x, at.y);
+      await page.mouse.down();
+      await page.waitForTimeout(250);
+      const down1 = await sample(half);
+      await page.mouse.up();
+      await page.waitForTimeout(60);
+      const anim1 = await page.getByTestId("life-number").first().evaluate((el) => el.firstElementChild.getAnimations().map((a) => a.animationName));
+      await page.waitForTimeout(240);
+      const up1 = await sample(half);
+      report(`${which}: the wash draws at about 10% while the finger is down`, alpha(down1.bg) > 0.07 && alpha(down1.bg) < 0.13, down1.bg);
+      report(`${which}: the wash is gone within 250 ms of release, with the change still pending`, alpha(up1.bg) < 0.03 && !!up1.pending, `${up1.bg} pending ${up1.pending}`);
+      report(`${which}: the glyph stays muted, never the accent`, down1.fg === up1.fg, `${down1.fg} vs ${up1.fg}`);
+      report(`${which}: the number ticks and nudges on a tap`, anim1.some((n) => n.startsWith("life-nudge")), anim1.join(","));
+      report(`${which}: the pending figure takes the gain or loss ink`, up1.pendingInk === (which === "half-plus" ? up1.success : up1.danger), `${up1.pendingInk}`);
+      // A second step while pending nudges again.
+      await page.mouse.down();
+      await page.waitForTimeout(120);
+      await page.mouse.up();
+      await page.waitForTimeout(60);
+      const anim2 = await page.getByTestId("life-number").first().evaluate((el) => el.firstElementChild.getAnimations().map((a) => a.animationName));
+      report(`${which}: a second tap plays the nudge again`, anim2.some((n) => n.startsWith("life-nudge")), anim2.join(","));
+      await page.waitForTimeout(250); // the 200 ms fade-out of the second press's wash
+      // Through the window: no wash, no tint, and at the commit the figure fades out while the number's own animation does not replay.
       const rows = [];
-      const taps = [0, 300, 600];
-      let next = 0;
-      while (Date.now() - t0 < 3400) {
-        const t = Date.now() - t0;
-        if (next < taps.length && t >= taps[next]) {
-          await page.touchscreen.tap(at.x, at.y);
-          next++;
-        }
-        rows.push({ t: Date.now() - t0, ...(await sample(half)) });
+      const t0 = Date.now();
+      while (Date.now() - t0 < 2800) {
+        rows.push({ t: Date.now() - t0, ...(await sample(half)), fading: await page.getByTestId("life-pending-fade").count() });
         await page.waitForTimeout(40);
       }
-      console.log(`  ${which}: taps at ${taps.join(", ")} ms; commit due ~${600 + 2000} ms`);
-      let last = "";
-      for (const r of rows) {
-        const line = `${r.bg} | ${r.fg} | tint ${r.tint} | ${r.pending}`;
-        if (line !== last) console.log(`   ${String(r.t).padStart(5)}ms  ${line}`);
-        last = line;
-      }
-      const pressedRows = rows.filter((r) => r.pending);
-      const first = pressedRows[0];
-      report(`${which}: the first sample after a tap already carries the pressed color`, first && alpha(first.bg) >= 0.15, first?.bg ?? "never pressed");
-      const commitAt = rows.findIndex((r, i) => i > 0 && rows[i - 1].pending && !r.pending);
-      const around = rows.slice(Math.max(0, commitAt - 2), commitAt + 4);
-      // Cue A (addendum R2): the half holds its 18% ground through the whole window, with no gap between taps,
-      // then fades back over 120 ms once the change commits.
-      const held = pressedRows.map((r) => alpha(r.bg));
-      report(`${which}: the pressed color holds through the window, never dropping between taps`, held.length > 10 && held.every((a) => a >= 0.15), `min ${Math.min(...held).toFixed(2)}`);
-      const commitT = commitAt > 0 ? rows[commitAt].t : Infinity;
-      const after = rows.filter((r) => r.t >= commitT + 250).map((r) => alpha(r.bg));
-      report(`${which}: the pressed color is gone within 250 ms of the commit`, after.length > 0 && after.every((a) => a < 0.03), `after ${after.slice(0, 3).map((a) => a.toFixed(2)).join(" ")}`);
-      report(`${which}: no panel tint flashes at the commit`, around.every((r) => r.tint === "none" || r.tint.endsWith("@0.00")), around.map((r) => r.tint).join(" "));
-      await page.waitForTimeout(800);
+      report(`${which}: nothing is held through the window (no wash)`, rows.every((r) => alpha(r.bg) < 0.03), `max ${Math.max(...rows.map((r) => alpha(r.bg))).toFixed(2)}`);
+      report(`${which}: no panel tint at any point`, rows.every((r) => r.tint === "none" || r.tint.endsWith("@0.00")), [...new Set(rows.map((r) => r.tint))].join(" "));
+      report(`${which}: the figure fades out at the commit`, rows.some((r) => r.fading > 0));
+      await page.waitForTimeout(600);
+      report(`${which}: the faded figure is gone`, (await page.getByTestId("life-pending-fade").count()) === 0);
     }
 
-    // A press that slides off without a step hands the light back to the half whose change is pending.
+    // Holding steps by ten after 480 ms, then every 380 ms.
+    {
+      const plus = page.getByTestId("half-plus").first();
+      const pb = await plus.boundingBox();
+      const life = () => page.getByTestId("life-number").first().evaluate((el) => Number(el.firstElementChild.textContent));
+      const start = await life();
+      await page.mouse.move(pb.x + pb.width / 2, pb.y + pb.height / 2);
+      await page.mouse.down();
+      await page.waitForTimeout(400);
+      const early = await life();
+      await page.waitForTimeout(200);
+      const first = await life();
+      await page.waitForTimeout(300);
+      const second = await life();
+      await page.mouse.up();
+      report("no hold step before 480 ms", early === start, `${start} -> ${early}`);
+      report("the first hold step lands after 480 ms, by ten", first === start + 10, `${start} -> ${first}`);
+      report("the next hold step lands about 380 ms later, not before", second === start + 10 || second === start + 20, `${second}`);
+      await page.waitForTimeout(2600);
+    }
+
+    // A press that slides off without a step ends its wash and hands nothing to the other half.
     {
       const plus = page.getByTestId("half-plus").first();
       const minus = page.getByTestId("half-minus").first();
       const pb = await plus.boundingBox();
       const mb = await minus.boundingBox();
       await page.touchscreen.tap(pb.x + pb.width / 2, pb.y + pb.height / 2);
-      await page.waitForTimeout(900);
+      await page.waitForTimeout(500);
       await page.mouse.move(mb.x + mb.width / 2, mb.y + mb.height / 2);
       await page.mouse.down();
       await page.waitForTimeout(120);
       await page.mouse.move(mb.x + mb.width / 2, mb.y - 200, { steps: 4 });
       await page.mouse.up();
-      await page.waitForTimeout(200);
+      await page.waitForTimeout(300);
       const p = await sample(plus);
       const m = await sample(minus);
-      report("a slid-off press leaves its own half unlit", alpha(m.bg) < 0.03, m.bg);
-      report("a slid-off press hands the light back to the pending half", alpha(p.bg) >= 0.15, p.bg);
+      report("a slid-off press leaves its own half without a wash", alpha(m.bg) < 0.03, m.bg);
+      report("a slid-off press hands nothing to the pending half", alpha(p.bg) < 0.03, p.bg);
       await page.waitForTimeout(2400);
     }
     await context.close();
+
+    // Reduced motion: the wash still draws while the finger is down (it is state, not motion), and nothing animates.
+    const calm = await browser.newContext({ viewport, hasTouch: true, isMobile: viewport.width < 768, reducedMotion: "reduce" });
+    const calmPage = await calm.newPage();
+    await signIn(calmPage);
+    await calmPage.goto(`${BASE}/friends/table/${TABLE}/play`, { waitUntil: "networkidle", timeout: 180_000 });
+    await calmPage.getByRole("button", { name: "Start", exact: true }).evaluate((el) => el.click());
+    await calmPage.getByTestId("tracker-play").waitFor({ timeout: 15_000 });
+    await calmPage.evaluate(() => {
+      document.querySelectorAll("[data-seat-notice-stack], nextjs-portal").forEach((n) => n.remove());
+      document.querySelector("[data-testid=first-roll] > button")?.click();
+    });
+    await calmPage.getByTestId("first-roll").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
+    await calmPage.waitForTimeout(800);
+    const calmHalf = calmPage.getByTestId("half-plus").first();
+    const cb = await calmHalf.boundingBox();
+    await calmPage.mouse.move(cb.x + cb.width / 2, cb.y + cb.height / 2);
+    await calmPage.mouse.down();
+    await calmPage.waitForTimeout(250);
+    const calmDown = await sample(calmHalf);
+    await calmPage.mouse.up();
+    await calmPage.waitForTimeout(60);
+    const calmAnims = await calmPage.getByTestId("life-number").first().evaluate((el) => el.getAnimations({ subtree: true }).length);
+    report("reduced motion: the wash still draws while the finger is down", alpha(calmDown.bg) > 0.07 && alpha(calmDown.bg) < 0.13, calmDown.bg);
+    report("reduced motion: the number does not animate", calmAnims === 0, `${calmAnims} animations`);
+    await calm.close();
   }
 } finally {
   await browser.close();

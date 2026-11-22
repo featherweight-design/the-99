@@ -2927,14 +2927,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   unchanged while the sheet is open and after it closes. On main the phone sheet opens 227px off screen with the table
   scrolled under it, a 180° seat's sheet rises upright, and seat 3's box covers seat 2. It writes nothing, needs
   `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch. `SHOTS=<dir>` keeps photographs.
-- `pnpm probe:tracker-life-tap` taps a tracker panel's − and + halves three times, 300 ms apart, at phone (390x844)
-  and tablet (1024x768) width on the fixture's S4, sampling every 40 ms through the commit what the half draws (its own
-  ground or its `half-fill` layer, alpha scaled by opacity) and any panel tint (an animating layer, outside the halves,
-  covering most of the panel). It checks addendum R2's cue A: the accent ground shows on the first sample after a tap,
-  holds at 18% through the window with no gap between taps, is gone within 250 ms of the commit, and no tint crosses the
-  panel when the change lands. A press slid off one half leaves it dark and the pending half lit. On main the first
-  sample is transparent, the ground drops between taps and a .35 danger or success tint flashes: 12 failures. It writes
-  nothing, needs `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch.
+- `pnpm probe:tracker-life-tap` presses a tracker panel's − and + halves at phone (390x844) and desktop (1300x900) width on
+  the fixture's S4 and samples every 40 ms what the half draws (its own ground or its `half-fill` layer, alpha scaled by
+  opacity), any panel tint (an animating layer, outside the halves, covering most of the panel) and the pending figure. It
+  checks ADDENDUM-life-press ("Nudge"): a 10% accent wash only while a finger is down, gone within 250 ms of release, the
+  glyph staying muted, the number's `life-nudge` animation on each tap, the pending figure in the theme's `--success` or
+  `--danger` ink and fading out at the commit (`life-pending-fade`), no wash and no panel tint through the 2 s window, a
+  hold that steps by ten only after 480 ms, and a slid-off press that ends its wash and hands nothing to the other half.
+  On main the wash is 18% and held through the window, the glyph turns accent, the number does not nudge and the figure
+  has the accent ink, so most checks fail. It writes nothing, needs `INVITE_CODE_SECRET` on the dev server and the
+  fixture on a scratch branch.
 - `pnpm probe:tracker-layout-parity` opens the life tracker's setup for the fixture's four-seat table S4 at phone
   (390x844) and both tablet widths (1024x768, 820x1180) and reads the Table radio group's arrangement names. Every width
   must offer what the phone offers, by the same names and in the same order, and every width must offer addendum R2's
