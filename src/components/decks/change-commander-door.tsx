@@ -15,14 +15,10 @@ import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import { createPortal } from "react-dom";
 import { SwapGlyph } from "./change-commander-glyph";
+import { PLATE, type Width } from "./change-commander-door-inert";
 import { useChangeCommander } from "./change-commander-context";
 import { ChangeCommanderSheet } from "./change-commander-sheet";
 import { useSheetHost } from "../ui/sheet-host";
-
-const PLATE =
-  "pointer-events-none absolute rounded-[7px] border border-[color:var(--border-strong)] bg-[color:var(--bg)]";
-
-type Width = "desktop" | "mobile";
 
 /** The sheet, from the door that opened it (a deck header door, or the commander's card details). */
 export function Sheet({ width }: { width: Width | "details" }) {

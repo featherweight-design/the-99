@@ -152,3 +152,20 @@ export function DeckFlipStrip({ flipState, width }: { flipState: DeckFlip; width
     </nav>
   );
 }
+
+/**
+ * The two squares of the strip, drawn inert for the deck's loading skeleton: the same boxes `DeckFlipStrip` draws once the order
+ * is read, so the arrows are where they will be when the page lands. Disabled and hidden from assistive tech (not focusable, not pressable, not announced).
+ */
+export function InertFlipSquares({ width }: { width: "phone" | "desktop" }) {
+  const square = width === "phone" ? "h-[44px] w-[44px]" : "h-[36px] w-[36px]";
+  return (
+    <>
+      {(["prev", "next"] as const).map((dir) => (
+        <GhostButton key={dir} disabled aria-hidden="true" tabIndex={-1} data-inert-flip={dir} className={`flex items-center justify-center ${square}`}>
+          <Arrow dir={dir} />
+        </GhostButton>
+      ))}
+    </>
+  );
+}

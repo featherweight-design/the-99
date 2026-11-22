@@ -21,7 +21,7 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { overCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import { IdentityPips } from "../commanders/commander-art";
-import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS } from "./deck-header-type";
+import { DECK_COMMANDER_SIZE, DECK_TITLE, DECK_TITLE_CLASS, PHONE_BLOCK_CLASS, PHONE_BLOCK_INSET_X, phoneBlockStyle } from "./deck-header-type";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { colorLabel, deckIdentity } from "../../lib/decks/format";
 import { STATUS_TOKEN, statusBarStyle } from "../../lib/decks/status-style";
@@ -53,7 +53,7 @@ import { ProxyTag } from "./proxy-tag";
 import { shortName } from "../../lib/cards/short-name";
 
 /** The label block's inset from the band's sides; its ramp reaches back out across it. */
-const BLOCK_INSET_X = 18;
+const BLOCK_INSET_X = PHONE_BLOCK_INSET_X;
 
 /** The rename glyph's drawn size. Named because the measurement below has to
     keep the glyph inside the block, and the heading reserves the same figure. */
@@ -307,24 +307,17 @@ export function SpineMobile({
           data-wash-label
           // `press-through`: a press on the art beside or behind this block's words reaches the
           // art's own press; its controls keep theirs.
-          className="press-through absolute flex flex-col items-start"
+          className={PHONE_BLOCK_CLASS}
           // Left-aligned, so the reserved space is on the right ALONE: the
           // card-details control sits in this band's bottom-right corner and its
           // 44px target reached into the meta row. A centred block had to pad
           // both sides to clear that corner without moving its centre; a
           // left-aligned one pays for it once.
-          // Its foot is the band's, with the 12px inset as padding, so its own
+          // The block's geometry is `phoneBlockStyle` (deck-header-type.ts), shared with the
+          // loader. Its foot is the band's, with the 12px inset as padding, so its own
           // height is the figure the ramp is keyed to; `isolation` keeps the ramp
           // under this block's ink and over the art.
-          style={{
-            left: BLOCK_INSET_X,
-            right: BLOCK_INSET_X,
-            bottom: 0,
-            paddingBottom: 12,
-            paddingRight: 40,
-            isolation: "isolate",
-            gap: renaming ? 8 : 6,
-          }}
+          style={phoneBlockStyle(renaming ? 8 : 6)}
         >
           <BlockScrim insetX={BLOCK_INSET_X} />
           {renaming ? (

@@ -9,7 +9,12 @@
 // computed line height and the first line box's height, and asserts the two agree. On main the skeleton's title was a larger,
 // lighter serif than the loaded display face, so every type check fails there.
 //
-// Its writes: two decks of its own (`probe:deck-loading-art`, no cards) on the signed-in account, deleted in `finally`.
+// And the header's rects: the gradient behind the label (`[data-block-scrim]`, phone only), the name, the commander line, the chips
+// row and the description, each as x, y, width and height from the drawn band's top left, in both states. They must be equal (the
+// width of the commander line excepted on a partner pair, whose loaded row draws the partner as its own control; its left, top and
+// height still agree). On main the skeleton draws no gradient and no description row, and its label is a parallel block, so these fail.
+//
+// Its writes: two decks of its own (`probe:deck-loading-art`, no cards; the lone one carries a description, the pair none) on the signed-in account, deleted in `finally`.
 // Production and staging are refused by `neon.branch_id`. DATABASE_URL must be the database the dev server reads.
 //   E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=http://localhost:3291 node scripts/probe-deck-loading-art.mjs
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
@@ -70,7 +75,7 @@ async function makeDecks(userId) {
   if (partners.length < 2) throw new Error("The catalog holds no two Partner commanders with art.");
   const [single] = await sql`select oracle_id from cards where commander_legal and art_crop_uri is not null
     and type_line ilike 'Legendary Creature%' and oracle_id <> ${partners[0].oracle_id} order by name limit 1`;
-  const [one] = await sql`insert into decks (user_id, name, commander_oracle_id) values (${userId}, ${NAME}, ${single.oracle_id}) returning id`;
+  const [one] = await sql`insert into decks (user_id, name, intent, commander_oracle_id) values (${userId}, ${NAME}, ${"Tokens and a long tagline that takes two lines on a phone, so the name has to hold its place when the page lands."}, ${single.oracle_id}) returning id`;
   const [two] = await sql`insert into decks (user_id, name, commander_oracle_id, partner_oracle_id)
     values (${userId}, ${NAME}, ${partners[0].oracle_id}, ${partners[1].oracle_id}) returning id`;
   return [{ kind: "single", id: one.id }, { kind: "partner", id: two.id }];
@@ -117,6 +122,38 @@ const READ_TYPE = (scope) => {
   return { title: read(h1), commander: line ? read(line) : { missing: "no commander line" } };
 };
 
+/** The rects a reader sees move when the page lands, relative to the drawn band's top left. A part not drawn reads null. */
+const READ_RECTS = (scope) => {
+  const root = document.querySelector(scope);
+  if (!root) return { missing: `no ${scope}` };
+  const shown = (el) => el.getClientRects().length > 0 && el.getBoundingClientRect().width > 0;
+  const band = [...root.querySelectorAll("[data-art-wash-band]")].find(shown)?.parentElement ?? [...root.querySelectorAll("h1")].find(shown)?.closest("div[style*='height']");
+  if (!band) return { missing: "no drawn band" };
+  const origin = band.getBoundingClientRect();
+  const round = (n) => Math.round(n * 10) / 10;
+  const rect = (el) => {
+    if (!el || !shown(el)) return null;
+    const r = el.getBoundingClientRect();
+    return { x: round(r.left - origin.left), y: round(r.top - origin.top), w: round(r.width), h: round(r.height) };
+  };
+  const first = (sel) => [...root.querySelectorAll(sel)].find(shown);
+  const meta = first("[data-spine-meta]");
+  return {
+    gradient: rect(first("[data-block-scrim]")),
+    name: rect(first("[data-deck-title]") ?? first("h1")),
+    description: rect(first("[data-deck-intent]")),
+    commander: rect(meta?.querySelector("span.font-mono") ?? null),
+    chips: rect(first("[data-spine-chips]")),
+    // The controls the loaded header draws and the skeleton draws inert in the same boxes. Each part reads null when a width draws none.
+    door: rect(first('[data-testid="change-commander-door"], [data-inert-door]')),
+    flipPrev: rect(first('[data-inert-flip="prev"], [data-flip-strip] a[aria-label]:nth-of-type(1)')),
+    flipNext: rect(first('[data-inert-flip="next"], [data-flip-strip] a[aria-label]:nth-of-type(2)')),
+    count: rect(first("[data-spine-count]")),
+    // Desktop only: the phone's `data-spine-actions` is its own below-the-fold row, which the skeleton does not draw.
+    actions: rect(first("[data-inert-actions], [data-spine-header-actions]")),
+  };
+};
+
 async function walk(browser, width, deck) {
   const context = await browser.newContext({ viewport: width.viewport });
   const page = await context.newPage();
@@ -151,6 +188,7 @@ async function walk(browser, width, deck) {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/${width.label}-${deck.kind}-loading.png` });
     report(L("the skeleton draws the commander's art"), loading.image === "url", JSON.stringify(loading));
     const loadingType = await page.evaluate(READ_TYPE, "[data-loading-screen]");
+    const loadingRects = await page.evaluate(READ_RECTS, "[data-loading-screen]");
     release();
     await page.locator("[data-loading-screen]").first().waitFor({ state: "detached", timeout: 90_000 });
     await page.waitForTimeout(600);
@@ -158,6 +196,15 @@ async function walk(browser, width, deck) {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/${width.label}-${deck.kind}-loaded.png` });
     report(L("the loaded header draws the commander's art"), loaded.image === "url", JSON.stringify(loaded));
     const loadedType = await page.evaluate(READ_TYPE, "main");
+    const loadedRects = await page.evaluate(READ_RECTS, "main");
+    for (const part of ["gradient", "name", "description", "commander", "chips", "door", "flipPrev", "flipNext", "count", "actions"]) {
+      const a = loadingRects[part], b = loadedRects[part];
+      // The description of a deck with none draws no row in either state; the gradient is a phone part.
+      if (a === null && b === null) continue;
+      const keys = ["x", "y", "w", "h"];
+      const same = a && b && keys.every((k) => Math.abs(a[k] - b[k]) <= 1);
+      report(L(`skeleton and loaded header draw the ${part} in the same place`), Boolean(same), `skeleton ${JSON.stringify(a)} vs loaded ${JSON.stringify(b)}`);
+    }
     for (const part of ["title", "commander"]) {
       for (const key of ["size", "weight", "family", "lineHeight"]) {
         const a = loadingType[part]?.[key], b = loadedType[part]?.[key];
@@ -179,15 +226,16 @@ await clerkSetup();
 const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
 await assertNotSharedBranch(branch, "probe-deck-loading-art");
 const browser = await chromium.launch();
+let ownerId = null;
 try {
   const context = await browser.newContext();
   const page = await context.newPage();
-  const userId = await signIn(page);
+  ownerId = await signIn(page);
   await context.close();
-  const decks = await makeDecks(userId);
+  const decks = await makeDecks(ownerId);
   for (const width of WIDTHS) for (const deck of decks) await walk(browser, width, deck);
 } finally {
-  await sql`delete from decks where name = ${NAME}`;
+  if (ownerId) await sql`delete from decks where name = ${NAME} and user_id = ${ownerId}`;
   await browser.close();
 }
 console.log(failures === 0 ? "\nall passed" : `\n${failures} failed`);
