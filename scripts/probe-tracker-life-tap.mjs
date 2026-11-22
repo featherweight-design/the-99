@@ -151,11 +151,12 @@ try {
       const rows = [];
       const t0 = Date.now();
       while (Date.now() - t0 < 2800) {
-        rows.push({ t: Date.now() - t0, ...(await sample(half)), fading: await page.getByTestId("life-pending-fade").count() });
+        rows.push({ t: Date.now() - t0, ...(await sample(half)), fading: await page.getByTestId("life-pending-fade").count(), numAnims: await page.getByTestId("life-number").first().evaluate((el) => el.getAnimations({ subtree: true }).length) });
         await page.waitForTimeout(40);
       }
       report(`${which}: nothing is held through the window (no wash)`, rows.every((r) => alpha(r.bg) < 0.03), `max ${Math.max(...rows.map((r) => alpha(r.bg))).toFixed(2)}`);
       report(`${which}: no panel tint at any point`, rows.every((r) => r.tint === "none" || r.tint.endsWith("@0.00")), [...new Set(rows.map((r) => r.tint))].join(" "));
+      report(`${which}: the number does not animate again at the commit`, rows.every((r) => r.numAnims === 0), `max ${Math.max(...rows.map((r) => r.numAnims))}`);
       report(`${which}: the figure fades out at the commit`, rows.some((r) => r.fading > 0));
       await page.waitForTimeout(600);
       report(`${which}: the faded figure is gone`, (await page.getByTestId("life-pending-fade").count()) === 0);
@@ -178,7 +179,7 @@ try {
       await page.mouse.up();
       report("no hold step before 480 ms", early === start, `${start} -> ${early}`);
       report("the first hold step lands after 480 ms, by ten", first === start + 10, `${start} -> ${first}`);
-      report("the next hold step lands about 380 ms later, not before", second === start + 10 || second === start + 20, `${second}`);
+      report("the repeat step lands 380 ms after the first (by 900 ms)", second === start + 20, `${start} -> ${second}`);
       await page.waitForTimeout(2600);
     }
 
