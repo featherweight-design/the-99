@@ -2940,6 +2940,16 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   commander and round, the art at .22 and grey, the front inert, a 44px Undo); the 0.45s rotateY flip, turning back
   on Undo, and no flip under reduced motion. On main the badges are counters only and the probe stops at the first
   badge it cannot find, after 4 failures. It writes nothing to the database; needs the fixture on a scratch branch.
+- `pnpm probe:tracker-tablet` presses the tracker's undrawn-tablet layouts and its upright turn (addendum #3115, gap
+  T7a) on a 1180x820 screen. Setup on the fixture's two-seat T5 must offer "Face to face" and on the three-seat T10 "One
+  at the end" then "Along one side", each mini drawn 56x40, and each game's panels must sit on the drawn cells. Mid-game
+  on S4 it turns the viewport upright and stubs `screen.orientation.angle` (Chromium's emulation never turns it): at 90
+  the board redraws as the landscape board turned a quarter counter-clockwise, at 270 clockwise, the same seats in the
+  same cells, with a 0.2s fade; setup's minis then draw 40x56. Last it rewrites a saved game to the old fallback's
+  layouts: phone-2 must draw as tablet-2 and phone-3-end as before, with no seat moving. On main the tablet offers the
+  phone's layouts, the board never turns and phone-2 draws portrait. The device class reads the screen's short side
+  (600px or more is a tablet), so the probe sets Playwright's `screen` as well as the viewport. It writes only
+  localStorage and needs the fixture on a scratch branch.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a

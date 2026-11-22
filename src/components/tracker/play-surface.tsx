@@ -18,7 +18,7 @@ import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { PersonName, type ThirdPartyName } from "../../lib/person-name";
 import { isOver, placements, replay, type Game, type GameConfig } from "../../lib/tracker/engine";
 import { landLife } from "../../lib/tracker/result";
-import { layoutById, layoutsFor, type Device } from "../../lib/tracker/layouts";
+import { drawnLayout, layoutById, layoutsFor, type Device, type Turn } from "../../lib/tracker/layouts";
 import { rollFair, SIDES, type DieKind } from "./dice";
 import { DiceResult, DiceRoll, type Roll } from "./dice-roll";
 import { FirstRoll } from "./first-roll";
@@ -35,12 +35,44 @@ import { useWakeLock } from "./use-wake-lock";
 
 const copy = trackerCopy;
 
+// The screen, as one string so the snapshot is stable: the device class from the short side (a tablet when it is 600px
+// or more, so an upright iPad mini is a tablet and a phone on its side stays a phone), whether it is held landscape, and
+// `screen.orientation.angle`, the way it was turned to get there (addendum #3115).
 const subscribe = (cb: () => void) => {
-  const q = window.matchMedia("(min-width: 768px)");
+  const q = window.matchMedia("(orientation: landscape)");
   q.addEventListener("change", cb);
-  return () => q.removeEventListener("change", cb);
+  window.addEventListener("resize", cb);
+  screen.orientation?.addEventListener("change", cb);
+  return () => {
+    q.removeEventListener("change", cb);
+    window.removeEventListener("resize", cb);
+    screen.orientation?.removeEventListener("change", cb);
+  };
 };
-const useDevice = (): Device => (useSyncExternalStore(subscribe, () => window.matchMedia("(min-width: 768px)").matches, () => false) ? "tablet" : "phone");
+const readScreen = () =>
+  `${Math.min(screen.width, screen.height) >= 600 ? "tablet" : "phone"}|${window.matchMedia("(orientation: landscape)").matches ? 1 : 0}|${screen.orientation?.angle ?? 0}`;
+const mod4 = (n: number) => (((n % 4) + 4) % 4) as Turn;
+
+/**
+ * The device class, and the quarter turns the table is drawn at. A tablet is drawn landscape and a phone portrait; held
+ * the other way the board turns a quarter (V2 to V6), and the way it turns follows the screen's angle, so when the
+ * screen flips mid-game every panel stays on the edge of the glass it was on. The angle grows as the device is turned
+ * counter-clockwise, which turns what is on the glass a quarter counter-clockwise on screen: one quarter fewer.
+ * Turned or not is decided here, at draw time, and never stored.
+ */
+function useTable(): { device: Device; turn: Turn } {
+  const [cls, land, deg] = useSyncExternalStore(subscribe, readScreen, () => "phone|0|0").split("|");
+  const device: Device = cls === "tablet" ? "tablet" : "phone";
+  const want = (device === "tablet") === (land === "1") ? 0 : 1;
+  const a = mod4(Math.round(Number(deg) / 90));
+  const [anchor, setAnchor] = useState<number | null>(null);
+  const held = anchor === null ? null : mod4(anchor - a);
+  // A screen that changes shape with no angle (a desktop window resized, or no orientation API) starts again from the
+  // turn its shape needs.
+  const turn: Turn = held !== null && (held & 1) === want ? held : (want as Turn);
+  if (held !== turn) setAnchor(turn + a);
+  return { device, turn };
+}
 
 export function PlaySurface({
   tableId,
@@ -71,7 +103,7 @@ export function PlaySurface({
   /** Opened from the Last game card's Undo (U5): the finished game this device holds is undone on arrival. */
   undoNow?: boolean;
 }) {
-  const device = useDevice();
+  const { device, turn } = useTable();
   const router = useRouter();
   const { ready, game, start, commit, undo, discard, finish } = useGame(tableId, expiresAt);
   /** Every panel's pending life change, so a change that ends the game lands the others with it (S5). */
@@ -98,6 +130,14 @@ export function PlaySurface({
   /** The seat whose panel takes focus once an Undo has reopened the game (clarification 10). */
   const refocus = useRef<number | null>(null);
   const board = useRef<HTMLDivElement>(null);
+  // A screen that turns mid-game redraws the table turned the matching way, with a 0.2s fade and none under reduced
+  // motion (addendum #3115). The first draw does not fade.
+  const lastTurn = useRef(turn);
+  useEffect(() => {
+    if (lastTurn.current === turn) return;
+    lastTurn.current = turn;
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) board.current?.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, easing: "ease-out" });
+  }, [turn]);
 
   const state = useMemo(() => (game ? replay(game) : null), [game]);
   const saved_layout = game ? layoutById(game.config.layout) : undefined;
@@ -242,11 +282,11 @@ export function PlaySurface({
   if (game && !fits) return null;
   if (!game || !state) {
     if (setupSeats === null) return null;
-    const layouts = layoutsFor(device, setupSeats.length);
     return (
       <Setup
         seats={setupSeats}
-        layouts={layouts.length ? layouts : layoutsFor(device === "phone" ? "tablet" : "phone", setupSeats.length)}
+        layouts={layoutsFor(device, setupSeats.length)}
+        turn={turn}
         initial={rematch ?? undefined}
         backHref={backHref}
         onStart={({ layout, life, first, order, rolls }) => {
@@ -270,7 +310,7 @@ export function PlaySurface({
     );
   }
 
-  const layout = saved_layout!;
+  const layout = drawnLayout(saved_layout!, device, turn);
   const seatsInPlay = players;
   const bySeat = new Map(seatsInPlay.map((s) => [s.seat, s]));
   const activeName = bySeat.get(state.active);
