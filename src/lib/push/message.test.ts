@@ -178,3 +178,49 @@ describe("a seat notice (Rule 0 revisions, item 6)", () => {
     expect(messagesFor([seat(T1), seat(T2)], "release")).toHaveLength(2);
   });
 });
+
+describe("a game to log (log reminder, PR 3)", () => {
+  const T1 = "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+  const T2 = "7a1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b";
+  const len = (t: string) => Array.from(t).length;
+  const log = (tableId: string, gameMs: number, over: Partial<Extract<PushItem, { kind: "rule_zero_log" }>> = {}): PushItem => ({
+    kind: "rule_zero_log", key: `game:${tableId}:${gameMs}`, batch: tableId, tableId, gameMs, deckId: "d1", deck: "Atraxa", pod: "Thursday night", result: { kind: "won", winner: "Colin" }, ...over,
+  });
+
+  it("names the winner and the pod, opens the game's Log form, and carries no image", () => {
+    expect(toMessage([log(T1, 1000)])).toEqual({
+      title: "Colin won at Thursday night’s table", body: "Log your game: Atraxa and every seat are filled in.",
+      route: `/decks/d1?tab=games&table=${T1}&game=1000`, tag: `rule_zero_log:${T1}`, keys: [`game:${T1}:1000`], openCard: null, openCombo: false, openVariant: null, image: null,
+    });
+  });
+  it("words a draw, a win of the reader's, and an undrawn winner", () => {
+    expect(toMessage([log(T1, 1, { result: { kind: "draw" } })]).title).toBe("A draw at Thursday night’s table");
+    expect(toMessage([log(T1, 1, { result: { kind: "you", winner: "You" } })]).title).toBe("You won at Thursday night’s table");
+    expect(toMessage([log(T1, 1, { result: { kind: "unknown" } })]).title).toBe("Your game at Thursday night’s table");
+  });
+  it("splits past 40 characters: the pod moves to the body", () => {
+    const m = toMessage([log(T1, 1, { pod: "The Friday night pod at the shop" })]);
+    expect(m.title).toBe("Colin won. Log your game");
+    expect(m.body).toBe("From The Friday night pod at the shop’s table. Atraxa and every seat are filled in.");
+  });
+  it("cuts a winner only when the split title is itself too long", () => {
+    const m = toMessage([log(T1, 1, { pod: "The Friday night pod at the shop", result: { kind: "won", winner: "W".repeat(60) } })]);
+    expect(len(m.title)).toBeLessThanOrEqual(40);
+    expect(m.title.endsWith("… won. Log your game") || m.title.includes("…")).toBe(true);
+  });
+  it("merges one table's games into one push that opens Home, oldest first, in both modes", () => {
+    const m = messagesFor([log(T1, 2000, { result: { kind: "won", winner: "Sam" } }), log(T1, 1000)], "live");
+    expect(m).toHaveLength(1);
+    expect(m[0]).toMatchObject({ title: "2 games at Thursday night’s table", body: "Colin won, then Sam did. Log both: every seat is filled in.", route: "/", tag: `rule_zero_log:${T1}` });
+    expect(messagesFor([log(T1, 2000), log(T1, 1000)], "release")).toHaveLength(1);
+  });
+  it("keeps two tables as two pushes, each with its own tag", () => {
+    const m = messagesFor([log(T1, 1000), log(T2, 1000)], "live");
+    expect(m.map((x) => x.tag).sort()).toEqual([`rule_zero_log:${T1}`, `rule_zero_log:${T2}`].sort());
+  });
+  it("names no winners for three or more games", () => {
+    const m = toMessage([log(T1, 1), log(T1, 2), log(T1, 3)]);
+    expect(m.title).toBe("3 games at Thursday night’s table");
+    expect(m.body).toBe("Log them: every seat is filled in.");
+  });
+});

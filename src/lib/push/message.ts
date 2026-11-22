@@ -11,9 +11,10 @@
  * collapsed in either mode.
  */
 import { formatCents } from "../decks/price";
-import { pushCopy } from "../copy/push";
+import { pushCopy, type LogResult } from "../copy/push";
 import { NO_DEVICE, saleWords, type SaleDevice } from "./sale-words";
-import type { AnnouncementFeedKind, SEAT_PUSH_KIND } from "../feed/kinds";
+import type { AnnouncementFeedKind, LOG_PUSH_KIND, SEAT_PUSH_KIND } from "../feed/kinds";
+import { logGameHref } from "../rule-zero/table-view";
 
 export type PushItem =
   | { kind: "new-set"; key: string; batch: string; name: string; cards: number | null; href: string }
@@ -24,6 +25,8 @@ export type PushItem =
   | { kind: "combo"; key: string; batch: string; oracleId: string; variantId: string | null; a: string; b: string; added: string; image: string | null }
   /** A seat notice (Rule 0 revisions, item 6): not a feed kind. `deck` is the reader's own seated deck, null while the seat waits. */
   | { kind: typeof SEAT_PUSH_KIND; key: string; batch: string; tableId: string; host: string; pod: string; deck: string | null }
+  /** A game to log (log reminder, PR 3): not a feed kind. `batch` is the table, so one table's games are one push. `deckId` is the reader's own deck at Start; `gameMs` is the game's id and orders a table's games. */
+  | { kind: typeof LOG_PUSH_KIND; key: string; batch: string; tableId: string; gameMs: number; deckId: string; deck: string; pod: string; result: LogResult }
   /** A Secret Lair drop's sale-time push (`sale.ts`): the post's title and its times as instants, `zone` the store's. The words are the device's (`sale-words.ts`). */
   | { kind: "secret-lair"; sale: true; key: string; batch: string; title: string; onSaleAt: Date; preQueueAt: Date | null; zone: string; image: string | null; href: string }
   /** A Wizards post (Announcements UI 3b): `href` is its out route (`/out/wizards/<contentful id>`), `image` its hero. */
@@ -57,7 +60,7 @@ export type CollapseMode = "live" | "release";
 export function collapse(items: readonly PushItem[], mode: CollapseMode): PushItem[][] {
   const groups = new Map<string, PushItem[]>();
   for (const item of items) {
-    const id = item.kind === "spare-request" || item.kind === "rule_zero_seat" || isSaleItem(item) ? `${item.kind}\u0000${item.key}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
+    const id = item.kind === "spare-request" || item.kind === "rule_zero_seat" || isSaleItem(item) ? `${item.kind}\u0000${item.key}` : item.kind === "rule_zero_log" ? `${item.kind}\u0000${item.batch}` : mode === "release" ? item.kind : `${item.kind}\u0000${item.batch}`;
     const g = groups.get(id);
     if (g) g.push(item);
     else groups.set(id, [item]);
@@ -118,6 +121,24 @@ export function toMessage(group: readonly PushItem[], device: SaleDevice = NO_DE
         : [fitTitle(seat.splitTitle, first.host, seat.titleMax), seat.splitBody(first.pod, first.deck)];
       return home(`rule_zero_seat:${first.key}`, keys, title, body, { route: `/friends/table/${first.tableId}` });
     }
+    case "rule_zero_log": {
+      // One table's games (the batch is the table, live and release alike), oldest first. One game opens its Log form; several open Home, where the card lists them.
+      const games = [...(group as (typeof first)[])].sort((a, b) => a.gameMs - b.gameMs);
+      const log = c.one.log;
+      const tag = `rule_zero_log:${first.tableId}`;
+      if (n === 1) {
+        const [title, body] = Array.from(log.title(first.result, first.pod)).length <= log.titleMax
+          ? [log.title(first.result, first.pod), log.body(first.deck)]
+          : [fitWinnerTitle(log.splitTitle, first.result, log.titleMax), log.splitBody(first.pod, first.deck)];
+        return home(tag, keys, title, body, { route: logGameHref({ tableId: first.tableId, viewerDeckId: first.deckId }, first.gameMs) ?? "/" });
+      }
+      const many = log.many;
+      const full = many.title(n, first.pod);
+      const [title, body] = Array.from(full).length <= log.titleMax
+        ? [full, many.body(games[0].result, n === 2 ? games[1].result : null)]
+        : [many.splitTitle(n), many.splitBody(first.pod, n === 2)];
+      return home(tag, keys, title, body);
+    }
     case "combo": {
       if (n === 1) return home("combo", keys, c.one.combo.title, c.one.combo.body(first.a, first.b, first.added), { openCard: first.oracleId, openCombo: true, openVariant: first.variantId, image: first.image });
       return home("combo", keys, c.many.combo.title(n), c.many.combo.body);
@@ -144,6 +165,15 @@ const fitTitle = (make: (host: string) => string, host: string, max: number): st
   if (Array.from(whole).length <= max) return whole;
   const room = max - Array.from(make("")).length - 1;
   return make(`${Array.from(host).slice(0, Math.max(room, 0)).join("")}\u2026`);
+};
+
+/** The log reminder's split title, with the winner cut by an ellipsis only when the title still runs past `max` (a draw or unknown result names no one). */
+const fitWinnerTitle = (make: (result: LogResult, winner: string) => string, result: LogResult, max: number): string => {
+  const winner = "winner" in result ? result.winner : "";
+  const whole = make(result, winner);
+  if (Array.from(whole).length <= max || winner === "") return whole;
+  const room = max - Array.from(make(result, "")).length - 1;
+  return make(result, `${Array.from(winner).slice(0, Math.max(room, 0)).join("")}\u2026`);
 };
 
 /** An image the device may fetch: https only (the worker refuses anything else too). */

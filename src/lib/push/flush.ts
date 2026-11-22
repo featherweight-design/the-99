@@ -22,7 +22,7 @@ import { eq, inArray, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { pushOutbox, pushSubscriptions } from "../../db/schema";
 import { availableFeedKinds } from "../feed/flag";
-import { isFeedKind, SEAT_PUSH_KIND } from "../feed/kinds";
+import { isFeedKind, LOG_PUSH_KIND, SEAT_PUSH_KIND } from "../feed/kinds";
 import { enqueueCatalogArrivals } from "./catalog";
 import type { PushConfig } from "./config";
 import { stillWanted } from "./eligible";
@@ -134,8 +134,8 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       // after the event, or its feature went off for them.
       const prefs = await readPushPrefs(userId, q);
       const available = availableFeedKinds(env);
-      // The seat notice has no kind preference to judge (the master switch above is its only gate); every other row is a feed kind.
-      const fresh = young.filter((r) => r.kind === SEAT_PUSH_KIND || (isFeedKind(r.kind) && stillWanted(prefs, r.kind, r.createdAt, available)));
+      // The seat notice and the log reminder have no kind preference to judge (the master switch above is their only gate); every other row is a feed kind.
+      const fresh = young.filter((r) => r.kind === SEAT_PUSH_KIND || r.kind === LOG_PUSH_KIND || (isFeedKind(r.kind) && stillWanted(prefs, r.kind, r.createdAt, available)));
       const unwanted = young.filter((r) => !fresh.includes(r));
       await settle(unwanted.map((r) => r.id), "off");
       report.abandoned += unwanted.length;
@@ -144,7 +144,7 @@ export async function flushPush(deps: FlushDeps): Promise<FlushReport> {
       const devices = await q.select().from(pushSubscriptions).where(eq(pushSubscriptions.userId, userId)).orderBy(pushSubscriptions.createdAt);
       if (devices.length === 0) { await settle(fresh.map((r) => r.id), "no-device"); report.abandoned += fresh.length; continue; }
 
-      const refs: OutboxRef[] = fresh.flatMap((r) => (r.kind === SEAT_PUSH_KIND || isFeedKind(r.kind) ? [{ kind: r.kind as OutboxRef["kind"], key: r.itemKey, batch: r.batchKey }] : []));
+      const refs: OutboxRef[] = fresh.flatMap((r) => (r.kind === SEAT_PUSH_KIND || r.kind === LOG_PUSH_KIND || isFeedKind(r.kind) ? [{ kind: r.kind as OutboxRef["kind"], key: r.itemKey, batch: r.batchKey }] : []));
       const { items: resolved, dropped } = await resolvePushItems(userId, refs, env, now, q);
       const dropKeys = new Set(dropped.map((d) => `${d.kind}\u0000${d.key}`));
       const live = fresh.filter((r) => !dropKeys.has(`${r.kind}\u0000${r.itemKey}`));
