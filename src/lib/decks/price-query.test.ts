@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
@@ -163,8 +164,9 @@ describe("loadPrices per store", () => {
   }
 
   it("reads Mana Pool byte for byte as it did before stores, with or without the argument", async () => {
-    // The fixture is the statement main issued before stores, rendered for each shape.
-    const before = readFileSync(new URL("./price-query.manapool.sql", import.meta.url), "utf8");
+    // The fixture is the statement main issued before stores, rendered for each shape. Read from the repository root
+    // (`process.cwd()` under Vitest): under jsdom `import.meta.url` is not a file URL.
+    const before = readFileSync(join(process.cwd(), "src/lib/decks/price-query.manapool.sql"), "utf8");
     expect(await everyShape()).toBe(before);
     state.texts = [];
     state.params = [];
