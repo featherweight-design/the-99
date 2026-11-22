@@ -7,6 +7,9 @@
 //   - the coin has seven rim discs and a shadow, and is 120px on a tablet and 72px on a phone;
 //   - the result card shows by about 1150 ms, with the coin back at rest on its face;
 //   - under reduced motion nothing animates and the result shows at once.
+// The faces (addendum R3, call 5, board Faces C): heads strikes five mana pips W U B R G, tails one {C}, each with the
+// word in capitals on its bottom arc in the display face; a heads pip is about 17px on a phone. On main the faces are
+// the bare words.
 // On main the coin spins flat about its height (rotateY), has no rim, arc or shadow and is 72px everywhere.
 // Writes only the device's saved game (localStorage). Needs the fixture seeded on a scratch branch (docs/probes.md) and
 // the dev server started with INVITE_CODE_SECRET set, or the roster cannot seal and the play route answers not found.
@@ -127,6 +130,29 @@ const sample = (page) =>
     };
   });
 
+// The face showing at rest, read from the drawing: which side, its word, the font it resolves to and its pips' size.
+const faces = (page) =>
+  page.evaluate(() => {
+    const coin = document.querySelector("[data-testid=dice-coin]");
+    const read = (side) => {
+      const svg = coin.querySelector(`[data-testid=coin-face-${side}]`);
+      if (!svg) return null;
+      const text = svg.querySelector("textPath");
+      // A pip is its lip, its disc and its glyph: the disc is every second circle after the three rings.
+      const discs = [...svg.querySelectorAll("circle")].slice(3).filter((_, i) => i % 2 === 1);
+      return {
+        word: text.textContent,
+        font: getComputedStyle(svg.querySelector("text")).fontFamily,
+        pips: discs.length,
+        pip: Math.max(...discs.map((d) => d.getBoundingClientRect().width)),
+        glyphs: svg.querySelectorAll("path[transform]").length,
+        face: svg.getBoundingClientRect().width,
+      };
+    };
+    const display = getComputedStyle(document.documentElement).getPropertyValue("--font-display").trim();
+    return { heads: read("heads"), tails: read("tails"), display };
+  });
+
 await clerkSetup();
 const browser = await chromium.launch();
 try {
@@ -143,6 +169,17 @@ try {
     const rest = await sample(page);
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/${s.name}-rest.png` });
     check(`${s.name}: the result shows by 1150 ms, the coin flat on its face`, rest.value && Math.abs(rest.m33) > 0.98 && Math.abs(rest.arcScale - 1) < 0.02, `landed ${rest.value}, m33 ${rest.m33.toFixed(2)}, scale ${rest.arcScale.toFixed(2)}`);
+    const f = await faces(page);
+    check(`${s.name}: heads strikes W U B R G with HEADS on its arc`, f.heads?.word === "HEADS" && f.heads.pips === 5 && f.heads.glyphs === 5, JSON.stringify(f.heads));
+    check(`${s.name}: tails strikes one {C} with TAILS on its arc`, f.tails?.word === "TAILS" && f.tails.pips === 1 && f.tails.glyphs === 1, JSON.stringify(f.tails));
+    const family = (v) => v.split(",")[0].trim().replace(/^["']|["']$/g, "");
+    check(`${s.name}: the word is set in the theme's display face`, !!f.heads && family(f.heads.font) === family(f.display), `${f.heads?.font} vs --font-display ${f.display}`);
+    // 23.2% of the face as drawn (the face's box, which a tilt and its lift toward you may set a little over the coin's).
+    check(`${s.name}: a heads pip is 23% of the face, about ${((s.size * 23.2) / 100).toFixed(0)}px`, !!f.heads && Math.abs(f.heads.pip / f.heads.face - 0.232) < 0.01, `${f.heads?.pip.toFixed(1)}px of a ${f.heads?.face.toFixed(1)}px face`);
+    if (SHOTS) {
+      const box = await page.getByTestId("dice-coin").boundingBox();
+      await page.screenshot({ path: `${SHOTS}/${s.name}-face.png`, clip: { x: box.x - 12, y: box.y - 12, width: box.width + 24, height: box.height + 24 } });
+    }
     // Again, from the coin itself: a new toss from the start.
     await page.getByTestId("dice-coin").click();
     await page.waitForTimeout(380);

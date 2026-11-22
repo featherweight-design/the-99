@@ -76,6 +76,28 @@ describe("DiceRoll", () => {
     expect(coin.style.transform).toMatch(/rotateX\(0deg\)$/);
   });
 
+  it("strikes W U B R G on heads and one {C} on tails, with the word in capitals on each face's arc", () => {
+    draw({ kind: "coin", values: [1], k: 5 });
+    const coin = screen.getByTestId("dice-coin");
+    const heads = coin.querySelector(".coin-face-front [data-testid=coin-face-heads]")!;
+    const tails = coin.querySelector(".coin-face-back [data-testid=coin-face-tails]")!;
+    for (const face of [heads, tails]) {
+      expect(face.getAttribute("aria-hidden")).toBe("true");
+      // The arc the word sits on is the face's own: two faces never share an id.
+      const href = face.querySelector("textPath")!.getAttribute("href")!;
+      expect(face.querySelector(`path[id="${href.slice(1)}"]`)).toBeTruthy();
+    }
+    expect(heads.querySelector("textPath")!.textContent).toBe("HEADS");
+    expect(tails.querySelector("textPath")!.textContent).toBe("TAILS");
+    // Each pip is a lip, a disc and its glyph: five on heads, one on tails, every glyph a path from public/mana.
+    const glyphs = (face: Element) => [...face.querySelectorAll("path[transform]")].map((p) => p.getAttribute("d")!);
+    const mana = (m: string) => [...readFileSync(join(process.cwd(), `public/mana/${m}.svg`), "utf8").matchAll(/ d=(["'])([^"']+)\1/g)].at(-1)![2];
+    expect(glyphs(heads)).toEqual(["W", "U", "B", "R", "G"].map(mana));
+    expect(glyphs(tails)).toEqual([mana("C")]);
+    // The button keeps the coin's only label.
+    expect(coin.getAttribute("aria-label")).toBe("Rolled a 4. Tap to roll again");
+  });
+
   // jsdom loads no stylesheet, so a renamed or deleted keyframe would pass the class assertions above.
   it("has a keyframe in globals.css for every animation the coin names", () => {
     draw({ kind: "coin", values: [2], k: 3 });
