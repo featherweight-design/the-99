@@ -10,12 +10,14 @@ import { worth, type WorthSort } from "../../../lib/lineup/among";
 import type { LineupDeck } from "../../../lib/lineup/types";
 import { SegmentedSwitch } from "../../ui/segmented-switch";
 import { DeckName } from "./deck-link";
+import { useStoreInfo } from "../../stores/store-provider";
 
 const copy = decksStatsCopy.worth;
 const pct = (x: number) => `${(x * 100).toFixed(3)}%`;
 
 export function WorthBody({ decks, chosenId, pricesAsOf, now }: { decks: readonly LineupDeck[]; chosenId: string | null; pricesAsOf: string | null; now: string }) {
   const [sort, setSort] = useState<WorthSort>("most");
+  const store = useStoreInfo();
   const w = worth(decks, sort);
   const med = w.maxCents > 0 ? w.medianCents / w.maxCents : 0;
   return (
@@ -61,7 +63,7 @@ export function WorthBody({ decks, chosenId, pricesAsOf, now }: { decks: readonl
         <span className="inline-flex items-center gap-[6px]"><span aria-hidden="true" className="h-[12px] border-l border-dashed border-l-[color:var(--fg-body)]" />{copy.median(w.medianCents)}</span>
       </div>
       {pricesAsOf ? (
-        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(copy.age((Date.parse(now) - Date.parse(pricesAsOf)) / 60_000))}</span>
+        <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(store, copy.age((Date.parse(now) - Date.parse(pricesAsOf)) / 60_000))}</span>
       ) : null}
     </>
   );

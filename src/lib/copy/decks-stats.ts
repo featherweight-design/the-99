@@ -3,6 +3,9 @@
 // "unselect" and never "tick", the word "labels" never appears, results are raw with their pod sizes, and a
 // gap is a count.
 
+import type { StoreInfo } from "../stores/info";
+import { storeCopy } from "./store";
+
 const n = (x: number) => x.toLocaleString("en-US");
 const pods = (sizes: readonly number[]) => {
   const s = [...new Set(sizes)].sort((a, b) => a - b);
@@ -110,8 +113,8 @@ export const decksStatsCopy = {
     sortName: "By name",
     median: (cents: number) => `the median deck, ${money(cents)}`,
     money,
-    /** `Mana Pool prices, 2h ago`: the newest price the values were read at. */
-    caption: (age: string) => `Mana Pool prices, ${age}`,
+    /** `Mana Pool prices, 2h ago`: the reader's store and the newest price the values were read at. */
+    caption: (s: StoreInfo, age: string) => storeCopy.deckCost(s, age),
     /** Rounded first, then the unit picked, so 59.6 minutes reads `1h ago` and 47.6 hours `2d ago`. */
     age: (minutes: number) => {
       const m = Math.max(1, Math.round(minutes));
@@ -165,7 +168,7 @@ export const decksStatsCopy = {
     none: "None at this share.",
     dollars: (cents: number) => `$${Math.round(cents / 100).toLocaleString("en-US")}`,
     // A part-total says so, in Money's words, so a value over some copies never reads as the whole collection's.
-    caption: (age: string | null, priced: number, copies: number) =>
-      ["Basics not counted", priced < copies ? `${n(priced)} of ${n(copies)} copies priced` : null, age ? `Mana Pool prices, ${age}` : null].filter(Boolean).join(" · "),
+    caption: (s: StoreInfo, age: string | null, priced: number, copies: number) =>
+      ["Basics not counted", priced < copies ? `${n(priced)} of ${n(copies)} copies priced` : null, age ? storeCopy.deckCost(s, age) : null].filter(Boolean).join(" · "),
   },
 } as const;

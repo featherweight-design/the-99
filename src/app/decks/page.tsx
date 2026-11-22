@@ -18,6 +18,8 @@ import { cookies } from "next/headers";
 import { ZoneProvider } from "../../components/zone-context";
 import { resolveZone } from "../../lib/zone/server";
 import { readLineupCached } from "../../lib/lineup/cached";
+import { readerStoreForPage } from "../../lib/stores/preference";
+import { StoreProvider } from "../../components/stores/store-provider";
 import { requestFlags } from "../../lib/flags/request";
 import { DECKS_STATS_OPEN_COOKIE } from "../../components/ui/view-cookie";
 import { pageLanding } from "../../lib/discovery/page-landing";
@@ -63,8 +65,11 @@ export default async function DecksPage({
   // Try it's landing for Stats for your decks (discovery R2·3): `?tool=lineup` haloes the Tiles · Stats switch;
   // anything else is stripped.
   const { landing, request } = pageLanding(params[TOOL_PARAM], env, "lineup");
+  // The reader's store (store choice): it prices the tiles' To buy figures and the Stats values, and keys both cached
+  // entries, so a store change never serves another store's figures. An unreadable preference prices in Mana Pool.
+  const store = await readerStoreForPage(userId, env);
   const lineupData = view === "stats"
-    ? readLineupCached(userId, env)
+    ? readLineupCached(userId, env, store)
     : null;
   // `measure:load`'s spans (PERF_TIMING=1 only; a pass-through otherwise).
   const perf = perfRoute("/decks");
@@ -73,7 +78,7 @@ export default async function DecksPage({
   // The precons line's meta is catalog data, the same for every reader, so it is read beside the
   // cached payload rather than inside it; a failed read keeps the line and drops the meta.
   const preconSummary = readPreconSummary();
-  const data = await cachePageForUser(userId, "decks", [], async (env) => {
+  const data = await cachePageForUser(userId, "decks", [store], async (env) => {
     const [decks, shopping, folders] = await Promise.all([
       // The sort has no default in the reader, so no caller's order can move
       // under it. The server hands back this order and the client re-sorts from
@@ -98,7 +103,7 @@ export default async function DecksPage({
       })),
       // The tile's To buy figure reads its copies and its cost from the same
       // roll-up, so the count and the price always cover the same cards.
-      perf.timed("shoppingRollup", () => loadShoppingRollup(userId)),
+      perf.timed("shoppingRollup", () => loadShoppingRollup(userId, undefined, store)),
       // The shelf line's own read, and it cannot be derived from the decks above:
       // a folder holding no decks has no deck row to be named by, and landing on
       // that empty shelf is the whole loop the create flow teaches.
@@ -156,6 +161,7 @@ export default async function DecksPage({
     <>
     <ToolLandingMount landing={landing} request={request} />
     <ZoneProvider zone={await resolveZone()}>
+      <StoreProvider store={store}>
       <DecksView
         decks={data.decks}
         folders={data.folders}
@@ -174,6 +180,7 @@ export default async function DecksPage({
         }}
         games={{ data: games, failed: gamesFailed }}
       />
+      </StoreProvider>
     </ZoneProvider>
     </>
   );

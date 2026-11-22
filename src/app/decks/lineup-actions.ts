@@ -3,6 +3,7 @@
 import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
 import { readLineupCached } from "../../lib/lineup/cached";
+import { readerStoreForPage } from "../../lib/stores/preference";
 import type { LineupData } from "../../lib/lineup/types";
 
 /**
@@ -13,5 +14,5 @@ import type { LineupData } from "../../lib/lineup/types";
 export async function readLineupStats(): Promise<LineupData | null> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
-  return readLineupCached(userId, env);
+  return readLineupCached(userId, env, await readerStoreForPage(userId, env));
 }

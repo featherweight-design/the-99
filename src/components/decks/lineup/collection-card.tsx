@@ -13,6 +13,7 @@ import { HoverPreviewProvider } from "../hover-preview";
 import { DeckName } from "./deck-link";
 import { DeckSelect } from "./deck-select";
 import { SegmentedSwitch } from "../../ui/segmented-switch";
+import { useStoreInfo } from "../../stores/store-provider";
 
 const copy = decksStatsCopy.collection;
 const UNIT = "h-[7px] w-[7px] rounded-[1.5px] md:h-[8px] md:w-[8px]";
@@ -47,6 +48,7 @@ export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
   onPick: (pick: WantedPick) => void;
 }) {
   const { deckId, cut } = pick;
+  const store = useStoreInfo();
   const s = collectionScope(c, filter);
   const perCopies = squareUnit(c.copies, 10);
   const perCents = squareUnit(c.valueCents, 1000);
@@ -95,7 +97,7 @@ export function CollectionBody({ c, decks, filter, age, pick, onPick }: {
         </HoverPreviewProvider>
         {!chosen && shown.length > WANTED_ROWS ? <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.more(shown.length - WANTED_ROWS)}</span> : null}
       </div>
-      <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(age, c.pricedCopies, c.copies)}</span>
+      <span className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.caption(store, age, c.pricedCopies, c.copies)}</span>
     </>
   );
 }

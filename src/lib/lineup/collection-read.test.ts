@@ -13,8 +13,9 @@ const chain = (): unknown => {
 };
 vi.mock("../../db", () => ({ db: { select: () => { calls.push("select"); return chain(); } } }));
 const AS_OF = new Date("2026-10-11T10:00:00Z");
+const stores: unknown[] = [];
 vi.mock("../decks/price-query", () => ({
-  loadPrices: async (ids: string[]) => ({
+  loadPrices: async (ids: string[], _picks: unknown, _printings: unknown, store: unknown) => (stores.push(store), {
     prices: new Map(ids.filter((id) => id !== "unpriced").map((id) => [id, { cents: 500, foilCents: null, etchedCents: null, asOf: AS_OF }])),
     newestAsOf: AS_OF,
   }),
@@ -55,5 +56,13 @@ describe("readCollection", () => {
       { oracleId: "boots", name: "Swiftfoot Boots", imageUri: "owned-boots.jpg", owned: 3, wants: [{ deckId: "g", n: 1 }, { deckId: "brew", n: 1 }], hits: [{ deckId: "g", pct: 58.4 }] },
       { oracleId: "beast", name: "Beast Within", imageUri: null, owned: 1, wants: [], hits: [{ deckId: "k", pct: 31.2 }] },
     ]);
+  });
+
+  it("prices the collection in the reader's store, and in Mana Pool when none is given", async () => {
+    stores.length = 0;
+    queue.length = 0;
+    await readCollection("u", [], [], new Set(), "tcgplayer");
+    await readCollection("u", [], [], new Set());
+    expect(stores).toEqual(["tcgplayer", "manapool"]);
   });
 });

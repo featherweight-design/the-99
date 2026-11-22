@@ -40,7 +40,9 @@ vi.mock("../lib/home/summary", () => ({
 }));
 vi.mock("../lib/decks/read", () => ({ listDecksWithStats: async () => stub.decks }));
 vi.mock("../lib/recs/ranked-list", () => ({ getRankedList: async () => ({ items: [], degraded: false }) }));
-vi.mock("../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: async () => ({}) }));
+const rollup = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => ({})), store: vi.fn(async (..._a: unknown[]): Promise<string> => "manapool") }));
+vi.mock("../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: rollup.load }));
+vi.mock("../lib/stores/preference", () => ({ readerStoreForPage: rollup.store }));
 vi.mock("../lib/recs/home-novelty", () => ({ loadUnplayedCounts: async () => null }));
 vi.mock("../lib/recs/ready-to-build", () => ({ readySlice: () => ({ shown: [] }) }));
 vi.mock("../lib/collection/owned-printings", () => ({ withOwnedCardArt: async () => [] }));
@@ -91,6 +93,18 @@ beforeEach(() => {
   stub.pool.mockClear();
   stub.feedAfter.mockClear();
   stub.after.mockReset();
+  rollup.load.mockClear();
+  rollup.store.mockReset();
+  rollup.store.mockResolvedValue("manapool");
+});
+
+// Store choice (#3200): the Commitments row's To buy figure is read in the reader's store, never a mix.
+describe("Home's store", () => {
+  it("prices the shopping roll-up in the reader's store", async () => {
+    rollup.store.mockResolvedValue("tcgplayer");
+    await HomePage();
+    expect(rollup.load).toHaveBeenCalledWith("user_1", undefined, "tcgplayer");
+  });
 });
 
 describe("Home's arrivals banner", () => {
