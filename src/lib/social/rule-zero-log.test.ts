@@ -34,7 +34,7 @@ describe("tableSeatsQuery", () => {
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
     expect(q.sql).toContain(`inner join "pod_members" "viewer_in" on ("viewer_in"."pod_id" = "rule_zero_tables"."pod_id" and "viewer_in"."user_id" = $2)`);
     expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_seats"."user_id")`);
-    // The clock alone (`tableLoggable`): a host-closed table keeps Log this game until its morning, an expired one does not.
+    // The kept window (`tableKept`): the live seats stay on the night.
     expect(q.sql).toMatch(/where \("rule_zero_seats"\."table_id" = \$\d+ and "rule_zero_tables"\."expires_at" > now\(\)\)/);
     expect(q.sql).not.toContain("closed_at");
   });
@@ -56,15 +56,18 @@ describe("tableSeatsQuery", () => {
 });
 
 describe("resultSeatsQuery (ruling (b))", () => {
-  const q = resultSeatsQuery(VIEWER, TABLE).toSQL();
+  const q = resultSeatsQuery(VIEWER, TABLE, new Date("2026-11-21T03:00:00.000Z")).toSQL();
 
   it("reads the stored result's seats under the live grant, only while the viewer played and has not logged it", () => {
     expect(q.sql).toContain('from "rule_zero_result_seats" inner join "rule_zero_tables"');
     expect(q.sql).toContain(`inner join "rule_zero_seats" "viewer_seat" on ("viewer_seat"."table_id" = "rule_zero_tables"."id" and "viewer_seat"."user_id" = $1)`);
-    expect(q.sql).toContain(`inner join "rule_zero_result_seats" "viewer_played" on ("viewer_played"."table_id" = "rule_zero_tables"."id" and "viewer_played"."user_id" = $2)`);
+    expect(q.sql).toContain(`inner join "rule_zero_result_seats" "viewer_played" on ("viewer_played"."table_id" = "rule_zero_tables"."id" and "viewer_played"."started_at" = "rule_zero_result_seats"."started_at" and "viewer_played"."user_id" = $2)`);
     expect(q.sql).toContain(`inner join "pod_members" on ("pod_members"."pod_id" = "rule_zero_tables"."pod_id" and "pod_members"."user_id" = "rule_zero_result_seats"."user_id")`);
-    expect(q.sql).toContain('"rule_zero_tables"."expires_at" > now()');
-    expect(q.sql).toContain('>= "rule_zero_result_seats".saved_at');
+    // The kept window (7 days past the morning), not the night, and one game's rows only.
+    expect(q.sql).toContain("interval '7 days' > now()");
+    expect(q.sql).toContain('"rule_zero_result_seats"."started_at" = $');
+    expect(q.sql).toContain('dg.rule_zero_game_at = "rule_zero_result_seats".started_at');
+    expect(q.sql).not.toContain('dg.created_at');
   });
 
   it("draws the deck each seat held at Start, only while it is that player's own", () => {
@@ -110,7 +113,7 @@ describe("prefillFrom", () => {
   it("draws every other seat, waiting ones too, and counts the whole table", () => {
     expect(prefill.podName).toEqual(named("Thursday night"));
     expect(prefill.podSize).toBe(4);
-    expect(prefill.table).toEqual({ id: TABLE, seating: seatingHash(TABLE, ROWS) });
+    expect(prefill.table).toEqual({ id: TABLE, seating: seatingHash(TABLE, ROWS), game: null });
     expect(prefill.seats).toEqual([
       { seat: 2, name: named("Colin"), deckName: named("Zimone Combo"), commanderName: "Zimone, Quandrix Prodigy", artCropUri: "https://art/zimone.jpg", friend: true },
       { seat: 3, name: named("Peter"), deckName: null, commanderName: null, artCropUri: null, friend: true },

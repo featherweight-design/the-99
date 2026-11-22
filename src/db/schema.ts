@@ -1102,6 +1102,8 @@ export const deckGames = pgTable("deck_games", {
   // table's grant: "Not logged yet" is true while a seated player has no game with this table. `set null`: a table's
   // expiry or delete must never delete a game.
   ruleZeroTableId: uuid("rule_zero_table_id").references(() => ruleZeroTables.id, { onDelete: "set null" }),
+  /** Which tracked game at that table this log drew (`rule_zero_result_seats.started_at`); null for a log made before games were addressable, or one with no tracked result. */
+  ruleZeroGameAt: timestamp("rule_zero_game_at", { withTimezone: true }),
 }, (t) => [
   check("deck_games_result_check", sql`${t.result} in ('win', 'loss', 'draw')`),
   check("deck_games_note_length_check", sql`${t.note} is null or char_length(${t.note}) <= 140`),
@@ -4105,8 +4107,8 @@ export const spareKeep = pgTable("spare_keep", {
  * Keyed by its own id, never by pod (G7): "one open table per pod" is one check in `setTable`, under the pod row's lock, because "open" is
  * not closed by its setter AND `expires_at > now()` and no index predicate can read the clock. Ended rows are not swept
  * by a job: every read applies the shared open predicate (`rule-zero-open.ts`), the pod's next setup deletes its
- * clock-expired tables (a host-closed one stays until its morning, so its seated players keep Log this game), and the
- * account purge takes the rest.
+ * tables a week past their morning (an ended one is kept that week, so its seated players keep Log this game), and the
+ * account purge takes the rest. An idle pod's last table outlives the week, inert: reads filter their own window.
  * No owner column and no `user_data_touch` trigger: Home reads its card per request (`PER_REQUEST_READS`).
  */
 export const ruleZeroTables = pgTable("rule_zero_tables", {
@@ -4162,12 +4164,12 @@ export const ruleZeroResultSeats = pgTable("rule_zero_result_seats", {
   place: smallint("place").notNull(),
   /** The deck the seat held at the game's Start (the sealed roster), so the log fills from the seats played, not the table's new ones. */
   deckId: uuid("deck_id").references(() => decks.id, { onDelete: "set null" }),
-  /** When the tracker page issued the roster this result was saved from: an older game's roster cannot replace it. Null on rows saved before the roster. */
-  startedAt: timestamp("started_at", { withTimezone: true }),
+  /** When the tracker page issued the roster this result was saved from: the game's id within its table, and an older game's roster cannot be saved after a newer one. Backfilled from `saved_at` for rows saved before rosters. */
+  startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
   savedAt: timestamp("saved_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
-  primaryKey({ columns: [t.tableId, t.userId] }),
-  unique("rule_zero_result_seats_seat_unique").on(t.tableId, t.seat),
+  primaryKey({ columns: [t.tableId, t.startedAt, t.userId] }),
+  unique("rule_zero_result_seats_seat_unique").on(t.tableId, t.startedAt, t.seat),
   check("rule_zero_result_seats_seat_check", sql`${t.seat} between 1 and 8`),
   check("rule_zero_result_seats_place_check", sql`${t.place} between 1 and 8`),
   index("rule_zero_result_seats_user_idx").on(t.userId),

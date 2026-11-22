@@ -36,7 +36,7 @@ const you = { name: "Ghalta, Primal Hunger", deckName: "Ghalta Stompy", imageUri
 const seatsCopy = gameSeatsCopy.seats;
 const SEATING = "a".repeat(64);
 const prefill: TablePrefill = {
-  table: { id: "7a0e0000-0000-4000-8000-000000000001", seating: SEATING },
+  table: { id: "7a0e0000-0000-4000-8000-000000000001", seating: SEATING, game: null },
   podName: named("Thursday night"),
   result: null,
   podSize: 4,

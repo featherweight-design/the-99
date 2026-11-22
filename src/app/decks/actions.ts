@@ -1214,13 +1214,16 @@ export type LogGameInput = {
   opponents?: OpponentInput[];
   /** The Rule 0 table the game was logged from, and the seating its prefill was drawn from (`TablePrefill.table`).
    *  Required when any opponent is a `tableSeat`, and ignored when none is. */
-  table?: { id: string; seating: string };
+  table?: { id: string; seating: string; game?: number | null };
 };
 
 /** A table claim's shape: a uuid and a sha256 in hex. Who sat there is read again under the grant. */
-const isTableRef = (v: unknown): v is { id: string; seating: string } =>
-  typeof v === "object" && v !== null && isUuid((v as { id?: unknown }).id)
-  && typeof (v as { seating?: unknown }).seating === "string" && /^[0-9a-f]{64}$/.test((v as { seating: string }).seating);
+const isTableRef = (v: unknown): v is { id: string; seating: string; game?: number | null } => {
+  if (typeof v !== "object" || v === null || !isUuid((v as { id?: unknown }).id)) return false;
+  const { seating, game } = v as { seating?: unknown; game?: unknown };
+  // The game is the tracked game's id (epoch milliseconds): a whole number or absent; the server re-reads it under the grant.
+  return typeof seating === "string" && /^[0-9a-f]{64}$/.test(seating) && (game === undefined || game === null || (Number.isSafeInteger(game) && (game as number) >= 0));
+};
 
 const GAME_RESULTS: readonly string[] = ["win", "loss", "draw"];
 const NOTE_MAX_LENGTH = deckTuningCopy.note.maxLength;
@@ -1320,7 +1323,9 @@ export async function logGame(
     await db.transaction(async (tx) => {
       // Table seats, then friend seats, first: their locks come before the game row's (see `resolveOpponentsIn`).
       // A table seat is read under the table's grant and becomes a friend ask or anyone by the deck's commanders.
-      const seated = withTableSeats(opponents, table === null ? [] : await resolveTableSeatsIn(tx, userId, table, tableSeats));
+      const resolved = table === null ? null : await resolveTableSeatsIn(tx, userId, table, tableSeats);
+      if (table !== null && resolved === null) throw new SeatRefused();
+      const seated = withTableSeats(opponents, resolved?.seats ?? []);
       if (seated === null) throw new SeatRefused();
       if (seated === "twice") throw new SeatRefused(true);
       const friends = await resolveOpponentsIn(tx, userId, seated);
@@ -1334,6 +1339,8 @@ export async function logGame(
           note: note.length > 0 ? note : null,
           // Set only past the table's grant check above: a table id nobody verified never lands on a game.
           ruleZeroTableId: table !== null && tableSeats.length > 0 ? table.id : null,
+          // The tracked game this log drew, from the same grant read; null for a log from live seats.
+          ruleZeroGameAt: table !== null && tableSeats.length > 0 ? resolved?.gameAt ?? null : null,
         })
         .returning({ id: deckGames.id });
 

@@ -74,7 +74,7 @@ import { loadSourceMana } from "../../../lib/decks/source-mana";
 import { loadDeckOpponents, opponentsWire } from "../../../lib/decks/deck-opponents-read";
 import { loadFriendDeckPrefs } from "../../../lib/social/deck-visibility";
 import { tablePrefill } from "../../../lib/social/rule-zero-log";
-import { logPrefillTable } from "../../../lib/rule-zero/table-view";
+import { logPrefillGame, logPrefillTable } from "../../../lib/rule-zero/table-view";
 import { gameLandingId } from "../../../lib/games/landing";
 import { suggestedChangesV2Enabled } from "../../../lib/tuning/flag";
 import { loadDeckNotices } from "../../../lib/notices/read";
@@ -260,7 +260,7 @@ export default async function DeckBuilderPage({
   const prefillTable = logPrefillTable(query);
   const prefillRead = prefillTable === null
     ? null
-    : early(perf.timed("tablePrefill", () => tablePrefill(userId, prefillTable, id)).catch(() => null));
+    : early(perf.timed("tablePrefill", () => tablePrefill(userId, prefillTable, id, logPrefillGame(query))).catch(() => null));
   // Not swallowed, unlike the price and availability reads below. Those degrade to a missing
   // ornament; a ledger that quietly vanished would tell the player their passes are gone, which is
   // a lie about deck state.

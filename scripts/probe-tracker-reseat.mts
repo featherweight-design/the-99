@@ -99,7 +99,7 @@ async function main() {
     check("the prefill carries Bo's win at his Start seat", JSON.stringify(pre?.result) === JSON.stringify({ viewer: "loss", winnerSeat: 2 }), JSON.stringify(pre?.result));
     check("the prefill's pod size is the game's", pre?.podSize === 3);
     const resolved = pre ? await db.transaction((tx) => resolveTableSeatsIn(tx, A, pre.table, [2, 3])) : null;
-    check("the save resolves the same seats the prefill drew", JSON.stringify(resolved?.map((r) => (r.kind === "friend" ? r.deck : null))) === JSON.stringify([deckB, deckC]), JSON.stringify(resolved));
+    check("the save resolves the same seats the prefill drew", JSON.stringify(resolved?.seats.map((r) => (r.kind === "friend" ? r.deck : null))) === JSON.stringify([deckB, deckC]), JSON.stringify(resolved));
 
     // Bo's own prefill: he is seated now, played, and gets the win.
     const preB = await tablePrefill(B, T, deckB);

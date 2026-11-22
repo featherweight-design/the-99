@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { TABLES, VIEWER_DECK_ID } from "../social/rule-zero-fixtures";
-import { drawTable, logGameHref, logPrefillTable, middleBrackets, type SeatDraw } from "./table-view";
+import { drawTable, logGameHref, logPrefillGame, logPrefillTable, middleBrackets, type SeatDraw } from "./table-view";
 import { named } from "../person-name/mint";
 import { plain } from "../person-name/testing";
 
@@ -138,5 +138,29 @@ describe("logPrefillTable", () => {
   it("reads nothing from an absent or repeated parameter", () => {
     expect(logPrefillTable({ tab: "games" })).toBeNull();
     expect(logPrefillTable({ tab: "games", table: ["t1", "t2"] })).toBeNull();
+  });
+});
+
+describe("the game on the Log URL", () => {
+  it("writes the epoch milliseconds beside the table and reads them back as the same number", () => {
+    const ms = new Date("2026-11-21T03:00:00.123Z").getTime();
+    const href = logGameHref(TABLES.T1, ms);
+    expect(href).toBe(`/decks/${VIEWER_DECK_ID}?tab=games&table=table-1&game=${ms}`);
+    const q = Object.fromEntries(new URL(href ?? "", "https://x.test").searchParams);
+    expect(logPrefillGame(q)).toBe(ms);
+  });
+
+  it("writes no game when none is named", () => {
+    expect(logGameHref(TABLES.T1)).not.toContain("game=");
+  });
+
+  it("reads only a plain whole number, on the Games tab, beside a table", () => {
+    expect(logPrefillGame({ tab: "games", table: "t", game: "1763694000123" })).toBe(1763694000123);
+    for (const bad of ["", "-1", "1.5", "1e3", " 5", "0x10", "99999999999999999", "2026-11-21T03:00:00Z"]) {
+      expect(logPrefillGame({ tab: "games", table: "t", game: bad })).toBeNull();
+    }
+    expect(logPrefillGame({ tab: "games", table: "t", game: ["1", "2"] })).toBeNull();
+    expect(logPrefillGame({ tab: "deck", table: "t", game: "1" })).toBeNull();
+    expect(logPrefillGame({ tab: "games", game: "1" })).toBeNull();
   });
 });

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { gameLoggedQuery, gameLoggerQuery, mayReplace, maySave, placementsFor, resultPlacesQuery, startDeckOf } from "./rule-zero-result";
+import { gameLoggedQuery, gameLoggerQuery, mayReplace, maySave, pickGameQuery, placementsFor, resultPlacesQuery, startDeckOf } from "./rule-zero-result";
 import { resultFor } from "./rule-zero-log";
 
 const TABLE = "7a0e0000-0000-4000-8000-000000000001";
@@ -93,13 +93,14 @@ describe("resultFor", () => {
 
 describe("resultPlacesQuery", () => {
   it("reads one table's rows, account and place only", () => {
-    const { sql: text, params } = resultPlacesQuery(TABLE, "user_a").toSQL();
+    const { sql: text, params } = resultPlacesQuery(TABLE, "user_a", new Date("2026-11-21T03:00:00.000Z")).toSQL();
     expect(text).toContain('"rule_zero_result_seats"."table_id" = $1');
     expect(text).not.toContain('"rule_zero_result_seats"."seat"');
     // Qualified in the subquery, and skipped once the viewer logged a game from the table since the result was saved.
-    expect(text).toContain('dg.rule_zero_table_id = $3');
-    expect(text).toContain('>= "rule_zero_result_seats".saved_at');
-    expect(params).toEqual([TABLE, "user_a", TABLE]);
+    expect(text).toMatch(/dg\.rule_zero_table_id = \$\d/);
+    expect(text).toContain('"rule_zero_result_seats"."started_at" = $2');
+    expect(params[0]).toBe(TABLE);
+    expect(params).toContain("user_a");
   });
 });
 
@@ -112,7 +113,7 @@ describe("gameLoggedQuery (Undo's refusal)", () => {
     // Unqualified, these would compare a column to itself and never find a log (AGENTS.md, correlated subqueries).
     expect(text).toContain('dg.user_id = "rule_zero_result_seats".user_id');
     expect(text).toContain('dg.rule_zero_table_id = "rule_zero_result_seats".table_id');
-    expect(text).toContain('>= "rule_zero_result_seats".saved_at');
+    expect(text).toContain('dg.rule_zero_game_at = "rule_zero_result_seats".started_at');
     expect(params[0]).toBe(TABLE);
   });
 });
@@ -126,5 +127,39 @@ describe("gameLoggerQuery (the U3 note's read)", () => {
     expect(text).toContain('"deck_games"."rule_zero_table_id" = "rule_zero_result_seats"."table_id"');
     expect(text).toContain('left join "social_profiles" on "social_profiles"."user_id" = "logger_in"."user_id"');
     expect(params.filter((p) => p === "user_a")).toHaveLength(2);
+  });
+});
+
+describe("pickGameQuery (which game the Log opens on)", () => {
+  it("without a game, takes the viewer's newest played game they have not logged, inside the kept window", () => {
+    const { sql: text, params } = pickGameQuery("user_a", TABLE, null).toSQL();
+    expect(text).toContain('"rule_zero_result_seats"."user_id" = $2');
+    expect(text).toContain("interval '7 days' > now()");
+    expect(text).toContain('not exists');
+    expect(text).toContain('dg.rule_zero_game_at = "rule_zero_result_seats".started_at');
+    expect(text).toContain('order by "rule_zero_result_seats"."started_at" desc limit $');
+    expect(text.slice(text.indexOf(" where "))).not.toContain("extract(epoch");
+    expect(params.slice(0, 2)).toEqual([TABLE, "user_a"]);
+  });
+
+  it("with a game, compares whole epoch milliseconds as a number, never a string", () => {
+    // 2026-11-21T03:00:00.123Z: the tracker stores `new Date(ms)`, which Postgres keeps as microseconds.
+    const ms = new Date("2026-11-21T03:00:00.123Z").getTime();
+    const { sql: text, params } = pickGameQuery("user_a", TABLE, ms).toSQL();
+    // Compared as the timestamp itself (the index's column), built from the ms, never as a string.
+    expect(text.slice(text.indexOf(" where "))).toMatch(/"rule_zero_result_seats"\."started_at" = \$\d/);
+    expect(params.some((p) => (p instanceof Date ? p.getTime() : typeof p === "string" ? Date.parse(p) : NaN) === ms)).toBe(true);
+    expect(params.some((p) => typeof p === "string" && p === String(ms))).toBe(false);
+  });
+
+  it("a game's id survives the trip through the database's microseconds", () => {
+    // The roster's started_at is a JS Date (whole ms). Postgres holds it as microseconds since the epoch; extract
+    // gives seconds, times 1000 is the ms again, up to float noise that `round` removes.
+    for (const iso of ["2026-11-21T03:00:00.000Z", "2026-11-21T03:00:00.123Z", "2026-11-21T03:00:00.999Z", "2030-02-28T23:59:59.001Z"]) {
+      const ms = new Date(iso).getTime();
+      const micros = ms * 1000;
+      const seconds = micros / 1_000_000;
+      expect(Math.round(seconds * 1000)).toBe(ms);
+    }
   });
 });
