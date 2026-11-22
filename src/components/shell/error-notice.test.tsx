@@ -11,6 +11,9 @@ vi.mock("@sentry/nextjs", () => sentry);
 const send = vi.hoisted(() => vi.fn());
 vi.mock("../../app/feedback-actions", () => ({ sendProblemReport: send }));
 
+const skew = vi.hoisted(() => ({ reloadForSkew: vi.fn(() => true) }));
+vi.mock("./skew-guard", () => skew);
+
 const copy = shellCopy.errorBoundary;
 
 function thrown(message: string, digest?: string): Error & { digest?: string } {
@@ -21,6 +24,8 @@ afterEach(() => {
   vi.restoreAllMocks();
   sentry.captureException.mockClear();
   send.mockReset();
+  skew.reloadForSkew.mockReset();
+  skew.reloadForSkew.mockReturnValue(true);
 });
 
 describe("ErrorNotice", () => {
@@ -103,5 +108,27 @@ describe("ErrorNotice", () => {
     fireEvent.click(screen.getByTestId("report-send"));
     await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1));
     expect(send).toHaveBeenCalledWith(expect.objectContaining({ digest: "dig42", sentryEventId: null }));
+  });
+
+  it("reloads once for a stale-chunk error instead of reporting it", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const err = thrown("Loading chunk 9 failed.");
+    const { rerender } = render(<ErrorNotice boundary="page" error={err} retry={() => {}} />);
+    rerender(<ErrorNotice boundary="page" error={err} retry={() => {}} />);
+    expect(skew.reloadForSkew).toHaveBeenCalledTimes(1);
+    expect(sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it("reports a stale-chunk error the loop guard will not reload for", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    skew.reloadForSkew.mockReturnValue(false);
+    render(<ErrorNotice boundary="page" error={thrown("Loading chunk 9 failed.")} retry={() => {}} />);
+    expect(sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it("never reloads for an ordinary error", () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    render(<ErrorNotice boundary="page" error={thrown("boom")} retry={() => {}} />);
+    expect(skew.reloadForSkew).not.toHaveBeenCalled();
   });
 });

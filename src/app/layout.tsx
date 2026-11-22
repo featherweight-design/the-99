@@ -10,6 +10,7 @@ import { ZoneCookie } from "../components/zone-cookie";
 import { ServiceWorker } from "../components/shell/service-worker";
 import { HomeUnderneath } from "../components/shell/home-underneath";
 import { Analytics } from "../components/shell/analytics";
+import { SkewGuard } from "../components/shell/skew-guard";
 import { INSTALL_PROMPT_CAPTURE } from "../lib/pwa/install-detect";
 import { LAUNCH_DETECT } from "../lib/pwa/launch-detect";
 import { STARTUP_IMAGES } from "../lib/pwa/startup-images";
@@ -70,6 +71,8 @@ export default async function RootLayout({
           <ServiceWorker />
           <ZoneCookie />
           <Analytics />
+          {/* Reloads a tab left a deployment behind (`skew-guard.tsx`); the id is this document's own build. */}
+          <SkewGuard deploymentId={process.env.VERCEL_DEPLOYMENT_ID ?? null} />
         </body>
       </html>
     </ClerkProvider>
