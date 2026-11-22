@@ -2,7 +2,7 @@
 // Alternate printings R2: the card's printings as a row of card-shaped thumbs in card details opened from search.
 // Selecting one shows it in place (the parent's preview state); nothing is stored here. Phone: in the sheet's
 // teaser under the price line. Desktop: under the title, with paddles while the row overflows.
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import type { BrowsePrinting } from "../../lib/collection/browse";
 import { identityGradient } from "../../lib/cards/gradients";
 import { printingStripCopy } from "../../lib/copy/collection";
@@ -37,7 +37,7 @@ export function orderStrip(
 }
 
 export function PrintingStrip({
-  printings, shownKey, onSelect, onAnnounce, cardName, colorIdentity, paddles = false, panelOpen = false, onPanelOpen, onPanelClose, wantedId = null,
+  printings, shownKey, onSelect, onAnnounce, cardName, colorIdentity, paddles = false, panelOpen = false, onPanelOpen, onPanelClose, wantedId = null, panelFoot = null,
 }: {
   printings: StripPrinting[];
   /** The key (`stripKey`) of the printing on screen. */
@@ -55,6 +55,8 @@ export function PrintingStrip({
   onPanelClose?: () => void;
   /** The catalog id of the printing the reader's wishlist line names: its thumb draws the wishlist's mark before its label. */
   wantedId?: string | null;
+  /** The wishlist foot the desktop panel draws (`PanelWishlistFoot`); null off the wishlist. */
+  panelFoot?: ReactNode;
 }) {
   const tile = useRef<HTMLButtonElement | null>(null);
   const hasTile = paddles && onPanelOpen !== undefined && onPanelClose !== undefined;
@@ -202,6 +204,8 @@ export function PrintingStrip({
               cardName={cardName}
               colorIdentity={colorIdentity}
               cols={6}
+              wantedId={wantedId}
+              foot={panelFoot}
               onClose={onPanelClose}
               onSelect={select}
             />
