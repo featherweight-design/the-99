@@ -11,6 +11,11 @@ on:
         type: choice
         options: [staging, production]
         default: staging
+      store:
+        description: Which store's prices (stores = TCGplayer and Card Kingdom)
+        type: choice
+        options: [manapool, tcgplayer, cardkingdom, stores]
+        default: manapool
 
 permissions:
   contents: read
@@ -90,6 +95,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
       - name: Refresh prices
+        env:
+          STORE: ${{ github.event.inputs.store }}
         run: |
           {
             echo "## Price refresh"
@@ -97,4 +104,11 @@ jobs:
             echo "- Target: \`catalog-${{ matrix.target }}\`"
             echo ""
           } >> "$GITHUB_STEP_SUMMARY"
-          pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY"
+          # Read through the environment, never interpolated, so the input cannot inject shell. The TCGplayer pass
+          # downloads Scryfall's default_cards itself here: no CATALOG_FETCH_DIR in this workflow.
+          case "$STORE" in
+            manapool|'') pnpm --silent db:seed:prices | tee -a "$GITHUB_STEP_SUMMARY" ;;
+            tcgplayer|cardkingdom) pnpm --silent db:seed:store-prices --store="$STORE" | tee -a "$GITHUB_STEP_SUMMARY" ;;
+            stores) pnpm --silent db:seed:store-prices | tee -a "$GITHUB_STEP_SUMMARY" ;;
+            *) echo "Unrecognised store: $STORE" >&2; exit 1 ;;
+          esac

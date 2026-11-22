@@ -11,6 +11,8 @@ export type BulkType = "oracle_cards" | "default_cards";
 export type BulkIndex = {
   jsonlDownloadUri: string;
   compressedSize: number;
+  /** The index's `updated_at`, when it gives one: when Scryfall built the file, which the store prices take as their `as_of`. */
+  updatedAt?: Date;
 };
 
 /**
@@ -31,7 +33,11 @@ export function parseBulkIndex(payload: unknown): BulkIndex {
   if (typeof size !== "number" || !Number.isFinite(size) || size <= 0) {
     throw new Error("unexpected bulk-data index shape: missing compressed_size");
   }
-  return { jsonlDownloadUri: uri, compressedSize: size };
+  const updated = typeof p?.updated_at === "string" ? new Date(p.updated_at) : null;
+  return {
+    jsonlDownloadUri: uri, compressedSize: size,
+    ...(updated && !Number.isNaN(updated.getTime()) ? { updatedAt: updated } : {}),
+  };
 }
 
 /**

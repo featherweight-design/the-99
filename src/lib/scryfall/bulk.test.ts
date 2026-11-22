@@ -32,6 +32,15 @@ describe("parseBulkIndex", () => {
     ).toThrow(/missing compressed_size/);
   });
 
+  // The store prices take their as_of from it (lib/stores/seed-store-prices.ts), so a bad value must be absent, not NaN.
+  it("reads updated_at when it is a date, and leaves it out otherwise", () => {
+    const base = { jsonl_download_uri: "https://x/y.jsonl.gz", compressed_size: 1 };
+    expect(parseBulkIndex({ ...base, updated_at: "2026-11-22T10:06:09.976+00:00" }).updatedAt?.toISOString())
+      .toBe("2026-11-22T10:06:09.976Z");
+    expect(parseBulkIndex({ ...base, updated_at: "not a date" })).not.toHaveProperty("updatedAt");
+    expect(parseBulkIndex({ ...base, updated_at: 5 })).not.toHaveProperty("updatedAt");
+  });
+
   it("rejects a non-object payload", () => {
     expect(() => parseBulkIndex(null)).toThrow(/missing jsonl_download_uri/);
   });
