@@ -8,6 +8,7 @@
 // per request, so a refresh already leaves it out); the shared toast carries Undo for as long as it stays.
 
 import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { useRef, useState } from "react";
 import { hideLogReminderAction, unhideLogReminderAction } from "../../app/friends/table/actions";
 import { ruleZeroCopy } from "../../lib/copy/rule-zero";
@@ -112,6 +113,7 @@ function One({ g, until, day, onHide }: { g: HomeLogGame; until: string; day: st
       {href ? (
         <Link href={href} data-testid="home-log-open" className={`${ACCENT_BUTTON} relative w-full no-underline xl:h-[40px] xl:min-h-0 xl:w-auto xl:px-[20px] xl:text-[13.5px]`}>
           {ruleZeroCopy.page.log}
+          <PendingReporter href={href} />
         </Link>
       ) : null}
     </section>
@@ -147,6 +149,7 @@ function Row({ g, utc, lastDay, onHide }: { g: HomeLogGame; utc: boolean; lastDa
           <span className="truncate text-[13px] text-[color:var(--fg-body)] xl:flex-1">{copy.placed(g.deckName, ordinal(mine?.place ?? g.seats.length))}</span>
         </span>
         <span className="flex h-[36px] flex-none items-center rounded-[9px] px-[12px] text-[13.5px] font-semibold text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--accent)]">{copy.log}</span>
+        <PendingReporter href={href ?? "#"} />
       </Link>
       <Hide g={g} onHide={onHide} className="mr-[4px]" />
     </div>
