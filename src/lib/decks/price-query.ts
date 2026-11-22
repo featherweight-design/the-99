@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { parseAsOf, priceOf, priceState, type PriceFact } from "./price";
+import type { OtherStore, Store } from "../stores/rows";
 
 // Timestamps are driver-dependent: the neon serverless driver parses
 // `timestamp` to a Date, others hand back the raw string. `parseAsOf` takes
@@ -23,6 +24,8 @@ type Row = {
   scryfall_id: string | null;
   /** True on a row answering for a printing the caller named (`printingIds`); false on every other row. */
   named: boolean | null;
+  /** Only on a store that reports stock: every finish the row prices is at zero. Absent on Mana Pool's read. */
+  sold_out?: boolean | null;
 };
 
 /**
@@ -90,7 +93,12 @@ export type PriceRead = {
  * them at zero, so a printing that has never been stocked in any run has never
  * appeared. `priceState` renders that as today's bare tag.
  */
-export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = [], printingIds: string[] = []): Promise<PriceRead> {
+export async function loadPrices(
+  oracleIds: string[],
+  allPicks: PricePick[] = [],
+  printingIds: string[] = [],
+  store: Store = "manapool",
+): Promise<PriceRead> {
   if (oracleIds.length === 0 && printingIds.length === 0) return { prices: new Map(), newestAsOf: null };
   // Only the picks of cards this read prices: a caller passes every held pick of its decks, and
   // the roll-up's buy rows are a handful of each deck's cards.
@@ -103,6 +111,23 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
   // placeholder so the driver serialises it as a Postgres array literal.
   const only = sql.param(oracleIds);
 
+  // THE STORE NAMES THE TABLE. Mana Pool reads `printing_prices` exactly as it always has: each
+  // fragment below renders to the text this statement had before stores, so a reader with no
+  // preference runs the same query byte for byte. Any other store reads its rows of
+  // `printing_store_prices` through `storeRows`, shaped like `printing_prices`, and its newest
+  // `as_of` is its own: liveness is measured per store, never across them.
+  const other = store === "manapool" ? null : store;
+  const source = other ? storeRows(other) : sql`printing_prices`;
+  const newestFrom = other
+    ? sql`printing_store_prices where store = ${other}`
+    : sql`printing_prices`;
+  const live = other
+    ? sql`(pp.as_of = (select as_of from newest) and not pp.sold_out)`
+    : sql`(pp.as_of = (select as_of from newest))`;
+  const soldOutCol = other ? sql`, pp.sold_out` : sql``;
+  const soldOutOut = other ? sql`,
+      facts.sold_out` : sql``;
+
   // An empty table makes `newest.as_of` null, and `pp.as_of = null` yields null
   // rather than false — which sorts with the stale rows, the harmless side. The
   // join returns nothing in that case anyway.
@@ -113,7 +138,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
   const pickedCte = picks.length === 0 ? sql`` : sql`,
     picked as (
       select w.deck_id, p.oracle_id,
-             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id, false as named
+             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id, false as named${soldOutCol}
       from unnest(
         ${sql.param(picks.map((k) => k.deckId))}::uuid[],
         ${sql.param(picks.map((k) => k.oracleId))}::uuid[],
@@ -122,7 +147,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       ) as w(deck_id, oracle_id, set_code, collector_number)
       join printings p
         on p.oracle_id = w.oracle_id and p.set_code = w.set_code and p.collector_number = w.collector_number
-      join printing_prices pp on pp.scryfall_id = p.scryfall_id
+      join ${source} pp on pp.scryfall_id = p.scryfall_id
       -- (set, collector number) is not unique in printings: two variants can share one. A pick
       -- naming a shared pair answers nothing, and its row takes today's figure, rather than pricing
       -- whichever sibling an unordered join yields (the rule price-lookup.ts keeps for the same key).
@@ -138,16 +163,16 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
   const namedCte = printingIds.length === 0 ? sql`` : sql`,
     named as (
       select null::uuid as deck_id, p.oracle_id,
-             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id, true as named
+             pp.price_cents, pp.price_cents_foil, pp.price_cents_etched, pp.as_of, p.scryfall_id, true as named${soldOutCol}
       from printings p
-      join printing_prices pp on pp.scryfall_id = p.scryfall_id
+      join ${source} pp on pp.scryfall_id = p.scryfall_id
       where p.scryfall_id = any(${sql.param(printingIds)}::uuid[])
     )`;
   const namedRows = printingIds.length === 0 ? sql`` : sql`union all select * from named`;
 
   const rows = await db.execute<Row>(sql`
     with newest as (
-      select max(as_of) as as_of from printing_prices
+      select max(as_of) as as_of from ${newestFrom}
     ),
     chosen as (
       select distinct on (p.oracle_id)
@@ -158,13 +183,13 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
         pp.price_cents_etched,
         pp.as_of,
         p.scryfall_id,
-        false as named
+        false as named${soldOutCol}
       from printings p
-      join printing_prices pp on pp.scryfall_id = p.scryfall_id
+      join ${source} pp on pp.scryfall_id = p.scryfall_id
       where p.oracle_id = any(${only}::uuid[])
       order by
         p.oracle_id,
-        (pp.as_of = (select as_of from newest)) desc,
+        ${live} desc,
         (pp.price_cents is null),
         coalesce(pp.price_cents, pp.price_cents_foil, pp.price_cents_etched) asc,
         pp.scryfall_id
@@ -183,7 +208,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       facts.price_cents_etched,
       facts.as_of,
       facts.scryfall_id,
-      facts.named
+      facts.named${soldOutOut}
     from newest
     left join facts on true
   `);
@@ -200,6 +225,7 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
       etchedCents: row.price_cents_etched,
       asOf: parseAsOf(row.as_of),
       ...(row.scryfall_id ? { printing: { scryfallId: row.scryfall_id } } : {}),
+      ...(row.sold_out ? { soldOut: true as const } : {}),
     };
     if (row.named && row.scryfall_id) named.set(row.scryfall_id, fact);
     else if (row.deck_id === null) prices.set(row.oracle_id, fact);
@@ -213,6 +239,35 @@ export async function loadPrices(oracleIds: string[], allPicks: PricePick[] = []
     ...(picks.length > 0 ? { picked } : {}),
     ...(printingIds.length > 0 ? { named } : {}),
   };
+}
+
+/**
+ * One store's rows of `printing_store_prices`, in `printing_prices`' columns plus `sold_out`.
+ *
+ * STOCK BECOMES THE SHAPE MANA POOL'S FEED ALREADY HAS. Mana Pool omits a sold-out printing, so a
+ * finish it prices is a finish in stock. Card Kingdom lists a sold-out finish at `quantity` 0, so a
+ * finish at zero is nulled here: a printing whose non-foil is gone but whose foil is not reads
+ * foil-only, the same as Mana Pool. TCGplayer reports no stock (`quantity` null), so every priced
+ * finish stands. A printing with EVERY priced finish at zero is `sold_out` and keeps its figures,
+ * as Mana Pool's stale row keeps its last ones; the read sorts it behind every live printing and
+ * `priceState` draws it as sold out.
+ */
+function storeRows(store: OtherStore) {
+  return sql`(
+        select scryfall_id, as_of, sold_out,
+               case when sold_out or coalesce(quantity, 1) <> 0 then price_cents end as price_cents,
+               case when sold_out or coalesce(quantity_foil, 1) <> 0 then price_cents_foil end as price_cents_foil,
+               case when sold_out or coalesce(quantity_etched, 1) <> 0 then price_cents_etched end as price_cents_etched
+        from (
+          select *,
+                 coalesce(price_cents, price_cents_foil, price_cents_etched) is not null
+                   and (price_cents is null or coalesce(quantity, 1) = 0)
+                   and (price_cents_foil is null or coalesce(quantity_foil, 1) = 0)
+                   and (price_cents_etched is null or coalesce(quantity_etched, 1) = 0) as sold_out
+          from printing_store_prices
+          where store = ${store}
+        ) s
+      )`;
 }
 
 /**

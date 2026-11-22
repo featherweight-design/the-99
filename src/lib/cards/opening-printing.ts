@@ -5,6 +5,7 @@ import { recordSoftFailure } from "../cache/soft-failure";
 import { comparePrintings, type BrowsePrinting } from "../collection/browse";
 import { loadOwnedPrintingPrices } from "./prices";
 import type { PrintingPrices } from "./price-lookup";
+import { isLive } from "./price-fact";
 
 /**
  * The printing a card the reader does NOT own opens on, in ONE place: card details opens on it (`catalogCard`) and
@@ -32,7 +33,7 @@ export function openingScryfallId(candidates: readonly OpeningCandidate[], defau
 export function liveCents(prices: PrintingPrices | null | undefined, scryfallId: string): number | null {
   const fact = prices?.byScryfallId[scryfallId];
   return prices?.newestAsOf != null && fact !== undefined && fact.cents !== null
-    && fact.asOf.getTime() === prices.newestAsOf.getTime() ? fact.cents : null;
+    && isLive(fact, prices.newestAsOf) ? fact.cents : null;
 }
 
 /** The printing a card opens on: its art, and the set and rarity printed on it. */

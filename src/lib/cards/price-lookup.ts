@@ -22,7 +22,7 @@
 // `priceState` decides it by comparing a row's `as_of` to the newest in the table,
 // and a query that returned only live rows would make `soldOut` unreachable.
 
-import { parseAsOf, type PriceFact } from "./price-fact";
+import { isLive, parseAsOf, type PriceFact } from "./price-fact";
 
 type Timestamp = string | Date;
 
@@ -101,13 +101,13 @@ export type PrintingPrices = {
  */
 export function cheapestLiveCents(prices: PrintingPrices | null | undefined): number | null {
   if (!prices || prices.newestAsOf === null) return null;
-  const newest = prices.newestAsOf.getTime();
+  const newest = prices.newestAsOf;
   let cheapest: number | null = null;
   // Indexed by id rather than by printing key: every fact carries an id — the
   // `left join` produces a row per catalog printing — and `ambiguousKeys` has
   // already stripped the pairs that name two printings out of the other index.
   for (const fact of Object.values(prices.byScryfallId)) {
-    if (fact.asOf.getTime() !== newest) continue;
+    if (!isLive(fact, newest)) continue;
     if (fact.cents === null) continue;
     if (cheapest === null || fact.cents < cheapest) cheapest = fact.cents;
   }

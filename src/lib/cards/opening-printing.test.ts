@@ -53,6 +53,7 @@ describe("liveCents", () => {
       fresh: { cents: 150, asOf: newest },
       stale: { cents: 90, asOf: new Date("2026-10-01T09:00:00Z") },
       foilOnly: { cents: null, asOf: newest },
+      soldOut: { cents: 120, asOf: newest, soldOut: true },
     },
   } as unknown as PrintingPrices;
 
@@ -60,6 +61,8 @@ describe("liveCents", () => {
     expect(liveCents(prices, "fresh")).toBe(150);
     expect(liveCents(prices, "stale")).toBeNull();
     expect(liveCents(prices, "foilOnly")).toBeNull();
+    // A store that reports stock keeps a sold-out printing's figure at the newest date: not a live price.
+    expect(liveCents(prices, "soldOut")).toBeNull();
     expect(liveCents(prices, "unknown")).toBeNull();
     expect(liveCents(null, "fresh")).toBeNull();
   });

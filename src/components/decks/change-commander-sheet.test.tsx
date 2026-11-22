@@ -366,6 +366,8 @@ describe("summedPrice", () => {
     const { summedPrice } = await import("./change-commander-sheet");
     expect(summedPrice([priced(150), priced(null)], at)).toBeNull();
     expect(summedPrice([priced(150), priced(275, new Date("2026-09-01T00:00:00Z"))], at)).toBeNull();
+    const soldOut = half("Hout", { owned: false, availability: null, price: { cents: 275, foilCents: null, etchedCents: null, asOf: at, soldOut: true } });
+    expect(summedPrice([priced(150), soldOut], at)).toBeNull();
   });
 
   it("leaves a single half to its own tag", async () => {

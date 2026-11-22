@@ -19,7 +19,7 @@ import { guildLabel } from "../../lib/copy/color-labels";
 import { changeCommanderCopy as copy } from "../../lib/copy/change-commander";
 import { changeCommander, readChangeCandidates } from "../../lib/commander-change/actions";
 import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/commander-change/candidates";
-import type { PriceFact } from "../../lib/decks/price";
+import { isLive, type PriceFact } from "../../lib/decks/price";
 import { tradeShape, type TradeShape } from "../../lib/commander-change/pending";
 import { useChangeCommander } from "./change-commander-context";
 import { AddPartnerSection, SectionHead, isKeptPartner } from "./partner-add-section";
@@ -627,7 +627,7 @@ export function Plate({
  */
 export function summedPrice(halves: CandidateHalf[], newestAsOf: Date | null): PriceFact | null {
   if (halves.length < 2 || newestAsOf === null) return null;
-  const live = halves.every((h) => h.price !== null && h.price.cents !== null && h.price.asOf.getTime() === newestAsOf.getTime());
+  const live = halves.every((h) => h.price !== null && h.price.cents !== null && isLive(h.price, newestAsOf));
   if (!live) return null;
   return {
     cents: halves.reduce((n, h) => n + (h.price!.cents ?? 0), 0),

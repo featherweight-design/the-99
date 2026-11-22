@@ -4,6 +4,7 @@ import {
   PRICE_STALE_AFTER_DAYS,
   formatCents,
   formatPriceFigure,
+  isLive,
   parseAsOf,
   priceRank,
   priceState,
@@ -21,6 +22,14 @@ const fact = (over: Partial<PriceFact> = {}): PriceFact => ({
   etchedCents: null,
   asOf: NEWEST,
   ...over,
+});
+
+describe("isLive", () => {
+  it("is a fact at the newest as_of that its store does not report sold out", () => {
+    expect(isLive(fact({ cents: 4500 }), NEWEST)).toBe(true);
+    expect(isLive(fact({ cents: 4500, soldOut: true }), NEWEST)).toBe(false);
+    expect(isLive(fact({ cents: 4500, asOf: new Date(NEWEST.getTime() - 86_400_000) }), NEWEST)).toBe(false);
+  });
 });
 
 describe("priceState", () => {
