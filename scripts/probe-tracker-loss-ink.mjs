@@ -184,6 +184,9 @@ try {
     }
     if (SHOTS) {
       // Every figure showing at once for the contact sheet: tap every seat, then shoot before the ink fades.
+      // The gain pass left a pending +3 on every seat: let it commit first, or the minus taps only cancel it and no figure draws.
+      await page.getByTestId("life-pending").first().waitFor({ state: "detached", timeout: 8_000 }).catch(() => {});
+      await page.waitForTimeout(600);
       const minus = page.getByTestId("half-minus");
       for (let seat = 0; seat < (await minus.count()); seat++) for (let k = 0; k < TAPS; k++) await minus.nth(seat).click({ force: true, delay: 20 });
       await page.waitForTimeout(200);
