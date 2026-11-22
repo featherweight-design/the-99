@@ -194,7 +194,7 @@ export function RevertConfirm({
         aria-busy={pending || undefined}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="flex h-[88dvh] w-full flex-col rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:h-[min(620px,88dvh)] md:w-[560px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
+        className="anim-sheet-in-phone flex h-[88dvh] w-full flex-col rounded-[22px_22px_0_0] p-[12px_22px_26px] outline-none [border-top:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:h-[min(620px,88dvh)] md:w-[560px] md:rounded-2xl md:p-[28px_32px] md:[border:1px_solid_var(--border-strong)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)]"
         style={{ background: "var(--surface-rail)" }}
       >
         <SheetGrabber className="pt-0" barClassName="mb-[16px]" />

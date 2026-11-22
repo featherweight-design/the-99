@@ -5,7 +5,7 @@
 import { VV_FRAME } from "../ui/visual-viewport";
 
 export const SHEET_PANEL_CLASS =
-  `fixed inset-0 ${VV_FRAME} z-50 flex flex-col overscroll-contain border-0 border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] md:inset-y-0 md:left-auto md:right-0 md:w-[480px] md:border-l md:shadow-[-24px_0_60px_rgba(0,0,0,0.45)]`;
+  `anim-sheet-in-phone fixed inset-0 ${VV_FRAME} z-50 flex flex-col overscroll-contain border-0 border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)] md:inset-y-0 md:left-auto md:right-0 md:w-[480px] md:border-l md:shadow-[-24px_0_60px_rgba(0,0,0,0.45)]`;
 
 /** The save bar: Remove / diff / Save on one row, the diff above them on a phone. */
 export const SHEET_FOOT_CLASS =

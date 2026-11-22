@@ -112,7 +112,7 @@ export function ConfirmModal({
         // Desktop: 520 modal, 30/34, radius 16, border all round. Capped in dvh at both widths (an open
         // keyboard shrinks it) as a column that never scrolls itself: the title and the buttons are pinned,
         // `flex-none`, and the body between them is the one scroller.
-        className="flex max-h-[88dvh] w-full flex-col overflow-hidden md:w-[520px] rounded-[22px_22px_0_0] md:rounded-2xl p-[12px_22px_30px] md:p-[30px_34px] [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)] outline-none"
+        className="anim-sheet-in-phone flex max-h-[88dvh] w-full flex-col overflow-hidden md:w-[520px] rounded-[22px_22px_0_0] md:rounded-2xl p-[12px_22px_30px] md:p-[30px_34px] [border-top:1px_solid_var(--border-strong)] md:[border:1px_solid_var(--border-strong)] shadow-[0_-20px_50px_rgba(0,0,0,.5)] md:shadow-[0_40px_100px_rgba(0,0,0,.7)] outline-none"
         style={{ background: "var(--surface-rail)" }}
       >
         {/* §1.3 Sheet handle, decorative */}
