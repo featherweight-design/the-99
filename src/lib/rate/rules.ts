@@ -137,6 +137,8 @@ export const RATE_RULES = {
   "friend-code-day": { limit: 30, windowMs: 86_400_000 },
   /** Friend requests sent, by link or code, per player, ENFORCED: 20 a day. Opening a link already asked sends nothing and is not counted. */
   "friend-request-day": { limit: 20, windowMs: 86_400_000 },
+  /** The admin "send every email template to me" button, per admin, ENFORCED: one press (three emails) in five minutes, so a held key cannot spend the day's mail cap. */
+  "admin-mail-preview": { limit: 1, windowMs: 300_000 },
   /** Reset link and code, per player, ENFORCED: 5 a day, so rotation cannot churn tokens or codes. */
   "friend-reset-day": { limit: 5, windowMs: 86_400_000 },
   /**

@@ -919,6 +919,23 @@ export const flagCopy: Readonly<Record<SwitchName, { label: string; description:
  * The launch email's admin card on /admin/invites (launch email R2c G3; eng-drawn admin tooling, orchestrator ruling
  * 2026-11-20): a dry run first, then Send next N behind a confirm that names the count. Shown whatever the flyer switch says.
  */
+export const emailPreviewAdminCopy = {
+  title: "Email previews",
+  meta: "Every email The 99 sends, to your own address. Subjects start with [Preview].",
+  send: "Send to me",
+  sending: "Sending…",
+  // The flyer code is the same email as the sign-in code, so three emails stand for four templates. Clerk sends its own.
+  result: (sent: number, total: number) => `Sent ${sent} of ${total}: the invite, the sign-up code (also the flyer code) and the launch email. Clerk's sign-in and reset emails come from Clerk and aren't included.`,
+  capped: "Today's mail cap is reached, so the rest weren't sent.",
+  limited: "Your address hit its hourly mail limit, so the rest weren't sent.",
+  cooldown: (sec: number) => `Sent a moment ago. Try again in ${sec < 90 ? `${sec} seconds` : `${Math.ceil(sec / 60)} minutes`}.`,
+  refused: {
+    unconfigured: "Email isn't configured on this deployment.",
+    "no-address": "Your account has no email address to send to.",
+    failed: "That didn't go through. Try again.",
+  },
+} as const;
+
 export const launchEmailAdminCopy = {
   title: "Launch email",
   meta: "One email to everyone on the launch list, sent in batches.",
