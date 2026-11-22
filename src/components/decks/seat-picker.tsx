@@ -43,10 +43,10 @@ type Search = { state: "idle" } | Load<OpponentCommanderHit>;
 type View =
   | { step: "list" }
   | { step: "decks" | "commander"; friend: PickerFriend }
-  | { step: "background"; friend: PickerFriend | null; commander: SeatCommander; background: SeatCommander | null };
+  | { step: "background"; friend: SeatFriend | null; commander: SeatCommander; background: SeatCommander | null };
 
 /** A seat that reopens on the Background step: its commander chooses one, and its Background, if any. */
-export type OpenPair = { commander: SeatCommander; background: SeatCommander | null };
+export type OpenPair = { friend: SeatFriend | null; commander: SeatCommander; background: SeatCommander | null };
 
 const ROW = "flex min-h-[52px] w-full cursor-pointer items-center gap-[12px] border-0 bg-transparent px-[14px] py-[6px] text-left hover:bg-[color:var(--surface-raised)]";
 const NOTE = "px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]";
@@ -355,7 +355,7 @@ function Body({
   openPair: OpenPair | null;
 }) {
   const [query, setQuery] = useState("");
-  const [view, setView] = useState<View | null>(openPair ? { step: "background", friend: null, ...openPair } : null);
+  const [view, setView] = useState<View | null>(openPair ? { step: "background", ...openPair } : null);
   const [friends, setFriends] = useState<Load<PickerFriend>>({ state: "busy" });
   const { search, reset } = useCommanderSearch(query);
 
@@ -404,8 +404,11 @@ function Body({
         commander={commander}
         background={background}
         onChoose={(next) => setView({ ...current, background: next })}
-        onSeat={() => onPick({ friend: who ? asFriend(who) : null, deck: null, commander, partner: background })}
-        onBack={() => go(who ? { step: "commander", friend: who } : { step: "list" })}
+        onSeat={() => onPick({ friend: who, deck: null, commander, partner: background })}
+        onBack={() => {
+          const back = who && list.find((f) => f.publicId === who.publicId);
+          go(back ? { step: "commander", friend: back } : { step: "list" });
+        }}
         inputRef={inputRef}
         describedBy={describedBy}
       />
@@ -461,7 +464,7 @@ function Body({
           search={search}
           onPick={(hit) =>
             hit.partner?.kind === "chooseBackground"
-              ? go({ step: "background", friend, commander: asCommander(hit), background: null })
+              ? go({ step: "background", friend: friend ? asFriend(friend) : null, commander: asCommander(hit), background: null })
               : onPick({ friend: friend ? asFriend(friend) : null, deck: null, commander: asCommander(hit) })}
         />
       </ul>

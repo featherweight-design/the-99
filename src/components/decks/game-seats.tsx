@@ -341,7 +341,7 @@ export function GameSeats({
             onOpen={(anchor, deck) => setPicking({
               at: s.key, anchor, openAt: deck ? s.friend : null,
               // A commander that chooses a Background reopens on its step, where the Background can be added, changed or removed.
-              openPair: !deck && !s.deck && s.commander?.choosesBackground ? { commander: s.commander, background: s.partner } : null,
+              openPair: !deck && !s.deck && s.commander?.choosesBackground ? { friend: s.friend, commander: s.commander, background: s.partner } : null,
             })}
             onClear={() => { clearedFocus.current = true; onClear(s.key); }}
             onWon={() => onWon(s.key)}

@@ -160,10 +160,22 @@ describe("SeatPicker at desktop width", () => {
     const onPick = vi.fn();
     const anchor = document.createElement("button");
     document.body.appendChild(anchor);
-    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={onPick} seated={new Set()} openPair={{ commander: lae, background: bg }} />);
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={onPick} seated={new Set()} openPair={{ friend: null, commander: lae, background: bg }} />);
     fireEvent.click(await screen.findByRole("button", { name: deckImportCopy.commander.remove }));
     fireEvent.click(await screen.findByRole("button", { name: gameSeatsCopy.picker.seat("Lae’zel") }));
     expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ partner: null }));
+    anchor.remove();
+  });
+
+  it("keeps a friend's seat a friend's when it reopens on the Background step", async () => {
+    const lae = { oracleId: "lae", name: "Lae’zel, Vlaakith's Champion", imageUri: null, choosesBackground: true };
+    const friend = { publicId: "pub-1", name: "Colin" };
+    const onPick = vi.fn();
+    const anchor = document.createElement("button");
+    document.body.appendChild(anchor);
+    render(<SeatPicker anchor={anchor} onClose={() => {}} onPick={onPick} seated={new Set()} openPair={{ friend, commander: lae, background: null }} />);
+    fireEvent.click(await screen.findByRole("button", { name: gameSeatsCopy.picker.seat("Lae’zel") }));
+    expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ friend }));
     anchor.remove();
   });
 });
