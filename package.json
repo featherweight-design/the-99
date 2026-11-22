@@ -98,6 +98,7 @@
     "probe:tracker-art-crop": "node scripts/probe-tracker-art-crop.mjs",
     "probe:tracker-coin": "node scripts/probe-tracker-coin.mjs",
     "probe:tracker-tablet": "node scripts/probe-tracker-tablet.mjs",
+    "probe:tracker-tablet-sheet": "node scripts/probe-tracker-tablet-sheet.mjs",
     "probe:tracker-menu": "node scripts/probe-tracker-menu.mjs",
     "probe:tracker-scroll-lock": "node scripts/probe-tracker-scroll-lock.mjs",
     "probe:admin-pii": "node scripts/probe-admin-pii.mjs",

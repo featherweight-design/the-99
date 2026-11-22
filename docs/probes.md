@@ -2967,6 +2967,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   commander and round, the art at .22 and grey, the front inert, a 44px Undo); the 0.45s rotateY flip, turning back
   on Undo, and no flip under reduced motion. On main the badges are counters only and the probe stops at the first
   badge it cannot find, after 4 failures. It writes nothing to the database; needs the fixture on a scratch branch.
+- `pnpm probe:tracker-tablet-sheet` presses seat 0's panel on a saved six-seat game with a partner pair (fixture S4, "Three and three") and measures the tablet sheet (tablet addendum, boards Sheet and Damage) at 1180x820, 820x1180 (turned), 1300x900 and 390x844: on a tablet or desktop a veil, the sheet half the table deep (380px floor), five damage art cards across, every card's stepper inside its card, both partner steppers inside their half and every damage button at least 44px, and End game opening inside the half sheet; on every screen the Table tab right after Mana; on a phone the full-height sheet unchanged. Fails on main. Writes only localStorage; needs the fixture on a scratch branch and `INVITE_CODE_SECRET` on the dev server. `SHOTS=<dir>` saves screenshots.
 - `pnpm probe:tracker-tablet` presses the tracker's undrawn-tablet layouts and its upright turn (addendum #3115, gap
   T7a) on a 1180x820 screen. Setup on the fixture's two-seat T5 must offer "Face to face" and on the three-seat T10 "One
   at the end" then "Along one side", each mini drawn 56x40, and each game's panels must sit on the drawn cells. Mid-game

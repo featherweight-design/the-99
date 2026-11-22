@@ -446,6 +446,7 @@ export function PlaySurface({
           state={state}
           game={game}
           rot={layout.cells[seatsInPlay.findIndex((s) => s.seat === sheet.seat)].rot}
+          tablet={device === "tablet"}
           onView={setSheet}
           onClose={() => setSheet(null)}
           onCommit={commit}
