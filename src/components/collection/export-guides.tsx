@@ -11,7 +11,7 @@ import { Fragment, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
-import { collectionSources, type GuideText } from "../../lib/copy/collection-sources";
+import { allGuideApps, collectionSources, type GuideApp, type GuideText } from "../../lib/copy/collection-sources";
 import { SheetGrabber } from "../ui/sheet-grabber";
 import { MoxfieldNote } from "./moxfield-note";
 
@@ -34,12 +34,12 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusRef: React.RefObject<HTMLElement | null> }) {
+function Dialog({ onClose, returnFocusRef, openApp }: { onClose: () => void; returnFocusRef: React.RefObject<HTMLElement | null>; openApp: GuideApp["id"] | null }) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const titleId = useId();
   const base = useId();
-  const [open, setOpen] = useState<string | null>(null);
+  const [open, setOpen] = useState<string | null>(openApp);
   // Focus lands on the close button; Tab is held inside, Escape closes, focus returns to the opener (`useDialogA11y`).
   useDialogA11y(dialogRef, onClose, { initialFocusRef: closeRef, returnFocusRef });
   const inertRef = useInertWhileOpen(true);
@@ -76,7 +76,7 @@ function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusR
         <p className="m-0 mb-[4px] flex-none text-[13px] leading-[1.5] text-[color:var(--fg-muted)]">{c.lead}</p>
         <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain">
           <ul className="m-0 list-none p-0">
-            {s.apps.map((app) => {
+            {allGuideApps.map((app) => {
               const shown = open === app.id;
               const panel = `${base}-${app.id}`;
               return (
@@ -128,8 +128,9 @@ function Dialog({ onClose, returnFocusRef }: { onClose: () => void; returnFocusR
 /**
  * The guides' opener and the dialog it opens, portalled to the body. `children` is the link's text; `className` styles the
  * trigger (a text link at each call site). The trigger keeps its own box: its 44px touch target is the caller's class.
+ * `openApp` opens that app's steps first: the upload names the app a failed file came from.
  */
-export function ExportGuides({ children, className }: { children: React.ReactNode; className: string }) {
+export function ExportGuides({ children, className, openApp = null }: { children: React.ReactNode; className: string; openApp?: GuideApp["id"] | null }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   return (
@@ -144,7 +145,7 @@ export function ExportGuides({ children, className }: { children: React.ReactNod
       >
         {children}
       </button>
-      {open && createPortal(<Dialog onClose={() => setOpen(false)} returnFocusRef={trigger} />, document.body)}
+      {open && createPortal(<Dialog onClose={() => setOpen(false)} returnFocusRef={trigger} openApp={openApp} />, document.body)}
     </>
   );
 }

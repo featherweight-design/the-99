@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { looksLikeCsv, missingRequiredColumn, parseCollectionCsv, parseFinish } from "./parse";
+import { detectSource, looksLikeCsv, missingRequiredColumn, parseCollectionCsv, parseFinish } from "./parse";
 
 // Layouts for the apps the landing page names (Dragon Shield, TCGplayer and Delver Lens also carry real rows below) beside ManaBox, Moxfield, Archidekt and Deckbox. Every card and
 // quantity in the made-up layouts is invented. NO published specification of any of these exports could be fetched (the vendors' help
@@ -182,5 +182,24 @@ describe("collection exports from TCGplayer and Delver Lens (made-up cards, unco
 
   it("still takes a lone line that merely starts with sep= as a header of its own", () => {
     expect(parseCollectionCsv("sep=,").errors).toEqual([{ line: 1, raw: "sep=,", reason: "header missing Name column" }]);
+  });
+});
+
+describe("detectSource", () => {
+  it("names the app from columns only its real export carries", () => {
+    expect(detectSource(DRAGON_SHIELD)).toBe("dragonshield");
+    expect(detectSource(TCGPLAYER_REAL)).toBe("tcgplayer");
+    expect(detectSource(TCGPLAYER_MINIMAL)).toBeNull();
+    expect(detectSource(DELVER_2023)).toBe("delver");
+    expect(detectSource("Name,Set code,Set name,Collector number,Foil,Rarity,Quantity,ManaBox ID,Scryfall ID\n")).toBe("manabox");
+  });
+
+  it("names the app even when the file lacks Name or Quantity", () => {
+    expect(detectSource("Name,Acquired Price,Language,Set Code,TCGPlayer Product ID,Number,Foil\n")).toBe("delver");
+  });
+
+  it("names none for a plain export or a blank file", () => {
+    expect(detectSource("Name,Qty\nSol Ring,1")).toBeNull();
+    expect(detectSource("")).toBeNull();
   });
 });

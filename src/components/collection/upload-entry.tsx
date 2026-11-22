@@ -8,7 +8,8 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { previewUpload, previewPaste, type UploadPreview } from "../../app/collection/actions";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { parsePasteList } from "../../lib/manabox/paste";
-import { missingRequiredColumn } from "../../lib/manabox/parse";
+import { detectSource, missingRequiredColumn, type SourceId } from "../../lib/manabox/parse";
+import { allGuideApps } from "../../lib/copy/collection-sources";
 import { ExportGuides } from "./export-guides";
 import { COLLECTION_FILE_MAX_BYTES, COLLECTION_FILE_MAX_LABEL, PASTE_MAX_BYTES } from "../../lib/upload-limits";
 import { importReviewCopy } from "../../lib/copy/import-review";
@@ -58,6 +59,8 @@ export function UploadEntry({
   const [error, setError] = useState<string | null>(null);
   // The file's first row names no Name or no Quantity column (landing PR 7b): its own error, with the guides one press away.
   const [noColumn, setNoColumn] = useState<"Name" | "Quantity" | null>(null);
+  // The app a failed file's header names, so its guide is one press away (`detectSource`).
+  const [source, setSource] = useState<SourceId | null>(null);
   const [pending, startTransition] = useTransition();
   const fileInputRef = useRef<HTMLInputElement>(null);
   // The page's drop zone is Collection Sync's target (G14): Try it lands on `/collection/replace` and haloes it. Only
@@ -68,6 +71,7 @@ export function UploadEntry({
     if (pending) return;
     setError(null);
     setNoColumn(null);
+    setSource(null);
     // Checked here as well as on the server: an oversized body never reaches the
     // action's own check, and the reader would see a minified React error instead.
     if (file.size > COLLECTION_FILE_MAX_BYTES) {
@@ -77,6 +81,7 @@ export function UploadEntry({
     const fd = new FormData();
     fd.set("file", file);
     startTransition(async () => {
+      let named: SourceId | null = null;
       try {
         // The header is read here, by the parser's own rule, so a file with no Name or Quantity column gets its own error
         // and no preview row is written. A header the peek cut short is left to the server.
@@ -90,14 +95,17 @@ export function UploadEntry({
           setError(importReviewCopy.errors.notUtf8);
           return;
         }
+        named = detectSource(head);
         const missing = missingRequiredColumn(head);
         if (missing) {
+          setSource(named);
           setNoColumn(missing);
           return;
         }
         const p = await previewUpload(fd);
         onPreview(p);
       } catch (e) {
+        setSource(named);
         setError(e instanceof Error ? e.message : importReviewCopy.errors.uploadFailed);
       }
     });
@@ -198,6 +206,17 @@ export function UploadEntry({
     />
   );
 
+  const linkClass = `${TOUCH_HIT_INLINE} inline cursor-pointer border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] underline underline-offset-[3px]`;
+  const sourceName = source ? allGuideApps.find((a) => a.id === source)?.name : undefined;
+  const fromApp = source && sourceName && (
+    <p data-from-app={source} className="m-0 w-full text-left text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
+      {importReviewCopy.errors.fromApp.lead(sourceName)}{" "}
+      <ExportGuides openApp={source} className={linkClass}>
+        {importReviewCopy.errors.fromApp.link(sourceName)}
+      </ExportGuides>
+    </p>
+  );
+
   const errorBlock = (
     <>
       {error && (
@@ -205,6 +224,7 @@ export function UploadEntry({
           {error}
         </p>
       )}
+      {error && fromApp}
       {noColumn && (
         <div
           role="alert"
@@ -212,6 +232,7 @@ export function UploadEntry({
           className="flex w-full flex-col gap-[6px] rounded-[10px] border border-solid border-[color:color-mix(in_oklab,var(--danger)_60%,transparent)] bg-[color:color-mix(in_oklab,var(--danger)_8%,transparent)] px-[14px] py-[12px] text-left"
         >
           <b className="font-sans text-[14px] font-semibold text-[color:var(--fg)]">{importReviewCopy.errors.noColumn.title(noColumn)}</b>
+          {fromApp}
           <p className="m-0 text-[13px] leading-[1.55] text-[color:var(--fg-body)]">
             {importReviewCopy.errors.noColumn.before}
             <ExportGuides className={`${TOUCH_HIT_INLINE} inline cursor-pointer border-0 bg-transparent p-0 font-sans text-[13px] font-medium text-[color:var(--accent-text)] underline underline-offset-[3px]`}>

@@ -1,16 +1,16 @@
-// Where a collection comes from: the one requirement and a short export guide per app of the four with a fixture (`parse.ts`:
-// ManaBox, Moxfield, Archidekt, Deckbox). Shared by the signed-out landing's Bring your collection section and, later, the
+// Where a collection comes from: the one requirement and a short export guide per app (`parse.ts`: ManaBox, Moxfield,
+// Archidekt, Deckbox; Dragon Shield, Delver Lens and TCGplayer in `moreGuideApps`). Shared by the signed-out landing's Bring your collection section and, later, the
 // signed-in first run's How to export, so it carries no landing-only wording. A step is plain text or a bold control name.
 //
-// UNVERIFIED: every app's steps (the menu names and their order) were drafted from memory by Design and have not been checked
-// against a real export. The one claim the code can back is the requirement, a Name and a Quantity column (`parse.ts`). No
-// brand is named for any app the parser has no fixture for (TCGplayer, Dragon Shield, Delver Lens): "Another app" says the
-// requirement and stops. US English, no em dashes.
+// UNVERIFIED for the first four: their steps were drafted from memory by Design and not checked against a real export. The
+// last three were read from the sources the import-friendliness PR cites (TCGplayer's seller help; MTGStand's Delver guide;
+// MythicHub's Dragon Shield page), none of them the vendor's own current help, so each is lower confidence than a vendor page.
+// The one claim the code can back is the requirement, a Name and a Quantity column (`parse.ts`). US English, no em dashes.
 
 export type GuideText = string | { b: string };
 
 export type GuideApp = {
-  id: "manabox" | "moxfield" | "archidekt" | "deckbox";
+  id: "manabox" | "moxfield" | "archidekt" | "deckbox" | "dragonshield" | "delver" | "tcgplayer";
   name: string;
   /** What the row says before it opens. */
   sub: string;
@@ -66,7 +66,6 @@ export const collectionSources = {
       hereStep: ["Upload the downloaded file here."],
     },
   ] satisfies readonly GuideApp[],
-  /** Audit finding 7: no brand names until a real export of each is checked. */
   another: { name: "Another app", sub: "Any CSV with a Name and a Quantity column" },
   list: { name: "A list", sub: "Paste it as it is, one card a line" },
   /** The row's toggle, said on every app row (the mock's "How to export" with a chevron). */
@@ -84,7 +83,47 @@ export const collectionSources = {
     title: "How to export your collection",
     lead: "Pick the app your cards are in now.",
     close: "Close",
-    /** Under the rows: the requirement, said once for any app not listed. No brand named (audit finding 7). */
+    /** Under the rows: the requirement, said once for any app not listed. */
     another: "Any CSV with a Name and a Quantity column imports. If yours fails, open it in a spreadsheet and check the first row names both.",
   },
 } as const;
+
+/**
+ * The signed-in guides' three more apps, kept out of `collectionSources` because the signed-out landing draws that object's
+ * apps and names no brand it has no real export of (`bring.test.tsx`). The upload names one of these when a file from it
+ * fails (`detectSource`), so its steps are there; the landing does not list them.
+ */
+export const moreGuideApps = [
+  {
+    id: "dragonshield", name: "Dragon Shield", sub: "Export a CSV, then upload it",
+    steps: [
+      ["In Dragon Shield, open ", { b: "Inventory" }, "."],
+      ["On the web app, press ", { b: "Export" }, ". In the phone app, open a folder’s ", { b: "⋯" }, " menu and choose ", { b: "Export" }, "."],
+      ["Once you have an account, upload the downloaded file."],
+    ],
+    hereStep: ["Upload the downloaded file here."],
+  },
+  {
+    id: "delver", name: "Delver Lens", sub: "Export a CSV, then upload it",
+    steps: [
+      ["In Delver Lens, open ", { b: "All Cards" }, " or one of your lists."],
+      ["Tap the export icon at the top, then ", { b: "Create CSV file" }, "."],
+      ["Once you have an account, upload the file."],
+    ],
+    hereStep: ["Save the file, then upload it here."],
+    foot: "If you pick the columns yourself, include Name and Quantity.",
+  },
+  {
+    id: "tcgplayer", name: "TCGplayer", sub: "Email yourself a CSV, then upload it",
+    steps: [
+      ["In the TCGplayer app’s settings, set the email export to ", { b: "CSV" }, "."],
+      ["Open the ", { b: "Collection" }, " tab and pick a list."],
+      ["Press ", { b: "⋯" }, ", then ", { b: "Send via Email" }, ", and send it to yourself."],
+      ["Once you have an account, upload the attached file."],
+    ],
+    hereStep: ["Save the attached file, then upload it here."],
+  },
+] satisfies readonly GuideApp[];
+
+/** Every guide the signed-in dialog draws, in its order. */
+export const allGuideApps: readonly GuideApp[] = [...collectionSources.apps, ...moreGuideApps];
