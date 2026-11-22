@@ -4,8 +4,9 @@
  * deck's color identity: an opponent's commander is anyone's, so the player's collection and the
  * deck being logged against decide nothing here. Catalog data only, so nothing in it is a reader's.
  *
- * What it offers is what `opponentCommandersValid` accepts when the game is saved: commander-legal and
- * `isCommanderCandidate`. The partner ability rides each hit so the client can offer only the pairs
+ * What it offers is commander-legal and `isCommanderCandidate`, a subset of what `opponentCommandersValid` accepts
+ * when the game is saved (the save also accepts a Background as a second half beside a commander that chooses one,
+ * which this search does not offer). The partner ability rides each hit so the client can offer only the pairs
  * `canPair` allows; the server re-checks the pair at save, and that check is the one that counts.
  */
 import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
