@@ -149,7 +149,7 @@ export function PrintingStrip({
                   </span>
                   <span
                     className="whitespace-nowrap font-mono text-[10px] leading-none"
-                    style={{ color: shown ? "var(--fg)" : p.mine ? "var(--accent)" : "var(--fg-muted)" }}
+                    style={{ color: shown ? "var(--fg)" : p.mine ? "var(--accent-text)" : "var(--fg-muted)" }}
                   >
                     {p.pick ? "◆ " : ""}{p.setCode}{p.mine && !p.pick ? ` ×${p.quantity}` : ""}
                   </span>
