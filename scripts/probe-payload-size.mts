@@ -172,7 +172,11 @@ async function main() {
         const first = discoveryRows(decodeDiscovery(encoded).items, { q: "", colors: [], match: "contains", order, printedIn: [], themes: [], themeMatch: "any" }, null)
           .slice(0, REVEAL_STEP);
         worstShipped = Math.max(worstShipped, Buffer.byteLength(JSON.stringify(cutToWindow(encoded, new Set(first.map((r) => r.slug)), oracleIds))));
-        worstRatio = Math.max(worstRatio, bytes / plain);
+        // An account with no rows has nothing to compress: its encoding is a fixed
+        // dictionary header (512 bytes) around a 280-byte empty list, a ratio of
+        // 183% that says nothing about the encoder. The ratio is read over lists
+        // that have rows; the check below still demands one somewhere.
+        if (list.items.length > 0) worstRatio = Math.max(worstRatio, bytes / plain);
         leastRows = Math.min(leastRows, list.items.length);
         if (bytes > worst.bytes) {
           worst = {

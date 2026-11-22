@@ -67,8 +67,9 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   they are held against the list the page decoded (`served`), not the pick-patched one, or every
   pick would drop them. A reveal or a filter reaching cards whose fields have not landed keeps the
   cards already drawn under `aria-busy`, and `Show more` ignores a press while it waits; no new
-  visuals, as on `/discover`. `probe:payload` holds the shipped wire to 1.05MB (0.959MB measured,
-  153.6KB gzipped, against 1.122MB with every card whole).
+  visuals, as on `/discover`. `probe:payload` holds the shipped wire to 1.05MB (0.915MB measured,
+  163.5KB gzipped; the card's availability rides as a short-keyed tuple `a`, absent when null, which
+  took it from 1.058MB).
 
   **Its grid's art waits for the page**, except the first screen's: once the server draws the grid
   (`?view=grid`, or a desktop default), a lazy img still starts on the HTML parse, and on the slow

@@ -107,8 +107,15 @@ describe("encodeCollection / decodeCollection", () => {
   it("names each deck once, however many cards it claims", () => {
     const wire = encodeCollection(cards, availability);
     expect(wire.decks).toEqual([["d1", "Izzet Spells"], ["d2", "Brew"]]);
-    expect(wire.cards[1].availability?.claims).toEqual([1]);
+    expect(wire.cards[1].a?.[4]).toEqual([1]);
     expect(wire.cards[0].imageUri).toBe(`${ID}?1783920591`);
+  });
+
+  it("ships availability as a short-keyed tuple, and none at all for a card with none", () => {
+    const wire = encodeCollection(cards, availability);
+    expect(wire.cards[0].a).toEqual([2, 1, 1, 1, [0, 1]]);
+    expect(Object.hasOwn(wire.cards[2], "a")).toBe(false);
+    expect(JSON.stringify(wire)).not.toContain('"availability"');
   });
 
   it("ships none of the claim fields a marker does not read", () => {
