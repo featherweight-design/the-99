@@ -124,7 +124,7 @@ try {
       },
       { table: S4, layout: s.layout, players: PLAYERS },
     );
-    await page.reload({ waitUntil: "networkidle" });
+    await page.reload({ waitUntil: "networkidle", timeout: 180_000 });
     await page.getByTestId("tracker-play").waitFor({ timeout: 20_000 });
     await page.evaluate(() => document.querySelector("[data-testid=first-roll] > button")?.click());
     await page.getByTestId("first-roll").waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
