@@ -115,12 +115,13 @@ try {
     // The pending change hangs off the number and never moves it.
     const before = await life.boundingBox();
     await minus.dispatchEvent("pointerdown");
+    check("minus half draws pressed while the finger is down", (await minus.getAttribute("data-pressed")) !== null);
     await minus.dispatchEvent("pointerup");
     await page.waitForTimeout(150);
     const after = await life.boundingBox();
     const pend = panel.getByTestId("life-pending");
     check("pending delta shows", (await pend.count()) === 1);
-    check("minus half draws pressed while pending", (await minus.getAttribute("data-pressed")) !== null);
+    check("minus half is not held pressed while pending", (await minus.getAttribute("data-pressed")) === null);
     check("life number does not move for the delta", Math.abs((before?.x ?? 0) - (after?.x ?? 1)) < 12, `${before?.x} vs ${after?.x}`);
     await shot(page, `${w.width}-pending`);
     await page.waitForTimeout(2200);
