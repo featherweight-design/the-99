@@ -53,6 +53,20 @@ function identity(rows: readonly { colorIdentity: string[] }[]): string[] {
   return [...new Set(rows.flatMap((r) => r.colorIdentity))].sort();
 }
 
+type Half = { name: string; typeLine: string; oracleText: string | null; manaCost: string | null; layout: string | null };
+
+/**
+ * The legality of the cards a change would lead the deck with: each half a commander candidate and
+ * a second half one that `canAddSecond` pairs. A Background is only ever the second half beside a
+ * commander that chooses one: it never leads, so `isCommanderCandidate` still gates the first half,
+ * and the second unless it is such a Background.
+ */
+export function pairLegal(a: Half, b: Half | undefined): boolean {
+  if (!isCommanderCandidate(a)) return false;
+  if (b === undefined) return true;
+  return (backgroundPairs(a, b) || isCommanderCandidate(b)) && canAddSecond(a, b);
+}
+
 /** Whether the new leader's identity (both sorted) fits the deck's: equal, or a superset when a
  *  single becomes a pair. */
 export function identityFits(from: readonly string[], to: readonly string[], growing: boolean): boolean {
@@ -107,13 +121,7 @@ export async function writeCommanderChange(
   const incoming = toIds.map((id) => byId.get(id));
   if (incoming.some((c) => !c || !c.commanderLegal)) return { ok: false, reason: "illegal" };
   const [a, b] = incoming as NonNullable<(typeof incoming)[number]>[];
-  // A Background is only ever the second half beside a commander that chooses one: it never leads, so
-  // `isCommanderCandidate` still gates the first half, and the second unless it is such a Background.
-  const backgroundSecond = b !== undefined && backgroundPairs(a, b);
-  if (!isCommanderCandidate(a) || (b !== undefined && !backgroundSecond && !isCommanderCandidate(b))) {
-    return { ok: false, reason: "illegal" };
-  }
-  if (b && !canAddSecond(a, b)) return { ok: false, reason: "illegal" };
+  if (!pairLegal(a, b)) return { ok: false, reason: "illegal" };
 
   // Exactly this deck's identity, so not one card of the 99 changes legality (ruling 2). A single
   // becoming a pair may widen it instead: a wider identity makes no card illegal, and a partner

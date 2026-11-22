@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cutAllowed, identityFits } from "./write";
+import { cutAllowed, identityFits, pairLegal } from "./write";
 
 describe("identityFits", () => {
   it("asks a same-size change for exactly the deck's identity (ruling 2)", () => {
@@ -36,5 +36,31 @@ describe("cutAllowed (#491, the cut a partner from outside the 99 needs)", () =>
     expect(ok(99, "elsewhere")).toBe(false);
     expect(ok(99, "locked")).toBe(false);
     expect(cutAllowed(99, "ishai", new Set(["ishai"]), commanders, new Set())).toBe(false);
+  });
+});
+
+describe("pairLegal (#491 PR6, a Background as the second half)", () => {
+  const card = (name: string, typeLine: string, oracleText: string | null = null) =>
+    ({ name, typeLine, oracleText, manaCost: "{2}{W}", layout: "normal" });
+  const chooser = card("Abdel", "Legendary Creature — Human Warrior", "Choose a Background (You can have a Background as a second commander.)");
+  const background = card("Acolyte", "Legendary Enchantment — Background", "Commander creatures you own have deathtouch.");
+  const partner = card("Tormod", "Legendary Creature — Zombie", "Partner");
+  const other = card("Other", "Legendary Creature — Elf", "Partner");
+
+  it("accepts a Background only beside a commander that chooses one", () => {
+    expect(pairLegal(chooser, background)).toBe(true);
+    expect(pairLegal(partner, background)).toBe(false);
+  });
+
+  it("never lets a Background lead, or two Backgrounds pair", () => {
+    expect(pairLegal(background, chooser)).toBe(false);
+    expect(pairLegal(background, background)).toBe(false);
+    expect(pairLegal(background, undefined)).toBe(false);
+  });
+
+  it("keeps Partner pairing as it was, and refuses a Partner beside a chooser", () => {
+    expect(pairLegal(partner, other)).toBe(true);
+    expect(pairLegal(chooser, partner)).toBe(false);
+    expect(pairLegal(partner, undefined)).toBe(true);
   });
 });
