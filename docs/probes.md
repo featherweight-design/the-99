@@ -2984,6 +2984,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   centered crop and with `center 25%`, for the contact sheet. On main every image computes `50% 50%`. It writes only
   localStorage and needs the fixture on a scratch branch, with `INVITE_CODE_SECRET` set on the dev server (the roster
   cannot seal without it, and the play route answers not found).
+- `pnpm probe:tracker-coin` presses the strip's dice button and "Flip a coin" (tablet addendum, board Coin) on a saved
+  four-seat game on S4 at 1180x820, 820x1180, 1300x900 and 390x844. Mid-toss (~380 ms) it asserts the coin turns about
+  its width (the matrix's `m13` stays 0, `m33` leaves 1) and the arc has lifted it (scale over 1.3, up off its rest); it
+  asserts seven `.coin-rim` discs, a shadow, 120px on a tablet and 72px on a phone; by 1150 ms the result shows with the
+  coin flat; a tap on the coin tosses again; under reduced motion nothing tosses and the result shows at once. On main
+  the coin spins flat about its height with no rim, arc or shadow, and 16 checks fail. `SHOTS=<dir>` writes each screen
+  mid-toss and at rest. Writes only localStorage; needs the fixture on a scratch branch and `INVITE_CODE_SECRET` set on
+  the dev server.
 - `pnpm probe:tracker-menu` presses the tracker strip's Menu (addendum #3115, gap T7b, board M1) at 390x844 and
   1180x820 on the fixture's S4. Menu must be the strip's last button, after Undo: the ⋯ icon with no text, named Menu,
   `aria-haspopup="menu"`. A press lights it with the accent and opens a 300px `role="menu"` above it, centred on it or

@@ -12,6 +12,7 @@
 // the dev server started with INVITE_CODE_SECRET set, or the roster cannot seal and the play route answers not found.
 //
 //   PROBE_BASE=http://localhost:3471 node scripts/probe-tracker-coin.mjs
+// Optional: SHOTS=<dir>.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
