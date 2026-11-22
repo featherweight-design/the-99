@@ -61,3 +61,5 @@ below (a test that pins the old coin class, the hint copy for partners, and End 
 ## Decisions inherited
 
 - Calls 1 to 4 as drawn, pending Hugh's review of the boards. No new strings. No switch: ships with its build PR.
+
+Audited 2026-11-22: concur
