@@ -11,7 +11,7 @@ import { addPanelCopy, deckHeaderCopy, overCopy } from "../../lib/copy/decks-bui
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { PrimaryButton, GhostButton } from "../ui/button";
 import { InertFlipSquares } from "./deck-flip-strip";
-import { InertChangeCommanderDoor } from "./change-commander-door";
+import { InertChangeCommanderDoor } from "./change-commander-door-inert";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deckFlipCopy, deckOpenLoadingCopy } from "../../lib/copy/deck-flip";
 import { gameLogCopy } from "../../lib/copy/game-log";
