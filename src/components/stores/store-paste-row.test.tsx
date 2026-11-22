@@ -23,9 +23,12 @@ describe("StorePasteRow", () => {
     await act(async () => fireEvent.click(press));
     expect(writeText).toHaveBeenCalledWith("1 Sol Ring\n2 Cultivate");
     expect(press).toHaveTextContent(storeCopy.copied);
+    // The accessible name swaps with the label, so a screen reader on the press hears Copied too.
+    expect(press).toHaveAccessibleName(storeCopy.copied);
     expect(screen.getByRole("status")).toHaveTextContent(storeCopy.copied);
     await act(async () => vi.advanceTimersByTime(1500));
     expect(press).toHaveTextContent(storeCopy.copyList);
+    expect(press).toHaveAccessibleName(storeCopy.copyAria(3));
     expect(screen.getByRole("status")).toHaveTextContent("");
   });
 

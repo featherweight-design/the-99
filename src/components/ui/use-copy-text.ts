@@ -46,7 +46,7 @@ export function useCopyText(onDone: (ok: boolean) => void, onReset?: () => void)
       else onDone(false);
     }
 
-    if (navigator.clipboard) navigator.clipboard.writeText(text).then(onSuccess).catch(legacyCopy);
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(onSuccess, legacyCopy);
     else legacyCopy();
   }
 

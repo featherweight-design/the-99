@@ -13,8 +13,7 @@ import { CartView } from "../../../components/decks/cart/cart-view";
 import { parseQuery } from "../../../lib/decks/cart-sort";
 import { requestFlags } from "../../../lib/flags/request";
 import { hasFriend } from "../../../lib/social/has-friend";
-import { readerStore } from "../../../lib/stores/preference";
-import type { Store } from "../../../lib/stores/rows";
+import { readerStoreForPage } from "../../../lib/stores/preference";
 import { StoreProvider } from "../../../components/stores/store-provider";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
@@ -43,7 +42,7 @@ export default async function AllDecksShoppingPage({
   // A cart whose prices could not be read is served and never stored: the next visit reads again.
   // The reader's store keys the entry as well as pricing it, so a store change can never serve another store's figures
   // (the `user_prefs` stamp retires it too). An unreadable preference prices in Mana Pool, the default.
-  const store = await readerStore(userId, env).catch((): Store => "manapool");
+  const store = await readerStoreForPage(userId, env);
   const cart = await cachePageForUser(userId, "cart", [store], async () => {
     const value = await loadCart(userId, store);
     return { value, store: value.priced };

@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cardTokens, tokenPrintings, tokens } from "../../db/schema";
+import type { Store } from "../stores/rows";
 import { tokenFloorFailure, type TokenCatalog, type TokenCatalogStats } from "./catalog";
 
 const BATCH = 1_000;
@@ -31,9 +32,14 @@ export async function tokenTablesExist(): Promise<boolean> {
  * catalog step and not for this one; the price ingest asks this, not `tokenTablesExist`, or it would
  * find token printings and then insert into a table that is not there and roll back the card prices.
  */
-export async function tokenPriceTablesExist(): Promise<boolean> {
+export async function tokenPriceTablesExist(store: Store = "manapool"): Promise<boolean> {
   if (!(await tokenTablesExist())) return false;
-  const { rows } = await db.execute<{ ok: boolean }>(sql`select to_regclass('public.token_printing_prices') is not null as ok`);
+  // Another store's figures live in `token_store_prices` (store preference), a later migration again.
+  const { rows } = await db.execute<{ ok: boolean }>(
+    store === "manapool"
+      ? sql`select to_regclass('public.token_printing_prices') is not null as ok`
+      : sql`select to_regclass('public.token_store_prices') is not null as ok`,
+  );
   return rows[0]?.ok === true;
 }
 

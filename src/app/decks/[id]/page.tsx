@@ -93,8 +93,7 @@ import { readShoppingLimit } from "../../../lib/swaps/read";
 import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestFlags } from "../../../lib/flags/request";
-import { readerStore } from "../../../lib/stores/preference";
-import type { Store } from "../../../lib/stores/rows";
+import { readerStoreForPage } from "../../../lib/stores/preference";
 import { StoreProvider } from "../../../components/stores/store-provider";
 import { preconUpgradeEnabled } from "../../../lib/precons/upgrade/flag";
 import { GuidedRunLine } from "../../../components/decks/guided/guided-run-line";
@@ -213,7 +212,7 @@ async function DeckBuilderBody({
   // The reader's store (store choice, design #3200): Mana Pool unless the switch is on and they chose another. The
   // deck's prices and its tokens' are read in it, and every price surface below draws its name. An
   // unreadable preference prices in Mana Pool, the default, rather than failing the page.
-  const storeRead = readerStore(userId, env).catch((): Store => "manapool");
+  const storeRead = readerStoreForPage(userId, env);
   // ONE availability read for the page, from this deck's vantage over the whole collection.
   // `getDeckDetail` (its own rows and commanders) and the candidate pool below both used to run
   // the claim model separately, ~150ms each on staging, the second only after the detail had

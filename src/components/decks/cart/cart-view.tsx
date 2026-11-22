@@ -345,6 +345,7 @@ function CartBody({
   }, [hasList]);
   // K1, once per visit: armed when the Mana Pool link is pressed, shown when the tab comes back,
   // and never again once dismissed. Held here, so nothing that remounts the list resets it.
+  const store = useStoreInfo();
   const [band, setBand] = useState<"off" | "armed" | "shown" | "dismissed">("off");
   const arm = (e: React.MouseEvent) => {
     // The band tells the player to press buy.
@@ -361,7 +362,6 @@ function CartBody({
   }, [band]);
   const readIds = useMemo(() => new Set(cart.lines.map((l) => l.oracleId)), [cart.lines]);
   const total = cartTotal(cart.decks, selected);
-  const store = useStoreInfo();
   // A store with a cart link gets its links; one without gets the selection as lines to paste (store choice, call 6).
   const links = useMemo(() => (store.cart ? checkoutLinks(cart.lines, selected) : []), [store.cart, cart.lines, selected]);
   const pasteLines = useMemo(() => (store.cart ? [] : checkoutLines(cart.lines, selected)), [store.cart, cart.lines, selected]);

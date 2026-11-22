@@ -35,7 +35,7 @@ export function StorePasteRow({ store, lines }: { store: StoreInfo; lines: reado
         type="button"
         data-copy-list=""
         onClick={() => copy(pasteListText(lines))}
-        aria-label={storeCopy.copyAria(count)}
+        aria-label={copied ? storeCopy.copied : storeCopy.copyAria(count)}
         className={`${TOUCH_HIT_INLINE} ${PRESS}`}
       >
         {copied ? (

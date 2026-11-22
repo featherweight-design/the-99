@@ -34,6 +34,17 @@ export async function readerStore(userId: string, env: NodeJS.ProcessEnv, q: Q =
 }
 
 /**
+ * A page's read of the reader's store: Mana Pool when the read fails, so the page still draws, every figure and label
+ * on it from one store. The failure is logged, since the reader then sees Mana Pool though they chose another.
+ */
+export function readerStoreForPage(userId: string, env: NodeJS.ProcessEnv): Promise<Store> {
+  return readerStore(userId, env).catch((error: unknown): Store => {
+    console.error("[store] reader store read failed; drawing Mana Pool", error);
+    return "manapool";
+  });
+}
+
+/**
  * Saves the reader's choice in one statement: inserted with their prefs row, or set on it, only when it changes.
  * True when it changed. Mana Pool is stored as itself, not as null, so "chose Mana Pool" stays distinct from "never
  * chose" (the first-run row asks only the second).

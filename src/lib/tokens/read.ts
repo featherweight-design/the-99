@@ -274,7 +274,7 @@ export async function loadDeckTokens(
         setCode: tokenPrintings.setCode, collectorNumber: tokenPrintings.collectorNumber,
         imageUri: tokenPrintings.imageUri, imageUriSmall: tokenPrintings.imageUriSmall, artCropUri: tokenPrintings.artCropUri,
       }).from(tokenPrintings).where(inArray(tokenPrintings.tokenOracleId, tokenIds)),
-      (await tokenPriceTablesExist()) ? loadTokenPrices(tokenIds, store) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
+      (await tokenPriceTablesExist(store)) ? loadTokenPrices(tokenIds, store) : Promise.resolve({ prices: new Map(), newestAsOf: null }),
       // 0118's tables are checked with the ownership ones (`tokenOwnershipTablesExist`).
       ownershipReady ? loadHeldTokenPrintings(userId, tokenIds) : Promise.resolve(new Map<string, HeldTokenPrinting[]>()),
       ownershipReady ? loadDeckTokenPicks(deckId, userId) : Promise.resolve(new Map<string, string>()),
