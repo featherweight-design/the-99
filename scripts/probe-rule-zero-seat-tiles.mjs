@@ -3,11 +3,10 @@
 // A <button> that is a grid item does not stretch in WebKit, so a tile with no width of its own shrinks to its content.
 // It opens the picker from the fixture's Sunday league pod ("Rule 0 check") at 1180x820 and 820x1180 (iPad), 390x844 and
 // 1300x900, in Chromium AND WebKit (Safari's engine), and per tile checks: the tile is as wide as its grid column, the art
-// box is as wide as the tile and at least 60px, and the checkbox sits in the art's top-right corner clear of the initials
-// or art centre. Writes nothing (it only opens the picker). Needs the fixture from `scripts/seed-rule-zero-fixture.mts`.
+// box is as wide as the tile and at least 60px, and the checkbox box lies inside the art box. The "chromium-fit" run emulates Safari's shrink-to-fit button. Writes nothing (it only opens the picker). Needs the fixture from `scripts/seed-rule-zero-fixture.mts`.
 //
 //   PROBE_BASE=http://localhost:3391 node scripts/probe-rule-zero-seat-tiles.mjs
-// Optional: SHOTS=<dir>.
+// Optional: PROBE_SHOTS=<dir>.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium, webkit } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
@@ -15,7 +14,7 @@ import { requireEnv } from "./lib/env.mjs";
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 if (!/^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?\/?$/.test(BASE)) throw new Error("PROBE_BASE must be a local dev server");
-const SHOTS = process.env.SHOTS;
+const SHOTS = process.env.PROBE_SHOTS;
 const WIDTHS = [
   { label: "ipad-landscape", width: 1180, height: 820 },
   { label: "ipad-portrait", width: 820, height: 1180 },
@@ -53,7 +52,10 @@ async function signIn(page) {
 }
 
 await clerkSetup();
-for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]]) {
+// "chromium-fit" emulates Safari: a <button> grid item does not stretch there (justify-self: start is the same shrink-to-fit),
+// which is what collapsed the tiles on the iPad. Playwright's own WebKit stretches the button, so only this run fails on a tile
+// with no width of its own.
+for (const [engineName, engine, fit] of [["chromium", chromium, false], ["webkit", webkit, false], ["chromium-fit", chromium, true]]) {
   const browser = await engine.launch();
   for (const w of WIDTHS) {
     const tag = `${engineName} ${w.label} ${w.width}x${w.height}`;
@@ -67,25 +69,22 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
       await row.waitFor({ timeout: 20_000 });
       await page.waitForTimeout(1500);
       await row.evaluate((el) => el.click());
-      const group = page.getByRole("group", { name: /./ }).filter({ has: page.getByRole("checkbox") }).first();
+      const group = page.getByRole("dialog").getByRole("group").filter({ has: page.getByRole("checkbox") }).first();
       await group.waitFor({ timeout: 20_000 });
+      if (fit) await page.addStyleTag({ content: "[role=checkbox]{justify-self:start}" });
       await page.waitForTimeout(500);
       const tiles = await group.evaluate((g) => {
         const gr = g.getBoundingClientRect();
         const cols = getComputedStyle(g).gridTemplateColumns.split(" ").map(parseFloat);
-        return [...g.querySelectorAll("[role=checkbox]")].map((t) => {
+        return [...g.querySelectorAll("[role=checkbox]")].map((t, idx) => {
           const r = t.getBoundingClientRect();
           const art = t.querySelector("[aria-hidden]");
           const a = art.getBoundingClientRect();
           const box = art.querySelector("span.absolute");
           const b = box?.getBoundingClientRect();
-          const initials = art.querySelector("[data-testid=pod-seat-initials]");
-          const range = initials ? document.createRange() : null;
-          range?.selectNodeContents(initials);
-          const i = range?.getBoundingClientRect();
           return {
-            tile: r.width, col: cols[0], art: a.width, artH: a.height,
-            overlap: b && i ? !(b.right <= i.left || b.left >= i.right || b.bottom <= i.top || b.top >= i.bottom) : false,
+            tile: r.width, col: cols[idx % cols.length], art: a.width, artH: a.height,
+            outside: b ? b.right > a.right + 1 || b.left < a.left - 1 || b.top < a.top - 1 || b.bottom > a.bottom + 1 : false,
             gridW: gr.width,
           };
         });
@@ -94,7 +93,7 @@ for (const [engineName, engine] of [["chromium", chromium], ["webkit", webkit]])
       tiles.forEach((t, k) => {
         check(`${tag} tile ${k}: as wide as its column`, Math.abs(t.tile - t.col) <= 1, `tile ${t.tile.toFixed(1)} col ${t.col}`);
         check(`${tag} tile ${k}: art at least 60px wide and as wide as the tile`, t.art >= 60 && Math.abs(t.art - t.tile) <= 1, `art ${t.art.toFixed(1)}`);
-        check(`${tag} tile ${k}: checkbox clear of the initials`, !t.overlap);
+        check(`${tag} tile ${k}: checkbox box inside the art`, !t.outside);
       });
       if (SHOTS) await page.screenshot({ path: `${SHOTS}/${engineName}-${w.label}.png` });
     } catch (e) {
