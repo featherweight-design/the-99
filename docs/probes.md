@@ -2913,9 +2913,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   nothing, needs `INVITE_CODE_SECRET` on the dev server and the fixture on a scratch branch.
 - `pnpm probe:tracker-layout-parity` opens the life tracker's setup for the fixture's four-seat table S4 at phone
   (390x844) and both tablet widths (1024x768, 820x1180) and reads the Table radio group's arrangement names. Every width
-  must offer what the phone offers, by the same names, and more than one (Hugh ruling 11-22: layouts are the same on
-  every device). On main the tablet offers one arrangement, "Two and two", against the phone's two: 3 failures. It
-  only reads (setup writes nothing until Start) and needs the fixture on a scratch branch.
+  must offer what the phone offers, by the same names and in the same order, and every width must offer addendum R2's
+  "Two and two" then "One on each side" (Hugh ruling 11-22: layouts are the same on every device). On main the tablet
+  offers one arrangement and the phone the old names: 5 failures. The fixture seats four, so five and six seats are
+  pinned by `layouts.test.ts` (setup draws `layoutsFor` directly). It only reads (setup writes nothing until Start) and
+  needs the fixture on a scratch branch.
 - `pnpm probe:rule-zero` proves Rule 0's data (plan `docs/superpowers/plans/2026-10-16-rule-zero.md` §PR 2a) against a
   real database. One player is everyone's friend and nobody else is anybody's, so two pod-mates are not friends. It proves
   setup's member kinds (`you`, `hasDecks`, `noDecks`, `picksOwn`); every refusal (a viewer or a seat outside the pod, a
