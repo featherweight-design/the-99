@@ -22,7 +22,7 @@
 // are purchases and go with the offers; Cancel plan and Update card stay. Both rules are imported, never restated, so
 // the probe is run with `tsx`.
 //
-// A switch change waits out the server's 30-second switch memo (`SNAPSHOT_TTL_MS`).
+// A switch change waits out the server's switch memo (`waitOutSwitchMemo`, scripts/lib/switch-memo.mjs).
 //
 //   PROBE_BASE=http://localhost:3392 PROBE_DATABASE_URL=… pnpm probe:payments-reduced
 // The server must read the same database (its `.env` `DATABASE_URL`). Point it at `next start`, never `next dev`.
@@ -35,6 +35,7 @@ import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 import { readerSeesOffers } from "../src/lib/payments/visible-rule";
 import { cardPresses, planCardFacts } from "../src/lib/payments/plan-card-rule";
+import { waitOutSwitchMemo } from "./lib/switch-memo.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, PROBE_DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -57,7 +58,6 @@ const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as
 assertScratchBranch(branch, "probe:payments-reduced");
 
 const MARK = `probe-payments-reduced-${Date.now()}`;
-const MEMO_MS = 31_000;
 const SHOTS = process.env.PROBE_SHOTS;
 let failures = 0;
 const check = (ok, label, saw) => {
@@ -146,11 +146,11 @@ async function setPlan(userId, cancelling) {
     values (${userId}, 'plan', 60, ${cancelling ? periodEnd() : null}::timestamp, ${`${MARK}-plan`}, ${PLAN_SUB})`;
 }
 
-async function setSwitch(userId, on) {
+async function setSwitch(userId, on, page) {
   await sql`delete from flag_overrides where switch = 'PAYMENTS_ENABLED' and scope = 'user' and user_id = ${userId}`;
   await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by) values ('PAYMENTS_ENABLED', 'user', ${userId}, ${on ? "on" : "off"}, ${MARK}, ${MARK})`;
-  // The server memoizes each reader's switches for 30 seconds.
-  await new Promise((r) => setTimeout(r, MEMO_MS));
+  // The server memoizes the switch snapshot, served stale past its window while it refreshes.
+  await waitOutSwitchMemo(page, BASE);
 }
 
 async function look(page, width, c) {
@@ -224,7 +224,7 @@ try {
   await sql`delete from subscriptions where user_id = ${userId}`;
   for (const switchOn of [true, false]) {
     console.log(`\n── switch ${switchOn ? "on" : "off"}`);
-    await setSwitch(userId, switchOn);
+    await setSwitch(userId, switchOn, Object.values(pages)[0]);
     for (const held of [true, false]) for (const bought of [true, false]) {
       await setLots(userId, { held, bought });
       await setPaused(userId, false);

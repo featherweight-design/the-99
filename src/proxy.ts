@@ -63,8 +63,9 @@ export default clerkMiddleware(async (auth, req) => {
   // travel with every request either way. (The About gate that once redirected from here retired with About visual
   // PR 6b: Home's banner carries launches now.)
   // `[perf] proxy` with PERF_TIMING=1: what the proxy costs before any page runs, logged under the
-  // request's own id. `memo` is how the switch overrides were answered: `hit` from the settled
-  // per-instance memo, `pending` by waiting on another request's read, `miss` by a read of its own.
+  // request's own id. `memo` is how the switch overrides were answered: `hit` from the per-instance
+  // memo inside its window, `stale` from it past the window while a read refreshes it behind the response,
+  // `pending` by waiting on another request's first read, `miss` by a first read of its own.
   const timing = process.env.PERF_TIMING === "1";
   const publicPath = isPublic(req);
   const t0 = timing ? performance.now() : 0;

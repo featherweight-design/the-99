@@ -1,27 +1,57 @@
-// The overrides are read once per 30 seconds per instance, and a failed read is never held.
+// The overrides are read once per 30 seconds per instance, served stale while a read refreshes them behind the
+// response, and a failed read is never held.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 // The HTTP driver's query function: every call is one statement, and `reads.n` counts them.
-const reads = vi.hoisted(() => ({ n: 0, fail: false, rows: [] as unknown[], members: [] as unknown[], texts: [] as string[] }));
+const reads = vi.hoisted(() => ({
+  n: 0, fail: false, rows: [] as unknown[], members: [] as unknown[], texts: [] as string[],
+  // When set, the next read waits for `release()` instead of answering at once.
+  gate: null as Promise<void> | null,
+}));
+// `after()` outside a request throws; here it records what it was asked to keep alive.
+const kept = vi.hoisted(() => ({ calls: [] as (() => unknown)[], throws: false }));
+vi.mock("next/server", () => ({
+  after: (task: () => unknown) => {
+    if (kept.throws) throw new Error("`after` was called outside a request scope");
+    kept.calls.push(task);
+  },
+}));
 vi.mock("@neondatabase/serverless", () => ({
   neon: () => ({
-    query: (text: string) => {
+    query: async (text: string) => {
       reads.n++;
       reads.texts.push(text);
-      if (reads.fail) return Promise.reject(new Error("down"));
-      return Promise.resolve([{ overrides: reads.rows, members: reads.members }]);
+      const fail = reads.fail;
+      const answer = [{ overrides: reads.rows, members: reads.members }];
+      if (reads.gate) await reads.gate;
+      if (fail) throw new Error("down");
+      return answer;
     },
   }),
 }));
 process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
 
-const { clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
+const { clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState, SNAPSHOT_MAX_STALE_MS, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
 
 describe("switchSnapshot", () => {
   beforeEach(() => {
     clearSwitchSnapshot();
-    Object.assign(reads, { n: 0, fail: false, rows: [], members: [], texts: [] });
+    Object.assign(reads, { n: 0, fail: false, rows: [], members: [], texts: [], gate: null });
+    Object.assign(kept, { calls: [], throws: false });
   });
+
+  const row = (value: "on" | "off") => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value });
+  const gated = () => {
+    let release = () => {};
+    reads.gate = new Promise<void>((r) => (release = r));
+    return () => {
+      reads.gate = null;
+      release();
+    };
+  };
+  const settle = async () => {
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+  };
 
   it("reads once and serves the window from memory", async () => {
     await switchSnapshot(1_000);
@@ -31,14 +61,90 @@ describe("switchSnapshot", () => {
     expect(reads.n).toBe(2);
   });
 
-  it("reports a read as a miss, pending while another's is in flight, and a hit once settled", async () => {
+  it("serves the held snapshot at once past its window, and refreshes it behind the response", async () => {
+    reads.rows = [row("on")];
+    await switchSnapshot(1_000);
+    reads.rows = [row("off")];
+    const release = gated();
+    const served = await switchSnapshot(1_000 + SNAPSHOT_TTL_MS); // answers while the refresh is still held at the gate
+    expect(served?.overrides[0]?.value).toBe("on");
+    expect(reads.n).toBe(2);
+    expect(kept.calls).toHaveLength(1); // the refresh is kept alive past the response
+    // a second request while it is in flight is served stale too, and starts no read of its own
+    expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS + 1))?.overrides[0]?.value).toBe("on");
+    expect(reads.n).toBe(2);
+    release();
+    await kept.calls[0]();
+    expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS + 2))?.overrides[0]?.value).toBe("off");
+    expect(reads.n).toBe(2);
+  });
+
+  it("makes only an instance's first read wait", async () => {
+    const release = gated();
+    let answered = false;
+    const first = switchSnapshot(1_000).then((s) => (answered = true, s));
+    await settle();
+    expect(answered).toBe(false);
+    release();
+    expect(await first).not.toBeNull();
+  });
+
+  it("keeps serving the held snapshot when a refresh fails, and asks again next request", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    reads.rows = [row("on")];
+    await switchSnapshot(1_000);
+    reads.fail = true;
+    expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS))?.overrides[0]?.value).toBe("on");
+    await kept.calls[0]();
+    expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS + 1))?.overrides[0]?.value).toBe("on");
+    expect(reads.n).toBe(3);
+  });
+
+  it("refreshes even outside a request, where after() throws", async () => {
+    await switchSnapshot(1_000);
+    kept.throws = true;
+    await switchSnapshot(1_000 + SNAPSHOT_TTL_MS);
+    expect(reads.n).toBe(2);
+  });
+
+  it("does not let a refresh begun before an admin write land after it", async () => {
+    reads.rows = [row("on")];
+    await switchSnapshot(1_000);
+    const release = gated();
+    await switchSnapshot(1_000 + SNAPSHOT_TTL_MS); // a refresh that read the pre-write rows, held at the gate
+    clearSwitchSnapshot(); // the write commits
+    reads.rows = [row("off")];
+    reads.gate = null; // the post-write read answers at once, BEFORE the pre-write one
+    expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS + 1))?.overrides[0]?.value).toBe("off");
+    release(); // the pre-write read lands last
+    await kept.calls[0]();
+    expect((await switchSnapshot(1_000 + SNAPSHOT_TTL_MS + 2))?.overrides[0]?.value).toBe("off");
+  });
+
+  it("waits on the read past the staleness cap, and answers the fallbacks when it fails there", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    reads.rows = [row("on")];
+    await switchSnapshot(1_000);
+    reads.rows = [row("off")];
+    const release = gated();
+    let answered = false;
+    const late = switchSnapshot(1_000 + SNAPSHOT_MAX_STALE_MS).then((s) => (answered = true, s));
+    await settle();
+    expect(answered).toBe(false); // too old to serve: it waits
+    release();
+    expect((await late)?.overrides[0]?.value).toBe("off");
+    reads.fail = true;
+    expect(await switchSnapshot(1_000 + 3 * SNAPSHOT_MAX_STALE_MS)).toBeNull();
+    expect(switchSnapshotState(1_000 + 3 * SNAPSHOT_MAX_STALE_MS)).toBe("miss");
+  });
+
+  it("reports a read as a miss, pending while another's is in flight, a hit once held, stale past the window", async () => {
     expect(switchSnapshotState(1_000)).toBe("miss");
     const read = switchSnapshot(1_000);
     expect(switchSnapshotState(1_001)).toBe("pending");
     await read;
-    await Promise.resolve();
     expect(switchSnapshotState(1_002)).toBe("hit");
-    expect(switchSnapshotState(1_000 + SNAPSHOT_TTL_MS)).toBe("miss");
+    expect(switchSnapshotState(1_000 + SNAPSHOT_TTL_MS)).toBe("stale");
   });
 
   // Two reads could pair one table's old rows with the other's new ones, a combination that never

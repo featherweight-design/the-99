@@ -17,7 +17,7 @@ const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one :
 const endOn = (name: string) => (name.endsWith(".") ? name : `${name}.`);
 
 /** When a switch write lands, as both confirms say it. */
-const WHEN = "Within 30 seconds, on every server.";
+const WHEN = "Each server picks it up after 30 seconds and one more request.";
 
 /** Admin R3, D14: a masked name is all a search field can match, so every account search says so. */
 const FIND_BY_NAME = "Find an account by name";
@@ -617,7 +617,7 @@ export const adminCopy = {
   // `Admin R2.dc.html`).
   flags: {
     title: "Feature flags",
-    sub: "The app-wide value is each flag’s default. Account beats group beats app-wide; Killed beats them all. Changes land within 30 seconds.",
+    sub: "The app-wide value is each flag’s default. Account beats group beats app-wide; Killed beats them all. Each server picks up a change after 30 seconds and one more request.",
     search: "Search by name or variable",
     chips: { all: "All", overridden: "Overridden", offForAnyone: "Off for anyone", model: "Model features" },
     chipsLabel: "Show",

@@ -17,6 +17,7 @@ import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
+import { waitOutSwitchMemo } from "./lib/switch-memo.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
 const sql = neon(DATABASE_URL);
@@ -70,7 +71,7 @@ async function switchOn(userId, page) {
   switched = true;
   if (own) return;
   await sql`insert into flag_overrides ("switch", scope, user_id, value, updated_by) values (${SWITCH}, 'user', ${userId}, 'on', ${MARK})`;
-  await page.waitForTimeout(31_000);
+  await waitOutSwitchMemo(page, BASE);
 }
 
 async function walk(browser, width) {

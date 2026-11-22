@@ -22,7 +22,8 @@ export { SWITCH_WRITE_LOCK, type CapabilityCost, type ConfirmPreview } from "./r
  *    needs `confirmed === N`; anything else returns the preview and writes nothing, so a stale
  *    confirm gets a fresh one. A no-op writes nothing. Then the mutate and its `admin_events` row.
  * 3. After the commit only: the memo clear and the revalidations. Clearing inside the transaction
- *    would let a concurrent request re-read the old rows and hold them for 30 seconds.
+ *    would let a concurrent request re-read the old rows and hold them past the commit, served for minutes as a
+ *    stale snapshot (the memo's generation only discards a read begun before the clear, not one begun after it).
  */
 export type WriteResult =
   | { ok: true }
