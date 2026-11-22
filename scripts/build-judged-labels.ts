@@ -25,8 +25,8 @@ import { runJudgedBuild } from "./lib/judged-labels-build";
 import { readModelCalls } from "./lib/model-calls-gate.mjs";
 import { requireBranch } from "./lib/require-branch.mjs";
 
-/** The whole programme's ceiling across every judged run. $20 is the hard cap Hugh approved (2026-11-21): the env var may lower it, never raise it. */
-const CAP_USD = boundedNumber("JUDGED_CAP_USD", process.env.JUDGED_CAP_USD, 20, 0, 20);
+/** The whole programme's ceiling across every judged run. $25 is the hard cap Hugh approved (2026-11-22, raised from $20): the env var may lower it, never raise it. */
+const CAP_USD = boundedNumber("JUDGED_CAP_USD", process.env.JUDGED_CAP_USD, 25, 0, 25);
 
 /** `--deep=pillowFort:160,bigMana:240`: more cards drawn for the named themes in a sample. */
 function parseDeep(arg: string | undefined): Partial<Record<JudgedTheme, number>> {
