@@ -309,6 +309,7 @@
     "db:build:labels": "tsx scripts/build-card-labels.ts",
     "db:build:judged": "tsx scripts/build-judged-labels.ts",
     "db:copy:labels": "tsx scripts/copy-card-labels.ts",
+    "db:copy:judged": "tsx scripts/copy-judged-labels.ts",
     "db:catalog-build": "tsx scripts/catalog-build.ts",
     "db:index-due": "tsx scripts/index-due.ts",
     "db:catalog-sources": "tsx scripts/catalog-sources.ts",
