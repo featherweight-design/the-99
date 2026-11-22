@@ -95,6 +95,7 @@
     "probe:tracker-layout-parity": "node scripts/probe-tracker-layout-parity.mjs",
     "probe:tracker-spine": "node scripts/probe-tracker-spine.mjs",
     "probe:tracker-badges": "node scripts/probe-tracker-badges.mjs",
+    "probe:tracker-art-crop": "node scripts/probe-tracker-art-crop.mjs",
     "probe:tracker-tablet": "node scripts/probe-tracker-tablet.mjs",
     "probe:tracker-menu": "node scripts/probe-tracker-menu.mjs",
     "probe:tracker-scroll-lock": "node scripts/probe-tracker-scroll-lock.mjs",

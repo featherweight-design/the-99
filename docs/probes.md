@@ -2977,6 +2977,13 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   phone's layouts, the board never turns and phone-2 draws portrait. The device class reads the screen's short side
   (600px or more is a tablet), so the probe sets Playwright's `screen` as well as the viewport. It writes only
   localStorage and needs the fixture on a scratch branch.
+- `pnpm probe:tracker-art-crop` checks the seat art crop (Hugh, 2026-11-22: faces cut off on an iPad). It plays a saved
+  four-seat game on S4 with Dogmeat, The Borg Queen, Clavileño and Black Panther on "One on each side", so every seat
+  turn draws, at 1180x820, 820x1180 (turned, `screen.orientation.angle` stubbed and asserted) and 390x844, and asserts
+  every panel image computes `object-position: 50% 0%`. With `SHOTS=<dir>` it writes each board as drawn, with the old
+  centered crop and with `center 25%`, for the contact sheet. On main every image computes `50% 50%`. It writes only
+  localStorage and needs the fixture on a scratch branch, with `INVITE_CODE_SECRET` set on the dev server (the roster
+  cannot seal without it, and the play route answers not found).
 - `pnpm probe:tracker-menu` presses the tracker strip's Menu (addendum #3115, gap T7b, board M1) at 390x844 and
   1180x820 on the fixture's S4. Menu must be the strip's last button, after Undo: the ⋯ icon with no text, named Menu,
   `aria-haspopup="menu"`. A press lights it with the accent and opens a 300px `role="menu"` above it, centred on it or

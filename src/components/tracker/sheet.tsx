@@ -59,7 +59,7 @@ function ArtStrip({ arts, className }: { arts: readonly (string | null)[]; class
   return (
     <span className={"flex flex-none bg-[color:var(--elevated)] " + className} aria-hidden="true">
       {shown.map((src, i) => (
-        <FadingImg key={i} src={src} alt="" className={"h-full min-w-0 flex-1 object-cover opacity-80" + (i > 0 ? " border-l-2 border-[color:var(--bg)]" : "")} />
+        <FadingImg key={i} src={src} alt="" className={"h-full min-w-0 flex-1 object-cover object-top opacity-80" + (i > 0 ? " border-l-2 border-[color:var(--bg)]" : "")} />
       ))}
     </span>
   );
@@ -133,7 +133,7 @@ export function Sheet({
           data-testid="tracker-sheet"
         >
           <div className="flex h-[44px] items-center gap-3">
-            {seat.art ? <FadingImg src={seat.art} alt="" className="h-10 w-10 rounded-full object-cover" /> : null}
+            {seat.art ? <FadingImg src={seat.art} alt="" className="h-10 w-10 rounded-full object-cover object-top" /> : null}
             <span id="sheet-title" className="sr-only">{seat.you ? copy.sheet.ariaYou : <PersonText text={copy.sheet.aria(seat.name)} />}</span>
             <b className="max-w-[45%] shrink-0 truncate font-display text-[21px] font-bold">{seat.you ? copy.history.you : <PersonName n={seat.name} />}</b>
             <i className="min-w-0 truncate font-mono text-[12px] not-italic text-[color:var(--fg-muted)]">
@@ -433,7 +433,7 @@ function EndTab({ state, seats, onCommit, onBack }: { state: GameState; seats: r
           const p = seats.find((x) => x.seat === s.seat)!;
           return (
             <button key={s.seat} type="button" onClick={() => onCommit({ t: "end", winners: [s.seat] })} className={CARD + " relative flex min-h-[64px] items-center overflow-hidden text-left text-[14px]"}>
-              {p.art ? <FadingImg src={p.art} alt="" className="absolute inset-0 h-full w-full object-cover opacity-40" /> : null}
+              {p.art ? <FadingImg src={p.art} alt="" className="absolute inset-0 h-full w-full object-cover object-top opacity-40" /> : null}
               <span className="relative">{p.you ? copy.sheet.endWonYou : <PersonText text={copy.sheet.endWon(p.name)} />}</span>
             </button>
           );

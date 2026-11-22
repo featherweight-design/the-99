@@ -306,7 +306,7 @@ function HolderButton({ kind, holder, picking, onPress, children }: { kind: "mon
     >
       {children}
       {holder.art && !picking ? (
-        <FadingImg src={holder.art} alt="" className="absolute -bottom-0.5 -right-0.5 size-[22px] rounded-full object-cover shadow-[0_0_0_2px_var(--surface)]" />
+        <FadingImg src={holder.art} alt="" className="absolute -bottom-0.5 -right-0.5 size-[22px] rounded-full object-cover object-top shadow-[0_0_0_2px_var(--surface)]" />
       ) : null}
     </button>
   );
