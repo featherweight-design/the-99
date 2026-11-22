@@ -31,6 +31,20 @@ describe("storedItemsByKeyQuery", () => {
     }
   });
 
+  it("shows a price drop only in the store it was told in: Mana Pool while the switch is off, the reader's choice while on", () => {
+    const off = "and (fi.kind <> 'price-drop' or coalesce(fi.data ->> 'store', 'manapool') = 'manapool')";
+    expect(q.sql).toContain(off);
+    expect(dialect.sqlToQuery(storedFeedBranch("u1", ["price-drop"], NOW)).sql).toContain(off);
+    const on = `= coalesce((select sup.preferred_store from "user_prefs" sup where sup.user_id = fi.user_id), 'manapool'))`;
+    for (const sql of [
+      dialect.sqlToQuery(storedItemsByKeyQuery("u1", [{ kind: "price-drop", key: "item:id-1" }], NOW, true)!).sql,
+      dialect.sqlToQuery(storedFeedBranch("u1", ["price-drop"], NOW, true)).sql,
+    ]) {
+      expect(sql).toContain("and (fi.kind <> 'price-drop' or coalesce(fi.data ->> 'store', 'manapool') " + on);
+      expect(sql).not.toContain(off);
+    }
+  });
+
   it("answers the opaque feed key, never a writer's dedupe key (a trade match's names another account), and never unseen", () => {
     expect(q.sql).toContain("'item:' || fi.id::text as key");
     expect(q.sql).not.toContain("fi.dedupe_key as key");

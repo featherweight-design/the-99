@@ -42,9 +42,15 @@ export function feedFriend(publicId: string | null, displayName: string | null):
  * spare request while its ask is open and unexpired, an item naming a friend while the friendship (and, for a trade
  * match, the shared spares) still holds, and the reader has not dismissed it (✕, `feed_dismissals`). Shared by the
  * feed's branch and the push resolver, so a push is made only for what Home would still show.
+ *
+ * A PRICE DROP stands only while it was written in the reader's store (store preference, design #3200): its
+ * `data.store`, or Mana Pool for an item older than the field, against the reader's choice while `storeOn` (their
+ * `STORE_PREFERENCE_ENABLED`, resolved by the caller) and Mana Pool while off. A drop told in TCGplayer's figures is
+ * not shown, nor pushed, beside Card Kingdom's prices.
  */
-function standing(now: Date): SQL {
+function standing(now: Date, storeOn: boolean): SQL {
   return sql`
+      and (fi.kind <> 'price-drop' or coalesce(fi.data ->> 'store', 'manapool') = ${readerStoreSql(storeOn)})
       and not exists (select 1 from ${feedDismissals} ffd where ffd.user_id = fi.user_id and ffd.key = 'item:' || fi.id::text)
       and (fi.kind <> 'spare-request' or exists (
         select 1 from ${spareRequests} fsr
@@ -66,6 +72,13 @@ function standing(now: Date): SQL {
         or (fi.kind <> 'trade-match' and exists (
           select 1 from ${friendLinks} gl
           where gl.user_id = fi.user_id and gl.friend_user_id = fi.friend_user_id)))))`;
+}
+
+/** The reader's store as SQL, on the item's `fi.user_id`: their `preferred_store` while `storeOn`, else Mana Pool. */
+function readerStoreSql(storeOn: boolean): SQL {
+  return storeOn
+    ? sql`coalesce((select sup.preferred_store from ${userPrefs} sup where sup.user_id = fi.user_id), 'manapool')`
+    : sql`'manapool'`;
 }
 
 /**
@@ -93,7 +106,7 @@ export function answerOpened(viewerId: string, key: SQL): SQL {
  * as the catalog branches type it: `public_id` is a uuid and the union's other branches give `null::text`, which
  * Postgres refuses to match ("UNION types text and uuid cannot be matched"), so it is cast to text.
  */
-export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[], now: Date): SQL {
+export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[], now: Date, storeOn = false): SQL {
   return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
       null::text as code, null::text as name, null::text as file_name,
       fi.oracle_id as oracle_id, fi.variant_id as variant_id,
@@ -104,7 +117,7 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[],
     where fi.user_id = ${viewerId}
       and fi.kind = any(${sql.param([...kinds])}::text[])
       and fi.created_at > ${kindEnabledAt(sql`fup`, sql`fi.kind`)}
-      ${standing(now)}`;
+      ${standing(now, storeOn)}`;
 }
 
 /**
@@ -113,7 +126,9 @@ export function storedFeedBranch(viewerId: string, kinds: readonly StoredKind[],
  * (`standing`). Never by a writer's dedupe key: a trade match's names another account. Columns match the union's, with
  * `unseen` false: the push never reads the cursor.
  */
-export function storedItemsByKeyQuery(viewerId: string, refs: readonly { kind: StoredKind; key: string }[], now: Date): SQL | null {
+export function storedItemsByKeyQuery(
+  viewerId: string, refs: readonly { kind: StoredKind; key: string }[], now: Date, storeOn = false,
+): SQL | null {
   if (refs.length === 0) return null;
   const pairs = sql.join(refs.map((r) => sql`(${r.kind}::text, ${r.key}::text)`), sql`, `);
   return sql`select fi.kind as kind, 'item:' || fi.id::text as key, fi.created_at as created_at,
@@ -125,5 +140,5 @@ export function storedItemsByKeyQuery(viewerId: string, refs: readonly { kind: S
     left join ${socialProfiles} sp on sp.user_id = fi.friend_user_id
     where fi.user_id = ${viewerId}
       and (fi.kind, 'item:' || fi.id::text) in (${pairs})
-      ${standing(now)}`;
+      ${standing(now, storeOn)}`;
 }

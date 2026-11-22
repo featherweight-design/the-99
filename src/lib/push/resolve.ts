@@ -10,6 +10,7 @@ import { lookups, toViews } from "../feed/home";
 import { toFeedItem, type FeedRow } from "../feed/read";
 import { isStoredKind, LOG_PUSH_KIND, SEAT_PUSH_KIND, type CatalogKind, type FeedKind, type StoredKind } from "../feed/kinds";
 import { storedItemsByKeyQuery } from "../social/feed-items";
+import { storePreferenceEnabled } from "../stores/flag";
 import { loadLogGames } from "../social/rule-zero-log-home";
 import { unseenSeatNotices } from "../social/rule-zero-notice";
 import { isUuid } from "../social/rules";
@@ -41,7 +42,7 @@ export async function resolvePushItems(
   const feedRefs = refs.filter((r) => r.kind !== SEAT_PUSH_KIND && r.kind !== LOG_PUSH_KIND && !isSale(r));
   const stored = feedRefs.flatMap((r) => (isStoredKind(r.kind) ? [{ kind: r.kind as StoredKind, key: r.key }] : []));
   const catalog = feedRefs.flatMap((r) => (isStoredKind(r.kind) ? [] : [{ kind: r.kind as CatalogKind, key: r.key }]));
-  const queries = [storedItemsByKeyQuery(userId, stored, now), catalogItemsByKeyQuery(userId, catalog, now)].filter((x) => x !== null);
+  const queries = [storedItemsByKeyQuery(userId, stored, now, storePreferenceEnabled(env)), catalogItemsByKeyQuery(userId, catalog, now)].filter((x) => x !== null);
   const found = (await Promise.all(queries.map((query) => q.execute<FeedRow>(query)))).flatMap(({ rows }) => (rows as FeedRow[]).map(toFeedItem));
   const views = queries.length === 0 ? [] : toViews(found, await lookups(userId, found, q, env));
   const byKey = new Map(views.map((v) => [`${v.kind}\u0000${v.key}`, v]));

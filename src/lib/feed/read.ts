@@ -25,6 +25,7 @@ import { db } from "../../db";
 import { catalogFirstSeen, feedDismissals, precons, sets, userPrefs, wizardsAnnouncementDecklists, wizardsAnnouncements } from "../../db/schema";
 import { RELEASE_SET_TYPES } from "../catalog/index-due";
 import { answerOpened, feedFriend, storedFeedBranch, type FeedFriend } from "../social/feed-items";
+import { storePreferenceEnabled } from "../stores/flag";
 import { unseenAnswersCount } from "../social/spare-requests";
 import { answerOf, type Answer } from "../social/spare-request-rules";
 import { availableFeedKinds } from "./flag";
@@ -119,13 +120,14 @@ function announcementBranch(kind: AnnouncementFeedKind, viewerId: string, gate: 
 /**
  * The union of every branch for these kinds, or null when none is left. Every branch LEFT JOINS the reader's own prefs
  * row. Every branch's feed gate is `kindEnabledAt`, so a default-on kind (a spare request, G4; Wizards' announcements)
- * reaches a reader with no row, and any other kind needs its stamp.
+ * reaches a reader with no row, and any other kind needs its stamp. `storeOn` is the reader's `STORE_PREFERENCE_ENABLED`:
+ * a price drop stands only in the reader's store (`storedFeedBranch`), and off, or omitted, that store is Mana Pool.
  */
-export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Date): SQL | null {
+export function feedUnion(viewerId: string, kinds: readonly FeedKind[], now: Date, storeOn = false): SQL | null {
   const branches: SQL[] = [];
   for (const kind of CATALOG_KINDS) if (kinds.includes(kind)) branches.push(catalogBranch(kind, viewerId, now, feedGate(kind)));
   const stored = kinds.filter(isStoredKind);
-  if (stored.length > 0) branches.push(storedFeedBranch(viewerId, stored, now));
+  if (stored.length > 0) branches.push(storedFeedBranch(viewerId, stored, now, storeOn));
   if (branches.length === 0) return null;
   return sql.join(branches, sql` union all `);
 }
@@ -137,8 +139,10 @@ const inWindow = (now: Date) => sql`f.created_at > ${windowFloor(now).toISOStrin
 const cursorOf = (cursor: FeedCursor) => (cursor === "feed_seen_at" ? sql`up.feed_seen_at` : sql`up.friends_seen_at`);
 
 /** The feed read, apart so a test can render it. `unseen` is measured against `cursor`: Home's, or the Friends badge's. */
-export function feedQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor = "feed_seen_at"): SQL | null {
-  const union = feedUnion(viewerId, kinds, now);
+export function feedQuery(
+  viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor = "feed_seen_at", storeOn = false,
+): SQL | null {
+  const union = feedUnion(viewerId, kinds, now, storeOn);
   if (!union) return null;
   return sql`select f.kind, f.key, f.created_at, f.code, f.name, f.file_name, f.oracle_id, f.variant_id,
       f.friend_public_id, f.friend_name, f.data,
@@ -150,8 +154,8 @@ export function feedQuery(viewerId: string, kinds: readonly FeedKind[], now: Dat
 }
 
 /** The unseen count, apart so a test can render it: one statement over the same union. */
-export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor): SQL | null {
-  const union = feedUnion(viewerId, kinds, now);
+export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor, storeOn = false): SQL | null {
+  const union = feedUnion(viewerId, kinds, now, storeOn);
   if (!union) return null;
   return sql`select count(*)::int as n
     from (${union}) f
@@ -167,8 +171,8 @@ export function unseenCountQuery(viewerId: string, kinds: readonly FeedKind[], n
  * An UPSERT, because a reader with no prefs row can still have an unseen item (a default-on kind, G4); the shape of
  * `markAnswersSeenQuery`.
  */
-export function markSeenQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor): SQL | null {
-  const union = feedUnion(viewerId, kinds, now);
+export function markSeenQuery(viewerId: string, kinds: readonly FeedKind[], now: Date, cursor: FeedCursor, storeOn = false): SQL | null {
+  const union = feedUnion(viewerId, kinds, now, storeOn);
   if (!union) return null;
   const column = cursor === "feed_seen_at" ? sql`feed_seen_at` : sql`friends_seen_at`;
   const stored = sql`(select cup.${column} from ${userPrefs} cup where cup.user_id = ${viewerId})`;
@@ -263,7 +267,7 @@ export function toSale(v: unknown): DropSale | null {
 
 /** The reader's feed: every item in the window, waiting on you first, then newest, each with `unseen`. */
 export async function loadFeed(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<FeedItem[]> {
-  const query = feedQuery(userId, availableFeedKinds(env), now);
+  const query = feedQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env));
   if (!query) return [];
   const { rows } = await q.execute<FeedRow>(query);
   return (rows as FeedRow[]).map(toFeedItem).sort(feedOrder);
@@ -271,7 +275,7 @@ export async function loadFeed(userId: string, env: NodeJS.ProcessEnv, now = new
 
 /** Home's badge: unseen items in the window. One statement; 0 while the feed is off. */
 export async function unseenCount(userId: string, env: NodeJS.ProcessEnv, now = new Date(), q: Executor = db): Promise<number> {
-  return countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at"), q);
+  return countUnder(unseenCountQuery(userId, availableFeedKinds(env), now, "feed_seen_at", storePreferenceEnabled(env)), q);
 }
 
 /**

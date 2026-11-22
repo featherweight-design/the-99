@@ -13,7 +13,7 @@ async function noticeDrops(): Promise<void> {
     const r = await noticePriceDrops(process.env);
     console.log(
       `Price drops: ${r.noticed} noticed of ${r.candidates} wishlist lines read (${r.switchedOff} switched off, ` +
-      `${r.failed} failed); ${r.backfilled} baselines filled.`,
+      `${r.otherStore} awaiting their store's figure, ${r.failed} failed); ${r.backfilled} baselines written.`,
     );
   } catch (error) {
     console.error("Price drops were not noticed this run (the prices stand):", error);

@@ -191,7 +191,8 @@ async function writeWant(
 ): Promise<WantResult | null> {
   // The price-drop baseline (menu and Home G2): today's cheapest, as every buy tag draws it, read before the lock so
   // the collection lock is held no longer than it was. Written only by a NEW line; a quantity change keeps the
-  // line's own. Null when the card has no live price, which the price job fills on its next run.
+  // line's own. Null when the card has no live price, which the price job fills on its next run. Mana Pool's figure
+  // (`price_store` null): for a reader priced in another store, the price job re-baselines the line in theirs first.
   const atAdd = cheapestNow(await loadPrices([oracleId]), oracleId);
   return db.transaction(async (tx) => {
     await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${viewerId}, 0))`);
@@ -231,6 +232,9 @@ async function writeWant(
  * to want, so it is removed (`held`), as `writeWant` removes a want set at or below what is held. The baseline is
  * null when the printing has no live price (the price job fills it on its next run); a named printing that is sold
  * out sets no alert until it returns.
+ *
+ * The baseline is Mana Pool's, so the line's `price_store` is cleared to say so: for a reader priced in another store
+ * (store preference, design #3200), the next price run re-baselines it in theirs before it compares.
  */
 export async function setWishlistPrinting(viewerId: string, oracleId: unknown, rawPrintingId: unknown): Promise<WantResult | null> {
   if (typeof oracleId !== "string" || !UUID.test(oracleId)) return null;
@@ -264,7 +268,8 @@ export async function setWishlistPrinting(viewerId: string, oracleId: unknown, r
       insert into ${wishlistItems} (user_id, oracle_id, quantity, price_at_add_cents, scryfall_id)
       values (${viewerId}, ${oracleId}, ${quantity}, ${atAdd}::int, ${printingId}::uuid)
       on conflict (user_id, oracle_id) do update set
-        scryfall_id = excluded.scryfall_id, price_at_add_cents = excluded.price_at_add_cents, price_noticed_at = null
+        scryfall_id = excluded.scryfall_id, price_at_add_cents = excluded.price_at_add_cents, price_noticed_at = null,
+        price_store = null
     `);
     return { status: "wanted", quantity, held: card.held };
   });
