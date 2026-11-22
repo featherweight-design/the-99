@@ -24,7 +24,7 @@ const SCORE = args.includes("--score");
 const model = args.find((a) => a.startsWith("--model="))?.slice(8);
 
 const MODELS: Record<string, { in: number; out: number; maxTokens: number; params: Record<string, unknown> }> = {
-  "claude-sonnet-5-5": { in: 1, out: 5, maxTokens: 300, params: { thinking: { type: "between_tools" } } },
+  "claude-sonnet-5-5": { in: 1, out: 5, maxTokens: 600, params: { thinking: { type: "between_tools" } } },
   "claude-opus-5-5": { in: 2, out: 10, maxTokens: 1500, params: { output_config: { effort: "low" } } },
 };
 
@@ -140,12 +140,14 @@ function score(pairs: Pair[]) {
     const f = join(DIR, `verify-test${SAMPLE === "2" ? "" : SAMPLE}-${m}.json`);
     if (!existsSync(f)) continue;
     const res: { custom_id: string; text?: string }[] = JSON.parse(readFileSync(f, "utf8"));
-    const yes = new Set<string>(); let bad = 0;
+    const yes = new Set<string>(); const bad: string[] = [];
     for (const r of res) {
       const s = r.text ?? ""; const a = s.indexOf("{"); const z = s.lastIndexOf("}");
-      try { if (JSON.parse(s.slice(a, z + 1)).verdict === "yes") yes.add(r.custom_id); } catch { bad++; }
+      try { if (JSON.parse(s.slice(a, z + 1)).verdict === "yes") yes.add(r.custom_id); } catch { bad.push(r.custom_id); }
     }
-    console.log(`  ${m}: ${yes.size} yes of ${res.length}, ${bad} unparsed (counted as no)`);
+    console.log(`  ${m}: ${yes.size} yes of ${res.length}, ${bad.length} unparsed`);
+    // A truncated or malformed reply is an error, never a "no": scoring it as no silently drops true positives.
+    if (bad.length) throw new Error(`${m}: unparsed verifier replies (likely truncated at max_tokens): ${bad.join(", ")}`);
     table(`pass1+pass2 ${m}`, pairs.filter((p) => yes.has(`vf-${p.n}-${p.theme}`)));
     for (const r of res) {
       if (!yes.has(r.custom_id)) continue;
