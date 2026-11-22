@@ -2146,7 +2146,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   With the predicate's correlation broken to `pi.oracle_id = pi.oracle_id` it reads every
   candidate in every set and fails three more. It makes no writes, so it can point at staging.
 
-- `pnpm probe:themes-filter` presses `Themes ▾` on `/commanders/discover` at 390x844 and 1300x900
+- `pnpm probe:themes-filter` presses `Themes ▾` on `/commanders/discover` (or, with `PROBE_LANE=owned`, on For you at `/commanders`) at 390x844 and 1300x900
   (#159, build T2). At 1300 it opens the rack's popover; at 390 it presses a pill in the filter
   sheet, reads the six-pill cap and the `All N themes` row, and opens the whole list as a second
   layer that must leave the sheet inert and close alone on `Back to filters`. It picks the enabled

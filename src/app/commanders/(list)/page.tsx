@@ -14,6 +14,8 @@ import { scopeRedirectTarget } from "../scope-redirect";
 import { searchParamsToQuery } from "../../../lib/commanders/search-params";
 import { retryRecs } from "../actions";
 import { lanePrintedInFor, loadCommanderPrintings } from "../../../lib/sets/lane-printed-in";
+import { laneThemesFor } from "../../../lib/themes/lane-themes";
+import { laneOracleIds } from "../../../lib/commanders/printed-in-lane";
 import { perfRead, perfRoute } from "../../../lib/perf/timing";
 import { RetryGhost } from "../../../components/commanders/retry-submit";
 import { GhostButton, PrimaryButton } from "../../../components/ui/button";
@@ -69,7 +71,11 @@ export default async function CommandersPage({
   const { items, degraded, uniqueCardsRead, candidateCount, hiddenCount, freeRanking, availOk } = rankings;
   // `Printed in ▾`'s index, aligned to these rows. The free ranking re-orders the same
   // commanders, so one index covers both lists.
-  const printedIn = await perf.timed("printedIn", () => lanePrintedInFor(items, printings));
+  // `Themes ▾`'s index, over the same rows and in the same order, so it is aligned by construction.
+  const [printedIn, themes] = await Promise.all([
+    perf.timed("printedIn", () => lanePrintedInFor(items, printings)),
+    perf.timed("themes", () => laneThemesFor(laneOracleIds(items))),
+  ]);
 
   // No commander candidates in the collection. A list the player emptied by hiding is not this: it
   // has candidates, all of them hidden, and the view draws "Everything here is hidden" under its rack.
@@ -225,6 +231,7 @@ export default async function CommandersPage({
         freeRanking={freeRanking}
         availOk={availOk}
         printedIn={printedIn}
+        themes={themes}
         savedAvail={savedAvail}
       />
     </section>

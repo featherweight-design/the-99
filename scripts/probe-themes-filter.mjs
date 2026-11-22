@@ -1,4 +1,4 @@
-// `Themes ▾` on Discover, pressed in a real browser at 390x844 and 1300x900 (#159, build T2).
+// `Themes ▾` on Discover and on For you, pressed in a real browser at 390x844 and 1300x900 (#159, build T2).
 //
 // The unit suites prove the filter over hand-built rows. What only a browser answers:
 //
@@ -15,6 +15,7 @@
 // follows the catalog rather than a name that rots. Read only, apart from the account's About row,
 // captured first and put back in a `finally`. Point it at `local-dev`, never production.
 //   PROBE_BASE=http://localhost:3000 pnpm probe:themes-filter
+// PROBE_LANE=owned walks the For you lane (/commanders) instead of Discover, the default.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { neon } from "@neondatabase/serverless";
@@ -33,7 +34,7 @@ const VIEWPORTS = [
   { label: "390", width: 390, height: 844, wide: false },
   { label: "1300", width: 1300, height: 900, wide: true },
 ];
-const LANE = "/commanders/discover";
+const LANE = process.env.PROBE_LANE === "owned" ? "/commanders" : "/commanders/discover";
 
 const sql = neon(DATABASE_URL);
 let failures = 0;
