@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-20T19:26:50Z"
  },
- "title": "Alternate printings R1",
+ "title": "Alternate printings R1 + R2",
  "launch": {
   "view": "canvas"
  },
@@ -44,6 +44,27 @@
    "w": 1250,
    "h": 994,
    "title": "Single"
+  },
+  "R2-Main.dc.html": {
+   "x": 0,
+   "y": 2120,
+   "w": 1500,
+   "h": 1500,
+   "title": "R2 \u00b7 Main"
+  },
+  "R2-Phone.dc.html": {
+   "x": 1620,
+   "y": 2120,
+   "w": 1400,
+   "h": 1860,
+   "title": "R2 \u00b7 Phone"
+  },
+  "R2-Desktop.dc.html": {
+   "x": 3140,
+   "y": 2120,
+   "w": 1672,
+   "h": 1374,
+   "title": "R2 \u00b7 Desktop"
   }
  },
  "order": [
@@ -51,8 +72,19 @@
   "Search.dc.html",
   "Unowned.dc.html",
   "Owned.dc.html",
-  "Single.dc.html"
+  "Single.dc.html",
+  "R2-Main.dc.html",
+  "R2-Phone.dc.html",
+  "R2-Desktop.dc.html"
  ],
- "notes": {},
+ "notes": {
+  "r2title": {
+   "x": 0,
+   "y": 1860,
+   "text": "R2 \u00b7 Pick a printing in place (2026-11-22)",
+   "kind": "title1",
+   "maxW": 4812
+  }
+ },
  "designSystems": []
 }

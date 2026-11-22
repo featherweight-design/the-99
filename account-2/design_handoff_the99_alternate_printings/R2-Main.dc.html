@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R2 · Pick a printing in place</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF6FAE}a:hover{color:#FF9AC6}
+</style>
+</helmet>
+<div style="width:1500px;min-height:1500px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:32px">
+<div style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif;color:#E6E8F0">R2 · Pick a printing in place</h2><p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1100px">Account 2, 2026-11-22. Hugh: seeing another printing on a phone takes five steps. Now a printing is shown first and every other printing sits right under it. Drawn on the shipped card details (rendered from the real component), in the shipped tile style, not ManaBox's.</p></div>
+<div style="display:flex;flex-direction:column;gap:14px;padding:24px;border:1px solid #262A35;border-radius:12px;background:#11131A">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#959AAD">Shipped (R1), phone</span>
+<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span style="padding:8px 14px;border-radius:999px;border:1px solid #262A35;font:500 13px 'IBM Plex Mono',monospace;color:#B1B6C7;white-space:nowrap">Scroll down</span><span aria-hidden="true" style="color:#5C6275;font:500 13px 'IBM Plex Mono',monospace">→</span><span style="padding:8px 14px;border-radius:999px;border:1px solid #262A35;font:500 13px 'IBM Plex Mono',monospace;color:#B1B6C7;white-space:nowrap">Open Set ▾</span><span aria-hidden="true" style="color:#5C6275;font:500 13px 'IBM Plex Mono',monospace">→</span><span style="padding:8px 14px;border-radius:999px;border:1px solid #262A35;font:500 13px 'IBM Plex Mono',monospace;color:#B1B6C7;white-space:nowrap">Pick a printing</span><span aria-hidden="true" style="color:#5C6275;font:500 13px 'IBM Plex Mono',monospace">→</span><span style="padding:8px 14px;border-radius:999px;border:1px solid #262A35;font:500 13px 'IBM Plex Mono',monospace;color:#B1B6C7;white-space:nowrap">Scroll back up</span><span aria-hidden="true" style="color:#5C6275;font:500 13px 'IBM Plex Mono',monospace">→</span><span style="padding:8px 14px;border-radius:999px;border:1px solid #262A35;font:500 13px 'IBM Plex Mono',monospace;color:#B1B6C7;white-space:nowrap">Pull the sheet down</span></div>
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE;margin-top:8px">R2, phone and desktop</span>
+<div style="display:flex;gap:10px;align-items:center"><span style="padding:8px 14px;border-radius:999px;border:1px solid #FF6FAE;font:500 13px 'IBM Plex Mono',monospace;color:#FF6FAE;white-space:nowrap">Tap a printing under the card</span></div>
+</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px 40px">
+<div style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font:600 16px IBM Plex Sans,sans-serif;color:#E6E8F0">1 · Where</p><p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7">A strip of every printing at card shape, with the set code under each, in card details opened from search. On the phone it sits in the sheet&#x27;s teaser under the price line. On desktop it sits under the title. The printing on screen is ringed.</p></div><div style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font:600 16px IBM Plex Sans,sans-serif;color:#E6E8F0">2 · Tap to view</p><p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7">The art, the price and the set line change in place. Nothing is stored, and closing or paging forgets it (the R1 preview rules). Add to collection and Edit copies open at the printing on screen, as shipped.</p></div><div style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font:600 16px IBM Plex Sans,sans-serif;color:#E6E8F0">3 · Owned cards</p><p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7">Your printings come first: ◆ your pick, then the rest you own (×N). A hairline, then every other printing. Viewing never changes your pick.</p></div><div style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font:600 16px IBM Plex Sans,sans-serif;color:#E6E8F0">4 · The Set field goes back to one job</p><p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7">For a card you don&#x27;t own it&#x27;s a plain field naming what&#x27;s showing. For a card you own it&#x27;s the shipped picker for your pick, over the printings you own. R1&#x27;s list inside the Set field (22 printings ▾, Other printings) is retired, so there&#x27;s one control per action.</p></div><div style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font:600 16px IBM Plex Sans,sans-serif;color:#E6E8F0">5 · Sizes</p><p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7">48×67 thumbs with an 8px gap, so 6 show on a phone. The teaser grows by 98px and the card above shrinks to fit, like the stand-ins door strip. The full phone sheet drops the strip because it covers the art. Pull down to the teaser to browse.</p></div><div style="display:flex;flex-direction:column;gap:6px"><p style="margin:0;font:600 16px IBM Plex Sans,sans-serif;color:#E6E8F0">6 · One printing</p><p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7">No strip. The plain Set field says The only printing, as shipped.</p></div>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#959AAD">New strings, draft for /copy-review</span>
+<p style="margin:0;font:400 13px IBM Plex Mono,monospace;color:#B1B6C7">{n} printings  /  {n} printings · you own {k}  (strip head)</p><p style="margin:0;font:400 13px IBM Plex Mono,monospace;color:#B1B6C7">Printings of {card}  (group label)</p><p style="margin:0;font:400 13px IBM Plex Mono,monospace;color:#B1B6C7">{set}, number {n}[, {k} in your collection][, your pick]  (thumb label)</p><p style="margin:0;font:400 13px IBM Plex Mono,monospace;color:#B1B6C7">More printings  (desktop ▸)</p></div>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#959AAD">Unchanged: the search row (R-A), wishlist (card-level), deck picks (owned only), Collection and deck card details (no strip), the Mana Pool link.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1500,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
