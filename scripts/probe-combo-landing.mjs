@@ -13,6 +13,7 @@ import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
+import { waitOutSwitchMemo } from "./lib/switch-memo.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, E2E_AUDIT_USER_PASSWORD: PASSWORD, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -78,8 +79,9 @@ async function land(browser, win, search) {
   const userId = await page.evaluate(() => window.Clerk.user.id);
   await sql`delete from flag_overrides where switch = 'PUSH_ENABLED' and scope = 'user' and user_id = ${userId}`;
   await sql`insert into flag_overrides (switch, scope, user_id, value, note, updated_by) values ('PUSH_ENABLED', 'user', ${userId}, 'on', ${MARK}, ${MARK})`;
-  // The server memoises the switch snapshot for 30 s (`SNAPSHOT_TTL_MS`): wait it out so the override just written is the one read.
-  await page.waitForTimeout(31_000);
+  // The server memoises the switch snapshot, served stale past its window while it refreshes: wait it out so the
+  // override just written is the one read.
+  await waitOutSwitchMemo(page, BASE);
   await page.goto(`${BASE}/${search}`, { waitUntil: "domcontentloaded", timeout: 180_000 });
   await page.waitForSelector("#card-modal-title, [data-card-combo]", { state: "attached", timeout: 60_000 }).catch(() => {});
   await page.waitForTimeout(2500);

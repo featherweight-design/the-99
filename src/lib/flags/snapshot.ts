@@ -82,7 +82,7 @@ async function readSnapshot(): Promise<SwitchSnapshot | null> {
 export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null> {
   if (held && now - held.at < SNAPSHOT_TTL_MS) return Promise.resolve(held.snapshot);
   if (held && now - held.at < SNAPSHOT_MAX_STALE_MS) {
-    keepAlive(refresh(now));
+    if (!inflight) keepAlive(refresh(now));
     return Promise.resolve(held.snapshot);
   }
   return refresh(now);
@@ -129,7 +129,11 @@ export function switchSnapshotState(now = Date.now()): "hit" | "stale" | "pendin
   return inflight ? "pending" : "miss";
 }
 
-/** Called by an admin write, after its transaction commits, so its own instance reads it at once. */
+/**
+ * Called by an admin write, after its transaction commits, so its own instance reads it at once. A read already in
+ * flight is dropped from the memo (it may carry the pre-write rows), though the requests already waiting on it still
+ * get its answer: they began before the write, as on main.
+ */
 export function clearSwitchSnapshot(): void {
   held = null;
   inflight = null;

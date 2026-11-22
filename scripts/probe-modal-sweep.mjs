@@ -13,6 +13,7 @@ import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
 import { assertNotSharedBranch, assertScratchBranch } from "./lib/scratch-branch.mjs";
+import { waitOutSwitchMemo } from "./lib/switch-memo.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
 const sql = neon(DATABASE_URL);
@@ -70,7 +71,7 @@ async function switchOn(userId, page) {
     await sql`insert into flag_overrides ("switch", scope, user_id, value, updated_by) values (${name}, 'user', ${userId}, 'on', ${MARK})`;
     added = true;
   }
-  if (added) await page.waitForTimeout(31_000);
+  if (added) await waitOutSwitchMemo(page, BASE);
 }
 
 /** Press `open` until the dialog at `selector` mounts (a hydrating page can swallow a press), recording the animation
@@ -164,7 +165,7 @@ async function landingSwitchesOn(page) {
     await sql`insert into flag_overrides ("switch", scope, value, updated_by) values (${name}, 'app', 'on', ${MARK})`;
     added = true;
   }
-  if (added) await page.waitForTimeout(31_000);
+  if (added) await waitOutSwitchMemo(page, BASE);
 }
 
 /** The landing's "What credits cost" sheet (CostSheet), signed out: a phone slide, instant on desktop. */
