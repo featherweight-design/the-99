@@ -474,7 +474,7 @@ export function Panel({
                     <button
                       type="button"
                       onClick={onUndo}
-                      className="mt-1 h-11 rounded-[10px] bg-[color:color-mix(in_srgb,var(--bg)_80%,transparent)] px-5 text-[14px] text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border-strong)]"
+                      className="mt-1 h-11 shrink-0 rounded-[10px] bg-[color:color-mix(in_srgb,var(--bg)_80%,transparent)] px-5 text-[14px] text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border-strong)]"
                       data-testid="panel-undo"
                     >
                       {copy.undo}

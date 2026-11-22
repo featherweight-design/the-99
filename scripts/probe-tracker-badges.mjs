@@ -176,7 +176,8 @@ try {
     } else console.log("SKIP  out art (seat C has no art)");
     check("the front face is inert while out", await c.getByTestId("panel-front").evaluate((el) => el.inert === true));
     const undoBtn = back.getByTestId("panel-undo");
-    check("Undo is 44px tall", (await undoBtn.evaluate((el) => el.offsetHeight)) === 44);
+    const undoH = await undoBtn.evaluate((el) => el.offsetHeight);
+    check("Undo is 44px tall", undoH === 44, String(undoH));
     await shot(page, `${w.width}${w.reduced ? "-reduced" : ""}-out`);
 
     // Undo turns it back: mid-turn the transform is neither face, then the front again.
