@@ -1,0 +1,1135 @@
+[
+ {
+  "id": "P1-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   }
+  ]
+ },
+ {
+  "id": "P2-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   }
+  ]
+ },
+ {
+  "id": "P3-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   }
+  ]
+ },
+ {
+  "id": "P4-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Raised by Giants')",
+    "wait": 500
+   }
+  ]
+ },
+ {
+  "id": "P5-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Raised by Giants')",
+    "wait": 500
+   },
+   {
+    "click": "[data-seat-pair]",
+    "wait": 600
+   },
+   {
+    "scroll": "[data-seat-key]"
+   }
+  ]
+ },
+ {
+  "id": "P6-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Raised by Giants')",
+    "wait": 500
+   },
+   {
+    "click": "[data-seat-pair]",
+    "wait": 600
+   },
+   {
+    "scroll": "[data-seat-key]"
+   },
+   {
+    "click": "[data-seat-key]",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Remove')",
+    "wait": 500
+   }
+  ]
+ },
+ {
+  "id": "P1-desk",
+  "dev": "desk",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   }
+  ]
+ },
+ {
+  "id": "P2-desk",
+  "dev": "desk",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   }
+  ]
+ },
+ {
+  "id": "P3-desk",
+  "dev": "desk",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   }
+  ]
+ },
+ {
+  "id": "P4-desk",
+  "dev": "desk",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Raised by Giants')",
+    "wait": 500
+   }
+  ]
+ },
+ {
+  "id": "P5-desk",
+  "dev": "desk",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Raised by Giants')",
+    "wait": 500
+   },
+   {
+    "click": "[data-seat-pair]",
+    "wait": 600
+   },
+   {
+    "scroll": "[data-seat-key]"
+   }
+  ]
+ },
+ {
+  "id": "P6-desk",
+  "dev": "desk",
+  "fix": {
+   "scene": "log"
+  },
+  "steps": [
+   {
+    "click": "button:has-text('Add opponent')",
+    "wait": 700
+   },
+   {
+    "click": "input[placeholder='Any commander']"
+   },
+   {
+    "type": "la",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Lae\u2019zel')",
+    "wait": 600
+   },
+   {
+    "click": "input[placeholder='Search Backgrounds']"
+   },
+   {
+    "type": "giants",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Raised by Giants')",
+    "wait": 500
+   },
+   {
+    "click": "[data-seat-pair]",
+    "wait": 600
+   },
+   {
+    "scroll": "[data-seat-key]"
+   },
+   {
+    "click": "[data-seat-key]",
+    "wait": 700
+   },
+   {
+    "click": "button:has-text('Remove')",
+    "wait": 500
+   }
+  ]
+ },
+ {
+  "id": "T1-tablet",
+  "dev": "desk",
+  "w": 1180,
+  "h": 820,
+  "fix": {
+   "scene": "tracker",
+   "seats": [
+    {
+     "seat": 0,
+     "you": true,
+     "name": "Chris",
+     "art": "art/sai.jpg",
+     "partnerArt": null,
+     "commander": "Sai, Master Thopterist",
+     "partner": null,
+     "deck": "Sai Thopters"
+    },
+    {
+     "seat": 1,
+     "you": false,
+     "name": "Colin",
+     "art": "art/ghalta.jpg",
+     "partnerArt": null,
+     "commander": "Ghalta, Primal Hunger",
+     "partner": null,
+     "deck": "Ghalta Stompy"
+    },
+    {
+     "seat": 2,
+     "you": false,
+     "name": "Peter",
+     "art": "art/laezel-stand-in.png",
+     "partnerArt": "art/raised-by-giants.png",
+     "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
+     "partner": "Raised by Giants",
+     "partnerIsBackground": true,
+     "deck": "Lae\u2019zel Counters"
+    },
+    {
+     "seat": 3,
+     "you": false,
+     "name": "Max",
+     "art": "art/bruse.jpg",
+     "partnerArt": "art/ishai.jpg",
+     "commander": "Bruse Tarl, Boorish Herder",
+     "partner": "Ishai, Ojutai Dragonspeaker",
+     "deck": "Bruse Ishai"
+    }
+   ],
+   "log": [
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 0,
+     "delta": 1
+    },
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 1,
+     "delta": 1
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 2,
+     "cmdr": 0,
+     "delta": 4
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 3,
+     "cmdr": 1,
+     "delta": 3
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 1,
+     "cmdr": 0,
+     "delta": 6
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "endTurn"
+    }
+   ],
+   "layout": "tablet-4"
+  }
+ },
+ {
+  "id": "T2-tablet-damage",
+  "dev": "desk",
+  "w": 1180,
+  "h": 820,
+  "fix": {
+   "scene": "tracker",
+   "seats": [
+    {
+     "seat": 0,
+     "you": true,
+     "name": "Chris",
+     "art": "art/sai.jpg",
+     "partnerArt": null,
+     "commander": "Sai, Master Thopterist",
+     "partner": null,
+     "deck": "Sai Thopters"
+    },
+    {
+     "seat": 1,
+     "you": false,
+     "name": "Colin",
+     "art": "art/ghalta.jpg",
+     "partnerArt": null,
+     "commander": "Ghalta, Primal Hunger",
+     "partner": null,
+     "deck": "Ghalta Stompy"
+    },
+    {
+     "seat": 2,
+     "you": false,
+     "name": "Peter",
+     "art": "art/laezel-stand-in.png",
+     "partnerArt": "art/raised-by-giants.png",
+     "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
+     "partner": "Raised by Giants",
+     "partnerIsBackground": true,
+     "deck": "Lae\u2019zel Counters"
+    },
+    {
+     "seat": 3,
+     "you": false,
+     "name": "Max",
+     "art": "art/bruse.jpg",
+     "partnerArt": "art/ishai.jpg",
+     "commander": "Bruse Tarl, Boorish Herder",
+     "partner": "Ishai, Ojutai Dragonspeaker",
+     "deck": "Bruse Ishai"
+    }
+   ],
+   "log": [
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 0,
+     "delta": 1
+    },
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 1,
+     "delta": 1
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 2,
+     "cmdr": 0,
+     "delta": 4
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 3,
+     "cmdr": 1,
+     "delta": 3
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 1,
+     "cmdr": 0,
+     "delta": 6
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "endTurn"
+    }
+   ],
+   "layout": "tablet-4"
+  },
+  "steps": [
+   {
+    "click": "[data-testid=panel-sheet] >> nth=0",
+    "wait": 500
+   }
+  ]
+ },
+ {
+  "id": "T3-tablet-tax",
+  "dev": "desk",
+  "w": 1180,
+  "h": 820,
+  "fix": {
+   "scene": "tracker",
+   "seats": [
+    {
+     "seat": 0,
+     "you": true,
+     "name": "Chris",
+     "art": "art/sai.jpg",
+     "partnerArt": null,
+     "commander": "Sai, Master Thopterist",
+     "partner": null,
+     "deck": "Sai Thopters"
+    },
+    {
+     "seat": 1,
+     "you": false,
+     "name": "Colin",
+     "art": "art/ghalta.jpg",
+     "partnerArt": null,
+     "commander": "Ghalta, Primal Hunger",
+     "partner": null,
+     "deck": "Ghalta Stompy"
+    },
+    {
+     "seat": 2,
+     "you": false,
+     "name": "Peter",
+     "art": "art/laezel-stand-in.png",
+     "partnerArt": "art/raised-by-giants.png",
+     "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
+     "partner": "Raised by Giants",
+     "partnerIsBackground": true,
+     "deck": "Lae\u2019zel Counters"
+    },
+    {
+     "seat": 3,
+     "you": false,
+     "name": "Max",
+     "art": "art/bruse.jpg",
+     "partnerArt": "art/ishai.jpg",
+     "commander": "Bruse Tarl, Boorish Herder",
+     "partner": "Ishai, Ojutai Dragonspeaker",
+     "deck": "Bruse Ishai"
+    }
+   ],
+   "log": [
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 0,
+     "delta": 1
+    },
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 1,
+     "delta": 1
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 2,
+     "cmdr": 0,
+     "delta": 4
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 3,
+     "cmdr": 1,
+     "delta": 3
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 1,
+     "cmdr": 0,
+     "delta": 6
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "endTurn"
+    }
+   ],
+   "layout": "tablet-4"
+  },
+  "steps": [
+   {
+    "js": "document.querySelectorAll('[data-testid=panel-sheet]')[2].click()",
+    "wait": 500
+   },
+   {
+    "js": "document.querySelector('#sheet-tab-tax')?.click()",
+    "wait": 400
+   }
+  ]
+ },
+ {
+  "id": "T4-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "tracker",
+   "seats": [
+    {
+     "seat": 0,
+     "you": true,
+     "name": "Chris",
+     "art": "art/sai.jpg",
+     "partnerArt": null,
+     "commander": "Sai, Master Thopterist",
+     "partner": null,
+     "deck": "Sai Thopters"
+    },
+    {
+     "seat": 1,
+     "you": false,
+     "name": "Colin",
+     "art": "art/ghalta.jpg",
+     "partnerArt": null,
+     "commander": "Ghalta, Primal Hunger",
+     "partner": null,
+     "deck": "Ghalta Stompy"
+    },
+    {
+     "seat": 2,
+     "you": false,
+     "name": "Peter",
+     "art": "art/laezel-stand-in.png",
+     "partnerArt": "art/raised-by-giants.png",
+     "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
+     "partner": "Raised by Giants",
+     "partnerIsBackground": true,
+     "deck": "Lae\u2019zel Counters"
+    },
+    {
+     "seat": 3,
+     "you": false,
+     "name": "Max",
+     "art": "art/bruse.jpg",
+     "partnerArt": "art/ishai.jpg",
+     "commander": "Bruse Tarl, Boorish Herder",
+     "partner": "Ishai, Ojutai Dragonspeaker",
+     "deck": "Bruse Ishai"
+    }
+   ],
+   "log": [
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 0,
+     "delta": 1
+    },
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 1,
+     "delta": 1
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 2,
+     "cmdr": 0,
+     "delta": 4
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 3,
+     "cmdr": 1,
+     "delta": 3
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 1,
+     "cmdr": 0,
+     "delta": 6
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "endTurn"
+    }
+   ],
+   "layout": "phone-4-sides"
+  }
+ },
+ {
+  "id": "T5-phone-damage",
+  "dev": "phone",
+  "fix": {
+   "scene": "tracker",
+   "seats": [
+    {
+     "seat": 0,
+     "you": true,
+     "name": "Chris",
+     "art": "art/sai.jpg",
+     "partnerArt": null,
+     "commander": "Sai, Master Thopterist",
+     "partner": null,
+     "deck": "Sai Thopters"
+    },
+    {
+     "seat": 1,
+     "you": false,
+     "name": "Colin",
+     "art": "art/ghalta.jpg",
+     "partnerArt": null,
+     "commander": "Ghalta, Primal Hunger",
+     "partner": null,
+     "deck": "Ghalta Stompy"
+    },
+    {
+     "seat": 2,
+     "you": false,
+     "name": "Peter",
+     "art": "art/laezel-stand-in.png",
+     "partnerArt": "art/raised-by-giants.png",
+     "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
+     "partner": "Raised by Giants",
+     "partnerIsBackground": true,
+     "deck": "Lae\u2019zel Counters"
+    },
+    {
+     "seat": 3,
+     "you": false,
+     "name": "Max",
+     "art": "art/bruse.jpg",
+     "partnerArt": "art/ishai.jpg",
+     "commander": "Bruse Tarl, Boorish Herder",
+     "partner": "Ishai, Ojutai Dragonspeaker",
+     "deck": "Bruse Ishai"
+    }
+   ],
+   "log": [
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 0,
+     "delta": 1
+    },
+    {
+     "t": "tax",
+     "seat": 2,
+     "cmdr": 1,
+     "delta": 1
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 2,
+     "cmdr": 0,
+     "delta": 4
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 3,
+     "cmdr": 1,
+     "delta": 3
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "damage",
+     "seat": 0,
+     "from": 1,
+     "cmdr": 0,
+     "delta": 6
+    },
+    {
+     "t": "endTurn"
+    },
+    {
+     "t": "endTurn"
+    }
+   ],
+   "layout": "phone-4-sides"
+  },
+  "steps": [
+   {
+    "js": "document.querySelectorAll('[data-testid=panel-sheet]')[0].click()",
+    "wait": 500
+   }
+  ]
+ },
+ {
+  "id": "H1-phone",
+  "dev": "phone",
+  "fix": {
+   "scene": "history",
+   "games": [
+    {
+     "id": "g1",
+     "result": "loss",
+     "podSize": 4,
+     "playedAt": "2026-11-21T03:00:00Z",
+     "versionNumber": 4,
+     "note": "Peter\u2019s giants came down on turn five and never left.",
+     "worked": [
+      "mana"
+     ],
+     "hurt": [
+      "answers"
+     ],
+     "opponents": [
+      {
+       "seat": 1,
+       "label": "Peter",
+       "c": {
+        "oracleId": "o-laezel",
+        "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
+        "imageUri": "art/laezel-stand-in.png"
+       },
+       "p": {
+        "oracleId": "o-raised",
+        "name": "Raised by Giants",
+        "imageUri": "art/raised-by-giants.png"
+       },
+       "won": true
+      },
+      {
+       "seat": 2,
+       "label": "Colin",
+       "c": {
+        "oracleId": "o-ghalta",
+        "name": "Ghalta, Primal Hunger",
+        "imageUri": "art/ghalta.jpg"
+       }
+      },
+      {
+       "seat": 3,
+       "c": {
+        "oracleId": "o-bruse",
+        "name": "Bruse Tarl, Boorish Herder",
+        "imageUri": "art/bruse.jpg"
+       },
+       "p": {
+        "oracleId": "o-ishai",
+        "name": "Ishai, Ojutai Dragonspeaker",
+        "imageUri": "art/ishai.jpg"
+       }
+      }
+     ]
+    },
+    {
+     "id": "g2",
+     "result": "win",
+     "podSize": 3,
+     "playedAt": "2026-11-14T03:00:00Z",
+     "versionNumber": 3,
+     "note": null,
+     "worked": [
+      "speed"
+     ],
+     "hurt": [],
+     "opponents": [
+      {
+       "seat": 1,
+       "c": {
+        "oracleId": "o-laezel",
+        "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
+        "imageUri": "art/laezel-stand-in.png"
+       },
+       "p": {
+        "oracleId": "o-noble",
+        "name": "Noble Heritage",
+        "imageUri": "art/noble-heritage.png"
+       }
+      },
+      {
+       "seat": 2,
+       "label": "Max",
+       "c": {
+        "oracleId": "o-gisa",
+        "name": "Ghoulcaller Gisa",
+        "imageUri": "art/gisa.jpg"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ },
+ {
+  "id": "H1-desk",
+  "dev": "desk",
+  "fix": {
+   "scene": "history",
+   "games": [
+    {
+     "id": "g1",
+     "result": "loss",
+     "podSize": 4,
+     "playedAt": "2026-11-21T03:00:00Z",
+     "versionNumber": 4,
+     "note": "Peter\u2019s giants came down on turn five and never left.",
+     "worked": [
+      "mana"
+     ],
+     "hurt": [
+      "answers"
+     ],
+     "opponents": [
+      {
+       "seat": 1,
+       "label": "Peter",
+       "c": {
+        "oracleId": "o-laezel",
+        "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
+        "imageUri": "art/laezel-stand-in.png"
+       },
+       "p": {
+        "oracleId": "o-raised",
+        "name": "Raised by Giants",
+        "imageUri": "art/raised-by-giants.png"
+       },
+       "won": true
+      },
+      {
+       "seat": 2,
+       "label": "Colin",
+       "c": {
+        "oracleId": "o-ghalta",
+        "name": "Ghalta, Primal Hunger",
+        "imageUri": "art/ghalta.jpg"
+       }
+      },
+      {
+       "seat": 3,
+       "c": {
+        "oracleId": "o-bruse",
+        "name": "Bruse Tarl, Boorish Herder",
+        "imageUri": "art/bruse.jpg"
+       },
+       "p": {
+        "oracleId": "o-ishai",
+        "name": "Ishai, Ojutai Dragonspeaker",
+        "imageUri": "art/ishai.jpg"
+       }
+      }
+     ]
+    },
+    {
+     "id": "g2",
+     "result": "win",
+     "podSize": 3,
+     "playedAt": "2026-11-14T03:00:00Z",
+     "versionNumber": 3,
+     "note": null,
+     "worked": [
+      "speed"
+     ],
+     "hurt": [],
+     "opponents": [
+      {
+       "seat": 1,
+       "c": {
+        "oracleId": "o-laezel",
+        "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
+        "imageUri": "art/laezel-stand-in.png"
+       },
+       "p": {
+        "oracleId": "o-noble",
+        "name": "Noble Heritage",
+        "imageUri": "art/noble-heritage.png"
+       }
+      },
+      {
+       "seat": 2,
+       "label": "Max",
+       "c": {
+        "oracleId": "o-gisa",
+        "name": "Ghoulcaller Gisa",
+        "imageUri": "art/gisa.jpg"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ }
+]

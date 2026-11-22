@@ -1,0 +1,701 @@
+diff --git a/src/app/decks/[id]/opponent-actions.ts b/src/app/decks/[id]/opponent-actions.ts
+index 5afd12c7..bff8e80b 100644
+--- a/src/app/decks/[id]/opponent-actions.ts
++++ b/src/app/decks/[id]/opponent-actions.ts
+@@ -6,7 +6,7 @@
+ // names a social table.
+ 
+ import { requireUserId } from "../../../lib/auth";
+-import { searchOpponentCommanders, type OpponentCommanderHit } from "../../../lib/decks/opponent-commanders";
++import { searchOpponentBackgrounds, searchOpponentCommanders, type OpponentCommanderHit } from "../../../lib/decks/opponent-commanders";
+ import { listFriendDecks, listPickerFriends, listPickerPods, listPodSeats, type FriendDeck, type PickerFriend, type PickerPod, type PodSeat } from "../../../lib/social/games";
+ 
+ /** The commanders an "anyone" seat can name, by card name. Catalog data, but still behind sign-in. */
+@@ -15,6 +15,12 @@ export async function searchOpponentCommandersAction(query: string): Promise<Opp
+   return searchOpponentCommanders(query);
+ }
+ 
++/** The seat picker's Background step: a Background by name (opponent Background addendum, G1). */
++export async function searchOpponentBackgroundsAction(query: string): Promise<OpponentCommanderHit[]> {
++  await requireUserId();
++  return searchOpponentBackgrounds(query);
++}
++
+ /** The decks a friend can be seated with, read when the picker opens that friend (G7). */
+ export async function listFriendDecksAction(friendPublicId: string): Promise<FriendDeck[]> {
+   const userId = await requireUserId();
+diff --git a/src/app/friends/table/[id]/play/page.tsx b/src/app/friends/table/[id]/play/page.tsx
+index 9fd8c259..9cb2d6d8 100644
+--- a/src/app/friends/table/[id]/play/page.tsx
++++ b/src/app/friends/table/[id]/play/page.tsx
+@@ -70,6 +70,7 @@ export default async function PlayPage({ params, searchParams }: { params: Promi
+     partnerArt: s.deck?.partner?.artCropUri ?? null,
+     commander: s.deck?.commander.name ?? "",
+     partner: s.deck?.partner?.name ?? null,
++    partnerIsBackground: s.deck?.partner?.background ?? false,
+     deck: s.deck?.name ?? null,
+   }));
+ 
+diff --git a/src/components/decks/game-seats.tsx b/src/components/decks/game-seats.tsx
+index c72e24d4..4984417d 100644
+--- a/src/components/decks/game-seats.tsx
++++ b/src/components/decks/game-seats.tsx
+@@ -12,12 +12,12 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
+ import { listPickerPodsAction, listPodSeatsAction } from "../../app/decks/[id]/opponent-actions";
+ import { gameSeatsCopy } from "../../lib/copy/game-seats";
+ import { ruleZeroCopy } from "../../lib/copy/rule-zero";
+-import { hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
++import { commandersName, hasRoom, podFill, seatCount, seatedFriends, seatName, shortName, SEAT_LABEL_MAX, type Seat, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
+ import { joinNames, PersonInitials, PersonName, PersonText, personAttrs, personText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
+ import type { PickerPod } from "../../lib/social/games";
+ import { ArtLayer } from "../ui/art-layer";
+ import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+-import { SeatPicker } from "./seat-picker";
++import { SeatPicker, type OpenPair } from "./seat-picker";
+ import { TrophyIcon } from "./trophy-icon";
+ 
+ const copy = gameSeatsCopy.seats;
+@@ -31,8 +31,18 @@ const ART_POSITION = "50% 20%";
+ /** A seat's art, or the friend's initials while they were seated with no commander to draw. `crop` marks an art_crop
+     (a Rule 0 table's seat) rather than a card face, and takes ArtWash's top trim (`ART_CROP_TRIM`): the box clips the
+     crop's top 3%, where some printings carry an arc of the card frame. A card face has its frame on purpose. */
+-function Art({ uri, dim = false, initials = null, crop = false }: { uri: string | null; dim?: boolean; initials?: ReactNode; crop?: boolean }) {
++function Art({ uri, pairUri = null, dim = false, initials = null, crop = false }: { uri: string | null; pairUri?: string | null; dim?: boolean; initials?: ReactNode; crop?: boolean }) {
+   const trim = crop && uri !== null;
++  // Two commanders split the art in halves with a 2px seam, as the tracker's panel draws a pair (F14).
++  if (uri && pairUri) {
++    return (
++      <span aria-hidden data-seat-pair-art className={`${ART} flex`} style={dim ? { opacity: 0.78 } : undefined}>
++        <span className="relative block h-full w-1/2"><ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION }} /></span>
++        <span className="relative block h-full w-1/2"><ArtLayer src={pairUri} style={{ backgroundPosition: ART_POSITION }} /></span>
++        <span className="absolute inset-y-0 left-1/2 -ml-px w-[2px] bg-[color:var(--bg)] opacity-80" />
++      </span>
++    );
++  }
+   return (
+     <span aria-hidden className={`${ART} ${trim ? ART_CROP_TRIM.box : ""} ${uri || initials === null ? "" : "flex items-center justify-center font-mono text-[18px] text-[color:var(--fg-muted)]"}`} style={dim ? { opacity: 0.78 } : undefined}>
+       {uri ? <ArtLayer src={uri} style={{ backgroundPosition: ART_POSITION, ...(trim ? ART_CROP_TRIM.layer : {}) }} /> : initials}
+@@ -41,7 +51,8 @@ function Art({ uri, dim = false, initials = null, crop = false }: { uri: string
+ }
+ 
+ /** The line under a seat's name: the table's deck, the friend's deck, the commander a friend played, or nothing. */
+-const seatSub = (s: Seat) => (s.table ? s.table.deckName : s.deck ? s.deck.name : s.friend && s.commander ? shortName(s.commander.name) : null);
++// A labelled seat names its commanders under the label, a pair as `Lae’zel + Raised by Giants` (the History row's treatment).
++const seatSub = (s: Seat) => (s.table ? s.table.deckName : s.deck ? s.deck.name : s.commander && (s.friend || (s.label !== "" && s.partner)) ? commandersName(s) : null);
+ 
+ function SeatView({
+   seat, lost, busy, editing, onOpen, onClear, onWon, onLabel,
+@@ -77,11 +88,12 @@ function SeatView({
+           // A seat from a Rule 0 table (plan §PR 8) draws the table's art for it, or the player's initials while it waits.
+           <Art uri={seat.table.artCropUri} crop initials={<PersonInitials n={seat.table.name} />} />
+         ) : (
+-          <Art uri={seat.commander?.imageUri ?? null} initials={seat.friend ? <PersonInitials n={seat.friend.name} /> : null} />
++          <Art uri={seat.commander?.imageUri ?? null} pairUri={seat.partner?.imageUri ?? null} initials={seat.friend ? <PersonInitials n={seat.friend.name} /> : null} />
+         )}
+       </button>
+       <span className="min-w-0 flex-1 md:flex-none">
+-        <span className="mt-0 block truncate text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px]">
++        {/* A pair's two names take two lines at 124px rather than cutting the Background's name off. */}
++        <span className={`mt-0 block text-[13px] font-medium text-[color:var(--fg)] md:mt-[6px] ${seat.partner && !seat.friend && !labelled ? "truncate md:line-clamp-2 md:whitespace-normal md:[overflow-wrap:anywhere]" : "truncate"}`}>
+           <PersonName n={name} />
+           {seat.table?.mark && <small className="ml-[6px] font-mono text-[9.5px] text-[color:var(--fg-faint)]">{ruleZeroCopy.log.fromTable}</small>}
+         </span>
+@@ -185,7 +197,7 @@ export function GameSeats({
+   onLabel: (key: string, text: string) => void;
+ }) {
+   // Which seat the open picker is for (null: a new seat), and the control it hangs from.
+-  const [picking, setPicking] = useState<{ at: string | null; anchor: HTMLElement; openAt: SeatFriend | null } | null>(null);
++  const [picking, setPicking] = useState<{ at: string | null; anchor: HTMLElement; openAt: SeatFriend | null; openPair?: OpenPair | null } | null>(null);
+   // The reader's pods, for the chips: names and sizes only, read once when the row mounts.
+   const [pods, setPods] = useState<PickerPod[]>([]);
+   useEffect(() => {
+@@ -326,7 +338,11 @@ export function GameSeats({
+             lost={lost}
+             busy={busy}
+             editing={picking?.at === s.key}
+-            onOpen={(anchor, deck) => setPicking({ at: s.key, anchor, openAt: deck ? s.friend : null })}
++            onOpen={(anchor, deck) => setPicking({
++              at: s.key, anchor, openAt: deck ? s.friend : null,
++              // A commander that chooses a Background reopens on its step, where the Background can be added, changed or removed.
++              openPair: !deck && !s.deck && s.commander?.choosesBackground ? { commander: s.commander, background: s.partner } : null,
++            })}
+             onClear={() => { clearedFocus.current = true; onClear(s.key); }}
+             onWon={() => onWon(s.key)}
+             onLabel={(text) => onLabel(s.key, text)}
+@@ -363,7 +379,7 @@ export function GameSeats({
+         </p>
+       )}
+       {picking && (
+-        <SeatPicker anchor={picking.anchor} onClose={() => setPicking(null)} onPick={pick} seated={seatedFriends(seats, picking.at)} openAt={picking.openAt} />
++        <SeatPicker anchor={picking.anchor} onClose={() => setPicking(null)} onPick={pick} seated={seatedFriends(seats, picking.at)} openAt={picking.openAt} openPair={picking.openPair ?? null} />
+       )}
+     </section>
+   );
+diff --git a/src/components/decks/seat-picker.tsx b/src/components/decks/seat-picker.tsx
+index 440ce12d..f1ec7e35 100644
+--- a/src/components/decks/seat-picker.tsx
++++ b/src/components/decks/seat-picker.tsx
+@@ -6,14 +6,21 @@
+ // and a sheet at 390, one body for both. The friends are read when the picker OPENS, so a form nobody opens the
+ // picker from reads nothing social.
+ //
++// A commander that chooses a Background is the one press that does not seat at once (opponent Background addendum):
++// it opens the Background step, the deck's second slot in the picker's own rows (search, a result row, the chosen
++// slot with Change and Remove), and one Seat press under it seats the commander alone or the pair. A seat holding such
++// a commander reopens on that step.
++//
+ // The search is `searchOpponentCommandersAction`: the whole catalog, commander-legal, no owned filter. A reply
+ // that arrives after a newer keystroke is dropped, so a slow answer for "yu" never lands over "yuriko".
+ 
+ import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from "react";
+-import { listFriendDecksAction, listPickerFriendsAction, searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
++import { listFriendDecksAction, listPickerFriendsAction, searchOpponentBackgroundsAction, searchOpponentCommandersAction } from "../../app/decks/[id]/opponent-actions";
+ import { useDialogA11y } from "../../lib/a11y/dialog";
+ import { gameSeatsCopy } from "../../lib/copy/game-seats";
+-import { shortName, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
++import { deckImportCopy } from "../../lib/copy/deck-import";
++import { partnerAddCopy } from "../../lib/copy/partner-add";
++import { shortName, type SeatCommander, type SeatFriend, type SeatPick } from "../../lib/decks/game-seats";
+ import type { OpponentCommanderHit } from "../../lib/decks/opponent-commanders";
+ import type { FriendDeck, PickerFriend } from "../../lib/social/games";
+ import { nameIncludes, PersonInitials, PersonName, PersonText } from "../../lib/person-name";
+@@ -21,6 +28,7 @@ import { IdentityPips } from "../commanders/commander-art";
+ import { Face } from "../social/face";
+ import { ANCHORED_PANEL_CLASS, useAnchoredPanel } from "../ui/anchored-panel";
+ import { ArtLayer } from "../ui/art-layer";
++import { PrimaryButton } from "../ui/button";
+ import { SearchIcon } from "../ui/search-icon";
+ import { Sheet, SheetHeader } from "../ui/sheet";
+ import { SearchField } from "../ui/text-field";
+@@ -32,7 +40,13 @@ const copy = gameSeatsCopy.picker;
+ 
+ type Load<T> = { state: "busy" } | { state: "failed" } | { state: "done"; items: T[] };
+ type Search = { state: "idle" } | Load<OpponentCommanderHit>;
+-type View = { step: "list" } | { step: "decks" | "commander"; friend: PickerFriend };
++type View =
++  | { step: "list" }
++  | { step: "decks" | "commander"; friend: PickerFriend }
++  | { step: "background"; friend: PickerFriend | null; commander: SeatCommander; background: SeatCommander | null };
++
++/** A seat that reopens on the Background step: its commander chooses one, and its Background, if any. */
++export type OpenPair = { commander: SeatCommander; background: SeatCommander | null };
+ 
+ const ROW = "flex min-h-[52px] w-full cursor-pointer items-center gap-[12px] border-0 bg-transparent px-[14px] py-[6px] text-left hover:bg-[color:var(--surface-raised)]";
+ const NOTE = "px-[14px] py-[10px] text-[13px] text-[color:var(--fg-muted)]";
+@@ -47,7 +61,7 @@ const HEADING = "m-0 px-[14px] pb-[4px] pt-[10px] font-mono text-[9.5px] upperca
+ const SCROLL_BODY = "-mb-[4px] mt-[4px] min-h-0 overflow-y-auto py-[4px]";
+ 
+ /** The catalog search for one query: nothing under two letters, and a reply for an older keystroke is dropped. */
+-function useCommanderSearch(query: string) {
++function useCommanderSearch(query: string, run: (q: string) => Promise<OpponentCommanderHit[]> = searchOpponentCommandersAction) {
+   const [search, setSearch] = useState<Search>({ state: "idle" });
+   const asked = useRef(0);
+   useEffect(() => {
+@@ -56,38 +70,49 @@ function useCommanderSearch(query: string) {
+     if (q.length < 2) return;
+     const timer = window.setTimeout(() => {
+       setSearch({ state: "busy" });
+-      searchOpponentCommandersAction(q)
++      run(q)
+         .then((items) => { if (asked.current === ticket) setSearch({ state: "done", items }); })
+         .catch(() => { if (asked.current === ticket) setSearch({ state: "failed" }); });
+     }, KEYSTROKE_MS);
+     return () => window.clearTimeout(timer);
+-  }, [query]);
++  }, [query, run]);
+   // A new query drops the old answer at once and invalidates any still in flight: until the debounce fires,
+   // the previous query's hits would stay on screen, selectable, under a field that no longer names them.
+   const reset = () => { asked.current += 1; setSearch({ state: "idle" }); };
+   return { search, reset };
+ }
+ 
+-function CommanderRows({ query, search, onPick }: { query: string; search: Search; onPick: (hit: OpponentCommanderHit) => void }) {
++function CommanderRows({ query, search, onPick, noMatch = copy.noMatch }: { query: string; search: Search; onPick: (hit: OpponentCommanderHit) => void; noMatch?: string }) {
+   if (query.trim().length < 2) return null;
+   if (search.state === "failed") return <li role="alert" className={NOTE}>{copy.failed}</li>;
+   if (search.state === "busy") return <li className="px-[14px] py-[10px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</li>;
+   if (search.state !== "done") return null;
+-  if (search.items.length === 0) return <li className={NOTE}>{copy.noMatch}</li>;
++  if (search.items.length === 0) return <li className={NOTE}>{noMatch}</li>;
+   return search.items.map((hit) => (
+     <li key={hit.oracleId}>
+       <button type="button" onClick={() => onPick(hit)} className={ROW}>
+         <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
+           {hit.imageUri && <ArtLayer src={hit.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
+         </span>
+-        <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
++        {hit.partner?.kind === "chooseBackground" ? (
++          // The one hit whose press opens a step rather than seating: its second line says why, as a deck row's does.
++          <span className="min-w-0 flex-1">
++            <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
++            <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.choosesBackground}</span>
++          </span>
++        ) : (
++          <span className="min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{hit.name}</span>
++        )}
+         <IdentityPips colorIdentity={hit.colorIdentity} size={9} />
+       </button>
+     </li>
+   ));
+ }
+ 
+-const asCommander = (hit: OpponentCommanderHit) => ({ oracleId: hit.oracleId, name: hit.name, imageUri: hit.imageUri });
++const asCommander = (hit: OpponentCommanderHit): SeatCommander => ({
++  oracleId: hit.oracleId, name: hit.name, imageUri: hit.imageUri,
++  ...(hit.partner?.kind === "chooseBackground" ? { choosesBackground: true } : {}),
++});
+ const asFriend = (f: PickerFriend): SeatFriend => ({ publicId: f.publicId, name: f.displayName });
+ 
+ function Field({ inputRef, value, onChange, placeholder, describedBy }: {
+@@ -226,12 +251,98 @@ function Decks({ friend, onPick, onCommander, onBack, describedBy }: {
+   );
+ }
+ 
++/** The row thumb, 56 × 40, as every picker row draws it. */
++function Thumb({ uri }: { uri: string | null }) {
++  return (
++    <span aria-hidden className="relative block h-[40px] w-[56px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
++      {uri && <ArtLayer src={uri} style={{ backgroundPosition: "50% 20%" }} />}
++    </span>
++  );
++}
++
++/**
++ * The Background step (opponent Background addendum): the commander on the head, then its second slot. Empty, the slot
++ * is the picker's own field and rows over Backgrounds; chosen, it is the chosen row with Change and Remove (the create
++ * picker's second slot). One Seat press follows, naming what it seats.
++ */
++function BackgroundStep({ commander, background, onChoose, onSeat, onBack, inputRef, describedBy }: {
++  commander: SeatCommander;
++  background: SeatCommander | null;
++  onChoose: (background: SeatCommander | null) => void;
++  onSeat: () => void;
++  onBack: () => void;
++  inputRef: RefObject<HTMLInputElement | null>;
++  describedBy: string;
++}) {
++  const [query, setQuery] = useState("");
++  const [changing, setChanging] = useState(false);
++  const { search, reset } = useCommanderSearch(query, searchOpponentBackgroundsAction);
++  const short = shortName(commander.name);
++  const searching = background === null || changing;
++  const change = (next: string) => { reset(); setQuery(next); };
++  return (
++    <div className="flex min-h-0 flex-col">
++      <div className="flex shrink-0 items-center gap-[10px] px-[12px] pt-[12px] md:pt-[10px]">
++        <button type="button" onClick={onBack} aria-label={copy.backToCommanders} className="flex h-[32px] w-[32px] shrink-0 cursor-pointer items-center justify-center rounded-full border border-solid border-[color:var(--border)] bg-transparent text-[14px] text-[color:var(--fg-muted)]">
++          ‹
++        </button>
++        <span aria-hidden className="relative block h-[26px] w-[26px] shrink-0 overflow-hidden rounded-[6px] bg-[color:var(--elevated)]">
++          {commander.imageUri && <ArtLayer src={commander.imageUri} style={{ backgroundPosition: "50% 20%" }} />}
++        </span>
++        <h3 className="m-0 min-w-0 flex-1 truncate text-[13.5px] font-medium text-[color:var(--fg)]">{commander.name}</h3>
++      </div>
++      {searching && <Field inputRef={inputRef} value={query} onChange={change} placeholder={copy.backgroundPlaceholder} describedBy={describedBy} />}
++      <div data-seat-body className={SCROLL_BODY}>
++        <ul className="m-0 list-none p-0 pb-[6px]">
++          {searching ? (
++            <>
++              {query.trim().length < 2 && <li className={NOTE}>{partnerAddCopy.door.body(short, { kind: "chooseBackground" })}</li>}
++              <CommanderRows
++                query={query}
++                search={search}
++                noMatch={copy.backgroundNoMatch}
++                onPick={(hit) => { onChoose(asCommander(hit)); setChanging(false); change(""); }}
++              />
++            </>
++          ) : (
++            <>
++              <li role="presentation"><h3 className={HEADING}>{copy.background}</h3></li>
++              <li data-background-chosen className="flex min-h-[52px] items-center gap-[12px] px-[14px] py-[6px]">
++                <Thumb uri={background.imageUri} />
++                <span className="min-w-0 flex-1">
++                  <span className="block truncate text-[13.5px] font-medium text-[color:var(--fg)]">{background.name}</span>
++                  <span className="block truncate font-mono text-[10.5px] text-[color:var(--fg-faint)]">{copy.backgroundChosen}</span>
++                </span>
++                <span className="flex shrink-0 gap-[14px]">
++                  <button type="button" onClick={() => setChanging(true)} className="cursor-pointer border-0 border-b border-solid border-b-[color:var(--border-strong)] bg-transparent p-0 font-mono text-[11px] text-[color:var(--fg-body)]">
++                    {deckImportCopy.commander.change}
++                  </button>
++                  <button type="button" onClick={() => onChoose(null)} className="cursor-pointer border-0 border-b border-solid border-b-[color:var(--border)] bg-transparent p-0 font-mono text-[11px] text-[color:var(--fg-faint)]">
++                    {deckImportCopy.commander.remove}
++                  </button>
++                </span>
++              </li>
++            </>
++          )}
++        </ul>
++        <div className="px-[14px] pb-[12px] pt-[4px]">
++          <PrimaryButton data-seat-pair onClick={onSeat} className="w-full min-h-[44px] md:min-h-[38px]">
++            {background ? copy.seatPair(short, shortName(background.name)) : copy.seat(short)}
++          </PrimaryButton>
++        </div>
++        <Foot id={describedBy}>{copy.footBackground}</Foot>
++      </div>
++    </div>
++  );
++}
++
+ function Body({
+   onPick,
+   inputRef,
+   describedBy,
+   seated,
+   openAt,
++  openPair,
+ }: {
+   onPick: (pick: SeatPick) => void;
+   inputRef: RefObject<HTMLInputElement | null>;
+@@ -240,9 +351,11 @@ function Body({
+   seated: ReadonlySet<string>;
+   /** Open on this friend's decks (a friend seated alone, from a pod, asks Which deck?). */
+   openAt: SeatFriend | null;
++  /** Open on the Background step: the seat holds a commander that chooses one. */
++  openPair: OpenPair | null;
+ }) {
+   const [query, setQuery] = useState("");
+-  const [view, setView] = useState<View | null>(null);
++  const [view, setView] = useState<View | null>(openPair ? { step: "background", friend: null, ...openPair } : null);
+   const [friends, setFriends] = useState<Load<PickerFriend>>({ state: "busy" });
+   const { search, reset } = useCommanderSearch(query);
+ 
+@@ -284,6 +397,21 @@ function Body({
+     return <p className="m-0 px-[14px] py-[14px] font-mono text-[11px] text-[color:var(--fg-faint)]">{copy.searching}</p>;
+   }
+ 
++  if (current.step === "background") {
++    const { friend: who, commander, background } = current;
++    return (
++      <BackgroundStep
++        commander={commander}
++        background={background}
++        onChoose={(next) => setView({ ...current, background: next })}
++        onSeat={() => onPick({ friend: who ? asFriend(who) : null, deck: null, commander, partner: background })}
++        onBack={() => go(who ? { step: "commander", friend: who } : { step: "list" })}
++        inputRef={inputRef}
++        describedBy={describedBy}
++      />
++    );
++  }
++
+   if (current.step === "decks") {
+     const friend = current.friend;
+     return (
+@@ -331,7 +459,10 @@ function Body({
+         <CommanderRows
+           query={query}
+           search={search}
+-          onPick={(hit) => onPick({ friend: friend ? asFriend(friend) : null, deck: null, commander: asCommander(hit) })}
++          onPick={(hit) =>
++            hit.partner?.kind === "chooseBackground"
++              ? go({ step: "background", friend, commander: asCommander(hit), background: null })
++              : onPick({ friend: friend ? asFriend(friend) : null, deck: null, commander: asCommander(hit) })}
+         />
+       </ul>
+       <Foot id={describedBy}>{!friend && list.length > 0 ? copy.footFriends : copy.footAnyone}</Foot>
+@@ -347,6 +478,7 @@ export function SeatPicker({
+   onPick,
+   seated,
+   openAt = null,
++  openPair = null,
+ }: {
+   /** The control that opened it: where the panel hangs at 1300, and where focus returns. */
+   anchor: HTMLElement;
+@@ -356,6 +488,7 @@ export function SeatPicker({
+   /** The friends already at the OTHER seats: a friend sits once. */
+   seated: ReadonlySet<string>;
+   openAt?: SeatFriend | null;
++  openPair?: OpenPair | null;
+ }) {
+   const desktop = useIsDesktop();
+   const footId = useId();
+@@ -390,7 +523,7 @@ export function SeatPicker({
+   if (!desktop) {
+     return (
+       <Sheet open portal onDismiss={onClose} ariaLabel={copy.title} panelRef={panelRef} header={<SheetHeader title={copy.title} closeLabel={copy.close} onDismiss={onClose} />}>
+-        <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} />
++        <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} openPair={openPair} />
+       </Sheet>
+     );
+   }
+@@ -404,7 +537,7 @@ export function SeatPicker({
+       className={`${ANCHORED_PANEL_CLASS} fixed flex flex-col`}
+       style={{ width: PANEL_WIDTH, maxHeight: at?.maxHeight, top: at?.top ?? 0, left: at?.left ?? 0, visibility: at ? "visible" : "hidden" }}
+     >
+-      <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} />
++      <Body onPick={onPick} inputRef={inputRef} describedBy={footId} seated={seated} openAt={openAt} openPair={openPair} />
+     </div>
+   );
+ }
+diff --git a/src/components/tracker/sheet.tsx b/src/components/tracker/sheet.tsx
+index d8d65ac0..f1e20489 100644
+--- a/src/components/tracker/sheet.tsx
++++ b/src/components/tracker/sheet.tsx
+@@ -13,6 +13,7 @@ import { ManaPip } from "../cards/mana-pips";
+ import { FadingImg } from "../ui/hydrated-art";
+ import { CounterIcon } from "./icons";
+ import type { PlaySeat } from "./panel";
++import { damageCommanders } from "../../lib/tracker/seat";
+ 
+ const copy = trackerCopy;
+ 
+@@ -202,19 +203,20 @@ function DamageTab({ seat, seats, state, tablet, onCommit }: { seat: SeatState;
+       <div className={"grid gap-2.5 @[560px]:[grid-template-columns:repeat(var(--n),minmax(0,1fr))]" + (foes.length === 1 ? " grid-cols-1" : " grid-cols-2")} style={{ "--n": Math.max(1, foes.length) } as CSSProperties}>
+         {foes.map((foe) => {
+           const p = seats.find((x) => x.seat === foe.seat)!;
++          const hitters = damageCommanders(p, foe.commanders);
+           return (
+             <div key={foe.seat} className={CARD_BOX}>
+               <div className="relative flex h-[56px] flex-none">
+-                <ArtStrip arts={artsOf(p, foe.commanders)} className="absolute inset-0" />
++                <ArtStrip arts={artsOf(p, hitters)} className="absolute inset-0" />
+                 <b className="absolute bottom-1.5 left-2.5 text-[13.5px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
+               </div>
+               <div className="flex flex-1 flex-col justify-evenly px-2 pb-2 pt-1">
+-                {Array.from({ length: foe.commanders }, (_, cmdr) => {
++                {Array.from({ length: hitters }, (_, cmdr) => {
+                   const n = seat.damage[`${foe.seat}:${cmdr}`] ?? 0;
+                   return (
+                     <div key={cmdr} className={"flex flex-col items-center gap-1" + (cmdr > 0 ? " border-t border-[color:var(--border)] pt-2" : "")}>
+                       <span className="max-w-full truncate text-[12px] text-[color:var(--fg-body)]">{cmdrName(p, cmdr)}</span>
+-                      <Stepper size={foe.commanders === 1 ? "damageOne" : "damage"} count={n} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
++                      <Stepper size={hitters === 1 ? "damageOne" : "damage"} count={n} what={cmdrName(p, cmdr)} onStep={(d) => onCommit({ t: "damage", seat: seat.seat, from: foe.seat, cmdr, delta: d })} />
+                     </div>
+                   );
+                 })}
+@@ -240,10 +242,12 @@ function DamageArt({ seat, foes, seats, onCommit }: { seat: SeatState; foes: rea
+       <div className="grid min-h-0 flex-1 gap-2.5" style={{ gridTemplateColumns: `repeat(${Math.max(1, foes.length)}, minmax(0, 1fr))` }}>
+         {foes.map((foe) => {
+           const p = seats.find((x) => x.seat === foe.seat)!;
+-          const taken = Array.from({ length: foe.commanders }, (_, cmdr) => seat.damage[`${foe.seat}:${cmdr}`] ?? 0);
++          // A Background deals no commander damage: its seat's card is the commander's alone (call 6).
++          const hitters = damageCommanders(p, foe.commanders);
++          const taken = Array.from({ length: hitters }, (_, cmdr) => seat.damage[`${foe.seat}:${cmdr}`] ?? 0);
+           return (
+             <div key={foe.seat} className={CARD_BOX} data-testid="damage-card">
+-              <ArtStrip arts={artsOf(p, foe.commanders)} className="absolute inset-0" />
++              <ArtStrip arts={artsOf(p, hitters)} className="absolute inset-0" />
+               <span aria-hidden className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,.55)_0%,rgba(0,0,0,0)_26%,rgba(0,0,0,0)_40%,rgba(0,0,0,.86)_100%)]" />
+               <b className="relative px-3 pt-2.5 text-[15px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
+               <div className="relative mt-auto flex">
+diff --git a/src/lib/copy/game-seats.ts b/src/lib/copy/game-seats.ts
+index f96f5709..3c39ddca 100644
+--- a/src/lib/copy/game-seats.ts
++++ b/src/lib/copy/game-seats.ts
+@@ -102,5 +102,24 @@ export const gameSeatsCopy = {
+     /** Not drawn either: a search that failed is not a search with no hit. Quick-add's failed search toast says the
+      *  same two halves apart (small items 2, item 8), so they are written once, below. */
+     failed: `${SEARCH_FAILED} ${SEARCH_RETRY}.`,
++
++    // The Background step (opponent Background addendum): a commander that chooses a Background opens a second slot
++    // before it is seated. The rule line reuses the deck's own (`partnerAddCopy.door.body`), and Change / Remove reuse
++    // the create picker's second slot (`deckImportCopy.commander.change` / `.remove`).
++    /** Under a commander hit that chooses one, so the row says why its press does not seat at once. */
++    choosesBackground: "chooses a Background",
++    /** The ‹ on the step's head. */
++    backToCommanders: "Back to commanders",
++    /** The step's head, under the commander's name. */
++    commanderTag: "commander",
++    background: "Background",
++    backgroundPlaceholder: "Search Backgrounds",
++    backgroundNoMatch: "No Background by that name.",
++    /** The chosen slot's caption. */
++    backgroundChosen: "second commander",
++    /** The one press that seats, which follows the slot. */
++    seat: (commander: string) => `Seat ${commander}`,
++    seatPair: (commander: string, background: string) => `Seat ${commander} + ${background}`,
++    footBackground: "A Background is optional: seat the commander alone if none was played.",
+   },
+ } as const;
+diff --git a/src/lib/decks/game-seats.ts b/src/lib/decks/game-seats.ts
+index b9c3d876..f4878197 100644
+--- a/src/lib/decks/game-seats.ts
++++ b/src/lib/decks/game-seats.ts
+@@ -18,8 +18,11 @@ import type { TablePrefill } from "../social/rule-zero-log";
+ import type { OpponentInput } from "./game-opponents";
+ import type { OpponentCommanderHit } from "./opponent-commanders";
+ 
+-/** What a seat draws of its commander. The hit's partner reading stays on the search, never in a seat. */
+-export type SeatCommander = Pick<OpponentCommanderHit, "oracleId" | "name" | "imageUri">;
++/**
++ * What a seat draws of its commander. The hit's partner reading stays on the search, never in a seat, except the one
++ * fact the picker reopens on: this commander chooses a Background (opponent Background addendum, call 4).
++ */
++export type SeatCommander = Pick<OpponentCommanderHit, "oracleId" | "name" | "imageUri"> & { choosesBackground?: boolean };
+ 
+ /** A friend at a seat: their `publicId` is what is sent, and their name is what the seat is called. */
+ export type SeatFriend = { publicId: string; name: string | ThirdPartyName };
+@@ -29,6 +32,8 @@ export type Seat = {
+   key: string;
+   /** Null for a friend seated alone, who has no commander to draw. */
+   commander: SeatCommander | null;
++  /** The commander's Background, the second half (opponent Background addendum). Only beside a commander that chooses one. */
++  partner: SeatCommander | null;
+   friend: SeatFriend | null;
+   /** The friend's deck, when one was picked: today's name, drawn on the seat. Its commander is `commander`. */
+   deck: { id: string; name: string | ThirdPartyName } | null;
+@@ -54,7 +59,13 @@ export const podSizeHeld = (podSize: number, filled: number) => seatCount(podSiz
+ export const hasRoom = (podSize: number, filled: number) => filled < seatCount(podSize);
+ 
+ /** What a picker press names: anyone by commander, or a friend (with a deck, or a commander of their own, or neither). */
+-export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: string | ThirdPartyName } | null; commander: SeatCommander | null };
++export type SeatPick = {
++  friend: SeatFriend | null;
++  deck: { id: string; name: string | ThirdPartyName } | null;
++  commander: SeatCommander | null;
++  /** A Background picked in the picker's Background step; absent or null for every other press. */
++  partner?: SeatCommander | null;
++};
+ 
+ /**
+  * The seat a picker press fills: a new one at the end, or the named one changed in place (`won` kept). A friend
+@@ -62,8 +73,8 @@ export type SeatPick = { friend: SeatFriend | null; deck: { id: string; name: st
+  */
+ export function seatWith(seats: readonly Seat[], at: string | null, pick: SeatPick, key: string): Seat[] {
+   // A picker press makes any seat an ordinary one: a seat from the table leaves the table path, label and all.
+-  const filled = (s: Seat): Seat => ({ ...s, ...pick, label: pick.friend ? "" : s.label, table: null });
+-  if (at === null) return [...seats, filled({ key, commander: null, friend: null, deck: null, label: "", won: false, table: null })];
++  const filled = (s: Seat): Seat => ({ ...s, ...pick, partner: pick.partner ?? null, label: pick.friend ? "" : s.label, table: null });
++  if (at === null) return [...seats, filled({ key, commander: null, partner: null, friend: null, deck: null, label: "", won: false, table: null })];
+   return seats.map((s) => (s.key === at ? filled(s) : s));
+ }
+ 
+@@ -125,8 +136,12 @@ export function seatsForResult(seats: readonly Seat[], result: string | null): S
+ /** The commander's short name, before the comma: `Yuriko` for `Yuriko, the Tiger's Shadow`. */
+ export const shortName = (name: string) => name.split(",")[0].trim();
+ 
+-/** The seat's own name for a screen reader and a heading: the table's name for it, the friend, else the label when there is one, else the commander. */
+-export const seatName = (s: Seat) => s.table?.name ?? s.friend?.name ?? (cleanLabel(s.label) || shortName(s.commander?.name ?? ""));
++/** A seat's commanders as one name: `Lae’zel + Raised by Giants`, the History row's and Matchups' two-name treatment. */
++export const commandersName = (s: Pick<Seat, "commander" | "partner">) =>
++  s.commander ? (s.partner ? `${shortName(s.commander.name)} + ${shortName(s.partner.name)}` : shortName(s.commander.name)) : "";
++
++/** The seat's own name for a screen reader and a heading: the table's name for it, the friend, else the label when there is one, else the commander(s). */
++export const seatName = (s: Seat) => s.table?.name ?? s.friend?.name ?? (cleanLabel(s.label) || commandersName(s));
+ 
+ /**
+  * The seats a table's prefill fills, in seat order: every other seat, a waiting one too. Each draws the table's name
+@@ -136,6 +151,7 @@ export function prefillSeats(prefill: Pick<TablePrefill, "seats"> & Partial<Pick
+   return prefill.seats.map((t) => ({
+     key: key(t.seat),
+     commander: null,
++    partner: null,
+     friend: null,
+     deck: null,
+     label: "",
+@@ -153,8 +169,10 @@ export function opponentsFor(seats: readonly Seat[], result: string | null): Opp
+     if (s.table) return { tableSeat: s.table.seat, ...won };
+     // A friend's deck carries its own name and commanders, so none is sent beside it (`parseOpponents` refuses them).
+     if (s.friend && s.deck) return { friend: s.friend.publicId, deck: s.deck.id, ...won };
+-    if (s.friend) return { friend: s.friend.publicId, ...(s.commander ? { commander: s.commander.oracleId } : {}), ...won };
++    // A Background rides beside its commander as `partner`, the field a deck's pair already sends (#3164 accepts it).
++    const pair = s.commander && s.partner ? { partner: s.partner.oracleId } : {};
++    if (s.friend) return { friend: s.friend.publicId, ...(s.commander ? { commander: s.commander.oracleId, ...pair } : {}), ...won };
+     const label = cleanLabel(s.label);
+-    return { commander: s.commander?.oracleId, ...(label !== "" ? { label } : {}), ...won };
++    return { commander: s.commander?.oracleId, ...pair, ...(label !== "" ? { label } : {}), ...won };
+   });
+ }
+diff --git a/src/lib/decks/opponent-commanders.ts b/src/lib/decks/opponent-commanders.ts
+index 1cf4d624..c4bc72e6 100644
+--- a/src/lib/decks/opponent-commanders.ts
++++ b/src/lib/decks/opponent-commanders.ts
+@@ -98,3 +98,42 @@ export async function searchOpponentCommanders(query: unknown): Promise<Opponent
+     imageUri: art.get(r.oracleId) ?? r.imageUri,
+   }));
+ }
++
++/**
++ * The picker's Background step (opponent Background addendum, G1): a Background by name, for the second half beside a
++ * commander that chooses one. Commander-legal game cards typed Legendary Enchantment — Background, the half `pairLegal`
++ * accepts; the save re-checks the pair, and that check is the one that counts. Same shape as a commander hit.
++ */
++export async function searchOpponentBackgrounds(query: unknown): Promise<OpponentCommanderHit[]> {
++  if (typeof query !== "string") return [];
++  const match = nameSearch(query);
++  if (!match) return [];
++  const { flavorHits } = match;
++  const rows = await db
++    .select({
++      oracleId: cards.oracleId,
++      name: cards.name,
++      typeLine: cards.typeLine,
++      manaCost: cards.manaCost,
++      colorIdentity: cards.colorIdentity,
++      imageUri: cards.imageUri,
++      flavorName: flavorHits.flavorName,
++    })
++    .from(cards)
++    .leftJoin(flavorHits, eq(flavorHits.oracleId, cards.oracleId))
++    .where(and(match.where, eq(cards.commanderLegal, true), isGameCardWhere(), ilike(cards.typeLine, "%Legendary Enchantment%Background%")))
++    .orderBy(...commanderSearchOrder(query))
++    .limit(OPPONENT_COMMANDER_HITS);
++  if (rows.length === 0) return [];
++  const art = await loadOpeningArt(rows.map((r) => r.oracleId)).catch(() => new Map<string, string>());
++  return rows.map((r) => ({
++    oracleId: r.oracleId,
++    name: r.name,
++    typeLine: r.typeLine,
++    manaCost: r.manaCost,
++    colorIdentity: WUBRG.filter((c) => r.colorIdentity.includes(c)),
++    partner: null,
++    flavorName: match.shownFlavor(r.name, r.flavorName),
++    imageUri: art.get(r.oracleId) ?? r.imageUri,
++  }));
++}
+diff --git a/src/lib/social/rule-zero-table.ts b/src/lib/social/rule-zero-table.ts
+index fcf7d7c8..235dc4b3 100644
+--- a/src/lib/social/rule-zero-table.ts
++++ b/src/lib/social/rule-zero-table.ts
+@@ -67,7 +67,8 @@ export type TableSeat = {
+     /** The seat player's deck name: branded on every seat but the viewer's own. */
+     name: string | ThirdPartyName;
+     commander: { name: string; artCropUri: string | null };
+-    partner: { name: string; artCropUri: string | null } | null;
++    /** `background`: the second half is a Background (opponent Background addendum, G4), which deals no combat damage. */
++    partner: { name: string; artCropUri: string | null; background: boolean } | null;
+     /** The whole deck, commanders in, so `87 of 100`. */
+     cards: number;
+     reading: SeatReading | null;
+@@ -163,6 +164,7 @@ export function seatsQuery(viewerId: string, tableId: string, q: Pick<typeof db,
+       commanderArt: commanderOf.artCropUri,
+       partnerName: partnerOf.name,
+       partnerArt: partnerOf.artCropUri,
++      partnerType: partnerOf.typeLine,
+     })
+     .from(ruleZeroSeats)
+     .innerJoin(ruleZeroTables, eq(ruleZeroTables.id, ruleZeroSeats.tableId))
+@@ -389,7 +391,7 @@ async function readTable<R = null>(
+           deckId: r.userId === viewerId ? r.deckId : null,
+           name: r.userId === viewerId ? r.deckName : named(r.deckName),
+           commander: { name: r.commanderName, artCropUri: r.commanderArt },
+-          partner: r.partnerName !== null ? { name: r.partnerName, artCropUri: r.partnerArt } : null,
++          partner: r.partnerName !== null ? { name: r.partnerName, artCropUri: r.partnerArt, background: /\bBackground\b/.test(r.partnerType ?? "") } : null,
+           cards: legality.built + (100 - legality.size),
+           reading: verdict && profile ? readingOf(verdict, profile, declared) : null,
+         },
+diff --git a/src/lib/tracker/seat.ts b/src/lib/tracker/seat.ts
+index 2e0be9ac..8a2218f3 100644
+--- a/src/lib/tracker/seat.ts
++++ b/src/lib/tracker/seat.ts
+@@ -14,6 +14,11 @@ export type PlaySeat = {
+   /** The commanders' card names (public card text), for the sheet's damage and tax rows. Empty with no deck. */
+   commander: string;
+   partner: string | null;
++  /**
++   * The second commander is a Background (opponent Background addendum, call 6): it is cast from the command zone, so
++   * Tax keeps its row, but it is no creature and deals no commander damage, so Commander damage draws the commander alone.
++   */
++  partnerIsBackground?: boolean;
+   /** The deck's name, as the table draws it (branded on every seat but the viewer's own), or null while the seat has no deck (S2). */
+   deck: string | ThirdPartyName | null;
+ };
+@@ -27,5 +32,8 @@ export const TAX_PER_CAST = 2;
+ /** Commander `cmdr` of a seat (1 is the partner), by card name, or null with no deck. */
+ export const commanderOf = (p: PlaySeat, cmdr: number): string | null => (cmdr === 1 && p.partner ? p.partner : p.commander || null);
+ 
++/** How many of a seat's commanders can deal commander damage: a Background deals none. */
++export const damageCommanders = (p: PlaySeat, commanders: number): number => (p.partnerIsBackground ? 1 : commanders);
++
+ /** The art of commander `cmdr` (1 is the partner's half). */
+ export const commanderArt = (p: PlaySeat, cmdr: number): string | null => (cmdr === 1 ? p.partnerArt : p.art);
