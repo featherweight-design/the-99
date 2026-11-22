@@ -21,7 +21,7 @@ export type JudgedRow = {
 
 /** The verified themes of a FRESH row; none for a row that is unverified, stale or malformed. */
 export function freshVerifiedThemes(r: JudgedRow): JudgedTheme[] {
-  if (!Array.isArray(r.verifiedThemes) || r.promptVersion !== JUDGED_PROMPT_VERSION) return [];
+  if (!Array.isArray(r.verifiedThemes) || r.verifiedThemes.length === 0 || r.promptVersion !== JUDGED_PROMPT_VERSION) return [];
   const hash = judgedInputHash(
     { oracleId: r.oracleId, name: r.name, mana_cost: r.manaCost, type_line: r.typeLine, oracle_text: r.oracleText, layout: r.layout },
     r.model,
