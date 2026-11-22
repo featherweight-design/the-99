@@ -24,6 +24,8 @@ export type { PlaySeat } from "../../lib/tracker/seat";
 const HOLD_MS = 450;
 const REPEAT_MS = 280;
 export const COMMIT_MS = 2000;
+/** The name row length, on the design canvas, below which End turn draws icon-only (addendum R2, decision 4). */
+const SHORT_ROW = 240;
 
 const copy = trackerCopy.panel;
 
@@ -209,18 +211,22 @@ export function Panel({
     </div>
   ) : null;
   // End turn and the sheet button (F04, F12): in the name row on a phone and the tablet's ends, in the foot on the tablet's grids.
+  // A name row under 240 px long (phone 6 Ends' sides) has no room for the label, so End turn keeps only its arrow in a 44 px
+  // circle, named by its aria-label (addendum R2, decision 4).
+  const iconOnly = !foot && Math.max(cell.w, cell.h) < SHORT_ROW;
   const endTurn = active && !out ? (
     <button
       type="button"
       onClick={onEndTurn}
       disabled={disabled}
       data-testid="end-turn"
+      aria-label={iconOnly ? copy.endTurn : undefined}
       className={
-        "flex shrink-0 items-center rounded-full bg-[color:var(--accent)] font-semibold text-[color:var(--bg)] motion-safe:animate-[end-turn-pop_.3s_cubic-bezier(.3,1.5,.5,1)] motion-safe:transition-transform motion-safe:active:scale-[.94] "
-        + (foot ? "h-[48px] gap-2 px-5 text-[16px]" : "h-10 gap-[6px] px-[14px] text-[14px] " + TOUCH_HIT)
+        "flex shrink-0 items-center justify-center rounded-full bg-[color:var(--accent)] font-semibold text-[color:var(--bg)] motion-safe:animate-[end-turn-pop_.3s_cubic-bezier(.3,1.5,.5,1)] motion-safe:transition-transform motion-safe:active:scale-[.94] "
+        + (foot ? "h-[48px] gap-2 px-5 text-[16px]" : iconOnly ? "size-11" : "h-10 gap-[6px] px-[14px] text-[14px] " + TOUCH_HIT)
       }
     >
-      {copy.endTurn}
+      {iconOnly ? null : copy.endTurn}
       <EndTurnIcon size={foot ? 18 : 16} />
     </button>
   ) : null;

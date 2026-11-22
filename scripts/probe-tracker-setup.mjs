@@ -2,8 +2,8 @@
 // 1300x820, on a four-seat table. It asserts what the boards draw and what the setup does:
 //   - the header: "Set up the game", and a 44px ✕ that is a link back to the table;
 //   - the lead line under it;
-//   - the Table row (84px) offers the screen's four-seat tables as 64x72 tiles, first one checked (on a phone, two long
-//     sides first);
+//   - the Table row (84px) offers the four-seat tables as 64x72 tiles, the same two on every device, Two and two first
+//     and checked (addendum R2);
 //   - the Starting life and Who goes first rows are 56px with a top hairline, the stepper's buttons 44px, and − moves
 //     the value;
 //   - I'll pick starts on the viewer's own seat, so Start is enabled in both modes;
@@ -100,9 +100,8 @@ async function walk(browser, width) {
     const names = [];
     for (let i = 0; i < n; i += 1) names.push(await tiles.nth(i).getAttribute("aria-label"));
     const firstBox = n ? await box(tiles.first()) : null;
-    // A phone offers its two four-seat tables, two long sides first; a tablet has one four-seat table.
-    const phone = width.viewport.width < 768;
-    const want = phone ? ["Two long sides, two players each", "One player on each side"] : ["Two and two"];
+    // Every device offers the same two four-seat tables, Two and two first (addendum R2).
+    const want = ["Two and two", "One on each side"];
     report(
       L(`the Table row offers ${want.join(", then ")}, as 64x72 tiles`),
       names.join("|") === want.join("|") && near(firstBox.width, 64) && near(firstBox.height, 72),

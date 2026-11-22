@@ -5,9 +5,10 @@
  * nth seat of the table takes cell n.
  *
  * L1 to L5 are the drawn boards, with phone 4 on two long sides (F02, setup's default for four), tablet 4 (F18: two
- * 575 px panels a side, 10 px apart) and tablet 5 (F19: three on top, two below). The counts the boards do not draw
- * (phone 2, 5 and 6, and tablet 6 as 3+3) follow the same grammar: full-width rows for the faces at the ends, 155 px
- * columns for the sides on a phone.
+ * 575 px panels a side, 10 px apart) and tablet 5 (F19: three on top, two below). Addendum R2 draws the rest of the
+ * parity: four, five and six seats offer the same arrangements, by the same names and in the same order, on both
+ * devices, the first being the default (R1 for phone 5 and 6, R2 for tablet 4 One on each side). Phone 2 and tablet 6
+ * as 3+3 follow the same grammar: full-width rows for the faces at the ends, 155 px columns for the sides on a phone.
  */
 export type Device = "phone" | "tablet";
 export type Cell = { x: number; y: number; w: number; h: number; rot: 0 | 90 | 180 | -90 };
@@ -30,6 +31,11 @@ export type Layout = {
    * them in one name row along the top.
    */
   foot?: true;
+  /**
+   * A retired arrangement: still resolved by id, so a game saved on it keeps its seats where they were, but no longer
+   * offered at setup.
+   */
+  retired?: true;
 };
 
 const PHONE = { w: 390, h: 844 } as const;
@@ -43,19 +49,24 @@ export const LAYOUTS: readonly Layout[] = [
   { id: "phone-2", device: "phone", seats: 2, canvas: PHONE, label: "Face to face", cells: [c(6, 648, 378, 190, 0), c(6, 6, 378, 190, 180)], spine: PHONE_SPINE },
   { id: "phone-3-end", device: "phone", seats: 3, canvas: PHONE, label: "One at the end", cells: [c(6, 648, 378, 190, 0), c(6, 6, 155, 636, 90), c(229, 6, 155, 636, -90)], spine: r(167, 6, 56, 636) },
   { id: "phone-3-side", device: "phone", seats: 3, canvas: PHONE, label: "Along one side", cells: [c(6, 565, 316, 273, 90), c(6, 285, 316, 274, 90), c(6, 6, 316, 273, 90)], spine: r(328, 6, 56, 832) },
-  { id: "phone-4-sides", device: "phone", seats: 4, canvas: PHONE, label: "Two long sides, two players each", cells: [c(6, 425, 155, 413, 90), c(6, 6, 155, 413, 90), c(229, 6, 155, 413, -90), c(229, 425, 155, 413, -90)], spine: r(167, 6, 56, 832) },
-  { id: "phone-4-around", device: "phone", seats: 4, canvas: PHONE, label: "One player on each side", cells: [c(6, 648, 378, 190, 0), c(6, 202, 155, 440, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
-  { id: "phone-5", device: "phone", seats: 5, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
-  { id: "phone-6", device: "phone", seats: 6, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 217, -90), c(229, 425, 155, 217, -90)], spine: PHONE_SPINE },
+  { id: "phone-4-sides", device: "phone", seats: 4, canvas: PHONE, label: "Two and two", cells: [c(6, 425, 155, 413, 90), c(6, 6, 155, 413, 90), c(229, 6, 155, 413, -90), c(229, 425, 155, 413, -90)], spine: r(167, 6, 56, 832) },
+  { id: "phone-4-around", device: "phone", seats: 4, canvas: PHONE, label: "One on each side", cells: [c(6, 648, 378, 190, 0), c(6, 202, 155, 440, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
+  { id: "phone-5-sides", device: "phone", seats: 5, canvas: PHONE, label: "Three and two", cells: [c(6, 425, 155, 413, 90), c(6, 6, 155, 413, 90), c(229, 6, 155, 273, -90), c(229, 285, 155, 274, -90), c(229, 565, 155, 273, -90)], spine: r(167, 6, 56, 832) },
+  { id: "phone-5-end", device: "phone", seats: 5, canvas: PHONE, label: "One at the end", cells: [c(6, 648, 378, 190, 0), c(6, 327, 155, 315, 90), c(6, 6, 155, 315, 90), c(229, 6, 155, 315, -90), c(229, 327, 155, 315, -90)], spine: r(167, 6, 56, 636) },
+  { id: "phone-5", retired: true, device: "phone", seats: 5, canvas: PHONE, label: "Around", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 440, -90)], spine: PHONE_SPINE },
+  { id: "phone-6-sides", device: "phone", seats: 6, canvas: PHONE, label: "Three and three", cells: [c(6, 565, 155, 273, 90), c(6, 285, 155, 274, 90), c(6, 6, 155, 273, 90), c(229, 6, 155, 273, -90), c(229, 285, 155, 274, -90), c(229, 565, 155, 273, -90)], spine: r(167, 6, 56, 832) },
+  { id: "phone-6", device: "phone", seats: 6, canvas: PHONE, label: "Ends", cells: [c(6, 648, 378, 190, 0), c(6, 425, 155, 217, 90), c(6, 202, 155, 217, 90), c(6, 6, 378, 190, 180), c(229, 202, 155, 217, -90), c(229, 425, 155, 217, -90)], spine: PHONE_SPINE },
   { id: "tablet-4", foot: true, device: "tablet", seats: 4, canvas: TABLET, label: "Two and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 575, 358, 180), c(595, 10, 575, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
+  { id: "tablet-4-around", device: "tablet", seats: 4, canvas: TABLET, label: "One on each side", cells: [c(270, 452, 640, 358, 0), c(10, 10, 250, 800, 90), c(270, 10, 640, 358, 180), c(920, 10, 250, 800, -90)], spine: r(270, 378, 640, 64) },
   { id: "tablet-5", foot: true, device: "tablet", seats: 5, canvas: TABLET, label: "Three and two", cells: [c(10, 452, 575, 358, 0), c(10, 10, 380, 358, 180), c(400, 10, 380, 358, 180), c(790, 10, 380, 358, 180), c(595, 452, 575, 358, 0)], spine: TABLET_SPINE },
   { id: "tablet-5-end", device: "tablet", seats: 5, canvas: TABLET, label: "One at the end", cells: [c(10, 452, 445, 358, 0), c(10, 10, 445, 358, 180), c(465, 10, 445, 358, 180), c(920, 10, 250, 800, -90), c(465, 452, 445, 358, 0)], spine: r(10, 378, 900, 64) },
   { id: "tablet-6", foot: true, device: "tablet", seats: 6, canvas: TABLET, label: "Three and three", cells: [c(10, 452, 380, 358, 0), c(10, 10, 380, 358, 180), c(400, 10, 380, 358, 180), c(790, 10, 380, 358, 180), c(790, 452, 380, 358, 0), c(400, 452, 380, 358, 0)], spine: TABLET_SPINE },
   { id: "tablet-6-ends", device: "tablet", seats: 6, canvas: TABLET, label: "Ends", cells: [c(270, 452, 315, 358, 0), c(10, 10, 250, 800, 90), c(270, 10, 315, 358, 180), c(595, 10, 315, 358, 180), c(920, 10, 250, 800, -90), c(595, 452, 315, 358, 0)], spine: r(270, 378, 640, 64) },
 ];
 
-/** The layouts a screen offers for a seat count, drawn boards first. */
-export const layoutsFor = (device: Device, seats: number): Layout[] => LAYOUTS.filter((l) => l.device === device && l.seats === seats);
+/** The layouts setup offers for a seat count, the default first. A retired layout still resolves by id but is never offered. */
+export const layoutsFor = (device: Device, seats: number): Layout[] =>
+  LAYOUTS.filter((l) => l.device === device && l.seats === seats && !l.retired);
 export const layoutById = (id: string): Layout | undefined => LAYOUTS.find((l) => l.id === id);
 
 /**

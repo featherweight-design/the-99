@@ -159,7 +159,7 @@ async function walk(browser, width) {
       await page.reload({ waitUntil: "domcontentloaded" });
       await page.addStyleTag({ content: "[data-seat-notice-stack]{display:none!important}" });
       await setup.waitFor({ timeout: 60_000 });
-      await setup.getByRole("radio", { name: "One player on each side" }).click();
+      await setup.getByRole("radio", { name: "One on each side" }).click();
       await page.waitForTimeout(400); // the faces glide 200ms to their new sides
       const d2 = await page.getByTestId("seat-map-device").boundingBox();
       const m2 = await map.boundingBox();
