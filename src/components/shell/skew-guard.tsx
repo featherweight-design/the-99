@@ -6,7 +6,7 @@
 //
 // When a tab becomes visible it asks `/api/health` which deployment answers. On a mismatch it holds a
 // pending reload and fires it at the first moment that loses nothing: a route change, or a blur with no
-// edited form on the page. A focused field holding typed text, or a changed form, keeps the tab where it is.
+// field holding typed text. Typed text in any field on the page keeps the tab where it is.
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 
@@ -39,25 +39,24 @@ function isMidInput(el: Element | null): boolean {
   return el instanceof HTMLElement && el.isContentEditable && (el.textContent ?? "") !== "";
 }
 
-/** A form with a control whose value is not the one it loaded with. */
-function anyDirtyForm(): boolean {
-  for (const form of Array.from(document.forms)) {
-    for (const el of Array.from(form.elements)) {
-      if (el instanceof HTMLInputElement) {
-        if (el.type === "hidden" || el.type === "submit" || el.type === "button") continue;
-        if (el.type === "checkbox" || el.type === "radio" ? el.checked !== el.defaultChecked : el.value !== el.defaultValue) return true;
-      } else if (el instanceof HTMLTextAreaElement) {
-        if (el.value !== el.defaultValue) return true;
-      } else if (el instanceof HTMLSelectElement) {
-        if (Array.from(el.options).some((o) => o.selected !== o.defaultSelected)) return true;
-      }
-    }
+const NON_TEXT = new Set(["hidden", "submit", "button", "reset", "checkbox", "radio", "range", "color", "file", "image"]);
+
+/**
+ * Text sitting in any field on the page, in a form or not. Not a comparison with `defaultValue`: React keeps a
+ * controlled field's `value` attribute in step with what was typed, so such a field always reads as unchanged.
+ * A search box prefilled from the address holds a pending reload until the next route change, which is the cost
+ * of never guessing whether typed text matters.
+ */
+function anyTypedText(): boolean {
+  for (const el of Array.from(document.querySelectorAll("input, textarea"))) {
+    if (el instanceof HTMLInputElement && NON_TEXT.has(el.type)) continue;
+    if ((el as HTMLInputElement | HTMLTextAreaElement).value !== "") return true;
   }
   return false;
 }
 
 function busy(): Busy {
-  return { editing: isMidInput(document.activeElement), dirtyForm: anyDirtyForm() };
+  return { editing: isMidInput(document.activeElement), dirtyForm: anyTypedText() };
 }
 
 export function SkewGuard({ deploymentId }: { deploymentId: string | null }) {
