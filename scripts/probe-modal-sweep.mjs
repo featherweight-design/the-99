@@ -12,7 +12,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { assertNotSharedBranch } from "./lib/scratch-branch.mjs";
+import { assertNotSharedBranch, assertScratchBranch } from "./lib/scratch-branch.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "DATABASE_URL"]);
 const sql = neon(DATABASE_URL);
@@ -99,6 +99,60 @@ async function openCheck(page, check, name, selector, open, tries = 4) {
   check(name, { found: true, css: await page.evaluate(() => window.__seen) });
 }
 
+/** The seeded rows: a fully-claimed card (owned once, claimed by one deck, so card details offers "Change copy") and a card
+ *  on a Shopping line (a deck holding a card the account does not own, so "Got it" appears). They WRITE (a deck and its
+ *  cards for the probe's own account), so they run only with `--branch=<id>` naming the scratch branch this database is:
+ *  the probe refuses when the connection is any other branch. Every row is the probe's own, found again by SEED_DECK. */
+const SEED_DECK = "probe:modal-sweep seed";
+const BRANCH_ARG = process.argv.find((a) => a.startsWith("--branch="))?.slice("--branch=".length) ?? null;
+let seeded = null;
+let seedFailed = false;
+let walkUser = null;
+async function seedRows(userId, branch) {
+  assertScratchBranch(branch, "probe:modal-sweep seeded checks");
+  if (BRANCH_ARG !== branch) throw new Error(`the seeded checks write rows: pass --branch=<the scratch branch id>; this connection is ${branch}, --branch is ${BRANCH_ARG ?? "absent"}`);
+  const [claimed] = await sql`
+    select ci.oracle_id, c.name from collection_items ci join cards c on c.oracle_id = ci.oracle_id
+    where ci.user_id = ${userId}
+      and not exists (select 1 from deck_cards dc join decks d on d.id = dc.deck_id where d.user_id = ${userId} and dc.oracle_id = ci.oracle_id)
+    group by ci.oracle_id, c.name having sum(ci.quantity) = 1 order by c.name limit 1`;
+  const [unowned] = await sql`
+    select c.oracle_id, c.name from cards c
+    where c.name ~ '^[A-Za-z ]+$' and exists (select 1 from printings p where p.oracle_id = c.oracle_id)
+      and not exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id)
+    order by c.name limit 1`;
+  if (!claimed || !unowned) throw new Error(`no card to seed with (claimed ${claimed?.name ?? "none"}, unowned ${unowned?.name ?? "none"})`);
+  const [src] = await sql`select commander_oracle_id from decks where user_id = ${userId} and commander_oracle_id is not null limit 1`;
+  const [deck] = await sql`insert into decks (user_id, name, commander_oracle_id, filled) values (${userId}, ${SEED_DECK}, ${src?.commander_oracle_id ?? null}, true) returning id`;
+  await sql`insert into deck_cards (deck_id, oracle_id, quantity) values (${deck.id}, ${claimed.oracle_id}, 1), (${deck.id}, ${unowned.oracle_id}, 1)`;
+  // A claim is read off a deck's newest COMMITTED version, so commit one holding the claimed card: it reads owned once,
+  // spoken for, in one deck. (Deleting the deck cascades its versions.)
+  if (!src?.commander_oracle_id) throw new Error("no deck with a commander to borrow one from for the seed version");
+  const [version] = await sql`insert into deck_versions (deck_id, number, commander_oracle_id) values (${deck.id}, 1, ${src.commander_oracle_id}) returning id`;
+  await sql`insert into deck_version_cards (version_id, oracle_id, quantity) values (${version.id}, ${claimed.oracle_id}, 1), (${version.id}, ${unowned.oracle_id}, 1)`;
+  seeded = { claimed: claimed.name, unowned: unowned.name, unownedId: unowned.oracle_id, deckId: deck.id };
+}
+// Adding the cart line's card writes a collection row and a history entry of its own (source `shopping:<deck id>`): the account owned
+// none of that card before the seed (seedRows picks one it does not), so removing them restores the account.
+async function unseed(userId) {
+  const ids = (await sql`select id from decks where user_id = ${userId} and name = ${SEED_DECK}`).map((r) => r.id);
+  if (seeded?.unownedId) {
+    await sql`delete from collection_items where user_id = ${userId} and oracle_id = ${seeded.unownedId}`;
+    for (const id of ids) {
+      await sql`update collection_history set reverted_by = null, reverts_id = null where user_id = ${userId} and source = ${`shopping:${id}`}`;
+      await sql`delete from collection_history where user_id = ${userId} and source = ${`shopping:${id}`}`;
+    }
+  }
+  if (ids.length) {
+    await sql`delete from deck_cards where deck_id = any(${ids})`;
+    await sql`delete from decks where id = any(${ids})`;
+  }
+  const [{ n }] = await sql`select count(*)::int as n from decks where user_id = ${userId} and name = ${SEED_DECK}`;
+  const [{ m }] = seeded?.unownedId ? await sql`select count(*)::int as m from collection_items where user_id = ${userId} and oracle_id = ${seeded.unownedId}` : [{ m: 0 }];
+  report("the probe's seeded deck and its bought card are removed", n === 0 && m === 0, `${n} deck(s), ${m} collection row(s) left`);
+  seeded = null;
+}
+
 /** The landing draws only with PUBLIC_LANDING_ENABLED on, and its "What credits cost" link only with PAYMENTS_ENABLED on and both
  *  Stripe Price ids set (start the dev server with STRIPE_PRICE_PACK_40 and STRIPE_PRICE_PLAN_MONTHLY set to any text: the sheet
  *  shows prices, it never calls Stripe). Adds an app-wide row for each switch that has none; the `finally` removes only this probe's. */
@@ -151,6 +205,9 @@ async function walk(browser, width) {
   try {
     const userId = await signIn(page);
     await switchOn(userId, page);
+    seeded = null;
+    await seedRows(userId, branch).catch((e) => { seedFailed = true; report("the seeded rows", false, String(e?.message ?? e)); });
+    walkUser = userId;
     await page.goto(`${BASE}/about`, { waitUntil: "domcontentloaded", timeout: 180_000 });
     const press = page.locator("[data-about-report] button");
     await press.waitFor({ timeout: 30_000 });
@@ -209,6 +266,37 @@ async function walk(browser, width) {
     await openCheck(page, check, "shopping > Got it confirm", "[role=dialog]", () => page.locator('button[aria-label^="Bought "]').first().click());
     await page.keyboard.press("Escape");
 
+    // The seeded rows: the fully-claimed card's copy chooser (it sits over the card modal, which carries `aria-owns`, so the
+    // chooser is the dialog without it), then the cart line's got-it confirm and, once bought, the receipt's Undo warning.
+    if (seeded) {
+      await gotoPath(page, `/collection?view=rows&q=${encodeURIComponent(seeded.claimed)}`);
+      const rowName = new RegExp(`^${seeded.claimed.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")},`);
+      await openCheck(page, check, "card details > Change copy chooser (seeded claimed card)", "[role=dialog][aria-modal=true]:not([aria-owns])", async () => {
+        const link = page.locator('[data-testid="change-copy-link"]').locator("visible=true").first();
+        if (!(await link.isVisible().catch(() => false))) await page.getByRole("button", { name: rowName }).first().click({ timeout: 8_000 });
+        // On a phone the details sit behind "All details".
+        if (!(await link.isVisible().catch(() => false))) await page.getByRole("button", { name: /^All details/ }).first().click({ timeout: 3_000 }).catch(() => {});
+        await link.click({ timeout: 8_000 });
+      }, 6);
+      await page.keyboard.press("Escape");
+      await page.keyboard.press("Escape");
+
+      await gotoPath(page, "/decks/shopping");
+      await openCheck(page, check, "shopping > Got it confirm (seeded cart line)", "[role=dialog][aria-modal=true]", () => page.locator(`button[aria-label^="Bought "][aria-label*="${seeded.unowned}"]`).first().click({ timeout: 8_000 }));
+      await page.getByRole("button", { name: /^Add\b/ }).locator("visible=true").first().click({ timeout: 8_000 });
+      await openCheck(page, check, "shopping > Got it receipt Undo warning (seeded cart line)", "[role=dialog][aria-modal=true]", async () => {
+        // The Undo check asks the server what the revert would cost the decks before it draws the warning, so the first press can
+        // outlast openCheck's own wait (and press again): press once and give the sheet its time.
+        const undo = page.locator('button[aria-label^="Undo adding"]').first();
+        if (await undo.count()) await undo.click({ timeout: 15_000 });
+        const dialog = page.locator("[role=dialog][aria-modal=true]").first();
+        await dialog.waitFor({ timeout: 25_000 });
+        // The sheet may have mounted while the first press was still waiting; read its entry from the element itself.
+        await page.evaluate((el) => { window.__seen ??= el ? getComputedStyle(el).animationName : null; }, await dialog.elementHandle());
+      });
+      await page.keyboard.press("Escape");
+    }
+
     // PR C: the set page's phone filter sheet (FilterSheet, phone only: it is not drawn from 768, so only 390 is checked).
     // The friends page can still be settling a navigation of its own, which aborts this one: let it land, and retry once.
     await page.waitForTimeout(1500);
@@ -232,6 +320,7 @@ async function walk(browser, width) {
     await page.keyboard.press("Escape");
   } finally {
     await context.close();
+    if (walkUser && (seeded || seedFailed)) await unseed(walkUser).catch((e) => report("the probe's seeded deck is removed", false, String(e?.message ?? e)));
   }
 }
 

@@ -140,6 +140,12 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:border-collision
 
+      # An `aria-modal` bottom sheet with no phone entry opens with no motion on a phone, and nothing else sees it.
+      # The class check is necessary, not sufficient: `pnpm probe:modal-sweep` proves the motion in a browser.
+      - name: Modal phone entry
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:modal-entry
+
       # A button that swaps to a shorter label while pending shrinks under the pointer unless the label is a SteadyLabel.
       - name: Steady pending labels
         if: ${{ steps.docs.outputs.docs_only != 'true' }}

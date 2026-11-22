@@ -148,6 +148,19 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   the second pass added the variant rule and the `.ts` and `.css` files, and found none
   outstanding: 90 bare tokens in `src`, every one overridden at its own variant.
 
+- `pnpm check:modal-entry` fails when a non-test file under `src` carries a JSX `aria-modal` attribute and
+  neither names a phone entry class (`anim-sheet-in-phone`, `anim-sheet-in`, `anim-sheet-up`) nor imports a shell
+  that draws it (`ui/sheet`, `social-modal`, `receipt-modal`), unless the file is in `ALLOW` in
+  `scripts/lib/modal-entry.mjs` with a reason. A sheet that forgets the entry opens with no motion on a phone
+  and nothing else notices. An `ALLOW` entry the file no longer needs is a finding too, so the list cannot rot.
+  The scan reads the TypeScript AST, so a comment naming `aria-modal` does not count. Its first draft matched any
+  import ending in `/sheet`, which let `lib/guided/sheet` pass `guided-sheet.tsx` with its class removed; the
+  failure path (delete the class, expect exit 1) caught it. A class is necessary, not sufficient (SocialModal
+  carried one and still did not slide): `pnpm probe:modal-sweep` presses each sheet at 390 and 1300 and reads the
+  computed `animation-name`. Allow-listed: the surfaces that draw their own motion (tour, card modal, guided run
+  view, the tracker's rotated seat frame), popovers and anchored confirmations (shelf menu, friends list), and the
+  full-screen card search and landing demo.
+
   **A side override repairs one side only** (#1440, bug 3). The bare utility is `border-color` on
   ALL FOUR sides, so a bare token whose class string also draws another side (`md:border` beside
   `md:last:border-b`, or `border-b` beside `border-l`) is reported even with its own side
