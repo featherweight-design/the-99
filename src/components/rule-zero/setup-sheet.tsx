@@ -261,7 +261,7 @@ function MemberTile({ member, on, off, noDecks, onToggle }: { member: SetupMembe
       aria-checked={on}
       aria-disabled={off || member.kind === "you" || undefined}
       onClick={onToggle}
-      className={`relative flex min-w-0 cursor-pointer flex-col gap-[6px] border-0 bg-transparent p-0 text-left text-[color:var(--fg)] aria-disabled:cursor-default ${off ? "opacity-[.42]" : ""}`}
+      className={`relative flex w-full min-w-0 cursor-pointer flex-col gap-[6px] border-0 bg-transparent p-0 text-left text-[color:var(--fg)] aria-disabled:cursor-default ${off ? "opacity-[.42]" : ""}`}
     >
       <SeatArt art={member.commander?.artCropUri ?? null} name={member.displayName} ring={on}>
         {noDecks ? null : (
