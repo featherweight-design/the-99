@@ -507,6 +507,13 @@ export function CardModal({
   const [picked, setPicked] = useState(false);
   // The printing previewed from the catalog list (alternate printings from search), by catalog id; null shows the card's own.
   const [previewId, setPreviewId] = useState<string | null>(null);
+  // Alternate printings R3: the desktop printings panel. Escape closes it before the dialog; so does paging.
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [panelFor, setPanelFor] = useState(card.oracleId);
+  if (panelFor !== card.oracleId) {
+    setPanelFor(card.oracleId);
+    setPanelOpen(false);
+  }
   const onlyPrinting = browsePrintings && card.kind !== "token" && !deckScope && card.quantity === 0 && card.printings.length === 1;
   // An owned card from search: the catalog printings it holds none of, listed after the reader's own and previewed alike.
   const others = useMemo(
@@ -862,6 +869,12 @@ export function CardModal({
       closeZoom();
       return true;
     },
+    // The printings panel closes before the sheet or the dialog (alternate printings R3).
+    () => {
+      if (!panelOpen) return false;
+      setPanelOpen(false);
+      return true;
+    },
     // Find a deck's view goes back to the details, one layer (handoff R2, D2).
     () => {
       if (!view) return false;
@@ -898,7 +911,7 @@ export function CardModal({
     },
   ]),
   // eslint-disable-next-line react-hooks/exhaustive-deps -- `setSnap` reads `snap`, which `min` and `sheetOpen` track
-  [closeZoom, locked, expanded, narrow, onClose, sheetOpen, min, zoomed, view]);
+  [closeZoom, locked, expanded, narrow, onClose, sheetOpen, min, zoomed, view, panelOpen]);
 
   // Focus trap + Escape + focus-return — shared hook, shared with the export dialog.
   // The ? lifted over the backdrop at 1280 is one more stop in the cycle, and only while this card is in front.
@@ -1024,6 +1037,9 @@ export function CardModal({
           cardName={card.name}
           colorIdentity={card.colorIdentity}
           paddles={paddles}
+          panelOpen={panelOpen}
+          onPanelOpen={() => setPanelOpen(true)}
+          onPanelClose={() => setPanelOpen(false)}
           // Viewing, never choosing: the printing on screen, and nothing stored.
           onSelect={(p) => setPreviewId(p.scryfallId ?? null)}
           onAnnounce={setAnnouncement}

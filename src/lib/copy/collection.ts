@@ -514,6 +514,20 @@ export const printingStripCopy = {
   /** The live line when a thumb is selected: the shipped wording, with the holding said only when there is none. */
   announceShowing: (setName: string, collectorNumber: string, owned: boolean) =>
     `Showing ${setName}, number ${collectorNumber}.${owned ? "" : " Not in your collection."}`,
+  /** Alternate printings R3 (DRAFT, copy-review): the panel opened from the strip's Search tile. */
+  searchTile: "Search",
+  searchTileAria: "Search printings",
+  panelSearchAria: (total: number) => `Search ${count(total)} printings`,
+  panelPlaceholder: (total: number) => `Search ${count(total)} printings by set`,
+  panelLabel: (cardName: string) => `Search printings of ${cardName}`,
+  panelClose: "Close printings",
+  panelMatches: (hits: number, total: number) => `${count(hits)} of ${count(total)} printings`,
+  panelOwnedHead: (owned: number) => `In your collection · ${count(owned)}`,
+  panelOtherHead: (others: number) => `Other printings · ${count(others)}`,
+  panelEmpty: (query: string) => `No printings match \u201c${query}\u201d`,
+  /** One panel thumb: the set and number, or the set and the count held. */
+  panelThumbLabel: (setCode: string, collectorNumber: string, owned: number, pick: boolean) =>
+    pick ? `\u25c6 ${setCode}` : owned > 0 ? `${setCode} \u00d7${owned}` : `${setCode} ${collectorNumber}`,
 } as const;
 
 /** Card details opened from search: the Set field of a card with one printing in the catalog says so. */
