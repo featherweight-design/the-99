@@ -435,7 +435,7 @@
      "seat": 2,
      "you": false,
      "name": "Peter",
-     "art": "art/laezel-stand-in.png",
+     "art": "art/laezel.jpg",
      "partnerArt": "art/raised-by-giants.png",
      "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
      "partner": "Raised by Giants",
@@ -538,7 +538,7 @@
      "seat": 2,
      "you": false,
      "name": "Peter",
-     "art": "art/laezel-stand-in.png",
+     "art": "art/laezel.jpg",
      "partnerArt": "art/raised-by-giants.png",
      "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
      "partner": "Raised by Giants",
@@ -647,7 +647,7 @@
      "seat": 2,
      "you": false,
      "name": "Peter",
-     "art": "art/laezel-stand-in.png",
+     "art": "art/laezel.jpg",
      "partnerArt": "art/raised-by-giants.png",
      "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
      "partner": "Raised by Giants",
@@ -758,7 +758,7 @@
      "seat": 2,
      "you": false,
      "name": "Peter",
-     "art": "art/laezel-stand-in.png",
+     "art": "art/laezel.jpg",
      "partnerArt": "art/raised-by-giants.png",
      "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
      "partner": "Raised by Giants",
@@ -859,7 +859,7 @@
      "seat": 2,
      "you": false,
      "name": "Peter",
-     "art": "art/laezel-stand-in.png",
+     "art": "art/laezel.jpg",
      "partnerArt": "art/raised-by-giants.png",
      "commander": "Lae\u2019zel, Vlaakith\u2019s Champion",
      "partner": "Raised by Giants",
@@ -962,7 +962,7 @@
        "c": {
         "oracleId": "o-laezel",
         "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
-        "imageUri": "art/laezel-stand-in.png"
+        "imageUri": "art/laezel.jpg"
        },
        "p": {
         "oracleId": "o-raised",
@@ -1012,7 +1012,7 @@
        "c": {
         "oracleId": "o-laezel",
         "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
-        "imageUri": "art/laezel-stand-in.png"
+        "imageUri": "art/laezel.jpg"
        },
        "p": {
         "oracleId": "o-noble",
@@ -1060,7 +1060,7 @@
        "c": {
         "oracleId": "o-laezel",
         "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
-        "imageUri": "art/laezel-stand-in.png"
+        "imageUri": "art/laezel.jpg"
        },
        "p": {
         "oracleId": "o-raised",
@@ -1110,7 +1110,7 @@
        "c": {
         "oracleId": "o-laezel",
         "name": "Lae\u2019zel, Vlaakith\u2019s Champion",
-        "imageUri": "art/laezel-stand-in.png"
+        "imageUri": "art/laezel.jpg"
        },
        "p": {
         "oracleId": "o-noble",

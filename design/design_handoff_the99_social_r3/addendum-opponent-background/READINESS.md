@@ -1,6 +1,6 @@
 # Readiness Review — Social R3 addendum: a Background as an opponent's second commander
 
-**Verdict:** 🟡 Yellow (buildable as drawn once Hugh approves the boards)
+**Verdict:** 🟢 Green (approved by Hugh 2026-11-22, "This LGTM")
 **Audited:** 2026-11-22, against origin/main 4c987a8
 **Related:** Social R3 (the seat picker and the Across the table row), partner add #491 (the Background pattern,
 #3154), game opponents #3164 (the save accepts the pair), life tracker F14 and the tablet sheet addendum
@@ -10,8 +10,8 @@
 
 Small: the server side shipped in #3164, so this is a client change plus one catalog search and one column on the
 table read. No schema, no switch (it rides `SOCIAL_FRIENDS_ENABLED` with the row). The change is
-`scratch-gen/proposal.diff` (about 290 lines against `src/`), which is what the boards render. Yellow because the
-boards are not approved and Lae’zel's art is a stand-in on every board (Scryfall blocked from the cloud session).
+`scratch-gen/proposal.diff` (about 290 lines against `src/`), which is what the boards render. Approved as drawn;
+R1.1 replaced Lae’zel's stand-in art with the card image Hugh supplied.
 
 ## Per-dimension findings
 
@@ -47,9 +47,9 @@ boards are not approved and Lae’zel's art is a stand-in on every board (Scryfa
   create picker (flagged: under 44 px, same as shipped).
 - ✅ Focus: the step's field takes focus on entry (the picker's existing effect); the head's ‹ has `Back to commanders`.
 - ✅ Third-party names: none new; a friend's name keeps `PersonName`/`PersonText`.
-- 🟡 Art: Lae’zel's art is a stand-in on the boards only; the build draws `imageUri` as every row does.
+- ✅ Art: real card art on every board (R1.1); the build draws `imageUri` as every row does.
 
 ## Decisions inherited
 
 - Only commanders with "Choose a Background" get the slot (Hugh, the brief).
-- Calls 1 to 7 as drawn, pending Hugh's review.
+- Calls 1 to 7 as drawn (Hugh, 2026-11-22: "This LGTM").

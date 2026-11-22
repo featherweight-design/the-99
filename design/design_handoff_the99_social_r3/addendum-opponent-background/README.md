@@ -1,6 +1,6 @@
 # Social R3 addendum: a Background as an opponent's second commander (account 1, 2026-11-22)
 
-Status: **Drawn for Hugh's review.** Opened as a PR at his request (the brief's Deliverable line); not yet approved.
+Status: **APPROVED by Hugh 2026-11-22** ("This LGTM"), as drawn. R1.1: Lae’zel's art, which Hugh supplied, replaces the stand-in.
 
 When a player logs a game they can name each opponent's commander. Since #3164 the save accepts a Background as an
 opponent's second commander (`pairLegal`, the rule a deck's own pair follows since #3154), but the seat picker offers
@@ -13,9 +13,7 @@ inside the shipped shell. The whole change is `scratch-gen/proposal.diff`, so th
 construction. Fixtures: you play Sai; Peter is on Lae’zel, Vlaakith’s Champion with Raised by Giants; Colin Ghalta;
 Max Bruse Tarl + Ishai (partners), drawn for comparison.
 
-**Art.** Lae’zel's card art could not be fetched from the cloud session (Scryfall is blocked by its network), so a
-striped stand-in marked "art not loadable" holds her place in every frame; the app draws her card art there. Raised by
-Giants and Noble Heritage are real crops cut from the approved partner add board V1, so they are soft when drawn large.
+**Art.** Lae’zel's art is cut from the card image Hugh supplied (R1.1). Raised by Giants and Noble Heritage are real crops cut from the approved partner add board V1, so they are soft when drawn large.
 
 ## Calls
 
