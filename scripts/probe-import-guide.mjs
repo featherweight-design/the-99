@@ -64,8 +64,9 @@ try {
     const line = page.locator("[data-from-app=delver]");
     await line.waitFor({ timeout: 15_000 }).catch(() => {});
     check(`${s.name}: a Delver header says it looks like a Delver Lens file`, (await line.count()) === 1, (await line.textContent().catch(() => "")) ?? "");
-    await page.getByRole("button", { name: "How to export from Delver Lens" }).click({ timeout: 5_000 }).catch(() => {});
+    await page.getByRole("button", { name: "How to export from Delver Lens" }).click({ timeout: 5_000 });
     const dialog = page.getByRole("dialog", { name: "How to export your collection" });
+    await dialog.waitFor({ timeout: 5_000 }).catch(() => {});
     check(`${s.name}: the link opens the guides`, await dialog.isVisible());
     check(`${s.name}: Delver Lens is expanded`, (await dialog.getByRole("button", { name: "Delver Lens" }).getAttribute("aria-expanded").catch(() => null)) === "true");
     check(`${s.name}: ManaBox is not`, (await dialog.getByRole("button", { name: "ManaBox" }).getAttribute("aria-expanded").catch(() => null)) === "false");

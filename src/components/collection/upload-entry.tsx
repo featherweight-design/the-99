@@ -114,6 +114,7 @@ export function UploadEntry({
   function handlePasteSubmit() {
     if (pending) return;
     setError(null);
+    setSource(null);
     setNoColumn(null);
     startTransition(async () => {
       try {
@@ -220,11 +221,13 @@ export function UploadEntry({
   const errorBlock = (
     <>
       {error && (
-        <p role="alert" className="m-0 w-full text-left text-[13px]" style={{ color: "var(--danger)" }}>
-          {error}
-        </p>
+        <div role="alert" className="flex w-full flex-col gap-[6px] text-left">
+          <p className="m-0 text-[13px]" style={{ color: "var(--danger)" }}>
+            {error}
+          </p>
+          {fromApp}
+        </div>
       )}
-      {error && fromApp}
       {noColumn && (
         <div
           role="alert"
