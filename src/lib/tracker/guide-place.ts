@@ -28,7 +28,7 @@ const overlap = (a: Box, b: Box): number => {
 };
 const inside = (a: Box, b: Box): boolean => a.x >= b.x && a.y >= b.y && a.x + a.w <= b.x + b.w && a.y + a.h <= b.y + b.h;
 
-/** `avoid` are the cutouts (padded by the caller); `fixed` boxes are already taken (the header card). Placed in order. */
+/** `avoid` are the cutouts (padded by the caller); each item is placed in order and later items keep clear of earlier ones (the header card goes first). */
 export function placeLabels(bounds: Box, avoid: readonly Box[], items: readonly Placing[]): Map<string, Box> {
   const field: Box = { x: bounds.x + EDGE, y: bounds.y + EDGE, w: bounds.w - EDGE * 2, h: bounds.h - EDGE * 2 };
   const out = new Map<string, Box>();

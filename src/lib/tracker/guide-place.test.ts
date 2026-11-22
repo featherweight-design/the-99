@@ -34,9 +34,11 @@ describe("placeLabels", () => {
     expect(a.y).toBeGreaterThanOrEqual(600);
   });
   it("takes the least-overlapping spot when nothing is free", () => {
-    const wall: Box = { x: 0, y: 0, w: 390, h: 800 };
-    const a = placeLabels(bounds, [wall], [{ id: "a", size: { w: 100, h: 40 }, ideal: { x: 200, y: 300 } }]).get("a");
-    expect(a).toBeDefined();
+    // A wall across the whole field but for a 60px strip down the right edge, which a 100px label can only half fill.
+    const wall: Box = { x: 0, y: 0, w: 330, h: 800 };
+    const a = placeLabels(bounds, [wall], [{ id: "a", size: { w: 100, h: 40 }, ideal: { x: 100, y: 300 } }]).get("a")!;
+    expect(a.x + a.w).toBeGreaterThan(330);
+    expect(a.x).toBeGreaterThan(200);
   });
 });
 
