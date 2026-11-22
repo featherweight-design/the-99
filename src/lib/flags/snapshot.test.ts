@@ -16,6 +16,30 @@ vi.mock("next/server", () => ({
     kept.calls.push(task);
   },
 }));
+// The data cache, passed through: `built` records how the entry was declared, `lookups` each read through it,
+// `unavailable` stands for a scope with no cache to give, and `retired` each tag a write retired.
+const cache = vi.hoisted(() => ({
+  built: [] as { key: string[]; opts: { tags?: string[]; revalidate?: number } }[],
+  lookups: 0, unavailable: false, retired: [] as unknown[][],
+  // What the cached function threw: Next stores nothing for a call that throws.
+  threw: [] as unknown[],
+}));
+vi.mock("next/cache", () => ({
+  unstable_cache: (fn: () => Promise<unknown>, key: string[], opts: { tags?: string[]; revalidate?: number }) => {
+    cache.built.push({ key, opts });
+    return async () => {
+      if (cache.unavailable) throw new Error("Invariant: incrementalCache missing in unstable_cache");
+      cache.lookups++;
+      try {
+        return await fn();
+      } catch (error) {
+        cache.threw.push(error);
+        throw error;
+      }
+    };
+  },
+  revalidateTag: (...args: unknown[]) => { cache.retired.push(args); },
+}));
 vi.mock("@neondatabase/serverless", () => ({
   neon: () => ({
     query: async (text: string) => {
@@ -31,13 +55,17 @@ vi.mock("@neondatabase/serverless", () => ({
 }));
 process.env.DATABASE_URL ??= "postgres://stub:stub@localhost/stub";
 
-const { clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState, SNAPSHOT_MAX_STALE_MS, SNAPSHOT_SQL, SNAPSHOT_TTL_MS } = await import("./snapshot");
+const {
+  clearSwitchSnapshot, resolveFlags, switchSnapshot, switchSnapshotState,
+  SNAPSHOT_CACHE_SECONDS, SNAPSHOT_MAX_STALE_MS, SNAPSHOT_SQL, SNAPSHOT_TAG, SNAPSHOT_TTL_MS,
+} = await import("./snapshot");
 
 describe("switchSnapshot", () => {
   beforeEach(() => {
     clearSwitchSnapshot();
     Object.assign(reads, { n: 0, fail: false, rows: [], members: [], texts: [], gate: null });
     Object.assign(kept, { calls: [], throws: false });
+    Object.assign(cache, { lookups: 0, unavailable: false, retired: [], threw: [] });
   });
 
   const row = (value: "on" | "off") => ({ switchName: "FEEDBACK_ENABLED", scope: "app", groupId: null, userId: null, value });
@@ -209,5 +237,57 @@ describe("switchSnapshot", () => {
     expect((await switchSnapshot(1_000))?.overrides.map((o) => o.switchName)).toEqual(["FEEDBACK_ENABLED"]);
     const env = await resolveFlags("u1", {} as unknown as NodeJS.ProcessEnv);
     expect(env.FEEDBACK_ENABLED).toBe("true");
+  });
+  it("reads through ONE tagged data-cache entry every instance shares, keyed on the database, with a ceiling", async () => {
+    await switchSnapshot(1_000); // beforeEach's clear stands for a write here: this read goes to Neon (below)
+    await switchSnapshot(1_000 + SNAPSHOT_MAX_STALE_MS);
+    expect(cache.lookups).toBe(1);
+    expect(cache.built).toEqual([{ key: [SNAPSHOT_TAG, "localhost"], opts: { tags: [SNAPSHOT_TAG], revalidate: SNAPSHOT_CACHE_SECONDS } }]);
+    await switchSnapshot(1_000 + 2 * SNAPSHOT_MAX_STALE_MS);
+    expect(cache.lookups).toBe(2);
+    expect(cache.built).toHaveLength(1); // declared once, not per read
+  });
+
+  it("reads Neon, not the entry it is retiring, on the instance that wrote", async () => {
+    await switchSnapshot(1_000 - 2 * SNAPSHOT_MAX_STALE_MS);
+    clearSwitchSnapshot();
+    reads.n = 0;
+    await switchSnapshot(1_000);
+    expect(reads.n).toBe(1);
+    expect(cache.lookups).toBe(0);
+    await switchSnapshot(1_000 + SNAPSHOT_MAX_STALE_MS);
+    expect(cache.lookups).toBe(1); // only the first: after it, the shared entry again
+  });
+
+  it("never stores a failed read: the cache sees it thrown and the request gets the fallbacks", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    await switchSnapshot(1_000);
+    reads.fail = true;
+    reads.n = 0;
+    expect(await switchSnapshot(1_000 + SNAPSHOT_MAX_STALE_MS)).toBeNull();
+    expect(cache.lookups).toBe(1);
+    expect(cache.threw).toHaveLength(1); // thrown out of the cached function, never returned as a value to store
+    expect(reads.n).toBe(1); // and not read again behind it: the failure is the answer
+  });
+
+  it("reads Neon directly where there is no data cache to give", async () => {
+    await switchSnapshot(1_000);
+    cache.unavailable = true;
+    reads.rows = [row("off")];
+    reads.n = 0;
+    const snapshot = await switchSnapshot(1_000 + SNAPSHOT_MAX_STALE_MS);
+    expect(snapshot?.overrides).toEqual([row("off")]);
+    expect(reads.n).toBe(1);
+    expect(cache.lookups).toBe(0);
+  });
+
+  it("retires the shared entry on every write once the response is sent, and gives up quietly outside a request", () => {
+    clearSwitchSnapshot();
+    expect(cache.retired).toHaveLength(0); // never inline: a render forbids it, an action would ship its page again
+    expect(kept.calls).toHaveLength(1);
+    kept.calls[0]();
+    expect(cache.retired).toEqual([[SNAPSHOT_TAG, { expire: 0 }]]);
+    kept.throws = true;
+    expect(() => clearSwitchSnapshot()).not.toThrow();
   });
 });

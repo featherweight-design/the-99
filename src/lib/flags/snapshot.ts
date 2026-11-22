@@ -1,4 +1,5 @@
 import { neon } from "@neondatabase/serverless";
+import { revalidateTag, unstable_cache } from "next/cache";
 import { after } from "next/server";
 import { isOverrideName } from "./registry";
 import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
@@ -17,6 +18,13 @@ import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
  * An admin write clears the memo on its own instance; every other instance catches up a refresh after the window, and
  * the Switches UI says so rather than promising instant.
  *
+ * Each refresh reads the SHARED data cache, not Neon (`readSharedSnapshot`): the snapshot is the same for every reader,
+ * so one entry serves every instance, and a cold instance's first read is a cache lookup (p50 ~46ms) rather than a
+ * Neon round trip (p50 442ms on GET /). The entry is tagged `SNAPSHOT_TAG`, and every write to the overrides or the
+ * memberships retires it through `clearSwitchSnapshot`, so a flip reaches the other instances a refresh after their
+ * window, as before. A write that does not pass through the app (the seed, a purge's cascade, a hand-run statement)
+ * is caught by the entry's own ceiling, `SNAPSHOT_CACHE_SECONDS`.
+ *
  * A read that fails is never held. With nothing held it resolves every switch to its compiled fallback
  * (`switchFallbackOn`; the model-call switch's variable still stops it), and the next request asks again. With a snapshot
  * held, a failed refresh keeps serving it until it is `SNAPSHOT_MAX_STALE_MS` old (the last state the admin wrote beats
@@ -27,6 +35,10 @@ import { resolveEnv, type OverrideRow, type SwitchSnapshot } from "./resolve";
 export const SNAPSHOT_TTL_MS = 30_000;
 /** How old a held snapshot may be and still be served without waiting: ten windows. */
 export const SNAPSHOT_MAX_STALE_MS = 5 * 60_000;
+/** The data cache's tag for the snapshot: `clearSwitchSnapshot` retires it. */
+export const SNAPSHOT_TAG = "flag-snapshot";
+/** How long the shared entry stands without a write retiring it, for writes made outside the app. */
+export const SNAPSHOT_CACHE_SECONDS = 60;
 
 /** The last good read and when it was asked for. Never a failed one. */
 let held: { at: number; snapshot: SwitchSnapshot } | null = null;
@@ -63,20 +75,93 @@ export async function readSwitchSnapshot(): Promise<SwitchSnapshot | null> {
   return readSnapshot();
 }
 
+/** The statement's one row, as JSON: what the data cache stores (a `Map` would not survive it). */
+type SnapshotRows = { overrides: OverrideRow[]; members: { userId: string; groupId: string }[] };
+
+async function queryRows(): Promise<SnapshotRows> {
+  const url = process.env.DATABASE_URL;
+  if (!url) throw new Error("DATABASE_URL is not set");
+  http ??= neon(url);
+  const [row] = (await http.query(SNAPSHOT_SQL)) as SnapshotRows[];
+  return row;
+}
+
+function toSnapshot(rows: SnapshotRows): SwitchSnapshot {
+  const overrides = rows.overrides.filter((r) => isOverrideName(r.switchName));
+  return { overrides, groupOf: new Map(rows.members.map((m) => [m.userId, m.groupId])) };
+}
+
+function readFailed(error: unknown): null {
+  // not a fallback: a cached page keys on the switches this resolves to, so a page drawn from the compiled
+  // fallbacks is stored under the fallbacks' bits and is true for them.
+  console.error("switch overrides could not be read; serving each switch's fallback", error);
+  return null;
+}
+
 async function readSnapshot(): Promise<SwitchSnapshot | null> {
   try {
-    const url = process.env.DATABASE_URL;
-    if (!url) throw new Error("DATABASE_URL is not set");
-    http ??= neon(url);
-    const [row] = (await http.query(SNAPSHOT_SQL)) as { overrides: OverrideRow[]; members: { userId: string; groupId: string }[] }[];
-    const overrides = row.overrides.filter((r) => isOverrideName(r.switchName));
-    return { overrides, groupOf: new Map(row.members.map((m) => [m.userId, m.groupId])) };
+    return toSnapshot(await queryRows());
   } catch (error) {
-    // not a fallback: a cached page keys on the switches this resolves to, so a page drawn from the compiled
-    // fallbacks is stored under the fallbacks' bits and is true for them.
-    console.error("switch overrides could not be read; serving each switch's fallback", error);
-    return null;
+    // not a fallback: readFailed says why the compiled fallbacks are true for a page cached under them.
+    return readFailed(error);
   }
+}
+
+/** Thrown inside the cached read so a failed query is never stored, and told apart from the cache itself failing. */
+class SnapshotReadFailed extends Error {}
+
+/** Built on first use, not at module scope: `unstable_cache` runs where it is called (see `catalog-generation.ts`). */
+let shared: (() => Promise<SnapshotRows>) | null = null;
+/** Set by a write on this instance: its next refresh reads Neon, not the entry the write is retiring. */
+let wroteHere = false;
+let warnedNoCache = false;
+
+/**
+ * The database's host, in the entry's key: two environments that share a data-cache namespace (previews, a branch
+ * swap) never read each other's switches. The host only, never the credentials.
+ */
+function databaseKey(): string {
+  try {
+    return new URL(process.env.DATABASE_URL ?? "").host;
+  } catch {
+    // not a fallback: an unparsable URL fails the read itself; the key only needs to be stable.
+    return "unknown";
+  }
+}
+
+/**
+ * The memo's refresh: the shared entry, filled from Neon on a miss. Where Next has no data cache to give (outside a
+ * request, a script), the database is read directly, as before. Under `next dev` it always is: the probes write
+ * `flag_overrides` with plain SQL, which no tag hears, and a second stale layer under the memo would make each of them
+ * wait out the entry's ceiling as well (`scripts/lib/switch-memo.mjs`).
+ */
+async function readSharedSnapshot(): Promise<SwitchSnapshot | null> {
+  if (process.env.NODE_ENV === "development") return readSnapshot();
+  let rows: SnapshotRows;
+  try {
+    shared ??= unstable_cache(
+      async () => {
+        try {
+          return await queryRows();
+        } catch (error) {
+          // not a fallback: rethrown, so the cache stores nothing and the caller answers below.
+          throw new SnapshotReadFailed("switch overrides could not be read", { cause: error });
+        }
+      },
+      [SNAPSHOT_TAG, databaseKey()],
+      { tags: [SNAPSHOT_TAG], revalidate: SNAPSHOT_CACHE_SECONDS },
+    );
+    rows = await shared();
+  } catch (error) {
+    if (error instanceof SnapshotReadFailed) return readFailed(error.cause);
+    // not a fallback: no data cache in this scope, so the database answers, exactly as it did before the cache.
+    if (!warnedNoCache && process.env.NODE_ENV === "production") {
+      warnedNoCache = true; // once per instance: a script has no cache by design, a deployment should
+      console.warn("switch snapshot: no data cache here, reading the database", error);
+    }
+    return readSnapshot();
+  }
+  return toSnapshot(rows);
 }
 
 export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null> {
@@ -92,7 +177,11 @@ export function switchSnapshot(now = Date.now()): Promise<SwitchSnapshot | null>
 function refresh(now: number): Promise<SwitchSnapshot | null> {
   if (inflight) return inflight;
   const asked = generation;
-  const read = readSnapshot().then((snapshot) => {
+  // The first read after a write on this instance goes to Neon: the shared entry is retired only once the response is
+  // sent, and a redirect straight back here must not draw from it.
+  const fresh = wroteHere;
+  wroteHere = false;
+  const read = (fresh ? readSnapshot() : readSharedSnapshot()).then((snapshot) => {
     if (asked === generation) {
       if (snapshot) held = { at: now, snapshot };
       inflight = null;
@@ -131,14 +220,31 @@ export function switchSnapshotState(now = Date.now()): "hit" | "stale" | "pendin
 }
 
 /**
- * Called by an admin write, after its transaction commits, so its own instance reads it at once. A read already in
- * flight is dropped from the memo (it may carry the pre-write rows), though the requests already waiting on it still
- * get its answer: they began before the write, as on main.
+ * Called after any write to the overrides or the memberships commits: an admin write, or a flyer sign-up joining its
+ * group. Its own instance reads at once, and the shared entry is retired so every other instance's next refresh reads
+ * the write rather than the entry. A read already in flight is dropped from the memo (it may carry the pre-write rows),
+ * though the requests already waiting on it still get its answer: they began before the write.
  */
 export function clearSwitchSnapshot(): void {
   held = null;
   inflight = null;
   generation++;
+  wroteHere = true;
+  retireSharedSnapshot();
+}
+
+/**
+ * `expire: 0`, so the next read after a write is a miss rather than the stale entry served while it refreshes. Always
+ * once the response is sent, in `after()`: Next refuses `revalidateTag` while a page renders (the `/friends` flyer
+ * spend runs in one), and in a Server Action it would ship the caller's page again. Its own instance does not wait on
+ * it (`wroteHere`). Outside a request there is no data cache to retire; an error inside the task reaches Next's log.
+ */
+function retireSharedSnapshot(): void {
+  try {
+    after(() => revalidateTag(SNAPSHOT_TAG, { expire: 0 }));
+  } catch {
+    // not a fallback: outside a request there is no shared entry to retire, and the memo is already cleared.
+  }
 }
 
 /** One reader's resolved switches, env-shaped. Resolve ONCE per page, action or route, and pass it down. */
