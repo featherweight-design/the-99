@@ -57,10 +57,11 @@ describe("loadFocusCandidates", () => {
   // A catalog row as the query returns it: no label row, so only a type axis can count it.
   const row = (oracleId: string, typeLine: string, inclusion: number | null, oracleText = "") => ({
     oracleId, name: `Card ${oracleId}`, manaCost: "{2}", oracleText, layout: "normal", typeLine, manaValue: 2, keywords: [],
-    labels: null, labelModel: null, promptVersion: null, inputHash: null, quantity: 1, inclusion, stapleShare: null,
+    labels: null, labelModel: null, promptVersion: null, inputHash: null,
+    verifiedThemes: null, judgedModel: null, judgedVersion: null, judgedHash: null, quantity: 1, inclusion, stapleShare: null,
   });
   const reader = (rows: ReturnType<typeof row>[]) =>
-    ({ select: () => ({ from: () => ({ leftJoin: () => ({ where: async () => rows }) }) }) }) as unknown as Parameters<typeof loadFocusCandidates>[1];
+    ({ select: () => ({ from: () => ({ leftJoin: () => ({ leftJoin: () => ({ where: async () => rows }) }) }) }) }) as unknown as Parameters<typeof loadFocusCandidates>[1];
   const base = { ...args, deckId: "deck", focus: "artifacts" as const, roleBasis: "classifier" as const };
 
   beforeEach(() => {
