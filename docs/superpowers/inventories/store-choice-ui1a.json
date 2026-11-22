@@ -1,0 +1,101 @@
+{
+  "feature": "Store choice UI-1a: the Shopping strip, the all-decks cart and the deck's money card in the reader's store (handoff design_handoff_the99_store_choice)",
+  "note": "Needs a server on a scratch branch of local-dev where the audit account (user_3HdjdocERCjunk0zJQFDWyHkTd4) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set to the store being photographed, and printing_store_prices / token_store_prices rows for that store (the store ingest has not run anywhere yet, so the rows are fixtures derived from Mana Pool's). SHOP_DECK is a deck of that account with cards to buy (HD - Gishath, 441286bb-f632-4d1e-af0f-aa7282bbb40f). Run once per store (tcgplayer, cardkingdom, manapool) with preferred_store changed between runs and the out directory copied aside. Copy the list writes the clipboard only; this inventory writes nothing.",
+  "out": "contact-sheets/store-choice-ui1a",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844,
+      "permissions": [
+        "clipboard-read",
+        "clipboard-write"
+      ]
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900,
+      "permissions": [
+        "clipboard-read",
+        "clipboard-write"
+      ]
+    }
+  ],
+  "rows": [
+    {
+      "id": "deck-shopping-strip",
+      "label": "/decks/[id] Shopping: the strip names the store, the market note on TCGplayer, Copy the list and the paste page link in place of the cart link",
+      "view": "src/components/decks/price-strip.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHOP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping",
+          "wait": "[data-price-strip]",
+          "settle": 800,
+          "scrollTo": "[data-price-strip]"
+        }
+      ]
+    },
+    {
+      "id": "deck-shopping-copied",
+      "label": "/decks/[id] Shopping: Copy the list pressed, the label swapped to Copied",
+      "view": "src/components/stores/store-paste-row.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHOP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Shopping",
+          "wait": "[data-price-strip]",
+          "settle": 800
+        },
+        {
+          "click": "[data-copy-list]",
+          "settle": 300,
+          "scrollTo": "[data-price-strip]"
+        }
+      ]
+    },
+    {
+      "id": "deck-stats-money",
+      "label": "/decks/[id] Stats: the money card's caption names the store",
+      "view": "src/components/decks/deck-stats-money.tsx",
+      "steps": [
+        {
+          "goto": "/decks/${SHOP_DECK}",
+          "wait": "[role=tablist]",
+          "settle": 1500
+        },
+        {
+          "clickRole": "tab",
+          "name": "^Show the deck as stats",
+          "wait": "[data-deck-stats]",
+          "settle": 800,
+          "scrollTo": "[data-money-squares]"
+        }
+      ]
+    },
+    {
+      "id": "cart-checkout",
+      "label": "/decks/shopping: the checkout box in the reader's store, Copy the list in place of the Mana Pool link",
+      "view": "src/components/decks/cart/cart-checkout.tsx",
+      "steps": [
+        {
+          "goto": "/decks/shopping",
+          "wait": "h1",
+          "settle": 2000,
+          "scrollTo": "[data-cart-checkout]"
+        }
+      ]
+    }
+  ]
+}
