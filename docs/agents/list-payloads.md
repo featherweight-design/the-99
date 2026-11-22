@@ -50,12 +50,13 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   shape as `/discover`'s and through the same loop. The page reads its URL (`q c t s avail sort
   dir`), finds the first 200 with `lib/collection/window` (`parseBrowseParams`, then the pure
   `filterCards` and `sortCards` the browser runs), and cuts every other card to the columns a
-  filter, a search or a sort reads (`cutCollectionWindow`). The art, the facts and the combo
-  partners (`COLLECTION_DRAW_KEYS`) arrive from `GET /api/collection-fields?ids=` in batches of up
-  to 200 oracle ids, read for THOSE ids only (`loadBrowseCardsFor`: the reader's rows of those cards,
+  filter, a search or a sort reads (`cutCollectionWindow`). The art, the cost, the facts and the combo
+  partners (`COLLECTION_DRAW_KEYS`) arrive from `POST /api/collection-fields` (`{ ids }`) in batches of up
+  to 500 oracle ids (500 ids is ~18 KB, too long for a query string; the GET stays at 200 for a client
+  that has not reloaded), read for THOSE ids only (`loadBrowseCardsFor`: the reader's rows of those cards,
   the same passes as the list, no prices), never through the page's cached list: a miss there rebuilds the
-  whole collection and a visit makes ~50 batches at 10k cards (measured 4.5s and 3.9MB of list per miss). `printedName`,
-  `layout` and `manaCost` stay on every card. The browser parses its own first render with the
+  whole collection and a visit makes ~50 batches at 10k cards (measured 4.5s and 3.9MB of list per miss). `printedName`
+  and `layout` stay on every card (search and the name sort read them). The browser parses its own first render with the
   same `parseBrowseParams`, so the cards it draws on arrival are the ones shipped whole. The page
   cuts through `pageWindowIds`, which JOINS the availability it reads beside the cached list first:
   that list carries none, and `?avail=` filters on it, so a cut over the bare list called every
@@ -85,4 +86,4 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
 - **`/discover` ships whole rows for its first window only** (25): `cutToWindow` cuts the rest to list columns and the draw fields arrive from `GET /api/discovery-fields?sort=&b=&s=` (signed in, at most `MAX_FIELDS_BATCH` 200, `private, no-store`). The server's window must be the client's (`lib/discovery/window`). `probe:payload` holds the wire to 0.3MB.
-- **`/collection` ships whole cards for its first window only** (200), the same shape: `cutCollectionWindow`, fields from `GET /api/collection-fields?ids=`, a withheld card marked by the decoder (`withheld: true`). The page cuts through `pageWindowIds`, which joins availability first. Its grid's art waits for the page except `GRID_EAGER_TILES` (4). `probe:payload` holds the wire to 1.05MB.
+- **`/collection` ships whole cards for its first window only** (200), the same shape: `cutCollectionWindow`, fields from `POST /api/collection-fields`, a withheld card marked by the decoder (`withheld: true`). The page cuts through `pageWindowIds`, which joins availability first. Its grid's art waits for the page except `GRID_EAGER_TILES` (4). `probe:payload` holds the wire to 1.05MB.

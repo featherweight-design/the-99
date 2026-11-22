@@ -56,10 +56,10 @@ type WireCard = Omit<BrowseListCard, "availability" | "price" | "added" | "since
 /**
  * The fields a card only DRAWS (list payload plan, PR 4): no filter, search or sort reads them, so
  * they ship for the URL's first window only and the rest arrive from `/api/collection-fields`.
- * `printedName`, `layout` and `manaCost` stay on every card: search and the name sort read the
- * first two, and the third is a few bytes.
+ * `printedName` and `layout` stay on every card: search and the name sort read them. `manaCost` is
+ * drawn by the row alone (the cost pips and its spoken label), so it rides with the other draw fields.
  */
-export const COLLECTION_DRAW_KEYS = ["imageUri", "facts", "comboPartner", "comboOtherPartners"] as const;
+export const COLLECTION_DRAW_KEYS = ["imageUri", "manaCost", "facts", "comboPartner", "comboOtherPartners"] as const;
 export type CollectionDrawKey = (typeof COLLECTION_DRAW_KEYS)[number];
 /**
  * What a fields batch answers for a card: its draw fields, and the CAPTION its art was resolved
