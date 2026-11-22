@@ -111,6 +111,13 @@ export const MoreIcon = (props: IconProps) => (
   </Icon>
 );
 
+/** The Menu's What's what row: a question mark in a ring. */
+export const HelpIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.8.9c0 1.7-2.4 2.1-2.4 3.7"/><circle cx="12" cy="16.9" r=".9" fill="currentColor" stroke="none"/>
+  </Icon>
+);
+
 /** The Menu's Back to the table (M1 `door`): an arrow out through a door frame. */
 export const DoorIcon = (props: IconProps) => (
   <Icon {...props}>

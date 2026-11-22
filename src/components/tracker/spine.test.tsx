@@ -36,6 +36,7 @@ function Strip({ canUndo = false, rect = { x: 0, y: 0, w: 56, h: 600 }, canvas =
       onDice={vi.fn()}
       onUndo={vi.fn()}
       onMenu={() => setMenu((m) => !m)}
+      onGuide={() => {}}
     />
   );
 }
@@ -90,7 +91,7 @@ describe("Spine Menu", () => {
     expect(b.querySelector("svg")).not.toBeNull();
   });
 
-  it("opens one row back to the table, lit while open, with focus on the row", () => {
+  it("opens What's what first, then the row back to the table, lit while open, with focus on What's what", () => {
     render(<Strip />);
     fireEvent.click(screen.getByTestId("strip-menu"));
     const b = screen.getByTestId("strip-menu");
@@ -98,11 +99,13 @@ describe("Spine Menu", () => {
     expect(b.className).toContain("aria-expanded:bg-[color:var(--accent)]");
     const menu = screen.getByRole("menu", { name: "Menu" });
     const items = screen.getAllByRole("menuitem");
-    expect(items).toHaveLength(1);
-    expect(menu.contains(items[0])).toBe(true);
-    expect(items[0].getAttribute("href")).toBe("/friends/table/t1");
-    expect(items[0].textContent).toContain("Back to the table");
-    expect(items[0].textContent).toContain("The game stays on this phone. Back to the game picks it up.");
+    expect(items).toHaveLength(2);
+    expect(items[0].getAttribute("data-testid")).toBe("strip-menu-guide");
+    const back = items[1];
+    expect(menu.contains(back)).toBe(true);
+    expect(back.getAttribute("href")).toBe("/friends/table/t1");
+    expect(back.textContent).toContain("Back to the table");
+    expect(back.textContent).toContain("The game stays on this phone. Back to the game picks it up.");
     expect(document.activeElement).toBe(items[0]);
   });
 
@@ -134,7 +137,7 @@ describe("Spine Menu", () => {
   it("lands pending life before leaving", () => {
     render(<Strip />);
     fireEvent.click(screen.getByTestId("strip-menu"));
-    fireEvent.click(screen.getByRole("menuitem"));
+    fireEvent.click(screen.getByText("Back to the table"));
     expect(onLeave).toHaveBeenCalledTimes(1);
   });
 

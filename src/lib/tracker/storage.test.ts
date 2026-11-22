@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Game } from "./engine";
-import { discardGame, loadGame, loadKept, saveGame, sweepGames } from "./storage";
+import { discardGame, guideSeen, loadGame, loadKept, markGuideSeen, saveGame, sweepGames } from "./storage";
 
 class Mem {
   m = new Map<string, string>();
@@ -59,5 +59,23 @@ describe("loadKept", () => {
     discardGame(s, "a");
     expect(loadKept(s, "a", 0)).toBeNull();
     expect(loadKept(s, "a", 2000)).toBeNull();
+  });
+});
+
+describe("the What's what flag", () => {
+  it("reads unseen, then seen once marked, and never matches the game sweep", () => {
+    const s = new Mem();
+    expect(guideSeen(s)).toBe(false);
+    markGuideSeen(s);
+    expect(guideSeen(s)).toBe(true);
+    const [key] = [...s.m.keys()];
+    expect(key.startsWith("the99.tracker.")).toBe(false);
+    sweepGames(s, 0);
+    expect(guideSeen(s)).toBe(true);
+  });
+  it("treats storage that throws as unseen and does not throw on mark", () => {
+    const bad = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
+    expect(guideSeen(bad)).toBe(false);
+    expect(() => markGuideSeen(bad)).not.toThrow();
   });
 });
