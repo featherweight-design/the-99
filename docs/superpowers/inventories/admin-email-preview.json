@@ -1,0 +1,18 @@
+{
+  "feature": "Admin email previews: the Send to me card on /admin/invites, at rest",
+  "note": "Signed in as the admin audit account (the server's ADMIN_USER_IDS names it, ADMIN_ENV_LABEL is set). The sheet only photographs the card at rest; pressing it sends mail, which probe:admin-email-preview does with Resend stubbed.",
+  "rows": [
+    {
+      "id": "email-preview-card",
+      "label": "/admin/invites, Email previews card beside the Launch email card",
+      "view": "src/components/admin/email-preview-card.tsx",
+      "steps": [
+        {
+          "goto": "/admin/invites",
+          "wait": "[data-testid='email-preview-card']",
+          "settle": 600
+        }
+      ]
+    }
+  ]
+}

@@ -15,6 +15,7 @@ const ALLOWED: Record<string, { names: string[]; why: string }> = {
   "src/app/settings/account-actions.ts": { names: ["clerkClient"], why: "Settings' Account: deleting the account and signing a device out are Clerk's own writes; once per press, each rate limited" },
   "src/app/settings/account-slot.tsx": { names: ["currentUser"], why: "Settings' Account row: the primary email and the sign-in methods live only in Clerk; once per Settings render (a visit, and each Settings write or rename that redraws the page), streamed behind its own Suspense so the page never waits on it" },
   "src/app/credits/actions.ts": { names: ["currentUser"], why: "Buy: the VERIFIED primary email lives only in Clerk, and Stripe's round trip that follows dwarfs it; once per purchase" },
+  "src/app/admin/invites/email-preview-actions.ts": { names: ["currentUser"], why: "the admin Email previews press: the admin's own primary address lives only in Clerk; admin only, once per press, one press per five minutes" },
   "src/lib/admin/accounts.ts": { names: ["clerkClient"], why: "the admin Accounts pages: emails and sign-in times live only in Clerk; admin only" },
   "src/lib/invites/clerk.ts": { names: ["clerkClient"], why: "email invitations and the 'already has an account' check: Clerk owns invitations; once per email invite" },
 };
