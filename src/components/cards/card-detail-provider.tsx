@@ -714,7 +714,12 @@ export function CardDetailProvider({
       // open one again. Without this the modal left standing is one no write can reach: an
       // art pick made in it would evict a card `evict` no longer believes is open, and the
       // pick would sit there uncorrected.
-      const giveUp = () => { openRef.current = shownRef.current; };
+      const giveUp = () => {
+        openRef.current = shownRef.current;
+        // An ask to land on Find a deck dies with the read it was for: it must not wait for this card to arrive by
+        // some later path that never asked for the view.
+        if (viewOnArrival.current === oracleId) viewOnArrival.current = null;
+      };
       setFailed(false);
       if (hit) {
         setPendingOracleId(null);
@@ -968,6 +973,7 @@ export function CardDetailProvider({
     // Or a read abandoned by the close could still commit its printing onto the next card
     // the reader opens.
     pendingAt.current = null;
+    viewOnArrival.current = null;
     show(null);
     setPendingOracleId(null);
     setFailed(false);

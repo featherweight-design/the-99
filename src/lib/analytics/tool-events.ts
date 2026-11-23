@@ -4,7 +4,7 @@
  * (`tool-events.test.ts` fails the build on one). Sent by `captureToolEvent` (`posthog.ts`).
  */
 
-/** Where a Find a deck open came from: the call-out's Show them, a tile's button, a phone row's strip, a desktop row's button, or the card window's door. */
+/** Where a press that asks for Find a deck came from (counted at the press, before the card arrives): the call-out's Show them, a tile's button, a phone row's strip, a desktop row's button, or the card window's door. */
 export const FIND_A_DECK_FROM = ["callout_show_them", "tile_button", "row_strip", "row_button", "card_door"] as const;
 export type FindADeckFrom = (typeof FIND_A_DECK_FROM)[number];
 

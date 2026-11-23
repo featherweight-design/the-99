@@ -5,6 +5,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(window.location.search),
   useRouter: () => ({ refresh: () => {} }),
 }));
+vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_1" }) }));
 const capture = vi.hoisted(() => vi.fn());
 vi.mock("../../lib/analytics/posthog", () => ({ captureToolEvent: capture }));
 const closeAction = vi.hoisted(() => vi.fn(async () => ({ ok: true, changed: true })));

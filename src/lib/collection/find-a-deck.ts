@@ -16,16 +16,21 @@ export type FindADeckState = { hasDeck: boolean; closed: boolean; illegal: strin
 
 /** The read, apart so a test can render it. One statement, every part scoped to the caller. */
 export function findADeckStateQuery(userId: string): SQL {
+  // The illegal set is read only for a reader with a deck: with none, no button draws and the join is skipped.
   return sql`
+    with d as (
+      select exists (select 1 from decks d where d.user_id = ${userId} and d.commander_oracle_id is not null) as has_deck
+    )
     select
-      exists (select 1 from decks d where d.user_id = ${userId} and d.commander_oracle_id is not null) as has_deck,
+      d.has_deck,
       exists (select 1 from user_prefs p where p.user_id = ${userId} and p.find_a_deck_closed_at is not null) as closed,
-      coalesce(
+      case when d.has_deck then coalesce(
         (select array_agg(distinct ci.oracle_id::text)
            from collection_items ci join cards c on c.oracle_id = ci.oracle_id
           where ci.user_id = ${userId} and not c.commander_legal),
         '{}'
-      ) as illegal
+      ) else '{}' end as illegal
+    from d
   `;
 }
 

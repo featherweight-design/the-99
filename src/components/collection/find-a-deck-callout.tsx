@@ -3,6 +3,7 @@
 // statement, under you-have-it R3's shell. On All it is the door to Availability › Free (`Show them`); on Free alone
 // it says what the button beside each card does. A bare ✕ closes it for good, per account.
 
+import { useAuth } from "@clerk/nextjs";
 import { useRef, useState } from "react";
 import { closeFindADeckAction } from "../../app/collection/find-a-deck-actions";
 import { findADeckCopy as copy } from "../../lib/copy/find-a-deck";
@@ -10,12 +11,16 @@ import { FitsGlyph } from "../cards/fits-door";
 
 const RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 
-/** Closed in this page's life: a remount (a view switch, a filter that unmounts the list) does not bring it back. */
-let closedHere = false;
+/**
+ * The account that closed it in this page's life: a remount (a view switch, a filter that unmounts the list, a route
+ * cache that still holds the open state) does not bring it back. Keyed on the account, since a sign-out and a sign-in
+ * as someone else happen without a page load.
+ */
+let closedFor: string | null = null;
 
 /** Test seam: a fresh module per test is what the app gets per page load. */
 export function resetFindADeckCalloutForTest() {
-  closedHere = false;
+  closedFor = null;
 }
 
 export function FindADeckCallout({
@@ -32,19 +37,21 @@ export function FindADeckCallout({
   rows: boolean;
   onShow: () => void;
 }) {
-  const [closed, setClosed] = useState(closedHere);
+  const { userId } = useAuth();
+  const [closedNow, setClosed] = useState(false);
+  const closed = closedNow || (userId != null && closedFor === userId);
   const section = useRef<HTMLElement>(null);
   if (closed) return null;
 
   const close = () => {
     // Focus goes to the first control after the call-out, never to <body> when the ✕ unmounts.
     const next = section.current?.nextElementSibling?.querySelector<HTMLElement>("button, a[href]");
-    closedHere = true;
+    closedFor = userId ?? null;
     setClosed(true);
     next?.focus();
     // Hidden on the press; a write that fails leaves the call-out for the next load.
     void closeFindADeckAction().catch(() => {
-      closedHere = false;
+      closedFor = null;
     });
   };
 
