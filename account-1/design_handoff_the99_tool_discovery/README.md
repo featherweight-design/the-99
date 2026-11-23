@@ -1,6 +1,12 @@
-# Finding the tools · R8
+# Finding the tools · R9
 
-Account 1, 2026-11-23. Status: **R8, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R9, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+
+**R9 (Hugh's R8 notes, 2026-11-23):** checked against two screenshots of a live Home. The fixture now draws What's
+new's foot (Past announcements, Clear all, Show all N), deck pills, bracket marks and copies to buy, five friends, the
+reader's face and the Fan Content notice. Seat art on Tonight's table and Game to log. Game to log's ✕ moves to the
+card's top right at every width (its CTA sits like Open the table). `Choose your notifications` becomes `Choose
+notifications`, which fits beside the What's new heading in the desktop rail.
 
 **R8 (Hugh's R7 notes, 2026-11-23):** Q11 A and Q12 A settled (credits in the panel's foot, What's new under the lead; no
 search on first run). On top of A: What's new moves to the top of the empty desktop rail (Q13), and Home's section
@@ -163,7 +169,7 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 - **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
   B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
 - **Q13 · What's new in the desktop rail?** A (drawn, recommended): top of the rail above Commitments and Friends; rows
-  draw as on a phone (action under the text); Choose your notifications moves into the list's foot beside Clear all. B:
+  draw as on a phone (action under the text); `Choose notifications` (R9) beside the heading as on a phone; the foot keeps one line. B:
   under the lead in the main column (R7 A). Phone unchanged either way. Board: Calmer Home.
 - **Q14 · Stronger section headings?** A (drawn, recommended): What's new, Pick up where you left off, Friends and
   Commitments in the display face at 17px, `--fg`, led by the accent diamond (7px, rotated); counts in mono `--accent-text`;
@@ -185,7 +191,7 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 | File | What |
 |---|---|
-| `Calm.dc.html` | R8: R7 A against R8 (What's new in the rail, display headings), desktop and phone |
+| `Calm.dc.html` | R8, R9: R7 A against R9 (What's new in the rail, display headings), desktop and phone |
 | `Order.dc.html` | R7: the busy Home three ways (A, B, C) on desktop and phone; first run with and without search |
 | `Home.dc.html` | H6 Home in full on a busy day, desktop and phone, and desktop typed in place (R6) |
 | `Main.dc.html` | What changed since R4, the answers, the open questions |
@@ -195,4 +201,5 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 | `Welcome.dc.html` | H0 Home's strip (unchanged); S0 the sheet today; S1 proposed |
 | `STATES.md` · `copy strings.ts` · `READINESS.md` | Every state, every new string, the gaps |
 | `art/td-*.webp` | The frames (2x), rendered from main 7563036. `td-*-c0..c2` (R1's Find) and `td-*-h1` (R2's What you can do), `td-*-r1` and `td-*-h2` (R3) are kept for the record. |
+| `scratch-gen/src-patches/` | R9: `home-log-card.tsx` with the ✕ moved (the one line changed in `Hide`'s className) |
 | `scratch-gen/` | How the frames were made (`HOW.md`). Reference only; never import. |

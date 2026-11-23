@@ -162,14 +162,19 @@ C11 = call("11", "A calmer busy Home (R8, on top of R7 A)", ul([
   "<b>Section headings you can find.</b> Every Home section heading (What's new, Pick up where you left off, Friends, Commitments) moves from 10px faint mono capitals to the page's display face at 17px in --fg, led by the accent diamond the app already uses as its mark. Counts stay mono, in --accent-text. 10px more room above each. The deck list's last touched caption stays from sm and leaves on a phone, where it wrapped the heading.",
   "<b>Phone:</b> the order stays R7 A (table, game to log, panel with credits, lead, What's new, decks, Friends, Commitments). It is still a long page on a busy day; the headings are what make it scannable. Not drawn, possible later: What's new showing two rows on a phone with Show all.",
   "Settled in R7: Q11 A (credits in the panel, What's new under the lead) and Q12 A (no search on first run)."]))
+C12 = call("12", "Matching the real Home (R9)", ul([
+  "Checked against two screenshots of a live Home. Added what the fixture had dropped: What's new's foot (Past announcements ›, Clear all, Show all 7, seven items with Today and Earlier), the deck rows' status pills (To buy, Draft, Complete), bracket marks and copies-to-buy counts, five friends, the reader's own face in the rail, and the Fan Content notice at the foot.",
+  "<b>Tonight's table and Game to log</b> draw each seat's commander art, as the shipped cards do (faces on the table; art tiles, the winner ringed, on the log).",
+  "<b>Game to log's ✕</b> leaves the CTA's line: top right of the card at every width (32px from 1180, 44px on a phone), like the welcome strip and the banner. Log this game sits where Open the table does, right of the body, vertically centred.",
+  "<b>Choose notifications</b> (was Choose your notifications) now fits beside the What's new heading in the desktop rail, as it sits on a phone. In the rail the list's foot keeps one line."]))
 Q13 = q("Q13", "Move What's new into the desktop rail?", "A: yes, top of the rail, rows drawn as on a phone, Choose your notifications in the list's foot (drawn). B: keep it in the main column under the lead (R7 A), the rail as shipped.", "A. It uses the empty rail, puts every notification in the first screen, and shortens the main column.")
 Q14 = q("Q14", "Stronger section headings on Home?", "A: display face 17px, --fg, the accent diamond, counts in --accent-text (drawn). B: keep the shipped 10px mono labels.", "A. On a busy Home the labels are what a reader scans by, and today they read as captions.")
 boards = {}
-boards["Calm.dc.html"] = (1700, 4130, "Calmer Home", page("Finding the tools R8: a calmer busy Home", 1700, 4130,
- head("A calmer busy Home (R8)", "R7 A (left) against R8 (right), the same reader. R8 moves What's new into the empty desktop rail and makes Home's section headings easy to find.")
- + C11 + Q13 + Q14
- + row("Desktop · 1300, busy day", [dk("d-ra", "R7 A", "What's new under the lead; the rail ends at Friends.", 760), dk("d-r8", "R8", "What's new tops the rail; display headings with the diamond.", 760)])
- + row("Phone · 390, busy day", [fig("p-ra", 320, "R7 A", "The shipped 10px labels."), fig("p-r8", 320, "R8", "Display headings; more room above each section.")])))
+boards["Calm.dc.html"] = (1700, 4770, "Calmer Home", page("Finding the tools R8: a calmer busy Home", 1700, 4770,
+ head("A calmer busy Home (R8, R9)", "R7 A (left) against R9 (right), the same reader. R8 moves What's new into the empty desktop rail and makes Home's section headings easy to find.")
+ + C12 + C11 + Q13 + Q14
+ + row("Desktop · 1300, busy day", [dk("d-ra", "R7 A", "What's new under the lead; the rail ends at Friends.", 760), dk("d-r9", "R9", "What's new tops the rail with Choose notifications beside it; the real Home's parts; the log card's ✕ top right.", 760)])
+ + row("Phone · 390, busy day", [fig("p-ra", 320, "R7 A", "The shipped 10px labels."), fig("p-r9", 320, "R9", "Display headings; seat art on the table and log cards; the full What's new foot.")])))
 boards["Order.dc.html"] = (1700, 5770, "Order and first run", page("Finding the tools R7: Home order and first run", 1700, 5770,
  head("Home order, and search on first run (R7)", "The busy Home from H6 three ways, each rendered with the same reader (a table, a game to log, the arrivals banner, the lead, What's new with two unseen, welcome credits), and the first-run Home with and without search.")
  + C9 + Q11
@@ -183,10 +188,10 @@ boards["Home.dc.html"] = (1700, 4480, "Home in full", page("Finding the tools R6
  + C8 + Q10
  + row("Desktop · 1300 and phone · 390, at rest", [dk("d-full", "H6 · Desktop, busy day", "Banner, the table and the game to log, then the panel, the welcome strip, the lead, decks, What's new; Commitments and Friends on the right.", 1000), fig("p-full", 340, "H6 · Phone, busy day", "The same order in one column; the panel starts at the fold.")])
  + row("Desktop · 1300, typed on Home", [dk("d-full-open", "H6 · Results in place", "The dropdown drops over the welcome strip and the lead; the page under it does not move (Q9 A).", 1000)])))
-boards["Main.dc.html"] = (1600, 2030, "Main", page("Finding the tools R8: main", 1600, 2030,
- head("Finding the tools · R8",
+boards["Main.dc.html"] = (1600, 2060, "Main", page("Finding the tools R9: main", 1600, 2060,
+ head("Finding the tools · R9",
   "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R5 makes Home's search easier to notice and sets down what pressing it does on a phone and a desktop. Everything else is as R4. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
- + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10).", "R7: three orders for a busy Home (Q11) and search on first run (Q12), on the Order and first run board. Settled: Q11 A, Q12 A.", "R8: What’s new in the desktop rail (Q13) and stronger section headings (Q14), on the Calmer Home board."])
+ + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10).", "R7: three orders for a busy Home (Q11) and search on first run (Q12), on the Order and first run board. Settled: Q11 A, Q12 A.", "R8: What’s new in the desktop rail (Q13) and stronger section headings (Q14), on the Calmer Home board.", "R9: the real Home\u2019s missing parts added (What\u2019s new foot with Show all, pills, brackets, footer), seat art on the table and log cards, the log card\u2019s ✕ top right, Choose notifications."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
  + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C6 + C7 + '</div>'
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
@@ -228,6 +233,6 @@ order = ["Main.dc.html", "Calm.dc.html", "Order.dc.html", "Home.dc.html", "Ask.d
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R8", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R9", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)

@@ -63,3 +63,6 @@ export const firstRunSearchCopy = {
   title: "Look up any card",
   line: "Search every Commander card, before you add yours.",
 };
+
+// R9: What's new heading link (feedCopy.choose), shorter so it fits beside the heading in the desktop rail.
+export const feedChooseCopy = { choose: "Choose notifications" }; // was "Choose your notifications"

@@ -1,4 +1,4 @@
-# READINESS · Finding the tools R8
+# READINESS · Finding the tools R9
 
 **Verdict: Amber, for Hugh's review.** Five open questions (README, Q8, Q9, Q10, Q13, Q14); Q11 and Q12 settled A. Every gap below has an answer proposed.
 
@@ -44,10 +44,13 @@
   the resume block; below 1180 its `order-3` becomes `order-1` with the decks at `order-2`. No data change.
 - **G17 · What's new in the rail (R8, Q13 A).** From 1180 `WhatsNew` renders first in the right column; below 1180 it
   keeps its main-column order. `FeedItemRow` gains a `compact` layout (the phone grid at any width) used in the rail, and
-  the heading's Choose your notifications link moves into the list foot when compact.
+  `feedCopy.choose` becomes `Choose notifications` everywhere, and stays in the heading.
 - **G18 · Home section headings (R8, Q14 A).** One shared `HomeSectionHead` for What's new, resume decks, Friends and
   Commitments: display 17px, `--fg`, the accent diamond, counts mono `--accent-text`; ids and `aria-labelledby` unchanged.
   The resume caption is `hidden sm:inline`.
+- **G19 · Game to log's ✕ (R9).** `HomeLogCard`'s single-game `Hide` is `absolute right-[4px] top-[4px]` at every width
+  (`xl:right-[6px] xl:top-[6px] xl:h-[32px] xl:w-[32px]`), no longer `xl:static xl:order-last`; Log this game keeps its
+  shipped classes and sits where Open the table does. The many-games card's row ✕ is unchanged.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
