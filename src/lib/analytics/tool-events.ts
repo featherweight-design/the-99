@@ -18,8 +18,8 @@ export const FEED_COUNT_BUCKET = ["1_to_5", "6_to_10", "11_to_20", "21_plus"] as
 export type FeedCountBucket = (typeof FEED_COUNT_BUCKET)[number];
 export const feedCountBucket = (n: number): FeedCountBucket => (n <= 5 ? "1_to_5" : n <= 10 ? "6_to_10" : n <= 20 ? "11_to_20" : "21_plus");
 /** How the Tuning tab was reached (B2): a press of the tab row, or an arrival by a URL or landing that named it. Ways in
- *  from inside the deck page (a strip cell, a nudge, the Games link) are not discovery and are not counted. `ask` and
- *  `welcome_sheet` arrive with D and C. */
+ *  from inside the deck page (a strip cell, a nudge, the Games link) are not discovery and are not counted. A welcome
+ *  sheet's Try it lands by URL and counts as `url`; README's `ask` waits on D. */
 export const TUNING_OPENED_FROM = ["tab", "url"] as const;
 export type TuningOpenedFrom = (typeof TUNING_OPENED_FROM)[number];
 /** The tool the Tuning tab opened on, or `hub` for the tab's tile grid (README's null, kept a closed-set string). The
