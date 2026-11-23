@@ -4,7 +4,7 @@ import Shell from "../components/shell/shell";
 import { SIGN_IN_PATH, SIGN_UP_PATH } from "../components/public/links";
 import { TASK_URLS } from "../lib/auth/session-tasks";
 import { resolveTheme } from "../lib/theme/server";
-import { preload } from "react-dom";
+import { preconnect, preload } from "react-dom";
 import { MANA_SPRITE_PATH } from "../lib/cards/mana-sprite";
 import { ZoneCookie } from "../components/zone-cookie";
 import { ServiceWorker } from "../components/shell/service-worker";
@@ -35,6 +35,12 @@ export default async function RootLayout({
   // routes and in the card modal that opens from all of them, and a symbol fetched only when its pip
   // painted showed an empty box first (Hugh, 2026-09-28). See `mana-sprite.ts`.
   preload(MANA_SPRITE_PATH, { as: "image", type: "image/svg+xml" });
+  // Card art and card images come from Scryfall's image host, a third-party origin that costs a DNS lookup, a TCP and a TLS
+  // handshake before its first byte. The connection opens from the document's head, so it is ready when the page's scripts
+  // draw the first tile. On staging, a cold /decks at 390 on Slow 4G (7 runs each, a `Link: rel=preconnect` header standing in
+  // for this call): the first Scryfall image landed at 10,478ms median without it, 9,286ms with it. No `crossOrigin`: the
+  // images are plain `<img>`, which ride the credentialed connection, and a `crossorigin` preconnect opens the other pool.
+  preconnect("https://cards.scryfall.io");
   return (
     // Clerk's prebuilt UI is fetched (it was held back at 261KB over five files, Hugh 2026-10-12): the sign-up
     // challenge for suspicious sign-ups (Clerk's bot protection) is drawn by that bundle, and a sign-up with no UI
