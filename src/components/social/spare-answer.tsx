@@ -9,7 +9,7 @@
 // that replaced the press (focusable, `tabIndex={-1}`), unless the reader has already moved on.
 
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { answerSpareAction } from "../../app/friends/spare-actions";
+import { answerOfferAction, answerSpareAction } from "../../app/friends/spare-actions";
 import { spareCopy } from "../../lib/copy/social";
 import { personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
 import { SocialToast, type SocialToastState } from "./social-toast";
@@ -69,12 +69,12 @@ export function useSpareAnswer(shared?: SpareToast) {
   // failure still shows after that element is gone.
   const own = useSpareToast();
   const toast = shared ?? own;
-  async function answer(requestId: string, a: Answer): Promise<boolean> {
+  async function answer(requestId: string, a: Answer, offer = false): Promise<boolean> {
     if (busy) return false;
     setBusy({ id: requestId, answer: a });
     let ok = false;
     try {
-      ok = (await answerSpareAction(requestId, a)).ok;
+      ok = (await (offer ? answerOfferAction(requestId, a) : answerSpareAction(requestId, a))).ok;
     } catch {
       ok = false;
     }
@@ -89,11 +89,13 @@ export function useSpareAnswer(shared?: SpareToast) {
  * Yes, No and the days left (`.ac` with `.yn`, `.yn.y` and `.ex` on Waiting on you's row; `.la` with `.ba` and `.bg`
  * on the lead story). Yes is the filled press: the answer the ask hopes for. Neither confirms, since neither moves a card.
  */
-export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size }: {
+export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, size, offer = false }: {
   friend: string | ThirdPartyName; card: string; daysLeft: number; busy: Answer | null; locked: boolean;
   /** `from` is the pressed button, for `useLandFocus`. */
   onAnswer: (a: Answer, from: Element) => void;
   size: "row" | "lead";
+  /** The request is an OFFER made to the reader: the presses name taking it, not sparing it. */
+  offer?: boolean;
 }) {
   const press = "inline-flex flex-none cursor-pointer items-center justify-center whitespace-nowrap font-sans disabled:cursor-default";
   const [yes, no] = size === "row"
@@ -107,11 +109,11 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, 
       ];
   return (
     <span data-testid="spare-answer" className={`flex min-w-0 flex-wrap items-center gap-[8px] ${size === "row" ? "md:justify-end" : ""}`}>
-      <button type="button" data-testid="spare-yes" {...personAttrs({ "aria-label": r.yesAria(friend, card) }, yes)} aria-busy={busy === "yes" || undefined}
+      <button type="button" data-testid="spare-yes" {...personAttrs({ "aria-label": (offer ? r.offer.yesAria : r.yesAria)(friend, card) }, yes)} aria-busy={busy === "yes" || undefined}
         disabled={locked} onClick={(e) => onAnswer("yes", e.currentTarget)}>
         {r.yes}
       </button>
-      <button type="button" data-testid="spare-no" {...personAttrs({ "aria-label": r.noAria(friend, card) }, no)} aria-busy={busy === "no" || undefined}
+      <button type="button" data-testid="spare-no" {...personAttrs({ "aria-label": (offer ? r.offer.noAria : r.noAria)(friend, card) }, no)} aria-busy={busy === "no" || undefined}
         disabled={locked} onClick={(e) => onAnswer("no", e.currentTarget)}>
         {r.no}
       </button>
@@ -123,7 +125,13 @@ export function AnswerPresses({ friend, card, daysLeft, busy, locked, onAnswer, 
 }
 
 /** The receipt's two lines, for the answer given: "You're sparing Lathliss for Peter" or "You're keeping Lathliss". */
-export function receiptText(answer: Answer, card: string, friend: string | ThirdPartyName): { kind: string; title: string | PersonParts; detail: string | PersonParts } {
+export function receiptText(answer: Answer, card: string, friend: string | ThirdPartyName, offer = false): { kind: string; title: string | PersonParts; detail: string | PersonParts } {
+  if (offer) {
+    const o = r.offer;
+    return answer === "yes"
+      ? { kind: o.receiptKind.yes, title: o.accepted(card, friend), detail: o.acceptedDetail(friend) }
+      : { kind: o.receiptKind.no, title: o.declined(card, friend), detail: o.declinedDetail(friend) };
+  }
   return answer === "yes"
     ? { kind: r.receiptKind.yes, title: r.sparing(card, friend), detail: r.sparingDetail(friend, card) }
     : { kind: r.receiptKind.no, title: r.keeping(card), detail: r.keepingDetail(friend) };

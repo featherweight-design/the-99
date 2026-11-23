@@ -45,6 +45,7 @@ vi.mock("../../lib/feed/read", () => ({ unseenFriendsCount: feed.unseenFriendsCo
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: feed.noticeTradeMatches }));
 // The waiting-asks half of the Friends badge: none here.
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
+vi.mock("../../lib/social/spare-offers", () => ({ waitingOffersCount: async () => 0 }));
 vi.mock("../../lib/social/friend-requests", () => ({ waitingFriendRequestsCount: async () => 0 }));
 vi.mock("../../lib/social/friends", () => ({ ownHeaderFace: async () => null }));
 // The seat toast reads the reader's notices through a server action; this suite draws the shell only, and a marker stands for the host.

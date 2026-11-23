@@ -25,6 +25,7 @@ import { feedbackEnabled } from "../../lib/feedback/flag";
 import { PlacePathsProvider } from "../commanders/place-paths";
 import { unseenFriendsCount } from "../../lib/feed/read";
 import { waitingAsksCount } from "../../lib/social/spare-requests";
+import { waitingOffersCount } from "../../lib/social/spare-offers";
 import { waitingFriendRequestsCount } from "../../lib/social/friend-requests";
 import { ownHeaderFace } from "../../lib/social/friends";
 import { friendLinksEnabled } from "../../lib/friend-links/flag";
@@ -144,7 +145,7 @@ export default async function Shell({
       console.error("shell: the Friends unseen count could not be read", error instanceof Error ? error.message : "");
       return 0;
     }),
-    perfRead("shell.friendsWaiting", () => waitingAsksCount(userId, env)).catch((error: unknown) => {
+    perfRead("shell.friendsWaiting", async () => (await waitingAsksCount(userId, env)) + (await waitingOffersCount(userId))).catch((error: unknown) => {
       console.error("shell: the Friends waiting count could not be read", error instanceof Error ? error.message : "");
       return 0;
     }),

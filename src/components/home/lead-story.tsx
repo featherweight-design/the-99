@@ -98,18 +98,19 @@ export function LeadStory({
   const two = seesLists(item);
   const friend = item.friend?.displayName ?? "";
   const cardName = item.card?.name ?? "";
-  const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend) : null;
+  const offer = ask?.offer !== undefined;
+  const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend, offer) : null;
   const text = receipt
     ? { title: receipt.title, line: <PersonText text={receipt.detail} />, press: null }
     : ask
-      ? { title: feed.title, line: <PersonText text={spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} />, press: null }
+      ? { title: feed.title, line: <PersonText text={ask.offer ? spareCopy.request.offer.detail(friend, ask.spare, ask.offer.want) : spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} />, press: null }
       : feed;
   // The ✕ is absent while an answer is out and on the receipt, as shipped.
   const dismiss = receipt || busy ? undefined : onDismiss;
   async function press(a: Answer, from: Element) {
     if (!ask || busy) return;
     onHold?.(true);
-    if (!(await answer(ask.id, a))) {
+    if (!(await answer(ask.id, a, offer))) {
       onHold?.(false);
       return;
     }
@@ -156,7 +157,7 @@ export function LeadStory({
       )}
       <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
         <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
-          <span className="min-w-0">{receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}</span>
+          <span className="min-w-0">{receipt ? receipt.kind : offer ? feedCopy.home.offerKicker : feedCopy.home.kicker[item.kind]}</span>
           <small className="flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case before:mr-[7px] before:content-['·']">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>
         <h3 id="home-lead-title" className="m-0 font-display [overflow-wrap:anywhere] text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">
@@ -196,7 +197,7 @@ export function LeadStory({
             )}
             {ask && !receipt && (
               <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
-                onAnswer={(a, from) => void press(a, from)} size="lead" />
+                onAnswer={(a, from) => void press(a, from)} size="lead" offer={offer} />
             )}
             {dismiss && <DismissButton title={text.title} onPress={dismiss} className="mt-[-2px] md:mt-0" />}
           </div>

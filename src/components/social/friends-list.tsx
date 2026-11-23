@@ -36,6 +36,7 @@ export function FriendsList({
   onRemove,
   linkable = false,
   emptyBody,
+  sparable,
 }: {
   friends: Friend[];
   now: Date;
@@ -52,6 +53,8 @@ export function FriendsList({
    * the reader (G9); off, the row is Round 1's.
    */
   linkable?: boolean;
+  /** Per friend (`public_id`), how many of their wanted cards the reader can spare (You have it); absent or 0 draws no chip. */
+  sparable?: Readonly<Record<string, number>>;
 }) {
   // A removal takes its row, its ⋯ and the confirm with it, so the dialog's own return lands on nothing: when
   // the list shrinks and focus is left on the page itself, it goes to the Friends heading. Effects run after the
@@ -82,6 +85,7 @@ export function FriendsList({
               removing={removing === friend.publicId}
               onRemove={() => onRemove(friend)}
               linkable={linkable}
+              sparable={sparable?.[friend.publicId] ?? 0}
             />
           ))}
         </ul>
@@ -97,6 +101,7 @@ function FriendRow({
   removing,
   onRemove,
   linkable,
+  sparable,
 }: {
   friend: Friend;
   since: string;
@@ -104,6 +109,7 @@ function FriendRow({
   removing: boolean;
   onRemove: () => void;
   linkable: boolean;
+  sparable: number;
 }) {
   return (
     <li className="relative flex h-[60px] items-center gap-[12px] pl-[14px] pr-[4px] [border-bottom:1px_solid_var(--border)] md:pl-[16px]" data-friend-row="">
@@ -130,6 +136,20 @@ function FriendRow({
       <span className={`flex-none font-mono text-[10.5px] md:text-[11px] ${linkable ? "hidden md:inline" : ""} ${fresh ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
         {f.since(since)}
       </span>
+      {linkable && sparable > 0 ? (
+        <Link
+          href={`/friends/${friend.publicId}/wishlist`}
+          data-spare-chip=""
+          {...personAttrs(
+            { "aria-label": f.spareChipAria(friend.displayName, sparable) },
+            "relative z-10 inline-flex h-[44px] flex-none items-center gap-[4px] rounded-[8px] px-[6px] font-mono text-[12px] font-medium text-[color:var(--accent-text)] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
+          )}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z" /></svg>
+          {sparable}
+          <PendingReporter href={`/friends/${friend.publicId}/wishlist`} />
+        </Link>
+      ) : null}
       {linkable ? <span aria-hidden className="flex-none px-[4px] text-[18px] leading-none text-[color:var(--fg-muted)]">›</span> : null}
       <FriendMenu friend={friend} removing={removing} onRemove={onRemove} className="relative z-10" />
     </li>

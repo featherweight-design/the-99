@@ -14,8 +14,8 @@ vi.mock("next/link", () => ({
 
 const f = socialCopy.friends;
 const COLIN = { publicId: "00000000-0000-4000-8000-000000000002", displayName: named("Colin"), since: new Date("2026-10-02T12:00:00Z"), commander: null };
-const draw = (linkable?: boolean) => render(
-  <FriendsList friends={[COLIN]} now={new Date("2026-10-15T12:00:00Z")} timeZone="UTC" fresh={null} removing={null} onRemove={vi.fn()} linkable={linkable} />,
+const draw = (linkable?: boolean, sparable?: Record<string, number>) => render(
+  <FriendsList friends={[COLIN]} now={new Date("2026-10-15T12:00:00Z")} timeZone="UTC" fresh={null} removing={null} onRemove={vi.fn()} linkable={linkable} sparable={sparable} />,
 );
 afterEach(cleanup);
 
@@ -34,6 +34,20 @@ describe("FriendsList rows", () => {
     const chevron = within(row).getByText("›");
     expect(chevron.compareDocumentPosition(menu) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(within(row).getByText(f.since("Oct 2")).className).toContain("hidden md:inline");
+  });
+
+  it("draws a You-have-it chip with the count, linking to the friend's wishlist, only when there is a count", () => {
+    draw(true, { [COLIN.publicId]: 3 });
+    const chip = screen.getByRole("link", { name: plain(f.spareChipAria(named("Colin"), 3)) });
+    expect(chip.getAttribute("href")).toBe(`/friends/${COLIN.publicId}/wishlist`);
+    expect(chip.textContent).toBe("3");
+    expect(chip.className).toContain("ph-no-capture");
+    cleanup();
+    draw(true, { [COLIN.publicId]: 0 });
+    expect(document.querySelector("[data-spare-chip]")).toBeNull();
+    cleanup();
+    draw(true);
+    expect(document.querySelector("[data-spare-chip]")).toBeNull();
   });
 
   it("raises an open … menu above the rows after it", async () => {

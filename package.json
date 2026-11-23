@@ -451,6 +451,7 @@
     "probe:undo-revert-inert": "node scripts/probe-undo-revert-inert.mjs",
     "probe:anthropic-cost": "tsx scripts/probe-anthropic-cost.mts",
     "probe:autocapture-names": "tsx scripts/probe-autocapture-names.mts",
+    "probe:you-have-it-3a": "tsx scripts/probe-you-have-it-3a.mts",
     "prepare": "husky || true"
   },
   "dependencies": {
