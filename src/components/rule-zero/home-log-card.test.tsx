@@ -49,6 +49,20 @@ describe("one game", () => {
     expect(plain(document.body.textContent ?? "")).toContain("Colin won");
   });
 
+  it("pins the ✕ to the card's top right corner at every width, not at the row's end (G19)", () => {
+    render(<HomeLogCard games={[game(1)]} now={NOW} />);
+    const cls = screen.getByTestId("home-log-hide").className;
+    expect(cls).toMatch(/(^| )absolute( |$)/);
+    expect(cls).toContain("right-[4px]");
+    expect(cls).toContain("top-[4px]");
+    expect(cls).toContain("xl:right-[6px]");
+    expect(cls).toContain("xl:top-[6px]");
+    expect(cls).toContain("xl:h-[32px]");
+    expect(cls).toContain("xl:w-[32px]");
+    expect(cls).not.toContain("xl:static");
+    expect(cls).not.toContain("xl:order-last");
+  });
+
   it("hides on the ✕ without a navigation, and Undo brings it back", async () => {
     render(<HomeLogCard games={[game(1)]} now={NOW} />);
     await act(async () => fireEvent.click(screen.getByTestId("home-log-hide")));

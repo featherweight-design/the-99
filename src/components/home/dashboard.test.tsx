@@ -306,6 +306,8 @@ describe("Dashboard, Rule 0's table cards", () => {
     const card = screen.getByTestId("home-table-card");
     expect(before(screen.getByRole("heading", { name: "Welcome back" }), card)).toBe(true);
     for (const id of ["welcome", "signature"]) expect(before(card, screen.getByTestId(id))).toBe(true);
+    // The credits, then the signature ask (Q10 A).
+    expect(before(screen.getByTestId("welcome"), screen.getByTestId("signature"))).toBe(true);
     expect(before(card, container.querySelector("#home-friends-head")!)).toBe(true);
   });
 

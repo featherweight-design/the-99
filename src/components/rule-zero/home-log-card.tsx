@@ -33,7 +33,7 @@ const ROWS = 4;
 const keyOf = (g: HomeLogGame) => `${g.tableId}:${g.gameMs}`;
 const seatOf = (s: HomeLogGame["seats"][number], i: number): PlaySeat => ({ seat: i, you: s.you, name: s.name, art: s.artCropUri, partnerArt: null, commander: "", partner: null, deck: null });
 
-/** The ✕: bare, a 44px hit box. The ring is a shadow over a transparent outline so forced-colors still shows focus. */
+/** The ✕: bare, a 44px hit box (32px from xl, where it sits in the card's corner as it does on a phone). The ring is a shadow over a transparent outline so forced-colors still shows focus. */
 function Hide({ g, onHide, className }: { g: HomeLogGame; onHide: (g: HomeLogGame) => void; className: string }) {
   return (
     <button
@@ -83,7 +83,7 @@ function One({ g, until, day, onHide }: { g: HomeLogGame; until: string; day: st
       className={`${SHELL} xl:flex-row xl:items-center xl:gap-[22px] xl:p-[16px_18px]`}
     >
       <Wash games={[g]} />
-      <Hide g={g} onHide={onHide} className="absolute right-[4px] top-[4px] xl:static xl:order-last xl:m-[-4px_-8px_-4px_-10px]" />
+      <Hide g={g} onHide={onHide} className="absolute right-[4px] top-[4px] xl:right-[6px] xl:top-[6px] xl:h-[32px] xl:w-[32px]" />
       <div className="relative flex flex-wrap items-baseline gap-x-[10px] gap-y-[10px] pr-[34px] xl:w-[230px] xl:flex-none xl:flex-col xl:items-start xl:gap-[8px] xl:pr-0">
         <span className="font-mono text-[10.5px] leading-[14px] font-medium uppercase tracking-[.14em] text-[color:var(--accent-text)] xl:order-1">{copy.kicker}</span>
         <span className="font-mono text-[11px] text-[color:var(--fg-faint)] xl:order-3">
