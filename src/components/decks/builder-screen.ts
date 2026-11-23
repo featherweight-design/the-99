@@ -29,6 +29,8 @@ export function deckViewOf(view: BuilderView, filter: "all" | "shopping", panel:
     case "games":
     case "versions":
       return view;
+    case "tuning":
+      return "analysis";
     case "consider":
       return "your-deck";
     case "deck":

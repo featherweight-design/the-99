@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { deckViewSearch, initialBuilderView, readBuilderView, readDeckBody } from "./builder-view";
+import { deckViewSearch, drawnView, initialBuilderView, readBuilderView, readDeckBody } from "./builder-view";
 
 describe("readBuilderView", () => {
   it("takes the tab a URL names", () => {
     expect(readBuilderView("consider")).toBe("consider");
+    expect(readBuilderView("tuning")).toBe("tuning");
     expect(readBuilderView("games")).toBe("games");
     expect(readBuilderView("deck")).toBe("deck");
     // `versions` is a tab like any other and an arrival may name it, so a
@@ -38,6 +39,10 @@ describe("initialBuilderView", () => {
   // decklist, a consider panel and a game log.
   it("leaves every other tab alone however many versions there are", () => {
     expect(initialBuilderView("consider", 0)).toBe("consider");
+    // Tool discovery B1: Tuning has no tab of its own yet, so it opens Analysis, where the hub is.
+    expect(initialBuilderView("tuning", 0)).toBe("analysis");
+    expect(drawnView("tuning")).toBe("analysis");
+    expect(drawnView("consider")).toBe("consider");
     expect(initialBuilderView("games", 0)).toBe("games");
     expect(initialBuilderView("deck", 3)).toBe("deck");
   });
@@ -61,6 +66,7 @@ describe("deckViewSearch", () => {
     expect(deckViewSearch("?x=1", "shopping")).toBe("?x=1&panel=shopping");
     // Consider reads as Your deck but is its own tab.
     expect(deckViewSearch("?panel=stats", "your-deck", "consider")).toBe("?tab=consider");
+    expect(deckViewSearch("?panel=stats", "analysis", "tuning")).toBe("?tab=tuning");
   });
 });
 
