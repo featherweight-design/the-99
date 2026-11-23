@@ -182,7 +182,7 @@ async function main() {
   if (hits.length < 3) throw new Error("the target's support list holds fewer than 3 usable cards");
   for (const h of hits) await addCard(deck, h.id);
 
-  const loaded = await loadChangeCandidates(deck, USER);
+  const loaded = await loadChangeCandidates(deck, USER, "manapool");
   check("loader: reads the reader's deck", loaded !== null, true);
   const all = [...(loaded?.yours ?? []), ...(loaded?.toBuy ?? [])];
   const { rows: identities } = await fixture.execute<{ id: string; ci: string[]; n: number | null }>(sql`
@@ -235,7 +235,7 @@ async function main() {
   } else {
     await fixture.execute(sql`insert into collection_items (user_id, oracle_id, quantity, set_code, scryfall_id, collector_number)
       values (${USER}, ${ownedHit.id}::uuid, 1, ${ownedHit.set_code}, ${ownedHit.scryfall_id}::uuid, ${ownedHit.collector_number})`);
-    const owned = matchedArt(await loadChangeCandidates(deck, USER));
+    const owned = matchedArt(await loadChangeCandidates(deck, USER, "manapool"));
     check("loader: a matched card the reader owns previews the printing they own", owned.get(ownedHit.id), ownedHit.image_uri);
   }
   // A sub-floor legend of the same identity, if the index holds one, must not appear.
@@ -396,28 +396,28 @@ async function main() {
     [...(r?.partnerAdd?.yours ?? []), ...(r?.partnerAdd?.toBuy ?? [])];
   const readFull = await makeDeck(anchor.oracle_id);
   await addCard99(readFull);
-  const fullRead = await loadChangeCandidates(readFull, USER);
+  const fullRead = await loadChangeCandidates(readFull, USER, "manapool");
   const found = partnersOf(fullRead).find((o) => o.halves[1].oracleId === p2.oracle_id);
   check("partner add: the catalog scan finds a legal partner with no pair row", [!!found, found?.hasPairRow, found?.belowFloor], [true, false, true]);
   check("partner add: the stay leads every pair", partnersOf(fullRead).every((o) => o.halves[0].oracleId === anchor.oracle_id), true);
   check("partner add: a body of 99 needs a cut", fullRead?.partnerAdd?.needsCut, true);
   check("partner add: the cut named is a card of the 99", found?.cuts.map((c) => c.oracleId), [fillers[0].oracle_id]);
   await fixture.execute(sql`insert into deck_locks (deck_id, oracle_id) values (${readFull}::uuid, ${fillers[0].oracle_id}::uuid)`);
-  const lockedRead = await loadChangeCandidates(readFull, USER);
+  const lockedRead = await loadChangeCandidates(readFull, USER, "manapool");
   check("partner add: a locked card is never suggested", partnersOf(lockedRead).flatMap((o) => o.cuts), []);
   check("partner add: a locked card is not in the cut pool", lockedRead?.partnerAdd?.cutPool, []);
   await fixture.execute(sql`delete from deck_locks where deck_id = ${readFull}::uuid`);
 
   const readSmall = await makeDeck(anchor.oracle_id);
   for (const f of fillers) await addCard(readSmall, f.oracle_id);
-  const smallRead = await loadChangeCandidates(readSmall, USER);
+  const smallRead = await loadChangeCandidates(readSmall, USER, "manapool");
   check("partner add: a body under 99 needs no cut", [smallRead?.partnerAdd?.needsCut, partnersOf(smallRead).flatMap((o) => o.cuts)], [false, []]);
   await addCard(readSmall, p2.oracle_id);
-  check("partner add: a partner already in the 99 is not offered here", partnersOf(await loadChangeCandidates(readSmall, USER)).some((o) => o.halves[1].oracleId === p2.oracle_id), false);
+  check("partner add: a partner already in the 99 is not offered here", partnersOf(await loadChangeCandidates(readSmall, USER, "manapool")).some((o) => o.halves[1].oracleId === p2.oracle_id), false);
 
   await fixture.execute(sql`update deck_cards set quantity = 100 where deck_id = ${readFull}::uuid and oracle_id = ${fillers[0].oracle_id}::uuid`);
-  check("partner add: a deck over 99 cards is not offered the add", (await loadChangeCandidates(readFull, USER))?.partnerAdd, null);
-  check("partner add: a pair deck is not offered it", (await loadChangeCandidates(pairDeck, USER))?.partnerAdd, null);
+  check("partner add: a deck over 99 cards is not offered the add", (await loadChangeCandidates(readFull, USER, "manapool"))?.partnerAdd, null);
+  check("partner add: a pair deck is not offered it", (await loadChangeCandidates(pairDeck, USER, "manapool"))?.partnerAdd, null);
 
   // ── Adding a Background (#491 PR6) ───────────────────────────────────────────
   // A commander that prints "Choose a Background" takes a Background from outside the 99 as its second
@@ -436,7 +436,7 @@ async function main() {
   if (!chooser || !bg1 || !bg2) throw new Error("catalog holds no Choose a Background fixture");
   const bgFull = await makeDeck(chooser.oracle_id);
   await addCard99(bgFull);
-  const bgRead = await loadChangeCandidates(bgFull, USER);
+  const bgRead = await loadChangeCandidates(bgFull, USER, "manapool");
   const bgOpt = partnersOf(bgRead).find((o) => o.halves[1].oracleId === bg1.oracle_id);
   check("background: the section is offered with the chooseBackground ability", bgRead?.partnerAdd?.ability, { kind: "chooseBackground" });
   check("background: every Background is offered, with no pair row", [!!bgOpt, bgOpt?.hasPairRow, bgOpt?.belowFloor], [true, false, true]);

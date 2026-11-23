@@ -8,6 +8,7 @@ import { requireUserId } from "../auth";
 import { revalidateClaims } from "../decks/revalidate-claims";
 import { isUuid } from "../uuid";
 import { loadChangeCandidates, type ChangeCandidates } from "./candidates";
+import { readerStoreForAction } from "../stores/action-store";
 import { loadOpenedCards } from "./opened-cards";
 import type { CommanderPair } from "./pending";
 import { writeUndoPartnerAdd, type UndoPartnerAddResult } from "./undo-write";
@@ -73,7 +74,8 @@ export async function undoPartnerAdd(
 export async function readChangeCandidates(deckId: string): Promise<ChangeCandidates | null> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return null;
-  return loadChangeCandidates(deckId, userId);
+  // The reader's store: a candidate to buy is priced there, never in Mana Pool by default.
+  return loadChangeCandidates(deckId, userId, await readerStoreForAction(userId));
 }
 
 /**

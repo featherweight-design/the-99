@@ -285,6 +285,7 @@
     "probe:store-cards": "node scripts/probe-store-cards.mjs",
     "probe:store-deck-links": "node scripts/probe-store-deck-links.mjs",
     "probe:store-draft": "tsx scripts/probe-store-draft.mts",
+    "probe:store-commander-change": "tsx scripts/probe-store-commander-change.mts",
     "probe:store-sets": "node scripts/probe-store-sets.mjs",
     "probe:store-collection": "node scripts/probe-store-collection.mjs",
     "probe:store-discover": "node scripts/probe-store-discover.mjs",

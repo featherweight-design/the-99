@@ -9,8 +9,6 @@
 
 /** Slice 3c-2: intake, decks, commander change. */
 const SLICE_3C2 = [
-  { path: "src/lib/commander-change/candidates.ts", fn: "loadChangeCandidates", n: 1 },
-  { path: "src/lib/commander-change/draft-rows.ts", fn: "loadCommanderRows", n: 1 },
 ];
 
 /** Slice 3c-3b: art chains and opponents' commander art (after 3c-2, as `chainArt` has callers in its files). */
