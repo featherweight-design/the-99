@@ -50,7 +50,9 @@ describe("Home's search panel", () => {
     expect(captured).toContainEqual(["search_opened", { from: "home_field" }]);
     expect(screen.getAllByRole("combobox")).toHaveLength(1);
     expect(document.querySelector("[data-card-search-frame=desktop]")).toBeNull();
+    expect(document.querySelector("[data-home-search-field] [data-card-search-add-several]")).not.toBeNull();
     await act(async () => void fireEvent.keyDown(field(), { key: "Escape" }));
+    expect(document.querySelector("[data-home-search-field] [data-card-search-add-several]")).toBeNull();
     expect(captured.filter(([n]) => n === "search_opened")).toHaveLength(1);
   });
 
