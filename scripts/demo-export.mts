@@ -195,7 +195,7 @@ async function readDeckCombos(steps: Pick<Committed, "collection" | "choose" | "
     const deck = steps.decks[role];
     const scope = { oracleIds: comboScopeIds(deck), commanderOracleIds: [deck.commander.oracleId, ...(deck.partner ? [deck.partner.oracleId] : [])] };
     const ids = byRole[role];
-    for (const [id, r] of await inPairs(ids, (oracleId) => loadCardCombos({ userId, oracleId, maxPieces: 2, cap: CARD_COMBOS_SHORTLIST, deck: scope }))) {
+    for (const [id, r] of await inPairs(ids, (oracleId) => loadCardCombos({ userId, oracleId, maxPieces: 2, cap: CARD_COMBOS_SHORTLIST, deck: scope, store: "manapool" }))) {
       if (r.status === "rejected") failures.push(`deck combos: the ${role} deck's read failed for ${id}`);
       // As `withCardCombos` lays it on: the block only where there is a combo.
       else scoped[role].set(id, r.value.combos.length > 0 ? { combos: r.value.combos, inScope: r.value.inScope } : null);

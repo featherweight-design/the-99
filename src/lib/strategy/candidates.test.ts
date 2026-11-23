@@ -6,9 +6,11 @@ vi.mock("../decks/availability-query", () => ({ loadAvailability: vi.fn(async ()
 vi.mock("../decks/price-query", () => ({ loadPrices: vi.fn(async () => ({ prices: prices.map, newestAsOf: prices.newestAsOf })) }));
 
 import { db } from "../../db";
+import { loadPrices } from "../decks/price-query";
 import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, planFocusCandidates, rankCandidates, readFocusCandidates, withFocusCandidates } from "./candidates";
 
 const args = {
+  store: "manapool" as const,
   userId: "u1",
   commanderOracleIds: ["c1"],
   colorIdentity: ["W", "U"],
@@ -79,6 +81,13 @@ describe("loadFocusCandidates", () => {
     ]));
     expect(out.map((c) => c.oracleId)).toEqual(["rock", "low"]);
     expect(out[0].roles).toContain("ramp");
+  });
+
+  it("prices the candidates at the reader's store", async () => {
+    vi.mocked(loadPrices).mockClear();
+    // A cap, so the price read runs: with no cap nothing is priced.
+    await loadFocusCandidates({ ...base, limits: { ...base.limits, capCents: 1000 }, store: "tcgplayer" }, reader([row("rock", "Artifact", 50, "{T}: Add {C}.")]));
+    expect(vi.mocked(loadPrices).mock.calls.map((c) => c[3])).toEqual(["tcgplayer"]);
   });
 
   it("drops an owned-only card with no free copy, and a card over the cap", async () => {

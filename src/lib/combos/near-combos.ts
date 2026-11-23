@@ -9,6 +9,7 @@ import { classifyRoles } from "../recs/roles";
 import { priceQualifier, priceState } from "../decks/price";
 import type { PriceRead } from "../decks/price-query";
 import { cheapestNow, loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { isMandatoryLoop } from "../spellbook/combo-features";
 import {
   addableMissingPiece,
@@ -191,6 +192,8 @@ export async function loadNearCombos(args: {
   cap?: number;
   /** The largest combo to list, in pieces. The deck page's list asks for 2 (combos-close G2). */
   maxPieces?: number;
+  /** The reader's store (store preference): a missing piece's buy price is read there. */
+  store: Store;
 }): Promise<NearCombos> {
   const [deck] = await db
     .select({ commander: decks.commanderOracleId, partner: decks.partnerOracleId })
@@ -213,7 +216,7 @@ export async function loadNearCombos(args: {
   const missingIds = [...new Set(candidates.map((c) => c.missing.oracleId))];
   const [availability, prices, catalog] = await Promise.all([
     loadPieceAvailability(args.userId, missingIds, { excludeDeckId: args.deckId }),
-    loadPrices(missingIds),
+    loadPrices(missingIds, [], [], args.store),
     db
       .select({
         oracleId: cards.oracleId,
@@ -547,6 +550,8 @@ export async function loadCardCombos(args: {
   cap?: number;
   /** The largest combo to list, in pieces. The card details block asks for 2 (combos-close G2). */
   maxPieces?: number;
+  /** The reader's store (store preference): a missing piece's buy price is read there. */
+  store: Store;
 }): Promise<CardCombos> {
   const scope = {
     deck: new Set([...(args.deck?.oracleIds ?? []), ...(args.deck?.commanderOracleIds ?? [])]),
@@ -573,7 +578,7 @@ export async function loadCardCombos(args: {
   if (rows.length === 0) return { ...NO_CARD_COMBOS, inScope };
   const ids = [...new Set(rows.map((r) => r.oracle_id).filter((id) => id !== args.oracleId))];
   // Prices beside availability, as read A prices its missing pieces: a piece not owned draws its buy tag.
-  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids), loadPrices(ids)]);
+  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids), loadPrices(ids, [], [], args.store)]);
   const shaped = shapeCardCombos(
     rows,
     args.oracleId,
@@ -602,7 +607,7 @@ function byCardVariant(rows: readonly CardComboRow[]): Map<string, CardComboRow[
  * public combo index and the caller's own collection. Null when the variant is gone, no longer a counted
  * template-free 2 to 6 piece combo, or a piece is missing from the catalog.
  */
-export async function loadVariantCombo(args: { userId: string; variantId: string }): Promise<CardCombo | null> {
+export async function loadVariantCombo(args: { userId: string; variantId: string; store: Store }): Promise<CardCombo | null> {
   const rows = (await db.execute(sql`
     select v.variant_id, v.produces, v.card_count, v.mana_value_needed, v.mana_needed, v.steps,
            v.notable_prerequisites, vc.oracle_id, c.name, vc.must_be_commander, 1 as total, c.image_uri
@@ -616,7 +621,7 @@ export async function loadVariantCombo(args: { userId: string; variantId: string
   `)).rows as CardComboRow[];
   if (rows.length === 0) return null;
   const ids = rows.map((r) => r.oracle_id);
-  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids), loadPrices(ids)]);
+  const [availability, prices] = await Promise.all([loadPieceAvailability(args.userId, ids), loadPrices(ids, [], [], args.store)]);
   // An empty card id leaves no piece out, and an empty scope holds none in a deck.
   const shaped = shapeCardCombos(
     rows,

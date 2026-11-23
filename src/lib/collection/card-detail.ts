@@ -408,6 +408,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
       userId,
       oracleId,
       maxPieces: 2,
+      store: await store,
       // Uncapped in practice (the SQL shortlist): the closed row counts this same list (OPEN-1).
       cap: CARD_COMBOS_SHORTLIST,
       deck: deckOracleIds ? { oracleIds: deckOracleIds, commanderOracleIds: commanderOracleIds ?? [] } : undefined,

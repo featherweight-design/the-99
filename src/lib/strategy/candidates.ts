@@ -24,6 +24,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { ownedCopyOffered, spareBeforeHeld, tieClosed } from "../tuning/limits";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { castFaceText } from "../cards/facet";
 import { labelRoleSet } from "../labels/role-sets";
 import { classifyRoles, rolesByLabelElseText } from "../recs/roles";
@@ -171,7 +172,11 @@ export async function loadFocusCandidates(args: FocusCandidateArgs, read: Reader
   return (await readFocusCandidates(args, read)).cards;
 }
 
-type FocusCandidateArgs = CandidateArgs & { deckId: string; focus: StrategyKey; roleBasis: RoleBasis; max?: number };
+type FocusCandidateArgs = CandidateArgs & {
+  deckId: string; focus: StrategyKey; roleBasis: RoleBasis; max?: number;
+  /** The reader's store (store preference): the price under a cap is read there. */
+  store: Store;
+};
 
 /**
  * The focus candidates and whether they are COMPLETE: every card that qualifies is listed. A list that reached `max` is
@@ -200,7 +205,7 @@ export async function readFocusCandidates(args: FocusCandidateArgs, read: Reader
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
       args.limits.ownedOnly ? loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId }) : null,
-      capCents === null ? null : loadPrices(ids),
+      capCents === null ? null : loadPrices(ids, [], [], args.store),
     ]);
     const passing = slice.filter((r) => {
       if (availability && !ownedCopyOffered(availability.get(r.oracleId)?.free, args.limits)) return false;

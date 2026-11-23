@@ -4,6 +4,7 @@ import { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
 import { readOwnedOracleIds } from "../decks/tuning-read";
 import { cheapestNow, loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { loadSupportMeta } from "../edhrec/support-read";
 import type { DeckLine, PoolRow } from "../precons/upgrade/inputs";
 import { assembleDeck, assemblePool, mergeLines } from "../precons/upgrade/inputs";
@@ -74,7 +75,8 @@ export async function guidedStrategies(userId: string, commanderIds: string[], l
  * The pool the run adds from, and the prices of the deck. `owned`: index rows the player owns; `cap` and `budget`: the index's own rows
  * (the per-card cap is `poolForPrompt`'s; a budget is enforced on the answer's total, `validateUpgrade`).
  */
-export async function loadGuidedPool(userId: string, deck: GuidedDeck, bracket: BracketTarget, mode: PoolMode) {
+/** `store` is the reader's store (store preference): the pool and the deck are priced there, the budget with them. */
+export async function loadGuidedPool(userId: string, deck: GuidedDeck, bracket: BracketTarget, mode: PoolMode, store: Store) {
   const deckIds = new Set(deck.lines.map((l) => l.oracleId));
   const identity = [...new Set(deck.lines.filter((l) => l.isCommander).flatMap((l) => l.colorIdentity))];
   let rows: PoolRow[] = await readPool(deck.commanderIds, [...deckIds], bracket < 3);
@@ -84,7 +86,7 @@ export async function loadGuidedPool(userId: string, deck: GuidedDeck, bracket: 
     rows = rows.filter((r) => owned.has(r.oracleId));
   }
   const ids = [...deckIds, ...rows.map((r) => r.oracleId)];
-  const read = await loadPrices(ids);
+  const read = await loadPrices(ids, [], [], store);
   const cents = new Map(ids.map((id) => [id, cheapestNow(read, id)] as const));
   return { deck: assembleDeck(deck.lines, cents), pool: assemblePool(rows, cents, deckIds) };
 }

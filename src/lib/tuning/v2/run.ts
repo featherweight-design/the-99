@@ -33,6 +33,7 @@ import { readListCardIds } from "./read-list";
 import { v2Outcome, v2StartReport } from "./report";
 import { requestHash } from "./request-hash";
 import { lineStream } from "./stream-lines";
+import { readerStoreForPage } from "../../stores/preference";
 
 /**
  * Suggested changes v2's run (plan 2026-10-27, PR 3), from the press to the settle. SERVER-ONLY. `runTuning` reaches it
@@ -173,6 +174,8 @@ async function workV2(args: {
   // One entry per streamed call that billed, settled together under the one reservation, whatever ends the run.
   const billed: Billed[] = [];
   try {
+    // The reader's store (store preference): every price under the cap, the pool's and each streamed line's, is read there.
+    const storeRead = readerStoreForPage(userId, env);
     const profile = await profileOfHead(head, env);
     const inDeckIds = new Set(profile.cards.map((c) => c.oracleId));
     const [owned, { overview, universal }] = await Promise.all([
@@ -180,8 +183,9 @@ async function workV2(args: {
       readTuningContext(head),
     ]);
     const focusRun = focus ? await loadRunStrategy(head, focus) : null;
+    const store = await storeRead;
     const shared = {
-      userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity], inDeck: inDeckIds, env,
+      userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity], inDeck: inDeckIds, env, store,
     };
     const ownedRead = limits.ownedOnly ? await readOwnedCandidates({ ...shared, limits }) : undefined;
     const ownedCandidates = ownedRead?.cards;
@@ -231,7 +235,7 @@ async function workV2(args: {
       const unique = [...new Set(names)];
       const fresh = unique.filter((n) => !reads.has(n));
       if (fresh.length > 0) {
-        const read = readResolvedRows({ userId, deckId, limits, names: fresh }).then((found) => {
+        const read = readResolvedRows({ userId, deckId, limits, names: fresh, store }).then((found) => {
           rows.push(...found);
           resolve = nameResolver(rows, inDeckIds);
         });

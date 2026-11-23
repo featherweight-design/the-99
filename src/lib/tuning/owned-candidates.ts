@@ -10,6 +10,7 @@ import { landColors, type Color } from "../swaps/land";
 import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { printedIn } from "../sets/printed-in-sql";
 import { listedText } from "./card-facts";
 import { OWNED_OFF_INDEX_MAX, OWNED_SHORTLIST_MAX, ownedCopyOffered, spareBeforeHeld, tieClosed } from "./limits";
@@ -52,6 +53,8 @@ type OwnedCandidateArgs = {
   colorIdentity: readonly string[];
   inDeck: ReadonlySet<string>;
   limits: { capCents: number | null; sets: readonly string[]; otherDecks?: boolean };
+  /** The reader's store (store preference): the price under a cap is read there. */
+  store: Store;
   max?: number;
 };
 
@@ -112,7 +115,7 @@ export async function readOwnedCandidates(args: OwnedCandidateArgs): Promise<{ c
     const ids = rows.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
       loadAvailability(userId, { oracleIds: ids, excludeDeckId: deckId }),
-      capCents === null ? null : loadPrices(ids),
+      capCents === null ? null : loadPrices(ids, [], [], args.store),
     ]);
     const passing = rows.filter((r) => {
       if (!ownedCopyOffered(availability.get(r.oracleId)?.free, limits)) return false;
@@ -159,6 +162,8 @@ export type OffIndexArgs = {
   colorIdentity: readonly string[];
   inDeck: ReadonlySet<string>;
   limits: { capCents: number | null; sets: readonly string[]; otherDecks?: boolean };
+  /** The reader's store (store preference): the price under a cap is read there. */
+  store: Store;
   /** Cards already offered by an earlier tier (the index cards and the focus candidates), never offered twice. */
   exclude?: ReadonlySet<string>;
   /** The room this tier fills: at most `OWNED_OFF_INDEX_MAX`, and what is left under `OWNED_SHORTLIST_MAX`. */
@@ -331,7 +336,7 @@ export async function readOwnedOffIndex(args: OffIndexArgs, read: Reader = db): 
     const ids = slice.map((r) => r.oracleId);
     const [availability, priced] = await Promise.all([
       loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.deckId }),
-      capCents === null ? null : loadPrices(ids),
+      capCents === null ? null : loadPrices(ids, [], [], args.store),
     ]);
     const passing = slice.filter((r) => {
       if (!ownedCopyOffered(availability.get(r.oracleId)?.free, args.limits)) return false;

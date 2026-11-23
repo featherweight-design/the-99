@@ -8,6 +8,7 @@ const calls = vi.hoisted(() => ({
   offsets: [] as number[],
   free: new Map<string, number>(),
   prices: new Map<string, number>(),
+  stores: [] as unknown[],
 }));
 
 vi.mock("../../db", () => {
@@ -22,7 +23,8 @@ vi.mock("../decks/availability-query", () => ({
   loadAvailability: async () => new Map([...calls.free].map(([id, free]) => [id, { free }])),
 }));
 vi.mock("../decks/price-query", () => ({
-  loadPrices: async () => {
+  loadPrices: async (...a: unknown[]) => {
+    calls.stores.push(a[3]);
     const asOf = new Date(0);
     return { prices: new Map([...calls.prices].map(([id, cents]) => [id, { cents, foilCents: null, etchedCents: null, asOf }])), newestAsOf: asOf };
   },
@@ -33,6 +35,7 @@ import { loadOwnedCandidates, readOwnedCandidates } from "./owned-candidates";
 const row = (i: number) => ({ oracleId: `id${i}`, name: `Card ${i}`, typeLine: "Artifact" });
 const page = (from: number, n: number) => Array.from({ length: n }, (_, i) => row(from + i));
 const args = {
+  store: "manapool" as const,
   userId: "u", deckId: "d", commanderOracleIds: ["cmd"], colorIdentity: ["W"], inDeck: new Set<string>(),
   limits: { capCents: null as number | null, sets: [] as string[] },
 };
@@ -42,6 +45,7 @@ beforeEach(() => {
   calls.offsets = [];
   calls.free = new Map();
   calls.prices = new Map();
+  calls.stores = [];
 });
 
 describe("loadOwnedCandidates", () => {
@@ -49,6 +53,13 @@ describe("loadOwnedCandidates", () => {
     calls.pages = [page(0, 3)];
     expect((await loadOwnedCandidates(args)).map((c) => c.name)).toEqual(["Card 0", "Card 1", "Card 2"]);
     expect(await loadOwnedCandidates({ ...args, commanderOracleIds: [] })).toEqual([]);
+  });
+
+  it("prices the candidates at the reader's store", async () => {
+    calls.pages = [page(0, 3)];
+    // A cap, so the price read runs: with no cap nothing is priced.
+    await loadOwnedCandidates({ ...args, limits: { capCents: 300, sets: [] }, store: "tcgplayer" });
+    expect(calls.stores).toEqual(["tcgplayer"]);
   });
 
   it("skips a card whose every copy is claimed by another deck, and keeps one with no availability row", async () => {

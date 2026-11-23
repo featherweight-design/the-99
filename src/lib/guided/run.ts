@@ -12,6 +12,7 @@ import { readSwapPartners } from "../precons/upgrade/swap-partners";
 import type { StoredPair } from "../precons/upgrade/validate";
 import { BUDGET_MAX_CENTS, BUDGET_MIN_CENTS, POOL_MODES, type PoolMode } from "./constants";
 import { guidedStrategies, loadGuidedDeck, loadGuidedPool } from "./inputs";
+import { readerStoreForPage } from "../stores/preference";
 import { finishGuided, reapGuided, startGuided, type GuidedHandle } from "./store";
 
 /**
@@ -67,7 +68,7 @@ export async function beginGuided(userId: string, deckId: string, picks: GuidedP
   // "Before" is the free fill as placed; a pick below it is not offered, as Upgrade's.
   const bracketBefore = await bracketOf(list, []);
   if (bracketBefore !== null && bracket < bracketBefore) return { ok: false, reason: "notOffered" };
-  const { deck: made, pool } = await loadGuidedPool(userId, deck, bracket, picks.poolMode);
+  const { deck: made, pool } = await loadGuidedPool(userId, deck, bracket, picks.poolMode, await readerStoreForPage(userId, env));
   // A pool-less run would pay for calls that can only come back empty.
   if (pool.entries.length === 0) return { ok: false, reason: "noPool" };
 
