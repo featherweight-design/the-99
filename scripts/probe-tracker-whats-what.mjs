@@ -56,6 +56,21 @@ async function signIn(page) {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
+// Segment geometry: does a leader pass through a label box (other than the one it starts from), or cross another leader?
+const ccw = (a, b, c) => (c.y - a.y) * (b.x - a.x) - (b.y - a.y) * (c.x - a.x);
+const cross = (p, q) => {
+  const a = { x: p.x1, y: p.y1 }, b = { x: p.x2, y: p.y2 }, c = { x: q.x1, y: q.y1 }, d = { x: q.x2, y: q.y2 };
+  return ccw(a, b, c) * ccw(a, b, d) < 0 && ccw(c, d, a) * ccw(c, d, b) < 0;
+};
+const through = (s, r) => {
+  const pad = 1;
+  for (let t = 0.03; t < 0.97; t += 0.01) {
+    const x = s.x1 + (s.x2 - s.x1) * t, y = s.y1 + (s.y2 - s.y1) * t;
+    if (x > r.x + pad && x < r.x + r.w - pad && y > r.y + pad && y < r.y + r.h - pad) return true;
+  }
+  return false;
+};
+
 const overlap = (a, b) => a.x < b.x + b.w - 0.5 && b.x < a.x + a.w - 0.5 && a.y < b.y + b.h - 0.5 && b.y < a.y + a.h - 0.5;
 
 // Every label, the header and every drawn control, as boxes, read from the page.
@@ -90,14 +105,14 @@ const read = (page) =>
       if (el) controls.push({ id: sel, ...box(el) });
     }
     for (const el of canvas?.querySelectorAll("[data-testid=end-turn]") ?? []) if (live(el)) controls.push({ id: "end-turn", ...box(el) });
-    return { labels, controls, canvas: canvas ? box(canvas) : null, inert: canvas?.hasAttribute("inert") ?? false, header: box(guide.querySelector("[data-testid=whats-what-header]")), leaders: guide.querySelectorAll("svg line").length };
+    return { labels, controls, canvas: canvas ? box(canvas) : null, inert: canvas?.hasAttribute("inert") ?? false, header: box(guide.querySelector("[data-testid=whats-what-header]")), leaders: guide.querySelectorAll("svg line").length, segs: [...guide.querySelectorAll("svg line")].map((l) => ({ x1: +l.getAttribute("x1"), y1: +l.getAttribute("y1"), x2: +l.getAttribute("x2"), y2: +l.getAttribute("y2") })), svg: (() => { const r = guide.querySelector("svg")?.getBoundingClientRect(); return r ? { x: r.left, y: r.top } : { x: 0, y: 0 }; })() };
   });
 
 async function startGame(page, layoutIndex) {
   await page.goto(`${BASE}/friends/table/${TABLE}/play`, { waitUntil: "networkidle", timeout: 180_000 });
   const radios = page.getByRole("radio");
   await radios.first().waitFor({ timeout: 60_000 }).catch(async () => {
-    throw new Error(`no layout choice at ${page.url()}: ${((await page.locator("body").innerText().catch(() => "")) || "").slice(0, 300)}`);
+    throw new Error(`no layout choice (signed in as ${await page.evaluate(() => window.Clerk?.user?.id)}) at ${page.url()}: ${((await page.locator("body").innerText().catch(() => "")) || "").slice(0, 300)}`);
   });
   const count = await radios.count();
   if (layoutIndex >= count) return { count, name: null };
@@ -148,6 +163,14 @@ try {
         if (b.x < g.canvas.x - 0.5 || b.y < g.canvas.y - 0.5 || b.x + b.w > g.canvas.x + g.canvas.w + 0.5 || b.y + b.h > g.canvas.y + g.canvas.h + 0.5) clashes.push(`${boxes[a][0]} outside the canvas`);
       }
       report(`${at}: no label over another label, a control, or off the canvas`, clashes.length === 0, clashes.join(", "));
+      // Every line traces to one control: no leader runs through a label (its own included past its edge) and none crosses another.
+      const segs = g.segs.map((q) => ({ x1: q.x1 + g.svg.x, y1: q.y1 + g.svg.y, x2: q.x2 + g.svg.x, y2: q.y2 + g.svg.y }));
+      const bad = [];
+      segs.forEach((sg, a) => {
+        for (const [id, r] of [...boxes, ["header", g.header]]) if (through(sg, r)) bad.push(`leader ${a} through ${id}`);
+        for (let b = a + 1; b < segs.length; b++) if (cross(sg, segs[b])) bad.push(`leader ${a} x ${b}`);
+      });
+      report(`${at}: no leader runs through a label or crosses another leader`, bad.length === 0, bad.slice(0, 6).join(", "));
       const flag = await page.evaluate((f) => ({ set: window.localStorage.getItem(f), prefixed: Object.keys(window.localStorage).filter((k) => k.startsWith("the99.tracker.") && k.includes("Guide")) }), FLAG);
       report(`${at}: the device flag is set, outside the the99.tracker. prefix`, flag.set !== null && flag.prefixed.length === 0);
       if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/${label.replace(/[^a-z0-9]+/gi, "-")}-${name.replace(/[^a-z0-9]+/gi, "-")}.png` });
