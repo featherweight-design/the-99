@@ -39,9 +39,9 @@ const panel: UpgradePanel = {
   runs: [{
     id: "r1", status: "done", strategyKey: runKey("muddle", 3, "tokens"), strategyLabel: "Tokens", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pricesAsOf: new Date("2026-11-10T12:00:00Z"),
     pairs: [{ cutId: "a", addId: "b", cut: "A", add: "B", addCents: 100, reason: "r", cutReason: null, position: 0 }] as never,
-    buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
+    buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0, priced: 0 }, pricesDated: { behind: false, when: "Monday" }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
   }],
-  listFp: "x", cards: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  listFp: "x", cards: {}, allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, priceStore: null,
 };
 const arrival = { name: "Prismari Artistry", setCode: "pca", cards: 100, unmapped: 0, owned: 41, of: 85 };
 const upgrade = (over: Partial<DeckUpgrade> = {}): DeckUpgrade => ({

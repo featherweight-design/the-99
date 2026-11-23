@@ -36,13 +36,13 @@ const panel: UpgradePanel = {
     add2: { cmc: 1, identity: ["R"], owned: true },
   },
   figures: {},
-  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, priceStore: null,
 };
 const pair = (n: number, over: Partial<PanelRun["pairs"][number]> = {}) => ({ cutId: `cut${n}`, cut: `Cut ${n}`, addId: `add${n}`, add: `Add ${n}`, addCents: 120, reason: `Reason ${n}`, cutReason: `Cut why ${n}`, position: n, ...over });
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pricesAsOf: new Date("2026-11-10T12:00:00Z"),
   pairs: [pair(1), pair(2)], buyTotalCents: 120, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
-  toBuy: { cards: 1, cents: 120 }, owned: 1, themes: { cut1: "Artifacts" }, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
+  toBuy: { cards: 1, cents: 120, priced: 1 }, pricesDated: { behind: false, when: "Monday" }, owned: 1, themes: { cut1: "Artifacts" }, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });
 
 const quiet = (): UpgradeActionDeps => ({ pick: vi.fn(async () => ({ ok: true as const, unpicked: [] })), setBracket: vi.fn(async () => null) });
@@ -240,5 +240,39 @@ describe("ResultView in the landing demo (A5b)", () => {
     expect(await demoLineActions(run(), null).setBracket("", "r", ["add1", "add2"], ["cut1", "cut2"])).toBeNull();
     expect(await a.pick("r", "c-cut1", false)).toEqual({ ok: true, unpicked: ["c-cut1"] });
     expect(await a.pick("r", "c-cut1", true)).toEqual({ ok: true, unpicked: [] });
+  });
+});
+
+describe("ResultView's store line (store label)", () => {
+  const line = () => document.querySelector("[data-upgrade-price-line]");
+  const priced = { ...panel, priceStore: "tcgplayer" as const };
+
+  it("names the panel's store, never the preference, in the strip's words and order", () => {
+    render(<ResultView panel={priced} run={run({ toBuy: { cards: 3, cents: 575, priced: 2 } })} lineActions={quiet()} />);
+    expect(line()!.textContent).toBe("TCGplayer market prices · averages of recent sales, so a listing can differ · 2 of 3 priced · last checked Monday");
+  });
+
+  it("says a listing store plainly, and adds the behind clause past ten days", () => {
+    render(<ResultView panel={{ ...panel, priceStore: "manapool" }} run={run({ pricesDated: { behind: true, when: "2 November" } })} lineActions={quiet()} />);
+    expect(line()!.textContent).toBe("single-copy prices on Mana Pool · last checked 2 November · these are behind");
+  });
+
+  it("draws no figure and the unpriced line when a store priced none of the adds to buy", () => {
+    render(<ResultView panel={priced} run={run({ toBuy: { cards: 2, cents: 0, priced: 0 } })} lineActions={quiet()} />);
+    // `dollars(0)` draws "$0", so the fact is checked as a whole: the count alone, no figure at all.
+    expect(screen.getByText("To buy").parentElement!.textContent).toBe("To buy2");
+    expect(line()!.textContent).toBe("no prices from TCGplayer for these · last checked Monday");
+  });
+
+  it("draws the stored figure and no line with no store (switch off or read failed), and no line with nothing to buy or on the landing", () => {
+    const { unmount } = render(<ResultView panel={panel} run={run()} lineActions={quiet()} />);
+    expect(line()).toBeNull();
+    expect(within(screen.getByText("To buy").parentElement!).getByText("$1.20")).toBeInTheDocument();
+    unmount();
+    const none = render(<ResultView panel={priced} run={run({ toBuy: { cards: 0, cents: 0, priced: 0 } })} lineActions={quiet()} />);
+    expect(line()).toBeNull();
+    none.unmount();
+    render(<ResultView panel={priced} run={run()} lineActions={quiet()} demo />);
+    expect(line()).toBeNull();
   });
 });

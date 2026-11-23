@@ -1,0 +1,20 @@
+{
+  "feature": "Precon Upgrade store label (addendum-upgrade-store): the result names the reader's store under the four facts",
+  "note": "Scratch-only fixture for the audit account: STORE_PREFERENCE_ENABLED and PRECON_UPGRADE_ENABLED on for it (user overrides), user_prefs.preferred_store = tcgplayer, printing_store_prices rows for tcgplayer on Cyclonic Rift and Rhystic Study, and one done, seen run on KeenEngineering_FDC (strategy_key sheet/3/sheet) whose adds are those two cards stored at $1.00 each, so the To buy figure drawn is today's tcgplayer price, not the stored one. No row presses Start or Apply.",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 1300 },
+    { "label": "desktop", "width": 1300, "height": 1000 }
+  ],
+  "rows": [
+    {
+      "id": "store-line",
+      "label": "The result: the four facts, the store line 8px under them (TCGplayer market prices, last checked), To buy at today's price",
+      "view": "src/components/decks/precons/upgrade/result-view.tsx",
+      "steps": [
+        { "goto": "/decks/precons/KeenEngineering_FDC", "wait": "h1", "settle": 1500 },
+        { "clickRole": "button", "name": "^Upgrade this precon$", "wait": "[data-last-run]", "settle": 800 },
+        { "click": "[data-last-run] [data-run-row]", "wait": "[data-upgrade-price-line]", "settle": 2500 }
+      ]
+    }
+  ]
+}

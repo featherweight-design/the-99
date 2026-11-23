@@ -25,6 +25,7 @@ import { CardDetailTrigger, useCardDetailIfAny } from "../../../cards/card-detai
 import type { StrategyKey } from "@/lib/strategy/score";
 import { pickUpgradeLineAction, upgradeSetBracketAction } from "../../../../lib/precons/upgrade/actions";
 import { SuggestedChangesRun, type SuggestedChangesPress } from "../../suggested-changes-run";
+import { UpgradePriceLine } from "./upgrade-price-line";
 import { figuresOf, upgradeActions, upgradeAsk, upgradeLines, upgradePermits, type UpgradeActionDeps } from "./upgrade-lines";
 
 const copy = preconUpgradeCopy.results;
@@ -229,6 +230,7 @@ export function ResultView({ panel, run, fileName = "", press = null, after = nu
   // Read once per run and panel: the component holds the picks made on screen over these.
   const lines = useMemo(() => upgradeLines(panel, run), [panel, run]);
   const actions = useMemo(() => upgradeActions(fileName, run.id, lineActions, onPicked ?? noop), [fileName, run.id, lineActions, onPicked]);
+  const noPrices = !demo && panel.priceStore !== null && run.toBuy.cards > 0 && run.toBuy.priced === 0;
   return (
     // The lists' bar pins to the sheet's own foot, never lifted over the app's tab bar or the deck page's dock (fresh start R2).
     <div className="flex flex-col gap-[16px]" style={{ ["--tabbar-h" as string]: "0px", ["--deck-foot-h" as string]: "0px" }}>
@@ -239,14 +241,18 @@ export function ResultView({ panel, run, fileName = "", press = null, after = nu
         <h3 className="m-0 min-w-0 flex-1 font-display text-[16px] font-normal uppercase text-[color:var(--fg)]">{copy.title(run.pairs.length, run.strategyLabel)}</h3>
         <span className="flex-none font-mono text-[10.5px] text-[color:var(--fg-faint)]">{runDay(run.createdAt)}</span>
       </div>
-      {/* The four facts as the run found them (call 9): the picks below move the bar's tally, not these. */}
-      <div className="grid grid-cols-2 gap-[2px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[3px] md:grid-cols-4">
-        <Fact label={copy.facts.ledBy}>{leadName}</Fact>
-        <Fact label={copy.facts.bracket}>
-          <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
-        </Fact>
-        <Fact label={copy.facts.toBuy}>{run.toBuy.cards} <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(run.toBuy.cents)}</span></Fact>
-        <Fact label={copy.facts.yours}>{run.owned}</Fact>
+      {/* The four facts as the run found them (call 9): the picks below move the bar's tally, not these. The store line sits 8px under them, in the same group so the sheet's 16px gap does not part them. */}
+      <div className="flex flex-col gap-[8px]">
+        <div className="grid grid-cols-2 gap-[2px] rounded-[10px] bg-[color:var(--surface-sunken)] p-[3px] md:grid-cols-4">
+          <Fact label={copy.facts.ledBy}>{leadName}</Fact>
+          <Fact label={copy.facts.bracket}>
+            <span className="text-[color:var(--accent-text)]">{run.bracketBefore ?? "?"} → {run.bracketAfter ?? run.bracketTarget ?? "?"}</span>
+          </Fact>
+          {/* A store that priced the panel and priced none of these draws the count alone, never $0.00 (the line below says why). */}
+          <Fact label={copy.facts.toBuy}>{run.toBuy.cards}{noPrices ? null : <> <span className="font-mono text-[12px] font-normal text-[color:var(--fg-body)]">{dollars(run.toBuy.cents)}</span></>}</Fact>
+          <Fact label={copy.facts.yours}>{run.owned}</Fact>
+        </div>
+        {!demo && <UpgradePriceLine store={panel.priceStore} toBuy={run.toBuy} dated={run.pricesDated} />}
       </div>
       {keyEntries.length > 0 && <MarkKey marks={keyEntries} regionAria={cardMarkCopy.keyRegionAria} />}
       {run.refunded && <p className="m-0 text-[12.5px] leading-[1.55] text-[color:var(--fg-body)]">{copy.short(run.bracketTarget ?? run.bracketAfter ?? 0, run.pairs.length)}</p>}

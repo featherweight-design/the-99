@@ -35,6 +35,7 @@ import { readerStoreForPage } from "../../stores/preference";
 import { storePreferenceEnabled } from "../../stores/flag";
 import { cheapestNow, loadPrices } from "../../decks/price-query";
 import type { Store } from "../../stores/rows";
+import { provenanceForm, type ProvenanceForm } from "../../cards/price-fact";
 
 /**
  * Upgrade this precon's read and press (research 2026-11-10). SERVER-ONLY. The actions (`actions.ts`) re-apply the switch and
@@ -48,7 +49,8 @@ export type OfferedCommander = Pick<CommanderOption, "key" | "isFace" | "cards" 
 
 /** A stored run with what its adds cost THIS reader now: the adds they do not own, read when the page draws (the stored total counts every add). */
 export type PanelRun = StoredUpgrade & {
-  toBuy: { cards: number; cents: number; };
+  /** The adds the reader does not own: how many, what the priced ones cost, and how many of them carry a figure (`priced`, so the client counts nothing: 0 means none is priced, which a store that priced the panel then says rather than drawing $0.00). */
+  toBuy: { cards: number; cents: number; priced: number };
   owned: number;
   /** The newest deck the reader started from this run or applied it to (`decks.built_from_upgrade_id`), or null when none: the run's row names it. */
   deck: RunDeck | null;
@@ -56,6 +58,8 @@ export type PanelRun = StoredUpgrade & {
   themes: Record<string, string>;
   /** The date of the figures its adds draw: today's price read when the panel repriced them (ruling A), else the run's own day. */
   pricesAsOf: Date;
+  /** `pricesAsOf` as the price line words it (a weekday, or a date and `behind` past ten days), built here once against the render's own clock so the browser never compares another (`provenanceForm`). */
+  pricesDated: ProvenanceForm;
 };
 
 /** Every run's adds priced now at the reader's store, by oracle id (null when that store has none), and the read's newest price date. */
@@ -80,6 +84,8 @@ export type UpgradePanel = {
   /** The result lists' group heads per commander option, by its key (fresh start R2): the box's 99 under that lead. */
   figures: Record<string, RunFigures>;
   allowance: Allowance;
+  /** The store whose figures this panel's prices are, set only when the reprice returned them (switch on, adds to price, read held): the price line names it and reads this, never the reader's preference, so figures stored at another store are never labelled with this one. Null draws the stored figures with no line. */
+  priceStore: Store | null;
 };
 
 export type UpgradePress =
@@ -392,7 +398,10 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
       const t = strategies.find((st) => st.backingIds.includes(p.cutId));
       if (t) themes[p.cutId] = t.label;
     }
-    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, deck: runDecks.get(r.id) ?? null, pricesAsOf };
+    return {
+      ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0), priced: buy.filter((p) => p.addCents > 0).length },
+      owned: r.pairs.length - buy.length, themes, deck: runDecks.get(r.id) ?? null, pricesAsOf, pricesDated: provenanceForm(pricesAsOf, now),
+    };
   });
   const cardsOut: Record<string, PanelCard> = {};
   for (const id of named) {
@@ -416,7 +425,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
     const mix = mixes.get(mixKey(pairOf(c.option.commanderIds)));
     if (mix) figures[c.key] = upgradeFigures(base.lines, c.option.commanderIds, byCard, mix);
   }
-  return { boxBracket: box?.plays ?? null, boxPermits: box?.permits ?? [], commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, figures, allowance };
+  return { boxBracket: box?.plays ?? null, boxPermits: box?.permits ?? [], commanders: offeredNow.map(({ option: _option, ...c }) => c), runs, listFp: boxFingerprint(base.lines), cards: cardsOut, figures, allowance, priceStore: repriced ? store : null };
 }
 
 /** The panel for one precon: free, never a call. Null when the precon is not found or has no commander. */
