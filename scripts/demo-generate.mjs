@@ -399,8 +399,15 @@ async function openAnalysis(page, role) {
   await tab.waitFor({ timeout: 60_000 });
   await tab.click();
 }
+// The Tuning hub's tools live on their own tab since tool discovery B2.
+async function openTuning(page, role) {
+  await page.goto(`${BASE}/decks/${ABOUT_DECK_IDS[role]}`, { waitUntil: "domcontentloaded" });
+  const tab = onPageRole(page, "tab", /^Tuning/).first();
+  await tab.waitFor({ timeout: 60_000 });
+  await tab.click();
+}
 async function openTile(page, role, heading) {
-  await openAnalysis(page, role);
+  await openTuning(page, role);
   await page.locator(`${PAGE} button[aria-label^="${heading}"]`).first().click({ timeout: 60_000 });
   await onPageRole(page, "heading", heading).first().waitFor({ timeout: 60_000 });
 }
@@ -620,7 +627,7 @@ async function topOff(page) {
 
 async function manaBalance(page) {
   // Zimone (the under deck): Forest-heavy, so Mana balance has a fix to show (Forests for Islands).
-  await openAnalysis(page, "under");
+  await openTuning(page, "under");
   await page.locator(`${PAGE} button[data-tool-tile='mana']`).first().click({ timeout: 60_000 });
   await page.locator("section[aria-labelledby='mana-heading'][data-mana-state]").first().waitFor({ state: "visible", timeout: 60_000 });
   let row = null;

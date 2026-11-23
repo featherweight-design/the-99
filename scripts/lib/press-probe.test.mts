@@ -92,20 +92,16 @@ describe("NAV_PROBE", () => {
 });
 
 describe("TAB_PROBE", () => {
-  it("times from the press to the first frame where the panel has settled on the hub's landing", async () => {
-    document.body.innerHTML = '<div id="panel-analysis" aria-busy="true"><p>Loading the tools</p></div>';
+  it("times from the press to the first frame where the panel holds the hub's landing", async () => {
+    document.body.innerHTML = '<div id="panel-tuning"><p>Loading the tools</p></div>';
     TAB_PROBE();
     press();
     await frame();
     await frame();
-    // Busy, and then settled with no hub: neither is done.
-    expect(stamps("__tab").drew).toBeNull();
-    document.getElementById("panel-analysis")!.removeAttribute("aria-busy");
-    await frame();
-    await frame();
+    // Text under the panel, but no hub: not done.
     expect(stamps("__tab").drew).toBeNull();
     await wait(20);
-    document.getElementById("panel-analysis")!.innerHTML = "<section data-tuning-hub></section>";
+    document.getElementById("panel-tuning")!.innerHTML = "<section data-tuning-hub></section>";
     await frame();
     await frame();
     const s = stamps("__tab");

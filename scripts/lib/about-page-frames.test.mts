@@ -16,7 +16,7 @@ describe("the About pages' frames", () => {
   });
 
   it("reaches every frame by a route or a fixture deck's view", () => {
-    const views = ["your-deck", "shopping", "stats", "notes", "analysis", "games", "versions"];
+    const views = ["your-deck", "shopping", "stats", "notes", "analysis", "tuning", "games", "versions"];
     for (const [capture, f] of Object.entries(PAGE_FRAMES)) {
       expect(Boolean(f.path) !== Boolean(f.deck), capture).toBe(true);
       if (f.deck) {

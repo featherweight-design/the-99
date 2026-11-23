@@ -111,9 +111,9 @@ for (const viewport of VIEWPORTS) {
   const page = await context.newPage();
   await signIn(page);
   await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded" });
-  // By id, not by accessible name: the tab's name is `considerAria`, which
-  // carries a count and is not the word "Consider".
-  await page.click("#tab-consider");
+  // Consider is a Tuning tool (tool discovery B2): the Tuning tab, then the Consider tile.
+  await page.click("#tab-tuning");
+  await page.click('button[data-tool-tile="consider"]');
   await page.waitForSelector("#panel-consider section[aria-labelledby^='shelf-']", {
     timeout: 30_000,
   });

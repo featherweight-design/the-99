@@ -124,9 +124,11 @@ async function openDeckCardView(page, asked) {
  */
 async function openConsider(page, asked) {
   await openDeck(page);
-  const tab = onPage(page, "#tab-consider").first();
+  // Consider is a Tuning tool (tool discovery B2): the Tuning tab, then the Consider tile.
+  const tab = onPage(page, "#tab-tuning").first();
   await tab.waitFor({ timeout: 60_000 });
   await tab.click();
+  await onPage(page, 'button[data-tool-tile="consider"]').first().click();
   await onPage(page, SURFACES.consider.tile).first().waitFor({ timeout: 60_000 });
   await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
   asked.clear();

@@ -5,8 +5,8 @@
 // A frame is a route, or one of the fixture's decks (`pnpm fixtures:about`, by role) opened on a view:
 //   - `deck`: `played` (whole, committed v1, a pending change after it, a stored analysis, one locked card) or `fresh`
 //     (whole, never analyzed, no description: the Analyze press and the Describe field draw only on such a deck);
-//   - `view`: the capture's `DECK_VIEW_STEPS` key (`your-deck`, `shopping`, `stats`, `notes`, `analysis`, `games`,
-//     `versions`);
+//   - `view`: the capture's `DECK_VIEW_STEPS` key (`your-deck`, `shopping`, `stats`, `notes`, `analysis`, `tuning`,
+//     `games`, `versions`);
 //   - `scroll`: `tabs` puts the deck's tab row under the header (the view leads, as the 390 set is shot); a selector
 //     puts that element's top there instead (a deck's to-do card, Home's figures, the tuning hub); none leaves the page
 //     at its top.
@@ -33,7 +33,7 @@ export const PAGE_FRAMES = {
   "p-deck-analysis": { width: "phone", deck: "fresh", view: "analysis", scroll: "#deck-description-field" },
   // The findings lead: the bracket card sits above them on an analyzed deck.
   "p-deck-analysis-read": { width: "phone", deck: "played", view: "analysis", scroll: "[data-testid='findings-block']" },
-  "p-analysis-tuning": { width: "phone", deck: "played", view: "analysis", scroll: "[data-tuning-hub]" },
+  "p-analysis-tuning": { width: "phone", deck: "played", view: "tuning", scroll: "[data-tuning-hub]" },
   "p-deck-versions": { width: "phone", deck: "played", view: "versions", scroll: "tabs" },
   "p-deck-games": { width: "phone", deck: "played", view: "games", scroll: "tabs" },
   "p-deck-stats": { width: "phone", deck: "played", view: "stats", scroll: "tabs" },
@@ -56,7 +56,7 @@ export const PAGE_FRAMES = {
   "d-deck-top": { width: "desktop", deck: "played", view: "your-deck" },
   "d-deck-list": { width: "desktop", deck: "played", view: "your-deck", scroll: "tabs", reveal: "[data-decklist-row]:has([data-testid^='card-fact-'])" },
   "d-analysis": { width: "desktop", deck: "played", view: "analysis", scroll: "tabs" },
-  "d-analysis-tuning": { width: "desktop", deck: "played", view: "analysis", scroll: "[data-tuning-hub]" },
+  "d-analysis-tuning": { width: "desktop", deck: "played", view: "tuning", scroll: "[data-tuning-hub]" },
   "d-analysis-describe": { width: "desktop", deck: "fresh", view: "analysis", scroll: "tabs" },
   "d-versions-precon": { width: "desktop", deck: "played", view: "versions", scroll: "tabs" },
   "d-games": { width: "desktop", deck: "played", view: "games", scroll: "tabs" },

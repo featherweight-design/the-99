@@ -86,18 +86,19 @@ export const ABOUT_REGIONS = {
   ),
 
   // ---- decks: Analysis. The phone's first shot is a deck with NO analysis (Analyze and the Describe field), its second
-  // the Played deck's stored analysis (the findings), its third the Played deck's tuning hub. At 1300 the analyzed
-  // Played deck holds the head, the findings and two tiles; the un-analyzed deck the Describe field and Mana Balance. --
+  // the Played deck's stored analysis (the findings), its third the Played deck's tuning hub, on the Tuning tab since tool
+  // discovery B2. At 1300 the analyzed Played deck holds the head and the findings, the un-analyzed deck the Describe
+  // field and Mana Balance, and the Tuning tab the hub's other tiles. --
   "decks/analysis/bracket": {
     phone: { capture: "p-deck-analysis", locator: "#panel-analysis button:has-text('Analyze')" },
     desktop: { capture: "d-analysis", locator: "#panel-analysis [data-testid='verdict-cell']" },
   },
   "decks/analysis/findings": both("p-deck-analysis-read", "d-analysis", "[data-testid='findings-block']"),
-  // At 1300 the analyzed deck's head, findings and tuning hub do not share a 900px frame (the overview, How it plays,
-  // Dependencies and the strategy ring sit between them), so the hub has its own shot, as at 390.
+  // The hub is on its own tab, so it has its own shot at both widths.
   "decks/analysis/suggested": both("p-analysis-tuning", "d-analysis-tuning", "[data-tool-tile='suggested'] >> nth=0"),
   "decks/analysis/cuts": both("p-analysis-tuning", "d-analysis-tuning", "[data-tool-tile='cuts'] >> nth=0"),
   "decks/analysis/describe": both("p-deck-analysis", "d-analysis-describe", "#deck-description-field"),
+  // Desktop Mana Balance stays on the un-analyzed deck's shot until the About pages are re-captured (tool discovery B3).
   "decks/analysis/mana": both("p-analysis-tuning", "d-analysis-describe", "[data-tool-tile='mana'] >> nth=0"),
 
   // ---- decks: Versions, Games, Stats, Notes ----------------------------------------------------------------------

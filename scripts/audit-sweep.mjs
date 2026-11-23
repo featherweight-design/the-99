@@ -48,8 +48,12 @@ const ROUTES = [
     name: "builder-consider",
     path: "deck",
     act: async (page) => {
-      const tab = page.getByRole("tab", { name: /cards to consider/i });
-      if ((await tab.count()) > 0) await tab.first().click();
+      // Consider is a Tuning tool since tool discovery B2: the Tuning tab, then its tile.
+      const tab = page.getByRole("tab", { name: /^Tuning/ });
+      if ((await tab.count()) > 0) {
+        await tab.first().click();
+        await page.locator("main button[data-tool-tile='consider']").first().click();
+      }
       await page.waitForTimeout(500);
     },
   },

@@ -1,11 +1,11 @@
-// Suggested changes on the Analysis tab, measured in a real browser at 1300x900 and 390x844.
+// Suggested changes on the Tuning tab, measured in a real browser at 1300x900 and 390x844.
 //
 // Every ruling here is a fact about laid-out geometry or about which of two responsive copies is
 // DRAWN, and jsdom lays nothing out: a class that did not compile leaves identical markup.
 //
 // WHAT IT PROVES, per width:
-//  - The panel mounts on the Analysis tab, LAST, below the mix (placement addendum v2): its top
-//    sits under the mix strip's bottom. Reached by PRESSING the tab, since the tab has no address.
+//  - The panel mounts on the Tuning tab, reached by PRESSING the tab and then its tile. (The old
+//    "below the mix" check retired with tool discovery B2: the mix stays on Your deck.)
 //  - Never run: the heading at 19px desktop / 17px phone in the display face. The manifest is a
 //    DISCLOSURE, never a control (manifest-affordance addendum, Hugh 2026-09-28): every read row is
 //    a ruled line at least 32px desktop / 36px phone, with no fill and no top or side border, a
@@ -35,7 +35,7 @@ import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
-import { onPageRole, PAGE } from "./lib/surface.mjs";
+import { onPage, onPageRole, PAGE } from "./lib/surface.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv([
   "E2E_AUDIT_USER_EMAIL",
@@ -176,11 +176,16 @@ async function removeFixture(handle) {
   if (handle.callId) await sql`delete from model_calls where id = ${handle.callId}`.catch((e) => console.error("cleanup call:", e));
 }
 
-async function openAnalysis(page, deckId) {
+async function openTuning(page, deckId) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-  const tab = onPageRole(page, "tab", /analysis/i).first();
+  // Suggested changes lives on the Tuning tab (tool discovery B2): press the tab, then its tile when the hub draws one.
+  const tab = onPageRole(page, "tab", /^Tuning/).first();
   await tab.waitFor({ timeout: 30_000 });
   await tab.click();
+  const tile = onPage(page, "button[data-tool-tile='suggested']");
+  const heading = onPageRole(page, "heading", "Suggested changes").first();
+  await Promise.race([tile.waitFor({ timeout: 30_000 }), heading.waitFor({ timeout: 30_000 })]);
+  if (await tile.count()) await tile.click();
   await onPageRole(page, "heading", "Suggested changes").first().waitFor({ timeout: 30_000 });
   await page.waitForTimeout(400);
 }
@@ -196,7 +201,6 @@ const measure = (page) =>
     };
     const section = root.querySelector('section[aria-labelledby="tuning-heading"]');
     const heading = root.querySelector("#tuning-heading");
-    const strip = [...root.querySelectorAll('section[aria-label="Recommended mix"]')].find(drawn);
     const rows = [...(section?.querySelectorAll('[data-testid="manifest-row"][data-kind="read"]') ?? [])].map((el) => {
       const cs = getComputedStyle(el);
       const clear = (c) => c === "rgba(0, 0, 0, 0)" || c === "transparent";
@@ -214,7 +218,6 @@ const measure = (page) =>
     const thumbs = cards.flatMap((c) => [...c.querySelectorAll('button[aria-hidden="true"]')]).filter(drawn).map(box);
     return {
       section: section ? box(section) : null,
-      strip: strip ? box(strip) : null,
       heading: heading ? { size: getComputedStyle(heading).fontSize, family: getComputedStyle(heading).fontFamily } : null,
       rows,
       logGame: logGame ? box(logGame) : null,
@@ -229,7 +232,7 @@ const measure = (page) =>
 
 async function walk(page, deck, width, phase) {
   await page.setViewportSize(width.viewport);
-  await openAnalysis(page, deck.id);
+  await openTuning(page, deck.id);
   const m = await measure(page);
   const tag = `${width.label} ${phase}`;
   // PROBE_SHOTS=<dir> saves the panel at each width and phase, for the design review.
@@ -240,7 +243,6 @@ async function walk(page, deck, width, phase) {
       .catch((e) => console.error("shot:", e.message));
   }
   if (!report(`${tag}: the panel mounts`, m.section !== null, m.section ? `at ${m.section.top}px` : "no section")) return;
-  report(`${tag}: below the mix`, m.strip !== null && m.section.top >= m.strip.bottom, `mix ends ${m.strip?.bottom}px, panel starts ${m.section.top}px`);
   const size = width.desktop ? "19px" : "17px";
   report(`${tag}: heading ${size}`, m.heading?.size === size, `read ${m.heading?.size}`);
   report(`${tag}: nothing past the viewport`, m.overflow <= 0, `${m.overflow}px over`);

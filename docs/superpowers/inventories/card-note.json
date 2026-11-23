@@ -18,7 +18,11 @@
           "settle": 3500
         },
         {
-          "click": "#tab-consider",
+          "click": "#tab-tuning",
+          "settle": 2000
+        },
+        {
+          "click": "button[data-tool-tile=\"consider\"]",
           "settle": 2000
         },
         {

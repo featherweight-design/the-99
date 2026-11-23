@@ -220,6 +220,7 @@ const DECK_VIEW_STEPS = {
   stats: async (page) => pressTab(page, "Stats"),
   notes: async (page) => pressTab(page, "Notes"),
   analysis: async (page) => pressTab(page, "Analysis"),
+  tuning: async (page) => pressTab(page, "Tuning"),
   games: async (page) => pressTab(page, "Games"),
   versions: async (page) => pressTab(page, "Versions"),
 };

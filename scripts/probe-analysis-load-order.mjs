@@ -2,8 +2,8 @@
 // on a deck with versions, a stored analysis and a written overview (Hugh's staging walk,
 // 2026-09-25). Three rulings, each a fact about what paints WHEN, which jsdom cannot see:
 //
-//   a/c. Nothing pops in. The tab holds its loader until the verdict, the overview, Suggested
-//        changes and the credit lines are ALL ready, and then paints them together: no part of the
+//   a/c. Nothing pops in. The tab holds its loader until the verdict, the overview and the
+//        credit lines are ALL ready (Suggested changes moved to the Tuning tab in tool discovery B2), and then paints them together: no part of the
 //        tab appears after another part has painted, least of all above it. Read by a
 //        sampler installed before the tab is pressed, which stamps each part's first visible frame
 //        and where it sat.
@@ -13,8 +13,6 @@
 //        and the empty state must paint while it is held: it does not wait for the note. A frame
 //        comparison cannot prove that, since a fast response lands in the empty state's own frame on
 //        a correct build. On a second, unheld load the note must arrive within 2.5s of the empty state.
-//        On the held load the Tuning hub under the empty state must not move, from its first frame
-//        through the note's landing, for a note of up to two lines: two of its lines are reserved. A longer note may move it by its extra lines, and is named.
 //   d.   The tab row stays one line with Analysis selected, on a deck with versions.
 //
 // It WRITES, on the deck it walks, only what the deck lacked: a reading (Analyze) and an overview
@@ -34,7 +32,6 @@ import { requireEnv } from "./lib/env.mjs";
 import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
-import { judgeHubMove, NOTE_SHAPE } from "./lib/note-variant.mjs";
 
 const { E2E_AUDIT_USER_EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 // Its own variables, read AFTER `env.mjs`: that loads `.env` with override, so a `DATABASE_URL`
@@ -100,26 +97,15 @@ const OBSERVE = () => {
     overview: "[data-testid='synopsis-overview']",
     empty: "[data-testid='analysis-empty']",
     pressNote: "[data-testid='press-note']",
-    // Suggested changes: the Tuning hub when two or more of its tools are on (the hub stands where the
-    // tool's own section stood, and the opening holds on it), the tool's section otherwise.
-    tuning: "section[data-tuning-hub], section[aria-labelledby='tuning-heading']",
   };
   const seen = {};
   window.__parts = seen;
-  // Every top the Tuning hub takes, from its first visible frame (a move of more than half a pixel).
-  const hubTops = [];
-  window.__hubTops = hubTops;
   const t0 = performance.now();
   let frame = 0;
   const sample = (ts) => {
     frame += 1;
     const panel = document.querySelector("#panel-analysis");
     if (panel) {
-      const hub = panel.querySelector("section[data-tuning-hub]");
-      if (hub && hub.getClientRects().length > 0) {
-        const top = Math.round((hub.getBoundingClientRect().top + window.scrollY) * 10) / 10;
-        if (hubTops.length === 0 || Math.abs(hubTops.at(-1).top - top) > 0.5) hubTops.push({ at: Math.round(ts - t0), frame, top });
-      }
       for (const [name, sel] of Object.entries(parts)) {
         if (seen[name]) continue;
         const el = [...panel.querySelectorAll(sel)].find((e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden");
@@ -205,7 +191,7 @@ async function run() {
       const first = Math.min(...content.map(([, p]) => p.at));
       const late = content.filter(([, p]) => p.at - first > 50);
       const above = late.filter(([, p]) => content.some(([, q]) => q.at < p.at - 50 && q.top >= p.top));
-      report(at("the tab's parts paint together, once the loader lets go"), content.length >= 3 && late.length === 0,
+      report(at("the tab's parts paint together, once the loader lets go"), Boolean(parts.verdict && parts.overview) && late.length === 0,
         JSON.stringify(parts));
       report(at("nothing paints above a part already on screen"), above.length === 0,
         above.length ? above.map(([n]) => n).join(", ") : "none");
@@ -287,21 +273,6 @@ async function run() {
       const noteAfter = await held.waitForFunction(() => Boolean(window.__parts.pressNote), null, { timeout: 30_000 })
         .then(() => true, () => false);
       report(at("and the credit note arrives once the read is released"), noteAfter, noteAfter ? "drawn" : "never drawn");
-      // THE HUB DOES NOT MOVE WHEN A NOTE OF UP TO TWO LINES LANDS (Hugh, 2026-10-15): the empty state holds
-      // two of the note's lines from its first frame. Before, the note pushed the hub down once, 56px at 1300
-      // and 35px at 390. A longer note (used up, owner share) may move it by its extra lines, and is
-      // named; an unrecognised note fails (`scripts/lib/note-variant.mjs`). The held read makes the landing
-      // late, well after the hub's first frame, so a move cannot hide in one frame.
-      await held.waitForTimeout(1_000);
-      const hubTops = await held.evaluate(() => window.__hubTops);
-      // The Tuning hub is always on, and Mana Balance lets it draw on a deck with no reading.
-      const shape = await held.evaluate(NOTE_SHAPE, PAGE);
-      const judged = judgeHubMove(hubTops.map((t) => t.top), shape);
-      report(at(judged.strict
-        ? `the Tuning hub stays put from its first frame through the ${judged.variant} note's landing`
-        : `the Tuning hub moves by at most the ${judged.variant} note's lines past the reserved two`),
-        noteAfter && judged.ok,
-        JSON.stringify({ variant: judged.variant, moved: judged.moved, allowed: judged.allowed, lines: shape?.lines ?? null, tops: hubTops, noteAt: (await held.evaluate(() => window.__parts.pressNote ?? null)) }));
       await held.unrouteAll({ behavior: "ignoreErrors" });
       await held.close();
 

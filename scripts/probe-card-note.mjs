@@ -341,11 +341,13 @@ async function run() {
       //
       // Reached by its tab rather than by a URL: the panel is component state, and a URL
       // sweep cannot see a surface reached by a press.
-      const considerTab = onPage(page, "#tab-consider").first();
+      // Consider is a Tuning tool (tool discovery B2): the Tuning tab, then the Consider tile.
+      const considerTab = onPage(page, "#tab-tuning").first();
       if ((await considerTab.count()) === 0) {
-        report(`${width}px · the Consider tab`, false, "not on the page — NOT a pass");
+        report(`${width}px · the Tuning tab`, false, "not on the page — NOT a pass");
       } else {
         await considerTab.click();
+        await onPage(page, 'button[data-tool-tile="consider"]').first().click();
         await page.waitForTimeout(1_500);
         const notes = await page.evaluate(READ_NOTES, '[data-testid="suggestion-tile"]');
         checkNotes(`${width}px · Consider tile`, notes, { bodyPx: 11.5, density: "tile" });

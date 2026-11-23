@@ -91,14 +91,18 @@ async function signIn(page: Page) {
 
 const panel = (page: Page) => page.locator('main section[aria-labelledby="cuts-heading"]');
 
-async function openAnalysis(page: Page, deckId: string) {
+async function openTuning(page: Page, deckId: string) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-  const tab = page.locator("main").getByRole("tab", { name: /analysis/i }).first();
+  // Proposed cuts lives on the Tuning tab (tool discovery B2): press the tab, then its tile when the hub draws one.
+  const tab = page.locator("main").getByRole("tab", { name: /^tuning/i }).first();
   await tab.waitFor({ timeout: 30_000 }).catch(async (error) => {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/cuts-failed-tab.png` });
     throw error;
   });
   await tab.click();
+  const tile = page.locator("main button[data-tool-tile='cuts']");
+  await Promise.race([tile.waitFor({ timeout: 30_000 }), panel(page).waitFor({ timeout: 30_000 })]).catch(() => {});
+  if (await tile.count()) await tile.click();
   // No reading is needed: Proposed cuts is for a deck OVER its size, which a reading refuses.
   await panel(page).waitFor({ timeout: 60_000 }).catch(async (error) => {
     if (SHOTS) await page.screenshot({ path: `${SHOTS}/cuts-failed-open.png`, fullPage: true });
@@ -139,7 +143,7 @@ try {
     // tsx's keepNames wraps helpers in `__name`, which does not exist in the page.
     await page.addInitScript("window.__name = (f) => f;");
     await signIn(page);
-    await openAnalysis(page, deckId);
+    await openTuning(page, deckId);
     const shot = (name: string) => SHOTS ? panel(page).screenshot({ path: `${SHOTS}/cuts-${name}-${w.label}.png` }) : Promise.resolve();
 
     // C1: the count.
@@ -162,7 +166,7 @@ try {
       { askedCount: inputs.facts.over, survivedCount: 3, keptCount: 3, over: inputs.facts.over, drops: [] });
     await q(`update model_calls set status = 'refunded' where id = $1`, [run.callId]);
     await page.reload({ waitUntil: "domcontentloaded" });
-    await openAnalysis(page, deckId);
+    await openTuning(page, deckId);
     g = await geometry(page);
     report(`${w.label} C3 one line per cut with the Suggestion tag`, g.articles === 3 && g.tags === 3, { articles: g.articles, tags: g.tags });
     report(`${w.label} C3 Cut and Keep${w.desktop ? "" : " 44 tall"}`, w.desktop ? g.cutH !== null && g.keepH !== null : g.cutH === 44 && g.keepH === 44, { cut: g.cutH, keep: g.keepH });

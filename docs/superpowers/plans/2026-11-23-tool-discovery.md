@@ -223,14 +223,14 @@ Each PR adds `docs/superpowers/inventories/tool-discovery-<pr>.json` and runs `n
 
 | Route / surface | 390 | 1300 | iPad 820 | PR |
 |---|---|---|---|---|
-| `/collection` grid, All (call-out with Show them) | ☐ | ☐ | ☐ | A |
-| `/collection?avail=free` grid (buttons under tiles) | ☐ | ☐ | ☐ | A |
-| `/collection?avail=free` rows (phone strip, desktop button) | ☐ | ☐ | ☐ | A |
-| Card window opened on Find a deck, back to details | ☐ | ☐ | | A |
-| `/decks/[id]` tab row (five tabs, Tuning third) | ☐ | ☐ | ☐ | B2 |
-| `/decks/[id]?tab=tuning`, hub tiles with Consider first | ☐ | ☐ | ☐ | B2 |
-| Tuning with Consider open (phone toolbar, desktop underline row) | ☐ | ☐ | | B2 |
-| `/decks/[id]?tab=consider` (old link lands on Tuning with Consider open) | ☐ | ☐ | | B2 |
+| `/collection` grid, All (call-out with Show them) | ✅ | ✅ | ✅ | A |
+| `/collection?avail=free` grid (buttons under tiles) | ✅ | ✅ | ✅ | A |
+| `/collection?avail=free` rows (phone strip, desktop button) | ✅ | ✅ | ✅ | A |
+| Card window opened on Find a deck, back to details | ✅ | ✅ | | A |
+| `/decks/[id]` tab row (five tabs, Tuning third) | ✅ | ✅ | ✅ | B2 |
+| `/decks/[id]?tab=tuning`, hub tiles with Consider first | ✅ | ✅ | ✅ | B2 |
+| Tuning with Consider open (phone toolbar, desktop underline row) | ✅ | ✅ | | B2 |
+| `/decks/[id]?tab=consider` (old link lands on Tuning with Consider open) | ✅ | ✅ | | B2 |
 | `/about` deck pages, Tuning labels | ☐ | ☐ | | B3 |
 | Welcome sheet, all three shapes (Home strip, /credits cell) | ☐ | ☐ | | C |
 | Card search: nothing typed, a question, nothing matches (rail dropdown, phone sheet) | ☐ | ☐ | | D |

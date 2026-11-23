@@ -439,9 +439,11 @@ async function findDeck(page) {
 }
 
 async function openConsider(page) {
-  const tab = onPage(page, "#tab-consider").first();
+  // Consider is a Tuning tool (tool discovery B2): the Tuning tab, then the Consider tile.
+  const tab = onPage(page, "#tab-tuning").first();
   await tab.waitFor({ state: "attached", timeout: 15_000 });
   await tab.click();
+  await onPage(page, 'button[data-tool-tile="consider"]').first().click();
   await page.waitForTimeout(1_200);
   await onPage(page, '[data-testid="suggestion-tile"]').first().waitFor({ state: "attached", timeout: 15_000 });
 }

@@ -74,8 +74,13 @@ try {
     const opener = onPageRole(page, "button", /Describe your deck →/);
     // The hub draws a tile per tool when two or more are on; the description lives under Suggested changes.
     const tile = onPage(page, "button[data-tool-tile='suggested']");
-    await Promise.race([tile.waitFor({ timeout: 60_000 }), field.first().waitFor({ timeout: 60_000 }), opener.first().waitFor({ timeout: 60_000 })]);
-    if (await tile.count()) await tile.click();
+    // A deck with no reading draws the field on Analysis; any other offers it under Suggested changes, on the Tuning tab
+    // (tool discovery B2).
+    if (!(await field.first().waitFor({ timeout: 15_000 }).then(() => true, () => false))) {
+      await onPageRole(page, "tab", /^Tuning/).first().click();
+      await Promise.race([tile.waitFor({ timeout: 60_000 }), field.first().waitFor({ timeout: 60_000 }), opener.first().waitFor({ timeout: 60_000 })]);
+      if (await tile.count()) await tile.click();
+    }
     await Promise.race([field.first().waitFor({ timeout: 60_000 }), opener.first().waitFor({ timeout: 60_000 })]).catch(async (e) => {
       await page.screenshot({ path: process.env.PROBE_SHOT ?? "/tmp/description-tag-box-fail.png", fullPage: true });
       throw e;

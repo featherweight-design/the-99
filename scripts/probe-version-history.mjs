@@ -557,8 +557,8 @@ try {
       rail.tabs.map((t) => `${t.label}${t.selected ? "*" : ""}`).join(" · ") || "no tablist",
     );
     check(
-      `${viewport.label} · all four tabs are in the row`,
-      ["tab-deck", "tab-consider", "tab-games", "tab-versions"].every((id) =>
+      `${viewport.label} · every tab is in the row`,
+      ["tab-deck", "tab-analysis", "tab-tuning", "tab-games", "tab-versions"].every((id) =>
         rail.tabs.some((tab) => tab.id === id),
       ),
       rail.tabs.map((t) => t.id).join(" · ") || "no tablist",
