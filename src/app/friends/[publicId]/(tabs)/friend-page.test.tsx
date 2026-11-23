@@ -19,6 +19,7 @@ const m = vi.hoisted(() => ({
   openCard: vi.fn(),
   catalogCardName: vi.fn(),
   loadPrices: vi.fn(),
+  readerStoreForPage: vi.fn(async (): Promise<string> => "manapool"),
 }));
 vi.mock("next/navigation", () => ({
   usePathname: () => m.pathname,
@@ -35,6 +36,8 @@ vi.mock("../../../../lib/social/friend-page-data", async (orig) => ({
   ...(await orig<typeof import("../../../../lib/social/friend-page-data")>()), catalogCardName: m.catalogCardName,
 }));
 vi.mock("../../../../lib/decks/price-query", () => ({ loadPrices: m.loadPrices }));
+vi.mock("../../../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => ({})) }));
+vi.mock("../../../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
 vi.mock("../../../../lib/social/decks", () => ({ loadFriendDecks: m.loadFriendDecks }));
 vi.mock("../../../../components/shell/pending-reporter", () => ({ PendingReporter: () => null }));
 vi.mock("../../actions", () => ({ unfriendAction: m.unfriendAction }));
@@ -324,5 +327,12 @@ describe("FriendHead and the wishlist tab", () => {
     const page = await FriendSparesPage({ params: params(), searchParams: Promise.resolve({ spare: SPARE.oracleId.toUpperCase() }) });
     expect(m.catalogCardName).not.toHaveBeenCalled();
     expect((page as { props: { asks: { spare: string } } }).props.asks.spare).toBe(SPARE.oracleId);
+  });
+
+  it("prices the spare's buy tag at the reader's store", async () => {
+    m.loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null });
+    m.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    await FriendSparesPage({ params: params(), searchParams: Promise.resolve({}) });
+    expect(m.loadPrices.mock.calls.at(-1)?.[3]).toBe("tcgplayer");
   });
 });

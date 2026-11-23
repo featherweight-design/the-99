@@ -19,6 +19,7 @@ import type { RoleName, RoleCard } from "../../../lib/recs/score";
 import { withChainArt } from "../../../lib/cards/chain-art";
 import { loadOpeningArt } from "../../../lib/cards/opening-printing";
 import { requestFlags } from "../../../lib/flags/request";
+import { readerStoreForPage } from "../../../lib/stores/preference";
 
 export default async function CommanderDetailPage({
   params,
@@ -37,6 +38,9 @@ export default async function CommanderDetailPage({
   // The reader's resolved switches, once for the whole render: the rank, the free ranking and the
   // score all count roles by its `LABEL_ROLE_COUNTS_ENABLED`, so the page agrees with the list.
   const env = await requestFlags(userId);
+  // The reader's store (store choice) prices the synergy cards' buy tags and picks the printing an unowned one opens on.
+  // Started here, read beside the scoring; it never rejects (Mana Pool when unreadable).
+  const storeRead = readerStoreForPage(userId, env);
 
   // Only the requested commander is scored — the page used to rank the whole
   // candidate set to render one.
@@ -165,18 +169,19 @@ export default async function CommanderDetailPage({
   // Role Coverage is built from the owned pool), beside the other two, carrying the art and the name
   // printed on it together. The same read also carries the owned synergy cards' art, which `withChainArt` overlays below.
   // Fail-soft through `resolveOwnedPrintings`: a failed read keeps what was there.
+  const store = await storeRead;
   const [availability, { prices, newestAsOf }, ownedArt, openingArt] = await Promise.all([
     loadAvailability(userId, {
       oracleIds: [...new Set([...coveredOracleIds, ...synergyRead.map((c) => c.oracleId)])],
     }).catch(() => new Map<string, Availability>()),
-    loadPrices(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId)).catch(() => ({
+    loadPrices(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId), [], [], store).catch(() => ({
       prices: new Map(),
       newestAsOf: null,
     })),
     // ONE owned-printing read for the role cards and the owned synergy cards: the same heavy join, disjoint ids.
     resolveOwnedPrintings(userId, [...new Set([...coveredOracleIds, ...synergyRead.filter((c) => c.owned).map((c) => c.oracleId)])]),
     // The cards they do not own open on the printing `loadOpeningArt` picks, the one card details opens.
-    loadOpeningArt(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId)),
+    loadOpeningArt(synergyRead.filter((c) => !c.owned).map((c) => c.oracleId), store),
   ]);
   // The printing the player owns for the cards they own, which is the one card details opens, else the opening one.
   const synergyCards = withChainArt(

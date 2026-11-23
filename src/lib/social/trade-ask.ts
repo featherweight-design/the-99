@@ -3,6 +3,7 @@
 // requests on, since an in-place sheet is the Ask's; off, the presses keep their links and nothing is read.
 import { loadPrices } from "../decks/price-query";
 import type { PriceFact } from "../decks/price";
+import type { Store } from "../stores/rows";
 
 /** A trade-match card the page can open in place: what the sheet's head draws. */
 export type TradeAskCard = { oracleId: string; name: string; imageUri: string | null };
@@ -21,13 +22,14 @@ export function distinctCards(cards: readonly TradeAskCard[]): TradeAskCard[] {
 
 /**
  * The payload, or null when there is no card to open. A price read that fails draws the bare tag rather than failing
- * the page: the price is the sheet's extra, and the Ask works without it.
+ * the page: the price is the sheet's extra, and the Ask works without it. Priced at the reader's store, as the sheet's
+ * buy tag links there.
  */
-export async function loadTradeAsk(cards: readonly TradeAskCard[]): Promise<TradeAskPayload | null> {
+export async function loadTradeAsk(cards: readonly TradeAskCard[], store: Store): Promise<TradeAskPayload | null> {
   const distinct = distinctCards(cards);
   if (distinct.length === 0) return null;
   try {
-    const read = await loadPrices(distinct.map((c) => c.oracleId));
+    const read = await loadPrices(distinct.map((c) => c.oracleId), [], [], store);
     return { cards: distinct, prices: Object.fromEntries(distinct.map((c) => [c.oracleId, read.prices.get(c.oracleId) ?? null])), newestAsOf: read.newestAsOf };
   } catch (error) {
     console.warn("[trade-ask] prices unreadable; the sheet draws the bare tag", error instanceof Error ? error.message : "");

@@ -23,18 +23,12 @@ const SLICE_3C2 = [
   { path: "src/lib/commander-change/draft-rows.ts", fn: "loadCommanderRows", n: 1 },
 ];
 
-/** Slice 3c-3: precon upgrade, trade ask, friend spares, the commander page, art chains and opponents. */
+/** Slice 3c-3b: art chains and opponents' commander art (after 3c-2, as `chainArt` has callers in its files). */
 const SLICE_3C3 = [
-  { path: "src/lib/precons/upgrade/load.ts", fn: "loadUpgradeFor", n: 1 },
-  { path: "src/lib/social/trade-ask.ts", fn: "loadTradeAsk", n: 1 },
-  { path: "src/app/friends/[publicId]/(tabs)/spares/page.tsx", fn: "FriendSparesPage", n: 1 },
-  { path: "src/app/commanders/[slug]/page.tsx", fn: "CommanderDetailPage", n: 2 },
   { path: "src/lib/cards/chain-art.ts", fn: "chainArt", n: 1 },
   { path: "src/lib/decks/deck-opponents-read.ts", fn: "withArt", n: 1 },
   { path: "src/lib/decks/opponent-commanders.ts", fn: "searchOpponentCommanders", n: 1 },
   { path: "src/lib/decks/opponent-commanders.ts", fn: "searchOpponentBackgrounds", n: 1 },
-  // No page calls it today (only scripts/probe-deck-stats.ts); 3c-3 threads it or retires it.
-  { path: "src/lib/decks/stats-query.ts", fn: "loadDeckStats", n: 1 },
 ];
 
 export const PENDING = [...SLICE_3C2, ...SLICE_3C3];

@@ -33,6 +33,7 @@ import {
   type PlayRecord,
 } from "./stats";
 import { loadShoppingRollup, type DeckShopping } from "./shopping-rollup";
+import type { Store } from "../stores/rows";
 
 export type DeckStats = {
   deckId: string;
@@ -47,7 +48,8 @@ export type DeckStats = {
   cost: DeckShopping | null;
 };
 
-type DeckIds = { userId: string; deckIds?: string[] };
+/** `store` is the reader's (store choice): it prices the cost to complete. */
+type DeckIds = { userId: string; deckIds?: string[]; store: Store };
 
 /** `cards` a second time, for the partner — a table joined twice needs a name
  *  for each side or the columns are ambiguous. */
@@ -129,7 +131,7 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
     // Narrowed to the decks being answered for: a deck page asking for one deck
     // should not pay to price the rest of the player's shopping list. The
     // seniority model behind it stays user-wide — see loadShoppingRollup.
-    loadShoppingRollup(input.userId, ids),
+    loadShoppingRollup(input.userId, ids, input.store),
   ]);
 
   type StatCard = { quantity: number; cmc: number; typeLine: string; colorIdentity: string[] };
@@ -187,7 +189,8 @@ export async function loadDeckStats(input: DeckIds): Promise<Map<string, DeckSta
 export async function loadOneDeckStats(
   deckId: string,
   userId: string,
+  store: Store,
 ): Promise<DeckStats | null> {
-  const stats = await loadDeckStats({ userId, deckIds: [deckId] });
+  const stats = await loadDeckStats({ userId, deckIds: [deckId], store });
   return stats.get(deckId) ?? null;
 }

@@ -21,21 +21,21 @@ describe("distinctCards", () => {
 
 describe("loadTradeAsk", () => {
   it("reads nothing and returns null with no trade match", async () => {
-    expect(await loadTradeAsk([])).toBeNull();
+    expect(await loadTradeAsk([], "manapool")).toBeNull();
     expect(m.loadPrices).not.toHaveBeenCalled();
   });
 
   it("prices each card once, a card with no price as null", async () => {
     const asOf = new Date("2026-10-26T00:00:00Z");
     m.loadPrices.mockResolvedValue({ prices: new Map([["a", { cents: 72, foilCents: null, etchedCents: null, asOf }]]), newestAsOf: asOf });
-    const out = await loadTradeAsk([A, B, A]);
-    expect(m.loadPrices).toHaveBeenCalledWith(["a", "b"]);
+    const out = await loadTradeAsk([A, B, A], "tcgplayer");
+    expect(m.loadPrices).toHaveBeenCalledWith(["a", "b"], [], [], "tcgplayer");
     expect(out).toEqual({ cards: [A, B], prices: { a: { cents: 72, foilCents: null, etchedCents: null, asOf }, b: null }, newestAsOf: asOf });
   });
 
   it("keeps the cards with no prices when the price read fails", async () => {
     vi.spyOn(console, "warn").mockImplementation(() => {});
     m.loadPrices.mockImplementation(async () => { throw new Error("down"); });
-    expect(await loadTradeAsk([A])).toEqual({ cards: [A], prices: {}, newestAsOf: null });
+    expect(await loadTradeAsk([A], "manapool")).toEqual({ cards: [A], prices: {}, newestAsOf: null });
   });
 });

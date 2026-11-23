@@ -38,6 +38,7 @@ import { WaitingOnYou } from "../../components/social/waiting-on-you";
 import { TradeAskFrame } from "../../components/social/trade-ask";
 import { CardDetailProvider } from "../../components/cards/card-detail-provider";
 import { loadTradeAsk } from "../../lib/social/trade-ask";
+import { readerStoreForPage } from "../../lib/stores/preference";
 import { loadYourRequests } from "../../lib/social/your-requests";
 import { YourRequests } from "../../components/social/your-requests";
 import { RequestsBox } from "../../components/social/requests-box";
@@ -130,6 +131,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // A trade match's Ask opens its spares sheet over this page (product call 8): the rows' cards and their prices.
   const tradeAsk = await loadTradeAsk(
     waiting.flatMap((r) => (r.kind === "trade-match" && r.askable ? [{ oracleId: r.card.oracleId, name: r.card.name, imageUri: r.card.imageUri }] : [])),
+    await readerStoreForPage(userId, env),
   );
   return (
     <>

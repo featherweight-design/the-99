@@ -79,14 +79,6 @@ function declOf(checker, node) {
   return sym.valueDeclaration ?? sym.declarations?.[0] ?? null;
 }
 
-/** The node naming what a call calls, through parentheses, property access and string element access. */
-function calleeName(expr) {
-  while (ts.isParenthesizedExpression(expr)) expr = expr.expression;
-  if (ts.isPropertyAccessExpression(expr)) return expr.name;
-  if (ts.isElementAccessExpression(expr) && ts.isStringLiteralLike(expr.argumentExpression)) return expr.argumentExpression;
-  return expr;
-}
-
 /**
  * The name a call is filed under in the pending list: the nearest named function or method around it, or the variable
  * a function (or a module-level wrapper such as `cache(async () => …)`) is assigned to.
