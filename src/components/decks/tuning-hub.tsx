@@ -40,10 +40,9 @@ export type HubToolSpec =
   /** History is part of the hub: drawn last whenever the hub draws, and its panel is the hub's own. */
   | { tool: "history" };
 
-/** A shortcut's ask: open this tool. `nonce` makes a second press of the same shortcut count. */
 /** A shortcut's ask: open `tool`, or with `tool: null` return to the tiles (N1 lands on Suggested changes' tile, so a
- *  tool left open must close first). */
-export type HubRequest = { tool: TuningTool | null; nonce: number };
+ *  tool left open must close first). `nonce` makes a second press of the same shortcut count. */
+export type HubRequest = { tool: TuningTool | "consider" | null; nonce: number };
 
 const clock = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -299,7 +298,8 @@ export function TuningHub({
       // No tile to hand focus back to: the tile the reader last left belongs to an earlier open, not this one.
       setLeftTool(null);
       setOpening(null);
-    } else if (tools.some((t) => t.tool === asked)) {
+    } else if (asked !== "consider" && tools.some((t) => t.tool === asked)) {
+      // `consider` is asked for from tool discovery B2, when Consider becomes the hub's first tile.
       setReview(null);
       setOpening((prev) => ({ tool: asked, focus: true, scroll: true, early: true, seq: (prev?.seq ?? 0) + 1 }));
     }

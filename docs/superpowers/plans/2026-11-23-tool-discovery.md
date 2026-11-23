@@ -37,9 +37,9 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
 
 ### B1 · The view seam (no visible change)
 
-- `BuilderView` gains `tuning` **alongside** `consider`. In B1, `tuning` draws today's Analysis tab with its hub. The tab row is unchanged, so Consider is still its own tab.
+- `BuilderView` gains `tuning` **alongside** `consider`. In B1, `tuning` draws today's Analysis tab with its hub. The tab row is unchanged, so Consider is still its own tab. As built: `drawnView` (`builder-view.ts`) opens `tuning` as `analysis`, and every way a view arrives from outside goes through it (`initialBuilderView` for the URL and a landing, and the nudge's `pressTool`), so the shell's own state never holds `tuning` in B1. B2 drops the mapping when it draws the tab.
 - `?tab=tuning` reads as `tuning`.
-- `deckViewOf` (`builder-screen.ts`) and About's `DeckView` map `tuning` to `analysis`. So does `help-root.tsx:61` through `deckViewSearch`.
+- `deckViewOf` (`builder-screen.ts`) and About's `DeckView` map `tuning` to `analysis`, so the ? opens the Analysis section. `deckViewSearch` (which `help-root.tsx:61` uses) writes `?tab=tuning`, so ‹ Back returns to Tuning.
 - `src/app/decks/[id]/page.tsx` (`readBuilderView`/`initialBuilderView`) passes `tuning` through.
 - `tools.ts` lands the three tune tools on `tuning` (same screen in B1), with the `tools.test` and `fits-view.test` expectations.
 - `ToolLands`' deck form already has the optional hub `tool` (shipped with `LANDINGS`); `HubRequest` (`tuning-hub.tsx:46`) gains `consider`, which is unused until B2.
@@ -161,7 +161,7 @@ Tests:
 Each one becomes a 🔸 row in that PR's `## Design review` table.
 
 - **Y1 · Landings for `consider`, `overview` and `find-a-deck-read` (PR C).** `TOOLS` stays the 14-tool showcase, so About is unchanged. `tools.ts` gains `LANDINGS`, which is `TOOLS` plus two entries that are not in the showcase. A `LandingSpot` type (named apart from `page-tools.ts`'s `Landing`; `landingSpotFor` reads one) carries `id`, `lands` and `needsDeck`, and no `target`, `credit` or `group`, so neither entry reaches the showcase, `TargetId` or the moments. The sheet's Try it builds its href from `LANDINGS`, not from `showcaseGroups`. `fits.ts` gives both a deck rule (the most recently touched deck), and `welcome-read.ts` loads it:
-  - `consider`: `{ kind: "deck", tab: "tuning", tool: "consider" }` (`LANDINGS` shipped ahead of B1 with `tab: "consider"`, today's Consider tab; B1 moves it to `tuning` with the three tune tools), needs a deck
+  - `consider`: `{ kind: "deck", tab: "tuning", tool: "consider" }` (`LANDINGS` shipped ahead of B1 with `tab: "consider"`, today's Consider tab. B1 moves the three tune tools to `tuning`, and B2 moves Consider there, since only B2's hub can open it), needs a deck
   - `overview`: `{ kind: "deck", tab: "analysis" }`, needs a deck
 
   The `?tool=` resolver and the deck picker (`fits.ts`) read `LANDINGS`. `ROW_TOOL` maps `overview` to `overview` and `find-a-deck-read` to the existing `find-a-deck` (`/collection?avail=free`). Ask's tool answers (PR D) match over `TOOLS` plus `consider`. Consider's name and line come from `tuningTabCopy.consider`, because `showcaseCopy.tools` has no Consider. `ToolLands`' deck form gains an optional `tool`, the hub tool to open; it shipped with `LANDINGS` ahead of C, and B2 reads it.

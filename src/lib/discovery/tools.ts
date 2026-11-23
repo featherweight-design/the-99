@@ -50,9 +50,9 @@ export const TOOLS = [
   { id: "precons", group: "start", switch: null, labels: ["decks/your-decks/precons"], target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
   // Tune it
   { id: "top-off", group: "tune", switch: null, labels: ["decks/your-deck/mix"], target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
-  { id: "proposed-cuts", group: "tune", switch: null, labels: ["decks/analysis/cuts"], target: "proposed-cuts", lands: { kind: "deck", tab: "analysis" }, credit: hub.cuts.cost, needsDeck: true },
-  { id: "suggested-changes", group: "tune", switch: null, labels: ["decks/analysis/suggested"], target: "suggested-changes", lands: { kind: "deck", tab: "analysis" }, credit: hub.suggested.cost, needsDeck: true },
-  { id: "mana-balance", group: "tune", switch: null, labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "analysis" }, credit: hub.mana.cost, needsDeck: true },
+  { id: "proposed-cuts", group: "tune", switch: null, labels: ["decks/analysis/cuts"], target: "proposed-cuts", lands: { kind: "deck", tab: "tuning" }, credit: hub.cuts.cost, needsDeck: true },
+  { id: "suggested-changes", group: "tune", switch: null, labels: ["decks/analysis/suggested"], target: "suggested-changes", lands: { kind: "deck", tab: "tuning" }, credit: hub.suggested.cost, needsDeck: true },
+  { id: "mana-balance", group: "tune", switch: null, labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "tuning" }, credit: hub.mana.cost, needsDeck: true },
   // Buy smarter
   { id: "stand-ins", group: "buy", switch: null, labels: ["shopping/deck-shopping/standins"], target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   { id: "friend-spares", group: "buy", switch: null, labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
@@ -93,7 +93,7 @@ export function toolLanding(value: unknown, isOn: (name: SwitchName) => boolean)
 
 /**
  * The deck page's reading of `?tool=`: a landing only for a tool that opens on a deck (every tab is drawn: the Analysis
- * tab's switch is retired).
+ * tab's switch is retired). A `tuning` landing opens Analysis until tool discovery B2 draws the Tuning tab (`drawnView`).
  */
 export function deckToolLanding(
   value: unknown,

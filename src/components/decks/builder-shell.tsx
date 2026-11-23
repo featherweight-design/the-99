@@ -75,7 +75,7 @@ import { TokensGroup } from "./tokens-group";
 import { firstCommitReady } from "../../lib/decks/first-commit";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
-import { deckViewSearch, initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
+import { deckViewSearch, drawnView, initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
 import type { FlipDeck } from "../../lib/decks/flip";
 import type { OpenFacts } from "../../lib/decks/open-entry";
 import { DeckPanelContext } from "./deck-panel";
@@ -602,7 +602,7 @@ export function BuilderShell({
     (id: ToolId) => {
       const next = toolLanding(id, () => true);
       if (next === null || next.lands.kind !== "deck") return;
-      setView(next.lands.tab);
+      setView(drawnView(next.lands.tab));
       if (next.lands.view === "shopping") {
         setDeckPanel("list");
         changeFilter("shopping");

@@ -15,7 +15,7 @@ import { InertChangeCommanderDoor } from "./change-commander-door-inert";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deckFlipCopy, deckOpenLoadingCopy } from "../../lib/copy/deck-flip";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { TAB_PARAM } from "../../lib/decks/builder-view";
+import { TAB_PARAM, drawnView, type BuilderView } from "../../lib/decks/builder-view";
 import { StallWatch } from "../shell/nav-stall";
 import { PendingReporter } from "../shell/pending-reporter";
 import { BAR } from "../ui/tile-skeleton";
@@ -349,8 +349,10 @@ export function DeckOpenLoading({ lean }: { lean?: LeanOpenFacts }) {
   const entry = parsed && parsed.to === id ? parsed : null;
   const facts: HeaderFacts | null = entry?.facts ?? (lean ? { ...lean, status: null, built: null } : null);
   const place = entry?.place ?? null;
+  // `?tab=tuning` opens Analysis until tool discovery B2 draws the Tuning tab, so the skeleton draws what the page will.
   const rawTab = params.get(TAB_PARAM);
-  const tab = TABS.some((t) => t.id === rawTab) ? (rawTab as string) : "deck";
+  const wanted = rawTab === null ? null : drawnView(rawTab as BuilderView);
+  const tab = TABS.some((t) => t.id === wanted) ? (wanted as string) : "deck";
   return (
     <div data-loading-screen>
       <span role="status" className="sr-only">{facts ? deckOpenLoadingCopy.opening(facts.name) : deckOpenLoadingCopy.status}</span>

@@ -16,6 +16,7 @@ describe("deckViewOf", () => {
     expect(deckViewOf("games", "all", "list")).toBe("games");
     expect(deckViewOf("versions", "all", "list")).toBe("versions");
     expect(deckViewOf("consider", "shopping", "stats")).toBe("your-deck");
+    expect(deckViewOf("tuning", "shopping", "stats")).toBe("analysis");
   });
 });
 

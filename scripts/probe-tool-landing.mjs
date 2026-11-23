@@ -75,14 +75,14 @@ const WIDTHS = [
 const TOOLS = [
   // The strip's door, by its shipped accessible name (`topOffCopy.strip.openAria`).
   { id: "top-off", name: "Top off", tab: "deck", targets: [["button[aria-label^='Choose the cards for the last']"]] },
-  { id: "proposed-cuts", name: "Proposed cuts", tab: "analysis", targets: [["[data-tool-tile='cuts']"], ["#cuts-heading"]] },
+  { id: "proposed-cuts", name: "Proposed cuts", tab: "tuning", targets: [["[data-tool-tile='cuts']"], ["#cuts-heading"]] },
   {
     id: "suggested-changes",
     name: "Suggested changes",
-    tab: "analysis",
+    tab: "tuning",
     targets: [["[data-tool-tile='suggested']"], ["div:has(> [data-testid='analysis-empty'])", "section[aria-labelledby='tuning-heading']"]],
   },
-  { id: "mana-balance", name: "Mana Balance", tab: "analysis", targets: [["[data-tool-tile='mana']"], ["#mana-heading"]] },
+  { id: "mana-balance", name: "Mana Balance", tab: "tuning", targets: [["[data-tool-tile='mana']"], ["#mana-heading"]] },
   { id: "stand-ins", name: "Cheaper stand-ins", tab: "deck", shopping: true, targets: [["[data-testid='other-ways']:has([data-testid='standin-glyph'])"]] },
   { id: "friend-spares", name: "A friend has a spare", tab: "deck", shopping: true, targets: [["[data-testid='other-ways']:has([data-testid='spare-glyph'])"]] },
   { id: "matchups", name: "Matchups", tab: "games", targets: [["section[aria-labelledby='game-matchups-heading'] [role='radiogroup']"]] },

@@ -57,9 +57,9 @@ describe("the tool registry", () => {
     const deck = Object.fromEntries(TOOLS.flatMap((t) => (t.lands.kind === "deck" ? [[t.id, t.lands]] : [])));
     expect(deck).toEqual({
       "top-off": { kind: "deck", tab: "deck" },
-      "proposed-cuts": { kind: "deck", tab: "analysis" },
-      "suggested-changes": { kind: "deck", tab: "analysis" },
-      "mana-balance": { kind: "deck", tab: "analysis" },
+      "proposed-cuts": { kind: "deck", tab: "tuning" },
+      "suggested-changes": { kind: "deck", tab: "tuning" },
+      "mana-balance": { kind: "deck", tab: "tuning" },
       "stand-ins": { kind: "deck", tab: "deck", view: "shopping" },
       "friend-spares": { kind: "deck", tab: "deck", view: "shopping" },
       matchups: { kind: "deck", tab: "games" },
@@ -77,7 +77,7 @@ describe("toolLanding", () => {
       tool: "mana-balance",
       target: "mana-balance",
       moment: "mana-balance",
-      lands: { kind: "deck", tab: "analysis" },
+      lands: { kind: "deck", tab: "tuning" },
     });
     expect(toolLanding("friends", allOn)?.moment).toBeNull();
   });
@@ -110,8 +110,8 @@ describe("deckToolLanding", () => {
     expect(deckToolLanding("find-a-deck", allOn)).toBeNull();
   });
 
-  it("lands a Tuning tool on the Analysis tab, which always draws", () => {
-    expect(deckToolLanding("suggested-changes", () => false)?.lands).toEqual({ kind: "deck", tab: "analysis" });
+  it("lands a Tuning tool on the Tuning tab (drawn as Analysis until B2), which always draws", () => {
+    expect(deckToolLanding("suggested-changes", () => false)?.lands).toEqual({ kind: "deck", tab: "tuning" });
     expect(deckToolLanding("top-off", () => false)?.tool).toBe("top-off");
   });
 });
