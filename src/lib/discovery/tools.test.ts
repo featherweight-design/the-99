@@ -122,7 +122,7 @@ describe("LANDINGS (tool discovery Y1)", () => {
     for (const t of TOOLS) expect(landingFor(t.id)).toEqual({ id: t.id, lands: t.lands, needsDeck: t.needsDeck });
   });
 
-  it("lands Consider on the Tuning tab's Consider and Overview on the Analysis tab, each needing a deck", () => {
+  it("lands Consider on the Consider tab (Tuning from B1) and Overview on the Analysis tab, each needing a deck", () => {
     expect(landingFor("consider")).toEqual({ id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true });
     expect(landingFor("overview")).toEqual({ id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true });
   });
@@ -134,5 +134,7 @@ describe("LANDINGS (tool discovery Y1)", () => {
     }
     expect(isLandingId("nope")).toBe(false);
     expect(isLandingId(["consider"])).toBe(false);
+    expect(landingFor("nope")).toBeNull();
+    expect(landingFor(["consider"])).toBeNull();
   });
 });

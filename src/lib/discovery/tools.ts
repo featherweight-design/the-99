@@ -25,10 +25,9 @@ import type { TargetId } from "./targets";
  */
 export type ToolGroup = "start" | "tune" | "buy" | "own" | "play";
 
-/** Where Try it opens: a deck's tab, or a route. `view: "shopping"` is Your deck's Shopping filter. */
 /**
  * Where a tool lands. The deck form names the builder tab, the Shopping view on the Deck tab, and `tool`, a hub tool the
- * tab opens on (Tuning's Consider, tool discovery Y1).
+ * tab opens on (Consider, tool discovery Y1).
  */
 export type ToolLands = { kind: "deck"; tab: BuilderView; view?: "shopping"; tool?: "consider" } | { kind: "route"; href: string };
 
@@ -141,6 +140,7 @@ export function isLandingId(v: unknown): v is LandingId {
   return typeof v === "string" && LANDING_BY_ID.has(v);
 }
 
-export function landingFor(id: LandingId): Landing {
-  return LANDING_BY_ID.get(id)!;
+/** The landing an id names, or null for anything else (a stale `?tool=` or answer id included). */
+export function landingFor(id: unknown): Landing | null {
+  return typeof id === "string" ? (LANDING_BY_ID.get(id) ?? null) : null;
 }
