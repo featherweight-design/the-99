@@ -11,7 +11,7 @@
 const SLICE_3C2 = [
 ];
 
-/** Slice 3c-3b: art chains and opponents' commander art (after 3c-2, as `chainArt` has callers in its files). */
+/** Slice 3c-3b-2: the art chain (after 3c-2, as `chainArt` has callers in its files). Opponents' art left in 3c-3b-1. */
 const SLICE_3C3 = [
   { path: "src/lib/cards/chain-art.ts", fn: "chainArt", n: 1 },
 ];

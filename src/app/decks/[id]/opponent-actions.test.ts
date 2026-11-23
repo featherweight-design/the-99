@@ -2,22 +2,23 @@
 // A component test mocks these away, so a read that skipped the session would pass everywhere else.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { readerStoreForAction, requireUserId, searchOpponentCommanders, listFriendDecks, listPodSeats, listPickerFriends, listPickerPods } = vi.hoisted(() => ({
+const { readerStoreForAction, requireUserId, searchOpponentCommanders, searchOpponentBackgrounds, listFriendDecks, listPodSeats, listPickerFriends, listPickerPods } = vi.hoisted(() => ({
   readerStoreForAction: vi.fn(),
   requireUserId: vi.fn(),
   searchOpponentCommanders: vi.fn(),
+  searchOpponentBackgrounds: vi.fn(),
   listFriendDecks: vi.fn(),
   listPodSeats: vi.fn(),
   listPickerFriends: vi.fn(),
   listPickerPods: vi.fn(),
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId }));
-vi.mock("../../../lib/decks/opponent-commanders", () => ({ searchOpponentCommanders }));
+vi.mock("../../../lib/decks/opponent-commanders", () => ({ searchOpponentCommanders, searchOpponentBackgrounds }));
 vi.mock("../../../lib/stores/action-store", () => ({ readerStoreForAction }));
 vi.mock("../../../lib/social/games", () => ({ listFriendDecks, listPodSeats, listPickerFriends, listPickerPods }));
 
 import {
-  listFriendDecksAction, listPickerFriendsAction, listPickerPodsAction, listPodSeatsAction, searchOpponentCommandersAction,
+  listFriendDecksAction, listPickerFriendsAction, listPickerPodsAction, listPodSeatsAction, searchOpponentBackgroundsAction, searchOpponentCommandersAction,
 } from "./opponent-actions";
 
 beforeEach(() => {
@@ -25,6 +26,7 @@ beforeEach(() => {
   requireUserId.mockResolvedValue("user_1");
   readerStoreForAction.mockResolvedValue("tcgplayer");
   searchOpponentCommanders.mockResolvedValue([{ oracleId: "y" }]);
+  searchOpponentBackgrounds.mockResolvedValue([{ oracleId: "b" }]);
   listFriendDecks.mockResolvedValue([{ deckId: "d" }]);
   listPodSeats.mockResolvedValue([{ publicId: "p" }]);
   listPickerFriends.mockResolvedValue([{ publicId: "f", deckCount: 2 }]);
@@ -37,6 +39,8 @@ describe("the opponent picker's actions", () => {
     // The hits' art is the reader's store's printing (store choice), resolved for this reader.
     expect(readerStoreForAction).toHaveBeenCalledWith("user_1");
     expect(searchOpponentCommanders).toHaveBeenCalledWith("yur", "tcgplayer");
+    expect(await searchOpponentBackgroundsAction("ath")).toEqual([{ oracleId: "b" }]);
+    expect(searchOpponentBackgrounds).toHaveBeenCalledWith("ath", "tcgplayer");
     expect(await listFriendDecksAction("f")).toEqual([{ deckId: "d" }]);
     expect(await listPodSeatsAction("p")).toEqual([{ publicId: "p" }]);
     expect(listFriendDecks).toHaveBeenCalledWith("user_1", "f");
@@ -54,7 +58,9 @@ describe("the opponent picker's actions", () => {
     await expect(listPodSeatsAction("p")).rejects.toThrow();
     await expect(listPickerFriendsAction()).rejects.toThrow();
     await expect(listPickerPodsAction()).rejects.toThrow();
+    await expect(searchOpponentBackgroundsAction("ath")).rejects.toThrow();
     expect(searchOpponentCommanders).not.toHaveBeenCalled();
+    expect(searchOpponentBackgrounds).not.toHaveBeenCalled();
     expect(readerStoreForAction).not.toHaveBeenCalled();
     expect(listFriendDecks).not.toHaveBeenCalled();
     expect(listPodSeats).not.toHaveBeenCalled();
