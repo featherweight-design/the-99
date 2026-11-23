@@ -23,6 +23,8 @@ import { lockPageLine, refreshCopy } from "../../lib/copy/refresh";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Lock } from "../ui/lock";
 import { FirstRunFriendsRow, type FirstRunFriendsProps } from "./first-run-friends";
+import { FirstRunStoreRow } from "./first-run-store";
+import type { Store } from "../../lib/stores/rows";
 
 /**
  * Three overlapping cards, the front one carrying the numeral. Decorative:
@@ -137,7 +139,10 @@ export function FirstRunChecklist({
   tourCredits = null,
   news = false,
   commandersPlace = false,
+  store = null,
 }: {
+  /** The reader's store for the first-run store row (store choice, Q1), or null: no row (the switch off, or a failed read). */
+  store?: Store | null;
   /** The Choose your news row, last (always on now). */
   news?: boolean;
   /** the Commanders place (always on) for the reader: the lock's page line names only the slots the bar locks. */
@@ -218,6 +223,7 @@ export function FirstRunChecklist({
         {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
             stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
         {signature}
+        {store && <FirstRunStoreRow store={store} />}
         {friends && <FirstRunFriendsRow {...friends} />}
         {news && <FirstRunNewsRow />}
         {/* The tour's precon line follows step 1's ways group, which always offers Precons I own. */}

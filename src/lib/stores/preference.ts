@@ -39,13 +39,24 @@ export async function readerStore(userId: string, env: NodeJS.ProcessEnv, q: Q =
  * on it from one store. The failure is logged, since the reader then sees Mana Pool though they chose another.
  */
 export function readerStoreForPage(userId: string, env: NodeJS.ProcessEnv): Promise<Store> {
-  return readerStore(userId, env).catch((error: unknown): Store => {
-    console.error("[store] reader store read failed; drawing Mana Pool", error);
+  return readerStoreOrNull(userId, env).then((store): Store => {
+    if (store) return store;
     // Inside a cached load this keeps the fallback page out of the list cache. A page that reads the store before
     // its cache (Home, /decks) is outside that scope, so this does nothing there; its payload is then keyed on
     // "manapool" and drawn wholly in Mana Pool, which is correct for that key.
     recordSoftFailure();
     return "manapool";
+  });
+}
+
+/**
+ * The reader's store, or null when the read fails (logged). For a page that prices in Mana Pool on a failure but must
+ * not draw a control holding Mana Pool over a store the reader chose: Home, whose first-run store row is then left out.
+ */
+export function readerStoreOrNull(userId: string, env: NodeJS.ProcessEnv): Promise<Store | null> {
+  return readerStore(userId, env).catch((error: unknown) => {
+    console.error("[store] reader store read failed; drawing Mana Pool", error);
+    return null;
   });
 }
 

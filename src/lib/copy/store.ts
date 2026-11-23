@@ -21,6 +21,13 @@ export const storeCopy = {
     failed: "We couldn’t save that. Try again.", // toast, role alert
   },
 
+  // ── First run (onboarding, Q1): an unnumbered checklist row ──────────
+  /** Its switch's group label is `settings.groupLabel`; its segments are the store names. */
+  firstRun: {
+    title: "Where do you buy cards?",
+    line: "Prices and buy links come from this store. Change it any time in Settings.",
+  },
+
   // ── Change store (call 2): trails the strip's and the cart's provenance line ─
   change: "Change store",
   changeAria: (s: StoreInfo) => `Change store, now ${s.name}`,

@@ -41,9 +41,9 @@ vi.mock("../lib/home/summary", () => ({
 vi.mock("../lib/decks/read", () => ({ listDecksWithStats: async () => stub.decks }));
 vi.mock("../lib/recs/ranked-list", () => ({ getRankedList: async () => ({ items: [], degraded: false }) }));
 const cacheKeys = vi.hoisted(() => ({ seen: [] as string[][] }));
-const rollup = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => ({})), store: vi.fn(async (..._a: unknown[]): Promise<string> => "manapool") }));
+const rollup = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => ({})), store: vi.fn(async (..._a: unknown[]): Promise<string | null> => "manapool") }));
 vi.mock("../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: rollup.load }));
-vi.mock("../lib/stores/preference", () => ({ readerStoreForPage: rollup.store }));
+vi.mock("../lib/stores/preference", () => ({ readerStoreOrNull: rollup.store }));
 const tradeAsk = vi.hoisted(() => vi.fn(async (..._a: unknown[]): Promise<null> => null));
 vi.mock("../lib/social/trade-ask", () => ({ loadTradeAsk: tradeAsk }));
 vi.mock("../lib/recs/home-novelty", () => ({ loadUnplayedCounts: async () => null }));
@@ -124,6 +124,33 @@ describe("Home's store", () => {
     tradeAsk.mockClear();
     await HomePage();
     expect(tradeAsk).toHaveBeenCalledWith([], "tcgplayer");
+  });
+});
+
+// Store choice (#3200, Q1): the first-run store row, only while the switch is on and the store was read.
+describe("Home's first-run store row", () => {
+  const firstRun = async () => (await HomePage()) as ReactElement<{ store?: string | null }>;
+
+  it("hands the checklist the reader's store while the switch is on", async () => {
+    stub.uniqueCards = 0;
+    stub.env = { ...ON, STORE_PREFERENCE_ENABLED: "true" };
+    rollup.store.mockResolvedValue("cardkingdom");
+    const page = await firstRun();
+    expect(page.type).toBe(FirstRunChecklist);
+    expect(page.props.store).toBe("cardkingdom");
+  });
+
+  it("draws no row while the switch is off", async () => {
+    stub.uniqueCards = 0;
+    expect((await firstRun()).props.store).toBeNull();
+  });
+
+  it("draws no row when the store read failed, and prices in Mana Pool", async () => {
+    stub.uniqueCards = 0;
+    stub.env = { ...ON, STORE_PREFERENCE_ENABLED: "true" };
+    rollup.store.mockResolvedValue(null);
+    expect((await firstRun()).props.store).toBeNull();
+    expect(cacheKeys.seen.at(-1)?.at(-1)).toBe("manapool");
   });
 });
 
