@@ -13,6 +13,7 @@ vi.mock("../decks/price-query", () => ({
 }));
 
 import { db } from "../../db";
+import { loadPrices } from "../decks/price-query";
 import { loadOwnedOffIndex, NEIGHBOUR_COMMANDERS, neighbourQuery, offIndexQuery, offIndexWorthOffering, rankOffIndex, readOwnedOffIndex, type OffIndexFitCard } from "./owned-candidates";
 import type { Job } from "../labels/types";
 import { OWNED_OFF_INDEX_MAX } from "./limits";
@@ -118,6 +119,14 @@ describe("loadOwnedOffIndex", () => {
     const out = await loadOwnedOffIndex({ ...args, limits: { capCents: 300, sets: [] }, exclude: new Set(["id5"]) }, read);
     expect(out.map((c) => c.oracleId)).toEqual(["id2", "id4"]);
     expect(out[0]).toEqual({ oracleId: "id2", name: "Card 2", typeLine: "Creature — Elf" });
+  });
+
+  it("prices the candidates at the reader's store", async () => {
+    vi.mocked(loadPrices).mockClear();
+    availability.map = new Map([["id2", { free: 1 }]]);
+    const { read } = reader(["n1"], [row(2)]);
+    await loadOwnedOffIndex({ ...args, store: "tcgplayer", limits: { capCents: 300, sets: [] }, exclude: new Set() }, read);
+    expect(vi.mocked(loadPrices).mock.calls.map((c) => c[3])).toEqual(["tcgplayer"]);
   });
 
   it("leaves out a card that does no job before ranking, so it neither takes room nor stops the tier completing", async () => {

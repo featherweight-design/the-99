@@ -174,6 +174,8 @@ async function workV2(args: {
   // One entry per streamed call that billed, settled together under the one reservation, whatever ends the run.
   const billed: Billed[] = [];
   try {
+    // The reader's store (store preference): every price under the cap, the pool's and each streamed line's, is read there.
+    const storeRead = readerStoreForPage(userId, env);
     const profile = await profileOfHead(head, env);
     const inDeckIds = new Set(profile.cards.map((c) => c.oracleId));
     const [owned, { overview, universal }] = await Promise.all([
@@ -181,8 +183,7 @@ async function workV2(args: {
       readTuningContext(head),
     ]);
     const focusRun = focus ? await loadRunStrategy(head, focus) : null;
-    // The reader's store (store preference): every price under the cap, the pool's and each streamed line's, is read there.
-    const store = await readerStoreForPage(userId, env);
+    const store = await storeRead;
     const shared = {
       userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity], inDeck: inDeckIds, env, store,
     };
