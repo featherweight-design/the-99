@@ -16,6 +16,7 @@
 import { cacheForUser } from "../cache/user-lists";
 import { type BrowseListCard } from "./browse";
 import { loadBrowseCards } from "./browse-read";
+import type { Store } from "../stores/rows";
 import { packCollection, unpackCollection } from "./packed-list";
 
 class PricesUnread extends Error {
@@ -36,16 +37,21 @@ export type CollectionList = { cards: BrowseListCard[]; pricesFailed: boolean };
 // (about 1.3 s at 3,000 cards); the audience is a handful of readers, so that was most visits.
 const LIST_CEILING_SECONDS = 24 * 60 * 60;
 
-export async function loadCollectionList(userId: string): Promise<CollectionList> {
+/**
+ * `store` is the reader's store (store preference): the list's figures and its Price sort are read from it alone, and
+ * it joins the key so a store switch never serves the other store's entry. Mana Pool keeps the key it had, so the
+ * switch off rebuilds nothing.
+ */
+export async function loadCollectionList(userId: string, store: Store = "manapool"): Promise<CollectionList> {
   try {
     // Set only when the loader ran, which is what a miss is: the data cache never calls it on a hit.
     let rebuilt: number | null = null;
     const packed = await cacheForUser(
       userId,
-      ["browse-6"],
+      store === "manapool" ? ["browse-6"] : ["browse-6", store],
       async () => {
         const started = performance.now();
-        const { cards, pricesFailed } = await loadBrowseCards(userId);
+        const { cards, pricesFailed } = await loadBrowseCards(userId, undefined, store);
         rebuilt = Math.round(performance.now() - started);
         if (pricesFailed) throw new PricesUnread(cards);
         // PACKED: the data cache refuses an entry over 2 MB, which the plain list passes at about

@@ -250,6 +250,15 @@ describe("loadBrowseCardsFor", () => {
     expect(asked).toEqual([]);
   });
 
+  // Store preference: the whole list's figures come from the reader's store, and Mana Pool's when none is named.
+  it("reads the whole list's prices at the reader's store, Mana Pool by default", async () => {
+    const stores: string[] = [];
+    const read = async (_ids: readonly string[], store: string) => (stores.push(store), new Map());
+    await loadBrowseCards("u1", read, "tcgplayer");
+    await loadBrowseCards("u1", read);
+    expect(stores).toEqual(["tcgplayer", "manapool"]);
+  });
+
   it("reads no prices: a price is not a draw field", async () => {
     // Control: the whole-list path reads the same mock and puts a price on the card, so the mock works.
     const whole = await loadBrowseCards("u1");

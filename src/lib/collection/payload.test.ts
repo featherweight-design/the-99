@@ -37,6 +37,17 @@ describe("loadCollectionList", () => {
     expect(loadBrowseCards).toHaveBeenCalledTimes(2);
   });
 
+  // Store preference: the store prices the read and keys the entry, and Mana Pool's entry is the one it always was.
+  it("reads and files a list per store", async () => {
+    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    await loadCollectionList("u");
+    await loadCollectionList("u", "manapool");
+    await loadCollectionList("u", "tcgplayer");
+    expect(loadBrowseCards).toHaveBeenCalledTimes(2);
+    expect(loadBrowseCards.mock.calls.map((c) => c[2])).toEqual(["manapool", "tcgplayer"]);
+    expect([...store.keys()]).toEqual(["u|g1|browse-6", "u|g1|browse-6|tcgplayer"]);
+  });
+
   // What this pins is that the list is cached and that its key is the generation the cache layer
   // hands it. That the real key carries `catalogGeneration()` is pinned in `user-lists.test.ts`, and
   // that a price refresh moves it in `seed-prices.test.ts`.

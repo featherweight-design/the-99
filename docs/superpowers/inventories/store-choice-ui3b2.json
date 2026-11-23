@@ -1,0 +1,19 @@
+{
+  "feature": "Store choice UI-3b-2: the collection list priced in the reader's store (handoff design_handoff_the99_store_choice)",
+  "note": "Needs a server on a scratch branch of local-dev where the audit account (user_3HdjdocERCjunk0zJQFDWyHkTd4) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set to the store being photographed, and printing_store_prices rows for that store. Run once per store with preferred_store changed between runs and the out directory copied aside. This inventory writes nothing.",
+  "out": "contact-sheets/store-choice-ui3b2",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "collection-price",
+      "label": "Collection sorted by price: each card's figure, and its spoken price, from the reader's store",
+      "view": "src/components/collection/rows-view.tsx",
+      "steps": [
+        { "goto": "/collection?sort=price&dir=desc", "settle": 4000 }
+      ]
+    }
+  ]
+}
