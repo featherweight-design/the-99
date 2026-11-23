@@ -25,14 +25,14 @@
  * itself — `history.heading`, `history.gamesHeld` and `changed.delta`.
  */
 
+import type { StoreInfo } from "../stores/info";
+
 /**
  * `1 card` / `2 cards`. Every figure in this module is a row or a copy count, so
  * one is an ordinary value for all of them and not an edge case: a draft with a
  * single add is the commonest draft there is.
  */
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
-import type { StoreInfo } from "../stores/info";
 
 export const deckVersioningCopy = {
   /* ---- §Surfaces 1 · pending state on the deck page ---- */

@@ -4,9 +4,9 @@
 //   - No verdict (Hugh, 2026-10-10): nothing says a color is short, fine, met or covered.
 //   - Karsten is named only in the "What Needs means" line and the citation (brief ruling 2).
 
-/** Karsten's article, the source of every Needed figure and the land formula. */
 import type { StoreInfo } from "../stores/info";
 
+/** Karsten's article, the source of every Needed figure and the land formula. */
 export const KARSTEN_ARTICLE_URL =
   "https://www.tcgplayer.com/content/article/How-Many-Sources-Do-You-Need-to-Consistently-Cast-Your-Spells-A-2022-Update/dc23a7d2-0a16-4c0b-ad36-586fcca03ad8/";
 

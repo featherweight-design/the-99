@@ -141,3 +141,16 @@ export async function loadManaStaples(
     }];
   });
 }
+
+/** Staple figures as the reader's store prices them now, with each card's layout for its link (`storeCardUrl`):
+ *  what History's reopened help draws (`reviewHelp`), since a stored help carries the figures of the store it was read in. */
+export type StaplePricing = ReadonlyMap<string, { priceCents: number | null; layout: string | null }>;
+
+export async function loadStaplePricing(oracleIds: string[], store: Store): Promise<StaplePricing> {
+  if (oracleIds.length === 0) return new Map();
+  const [rows, prices] = await Promise.all([
+    db.select({ oracleId: cards.oracleId, layout: cards.layout }).from(cards).where(inArray(cards.oracleId, oracleIds)),
+    loadPrices(oracleIds, store),
+  ]);
+  return new Map(rows.map((r) => [r.oracleId, { priceCents: prices.get(r.oracleId)?.liveCents ?? null, layout: r.layout }]));
+}

@@ -254,26 +254,28 @@ describe("reviewHelp: a past help reopened from History", () => {
   it("keeps its own trades and marks the ones today's help no longer offers with the same card out", () => {
     const past = helpOf([trade("a", "forest"), trade("b", "island"), trade("c", "wastes")]);
     const today = helpOf([trade("a", "forest"), trade("b", "plains")]);
-    const shown = reviewHelp(past, today);
+    const shown = reviewHelp(past, today, new Map());
     expect(shown.trades.map((t) => t.staple.oracleId)).toEqual(["a", "b", "c"]);
     expect(shown.noLonger).toEqual(["b", "c"]);
   });
 
   it("marks every trade when today's help could not be read", () => {
-    expect(reviewHelp(helpOf([trade("a", "forest")]), null).noLonger).toEqual(["a"]);
+    expect(reviewHelp(helpOf([trade("a", "forest")]), null, new Map()).noLonger).toEqual(["a"]);
   });
 
   // Store choice: a History read under one store, reopened under another, draws no figure of the old store's.
-  it("draws today's prices, and none for a staple today's help does not list", () => {
+  it("draws the figures read now for every staple it lists, offered today or not, and the card's layout", () => {
     const pricedTrade = (id: string, out: string, cents: number | null): TradeMove => {
       const t = trade(id, out);
       return { ...t, staple: { ...t.staple, priceCents: cents } };
     };
-    const past = helpOf([pricedTrade("a", "forest", 500), pricedTrade("c", "wastes", 900)]);
+    const past = helpOf([pricedTrade("a", "forest", 500), pricedTrade("c", "wastes", 900), pricedTrade("d", "wastes", 700)]);
     const today = helpOf([pricedTrade("a", "forest", 420)]);
-    const shown = reviewHelp(past, today);
-    expect(shown.staples.map((s) => s.priceCents)).toEqual([420, null]);
-    expect(shown.trades.map((t) => t.staple.priceCents)).toEqual([420, null]);
-    expect(reviewHelp(past, null).staples.map((s) => s.priceCents)).toEqual([null, null]);
+    const now = new Map([["a", { priceCents: 420, layout: "normal" }], ["c", { priceCents: 880, layout: "split" }]]);
+    const shown = reviewHelp(past, today, now);
+    expect(shown.staples.map((s) => s.priceCents)).toEqual([420, 880, null]);
+    expect(shown.trades.map((t) => t.staple.priceCents)).toEqual([420, 880, null]);
+    expect(shown.trades[1].staple.layout).toBe("split");
+    expect(reviewHelp(past, null, now).staples.map((s) => s.priceCents)).toEqual([420, 880, null]);
   });
 });

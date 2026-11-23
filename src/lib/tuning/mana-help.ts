@@ -33,7 +33,7 @@ import { NO_TAPPED_LANDS } from "../mana/lands-tapped";
 import type { ManaSupplyCardRow } from "../mana/supply";
 import { CONDITIONAL_GRANT, searchFinds } from "../swaps/land";
 import { BALANCE_COLORS, readManaBalance, type BalanceColor, type ManaBalance } from "./mana-balance";
-import { rankStaples, type StapleCandidate } from "./mana-staples";
+import { rankStaples, type StapleCandidate, type StaplePricing } from "./mana-staples";
 
 /** The five basics, by the color each adds: an oracle id and a name the caller read from the catalog. */
 export type BasicCatalog = Readonly<Record<BalanceColor, { id: string; name: string }>>;
@@ -103,13 +103,16 @@ export type ManaHelp = {
  * against today's help for the same color. A trade applies only when today's help still offers the
  * same staple for the same card out, which is the check `applyManaTrade` makes before it writes.
  *
- * Its prices are today's, read from the reader's store now (store choice: totals never mix stores). A staple
- * today's help does not list has no figure, rather than the one its own read stored, which may be another store's.
+ * Its figures are read now, in the reader's store (store choice: totals never mix stores), for every staple it
+ * lists, offered today or not: a stored figure may be another store's. Each staple takes its card's layout too,
+ * which helps stored before store choice lack, so its link finds a two-faced card.
  */
-export function reviewHelp(past: ManaHelp, today: ManaHelp | null): ManaHelp {
+export function reviewHelp(past: ManaHelp, today: ManaHelp | null, now: StaplePricing): ManaHelp {
   const offered = new Set((today?.trades ?? []).map((t) => `${t.staple.oracleId}|${t.out.id}`));
-  const prices = new Map([...(today?.staples ?? []), ...(today?.trades ?? []).map((t) => t.staple)].map((s) => [s.oracleId, s.priceCents]));
-  const priced = (s: StapleCandidate): StapleCandidate => ({ ...s, priceCents: prices.get(s.oracleId) ?? null });
+  const priced = (s: StapleCandidate): StapleCandidate => {
+    const read = now.get(s.oracleId);
+    return { ...s, priceCents: read?.priceCents ?? null, layout: read?.layout ?? s.layout };
+  };
   return {
     ...past,
     staples: past.staples.map(priced),
@@ -117,6 +120,9 @@ export function reviewHelp(past: ManaHelp, today: ManaHelp | null): ManaHelp {
     noLonger: past.trades.filter((t) => !offered.has(`${t.staple.oracleId}|${t.out.id}`)).map((t) => t.staple.oracleId),
   };
 }
+
+/** Every staple a help lists, its trades' included: the ids `loadStaplePricing` reads for `reviewHelp`. */
+export const helpStapleIds = (help: ManaHelp): string[] => [...new Set([...help.staples, ...help.trades.map((t) => t.staple)].map((s) => s.oracleId))];
 
 const isBasicType = (typeLine: string) => isLandFace(typeLine) && /\bBasic\b/.test(typeLine);
 
