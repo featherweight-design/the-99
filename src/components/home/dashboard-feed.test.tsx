@@ -109,7 +109,7 @@ describe("Home, direction B", () => {
     const lead = container.querySelector("[data-lead-story]")!;
     const whatsNew = container.querySelector("[data-whats-new]")!;
     expect(follows(lead, whatsNew)).toBe(true);
-    expect(follows(whatsNew, screen.getByRole("heading", { name: "Pick up where you left off" }))).toBe(true);
+    expect(follows(whatsNew, screen.getByRole("heading", { name: /^Pick up where you left off/ }))).toBe(true);
   });
 
   it("a busy feed: five shown and Show all N", () => {

@@ -31,7 +31,13 @@ export function HomeSectionHead({
     >
       <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rotate-45 bg-[color:var(--accent)]" />
       <span>{children}</span>
-      {count ? <span className="font-mono text-[11px] font-normal tracking-[.08em] text-[color:var(--accent-text)]">{count}</span> : null}
+      {/* A space for the accessible name ("Friends · 3"); a whitespace-only text node draws nothing in a flex row. */}
+      {count ? (
+        <>
+          {" "}
+          <span className="font-mono text-[11px] font-normal tracking-[.08em] text-[color:var(--accent-text)]">{count}</span>
+        </>
+      ) : null}
       {aside}
     </h2>
   );
