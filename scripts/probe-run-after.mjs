@@ -85,10 +85,10 @@ async function accountDeckIds(page) {
 
 async function openAnalysis(page, deckId, heading, tool) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-  const tab = onPageRole(page, "tab", /analysis/i).first();
+  const tab = onPageRole(page, "tab", /^Tuning/).first();
   await tab.waitFor({ timeout: 30_000 });
   await tab.click();
-  // The Analysis tab lands on the tool hub; the tool's own panel opens from its tile.
+  // The Tuning tab lands on the tool hub; the tool's own panel opens from its tile.
   await page.locator(`${PAGE} button[aria-label^="${heading}"]`).first().click({ timeout: 30_000 }).catch(async (error) => {
     // PROBE_SHOTS=<dir> keeps what the page drew when the tool's tile was not there.
     if (process.env.PROBE_SHOTS) await page.screenshot({ path: `${process.env.PROBE_SHOTS}/run-after-${tool}.png`, fullPage: true });

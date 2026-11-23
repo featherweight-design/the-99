@@ -97,7 +97,7 @@ async function undoCut(page, cutRow, name) {
 
 async function openFromHistory(page, deckId, tier) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-  await onPageRole(page, "tab", /analysis/i).first().click();
+  await onPageRole(page, "tab", /^Tuning/).first().click();
   await onPage(page, "[data-tool-tile='history']").click();
   await onPage(page, `[data-history-row^='run:']:has-text('${tier}')`).first().click();
   await onPage(page, "[data-review-note]").waitFor({ timeout: 30_000 });

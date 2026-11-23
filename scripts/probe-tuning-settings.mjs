@@ -103,7 +103,7 @@ try {
     const page = await ctx.newPage();
     await signIn(page);
     await page.goto(`${BASE}/decks/${DECK}`, { waitUntil: "domcontentloaded" });
-    await onPageRole(page, "tab", /analysis/i).first().click();
+    await onPageRole(page, "tab", /^Tuning/).first().click();
     // The hub draws a tile per tool (two or more on); one tool on mounts it directly.
     const tile = onPage(page, "button[data-tool-tile='suggested']");
     const any = onPageRole(page, "radio", "Any card").first();

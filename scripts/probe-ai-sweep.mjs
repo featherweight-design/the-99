@@ -186,7 +186,7 @@ async function accountDeckIds(page) {
 
 async function openAnalysis(page, deckId, heading) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
-  const tab = onPageRole(page, "tab", /analysis/i).first();
+  const tab = onPageRole(page, "tab", /^Tuning/).first();
   await tab.waitFor({ timeout: 30_000 });
   await tab.click();
   await page.locator(`${PAGE} button[aria-label^="${heading}"]`).first().click({ timeout: 30_000 });
