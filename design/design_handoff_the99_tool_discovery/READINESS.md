@@ -1,6 +1,6 @@
 # READINESS · Finding the tools
 
-**Verdict: Green.** Approved by Hugh 2026-11-23 through R11; every question settled (README, Decisions). Every gap below has an answer.
+**Verdict: Yellow** (engineering readiness audit, 2026-11-23, amending Design's Green). Hugh approved the design through R11 and every question is settled, but G6, G9 and G22 do not match the code, four states are undrawn, and the copy had not been reviewed. Each gap is settled from the nearest drawn pattern in `docs/superpowers/plans/2026-11-23-tool-discovery.md` (sections 1, 4, 5 and 7); nothing returns to Design.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -81,3 +81,14 @@
 - R11 frames rendered from main bb4832f8 (`scratch-gen/r-offers.tsx`, `sp-of.json`, `src-patches/` for the ✕ and row toggles).
 - Frames rendered from main 7563036 with the shipped components; new parts in `scratch-gen/find.tsx` (R2: `FindCallout` `on`, `FitButton`; R3: `FitRowButton`, and `ask.tsx` for Ask) and the hub
   patch described in `scratch-gen/HOW.md`. Figures, set codes and art are illustrative.
+
+## Errata (engineering audit, 2026-11-23)
+
+| Item | As written | In the code | Resolution |
+|---|---|---|---|
+| G6, moments | M3 and M4 move to Tuning; M2 (the reading) stays | M2 is `suggested-changes`; M2, M3 and M4 all anchor on the Analysis tab button | All three move to the Tuning tab; the to-do card (M3) and land cell (M4) shortcut anchors stay |
+| G6, URL | `?view=consider` | The parameter is `?tab=consider` (`builder-view.ts`) | `?tab=consider` reads as Tuning with Consider open |
+| G9, landings | `ROW_TOOL` gains `overview` and `find-a-deck-read` | `TOOLS` has no entry for either, nor for Consider, and `TOOLS` drives About's showcase | `LANDINGS` = `TOOLS` plus `consider` and `overview`, outside the showcase; `find-a-deck-read` maps to `find-a-deck` |
+| G22 | Proposes ranking an answerable ask above every kind | `LEAD_PRIORITY` already ranks `spare-request` first; the frame's offer lost because it was seen | A seen, still-answerable ask or offer leads (Q16 A "always"); the unseen rule stays for news |
+| STATES R8 row | `Choose your notifications` | R9 renamed it | `Choose notifications` (G17) |
+| `copy strings.ts` `freeLine` | `Free, no credit needed` | Each row under it carries a `free` pill | `No credit needed` (copy review, rule 7) |
