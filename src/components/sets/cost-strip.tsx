@@ -15,6 +15,7 @@ import { formatCents } from "../../lib/decks/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import type { CostToComplete } from "../../lib/sets/cost";
 import { Chevron } from "../ui/chevron";
+import { useStoreInfo } from "../stores/store-provider";
 
 export function CostStrip({
   cost,
@@ -48,6 +49,13 @@ export function CostStrip({
   // containing it has a height nobody can predict, which is the ghost-Clear defect §28
   // already ruled out on the row below.
   const [expanded, setExpanded] = useState(false);
+  // The store the figure is from (store preference). Only Mana Pool's feed keeps a history, so only there can a card be
+  // known as never stocked; at another store a printing with no row has simply no price from it, the same words
+  // `storeCopy.noStockAria` gives the cell, and the two counts read as one line.
+  const store = useStoreInfo();
+  const history = store.id === "manapool";
+  const absent = history ? cost.absentCount : 0;
+  const noFigure = history ? cost.inconclusiveCount : cost.absentCount + cost.inconclusiveCount;
   /**
    * Which toggle to focus after the swap. Each of the two unmounts the other, so without
    * this a keyboard reader who opens the strip — or closes it again — is left on the body
@@ -75,8 +83,8 @@ export function CostStrip({
       : formatCents(cost.totalCents);
 
   const caveats = [
-    cost.absentCount > 0,
-    cost.inconclusiveCount > 0,
+    absent > 0,
+    noFigure > 0,
     cost.soldOutCount > 0,
     staleAsOf !== null,
   ].filter(Boolean).length;
@@ -151,14 +159,14 @@ export function CostStrip({
               : setPageCopy.cost.line(cost.pricedCount, cost.missingCount)}
           </span>
         </span>
-        {cost.absentCount > 0 ? (
+        {absent > 0 ? (
           <span className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>
-            {setPageCopy.cost.unpriced(cost.absentCount)}
+            {setPageCopy.cost.unpriced(absent)}
           </span>
         ) : null}
-        {cost.inconclusiveCount > 0 ? (
+        {noFigure > 0 ? (
           <span className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>
-            {setPageCopy.cost.noFigure(cost.inconclusiveCount)}
+            {setPageCopy.cost.noFigure(noFigure, store.name)}
           </span>
         ) : null}
         {cost.soldOutCount > 0 ? (

@@ -65,10 +65,28 @@ export function printingPricesQuery(oracleId: string, store: Store) {
  */
 export async function loadOwnedPrintingPrices(
   oracleIds: readonly string[],
+  store: Store = "manapool",
 ): Promise<Map<string, PrintingPrices>> {
   if (oracleIds.length === 0) return new Map();
-  const result = await db.execute<PrintingPriceRow & { oracle_id: string }>(sql`
-    with newest as (select max(as_of) as as_of from printing_prices),
+  const result = await db.execute<PrintingPriceRow & { oracle_id: string }>(ownedPrintingPricesQuery(oracleIds, store));
+  const byOracle = new Map<string, PrintingPriceRow[]>();
+  for (const row of result.rows as (PrintingPriceRow & { oracle_id: string })[]) {
+    const rows = byOracle.get(row.oracle_id);
+    if (rows) rows.push(row);
+    else byOracle.set(row.oracle_id, [row]);
+  }
+  return new Map([...byOracle].map(([oracleId, rows]) => [oracleId, indexPriceRows(rows)]));
+}
+
+/** The statement, apart so a test can read it. The store names the table exactly as `printingPricesQuery` has it. */
+export function ownedPrintingPricesQuery(oracleIds: readonly string[], store: Store) {
+  const other = store === "manapool" ? null : store;
+  const newestFrom = other ? sql`printing_store_prices where store = ${other}` : sql`printing_prices`;
+  const source = other ? storeRows(other) : sql`printing_prices`;
+  const soldOutCol = other ? sql`,
+           pp.sold_out          as sold_out` : sql``;
+  return sql`
+    with newest as (select max(as_of) as as_of from ${newestFrom}),
          owned as (select distinct unnest(${sql.param([...oracleIds])}::uuid[]) as oracle_id)
     select o.oracle_id          as oracle_id,
            n.as_of              as newest_as_of,
@@ -78,17 +96,10 @@ export async function loadOwnedPrintingPrices(
            pp.price_cents       as price_cents,
            pp.price_cents_foil  as price_cents_foil,
            pp.price_cents_etched as price_cents_etched,
-           pp.as_of             as as_of
+           pp.as_of             as as_of${soldOutCol}
       from newest n
       cross join owned o
       left join printings p on p.oracle_id = o.oracle_id
-      left join printing_prices pp on pp.scryfall_id = p.scryfall_id
-  `);
-  const byOracle = new Map<string, PrintingPriceRow[]>();
-  for (const row of result.rows as (PrintingPriceRow & { oracle_id: string })[]) {
-    const rows = byOracle.get(row.oracle_id);
-    if (rows) rows.push(row);
-    else byOracle.set(row.oracle_id, [row]);
-  }
-  return new Map([...byOracle].map(([oracleId, rows]) => [oracleId, indexPriceRows(rows)]));
+      left join ${source} pp on pp.scryfall_id = p.scryfall_id
+  `;
 }

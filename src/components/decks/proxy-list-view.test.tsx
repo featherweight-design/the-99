@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import { ProxyListView } from "./proxy-list-view";
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
+import { STORE_INFO } from "../../lib/stores/info";
 
 /** One run, shared by every row: `priceState` compares each row's own `asOf`
  *  against this to tell a live figure from a frozen one. */
@@ -244,4 +245,25 @@ it("speaks every cost it prints", () => {
 
   const spoken = [...document.querySelectorAll(".sr-only")].map((el) => el.textContent);
   expect(spoken.join(" ")).toContain("second cost 1 green blue");
+});
+
+describe("the proxy list at another store (store preference)", () => {
+  const unpriced = () => row({ oracleId: "o9", name: "Sol Ring", price: null as unknown as ProxyRow["price"] });
+
+  it("says never stocked at Mana Pool, whose feed keeps a history", () => {
+    render(<ProxyListView newestAsOf={NEWEST} rows={[row(), unpriced()]} hasDecks hasCollection />);
+    expect(screen.getByText(proxyCopy.cost.unpriced(1))).toBeTruthy();
+    expect(screen.queryByText(proxyCopy.cost.noFigure(1, "Mana Pool"))).toBeNull();
+  });
+
+  it("folds the same card into no price from the reader's store elsewhere", () => {
+    render(
+      <ProxyListView
+        newestAsOf={NEWEST} rows={[row(), unpriced()]} hasDecks hasCollection
+        store={STORE_INFO.tcgplayer}
+      />,
+    );
+    expect(screen.queryByText(proxyCopy.cost.unpriced(1))).toBeNull();
+    expect(screen.getByText(proxyCopy.cost.noFigure(1, "TCGplayer"))).toBeTruthy();
+  });
 });

@@ -7,9 +7,10 @@ export const collectionPriceCopy = {
   // The visible suffix when a cheaper copy is owned. Replaces the finish word on screen.
   maxSuffix: "max",
   // Spoken last in the row or tile name, and only while sorted by price.
+  // `store` is the reader's store's name (store preference).
   aria: {
-    priced: (figure: string) => `${figure} at Mana Pool`,
-    mixed: (figure: string) => `${figure} at Mana Pool, your most valuable copy`,
+    priced: (figure: string, store: string) => `${figure} at ${store}`,
+    mixed: (figure: string, store: string) => `${figure} at ${store}, your most valuable copy`,
   },
   // F1: the whole price read failed, so every card is silent and the order is A to Z.
   readFailed: "Prices didn’t load, so this is A–Z.",

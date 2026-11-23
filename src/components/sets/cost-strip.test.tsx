@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { CostStrip } from "./cost-strip";
 import type { CostToComplete } from "../../lib/sets/cost";
+import { StoreProvider } from "../stores/store-provider";
+import { setPageCopy } from "../../lib/copy/set-collections";
 
 const cost = (over: Partial<CostToComplete> = {}): CostToComplete => ({
   totalCents: 128_440, pricedCount: 193, missingCount: 214, absentCount: 21,
@@ -304,5 +306,17 @@ describe("CostStrip — the accessible name with no send link", () => {
     const send = screen.getByRole("link");
     expect(send.className).toMatch(/md:ml-auto/);
     expect(send.className).not.toMatch(/(^|\s)ml-auto/);
+  });
+});
+
+describe("CostStrip at another store (store preference)", () => {
+  it("folds never stocked into no price from the store, whose feed keeps no history", () => {
+    render(
+      <StoreProvider store="tcgplayer">
+        <CostStrip cost={cost({ absentCount: 21, inconclusiveCount: 2 })} href={null} />
+      </StoreProvider>,
+    );
+    expect(screen.queryByText(/never been stocked/)).toBeNull();
+    expect(screen.getByText(setPageCopy.cost.noFigure(23, "TCGplayer"))).toBeInTheDocument();
   });
 });

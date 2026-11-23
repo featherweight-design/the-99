@@ -229,6 +229,12 @@ export const proxyCopy = {
       n === 1
         ? "1 has never been stocked and is not in this figure."
         : `${n} have never been stocked and are not in this figure.`,
+    // Another store's (store preference): its rows carry no history, so a card it does not price has no price from it,
+    // never "never stocked" (`storeCopy.noStockAria` says the same on a tag).
+    noFigure: (n: number, store: string) =>
+      n === 1
+        ? `1 has no price from ${store} and is not in this figure.`
+        : `${n} have no price from ${store} and are not in this figure.`,
     // RENDERED since the loader took the app's own price read: `priceState`
     // tells sold-out from never-stocked, and the two are different facts — one
     // card was on sale and is not now, the other never has been.
@@ -254,7 +260,6 @@ export const proxyCopy = {
     commander: "commander",
     commanderAria: "This deck’s commander",
     noStock: "no stock",
-    noStockAria: "Never stocked at Mana Pool",
   },
 
   // Three branches. (a) and (b) differ because they name different preconditions, and an

@@ -6,6 +6,10 @@
 // deck — unmarking happens where the decision was made, via the deck links.
 
 import { requireUserId } from "../../../../lib/auth";
+import { requestFlags } from "../../../../lib/flags/request";
+import { readerStoreForPage } from "../../../../lib/stores/preference";
+import { StoreProvider } from "../../../../components/stores/store-provider";
+import { STORE_INFO } from "../../../../lib/stores/info";
 import { loadProxyList } from "../../../../lib/decks/proxy-list";
 import { userHasDecks } from "../../../../lib/decks/proxy-list";
 import { ProxyListView } from "../../../../components/decks/proxy-list-view";
@@ -20,7 +24,8 @@ export default async function ProxiesPage() {
   // for a flippable deck, the user-wide claim and seniority query behind
   // `loadDeckBuyRows` — all of it discarded here for one boolean.
   const [list, hasDecks, stats] = await Promise.all([
-    loadProxyList(userId),
+    // The reader's store's figures (store preference); Mana Pool while the switch is off for them or the read fails.
+    requestFlags(userId).then((env) => readerStoreForPage(userId, env)).then((store) => loadProxyList(userId, store).then((list) => ({ ...list, store }))),
     userHasDecks(userId),
     getCollectionStats(userId),
   ]);
@@ -28,13 +33,16 @@ export default async function ProxiesPage() {
   // The group's place head (`(list)/layout.tsx`) sits above the list's padded column so its
   // strip lands where /collection's does (E19).
   return (
+    <StoreProvider store={list.store}>
     <div className="flex flex-col">
       <ProxyListView
         rows={list.rows}
         newestAsOf={list.newestAsOf}
         hasDecks={hasDecks}
         hasCollection={stats.totalCards > 0}
+        store={STORE_INFO[list.store]}
       />
     </div>
+    </StoreProvider>
   );
 }

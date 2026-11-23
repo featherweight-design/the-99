@@ -10,6 +10,8 @@ import { readCardPrice } from "../../lib/cards/copy-price";
 import { collectionPriceCopy } from "../../lib/copy/collection-price";
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { storeCopy } from "../../lib/copy/store";
+import { STORE_INFO, type StoreInfo } from "../../lib/stores/info";
 import { formatCents } from "../../lib/cards/price-fact";
 
 /** Null for silence: the caller draws its line exactly as it would on any other sort. */
@@ -44,10 +46,11 @@ export function PriceFigure({
 }
 
 /** The clause the row or tile name gains, last, while sorted by price. Null for silence. */
-export function priceSpoken(code: number | undefined): string | null {
+export function priceSpoken(code: number | undefined, store: StoreInfo = STORE_INFO.manapool): string | null {
   const price = readCardPrice(code);
   if (price === null) return null;
-  if ("none" in price) return setPageCopy.cellPrice[price.none];
+  // The store the figure is from (store preference) names it, and names the no-figure states as the tag does.
+  if ("none" in price) return storeCopy.noStockAria(store, price.none);
   const figure = price.finish ? `${formatCents(price.cents)} ${priceCopy.tag[price.finish]}` : formatCents(price.cents);
-  return price.mixed ? collectionPriceCopy.aria.mixed(figure) : collectionPriceCopy.aria.priced(figure);
+  return price.mixed ? collectionPriceCopy.aria.mixed(figure, store.name) : collectionPriceCopy.aria.priced(figure, store.name);
 }

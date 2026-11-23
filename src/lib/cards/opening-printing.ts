@@ -4,6 +4,7 @@ import { cards, printings } from "../../db/schema";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { comparePrintings, type BrowsePrinting } from "../collection/browse";
 import { loadOwnedPrintingPrices } from "./prices";
+import type { Store } from "../stores/rows";
 import type { PrintingPrices } from "./price-lookup";
 import { isLive } from "./price-fact";
 
@@ -45,7 +46,11 @@ export type OpeningPrinting = { scryfallId: string; imageUri: string; setCode: s
  * empty map on a failed read. A surface that captions the printing it draws (the proxy list names its set and
  * rarity) takes them from here, so art and caption are one printing.
  */
-export async function loadOpeningPrintings(oracleIds: readonly string[]): Promise<Map<string, OpeningPrinting>> {
+export async function loadOpeningPrintings(
+  oracleIds: readonly string[],
+  // The reader's store (store preference): card details open an unowned card on that store's cheapest live printing.
+  store: Store = "manapool",
+): Promise<Map<string, OpeningPrinting>> {
   const ids = [...new Set(oracleIds)];
   const out = new Map<string, OpeningPrinting>();
   if (ids.length === 0) return out;
@@ -58,7 +63,7 @@ export async function loadOpeningPrintings(oracleIds: readonly string[]): Promis
         .from(printings)
         .innerJoin(cards, eq(cards.oracleId, printings.oracleId))
         .where(and(inArray(printings.oracleId, ids), isNotNull(printings.imageUri))),
-      loadOwnedPrintingPrices(ids),
+      loadOwnedPrintingPrices(ids, store),
     ]);
     const byCard = new Map<string, typeof rows>();
     for (const r of rows) byCard.set(r.oracleId, [...(byCard.get(r.oracleId) ?? []), r]);

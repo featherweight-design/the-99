@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { SetCell } from "./set-cell";
+import { StoreProvider } from "../stores/store-provider";
 import type { Cell } from "../../lib/sets/completion";
 import type { PriceFact } from "../../lib/decks/price";
 
@@ -274,5 +275,26 @@ describe("SetCell — no size literal at any width", () => {
     const shape = (root: HTMLElement) =>
       (root.querySelector("button") as HTMLElement).className;
     expect(shape(owned)).toBe(shape(missing));
+  });
+});
+
+describe("SetCell at another store (store preference)", () => {
+  it("names the reader's store, not Mana Pool, on a card it has no price for", () => {
+    render(
+      <StoreProvider store="tcgplayer">
+        <SetCell cell={cell({})} price={null} newestAsOf={NEWEST} />
+      </StoreProvider>,
+    );
+    expect(screen.getByRole("button", { name: /No price from TCGplayer/ })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Mana Pool/ })).toBeNull();
+  });
+
+  it("speaks an owned cell's figure at the reader's store", () => {
+    render(
+      <StoreProvider store="tcgplayer">
+        <SetCell cell={cell({ owned: true, finishes: ["nonfoil"] })} price={fact({})} newestAsOf={NEWEST} />
+      </StoreProvider>,
+    );
+    expect(screen.getByRole("button", { name: /\$1\.20 at TCGplayer/ })).toBeInTheDocument();
   });
 });
