@@ -119,7 +119,7 @@ export function WhereCreditsWork({
             <i aria-hidden className="block h-[6px] w-[6px] flex-none rotate-45 border border-[color:var(--fg-faint)]" />
             {sheet.freeLine}
           </p>
-          <ul role="list" className={LIST}>
+          <ul role="list" aria-label={sheet.freeLine} className={LIST}>
             {sheet.free.map((r) => <Row key={r.id} row={r} />)}
           </ul>
           {teaser ? (

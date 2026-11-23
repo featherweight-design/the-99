@@ -75,14 +75,15 @@ const ROW_TOOL: Partial<Record<WrittenRow["id"], ToolId>> = {
   "help-me-choose": "help-me-choose",
 };
 
-/** The people-facing landing of a deck tool on the reader's most recently touched deck, from the shared landing table. */
+/** The people-facing landing of a deck tool on the first deck of the reader's list, from the shared landing table. */
 function deckLanding(id: "overview" | "consider", deckId: string | null): string | null {
   const spot = landingSpotFor(id);
   return deckId && spot?.lands.kind === "deck" ? `/decks/${deckId}?tab=${spot.lands.tab}` : null;
 }
 
-/** Where Find a deck lands: the collection's Free cards, where each card carries the button. */
-const FIND_A_DECK_HREF = "/collection?avail=free";
+/** Where Find a deck lands, from the shared landing table: the collection's Free cards, where each card carries the button. */
+const findADeckLanding = landingSpotFor("find-a-deck")?.lands;
+const FIND_A_DECK_HREF = findADeckLanding?.kind === "route" ? findADeckLanding.href : null;
 
 export function welcomeSheet(input: {
   /** `writtenForYou(suggestedV2, upgrade).rows`. */
@@ -92,7 +93,7 @@ export function welcomeSheet(input: {
   decks: number;
   /** `showcaseGroups` for this reader: its card states are the shipped Try-it resolver's answers. */
   groups: readonly ShowcaseGroup[];
-  /** The reader's most recently touched deck, which Overview and Consider open on; null with none. */
+  /** The first deck of the list the caller holds (Home's order), which Overview and Consider open on; null with none. */
   firstDeckId?: string | null;
 }): WelcomeSheet | null {
   if (!input.written || input.written.length === 0) return null;
