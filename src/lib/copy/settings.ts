@@ -11,6 +11,8 @@ export const settingsCopy = {
     /** The threshold sentence, around the stepper: `Offer a card only when I have [2] or more spare copies.` */
     before: "Offer a card only when I have",
     after: "or more spare copies.",
+    /** The pointer under the threshold sentence: the same number decides what the reader can offer from a friend's wishlist. */
+    alsoOffer: "This also decides which cards you can offer from a friend’s wishlist.",
     stepperLabel: "Spare copies a card needs before it is offered",
     fewer: "Fewer",
     more: "More",

@@ -575,8 +575,19 @@ export const spareCopy = {
  * tab marking the cards the reader can spare, and the sheet that offers one. Reused shipped strings are named in comments.
  */
 export const haveItCopy = {
-  key: { spare: "you can spare", asked: "asked you", offered: "offered", accepted: "accepted" },
+  key: { spare: "you can spare", asked: "asked you", offered: "offered", accepted: "accepted", under: "under your threshold" },
   aria: (card: string) => `You can spare ${card}`,
+  /** A spare under the reader's Offer threshold (Settings › Spares): the dashed tile, the key word, the call-out when only these exist, and the sheet. */
+  under: {
+    aria: (card: string, min: number) => `You have a spare ${card}, under your threshold of ${min}`,
+    sub: (min: number) => `under your threshold of ${min}`,
+    foot: (min: number) => `You offer a card only when you have ${min} or more spare copies.`,
+    settings: "Change it in Settings ›",
+    /** After the call-out's body when some spares can be offered; alone when none can. */
+    more: (n: number) => (n === 1 ? "1 more is under your threshold." : `${n} more are under your threshold.`),
+    title: (n: number) => (n === 1 ? "You have 1 spare under your threshold" : `You have ${n} spares under your threshold`),
+    body: (names: string, min: number) => `${names}. You offer a card from ${min} spare copies; change it in Settings › Spares.`,
+  },
   /** The press's aria with its mark, as `spareCopy.request.markAria` does for the Wishlist tab's press. */
   markAria: (base: string, mark: "asked" | "offered" | "accepted") => `${base}, ${mark === "asked" ? "asked you" : mark}`,
   title: "You have this",

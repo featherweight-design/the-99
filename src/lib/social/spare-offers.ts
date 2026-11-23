@@ -21,7 +21,7 @@ import {
   type IncomingAsk, type OtherSide,
 } from "./spare-requests";
 import { recordFeedItem } from "./feed-write";
-import { loadOwnOffered } from "./spares";
+import { loadOwnOffered, loadOwnSpareSplit } from "./spares";
 import { loadFriendsWantedPairs, loadFriendWantedGap } from "./wishlist";
 import { MAX_SPARES_BATCH } from "./client-rules";
 
@@ -176,11 +176,17 @@ export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, 
 }
 
 /** What a friend's Wishlist tab draws of one card the viewer can spare (`HaveItCard.mark` null: nothing is open or agreed). */
-export type HaveItCard = { oracleId: string; spare: number; mark: OfferMark | null; requestId: string | null; daysLeft: number | null; copies: number | null };
+export type HaveItCard = {
+  oracleId: string; spare: number; mark: OfferMark | null; requestId: string | null; daysLeft: number | null; copies: number | null;
+  /** The viewer's Offer threshold when it holds this spare back (0 < spare < threshold): the tile draws muted, the sheet explains and cannot offer. Absent for an offerable card. */
+  under?: number;
+};
 
 /**
  * The friend's wishlist cards the viewer can spare, each with its mark (You have it, PR 3b): the viewer's own spare rule
- * (`loadOwnOffered`, in batches) joined to `loadOfferMarks`. A card the viewer cannot spare is absent, whatever its row says.
+ * (`loadOwnSpareSplit`, in batches) joined to `loadOfferMarks`. A card the viewer cannot spare is absent, whatever its row says.
+ * A spare their own threshold holds back comes back with `under` set and no mark (You have it R2: unofferable, and the Offer
+ * write's own re-check still refuses it); a card they kept back is absent.
  * The friend's quantity and `held` stay with the caller's lines and the write: neither is read here.
  */
 export async function loadHaveIt(viewerId: string, friendPublicId: unknown, oracleIds: readonly string[], now = new Date()): Promise<HaveItCard[]> {
@@ -188,14 +194,17 @@ export async function loadHaveIt(viewerId: string, friendPublicId: unknown, orac
   const batches: string[][] = [];
   for (let i = 0; i < ids.length; i += MAX_SPARES_BATCH) batches.push(ids.slice(i, i + MAX_SPARES_BATCH));
   const [spares, marks] = await Promise.all([
-    Promise.all(batches.map((b) => loadOwnOffered(viewerId, b))),
+    Promise.all(batches.map((b) => loadOwnSpareSplit(viewerId, b))),
     loadOfferMarks(viewerId, friendPublicId, ids, now),
   ]);
   const out: HaveItCard[] = [];
   for (const got of spares) {
-    for (const [oracleId, spare] of got) {
+    for (const [oracleId, spare] of got.offered) {
       const m = marks.get(oracleId);
       out.push({ oracleId, spare, mark: m?.mark ?? null, requestId: m?.requestId ?? null, daysLeft: m?.daysLeft ?? null, copies: m?.copies ?? null });
+    }
+    for (const [oracleId, spare] of got.under) {
+      out.push({ oracleId, spare, mark: null, requestId: null, daysLeft: null, copies: null, under: got.min });
     }
   }
   return out;

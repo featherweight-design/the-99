@@ -185,18 +185,31 @@ export async function loadFriendSpares(viewerId: string, oracleIds: readonly str
  * rows, so it needs no grant.
  */
 export async function loadOwnOffered(userId: string, oracleIds: readonly string[]): Promise<Map<string, number>> {
+  return (await loadOwnSpareSplit(userId, oracleIds)).offered;
+}
+
+/**
+ * `loadOwnOffered`'s read, split: `offered` is what the reader offers, `under` the cards they hold spare copies of that
+ * their own `spare_min` holds back (0 < spare < min, not kept back) with the spare count, and `min` the threshold. A card
+ * the reader kept back is in neither: that is a choice, where `under` is a rule the reader can change. The same snapshot
+ * serves both, so a card is never in `offered` and `under` at once (You have it R2).
+ */
+export async function loadOwnSpareSplit(userId: string, oracleIds: readonly string[]): Promise<{ offered: Map<string, number>; under: Map<string, number>; min: number }> {
   const asked = [...new Set(oracleIds.filter(isUuid))];
-  const out = new Map<string, number>();
-  if (asked.length === 0) return out;
+  const offered = new Map<string, number>();
+  const under = new Map<string, number>();
+  if (asked.length === 0) return { offered, under, min: 1 };
   const read = await db.transaction(async (tx) => ({
     model: await loadAvailability(userId, { oracleIds: asked }, tx),
     settings: await spareSettingsIn(tx, userId, asked),
   }), { isolationLevel: "repeatable read" });
+  const { min, kept } = read.settings;
   for (const [oracleId, a] of read.model) {
     const spare = spareCount(a);
-    if (isOffered(spare, read.settings.min, read.settings.kept.has(oracleId))) out.set(oracleId, spare);
+    if (isOffered(spare, min, kept.has(oracleId))) offered.set(oracleId, spare);
+    else if (spare > 0 && !kept.has(oracleId)) under.set(oracleId, spare);
   }
-  return out;
+  return { offered, under, min };
 }
 
 /**

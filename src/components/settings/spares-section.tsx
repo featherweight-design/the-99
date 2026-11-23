@@ -108,6 +108,7 @@ export function SparesSection({ spareMin, pods, kept }: { spareMin: number; pods
         <Stepper value={min} saving={saving} onStep={step} />
         <span>{c.after}</span>
       </div>
+      <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.alsoOffer}</p>
       <WhoSees pods={pods} />
       <h3 className="m-0 mt-[22px] font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.keptHead(shown.length)}</h3>
       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.keptExplain}</p>

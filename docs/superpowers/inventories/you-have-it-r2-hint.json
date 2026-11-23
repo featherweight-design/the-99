@@ -1,0 +1,38 @@
+{
+  "feature": "You have it R2, PR 2: the below-threshold hint (T0 to T3, G1, D0 to D4)",
+  "note": "Needs a SCRATCH branch off local-dev: the reader's Offer threshold at 2, a friend wanting one card the reader can offer, one they hold a single spare of (under) and one they hold none of. probe:you-have-it-r2b seeds it with YHI_KEEP=1; set user_prefs.spare_min back to 2 and re-add the offerable card for the sheet. The friend's public id below is that scratch friend's.",
+  "out": "contact-sheets/you-have-it-r2-hint",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "wishlist-under",
+      "label": "friend Wishlist tab: call-out, key and the dashed under tile",
+      "view": "src/components/social/friend-wishlist-have.tsx",
+      "steps": [
+        { "goto": "/friends/e69f0532-1f75-4a50-93fd-f514e89be768/wishlist", "wait": "[data-testid=\"have-callout\"]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "under-sheet",
+      "label": "the under tile's sheet: no Offer, foot, Change it in Settings",
+      "view": "src/components/social/friend-wishlist-have.tsx",
+      "steps": [
+        { "goto": "/friends/e69f0532-1f75-4a50-93fd-f514e89be768/wishlist", "wait": "[data-testid=\"have-press\"]", "settle": 2500 },
+        { "click": "[data-testid=\"have-press\"][aria-label*=\"under your threshold\"]" },
+        { "wait": "[data-testid=\"have-sheet\"]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "settings-spares",
+      "label": "Settings, Spares: the pointer sentence under the stepper",
+      "view": "src/components/settings/spares-section.tsx",
+      "steps": [
+        { "goto": "/settings#settings-spares", "wait": "#settings-spares", "settle": 800 }
+      ]
+    }
+  ]
+}
