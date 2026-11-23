@@ -280,9 +280,16 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // Ask (D): the tools a typed question answers sit above the cards, and ↑ ↓ walk both as one list: the tools take the
   // first places, so a card's place is `active - toolCount`.
   const ask = useAsk({ open, online, query: trimmed, searching });
-  const toolCount = Layer === null || !online || phase === "failed" ? 0 : ask.tools.length;
+  // Tools count only while they are drawn: not for a stale list (the layer keeps the old rows under the bar), a failed read or no query.
+  const toolCount = Layer === null || !online || phase === "failed" || !searching || rowsFor !== trimmed ? 0 : ask.tools.length;
+  // A highlighted card must not slide under the tools when they arrive after the cards.
+  const [toolsSeen, setToolsSeen] = useState(0);
+  if (toolsSeen !== toolCount) {
+    setToolsSeen(toolCount);
+    setActive(-1);
+  }
   // The shape of each settled query, once (never its text): the tools that answered, whether card names matched, how many words.
-  const askSettled = open && searching && online && phase === "results" && ask.tools.length === ask.ids.length;
+  const askSettled = open && searching && online && phase === "results" && rowsFor === trimmed && ask.tools.length === ask.ids.length;
   const askReported = useRef("");
   useEffect(() => {
     if (!askSettled) return;
@@ -477,7 +484,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const pressTool = useCallback(
     (tool: ToolCardModel, index: number) => {
       if (bodyRef.current?.closest("[inert]")) return;
-      captureToolEvent("ask_tool_pressed", { tool: tool.id, from: desktop ? "rail" : "phone_sheet", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
+      captureToolEvent("ask_tool_pressed", { tool: tool.id, from: desktop ? "desktop" : "phone_sheet", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
       if (tool.id === "find-a-deck") captureToolEvent("find_a_deck_opened", { from: "ask" });
       close();
       router.push(toolHref(tool));

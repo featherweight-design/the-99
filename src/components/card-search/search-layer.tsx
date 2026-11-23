@@ -279,6 +279,8 @@ function SearchBody(props: SearchLayerProps) {
     // Nothing answers: the tools part is the "Nothing here answers that yet" state, never a dead end. A tool that
     // answers with no card name is `Tools for this` over the one line `No card names match.`
     if (toolsOn) return withTools(<NoCards />);
+    // Tools matched but are still on the way: the searching line, never the no-results box that the tools would then replace.
+    if (p.ask.ids.length > 0) return <p className={META}>{cardSearchCopy.searching}</p>;
     if (p.ask.ids.length === 0 && askWords(p.query).length >= 2) {
       return <NoTool questions={p.ask.starters} onPick={p.ask.onStarter} onNavigate={p.ask.onNavigate} />;
     }
@@ -293,7 +295,7 @@ function SearchBody(props: SearchLayerProps) {
   if (toolsOn) {
     return (
       <>
-        {withTools(<><p className={META}>{cardSearchCopy.count(p.rows.length)}</p><Rows {...p} from={p.rows} matchQuery={p.rowsFor} offset={tools.length} bare /></>)}
+        {withTools(<><p aria-hidden className={META}>{cardSearchCopy.count(p.rows.length)}</p><Rows {...p} from={p.rows} matchQuery={p.rowsFor} offset={tools.length} bare /></>)}
         {p.rows.length >= RESULTS_LIMIT ? (
           <p className="border-t border-solid border-[color:var(--border)] px-4 py-[14px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">
             {cardSearchCopy.limitReached}

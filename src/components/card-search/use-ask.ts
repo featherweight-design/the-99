@@ -35,13 +35,14 @@ export type Ask = {
 
 export function useAsk({ open, online, query, searching }: { open: boolean; online: boolean; query: string; searching: boolean }): Ask {
   const [start, setStart] = useState<Start | null>(null);
+  const [startFailed, setStartFailed] = useState(false);
   useEffect(() => {
     if (!open || !online) return;
     let live = true;
     askStartAction()
       .then((s) => live && setStart(s))
       // Unread: every starter and every tool stay, as when offline.
-      .catch(() => {});
+      .catch(() => live && setStartFailed(true));
     return () => {
       live = false;
     };
@@ -51,7 +52,10 @@ export function useAsk({ open, online, query, searching }: { open: boolean; onli
     const off = new Set<ToolId>(start?.off ?? []);
     return (id: ToolId) => !off.has(id);
   }, [start]);
-  const ids = useMemo(() => (searching ? matchTools(query, on) : []), [searching, query, on]);
+  // Online, a switch-off tool must not flash before the reader's switches arrive, so nothing matches until they have; offline (or
+  // unread) every tool answers from the registry, as the fallback cards do.
+  const waiting = online && start === null && !startFailed;
+  const ids = useMemo(() => (searching && !waiting ? matchTools(query, on) : []), [searching, waiting, query, on]);
   const key = ids.join(",");
   const [read, setRead] = useState<{ key: string; models: ToolCardModel[] }>({ key: "", models: [] });
   const seq = useRef(0);

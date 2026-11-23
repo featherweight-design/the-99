@@ -30,7 +30,7 @@ export const TUNING_OPENED_TOOL = ["hub", "consider", "suggested", "mana", "cuts
 export type TuningOpenedTool = (typeof TUNING_OPENED_TOOL)[number];
 /** Ask in the card search (D): where the search was opened from, where an answer was pressed, and the shape of a query, never its text. */
 export const SEARCH_OPENED_FROM = ["rail", "header", "cmdk"] as const;
-export const ASK_PRESSED_FROM = ["rail", "phone_sheet"] as const;
+export const ASK_PRESSED_FROM = ["desktop", "phone_sheet"] as const;
 export const ASK_WORDS = ["1", "2", "3+"] as const;
 export const ASK_COUNT = ["0", "1", "2", "3"] as const;
 export const ASK_CARDS = ["none", "some"] as const;
