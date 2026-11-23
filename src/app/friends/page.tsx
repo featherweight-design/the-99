@@ -22,6 +22,7 @@ import { spendFlyerOnSignUp } from "../../lib/flyer/spend";
 import { pendingReceipt, reservationIdFrom, spendInviteOnSignUp, takeReceipt } from "../../lib/invites/spend";
 import { listPods } from "../../lib/social/access";
 import { listSharedPods } from "../../lib/social/spares";
+import { loadSparableCounts } from "../../lib/social/spare-offers";
 import { PodsPane } from "../../components/social/pods-pane";
 import { MAX_OPEN_INVITES, profileNeedsClerk } from "../../lib/social/rules";
 import { ACCEPTED_PARAM, INVITE_PARAM, originFrom } from "../../lib/social/client-rules";
@@ -91,7 +92,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   });
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
-  const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs, mine, hasHistory] = await Promise.all([
+  const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs, mine, hasHistory, sparable] = await Promise.all([
     perf.timed("ensureProfile", () => ensureProfile(userId, user?.firstName)),
     perf.timed("friendsAndLinks", () => loadFriendsAndLinks(userId, now)),
     perf.timed("pods", () => listPods(userId)),
@@ -105,6 +106,8 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     perf.timed("yourRequests", () => loadYourRequests(userId, env, now)),
     // Whether Request history has anything to open: the Requests box's foot link (R1d D2).
     perf.timed("requestHistoryExists", () => hasRequestHistory(userId)),
+    // The per-friend chip (You have it): how many of each friend's wanted cards the reader can spare. A count that cannot be read draws no chip.
+    perf.timed("sparableCounts", () => loadSparableCounts(userId).catch(() => new Map<string, number>())),
   ]);
   // After the response, never during the render: record any trade match this reader has not been told about (the next
   // render draws it), then clear the Friends badge up to the instant this page drew. Each writes only when it has
@@ -154,6 +157,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
       }
       pods={<PodsPane pods={pods} sharedIds={shared.map((s) => s.podId)} friends={friends} ruleZero={{ tables, now }} />}
       friends={friends}
+      sparable={Object.fromEntries(sparable)}
       links={links}
       openInviteNew={query[INVITE_PARAM] === "new"}
       accepted={

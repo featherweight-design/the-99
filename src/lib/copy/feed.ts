@@ -19,6 +19,12 @@ function spareRequestTitle(friend: string | ThirdPartyName, card: string): strin
 function spareRequestTitle(friend: string | ThirdPartyName, card: string): string | PersonParts {
   return typeof friend === "string" ? `${friend} asks for your spare ${card}` : personText`${friend} asks for your spare ${card}`;
 }
+function spareOfferTitle(friend: string, card: string): string;
+function spareOfferTitle(friend: ThirdPartyName, card: string): PersonParts;
+function spareOfferTitle(friend: string | ThirdPartyName, card: string): string | PersonParts;
+function spareOfferTitle(friend: string | ThirdPartyName, card: string): string | PersonParts {
+  return typeof friend === "string" ? `${friend} is offering you ${card}` : personText`${friend} is offering you ${card}`;
+}
 function seeSpares(friend: string): string;
 function seeSpares(friend: ThirdPartyName): PersonParts;
 function seeSpares(friend: string | ThirdPartyName): string | PersonParts;
@@ -189,6 +195,8 @@ export const feedCopy = {
       tradeMatch: tradeMatchTitle,
       /** Also the title of the same ask on `/friends`' Waiting on you. */
       spareRequest: spareRequestTitle,
+      /** An offer to the reader (You have it): the same row and lead, turned around. */
+      spareOffer: spareOfferTitle,
       combo: (a: string, b: string) => `${a} + ${b}`,
     },
     /** Each kind's one line. */
@@ -201,6 +209,7 @@ export const feedCopy = {
       priceDropAt: (printing: string) => `at ${printing}.`,
       tradeMatch: "It’s on your wishlist.",
       spareRequest: "Answer in Friends.",
+      spareOffer: "Answer in Friends.",
       /** Source-neutral: an upload, a hand add and a bought card all complete a pair. */
       combo: (added: string) => `You added ${added}.`,
       /** The lead of the combo sheet the feed opens on its own (small items 12 PR 3b); the second sentence is a DRAFT for `/copy-review`. */

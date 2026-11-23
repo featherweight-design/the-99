@@ -17,6 +17,7 @@ vi.mock("../../lib/home/summary", () => ({ getCollectionStats: async () => ({ un
 vi.mock("../../lib/flags/request", () => ({ requestFlags: async () => state.env }));
 vi.mock("../../lib/feed/read", () => ({ unseenCount: async () => 0, unseenFriendsCount: async () => 0 }));
 vi.mock("../../lib/social/spare-requests", () => ({ waitingAsksCount: async () => 0 }));
+vi.mock("../../lib/social/spare-offers", () => ({ waitingOffersCount: async () => 0 }));
 vi.mock("../../lib/social/friend-requests", () => ({ waitingFriendRequestsCount: async () => 0 }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: async () => 0 }));
 const face = vi.hoisted(() => vi.fn());

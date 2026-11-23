@@ -75,6 +75,14 @@ export function feedText(item: FeedView): { title: string | PersonParts; line: R
     case "trade-match":
       return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: item.askable ? c.press.tradeMatchAsk(friend) : c.press.tradeMatch(friend) };
     case "spare-request":
+      if (item.offer) {
+        // An OFFER (You have it): the friend's answer to the reader's offer, or the offer made to the reader.
+        const o = spareCopy.request.offer;
+        if (item.answer) return item.answer === "yes"
+          ? { title: o.answered.yes(friend, card), line: o.answered.yesLine, press: null }
+          : { title: o.answered.no(friend, card), line: o.answered.noLine, press: null };
+        return { title: c.title.spareOffer(friend, card), line: c.line.spareOffer, press: null };
+      }
       if (item.answer) return { ...answerText(item, friend, card), press: c.press.answer };
       return { title: c.title.spareRequest(friend, card), line: c.line.spareRequest, press: null };
     case "combo":

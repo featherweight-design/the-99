@@ -18,7 +18,7 @@ import { isUuid } from "./rules";
 import { askRefusal, capCopies, daysLeft, isAnswer, offerAnswerData, offerData, openFloor, requestState, type AskRefusal, type PriorAsk, type StoredStatus } from "./spare-request-rules";
 import {
   askLockQuery, expireStaleQuery, faceOf, inAskTransaction, lockFriendshipQuery, type AnswerOutcome, type AskOutcome, type CloseOutcome,
-  type OtherSide,
+  type IncomingAsk, type OtherSide,
 } from "./spare-requests";
 import { recordFeedItem } from "./feed-write";
 import { loadOwnOffered } from "./spares";
@@ -237,4 +237,14 @@ export async function loadIncomingOffers(wanterId: string, now = new Date()): Pr
       offerer: { publicId: r.public_id, displayName: named(r.display_name), commander: faceOf(r) }, createdAt, daysLeft: daysLeft(createdAt, now),
     }];
   });
+}
+
+/** Offers waiting on the reader's answer, for the Friends badge beside `waitingAsksCount`. */
+export async function waitingOffersCount(wanterId: string, now = new Date()): Promise<number> {
+  return (await loadIncomingOffers(wanterId, now)).length;
+}
+
+/** An incoming offer as an `IncomingAsk`, turned around: the offerer is the `asker`, the copies they put up are `spare` and `copies`. Waiting on you and Home's lead draw it with the ask's own parts. */
+export function offerAsAsk(o: IncomingOffer): IncomingAsk {
+  return { id: o.id, oracleId: o.oracleId, card: o.card, copies: o.copies, deckName: null, spare: o.copies, asker: o.offerer, createdAt: o.createdAt, daysLeft: o.daysLeft };
 }

@@ -98,18 +98,19 @@ export function LeadStory({
   const two = seesLists(item);
   const friend = item.friend?.displayName ?? "";
   const cardName = item.card?.name ?? "";
-  const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend) : null;
+  const offer = ask?.offer !== undefined;
+  const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend, offer) : null;
   const text = receipt
     ? { title: receipt.title, line: <PersonText text={receipt.detail} />, press: null }
     : ask
-      ? { title: feed.title, line: <PersonText text={spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} />, press: null }
+      ? { title: feed.title, line: <PersonText text={ask.offer ? spareCopy.request.offer.detail(friend, ask.spare, ask.offer.want) : spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} />, press: null }
       : feed;
   // The ✕ is absent while an answer is out and on the receipt, as shipped.
   const dismiss = receipt || busy ? undefined : onDismiss;
   async function press(a: Answer, from: Element) {
     if (!ask || busy) return;
     onHold?.(true);
-    if (!(await answer(ask.id, a))) {
+    if (!(await answer(ask.id, a, offer))) {
       onHold?.(false);
       return;
     }
@@ -196,7 +197,7 @@ export function LeadStory({
             )}
             {ask && !receipt && (
               <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
-                onAnswer={(a, from) => void press(a, from)} size="lead" />
+                onAnswer={(a, from) => void press(a, from)} size="lead" offer={offer} />
             )}
             {dismiss && <DismissButton title={text.title} onPress={dismiss} className="mt-[-2px] md:mt-0" />}
           </div>

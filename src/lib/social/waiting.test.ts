@@ -11,8 +11,10 @@ const m = vi.hoisted(() => ({
   kinds: vi.fn(),
   asks: vi.fn(),
   friendAsks: vi.fn(),
+  offers: vi.fn(),
 }));
 vi.mock("./spare-requests", () => ({ loadIncomingAsks: m.asks }));
+vi.mock("./spare-offers", async (actual) => ({ ...(await actual<typeof import("./spare-offers")>()), loadIncomingOffers: m.offers }));
 vi.mock("./friend-requests", () => ({ loadIncomingFriendRequests: m.friendAsks }));
 vi.mock("../../db", () => ({
   db: { execute: m.execute, select: () => ({ from: () => ({ where: m.where }) }) },
@@ -35,6 +37,7 @@ const row = (key: string, oracle: string, friend: string, hoursAgo: number, unse
 beforeEach(() => {
   m.asks.mockReset().mockResolvedValue([]);
   m.friendAsks.mockReset().mockResolvedValue([]);
+  m.offers.mockReset().mockResolvedValue([]);
   m.kinds.mockReset().mockReturnValue(["new-set", "trade-match", "price-drop"]);
   m.feedQuery.mockReset().mockReturnValue("QUERY");
   m.execute.mockReset().mockResolvedValue({ rows: [row("item:1", "ghalta", "pub-colin", 5), row("item:2", "sol", "pub-gone", 2)] });
@@ -116,3 +119,21 @@ describe("loadWaitingOnYou", () => {
     });
   });
 });
+
+describe("an offer made to the reader", () => {
+  it("is a Waiting row of the same kind, the offerer as the asker, flagged with what the reader wants", async () => {
+    const offerer = { publicId: "pub-max", displayName: named("Max"), commander: null };
+    m.offers.mockResolvedValue([{
+      id: "o1", oracleId: "lath", card: { name: "Lathliss, Dragon Queen", imageUri: null }, copies: 1, want: 2, offerer,
+      createdAt: new Date(NOW.getTime() - 3_600_000), daysLeft: 13,
+    }]);
+    m.execute.mockResolvedValue({ rows: [] });
+    const rows = await loadWaitingOnYou("user_viewer", ENV, NOW);
+    expect(rows).toEqual([expect.objectContaining({
+      key: "o1", kind: "spare-request", offer: { want: 2 },
+      ask: expect.objectContaining({ id: "o1", spare: 1, copies: 1, asker: offerer, deckName: null, daysLeft: 13 }),
+    })]);
+    expect(m.offers).toHaveBeenCalledWith("user_viewer", NOW);
+  });
+});
+

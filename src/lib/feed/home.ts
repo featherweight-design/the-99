@@ -28,6 +28,7 @@ import { compareNames } from "../person-name";
 import type { ThirdPartyName } from "../person-name/brand";
 import { answerStandalone, type Answer } from "../social/spare-request-rules";
 import { loadIncomingAsks, type IncomingAsk } from "../social/spare-requests";
+import { loadIncomingOffers, offerAsAsk, type IncomingOffer } from "../social/spare-offers";
 import { loadFriendSpares, type FriendSpare } from "../social/spares";
 import { noticeTradeMatches } from "../social/trade-match";
 import { availableFeedKinds } from "./flag";
@@ -146,7 +147,11 @@ export function postLists(kind: FeedKind, post: Pick<FeedPost, "lists" | "promis
 export type AnswerDetail = { others: ThirdPartyName[]; standalone: boolean };
 
 /** What the lead story's Yes and No need: the request, the holder's spare count, the copies and deck the ask names. */
-export type LeadAsk = { id: string; spare: number; copies: number; deckName: ThirdPartyName | null; daysLeft: number };
+export type LeadAsk = {
+  id: string; spare: number; copies: number; deckName: ThirdPartyName | null; daysLeft: number;
+  /** The lead is an OFFER made to the reader (You have it): what the reader wants of the card; Yes and No answer the offer. */
+  offer?: { want: number };
+};
 
 export type HomeFeed =
   /**
@@ -382,7 +387,10 @@ export async function loadHomeFeed(
   // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).
   const standalone = new Set(items.flatMap((i) => ("answer" in i && i.answer && answerStandalone(i.data) ? [i.key] : [])));
   const answered = await answerDetails(userId, feed, standalone);
-  if (answered.chosen && answered.lead?.kind === "spare-request") return withLeadAsk(answered, await loadIncomingAsks(userId, env, now, q));
+  if (answered.chosen && answered.lead?.kind === "spare-request") {
+    const asks = answered.lead.offer ? (await loadIncomingOffers(userId, now)).map(offerAsLeadAsk) : await loadIncomingAsks(userId, env, now, q);
+    return withLeadAsk(answered, asks);
+  }
   return answered;
 }
 
@@ -429,13 +437,16 @@ export function withAnswerDetails(
   return { ...feed, lead: feed.lead && detail(feed.lead), items: feed.items.map(detail) };
 }
 
+/** An incoming offer as the lead's ask: the offer's own parts, plus what the reader wants of the card. */
+const offerAsLeadAsk = (o: IncomingOffer): IncomingAsk & { offer: { want: number } } => ({ ...offerAsAsk(o), offer: { want: o.want } });
+
 /** The lead with its ask attached, when one of `asks` is the lead's (its card and its asker). Pure, for the tests. */
-export function withLeadAsk(feed: HomeFeed, asks: readonly IncomingAsk[]): HomeFeed {
+export function withLeadAsk(feed: HomeFeed, asks: readonly (IncomingAsk & { offer?: { want: number } })[]): HomeFeed {
   if (!feed.chosen || feed.lead?.kind !== "spare-request" || !feed.lead.card || !feed.lead.friend) return feed;
   const { card, friend } = feed.lead;
   const ask = asks.find((a) => a.oracleId === card.oracleId && a.asker.publicId === friend.publicId);
   if (!ask) return feed;
-  return { ...feed, lead: { ...feed.lead, ask: { id: ask.id, spare: ask.spare, copies: ask.copies, deckName: ask.deckName, daysLeft: ask.daysLeft } } };
+  return { ...feed, lead: { ...feed.lead, ask: { id: ask.id, spare: ask.spare, copies: ask.copies, deckName: ask.deckName, daysLeft: ask.daysLeft, ...(ask.offer ? { offer: ask.offer } : {}) } } };
 }
 
 /** The lead out of the list, by the shared rule; the head's count is every unseen item, the lead's included. */

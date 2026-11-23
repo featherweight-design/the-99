@@ -127,7 +127,7 @@ export function WaitingOnYou({ rows, now, bare = false }: { rows: readonly Waiti
   }
   async function press(row: SpareRequestRow, a: Answer, index: number, from: Element) {
     if (friendBusy !== null) return;
-    if (!(await answer(row.ask.id, a))) return;
+    if (!(await answer(row.ask.id, a, row.offer !== undefined))) return;
     setReceipts((prev) => new Map(prev).set(row.key, { row, answer: a, index }));
     land(`[data-receipt="${row.key}"] [data-testid="spare-receipt-status"]`, from);
   }
@@ -212,22 +212,25 @@ function AskRow({ row, now, busy, locked, onAnswer, onDismiss }: {
 }) {
   const { ask } = row;
   const friend = ask.asker.displayName;
+  const offer = row.offer !== undefined;
   return (
-    <li data-testid="waiting-row" data-kind="spare-request" data-unseen="" className={ASK_ROW}>
+    <li data-testid="waiting-row" data-kind="spare-request" data-offer={offer ? "" : undefined} data-unseen="" className={ASK_ROW}>
       <Picture imageUri={ask.card.imageUri} friend={ask.asker} className="row-span-2 self-start md:row-span-1 md:self-center" />
       <div className="flex min-w-0 flex-col gap-[3px]">
         <p className="m-0 flex min-w-0 items-center gap-[7px]">
           <Unseen />
-          <span className={`${KIND} text-[color:var(--accent-text)]`}>{w.kind["spare-request"]}</span>
+          <span className={`${KIND} text-[color:var(--accent-text)]`}>{offer ? r.offer.kind : w.kind["spare-request"]}</span>
           <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{ago(row.createdAt, now)}</small>
         </p>
-        <p className={TITLE}><PersonText text={feedCopy.home.title.spareRequest(friend, ask.card.name)} /></p>
-        <p className={DETAIL}><PersonText text={r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} /></p>
+        <p className={TITLE}><PersonText text={(offer ? feedCopy.home.title.spareOffer : feedCopy.home.title.spareRequest)(friend, ask.card.name)} /></p>
+        <p className={DETAIL}>
+          <PersonText text={row.offer ? r.offer.detail(friend, ask.spare, row.offer.want) : r.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} />
+        </p>
       </div>
       {/* The action line (board `Dismiss-X`, `.d4n .ac`): Yes, No and the days left, then the ✕ at its end. */}
       <div className={ACTIONS}>
-        <AnswerPresses friend={friend} card={ask.card.name} daysLeft={ask.daysLeft} busy={busy} locked={locked} onAnswer={onAnswer} size="row" />
-        <DismissButton title={feedCopy.home.title.spareRequest(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
+        <AnswerPresses friend={friend} card={ask.card.name} daysLeft={ask.daysLeft} busy={busy} locked={locked} onAnswer={onAnswer} size="row" offer={offer} />
+        <DismissButton title={(offer ? feedCopy.home.title.spareOffer : feedCopy.home.title.spareRequest)(friend, ask.card.name)} onPress={onDismiss} disabled={locked} />
       </div>
     </li>
   );
@@ -303,7 +306,7 @@ function FriendReceiptRow({ row, accepted }: { row: FriendRequestRow; accepted: 
 function ReceiptRow({ receipt }: { receipt: { row: SpareRequestRow; answer: Answer; index: number } }) {
   const { ask } = receipt.row;
   const yes = receipt.answer === "yes";
-  const text = receiptText(receipt.answer, shortName(ask.card.name), ask.asker.displayName);
+  const text = receiptText(receipt.answer, shortName(ask.card.name), ask.asker.displayName, receipt.row.offer !== undefined);
   return (
     <li
       data-testid="waiting-receipt"

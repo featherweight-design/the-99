@@ -86,6 +86,7 @@ export function FriendsView({
   pods,
   waiting,
   friends,
+  sparable,
   links,
   accepted,
   origin,
@@ -103,6 +104,8 @@ export function FriendsView({
   /** Waiting on you (menu and Home PR 7): the first section under the head; absent when it has no rows. */
   waiting?: ReactNode;
   friends: Friend[];
+  /** Per friend, how many of their wanted cards the reader can spare (You have it); drawn as the row's chip. */
+  sparable?: Readonly<Record<string, number>>;
   links: OpenInvite[];
   /** The friend Accept just made (E10), resolved on the server from the URL's `publicId`; null for none. */
   accepted: Friend | null;
@@ -466,6 +469,7 @@ export function FriendsView({
               removing={removing}
               onRemove={remove}
               linkable
+              sparable={sparable}
             />
           </div>
           <div data-friends-col="right" className="min-w-0 min-[73.75rem]:flex min-[73.75rem]:flex-col">

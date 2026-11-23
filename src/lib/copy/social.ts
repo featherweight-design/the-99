@@ -115,6 +115,8 @@ export const socialCopy = {
     removeFailed: "We couldn’t remove that friend. Try again.", // toast, role alert
     // The row's link to the friend's page (R2 P1), spoken; the › itself is drawn.
     openAria: (name: ThirdPartyName) => personText`${name}’s page`,
+    /** The per-friend chip (You have it): how many of their wanted cards the reader can spare; it opens their wishlist. */
+    spareChipAria: (name: ThirdPartyName, n: number) => personText`You can spare ${String(n)} of ${name}’s wanted ${n === 1 ? "card" : "cards"}`,
   },
 
   // A friend's page, `/friends/[publicId]` (Social R2 P2, P3; handoff `social-r2 · copy strings.ts` friend block).
@@ -503,6 +505,28 @@ export const spareCopy = {
       personText`${friend}’s been told. Hand ${card} over when you meet; your collection stays as it is until you change it.`,
     keeping: (card: string) => `You’re keeping ${card}`,
     keepingDetail: (friend: string | ThirdPartyName) => personText`${friend}’s been told.`,
+    /**
+     * An OFFER made to the reader (You have it, PR 3a; handoff `design_handoff_the99_you_have_it`, board Friends C1 to C2):
+     * the friend's Waiting on you row, Yes and No as an ask's, and its receipt. The row's title is `feedCopy.home.title.spareOffer`.
+     */
+    offer: {
+      kind: "Spare offer",
+      detail: (from: string | ThirdPartyName, spare: number, want: number) => personText`${from} has ${spare} spare. You want ${want}.`,
+      yesAria: (friend: string | ThirdPartyName, card: string) => personText`Yes, take ${card} from ${friend}`,
+      noAria: (friend: string | ThirdPartyName, card: string) => personText`No, pass on ${card} from ${friend}`,
+      receiptKind: { yes: "Spare offer · accepted", no: "Spare offer · declined" },
+      accepted: (card: string, friend: string | ThirdPartyName) => personText`You said yes to ${card} from ${friend}`,
+      acceptedDetail: (friend: string | ThirdPartyName) => personText`${friend}’s been told. The handover is between you.`,
+      declined: (card: string, friend: string | ThirdPartyName) => personText`You passed on ${card} from ${friend}`,
+      declinedDetail: (friend: string | ThirdPartyName) => personText`${friend}’s been told. Nothing else changes.`,
+      /** The offerer's side: the friend's answer to the reader's offer, as a Home item (the push says the same). */
+      answered: {
+        yes: (friend: string | ThirdPartyName, card: string) => personText`${friend} said yes to ${card}`,
+        yesLine: "The handover is between you.",
+        no: (friend: string | ThirdPartyName, card: string) => personText`${friend} passed on ${card}`,
+        noLine: "Nothing else changes.",
+      },
+    },
     /**
      * The asker's side (PR 3d; board `Asker-States`, call 7): Your requests on `/friends`, in the feed's rows. The
      * kicker names the state (uppercase by CSS); No longer spare and No longer needed are copy only on the board.

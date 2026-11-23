@@ -25,6 +25,7 @@ import type { ThirdPartyName } from "../person-name/brand";
 import { toCommander, type ProfileCommander } from "./commander";
 import { loadIncomingFriendRequests, type IncomingFriendRequest } from "./friend-requests";
 import { loadIncomingAsks, type IncomingAsk } from "./spare-requests";
+import { loadIncomingOffers, offerAsAsk, type IncomingOffer } from "./spare-offers";
 import { spareGrantDetailsQuery } from "./spares";
 
 /**
@@ -33,8 +34,18 @@ import { spareGrantDetailsQuery } from "./spares";
  */
 export const WAITING_ON_YOU_KINDS: readonly FeedKind[] = ["spare-request", "trade-match"];
 
-/** A spare request waiting on the reader's Yes or No; `key` is the request's own id. */
-export type SpareRequestRow = { key: string; kind: "spare-request"; createdAt: Date; unseen: true; ask: IncomingAsk };
+/**
+ * A spare request waiting on the reader's Yes or No; `key` is the request's own id. An OFFER made to the reader (You have it)
+ * is the same row turned around: `ask` carries the offerer as `asker`, the copies they put up as `spare` and `copies`, and
+ * `offer` says what the reader wants of the card; the answer goes to `answerOfferAction`, not the ask's.
+ */
+export type SpareRequestRow = { key: string; kind: "spare-request"; createdAt: Date; unseen: true; ask: IncomingAsk; offer?: { want: number } };
+
+/** An incoming offer as the row's `ask`: id, card, face and days are the same; the spare count is what the offerer puts up. */
+export function offerRow(o: IncomingOffer): SpareRequestRow {
+  const ask = offerAsAsk(o);
+  return { key: o.id, kind: "spare-request", createdAt: o.createdAt, unseen: true, ask, offer: { want: o.want } };
+}
 
 /** A friend request waiting on the reader's Accept or Decline (friend links R1, F1 to F4); `key` names the requester. */
 export type FriendRequestRow = { key: string; kind: "friend-request"; createdAt: Date; unseen: boolean; request: IncomingFriendRequest };
@@ -57,8 +68,9 @@ export type TradeMatchRow = {
 
 /** The section's rows, waiting kinds first and newest within; empty while every kind it draws is off for the reader. */
 export async function loadWaitingOnYou(viewerId: string, env: NodeJS.ProcessEnv, now: Date): Promise<WaitingRow[]> {
-  const [asks, matches, friendAsks] = await Promise.all([
+  const [asks, offers, matches, friendAsks] = await Promise.all([
     loadIncomingAsks(viewerId, env, now),
+    loadIncomingOffers(viewerId, now),
     loadTradeMatchRows(viewerId, env, now),
     loadIncomingFriendRequests(viewerId, env),
   ]);
@@ -67,7 +79,7 @@ export async function loadWaitingOnYou(viewerId: string, env: NodeJS.ProcessEnv,
   const friends = friendAsks.map((request): FriendRequestRow => ({
     key: `friend:${request.requester.publicId}`, kind: "friend-request", createdAt: request.sentAt, unseen: request.unseen, request,
   }));
-  return [...friends, ...[...requests, ...matches].sort(feedOrder)];
+  return [...friends, ...[...requests, ...offers.map(offerRow), ...matches].sort(feedOrder)];
 }
 
 /** The trade matches, from the feed's read with `friends_seen_at` as the cursor. */
