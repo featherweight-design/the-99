@@ -103,7 +103,7 @@ export async function seedPrices(): Promise<SeedPricesResult> {
   // token tables do not exist, because the refresh can reach a database before its migration does.
   const knownTokens = new Set<string>();
   let tokenCatalogSize = 0;
-  if (await tokenPriceTablesExist()) {
+  if (await tokenPriceTablesExist("manapool")) {
     tokenCatalogSize = await countTokenPrintings();
     const rest = feedIds.filter((id) => !known.has(id));
     for (let i = 0; i < rest.length; i += LOOKUP_CHUNK) {

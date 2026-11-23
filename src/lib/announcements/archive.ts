@@ -95,7 +95,8 @@ export function toArchivePage(rows: readonly PostRow[], targets: ReadonlyMap<str
     data: { title: r.title, excerpt: r.excerpt, hero: r.hero, url: r.url, promised: r.promised, lists: r.lists, sale: r.sale },
     unseen: false,
   }));
-  const views = withListTargets(toViews(items.map(toFeedItem), { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() }), targets);
+  // An announcement is never a price drop, the one item whose press reads the store.
+  const views = withListTargets(toViews(items.map(toFeedItem), { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() }, "manapool"), targets);
   const last = shown.at(-1);
   return { items: views, next: rows.length > ARCHIVE_PAGE && last ? encodeCursor({ at: last.published_text, id: last.id }) : null };
 }

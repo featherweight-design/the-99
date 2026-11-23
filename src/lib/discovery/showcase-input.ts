@@ -33,9 +33,10 @@ async function deckCount(userId: string): Promise<number> {
 }
 
 /** `loadToolFits` at the reader's store, so a deck over its limit is the one its Shopping list marks. The store is read
-    only when a tool that prices asks (`readerStoreForPage` never rejects). */
+    only when a tool that prices asks (`readerStoreForPage` never rejects); no other tool reads it, so the rest pass Mana
+    Pool rather than wait on the read. */
 function toolFits(userId: string, env: NodeJS.ProcessEnv, asked: readonly DeckToolId[]) {
-  if (!asked.includes("stand-ins")) return loadToolFits(userId, asked);
+  if (!asked.includes("stand-ins")) return loadToolFits(userId, asked, "manapool");
   return readerStoreForPage(userId, env).then((store) => loadToolFits(userId, asked, store));
 }
 

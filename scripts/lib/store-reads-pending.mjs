@@ -3,35 +3,38 @@
 // in its own section, when its PR gives the call a store; the check fails on an entry whose call already passes one,
 // so this list only shrinks. Nothing new is ever added here: a new read passes the store from its first commit.
 //
-// An entry names the file and the function the call sits in (`enclosingName` in store-reads.mjs), not a line, so an
-// unrelated edit above it does not break the check.
+// An entry names the file, the function the call sits in (`enclosingName` in store-reads.mjs) and how many of its calls
+// leave the store out, not a line, so an unrelated edit above it does not break the check, while a new call in a pending
+// function does: the count no longer matches.
 
 /** Slice 3c-2: intake, decks, commander change. */
 const SLICE_3C2 = [
-  { path: "src/lib/intake/fill-facts.ts", fn: "loadFillGate" },
-  { path: "src/lib/intake/fill-facts.ts", fn: "loadBudgetLeftCents" },
-  { path: "src/lib/intake/trial.ts", fn: "trialFill" },
-  { path: "src/lib/intake/search.ts", fn: "loadSearchFacts" },
-  { path: "src/lib/intake/rows.ts", fn: "decorate" },
-  { path: "src/lib/intake/rows.ts", fn: "loadCardChip" },
-  { path: "src/lib/decks/draft-state.ts", fn: "readDraft" },
-  { path: "src/lib/decks/fill-plan.ts", fn: "buildFillPlan" },
-  { path: "src/lib/decks/tuning-read.ts", fn: "readItems" },
-  { path: "src/lib/decks/versions.ts", fn: "loadVersionDiff" },
-  { path: "src/lib/commander-change/candidates.ts", fn: "loadChangeCandidates" },
-  { path: "src/lib/commander-change/draft-rows.ts", fn: "loadCommanderRows" },
+  { path: "src/lib/intake/fill-facts.ts", fn: "loadFillGate", n: 1 },
+  { path: "src/lib/intake/fill-facts.ts", fn: "loadBudgetLeftCents", n: 1 },
+  { path: "src/lib/intake/trial.ts", fn: "trialFill", n: 1 },
+  { path: "src/lib/intake/search.ts", fn: "loadSearchFacts", n: 1 },
+  { path: "src/lib/intake/rows.ts", fn: "decorate", n: 2 },
+  { path: "src/lib/intake/rows.ts", fn: "loadCardChip", n: 1 },
+  { path: "src/lib/decks/draft-state.ts", fn: "readDraft", n: 1 },
+  { path: "src/lib/decks/fill-plan.ts", fn: "buildFillPlan", n: 1 },
+  { path: "src/lib/decks/tuning-read.ts", fn: "readItems", n: 1 },
+  { path: "src/lib/decks/versions.ts", fn: "loadVersionDiff", n: 1 },
+  { path: "src/lib/commander-change/candidates.ts", fn: "loadChangeCandidates", n: 1 },
+  { path: "src/lib/commander-change/draft-rows.ts", fn: "loadCommanderRows", n: 1 },
 ];
 
 /** Slice 3c-3: precon upgrade, trade ask, friend spares, the commander page, art chains and opponents. */
 const SLICE_3C3 = [
-  { path: "src/lib/precons/upgrade/load.ts", fn: "loadUpgradeFor" },
-  { path: "src/lib/social/trade-ask.ts", fn: "loadTradeAsk" },
-  { path: "src/app/friends/[publicId]/(tabs)/spares/page.tsx", fn: "FriendSparesPage" },
-  { path: "src/app/commanders/[slug]/page.tsx", fn: "CommanderDetailPage" },
-  { path: "src/lib/cards/chain-art.ts", fn: "chainArt" },
-  { path: "src/lib/decks/deck-opponents-read.ts", fn: "withArt" },
-  { path: "src/lib/decks/opponent-commanders.ts", fn: "searchOpponentCommanders" },
-  { path: "src/lib/decks/opponent-commanders.ts", fn: "searchOpponentBackgrounds" },
+  { path: "src/lib/precons/upgrade/load.ts", fn: "loadUpgradeFor", n: 1 },
+  { path: "src/lib/social/trade-ask.ts", fn: "loadTradeAsk", n: 1 },
+  { path: "src/app/friends/[publicId]/(tabs)/spares/page.tsx", fn: "FriendSparesPage", n: 1 },
+  { path: "src/app/commanders/[slug]/page.tsx", fn: "CommanderDetailPage", n: 2 },
+  { path: "src/lib/cards/chain-art.ts", fn: "chainArt", n: 1 },
+  { path: "src/lib/decks/deck-opponents-read.ts", fn: "withArt", n: 1 },
+  { path: "src/lib/decks/opponent-commanders.ts", fn: "searchOpponentCommanders", n: 1 },
+  { path: "src/lib/decks/opponent-commanders.ts", fn: "searchOpponentBackgrounds", n: 1 },
+  // No page calls it today (only scripts/probe-deck-stats.ts); 3c-3 threads it or retires it.
+  { path: "src/lib/decks/stats-query.ts", fn: "loadDeckStats", n: 1 },
 ];
 
 export const PENDING = [...SLICE_3C2, ...SLICE_3C3];

@@ -352,21 +352,27 @@ back at `lib/collection/browse` fails the standing test.
 
 ## check:store-reads
 
-`pnpm check:store-reads` (`scripts/lib/store-reads.mjs`, test `scripts/lib/store-reads.test.mts`) holds every call under `src/` to a
-store-taking read to the reader's store (store choice, design #3200). The guarded reads are `loadPrices` in both
-`src/lib/decks/price-query.ts` (store fourth) and `src/lib/discovery/price.ts` (store second), `readBuyRowPrices`,
-`loadOwnedPrintingPrices` and `loadOpeningArt`. Each defaults its `store` to Mana Pool, so a call that leaves it out compiles and
-prices a TCGplayer reader in Mana Pool, beside figures from their own store. The check is type-aware: it resolves each call
-through import aliases, namespaces and the `@/` path to the declaration, finds that declaration's `store` parameter by name,
-and fails a call with no argument at that position (a spread is given the benefit of the doubt). It throws if a guarded read
-loses its `store` parameter, rather than passing its calls. Test files are skipped; scripts (the landing demo's exporter,
-which stays Mana Pool) are outside `src/`.
+`pnpm check:store-reads` (`scripts/lib/store-reads.mjs`, test `scripts/lib/store-reads.test.mts`) holds every call under `src/` to
+a read that takes the reader's store (store choice, design #3200) to passing one. A function whose positional `store`
+parameter is optional or defaults to Mana Pool (typed `Store`, or defaulted to a store's name) still compiles when a call leaves
+it out, and prices a TCGplayer reader in Mana Pool beside figures from their own store. So every such function declared under
+`src/` is guarded, the price reads themselves (`loadPrices` in `decks/price-query.ts` and `discovery/price.ts`,
+`readBuyRowPrices`, `loadOwnedPrintingPrices`, `loadOpeningArt`) and every wrapper that defaults its own store
+(`loadShoppingRollup`, `loadCollectionList`, `toViews`, ...). A `store` that is a database seam (`reverseCharge`'s) is not one.
 
-Calls not yet threaded are listed by file and enclosing function in `scripts/lib/store-reads-pending.mjs`, one section per
-slice (3c-2, 3c-3). A slice deletes its own entries; an entry whose call now passes a store is a finding, so the list only
-shrinks, and nothing new is added to it. Pass `readerStoreForPage(userId, env)` on a reader's surface, or `"manapool"` where the
-surface is Mana Pool by rule (the cart, a signed-out page). Its failure paths, each seen to fire on a fixture tree: every import
-spelling, each read at its own store position, a pending entry gone stale, a read that lost its parameter.
+Each call is resolved to its declaration through import aliases, namespaces, the `@/` path, re-exports, parentheses and string
+element access, and judged at that declaration's own `store` position. A call fails when it has no argument there, or one whose
+type admits `undefined` (a spread is given the benefit of the doubt). A guarded function referenced any other way (aliased,
+`.call`, handed on) fails too, unless it lands where the store must be given: a parameter or variable typed
+`(ids, store: Store) => ...`. A store inside an options object is not read: those loaders' required `store` fields are
+TypeScript's to enforce. The five price reads are anchors: if one is renamed, moved or loses its default, the check throws rather
+than going quiet. Test files are skipped; scripts (the landing demo's exporter, which stays Mana Pool) are outside `src/`.
+
+Calls not yet threaded are listed in `scripts/lib/store-reads-pending.mjs` by file, enclosing function and count, one section
+per slice (3c-2, 3c-3). A slice deletes its own entries. An entry whose count no longer matches is a finding, so a new call in a
+pending function fails and the list only shrinks; nothing new is added to it. Pass `readerStoreForPage(userId, env)` on a
+reader's surface, or `"manapool"` where the store cannot matter or the surface is Mana Pool by rule (the cart, a push, an
+announcement, the price refresh). Every failure path above has a fixture case in the test.
 
 ## The Fan Content notice's guards
 
