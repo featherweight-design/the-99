@@ -33,6 +33,8 @@ import {
 } from "../../../components/ui/empty-state";
 import { CollectionEmptyDoors } from "../../../components/collection/collection-empty-doors";
 import { requestFlags } from "../../../lib/flags/request";
+import { readerStoreForPage } from "../../../lib/stores/preference";
+import { StoreProvider } from "../../../components/stores/store-provider";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
 import { PICK_RECEIPT_PARAM } from "../../../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../../../lib/precons/pick-receipt-read";
@@ -60,7 +62,9 @@ export default async function CollectionPage({
     // The sort the reader last chose: the first window is cut by it unless the URL names its own.
     sort: parseSortCookie(jar.get(COLLECTION_SORT_COOKIE)?.value),
   };
-  const [stats, { cards, pricesFailed }, ownedSets, availability, savedToken] = await Promise.all([
+  // The reader's store (store preference): Mana Pool, with no read, while the switch is off for them.
+  const storeRead = readerStoreForPage(userId, env);
+  const [stats, { cards, pricesFailed }, ownedSets, availability, savedToken, store] = await Promise.all([
     perf.timed("stats", () => getCollectionStats(userId)),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
@@ -88,7 +92,7 @@ export default async function CollectionPage({
     // `revalidateClaims`, which calls `revalidateUserLists`, which drops exactly the tag
     // `cacheForUser` put on this entry. Building a deck holding both pieces retires the
     // clause on the spot rather than at the hour ceiling.
-    perf.timed("list", () => loadCollectionList(userId)),
+    perf.timed("list", () => storeRead.then((store) => loadCollectionList(userId, store))),
     // Set names + release dates for the Set ▾ panel (#86).
     perf.timed("ownedSets", () => loadOwnedSetMeta(userId)),
     // One aggregate for the whole page — never per row (Addendum 2).
@@ -99,6 +103,7 @@ export default async function CollectionPage({
     // stamp unreadable). The fields themselves are fetched after this render, so a write landing in
     // between can only make the copy filed under this token newer than it says, never older.
     savedListToken(userId, env).catch(() => null),
+    storeRead,
   ]);
 
   // Flattened onto the cards here: a Map cannot cross the server/client
@@ -165,14 +170,16 @@ export default async function CollectionPage({
       {strip}
       {/* The browse list carries no printings or oracle text — the modal fetches the
           one card it is opening, the same way every deck surface does. */}
-      <CollectionClient
-        wire={wire}
-        ownedSets={ownedSets}
-        availabilityOk={availability !== null}
-        pricesFailed={pricesFailed}
-        viewHint={viewHint}
-        savedToken={savedToken}
-      />
+      <StoreProvider store={store}>
+        <CollectionClient
+          wire={wire}
+          ownedSets={ownedSets}
+          availabilityOk={availability !== null}
+          pricesFailed={pricesFailed}
+          viewHint={viewHint}
+          savedToken={savedToken}
+        />
+      </StoreProvider>
     </section>
   );
 }

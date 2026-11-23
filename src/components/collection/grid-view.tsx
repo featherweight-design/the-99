@@ -18,6 +18,7 @@ import { readCardPrice } from "../../lib/cards/copy-price";
 import { useZone } from "../zone-context";
 import { DateFigure, dateSpoken, readCardDate } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
+import { useStoreInfo } from "../stores/store-provider";
 import { printedFaceName, printedNameOf } from "../../lib/cards/printed-name";
 import { identityGradient } from "../../lib/cards/gradients";
 import { availabilityState } from "../../lib/cards/availability";
@@ -98,6 +99,8 @@ export function GridView({
   mayBeHidden?: boolean;
 }) {
   const zone = useZone();
+  // The store the figures are from (store preference), so each spoken price names it.
+  const store = useStoreInfo();
   return (
     /* §Grid Container. The desktop track is a TILE FLOOR rather than a column
        count (card-captions readiness, erratum 5): `md:grid-cols-6` would begin
@@ -120,7 +123,7 @@ export function GridView({
       {cards.map((c, i) => {
         const reveal = revealOf(i, revealFrom);
         const state = c.availability ? availabilityState(c.availability) : "free";
-        const spokenPrice = showPrice ? priceSpoken(c.price) : showAdded ? dateSpoken(c, zone) : null;
+        const spokenPrice = showPrice ? priceSpoken(c.price, store) : showAdded ? dateSpoken(c, zone) : null;
         // Addendum 2 §2, matching the row: over-committed keeps its border tint
         // and nothing else.
         const border =

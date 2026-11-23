@@ -20,6 +20,7 @@ import { factsFor } from "../bracket/facts";
 import type { CardBracketFlags } from "../bracket/flags-read";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { perfRead } from "../perf/timing";
+import type { Store } from "../stores/rows";
 
 /**
  * Server query — joins collection_items × cards for the user, optionally narrowed to one
@@ -149,7 +150,9 @@ export async function attachComboPartners(
 export const loadBrowseCards = cache(async function loadBrowseCards(
   userId: string,
   /** The price read, injected for tests, as `attachBracketFacts`' flags read is. */
-  readPrices?: (oracleIds: readonly string[]) => Promise<Map<string, PrintingPrices>>,
+  readPrices?: (oracleIds: readonly string[], store: Store) => Promise<Map<string, PrintingPrices>>,
+  /** The reader's store (store preference): every card's figure and the Price sort read from it alone. */
+  store: Store = "manapool",
 ): Promise<{ cards: BrowseListCard[]; pricesFailed: boolean }> {
   // Spans for the miss-path breakdown (PERF_TIMING=1 only; a pass-through otherwise).
   const aggregated = aggregateCollection(await perfRead("browse.rows", () => selectCollectionRows(userId)));
@@ -159,7 +162,7 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   // reported rather than swallowed, because the page says so (F1) and the list must not be cached.
   // Resolved here, outside any catch: an import that fails throws out of this function as it always did.
   const loadPrices = readPrices ?? (await import("../cards/prices")).loadOwnedPrintingPrices;
-  const prices = startPriceRead(aggregated, (ids) => perfRead("browse.prices", () => loadPrices(ids)));
+  const prices = startPriceRead(aggregated, (ids) => perfRead("browse.prices", () => loadPrices(ids, store)));
   // SEQUENTIAL, and the order is not arbitrary: both passes mutate the same card objects, and
   // running them together would be two concurrent writers to one array for no gain — the combo
   // read is 492ms of database time that does not overlap with the flags read's own round trip

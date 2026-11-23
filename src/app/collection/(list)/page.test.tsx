@@ -26,6 +26,7 @@ vi.mock("../../../lib/collection/browse-read", async (orig) => ({
   loadOwnedSetMeta: async () => [],
 }));
 vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: async () => ({ cards: [], pricesFailed: false }) }));
+vi.mock("../../../lib/stores/preference", () => ({ readerStoreForPage: async () => "manapool" }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: async () => null }));
 vi.mock("../../../components/collection/add-cards-sheet", () => ({ AddCardsSheet: () => null }));
 vi.mock("../../../components/collection/collection-client", () => ({ CollectionClient: () => <div data-testid="browser" /> }));
