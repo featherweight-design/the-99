@@ -36,7 +36,7 @@ async function fresh(
   deck: { commanderOracleId: string; partnerOracleId: string | null },
 ): Promise<NotesResult> {
   surfaces(deckId);
-  const notes = await readDeckNotes(deckId, userId, deck, await readerStoreForAction(userId)).catch((err) => {
+  const notes = await readDeckNotes(deckId, userId, deck, readerStoreForAction(userId)).catch((err) => {
     console.error("readDeckNotes after a write failed", err);
     return null;
   });

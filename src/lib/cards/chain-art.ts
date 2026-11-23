@@ -27,7 +27,7 @@ export async function chainArt(
   userId: string,
   deckId: string | null,
   oracleIds: readonly (string | null | undefined)[],
-  store: Store,
+  store: Store | Promise<Store>,
 ): Promise<Map<string, string>> {
   const ids = [...new Set(oracleIds.filter((id): id is string => typeof id === "string"))];
   const art = new Map<string, string>();
@@ -47,7 +47,7 @@ export async function chainArt(
   // The cards the read confirms absent are cards the reader does not own: they open on the opening printing, so
   // the preview and the press show one picture. A card the reader owns whose printing has no art is in the map
   // and keeps what the caller holds. Fail-soft inside `loadOpeningArt`.
-  for (const [id, uri] of await loadOpeningArt(ids.filter((id) => !printings.has(id)), store)) art.set(id, uri);
+  for (const [id, uri] of await loadOpeningArt(ids.filter((id) => !printings.has(id)), await store)) art.set(id, uri);
   return art;
 }
 

@@ -17,12 +17,12 @@ export async function readFitsReadAction(oracleId: string): Promise<FitsReadPane
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   if (!isUuid(oracleId)) return null;
-  return readFitsRead(userId, oracleId, undefined, env, await readerStoreForAction(userId));
+  return readFitsRead(userId, oracleId, undefined, env, readerStoreForAction(userId));
 }
 
 export async function pressFitsReadAction(oracleId: string): Promise<FitsReadPress> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   if (!isUuid(oracleId)) return { ok: false, reason: "notFound" };
-  return pressFitsRead(userId, oracleId, undefined, env, await readerStoreForAction(userId));
+  return pressFitsRead(userId, oracleId, undefined, env, readerStoreForAction(userId));
 }

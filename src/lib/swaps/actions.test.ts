@@ -79,7 +79,9 @@ describe("addFromFits", () => {
 describe("loadFitsAction", () => {
   it("reads for the signed-in reader", async () => {
     await loadFitsAction(CARD);
-    expect(vi.mocked(loadFits).mock.calls[0] as unknown[]).toEqual(["user_1", CARD, "tcgplayer"]);
+    // The store read is handed on unawaited, so it overlaps the fits read; it resolves to the reader's store.
+    const [user, card, store] = vi.mocked(loadFits).mock.calls[0] as unknown[];
+    expect([user, card, await store]).toEqual(["user_1", CARD, "tcgplayer"]);
   });
 
   it("answers null for a malformed id", async () => {

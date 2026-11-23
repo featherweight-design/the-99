@@ -153,7 +153,7 @@ type CardRowDb = {
 /**
  * The whole read for one card, for the signed-in reader. Null when the card does not exist.
  */
-export async function loadFits(userId: string, oracleId: string, store: Store): Promise<FitsRead | null> {
+export async function loadFits(userId: string, oracleId: string, store: Store | Promise<Store>): Promise<FitsRead | null> {
   const [cardRes, deckRes] = await Promise.all([
     db.execute<CardRowDb>(sql`
       select oracle_id, name, color_identity, commander_legal, type_line, oracle_text, keywords
@@ -254,7 +254,7 @@ export async function loadFits(userId: string, oracleId: string, store: Store): 
  * every piece (`chainArt`), plus one `cards` read for the catalog fallback. Fail-soft: a failed read leaves the
  * piece without a preview.
  */
-async function withPartnerArt(userId: string, reasons: Map<string, FitReason>, store: Store): Promise<void> {
+async function withPartnerArt(userId: string, reasons: Map<string, FitReason>, store: Store | Promise<Store>): Promise<void> {
   const combos = [...reasons.values()].flatMap((r) => (r.kind === "combo" ? [r] : []));
   if (combos.length === 0) return;
   const ids = [...new Set(combos.map((r) => r.with.oracleId))];

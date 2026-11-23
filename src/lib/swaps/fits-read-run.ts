@@ -47,7 +47,7 @@ export type FitsReadPress =
   | { ok: false; reason: "notFound" | "noCandidates" | "tooBig" | "current" | "allowance" | "ownerShare" | "paused" };
 
 type Deps = {
-  load: (userId: string, oracleId: string, store: Store) => Promise<FitsReadLoad | null>;
+  load: (userId: string, oracleId: string, store: Store | Promise<Store>) => Promise<FitsReadLoad | null>;
   model: () => string;
   call: (req: { inputs: FitsReadLoad["inputs"]; prompt: ReturnType<typeof buildFitsReadPrompt>; model: string }) => Promise<ModelOutcome<FitsReadReply>>;
   now: () => Date;
@@ -77,7 +77,7 @@ export const LIVE_DEPS: Deps = {
  * for the allowance (`withPayments`).
  */
 export async function readFitsRead(
-  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv, store: Store,
+  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv, store: Store | Promise<Store>,
 ): Promise<FitsReadPanel | null> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);
@@ -86,7 +86,7 @@ export async function readFitsRead(
   return panelFor(userId, oracleId, load, deps.model(), now, env, store);
 }
 
-async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, model: string, now: Date, env: NodeJS.ProcessEnv, store: Store): Promise<FitsReadPanel> {
+async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, model: string, now: Date, env: NodeJS.ProcessEnv, store: Store | Promise<Store>): Promise<FitsReadPanel> {
   const [rows, allowance] = await Promise.all([readFitsReadRows(userId, oracleId), readAllowance(userId, now, "fits_read").then((a) => withPayments(a, env))]);
   const planSources = Object.fromEntries(load.inputs.candidates.map((c) => [c.deckId, load.planOf.get(c.deckId)?.source ?? "none"]));
   const holding = new Set(load.fits.holds.map((h) => h.id));
@@ -97,7 +97,7 @@ async function panelFor(userId: string, oracleId: string, load: FitsReadLoad, mo
 
 /** Names for the stored picks' cards: from the inputs where the deck still runs the card, else the
  *  catalog (a card a deck has since cut, on an out-of-date read). */
-async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad, store: Store): Promise<
+async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad, store: Store | Promise<Store>): Promise<
   Pick<FitsReadPanel, "names" | "images" | "commanderIds">
 > {
   const ids = new Set<string>();
@@ -152,7 +152,7 @@ async function pickCards(userId: string, view: FitsReadView, load: FitsReadLoad,
  * settles it: spent for a read that held up, refunded for a failure, a no fit or a thin read.
  */
 export async function pressFitsRead(
-  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv, store: Store,
+  userId: string, oracleId: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv, store: Store | Promise<Store>,
 ): Promise<FitsReadPress> {
   const now = deps.now();
   await reapFitsReads(userId, oracleId, now);

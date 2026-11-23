@@ -87,7 +87,7 @@ export async function liveOffendingIds(tx: Tx, deckId: string, commanderIds: rea
 export async function loadDeckNotices(
   deckId: string,
   userId: string,
-  store: Store,
+  store: Store | Promise<Store>,
 ): Promise<DeckNotices | null> {
   // The deck, its reading and its cards from ONE snapshot: read apart, an edit or an analysis
   // committing between them pairs a reading's marks with a list it never described.

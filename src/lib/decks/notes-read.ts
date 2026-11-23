@@ -35,7 +35,7 @@ export async function readDeckNotes(
   deckId: string,
   userId: string,
   deck: { commanderOracleId: string; partnerOracleId: string | null },
-  store: Store,
+  store: Store | Promise<Store>,
 ): Promise<DeckNotesView> {
   // Stamped before the first query, not after the last: a read that began before a write and finished after
   // it holds the old rows, and must not outrank the read the write's own action makes afterwards.

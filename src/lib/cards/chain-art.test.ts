@@ -70,6 +70,12 @@ describe("chainArt", () => {
     expect(calls.openingStore).toBe("cardkingdom");
   });
 
+  it("takes the store as a pending read and waits for it only at the opening printing", async () => {
+    calls.opening = new Map([["b", "opening-b.jpg"]]);
+    await chainArt("u", null, ["b"], Promise.resolve("tcgplayer"));
+    expect(calls.openingStore).toBe("tcgplayer");
+  });
+
   // A failed ownership read says nothing about ownership: it must not send an owned card through the unowned rule
   // (the preview would show the shop's printing while card details opens the one the reader owns).
   it("answers nothing, and applies no opening printing, when the ownership read fails", async () => {

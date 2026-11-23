@@ -90,7 +90,7 @@ type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: st
 export async function loadFitsReadInputs(
   userId: string,
   oracleId: string,
-  store: Store,
+  store: Store | Promise<Store>,
   opts: { allDecks?: boolean } = {},
 ): Promise<FitsReadLoad | null> {
   const fits = await loadFits(userId, oracleId, store);
