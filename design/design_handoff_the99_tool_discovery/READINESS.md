@@ -1,6 +1,6 @@
 # READINESS · Finding the tools
 
-**Verdict: Green.** Approved by Hugh 2026-11-23; every question settled (README, Decisions). Every gap below has an answer.
+**Verdict: Green.** Approved by Hugh 2026-11-23 through R11; every question settled (README, Decisions). Every gap below has an answer.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -60,9 +60,24 @@
   surfaces they measure, through the existing `<Analytics />` client (production hostnames only; no query text, no typed
   card names, no third-party names). The `Finding the tools` PostHog dashboard and its six insights are built before
   launch, with a two-week baseline. A unit test per event asserts its properties carry no free text.
+- **G22 · Asks lead (R11, Q16 A).** `leadStory` (`src/lib/feed/kinds.ts`) ranks a `spare-request` item that is unanswered
+  and still answerable (an incoming ask or an offer made to the reader) above every other kind, newest first; the rest of
+  the rank is unchanged. `withLeadAsk` (`src/lib/feed/home.ts`) already attaches its `LeadAsk`, offer or not.
+- **G23 · The lead's ✕ (R11, Q17 A).** `LeadStory`'s `DismissButton` leaves `data-lead-actions` and sits absolute at
+  `right-[6px] top-[6px] md:right-[10px] md:top-[10px]` on the section; the text column gains `pr-[26px] md:pr-[30px]`.
+  Every lead kind, not only asks. Hidden on the receipt and while an answer is out, as shipped.
+- **G24 · Answer in the row (R11, Q18 A).** `toViews` carries an `ask` (the `LeadAsk` shape) on every unanswered,
+  answerable `spare-request` row, from the same `loadIncomingAsks` / `loadIncomingOffers` read the lead uses (one query,
+  not one per row). `FeedItemRow` then draws the detail line (`spareCopy.request.offer.detail` or `incomingDetail`), the
+  shipped `AnswerPresses size="row"` under the text, and its ✕ absolute at the row's top right (`right-[4px] top-[4px]
+  md:right-[8px] md:top-[8px]`, text `pr-[30px]`). Answering runs the lead's own action and lands its receipt in the row.
+  A row whose ask ran out keeps `Answer in Friends.` until the next read drops it. The rail's compact layout (G17) applies.
+- **G25 · Friends badge and the offerer's sheet (R11).** No change: the badge (#3221) and `OfferAnswerSheet` (#3242) as
+  shipped. The badge falls by one as a row or the lead is answered (the existing `announceAnswerSeen`).
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
 - Every board renders, no broken images, no clipped frame (measured with support.js stripped).
+- R11 frames rendered from main bb4832f8 (`scratch-gen/r-offers.tsx`, `sp-of.json`, `src-patches/` for the ✕ and row toggles).
 - Frames rendered from main 7563036 with the shipped components; new parts in `scratch-gen/find.tsx` (R2: `FindCallout` `on`, `FitButton`; R3: `FitRowButton`, and `ask.tsx` for Ask) and the hub
   patch described in `scratch-gen/HOW.md`. Figures, set codes and art are illustrative.

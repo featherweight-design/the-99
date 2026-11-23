@@ -1,4 +1,4 @@
-# States · Finding the tools R10
+# States · Finding the tools R11
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -90,3 +90,14 @@
 | Clear all | Clears the shown items; the sheet closes when none are left. |
 | ✕ on a row | That row leaves; the counts update. |
 | Esc / ✕ / scrim | Closes; focus back on Show all. |
+
+## Spare offers on Home · R11 (Q16 A, Q17 A, Q18 A)
+| State | Draws |
+|---|---|
+| An unanswered, open offer to the reader | It leads at both widths: kicker `Spare offer`, `Max is offering you <card>`, `Max has 1 spare. You want 1.`, Yes, No, `14 days left`; ✕ in the card's top right. |
+| An unanswered, open ask of the reader | The same lead with the ask's kicker and `incomingDetail` line. |
+| Two or more waiting | The newest leads; the others answer in their What's new rows (Yes, No, days left; ✕ in the row's corner). |
+| Answered (lead or row) | The shipped receipt in place; the Friends badge falls by one. |
+| Ran out while on screen | The row keeps `Answer in Friends.` with no presses until the next read. |
+| Friends badge | The count of offers and asks waiting on the reader (rail and tab bar); none at 0. |
+| The reader's offer answered | Row kicker `Your offer`, `Max said yes to <card>` / `The handover is between you.`, `Your offer ›` opens the shipped sheet. |
