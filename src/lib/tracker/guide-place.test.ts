@@ -89,8 +89,8 @@ describe("the labelled row (What's what, T1)", () => {
 describe("a leader a label would draw", () => {
   it("keeps clear of a fixed leader that would cross it", () => {
     const to = { x: 200, y: 600 };
-    const out = placeLabels(bounds, [], [{ id: "a", size: { w: 100, h: 40 }, ideal: { x: 200, y: 400 }, to }], [[{ x: 150, y: 330 }, { x: 150, y: 470 }]]);
+    const out = placeLabels(bounds, [], [{ id: "a", size: { w: 100, h: 40 }, ideal: { x: 200, y: 400 }, to }], [[{ x: 190, y: 330 }, { x: 190, y: 470 }]]);
     const a = out.get("a")!;
-    expect(a.x < 150 && 150 < a.x + a.w && a.y < 470 && 330 < a.y + a.h).toBe(false);
+    expect(a.x < 190 && 190 < a.x + a.w && a.y < 470 && 330 < a.y + a.h).toBe(false);
   });
 });

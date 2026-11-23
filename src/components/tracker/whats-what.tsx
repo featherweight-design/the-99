@@ -109,6 +109,7 @@ function measure(root: HTMLElement, canvas: HTMLElement, base: number): Plan | n
       // A control sitting between the strip and the row (End turn, the sheet chevron) joins the row, so its label is not boxed in behind the others.
       const beside = lit.filter((t) => (sd === -1 ? centre(t.box).y < spine.y : centre(t.box).y > spine.y + spine.h) && Math.abs(centre(t.box).y - centre(spine).y) < 160);
       const group = [...strip, ...beside].sort((a, b) => a.box.x - b.box.x);
+      for (const t of [...strip, ...lit]) setWidth(t.id, base);
       const rowW = rowLabelWidth(bounds, group.length, base);
       for (const t of group) setWidth(t.id, rowW);
       const buttons = group.map((t) => grow(t.box, RING));
@@ -140,8 +141,8 @@ function measure(root: HTMLElement, canvas: HTMLElement, base: number): Plan | n
   const foot = panel ?? null;
   const stripC = spine ? centre(spine) : { x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2 };
   const footC = foot ? centre(foot) : { x: stripC.x, y: bounds.y + bounds.h };
-  // Away from the foot panel: a row goes on the far side of it vertically; a column alternates unless the panel sits to one side.
-  const away = column ? (Math.abs(footC.x - stripC.x) > 40 ? (footC.x < stripC.x ? 1 : -1) : 0) : footC.y > stripC.y ? -1 : 1;
+  // A row goes on the far side of the foot panel vertically; a column alternates sides (addendum P1).
+  const away = footC.y > stripC.y ? -1 : 1;
   // In the narrow column the foot panel's labels are slimmer and go first, so they keep their spot beside the control (addendum P1).
   if (column) {
     for (const t of targets) {
