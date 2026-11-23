@@ -49,7 +49,7 @@ export function FindADeckCallout({
     closedFor = userId ?? null;
     setClosed(true);
     next?.focus();
-    // Hidden on the press; a write that fails leaves the call-out for the next load.
+    // Hidden on the press; a write that fails leaves it hidden in this mount and draws it again on the next one.
     void closeFindADeckAction().catch(() => {
       closedFor = null;
     });
