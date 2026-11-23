@@ -32,6 +32,7 @@ import { friendLinksEnabled } from "../../lib/friend-links/flag";
 import { noticeTradeMatches } from "../../lib/social/trade-match";
 import { liveMoments } from "../../lib/moments/live";
 import { readShellPrefs } from "../../lib/shell/prefs";
+import { storeOf } from "../../lib/stores/preference";
 import { friendsAfterGameDue } from "../../lib/social/after-game";
 import { MomentsProvider } from "../moments/moments-provider";
 import { TargetsProvider } from "../discovery/targets-provider";
@@ -211,7 +212,8 @@ export default async function Shell({
           <ShellMain className="flex min-w-0 flex-1 flex-col min-h-[calc(100dvh-var(--header-h,79px)-var(--tabbar-h))] md:min-h-dvh">
             {children}
           </ShellMain>
-          <FanContentNotice />
+          {/* The notice credits the reader's price store; a failed prefs read leaves Mana Pool. */}
+          <FanContentNotice store={storeOf(env, prefs?.preferredStore)} />
         </div>
         <TabBar
           locked={locked}
