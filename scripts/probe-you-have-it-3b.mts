@@ -118,9 +118,13 @@ async function main() {
       check(`${vp.label} call-out names the card`, ct.includes(face), ct.slice(0, 140));
       check(`${vp.label} key line`, /you can spare/.test(((await onPage(page, '[data-testid="have-key"]').first().textContent()) ?? "")));
       check(`${vp.label} one press for one spare card`, (await onPage(page, '[data-testid="have-press"]').count()) === 1);
-      const tiles = () => onPage(page, 'main ul:not([data-testid="have-key"]) > li').count();
+      const tiles = () => onPage(page, 'ul.grid > li').count();
       const before = await tiles();
-      await onPage(page, 'button:has-text("You can spare")').first().click();
+      // The press can land before hydration: press again until the tiles narrow (a few tries), then judge.
+      for (let t = 0; t < 8 && (await tiles()) !== 1; t++) {
+        await onPage(page, 'button:has-text("You can spare")').first().click();
+        await page.waitForTimeout(400);
+      }
       check(`${vp.label} filter narrows to the spare card`, (await tiles()) === 1 && before === 2, `${before} -> ${await tiles()}`);
       await onPage(page, 'button:has-text("All")').first().click();
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
@@ -132,6 +136,7 @@ async function main() {
       const sheet = onPage(page, '[data-testid="have-sheet"]').first();
       await sheet.waitFor({ state: "visible", timeout: 10_000 });
       check(`${vp.label} sheet opens with the card and Offer`, (await sheet.textContent())?.includes(face) === true && (await sheet.locator('[data-testid="have-offer"]').count()) === 1);
+      await page.waitForTimeout(700); // the sheet's own entrance
       await page.screenshot({ path: `${SHOTS}/sheet-${vp.label}.png` });
       if (vp.label === "1300") {
         await sheet.locator('[data-testid="have-offer"]').click();
