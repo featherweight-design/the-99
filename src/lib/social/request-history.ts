@@ -59,7 +59,7 @@ export function requestHistoryQuery(viewerId: string, direction: HistoryDirectio
   const nonStarter = sql`(case when hsr.initiated_by = 'asker' then hsr.holder_user_id else hsr.asker_user_id end)`;
   const mine = asked ? starter : nonStarter;
   const theirs = asked ? nonStarter : starter;
-  // The same test written on the plain columns, so the (asker, created_at) and (holder, created_at) indexes can serve the filter.
+  // The same test written on the plain columns, so the viewer's id is a bare column equality the planner can use (`spare_requests_asker_idx` on (asker, created_at); the holder side has only (holder, status), a pre-existing shape).
   const mineIsViewer = asked
     ? sql`((hsr.initiated_by = 'asker' and hsr.asker_user_id = ${viewerId}) or (hsr.initiated_by = 'holder' and hsr.holder_user_id = ${viewerId}))`
     : sql`((hsr.initiated_by = 'asker' and hsr.holder_user_id = ${viewerId}) or (hsr.initiated_by = 'holder' and hsr.asker_user_id = ${viewerId}))`;
