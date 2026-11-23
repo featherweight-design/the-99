@@ -123,3 +123,14 @@ describe("loadCardChip's store", () => {
     for (const c of vi.mocked(loadPrices).mock.calls) expect(c[1]).toBe("cardkingdom");
   });
 });
+
+describe("loadResultsPage's store", () => {
+  it("prices the rows in the reader's store", async () => {
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockClear();
+    await loadResultsPage("u", "tcgplayer", answers);
+    const calls = vi.mocked(loadPrices).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const c of calls) expect(c[1]).toBe("tcgplayer");
+  });
+});

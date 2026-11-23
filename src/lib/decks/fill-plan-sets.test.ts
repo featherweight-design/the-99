@@ -102,3 +102,15 @@ describe("buildFillPlan's set preference", () => {
     expect(marked()).toEqual([]);
   });
 });
+
+describe("buildFillPlan's store", () => {
+  it("hands the reader's store to the budget and gate reads", async () => {
+    const { loadFillGate, loadBudgetLeftCents } = await import("../intake/fill-facts");
+    await buildFillPlan("u", commanders, new Set(), {
+      store: "cardkingdom", selected: [], env,
+      answers: { budgetCents: 5000, bracket: null, cardOracleId: null },
+    });
+    expect(vi.mocked(loadBudgetLeftCents).mock.calls[0][0]).toMatchObject({ store: "cardkingdom" });
+    expect(vi.mocked(loadFillGate).mock.calls[0][0]).toMatchObject({ store: "cardkingdom" });
+  });
+});
