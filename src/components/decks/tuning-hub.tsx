@@ -41,7 +41,7 @@ export type HubToolSpec =
   | { tool: "history" };
 
 /** A shortcut's ask: open `tool`, or with `tool: null` return to the tiles (N1 lands on Suggested changes' tile, so a
- *  tool left open must close first). */
+ *  tool left open must close first). `nonce` makes a second press of the same shortcut count. */
 export type HubRequest = { tool: TuningTool | "consider" | null; nonce: number };
 
 const clock = (ms: number) => {

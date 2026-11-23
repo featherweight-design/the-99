@@ -39,7 +39,7 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
 
 - `BuilderView` gains `tuning` **alongside** `consider`. In B1, `tuning` draws today's Analysis tab with its hub. The tab row is unchanged, so Consider is still its own tab. As built: `drawnView` (`builder-view.ts`) opens `tuning` as `analysis`, and every way a view arrives from outside goes through it (`initialBuilderView` for the URL and a landing, and the nudge's `pressTool`), so the shell's own state never holds `tuning` in B1. B2 drops the mapping when it draws the tab.
 - `?tab=tuning` reads as `tuning`.
-- `deckViewOf` (`builder-screen.ts`) and About's `DeckView` map `tuning` to `analysis`. So does `help-root.tsx:61` through `deckViewSearch`.
+- `deckViewOf` (`builder-screen.ts`) and About's `DeckView` map `tuning` to `analysis`, so the ? opens the Analysis section. `deckViewSearch` (which `help-root.tsx:61` uses) writes `?tab=tuning`, so ‹ Back returns to Tuning.
 - `src/app/decks/[id]/page.tsx` (`readBuilderView`/`initialBuilderView`) passes `tuning` through.
 - `tools.ts` lands the three tune tools on `tuning` (same screen in B1), with the `tools.test` and `fits-view.test` expectations.
 - `ToolLands`' deck form already has the optional hub `tool` (shipped with `LANDINGS`); `HubRequest` (`tuning-hub.tsx:46`) gains `consider`, which is unused until B2.

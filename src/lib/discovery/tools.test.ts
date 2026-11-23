@@ -110,7 +110,7 @@ describe("deckToolLanding", () => {
     expect(deckToolLanding("find-a-deck", allOn)).toBeNull();
   });
 
-  it("lands a Tuning tool on the Tuning tab, which always draws", () => {
+  it("lands a Tuning tool on the Tuning tab (drawn as Analysis until B2), which always draws", () => {
     expect(deckToolLanding("suggested-changes", () => false)?.lands).toEqual({ kind: "deck", tab: "tuning" });
     expect(deckToolLanding("top-off", () => false)?.tool).toBe("top-off");
   });

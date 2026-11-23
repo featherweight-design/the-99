@@ -93,7 +93,7 @@ export function toolLanding(value: unknown, isOn: (name: SwitchName) => boolean)
 
 /**
  * The deck page's reading of `?tool=`: a landing only for a tool that opens on a deck (every tab is drawn: the Analysis
- * tab's switch is retired).
+ * tab's switch is retired). A `tuning` landing opens Analysis until tool discovery B2 draws the Tuning tab (`drawnView`).
  */
 export function deckToolLanding(
   value: unknown,
