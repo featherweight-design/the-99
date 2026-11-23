@@ -6,8 +6,11 @@ import { spareRequests } from "../../db/schema";
 import { answerOfferQuery, offerCopies, offererQuery, withdrawOfferQuery } from "./spare-offers";
 import {
   answerAskerQuery, answerQuery, clearQuery, incomingAsksQuery, myAsksQuery, waitingAsksCountQuery, withdrawQuery,
-  unseenAnswersCountQuery, markAnswerSeenQuery,
+  unseenAnswersCountQuery, markAnswerSeenQuery, withdrawForInsteadQuery,
 } from "./spare-requests";
+import { hiddenHistoryCountQuery, requestHistoryQuery } from "./request-history";
+import { dismissQuery } from "./feed-dismiss";
+import { answeredRequestIdQuery } from "./your-requests";
 
 const NOW = new Date("2026-11-22T12:00:00Z");
 const ID = "44444444-4444-4444-8444-444444444444";
@@ -36,7 +39,9 @@ describe("every ask statement leaves offers alone", () => {
     const asks = [
       answerAskerQuery("h", ID), answerQuery("h", ID, "yes", NOW), incomingAsksQuery("h", NOW), waitingAsksCountQuery("h", NOW),
       myAsksQuery("a", NOW), withdrawQuery("a", ID, NOW), clearQuery("a", ID, NOW), unseenAnswersCountQuery("a", NOW),
-      markAnswerSeenQuery("a", ID, NOW),
+      markAnswerSeenQuery("a", ID, NOW), withdrawForInsteadQuery("a", ID, ID, "h", NOW), requestHistoryQuery("a", "asked", null),
+      requestHistoryQuery("a", "received", null), hiddenHistoryCountQuery("a"), dismissQuery("h", { kind: "ask", requestId: ID }),
+      answeredRequestIdQuery("a", ID),
     ];
     for (const q of asks) expect(render(q)).toContain("initiated_by = 'asker'");
   });

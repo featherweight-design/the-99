@@ -59,6 +59,9 @@ export async function offerSpare(
       prior.map((p) => ({ ...p, status: p.status as StoredStatus, initiatedBy: p.initiatedBy as PriorAsk["initiatedBy"] })),
       offererId, now, "holder",
     );
+    // A friend's pending ask or offer with SOMEONE ELSE is theirs to keep private: the offerer is told only what an
+    // unrelated stale offer would say (`not-spare`), never that the friend has the card in play elsewhere.
+    if (refusal === "asked" && !prior.some((p) => p.holderUserId === offererId && p.status === "open")) return { ok: false, reason: "not-spare" };
     if (refusal) return { ok: false, reason: refusal };
     const [row] = await tx
       .insert(spareRequests)

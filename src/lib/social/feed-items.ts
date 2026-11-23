@@ -56,8 +56,8 @@ function standing(viewerId: string, now: Date, storeOn: boolean): SQL {
         select 1 from ${spareRequests} fsr
         where fsr.id = (case when fi.kind = 'spare-request' then fi.dedupe_key::uuid end)
           and (case when fi.data ->> 'answer' is not null
-            then fsr.asker_user_id = fi.user_id and fsr.status = fi.data ->> 'answer' and fsr.asker_cleared_at is null
-            else fsr.holder_user_id = fi.user_id and fsr.status = 'open'
+            then fsr.asker_user_id = fi.user_id and fsr.initiated_by = 'asker' and fsr.status = fi.data ->> 'answer' and fsr.asker_cleared_at is null
+            else fsr.holder_user_id = fi.user_id and fsr.initiated_by = 'asker' and fsr.status = 'open'
               and fsr.created_at > ${openFloor(now).toISOString()}::timestamptz end)))
       and (fi.friend_user_id is null or (sp.public_id is not null and (
         (fi.kind = 'trade-match' and exists (
