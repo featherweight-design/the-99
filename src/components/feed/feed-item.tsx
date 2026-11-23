@@ -297,8 +297,16 @@ function tradeAskOf(item: FeedView, held: boolean): { oracleId: string; friendPu
   return { oracleId: item.card.oracleId, friendPublicId: item.friend.publicId, friendName: item.friend.displayName };
 }
 
+/**
+ * `true` draws the phone grid at every width (the Show all sheet); `"rail"` draws it from 1180, where What's new sits in the
+ * right rail, and the wide layout below that, where it stays in the main column. Tailwind reads whole class names, so each
+ * `md:` piece of the wide layout is written out once more for the rail, by `rowMd`.
+ */
+export type RowCompact = boolean | "rail";
+const rowMd = (compact: RowCompact, wide: string, rail: string): string => (compact === true ? "" : compact === "rail" ? rail : wide);
+
 /** The 46x64 picture: the card at card shape with the friend's face on its corner, or the combo mark. */
-function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, "artCropUri"> | null | undefined }) {
+function Picture({ item, face, compact }: { item: FeedView; face: Pick<ProfileCommander, "artCropUri"> | null | undefined; compact: RowCompact }) {
   // Every card row previews its card on hover (Hugh, 2026-10-12), on the picture, since the row carries prose; from
   // What's new's provider. A combo's picture is the mark, and previews nothing. The press is stretched over the whole
   // row (an `::after` later in the DOM), so the picture sits ABOVE it (`z-[1]`) to be hovered at all, and a press on
@@ -313,13 +321,13 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
       <span
         aria-hidden
         data-feed-combo
-        className="row-span-2 flex h-[64px] w-[46px] items-center justify-center self-start rounded-[4px] [border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fact)] md:row-span-1 md:self-center"
+        className={`row-span-2 flex h-[64px] w-[46px] items-center justify-center self-start rounded-[4px] [border:1px_solid_var(--border-strong)] bg-[color:var(--surface-raised)] text-[color:var(--fact)] ${rowMd(compact, "md:row-span-1 md:self-center", "md:max-[1179px]:row-span-1 md:max-[1179px]:self-center")}`}
       >
         <ComboGlyph />
       </span>
     );
   }
-  const box = "relative z-[1] row-span-2 h-[64px] w-[46px] self-start md:row-span-1 md:self-center";
+  const box = `relative z-[1] row-span-2 h-[64px] w-[46px] self-start ${rowMd(compact, "md:row-span-1 md:self-center", "md:max-[1179px]:row-span-1 md:max-[1179px]:self-center")}`;
   if (item.post) return <PostPicture item={item} box={box} />;
   const art = (
     <>
@@ -364,8 +372,10 @@ function Picture({ item, face }: { item: FeedView; face: Pick<ProfileCommander, 
   );
 }
 
-export function FeedItemRow({ item, now, face, onDismiss, when, zone = null }: {
+export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, compact = false }: {
   item: FeedView;
+  /** The phone grid at any width (What's new in the rail and its Show all sheet, G17): the picture beside the text, the press under it. */
+  compact?: RowCompact;
   now: string;
   /** The reader's IANA zone (the zone cookie), or null: a drop's sale lines then read in the store's zone, labelled. */
   zone?: string | null;
@@ -393,9 +403,9 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null }: {
     <li
       data-feed-item={item.kind}
       data-unseen={item.unseen || undefined}
-      className="relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]"
+      className={`relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] ${rowMd(compact, "md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]", "md:max-[1179px]:grid-cols-[46px_minmax(0,1fr)_auto] md:max-[1179px]:items-center md:max-[1179px]:gap-x-[14px] md:max-[1179px]:px-[16px]")}`}
     >
-      <Picture item={item} face={face} />
+      <Picture item={item} face={face} compact={compact} />
       <div className="flex min-w-0 flex-col gap-[3px]">
         <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
@@ -418,16 +428,16 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null }: {
           (the text column's 3px gap plus 2px), the row's third column from desktop. A row with no press keeps the line
           for its ✕ alone. */}
       {(text.press || onDismiss) && (
-        <div data-feed-actions className="col-start-2 mt-[5px] flex min-w-0 flex-nowrap items-center gap-[8px] md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:gap-[12px]">
+        <div data-feed-actions className={`col-start-2 mt-[5px] flex min-w-0 flex-nowrap items-center gap-[8px] ${rowMd(compact, "md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:gap-[12px]", "md:max-[1179px]:col-start-3 md:max-[1179px]:row-start-1 md:max-[1179px]:mt-0 md:max-[1179px]:justify-end md:max-[1179px]:gap-[12px]")}`}>
           {two && text.press ? (
             // Board `.fi .ac .two`: one line on a phone (16px apart), stacked and right-aligned from `md` (28px each).
-            <span data-feed-two className="flex min-w-0 flex-wrap items-center gap-x-[16px] gap-y-0 md:flex-col md:flex-nowrap md:items-end">
+            <span data-feed-two className={`flex min-w-0 flex-wrap items-center gap-x-[16px] gap-y-0 ${rowMd(compact, "md:flex-col md:flex-nowrap md:items-end", "md:max-[1179px]:flex-col md:max-[1179px]:flex-nowrap md:max-[1179px]:items-end")}`}>
               <FeedPress
                 item={two.lists}
                 label={`${c.press.seeLists} ›`}
                 describedBy={titleId}
                 stretch="after:absolute after:inset-0 after:content-['']"
-                className="flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--accent-text)] md:min-h-[28px]"
+                className={`flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--accent-text)] ${rowMd(compact, "md:min-h-[28px]", "md:max-[1179px]:min-h-[28px]")}`}
               />
               {/* Above the stretched See the lists (`z-[1]`), so a press on it goes out to the post. */}
               <FeedPress
@@ -435,7 +445,7 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null }: {
                 label={text.press}
                 describedBy={titleId}
                 stretch=""
-                className="relative z-[1] flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] md:min-h-[28px]"
+                className={`relative z-[1] flex min-h-[32px] items-center font-sans text-[13px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] ${rowMd(compact, "md:min-h-[28px]", "md:max-[1179px]:min-h-[28px]")}`}
               />
             </span>
           ) : text.press && (

@@ -96,9 +96,7 @@ describe("Home, direction B", () => {
     const whatsNew = container.querySelector("[data-whats-new]");
     const friends = ordered(container.querySelector("#home-friends-head")!);
     const commitments = ordered(screen.getByText("Commitments"));
-    const resume = container.querySelector("#home-whats-new")!.closest("section")!.parentElement!.querySelector("[class*='order-2']");
-    expect(orderOf(whatsNew)).toBe(1);
-    expect(orderOf(resume)).toBe(2);
+    expect(orderOf(ordered(whatsNew!))).toBe(1);
     expect(orderOf(friends)).toBe(4);
     expect(orderOf(commitments)).toBe(5);
   });
@@ -113,11 +111,14 @@ describe("Home, direction B", () => {
       lastEditedAt: new Date("2026-09-01T00:00:00Z"), lastCommittedAt: null, inUseElsewhere: 0, proxiedCount: 0,
     } as unknown as (typeof BASE)["decks"][number];
     const { container } = render(<Dashboard {...BASE} decks={[resumable]} feed={chosen([view(1)], { lead: LEAD, unseen: 1 })} />);
-    const follows = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
-    const lead = container.querySelector("[data-lead-story]")!;
+    // Below 1180 the columns are `contents`, so `order` places the blocks: What's new (1) sits between the lead and the
+    // resume block (2); from 1180 it leads the rail by DOM position (G16, G17).
+    const orderOf = (el: Element | null) => Number(/(?:^|\s)order-(\d)/.exec(el?.closest('[class^="order-"], [class*=" order-"]')?.className ?? "")?.[1]);
     const whatsNew = container.querySelector("[data-whats-new]")!;
-    expect(follows(lead, whatsNew)).toBe(true);
-    expect(follows(whatsNew, screen.getByRole("heading", { name: /^Pick up where you left off/ }))).toBe(true);
+    const resume = screen.getByRole("heading", { name: /^Pick up where you left off/ });
+    expect(container.querySelector("[data-lead-story]")).not.toBeNull();
+    expect(orderOf(whatsNew)).toBeLessThan(orderOf(resume));
+    expect(whatsNew.closest("[class*='min-[1180px]:w-[316px]']")).not.toBeNull();
   });
 
   it("a busy feed: five shown and Show all N", () => {

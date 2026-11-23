@@ -315,8 +315,7 @@ describe("Dashboard, Rule 0's table cards", () => {
     const sooner = { ...TABLE, tableId: "t3" };
     const { container } = render(<Dashboard {...BASE} tables={[sooner, TABLE]} friends={FRIENDS} />);
     const wrap = container.querySelector("[data-home-tables]")!;
-    const main = container.querySelector("[data-dismiss-scope]")!;
-    expect(wrap.parentElement).toBe(main);
+    const main = wrap.parentElement!;
     expect(main.firstElementChild).toBe(wrap);
     expect(container.querySelectorAll("[data-home-tables]")).toHaveLength(1);
     expect(main.parentElement!.contains(container.querySelector("#home-friends-head"))).toBe(true);

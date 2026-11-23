@@ -1,7 +1,7 @@
 "use client";
 // Home's What's new (menu and Home handoff, direction B; property table `menu-home-home.md` § What's new). Three
 // states, from one read (`loadHomeFeed`):
-// - kinds on, items: five rows, then "Show all N" expanding in place; Today / Earlier labels only when the shown list
+// - kinds on, items: five rows, then "Show all N" opening the FeedSheet; Today / Earlier labels only when the shown list
 //   holds both;
 // - kinds on, nothing in the window: the quiet box, a fan of two picture plates beside the lead and a line teasing two
 //   of the kinds on (What's new empty handoff, B);
@@ -25,7 +25,10 @@ import type { FeedKind } from "../../lib/feed/kinds";
 import { FeedItemRow, PostGlyph, type FeedFaces } from "../feed/feed-item";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { NavIcon } from "../shell/nav-icons";
-import { FEED_SHOWN, ShowAllFooter, useShowAll } from "../feed/show-all";
+import { FEED_SHOWN, ShowAllFooter } from "../feed/show-all";
+import { FEED_DAY, FEED_ROWS, FeedSheet } from "../feed/feed-sheet";
+import { captureToolEvent } from "../../lib/analytics/posthog";
+import { feedCountBucket } from "../../lib/analytics/tool-events";
 import { DismissButton, useFeedDismiss } from "../feed/dismiss";
 import { AnswerSheetProvider, useAnswerSheet } from "./answer-sheet";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
@@ -54,8 +57,8 @@ export function feedGroups(items: readonly FeedView[], now: string, expanded: bo
   };
 }
 
-const ROWS = "m-0 list-none p-0 [&>li+li]:[border-top:1px_solid_var(--border)]";
-const DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.14em] text-[color:var(--fg-locked)] uppercase";
+const ROWS = FEED_ROWS;
+const DAY = FEED_DAY;
 
 /**
  * Past announcements ›, the way into `/announcements` (small items 11, item 3, board `Archive` E1): the left of What's new's
@@ -97,7 +100,7 @@ function ArchiveFoot() {
 }
 
 export function WhatsNew({ feed: served, now, faces, zone = null, archive = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; zone?: string | null; archive?: boolean; className?: string }) {
-  const { expanded, root, expand } = useShowAll();
+  const [sheetOpen, setSheetOpen] = useState(false);
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
   const heldLead = useHeldLead();
   const displaced = displaceLead(served, heldLead?.key ?? null);
@@ -136,19 +139,20 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
     dismissed.hideMany(keys, on);
     if (lead) heldLead?.setGone(on ? lead : null);
   };
-  const clearAll = (pending: string | null) => {
-    const keys = [...new Set(clearable.filter((k) => k !== pending))].slice(0, CLEAR_ALL_MAX);
+  // `only` is the Show all sheet's clear (the keys its chip shows): the page behind the sheet keeps focus where it is.
+  const clearAll = (pending: string | null, only?: readonly string[]) => {
+    const keys = [...new Set((only ?? clearable).filter((k) => k !== pending))].slice(0, CLEAR_ALL_MAX);
     if (keys.length === 0) return;
     const lead = leadKey && keys.includes(leadKey) ? leadKey : null;
     setClearToast(null);
     bring(keys, true, lead);
-    requestAnimationFrame(() => document.getElementById("home-whats-new")?.focus());
+    if (!only) requestAnimationFrame(() => document.getElementById("home-whats-new")?.focus());
     const fail = (text: string) => setClearFailed({ id: ++clearSeq.current, text });
     // Undo lifts only what this press newly wrote: an item dismissed elsewhere meanwhile stays dismissed.
     const undo = (wrote: string[]) => () => {
       bring(keys, false, lead);
       // The press is not on the page until the rows are back: the effect below focuses it once it is.
-      refocusClear.current = true;
+      refocusClear.current = !only;
       void (wrote.length > 0 ? restoreFeedItemsAction(wrote) : Promise.resolve({ ok: true as const }))
         .then((r) => {
           if (!r.ok) throw new Error(r.reason);
@@ -198,7 +202,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
       >
         {c.head}
       </HomeSectionHead>
-      <div ref={root} className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
+      <div className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
         {!chosen ? (
           (feed.on.length > 0 || !offer || offerGone) && <Quiet on={feed.on} />
         ) : feed.items.length + drops === 0 ? (
@@ -206,7 +210,26 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
         ) : (
           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
             <HoverPreviewProvider className="flex flex-col">
-              <Rows items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} expanded={expanded} onExpand={expand} onDismiss={dismissed.dismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
+              <Rows items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
+                setSheetOpen(true);
+                captureToolEvent("feed_show_all", { count: feedCountBucket(feed.items.length) });
+              }} onDismiss={dismissed.dismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
+              {sheetOpen && feed.items.length > 0 && (
+                <FeedSheet
+                  items={feed.items}
+                  now={now}
+                  zone={zone}
+                  faces={faces}
+                  unseen={feed.items.filter((i) => i.unseen).length}
+                  aside={archive ? <ArchiveEntry /> : undefined}
+                  onDismiss={dismissed.dismiss}
+                  onClear={(keys) => {
+                    clearAll(null, keys);
+                    if (keys.length >= feed.items.length) setSheetOpen(false);
+                  }}
+                  onClose={() => setSheetOpen(false)}
+                />
+              )}
             </HoverPreviewProvider>
           </AnswerSheetProvider>
         )}
@@ -253,19 +276,19 @@ function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>, goneLead: st
   };
 }
 
-function Rows({ items, upcoming, now, faces, zone, expanded, onExpand, onDismiss, archive, clearCount, onClear }: {
-  items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; expanded: boolean; onExpand: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
+function Rows({ items, upcoming, now, faces, zone, onShowAll, onDismiss, archive, clearCount, onClear }: {
+  items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; onShowAll: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
   /** Everything Clear all would clear (the lead included), and the press; the press shows from two items. */
   clearCount: number; onClear: (pending: string | null) => void;
 }) {
   // The item whose answer sheet is opening is skipped, as its ✕ is while an answer is out.
   const pending = useAnswerSheet()?.pending ?? null;
-  const { today, earlier, hidden } = feedGroups(items, now, expanded);
+  const { today, earlier, hidden } = feedGroups(items, now, false);
   // While Upcoming drops shows, the rest is always labelled (handoff call 1); otherwise only when both days hold rows.
   const grouped = upcoming.length > 0;
   const labelled = grouped || (today.length > 0 && earlier.length > 0);
   const row = (i: FeedView) => (
-    <FeedItemRow key={i.key} item={i} now={now} zone={zone} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
+    <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact="rail" face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
   );
   return (
     <>
@@ -275,7 +298,7 @@ function Rows({ items, upcoming, now, faces, zone, expanded, onExpand, onDismiss
       {today.length > 0 && <ul className={ROWS}>{today.map(row)}</ul>}
       {labelled && earlier.length > 0 && <p className={`${DAY} ${today.length > 0 || grouped ? "[border-top:1px_solid_var(--border)]" : ""}`}>{c.earlier}</p>}
       {earlier.length > 0 && <ul className={`${ROWS} ${!labelled && today.length > 0 ? "[border-top:1px_solid_var(--border)]" : ""}`}>{earlier.map(row)}</ul>}
-      <ShowAllFooter hidden={hidden} total={items.length} onExpand={onExpand} aside={archive ? <ArchiveEntry /> : undefined} clear={clearCount >= 2 ? <ClearAllPress onPress={() => onClear(pending)} /> : undefined} />
+      <ShowAllFooter hidden={hidden} total={items.length} onExpand={onShowAll} aside={archive ? <ArchiveEntry /> : undefined} clear={clearCount >= 2 ? <ClearAllPress onPress={() => onClear(pending)} /> : undefined} />
     </>
   );
 }

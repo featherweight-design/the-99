@@ -38,6 +38,21 @@ function askFriend(friend: string | ThirdPartyName): string | PersonParts {
   return typeof friend === "string" ? `Ask ${friend}` : personText`Ask ${friend}`;
 }
 
+/**
+ * What's new's Show all sheet (tool-discovery R10, G20; handoff `feedSheetCopy`). The chips name the four kinds the handoff
+ * draws; every other kind takes its Settings name (`feedCopy.news.kinds`), the nearest drawn pattern. `Today` and
+ * `Earlier` are `feedCopy.home`'s.
+ */
+export const feedSheetCopy = {
+  title: "What’s new",
+  /** The head's count: every item, and how many of them are unseen. */
+  count: (n: number, fresh: number) => (fresh > 0 ? `${n} · ${fresh} new` : `${n}`),
+  all: "All",
+  kinds: { "price-drop": "Price drops", combo: "Combos", "new-set": "New sets", "trade-match": "Trade matches" } as Partial<Record<FeedKind, string>>,
+  thisWeek: "This week",
+  close: "Close What’s new",
+};
+
 export const feedCopy = {
   news: {
     /** The mono section head, drawn uppercase by CSS. */
@@ -79,7 +94,7 @@ export const feedCopy = {
     newCount: (n: number) => `· ${n} new`,
     /** The head's right link, to Settings, wherever the reader has chosen (What's new empty handoff, DRAFT for
      *  `/copy-review`). */
-    choose: "Choose your notifications",
+    choose: "Choose notifications",
     /** Day labels, only when the shown list holds both. "Earlier" rather than the board's "Earlier this week": the feed keeps fourteen days. */
     today: "Today",
     earlier: "Earlier",
