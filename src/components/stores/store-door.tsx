@@ -7,6 +7,7 @@
 
 import Link from "next/link";
 import { storeCopy } from "../../lib/copy/store";
+import { PendingReporter } from "../shell/pending-reporter";
 import { STORE_SETTINGS_HREF } from "../../lib/stores/info";
 import { TOUCH_HIT_INLINE } from "../ui/touch-hit";
 import { useCanChangeStore, useStoreInfo } from "./store-provider";
@@ -25,6 +26,7 @@ export function StoreDoor() {
         className={`${TOUCH_HIT_INLINE} rounded-[3px] text-[color:var(--fg-muted)] underline decoration-1 underline-offset-[2px] decoration-[color-mix(in_srgb,var(--fg-muted)_50%,transparent)] hover:text-[color:var(--fg)]`}
       >
         {storeCopy.change}
+        <PendingReporter href={STORE_SETTINGS_HREF} />
       </Link>
     </>
   );
