@@ -4,12 +4,14 @@
 // the call-out and its filter, the key, and the `You have this` sheet with Offer. Nothing here reads: the page's one read
 // (`loadHaveIt`) arrives with the tab, and a write's reply moves one card's mark for the visit.
 
+import Link from "next/link";
 import { useRef, useState } from "react";
 import { offerSpareAction } from "../../app/friends/spare-actions";
 import { haveItCopy as h } from "../../lib/copy/social";
 import { PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-name";
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import type { HaveItCard } from "../../lib/social/spare-offers";
+import { PendingReporter } from "../shell/pending-reporter";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
@@ -26,11 +28,14 @@ import { ASK_INK, ASK_PRESS, ASK_SIZE, STATUS } from "./friend-spares";
 export type HaveFilter = "all" | "spare";
 export type HaveLine = { oracleId: string; name: string; imageUri: string | null; quantity: number };
 
+/** The Spares section of Settings: its heading carries this id (`SparesSection`). */
+const SETTINGS_SPARES = "/settings#settings-spares";
+
 const glyphMark = (c: HaveItCard): SpareMark => (c.mark === "accepted" ? "accepted" : c.mark ? "requested" : null);
 
 /** The tile's press: the 26px outlined box with the spare glyph and its mark, over the caption's lower right. */
 export function HavePress({ line, have, open, onOpen }: { line: HaveLine; have: HaveItCard; open: boolean; onOpen: () => void }) {
-  const base = h.aria(line.name);
+  const base = have.under ? h.under.aria(line.name, have.under) : h.aria(line.name);
   return (
     <span className="absolute bottom-[8px] right-[6px] z-[1] flex md:bottom-[9px] md:right-[8px]">
       <button
@@ -40,12 +45,17 @@ export function HavePress({ line, have, open, onOpen }: { line: HaveLine; have: 
         aria-haspopup="dialog"
         aria-expanded={open}
         onClick={onOpen}
-        className={`${SPARE_PRESS_FADE} ${TOUCH_HIT} flex h-[26px] min-w-[26px] cursor-pointer items-center justify-center rounded-[6px] bg-transparent px-[5px] [border:1px_solid_var(--border-strong)] ${open ? "ring-2 ring-[color:var(--accent)] ring-offset-2" : ""}`}
+        className={`${SPARE_PRESS_FADE} ${TOUCH_HIT} flex h-[26px] min-w-[26px] cursor-pointer items-center justify-center rounded-[6px] bg-transparent px-[5px] ${have.under ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${open ? "ring-2 ring-[color:var(--accent)] ring-offset-2" : ""}`}
       >
-        <MarkedSpareGlyph mark={glyphMark(have)} size={16} testId="have-glyph" />
+        {have.under ? <UnderGlyph size={16} /> : <MarkedSpareGlyph mark={glyphMark(have)} size={16} testId="have-glyph" />}
       </button>
     </span>
   );
+}
+
+/** The spare glyph, unmarked, in the faint ink: a spare the reader's Offer threshold holds back. */
+export function UnderGlyph({ size }: { size: number }) {
+  return <span data-mark="under" data-testid="have-under-glyph" className="inline-flex text-[color:var(--fg-faint)]"><SpareGlyph size={size} /></span>;
 }
 
 /** A tile's face for the friend's list: its wants line takes the press's height once any tile draws a press. */
@@ -58,12 +68,19 @@ export function HaveCallout({ names, haves, total, filter, onFilter }: {
   names: readonly string[]; haves: readonly HaveItCard[]; total: number; filter: HaveFilter; onFilter: (f: HaveFilter) => void;
 }) {
   if (haves.length === 0) return null;
-  const marks = new Set(haves.map((c) => c.mark));
-  const key: Array<{ label: string; mark: SpareMark }> = [
-    { label: h.key.spare, mark: null },
+  // A spare under the reader's threshold draws and is keyed, but is not offerable: the title, filter and count speak of the offerable ones.
+  const offerable = haves.filter((c) => !c.under);
+  const under = haves.filter((c) => c.under);
+  const min = under[0]?.under ?? 0;
+  const nameByCard = new Map(haves.map((c, i) => [c, names[i]] as const));
+  const nameOf = (c: HaveItCard) => nameByCard.get(c)!;
+  const marks = new Set(offerable.map((c) => c.mark));
+  const key: Array<{ label: string; mark: SpareMark | "under" }> = [
+    ...(offerable.length ? [{ label: h.key.spare, mark: null }] : []),
     ...(marks.has("asked") ? [{ label: h.key.asked, mark: "requested" as const }] : []),
     ...(marks.has("offered") ? [{ label: h.key.offered, mark: "requested" as const }] : []),
     ...(marks.has("accepted") ? [{ label: h.key.accepted, mark: "accepted" as const }] : []),
+    ...(under.length ? [{ label: h.key.under, mark: "under" as const }] : []),
   ];
   return (
     <div data-testid="have-callout" className={`${SPARE_PRESS_FADE} mt-[14px] flex flex-col gap-[10px]`}>
@@ -75,12 +92,14 @@ export function HaveCallout({ names, haves, total, filter, onFilter }: {
           tone="action"
           next={false}
           mark={<SpareGlyph size={16} />}
-          title={h.callout.title(haves.length)}
-          body={h.callout.body(h.callout.names(names))}
+          title={offerable.length ? h.callout.title(offerable.length) : h.under.title(under.length)}
+          body={offerable.length
+            ? `${h.callout.body(h.callout.names(offerable.map(nameOf)))}${under.length ? ` ${h.under.more(under.length)}` : ""}`
+            : h.under.body(h.callout.names(under.map(nameOf)), min)}
         />
       </div>
       <div className="flex flex-col items-start gap-[10px]">
-        <SegmentedSwitch<HaveFilter>
+        {offerable.length > 0 && <SegmentedSwitch<HaveFilter>
           kind="radio"
           size="compact"
           ariaLabel={h.callout.filterAria}
@@ -88,13 +107,13 @@ export function HaveCallout({ names, haves, total, filter, onFilter }: {
           onChange={onFilter}
           segments={[
             { value: "all", label: h.callout.filterAll, count: total },
-            { value: "spare", label: h.callout.filterSpare, count: haves.length },
+            { value: "spare", label: h.callout.filterSpare, count: offerable.length },
           ]}
-        />
+        />}
         <ul data-testid="have-key" className="m-0 flex list-none flex-wrap items-center gap-x-[14px] gap-y-[4px] p-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
           {key.map((k) => (
             <li key={k.label} className="inline-flex items-center gap-[6px]">
-              <MarkedSpareGlyph mark={k.mark} size={14} />
+              {k.mark === "under" ? <UnderGlyph size={14} /> : <MarkedSpareGlyph mark={k.mark} size={14} />}
               {k.label}
             </li>
           ))}
@@ -142,7 +161,7 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
     }
   }
 
-  const foot = have.mark === "asked" ? h.foot.asked(friend) : have.mark === "offered" ? h.foot.offered(friend) : have.mark === "accepted" ? h.foot.accepted(friend) : h.foot.offer(friend);
+  const foot = have.under ? h.under.foot(have.under) : have.mark === "asked" ? h.foot.asked(friend) : have.mark === "offered" ? h.foot.offered(friend) : have.mark === "accepted" ? h.foot.accepted(friend) : h.foot.offer(friend);
   return (
     <HoverPreviewProvider waitForMove>
     <ModalChrome title={h.title} closeLabel={h.close} onClose={onClose} width={640}>
@@ -167,18 +186,18 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
           <div className="flex flex-col gap-[10px]">
             <div className="flex items-center gap-[12px]">
               <span className="inline-flex size-[30px] flex-none items-center justify-center rounded-[8px] bg-[color:var(--bg)] [border:1px_solid_var(--border)]">
-                <MarkedSpareGlyph mark={glyphMark(have)} size={18} />
+                {have.under ? <UnderGlyph size={18} /> : <MarkedSpareGlyph mark={glyphMark(have)} size={18} />}
               </span>
               <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
                 <span className="text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]">
                   {have.mark === "asked" ? <PersonText text={h.asked(friend, have.copies ?? 1)} /> : h.spare(have.spare)}
                 </span>
                 <span className="font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">
-                  {have.mark === "offered" && have.daysLeft !== null ? h.daysLeft(have.daysLeft) : have.mark === "asked" ? `${h.spare(have.spare)} · ${h.spareSub}` : h.spareSub}
+                  {have.under ? h.under.sub(have.under) : have.mark === "offered" && have.daysLeft !== null ? h.daysLeft(have.daysLeft) : have.mark === "asked" ? `${h.spare(have.spare)} · ${h.spareSub}` : h.spareSub}
                 </span>
               </span>
               <span ref={cell} tabIndex={-1} className="flex flex-none items-center outline-none">
-                {have.mark === null ? (
+                {have.under ? null : have.mark === null ? (
                   <button
                     type="button"
                     data-testid="have-offer"
@@ -219,7 +238,17 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
             ) : null}
           </div>
         </section>
-        <p data-testid="have-foot" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={foot} /></p>
+        <p data-testid="have-foot" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={foot} />
+          {have.under ? (
+            <>
+              {" "}
+              <Link href={SETTINGS_SPARES} data-testid="have-settings" className="font-medium text-[color:var(--accent-text)] no-underline">
+                {h.under.settings}
+                <PendingReporter href={SETTINGS_SPARES} />
+              </Link>
+            </>
+          ) : null}
+        </p>
       </div>
       {toast.node}
     </ModalChrome>

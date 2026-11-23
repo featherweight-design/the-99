@@ -295,6 +295,13 @@ made, `To you` the reverse), `requestHistoryQuery` and `hiddenHistoryCountQuery`
 makes the row draw `Offered` / `You offered ... to ...`. An offer carries no deck line (the deck join is asks only), and a withdrawn
 row is hidden on the non-starter's side for both kinds.
 
+**Below-threshold hint (R2, PR 2).** A card the reader holds a spare of, but fewer than their `spare_min`, is `under`: it stays
+unofferable (`offerSpareAction` still re-checks through `loadOwnOffered`, and `loadSparableCounts` still counts offerable only), but a
+friend's Wishlist tab now draws it as a dashed tile with its own key entry, call-out line and sheet that explains the rule and links to
+`/settings#settings-spares`. `loadOwnSpareSplit` (`spares.ts`) reads offered and under from ONE snapshot so a card is never both;
+`loadOwnOffered` delegates to it. A card the reader KEPT BACK is a choice, never `under`, and is absent. `HaveItCard.under` carries the
+reader's threshold for the copy; the `You can spare` filter counts and shows offerable tiles only.
+
 ## Log reminder (Home's Game to log card)
 
 A game the viewer played at a closed table and has not logged stays loggable until the table's keep window ends (`tableKept`, a week past its clock). Home draws it as one card, read per request by `loadHomeLogGames` (`src/lib/social/rule-zero-log-home.ts`, registered in `PER_REQUEST_READS`, never in Home's cached payload): a raw candidate query over the viewer's own result seats (joined to the table unaliased, because the `rule-zero-open.ts` window fragments render `"rule_zero_tables"."col"`, and to the viewer's own pod membership), then `tableGamesIn` under each table's grant so the seats, result and deck come from the one shared read the closed page uses. A game is its result seat's `started_at` in whole milliseconds, the same id the Log URL carries (`game=`). The ✕ writes `rule_zero_log_hidden` (`hideLogReminder`, `rule-zero-log-hidden.ts`): one row per (player, table, game), selected from the viewer's own result row so no one can hide a reminder they do not hold, and cleaned by `purgeAccount` and the table's cascade. Hiding is optimistic on the client and never revalidates Home; Undo deletes the row. A hidden reminder only hides the card (and, from PR 3, its push); `Log this game` on the closed page stays.

@@ -27,7 +27,8 @@ export function FriendWishlist({ name, friendPublicId, lines, haves }: {
   const [opened, setOpened] = useState<string | null>(null);
   const have = new Map(haves.map((c) => [c.oracleId, { ...c, ...patches[c.oracleId] }]));
   const spareLines = lines.filter((l) => have.has(l.oracleId));
-  const shown = filter === "spare" ? spareLines : lines;
+  // A spare under the reader's Offer threshold draws its muted press but stays out of the filter.
+  const shown = filter === "spare" ? spareLines.filter((l) => !have.get(l.oracleId)!.under) : lines;
   const openedLine = opened ? lines.find((l) => l.oracleId === opened) : undefined;
   const openedHave = opened ? have.get(opened) : undefined;
   // The tiles in their order, so card details steps through the friend's list.

@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const m = vi.hoisted(() => ({ offer: vi.fn(), answerSpare: vi.fn(), answerOffer: vi.fn() }));
 vi.mock("../../app/friends/spare-actions", () => ({ offerSpareAction: m.offer, answerSpareAction: m.answerSpare, answerOfferAction: m.answerOffer }));
+vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 vi.mock("../cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
   cardDetailCopy: { triggerAria: (name: string) => `View details for ${name}` },
@@ -81,5 +82,47 @@ describe("You have it on a friend's wishlist", () => {
     await act(async () => { fireEvent.click(screen.getByTestId("spare-yes")); });
     expect(m.answerSpare).toHaveBeenCalledWith("req-2", "yes");
     await waitFor(() => expect(screen.getByTestId("have-accepted")).toBeTruthy());
+  });
+  describe("a spare under the reader's threshold (You have it R2)", () => {
+    const UNDER: HaveItCard = { oracleId: "b", spare: 1, mark: null, requestId: null, daysLeft: null, copies: null, under: 3 };
+
+    it("draws a muted press, keyed `under your threshold`, with its own aria", () => {
+      draw([HAVE, UNDER]);
+      const presses = screen.getAllByTestId("have-press");
+      expect(presses).toHaveLength(2);
+      expect(presses[1].getAttribute("aria-label")).toBe(h.under.aria("Sol Ring", 3));
+      expect(screen.getAllByTestId("have-under-glyph").length).toBeGreaterThan(0);
+      expect(screen.getByTestId("have-key").textContent).toContain(h.key.under);
+      expect(screen.getByTestId("have-callout").textContent).toContain(h.under.more(1));
+    });
+
+    it("the filter counts and shows only the offerable spares", () => {
+      draw([HAVE, UNDER]);
+      expect(screen.getByRole("radio", { name: /You can spare/ }).textContent).toContain("1");
+      fireEvent.click(screen.getByRole("radio", { name: /You can spare/ }));
+      expect(screen.getAllByRole("button", { name: /View details for/ })).toHaveLength(1);
+    });
+
+    it("with only under-threshold spares the call-out says so and draws no filter", () => {
+      draw([UNDER]);
+      const c = screen.getByTestId("have-callout");
+      expect(c.textContent).toContain(h.under.title(1));
+      expect(c.textContent).toContain(h.under.body("Sol Ring", 3));
+      expect(screen.queryByRole("radio")).toBeNull();
+      expect(screen.getByTestId("have-key").textContent).not.toContain(h.key.spare);
+    });
+
+    it("the sheet explains the threshold, draws no Offer, and links to Settings › Spares", () => {
+      draw([UNDER]);
+      fireEvent.click(screen.getByTestId("have-press"));
+      const sheet = screen.getByTestId("have-sheet");
+      expect(within(sheet).queryByTestId("have-offer")).toBeNull();
+      expect(sheet.textContent).toContain(h.under.sub(3));
+      expect(within(sheet).getByTestId("have-foot").textContent).toContain(h.under.foot(3));
+      const link = within(sheet).getByTestId("have-settings");
+      expect(link.getAttribute("href")).toBe("/settings#settings-spares");
+      expect(link.textContent).toContain(h.under.settings);
+      expect(m.offer).not.toHaveBeenCalled();
+    });
   });
 });
