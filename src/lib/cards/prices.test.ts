@@ -25,7 +25,9 @@ const BEFORE = `
 
 describe("printingPricesQuery", () => {
   it("reads Mana Pool byte for byte as card details did before stores", () => {
-    expect(render(printingPricesQuery("o-1", "manapool"))).toEqual({ sql: BEFORE, params: ["o-1"] });
+    // The text and the parameters are what Postgres receives; a nested fragment adds a `typings` hint, which is not sent.
+    const { sql, params } = render(printingPricesQuery("o-1", "manapool"));
+    expect({ sql, params }).toEqual({ sql: BEFORE, params: ["o-1"] });
   });
 
   it("reads another store's own rows against its own newest, and carries sold_out", () => {
