@@ -1,5 +1,5 @@
 "use client";
-// BuilderTabs — the decklist, Consider, Games and Versions as peers, per design
+// BuilderTabs — the decklist, Analysis, Tuning, Games and Versions as peers, per design
 // table §1. Every cell is a tab over a panel in this document: Versions used to
 // be a link to a route of its own, which made it the one cell that took the deck
 // off screen.
@@ -28,7 +28,7 @@ interface BuilderTabsProps {
   onViewChange: (view: BuilderView) => void;
   /** The desktop toolbar rides the same row, pushed right. Mobile draws it below. */
   children?: React.ReactNode;
-  /** A moment's anchor on one tab (discovery R1: the Analysis tab carries M2, and M3 and M4 when their shortcut is
+  /** A moment's anchor on one tab (discovery R1, on Tuning since tool discovery B2: the Tuning tab carries M2, and M3 and M4 when their shortcut is
    *  not drawn): its ref, and the describedby the bubble sets while it shows. */
   anchor?: { view: BuilderView; ref: (el: HTMLElement | null) => void; describedBy?: string };
 }

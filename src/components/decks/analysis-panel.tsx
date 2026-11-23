@@ -18,7 +18,7 @@ import type { BenchmarksWire } from "../../lib/benchmarks/wire";
 import { LeanLine } from "./lean-line";
 import type { FindingArt } from "./receipt-modal";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
-import type { Bracket, DeckProfile } from "../../lib/profile/types";
+import type { DeckProfile } from "../../lib/profile/types";
 import { VerdictBlock } from "./verdict-block";
 
 /**
@@ -49,7 +49,6 @@ export function AnalysisPanel({
   art = EMPTY_ART,
   locked = NO_LOCKS,
   legality,
-  hub,
   strategy,
   opening = "off",
   overview,
@@ -88,11 +87,6 @@ export function AnalysisPanel({
   locked?: ReadonlySet<string>;
   /** The deck's strategy block: drawn last in the reading, above Tuning, and only over one. */
   strategy?: ReactNode;
-  /** The Tuning hub, present wherever the Analysis tab is: it mounts Suggested changes, Mana Balance and Proposed cuts
-   *  inside its own tiles (none has a switch of its own). Handed the held reading's permits, or null with no reading (a
-   *  deck built long). It draws for any deck (Mana Balance needs no reading), so Suggested changes' landing target is
-   *  always its tile there (discovery R2, E11). */
-  hub?: (permits: readonly Bracket[] | null) => ReactNode;
   /** The deck's overview (sub-project 6), drawn beside the verdict and only over a reading. */
   overview?: ReactNode;
   /**
@@ -156,7 +150,6 @@ export function AnalysisPanel({
   // staging walk, 2026-09-25: nothing may pop in once the tab has painted). One tree in both
   // phases, so revealing it keeps every read that already landed rather than remounting.
   const gated = opening !== "off";
-  const hubPermits = held && !behind ? slotDeck(held.profile).permits : null;
   return (
     <>
     {gated ? (
@@ -214,14 +207,6 @@ export function AnalysisPanel({
           onSaveDescription={onSaveDescription}
         />
       ) : null) : null}
-      {/* THE FLAG BEING OFF, OR A DECK THAT CANNOT BE READ, DRAWS NO READING: the tab is hidden by
-          the same flag, and the page around it has already answered for a missing deck. */}
-      {/* THE HUB IS NEVER HIDDEN (Hugh, 2026-10-14): it stays drawn, as the same node and in the same
-          place, before, during and after an analysis. While the overview is written the reading is in
-          but not yet shown, so the hub is handed no reading until the verdict paints: Suggested changes
-          stays dimmed until then, and wakes in the same frame as the verdict. The tools below the
-          reading (Proposed cuts, Mana Balance) need none, so they are never hidden either. */}
-      {hub ? hub(hubPermits) : null}
       <p role="status" className="sr-only">{announced}</p>
     </div>
     </>

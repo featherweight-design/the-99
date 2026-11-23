@@ -93,7 +93,7 @@ export function toolLanding(value: unknown, isOn: (name: SwitchName) => boolean)
 
 /**
  * The deck page's reading of `?tool=`: a landing only for a tool that opens on a deck (every tab is drawn: the Analysis
- * tab's switch is retired). A `tuning` landing opens Analysis until tool discovery B2 draws the Tuning tab (`drawnView`).
+ * tab's switch is retired).
  */
 export function deckToolLanding(
   value: unknown,
@@ -129,7 +129,7 @@ export type LandingSpot = { id: string; lands: ToolLands; needsDeck: boolean };
 
 export const LANDINGS = [
   ...TOOLS.map(({ id, lands, needsDeck }) => ({ id, lands, needsDeck })),
-  { id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true },
+  { id: "consider", lands: { kind: "deck", tab: "tuning", tool: "consider" }, needsDeck: true },
   { id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true },
 ] as const satisfies readonly LandingSpot[];
 

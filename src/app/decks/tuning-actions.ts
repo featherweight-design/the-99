@@ -440,7 +440,7 @@ async function runTuningV2(deckId: string, userId: string, env: NodeJS.ProcessEn
 }
 
 /**
- * What a surface calls to draw the panel. The Analysis tab has no address, so no route loader
+ * What a surface calls to draw the panel. The Tuning tab has no address, so no route loader
  * can load this only when the panel shows; the panel asks for it. Never builds the profile.
  * Null for a deck that is not the reader's.
  */

@@ -1,0 +1,58 @@
+{
+  "feature": "Finding the tools, PR B2: the Tuning tab, with Consider as the hub's first tool (handoff design_handoff_the99_tool_discovery, Tuning.dc.html T1 and T2; plan 2026-11-23-tool-discovery.md §3 B2)",
+  "note": "Every row is on /decks/[id] and reaches its surface by PRESSING the tab row or a tile: the tab is component state, so a URL sweep cannot see it. The last row arrives by the retired `?tab=consider`, which must land on Tuning with Consider open. TOOL_DECK must be a deck with open slots, so the Consider list has cards (local-dev: the card-mark fixture deck).",
+  "out": "contact-sheets/tool-discovery-b2",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "ipad", "width": 820, "height": 1180 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "tab-row",
+      "label": "/decks/[id], Your deck: the tab row reads Your deck, Analysis, Tuning, Games",
+      "view": "src/lib/decks/builder-tab-specs.ts",
+      "steps": [
+        { "goto": "/decks/${TOOL_DECK}", "wait": "#tab-tuning", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "tuning-tiles",
+      "label": "/decks/[id], Tuning: the hub's tiles, Consider first and spanning both columns from md",
+      "view": "src/components/decks/tuning-hub.tsx",
+      "steps": [
+        { "goto": "/decks/${TOOL_DECK}", "wait": "#tab-tuning", "settle": 2500 },
+        { "click": "#tab-tuning", "settle": 2000 },
+        { "scrollTo": "[data-tool-tile=\"consider\"]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "consider-open",
+      "label": "/decks/[id], Tuning: the Consider tile pressed, the shipped Consider list open in place",
+      "view": "src/components/decks/consider-panel.tsx",
+      "steps": [
+        { "goto": "/decks/${TOOL_DECK}", "wait": "#tab-tuning", "settle": 2500 },
+        { "click": "#tab-tuning", "settle": 2000 },
+        { "click": "[data-tool-tile=\"consider\"]", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "analysis-no-hub",
+      "label": "/decks/[id], Analysis: the reading only, the hub gone from its foot",
+      "view": "src/components/decks/analysis-panel.tsx",
+      "steps": [
+        { "goto": "/decks/${TOOL_DECK}", "wait": "#tab-analysis", "settle": 2500 },
+        { "click": "#tab-analysis", "settle": 2500 }
+      ]
+    },
+    {
+      "id": "old-consider-link",
+      "label": "/decks/[id]?tab=consider: an old link lands on Tuning with Consider open",
+      "view": "src/lib/decks/builder-view.ts",
+      "steps": [
+        { "goto": "/decks/${TOOL_DECK}?tab=consider", "wait": "#panel-tuning #panel-consider", "settle": 2500 }
+      ]
+    }
+  ]
+}

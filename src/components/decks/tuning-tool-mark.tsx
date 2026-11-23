@@ -1,11 +1,11 @@
-// The four Tuning tool marks (tuning hub handoff R1, `TuningToolMark.dc.html`; design table
+// The Tuning tool marks (tuning hub handoff R1, `TuningToolMark.dc.html`; design table
 // `TuningToolMark`). One ink, `currentColor`, always beside the tool's name and never in place of
 // it, so `aria-hidden`. Geometric for Suggested changes, Mana Balance and History; Proposed cuts
 // takes the glyph (Hugh, R1 feedback 3). The canvas draws the geometric marks as percentage
 // boxes; here they are the same boxes in a 24-unit viewBox, with the stroke converted from the
 // canvas's pixel widths so a mark reads the same at every size in use (14, 16, 20).
 
-export type TuningTool = "suggested" | "mana" | "cuts" | "history";
+export type TuningTool = "consider" | "suggested" | "mana" | "cuts" | "history";
 
 /** The canvas's stroke steps, in px: 1.5 under 18, 2 from 18, 2.5 from 28. */
 function strokePx(size: number): number {
@@ -28,7 +28,14 @@ export function TuningToolMark({ tool, size }: { tool: TuningTool; size: number 
       className="block flex-none"
       fill="currentColor"
     >
-      {tool === "suggested" ? (
+      {tool === "consider" ? (
+        <>
+          {/* Three cards, the middle one outlined and lifted (tool discovery B2, art td-d-t1): cards to weigh. */}
+          <rect x={1.5} y={7.5} width={6} height={13.5} rx={radius} />
+          <rect x={9 + sw / 2} y={3 + sw / 2} width={6 - sw} height={13.5 - sw} rx={radius} fill="none" stroke="currentColor" strokeWidth={sw} />
+          <rect x={16.5} y={7.5} width={6} height={13.5} rx={radius} />
+        </>
+      ) : tool === "suggested" ? (
         <>
           {/* Outlined card, diamond, filled card: a swap. */}
           <rect x={0.96 + sw / 2} y={3.36 + sw / 2} width={8.16 - sw} height={17.28 - sw} rx={radius} fill="none" stroke="currentColor" strokeWidth={sw} />

@@ -15,7 +15,7 @@ import { InertChangeCommanderDoor } from "./change-commander-door-inert";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deckFlipCopy, deckOpenLoadingCopy } from "../../lib/copy/deck-flip";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { TAB_PARAM, drawnView, type BuilderView } from "../../lib/decks/builder-view";
+import { TAB_PARAM, readBuilderView } from "../../lib/decks/builder-view";
 import { StallWatch } from "../shell/nav-stall";
 import { PendingReporter } from "../shell/pending-reporter";
 import { BAR } from "../ui/tile-skeleton";
@@ -39,7 +39,7 @@ const NAME = [62, 48, 74, 55, 68, 44, 80, 58, 66, 50, 72, 46];
 const TABS = [
   { id: "deck", label: addPanelCopy.tabs.deck, count: true },
   { id: "analysis", label: addPanelCopy.tabs.analysis, count: false },
-  { id: "consider", label: addPanelCopy.tabs.consider, count: false },
+  { id: "tuning", label: addPanelCopy.tabs.tuning, count: false },
   { id: "games", label: gameLogCopy.tab.label, count: false },
   { id: "versions", label: deckVersioningCopy.history.tab, count: false },
 ] as const;
@@ -106,7 +106,7 @@ function Body({ wide, tab }: { wide: boolean; tab: string }) {
         ))}
       </nav>
       <div className={`anim-skeleton flex flex-col gap-[12px] ${px} pb-[24px] pt-[14px]`}>
-        {tab === "deck" || tab === "consider" ? (
+        {tab === "deck" ? (
           <>
             {wide ? (
               <div className="flex items-center gap-[10px]">
@@ -349,9 +349,9 @@ export function DeckOpenLoading({ lean }: { lean?: LeanOpenFacts }) {
   const entry = parsed && parsed.to === id ? parsed : null;
   const facts: HeaderFacts | null = entry?.facts ?? (lean ? { ...lean, status: null, built: null } : null);
   const place = entry?.place ?? null;
-  // `?tab=tuning` opens Analysis until tool discovery B2 draws the Tuning tab, so the skeleton draws what the page will.
+  // `?tab=consider` opens Tuning (tool discovery B2), so the skeleton reads the tab as the page will.
   const rawTab = params.get(TAB_PARAM);
-  const wanted = rawTab === null ? null : drawnView(rawTab as BuilderView);
+  const wanted = rawTab === null ? null : readBuilderView(rawTab);
   const tab = TABS.some((t) => t.id === wanted) ? (wanted as string) : "deck";
   return (
     <div data-loading-screen>

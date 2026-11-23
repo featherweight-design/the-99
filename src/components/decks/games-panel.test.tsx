@@ -191,14 +191,14 @@ describe("GamesPanel — empty", () => {
 
 // The pointer to Suggested changes (addendum r1, C1/C2), over a reading and a game to read.
 describe("the Suggested changes pointer", () => {
-  const draw = (games: DeckGame[], tuned: boolean, onOpenAnalysis = vi.fn()) => {
+  const draw = (games: DeckGame[], tuned: boolean, onOpenTuning = vi.fn()) => {
     render(
-      <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} tuned={tuned} onOpenAnalysis={onOpenAnalysis} />,
+      <GamesPanel deckId="deck_1" games={games} summary={summarizeGames(games)} tuned={tuned} onOpenTuning={onOpenTuning} />,
     );
-    return onOpenAnalysis;
+    return onOpenTuning;
   };
 
-  it("points at the Analysis tab, and pressing it opens the tab", () => {
+  it("points at the Tuning tab, and pressing it opens the tab", () => {
     const open = draw([game()], true);
     expect(screen.getByText(deckTuningCopy.gamesLine.lead, { exact: false })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: deckTuningCopy.gamesLine.link }));

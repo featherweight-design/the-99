@@ -49,6 +49,6 @@ export async function readTuningPastRun(deckId: string, id: string): Promise<Pas
   if (!ref || !isUuid(ref.uuid)) return null;
   const now = new Date();
   await reapReaderRuns(deckId, userId, now);
-  // Every tool History lists is drawn (the Analysis tab and its tools are always on), so any run it holds is reachable.
+  // Every tool History lists is drawn (the Tuning tab and its tools are always on), so any run it holds is reachable.
   return readPastRun(deckId, userId, ref, now);
 }

@@ -15,14 +15,14 @@ import type { DeckPanel } from "./group-toggle";
 
 /**
  * What the builder publishes: the About screen it shows (`view`), and the tab it is on (`tab`). The two differ on
- * Consider, which has no About screen of its own and reads as Your deck, but which "‹ Back to {deck}" must still return
- * to (`?tab=consider`).
+ * Tuning, which has no About screen of its own and reads as Analysis, but which "‹ Back to {deck}" must still return
+ * to (`?tab=tuning`).
  */
 export type BuilderScreen = { view: DeckView; tab: BuilderView };
 
 export const BuilderScreenContext = createContext<((screen: BuilderScreen | null) => void) | null>(null);
 
-/** The deck view the builder's state shows. The Consider tab has no screen of its own, so it reads as Your deck. */
+/** The deck view the builder's state shows. Tuning has no About screen of its own, so it reads as Analysis. */
 export function deckViewOf(view: BuilderView, filter: "all" | "shopping", panel: DeckPanel): DeckView {
   switch (view) {
     case "analysis":
@@ -31,8 +31,6 @@ export function deckViewOf(view: BuilderView, filter: "all" | "shopping", panel:
       return view;
     case "tuning":
       return "analysis";
-    case "consider":
-      return "your-deck";
     case "deck":
       if (panel === "stats" || panel === "notes") return panel;
       return filter === "shopping" ? "shopping" : "your-deck";

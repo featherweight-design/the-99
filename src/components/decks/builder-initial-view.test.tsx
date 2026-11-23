@@ -171,10 +171,10 @@ describe("BuilderShell — the tab it opens on", () => {
     );
   });
 
-  it("opens on the consider panel when the arrival names it", async () => {
-    await mount("consider");
+  it("opens on the Tuning tab when the arrival names it", async () => {
+    await mount("tuning");
     expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true })).toHaveTextContent(
-      addPanelCopy.tabs.consider,
+      addPanelCopy.tabs.tuning,
     );
   });
 
@@ -252,9 +252,9 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
     expect(last(await opened("deck", null))).toBe("your-deck");
   });
 
-  it("publishes Consider as its own tab, reading as Your deck (Copilot round 2)", async () => {
-    const publish = await opened("consider", null);
-    expect(publish.mock.calls.at(-1)?.[0]).toEqual({ view: "your-deck", tab: "consider" });
+  it("publishes Tuning as its own tab, reading as Analysis (tool discovery B2)", async () => {
+    const publish = await opened("tuning", null);
+    expect(publish.mock.calls.at(-1)?.[0]).toEqual({ view: "analysis", tab: "tuning" });
   });
 
   it("ignores it on any other tab: the deck tab, once chosen, opens on its list", async () => {

@@ -110,11 +110,11 @@ describe("the ?", () => {
     expect(push).toHaveBeenCalledWith(`/about/decks?from=${enc(`${DECK}?panel=stats`)}#stats`);
   });
 
-  it("keeps Consider in from while landing on Your deck (Copilot round 2)", () => {
+  it("keeps Tuning in from while landing on Analysis (Copilot round 2)", () => {
     window.history.replaceState(null, "", DECK);
-    draw(<Deck view="your-deck" tab="consider" />);
+    draw(<Deck view="analysis" tab="tuning" />);
     press();
-    expect(push).toHaveBeenCalledWith(`/about/decks?from=${enc(`${DECK}?tab=consider`)}#your-deck`);
+    expect(push).toHaveBeenCalledWith(`/about/decks?from=${enc(`${DECK}?tab=tuning`)}#analysis`);
   });
 
   it("draws nothing outside the root", () => {
@@ -130,7 +130,7 @@ describe("backFrom", () => {
     expect(backFrom(DECK, "?tab=games&x=1", { view: "shopping", tab: "deck" })).toBe(`${DECK}?x=1&panel=shopping`);
     expect(backFrom(DECK, "?panel=notes", { view: "stats", tab: "deck" })).toBe(`${DECK}?panel=stats`);
     expect(backFrom(DECK, "?tab=versions&panel=notes", { view: "your-deck", tab: "deck" })).toBe(DECK);
-    expect(backFrom(DECK, "?panel=stats", { view: "your-deck", tab: "consider" })).toBe(`${DECK}?tab=consider`);
+    expect(backFrom(DECK, "?panel=stats", { view: "analysis", tab: "tuning" })).toBe(`${DECK}?tab=tuning`);
   });
 
   it("leaves any other screen, and a deck with no published view, as it is", () => {

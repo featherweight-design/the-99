@@ -15,10 +15,10 @@ import { RoleCounterCell } from "./role-counter-cell";
 import { StripRationale } from "./strip-rationale";
 
 /**
- * `onSeeShelf` switches the builder to Consider, scrolls to that role's shelf
- * and moves focus onto its heading. A cell cannot be an anchor: the Consider
- * panel is unmounted while the deck tab is up, so the `#shelf-*` heading does
- * not exist at click time.
+ * `onSeeShelf` opens Consider in the builder's Tuning tab, scrolls to that
+ * role's shelf and moves focus onto its heading. A cell cannot be an anchor:
+ * the Consider panel is unmounted while the deck tab is up, so the `#shelf-*`
+ * heading does not exist at click time.
  *
  * `rolesWithShelves` names the roles Consider actually draws a shelf for, which
  * is not every short role: a shelf is built from owned suggestions, so a role

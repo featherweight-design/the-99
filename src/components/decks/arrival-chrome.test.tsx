@@ -14,6 +14,12 @@ import { reveal } from "../../lib/ui/reveal";
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
 const TEST_MIX = recommendedMix(null, false);
 
+// The Tuning tab's hub reads on open (tool discovery B2); this test presses the tab and needs no reading.
+vi.mock("../../app/decks/tuning-hub-actions", () => ({
+  readTuningHub: vi.fn(async () => null),
+  readTuningHistory: vi.fn(async () => null),
+  readTuningPastRun: vi.fn(async () => null),
+}));
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -374,14 +380,14 @@ describe("The unresolved row's jump to the unresolved group", () => {
     expect(scrollIntoView.landed()).toBe(true);
   });
 
-  // Consider does not draw the decklist at all.
-  it("switches back from the Consider tab first, then scrolls", async () => {
+  // Tuning, Consider's tab, does not draw the decklist at all.
+  it("switches back from the Tuning tab first, then scrolls", async () => {
     const scrollIntoView = spyOnScroll();
     await act(async () => {
       renderBuilder(shortDeck());
     });
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /Cards to consider/ }));
+      fireEvent.click(screen.getByRole("tab", { name: /^Tuning/ }));
     });
     expect(document.getElementById("unresolved-group")).toBeNull();
 

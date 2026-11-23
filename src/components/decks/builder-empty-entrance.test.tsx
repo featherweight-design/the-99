@@ -100,9 +100,9 @@ describe("empty builder", () => {
     expect(screen.getByText(hint)).toBeInTheDocument();
   });
 
-  it("keeps both entrances: the Consider tab and the quick-add bar", () => {
+  it("keeps both entrances: the Tuning tab, Consider's home, and the quick-add bar", () => {
     renderEmpty();
-    expect(screen.getByRole("tab", { name: /cards to consider/i })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: /^Tuning/ })).toBeInTheDocument();
     expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 

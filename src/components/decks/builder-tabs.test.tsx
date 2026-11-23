@@ -1,4 +1,4 @@
-// The tabs are the only route between the decklist and Consider, so the
+// The tabs are the only route between the decklist and Tuning, so the
 // keyboard contract is load-bearing rather than decorative. Both halves of the
 // roving-tabindex pattern are asserted: the inactive tab leaves the tab order,
 // and the arrows are what put it back within reach.
@@ -7,13 +7,13 @@ import { describe, expect, it, vi } from "vitest";
 import { BuilderTabs, type BuilderTabSpec, type BuilderView } from "./builder-tabs";
 
 const DECK_TAB = { id: "deck" as const, label: "In deck", count: 12, accessibleName: "In deck, 12 cards" };
-const CONSIDER_TAB = { id: "consider" as const, label: "Consider", count: 30, accessibleName: "Consider, 30 cards" };
+const TUNING_TAB = { id: "tuning" as const, label: "Tuning", count: 30, accessibleName: "Tuning, 30 cards" };
 const GAMES_TAB = { id: "games" as const, label: "Games", count: 3, accessibleName: "Games, 3 logged" };
 
 function mount(
   view: BuilderView = "deck",
   onViewChange = vi.fn(),
-  tabs: readonly BuilderTabSpec[] = [DECK_TAB, CONSIDER_TAB],
+  tabs: readonly BuilderTabSpec[] = [DECK_TAB, TUNING_TAB],
 ) {
   render(<BuilderTabs tabs={tabs} view={view} onViewChange={onViewChange} />);
   return onViewChange;
@@ -39,20 +39,20 @@ describe("BuilderTabs — keyboard contract", () => {
   it("moves between the tabs with the arrows", () => {
     const onViewChange = mount();
     fireEvent.keyDown(tabs()[0], { key: "ArrowRight" });
-    expect(onViewChange).toHaveBeenCalledWith("consider");
+    expect(onViewChange).toHaveBeenCalledWith("tuning");
 
     onViewChange.mockClear();
     // Wraps rather than clamping: with the tab list now variable-length, the
     // arrows are index arithmetic modulo the list, which is also what the ARIA
     // pattern specifies. This assertion read "deck" while the handler clamped.
     fireEvent.keyDown(tabs()[0], { key: "ArrowLeft" });
-    expect(onViewChange).toHaveBeenCalledWith("consider");
+    expect(onViewChange).toHaveBeenCalledWith("tuning");
   });
 
   it("jumps to either end with Home and End", () => {
     const onViewChange = mount();
     fireEvent.keyDown(tabs()[0], { key: "End" });
-    expect(onViewChange).toHaveBeenCalledWith("consider");
+    expect(onViewChange).toHaveBeenCalledWith("tuning");
 
     onViewChange.mockClear();
     fireEvent.keyDown(tabs()[0], { key: "Home" });
@@ -72,7 +72,7 @@ describe("BuilderTabs — keyboard contract", () => {
   it("ignores arrow keys from the toolbar sharing its row", () => {
     const onViewChange = vi.fn();
     render(
-      <BuilderTabs tabs={[DECK_TAB, CONSIDER_TAB]} view="deck" onViewChange={onViewChange}>
+      <BuilderTabs tabs={[DECK_TAB, TUNING_TAB]} view="deck" onViewChange={onViewChange}>
         <select aria-label="Sort">
           <option>Best fit</option>
           <option>Cheapest</option>
@@ -85,10 +85,10 @@ describe("BuilderTabs — keyboard contract", () => {
 });
 
 describe("BuilderTabs — three tabs", () => {
-  const three = [DECK_TAB, CONSIDER_TAB, GAMES_TAB];
+  const three = [DECK_TAB, TUNING_TAB, GAMES_TAB];
 
   it("steps one tab at a time rather than jumping to an end", () => {
-    const onViewChange = mount("consider", vi.fn(), three);
+    const onViewChange = mount("tuning", vi.fn(), three);
     fireEvent.keyDown(tabs()[1], { key: "ArrowRight" });
     expect(onViewChange).toHaveBeenCalledWith("games");
   });
@@ -106,7 +106,7 @@ describe("BuilderTabs — three tabs", () => {
     expect(second).toHaveBeenCalledWith("deck");
   });
 
-  it("puts End on the last tab, not on Consider", () => {
+  it("puts End on the last tab, not on Tuning", () => {
     const onViewChange = mount("deck", vi.fn(), three);
     fireEvent.keyDown(tabs()[0], { key: "End" });
     expect(onViewChange).toHaveBeenCalledWith("games");
@@ -140,7 +140,7 @@ describe("BuilderTabs — Versions as a fourth tab", () => {
     count: 3,
     accessibleName: "Versions, 3 versions committed",
   };
-  const four = [DECK_TAB, CONSIDER_TAB, GAMES_TAB, VERSIONS_TAB];
+  const four = [DECK_TAB, TUNING_TAB, GAMES_TAB, VERSIONS_TAB];
 
   // It used to be a link to a route of its own, which is what made it the one
   // cell in this row that took the deck's head off screen.

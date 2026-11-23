@@ -6,7 +6,7 @@ import { searchNoteCards } from "../../lib/decks/notes-store";
 
 /**
  * The boxes that can name a card. None is behind a switch any more (the reader still has to be signed in): `tuning` is
- * Suggested changes' boxes, on the Analysis tab, whose switch and Suggested changes' are retired (always on). `intake`
+ * Suggested changes' boxes, on the Tuning tab, whose switch and Suggested changes' are retired (always on). `intake`
  * is Help me choose's box, its switch retired too. `description` is a deck's description box, and `gameNote` is the
  * log-a-game form's note.
  */

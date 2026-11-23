@@ -90,7 +90,7 @@ import { DeckTokensProvider } from "../../../components/decks/deck-tokens-contex
 import { GotItProvider } from "../../../components/decks/got-it";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
-import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
+import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, readHubTool, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestFlags } from "../../../lib/flags/request";
 import { readerStoreForPage } from "../../../lib/stores/preference";
@@ -329,7 +329,7 @@ async function DeckBuilderBody({
   )));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
-  // The Set picker lives inside Suggested changes' panel alone (`builder-shell.tsx`), on the Analysis tab, which always
+  // The Set picker lives inside Suggested changes' panel alone (`builder-shell.tsx`), on the Tuning tab, which always
   // draws (its switch and Suggested changes' are retired), so this read runs on every page render.
   const printedInSetsRead = early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])));
   const detail = await detailRead;
@@ -767,6 +767,8 @@ async function DeckBuilderBody({
       nearCombos={nearCombos}
       // `?panel=`: the ?'s way back to Shopping, Stats or Notes (About PR 6a); the builder reads it on the deck tab only.
       initialBody={readDeckBody(query[BODY_PARAM])}
+      // Consider is a Tuning tool (tool discovery B2): a Consider landing or the retired `?tab=consider` opens it there.
+      initialHubTool={landing ? landing.lands.tool ?? null : readHubTool(query[TAB_PARAM])}
       initialView={initialBuilderView(
         landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.

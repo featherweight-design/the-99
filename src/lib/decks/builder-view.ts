@@ -13,29 +13,37 @@
 
 import type { DeckView } from "../copy/about";
 
-// `tuning` (tool discovery B1) names the Tuning tab ahead of its drawing: until B2 draws it, it opens as Analysis, where
-// the Tuning hub lives today (`drawnView`).
-export type BuilderView = "deck" | "analysis" | "tuning" | "consider" | "games" | "versions";
+// Consider is a tool in the Tuning tab (tool discovery B2), not a tab of its own: `?tab=consider` opens Tuning with
+// Consider open (`readHubTool`).
+export type BuilderView = "deck" | "analysis" | "tuning" | "games" | "versions";
 
 export const TAB_PARAM = "tab";
 
 // The set of names a URL may ask for. NOT the draw order — `readBuilderView` uses this as a
 // membership test and nothing else, and `builderTabSpecs` owns where each cell lands. Analysis
 // is second on screen because that function puts it there; reordering this array moves nothing.
-const VIEWS: readonly BuilderView[] = ["deck", "analysis", "tuning", "consider", "games", "versions"];
+const VIEWS: readonly BuilderView[] = ["deck", "analysis", "tuning", "games", "versions"];
+
+/** The retired Consider tab's name: old links and bookmarks still carry it, and it opens Tuning with Consider open. */
+const CONSIDER_TAB = "consider";
 
 /** The tab a URL asks for, or "deck" for anything else — including an absent
  *  parameter, a repeated one, and a name no tab answers to. */
 export function readBuilderView(value: string | string[] | undefined): BuilderView {
   if (typeof value !== "string") return "deck";
+  if (value === CONSIDER_TAB) return "tuning";
   return (VIEWS as readonly string[]).includes(value) ? (value as BuilderView) : "deck";
 }
 
-/** The tab the builder draws for `view`. `tuning` has no tab of its own until B2 draws one, so it opens Analysis, which
- *  holds the Tuning hub; every way the builder is told a view from outside (the URL, a landing, a nudge) goes through
- *  here. */
-export function drawnView(view: BuilderView): BuilderView {
-  return view === "tuning" ? "analysis" : view;
+/** The Tuning tool a URL's tab opens on arrival: Consider for the retired `?tab=consider`, otherwise none. */
+export function readHubTool(value: string | string[] | undefined): "consider" | null {
+  return value === CONSIDER_TAB ? "consider" : null;
+}
+
+/** The `?tab=` value that opens `tab` with `tool` open: `readHubTool`'s inverse, so a link to Consider lands on it
+ *  rather than on the Tuning tab's tiles. */
+export function tabQuery(tab: BuilderView, tool?: string | null): string {
+  return tab === "tuning" && tool === "consider" ? CONSIDER_TAB : tab;
 }
 
 /** The tab the builder actually opens on. A URL can name `versions` on a deck
@@ -49,7 +57,7 @@ export function initialBuilderView(
   // A URL naming a tab the row does not draw would leave every cell unselected above an empty
   // panel: `versions` on a deck with no history.
   if (view === "versions" && versionCount === 0) return "deck";
-  return drawnView(view);
+  return view;
 }
 
 /** Your deck's bodies other than its list: the Shopping view and the Stats and Notes panels. */
@@ -70,14 +78,14 @@ export function readDeckBody(value: string | string[] | undefined): DeckBody | n
 
 /**
  * A deck page's query, rewritten to open on `view` (the builder's live view, as the ? reads it) on `tab`: a tab by
- * `?tab=`, a body by `?panel=`, Your deck by neither. Consider is its own tab though it reads as Your deck, so it is
- * named by `?tab=consider`, and Tuning by `?tab=tuning`. Every other parameter is kept as it was. Returns `""` or `?…`.
+ * `?tab=`, a body by `?panel=`, Your deck by neither. Tuning reads as Analysis, so it is named by `?tab=tuning`. Every
+ * other parameter is kept as it was. Returns `""` or `?…`.
  */
 export function deckViewSearch(search: string, view: DeckView, tab: BuilderView = "deck"): string {
   const q = new URLSearchParams(search);
   q.delete(TAB_PARAM);
   q.delete(BODY_PARAM);
-  if (tab === "consider" || tab === "tuning") q.set(TAB_PARAM, tab);
+  if (tab === "tuning") q.set(TAB_PARAM, tab);
   else if (view === "analysis" || view === "games" || view === "versions") q.set(TAB_PARAM, view);
   else if (view !== "your-deck") q.set(BODY_PARAM, view);
   const out = q.toString();

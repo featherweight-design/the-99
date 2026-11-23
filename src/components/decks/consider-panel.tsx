@@ -26,6 +26,7 @@ import { SHELF_CAP } from "../../lib/decks/shelf-cap";
 import { useFoldedShelves, useStoredKeys } from "./use-folded-shelves";
 import { shelfOpenedKey } from "../../lib/decks/shelf-fold";
 import { Chevron } from "../ui/chevron";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 
 // Named once, in its own module, so the cap, the `Show all N` count, the server's
 // unowned append and the tests cannot drift apart (#391).
@@ -516,12 +517,14 @@ export function ConsiderPanel({
   return (
     <section
       id="panel-consider"
-      role="tabpanel"
-      // The tab is the panel's name, and aria-labelledby wins over aria-label
-      // regardless — a second name here would simply never be read.
-      aria-labelledby="tab-consider"
-      className="px-[16px] pt-[12px] md:px-[30px] md:pt-[16px]"
+      aria-labelledby="consider-heading"
+      // Inside the Tuning hub's tool panel (tool discovery B2), which owns the tabpanel role and the page padding. The
+      // heading is the one the hub moves focus to on opening; the hub's tab row and tile already name it on screen.
+      className="pt-[4px]"
     >
+      <h2 id="consider-heading" tabIndex={-1} className="sr-only">
+        {tuningHubCopy.tools.consider.name}
+      </h2>
       {degraded && (
         <div
           className="flex items-start gap-[11px] mb-[16px] rounded-[9px] px-[15px] py-[11px] bg-[color:var(--surface-sunken)] border border-[color:var(--border)] border-l-[3px] border-l-[color:var(--warning)]"
@@ -582,8 +585,8 @@ export function ConsiderPanel({
         </div>
       ) : (
         <>
-          {/* Phone only: at desktop width the same toolbar is mounted on the tab
-              row by the shell, per §1. */}
+          {/* Phone only: at desktop width the same toolbar rides the Tuning hub's
+              tab row, at its right end (tool discovery READINESS G5). */}
           <div className="flex md:hidden items-center justify-between gap-[12px] mb-[14px]">
             <ConsiderToolbar
               sort={sort}

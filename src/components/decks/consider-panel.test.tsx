@@ -765,13 +765,12 @@ describe("ConsiderPanel — unowned staples", () => {
 });
 
 describe("ConsiderPanel — panel states", () => {
-  it("is a tabpanel, not an overlay", () => {
+  it("is a region named by its own heading inside the Tuning hub, not a tabpanel or an overlay", () => {
     mount();
-    // Named by its tab rather than carrying a label of its own, which
-    // aria-labelledby would win against anyway. The tab lives in BuilderTabs,
-    // so the name resolves only in the shell — the wiring is this panel's half.
-    expect(screen.getByRole("tabpanel")).toHaveAttribute("aria-labelledby", "tab-consider");
-    expect(screen.getByRole("tabpanel")).not.toHaveAttribute("aria-label");
+    // Tool discovery B2: the hub's tool panel owns the tabpanel role, so a second one nested inside it would be
+    // announced twice. The heading is the one the hub moves focus to when Consider opens.
+    expect(screen.queryByRole("tabpanel")).toBeNull();
+    expect(screen.getByRole("region", { name: "Consider" })).toHaveAttribute("aria-labelledby", "consider-heading");
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 

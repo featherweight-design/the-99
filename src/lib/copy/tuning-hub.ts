@@ -18,6 +18,14 @@ export const tuningHubCopy = {
    *  deployment draws, so a hub with two tools says `1 of 2`. */
   toolOf: (n: number, total: number) => `${n} of ${total} tools`,
   tools: {
+    /** The hub's first tile (tool discovery B2, the handoff's `tuningTabCopy.consider`): the shipped Consider list, opened in place. */
+    consider: {
+      name: "Consider",
+      purpose: "Cards that fill what this deck is short of, the ones you own first.",
+      cost: "free",
+      status: (owned: number, toBuy: number) => `${owned} you own · ${toBuy} to buy`,
+      none: "nothing to consider",
+    },
     suggested: {
       name: "Suggested changes",
       purpose: "Up to five swaps, read from your games, your notes and the list.",

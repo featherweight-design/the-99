@@ -611,7 +611,7 @@ export function GameLogForm({
 
         {/* Desktop only. The handoff's sentence also promises Suggested changes
             reads the note, which is true only where it exists: it ships with the
-            Analysis tab, so the clause naming it is drawn only when `tuned`. */}
+            Tuning tab's reading, so the clause naming it is drawn only when `tuned`. */}
         <p className="hidden md:block mt-[8px] font-mono text-[10px] leading-[1.5] text-fg-faint">
           {tuned ? deckTuningGamesCopy.note.readBackTuned : deckTuningGamesCopy.note.readBack}{" "}
           <em className="not-italic text-fg-body">{deckTuningGamesCopy.note.readBackEmphasis}</em>

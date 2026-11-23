@@ -57,7 +57,7 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
   - `last-slots-strip.tsx:78`
   - `builder-tab-specs.ts`
   - `use-tool-landing.ts`
-  - These stay on Analysis because they open the reading: `builder-shell.tsx` 1691 (`onOpenBracket`), 2077 (`onOpenAnalysis`), 2415 (the notices' `toTab`) and `read-row.tsx:104`.
+  - These stay on Analysis because they open the reading: `builder-shell.tsx` 1691 (`onOpenBracket`), 2415 (the notices' `toTab`) and `read-row.tsx:104`. The Games panel's link (2077, `onOpenAnalysis`) does not stay: handoff Q2 retargets it, so B2 renames it `onOpenTuning` and opens Tuning with Suggested changes open.
 - Moments: `offAnalysis` (1539) becomes `view !== "tuning"`. The merged ref moves to the Tuning tab button, and the `anchor={{ view: "analysis" }}` at 1956 changes to `tuning`. M2, M3 and M4 all move. The shortcut anchors stay.
 - Files: about 14. `builder-shell.tsx`, `tuning-hub.tsx`, `builder-tab-specs.ts`, `builder-view.ts`, `deck-open-loading.tsx`, `last-slots-strip.tsx`, `use-tool-landing.ts`, `src/lib/copy/tuning-hub.ts`, the tests (`builder-tab-specs`, `builder-tabs`, `builder-shell-nudges`, `tuning-hub*`, `builder-initial-view`, `use-visit-receipts`).
 - Events: `tuning_opened` with `from` = `tab` or `url`, and `tool` = `consider`, `history`, `suggested`, `mana` or `cuts`. `ask` and `welcome_sheet` come with D and C.

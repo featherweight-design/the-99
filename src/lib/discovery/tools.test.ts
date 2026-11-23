@@ -123,7 +123,7 @@ describe("LANDINGS (tool discovery Y1)", () => {
   });
 
   it("lands Consider on the Consider tab (Tuning from B1) and Overview on the Analysis tab, each needing a deck", () => {
-    expect(landingSpotFor("consider")).toEqual({ id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true });
+    expect(landingSpotFor("consider")).toEqual({ id: "consider", lands: { kind: "deck", tab: "tuning", tool: "consider" }, needsDeck: true });
     expect(landingSpotFor("overview")).toEqual({ id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true });
   });
 
