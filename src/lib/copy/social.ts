@@ -570,6 +570,48 @@ export const spareCopy = {
   },
 } as const;
 
+/**
+ * You have it, PR 3b (handoff `design_handoff_the99_you_have_it`, `copy strings.ts` `haveCopy`): a friend's Wishlist
+ * tab marking the cards the reader can spare, and the sheet that offers one. Reused shipped strings are named in comments.
+ */
+export const haveItCopy = {
+  key: { spare: "you can spare", asked: "asked you", offered: "offered", accepted: "accepted" },
+  aria: (card: string) => `You can spare ${card}`,
+  /** The press's aria with its mark, as `spareCopy.request.markAria` does for the Wishlist tab's press. */
+  markAria: (base: string, mark: "asked" | "offered" | "accepted") => `${base}, ${mark === "asked" ? "asked you" : mark}`,
+  title: "You have this",
+  close: "Close",
+  kicker: (friend: ThirdPartyName, wants: number) => personText`on ${friend}’s wishlist · wants ${wants}`,
+  section: (n: number) => `Your spares · ${n}`,
+  spare: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
+  spareSub: "not in a deck or draft",
+  offer: "Offer",
+  offerAria: (friend: ThirdPartyName, card: string) => personText`Offer ${friend} ${card}`,
+  offered: "Offered",
+  accepted: "Accepted",
+  daysLeft: (n: number) => (n === 1 ? "1 day left" : `${n} days left`),
+  foot: {
+    offer: (friend: ThirdPartyName) => personText`Offer, and ${friend} answers yes or no. The trade (or the goat) is between you.`,
+    offered: (friend: ThirdPartyName) => personText`${friend} has been told. You’ll hear when they answer.`,
+    asked: (friend: ThirdPartyName) => personText`${friend} asked you for it. Yes tells them it’s theirs.`,
+    accepted: (friend: ThirdPartyName) =>
+      personText`${friend} said yes. Hand it over when you meet; your collection stays as it is until you change it.`,
+  },
+  callout: {
+    eyebrow: "Your spares",
+    title: (n: number) => `You have ${n} to spare`,
+    body: (names: string) => `${names}. Offer one from its tile.`,
+    /** Up to four names read whole ("A, B, C and D"); past four, the first three and how many more. */
+    names: (list: readonly string[]) => {
+      const join = (l: readonly string[]) => (l.length < 2 ? l.join("") : `${l.slice(0, -1).join(", ")} and ${l[l.length - 1]}`);
+      return list.length <= 4 ? join(list) : `${list.slice(0, 3).join(", ")} and ${list.length - 3} more`;
+    },
+    filterAria: "Show",
+    filterAll: "All ·",
+    filterSpare: "You can spare ·",
+  },
+} as const;
+
 /** Find a friend's spares (handoff `design_handoff_the99_spares_search`). Reused shipped strings are named in comments. */
 export const sparesSearchCopy = {
   search: {

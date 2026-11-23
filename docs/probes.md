@@ -3669,3 +3669,8 @@ Fixture: the account's wishlist must hold a card a friend shares a spare of and 
 ## probe:you-have-it-3a
 
 `pnpm probe:you-have-it-3a` (`YHI_PROBE_URL` and `YHI_PROBE_BRANCH`, a scratch branch made from local-dev; `E2E_AUDIT_USER_EMAIL`; `PROBE_BASE=...`, local dev server; optional `PROBE_SHOTS=<dir>`) proves the wanter's side of an Offer at 390 and 1300: `/friends` draws the Waiting on you row for an offer (`data-offer`, kind `Spare offer`, title, `has N spare. You want M.`), the per-friend chip (`[data-spare-chip]`, link to the friend's wishlist, aria) with no horizontal overflow and clear of the row's other controls, Home's lead story for the offer, and pressing Yes answers it (receipt `You said yes to <card> from <friend>`, accepted in the database). It writes a made-up per-run offerer, a friendship and a wishlist row, purged in a `finally`; it refuses production, staging and local-dev by `neon.branch_id`. It fails on `main`, where the row has no `data-offer`.
+
+## probe:you-have-it-3b
+
+`pnpm probe:you-have-it-3b` (same environment as 3a: `YHI_PROBE_URL` and `YHI_PROBE_BRANCH` for a scratch branch made from local-dev, `E2E_AUDIT_USER_EMAIL`, `PROBE_BASE`, optional `PROBE_SHOTS`) proves the offerer's side at 390 and 1300. A friend's Wishlist tab draws the call-out (`You have 1 to spare`), the key and a press on the one spare tile; the `You can spare` filter narrows the tiles; the press opens `You have this`; Offer turns the row to `Offered`, the press's aria gains `, offered`, and a holder-initiated `spare_requests` row exists. It writes the per-run wanter (purged in a finally), the friendship and two wishlist rows, so it is refused on production, staging and local-dev. It fails on main, where the tab has no call-out.
+

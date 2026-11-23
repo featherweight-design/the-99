@@ -454,6 +454,7 @@
     "probe:anthropic-cost": "tsx scripts/probe-anthropic-cost.mts",
     "probe:autocapture-names": "tsx scripts/probe-autocapture-names.mts",
     "probe:you-have-it-3a": "tsx scripts/probe-you-have-it-3a.mts",
+    "probe:you-have-it-3b": "tsx scripts/probe-you-have-it-3b.mts",
     "prepare": "husky || true"
   },
   "dependencies": {

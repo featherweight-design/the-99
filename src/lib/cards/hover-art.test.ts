@@ -273,6 +273,8 @@ const COMPOSED_ROWS: Record<string, string[]> = {
   "components/collection/browser.tsx": ["components/collection/rows-view.tsx"],
   // The spares-only modal's Replacing line is the stand-ins modal's own `ReplacingLine`, which previews the card.
   "components/social/spare-markers.tsx": ["components/decks/stand-ins-sheet.tsx"],
+  // The You have it sheet's Replacing-style head line is the same `ReplacingLine`, under the sheet's own provider.
+  "components/social/friend-wishlist-have.tsx": ["components/decks/stand-ins-sheet.tsx"],
 };
 
 /**

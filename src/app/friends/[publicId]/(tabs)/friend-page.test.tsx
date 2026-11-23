@@ -10,6 +10,7 @@ const m = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   loadFriend: vi.fn(),
   loadFriendWishlist: vi.fn(),
+  loadHaveIt: vi.fn(),
   loadFriendSpareList: vi.fn(),
   loadFriendDecks: vi.fn(),
   pathname: "/friends/00000000-0000-4000-8000-000000000002",
@@ -28,6 +29,7 @@ vi.mock("next/navigation", () => ({
 vi.mock("../../../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../../../lib/social/access", () => ({ loadFriend: m.loadFriend }));
 vi.mock("../../../../lib/social/wishlist", () => ({ loadFriendWishlist: m.loadFriendWishlist }));
+vi.mock("../../../../lib/social/spare-offers", () => ({ loadHaveIt: m.loadHaveIt }));
 vi.mock("../../../../lib/social/spares", () => ({ loadFriendSpareList: m.loadFriendSpareList }));
 vi.mock("../../../../lib/social/friend-page-data", async (orig) => ({
   ...(await orig<typeof import("../../../../lib/social/friend-page-data")>()), catalogCardName: m.catalogCardName,
@@ -36,6 +38,7 @@ vi.mock("../../../../lib/decks/price-query", () => ({ loadPrices: m.loadPrices }
 vi.mock("../../../../lib/social/decks", () => ({ loadFriendDecks: m.loadFriendDecks }));
 vi.mock("../../../../components/shell/pending-reporter", () => ({ PendingReporter: () => null }));
 vi.mock("../../actions", () => ({ unfriendAction: m.unfriendAction }));
+vi.mock("../../spare-actions", () => ({ offerSpareAction: vi.fn(), answerSpareAction: vi.fn(), answerOfferAction: vi.fn() }));
 // Card details is its own surface, tested on its own: here a tile only has to be the press that opens it, for its card.
 vi.mock("../../../../components/cards/card-detail-provider", () => ({
   CardDetailProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
@@ -74,6 +77,7 @@ beforeEach(() => {
   m.pathname = `/friends/${COLIN.publicId}`;
   m.loadFriend.mockResolvedValue(COLIN);
   m.loadFriendWishlist.mockResolvedValue([LINE]);
+  m.loadHaveIt.mockResolvedValue([]);
   m.unfriendAction.mockReset();
   m.replace.mockReset();
 });
@@ -241,7 +245,7 @@ describe("FriendHead and the wishlist tab", () => {
   const draw = (lines = [LINE]) => render(
     <>
       <FriendHead friend={COLIN} nowMs={Date.parse("2026-10-15T12:00:00Z")} />
-      <FriendWishlist name={COLIN.displayName} lines={lines} />
+      <FriendWishlist name={COLIN.displayName} friendPublicId={COLIN.publicId} lines={lines} haves={[]} />
     </>,
   );
 
