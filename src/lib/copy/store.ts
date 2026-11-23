@@ -28,4 +28,30 @@ export const storeCopy = {
   /** A deck's or the collection's value caption: `Mana Pool prices, 2h ago` or `TCGplayer market prices, 2h ago`. */
   deckCost: (s: StoreInfo, age: string) => (s.figure === "market" ? `${s.name} market prices, ${age}` : `${s.name} prices, ${age}`),
   moneyCaption: (s: StoreInfo) => `One square per card, owned first. Prices from ${s.name}. Basics are never priced or counted to buy.`,
+
+  // ── Card details, tokens, the wishlist box and Home's price drop (UI-2) ─
+  /** Card details' link when the store has a figure for the card. */
+  linkOut: (s: StoreInfo) => `Buy any printing at ${s.name}`,
+  /** A wishlist line that names a printing reads it on the link. */
+  linkOutPrinting: (s: StoreInfo, set: string, n: string) => `Buy ${set} ${n} at ${s.name}`,
+  /** The link with no figure from the store: a search, not a claim the store sells it. */
+  lookFor: (s: StoreInfo) => `Look for it at ${s.name}`,
+  tokenLinkOut: (s: StoreInfo) => `Buy this token at ${s.name}`,
+  /** Beside card details' tag, market stores only; its spoken form rides the tag's sentence (`aria.priced`). */
+  marketTag: "market price",
+  /** Card details' `from $x`, spoken. */
+  cheapestAria: (s: StoreInfo, figure: string) => `cheapest non-foil printing of this card is ${figure} at ${s.name}`,
+  feedBuy: (s: StoreInfo) => `Buy at ${s.name}`,
+  soldOutNote: (s: StoreInfo, price: string) => `${s.name} has none now. Any printing is ${price}.`,
+  /** The tag's accessible name with no figure. Mana Pool keeps its three histories; a store whose rows carry no history says one. */
+  noStockAria: (s: StoreInfo, state: "neverStocked" | "soldOut" | "noFigure") =>
+    state === "soldOut" ? `Sold out at ${s.name}`
+      : state === "neverStocked" && s.id === "manapool" ? `Never stocked at ${s.name}`
+        : `No price from ${s.name}`,
+  aria: {
+    priced: (s: StoreInfo, figure: string, when: string) =>
+      s.figure === "market" ? `${figure}, ${s.name} market price, last checked ${when}` : `${figure} at ${s.name}, last checked ${when}`,
+    pricedBehind: (s: StoreInfo, figure: string, when: string) =>
+      `${storeCopy.aria.priced(s, figure, when)}, these prices are behind`,
+  },
 } as const;

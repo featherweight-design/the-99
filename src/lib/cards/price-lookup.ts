@@ -36,6 +36,8 @@ export type PrintingPriceRow = {
   price_cents_foil: number | null;
   price_cents_etched: number | null;
   as_of: Timestamp | null;
+  /** A store that reports stock (`storeRows`): every finish it prices is out. Absent from Mana Pool's read. */
+  sold_out?: boolean | null;
 };
 
 export type PrintingPrices = {
@@ -156,6 +158,7 @@ export function indexPriceRows(rows: PrintingPriceRow[]): PrintingPrices {
       foilCents: r.price_cents_foil,
       etchedCents: r.price_cents_etched,
       asOf: parseAsOf(r.as_of),
+      ...(r.sold_out ? { soldOut: true as const } : {}),
     };
     if (r.scryfall_id !== null) byScryfallId[r.scryfall_id] = fact;
     if (r.set_code !== null && r.collector_number !== null) {

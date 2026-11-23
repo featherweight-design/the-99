@@ -9,6 +9,7 @@ const m = vi.hoisted(() => ({
   loadWishlistTiles: vi.fn(),
   loadCollectedNotices: vi.fn(),
   listFriends: vi.fn(),
+  readerStoreForPage: vi.fn(),
 }));
 vi.mock("next/navigation", () => ({ notFound: m.notFound }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "u1" }));
@@ -19,6 +20,7 @@ vi.mock("../../../../lib/flags/request", async () => {
 vi.mock("../../../../lib/wishlist/wishlist", () => ({ loadWishlistTiles: m.loadWishlistTiles }));
 vi.mock("../../../../lib/wishlist/collected", () => ({ loadCollectedNotices: m.loadCollectedNotices }));
 vi.mock("../../../../lib/social/access", () => ({ listFriends: m.listFriends }));
+vi.mock("../../../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
 vi.mock("../../../../components/wishlist/wishlist-view", () => ({ WishlistView: () => null }));
 
 import WishlistPage from "./page";
@@ -34,6 +36,7 @@ beforeEach(() => {
   });
   m.loadCollectedNotices.mockResolvedValue([{ oracleId: CARD, name: "Sol Ring", quantity: 2, collectedAt: new Date(AT) }]);
   m.listFriends.mockResolvedValue([{ publicId: "p1" }]);
+  m.readerStoreForPage.mockResolvedValue("manapool");
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -46,6 +49,12 @@ const view = async (query: Record<string, string> = {}) => {
 const props = async () => (await view()).props;
 
 describe("/collection/wishlist", () => {
+  it("prices the tiles in the reader's store", async () => {
+    m.readerStoreForPage.mockResolvedValueOnce("cardkingdom");
+    await props();
+    expect(m.loadWishlistTiles).toHaveBeenCalledWith("u1", "cardkingdom");
+  });
+
   it("hands the view plain props, with dates as ISO strings", async () => {
     expect(await props()).toEqual({
       tiles: [{ oracleId: CARD, name: "Sol Ring", imageUri: "https://img", want: 2, have: 1, addedAt: AT, line: null, price: null }],

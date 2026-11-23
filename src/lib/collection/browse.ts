@@ -15,6 +15,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
  * could not represent that, which is why the modal caption reads set + collector number here.
  */
 import type { PrintingPrices } from "../cards/price-lookup";
+import type { Store } from "../stores/rows";
 import { cardPriceCode, priceSortCents } from "./copy-price";
 import type { ModalComboPartner } from "../combos/near-miss";
 import type { CardCombos } from "../combos/near-combos";
@@ -156,8 +157,13 @@ export type BrowseCard = {
    * omitting rarity, identity and owned copies, and links its own Mana Pool product. Absent for a card.
    */
   kind?: "token";
-  /** A token's Mana Pool link, for the product its price is for; null when Mana Pool lists none. */
+  /** A token's link: Mana Pool's product its price is for, another store's search; null when the store prices none. */
   tokenBuyUrl?: string | null;
+  /**
+   * The store card details' prices and link come from (store preference): the reader's, set by `loadCardDetail` and
+   * `loadTokenDetail`. Absent on every other payload, which reads as Mana Pool.
+   */
+  priceStore?: Store;
   oracleId: string;
   /**
    * When the card last arrived, for the Date added sort (`addedOf`): unix MINUTES of its newest EXACT holding,

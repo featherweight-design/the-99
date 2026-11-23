@@ -85,8 +85,11 @@ export type WishlistTile = WishlistLine & {
  */
 export type WishlistTiles = { tiles: WishlistTile[]; newestAsOf: Date | null };
 
-/** The viewer's wanted lines as tiles: the catalog's name and full card image, and the price read's figure. */
-export async function loadWishlistTiles(viewerId: string): Promise<WishlistTiles> {
+/**
+ * The viewer's wanted lines as tiles: the catalog's name and full card image, and the price read's figure, from the
+ * viewer's store (store preference; the tile never names it). Mana Pool when none is given.
+ */
+export async function loadWishlistTiles(viewerId: string, store: Store = "manapool"): Promise<WishlistTiles> {
   const lines = await wishlistLinesQuery(viewerId);
   if (lines.length === 0) return { tiles: [], newestAsOf: null };
   const ids = lines.map((l) => l.oracleId);
@@ -100,7 +103,7 @@ export async function loadWishlistTiles(viewerId: string): Promise<WishlistTiles
       : db.select({ scryfallId: printings.scryfallId, setCode: printings.setCode, collectorNumber: printings.collectorNumber, imageUri: printings.imageUri, backImageUri: printings.backImageUri })
         .from(printings)
         .where(inArray(printings.scryfallId, chosen)),
-    loadPrices(ids, [], chosen),
+    loadPrices(ids, [], chosen, store),
   ]);
   const byId = new Map(faces.map((f) => [f.oracleId, f]));
   const byPrinting = new Map(named.map((p) => [p.scryfallId, p]));

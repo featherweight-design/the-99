@@ -22,6 +22,9 @@ vi.mock("../cards/prices", () => ({
 }));
 // The Wishlist section is always read now its switch is retired; stood in so no test opens a connection.
 vi.mock("../wishlist/wishlist", () => ({ loadWishlistLine: async () => null }));
+// The reader's store (store preference): Mana Pool unless a test sets another.
+const readerStoreForPage = vi.fn(async (): Promise<string> => "manapool");
+vi.mock("../stores/preference", () => ({ readerStoreForPage: (...args: unknown[]) => readerStoreForPage(...(args as [])) }));
 
 import {
   catalogCard,
@@ -303,7 +306,28 @@ describe("loadCardDetail availability", () => {
     loadPrintingPrices.mockResolvedValue(PRICES);
     const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
     expect(card?.prices).toEqual(PRICES);
-    expect(loadPrintingPrices).toHaveBeenCalledWith("o-1");
+    expect(loadPrintingPrices).toHaveBeenCalledWith("o-1", "manapool");
+    expect(card?.priceStore).toBe("manapool");
+  });
+
+  it("prices the card in the reader's store and names it on the payload", async () => {
+    readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
+    expect(loadPrintingPrices).toHaveBeenLastCalledWith("o-1", "tcgplayer");
+    expect(card?.priceStore).toBe("tcgplayer");
+  });
+
+  it("prices in Mana Pool when the store read fails", async () => {
+    readerStoreForPage.mockRejectedValueOnce(new Error("down"));
+    selectCollectionRows.mockResolvedValue([row]);
+    loadAvailability.mockResolvedValue(new Map());
+    loadPrintingPrices.mockResolvedValue(PRICES);
+    const card = await loadCardDetail("user_1", "o-1", undefined, ENV_VIEW);
+    expect(loadPrintingPrices).toHaveBeenLastCalledWith("o-1", "manapool");
+    expect(card?.priceStore).toBe("manapool");
   });
 
   // The live-printing rule is the UNOWNED branch's alone. An owned card opens on the reader's

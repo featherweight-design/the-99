@@ -12,6 +12,7 @@ import { loadCollectedNotices } from "../../../../lib/wishlist/collected";
 import { listFriends } from "../../../../lib/social/access";
 import { WishlistView } from "../../../../components/wishlist/wishlist-view";
 import { pageLanding } from "../../../../lib/discovery/page-landing";
+import { readerStoreForPage } from "../../../../lib/stores/preference";
 import { TOOL_PARAM } from "../../../../lib/discovery/tool-param";
 import { ToolLandingMount } from "../../../../components/discovery/tool-landing-mount";
 
@@ -22,7 +23,8 @@ export default async function CollectionWishlistPage({ searchParams }: { searchP
   // Try it's landing (discovery R2·3): `?tool=wishlist` haloes the search; anything else is stripped.
   const { landing, request } = pageLanding((await searchParams)[TOOL_PARAM], env, "wishlist");
   const [{ tiles, newestAsOf }, notices, hasFriend] = await Promise.all([
-    loadWishlistTiles(userId),
+    // The reader's store's figures (store preference); Mana Pool while the switch is off for them or the read fails.
+    readerStoreForPage(userId, env).then((store) => loadWishlistTiles(userId, store)),
     loadCollectedNotices(userId),
     // A friends read that fails draws the meta line without `Your friends can see this list`, never a broken page. The
     // page is read per request (not a `cachePageForUser` page), so nothing stale can be kept.

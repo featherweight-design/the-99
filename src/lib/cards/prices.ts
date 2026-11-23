@@ -7,6 +7,8 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { indexPriceRows, type PrintingPriceRow, type PrintingPrices } from "./price-lookup";
+import { storeRows } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 
 /**
  * Every printing of one oracle card, with whatever price the feed last carried.
@@ -17,9 +19,24 @@ import { indexPriceRows, type PrintingPriceRow, type PrintingPrices } from "./pr
  * and `priceState` reads that mismatch as `sold out` for every printing at once.
  * `left join … on true` is what keeps the newest row when nothing else matched.
  */
-export async function loadPrintingPrices(oracleId: string): Promise<PrintingPrices> {
-  const result = await db.execute<PrintingPriceRow>(sql`
-    with newest as (select max(as_of) as as_of from printing_prices)
+export async function loadPrintingPrices(oracleId: string, store: Store = "manapool"): Promise<PrintingPrices> {
+  const result = await db.execute<PrintingPriceRow>(printingPricesQuery(oracleId, store));
+  return indexPriceRows(result.rows as PrintingPriceRow[]);
+}
+
+/**
+ * The statement, apart so a test can read it. THE STORE NAMES THE TABLE, as in `loadPrices`: Mana Pool renders the
+ * text this statement had before stores, byte for byte; another store reads its own rows through `storeRows`, against
+ * its own newest `as_of`, and carries `sold_out`, which `indexPriceRows` sets as the fact's `soldOut`.
+ */
+export function printingPricesQuery(oracleId: string, store: Store) {
+  const other = store === "manapool" ? null : store;
+  const newestFrom = other ? sql`printing_store_prices where store = ${other}` : sql`printing_prices`;
+  const source = other ? storeRows(other) : sql`printing_prices`;
+  const soldOutCol = other ? sql`,
+           pp.sold_out          as sold_out` : sql``;
+  return sql`
+    with newest as (select max(as_of) as as_of from ${newestFrom})
     select n.as_of              as newest_as_of,
            p.scryfall_id        as scryfall_id,
            upper(p.set_code)    as set_code,
@@ -27,12 +44,11 @@ export async function loadPrintingPrices(oracleId: string): Promise<PrintingPric
            pp.price_cents       as price_cents,
            pp.price_cents_foil  as price_cents_foil,
            pp.price_cents_etched as price_cents_etched,
-           pp.as_of             as as_of
+           pp.as_of             as as_of${soldOutCol}
       from newest n
       left join printings p on p.oracle_id = ${oracleId}
-      left join printing_prices pp on pp.scryfall_id = p.scryfall_id
-  `);
-  return indexPriceRows(result.rows as PrintingPriceRow[]);
+      left join ${source} pp on pp.scryfall_id = p.scryfall_id
+  `;
 }
 
 /**

@@ -605,3 +605,41 @@ describe("the phone sheet's second line (carousel R2)", () => {
     expect(screen.getByTestId("modal-price-mobile").closest("[aria-hidden]")).toBeNull();
   });
 });
+
+describe("the reader's store (store preference, design #3200)", () => {
+  const links = (name: string) => screen.getAllByRole("link", { name: new RegExp(name) });
+
+  it("keeps Mana Pool's link, words and tag as shipped when the card names no store", () => {
+    mount(card());
+    for (const a of links("Buy any printing at Mana Pool")) expect(a.getAttribute("href")).toContain("manapool.com");
+    expect(screen.queryByTestId("modal-market-note-desktop")).toBeNull();
+  });
+
+  it("links a market store's search, says `market price` beside the figure and speaks it", () => {
+    mount(card({ priceStore: "tcgplayer" }));
+    for (const a of links("Buy any printing at TCGplayer")) expect(a.getAttribute("href")).toContain("tcgplayer.com/search");
+    expect(screen.queryAllByRole("link", { name: /Mana Pool/ })).toHaveLength(0);
+    expect(screen.getByTestId("modal-market-note-desktop")).toHaveTextContent("· market price");
+    expect(screen.getByTestId("modal-market-note-mobile")).toHaveTextContent("· market price");
+    expect(screen.getAllByText(/^\$2\.41, TCGplayer market price, last checked/).length).toBeGreaterThan(0);
+  });
+
+  it("draws no note beside a listing store's figure", () => {
+    mount(card({ priceStore: "cardkingdom" }));
+    expect(links("Buy any printing at Card Kingdom").length).toBeGreaterThan(0);
+    expect(screen.queryByTestId("modal-market-note-desktop")).toBeNull();
+  });
+
+  it("looks for a card the store has no figure for, with no note and no claim it sells it", () => {
+    mount(card({ priceStore: "tcgplayer", prices: indexPriceRows([priceRow({ as_of: null, price_cents: null })]) }));
+    expect(links("Look for it at TCGplayer").length).toBeGreaterThan(0);
+    expect(screen.queryAllByRole("link", { name: /Buy any printing/ })).toHaveLength(0);
+    expect(screen.queryByTestId("modal-market-note-desktop")).toBeNull();
+    expect(screen.getByTestId("modal-price-desktop")).toHaveTextContent(setPageCopy.cell.noStock);
+  });
+
+  it("names the store on a sold-out store row", () => {
+    mount(card({ priceStore: "cardkingdom", prices: indexPriceRows([priceRow({ sold_out: true }), priceRow({ scryfall_id: "s-2", collector_number: "13" })]) }));
+    expect(screen.getAllByText("Sold out at Card Kingdom").length).toBeGreaterThan(0);
+  });
+});

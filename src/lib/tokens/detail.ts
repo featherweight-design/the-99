@@ -6,6 +6,8 @@ import { heldGroups, loadHeldTokenPrintings, type HeldTokenPrinting } from "./de
 import { manapoolAddDeckUrl } from "../manapool/links";
 import { loadTokenPrices, type TokenPriceFact } from "./price";
 import { tokenManapoolLine } from "./price-line";
+import { storeCardUrl } from "../stores/links";
+import type { Store } from "../stores/rows";
 
 /**
  * A token's card details (bug batch 2026-10-12, item 5, ruled by the orchestrator as Hugh's proxy):
@@ -20,7 +22,7 @@ import { tokenManapoolLine } from "./price-line";
  * Reached from `loadCardDetail`, which asks it only for an id the card catalog does not hold, so the
  * press, the prefetch and every re-read take one path.
  */
-export async function loadTokenDetail(oracleId: string, userId: string): Promise<BrowseCard | null> {
+export async function loadTokenDetail(oracleId: string, userId: string, store: Store = "manapool"): Promise<BrowseCard | null> {
   // No schema probe first: every open and every prefetch would pay it as extra round trips ahead
   // of the read. A database the token migration has not reached throws on the read itself, which
   // the catches below turn into no token (and, for the price table alone, no price).
@@ -48,7 +50,7 @@ export async function loadTokenDetail(oracleId: string, userId: string): Promise
           console.error("[tokens] token detail printings failed", err instanceof Error ? err.message : err);
           return [] as TokenDetailPrinting[];
         }),
-      loadTokenPrices([oracleId])
+      loadTokenPrices([oracleId], store)
         .catch((err: unknown) => {
           console.error("[tokens] token detail price failed", err instanceof Error ? err.message : err);
           return { prices: new Map<string, TokenPriceFact>(), newestAsOf: null };
@@ -61,7 +63,7 @@ export async function loadTokenDetail(oracleId: string, userId: string): Promise
           return [] as HeldTokenPrinting[];
         }),
     ]);
-    return assembleTokenDetail(token, printings, priced.prices.get(oracleId) ?? null, priced.newestAsOf, held);
+    return assembleTokenDetail(token, printings, priced.prices.get(oracleId) ?? null, priced.newestAsOf, held, store);
   } catch (err) {
     console.error("[tokens] loadTokenDetail failed", err instanceof Error ? err.message : err);
     return null;
@@ -102,6 +104,7 @@ export function assembleTokenDetail(
   price: TokenPriceFact | null,
   newestAsOf: Date | null,
   held: readonly HeldTokenPrinting[] = [],
+  store: Store = "manapool",
 ): BrowseCard {
   const byId = new Map(printings.map((p) => [p.scryfallId, p]));
   // The picker's tiles, one per set and number, from the same list the deck's row reads (`heldGroups`).
@@ -152,8 +155,11 @@ export function assembleTokenDetail(
         newestAsOf,
       }
       : null,
-    // What Mana Pool sells for this price: its own product, placed by the line a token row's link sends.
-    tokenBuyUrl: shownPrice ? manapoolAddDeckUrl([tokenManapoolLine(token.name, 1, shownPrice)]) : null,
+    // What Mana Pool sells for this price: its own product, placed by the line a token row's link sends. Another
+    // store links its own search for the token's name, priced or not (design #3200: no tag, the search link).
+    tokenBuyUrl: store !== "manapool" ? storeCardUrl(store, token.name)
+      : shownPrice ? manapoolAddDeckUrl([tokenManapoolLine(token.name, 1, shownPrice)]) : null,
+    priceStore: store,
     // The held rows, and after them the shown printing at no copies when it is not one of them (no held
     // printing has art): the modal's resolver then finds the same art, and its picker still lists only the
     // held rows (it offers the printings with copies).

@@ -12,6 +12,8 @@ import { identityGradient } from "../../lib/cards/gradients";
 import { cheapestLiveCents, priceFor } from "../../lib/cards/price-lookup";
 import { formatCents, priceOf, priceState } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
+import { storeCopy } from "../../lib/copy/store";
+import { STORE_INFO, type StoreInfo } from "../../lib/stores/info";
 import { faceNames, isTwoFaced } from "../../lib/cards/faces";
 import { cardZoomCopy, twoFacedCopy } from "../../lib/copy/card-surfaces";
 import type { SiblingCard } from "./card-detail-context";
@@ -348,7 +350,7 @@ export function cardPrice(card: BrowseCard, resolved: BrowsePrinting | undefined
 }
 
 /** The cheapest printing's figure, as a companion to the tag (`cardPrice`'s `fromCents`). */
-export function PriceFrom({ cents, phone }: { cents: number; phone: boolean }) {
+export function PriceFrom({ cents, phone, store = STORE_INFO.manapool }: { cents: number; phone: boolean; store?: StoreInfo }) {
   return (
     <span
       className="flex items-center"
@@ -357,7 +359,25 @@ export function PriceFrom({ cents, phone }: { cents: number; phone: boolean }) {
       <span aria-hidden="true" className="font-mono text-[10px]" style={{ color: "var(--fg-locked)" }}>
         {priceCopy.cheapest.from(formatCents(cents))}
       </span>
-      <span className="sr-only">{priceCopy.cheapest.aria(formatCents(cents))}</span>
+      <span className="sr-only">{storeCopy.cheapestAria(store, formatCents(cents))}</span>
+    </span>
+  );
+}
+
+/**
+ * `· market price` after the tag, and after `from $x` when that line shows: a market store's figure is an average of
+ * recent sales, not a listing (store choice call 4). Silent to a screen reader, since the tag's own sentence says
+ * `TCGplayer market price` (`storeCopy.aria.priced`).
+ */
+export function MarketNote({ phone }: { phone: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="font-mono text-[10px]"
+      style={{ color: "var(--fg-muted)" }}
+      data-testid={phone ? "modal-market-note-mobile" : "modal-market-note-desktop"}
+    >
+      {`· ${storeCopy.marketTag}`}
     </span>
   );
 }

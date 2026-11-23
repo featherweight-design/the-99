@@ -15,6 +15,8 @@
 // one.)
 
 import { useEffect, useRef, useState } from "react";
+import { storeCopy } from "../../lib/copy/store";
+import { STORE_INFO, type StoreInfo } from "../../lib/stores/info";
 import { addToWishlistAction, removeFromWishlistAction, setWishlistPrintingAction, setWishlistWantAction, type WantOutcome } from "../../app/collection/wishlist/actions";
 import { wishlistCopy, wishlistPrintingCopy } from "../../lib/copy/wishlist";
 import type { WishlistPrintingView } from "../../lib/wishlist/printing-line";
@@ -44,6 +46,7 @@ export function CardWishlist({
   onWrite,
   printingView = null,
   onWantedChange,
+  store = STORE_INFO.manapool,
 }: {
   oracleId: string;
   /** How many copies the reader wants in all, or null when the card is not on the list. */
@@ -56,6 +59,8 @@ export function CardWishlist({
   printingView?: WishlistPrintingView | null;
   /** The line's wanted printing moved (a press, `chosen`, or the line going): the modal's strip mark and link-out follow it, and a press is announced. */
   onWantedChange?: (printingId: string | null, chosen?: boolean) => void;
+  /** The store the card's prices are from (store preference), named by the sold-out note. */
+  store?: StoreInfo;
 }) {
   const [want, setWant] = useState(initial);
   const [have, setHave] = useState(owned);
@@ -197,7 +202,7 @@ export function CardWishlist({
         </div>
       )}
       {want !== null && printingView && printingView.count >= 2 ? (
-        <PrintingLine view={printingView} wait={wait} busy={busy} onChoose={(id) => void choose(id)} />
+        <PrintingLine view={printingView} wait={wait} busy={busy} onChoose={(id) => void choose(id)} store={store} />
       ) : null}
       <SocialToast toast={toast} onDone={() => setToast(null)} />
     </section>
@@ -209,8 +214,9 @@ export function CardWishlist({
  * for a card with two or more printings. The wanted printing is the line's `SLD 2125 · $24.50` with its thumb; the
  * press offers the printing on screen when it is another one, and `Any printing` goes back.
  */
-function PrintingLine({ view, wait, busy, onChoose }: {
+function PrintingLine({ view, wait, busy, onChoose, store }: {
   view: WishlistPrintingView;
+  store: StoreInfo;
   wait: string;
   busy: boolean;
   onChoose: (printingId: string | null) => void;
@@ -255,7 +261,7 @@ function PrintingLine({ view, wait, busy, onChoose }: {
           </span>
           {wantPress ?? anyLink}
           {wanted.soldOut && view.anyPrice ? (
-            <span className="basis-full text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{copy.box.soldOutNote(view.anyPrice)}</span>
+            <span className="basis-full text-[12.5px]" style={{ color: "var(--fg-muted)" }}>{storeCopy.soldOutNote(store, view.anyPrice)}</span>
           ) : null}
         </>
       ) : (

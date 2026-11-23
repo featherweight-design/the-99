@@ -9,6 +9,7 @@ import { cache } from "react";
 import { loadWishlistLine } from "../wishlist/wishlist";
 import { liveCents, openingScryfallId } from "../cards/opening-printing";
 import type { PrintingPrices } from "../cards/price-lookup";
+import type { Store } from "../stores/rows";
 import type { BrowseCard, BrowsePrinting, ProxyingDeck } from "./browse";
 import {
   aggregateCollection,
@@ -324,11 +325,8 @@ export const loadCardDetail = cache(async function loadCardDetail(
   oracleId: string,
   /** The deck the modal was opened from, if any. See `withCardCombos`. */
   deckOracleIds: readonly string[] | undefined,
-  /**
-   * The reader's resolved switches (`requestFlags`). Read by nothing since the swap tools' switch retired (it was
-   * the Fits door's gate); kept positional so callers and probes need no change until the switch is deleted.
-   */
-  _env: NodeJS.ProcessEnv,
+  /** The reader's resolved switches (`requestFlags`): they decide the store the card's prices and link come from. */
+  env: NodeJS.ProcessEnv,
   /**
    * That deck's commanders, apart from `deckOracleIds` (which already lists them): `loadCardCombos`
    * holds a command-zone-only piece only as a commander, and reads the deck's colors from them.
@@ -349,6 +347,9 @@ export const loadCardDetail = cache(async function loadCardDetail(
   const { db } = await import("../../db");
   const { cards, printings, sets } = await import("../../db/schema");
   const { eq } = await import("drizzle-orm");
+  // The reader's store (store preference): every figure and link the modal draws comes from it. Started with stage 1,
+  // since it is keyed on the reader alone; Mana Pool, with no read, while the switch is off for them, and on a failed read.
+  const store = import("../stores/preference").then(({ readerStoreForPage }) => readerStoreForPage(userId, env)).catch((): Store => "manapool");
   // Both started now; only the collection is awaited before branching. An owned card never
   // reads the catalog row, so it must not wait on it either — a slow catalog read would
   // otherwise hold every owned card's modal. `settle` keeps the abandoned read from rejecting
@@ -387,13 +388,14 @@ export const loadCardDetail = cache(async function loadCardDetail(
   // batch 2026-10-12). Asked here so the press, the prefetch and every re-read take one path.
   // Imported here, as the database is above, so a module that imports this one for its types or
   // helpers does not pull the client in.
-  if (owned.length === 0 && !card) return (await import("../tokens/detail")).loadTokenDetail(oracleId, userId);
+  if (owned.length === 0 && !card) return (await import("../tokens/detail")).loadTokenDetail(oracleId, userId, await store);
 
   // Stage 2. Each read fails on its own: every one is already caught (`pricesFor`,
   // `proxyingDecks`, `fitsGate`, the availability read) or settled here (the flags and the
   // partners, whose assembly functions own their own catch), so `Promise.all` never rejects
   // for one of them and a failed read costs the reader a block, never the card.
-  const prices = pricesFor(oracleId);
+  const priceStore = await store;
+  const prices = pricesFor(oracleId, priceStore);
   // Both branches, not only the owned one: a card the player owns no copy of is the
   // COMMONEST proxy — the Ozolith case the spec is written around.
   const proxiedBy = proxyingDecks(userId, oracleId);
@@ -469,7 +471,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
     const otherPrintings = catalogEntries({ imageUri: null }, rows)
       .map((e) => e.printing)
       .filter((x) => !held.has(`${x.setCode}|${x.collectorNumber}`));
-    return assemble({ ...base, otherPrintings, availability: a, draftWants: dw, prices: p, proxiedBy: pb, ...g });
+    return assemble({ ...base, otherPrintings, availability: a, draftWants: dw, prices: p, priceStore, proxiedBy: pb, ...g });
   }
 
   // `card` is known here: stage 1 returned when the unowned branch found none.
@@ -502,6 +504,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
     unownedAvailability: w,
     draftWants: dw,
     prices: p,
+    priceStore,
     proxiedBy: pb,
     ...g,
   });
@@ -537,9 +540,9 @@ async function unsettle<T>(held: Promise<Result<T>>): Promise<T> {
  * means the store answered, and the modal draws `no stock`. What neither may ever
  * become is a price of nothing.
  */
-async function pricesFor(oracleId: string): Promise<PrintingPrices | null> {
+async function pricesFor(oracleId: string, store: Store): Promise<PrintingPrices | null> {
   return (async () => {
     const { loadPrintingPrices } = await import("../cards/prices");
-    return loadPrintingPrices(oracleId);
+    return loadPrintingPrices(oracleId, store);
   })().catch(() => null);
 }

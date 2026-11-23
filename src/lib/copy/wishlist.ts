@@ -4,6 +4,9 @@
 // PR 3 brings the whole module; the tab (PR 4), card details' section (PR 5) and the friend page (PR 6) read it.
 // The spare strings are not here: they sit beside socialCopy with the Shopping work. No string here reaches a model.
 
+import { storeCopy } from "./store";
+import { STORE_INFO } from "../stores/info";
+
 /** A run of text, drawn strong (500 or 600 in `--fg`) where the boards draw it bold. */
 export type CopyPart = { text: string; strong?: true };
 
@@ -102,7 +105,7 @@ export const wishlistPrintingCopy = {
     want: (set: string, n: string) => `Want ${set} ${n}`,
     wantAria: (set: string, n: string, setName: string, card: string) => `Want ${set} ${n}, ${card} from ${setName}`,
     soldOut: "sold out",
-    soldOutNote: (price: string) => `Mana Pool has none now. Any printing is ${price}.`,
+    soldOutNote: (price: string) => storeCopy.soldOutNote(STORE_INFO.manapool, price),
   },
   panel: {
     wantedAny: "Wanted: any printing",
@@ -111,7 +114,7 @@ export const wishlistPrintingCopy = {
   tile: {
     aria: (set: string, n: string) => `wanted printing ${set} ${n}`,
   },
-  linkOut: (set: string, n: string) => `Buy ${set} ${n} at Mana Pool`,
+  linkOut: (set: string, n: string) => storeCopy.linkOutPrinting(STORE_INFO.manapool, set, n),
   announce: (set: string, n: string) => `Wanted ${set} ${n}.`,
   announceAny: "Wanted any printing.",
   failed: "Couldn’t change the printing. Try again.",

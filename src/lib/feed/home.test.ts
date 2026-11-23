@@ -180,6 +180,23 @@ describe("toViews", () => {
     expect(toViews([trade], empty)[0].askable).toBe(false);
   });
 
+  it("sends a price drop to the reader's store, naming it only when it is not Mana Pool (store preference)", () => {
+    const drop = { kind: "price-drop", key: "item:p", createdAt: NOW, unseen: true, oracleId: "g", variantId: null, friend: null, answer: null, data: { fromCents: 640, toCents: 310 } } as FeedItem;
+    const cards = new Map([["g", { oracleId: "g", name: "Sol Ring", image: null, art: null, colorIdentity: null }]]);
+    const shipped = toViews([drop], { ...empty, cards })[0];
+    expect(shipped.outbound).toBe("https://manapool.com/cards?q=Sol%20Ring");
+    expect("store" in shipped).toBe(false);
+    expect(toViews([drop], { ...empty, cards }, "manapool")[0]).toEqual(shipped);
+    expect(toViews([drop], { ...empty, cards }, "tcgplayer")[0]).toMatchObject({
+      outbound: "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Sol%20Ring",
+      store: "tcgplayer",
+    });
+    // A two-faced card is searched by its front face, which the store lists it under.
+    const dfc = new Map([["g", { oracleId: "g", name: "Delver of Secrets // Insectile Aberration", image: null, art: null, colorIdentity: null, layout: "transform" }]]);
+    expect(toViews([drop], { ...empty, cards: dfc }, "cardkingdom")[0].outbound)
+      .toBe("https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=Delver%20of%20Secrets");
+  });
+
   it("gives a spare request (a later round) no press", () => {
     const item = { kind: "spare-request", key: "item:s", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Peter") }, data: {} } as FeedItem;
     expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, outbound: null, friend: { displayName: named("Peter") }, answer: null });
@@ -262,6 +279,8 @@ describe("the feed's card lookups carry the card's colour identity", () => {
     expect(text(setCardsQuery(["sos"]))).toContain("sc.color_identity as identity");
     expect(text(preconCommandersQuery(["f"]))).toContain("pcc.color_identity as identity");
     expect(text(feedCardsQuery(["c"]))).toContain("fc.color_identity as identity");
+    // The layout decides the name another store searches (`storeSearchName`): a two-faced card's front face.
+    expect(text(feedCardsQuery(["c"]))).toContain("fc.layout as layout");
   });
 });
 

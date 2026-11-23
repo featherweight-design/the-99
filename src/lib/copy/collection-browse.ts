@@ -4,6 +4,8 @@
 // that reproduce it.
 
 import { guildLabel } from "./color-labels";
+import { storeCopy } from "./store";
+import { STORE_INFO } from "../stores/info";
 
 /** The heading names the active color filter in the *guild* register
  *  ("in Red", "in Boros") — commanders uses the hyphenated word register.
@@ -39,7 +41,7 @@ export const collectionBrowseCopy = {
 /** Card modal. "any printing" because the link is keyed by the oracle card,
  *  not the printing on screen — Mana Pool's grid shows them all. */
 export const cardLinkOutCopy = {
-  card: "Buy any printing at Mana Pool",
+  card: storeCopy.linkOut(STORE_INFO.manapool),
   /** A token's details: the link names the one Mana Pool product its price is for, not every printing. */
-  token: "Buy this token at Mana Pool",
+  token: storeCopy.tokenLinkOut(STORE_INFO.manapool),
 } as const;
