@@ -665,7 +665,7 @@ async function cardPress(page, cap, width) {
 }
 
 /**
- * The deck page's Analysis tab, pressed three ways, each in a fresh context (an empty cache): `early` straight after the load
+ * The deck page's Tuning tab (where the hub lives since tool discovery B2), pressed three ways, each in a fresh context (an empty cache): `early` straight after the load
  * event (a build that loads the Tuning tools on demand may still be fetching them), `idle` after the
  * page has sat for IDLE_WAIT_MS (they are warmed by then), and `intent` after a pointer rested on the tab
  * (focus at 390) for 400ms. Each reads press to the tab's panel no longer busy, which is when it has
@@ -684,8 +684,8 @@ async function tabPress(browser, state, width, url) {
     await capture(page);
     await page.goto(url, { waitUntil: "domcontentloaded", timeout: 120_000 });
     await page.waitForLoadState("load", { timeout: LOAD_CAP_MS }).catch(() => {});
-    const tab = page.locator("#tab-analysis");
-    // A deployment with Analysis off draws no such tab; that is a reading of null, not a failed run.
+    const tab = page.locator("#tab-tuning");
+    // A deployment without the Tuning tab draws no such tab; that is a reading of null, not a failed run.
     if (!(await tab.waitFor({ state: "visible", timeout: 30_000 }).then(() => true, () => false))) {
       out[key] = null;
       await context.close();
@@ -860,7 +860,7 @@ function table(runs, routes) {
     lines.push(`\nLoad event cold / warm (null: not within ${LOAD_CAP_MS / 1000}s): ${routes.map((route) => `${route.label} ${m((p) => p.routes[route.label]?.cold?.loadEvent)} / ${m((p) => p.routes[route.label]?.warm?.loadEvent)}`).join(" · ")}.`);
     if (routes.some((r) => r.label === "deck")) lines.push(`\nDeck from its tile, click or tap to content (a 300ms hover first at 1300, a bare tap at 390): from /decks ${m((p) => p.tile?.["/decks"])}ms, from Home ${m((p) => p.tile?.["/"])}ms (null: not a resume row there).`);
     if (routes.some((r) => r.label === "deck")) lines.push(`\nCard press: cold ${m((p) => p.card?.cold.dialog)}ms to dialog, ${m((p) => p.card?.cold.art)}ms to art; warm ${m((p) => p.card?.warm.dialog)}ms; another cold card ${m((p) => p.card?.coldOther.dialog)}ms; after intent ${m((p) => p.card?.intent?.dialog)}ms.`);
-    if (routes.some((r) => r.label === "deck")) lines.push(`\nAnalysis tab, press to drawn (a fresh load each): early ${m((p) => p.tab?.early)}ms, idle ${m((p) => p.tab?.idle)}ms, after intent ${m((p) => p.tab?.intent)}ms.`);
+    if (routes.some((r) => r.label === "deck")) lines.push(`\nTuning tab, press to drawn (a fresh load each): early ${m((p) => p.tab?.early)}ms, idle ${m((p) => p.tab?.idle)}ms, after intent ${m((p) => p.tab?.intent)}ms.`);
   }
   return lines.join("\n");
 }

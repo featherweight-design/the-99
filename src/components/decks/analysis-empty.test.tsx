@@ -262,9 +262,9 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
   });
 });
 
-// Hugh, 2026-10-14: once Analyze is pressed the block holds its idle height, so the Tuning hub below
-// it does not jump up when the field and the second paragraph leave. jsdom lays nothing out, so the
-// height is given; the browser half is `probe:tuning-hub-stays-put`.
+// Hugh, 2026-10-14: once Analyze is pressed the block holds its idle height, so what sits below it does
+// not jump up when the field and the second paragraph leave. jsdom lays nothing out, so the height is
+// given.
 describe("AnalysisEmpty holds its height through the press", () => {
   const section = () => screen.getByTestId("analysis-empty") as HTMLElement;
   const withHeight = (px: number, run: () => void) => {

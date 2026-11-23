@@ -190,11 +190,12 @@ for (const { label, width, height } of VIEWPORTS) {
   await page.waitForTimeout(500);
   await report(page, `shopping ${deckHref}`);
 
-  // The tile variant lives on the Consider tab, where the tag sits on card art
-  // and the scrim is the only thing holding the warning ink off it.
-  const tab = page.getByRole("tab", { name: /cards to consider/i });
+  // The tile variant lives in Consider (a Tuning tool since tool discovery B2), where the tag sits on
+  // card art and the scrim is the only thing holding the warning ink off it.
+  const tab = page.getByRole("tab", { name: /^Tuning/ });
   if ((await tab.count()) > 0) {
     await tab.first().click();
+    await page.locator("main button[data-tool-tile='consider']").first().click();
     await page.waitForTimeout(900);
     await report(page, `consider ${deckHref}`);
 

@@ -299,11 +299,13 @@ async function run() {
         await page.waitForTimeout(1_000);
         await measure(page, "card view", onPage(page, "ul.grid > li"));
       }
-      const consider = page.getByRole("tab", { name: /cards to consider/i });
+      // Consider is a Tuning tool since tool discovery B2: the Tuning tab, then its tile.
+      const consider = page.getByRole("tab", { name: /^Tuning/ });
       if ((await consider.count()) === 0) {
         report("consider · its tab", false, "not on the page — NOT a pass");
       } else {
         await consider.click();
+        await onPage(page, "button[data-tool-tile='consider']").first().click();
         await page.waitForTimeout(1_500);
         await measure(page, "consider", onPage(page, '[data-testid="suggestion-tile"]'));
       }

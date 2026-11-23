@@ -2,8 +2,8 @@
 // (Hugh's ruling, 2026-09-26; the overview-loading addendum).
 //
 // The press holds the empty state's loader through the write, its heading stepping from reading the
-// deck to writing the overview, and lets go once, onto the verdict, the written overview and
-// Suggested changes together. Nothing may move afterwards. Past `OVERVIEW_HOLD_MS` it lets go onto
+// deck to writing the overview, and lets go once, onto the verdict and the written overview
+// together. Nothing may move afterwards. Past `OVERVIEW_HOLD_MS` it lets go onto
 // the verdict with the slot's status line instead, and the overview grows in place when it lands.
 //
 // Which path is walked is the server's to decide, by how long its stub takes: run the dev server
@@ -15,10 +15,8 @@
 // local-dev fixture account holds have one. Point PROBE_TARGET_URL at a scratch branch or local-dev, never
 // production.
 //
-// The Tuning hub is always on: it stands from the tab's first frame (#1809), so the check is the hub
-// staying put, as the same node, from its first frame (the credit note landing under the empty state
-// included) through the press to the frame the verdict lands. See `hubStaysPut`. Mana Balance is what
-// lets the hub draw on a deck with no reading yet (`drawn` in builder-shell.tsx).
+// The Tuning hub moved to its own tab in tool discovery B2, so nothing of it stands under the empty state
+// and this probe no longer samples it (its stays-put checks went with it).
 //
 //   PROBE_TARGET_URL=<local-dev> PROBE_EMAIL=<+clerk_test account> PROBE_HOLD=held \
 //     PROBE_BASE=http://localhost:3260 node scripts/probe-overview-hold.mjs
@@ -32,7 +30,6 @@ import { assertModelStandIn, pageGet } from "./lib/model-stand-in.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { clearAboutSheet } from "./lib/about-clear.mjs";
 import { holdProfile } from "./lib/profile-hold.mjs";
-import { judgeHubMove, NOTE_SHAPE } from "./lib/note-variant.mjs";
 
 const { E2E_AUDIT_USER_EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
 const TARGET = process.env.PROBE_TARGET_URL;
@@ -88,7 +85,7 @@ async function signIn(page) {
 
 // Stamps each part's first visible frame and top, every heading the loader shows, and every top the
 // verdict and the overview take afterwards, so a move after the first paint is seen. The geometry is
-// SAMPLED in requestAnimationFrame, every part and the hub in one pass with the frame's own timestamp
+// SAMPLED in requestAnimationFrame, every part in one pass with the frame's own timestamp
 // and a frame counter, so two stamps share a frame exactly when they were drawn in the same painted
 // frame. Only the announcements are also read on mutations: a status line can change between frames.
 const OBSERVE = () => {
@@ -97,34 +94,19 @@ const OBSERVE = () => {
     overview: "[data-testid='synopsis-overview']",
     written: "[data-testid='synopsis-overview'] p[class*='text-[var(--fg-body)]']",
     writing: "[data-testid='overview-writing']",
-    tuning: "section[aria-labelledby='tuning-heading']",
   };
-  // The Tuning hub, sampled every frame from the panel's first: when it first drew, every top it took
-  // (with the frame it moved on), frames it was missing once drawn, and whether its node was replaced.
   // `noteAt`: the credit note's first frame, which lands after the empty state (#1465).
-  const hub = { panelAt: null, at: null, noteAt: null, node: null, replaced: false, missing: 0, tops: [] };
   const t0 = performance.now();
-  const w = { t0, seen: {}, headings: [], tops: { verdict: new Set(), overview: new Set() }, said: [], hub };
+  const w = { t0, seen: {}, headings: [], tops: { verdict: new Set(), overview: new Set() }, said: [], noteAt: null };
   window.__hold = w;
   const visible = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== "hidden";
   let frame = 0;
   const sample = (ts) => {
     frame += 1;
     const panel = document.querySelector("#panel-analysis");
-    if (!panel) {
-      // Once drawn, a hub whose whole panel is gone is a missing hub.
-      if (hub.node !== null) hub.missing += 1;
-      return;
-    }
+    if (!panel) return;
     const now = Math.round(ts - t0);
-    if (hub.panelAt === null && visible(panel)) hub.panelAt = now;
-    const h0 = panel.querySelector("section[data-tuning-hub]");
-    if (h0 && visible(h0)) {
-      if (hub.node === null) { hub.node = h0; hub.at = now; } else if (hub.node !== h0) hub.replaced = true;
-      const top = Math.round((h0.getBoundingClientRect().top + window.scrollY) * 10) / 10;
-      if (hub.tops.length === 0 || Math.abs(hub.tops.at(-1).top - top) > 0.5) hub.tops.push({ at: now, frame, top });
-    } else if (hub.node !== null) hub.missing += 1;
-    if (hub.noteAt === null && [...panel.querySelectorAll("[data-testid='press-note']")].some(visible)) hub.noteAt = now;
+    if (w.noteAt === null && [...panel.querySelectorAll("[data-testid='press-note']")].some(visible)) w.noteAt = now;
     for (const [name, sel] of Object.entries(parts)) {
       if (w.seen[name]) continue;
       const el = [...panel.querySelectorAll(sel)].find(visible);
@@ -166,45 +148,6 @@ async function reset(id, before) {
   } catch (error) {
     console.error(`cleanup: the reading on ${id} was left behind:`, error.message);
   }
-}
-
-// The Tuning hub (#1809, tuning-hub-stays-put): drawn from the tab's first frame, the
-// same node throughout, never missing once drawn, and its top still (within 1px) from the press, through
-// the hold, to the frame the verdict lands. At that frame the reading is drawn ABOVE the hub, so the hub
-// moves down by the reading's height by design (#1809's own probe asserts the same); what is held there
-// is that it moves only on a landing frame: the verdict's, and on the fallback the overview's too. Frames
-// are the sampler's own counter, so "the landing frame" is the painted frame the verdict appeared in.
-//
-// AND BEFORE THE PRESS, from the hub's first frame (Hugh, 2026-10-15). The credit note lands under the
-// empty state about 0.7 to 2s after it (#1465), and until its frame was reserved it pushed the hub down
-// once, 56px at 1300 and 35px at 390. The empty state now holds two of the note's lines from its first
-// frame, so a note of up to two lines (the credit, free and check notes) must move nothing; a longer one
-// (used up, owner share) may move it by its extra lines and no more, and is named in the line. A
-// note the probe does not recognise fails (`scripts/lib/note-variant.mjs`).
-function hubStaysPut(at, hub, pressAt, released, landings, shape) {
-  report(at("the Tuning hub is drawn from the tab's first frame"),
-    // Both are stamped by the same frame sampler, so a hub mounted with its panel shares its frame exactly.
-    hub.at !== null && hub.panelAt !== null && hub.at === hub.panelAt,
-    JSON.stringify({ panel: hub.panelAt, hub: hub.at }));
-  report(at("it is one node, never missing once drawn"), hub.at !== null && !hub.replaced && hub.missing === 0,
-    JSON.stringify({ replaced: hub.replaced, missingFrames: hub.missing }));
-  const idle = hub.tops.filter((t) => t.at <= pressAt);
-  const judged = judgeHubMove(idle.map((t) => t.top), shape);
-  report(at(judged.strict
-    ? `its top stays put from its first frame to the press, the ${judged.variant} note's landing included`
-    : `its top moves by at most the ${judged.variant} note's lines past the reserved two, before the press`),
-    hub.noteAt !== null && judged.ok,
-    JSON.stringify({ variant: judged.variant, moved: judged.moved, allowed: judged.allowed, lines: shape?.lines ?? null, tops: idle, creditNoteAt: hub.noteAt, pressAt }));
-  const settled = idle.at(-1)?.top ?? null;
-  // `released` and `landings` are sampler FRAMES; `pressAt` is a time, stamped by the click itself.
-  const held = hub.tops.filter((t) => t.at > pressAt && (released === null || t.frame < released));
-  report(at("its top stays put from the press to the analysis landing"),
-    settled !== null && released !== null && held.every((t) => Math.abs(t.top - settled) <= 1),
-    JSON.stringify({ settled, moves: held, landingFrame: released }));
-  const after = hub.tops.filter((t) => released !== null && t.frame >= released);
-  report(at("and after, moves only on a landing frame"),
-    released !== null && after.every((t) => landings.includes(t.frame)),
-    JSON.stringify({ landings, moves: after }));
 }
 
 async function run() {
@@ -279,18 +222,9 @@ async function run() {
         continue;
       }
       await page.evaluate(() => { const w = window.__hold; w.seen = {}; w.headings = []; w.tops.verdict.clear(); w.tops.overview.clear(); w.said = []; });
-      // The boundary is the click itself, not the moment before Playwright's actionability wait: the sampler
-      // must already hold the credit note's frame (the hub must not move when it lands, #1465), and the
-      // press time is stamped in the page by the click's own event.
-      await page.waitForFunction(() => window.__hold.hub.noteAt !== null, null, { timeout: 30_000 });
-      const shape = await page.evaluate(NOTE_SHAPE, PAGE);
-      await page.evaluate(() => {
-        const w = window.__hold;
-        w.pressAt = null;
-        document.addEventListener("click", () => { w.pressAt ??= Math.round(performance.now() - w.t0); }, { capture: true, once: true });
-      });
+      // The press waits for the credit note's frame (#1465), so the note's landing is not read as the press's.
+      await page.waitForFunction(() => window.__hold.noteAt !== null, null, { timeout: 30_000 });
       await empty.getByRole("button", { name: "Analyze" }).click();
-      const pressAt = await page.evaluate(() => window.__hold.pressAt);
       await page.locator(`${PAGE} [data-testid='verdict-cell']`).first().waitFor({ timeout: 90_000 });
       if (MODE === "fallback") {
         await page.locator(`${PAGE} [data-testid='synopsis-overview'] button`, { hasText: "View full overview" }).first().waitFor({ timeout: 90_000 });
@@ -299,9 +233,7 @@ async function run() {
       await page.waitForTimeout(2_500);
       const w = await page.evaluate(() => {
         const x = window.__hold;
-        // Every field but the node itself, which cannot leave the page.
-        const hub = { panelAt: x.hub.panelAt, at: x.hub.at, noteAt: x.hub.noteAt, replaced: x.hub.replaced, missing: x.hub.missing, tops: x.hub.tops };
-        return { seen: x.seen, headings: x.headings, tops: { verdict: [...x.tops.verdict], overview: [...x.tops.overview] }, said: x.said, hub };
+        return { seen: x.seen, headings: x.headings, tops: { verdict: [...x.tops.verdict], overview: [...x.tops.overview] }, said: x.said };
       });
 
       const heads = w.headings.map((h) => h.text);
@@ -309,11 +241,6 @@ async function run() {
         heads.indexOf(READING) >= 0 && heads.indexOf(WRITING) > heads.indexOf(READING), JSON.stringify(w.headings));
       const writingAt = w.headings.find((h) => h.text === WRITING)?.at ?? null;
       const released = w.seen.verdict?.at ?? null;
-      // On the fallback the overview also grows in place when it lands (the growth Hugh accepted), so
-      // the hub may move on that frame too.
-      const landed = w.seen.verdict?.frame ?? null;
-      const landings = MODE === "fallback" && w.seen.written ? [landed, w.seen.written.frame] : [landed];
-      hubStaysPut(at, w.hub, pressAt, landed, landings, shape);
       if (MODE === "held") {
         report(at("the written overview paints with them, never the status line"),
           w.seen.written?.at === released && !w.seen.writing, JSON.stringify({ written: w.seen.written, writing: w.seen.writing ?? null }));

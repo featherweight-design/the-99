@@ -73,7 +73,7 @@ them / the brand sheet names them.
 | Bottom rule | `1px solid --border` under the whole bar | Canvas C:411 |
 | Tap target | `44px` minimum | README §Accessibility contract (Tap targets) |
 | Accessible name, deck tab | `Your deck, {n} cards` | copy.tabs.deckAria |
-| Accessible name, consider tab | `Cards to consider, {n} suggestions` | copy.tabs.considerAria |
+| Accessible name, consider tab | Retired by tool discovery B2: Consider is a Tuning tool, reached by the `Tuning` tab (`addPanelCopy.tabs.tuningAria`) | copy.tabs.considerAria (removed) |
 | Toolbar co-location, desktop | Provenance + Sort sit on the **same row** as the tabs, pushed right (`margin-left:auto`), `gap 12px`, `padding-bottom 8px` | Canvas C:414–417 |
 | Toolbar co-location, mobile | Toolbar is a **separate row below** the tab bar, inside the panel body | Canvas C:375–378 |
 | Count update on add | Tab count updates **immediately and optimistically** | README §Decision 8 |
@@ -86,7 +86,7 @@ them / the brand sheet names them.
 | Property | Specified value | Source |
 |---|---|---|
 | Panel role | `section[role="tabpanel"][aria-label="Cards to consider"]` | README §Accessibility contract |
-| Panel aria-label string | `Cards to consider` | copy.tabs.panelAria |
+| Panel aria-label string | `Cards to consider` until tool discovery B2; Consider now draws inside the Tuning panel | copy.tabs.panelAria (removed) |
 | Width | Full width of the main column, at both breakpoints; peer tab of the decklist | README §Decision 2 |
 | Not | Not an overlay, not appended below the decklist, not a rail, not a sheet | README §Decision 2 |
 | Coverage strip position | Stays **above** the tabs at both widths, visible while Consider is open | README §Decision 2; gap report 5 |

@@ -38,7 +38,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   `TUNING_STUB_DELAY_MS`, and each other path has a `*_LIVE` opt-in. A live path passes only
   when the server holds no real key (start it with a dummy `ANTHROPIC_API_KEY`) and no
   `ANTHROPIC_BASE_URL`. Every probe that presses a spend path through a server calls it, right
-  after its first sign-in and before its first press: `tuning-hub-stays-put`, `analysis-load-order`,
+  after its first sign-in and before its first press: `analysis-load-order`,
   `analysis-tab`, `banner-busy`, `bracket-chip`, `brackets-sheet`, `verdict-lean`,
   `verdict-findings`, `verdict-block`, `overview-hold` and `synopsis-ui` (`synopsis`, the overview an
   Analyze or Write one may write), `run-after` (`tuning`), `ai-sweep` (`tuning`, `intake` and
@@ -2399,40 +2399,8 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Analysis carries no hub; and the retired `?tab=consider` arrives on Tuning with Consider open. Read
   only, loopback `PROBE_BASE` only. On main the first check fails: there is no Tuning tab.
 
-- `pnpm probe:tuning-hub-stays-put` proves the Analysis tab's Tuning hub stays where it is, as the same
-  node, before, during and after an analysis, at 1300x900 and 390x844 (Hugh, 2026-10-14). Two cases,
-  each on decks it clones under the audit account and deletes in a `finally`, with every ledger row
-  their runs and overviews made; the account's About row is captured and put back.
-  **The walk** (`PROBE_CASES=walk`): a deck over its size (Analyze refused) and a legal deck at exactly
-  its size, never analyzed. Before the first analysis Suggested changes' tile is dimmed and Proposed
-  cuts (over size; inert at size), Mana Balance and History each open their tool and come back. Then,
-  sampled every animation frame from load: idle, the press, running (the empty state's loading phase,
-  through the overview write) and done. The hub must be drawn in every frame, be the node first seen
-  (a handle compared every frame). Its top must hold within 1px from its FIRST idle frame to the press
-  for a credit note of up to two lines (a longer note, used up or owner share, may move it by
-  its lines past the reserved two, named; an unrecognised note fails: `scripts/lib/note-variant.mjs`),
-  and within 1px of the settled tab from the press through running. Every idle frame counts (2026-10-15; it was the last 30 before the press, which sat after
-  the credit note's landing and so never saw the 56px / 35.4px drop it caused before the note's frame
-  was reserved; with the reservation removed the at-size deck now fails at both widths); no layout
-  shift may move it before the reading lands. At done the reading is drawn ABOVE the hub, so its top
-  moves by the reading's height by design: the check is that it sits under the reading at the idle
-  gap and moved once. CLS is printed per deck and width, with the press's own shifts apart.
-  **The second repro** (`PROBE_CASES=cuts`): an over-size deck with Proposed cuts open, a result naming
-  exactly the overage written through the real run store after the visit began (Look deeper's
-  stand-in: no model call), every cut pressed through the real Cut button down to the line, then the
-  deck analyzed. The hub must be drawn in every frame, Proposed cuts must stay the open tool, and the
-  panel under the tab row must never be empty: at the line it finishes in place (C8).
-  Before the fix it failed 10 checks: the hub was hidden for every frame of the overview write
-  (~650 at both widths) and jumped 196px up at 1300 (284px at 390) when Analyze was pressed. Step 5 of
-  the second repro (an empty panel) did not show on local-dev: the panel re-reads only when the list,
-  description, declared bracket or locks move, and none did; `tuning-hub.test.tsx` pins that re-read.
-  **Run it against `next dev`, never `next start`**: the overview's model stand-in answers only
-  outside production (`synopsisLive`), so a production server makes a REAL model call on the first
-  press; the spend guard (above) refuses before any press otherwise. At the line it also reads
-  C8's box head, `Back to 99 / 99. You cut N.` for the N cuts it pressed. Start the server with
-  `SYNOPSIS_STUB_DELAY_MS=3000`, and `ANTHROPIC_API_KEY` set to a
-  dummy value so a mistake fails instead of spending. Loopback `PROBE_BASE` only; it refuses staging
-  and production by `neon.branch_id`. `PROBE_WIDTH=390` runs one width.
+- `probe:tuning-hub-stays-put` (retired with tool discovery B2): it held the Tuning hub still on the
+  Analysis tab through an Analyze press. The hub now has its own tab, so the two never share a screen.
 
 - `pnpm probe:purge` proves the account purge (`purgeAccount`, run by the Clerk `user.deleted` webhook) against a real
   database. It builds an account with friends (as inviter and as redeemer), a pod it owns with two members, a

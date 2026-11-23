@@ -195,15 +195,19 @@ try {
     await panel.waitFor({ timeout: 30_000 });
     await probeBox(page, `${w.label} deck notes`, panel.locator('[role="combobox"]').first(), panel.getByRole("button", { name: "Insert a card tag" }), w.touch);
 
-    // The deck's description box, on the Analysis tab (the empty state, or Suggested changes' editor).
+    // The deck's description box: Analysis's empty state, or Suggested changes' editor on the Tuning tab (tool discovery B2).
     await page.goto(`${BASE}/decks/${deck}`, { waitUntil: "domcontentloaded" });
     await onPageRole(page, "tab", /analysis/i).first().click();
     // The empty state's field, or the Suggested changes editor's (`DescribingInPlace`).
     const desc = onPage(page, "#deck-description-field, #tuning-describing-field").first();
     const tile = onPage(page, "button[data-tool-tile='suggested']");
     const opener = onPageRole(page, "button", /Describe your deck →/);
-    await Promise.race([tile.waitFor({ timeout: 60_000 }), desc.waitFor({ timeout: 60_000 }), opener.first().waitFor({ timeout: 60_000 })]);
-    if (await tile.count()) await tile.click();
+    // A deck with no reading draws the field on Analysis; any other offers it under Suggested changes, on Tuning.
+    if (!(await desc.waitFor({ timeout: 15_000 }).then(() => true, () => false))) {
+      await onPageRole(page, "tab", /^Tuning/).first().click();
+      await Promise.race([tile.waitFor({ timeout: 60_000 }), desc.waitFor({ timeout: 60_000 }), opener.first().waitFor({ timeout: 60_000 })]);
+      if (await tile.count()) await tile.click();
+    }
     // A deck that already has a description draws neither (Suggested changes offers the row only while `intent` is
     // null): that is a deck this check cannot use, so it fails by name rather than timing out the rest of the run.
     const offered = await Promise.race([desc.waitFor({ timeout: 30_000 }), opener.first().waitFor({ timeout: 30_000 })]).then(() => true, () => false);
