@@ -16,7 +16,8 @@ vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.lo
 const RESOLVED = vi.hoisted(() => ({ FEEDBACK_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => RESOLVED }));
 // The reader's store, read under the same switches the page reads it under.
-vi.mock("../../../lib/stores/preference", () => ({
+vi.mock("../../../lib/stores/preference", async (actual) => ({
+  parseStore: (await actual<typeof import("../../../lib/stores/preference")>()).parseStore,
   readerStoreForPage: async (userId: string, env: unknown) => (stub.storeWith.push([userId, env]), stub.store),
 }));
 
@@ -65,13 +66,36 @@ describe("GET /api/discovery-fields", () => {
     stub.store = "tcgplayer";
     stub.storeWith.length = 0;
     try {
-      const res = await get("sort=fit&b=labels&s=a");
+      const res = await get("sort=fit&b=labels&st=tcgplayer&s=a");
       expect(res.status).toBe(200);
+      expect(Object.keys((await res.json()).fields)).toEqual(["a"]);
       expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED, "tcgplayer");
       expect(stub.storeWith).toEqual([["user_1", RESOLVED]]);
     } finally {
       stub.store = "manapool";
     }
+  });
+
+  // A page and a batch whose store reads answered differently (one fell back to Mana Pool): no fields, so no row is
+  // priced at a store its stamp does not name, and the payload is never read at the other store.
+  it("answers no fields when the page's store is not the reader's store now", async () => {
+    stub.store = "manapool";
+    const tcgPage = await get("sort=fit&b=labels&st=tcgplayer&s=a");
+    expect(await tcgPage.json()).toEqual({ fields: {} });
+    stub.store = "tcgplayer";
+    try {
+      const manaPage = await get("sort=fit&b=labels&s=a");
+      expect(await manaPage.json()).toEqual({ fields: {} });
+    } finally {
+      stub.store = "manapool";
+    }
+    expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("refuses a store the app does not quote", async () => {
+    const res = await get("sort=fit&b=labels&st=ebay&s=a");
+    expect(res.status).toBe(400);
+    expect(stub.load).not.toHaveBeenCalled();
   });
 
   // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): `b=classifier` is still accepted, but the entry is

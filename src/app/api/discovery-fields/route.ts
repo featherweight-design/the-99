@@ -13,6 +13,9 @@
 //     A page whose basis is not the entry's (a classifier page from before the retirement, or a
 //     labels page whose label read just fell back) gets no fields, so no other basis's rank and fit
 //     are merged into the ranking on screen (admin PR 6d-2).
+//   - the store the PAGE was priced at rides as `st` (absent for Mana Pool) and is checked the same way:
+//     a page and a batch whose store reads answered differently (one fell back to Mana Pool) get no
+//     fields, so a row is never priced at a store its stamp does not name.
 // A route rather than a server action because Next runs a page's actions one at a time: a
 // background read queued as an action would wait on, and delay, the reader's own writes.
 import { auth } from "@clerk/nextjs/server";
@@ -22,7 +25,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { drawFieldsFor } from "../../../lib/discovery/encode";
 import { loadDiscoveryPayload } from "../../../lib/discovery/payload";
 import { requestFlags } from "../../../lib/flags/request";
-import { readerStoreForPage } from "../../../lib/stores/preference";
+import { parseStore, readerStoreForPage } from "../../../lib/stores/preference";
 import { parseRoleBasis } from "../../../lib/profile/build";
 import { MAX_FIELDS_BATCH } from "../../../lib/discovery/fields-batch";
 
@@ -41,6 +44,8 @@ export async function GET(req: NextRequest) {
   if (sort !== "fit" && sort !== "new") return NextResponse.json(null, { status: 400, headers: HEADERS });
   const basis = parseRoleBasis(params.get("b"));
   if (basis === null) return NextResponse.json(null, { status: 400, headers: HEADERS });
+  const pageStore = params.has("st") ? parseStore(params.get("st")) : "manapool";
+  if (pageStore === null) return NextResponse.json(null, { status: 400, headers: HEADERS });
   const slugs = (params.get("s") ?? "").split(",").filter(Boolean);
   if (slugs.length === 0 || slugs.length > MAX_FIELDS_BATCH || !slugs.every((s) => SLUG.test(s))) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });
@@ -48,7 +53,9 @@ export async function GET(req: NextRequest) {
   // The reader's resolved switches and store, as the page reads them: the entry is always counted by label and
   // keyed on the store, so this reaches the entry the page drew.
   const env = await requestFlags(userId);
-  const payload = await loadDiscoveryPayload(userId, sort, env, await readerStoreForPage(userId, env));
+  const store = await readerStoreForPage(userId, env);
+  if (store !== pageStore) return NextResponse.json({ fields: {} }, { headers: HEADERS });
+  const payload = await loadDiscoveryPayload(userId, sort, env, store);
   // The basis the entry was COUNTED by: a labels request whose label read failed just now gets a
   // classifier list back, and a classifier page's figures are not the entry's, so both get no fields
   // and the client's missing-row path reads the page again.
