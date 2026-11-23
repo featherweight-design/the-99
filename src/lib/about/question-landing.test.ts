@@ -33,7 +33,7 @@ describe("the light tables match the page copy", () => {
       } else {
         const label = section!.labels.find((l) => l.id === (row.lit as { label: string }).label);
         expect(label, id).toBeDefined();
-        expect(key).toBe(labelKey(section!, label!));
+        expect(key).toBe(labelKey(label!));
       }
     }
   });

@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { ABOUT_SECTIONS } from "../copy/about-pages";
 import { SWITCH_NAMES } from "../flags/registry";
 import { PAGE_WIDTHS, type PageShot } from "./page-shots";
-import { labelKey, visibleSections, type VisibleSection } from "./pages-visible";
+import { visibleSections, type VisibleSection } from "./pages-visible";
 import {
-  BRACKET_ARM, BRACKET_EDGE, BRACKET_MIN, HALO_REACH, MAX_PINS, PIN_GAP, PIN_GUTTER, PIN_SIZE, haloAt, pinsAt, placePins, regionOf,
+  BRACKET_ARM, BRACKET_EDGE, BRACKET_MIN, HALO_REACH, MAX_PINS, PIN_GAP, PIN_GUTTER, PIN_SIZE, haloAt, pinsAt, placePins,
   screenModel, type Box, type PlacedPin,
 } from "./pins";
 
@@ -200,7 +200,6 @@ describe("the shipped pages, every switch on", () => {
   it("every label's region is its key, so the manifest is read by the key the reader carries", () => {
     // `<area>/<section>/<label id>` where the label was first drawn: Tuning's three keep `decks/analysis/*` (B3).
     for (const s of ABOUT_SECTIONS) for (const l of s.labels) {
-      expect(l.region).toBe(regionOf({ key: labelKey(s, l) }));
       expect(l.region, l.region).toMatch(new RegExp(`^${s.area}/[a-z-]+/${l.id}$`));
     }
   });

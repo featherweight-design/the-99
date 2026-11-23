@@ -39,24 +39,24 @@ const card = (id: string, label: string): PageCard => ({
     state: { kind: "page", href: `/x?tool=${id}`, label: "Open" },
     note: null,
     label,
-    showMe: `/about/decks?lit=${encodeURIComponent(label)}#analysis`,
+    showMe: `/about/decks?lit=${encodeURIComponent(label)}#tuning`,
   },
   phone: null,
   desktop: null,
 });
 const CARDS = [card("suggested-changes", "decks/analysis/suggested"), card("proposed-cuts", LIT), card("mana-balance", "decks/analysis/mana")];
 
-const landable = (isNew: boolean): Landable => ({ "decks/analysis/analyze": { isNew: false, section: "analysis" }, [LIT]: { isNew, section: "analysis" } });
+const landable = (isNew: boolean): Landable => ({ "decks/analysis/analyze": { isNew: false, section: "analysis" }, [LIT]: { isNew, section: "tuning" } });
 const NEW = landable(true);
 const TOLD = landable(false);
 const at = (address: string) => window.history.replaceState(null, "", address);
-const LANDED = `/about/decks?lit=${encodeURIComponent(LIT)}&x=1#analysis`;
+const LANDED = `/about/decks?lit=${encodeURIComponent(LIT)}&x=1#tuning`;
 
 const draw = (land: Landable = NEW, initialLit: string | null = LIT) =>
   render(
     <LabelLanding landable={land} initialLit={initialLit} cards={CARDS}>
       <LabelledScreen phone={model("/p.webp")} desktop={model("/d.webp")} />
-      <TryIt sectionId="analysis" cards={CARDS} />
+      <TryIt sectionId="tuning" cards={CARDS} />
     </LabelLanding>,
   );
 
@@ -101,7 +101,7 @@ describe("LabelLanding", () => {
   });
 
   it("lands the ?'s landing (with from) as the halo alone: lit, never New, no card, and keeps from on the strip", () => {
-    at(`/about/decks?from=${encodeURIComponent("/decks/new")}&lit=${encodeURIComponent(LIT)}#analysis`);
+    at(`/about/decks?from=${encodeURIComponent("/decks/new")}&lit=${encodeURIComponent(LIT)}#tuning`);
     const { container } = draw(NEW);
     expect(width(container, "phone").querySelector(`[data-about-label='${LIT}'] button`)!.getAttribute("aria-pressed")).toBe("true");
     expect(container.querySelector("[data-about-new]")).toBeNull();
@@ -131,9 +131,9 @@ describe("LabelLanding", () => {
     expect(line().getAttribute("aria-pressed")).toBe("false");
     // The strip (mocked here), then Show me's push, twice over.
     for (let i = 0; i < 2; i += 1) {
-      act(() => window.history.pushState(null, "", "/about/decks#analysis"));
+      act(() => window.history.pushState(null, "", "/about/decks#tuning"));
       expect(line().getAttribute("aria-pressed")).toBe("false");
-      act(() => window.history.pushState(null, "", `/about/decks?lit=${encodeURIComponent(LIT)}#analysis#analysis`));
+      act(() => window.history.pushState(null, "", `/about/decks?lit=${encodeURIComponent(LIT)}#tuning#tuning`));
       expect(line().getAttribute("aria-pressed")).toBe("true");
       expect(width(container, "desktop").querySelectorAll("[data-about-new]")).toHaveLength(1);
       fireEvent.click(line());
@@ -142,23 +142,23 @@ describe("LabelLanding", () => {
     expect(mirror.mirrorUrl).toHaveBeenCalledTimes(3);
     const url = mirror.mirrorUrl.mock.calls[2][0] as URL;
     expect(url.searchParams.has("lit")).toBe(false);
-    expect(url.hash).toBe("#analysis");
+    expect(url.hash).toBe("#tuning");
   });
 
   it("lands a label first named by the live address after the page rendered with none", () => {
-    at("/about/decks#analysis");
+    at("/about/decks#tuning");
     const { container } = draw(NEW, null);
     const line = () => width(container, "phone").querySelector(`[data-about-label='${LIT}'] button[aria-pressed]`)!;
     expect(line().getAttribute("aria-pressed")).toBe("false");
     expect(mirror.mirrorUrl).not.toHaveBeenCalled();
-    act(() => window.history.pushState(null, "", `/about/decks?lit=${encodeURIComponent(LIT)}#analysis`));
+    act(() => window.history.pushState(null, "", `/about/decks?lit=${encodeURIComponent(LIT)}#tuning`));
     expect(line().getAttribute("aria-pressed")).toBe("true");
     expect(container.querySelector("[data-about-landing-card]")?.getAttribute("data-about-landing-card")).toBe("proposed-cuts");
     expect(mirror.mirrorUrl).toHaveBeenCalledTimes(1);
   });
 
   it("lights nothing without a landing, and a press still lights a label", () => {
-    at("/about/decks#analysis");
+    at("/about/decks#tuning");
     const { container } = draw(NEW, null);
     const line = () => width(container, "phone").querySelector(`[data-about-label='${LIT}'] button`)!;
     expect(line().getAttribute("aria-pressed")).toBe("false");
@@ -175,20 +175,20 @@ describe("LabelLanding", () => {
     expect(url.pathname).toBe("/about/decks");
     expect(url.searchParams.has("lit")).toBe(false);
     expect(url.searchParams.get("x")).toBe("1");
-    expect(url.hash).toBe("#analysis");
+    expect(url.hash).toBe("#tuning");
   });
 
   it("brings the landed label's section into view by its key, whatever the hash says, and nothing with no `lit`", () => {
     const section = document.createElement("section");
-    section.id = "analysis";
+    section.id = "tuning";
     document.body.appendChild(section);
-    at(`/about/decks?lit=${encodeURIComponent(LIT)}#analysis#analysis`);
+    at(`/about/decks?lit=${encodeURIComponent(LIT)}#tuning#tuning`);
     draw(TOLD);
     expect(scroll.reveal).toHaveBeenCalledWith(section, "start");
     // The doubled hash Next can write is put back as the section's.
-    expect((mirror.mirrorUrl.mock.calls[0][0] as URL).hash).toBe("#analysis");
+    expect((mirror.mirrorUrl.mock.calls[0][0] as URL).hash).toBe("#tuning");
     scroll.reveal.mockClear();
-    at("/about/decks#analysis");
+    at("/about/decks#tuning");
     draw(NEW, null);
     expect(scroll.reveal).not.toHaveBeenCalled();
     section.remove();
@@ -196,11 +196,11 @@ describe("LabelLanding", () => {
 
   it("cancels the landing's pending scroll when the page goes away (a Back mid-scroll)", () => {
     const section = document.createElement("section");
-    section.id = "analysis";
+    section.id = "tuning";
     document.body.appendChild(section);
     const cancel = vi.fn();
     scroll.reveal.mockImplementationOnce(() => cancel);
-    at(`/about/decks?lit=${encodeURIComponent(LIT)}#analysis`);
+    at(`/about/decks?lit=${encodeURIComponent(LIT)}#tuning`);
     const { unmount } = draw(TOLD);
     expect(cancel).not.toHaveBeenCalled();
     unmount();
@@ -226,7 +226,7 @@ describe("LabelLanding", () => {
   });
 
   it("writes nothing when the address has no `lit`", () => {
-    at("/about/decks#analysis");
+    at("/about/decks#tuning");
     draw(NEW, null);
     expect(mirror.mirrorUrl).not.toHaveBeenCalled();
   });
@@ -306,7 +306,7 @@ describe("Try it and Good to know panels (R4 board 4)", () => {
   it("draws Try it on its accent-lit panel with the spark plate, no round mark, the sub-line stacked", () => {
     at("/about/decks");
     const { container } = draw(NEW, null);
-    const panel = container.querySelector<HTMLElement>("[data-try-it='analysis']")!;
+    const panel = container.querySelector<HTMLElement>("[data-try-it='tuning']")!;
     expect(panel.className).toContain("rounded-[16px]");
     expect(panel.className).toContain("bg-[color:color-mix(in_oklab,var(--accent)_7%,var(--bg))]");
     expect(panel.className).toContain("border-[color:color-mix(in_oklab,var(--accent)_34%,var(--border))]");

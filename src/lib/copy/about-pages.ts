@@ -535,7 +535,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     name: "Tuning",
     sub: "Tools for this deck. Suggested changes, Proposed cuts and Mana Balance help you tune it.",
     subSentences: {
-      // Proposed cuts follows the Analysis tab (its own switch is retired), which Mana Balance already needs.
+      // Proposed cuts' own switch is retired; the sentence still follows the Tuning and Mana Balance switches.
       " Suggested changes, Proposed cuts and Mana Balance help you tune it.": ["TUNING_ENABLED", "MANA_BALANCE_ENABLED"],
     },
     screens: [{ screen: "deck", view: "tuning" }],
