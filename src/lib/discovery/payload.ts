@@ -10,6 +10,7 @@ import { encodeDiscovery } from "./encode";
 import { loadHiddenIds } from "../commanders/hidden";
 import { discoveryKey, loadDiscoveryWithIds } from "./list";
 import { perfRead } from "../perf/timing";
+import type { Store } from "../stores/rows";
 
 /**
  * `env` is the reader's resolved switches (`requestFlags`): the key and the load decide the role
@@ -20,15 +21,21 @@ import { perfRead } from "../perf/timing";
  * because the label read failed is served and never filed (admin PR 6d-2): stored under the labels
  * key, it would be served as the labels' ranking until the ceiling.
  */
-export async function loadDiscoveryPayload(userId: string, sort: "fit" | "new", env: NodeJS.ProcessEnv) {
+export async function loadDiscoveryPayload(
+  userId: string,
+  sort: "fit" | "new",
+  env: NodeJS.ProcessEnv,
+  /** The reader's store (`readerStoreForPage`): it prices the rows and is part of the key. */
+  store: Store = "manapool",
+) {
   // Read BEFORE the cached call and handed to both the key and the load, so an entry is only ever filed
   // under the hidden set it was built from (`hiddenSetKey`, hide follow-up D1).
   const hiddenIds = await perfRead("discovery.hidden", () => loadHiddenIds(userId));
   return cacheForUser(
     userId,
-    discoveryKey(sort, hiddenIds),
+    discoveryKey(sort, hiddenIds, store),
     async () => {
-      const { list, oracleIds, basis, fellBack } = await loadDiscoveryWithIds(userId, { sort, hiddenIds }, env);
+      const { list, oracleIds, basis, fellBack } = await loadDiscoveryWithIds(userId, { sort, hiddenIds, store }, env);
       return { encoded: encodeDiscovery(list), oracleIds, basis, fellBack };
     },
     { store: (payload) => !payload.fellBack },

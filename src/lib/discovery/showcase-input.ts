@@ -6,6 +6,7 @@ import { SWITCH_FLAGS } from "../flags/flags";
 import type { Perf } from "../perf/timing";
 import type { SwitchName } from "../flags/registry";
 import { DECK_TOOLS, loadToolFits, type DeckToolId } from "./fits";
+import { readerStoreForPage } from "../stores/preference";
 import type { CardInput } from "./showcase";
 import { TOOLS } from "./tools";
 
@@ -31,6 +32,13 @@ async function deckCount(userId: string): Promise<number> {
   return Number(row?.n ?? 0);
 }
 
+/** `loadToolFits` at the reader's store, so a deck over its limit is the one its Shopping list marks. The store is read
+    only when a tool that prices asks (`readerStoreForPage` never rejects). */
+function toolFits(userId: string, env: NodeJS.ProcessEnv, asked: readonly DeckToolId[]) {
+  if (!asked.includes("stand-ins")) return loadToolFits(userId, asked);
+  return readerStoreForPage(userId, env).then((store) => loadToolFits(userId, asked, store));
+}
+
 /**
  * The card input for `userId` under `env`, the reader's resolved switches (`requestFlags`). `perf` times the fits
  * read for a route's perf log.
@@ -41,7 +49,7 @@ export async function loadCardInput(
   const isOn = switchesOn(env);
   const asked = deckToolsFor(isOn, only);
   const [fits, decksHeld, syncAnchored] = await Promise.all([
-    perf ? perf.timed("toolFits", () => loadToolFits(userId, asked)) : loadToolFits(userId, asked),
+    perf ? perf.timed("toolFits", () => toolFits(userId, env, asked)) : toolFits(userId, env, asked),
     deckCount(userId),
     hasSyncAnchor(userId),
   ]);

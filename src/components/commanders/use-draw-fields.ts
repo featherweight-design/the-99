@@ -7,13 +7,16 @@
 // the fit figures belong to a ranking. The basis is the one the page's payload was counted by. The
 // route always reads the labels entry (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31), and a `b` it
 // does not match (a classifier page, or a labels page whose read fell back) gets `{fields:{}}`, so
-// no other basis's figures are merged into this ranking (admin PR 6d-2).
+// no other basis's figures are merged into this ranking (admin PR 6d-2). The page's store rides too
+// (`st`, only when it is not Mana Pool, so Mana Pool's request is unchanged): a route whose own store read
+// answered differently gets `{fields:{}}` the same way, so no row is priced at another store than its stamp.
 import { useMemo } from "react";
 import { isDrawn, type DiscoveryRow } from "../../lib/discovery/encode";
 import { MAX_FIELDS_BATCH } from "../../lib/discovery/fields-batch";
 import type { DiscoveryItem } from "../../lib/discovery/list";
 import type { RoleBasis } from "../../lib/profile/build";
 import { useWithheldFields, type FieldsSource } from "../ui/use-withheld-fields";
+import { useStoreInfo } from "../stores/store-provider";
 
 type Sort = "fit" | "new";
 
@@ -24,14 +27,16 @@ export function useDrawFields(
   onStale: () => void = () => {},
 ) {
   const { sort, basis } = ranking;
+  const store = useStoreInfo().id;
   const source = useMemo<FieldsSource<DiscoveryRow>>(
     () => ({
       keyOf: (row) => row.slug,
       isDrawn,
       maxBatch: MAX_FIELDS_BATCH,
-      url: (keys) => `/api/discovery-fields?sort=${sort}&b=${basis}&s=${keys.map(encodeURIComponent).join(",")}`,
+      url: (keys) =>
+        `/api/discovery-fields?sort=${sort}&b=${basis}${store === "manapool" ? "" : `&st=${store}`}&s=${keys.map(encodeURIComponent).join(",")}`,
     }),
-    [sort, basis],
+    [sort, basis, store],
   );
   return useWithheldFields<DiscoveryRow, DiscoveryItem>(source, all, wanted, onStale);
 }

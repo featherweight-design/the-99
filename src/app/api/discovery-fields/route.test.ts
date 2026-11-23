@@ -4,6 +4,8 @@ import { NextRequest } from "next/server";
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
   load: vi.fn(),
+  store: "manapool" as string,
+  storeWith: [] as unknown[],
 }));
 const observe = vi.hoisted(() => vi.fn());
 vi.mock("../../../lib/rate/observe", () => ({ enforceHit: observe }));
@@ -13,6 +15,11 @@ vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.lo
 // them, untouched (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31: no basis is written over them).
 const RESOLVED = vi.hoisted(() => ({ FEEDBACK_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => RESOLVED }));
+// The reader's store, read under the same switches the page reads it under.
+vi.mock("../../../lib/stores/preference", async (actual) => ({
+  parseStore: (await actual<typeof import("../../../lib/stores/preference")>()).parseStore,
+  readerStoreForPage: async (userId: string, env: unknown) => (stub.storeWith.push([userId, env]), stub.store),
+}));
 
 import { GET } from "./route";
 import { encodeDiscovery } from "../../../lib/discovery/encode";
@@ -50,7 +57,45 @@ describe("GET /api/discovery-fields", () => {
     const { fields } = await res.json();
     expect(Object.keys(fields)).toEqual(["a", "b"]);
     expect(fields.a.prose).toBe("About a.");
-    expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED);
+    expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED, "manapool");
+  });
+
+  // Store preference: the page keys its payload on the reader's store, so the route must read the same entry, or a
+  // TCGplayer page's withheld rows would rebuild and read a Mana Pool payload.
+  it("reads the payload at the reader's store, decided under their switches", async () => {
+    stub.store = "tcgplayer";
+    stub.storeWith.length = 0;
+    try {
+      const res = await get("sort=fit&b=labels&st=tcgplayer&s=a");
+      expect(res.status).toBe(200);
+      expect(Object.keys((await res.json()).fields)).toEqual(["a"]);
+      expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED, "tcgplayer");
+      expect(stub.storeWith).toEqual([["user_1", RESOLVED]]);
+    } finally {
+      stub.store = "manapool";
+    }
+  });
+
+  // A page and a batch whose store reads answered differently (one fell back to Mana Pool): no fields, so no row is
+  // priced at a store its stamp does not name, and the payload is never read at the other store.
+  it("answers no fields when the page's store is not the reader's store now", async () => {
+    stub.store = "manapool";
+    const tcgPage = await get("sort=fit&b=labels&st=tcgplayer&s=a");
+    expect(await tcgPage.json()).toEqual({ fields: {} });
+    stub.store = "tcgplayer";
+    try {
+      const manaPage = await get("sort=fit&b=labels&s=a");
+      expect(await manaPage.json()).toEqual({ fields: {} });
+    } finally {
+      stub.store = "manapool";
+    }
+    expect(stub.load).not.toHaveBeenCalled();
+  });
+
+  it("refuses a store the app does not quote", async () => {
+    const res = await get("sort=fit&b=labels&st=ebay&s=a");
+    expect(res.status).toBe(400);
+    expect(stub.load).not.toHaveBeenCalled();
   });
 
   // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): `b=classifier` is still accepted, but the entry is
@@ -59,7 +104,7 @@ describe("GET /api/discovery-fields", () => {
   it("still accepts a classifier page's basis, reads the labels entry, and answers it no fields", async () => {
     const res = await get("sort=new&b=classifier&s=a");
     expect(res.status).toBe(200);
-    expect(stub.load).toHaveBeenCalledWith("user_1", "new", RESOLVED);
+    expect(stub.load).toHaveBeenCalledWith("user_1", "new", RESOLVED, "manapool");
     expect((await res.json()).fields).toEqual({});
   });
 

@@ -129,6 +129,8 @@ export type PriceRead = {
 
 export async function readPrices(
   oracleIds: string[],
+  /** The reader's store (store preference); `manapool` reads exactly what it always read. */
+  store: Store = "manapool",
   /**
    * The read, injectable ONLY so the failure path can be tested.
    *
@@ -139,10 +141,10 @@ export async function readPrices(
    * success case failed outright. The same binding is why `list-wiring.test.ts`
    * mocking `loadPrices` never reached this wrapper.
    */
-  load: (ids: string[]) => Promise<Map<string, PriceAggRow>> = loadPrices,
+  load: (ids: string[], store: Store) => Promise<Map<string, PriceAggRow>> = loadPrices,
 ): Promise<PriceRead> {
   try {
-    return { prices: await load(oracleIds), ok: true };
+    return { prices: await load(oracleIds, store), ok: true };
   } catch {
     return { prices: new Map(), ok: false };
   }

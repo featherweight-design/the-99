@@ -21,6 +21,7 @@ import { formatCents } from "../../lib/cards/price-fact";
 import { commanderRowCopy, type GapPart } from "../../lib/copy/commander-row";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { useStoreInfo } from "../stores/store-provider";
 import { explainedCopy } from "../../lib/copy/commander-explained";
 import type { GapSlot } from "../../lib/edhrec/gap-slot";
 import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score";
@@ -230,6 +231,8 @@ function GapLine({ slot, picked }: { slot: GapSlot; picked?: string[] }) {
  * `priceOk`. A missing figure is omitted, never zeroed (D3).
  */
 function PriceFigure({ price, priceOk }: { price: PriceSlotValue; priceOk: boolean }) {
+  // The reader's store, from the page's StoreProvider; Mana Pool outside one.
+  const store = useStoreInfo();
   if (!priceOk || price.kind === "absent") return null;
   const priced = price.kind === "priced";
   const formatted = priced ? formatCents(price.cents) : priceCopy.notStocked;
@@ -264,10 +267,10 @@ function PriceFigure({ price, priceOk }: { price: PriceSlotValue; priceOk: boole
           price and never ends a line alone. The 6px is this row's gap. It was at the line's end (`ml-auto`) as the R1 canvas drew
           it, far from the price it names. The shipped `manapool` string, still decorative: the sr-only sentence below carries it. */}
       <span aria-hidden="true" className="font-mono" style={{ fontSize: 10, color: "var(--fg-locked)" }}>
-        {priceCopy.source}
+        {priceCopy.source(store)}
       </span>
       <span className="sr-only">
-        {priced ? priceCopy.aria(formatted) : priceCopy.notStockedAria}
+        {priced ? priceCopy.aria(store, formatted) : priceCopy.notStockedAria(store)}
       </span>
     </span>
   );

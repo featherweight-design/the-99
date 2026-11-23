@@ -15,6 +15,8 @@ import { fileThemes } from "../../../../lib/themes/commander-themes";
 import { laneThemesFor } from "../../../../lib/themes/lane-themes";
 import { discoverSort, parseLaneParams } from "../../../../lib/commanders/lane-params";
 import { searchParamsToQuery } from "../../../../lib/commanders/search-params";
+import { readerStoreForPage } from "../../../../lib/stores/preference";
+import { StoreProvider } from "../../../../components/stores/store-provider";
 
 /**
  * The discover lane: every commander-legal card the player does not own.
@@ -34,6 +36,8 @@ export default async function DiscoverPage({
   // The reader's resolved switches (`requestFlags`), once for the whole render.
   const env = await requestFlags(userId);
   const params = parseLaneParams(searchParamsToQuery(await searchParams), "discover");
+  // The reader's store, started beside the stats read: it never rejects (Mana Pool on a failed read).
+  const storeRead = readerStoreForPage(userId, env);
   const stats = await perf.timed("stats", () => getCollectionStats(userId));
 
   if (stats.uniqueCards === 0) {
@@ -60,7 +64,8 @@ export default async function DiscoverPage({
   // the entry, per request: its read can fail, and a failure filed here would hide the control
   // for the entry's whole life. `loadCommanderPrintings` is memoised per catalog generation, so
   // the per-request cost is the crossing, not the read.
-  const { encoded, oracleIds, basis } = await perf.timed("payload", () => loadDiscoveryPayload(userId, sort, env));
+  const { encoded, oracleIds, basis } = await perf.timed("payload", () => storeRead.then((store) => loadDiscoveryPayload(userId, sort, env, store)));
+  const store = await storeRead;
   const [printedIn, themes] = await Promise.all([
     perf.timed("printedIn", () => lanePrintedInFor(oracleIds.map((oracleId) => ({ oracleId })))),
     perf.timed("themes", () => laneThemesFor(oracleIds)),
@@ -86,7 +91,9 @@ export default async function DiscoverPage({
   return (
     <section className="flex flex-col min-h-screen">
       {/* The view decodes once. */}
-      <DiscoveryView encoded={shipped} printedIn={printedIn} themes={themes} basis={basis} />
+      <StoreProvider store={store}>
+        <DiscoveryView encoded={shipped} printedIn={printedIn} themes={themes} basis={basis} />
+      </StoreProvider>
     </section>
   );
 }

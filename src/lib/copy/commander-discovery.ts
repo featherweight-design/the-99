@@ -30,6 +30,7 @@
 // excludes the 8 commanders with decks, not the 3,100 the player does not own.
 // Every COUNT below goes through `n`, including the small ones, so the rule has no exceptions to
 // remember. Percentages do not: a separator in a percentage would be a bug, not a formatting.
+import type { StoreInfo } from "../stores/info";
 
 const n = (v: number) => v.toLocaleString("en-US");
 
@@ -148,10 +149,12 @@ export const discoveryCopy = {
     // 10px stamp in `--fg-locked`, the same register as a field label, because a price with no
     // source is a claim the product cannot stand behind but the source is not the point of the
     // row. The brand capitalisation appears where it is spoken — see `aria` below.
-    source: "manapool",
+    // The reader's store (design #3200 copy map): the stamp is the store's id in the same lower-case register
+    // (`manapool`, `tcgplayer`), and the spoken sentences name it.
+    source: (s: StoreInfo) => s.id,
     notStocked: "not stocked",
-    aria: (formatted: string) => `${formatted}, in stock at Mana Pool`,
-    notStockedAria: "Mana Pool has none in stock",
+    aria: (s: StoreInfo, formatted: string) => `${formatted}, in stock at ${s.name}`,
+    notStockedAria: (s: StoreInfo) => `${s.name} has none in stock`,
   },
 
   // ── Untagged commanders (ruling 5) ────────────────────────────────────

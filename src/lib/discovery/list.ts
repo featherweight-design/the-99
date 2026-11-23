@@ -6,6 +6,7 @@ import type { RoleBasis } from "../profile/build";
 import { buildPoolRollup, rollupFor, type PoolRollup } from "../recs/pool-rollup";
 import { loadCandidates, type CandidateRow } from "./candidates";
 import { readPrices, slotFor, type PriceAggRow, type PriceSlot } from "./price";
+import type { Store } from "../stores/rows";
 import { computeFit, type RoleName } from "../recs/score";
 import { ROLE_TARGETS } from "../recs/roles";
 import { loadRoleTargetsForCommanders } from "../profile/role-targets";
@@ -412,8 +413,12 @@ export function discoveryKey(
   sort: string,
   /** The reader's hidden ids, the SAME list handed to the loader: see `hiddenSetKey`. */
   hiddenIds: readonly string[],
+  /** The reader's store (store preference). Mana Pool's key is unchanged, so with the switch off no entry goes cold;
+      another store files its own entry, so a payload priced at one store is never served to a reader of another. */
+  store: Store = "manapool",
 ): string[] {
-  return ["discovery", sort, `v${PAYLOAD_VERSION}`, "basis:labels", hiddenSetKey(hiddenIds)];
+  const key = ["discovery", sort, `v${PAYLOAD_VERSION}`, "basis:labels", hiddenSetKey(hiddenIds)];
+  return store === "manapool" ? key : [...key, `store:${store}`];
 }
 
 /**
@@ -462,7 +467,7 @@ export async function loadDiscoveryPool(
  */
 export async function loadDiscovery(
   userId: string,
-  opts: { sort: "fit" | "new" },
+  opts: { sort: "fit" | "new"; store?: Store },
   env: NodeJS.ProcessEnv,
 ): Promise<DiscoveryList> {
   return (await loadDiscoveryWithIds(userId, opts, env)).list;
@@ -483,7 +488,7 @@ export async function loadDiscoveryWithIds(
   userId: string,
   /** `hiddenIds`: the ids the cache key was made from (`discoveryKey`). A cached caller always passes
    *  them, so the payload drops exactly the set it is filed under; read here only when absent. */
-  opts: { sort: "fit" | "new"; hiddenIds?: readonly string[] },
+  opts: { sort: "fit" | "new"; hiddenIds?: readonly string[]; store?: Store },
   /** The reader's resolved switches. Unread since roles are always counted by label
    *  (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31); kept so callers hand one env to every loader. */
   _env: NodeJS.ProcessEnv,
@@ -509,7 +514,7 @@ export async function loadDiscoveryWithIds(
   // on both sides, and this payload is cached (an hour at most), so it can disagree with the detail
   // page until it is rebuilt. The prices and played tags do not wait on either read.
   const [priceRead, playedTags, { basis, fellBack, roleSets, roleTargets }, hiddenIds] = await Promise.all([
-    perfRead("discovery.prices", () => readPrices(candidates.map((c) => c.oracleId))),
+    perfRead("discovery.prices", () => readPrices(candidates.map((c) => c.oracleId), opts.store)),
     perfRead("discovery.playedTags", () => loadPlayedTags(userId)),
     perfRead("discovery.basisAndTargets", () => basisRead.then(async ({ basis, fellBack, roleSets }) => ({
       basis,

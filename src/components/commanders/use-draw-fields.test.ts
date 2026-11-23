@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook, waitFor } from "@testing-library/react";
+import { createElement, type ReactNode } from "react";
 import { useDrawFields } from "./use-draw-fields";
+import { StoreProvider } from "../stores/store-provider";
 import type { DiscoveryRow, DrawFields } from "../../lib/discovery/encode";
 
 const row = (slug: string): DiscoveryRow => ({ slug, name: slug, colorIdentity: [], releasedAt: null, deckCount: null });
@@ -52,6 +54,17 @@ describe("useDrawFields", () => {
     const params = new URL(net.calls[0].url, "http://x").searchParams;
     expect(params.get("sort")).toBe("new");
     expect(params.get("b")).toBe("labels");
+    // Mana Pool's request is the one it always was.
+    expect(params.has("st")).toBe(false);
+  });
+
+  // Store preference: the page's store rides with every batch, so the route can refuse rows priced at another store.
+  it("names the page's store in every request when it is not Mana Pool", async () => {
+    renderHook(() => useDrawFields(FIT, all, [all[0]]), {
+      wrapper: ({ children }: { children: ReactNode }) => createElement(StoreProvider, { store: "tcgplayer" } as { store: "tcgplayer"; children: ReactNode }, children),
+    });
+    await waitFor(() => expect(net.calls).toHaveLength(1));
+    expect(new URL(net.calls[0].url, "http://x").searchParams.get("st")).toBe("tcgplayer");
   });
 
   it("asks for the rows the reader is waiting on first, one batch at a time", async () => {

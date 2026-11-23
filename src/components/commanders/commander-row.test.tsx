@@ -5,6 +5,8 @@ import { CommanderRow, EAGER_ART_ROWS, type CommanderRowView } from "./commander
 import { commanderRowCopy } from "../../lib/copy/commander-row";
 import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
+import { STORE_INFO } from "../../lib/stores/info";
+import { StoreProvider } from "../stores/store-provider";
 
 const { price: priceCopy } = discoveryCopy;
 
@@ -226,7 +228,7 @@ describe("CommanderRow · state 5, unpriced", () => {
 
     expect(container.textContent).not.toContain("$");
     expect(container.textContent).not.toContain(priceCopy.notStocked);
-    expect(screen.queryByText(priceCopy.notStockedAria)).not.toBeInTheDocument();
+    expect(screen.queryByText(priceCopy.notStockedAria(STORE_INFO.manapool))).not.toBeInTheDocument();
     // ONE figure left — the deck count — so no separator at all. Fit moved up
     // to the band's chip, so the foot line no longer holds an unconditional
     // figure for an orphaned separator to sit beside.
@@ -261,13 +263,13 @@ describe("CommanderRow · state 5, unpriced", () => {
   it("keeps the ManaPool source stamp beside the figure", () => {
     row({ priceOk: true, price: { kind: "priced", cents: 1840 } });
 
-    expect(screen.getByText(priceCopy.source)).toBeInTheDocument();
+    expect(screen.getByText(priceCopy.source(STORE_INFO.manapool))).toBeInTheDocument();
   });
 
   it("draws the stamp in the figure's own item, after the figure, not pushed to the line's end", () => {
     row({ priceOk: true, price: { kind: "priced", cents: 1840 } });
 
-    const stamp = screen.getByText(priceCopy.source);
+    const stamp = screen.getByText(priceCopy.source(STORE_INFO.manapool));
     const figure = screen.getByText("$18.40");
     expect(stamp.parentElement).toBe(figure.parentElement);
     expect(figure.compareDocumentPosition(stamp) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -277,7 +279,31 @@ describe("CommanderRow · state 5, unpriced", () => {
   it("takes the source stamp with the figure when there is none", () => {
     row({ price: { kind: "absent" } });
 
-    expect(screen.queryByText(priceCopy.source)).not.toBeInTheDocument();
+    expect(screen.queryByText(priceCopy.source(STORE_INFO.manapool))).not.toBeInTheDocument();
+  });
+
+  // Store preference (design #3200): inside the page's provider the stamp and the spoken sentence name the reader's
+  // store, and never Mana Pool.
+  it("names the reader's store in the stamp and the spoken figure", () => {
+    const { container } = render(
+      <StoreProvider store="tcgplayer">
+        <CommanderRow item={view({ priceOk: true, price: { kind: "priced", cents: 1840 } })} />
+      </StoreProvider>,
+    );
+
+    expect(screen.getByText("tcgplayer")).toBeInTheDocument();
+    expect(screen.getByText("$18.40, in stock at TCGplayer")).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/mana ?pool/i);
+  });
+
+  it("says the reader's store has none in stock", () => {
+    render(
+      <StoreProvider store="tcgplayer">
+        <CommanderRow item={view({ priceOk: true, price: { kind: "notStocked" } })} />
+      </StoreProvider>,
+    );
+
+    expect(screen.getByText("TCGplayer has none in stock")).toBeInTheDocument();
   });
 });
 

@@ -49,7 +49,7 @@ describe("readPrices", () => {
   it("returns an empty map when the price read rejects", async () => {
     const reject = () => Promise.reject(new Error("feed down"));
 
-    await expect(readPrices(["a"], reject)).resolves.toEqual({ prices: new Map(), ok: false });
+    await expect(readPrices(["a"], "manapool", reject)).resolves.toEqual({ prices: new Map(), ok: false });
   });
 
   // The other half, and not a formality: a wrapper that swallowed EVERYTHING
@@ -57,14 +57,22 @@ describe("readPrices", () => {
   it("passes the rows through when the read succeeds", async () => {
     const rows = new Map([["a", { oracleId: "a", liveCents: 100, everPriced: true, live: true }]]);
 
-    await expect(readPrices(["a"], async () => rows)).resolves.toEqual({ prices: rows, ok: true });
+    await expect(readPrices(["a"], "manapool", async () => rows)).resolves.toEqual({ prices: rows, ok: true });
   });
 
   it("hands the ids it was given to the read", async () => {
     const seen: string[][] = [];
 
-    await readPrices(["a", "b"], async (ids) => { seen.push(ids); return new Map(); });
+    await readPrices(["a", "b"], "manapool", async (ids) => { seen.push(ids); return new Map(); });
 
     expect(seen).toEqual([["a", "b"]]);
+  });
+
+  it("hands the reader's store to the read", async () => {
+    const seen: string[] = [];
+
+    await readPrices(["a"], "tcgplayer", async (_ids, store) => { seen.push(store); return new Map(); });
+
+    expect(seen).toEqual(["tcgplayer"]);
   });
 });

@@ -13,16 +13,29 @@ vi.mock("../../../../lib/flags/request", () => ({
 }));
 vi.mock("../../../../lib/home/summary", () => ({ getCollectionStats: async () => ({ uniqueCards: 10 }) }));
 vi.mock("../../../../lib/sets/lane-printed-in", () => ({ lanePrintedInFor: async () => null }));
+const loaded = vi.hoisted(() => ({ store: [] as unknown[] }));
 vi.mock("../../../../lib/discovery/payload", () => ({
-  loadDiscoveryPayload: async () => ({ encoded: encodeDiscovery(list), oracleIds: [], basis: "classifier", fellBack: true }),
+  loadDiscoveryPayload: async (_u: string, _sort: string, _env: unknown, store: unknown) => (
+    loaded.store.push(store), { encoded: encodeDiscovery(list), oracleIds: [], basis: "classifier", fellBack: true }
+  ),
 }));
+vi.mock("../../../../lib/stores/preference", () => ({ readerStoreForPage: async () => "tcgplayer" }));
 vi.mock("../../../../components/commanders/discovery-view", () => ({ DiscoveryView: () => null }));
 
 const { default: DiscoverPage } = await import("./page");
+type Page = ReactElement<{ children: ReactElement<{ store: string; children: ReactElement<{ basis: string }> }> }>;
 
 describe("/discover", () => {
   it("hands the view the basis the payload was counted by", async () => {
-    const page = (await DiscoverPage({ searchParams: Promise.resolve({}) })) as ReactElement<{ children: ReactElement<{ basis: string }> }>;
-    expect(page.props.children.props.basis).toBe("classifier");
+    const page = (await DiscoverPage({ searchParams: Promise.resolve({}) })) as Page;
+    expect(page.props.children.props.children.props.basis).toBe("classifier");
+  });
+
+  // Store preference: the payload is priced at the reader's store, and the rows draw inside that store's provider.
+  it("reads the payload at the reader's store and provides that store to the rows", async () => {
+    loaded.store.length = 0;
+    const page = (await DiscoverPage({ searchParams: Promise.resolve({}) })) as Page;
+    expect(loaded.store).toEqual(["tcgplayer"]);
+    expect(page.props.children.props.store).toBe("tcgplayer");
   });
 });
