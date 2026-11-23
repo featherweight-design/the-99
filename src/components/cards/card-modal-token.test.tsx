@@ -87,4 +87,15 @@ describe("a token's card details", () => {
     // Nor the phone link-out's hairline strip, which would hold nothing.
     expect(document.querySelector('div.md\\:hidden.mt-\\[14px\\]')).toBeNull();
   });
+
+  // Another store (store preference): the token links that store's search for its name, priced or not, and the
+  // payload names the store the modal draws its words from.
+  it("links another store's search for the token and names the store, priced or not", () => {
+    for (const priced of [true, false]) {
+      const card = assembleTokenDetail(TOKEN, PRINTINGS, priced ? (PRICE as never) : null, NEWEST, [], "tcgplayer");
+      expect(card.priceStore).toBe("tcgplayer");
+      expect(card.tokenBuyUrl).toBe("https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Goblin");
+    }
+    expect(assembleTokenDetail(TOKEN, PRINTINGS, null, NEWEST).tokenBuyUrl).toBeNull();
+  });
 });

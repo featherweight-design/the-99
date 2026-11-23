@@ -191,6 +191,10 @@ describe("toViews", () => {
       outbound: "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Sol%20Ring",
       store: "tcgplayer",
     });
+    // A two-faced card is searched by its front face, which the store lists it under.
+    const dfc = new Map([["g", { oracleId: "g", name: "Delver of Secrets // Insectile Aberration", image: null, art: null, colorIdentity: null, layout: "transform" }]]);
+    expect(toViews([drop], { ...empty, cards: dfc }, "cardkingdom")[0].outbound)
+      .toBe("https://www.cardkingdom.com/catalog/search?search=header&filter%5Bname%5D=Delver%20of%20Secrets");
   });
 
   it("gives a spare request (a later round) no press", () => {
@@ -275,6 +279,8 @@ describe("the feed's card lookups carry the card's colour identity", () => {
     expect(text(setCardsQuery(["sos"]))).toContain("sc.color_identity as identity");
     expect(text(preconCommandersQuery(["f"]))).toContain("pcc.color_identity as identity");
     expect(text(feedCardsQuery(["c"]))).toContain("fc.color_identity as identity");
+    // The layout decides the name another store searches (`storeSearchName`): a two-faced card's front face.
+    expect(text(feedCardsQuery(["c"]))).toContain("fc.layout as layout");
   });
 });
 

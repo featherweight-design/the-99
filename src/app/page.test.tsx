@@ -108,6 +108,13 @@ describe("Home's store", () => {
     // Keyed on the store, so a store change never serves the other store's cached total.
     expect(cacheKeys.seen.at(-1)?.at(-1)).toBe("tcgplayer");
   });
+
+  it("reads the feed in the reader's store, so a price drop's press goes there", async () => {
+    rollup.store.mockResolvedValue("tcgplayer");
+    stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, unseen: 0, on: [] });
+    await HomePage();
+    expect(stub.loadFeed).toHaveBeenCalledWith("user_1", expect.anything(), expect.any(Date), undefined, "tcgplayer");
+  });
 });
 
 describe("Home's arrivals banner", () => {
