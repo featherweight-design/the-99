@@ -10,7 +10,7 @@ Read with the handoff README (calls 1 to 5, the Decisions, the engagement metric
 |---|---|---|
 | 1 | **G22's premise is wrong.** `LEAD_PRIORITY` (`src/lib/feed/kinds.ts:77`) already ranks `spare-request` first, ahead of `trade-match`. `leadStory` skips items that are not unseen and answer items. The desktop frame's trade match led because the offer had been seen, not because of rank. | Decided in §4. The work stays in PR G, which is held. |
 | 2 | **The Consider retarget list misses call sites.** These are `last-slots-strip.tsx:78` (`onConsider`), `builder-shell.tsx` 1472 (`pendingShelf`), 1870, 1958, 2097 and 2228, `deck-open-loading.tsx:42,109`, `builder-screen.ts:32` and `deckViewSearch` (`builder-view.ts:71`). The `?tab=consider` tests are in builder-view, builder-screen, builder-initial-view and help-root. The URL is `?tab=consider`; G6's `?view=consider` names a parameter that does not exist. | B1 owns every site on this list (§3). |
-| 3 | **Moments.** G6 moves M3 and M4 and keeps M2 "for the reading". M2 is `suggested-changes` (`src/lib/moments/registry.ts:20`), not the reading. All three anchor on the Analysis tab button (`builder-shell.tsx:1541-1559`, merged into `analysisTabRef`), each eligible only while Analysis is not the open tab. | **All three anchors move to the Tuning tab button**, eligible while Tuning is not open. The shortcut anchors stay where they are: M3 on the to-do card (`todo-card.tsx:308`) and M4 on the land cell (`role-counter-cell.tsx:76`). B2 builds this. |
+| 3 | **Moments.** G6 moves M3 and M4 and keeps M2 "for the reading". M2 is `suggested-changes` (`src/lib/moments/registry.ts:20`), not the reading. All three anchor on the Analysis tab button (`builder-shell.tsx:1539-1559`, merged into `analysisTabRef`), each eligible only while Analysis is not the open tab. | **All three anchors move to the Tuning tab button**, eligible while Tuning is not open. The shortcut anchors stay where they are: M3 on the to-do card (`todo-card.tsx:308`) and M4 on the land cell (`role-counter-cell.tsx:76`). B2 builds this. |
 | 4 | **`TOOLS` has no `consider` or `overview` entry,** and the welcome sheet's Which deck needs it most? row (`find-a-deck-read`) has no landing. `TOOLS` also drives About's Tools showcase (`showcase.ts`), so adding an entry would add an About card that was not drawn. The status line `14 you own · 26 to buy` has no loading or zero state drawn. | §5, gaps Y1 and Y2. |
 | 5 | **Undrawn states.** Tuning on a brew or a deck with no data; Consider's desktop toolbar inside the hub (G5); the Home panel's popover on a short viewport; Ask on a tool whose switch is off for the reader. | §5, gaps Y3 to Y6. None needs a Design item. |
 | 6 | **STATES.md, R8 row** still reads `Choose your notifications`. R9 renamed it to `Choose notifications`. | Errata row in READINESS. The build uses `Choose notifications` (G17). |
@@ -42,7 +42,7 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
 - `deckViewOf` (`builder-screen.ts`) and About's `DeckView` map `tuning` to `analysis`. So does `help-root.tsx:61` through `deckViewSearch`.
 - `src/app/decks/[id]/page.tsx` (`readBuilderView`/`initialBuilderView`) passes `tuning` through.
 - `tools.ts` lands the three tune tools on `tuning` (same screen in B1), with the `tools.test` and `fits-view.test` expectations.
-- `ToolLands`' deck form gains an optional hub `tool`, and `HubRequest` (`tuning-hub.tsx:163`) gains `consider`, which is unused until B2.
+- `ToolLands`' deck form gains an optional hub `tool`, and `HubRequest` (`tuning-hub.tsx:46`) gains `consider`, which is unused until B2.
 - Files: `builder-view.ts`, `builder-screen.ts`, `page.tsx`, `help-root.tsx`, `tools.ts`, `tuning-hub.tsx` (the type only), `builder-shell.tsx` (the view switch only), and their tests.
 - Events: none.
 
@@ -52,12 +52,13 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
 - The hub moves into Tuning, so Analysis is the reading alone. The hub's h2 becomes `sr-only` and its top rule goes.
 - Consider is the hub's first tile, spanning both columns from md, and opens `ConsiderPanel` in place.
 - Every way in is retargeted to `setView("tuning")`:
-  - `builder-shell.tsx`: 1472 (`pendingShelf`), 1563 (`proposedCutsPress`), 1870 (`onConsider`), 1923 (mana), 1930 (the role cell's Suggest), 1958, 2097 and 2228
+  - `builder-shell.tsx`: 1472 (`pendingShelf`), 1564 (`proposedCutsPress`), 1870 (`onConsider`), 1923 (mana), 1930 (the role cell's Suggest, which today presses the hub without a `setView` and gains one), 1958, 2097 and 2228
   - `deck-open-loading.tsx:42,109`
   - `last-slots-strip.tsx:78`
   - `builder-tab-specs.ts`
   - `use-tool-landing.ts`
-- Moments: `offAnalysis` (1540) becomes `view !== "tuning"`. The merged ref moves to the Tuning tab button, and the `anchor={{ view: "analysis" }}` at 1956 changes to `tuning`. M2, M3 and M4 all move. The shortcut anchors stay.
+  - These stay on Analysis because they open the reading: `builder-shell.tsx` 1691 (`onOpenBracket`), 2077 (`onOpenAnalysis`), 2415 (the notices' `toTab`) and `read-row.tsx:104`.
+- Moments: `offAnalysis` (1539) becomes `view !== "tuning"`. The merged ref moves to the Tuning tab button, and the `anchor={{ view: "analysis" }}` at 1956 changes to `tuning`. M2, M3 and M4 all move. The shortcut anchors stay.
 - Files: about 14. `builder-shell.tsx`, `tuning-hub.tsx`, `builder-tab-specs.ts`, `builder-view.ts`, `deck-open-loading.tsx`, `last-slots-strip.tsx`, `use-tool-landing.ts`, `src/lib/copy/tuning-hub.ts`, the tests (`builder-tab-specs`, `builder-tabs`, `builder-shell-nudges`, `tuning-hub*`, `builder-initial-view`, `use-visit-receipts`).
 - Events: `tuning_opened` with `from` = `tab` or `url`, and `tool` = `consider`, `history`, `suggested`, `mana` or `cuts`. `ask` and `welcome_sheet` come with D and C.
 
@@ -70,7 +71,7 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
 
 - Every row gets Try it. `overview` lands on the most recent deck's Analysis tab. `find-a-deck-read` lands on `/collection?avail=free`. The new Where lines apply.
 - The free block (Consider, Find a deck) is added in all three shapes, on Home's strip and on the /credits Welcome cell's sheet.
-- `tourCreditsFor` (`welcome-sheet.ts:115`) keeps listing only the spenders, so the free block stays out of it. A test pins this.
+- `tourCreditsFor` (`welcome-sheet.ts:110`) keeps listing only the spenders, so the free block stays out of it. A test pins this.
 - Landings, Y1.
 - `freeLine` is tightened (§7). The PR body flags it as the one approved string changed.
 - Files: `welcome-sheet.ts`, `tools.ts` (`LANDINGS`), `fits.ts`, `showcase-input.ts`, `welcome-read.ts`, `src/lib/copy/discovery.ts`, the sheet components, and their tests.
