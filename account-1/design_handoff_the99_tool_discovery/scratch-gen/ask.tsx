@@ -60,6 +60,35 @@ export function Starters({ heading = askCopy.starters.heading, pad = true }: { h
   );
 }
 
+/** R7 alternative C: the search as one compact field in the page head; the starters live in its open state (A0). */
+export function HeadSearch() {
+  return (
+    <div data-head-search className="px-[16px] pt-[12px] sm:order-none sm:flex-none sm:p-0 sm:w-[420px] sm:self-end">
+      <div className="flex h-[48px] w-full items-center gap-[10px] rounded-[10px] bg-[color:var(--surface)] px-[14px] text-[15px] sm:h-[40px] sm:text-[14px] [border:1px_solid_color-mix(in_srgb,var(--accent)_60%,var(--border-strong))] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_10%,transparent)]">
+        <span className="text-[color:var(--accent)]"><SearchGlyph size={18} stroke={1.9} /></span>
+        <span className="min-w-0 flex-1 truncate text-[color:var(--fg-muted)]">{askCopy.placeholder}</span>
+        <kbd aria-hidden className="hidden rounded-[5px] px-[6px] py-[2px] font-mono text-[10.5px] text-[color:var(--fg-faint)] [border:1px_solid_var(--border-strong)] sm:inline">⌘K</kbd>
+      </div>
+    </div>
+  );
+}
+
+/** R7 first run, option B: an unnumbered row among the checklist's own rows, for any card (no collection yet, so no starters). */
+export const firstRunSearchCopy = { title: "Look up any card", line: "Search every Commander card, before you add yours." };
+export function FirstRunSearchRow() {
+  return (
+    <div data-first-run-search className="flex min-h-[56px] items-center gap-[12px] rounded-[14px] [border:1px_solid_var(--border-strong)] bg-[color:var(--surface-rail)] p-[12px_15px] font-sans">
+      <span aria-hidden className="flex h-[22px] w-[22px] flex-none items-center justify-center text-[color:var(--accent)]"><SearchGlyph size={18} stroke={1.9} /></span>
+      <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+        <b className="font-display text-[15px] font-semibold text-[color:var(--fg)]">{firstRunSearchCopy.title}</b>
+        <span className="text-[12px] text-[color:var(--fg-muted)]">{firstRunSearchCopy.line}</span>
+      </span>
+      <kbd aria-hidden className="hidden rounded-[5px] px-[6px] py-[2px] font-mono text-[10.5px] text-[color:var(--fg-faint)] [border:1px_solid_var(--border-strong)] sm:inline">⌘K</kbd>
+      <span aria-hidden className="text-[color:var(--fg-faint)] sm:hidden">›</span>
+    </div>
+  );
+}
+
 /** One tool answer: the search row's frame, a mark tile in place of the card, the tool's shipped line, the reader's
  *  own number when there is one, and where it lands. A press goes there (the tool's `lands`, as Try it). */
 function AnswerRow({ a, first }: { a: Answer; first: boolean }) {
@@ -213,7 +242,7 @@ function Fan({ art, small = false }: { art: string[]; small?: boolean }) {
     </div>
   );
 }
-export function HomeSearchPanel({ art, query = "", open = null }: { art: string[]; query?: string; open?: any }) {
+export function HomeSearchPanel({ art, query = "", open = null, foot = null }: { art: string[]; query?: string; open?: any; foot?: any }) {
   return (
     <section aria-label={homeSearchCopy.title}
       className="relative overflow-visible rounded-[12px] px-[16px] pt-[14px] pb-[14px] md:px-[20px] md:pt-[16px] md:pb-[16px] [border:1px_solid_color-mix(in_srgb,var(--accent)_55%,var(--border))]"
@@ -251,6 +280,11 @@ export function HomeSearchPanel({ art, query = "", open = null }: { art: string[
           </li>
         ))}
       </ul>
+      {foot ? (
+        <div data-panel-foot className="relative -mx-[16px] -mb-[14px] mt-[14px] border-t border-solid border-[color:color-mix(in_srgb,var(--accent)_30%,var(--border))] px-[4px] md:-mx-[20px] md:-mb-[16px] md:px-[8px] [&_[data-welcome-strip]]:!border-0 [&_[data-welcome-strip]]:!bg-transparent">
+          {foot}
+        </div>
+      ) : null}
     </section>
   );
 }

@@ -57,3 +57,9 @@ export const homeSearchCopy = {
   title: "Not sure where to go?",
   line: "Ask a question, or look up any card.",
 };
+
+// R7, first run option B (Q12 B only).
+export const firstRunSearchCopy = {
+  title: "Look up any card",
+  line: "Search every Commander card, before you add yours.",
+};

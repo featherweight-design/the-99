@@ -1,4 +1,4 @@
-# States · Finding the tools R6
+# States · Finding the tools R7
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -57,3 +57,17 @@
 | Phone, field pressed | The full-screen search sheet, nothing typed. |
 | A starter pressed | Desktop: typed into the panel's field, answers in place. Phone: the sheet with it typed. |
 | A starter whose tool cannot answer this reader (no deck for Find a deck) | That starter is left out; the row closes up. |
+
+## Home order · R7 (Q11 A, recommended)
+| State | Draws |
+|---|---|
+| Reader with welcome credits | The panel with the shipped strip as its foot (no edge, no fill); no separate strip. |
+| Credits line closed (✕) or lot gone | The panel without its foot. |
+| Feed with items | What's new directly under the lead story, then the decks. |
+| Busy day | Banner, Rule 0's cards, the panel, the lead, What's new, decks; Commitments and Friends in the rail. |
+
+## First run · R7 (Q12 A, recommended)
+| State | Draws |
+|---|---|
+| No collection | First run as shipped; no panel. Search through the magnifier and ⌘K. |
+| Option B | An unnumbered `Look up any card` row after step 3; a press opens the card search, nothing typed. |

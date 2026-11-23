@@ -1,6 +1,6 @@
-# READINESS · Finding the tools R6
+# READINESS · Finding the tools R7
 
-**Verdict: Amber, for Hugh's review.** Three open questions (README, Q8, Q9 and Q10). Every gap below has an answer proposed.
+**Verdict: Amber, for Hugh's review.** Five open questions (README, Q8 to Q12). Every gap below has an answer proposed.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -38,6 +38,10 @@
   listbox component in its own anchored popover from md (Q9 A), and on a phone calls `openSearch` (`?q=` for a starter).
   Only one is open at a time: opening the rail's search closes the panel's list. The fan reads the three most recent adds
   the Recent cards list already loads; no new query.
+- **G15 · Credits in the panel (R7, Q11 A).** `WelcomeStrip` gains a `place: "panel"` that drops its edge and fill;
+  the page hands it to the panel as `foot` rather than to `props.welcome`. Its ✕ and dismiss action are unchanged.
+- **G16 · What's new under the lead (R7, Q11 A).** In `Dashboard`, `WhatsNew` renders right after `LeadSlot` and before
+  the resume block; below 1180 its `order-3` becomes `order-1` with the decks at `order-2`. No data change.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks

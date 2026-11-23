@@ -146,22 +146,41 @@ C8 = call("8", "Home in full, a busy day (R6)", ul([
   "On a phone on a busy day the panel starts at the fold (about 810px of 844); on desktop it sits under the two table cards, level with Commitments.",
   "Pressed on desktop (H6 open), the results drop over the welcome strip and the lead; nothing below moves."]))
 Q10 = q("Q10", "On a busy day, does the search panel sit under Rule 0's cards, or above them?", "Option A: under them (drawn): a table closing tonight and a game to log come first, then the panel. Option B: the panel first under the page head always, and Rule 0's cards under it.", "A. The table and the log run out; the panel is always there, and so are the magnifier and ⌘K. On a quiet day A and B draw the same.")
+C9 = call("9", "Reordering a busy Home (R7)", ul([
+  "<b>What is buried today (H6):</b> What's new sits under the decks, so the unseen rows are the page's last block; the welcome credits are a thin strip between two loud blocks (the panel and the lead), easy to scroll past.",
+  "<b>A · One welcome block, news together (recommended):</b> the welcome credits become the search panel's foot (the shipped strip, its edge dropped, its ✕ closes only that line). The credits exist to try the tools and the panel is where the tools are found, so they say one thing. What's new moves up under the lead story, so every notification is in one run; the decks follow. Rule 0's cards still lead.",
+  "<b>B · News first:</b> Rule 0's cards, the lead and What's new, then the panel (with the credits), then the decks. Notifications are never buried; the panel drops to about 1,700px on a phone on a busy day.",
+  "<b>C · Search in the head:</b> no panel. A 40px field in the page head beside Update collection (desktop) or under the buttons (phone), accent-edged; its starters show when it opens (A0). The credits strip stays, What's new moves under the lead. The shortest page, but it is close to R4's field, which read as easy to miss.",
+  "Every option keeps the shipped rules: the arrivals banner spans the page, Rule 0's cards lead the main column, Commitments and Friends keep the right rail."]))
+C10 = call("10", "Search on the first-run Home (R7)", ul([
+  "<b>A · Wait (recommended):</b> first run as shipped. It has one job, Add your collection, and step 1 already offers Add cards by hand (search by name). Every starter question is about the reader's cards or decks, so none could answer yet. The magnifier and ⌘K are there from the first visit. The panel, with the credits in its foot, arrives on the first Home after the collection is read.",
+  "<b>B · A row:</b> an unnumbered Look up any card row among the checklist's own rows (after step 3, before Add your friends), the same shape as Choose your news: any card in the catalog, no starters. A press opens the card search."]))
+Q11 = q("Q11", "How should a busy Home be ordered?", "A: the credits fold into the search panel and What's new moves up under the lead (drawn). B: notifications first, then the panel. C: the search as a field in the page head, no panel.", "A. It fixes both buried things with one move each, keeps the panel Hugh asked for, and turns two new-player blocks into one.")
+Q12 = q("Q12", "Does the first-run Home get search?", "A: no; it arrives with the first Home after the collection (drawn as shipped). B: a Look up any card row among the checklist's rows.", "A. First run has one job, the questions all need a collection, and step 1 already searches by name.")
 boards = {}
+boards["Order.dc.html"] = (1700, 5770, "Order and first run", page("Finding the tools R7: Home order and first run", 1700, 5770,
+ head("Home order, and search on first run (R7)", "The busy Home from H6 three ways, each rendered with the same reader (a table, a game to log, the arrivals banner, the lead, What's new with two unseen, welcome credits), and the first-run Home with and without search.")
+ + C9 + Q11
+ + row("Desktop · 1300, busy day", [dk("d-ra", "A · One welcome block, news together", "Credits in the panel's foot; What's new under the lead; decks after.", 500), dk("d-rb", "B · News first", "The lead and What's new, then the panel, then decks.", 500), dk("d-rc", "C · Search in the head", "A field beside the page head's buttons; no panel.", 500)])
+ + row("Phone · 390, busy day", [fig("p-ra", 300, "A · Phone", "The panel at the fold, its credits foot under it; then the lead, What's new, decks."), fig("p-rb", 300, "B · Phone", "Notifications first; the panel under What's new."), fig("p-rc", 300, "C · Phone", "The field under the buttons; the credits strip as shipped.")])
+ + C10 + Q12
+ + row("First run · desktop 1300", [dk("d-fa", "A · Wait (as shipped)", "No panel; the magnifier and ⌘K, and step 1's Add cards by hand.", 760), dk("d-fb", "B · A row", "Look up any card, unnumbered, after step 3.", 760)])
+ + row("First run · phone 390", [ph("p-fa", "A · Wait", "First run as shipped."), ph("p-fb", "B · A row", "The row before Add your friends.")])))
 boards["Home.dc.html"] = (1700, 4480, "Home in full", page("Finding the tools R6: Home in full", 1700, 4480,
  head("Home in full, a busy day (R6)", "Home with everything a reader can have at once, so the panel is judged in its real company: an open table, a game to log, the arrivals banner, the lead story, What's new with unseen rows, Commitments, Friends with a badge. Rendered from main 7563036 with the shipped components; names, figures and art are illustrative.")
  + C8 + Q10
  + row("Desktop · 1300 and phone · 390, at rest", [dk("d-full", "H6 · Desktop, busy day", "Banner, the table and the game to log, then the panel, the welcome strip, the lead, decks, What's new; Commitments and Friends on the right.", 1000), fig("p-full", 340, "H6 · Phone, busy day", "The same order in one column; the panel starts at the fold.")])
  + row("Desktop · 1300, typed on Home", [dk("d-full-open", "H6 · Results in place", "The dropdown drops over the welcome strip and the lead; the page under it does not move (Q9 A).", 1000)])))
-boards["Main.dc.html"] = (1600, 1740, "Main", page("Finding the tools R6: main", 1600, 1740,
- head("Finding the tools · R6",
+boards["Main.dc.html"] = (1600, 2000, "Main", page("Finding the tools R7: main", 1600, 2000,
+ head("Finding the tools · R7",
   "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R5 makes Home's search easier to notice and sets down what pressing it does on a phone and a desktop. Everything else is as R4. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
- + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10)."])
+ + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10).", "R7: three orders for a busy Home (Q11) and search on first run (Q12), on the Order and first run board."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
  + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C6 + C7 + '</div>'
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
  + '<div style="display:flex;gap:20px">' + fig("p-h4", 300, "Home, phone", "The panel, first under the page head.") + fig("p-a1", 300, "Pressed, phone", "The full-screen sheet; a starter types its question.") + '</div>'
  + '</div></div>'
- + Q10 + Q9 + Q8
+ + Q11 + Q12 + Q10 + Q9 + Q8
  + note("As R4", ["Ask in the card search: starters, Tools for this, never a dead end; one field, card names first.", "Find a deck: the tile button, the row strip (phone) and button (desktop), the call-out.", "Tuning and Welcome as R1, approved."])))
 
 boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a deck", 1700, 4560,
@@ -193,10 +212,10 @@ boards["Welcome.dc.html"] = (1700, 3700, "Welcome", page("Finding the tools: wel
 
 os.makedirs(out, exist_ok=True)
 for n, (w, h, t, html) in boards.items(): open(os.path.join(out, n), "w").write(html)
-order = ["Main.dc.html", "Home.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
+order = ["Main.dc.html", "Order.dc.html", "Home.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R6", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R7", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)

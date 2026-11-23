@@ -1,6 +1,11 @@
-# Finding the tools · R6
+# Finding the tools · R7
 
-Account 1, 2026-11-23. Status: **R6, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R7, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+
+**R7 (Hugh's R6 notes, 2026-11-23):** a busy Home buries What's new (last block) and the welcome credits (a thin strip
+between two loud blocks). Three orders drawn (Q11): A folds the credits into the search panel's foot and moves What's
+new up under the lead (recommended); B puts notifications first, then the panel; C swaps the panel for a field in the
+page head. First run (Q12): A waits for the collection (recommended), B adds a Look up any card row to the checklist.
 
 **R6 (Hugh's R5 notes, 2026-11-23):** the panel drawn in Home's full company on a busy day: the arrivals banner, an open
 Rule 0 table, a game to log, the welcome strip, the lead story, decks, What's new with unseen rows, Commitments, Friends
@@ -153,6 +158,13 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 - **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
   B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
+- **Q11 · How should a busy Home be ordered?** A (recommended): the welcome credits become the panel's foot (the shipped
+  strip, edge dropped, its ✕ closes only that line) and What's new moves under the lead story, decks after. B: Rule 0's
+  cards, the lead and What's new, then the panel, then decks. C: no panel; a 40px accent-edged field in the page head,
+  starters in its open state. Board: Order and first run.
+- **Q12 · Does the first-run Home get search?** A (recommended): no; first run keeps its one job, the starters all need a
+  collection, step 1 already offers Add cards by hand, and the magnifier is there. The panel arrives with the first Home
+  after the collection is read. B: an unnumbered `Look up any card` row after step 3, before Add your friends.
 - **Q10 · On a busy day, does the panel sit under Rule 0's cards, or above them?** A (drawn, recommended): under them; a
   table closing tonight and a game to log come first. B: the panel first under the page head always. Board: Home in full.
 - **Q9 · Desktop: does Home's field answer in place, or open the rail's search?** A (drawn, recommended): in place, under
@@ -163,6 +175,7 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 | File | What |
 |---|---|
+| `Order.dc.html` | R7: the busy Home three ways (A, B, C) on desktop and phone; first run with and without search |
 | `Home.dc.html` | H6 Home in full on a busy day, desktop and phone, and desktop typed in place (R6) |
 | `Main.dc.html` | What changed since R4, the answers, the open questions |
 | `Ask.dc.html` | A0 nothing typed, A1 a question, A3 nothing matches (desktop dropdown and phone sheet); H4 Home's search panel (R5), H5 desktop answering in place; H3 R4's field, kept for the record |

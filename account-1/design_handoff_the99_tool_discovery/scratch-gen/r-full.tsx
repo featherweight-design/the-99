@@ -4,7 +4,8 @@ import { shell } from "./shell";
 import { Dashboard } from "../src/components/home/dashboard";
 import { WelcomeStrip } from "../src/components/welcome/welcome-strip";
 import { named } from "../src/lib/person-name/mint";
-import { HomeSearchPanel, ToolAnswers, ANSWERS } from "./ask";
+import { HomeSearchPanel, ToolAnswers, ANSWERS, HeadSearch, FirstRunSearchRow } from "./ask";
+import { FirstRunChecklist } from "../src/components/home/first-run";
 const G = globalThis as any;
 const NOW = new Date("2026-11-23T15:00:00Z");
 const facts: any = { lot: "held", units: 3, left: 3, expiresAtMs: Date.UTC(2026, 10, 30, 12), days: 7, teaser: true, free: 1 };
@@ -42,9 +43,13 @@ const LOG: any = { gameMs: Date.parse("2026-11-20T03:00:00Z"), startedAt: new Da
   loggedAt: null, until: new Date("2026-11-27T11:00:00Z"), tableId: "7a0e0000-0000-4000-8000-000000000001", podName: named("Thursday night") };
 const ARRIVALS: any = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
 const ART = ["art/c-killian.jpg", "art/c-lathliss.jpg", "art/c-ghalta.jpg"];
-function full(name: string, dev: "phone" | "desk", panel: any = {}) {
+const SHEET: any = { shape: "decks", lead: [], line: null, rows: [] };
+function full(name: string, dev: "phone" | "desk", panel: any = {}, alt: "" | "a" | "c" = "") {
   G.__VW = dev === "desk" ? 1300 : 390; G.__INLINE = true; G.__BADGES = { home: 2, friends: 1 };
-  const strip = <><div className="order-0 relative z-[5]"><HomeSearchPanel art={ART} {...panel} /></div><WelcomeStrip facts={facts} sheet={null as any} place="dashboard" /></>;
+  const ws = <WelcomeStrip facts={facts} sheet={SHEET} place="dashboard" />;
+  const strip = alt === "a" ? <div className="order-0 relative z-[5]"><HomeSearchPanel art={ART} {...panel} foot={ws} /></div>
+    : alt === "c" ? <><div hidden data-head-holder><HeadSearch /></div>{ws}</>
+    : <><div className="order-0 relative z-[5]"><HomeSearchPanel art={ART} {...panel} /></div><WelcomeStrip facts={facts} sheet={null as any} place="dashboard" /></>;
   const html = shell(
     <Dashboard stats={{ totalCards: 4492, uniqueCards: 2926 }} lastUpdated={new Date("2026-11-21T12:00:00Z")} timeZone="UTC" ready={null}
       inUse={new Map()} decks={DECKS} commitments={{ inUse: 488, overCommitted: 2 } as any}
@@ -55,6 +60,17 @@ function full(name: string, dev: "phone" | "desk", panel: any = {}) {
   G.__VW = 0;
 }
 full("p-full", "phone");
+for (const dev of ["phone", "desk"] as const) {
+  const d = dev === "desk" ? "d" : "p";
+  full(`${d}-ra`, dev, {}, "a");
+  full(`${d}-rc`, dev, {}, "c");
+  for (const fr of ["fa", "fb"]) {
+    G.__VW = dev === "desk" ? 1300 : 390; G.__INLINE = true; G.__BADGES = undefined;
+    const html = shell(<FirstRunChecklist welcome={<WelcomeStrip facts={facts} sheet={SHEET} place="first-run" />} friends={{ friends: [], links: [], now: NOW.toISOString(), invites: null } as any} news commandersPlace
+      signature={fr === "fb" ? <FirstRunSearchRow /> : null} />, "/", null);
+    writeFileSync(`dz/frames/${d}-${fr}.html`, html);
+  }
+}
 full("d-full", "desk");
 full("d-full-open", "desk", { query: "where do my spare cards go", open: <ToolAnswers answers={ANSWERS.spares} /> });
 console.log("ok");
