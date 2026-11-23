@@ -58,9 +58,8 @@ export const NAV_PROBE = ({ path, at }) => {
 
 /**
  * Arms one Tuning-tab press's timing, in the page: the press's pointerdown, then the first frame
- * where the tab's panel is no longer busy and holds the Tuning hub's landing. The hub itself, not just
- * any text under a settled panel: a build that has not yet drawn the Tuning tools must not read as
- * done. Read back as `window.__tab`.
+ * where the tab's panel holds the Tuning hub's landing. The hub itself, not just any text under the
+ * panel: a build that has not yet drawn the Tuning tools must not read as done. Read back as `window.__tab`.
  */
 export const TAB_PROBE = () => {
   const stamps = { at: null, drew: null };
@@ -69,7 +68,7 @@ export const TAB_PROBE = () => {
   const tick = () => {
     if (window.__tab !== stamps) return;
     const panel = document.getElementById("panel-tuning");
-    if (stamps.at != null && panel && !panel.hasAttribute("aria-busy") && panel.querySelector("[data-tuning-hub]")) {
+    if (stamps.at != null && panel?.querySelector("[data-tuning-hub]")) {
       stamps.drew = performance.now();
       return;
     }

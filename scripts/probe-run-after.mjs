@@ -83,7 +83,7 @@ async function accountDeckIds(page) {
     .map((a) => a.getAttribute("href").split("/")[2]).filter((id) => /^[0-9a-f-]{36}$/.test(id)), PAGE);
 }
 
-async function openAnalysis(page, deckId, heading, tool) {
+async function openTuning(page, deckId, heading, tool) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
   const tab = onPageRole(page, "tab", /^Tuning/).first();
   await tab.waitFor({ timeout: 30_000 });
@@ -104,7 +104,7 @@ async function leg(browser, label, tool, hubTool, deckId, heading, button, made)
   const context = await browser.newContext({ viewport: { width: 1300, height: 900 } });
   const page = await context.newPage();
   await signIn(page);
-  await openAnalysis(page, deckId, heading, hubTool);
+  await openTuning(page, deckId, heading, hubTool);
   await onPageRole(page, "button", button).first().click();
   let run = null;
   for (let i = 0; i < 100 && !run; i += 1) {

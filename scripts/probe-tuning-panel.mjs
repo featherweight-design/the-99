@@ -176,7 +176,7 @@ async function removeFixture(handle) {
   if (handle.callId) await sql`delete from model_calls where id = ${handle.callId}`.catch((e) => console.error("cleanup call:", e));
 }
 
-async function openAnalysis(page, deckId) {
+async function openTuning(page, deckId) {
   await page.goto(`${BASE}/decks/${deckId}`, { waitUntil: "domcontentloaded" });
   // Suggested changes lives on the Tuning tab (tool discovery B2): press the tab, then its tile when the hub draws one.
   const tab = onPageRole(page, "tab", /^Tuning/).first();
@@ -232,7 +232,7 @@ const measure = (page) =>
 
 async function walk(page, deck, width, phase) {
   await page.setViewportSize(width.viewport);
-  await openAnalysis(page, deck.id);
+  await openTuning(page, deck.id);
   const m = await measure(page);
   const tag = `${width.label} ${phase}`;
   // PROBE_SHOTS=<dir> saves the panel at each width and phase, for the design review.

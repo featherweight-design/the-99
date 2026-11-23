@@ -191,7 +191,7 @@ async function run() {
       const first = Math.min(...content.map(([, p]) => p.at));
       const late = content.filter(([, p]) => p.at - first > 50);
       const above = late.filter(([, p]) => content.some(([, q]) => q.at < p.at - 50 && q.top >= p.top));
-      report(at("the tab's parts paint together, once the loader lets go"), content.length >= 2 && late.length === 0,
+      report(at("the tab's parts paint together, once the loader lets go"), Boolean(parts.verdict && parts.overview) && late.length === 0,
         JSON.stringify(parts));
       report(at("nothing paints above a part already on screen"), above.length === 0,
         above.length ? above.map(([n]) => n).join(", ") : "none");
