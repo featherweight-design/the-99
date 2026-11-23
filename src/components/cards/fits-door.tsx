@@ -12,19 +12,9 @@ import { useMomentAnchor } from "../moments/moments-provider";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
 import { captureToolEvent } from "../../lib/analytics/posthog";
+import { FitsGlyph } from "./fits-glyph";
 
 const copy = swapToolsCopy.fits;
-
-/** The door's two-diamond glyph, drawn rather than typed so it takes the accent's outline. */
-export function FitsGlyph() {
-  return (
-    <span aria-hidden="true" className="flex gap-[3px]">
-      {[0, 1].map((i) => (
-        <span key={i} className="w-[6px] h-[6px] rotate-45 border-[1.5px] border-[color:var(--accent)]" />
-      ))}
-    </span>
-  );
-}
 
 export function FitsDoor({
   cardName,

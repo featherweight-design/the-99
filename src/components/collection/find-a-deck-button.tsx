@@ -3,7 +3,7 @@
 // (tool discovery call 1, `Find.dc.html` F1 and R4). A sibling of the tile or row, never nested in it: both are
 // buttons. It opens the card window straight on the shipped Find a deck view.
 
-import { FitsGlyph } from "../cards/fits-door";
+import { FitsGlyph } from "../cards/fits-glyph";
 import { findADeckCopy as copy } from "../../lib/copy/find-a-deck";
 import type { FindADeckFrom } from "../../lib/analytics/tool-events";
 

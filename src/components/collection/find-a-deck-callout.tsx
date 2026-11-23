@@ -7,7 +7,7 @@ import { useAuth } from "@clerk/nextjs";
 import { useRef, useState } from "react";
 import { closeFindADeckAction } from "../../app/collection/find-a-deck-actions";
 import { findADeckCopy as copy } from "../../lib/copy/find-a-deck";
-import { FitsGlyph } from "../cards/fits-door";
+import { FitsGlyph } from "../cards/fits-glyph";
 
 const RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 
