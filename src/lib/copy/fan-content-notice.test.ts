@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { FAN_CONTENT_POLICY_URL, fanContentNotice, passageOneParts, policyLinkAria } from "./fan-content-notice";
+import { STORE_INFO } from "../stores/info";
+import { FAN_CONTENT_POLICY_URL, fanContentNotice, passageOneParts, passageTwoFor, policyLinkAria } from "./fan-content-notice";
 
 // The notice's words are Hugh's (L4). They live in the brief; this pins the code to them, so a change has to change the brief first.
 const brief = readFileSync(join(process.cwd(), "docs/superpowers/design-briefs/2026-10-17-fan-content-notice.md"), "utf8");
@@ -36,5 +37,15 @@ describe("the locked notice text", () => {
     expect(JSON.stringify(fanContentNotice)).not.toContain("—");
     expect(FAN_CONTENT_POLICY_URL).toBe("https://company.wizards.com/en/legal/fancontentpolicy");
     expect(policyLinkAria).toBe("Fan Content Policy, opens in a new tab");
+  });
+});
+
+describe("passage two follows the reader's store", () => {
+  it("is the locked text for Mana Pool, and names the store in both places for the others", () => {
+    expect(passageTwoFor(STORE_INFO.manapool.name)).toBe(fanContentNotice.passageTwo);
+    expect(passageTwoFor(STORE_INFO.tcgplayer.name)).toContain("prices from TCGplayer.");
+    expect(passageTwoFor(STORE_INFO.tcgplayer.name)).toContain("Scryfall or TCGplayer.");
+    expect(passageTwoFor(STORE_INFO.cardkingdom.name)).not.toContain("Mana Pool");
+    for (const info of Object.values(STORE_INFO)) expect(passageTwoFor(info.name)).not.toContain("—");
   });
 });

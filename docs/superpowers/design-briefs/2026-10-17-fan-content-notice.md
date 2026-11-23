@@ -40,6 +40,11 @@ the same, nothing left out by omission (L1), and as quietly as a footer can be: 
 
    Design sets it and may break it across lines; Design does not reword it. Any change to the words goes through
    Hugh and `/copy-review`.
+
+   **Ruling, 2026-11-23 (Hugh, via the orchestrator):** the quoted passage is the Mana Pool reading. With store
+   preference on, passage two names the reader's price store in both places it says Mana Pool (`passageTwoFor` in
+   `src/lib/copy/fan-content-notice.ts`); a signed-out reader and every reader with the switch off read the quote above
+   unchanged.
 2. **On every page, signed in or out**, and on /about and the Terms (the About placement is a later PR, A2, on the
    existing About layout; the Terms carry it in /terms below).
 3. **Subtle:** small, muted, Scryfall-style footer text. It is not a banner, a bar that stays on screen, a modal or a

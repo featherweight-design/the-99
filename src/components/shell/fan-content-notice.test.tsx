@@ -3,7 +3,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
-import { fanContentNotice, FAN_CONTENT_POLICY_URL, policyLinkAria } from "../../lib/copy/fan-content-notice";
+import { fanContentNotice, FAN_CONTENT_POLICY_URL, passageTwoFor, policyLinkAria } from "../../lib/copy/fan-content-notice";
 import { contrast } from "../../lib/theme/color";
 import { parseThemeBlocks } from "../../lib/theme/parse-css";
 import { FanContentNotice } from "./fan-content-notice";
@@ -25,6 +25,14 @@ describe("FanContentNotice", () => {
     expect(paragraphs).toEqual([fanContentNotice.passageOne, fanContentNotice.passageTwo]);
     expect(footer.querySelectorAll("a")).toHaveLength(1);
     expect(footer.querySelectorAll("button, input, [role='button']")).toHaveLength(0);
+  });
+
+  it("credits the reader's store in passage two, and Mana Pool when none is given", () => {
+    render(<FanContentNotice store="cardkingdom" />);
+    expect(document.querySelectorAll("footer p")[1].textContent).toBe(passageTwoFor("Card Kingdom"));
+    cleanup();
+    render(<FanContentNotice />);
+    expect(document.querySelectorAll("footer p")[1].textContent).toBe(fanContentNotice.passageTwo);
   });
 
   it("links Wizards' policy in a new tab, with the accessible name saying so, and hides the arrow from readers", () => {

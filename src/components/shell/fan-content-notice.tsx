@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
-import { FAN_CONTENT_POLICY_URL, passageOneParts, fanContentNotice, policyLinkAria } from "../../lib/copy/fan-content-notice";
+import { FAN_CONTENT_POLICY_URL, passageOneParts, passageTwoFor, policyLinkAria } from "../../lib/copy/fan-content-notice";
+import { STORE_INFO } from "../../lib/stores/info";
+import type { Store } from "../../lib/stores/rows";
 import { LinkOutLabel } from "../ui/link-out-icon";
 
 /**
  * The Fan Content notice (launch epic A1; design `design_handoff_the99_fan_content_notice`, approved R2). A small legal line
  * after every page, signed in or out. It is page content, never `position: fixed`, never dismissible, and it carries no state:
- * a server component with no request API, which is also what lets another layout render it unchanged.
+ * a server component with no request API, which is also what lets another layout render it unchanged. The one input is
+ * `store`, the reader's price store (the shell reads it; signed out, and unset, it is Mana Pool, the locked text).
  *
  * INK IS `--fg-muted` ALONE (measured 6.61 to 7.35:1 on `--bg` in all six themes, `fan-content-notice.test.tsx`). It was ruled
  * when `--fg-faint` failed 4.5:1 in two themes; the text inks addendum has since lifted the faint ink, and the notice keeps the
@@ -16,7 +19,7 @@ import { LinkOutLabel } from "../ui/link-out-icon";
  * bare signed-out branch (`align="center"`, with its own gutter and the device's bottom inset). The signed-in column's own
  * bottom reserve clears the tab bar and the sheets, and reads the locked 88px.
  */
-export function FanContentNotice({ align = "start", lead }: { align?: "start" | "center"; lead?: ReactNode }) {
+export function FanContentNotice({ align = "start", lead, store = "manapool" }: { align?: "start" | "center"; lead?: ReactNode; store?: Store }) {
   const centered = align === "center";
   const parts = passageOneParts();
   return (
@@ -48,7 +51,7 @@ export function FanContentNotice({ align = "start", lead }: { align?: "start" | 
           </a>
           {parts.after}
         </p>
-        <p className="m-0 mt-[6px]">{fanContentNotice.passageTwo}</p>
+        <p className="m-0 mt-[6px]">{passageTwoFor(STORE_INFO[store].name)}</p>
       </div>
     </footer>
   );
