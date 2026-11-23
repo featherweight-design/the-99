@@ -34,6 +34,7 @@ export const DECK_VIEW_NAMES: Record<DeckView, string> = {
   stats: 'Stats',
   notes: 'Notes',
   analysis: 'Analysis',
+  tuning: 'Tuning',
   games: 'Games',
   versions: 'Versions',
 };

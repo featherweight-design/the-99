@@ -2399,6 +2399,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   Analysis carries no hub; and the retired `?tab=consider` arrives on Tuning with Consider open. Read
   only, loopback `PROBE_BASE` only. On main the first check fails: there is no Tuning tab.
 
+- `pnpm probe:tuning-about` (tool discovery B3) presses the Tuning tab and then the ? at 390x844 (the
+  header's) and 1300x900 (the rail's): About opens on `/about/decks#tuning`, a section named Tuning that draws
+  the Suggested changes, Proposed cuts and Mana Balance labels (still keyed `decks/analysis/*`), and the
+  Analysis section draws none of them; the ? on Analysis still opens `#analysis`. Read only, loopback
+  `PROBE_BASE` only. On main the first check fails: Tuning read as Analysis, so the ? landed on `#analysis`.
+
 - `probe:tuning-hub-stays-put` (retired with tool discovery B2): it held the Tuning hub still on the
   Analysis tab through an Analyze press. The hub now has its own tab, so the two never share a screen.
 

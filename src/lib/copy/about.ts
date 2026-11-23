@@ -26,7 +26,7 @@ export const ABOUT_SCREENS = [
 export type AboutScreen = (typeof ABOUT_SCREENS)[number];
 
 /** A deck's views, as the "?" reads them from the builder's live state. */
-export const DECK_VIEWS = ['your-deck', 'shopping', 'stats', 'notes', 'analysis', 'games', 'versions'] as const;
+export const DECK_VIEWS = ['your-deck', 'shopping', 'stats', 'notes', 'analysis', 'tuning', 'games', 'versions'] as const;
 export type DeckView = (typeof DECK_VIEWS)[number];
 
 /**

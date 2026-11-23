@@ -1,4 +1,4 @@
-import { showMeLabel, unseenUnits, type VisibleSection } from "../about/pages-visible";
+import { labelAt, showMeLabel, unseenUnits, type VisibleSection } from "../about/pages-visible";
 import type { Shot } from "../about/shots";
 import type { SeenState } from "../about/visible";
 import type { AboutArea } from "../copy/about-pages";
@@ -25,16 +25,19 @@ export const LIT_PARAM = "lit";
 export const FROM_PARAM = "from";
 
 /**
- * Show me's address: the label's page, lit, scrolled to its section. `labelKey` is `<area>/<section>/<label>`
- * (`labelKey`, `pages-visible.ts`).
+ * Show me's address: the label's page, lit, scrolled to the section that draws it. That is read from the pages
+ * (`labelAt`), not the key: a label that moved section keeps its key (tool discovery B3).
  */
 export function showMeHref(labelKey: string): string {
-  const [area, section] = labelKey.split("/");
+  const [area, section] = sectionOf(labelKey).split("/");
   return `/about/${area}?${new URLSearchParams({ [LIT_PARAM]: labelKey }).toString()}#${section}`;
 }
 
-/** The section a label key belongs to, as `<area>/<section>`. */
-export const sectionOf = (labelKey: string) => labelKey.split("/").slice(0, 2).join("/");
+/** The section that draws a label, as `<area>/<section>`; a key no page draws falls back to its own first two parts. */
+export const sectionOf = (labelKey: string) => {
+  const at = labelAt(labelKey);
+  return at ? `${at.section.area}/${at.section.id}` : labelKey.split("/").slice(0, 2).join("/");
+};
 
 /**
  * Each drawn section's tool cards, keyed `<area>/<section>`: first the tools the section lists, in its order (the

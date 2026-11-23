@@ -7,7 +7,7 @@ import { LEGACY_SECTIONS, legacyHref, legacySection } from "./legacy-href";
 
 describe("legacyHref (Review Focus 3)", () => {
   it("sends a Reference entry to the page section that now holds it", () => {
-    expect(legacyHref("/about?tab=reference#credits")).toBe("/about/decks#analysis");
+    expect(legacyHref("/about?tab=reference#credits")).toBe("/about/decks#tuning");
     expect(legacyHref("/about?tab=reference#locked-cards")).toBe("/about/decks#your-deck");
     expect(legacyHref("/about?tab=reference#stand-ins")).toBe("/about/shopping#deck-shopping");
   });

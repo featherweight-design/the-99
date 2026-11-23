@@ -10,11 +10,11 @@
 // the reader's switches are applied per request, outside it.
 
 import { ABOUT_VERSION } from "../copy/about";
-import { ABOUT_AREAS, ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_SECTIONS, type AboutArea, type AboutLabel, type AboutRuleId } from "../copy/about-pages";
+import { ABOUT_AREAS, ABOUT_PAGE_STRINGS, ABOUT_RULES, type AboutArea, type AboutLabel, type AboutRuleId } from "../copy/about-pages";
 import { LIT_PARAM } from "../discovery/page-tools";
 import type { NavHref } from "../../components/shell/nav-icons";
 import type { AboutLaunch, AboutLine } from "./banner-line";
-import { claimedKeys, claimWrite, everyAnnouncement, unseenUnits, type UnseenUnit, type VisibleSection } from "./pages-visible";
+import { claimedKeys, claimWrite, everyAnnouncement, labelAt, unseenUnits, type UnseenUnit, type VisibleSection } from "./pages-visible";
 import { isFirstRun, type SeenState } from "./visible";
 
 export type { AboutLaunch, AboutLine } from "./banner-line";
@@ -23,8 +23,7 @@ const baseKey = (key: string) => key.split("@")[0];
 
 function rawUnit(key: string): AboutLabel | (typeof ABOUT_RULES)[AboutRuleId] | null {
   if (key.startsWith("rule/")) return ABOUT_RULES[key.slice("rule/".length) as AboutRuleId] ?? null;
-  const [area, section, id] = key.split("/");
-  return ABOUT_SECTIONS.find((s) => s.area === area && s.id === section)?.labels.find((l) => l.id === id) ?? null;
+  return labelAt(key)?.label ?? null;
 }
 
 /** The words a launch says: a whole unit as drawn, or for a switched sentence told on its own, that sentence alone. */

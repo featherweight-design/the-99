@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { visibleSections, type VisibleSection } from "../about/pages-visible";
 import { NEVER_SEEN, type SeenState } from "../about/visible";
+import { ABOUT_SECTIONS } from "../copy/about-pages";
 import { SWITCH_FLAGS } from "../flags/flags";
 import { SWITCH_NAMES, type SwitchName } from "../flags/registry";
 import { landableIn, landingFor, pageTools, showMeHref, type PageCard } from "./page-tools";
@@ -59,10 +60,11 @@ describe("pageTools", () => {
 });
 
 describe("showMeHref", () => {
-  it("is /about/<area>?lit=<label key>#<section> for every tool's every label", () => {
+  it("is /about/<area>?lit=<label key>#<section> for every tool's every label, the section the one that draws it", () => {
     for (const t of TOOLS) {
       for (const label of t.labels) {
-        const [area, section] = label.split("/");
+        const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => l.region === label))!;
+        const [area, section] = [s.area, s.id];
         const url = new URL(showMeHref(label), "https://x.test");
         expect(url.pathname).toBe(`/about/${area}`);
         expect(url.searchParams.get("lit")).toBe(label);

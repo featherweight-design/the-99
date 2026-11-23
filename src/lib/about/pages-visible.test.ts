@@ -149,9 +149,9 @@ describe("Suggested changes v2 follows its own switch alone", () => {
 });
 
 describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
-  // The Analysis tab's switch is retired (always on): nothing else need be set.
+  // The Analysis tab's switch is retired (always on): nothing else need be set. The credit and pick rules sit on Tuning (B3).
   const PARENTS = {};
-  const analysis = (e: Record<string, string>) => visibleSections(env(e)).find((s) => s.id === "analysis")!;
+  const analysis = (e: Record<string, string>) => visibleSections(env(e)).find((s) => s.id === "tuning")!;
   const creditRows = (e: Record<string, string>) =>
     analysis(e).rules.find((r) => r.key === "rule/credits")!.diagram!.columns
       .flatMap((c) => c.parts)
@@ -347,7 +347,7 @@ describe("seen translation", () => {
     ]);
     const switchOf = LEGACY_ENTRY_SWITCH;
     const units2 = [
-      ...ABOUT_SECTIONS.flatMap((s) => s.labels.map((l) => [`${s.area}/${s.id}/${l.id}`, l] as const)),
+      ...ABOUT_SECTIONS.flatMap((s) => s.labels.map((l) => [l.region, l] as const)),
       ...Object.entries(ABOUT_RULES).map(([k, r]) => [`rule/${k}`, r] as const),
     ];
     for (const [key, u] of units2) for (const sw of Object.values(u.sentences ?? {})) {
@@ -398,7 +398,7 @@ describe("seen translation", () => {
     ]);
     const kept = ["upload-choice", "availability", "deck-analysis", "auto-fill", "decklist-marks", "locked-cards", "roles", "versions", "shopping", "friends", "credits", "buying-credits", "statuses", "getting-help"];
     for (const id of kept) expect(named, id).toContain(id);
-    expect(labelKey({ area: "home", id: "home" }, { id: "help" })).toBe("home/home/help");
+    expect(labelKey({ area: "home", id: "home" }, { region: "home/home/help" })).toBe("home/home/help");
   });
 });
 
@@ -467,14 +467,14 @@ describe("a section's sub-line", () => {
     expect(sub(off("SOCIAL_FRIENDS_ENABLED"), "friends")).not.toContain(ABOUT_SCREEN_OFF.trim());
   });
 
-  it("names Analysis's tuning tools, whatever their retired switches say", () => {
-    const named = "Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.";
-    expect(sub(ALL_ON, "analysis")).toBe(named);
+  it("names the tuning tools on Tuning, not Analysis, whatever their retired switches say (tool discovery B3)", () => {
+    const named = "Tools for this deck. Suggested changes, Proposed cuts and Mana Balance help you tune it.";
+    expect(sub(ALL_ON, "tuning")).toBe(named);
+    expect(sub(ALL_ON, "analysis")).toBe("Which bracket your deck sits in, and why.");
     // Suggested changes', Mana Balance's and Proposed cuts' switches are retired, as is the tab's: set to off, they cut nothing.
-    expect(sub(off("ANALYSIS_TAB_ENABLED"), "analysis")).toBe(named);
-    expect(sub(off("TUNING_ENABLED"), "analysis")).toBe(named);
-    expect(sub(off("MANA_BALANCE_ENABLED"), "analysis")).toBe(named);
-    expect(sub(off("PROPOSED_CUTS_ENABLED"), "analysis")).toBe(named);
+    for (const sw of ["ANALYSIS_TAB_ENABLED", "TUNING_ENABLED", "MANA_BALANCE_ENABLED", "PROPOSED_CUTS_ENABLED"]) {
+      expect(sub(off(sw), "tuning"), sw).toBe(named);
+    }
   });
 
   it("cuts a sentence naming a switched feature while that switch is off, and keeps the rest (Small items 3, item 4)", () => {

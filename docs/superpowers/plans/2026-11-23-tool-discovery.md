@@ -66,6 +66,9 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
 
 - The labels `decks/analysis/{suggested,mana,cuts}` move under a Tuning section: `about-pages.ts`, `pages-visible.ts`, `about/shots.ts`, the labelled screen, and their tests.
 - Split out now so B2 stays under 20 files.
+- As built: `tuning` is a `DeckView` of its own (`about.ts`, `DECK_VIEW_NAMES`), and `deckViewOf("tuning")` returns it, so the ? on the Tuning tab opens `/about/decks#tuning`. A new Decks section `tuning` (named Tuning, sub line "Tools for this deck." plus the tools sentence that moved off Analysis) holds the three labels, the `pick` and `credits` rules and the three tool cards; Analysis keeps bracket, findings and Describe your deck and the `intent` rule. `/credits`' ? and the old About entries for the three tools and credits land on Tuning.
+- The three labels keep their `decks/analysis/*` region keys. A region is also the label's seen and notice key, so a rename would tell every reader the same labels as New again. A label's key is therefore its `region`, not `<area>/<section>/<id>` (`labelKey`), and the section that draws a key is read from the pages (`labelAt`), never out of the key: Show me's `#section` (`showMeHref`, `sectionOf`) and the banner's unit lookup (`notice.ts`) use it.
+- Pictures: no re-capture. `pnpm capture:about` needs `next start` of a local build, which is not run while Hugh is away (orchestrator ruling, 2026-11-23). The Tuning section shows the existing `p-analysis-tuning` and `d-analysis-tuning` shots (taken when the hub sat on Analysis) and the un-analyzed deck's `d-analysis-describe` for desktop Mana Balance. The capture frames for the two tuning shots now press the Tuning tab (`about-page-frames.mjs`, `capture-about.mjs`), so the re-shoot follow-up is one `pnpm capture:about` run plus pointing `decks/analysis/mana`'s desktop locator back at `d-analysis-tuning`.
 
 ### C · The welcome sheet
 
@@ -231,7 +234,7 @@ Each PR adds `docs/superpowers/inventories/tool-discovery-<pr>.json` and runs `n
 | `/decks/[id]?tab=tuning`, hub tiles with Consider first | ✅ | ✅ | ✅ | B2 |
 | Tuning with Consider open (phone toolbar, desktop underline row) | ✅ | ✅ | | B2 |
 | `/decks/[id]?tab=consider` (old link lands on Tuning with Consider open) | ✅ | ✅ | | B2 |
-| `/about` deck pages, Tuning labels | ☐ | ☐ | | B3 |
+| `/about` deck pages, Tuning labels | ✅ | ✅ | | B3 |
 | Welcome sheet, all three shapes (Home strip, /credits cell) | ☐ | ☐ | | C |
 | Card search: nothing typed, a question, nothing matches (rail dropdown, phone sheet) | ☐ | ☐ | | D |
 | Home: the panel, typing in place, the credits foot | ☐ | ☐ | ☐ | E1 |
