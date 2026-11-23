@@ -47,7 +47,7 @@ function Fan({ art }: { art: string[] }) {
         </div>
       ))}
       {/* The lens over them. */}
-      <span className="absolute top-1 right-3 flex h-9 w-9 items-center justify-center rounded-full border-2 border-solid border-[color:var(--accent)] bg-[color:var(--bg)] text-[color:var(--accent)] md:h-11 md:w-11">
+      <span className="absolute top-1 right-3 flex h-9 w-9 items-center justify-center rounded-full border-2 border-solid border-[color:var(--accent)] bg-[color:var(--bg)] text-[color:var(--accent-text)] md:h-11 md:w-11">
         <SearchGlyph size={18} />
       </span>
     </div>
@@ -137,7 +137,7 @@ export function HomeSearchPanel({ userId, foot }: { userId: string; foot?: React
             containerClassName="h-[52px] min-w-0 gap-3 rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--bg)] pr-[10px] pl-4"
             className="text-[15px] whitespace-nowrap touch:text-base"
             leading={
-              <span className="flex-none text-[color:var(--accent)]">
+              <span className="flex-none text-[color:var(--accent-text)]">
                 <SearchGlyph size={20} />
               </span>
             }
