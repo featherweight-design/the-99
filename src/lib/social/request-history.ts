@@ -173,5 +173,7 @@ export async function loadOfferAnswer(userId: string, key: string, now = new Dat
   const id = (await q.execute<{ id: string }>(offerAnswerIdQuery(userId, target.id))).rows[0]?.id;
   if (!id) return null;
   const row = (await q.execute<Row>(requestHistoryQuery(userId, "asked", null, 1, id))).rows[0] as Row | undefined;
-  return row ? entryOf(row, now) : null;
+  const entry = row ? entryOf(row, now) : null;
+  // The sheet draws an answer only: whatever the history's state words say, a row that is not yes or no opens nothing.
+  return entry && (entry.state === "yes" || entry.state === "no") ? entry : null;
 }

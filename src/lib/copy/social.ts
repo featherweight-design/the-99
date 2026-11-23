@@ -660,4 +660,4 @@ export const offerSheetCopy = {
   noDetail: spareCopy.request.offer.answered.noLine,
   /** The line under, mono: when it was offered and how many. */
   meta: (on: string, copies: number) => `Offered ${on} · ${copies === 1 ? "1 copy" : `${copies} copies`}`,
-};
+} as const;
