@@ -10,8 +10,6 @@ import { tuningHubShortcutsCopy } from "./tuning-hub-shortcuts";
 
 export const tuningHubCopy = {
   title: "Tuning",
-  /** The deck tab's accessible name (tool discovery B2, the handoff's `tuningTabCopy.tabAria`); its label is `title`. */
-  tabAria: "Tuning, tools for this deck",
   allTools: "All tools",
   /** Engineering addition (Small items 7, item 4): the label over the tile row that fills a short tool's held space. Owed to /copy-review. */
   otherTools: "Other tools",

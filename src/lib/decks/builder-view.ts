@@ -40,6 +40,12 @@ export function readHubTool(value: string | string[] | undefined): "consider" | 
   return value === CONSIDER_TAB ? "consider" : null;
 }
 
+/** The `?tab=` value that opens `tab` with `tool` open: `readHubTool`'s inverse, so a link to Consider lands on it
+ *  rather than on the Tuning tab's tiles. */
+export function tabQuery(tab: BuilderView, tool?: string | null): string {
+  return tab === "tuning" && tool === "consider" ? CONSIDER_TAB : tab;
+}
+
 /** The tab the builder actually opens on. A URL can name `versions` on a deck
  *  that has none — an old link to the retired route, or a hand-typed parameter —
  *  and the row draws no Versions cell at zero, so landing there would leave every

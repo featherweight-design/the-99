@@ -33,6 +33,12 @@ vi.mock("../../app/decks/actions", () => ({
 // Consider's degraded banner refreshes the route rather than owning a retry, so
 // mounting the shell now needs a router even on the happy path.
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
+// Consider is a Tuning tool (tool discovery B2): its panel draws once the hub's first read has landed.
+vi.mock("../../app/decks/tuning-hub-actions", () => ({
+  readTuningHub: vi.fn(async () => null),
+  readTuningHistory: vi.fn(async () => null),
+  readTuningPastRun: vi.fn(async () => null),
+}));
 
 const { BuilderShell } = await import("./builder-shell");
 const { SETTLE_MS } = await import("./use-basic-count");
@@ -124,17 +130,27 @@ function renderBuilder() {
   );
 }
 
-// Suggestions live behind the Consider tab now, so each step is flushed on its
-// own: batched inside a single act(), the add would be looked up in the DOM the
-// tab click had not yet redrawn.
+// Suggestions live in Consider, the Tuning tab's first tool (tool discovery B2), so each step is flushed on its own:
+// batched inside a single act(), the add would be looked up in the DOM the tab click had not yet redrawn.
 const showTab = async (name: RegExp) => {
   await act(async () => {
     fireEvent.click(screen.getByRole("tab", { name }));
   });
 };
 
+async function showConsider() {
+  await act(async () => {
+    fireEvent.click(screen.getByRole("tab", { name: /^Tuning/ }));
+  });
+  await act(async () => {
+    const tile = document.querySelector('[data-tool-tile="consider"]') as HTMLElement;
+    fireEvent.click(tile.tagName === "BUTTON" ? tile : (tile.querySelector("button") as HTMLElement));
+  });
+  await screen.findByRole("button", { name: "Add Sol Ring to the deck, and to your shopping list, because you don’t own it" });
+}
+
 async function addSolRing() {
-  await showTab(/cards to consider/i);
+  await showConsider();
   await act(async () => {
     // This fixture's Sol Ring is unowned, so its accessible name is the long
     // form. Spelled out rather than prefix-matched: the owned name is a prefix

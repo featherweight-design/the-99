@@ -37,6 +37,12 @@ const { addCardToDeck, removeCardFromDeck, keepAutoCard, discardDeckDraft } = vi
   keepAutoCard: vi.fn(),
   discardDeckDraft: vi.fn(),
 }));
+// The Tuning tab's hub reads on open (tool discovery B2); this test presses the tab and needs no reading.
+vi.mock("../../app/decks/tuning-hub-actions", () => ({
+  readTuningHub: vi.fn(async () => null),
+  readTuningHistory: vi.fn(async () => null),
+  readTuningPastRun: vi.fn(async () => null),
+}));
 vi.mock("../../app/decks/actions", () => ({
   createDeck: vi.fn(),
   getDeckSuggestions: vi.fn(async () => ({ suggestions: [], degraded: false })),
@@ -943,14 +949,14 @@ describe("undo row lifetime (#185)", () => {
     expect(screen.queryByText(proxyCopy.tag.aria)).not.toBeInTheDocument();
   });
 
-  it("survives a tab switch to Consider and back", async () => {
+  it("survives a tab switch to Tuning and back", async () => {
     removeCardFromDeck.mockReturnValue(deferred<void>().promise);
 
     renderBuilder();
     await removeFromBuilder("Sol Ring");
 
     await act(async () => {
-      fireEvent.click(screen.getByRole("tab", { name: /cards to consider/i }));
+      fireEvent.click(screen.getByRole("tab", { name: /^Tuning/ }));
     });
     await act(async () => {
       fireEvent.click(screen.getByRole("tab", { name: /your deck/i }));

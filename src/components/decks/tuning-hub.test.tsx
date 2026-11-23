@@ -198,7 +198,8 @@ describe("TuningHub opening a tool", () => {
     // ResizeObserver there reads the box as empty; the arrival itself is the test below).
     expect(panel().className.split(/\s+/).some((c) => c === "anim-gentle-in" || c === "gentle-hold")).toBe(true);
     // The opened tool's chrome arrives with it: the desktop tab row and the phone header.
-    expect(screen.getByRole("tablist").className.split(/\s+/)).toContain("anim-gentle-in");
+    // The row holds the tablist and Consider's sort beside it (tool discovery B2), so the motion is on the row.
+    expect(screen.getByRole("tablist").parentElement!.className.split(/\s+/)).toContain("anim-gentle-in");
     const phoneHead = screen.getByRole("button", { name: copy.back }).parentElement!;
     expect(phoneHead.className.split(/\s+/)).toEqual(expect.arrayContaining(["anim-gentle-in", "md:hidden"]));
     const first = panel();

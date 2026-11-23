@@ -16,7 +16,6 @@ import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deckFlipCopy, deckOpenLoadingCopy } from "../../lib/copy/deck-flip";
 import { gameLogCopy } from "../../lib/copy/game-log";
 import { TAB_PARAM, readBuilderView } from "../../lib/decks/builder-view";
-import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import { StallWatch } from "../shell/nav-stall";
 import { PendingReporter } from "../shell/pending-reporter";
 import { BAR } from "../ui/tile-skeleton";
@@ -40,7 +39,7 @@ const NAME = [62, 48, 74, 55, 68, 44, 80, 58, 66, 50, 72, 46];
 const TABS = [
   { id: "deck", label: addPanelCopy.tabs.deck, count: true },
   { id: "analysis", label: addPanelCopy.tabs.analysis, count: false },
-  { id: "tuning", label: tuningHubCopy.title, count: false },
+  { id: "tuning", label: addPanelCopy.tabs.tuning, count: false },
   { id: "games", label: gameLogCopy.tab.label, count: false },
   { id: "versions", label: deckVersioningCopy.history.tab, count: false },
 ] as const;

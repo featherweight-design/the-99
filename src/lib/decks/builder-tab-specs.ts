@@ -11,7 +11,6 @@ import type { BuilderTabSpec } from "../../components/decks/builder-tabs";
 import { addPanelCopy } from "../copy/decks-builder";
 import { deckVersioningCopy, historyOriginCopy } from "../copy/deck-versioning";
 import { gameLogCopy } from "../copy/game-log";
-import { tuningHubCopy } from "../copy/tuning-hub";
 
 export function builderTabSpecs({
   built,
@@ -47,8 +46,8 @@ export function builderTabSpecs({
     // for any deck, and its tools carry their own figures on their tiles.
     {
       id: "tuning",
-      label: tuningHubCopy.title,
-      accessibleName: tuningHubCopy.tabAria,
+      label: addPanelCopy.tabs.tuning,
+      accessibleName: addPanelCopy.tabs.tuningAria,
     },
     {
       id: "games",

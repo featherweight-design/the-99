@@ -315,14 +315,13 @@ describe("AnalysisPanel", () => {
       expect(screen.getByTestId("analysis-ring")).not.toBeVisible();
     });
 
-    // Held for the hold even once the reading landed: the reading waits behind the loader.
-    // The Tuning hub is MOUNTED under the held loader, which is what lets its first read run
-    // before the tab paints (the shell holds the loader until that read settles), and it is drawn
-    // only once the loader lets go.
-    it("withholds a reading that landed while the loader is held, with the Tuning hub mounted behind it", () => {
-      opening("loader", ready());
-      expect(screen.getByText("tuning")).not.toBeVisible();
+    // Held for the hold even once the reading landed: the reading waits behind the loader. The
+    // Tuning hub has its own tab (tool discovery B2), so nothing of it is mounted here.
+    it("withholds a reading that landed while the loader is held", () => {
+      const { container } = opening("loader", ready());
       expect(screen.getByText(copy.opening)).toBeVisible();
+      expect(screen.getByTestId("verdict-cell")).not.toBeVisible();
+      expect(container.querySelector("[data-tuning-hub]")).toBeNull();
     });
 
     it("draws the tab again once it has its answer", () => {

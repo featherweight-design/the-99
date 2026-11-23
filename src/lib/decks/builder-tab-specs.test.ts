@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { builderTabSpecs } from "./builder-tab-specs";
 import { historyOriginCopy } from "../copy/deck-versioning";
-import { tuningHubCopy } from "../copy/tuning-hub";
+import { addPanelCopy } from "../copy/decks-builder";
 
 const base = {
   built: 99,
@@ -42,7 +42,7 @@ describe("which tabs the builder draws", () => {
     const specs = builderTabSpecs({ ...base, built: 99, gameCount: 4, versionCount: 3 });
     expect(specs.filter((t) => t.count !== undefined).map((t) => t.id)).toEqual(["deck"]);
     expect(specs.find((t) => t.id === "deck")?.count).toBe(99);
-    expect(specs.find((t) => t.id === "tuning")?.accessibleName).toBe(tuningHubCopy.tabAria);
+    expect(specs.find((t) => t.id === "tuning")?.accessibleName).toBe(addPanelCopy.tabs.tuningAria);
     expect(specs.find((t) => t.id === "games")?.accessibleName).toContain("4");
   });
 

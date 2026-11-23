@@ -9,7 +9,6 @@ import { describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { gameLogCopy } from "../../lib/copy/game-log";
-import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { BuilderView } from "../../lib/decks/builder-view";
 import { recommendedMix } from "../../lib/decks/mix";
@@ -175,7 +174,7 @@ describe("BuilderShell — the tab it opens on", () => {
   it("opens on the Tuning tab when the arrival names it", async () => {
     await mount("tuning");
     expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true })).toHaveTextContent(
-      tuningHubCopy.title,
+      addPanelCopy.tabs.tuning,
     );
   });
 

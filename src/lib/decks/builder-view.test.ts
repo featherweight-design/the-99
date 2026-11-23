@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { deckViewSearch, initialBuilderView, readBuilderView, readDeckBody, readHubTool } from "./builder-view";
+import { deckViewSearch, initialBuilderView, readBuilderView, readDeckBody, readHubTool, tabQuery } from "./builder-view";
 
 describe("readBuilderView", () => {
   it("takes the tab a URL names", () => {
@@ -26,6 +26,14 @@ describe("readBuilderView", () => {
     expect(readBuilderView("consider")).toBe("tuning");
     expect(readHubTool("consider")).toBe("consider");
     for (const v of [undefined, "", "tuning", "analysis", ["consider"]]) expect(readHubTool(v)).toBeNull();
+  });
+
+  it("writes the address that reopens a tab with its tool: Consider's, and every other tab as itself", () => {
+    expect(tabQuery("tuning", "consider")).toBe("consider");
+    expect(readBuilderView(tabQuery("tuning", "consider"))).toBe("tuning");
+    expect(readHubTool(tabQuery("tuning", "consider"))).toBe("consider");
+    expect(tabQuery("tuning")).toBe("tuning");
+    expect(tabQuery("analysis", null)).toBe("analysis");
   });
 });
 

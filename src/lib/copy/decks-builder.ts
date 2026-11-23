@@ -42,6 +42,10 @@ export const addPanelCopy = {
     analysis: "Analysis",
     deckAria: (n: number) => `Your deck, ${plural(n, "card", "cards")}`,
     analysisAria: "Analysis of this deck",
+    /** Tool discovery B2: the Tuning hub's tab (the handoff's `tuningTabCopy`). Here, not in `tuningHubCopy`, so the deck
+     *  page's loading skeleton, which Home's shell carries, names the tab without shipping the hub's copy. */
+    tuning: "Tuning",
+    tuningAria: "Tuning, tools for this deck",
     // No `panelAria`: each tabpanel is named by its tab through
     // aria-labelledby, which wins over aria-label, so a panel-side name would
     // never reach a screen reader.

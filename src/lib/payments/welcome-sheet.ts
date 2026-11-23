@@ -3,6 +3,7 @@ import { refreshCopy } from "../copy/refresh";
 import type { ShowcaseGroup, WrittenRow } from "../discovery/showcase";
 import type { TourCredits } from "../discovery/tour-steps";
 import { landingSpotFor, type ToolId } from "../discovery/tools";
+import { tabQuery } from "../decks/builder-view";
 import { EXPIRY_WARNING_MS } from "../model/credit-line";
 import type { WelcomeLotKind, WelcomeState } from "./welcome-state";
 
@@ -78,7 +79,9 @@ const ROW_TOOL: Partial<Record<WrittenRow["id"], ToolId>> = {
 /** The people-facing landing of a deck tool on the first deck of the reader's list, from the shared landing table. */
 function deckLanding(id: "overview" | "consider", deckId: string | null): string | null {
   const spot = landingSpotFor(id);
-  return deckId && spot?.lands.kind === "deck" ? `/decks/${deckId}?tab=${spot.lands.tab}` : null;
+  if (!deckId || spot?.lands.kind !== "deck") return null;
+  // Consider is a Tuning tool (tool discovery B2): its address opens the tab with Consider open, not the tab's tiles.
+  return `/decks/${deckId}?tab=${tabQuery(spot.lands.tab, "tool" in spot.lands ? spot.lands.tool : null)}`;
 }
 
 /** Where Find a deck lands, from the shared landing table: the collection's Free cards, where each card carries the button. */
