@@ -244,7 +244,7 @@ export function toViews(
     /** A trade match's press asks (always, since `SOCIAL_FRIENDS_ENABLED` retired). */
     askable?: boolean;
   },
-  /** The reader's store: a price drop's press goes there. The drops read are already that store's (`storedItemsQuery`). */
+  /** The reader's store: a price drop's press goes there. The drops read are already that store's (`storedFeedBranch`). */
   store: Store = "manapool",
 ): FeedView[] {
   return items.map((item): FeedView => {

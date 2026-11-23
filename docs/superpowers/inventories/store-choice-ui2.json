@@ -1,6 +1,6 @@
 {
   "feature": "Store choice UI-2: card details, the wishlist and Home's price drop in the reader's store (handoff design_handoff_the99_store_choice)",
-  "note": "Needs a server on a scratch branch of local-dev where the audit account (user_3HdjdocERCjunk0zJQFDWyHkTd4) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set to the store being photographed, printing_store_prices rows for that store, price-drop on in user_prefs.feed_kinds, a wishlist entry for Smothering Tithe and a price-drop feed item for it whose data.store is that store. Run once per store with preferred_store changed between runs and the out directory copied aside. This inventory writes nothing.",
+  "note": "Needs a server on a scratch branch of local-dev where the audit account (user_3HdjdocERCjunk0zJQFDWyHkTd4) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set to the store being photographed, printing_store_prices rows for that store, price-drop on in user_prefs.feed_kinds, a wishlist entry for a card it does not own (Teferi's Protection; an owned card leaves the list) and a price-drop feed item for it whose data.store is that store. Run once per store with preferred_store changed between runs and the out directory copied aside. This inventory writes nothing.",
   "out": "contact-sheets/store-choice-ui2",
   "widths": [
     { "label": "phone", "width": 390, "height": 844 },
@@ -13,7 +13,7 @@
       "view": "src/components/cards/card-modal.tsx",
       "steps": [
         { "goto": "/collection?view=rows&q=Aggravated%20Assault", "settle": 2500 },
-        { "clickRole": "button", "name": "^Aggravated Assault,", "wait": "[role=dialog] [data-testid^='modal-price-']", "settle": 1500 }
+        { "clickRole": "button", "name": "^Aggravated Assault,", "wait": "[role=dialog] [data-testid^='modal-price-']:visible", "settle": 1500 }
       ],
       "widths": ["desktop"]
     },
@@ -23,7 +23,7 @@
       "view": "src/components/cards/card-modal-sheet.tsx",
       "steps": [
         { "goto": "/collection?view=rows&q=Aggravated%20Assault", "settle": 2500 },
-        { "clickRole": "button", "name": "^Aggravated Assault,", "wait": "[role=dialog] [data-testid^='modal-price-']", "settle": 1500 }
+        { "clickRole": "button", "name": "^Aggravated Assault,", "wait": "[role=dialog] [data-testid^='modal-price-']:visible", "settle": 1500 }
       ],
       "widths": ["phone"]
     },
@@ -33,7 +33,7 @@
       "view": "src/components/cards/card-modal-sheet.tsx",
       "steps": [
         { "goto": "/collection?view=rows&q=Aggravated%20Assault", "settle": 2500 },
-        { "clickRole": "button", "name": "^Aggravated Assault,", "wait": "[role=dialog] [data-testid^='modal-price-']", "settle": 1500 },
+        { "clickRole": "button", "name": "^Aggravated Assault,", "wait": "[role=dialog] [data-testid^='modal-price-']:visible", "settle": 1500 },
         { "clickRole": "button", "name": "All details", "settle": 900 },
         { "scrollTo": "[role=dialog] a[href*='tcgplayer.com'], [role=dialog] a[href*='cardkingdom.com'], [role=dialog] a[href*='manapool.com']", "settle": 600 }
       ],
@@ -41,10 +41,10 @@
     },
     {
       "id": "wishlist",
-      "label": "/collection/wishlist: Smothering Tithe's tile priced in the reader's store",
+      "label": "/collection/wishlist: Teferi's Protection's tile priced in the reader's store",
       "view": "src/app/collection/(list)/wishlist/page.tsx",
       "steps": [
-        { "goto": "/collection/wishlist", "wait": "img", "settle": 2000 }
+        { "goto": "/collection/wishlist", "wait": "[data-testid=wishlist-tile]", "settle": 2000 }
       ]
     },
     {
