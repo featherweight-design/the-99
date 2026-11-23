@@ -3,12 +3,16 @@
 
 import { act, render, screen } from "@testing-library/react";
 import { landingCopy } from "../../lib/copy/landing";
-import { fanContentNotice } from "../../lib/copy/fan-content-notice";
+import { fanContentNotice, passageTwoFor } from "../../lib/copy/fan-content-notice";
+import { FLAGS } from "../../lib/flags/registry";
+import { SWITCHES_HEADER } from "../../lib/flags/request";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 let requestHeaders = new Headers();
 vi.mock("next/headers", () => ({ headers: async () => requestHeaders }));
-const prefs = vi.hoisted(() => ({ readShellPrefs: vi.fn(async () => ({ spentMoments: [] as string[], installed: false })) }));
+const prefs = vi.hoisted(() => ({
+  readShellPrefs: vi.fn(async () => ({ spentMoments: [] as string[], installed: false, preferredStore: null as string | null })),
+}));
 vi.mock("../../lib/shell/prefs", () => prefs);
 vi.mock("../../lib/social/after-game", () => ({ friendsAfterGameDue: async () => false }));
 // The navigation-pending provider runs code-started pushes, so it reads the router; this suite
@@ -256,7 +260,7 @@ describe("Shell and the install stamp (install onboarding call 7)", () => {
 
   it("hands the phone header the reader's install stamp", async () => {
     navProps.length = 0;
-    prefs.readShellPrefs.mockResolvedValueOnce({ spentMoments: [], installed: true });
+    prefs.readShellPrefs.mockResolvedValueOnce({ spentMoments: [], installed: true, preferredStore: null });
     await renderShell();
     expect(headerInstalled()).toEqual([true]);
   });
@@ -268,6 +272,33 @@ describe("Shell and the install stamp (install onboarding call 7)", () => {
     await renderShell();
     expect(screen.getByText("page")).toBeTruthy();
     expect(headerInstalled()).toEqual([false]);
+    err.mockRestore();
+  });
+});
+
+describe("Shell and the Fan Content notice's store", () => {
+  // Only the store switch differs: every other switch stays off, as the other shell tests have it.
+  const bits = (on: boolean) => FLAGS.map(({ name }) => (on && name === "STORE_PREFERENCE_ENABLED" ? "1" : "0")).join("");
+  const notice2 = () => document.querySelectorAll("footer[data-fan-content-notice] p")[1]?.textContent;
+
+  it("credits the reader's store when the switch is on for them", async () => {
+    requestHeaders = new Headers({ [SWITCHES_HEADER]: bits(true) });
+    prefs.readShellPrefs.mockResolvedValueOnce({ spentMoments: [], installed: false, preferredStore: "tcgplayer" });
+    render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
+    expect(notice2()).toBe(passageTwoFor("TCGplayer"));
+  });
+
+  it("keeps Mana Pool with the switch off, and when the prefs read fails", async () => {
+    requestHeaders = new Headers({ [SWITCHES_HEADER]: bits(false) });
+    prefs.readShellPrefs.mockResolvedValueOnce({ spentMoments: [], installed: false, preferredStore: "tcgplayer" });
+    const { unmount } = render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
+    expect(notice2()).toBe(fanContentNotice.passageTwo);
+    unmount();
+    requestHeaders = new Headers({ [SWITCHES_HEADER]: bits(true) });
+    prefs.readShellPrefs.mockRejectedValueOnce(new Error("down"));
+    const err = vi.spyOn(console, "error").mockImplementation(() => {});
+    render(await Shell({ children: <p>page</p>, theme: DEFAULT_THEME }));
+    expect(notice2()).toBe(fanContentNotice.passageTwo);
     err.mockRestore();
   });
 });

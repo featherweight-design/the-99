@@ -43,9 +43,10 @@ describe("the locked notice text", () => {
 describe("passage two follows the reader's store", () => {
   it("is the locked text for Mana Pool, and names the store in both places for the others", () => {
     expect(passageTwoFor(STORE_INFO.manapool.name)).toBe(fanContentNotice.passageTwo);
-    expect(passageTwoFor(STORE_INFO.tcgplayer.name)).toContain("prices from TCGplayer.");
-    expect(passageTwoFor(STORE_INFO.tcgplayer.name)).toContain("Scryfall or TCGplayer.");
-    expect(passageTwoFor(STORE_INFO.cardkingdom.name)).not.toContain("Mana Pool");
+    for (const [name, store] of [["TCGplayer", "tcgplayer"], ["Card Kingdom", "cardkingdom"]] as const) {
+      expect(passageTwoFor(STORE_INFO[store].name)).toBe(fanContentNotice.passageTwo.replaceAll("Mana Pool", name));
+      expect(passageTwoFor(STORE_INFO[store].name)).toContain(`prices from ${name}. Not affiliated with Wizards of the Coast, Scryfall or ${name}.`);
+    }
     for (const info of Object.values(STORE_INFO)) expect(passageTwoFor(info.name)).not.toContain("—");
   });
 });
