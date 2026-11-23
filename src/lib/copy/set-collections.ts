@@ -415,7 +415,6 @@ export const setPageCopy = {
     foil: "◆ FOIL",
     foilAria: "You hold this in foil",
     noStock: "no stock",
-    noStockAria: "Never stocked at Mana Pool",
     // The qualifier is the finish word the buy tag chose — foil or etched — because
     // priceState collapses both into one state and only the column says which.
     qualifiedPrice: (finish: string, p: string) => `◆ ${finish} ${p}`,

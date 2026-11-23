@@ -250,7 +250,7 @@ it("speaks every cost it prints", () => {
 describe("the proxy list at another store (store preference)", () => {
   const unpriced = () => row({ oracleId: "o9", name: "Sol Ring", price: null as unknown as ProxyRow["price"] });
 
-  it("says never stocked at Mana Pool, whose feed keeps a history", () => {
+  it("draws never stocked on the Mana Pool list, whose feed keeps a history, not the other-store note", () => {
     render(<ProxyListView newestAsOf={NEWEST} rows={[row(), unpriced()]} hasDecks hasCollection />);
     expect(screen.getByText(proxyCopy.cost.unpriced(1))).toBeTruthy();
     expect(screen.queryByText(proxyCopy.cost.noFigure(1, "Mana Pool"))).toBeNull();

@@ -123,7 +123,7 @@ async function run(size) {
     if (opened) {
       const dialog = page.locator('[role="dialog"]').first();
       if (size.width < 768) {
-        await dialog.locator("button", { hasText: "All details" }).filter({ visible: true }).first().click({ timeout: 20_000 }).catch(() => {});
+        await dialog.locator("button", { hasText: "All details" }).filter({ visible: true }).first().click({ timeout: 20_000 });
         await page.waitForTimeout(800);
       }
       const buy = dialog.getByRole("link", { name: /^Buy any printing at TCGplayer/ });
@@ -135,7 +135,9 @@ async function run(size) {
     // The proxy list.
     await page.goto(`${BASE}/collection/proxies`, { waitUntil: "domcontentloaded" });
     await page.getByText(PROXY, { exact: true }).filter({ visible: true }).first().waitFor({ timeout: 60_000 });
-    const text = (await page.locator("main").innerText()).replace(/\s+/g, " ");
+    // The proxied card's own row, so another card at the same figure can neither pass nor fail the check.
+    const proxyRow = page.locator("main li").filter({ hasText: PROXY }).filter({ visible: true }).first();
+    const text = (await proxyRow.innerText()).replace(/\s+/g, " ");
     const atTcg = PROXY_TCG.filter((f) => text.includes(f));
     const atMp = PROXY_MP.filter((f) => text.includes(f));
     check(atTcg.length > 0 && atMp.length === 0, `${size.name} the proxy figure is TCGplayer's`, `tcg ${JSON.stringify(atTcg)} mp ${JSON.stringify(atMp)}`);

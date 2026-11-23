@@ -55,7 +55,7 @@ export function printingPricesQuery(oracleId: string, store: Store) {
  * `loadPrintingPrices` for every card one reader owns, in one statement: `/collection`'s Price
  * sort needs a figure on every card it ships. The same columns and the same `newest` row, grouped
  * per oracle card and indexed by the same `indexPriceRows`, so each card's index is exactly the
- * one card details would build for it. All of a card's printings, not only the owned ones:
+ * one card details would build for it at the same store: the caller passes the reader's store. All of a card's printings, not only the owned ones:
  * `priceFor` names a set-only or name-only holding by counting the catalog's printings of it.
  *
  * It takes the ids rather than the user: the caller passes the cards of the collection snapshot it
