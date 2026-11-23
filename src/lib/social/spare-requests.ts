@@ -316,7 +316,7 @@ export type IncomingAsk = {
 };
 
 /** A face from a row's three commander columns (the `toCommander` rule, on raw SQL's names). */
-function faceOf(r: { commander_oracle_id: string | null; commander_name: string | null; commander_art: string | null }): ProfileCommander | null {
+export function faceOf(r: { commander_oracle_id: string | null; commander_name: string | null; commander_art: string | null }): ProfileCommander | null {
   if (r.commander_oracle_id === null || r.commander_name === null) return null;
   return { oracleId: r.commander_oracle_id, name: r.commander_name, artCropUri: r.commander_art };
 }
@@ -348,7 +348,7 @@ export function incomingAsksQuery(holderId: string, now: Date): SQL {
  * item (the holder's own feed item for it, dedupe key = the request id). Hiding answers nothing: the ask stays open for
  * the asker. On the ask's alias.
  */
-function notDismissedAsk(r: SQL): SQL {
+export function notDismissedAsk(r: SQL): SQL {
   return sql`and not exists (
         select 1 from ${feedDismissals} dad where dad.user_id = ${r}.holder_user_id and dad.key = 'ask:' || ${r}.id::text)
       and not exists (

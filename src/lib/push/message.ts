@@ -21,7 +21,7 @@ export type PushItem =
   | { kind: "new-precon"; key: string; batch: string; name: string; owned: number; of: number; href: string }
   | { kind: "price-drop"; key: string; batch: string; oracleId: string; card: string; wasCents: number; nowCents: number; image: string | null; printing?: string | null }
   | { kind: "trade-match"; key: string; batch: string; friend: string; publicId: string; oracleId: string; card: string; image: string | null; askable: boolean }
-  | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no" }
+  | { kind: "spare-request"; key: string; batch: string; friend: string; card: string; image: string | null; answer?: "yes" | "no"; offer?: true }
   | { kind: "combo"; key: string; batch: string; oracleId: string; variantId: string | null; a: string; b: string; added: string; image: string | null }
   /** A seat notice (Rule 0 revisions, item 6): not a feed kind. `deck` is the reader's own seated deck, null while the seat waits. */
   | { kind: typeof SEAT_PUSH_KIND; key: string; batch: string; tableId: string; host: string; pod: string; deck: string | null }
@@ -109,6 +109,10 @@ export function toMessage(group: readonly PushItem[], device: SaleDevice = NO_DE
     }
     case "spare-request": {
       // Never collapsed: one group, one item. An answer to the reader's own ask reads as one, landing on Your requests.
+      if (first.offer) {
+        const words = first.answer ? c.one.spareOfferAnswer[first.answer] : c.one.spareOffer;
+        return home(`spare-request:${first.key}`, keys, words.title(first.friend, first.card), words.body, { route: "/friends", image: first.image });
+      }
       const words = first.answer ? c.one.spareAnswer[first.answer] : c.one.spareRequest;
       return home(`spare-request:${first.key}`, keys, words.title(first.friend, first.card), words.body, { route: "/friends", image: first.image });
     }

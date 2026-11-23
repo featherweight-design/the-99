@@ -25,6 +25,13 @@ export const pushCopy = {
       bodyAsk: (friend: string) => `${feedCopy.home.line.tradeMatch} Ask ${friend} for it.`,
     },
     spareRequest: { title: t.spareRequest, body: feedCopy.home.line.spareRequest },
+    /** A friend's offer of a spare the reader wants (You have it): who offers, what, and where to answer. */
+    spareOffer: { title: (friend: string, card: string) => `${friend} is offering you ${card}`, body: "Answer in Friends." },
+    /** The wanter's answer to the reader's offer. */
+    spareOfferAnswer: {
+      yes: { title: (friend: string, card: string) => `${friend} said yes to ${card}`, body: "The handover is between you." },
+      no: { title: (friend: string, card: string) => `${friend} passed on ${card}`, body: "Nothing else changes." },
+    },
     /** A friend's answer to the reader's own spare request: Your requests' title, and where it is listed. */
     spareAnswer: {
       yes: { title: spareCopy.request.mine.canSpare, body: "The handover is between you." },

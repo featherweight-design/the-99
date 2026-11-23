@@ -75,3 +75,16 @@ export async function loadFriendWantedGap(viewerId: string, friendPublicId: unkn
   if (!isUuid(friendPublicId) || ids.length === 0) return new Map();
   return new Map((await friendWantedGapQuery(viewerId, friendPublicId, ids)).map((r) => [r.oracleId, Number(r.gap)]));
 }
+
+/**
+ * Every friend's still-wanted cards as (friend public id, oracle id) pairs, through the viewer's own friend grants (You
+ * have it, G7: `/friends` counts what the viewer can spare of them). Names a card only, never a quantity or `held`.
+ */
+export async function loadFriendsWantedPairs(viewerId: string): Promise<{ publicId: string; oracleId: string }[]> {
+  return db
+    .selectDistinct({ publicId: sql<string>`${socialProfiles.publicId}::text`, oracleId: wishlistItems.oracleId })
+    .from(wishlistItems)
+    .innerJoin(friendLinks, and(eq(friendLinks.friendUserId, wishlistItems.userId), eq(friendLinks.userId, viewerId)))
+    .innerJoin(socialProfiles, eq(socialProfiles.userId, wishlistItems.userId))
+    .where(sql`${heldCopies(wishlistItems.userId, wishlistItems.oracleId, wishlistItems.scryfallId)} < ${wishlistItems.quantity}`);
+}

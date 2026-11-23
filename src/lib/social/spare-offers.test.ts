@@ -3,7 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import { spareRequests } from "../../db/schema";
-import { answerOfferQuery, offerCopies, offererQuery, offerRefusal, withdrawOfferQuery } from "./spare-offers";
+import { answerOfferQuery, incomingOffersQuery, offerCopies, offererQuery, offerRefusal, withdrawOfferQuery } from "./spare-offers";
 import {
   answerAskerQuery, answerQuery, clearQuery, incomingAsksQuery, myAsksQuery, waitingAsksCountQuery, withdrawQuery,
   unseenAnswersCountQuery, markAnswerSeenQuery, withdrawForInsteadQuery,
@@ -70,5 +70,18 @@ describe("offerRefusal keeps a friend's other requests private", () => {
   it("a No to this offerer inside the cooldown reads declined; nothing open and no No is clear", () => {
     expect(offerRefusal([row({ status: "no", answeredAt: NOW })], "me", NOW)).toBe("declined");
     expect(offerRefusal([], "me", NOW)).toBeNull();
+  });
+});
+
+describe("incomingOffersQuery", () => {
+  const q = render(incomingOffersQuery("wanter", NOW)).replace(/\s+/g, " ");
+  it("reads the reader as the asker of holder-initiated, open, unexpired rows through the live friendship", () => {
+    expect(q).toContain(`where ior.asker_user_id = $`);
+    expect(q).toContain(`and ior.initiated_by = 'holder' and ior.status = 'open'`);
+    expect(q).toContain(`join "friend_links" ifl on ifl.user_id = ior.asker_user_id and ifl.friend_user_id = ior.holder_user_id`);
+  });
+  it("qualifies the wishlist subquery on the alias and leaves out a hidden offer", () => {
+    expect(q).toContain(`from "wishlist_items" iw where iw.user_id = ior.asker_user_id and iw.oracle_id = ior.oracle_id`);
+    expect(q).toContain(`idd.user_id = ior.asker_user_id and idd.key = 'ask:' || ior.id::text`);
   });
 });

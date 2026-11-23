@@ -43,7 +43,7 @@ export function toPushItem(view: FeedView, batch: string): PushItem | null {
       return { ...base, kind: "trade-match", friend: reveal(view.friend.displayName), publicId: view.friend.publicId, oracleId: card.oracleId, card: card.name, image: card.image, askable: view.askable };
     case "spare-request":
       if (!card || !view.friend) return null;
-      return { ...base, kind: "spare-request", friend: reveal(view.friend.displayName), card: card.name, image: card.image, ...(view.answer ? { answer: view.answer } : {}) };
+      return { ...base, kind: "spare-request", friend: reveal(view.friend.displayName), card: card.name, image: card.image, ...(view.answer ? { answer: view.answer } : {}), ...(view.offer ? { offer: true as const } : {}) };
     case "combo":
       if (!card || !view.combo || !view.opens) return null;
       return { ...base, kind: "combo", oracleId: view.opens, variantId: view.combo.variantId, a: view.combo.pieces[0], b: view.combo.pieces[1], added: view.combo.added, image: card.image };

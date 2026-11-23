@@ -93,6 +93,8 @@ export type FeedView = {
    * Null on every other item, an incoming ask included. Its press goes to `/friends`, where Your requests lists it.
    */
   answer: Answer | null;
+  /** A spare request item of an OFFER (You have it): the reader's own offer's answer, or an offer made to the reader. */
+  offer?: true;
   /**
    * A trade match whose press opens the card's spares sheet with Ask (always, since `SOCIAL_FRIENDS_ENABLED` retired).
    * False on every other item.
@@ -302,7 +304,7 @@ export function toViews(
         return { ...base, card, opens: c?.first ?? item.oracleId, combo: c && { pieces: c.pieces, added: c.added, variantId: item.variantId } };
       }
       case "spare-request":
-        return item.answer ? { ...base, card, friend, answer: item.answer, href: "/friends" } : { ...base, card, friend };
+        return item.answer ? { ...base, card, friend, answer: item.answer, href: "/friends", ...(item.offer ? { offer: true as const } : {}) } : { ...base, card, friend, ...(item.offer ? { offer: true as const } : {}) };
     }
   });
 }
