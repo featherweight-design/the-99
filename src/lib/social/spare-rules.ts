@@ -31,3 +31,11 @@ export function spareMinOf(v: unknown): number {
 export function isOffered(spare: number, min: number, kept: boolean): boolean {
   return !kept && spare > 0 && spare >= min;
 }
+
+/**
+ * Whether a card is under the owner's threshold (You have it R2): a spare they have not kept back, but fewer than `min`.
+ * The complement of `isOffered` among spares, so a card is never both; a kept-back card is a choice and is neither.
+ */
+export function isUnder(spare: number, min: number, kept: boolean): boolean {
+  return !kept && spare > 0 && spare < min;
+}

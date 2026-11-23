@@ -27,7 +27,7 @@ import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
 import { MAX_SPARES_BATCH } from "./client-rules";
 import { isUuid } from "./rules";
-import { isOffered, spareCount } from "./spare-rules";
+import { isOffered, isUnder, spareCount } from "./spare-rules";
 import { spareSettingsIn, type SpareSettings } from "./spare-settings";
 
 const viewerIn = alias(podMembers, "viewer_in");
@@ -207,7 +207,7 @@ export async function loadOwnSpareSplit(userId: string, oracleIds: readonly stri
   for (const [oracleId, a] of read.model) {
     const spare = spareCount(a);
     if (isOffered(spare, min, kept.has(oracleId))) offered.set(oracleId, spare);
-    else if (spare > 0 && !kept.has(oracleId)) under.set(oracleId, spare);
+    else if (isUnder(spare, min, kept.has(oracleId))) under.set(oracleId, spare);
   }
   return { offered, under, min };
 }

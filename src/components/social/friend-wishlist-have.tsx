@@ -72,7 +72,8 @@ export function HaveCallout({ names, haves, total, filter, onFilter }: {
   const offerable = haves.filter((c) => !c.under);
   const under = haves.filter((c) => c.under);
   const min = under[0]?.under ?? 0;
-  const nameOf = (c: HaveItCard) => names[haves.indexOf(c)];
+  const nameByCard = new Map(haves.map((c, i) => [c, names[i]] as const));
+  const nameOf = (c: HaveItCard) => nameByCard.get(c)!;
   const marks = new Set(offerable.map((c) => c.mark));
   const key: Array<{ label: string; mark: SpareMark | "under" }> = [
     ...(offerable.length ? [{ label: h.key.spare, mark: null }] : []),
