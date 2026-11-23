@@ -4,6 +4,7 @@
 // §HomeHeader. The mobile top bar the table draws above the kicker (mark +
 // avatar) is the shell's, not this component's — see components/shell/nav.tsx.
 
+import { HomeSearchPanel } from "./home-search-panel";
 import { GhostButton, PrimaryButton } from "@/components/ui/button";
 import { CountUp } from "@/components/ui/count-up";
 import { countParts } from "../../lib/ui/count-parts";
@@ -95,6 +96,11 @@ export type DashboardProps = {
    * column, over Ready to build; the right column keeps Friends alone.
    */
   welcome?: React.ReactNode;
+  /**
+   * The signed-in reader's id, to read their recent cards for the search panel's fan (tool discovery E1). Given with a
+   * collection, the panel draws after the tables and the welcome credits become its foot (G15); without, the credits stand alone.
+   */
+  searchUserId?: string;
   /** Asking once for a signature card (avatar handoff 20, call 5), or null: the left column's first block. */
   signature?: React.ReactNode;
   /**
@@ -273,7 +279,7 @@ export function Dashboard(props: DashboardProps) {
             </div>
           )}
           {/* Rule 0's cards, then the credits and the signature ask, then the lead (Q10 A): things that run out come first. */}
-          {props.welcome}
+          {props.searchUserId && !props.noCards ? <HomeSearchPanel userId={props.searchUserId} foot={props.welcome} /> : props.welcome}
           {props.signature}
           {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}
           {feed ? (

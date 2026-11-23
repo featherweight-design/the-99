@@ -1,0 +1,45 @@
+{
+  "feature": "Finding the tools, PR E1: Home's search panel",
+  "note": "Signed in as the audit account (a collection, so Home draws the panel). Same-origin dev server. The desktop popover shares the listbox D built.",
+  "out": "contact-sheets/tool-discovery-e1",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "shares": {
+    "binding": "SearchDropdown",
+    "module": "src/components/card-search/search-desktop",
+    "view": "src/components/home/home-search-panel.tsx"
+  },
+  "rows": [
+    {
+      "id": "home-panel",
+      "label": "Home, search panel at rest",
+      "view": "src/components/home/home-search-panel.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-home-search-panel]", "settle": 2500 }]
+    },
+    {
+      "id": "home-panel-open",
+      "label": "Home, field pressed: answers in place (desktop)",
+      "view": "src/components/home/home-search-panel.tsx",
+      "widths": ["desktop"],
+      "steps": [
+        { "goto": "/", "wait": "[data-home-search-panel]", "settle": 1500 },
+        { "click": "[data-home-search-panel] input" },
+        { "wait": "[data-home-search-field] [data-card-search-add-several]", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "home-panel-sheet",
+      "label": "Home, field pressed: the sheet (phone)",
+      "view": "src/components/home/home-search-panel.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/", "wait": "[data-home-search-panel]", "settle": 1500 },
+        { "click": "[data-home-search-panel] input" },
+        { "waitDialog": "Search all cards", "settle": 1200 }
+      ]
+    }
+  ]
+}
