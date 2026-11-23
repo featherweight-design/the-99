@@ -17,7 +17,7 @@ describe("requestHistoryQuery", () => {
     const { q, params } = render(requestHistoryQuery("viewer", "asked", null));
     expect(q).toContain(`join "friend_links" hfl on hfl.user_id = hsr.asker_user_id and hfl.friend_user_id = hsr.holder_user_id`);
     expect(q).toContain(`join "social_profiles" hsp on hsp.user_id = hsr.holder_user_id`);
-    expect(q).toContain("where hsr.asker_user_id = $1");
+    expect(q).toContain("where hsr.asker_user_id = $1 and hsr.initiated_by = 'asker'");
     expect(q).not.toContain("asker_cleared_at");
     expect(q).not.toContain("<> 'withdrawn'");
     expect(q).toMatch(/order by hsr\.created_at desc, hsr\.id desc limit \$2$/);
@@ -27,7 +27,7 @@ describe("requestHistoryQuery", () => {
   it("Asked of you: the viewer is the holder, and a withdrawn ask never shows", () => {
     const { q } = render(requestHistoryQuery("viewer", "received", null));
     expect(q).toContain(`on hfl.user_id = hsr.holder_user_id and hfl.friend_user_id = hsr.asker_user_id`);
-    expect(q).toContain("where hsr.holder_user_id = $1 and hsr.status <> 'withdrawn'");
+    expect(q).toContain("where hsr.holder_user_id = $1 and hsr.initiated_by = 'asker' and hsr.status <> 'withdrawn'");
   });
 
   it("pages by a (created_at, id) keyset carried as the database's own text", () => {

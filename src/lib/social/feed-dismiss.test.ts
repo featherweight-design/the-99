@@ -45,8 +45,8 @@ describe("dismissQuery", () => {
   });
   it("writes an ask the reader holds under its own key, and its holder's unanswered feed item when there is one", () => {
     const { sql, params } = render(dismissQuery("u1", { kind: "ask", requestId: ID }));
-    expect(sql).toContain(`select dsr.holder_user_id, 'ask:' || dsr.id::text from "spare_requests" dsr where dsr.id = $1::uuid and dsr.holder_user_id = $2 union all`);
-    expect(sql).toContain(`join "spare_requests" dsr on dsr.id = $3::uuid and dsr.holder_user_id = dfi.user_id`);
+    expect(sql).toContain(`select dsr.holder_user_id, 'ask:' || dsr.id::text from "spare_requests" dsr where dsr.id = $1::uuid and dsr.holder_user_id = $2 and dsr.initiated_by = 'asker' union all`);
+    expect(sql).toContain(`join "spare_requests" dsr on dsr.id = $3::uuid and dsr.holder_user_id = dfi.user_id and dsr.initiated_by = 'asker'`);
     expect(sql).toContain("where dfi.user_id = $4 and dfi.kind = 'spare-request' and dfi.dedupe_key = dsr.id::text and dfi.data ->> 'answer' is null");
     expect(params).toEqual([ID, "u1", ID, "u1"]);
   });
