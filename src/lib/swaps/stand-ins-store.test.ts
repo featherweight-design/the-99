@@ -28,7 +28,7 @@ vi.mock("../../db", () => ({
 }));
 vi.mock("../decks/price-query", async (orig) => ({
   ...(await orig<typeof import("../decks/price-query")>()),
-  loadPrices: async (...args: unknown[]) => { state.priceReads.push(args); return new Map(); },
+  loadPrices: async (...args: unknown[]) => { state.priceReads.push(args); return { prices: new Map(), newestAsOf: null }; },
 }));
 vi.mock("../staples/universal", () => ({ loadUniversalStaples: async () => new Set<string>() }));
 vi.mock("../labels/read", () => ({ readLabels: async () => new Map() }));
