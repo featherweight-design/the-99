@@ -12,6 +12,10 @@ const m = vi.hoisted(() => ({
   resolveCommanderSlug: vi.fn<(...args: unknown[]) => Promise<unknown>>(),
   loadHiddenIds: vi.fn<(...args: unknown[]) => Promise<string[]>>(),
   getRankedList: vi.fn<(...args: unknown[]) => Promise<{ items: { oracleId: string }[] }>>(),
+  // The reads past the score, stubbed to draw: only the store test reaches them (the rest end at the not-found).
+  readerStoreForPage: vi.fn<(...args: unknown[]) => Promise<string>>(async () => "manapool"),
+  loadPrices: vi.fn<(...args: unknown[]) => Promise<unknown>>(async () => ({ prices: new Map(), newestAsOf: null })),
+  loadOpeningArt: vi.fn<(...args: unknown[]) => Promise<Map<string, string>>>(async () => new Map()),
 }));
 
 const shown = { oracleId: "cmd-1", rank: 1, hidden: false, anyDegraded: false };
@@ -37,14 +41,18 @@ vi.mock("../../../lib/recs/store", () => ({
   isSchemaLagError: (err: unknown) =>
     typeof err === "object" && err !== null && ["42P01", "42703"].includes((err as { code?: string }).code ?? ""),
 }));
-vi.mock("../../../lib/collection/owned-printings", () => ({ resolveOwnedPrintings: vi.fn(), withOwnedCardArt: vi.fn() }));
+vi.mock("../../../lib/collection/owned-printings", () => ({
+  resolveOwnedPrintings: async () => new Map(),
+  withOwnedCardArt: async (_userId: string, rows: unknown[]) => rows,
+}));
 vi.mock("../../../components/commanders/detail", () => ({ CommanderDetail: () => null }));
-vi.mock("../../../lib/prose/read", () => ({ readCommanderProse: vi.fn() }));
-vi.mock("./synergy-read", () => ({ readSynergyCards: vi.fn() }));
-vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: vi.fn() }));
-vi.mock("../../../lib/decks/price-query", () => ({ loadPrices: vi.fn() }));
-vi.mock("../../../lib/cards/chain-art", () => ({ withChainArt: vi.fn() }));
-vi.mock("../../../lib/cards/opening-printing", () => ({ loadOpeningArt: vi.fn() }));
+vi.mock("../../../lib/prose/read", () => ({ readCommanderProse: async () => null }));
+vi.mock("./synergy-read", () => ({ readSynergyCards: async () => [{ oracleId: "syn-1", owned: false }] }));
+vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: async () => new Map() }));
+vi.mock("../../../lib/decks/price-query", () => ({ loadPrices: m.loadPrices }));
+vi.mock("../../../lib/cards/chain-art", () => ({ withChainArt: (rows: unknown[]) => rows }));
+vi.mock("../../../lib/cards/opening-printing", () => ({ loadOpeningArt: m.loadOpeningArt }));
+vi.mock("../../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
 
 const { default: CommanderDetailPage } = await import("./page");
 
@@ -58,6 +66,7 @@ beforeEach(() => {
   m.loadFreePool.mockClear();
   m.rankFree.mockClear();
   m.scoreOneCommander.mockClear();
+  m.readerStoreForPage.mockClear();
   m.resolveCommanderSlug.mockReset().mockResolvedValue(shown);
   m.loadHiddenIds.mockReset().mockResolvedValue([]);
   m.getRankedList.mockReset().mockResolvedValue({ items: [] });
@@ -114,5 +123,16 @@ describe("the commander page in free mode", () => {
     expect(m.scoreOneCommander).toHaveBeenCalledTimes(1);
     // No free pool: the canonical score.
     expect(m.scoreOneCommander.mock.calls[0][3]).toBeUndefined();
+  });
+});
+
+describe("the commander page's store", () => {
+  it("prices the synergy panel and picks its opening art at the reader's store", async () => {
+    m.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    m.scoreOneCommander.mockResolvedValueOnce({ oracleId: "cmd-1", roleCards: {} } as never);
+    await open();
+    expect(m.readerStoreForPage.mock.calls[0]).toEqual(["user_1", m.READER]);
+    expect(m.loadPrices.mock.calls.at(-1)).toEqual([["syn-1"], [], [], "tcgplayer"]);
+    expect(m.loadOpeningArt.mock.calls.at(-1)).toEqual([["syn-1"], "tcgplayer"]);
   });
 });

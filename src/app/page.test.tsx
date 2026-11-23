@@ -44,6 +44,8 @@ const cacheKeys = vi.hoisted(() => ({ seen: [] as string[][] }));
 const rollup = vi.hoisted(() => ({ load: vi.fn(async (..._a: unknown[]): Promise<unknown> => ({})), store: vi.fn(async (..._a: unknown[]): Promise<string> => "manapool") }));
 vi.mock("../lib/decks/shopping-rollup", () => ({ loadShoppingRollup: rollup.load }));
 vi.mock("../lib/stores/preference", () => ({ readerStoreForPage: rollup.store }));
+const tradeAsk = vi.hoisted(() => vi.fn(async (..._a: unknown[]): Promise<null> => null));
+vi.mock("../lib/social/trade-ask", () => ({ loadTradeAsk: tradeAsk }));
 vi.mock("../lib/recs/home-novelty", () => ({ loadUnplayedCounts: async () => null }));
 vi.mock("../lib/recs/ready-to-build", () => ({ readySlice: () => ({ shown: [] }) }));
 vi.mock("../lib/collection/owned-printings", () => ({ withOwnedCardArt: async () => [] }));
@@ -114,6 +116,14 @@ describe("Home's store", () => {
     stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, unseen: 0, on: [] });
     await HomePage();
     expect(stub.loadFeed).toHaveBeenCalledWith("user_1", expect.anything(), expect.any(Date), undefined, "tcgplayer");
+  });
+
+  it("prices a trade match's Ask sheet in the reader's store", async () => {
+    rollup.store.mockResolvedValue("tcgplayer");
+    stub.loadFeed.mockResolvedValue({ chosen: true, items: [], lead: null, unseen: 0, on: [] });
+    tradeAsk.mockClear();
+    await HomePage();
+    expect(tradeAsk).toHaveBeenCalledWith([], "tcgplayer");
   });
 });
 
