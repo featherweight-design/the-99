@@ -10,6 +10,8 @@ const h = vi.hoisted(() => ({
   overview: vi.fn(),
   startArgs: [] as unknown[],
   engineArgs: [] as unknown[],
+  store: "manapool" as string,
+  poolArgs: [] as unknown[][],
 }));
 
 const reval = vi.hoisted(() => vi.fn());
@@ -18,8 +20,9 @@ vi.mock("../model/client", () => ({ callModel: vi.fn() }));
 vi.mock("./inputs", () => ({
   loadGuidedDeck: async () => h.deck,
   guidedStrategies: async () => h.strategies,
-  loadGuidedPool: async () => ({ deck: { prompt: [], entries: [] }, pool: h.pool }),
+  loadGuidedPool: async (...a: unknown[]) => { h.poolArgs.push(a); return { deck: { prompt: [], entries: [] }, pool: h.pool }; },
 }));
+vi.mock("../stores/preference", () => ({ readerStoreForPage: async () => h.store }));
 vi.mock("./store", () => ({
   reapGuided: async () => 0,
   startGuided: async (...a: unknown[]) => { h.startArgs.push(a); return h.started; },
@@ -49,6 +52,7 @@ describe("beginGuided", () => {
     h.strategies = [{ key: "s1", label: "S1", blurb: "b", backing: [{ oracleId: "x", name: "X" }] }];
     h.started = { kind: "started", runId: "run-1", callId: "call-1" };
     reval.mockReset(); h.finish.mockReset(); h.overview.mockReset(); h.startArgs.length = 0; h.engineArgs.length = 0;
+    h.store = "manapool"; h.poolArgs.length = 0;
     h.pool = { entries: [{ oracleId: "p1", name: "P1", cents: 100 }], prompt: [] };
   });
 
@@ -66,6 +70,12 @@ describe("beginGuided", () => {
     h.pool = { entries: [], prompt: [] };
     expect(await beginGuided("u", "d", picks, env)).toEqual({ ok: false, reason: "noPool" });
     expect(h.startArgs).toHaveLength(0);
+  });
+
+  it("prices the pool at the reader's store", async () => {
+    h.store = "tcgplayer";
+    await beginGuided("u", "d", picks, env);
+    expect(h.poolArgs[0][4]).toBe("tcgplayer");
   });
 
   it("passes the store's refusals through, mapping in_flight", async () => {

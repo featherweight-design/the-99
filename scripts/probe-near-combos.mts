@@ -48,7 +48,7 @@ async function main() {
   const bucket = (w: { kind: string; cents?: number | null }) => (w.kind === "spare" ? 0 : w.kind === "elsewhere" ? 1 : w.cents == null ? 3 : 2);
   let withAny = 0;
   for (const deck of decks) {
-    const out = await loadNearCombos({ userId, deckId: deck.id });
+    const out = await loadNearCombos({ userId, deckId: deck.id, store: "manapool" });
     if (out.total > 0) withAny++;
     const tally = { spare: 0, elsewhere: 0, buy: 0 };
     for (const c of out.combos) tally[c.missing.where.kind]++;
@@ -95,7 +95,7 @@ async function main() {
   ].filter((c): c is { label: string; oracleId: string; deck: { oracleIds: string[]; commanderOracleIds: string[] } | undefined } => !!c.oracleId);
   for (const c of cases) {
     const started = Date.now();
-    const out = await loadCardCombos({ userId, oracleId: c.oracleId, deck: c.deck });
+    const out = await loadCardCombos({ userId, oracleId: c.oracleId, deck: c.deck, store: "manapool" });
     const ms = Date.now() - started;
     console.log(`\n${c.label}: ${out.total} combos, top ${out.combos.length} in ${ms}ms`);
     for (const k of out.combos.slice(0, 3)) {

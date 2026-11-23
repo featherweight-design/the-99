@@ -115,7 +115,7 @@ describe("owned basic lands", () => {
     // A fresh map per call: the fill writes into the map it is handed, so a shared one would let
     // read A pass on read B's fill.
     loadAvailability.mockImplementation(() => Promise.resolve(new Map()));
-    const b = await loadCardCombos({ userId: "u", oracleId: "id-Card" });
+    const b = await loadCardCombos({ store: "manapool", userId: "u", oracleId: "id-Card" });
     expect(b.combos[0].others.map((p) => [p.name, p.state])).toEqual([["Forest", "spare"]]);
 
     // Read A: the missing piece is that basic.
@@ -124,7 +124,7 @@ describe("owned basic lands", () => {
       .mockResolvedValueOnce({ rows: [piece("p", "Held", { color_identity: [] }), piece("p", "Forest", { held: false, color_identity: [] })] })
       .mockResolvedValueOnce({ rows: [{ oracle_id: "id-Forest" }] });
     loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
-    const a = await loadNearCombos({ userId: "u", deckId: "d" });
+    const a = await loadNearCombos({ store: "manapool", userId: "u", deckId: "d" });
     expect(a.combos[0].missing.where).toEqual({ kind: "spare" });
   });
 });
@@ -184,7 +184,7 @@ describe("loadNearCombos", () => {
 
   it("a deck that is not the reader's reads as empty", async () => {
     selects.push([]);
-    expect(await loadNearCombos({ userId: "u", deckId: "d" })).toEqual({ combos: [], total: 0 });
+    expect(await loadNearCombos({ store: "manapool", userId: "u", deckId: "d" })).toEqual({ combos: [], total: 0 });
     expect(execute).not.toHaveBeenCalled();
   });
 
@@ -208,7 +208,7 @@ describe("loadNearCombos", () => {
     loadAvailability.mockResolvedValue(new Map([["id-Spare", avail({ owned: 1, free: 1 })]]));
     loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map([["id-Bought", 350]]) });
 
-    const out = await loadNearCombos({ userId: "u", deckId: "d" });
+    const out = await loadNearCombos({ store: "tcgplayer", userId: "u", deckId: "d" });
     expect(out.combos.map((c) => [c.variantId, c.missing.where])).toEqual([
       ["spare", { kind: "spare" }],
       ["buy", { kind: "buy", cents: 350, soldOut: false, qualifier: null }],
@@ -220,6 +220,8 @@ describe("loadNearCombos", () => {
     // A card the catalog has no row for carries none, rather than a guess.
     expect(out.combos[0].missing.card).toBeNull();
     expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ excludeDeckId: "d", oracleIds: ["id-Bought", "id-Spare"] }));
+    // A missing piece is priced at the reader's store.
+    expect(loadPrices.mock.calls[0][3]).toBe("tcgplayer");
   });
 
   it("maxPieces keeps only combos of that many pieces or fewer", async () => {
@@ -232,7 +234,7 @@ describe("loadNearCombos", () => {
     }).mockResolvedValueOnce({ rows: [] });
     loadAvailability.mockResolvedValue(new Map());
     loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
-    const out = await loadNearCombos({ userId: "u", deckId: "d", maxPieces: 2 });
+    const out = await loadNearCombos({ store: "manapool", userId: "u", deckId: "d", maxPieces: 2 });
     expect(out.combos.map((c) => c.variantId)).toEqual(["pair"]);
     expect(out.total).toBe(1);
   });
@@ -350,7 +352,7 @@ describe("read B: a card's combos", () => {
   it("the loader hands the shortlist the deck in scope, commanders included", async () => {
     execute.mockReset();
     execute.mockResolvedValue({ rows: [] });
-    await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: ["id-A"], commanderOracleIds: ["id-Cmdr"] } });
+    await loadCardCombos({ store: "manapool", userId: "u", oracleId: CARD, deck: { oracleIds: ["id-A"], commanderOracleIds: ["id-Cmdr"] } });
     const { PgDialect } = await import("drizzle-orm/pg-core");
     const params = new PgDialect().sqlToQuery(execute.mock.calls[0][0]).params;
     expect(params).toContainEqual(["id-A", "id-Cmdr"]);
@@ -373,7 +375,7 @@ describe("read B: a card's combos", () => {
       .mockResolvedValueOnce({ rows: [row("v", "Card", { card_count: 4 }), row("v", "InDeck", { card_count: 4 }), row("v", "Away", { card_count: 4 }), row("v", "Gone", { card_count: 4 })] })
       .mockResolvedValueOnce({ rows: [] });
     loadAvailability.mockResolvedValue(new Map([["id-Away", avail({ owned: 1, free: 0, claims: [claim("d2", "Elves")] })]]));
-    const out = await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: ["id-InDeck"], commanderOracleIds: [] } });
+    const out = await loadCardCombos({ store: "manapool", userId: "u", oracleId: CARD, deck: { oracleIds: ["id-InDeck"], commanderOracleIds: [] } });
     expect(out.combos[0].others.map((p) => [p.name, p.state, p.decks.map((d) => d.name)])).toEqual([["Away", "elsewhere", ["Elves"]], ["Gone", "notOwned", []], ["InDeck", "inDeck", []]]);
     expect(loadAvailability).toHaveBeenCalledWith("u", expect.objectContaining({ oracleIds: ["id-InDeck", "id-Away", "id-Gone"] }));
   });
@@ -427,7 +429,7 @@ describe("read B: a card's combos", () => {
         .mockResolvedValueOnce({ rows: [] });
       loadAvailability.mockResolvedValue(new Map());
       loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map([["id-Bought", 3420]]) });
-      const out = await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: [CARD], commanderOracleIds: ["id-Cmdr"] }, maxPieces: 2 });
+      const out = await loadCardCombos({ store: "tcgplayer", userId: "u", oracleId: CARD, deck: { oracleIds: [CARD], commanderOracleIds: ["id-Cmdr"] }, maxPieces: 2 });
       expect(out.inScope).toBe(true);
       // The off-color partner is not one piece away from this deck: dropped (OPEN-5).
       expect(out.combos.map((c) => c.variantId).sort()).toEqual(["buy", "cmdr"]);
@@ -439,6 +441,7 @@ describe("read B: a card's combos", () => {
       expect([cmdr.where, cmdr.isCommander]).toEqual([{ kind: "inDeck" }, true]);
       // Priced after the filter: a dropped partner costs no lookup.
       expect([...(loadPrices.mock.calls[0][0] as string[])].sort()).toEqual(["id-Bought", "id-Cmdr"]);
+      expect(loadPrices.mock.calls[0][3]).toBe("tcgplayer");
     });
 
     it("deck-less: not in scope, and nothing is filtered by a deck's colors", async () => {
@@ -449,7 +452,7 @@ describe("read B: a card's combos", () => {
       execute.mockResolvedValueOnce({ rows: pair("off", "OffColor", { color_identity: ["U"] }) }).mockResolvedValueOnce({ rows: [] });
       loadAvailability.mockResolvedValue(new Map());
       loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
-      const out = await loadCardCombos({ userId: "u", oracleId: CARD, maxPieces: 2 });
+      const out = await loadCardCombos({ store: "manapool", userId: "u", oracleId: CARD, maxPieces: 2 });
       expect(out.inScope).toBe(false);
       expect(out.combos.map((c) => c.variantId)).toEqual(["off"]);
       expect(out.combos[0].others[0].where).toEqual({ kind: "buy", cents: null, soldOut: false, qualifier: null });
@@ -462,7 +465,7 @@ describe("read B: a card's combos", () => {
       execute.mockResolvedValueOnce({ rows: pair("x", "InDeck", { color_identity: ["U"] }) }).mockResolvedValueOnce({ rows: [] });
       loadAvailability.mockResolvedValue(new Map());
       loadPrices.mockResolvedValue({ prices: new Map(), newestAsOf: null, cents: new Map() });
-      const out = await loadCardCombos({ userId: "u", oracleId: CARD, deck: { oracleIds: ["id-InDeck"], commanderOracleIds: ["id-Cmdr"] }, maxPieces: 2 });
+      const out = await loadCardCombos({ store: "manapool", userId: "u", oracleId: CARD, deck: { oracleIds: ["id-InDeck"], commanderOracleIds: ["id-Cmdr"] }, maxPieces: 2 });
       expect(out.inScope).toBe(false);
       expect(out.combos[0].others[0].where).toEqual({ kind: "inDeck" });
     });

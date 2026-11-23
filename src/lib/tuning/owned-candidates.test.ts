@@ -33,6 +33,7 @@ import { loadOwnedCandidates, readOwnedCandidates } from "./owned-candidates";
 const row = (i: number) => ({ oracleId: `id${i}`, name: `Card ${i}`, typeLine: "Artifact" });
 const page = (from: number, n: number) => Array.from({ length: n }, (_, i) => row(from + i));
 const args = {
+  store: "manapool" as const,
   userId: "u", deckId: "d", commanderOracleIds: ["cmd"], colorIdentity: ["W"], inDeck: new Set<string>(),
   limits: { capCents: null as number | null, sets: [] as string[] },
 };

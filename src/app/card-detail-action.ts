@@ -7,6 +7,7 @@ import { loadCardDetail } from "../lib/collection/card-detail";
 import { currentUserId } from "../lib/auth";
 import { perfRoute } from "../lib/perf/timing";
 import { requestFlags } from "../lib/flags/request";
+import { readerStoreForPage } from "../lib/stores/preference";
 import { enforceHit } from "../lib/rate/observe";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -72,7 +73,8 @@ export async function getComboSheet(variantId: string): Promise<CardCombo | null
   if (userId === null) return null;
   if (typeof variantId !== "string" || variantId.length === 0 || variantId.length > 80) return null;
   if ((await enforceHit(userId, "card-detail")) !== null) return null;
-  const combo = await loadVariantCombo({ userId, variantId });
+  // The reader's store (store preference): a piece's buy tag is priced there, as card details' are.
+  const combo = await loadVariantCombo({ userId, variantId, store: await readerStoreForPage(userId, await requestFlags(userId)) });
   // Both halves owned is what the feed item said; a piece no longer held is a combo that is no longer there.
   return combo && combo.others.length > 0 && combo.others.every((o) => o.state !== "notOwned") ? combo : null;
 }

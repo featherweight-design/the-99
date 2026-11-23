@@ -5,6 +5,7 @@ import { cards } from "../../db/schema";
 import { loadAvailability } from "../decks/availability-query";
 import { priceOf, priceState } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { readOwnedOracleIds } from "../decks/tuning-read";
 import { printedIn } from "../sets/printed-in-sql";
 import type { EvidencePack } from "./evidence";
@@ -41,11 +42,13 @@ export async function resolveAnswer(args: {
   deckId: string;
   pack: EvidencePack;
   response: TuningResponse;
+  /** The reader's store (store preference): a card's price under the cap is read there. */
+  store: Store;
 }) {
-  const { userId, deckId, pack, response } = args;
+  const { userId, deckId, pack, response, store } = args;
   const { additions, cuts } = response;
   const names = [...new Set([...additions, ...cuts].map((l) => l.card))];
-  const rows = await readResolvedRows({ userId, deckId, limits: pack.limits, names });
+  const rows = await readResolvedRows({ userId, deckId, limits: pack.limits, names, store });
   const resolveName = nameResolver(rows, new Set(pack.cards.map((c) => c.oracleId)));
   return { ...validateSuggestions({ response, pack, resolveName }), askedCount: additions.length + cuts.length };
 }
@@ -60,8 +63,10 @@ export async function readResolvedRows(args: {
   deckId: string;
   limits: EvidencePack["limits"];
   names: readonly string[];
+  /** The reader's store (store preference): the price under a cap is read there. */
+  store: Store;
 }): Promise<(ResolvedCard & { name: string })[]> {
-  const { userId, deckId, limits, names } = args;
+  const { userId, deckId, limits, names, store } = args;
   const nameRows = names.length === 0 ? [] : await db
     .select({
       oracleId: cards.oracleId,
@@ -78,7 +83,7 @@ export async function readResolvedRows(args: {
     .where(inArray(cards.name, names));
   const suggestedIds = nameRows.map((r) => r.oracleId);
   const [{ prices, newestAsOf }, suggestedOwned, availability] = await Promise.all([
-    limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(suggestedIds),
+    limits.capCents === null ? { prices: new Map(), newestAsOf: null } : loadPrices(suggestedIds, [], [], store),
     nameRows.length === 0 || !limits.ownedOnly ? new Set<string>() : readOwnedOracleIds(userId, suggestedIds),
     nameRows.length === 0 || !limits.ownedOnly ? new Map() : loadAvailability(userId, { oracleIds: suggestedIds, excludeDeckId: deckId }),
   ]);

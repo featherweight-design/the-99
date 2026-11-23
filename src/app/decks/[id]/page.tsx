@@ -265,7 +265,7 @@ async function DeckBuilderBody({
   const nearCombosRead = early(
     // Uncapped: the sheet lists every combo its count names, so the segment's count and the sheet's
     // rows always agree. Two-card near combos run to 54 on staging's busiest deck, a small payload.
-    perf.timed("nearCombos", () => loadNearCombos({ userId, deckId: id, maxPieces: 2, cap: Number.POSITIVE_INFINITY })).catch(() => null),
+    perf.timed("nearCombos", async () => loadNearCombos({ userId, deckId: id, maxPieces: 2, cap: Number.POSITIVE_INFINITY, store: await storeRead })).catch(() => null),
   );
   const suggestionsRead = early(indexGenRead.then((indexGen) =>
     // The mix is always counted by label, so no switch decides it and none rides in the key.

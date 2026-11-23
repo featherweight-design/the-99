@@ -18,6 +18,7 @@ import type { Job } from "../labels/types";
 import { OWNED_OFF_INDEX_MAX } from "./limits";
 
 const args = {
+  store: "manapool" as const,
   userId: "u1", deckId: "deck", commanderOracleIds: ["cmd"], colorIdentity: ["W", "U"], inDeck: new Set(["d1", "d2"]),
   limits: { capCents: null as number | null, sets: [] as string[] },
 };

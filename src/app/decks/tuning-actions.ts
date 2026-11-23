@@ -9,6 +9,7 @@ import { db } from "../../db";
 import { deckSuggestionItems, decks } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
+import { readerStoreForPage } from "../../lib/stores/preference";
 import { resolveZone } from "../../lib/zone/server";
 import { heldStubOutcome } from "../../lib/tuning/stub";
 import { isUuid } from "../../lib/uuid";
@@ -283,6 +284,8 @@ export async function runTuning(
   // run finishes whether or not the player stays on the page. The panel reads the run until it settles.
   const work = async (): Promise<unknown> => {
     try {
+      // The reader's store (store preference): every price under the cap, the shortlist's and the answer's, is read there.
+      const storeRead = readerStoreForPage(userId, env);
       const profile = await profileOfHead(head, env);
       const [owned, { overview, universal }] = await Promise.all([
         readOwnedOracleIds(userId, [
@@ -300,16 +303,16 @@ export async function runTuning(
       const ownedCandidates = limits.ownedOnly
         ? await loadOwnedCandidates({
           userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
-          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits,
+          inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits, store: await storeRead,
         })
         : undefined;
       // The cards the run could add toward the focus (plan 4c). On an owned-only run they are read under its limits
       // before "nothing owned fits" is decided, and join the shortlist (`planFocusCandidates`).
       const focusPlan = focusRun
-        ? await planFocusCandidates(limits, ownedCandidates, (l) => loadFocusCandidates({
+        ? await planFocusCandidates(limits, ownedCandidates, async (l) => loadFocusCandidates({
           userId, deckId, commanderOracleIds: profile.commanderOracleIds, colorIdentity: [...profile.colours.identity],
           inDeck: new Set(profile.cards.map((c) => c.oracleId)), limits: l, focus: focusRun.key,
-          stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier",
+          stapleCondition: profile.skeleton.condition, roleBasis: profile.skeleton.roleBasis ?? "classifier", store: await storeRead,
         }))
         : null;
       const shortlist = focusPlan ? focusPlan.shortlist : ownedCandidates;
@@ -343,7 +346,7 @@ export async function runTuning(
         // A rejection is stored as busy here: the distinction is kept for the overview only, for now.
         if (!outcome.ok) return await fail(outcome.errorClass === "upstream_rejected" ? "upstream_busy" : outcome.errorClass);
 
-        resolved = await resolveAnswer({ userId, deckId, pack, response: outcome.value });
+        resolved = await resolveAnswer({ userId, deckId, pack, response: outcome.value, store: await storeRead });
         // 6-asked/5-kept in each list (H35, PR 4a; sub-project 8): the first survivors of each list in
         // whatever order the validator already gives — no new ranking pass. Fewer than 5 is shown as-is.
         sized = sizeLists(resolved.kept, MAX_SUGGESTIONS);

@@ -9,6 +9,7 @@ import { db } from "../../db";
 import { candidateQuery, FOCUS_CANDIDATES_MAX, loadFocusCandidates, planFocusCandidates, rankCandidates, readFocusCandidates, withFocusCandidates } from "./candidates";
 
 const args = {
+  store: "manapool" as const,
   userId: "u1",
   commanderOracleIds: ["c1"],
   colorIdentity: ["W", "U"],
