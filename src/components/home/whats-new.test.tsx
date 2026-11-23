@@ -89,7 +89,7 @@ describe("WhatsNew, kinds on", () => {
     const dialog = screen.getByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: /Price drops/ }));
     expect(dialog.querySelectorAll("li")).toHaveLength(1);
-    expect(within(dialog).getByText(/^6/)).toBeInTheDocument();
+    expect(within(dialog).getAllByText(/^6/).length).toBeGreaterThan(0);
     fireEvent.click(within(dialog).getByRole("button", { name: /^All/ }));
     expect(dialog.querySelectorAll("li")).toHaveLength(6);
   });

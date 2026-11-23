@@ -1,7 +1,7 @@
 "use client";
 // Home's What's new (menu and Home handoff, direction B; property table `menu-home-home.md` § What's new). Three
 // states, from one read (`loadHomeFeed`):
-// - kinds on, items: five rows, then "Show all N" expanding in place; Today / Earlier labels only when the shown list
+// - kinds on, items: five rows, then "Show all N" opening the FeedSheet; Today / Earlier labels only when the shown list
 //   holds both;
 // - kinds on, nothing in the window: the quiet box, a fan of two picture plates beside the lead and a line teasing two
 //   of the kinds on (What's new empty handoff, B);

@@ -26,7 +26,7 @@ const s = feedSheetCopy;
 const DAY_MS = 86_400_000;
 
 export const FEED_ROWS = "m-0 list-none p-0 [&>li+li]:[border-top:1px_solid_var(--border)]";
-export const FEED_DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.14em] text-[color:var(--fg-locked)] uppercase";
+export const FEED_DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9.5px] font-medium tracking-[.14em] text-[color:var(--fg-locked)] uppercase";
 
 /** The items split into Today (the last 24 hours), This week (the last seven days) and Earlier, each in the feed's order. Pure. */
 export function sheetGroups(items: readonly FeedView[], now: string): { today: FeedView[]; week: FeedView[]; earlier: FeedView[] } {
@@ -73,11 +73,11 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
   const active = kind && kinds.some((k) => k.kind === kind) ? kind : null;
   const shown = active ? items.filter((i) => i.kind === active) : items;
   const groups = sheetGroups(shown, now);
-  const group = (label: string, rows: FeedView[]) =>
+  const group = (label: string, rows: FeedView[], after: boolean) =>
     rows.length === 0 ? null : (
-      <section key={label} aria-label={label} className="flex flex-col">
-        <p className={`${FEED_DAY} pb-[6px]`}>{label}</p>
-        <ul className={`${FEED_ROWS} [border-top:1px_solid_var(--border)]`}>
+      <section key={label} aria-label={label} className={`flex flex-col ${after ? "[border-top:1px_solid_var(--border)]" : ""}`}>
+        <p className={`${FEED_DAY} !pt-[12px] !pb-[2px] md:!px-[18px]`}>{label}</p>
+        <ul className={FEED_ROWS}>
           {rows.map((i) => (
             <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
           ))}
@@ -92,11 +92,11 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
       data-feed-chip
       onClick={press}
       className={`flex min-h-[36px] flex-none cursor-pointer items-center gap-[6px] rounded-full px-[12px] font-sans text-[13px] font-medium whitespace-nowrap ${FOCUS} ${
-        on ? "[border:1px_solid_var(--accent)] bg-[color:color-mix(in_srgb,var(--accent)_12%,transparent)] text-[color:var(--fg)]" : "[border:1px_solid_var(--border)] bg-transparent text-[color:var(--fg-muted)]"
+        on ? "[border:1px_solid_var(--fg)] bg-[color:var(--fg)] text-[color:var(--bg)]" : "[border:1px_solid_var(--border-strong)] bg-[color:var(--surface)] text-[color:var(--fg)]"
       }`}
     >
       {label}
-      <small className="font-mono text-[10.5px] text-[color:var(--fg-faint)]">{n}</small>
+      <small className={`font-mono text-[10.5px] ${on ? "opacity-70" : "text-[color:var(--fg-faint)]"}`}>{n}</small>
     </button>
   );
 
@@ -116,27 +116,27 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
         aria-labelledby="feed-sheet-title"
         data-feed-sheet
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full flex-col overflow-hidden bg-[color:var(--surface)] md:w-[460px] md:[border-left:1px_solid_var(--border-strong)]"
+        className="flex h-full w-full flex-col overflow-hidden bg-[color:var(--bg)] md:w-[460px] md:[border-left:1px_solid_var(--border-strong)]"
         style={{ boxShadow: "var(--modal-shadow)" }}
       >
-        <div className="flex flex-none flex-col gap-[10px] [border-bottom:1px_solid_var(--border)] pt-[10px] pb-[12px] pl-[16px] pr-[8px]">
-          <div className="flex items-center gap-[9px]">
-            <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rotate-45 bg-[color:var(--accent)]" />
-            <h2 ref={headingRef} id="feed-sheet-title" tabIndex={-1} className="m-0 font-display text-[17px] leading-[1.2] font-semibold text-[color:var(--fg)] outline-none">
+        <div className="flex flex-none flex-col gap-[12px] [border-bottom:1px_solid_var(--border)] px-[16px] pt-[14px] pb-[12px] md:px-[20px] md:pt-[18px]">
+          <div className="flex items-center gap-[10px]">
+            <span aria-hidden="true" className="h-[7px] w-[7px] flex-none rotate-45 bg-[color:var(--accent)] opacity-85" />
+            <h2 ref={headingRef} id="feed-sheet-title" tabIndex={-1} className="m-0 font-display text-[20px] leading-[1.2] font-bold text-[color:var(--fg)] outline-none">
               {s.title}
             </h2>
-            <span className="font-mono text-[11px] tracking-[.08em] text-[color:var(--accent-text)]">{s.count(items.length, unseen)}</span>
+            <span className="font-mono text-[10.5px] tracking-[.14em] text-[color:var(--accent-text)]">{s.count(items.length, unseen)}</span>
             <button
               type="button"
               data-feed-sheet-close
               aria-label={s.close}
               onClick={onClose}
-              className={`ml-auto flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center border-0 bg-transparent font-mono text-[15px] text-[color:var(--fg-muted)] ${FOCUS}`}
+              className={`-mr-[8px] ml-auto flex h-[44px] w-[44px] flex-none cursor-pointer items-center justify-center rounded-[8px] border-0 bg-transparent md:h-[36px] md:w-[36px] font-mono text-[15px] text-[color:var(--fg-muted)] ${FOCUS}`}
             >
               <span aria-hidden>✕</span>
             </button>
           </div>
-          <div role="group" aria-label={feedCopy.archive.kindsAria} className="-mr-[8px] flex gap-[8px] overflow-x-auto pr-[8px]">
+          <div role="group" aria-label={feedCopy.archive.kindsAria} className="-mx-[16px] flex gap-[8px] overflow-x-auto px-[16px] [scrollbar-width:none] md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
             {chip(s.all, items.length, active === null, () => setKind(null))}
             {kinds.map((k) =>
               chip(chipName(k.kind), k.n, active === k.kind, () => {
@@ -147,13 +147,13 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
           </div>
         </div>
         <div data-dismiss-scope data-feed-sheet-body className="flex min-h-0 flex-auto flex-col overflow-y-auto overscroll-contain">
-          {group(c.today, groups.today)}
-          {group(s.thisWeek, groups.week)}
-          {group(c.earlier, groups.earlier)}
+          {group(c.today, groups.today, false)}
+          {group(s.thisWeek, groups.week, groups.today.length > 0)}
+          {group(c.earlier, groups.earlier, groups.today.length + groups.week.length > 0)}
         </div>
-        <div data-feed-sheet-foot className="flex flex-none items-center gap-[4px] [border-top:1px_solid_var(--border)] py-[4px] pr-[6px] pl-[14px]">
+        <div data-feed-sheet-foot className="flex flex-none items-center gap-[6px] [border-top:1px_solid_var(--border)] px-[10px] py-[6px] md:px-[14px]">
           {aside}
-          <Link href="/settings" className={`flex min-h-[44px] items-center gap-[5px] px-[4px] font-sans text-[13px] font-medium text-[color:var(--fg-muted)] ${FOCUS}`}>
+          <Link href="/settings" className={`flex min-h-[44px] items-center gap-[5px] px-[6px] font-sans text-[13px] font-medium text-[color:var(--fg-muted)] md:min-h-[36px] ${FOCUS}`}>
             {c.choose}
             <i aria-hidden className="text-[15px] leading-none text-[color:var(--fg-faint)] not-italic">›</i>
             <PendingReporter href="/settings" />
@@ -169,7 +169,7 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
                 captureToolEvent("feed_sheet_clear", { count: feedCountBucket(keys.length), filtered: active ? "kind" : "all" });
                 onClear(keys, active !== null);
               }}
-              className={`ml-auto flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg)] ${FOCUS}`}
+              className={`ml-auto flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent px-[10px] font-sans text-[13px] font-medium text-[color:var(--fg-muted)] md:min-h-[36px] ${FOCUS}`}
             >
               {c.clearAll.label}
             </button>
