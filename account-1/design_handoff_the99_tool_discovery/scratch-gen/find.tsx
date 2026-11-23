@@ -24,6 +24,7 @@ export const findCopy = {
     bodyFreeRows: "Press Find a deck beside a card to see which of your decks it fits.",
     /** The phone row's button is the glyph alone, so the line draws the glyph it names (lead, glyph, rest). */
     bodyFreeRowsPhone: { lead: "Press", rest: "beside a card to see which of your decks it fits." },
+    /** R4: the phone row's strip carries the word, so the phone reads the tile's line. */
     dismiss: "Dismiss",
   },
   button: "Find a deck",
@@ -184,6 +185,18 @@ export function FitRowButton({ name, open = false }: { name: string; open?: bool
       className={`flex w-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] rounded-[7px] bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] text-[12.5px] font-medium text-[color:var(--fg)] md:w-[136px] ${open ? "outline-solid outline-2 outline-offset-[2px] outline-[color:var(--accent)]" : ""}`}>
       <FitsGlyph px={6} />
       <span className="hidden whitespace-nowrap md:inline">{findCopy.button}</span>
+    </button>
+  );
+}
+
+/** R4: the phone row's button as a strip under the row, inside its outline: the full row's width, 40px, the glyph and
+ *  `Find a deck`, a hairline between. The row keeps every cell it draws today; the strip is a sibling button. */
+export function FitRowStrip({ name, open = false }: { name: string; open?: boolean }) {
+  return (
+    <button type="button" aria-label={findCopy.pressAria(name)} aria-haspopup="dialog" aria-expanded={open} data-dz="fits"
+      className={`flex h-[40px] w-full cursor-pointer items-center justify-center gap-[8px] rounded-b-[7px] bg-[color:var(--surface)] [border:1px_solid_var(--border)] [border-top:1px_solid_var(--border)] -mt-px text-[13px] font-medium text-[color:var(--fg)] ${open ? "outline-solid outline-2 outline-offset-[2px] outline-[color:var(--accent)]" : ""}`}>
+      <FitsGlyph px={5} />
+      <span>{findCopy.button}</span>
     </button>
   );
 }

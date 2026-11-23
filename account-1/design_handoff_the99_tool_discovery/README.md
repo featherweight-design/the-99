@@ -1,6 +1,10 @@
-# Finding the tools · R3
+# Finding the tools · R4
 
-Account 1, 2026-11-23. Status: **R3, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R4, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Ask, Find, Tuning, Welcome).
+
+**R4 (Hugh's R3 notes, 2026-11-23):** rows redrawn over the full shipped row (marks, combo, foil, pips, dates); the phone's
+row button becomes a strip under the row (Q8). Home's search stays for good, first under the page head. No model call for Ask
+(R3 Q6 settled). Call 5 sets down how card search and Ask share one field.
 
 **R3 (Hugh's R2 notes, 2026-11-23):** the labelled Find a deck button is approved (R2 Q4, A); R3 draws it in row view, the
 phone's default. Home's What you can do is withdrawn as too fixed to explore (R2 Q5 goes with it); call 5, Ask, replaces it:
@@ -37,12 +41,16 @@ Source of truth on main 7563036: `src/lib/decks/builder-tab-specs.ts`, `src/comp
      The name keeps its whole line (no padding taken), and a reader who has never seen the glyph reads what it does. It
      opens the card window straight on the shipped Find a deck view; its back press is the card's details.
    - Not on All: most of a collection is in decks, and a button under every tile would be noise.
-   - **Row view (R3).** The phone's default view. A row is one button, so the Find a deck button is its sibling at the
-     row's right, the row's full height, 6px from it, radius 7, `--surface` with `--border-strong`. From md: glyph and
-     `Find a deck`, 136px (the row's chevron column stays). Phone: 44px wide, the glyph alone (no room for the word beside a
-     name), accessible name `Find a deck for <card>`. The call-out names it: from md `Press Find a deck beside a card to
-     see which of your decks it fits.`; on a phone `Press [glyph, boxed as the button] beside a card to see which of your
-     decks it fits.`
+   - **Row view (R4), over the full shipped row.** The phone's default view. Drawn sorted by Date added, as most
+     collections are: copies, name, bracket marks, combo, foil, the date, the type line, cost pips, the set. In the Free
+     view every row is free, so the shipped row draws no availability marker. A row is one button, so the control is its
+     sibling, never nested:
+     - **Phone:** a `Find a deck` strip under the row, inside its outline: 40px, full width, the glyph and the word, a
+       `--border` hairline above, the row's bottom corners squared and the strip's rounded 7. The row keeps every cell and
+       its whole name line. The call-out reads as the tiles': `Press Find a deck under a card…`.
+     - **From md:** the button beside the row, the row's height, 136px, glyph and `Find a deck`, 6px from it; the row's
+       chevron column stays. The call-out: `Press Find a deck beside a card…`.
+     - Q8 B (drawn, not recommended): R3's 44px glyph button beside the phone row; names lose about ten characters.
    - Unchanged: the door in card details, its M8 moment, the view, Add / Add to buy, Which deck needs it most?.
    - Every Try it for Find a deck (`tools.ts` lands `/collection?avail=free`) arrives on the buttons: About's Tools tab,
      the tour, the welcome sheet (call 3) and Home (call 4).
@@ -93,31 +101,42 @@ Source of truth on main 7563036: `src/lib/decks/builder-tab-specs.ts`, `src/comp
      questions: "spare", "extra", "not in a deck", "make better", "improve", "build", "buy", "cheaper"...). A query of two
      or more words that hits a list draws that tool; a card-name hit always draws its cards too. Free, instant, works
      offline once loaded, and nothing typed leaves the page.
-   - **Home:** in R2's slot (under the welcome strip, above Pick up where you left off): `Not sure where to go?`, the
-     field drawn as a press (48px, `--surface-sunken`, the glyph, the placeholder, `⌘K` from md) that opens the search,
-     and the starters under it; a starter opens the search with its question typed. From 1180 the field is 640px wide.
+   - **Home (R4), for good:** first under the page head, above the welcome strip: the field drawn as a press (48px,
+     `--surface-sunken`, the glyph, `Search cards, or ask a question`, `⌘K` from md; 720px wide from 1180) that opens the
+     search, and the four starters under it, one row that scrolls sideways on a phone and wraps from md. A starter opens
+     the search with its question typed. It never retires; the magnifier and ⌘K stay on every screen.
+   - **One field, two jobs (R4).** What keeps card search and Ask apart:
+     - Card names that read as questions (`Where Ancients Tread`, `Ask Urza`, `Find the Path`, `What Must Be Done`): a
+       card whose name equals the query or starts with it always ranks first, tools under it. Tools lead only when no card
+       name starts with the query.
+     - One word answers a tool only when it is the tool's own name (Wishlist, Tuning, Consider); otherwise a question needs
+       two or more words to hit a phrase, so typing a name stays a card lookup.
+     - Card results are every card, as shipped; tool answers are about the reader's own cards and decks, and carry their
+       numbers to say so.
+     - One combobox, one listbox with two labelled groups (`Tools for this`, the cards); ↑ ↓ move through both.
+     - A question with no match says so and offers the starters and About; never the card no-results box.
+     - The search event records which group a press came from (tool or card), never the text.
+     - Why one field: a new player will not know which of two boxes to use, and the app's rule is one control per action.
 6. **Phone and desktop:** one design.
 
 ## Open questions (Hugh)
 
 Settled: Tuning always lands on its tiles (R1 Q1, A); the free block stays in Where credits work (R1 Q2, A); the labelled
-button under each tile (R2 Q4, A). Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What you can do).
+button under each tile (R2 Q4, A); no model call for Ask (R3 Q6, A). Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What
+you can do), R3 Q7 (it asked whether Home's field should go away after three uses; it now stays for good).
 
-- **Q6 · When no tool matches a question, should a model try?** A (drawn, recommended): no model; misses show the
-  starters and About, and are counted (never their text) so the phrase lists grow. B: a miss goes to a small model call
-  that picks the closest tool (`playerText`, a registered prompt path, a cost per call). Board: Ask, A3.
-- **Q7 · Does Home keep the Ask field for good?** A (recommended): it shows until the reader has asked or searched from it
-  three times, then leaves; the magnifier and ⌘K stay everywhere. B: it stays on Home for good. Board: Ask, H2.
+- **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
+  B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
 
 ## Files
 
 | File | What |
 |---|---|
 | `Main.dc.html` | What changed since R2, the answers, the open questions |
-| `Ask.dc.html` | A0 nothing typed, A1 a question, A3 nothing matches (desktop dropdown and phone sheet); H2 Home's way in |
-| `Find.dc.html` | F0–F2 desktop and phone: the call-out with Show them, Free with a button under each tile, the button opens Find a deck; R1 the row view |
+| `Ask.dc.html` | A0 nothing typed, A1 a question, A3 nothing matches (desktop dropdown and phone sheet); H3 Home's search |
+| `Find.dc.html` | F0–F2 desktop and phone: the call-out with Show them, Free with a button under each tile, the button opens Find a deck; R5 / R4 the row view over the full row (Q8 A / B) |
 | `Tuning.dc.html` | T0 today's tab row; T1 the Tuning tab; T2 Consider open in it |
 | `Welcome.dc.html` | H0 Home's strip (unchanged); S0 the sheet today; S1 proposed |
 | `STATES.md` · `copy strings.ts` · `READINESS.md` | Every state, every new string, the gaps |
-| `art/td-*.webp` | The frames (2x), rendered from main 7563036. `td-*-c0..c2` (R1's Find) and `td-*-h1` (R2's What you can do) are kept for the record. |
+| `art/td-*.webp` | The frames (2x), rendered from main 7563036. `td-*-c0..c2` (R1's Find) and `td-*-h1` (R2's What you can do), `td-*-r1` and `td-*-h2` (R3) are kept for the record. |
 | `scratch-gen/` | How the frames were made (`HOW.md`). Reference only; never import. |

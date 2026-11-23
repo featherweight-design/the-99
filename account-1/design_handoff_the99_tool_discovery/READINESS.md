@@ -1,6 +1,6 @@
-# READINESS · Finding the tools R3
+# READINESS · Finding the tools R4
 
-**Verdict: Amber, for Hugh's review.** Two open questions (README, Q6 and Q7). Every gap below has an answer proposed.
+**Verdict: Amber, for Hugh's review.** One open question (README, Q8). Every gap below has an answer proposed.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -9,8 +9,9 @@
   is unknown (`availabilityOk` false).
 - **G3 · The button opens the view.** `CardDetailProvider` gains an open-with-view entry (`openCard(id, { view: "fits" })`)
   so the window mounts on `FitsView` with `onBack` to the card; focus returns to the button on close.
-- **G4 · Row view (drawn R3).** `RowsView` wraps each row in a flex row with the button as the row button's sibling
-  (never nested). The button's name is `Find a deck for <card>` at every width.
+- **G4 · Row view (R4).** `RowsView` wraps each row with its control as the row button's sibling, never nested: a flex
+  column below md (the row's bottom corners squared, the strip under it), a flex row from md (the button beside it). The
+  control's name is `Find a deck for <card>` at every width. Every cell of `CollectionRowCells` draws as shipped.
 - **G5 · Consider's desktop toolbar.** Today it rides the deck tabs' row; inside Tuning it rides the hub's underline row
   at its right end (not drawn). Phone: the panel's own toolbar row, as drawn.
 - **G6 · Retargets.** `builder-view.ts` gains `tuning`, loses `consider`; `?view=consider` and stored last-views map to
@@ -29,6 +30,11 @@
 - **G11 · Ask numbers and misses.** An answer's own number comes from data the page already has (the Free count the
   collection reads, a deck's open slots); one that is not loaded is left out, never fetched for the row. A miss is one
   PostHog count with no query text (`ph-no-capture` stays on the field).
+- **G13 · Ranking in one field (R4).** The search merges two lists: card hits whose name equals or starts with the
+  query rank first; then tool answers; then the rest of the card hits. One listbox, two `role="group"` children with
+  labels. Tool phrases never match a single word other than a tool's own name.
+- **G14 · Home's field.** A press that opens the shell's search (`openSearch`), with `?q=` for a starter; no second
+  search state. Lives in `Dashboard` above `props.welcome`, `order-0` below 1180.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks

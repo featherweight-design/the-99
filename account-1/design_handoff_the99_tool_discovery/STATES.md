@@ -1,4 +1,4 @@
-# States · Finding the tools R3
+# States · Finding the tools R4
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -20,13 +20,14 @@
 | Back (← card) | The card's details, the door under the store link as shipped. |
 | Close | Focus returns to the button. |
 
-## Find a deck button (beside a row) · R3
+## Find a deck in row view · R4
 | State | Draws |
 |---|---|
 | List not narrowed to Free alone | Nothing; the row as shipped. |
-| Narrowed to Free alone, phone | 44px glyph button beside each row; the call-out's phone line draws the glyph. |
-| Narrowed to Free alone, from md | 136px glyph and `Find a deck` beside each row. |
-| Card not Commander-legal | No button; the row runs the full width. |
+| Narrowed to Free alone, phone | A 40px `Find a deck` strip under each row, inside its outline; every cell of the row as shipped. |
+| Narrowed to Free alone, from md | The 136px button beside each row, the row's height. |
+| Any sort (Name, Date added, Price) | The row's own figure leads its type line as shipped; the strip or button is unchanged. |
+| Card not Commander-legal | No strip or button; the row as shipped. |
 | Pressed / Back / Close | As the tile's button. |
 
 ## Ask (card search) · R3
@@ -42,33 +43,11 @@
 | A tool's switch off for this reader | That tool never answers (`requestFlags`). |
 | Offline | As shipped (S7). Tools still answer; the reader's numbers are those the page holds, or left out. |
 
-## Home · Ask · R3
+## Home · search · R4
 | State | Draws |
 |---|---|
-| Reader has a deck, Ask not yet used three times from Home | `Not sure where to go?`, the field as a press, the starters. |
-| Used three times from Home (Q7 A) | Nothing. |
-| No deck yet | Nothing (Home's ways in already lead). |
+| Any reader with a collection | The field and the starters, first under the page head, for good. |
+| No collection yet | Nothing (first-run Home leads with adding cards). |
 | Field pressed | The search opens (phone sheet, desktop dropdown), nothing typed. |
 | A starter pressed | The search opens with the question typed. |
-
-## Deck tabs
-| Deck | Row |
-|---|---|
-| Brew (no version) | Your deck · Analysis · Tuning · Games |
-| Committed or linked | Your deck · Analysis · Tuning · Games · Versions |
-
-## Tuning tab
-| State | Draws |
-|---|---|
-| Landing | Consider (full width from md), then the shipped four tiles with their shipped states. |
-| Consider open | Hub's underline row (desktop) / `‹ Tuning` + `1 of 5 tools` (phone); the shipped Consider panel. |
-| Consider empty (nothing to suggest) | The panel's shipped empty state; the tile's status reads `nothing to consider`. |
-| Consider degraded (EDHREC down) | The panel's shipped notice; tile status empty. |
-| Leave the tab | Resets to the landing (the hub's shipped rule, now on the Tuning tabpanel's unmount). |
-
-## Where credits work
-| Shape | Rows | Free block |
-|---|---|---|
-| `decks` | Every row with Try it | Both rows with Try it |
-| `noDeck` | As shipped (lead rows with Try it, reason line, rest) | Under the reason line, no Try it |
-| `locked` | As shipped (lock line, no Try it) | Under the lock line, no Try it |
+| A starter whose tool cannot answer this reader (no deck for Find a deck) | That starter is left out; the row closes up. |

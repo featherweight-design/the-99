@@ -172,3 +172,24 @@ export function HomeAsk() {
     </section>
   );
 }
+
+/** R4: Home's search, for good. First thing under the page head, above the welcome strip: the field (a press that
+ *  opens the search) and, under it, the starters in one row that scrolls sideways on a phone. */
+export function HomeSearch() {
+  return (
+    <section aria-label="Search or ask" className="flex flex-col gap-[10px]">
+      <button type="button" className="flex h-[48px] w-full cursor-text items-center gap-[10px] rounded-[10px] bg-[color:var(--surface-sunken)] px-[14px] text-left text-[15px] text-[color:var(--fg-faint)] [border:1px_solid_var(--border-strong)] min-[1180px]:max-w-[720px]">
+        <span className="text-[color:var(--fg-muted)]"><SearchGlyph size={18} /></span>
+        <span className="min-w-0 flex-1 truncate">{askCopy.placeholder}</span>
+        <kbd aria-hidden className="hidden rounded-[5px] px-[6px] py-[2px] font-mono text-[10.5px] text-[color:var(--fg-faint)] [border:1px_solid_var(--border-strong)] md:inline">⌘K</kbd>
+      </button>
+      <ul role="list" aria-label={askCopy.starters.heading} className="-mx-[16px] m-0 flex list-none gap-[8px] overflow-x-auto px-[16px] pb-[2px] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [scrollbar-width:none]">
+        {askCopy.starters.questions.map((q) => (
+          <li key={q} className="flex-none">
+            <button type="button" className="flex min-h-[40px] cursor-pointer items-center whitespace-nowrap rounded-full bg-[color:var(--surface)] px-[13px] text-[13px] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] md:min-h-[34px]">{q}</button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}

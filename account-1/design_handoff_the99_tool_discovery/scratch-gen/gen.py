@@ -110,32 +110,50 @@ C5 = call("5", "Ask, in the search you already have", ul([
   f"Home: R2's What you can do is replaced by the same field as a press (it opens the search) under {m('Not sure where to go?')}, with the starters under it. Under the welcome strip, above Pick up where you left off."]))
 Q6 = q("Q6", "When no tool matches a question, should a model try?", "Option A: no model (drawn). Phrase lists match; a miss shows the starters and About, and misses are counted (never their text) so the lists grow. Option B: a miss goes to a small model call that picks the closest tool. It reads free text, so it goes through playerText, registers as a prompt path, and costs per call.", "A for launch. It is free, instant and private, and the miss count tells us whether B is worth building.")
 Q7 = q("Q7", "Does Home keep the Ask field for good?", "Option A: it shows until the reader has asked or searched from it three times, then leaves; the magnifier and ⌘K stay everywhere (drawn as the first-visit state). Option B: it stays on Home for good.", "A. It is a way in for someone who has not found search yet; once they have, Home goes back to their decks.")
+
+C1R4 = call("1", "Find a deck in row view, over the full row (R4)", ul([
+  "Drawn over the row as it ships, sorted by Date added as most collections are: copies, name, bracket marks, combo, foil, the date, the type line, cost pips, the set. In the Free view every row is free, so the shipped row draws no availability marker.",
+  f"Phone: a {m('Find a deck')} strip under each row, inside its outline (40px, the glyph and the word, a hairline above). The row keeps every cell and its whole name line, and it reads as the tile's button does. The call-out reads as the tiles': {m('Press Find a deck under a card…')}",
+  "Desktop: the R3 button beside the row (136px, glyph and word), the row's height. A desktop row has the room.",
+  "R3's phone glyph beside the row is drawn as Q8's option B: it costs the name about ten characters on a full row."]))
+C5R4 = call("5", "Ask and card search, one field (R4)", ul([
+  f"Home gets the field for good, first under the page head and above the welcome strip: {m('Search cards, or ask a question')}, a press that opens the search, and the four starters under it (one row that scrolls sideways on a phone). The magnifier and ⌘K stay on every screen.",
+  "The search itself is as R3: starters when nothing is typed, Tools for this above the cards for a question, never a dead end. No model call (Hugh, R3 Q6).",
+  "One field, two jobs, and what keeps them apart:",
+  ul([f"<b>Card names that read as questions</b> ({m('Where Ancients Tread')}, {m('Ask Urza')}, {m('Find the Path')}, {m('What Must Be Done')}). A card whose name starts with the query, or equals it, always ranks first; tools follow under it. Tools lead only when no card name starts with the query.",
+      "<b>One word.</b> Tools answer one word only when it is a tool's own name (Wishlist, Tuning, Consider); otherwise a question needs two or more words to hit a phrase. Typing a name stays a card lookup.",
+      "<b>All cards vs yours.</b> Card results are every card, as shipped; tool answers are about the reader's own cards and decks, and say so with their numbers.",
+      "<b>Keys and screen readers.</b> One combobox, one listbox with two labelled groups (Tools for this, the cards); ↑ ↓ move through both, ↵ opens.",
+      "<b>Expectation.</b> A question with no match says so plainly and offers the starters and About; it never shows a card no-results box for a question.",
+      "<b>Measuring.</b> The search event records which group the press came from (tool or card), never the text, so card lookups and questions read apart."]),
+  "Why one field: new players will not know which of two boxes to use, and the app's rule is one control per action."]))
+Q8 = q("Q8", "Phone rows: a Find a deck strip under each row, or the glyph beside it?", "Option A: the strip under the row, the glyph and the word (drawn, R5). Option B: R3's 44px glyph button beside the row; rows stay their height, names lose about ten characters on a full row.", "A. The name is what a reader scans by, and the word matches the tile's button, so phone and desktop read the same.")
 boards = {}
-boards["Main.dc.html"] = (1600, 2000, "Main", page("Finding the tools R3: main", 1600, 2000,
- head("Finding the tools · R3",
-  "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R3 draws Find a deck in row view and replaces Home's What you can do with Ask: the card search takes questions and answers with the tools, and Home shows the same field with starter questions. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
- + note("Since R2", ["The labelled Find a deck button under each tile is approved (R2 Q4, A). R3 adds the row view (call 1, board Find).", "What you can do on Home is withdrawn (too fixed, no room to explore); R2 Q5 goes with it. Ask replaces it (call 5, board Ask).", "Tuning and Welcome as R1, approved."])
+boards["Main.dc.html"] = (1600, 1850, "Main", page("Finding the tools R4: main", 1600, 1850,
+ head("Finding the tools · R4",
+  "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R4 redraws Find a deck's rows over the full shipped row, puts a search field on Home for good, and sets down how card search and Ask share one field. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
+ + note("Since R3", ["Rows are drawn over the full shipped row (marks, combo, foil, pips, dates); the phone's button becomes a strip under the row (call 1, Q8).", "Home's field stays for good and moves up, first under the page head (R3 Q7 withdrawn: it asked whether the Home field should go away after three uses; it no longer does).", "No model call for Ask (R3 Q6, settled).", "Tuning and Welcome as R1, the tile button as R2, approved."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
- + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C5 + C1R3 + call("2, 3", "As R1, approved", ul(["Tuning gets its own tab after Analysis; Consider leaves the tab row and becomes Tuning's first tile. Analysis keeps the reading.", "Where credits work: every row lands, the Tuning rows name the tab, and a free block names Consider and Find a deck."])) + '</div>'
+ + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C5R4 + C1R4 + call("2, 3", "As R1, approved", ul(["Tuning gets its own tab after Analysis; Consider leaves the tab row and becomes Tuning's first tile. Analysis keeps the reading.", "Where credits work: every row lands, the Tuning rows name the tab, and a free block names Consider and Find a deck."])) + '</div>'
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
- + '<div style="display:flex;gap:20px">' + fig("p-a1", 300, "Ask, a question", "The tools answer above the cards.") + fig("p-r1", 300, "Collection rows, Free", "The glyph button beside each row.") + '</div>'
+ + '<div style="display:flex;gap:20px">' + fig("p-h3", 300, "Home, the search for good", "First under the page head.") + fig("p-r5", 300, "Collection rows, Free", "A Find a deck strip under each row.") + '</div>'
  + '</div></div>'
- + Q6 + Q7
+ + Q8
  + note("Not changed", ["Card search's card results, recents, Add several and its keys.", "The card window's Find a deck door and its moment (M8).", "The Availability filter, its options and its chip.", "Home's strip, the first-run tour."])))
 
-boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R3: Find a deck", 1700, 4560,
- head("Q1 · How a player finds the deck a card fits (R3)", "/collection's Cards tab. F0 the call-out on All, its Show them applying the shipped Availability: Free. F1 narrowed to Free, a Find a deck button under each tile (approved R2). R1 the row view, new in R3: the button beside each row. F2 the button opens Find a deck straight (shipped view, Killian, one deck fits).")
- + row("Row view, new in R3", [dk("d-r1", "R1 · Rows, desktop", "Glyph and word, 136px, the row's height.", 780), ph("p-r1", "R1 · Rows, phone (the phone's default)", "44px, the glyph alone; the call-out draws the glyph it names.")])
+boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a deck", 1700, 4560,
+ head("Q1 · How a player finds the deck a card fits (R4)", "/collection's Cards tab. F0 the call-out on All, its Show them applying the shipped Availability: Free. F1 narrowed to Free, a Find a deck button under each tile (approved R2). R5 and R4 the row view over the full shipped row, phone options A and B. F2 the button opens Find a deck straight (shipped view, Killian, one deck fits).")
+ + row("Row view, the full row (R4)", [dk("d-r5", "R5 · Rows, desktop", "Sorted by Date added: marks, combo, pips, dates; the button beside, 136px.", 780), ph("p-r5", "R5 · Rows, phone (Q8 A)", "A strip under each row; every cell and the whole name line stay."), ph("p-r4", "R4 · Rows, phone (Q8 B)", "R3's glyph beside the row: the names lose about ten characters.")])
  + row("Desktop · 1300", [dk("d-f0", "F0 · All", "The call-out with Show them; no buttons on All.", 780), dk("d-f1", "F1 · Free", "The Free chip as shipped; a labelled button under each tile.", 780)])
  + row("Desktop · 1300", [dk("d-f2", "F2 · The button opens Find a deck", "The card window straight on the view; ← the card goes to its details.", 780)])
  + row("Phone · 390", [ph("p-f0", "F0 · All", "Show them under the line, 44px."), ph("p-f1", "F1 · Free", "Names keep their whole line; the button sits under the tile."), ph("p-f2", "F2 · Find a deck", "The phone card window, on the view.")])))
 
-boards["Ask.dc.html"] = (1700, 3080, "Ask", page("Finding the tools R3: Ask", 1700, 3080,
- head("Q4 · Ask: questions that lead to the tools", "The shipped card search, open over Home. A0 nothing typed: the starter questions above Recent cards. A1 a question: the tools that answer it, above the cards. A3 nothing matches: never a dead end. H2 Home's way in, in place of R2's What you can do.")
+boards["Ask.dc.html"] = (1700, 3080, "Ask", page("Finding the tools R4: Ask", 1700, 3080,
+ head("Q4 · Ask: questions that lead to the tools", "The shipped card search, open over Home. A0 nothing typed: the starter questions above Recent cards. A1 a question: the tools that answer it, above the cards. A3 nothing matches: never a dead end. H3 Home's search, for good (R4).")
  + row("Desktop · 1300, the search's dropdown", [dk("d-a0", "A0 · Nothing typed", "Starters above Recent cards; the placeholder says it takes questions.", 760), dk("d-a1", "A1 · A question", "Tools for this: name, cost, the shipped line, your number, where it lands.", 760)])
- + row("Desktop · 1300", [dk("d-a3", "A3 · Nothing matches", "The starters again and About’s tool list.", 760), dk("d-h2", "H2 · Home", "The field as a press under Not sure where to go?, the starters under it.", 780)])
+ + row("Desktop · 1300", [dk("d-a3", "A3 · Nothing matches", "The starters again and About’s tool list.", 760), dk("d-h3", "H3 · Home (R4)", "The field for good, first under the page head; the starters under it.", 780)])
  + row("Phone · 390, the search sheet", [ph("p-a0", "A0 · Nothing typed", "Starters wrap, 44px each."), ph("p-a1", "A1 · A question", "Three tools; no card names match."), ph("p-a3", "A3 · Nothing matches", "Starters, then About.")])
- + row("Phone · 390", [ph("p-h2", "H2 · Home, phone", "Under the strip, above your decks.")])))
+ + row("Phone · 390", [ph("p-h3", "H3 · Home, phone (R4)", "Under the page head; the starters scroll sideways.")])))
 
 boards["Tuning.dc.html"] = (1700, 3920, "Tuning", page("Finding the tools: Tuning", 1700, 3920,
  head("Q2 · Tuning gets a tab", "T0 today's tab row (Tuning is the last section of Analysis, under the whole reading). T1 the Tuning tab's landing. T2 Consider opened inside it, the shipped panel.")
@@ -155,6 +173,6 @@ order = ["Main.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welco
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R3", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R4", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)

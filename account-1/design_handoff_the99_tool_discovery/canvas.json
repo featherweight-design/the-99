@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-23T17:00:00Z"
  },
- "title": "Finding the tools R3",
+ "title": "Finding the tools R4",
  "launch": {
   "view": "canvas"
  },
@@ -14,7 +14,7 @@
    "x": 0,
    "y": 0,
    "w": 1600,
-   "h": 2000,
+   "h": 1850,
    "title": "Main"
   },
   "Ask.dc.html": {

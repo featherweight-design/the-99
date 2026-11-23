@@ -1,4 +1,4 @@
-// Finding the tools R3: every NEW or CHANGED string (placeholders for /copy-review). Shipped strings are reused as named.
+// Finding the tools R4: every NEW or CHANGED string (placeholders for /copy-review). Shipped strings are reused as named.
 export const findADeckCalloutCopy = {
   eyebrow: "Find a deck",
   title: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck`,
@@ -24,7 +24,7 @@ export const askCopy = {
   yours: { spares: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck` },
   noCards: "No card names match.",
   noTool: { title: "Nothing here answers that yet", body: "Try one of these, or search a card by name.", about: "Every tool, in About" },
-  home: { heading: "Not sure where to go?" },
+  // R4: Home draws the field and the starters with no heading (the field names itself).
 };
 
 export const tuningTabCopy = {

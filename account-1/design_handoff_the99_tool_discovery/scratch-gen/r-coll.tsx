@@ -10,7 +10,7 @@ import { collectionChips } from "../src/lib/collection/chips";
 import { collectionChassisCopy } from "../src/lib/copy/collection";
 import { availabilityLabel } from "../src/lib/collection/availability-filter";
 import { projected } from "../src/lib/demo/projected";
-import { FindCallout, FindFilter, FitPress, FitButton, FitRowButton, FitsSheet } from "./find";
+import { FindCallout, FindFilter, FitPress, FitButton, FitRowButton, FitRowStrip, FitsSheet } from "./find";
 const G = globalThis as any;
 const CTX: any = new Proxy({}, { get: (_t, k) => (k === "then" ? undefined : () => undefined) });
 const P: any = projected();
@@ -38,13 +38,22 @@ const ROWS: [string, string, string[], string, boolean][] = ([
   ["card-sai", "Sai, Master Thopterist", ["U"], "Legendary Creature — Human Artificer", true],
   ["tchalla", "T’Challa, the Black Panther", ["G", "W"], "Legendary Creature — Human Noble Hero", true],
 ] as [string, string, string[], string, boolean][]).sort((x, y) => x[1].localeCompare(y[1]));
-const card = ([slug, name, ci, type, free]: (typeof ROWS)[number]) => ({
+// R4: the full row, as a real collection draws it: costs, bracket facts, a combo, a foil, copies, dates added.
+const COST: Record<string, string> = { killian: "{W}{B}", lathliss: "{4}{R}{R}", zimone: "{2}{G}{U}", polyraptor: "{6}{G}{G}", jace: "{4}{U}{U}", gisa: "{3}{B}{B}",
+  mothman: "{1}{B}{G}{U}", tam: "{2}{G}{U}", muddle: "{1}{G}{U}", "invisible-woman": "{2}{W}{U}", heroes: "{2}{G}{U}{W}", "captain-america": "{1}{R}{W}",
+  quintorius: "{3}{R}{W}", "auntie-ool": "{2}{B}{R}{G}", miku: "{2}{G}{W}", zada: "{3}{R}", "card-sai": "{2}{U}", tchalla: "{2}{G}{W}" };
+const FACTS: Record<string, string[]> = { jace: ["tutor"], "auntie-ool": ["gameChanger"], gisa: ["tutor"] };
+const QTY: Record<string, number> = { polyraptor: 2, lathliss: 3, muddle: 2 };
+const NOW_MIN = Math.floor(Date.UTC(2026, 10, 23, 15) / 60000);
+const card = ([slug, name, ci, type, free]: (typeof ROWS)[number], i = 0) => ({
   ...base, oracleId: "o-" + slug, name, printedName: null, colorIdentity: ci, typeLine: type, imageUri: `art/c-${slug}.jpg`,
-  quantity: 1, foil: null, facts: [], comboPartner: null, price: null,
+  quantity: QTY[slug] ?? 1, foil: slug === "miku" ? "foil" : null, facts: FACTS[slug] ?? [], manaCost: COST[slug] ?? null, cmc: 3,
+  comboPartner: slug === "gisa" ? { name: "Animate Dead" } : null, comboOtherPartners: 0, price: null,
+  added: NOW_MIN - 7 * 1440 - i * 37, since: undefined, rarity: slug === "polyraptor" ? "mythic" : "rare",
   availability: free ? FREE : inUse(slug === "zimone" ? "Lanternlight Tinkers" : "Ashen Banner Parade"),
 });
-const ALL = ROWS.map(card);
-const FREEONLY = ROWS.filter((r) => r[4]).map(card);
+const ALL = ROWS.map((r, i) => card(r, i));
+const FREEONLY = ROWS.filter((r) => r[4]).map((r, i) => card(r, i));
 const TOTAL = 2926, NFREE = 212;
 const filters0 = { search: "", colors: [], types: [], setCodes: [], availability: [] as string[] };
 const availOpts = (["free", "soft", "hard", "over"] as const).map((code) => ({ code, label: availabilityLabel(code as any), count: code === "free" ? NFREE : code === "hard" ? 2701 : code === "soft" ? 13 : 0, disabled: code === "over" }));
@@ -53,22 +62,24 @@ function bar(on: boolean, rows = false) {
   const chips = collectionChips(f, { types: [], sets: [], availability: availOpts.map((o) => ({ code: o.code, label: o.label })) as any }) as any;
   const shown = on ? NFREE : TOTAL;
   return (
-    <FilterBar filters={f} sort={"name" as any} sortDirection={"asc" as any} view={(rows ? "rows" : "grid") as any} setOptions={[]} typeOptions={[]} availabilityOptions={availOpts as any}
+    <FilterBar filters={f} sort={(G.__ADDED ? "added" : "name") as any} sortDirection={(G.__ADDED ? "desc" : "asc") as any} view={(rows ? "rows" : "grid") as any} setOptions={[]} typeOptions={[]} availabilityOptions={availOpts as any}
       colorOptions={["W", "U", "B", "R", "G"].map((code) => ({ code, label: code, count: 400, disabled: false }))} shown={shown} total={TOTAL} availabilityOk
       chips={chips.map((c: any) => ({ ...c, onRemove: () => {} }))} onClearAll={() => {}} announcement="" onAnnounce={() => {}} onFiltersChange={() => {}} onSortChange={() => {}} onViewChange={() => {}}
       resultLine={G.__VW >= 1000 ? collectionChassisCopy.result(shown, TOTAL, 4492, on) : collectionChassisCopy.resultCompact(shown)} />
   );
 }
-export function collection(name: string, o: { dev: "phone" | "desk"; on?: boolean; callout?: boolean; open?: string; sheet?: any; r2?: boolean; rows?: boolean }) {
+export function collection(name: string, o: { dev: "phone" | "desk"; on?: boolean; callout?: boolean; open?: string; sheet?: any; r2?: boolean; rows?: boolean; added?: boolean; variant?: string }) {
   G.__VW = o.dev === "desk" ? 1300 : 390;
-  G.__FITROW = o.on && o.rows ? (c: any) => <FitRowButton name={c.name} open={o.open === c.oracleId} /> : undefined;
+  G.__ADDED = !!o.added;
+  G.__FITROW_STRIP = o.variant === "strip";
+  G.__FITROW = o.on && o.rows ? (c: any) => (o.variant === "strip" ? <FitRowStrip name={c.name} open={o.open === c.oracleId} /> : <FitRowButton name={c.name} open={o.open === c.oracleId} />) : undefined;
   G.__FIT = o.on ? (c: any) => (o.r2 ? <FitButton name={c.name} open={o.open === c.oracleId} /> : <FitPress name={c.name} open={o.open === c.oracleId} />) : undefined;
   const html = shell(
     <CardDetailContext.Provider value={CTX}>
       <CollectionPlaceHead stats={{ totalCards: 4492, uniqueCards: TOTAL } as any} lastUpdatedLabel="Nov 21" editEnabled historyHasEntries preconPick scan wishlistEnabled {...({} as any)} />
       {bar(!!o.on, !!o.rows)}
-      {o.callout !== false ? <div className="px-[14px] md:px-[34px]">{o.r2 ? <div className="mb-[4px]"><FindCallout n={NFREE} on={!!o.on} rows={!!o.rows} /></div> : <><FindCallout n={NFREE} on="r1" /><FindFilter all={TOTAL} n={NFREE} on={!!o.on} /></>}</div> : null}
-      {o.rows ? <RowsView cards={(o.on ? FREEONLY : ALL) as any} totalCards={o.on ? NFREE : TOTAL} onShowMore={() => {}} onOpen={() => {}} /> : <GridView cards={(o.on ? FREEONLY : ALL) as any} totalCards={o.on ? NFREE : TOTAL} onOpen={() => {}} />}
+      {o.callout !== false ? <div className="px-[14px] md:px-[34px]">{o.r2 ? <div className="mb-[4px]"><FindCallout n={NFREE} on={!!o.on} rows={!!o.rows && o.variant !== "strip"} /></div> : <><FindCallout n={NFREE} on="r1" /><FindFilter all={TOTAL} n={NFREE} on={!!o.on} /></>}</div> : null}
+      {o.rows ? <RowsView cards={(o.on ? FREEONLY : ALL) as any} totalCards={o.on ? NFREE : TOTAL} onShowMore={() => {}} onOpen={() => {}} showAdded={!!o.added} /> : <GridView cards={(o.on ? FREEONLY : ALL) as any} totalCards={o.on ? NFREE : TOTAL} onOpen={() => {}} />}
     </CardDetailContext.Provider>, "/collection", o.sheet ? W(<CardDetailContext.Provider value={CTX}>{o.sheet}</CardDetailContext.Provider>, "/collection") : null);
   const css = o.r2 ? "" : `<style>div.relative:has(>[class*=bottom-] [data-dz=fit]) [data-collection-tile] .min-w-0.truncate{padding-right:32px}@media(min-width:768px){div.relative:has(>[class*=bottom-] [data-dz=fit]) [data-collection-tile] .min-w-0.truncate{padding-right:40px}}</style>`;
   writeFileSync(`dz/frames/${name}.html`, css + html);
@@ -94,6 +105,8 @@ for (const dev of ["phone", "desk"] as const) {
   collection(`${d}-c1`, { dev, on: true });
   collection(`${d}-c2`, { dev, on: true, open: "o-killian", sheet: <FitsSheet fits={KILLIAN} dev={dev} /> });
   collection(`${d}-r1`, { dev, on: true, r2: true, rows: true });
+  collection(`${d}-r4`, { dev, on: true, r2: true, rows: true, added: true });
+  collection(`${d}-r5`, { dev, on: true, r2: true, rows: true, added: true, variant: dev === "phone" ? "strip" : undefined });
   collection(`${d}-f0`, { dev, r2: true });
   collection(`${d}-f1`, { dev, on: true, r2: true });
   collection(`${d}-f2`, { dev, on: true, r2: true, open: "o-killian", sheet: <FitsSheet fits={KILLIAN} dev={dev} /> });

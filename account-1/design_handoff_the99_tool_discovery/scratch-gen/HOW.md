@@ -10,6 +10,7 @@ query-core override, clerk stub, `use-min-width` server snapshot reads `globalTh
 - `welcome/where-credits-work.tsx`: `Row` exported; `{globalThis.__FREEBLOCK}` after the rows; `useLocalDay` ready under `__INLINE`.
 R2 frames: `r-coll.tsx` writes f0–f2 (`r2: true`), `r-home.tsx` writes h1; shot with `specs-r2.json`. The scripts need a stub `DATABASE_URL`.
 R3 frames: `r-coll.tsx` writes r1 (`rows: true`; `collection/rows-view.tsx` takes `globalThis.__FITROW`), `r-home.tsx` writes h2, a0, a1, a3 (`ask.tsx`); shot with `specs-r3.json`.
+R4 frames: `r-coll.tsx` writes r4/r5 (full rows, Date added; `__FITROW_STRIP` stacks the strip under the row), `r-home.tsx` writes h3; shot with `specs-r4.json`.
 Fixtures: the landing demo's `projected()` (deck, Find a deck read re-pointed at Killian); art from other handoffs' large
 `c-*.jpg` crops (no stamps). Then `node dz/css.mjs`; `npx tsx dz/r-deck.tsx all`, `dz/r-coll.tsx`, `dz/r-home.tsx`;
 `node dz/shot.mjs dz/specs.json`; PNG to `art/td-*.webp` (crops in the converter); `python3 gen.py repo|canvas <out>`;
