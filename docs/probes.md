@@ -2595,6 +2595,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   handovers before the Backs, and on a deck page, and checks Escape (clears the query, then closes, focus back on the
   icon). It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
+- `pnpm probe:ask` proves Ask in the card search (tool discovery D) at 390 and at 1300, against a server at `PROBE_BASE`.
+  It checks the field's placeholder, the starters' heights (44px phone, 34px dropdown) and that a press types its
+  question, that a question about spare cards draws Find a deck under `Tools for this` in the one listbox, that ↓ ↵
+  lands it, that a card name (`sol`) draws no tool, and that a question nothing answers draws the nothing-matches
+  state with `Every tool, in About` linking `/about`. It writes no row (the About gate is marked seen and put back); a
+  server on main fails it at the first starter check.
 - `pnpm probe:card-search-followups` proves card search's three staging follow-ups at 390 and at 1300, against a server
   at `PROBE_BASE` (`PROBE_QUERY`, default `sol`). It presses Close (or a press outside, on the desktop), Escape and Back with a query
   typed and checks each opens empty; it adds a card to the wishlist from card details opened from the search, on

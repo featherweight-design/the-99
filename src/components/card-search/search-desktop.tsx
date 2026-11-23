@@ -10,7 +10,7 @@
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
 import { dialogIsUp, isMacPlatform, isSearchShortcut } from "../../lib/card-search/shortcut";
-import { cardSearchCopy } from "../../lib/copy/card-search";
+import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
 import { useMinWidth } from "../ui/use-min-width";
 import { SearchField } from "../ui/text-field";
 import { COVERED_WITH_MAIN } from "../shell/covered-layer";
@@ -65,7 +65,7 @@ export function SearchDesktop() {
 }
 
 function DesktopFrame() {
-  const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online, canAdd } =
+  const { isOpen, veiled, query, setQuery, list, toolCount, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online, canAdd } =
     useCardSearch()!;
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
@@ -117,7 +117,7 @@ function DesktopFrame() {
         return;
       }
       warmSearch();
-      openSearch(document.activeElement instanceof HTMLElement ? document.activeElement : null);
+      openSearch(document.activeElement instanceof HTMLElement ? document.activeElement : null, "cmdk");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -125,7 +125,7 @@ function DesktopFrame() {
 
   // The foot line is D4's: results are up (D2, D2n and DD2 draw none). With the rows' + on it also stands over Recent
   // cards, whose rows carry the + and take ⌘↵ too (add a card from anywhere C-D1).
-  const showFoot = list.length > 0 && (searching || canAdd);
+  const showFoot = list.length + toolCount > 0 && (searching || canAdd);
 
   return (
     <>
@@ -175,13 +175,13 @@ function DesktopFrame() {
               ) : null
             }
             role="combobox"
-            aria-expanded={list.length > 0}
+            aria-expanded={list.length + toolCount > 0}
             aria-controls={listboxId}
             aria-autocomplete="list"
             aria-activedescendant={active >= 0 ? `${listboxId}-${active}` : undefined}
             aria-keyshortcuts={shortcut.keys}
-            aria-label={cardSearchCopy.label}
-            placeholder={cardSearchCopy.label}
+            aria-label={askCopy.placeholder}
+            placeholder={askCopy.placeholder}
             autoComplete="off"
             autoCorrect="off"
             autoCapitalize="none"

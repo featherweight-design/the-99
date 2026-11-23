@@ -1,0 +1,148 @@
+{
+  "feature": "Finding the tools, PR D: Ask in the card search",
+  "note": "Signed in as the audit account (decks and a collection). Same-origin dev server; flags per the account's overrides. The listbox is the one shared by D and E1's Home popover.",
+  "out": "contact-sheets/tool-discovery-d",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "shares": {
+    "binding": "SearchListbox",
+    "module": "src/components/card-search/search-listbox"
+  },
+  "rows": [
+    {
+      "id": "ask-open-phone",
+      "label": "Search open, nothing typed: starters above Recent cards (phone)",
+      "view": "src/components/card-search/search-layer.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2500
+        },
+        {
+          "openSearch": true,
+          "searchWait": "Not sure where to go? Ask",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ask-tools-phone",
+      "label": "A question typed: Tools for this above the cards (phone)",
+      "view": "src/components/card-search/search-layer.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2500
+        },
+        {
+          "openSearch": true,
+          "searchType": "where can my spare cards go",
+          "searchWait": "Tools for this",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ask-nothing-phone",
+      "label": "Nothing answers: the state, the starters and Every tool, in About (phone)",
+      "view": "src/components/card-search/search-layer.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "input[placeholder^='Search your']",
+          "settle": 2500
+        },
+        {
+          "openSearch": true,
+          "searchType": "zzqx blorp wibble",
+          "searchWait": "Nothing here answers that yet",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ask-open-desktop",
+      "label": "Search open, nothing typed: starters above Recent cards (desktop)",
+      "view": "src/components/card-search/search-layer.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRail": "Search all cards",
+          "searchWait": "Not sure where to go? Ask",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ask-tools-desktop",
+      "label": "A question typed: Tools for this above the cards (desktop)",
+      "view": "src/components/card-search/search-layer.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRail": "Search all cards",
+          "searchType": "where can my spare cards go",
+          "searchWait": "Tools for this",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "ask-nothing-desktop",
+      "label": "Nothing answers: the state, the starters and Every tool, in About (desktop)",
+      "view": "src/components/card-search/search-layer.tsx",
+      "widths": [
+        "desktop"
+      ],
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "h1",
+          "settle": 2500
+        },
+        {
+          "clickRail": "Search all cards",
+          "searchType": "zzqx blorp wibble",
+          "searchWait": "Nothing here answers that yet",
+          "settle": 1200
+        }
+      ]
+    }
+  ]
+}
