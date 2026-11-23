@@ -26,7 +26,7 @@ beforeEach(() => {
 describe("loadHandOffAnswers", () => {
   it("reads the card chip for the asked card", async () => {
     await loadHandOffAnswers("u", "manapool", COMMANDER, ask());
-    expect(stub.chip.mock.calls[0]).toEqual(["u", CARD]);
+    expect(stub.chip.mock.calls[0]).toEqual(["u", CARD, "manapool"]);
   });
 
   it("prints the results' own figures: a theme's share and the card's inclusion, as whole percents", async () => {

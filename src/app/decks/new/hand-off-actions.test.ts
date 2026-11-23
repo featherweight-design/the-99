@@ -13,6 +13,7 @@ const commander = { oracleId: COMMANDER, name: "Sai", colorIdentity: ["U"], mana
   typeLine: "Legendary Creature — Human Artificer", oracleText: "", layout: "normal" };
 
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../../lib/stores/action-store", () => ({ readerStoreForAction: async () => "manapool" }));
 vi.mock("../../../lib/flags/request", () => ({
   requestFlags: async () => envViewWith({}),
 }));
@@ -52,19 +53,19 @@ beforeEach(() => {
 describe("handOffBracketReach's sets", () => {
   it("hands the trial the sets asked, so the preview fills as the create does", async () => {
     await handOffBracketReach(COMMANDER, { ...asked, sets: ["blb", "mh3"] }, []);
-    expect(m.trial.mock.calls[0][2]).toMatchObject({ sets: ["blb", "mh3"] });
+    expect(m.trial.mock.calls[0][3]).toMatchObject({ sets: ["blb", "mh3"] });
   });
 
   it("hands none when none were asked", async () => {
     await handOffBracketReach(COMMANDER, asked, []);
-    expect(m.trial.mock.calls[0][2]).not.toHaveProperty("sets");
+    expect(m.trial.mock.calls[0][3]).not.toHaveProperty("sets");
   });
 });
 
 describe("handOffBracketReach's picks", () => {
   it("hands the trial the legal picks the create would place, dropping the rest", async () => {
     await handOffBracketReach(COMMANDER, asked, [GC, OFF_COLOR, "not-a-uuid"]);
-    expect(m.trial.mock.calls[0][5]).toEqual([GC]);
+    expect(m.trial.mock.calls[0][6]).toEqual([GC]);
   });
 
   it("returns the picks the create buys on the Hit set, for the budget line (round 5)", async () => {
