@@ -10,7 +10,7 @@ import { tuningHubShortcutsCopy } from "./tuning-hub-shortcuts";
 
 export const tuningHubCopy = {
   title: "Tuning",
-  /** The deck tab's accessible name (tool discovery B2, `tuningTabCopy.tabAria`); its label is `title`. */
+  /** The deck tab's accessible name (tool discovery B2, the handoff's `tuningTabCopy.tabAria`); its label is `title`. */
   tabAria: "Tuning, tools for this deck",
   allTools: "All tools",
   /** Engineering addition (Small items 7, item 4): the label over the tile row that fills a short tool's held space. Owed to /copy-review. */
@@ -20,7 +20,7 @@ export const tuningHubCopy = {
    *  deployment draws, so a hub with two tools says `1 of 2`. */
   toolOf: (n: number, total: number) => `${n} of ${total} tools`,
   tools: {
-    /** The hub's first tile (tool discovery B2, `tuningTabCopy.consider`): the shipped Consider list, opened in place. */
+    /** The hub's first tile (tool discovery B2, the handoff's `tuningTabCopy.consider`): the shipped Consider list, opened in place. */
     consider: {
       name: "Consider",
       purpose: "Cards that fill what this deck is short of, the ones you own first.",

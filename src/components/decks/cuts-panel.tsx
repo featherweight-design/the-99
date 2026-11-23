@@ -28,7 +28,7 @@ import { useTarget } from "../discovery/targets-provider";
 
 /**
  * Proposed cuts (Tuning hub R2, canvas C): the free pass COUNTS and names no card, and Look deeper
- * names the cuts. Mounted on the Analysis tab after Suggested changes, for a deck over 100. It needs
+ * names the cuts. Mounted in the Tuning tab's hub after Suggested changes, for a deck over 100. It needs
  * no reading: a reading is made of a whole deck and this tool is for one that is over, so the two
  * preconditions exclude each other. It reads its own state on mount and never spends a credit without a press.
  *

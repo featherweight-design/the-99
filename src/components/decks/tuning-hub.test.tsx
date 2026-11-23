@@ -112,18 +112,15 @@ describe("TuningHub landing", () => {
     expect(tile("history").hasAttribute("data-target-halo")).toBe(false);
   });
 
-  it("draws nothing when it is not drawn, and still settles the tab's loader", async () => {
-    const settled = vi.fn();
-    const { container } = render(<TuningHub deckId="d" drawn={false} tools={[suggested()]} onSettled={settled} />);
+  it("draws nothing when it is not drawn", () => {
+    const { container } = render(<TuningHub deckId="d" drawn={false} tools={[suggested()]} />);
     expect(container.innerHTML).toBe("");
-    await waitFor(() => expect(settled).toHaveBeenCalled());
   });
 
-  it("settles the loader on a failed read too", async () => {
+  it("still draws its tiles on a failed read", async () => {
     read.mockRejectedValueOnce(new Error("down"));
-    const settled = vi.fn();
-    render(<TuningHub deckId="d" drawn tools={[suggested()]} onSettled={settled} />);
-    await waitFor(() => expect(settled).toHaveBeenCalled());
+    render(<TuningHub deckId="d" drawn tools={[suggested()]} />);
+    await waitFor(() => expect(read).toHaveBeenCalled());
     expect(tile("suggested")).not.toBeNull();
   });
 
@@ -636,14 +633,12 @@ describe("TuningHub opening a tool", () => {
     expect(tile("cuts")?.hasAttribute("data-inert")).toBe(true);
   });
 
-  it("still reads and settles the tab's loader when a shortcut opens a tool on the first render", async () => {
+  it("still reads when a shortcut opens a tool on the first render", async () => {
     Element.prototype.scrollIntoView = vi.fn();
-    const settled = vi.fn();
-    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} onSettled={settled} />);
+    render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
     // Open from the first render, but its panel waits for the hub's read, which seeds the visit.
     expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
     expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
-    await waitFor(() => expect(settled).toHaveBeenCalled());
     expect(read).toHaveBeenCalledTimes(1);
   });
 

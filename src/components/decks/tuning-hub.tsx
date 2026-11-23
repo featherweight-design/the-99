@@ -163,7 +163,6 @@ export function TuningHub({
   drawn,
   request,
   onRequestAnswered,
-  onSettled,
 }: {
   deckId: string;
   tools: HubToolSpec[];
@@ -174,8 +173,6 @@ export function TuningHub({
   /** Told when a request has been answered, so its owner can drop it: the hub remounts on every
    *  visit to the tab, and a request still held then would reopen the tool over the landing. */
   onRequestAnswered?: (nonce: number) => void;
-  /** Called once the landing's first read has landed or failed (the tab's opening loader). */
-  onSettled?: () => void;
 }) {
   // What is open, and how it was opened: a tile or a shortcut moves focus to the tool's heading,
   // a shortcut also brings the Tuning heading to the top, and a tab keeps focus on the tab row so
@@ -196,15 +193,12 @@ export function TuningHub({
   // A tool opened before the hub's first read lands (a shortcut opens one in the first render, and
   // a tile can be pressed while the status lines load) waits for it: the read records the visit's
   // baseline, and a tool reading first would record its own, which can already hold a run that
-  // settled since arrival and would then be hidden as a prior one. The tab's opening loader waits
-  // on the same read, so nothing visible is held back.
+  // settled since arrival and would then be hidden as a prior one.
   const [baselineRead, setBaselineRead] = useState(false);
-  const settledRef = useRef(onSettled);
   const mountedRef = useRef(true);
   useEffect(() => { mountedRef.current = true; return () => { mountedRef.current = false; }; }, []);
   const toolsRef = useRef<TuningTool[]>([]);
   useEffect(() => { toolsRef.current = tools.map((t) => t.tool); });
-  useEffect(() => { settledRef.current = onSettled; });
   // Reads overlap (the mount read, the watch and a return to the tiles), so only the newest one
   // asked for is applied: an older answer landing late would put a finished run back to running.
   const latest = useRef(0);
@@ -224,7 +218,7 @@ export function TuningHub({
       })
       // A failed read leaves the tiles without a status line; every tool still opens.
       .catch(() => {})
-      .finally(() => { setBaselineRead(true); settledRef.current?.(); });
+      .finally(() => { setBaselineRead(true); });
   }, [deckId]);
 
   // On mount, whether or not a shortcut opened a tool in the first render (the tab's opening

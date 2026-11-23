@@ -23,7 +23,7 @@ export interface GamesPanelProps {
   /** Suggested changes is on this deck: the Analysis tab exists and holds a reading. */
   tuned?: boolean;
   /** Presses the Analysis tab, for the pointer line. */
-  onOpenAnalysis?: () => void;
+  onOpenTuning?: () => void;
   /** The log form's "Across the table" row, for a reader with `SOCIAL_FRIENDS_ENABLED` on. Absent: the shipped form. */
   opponents?: GameLogFormProps["opponents"];
   /** The seats of each game and the matchups drawn from them (Social R3), for a reader with `SOCIAL_FRIENDS_ENABLED` on. Null: no Matchups, no `vs` lines. */
@@ -246,7 +246,7 @@ export function GameHeadlineHeader({ headline, count }: { headline: Headline; co
   );
 }
 
-export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalysis, opponents, gameOpponents = null, prefill, onPrefillSpent, landingGameId = null, onLandingSpent }: GamesPanelProps) {
+export function GamesPanel({ deckId, games, summary, tuned = false, onOpenTuning, opponents, gameOpponents = null, prefill, onPrefillSpent, landingGameId = null, onLandingSpent }: GamesPanelProps) {
   const headline = deriveHeadline(summary);
   const [announcement, setAnnouncement] = useState("");
   // The table's prefill is held, and spent, by `BuilderShell` (a save or a Cancel in either form mount): this panel
@@ -367,10 +367,10 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
       {/* The pointer to what reads these games (addendum r1, C1/C2): only over a reading, and
           only with a game to read. The second half needs no clause here: a deck with no game
           returns the empty state above, before this point. */}
-      {tuned && onOpenAnalysis ? (
+      {tuned && onOpenTuning ? (
         <p data-games-pointer className="mt-[10px] flex min-h-[44px] flex-wrap items-center gap-x-[4px] text-[13px] leading-[1.5] text-fg-body md:mt-[14px]">
           {deckTuningGamesCopy.gamesLine.lead}{" "}
-          <button type="button" onClick={onOpenAnalysis} className="font-semibold text-[color:var(--accent-text)] hover:underline">
+          <button type="button" onClick={onOpenTuning} className="font-semibold text-[color:var(--accent-text)] hover:underline">
             {deckTuningGamesCopy.gamesLine.link}
           </button>
         </p>
@@ -378,7 +378,7 @@ export function GamesPanel({ deckId, games, summary, tuned = false, onOpenAnalys
 
       {gameOpponents && <GameMatchups matchups={gameOpponents.matchups} />}
 
-      <div className={`flex items-baseline gap-[10px] mb-[10px] ${(tuned && onOpenAnalysis) && !gameOpponents ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
+      <div className={`flex items-baseline gap-[10px] mb-[10px] ${(tuned && onOpenTuning) && !gameOpponents ? "mt-[10px] md:mt-[12px]" : "mt-[22px]"}`}>
         <h2 className="font-mono uppercase text-[10px] tracking-[0.14em] text-fg-faint">
           {gameLogCopy.history.heading}
         </h2>

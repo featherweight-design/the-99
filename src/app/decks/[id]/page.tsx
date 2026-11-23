@@ -329,7 +329,7 @@ async function DeckBuilderBody({
   )));
   // "Kept for this deck"'s Set picker (H35, PR 2) — the same cached, unscoped list
   // help-me-choose's intake form reads. Degrades to an empty picker rather than failing the page.
-  // The Set picker lives inside Suggested changes' panel alone (`builder-shell.tsx`), on the Analysis tab, which always
+  // The Set picker lives inside Suggested changes' panel alone (`builder-shell.tsx`), on the Tuning tab, which always
   // draws (its switch and Suggested changes' are retired), so this read runs on every page render.
   const printedInSetsRead = early(perf.timed("printedInSets", () => loadCommanderPrintings().then((x) => x.sets).catch(() => [])));
   const detail = await detailRead;

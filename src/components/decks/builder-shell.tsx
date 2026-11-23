@@ -34,6 +34,7 @@ import { pressNote } from "./synopsis-note";
 import { SynopsisOverview } from "./synopsis-overview";
 import { OVERVIEW_HOLD_MS, useDeckSynopsis } from "./synopsis-state";
 import { shownReading, useDeckProfile } from "./use-deck-profile";
+import { tuningReading } from "./deck-profile-state";
 import { deckAnalyzed, holdsOpening, isOpening, useOpenOnce, useOpeningGate } from "./use-opening-gate";
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
@@ -616,7 +617,7 @@ export function BuilderShell({
     setView("tuning");
     setHubRequest({ tool: "consider", nonce: (hubNonce.current += 1) });
   }, []);
-  // The tab row's press. Opening Tuning is counted (plan §6), naming the tool a pending request opens it on.
+  // The tab row's press. Opening Tuning is counted (plan §6) as the hub itself: a press opens no tool.
   const changeView = useCallback(
     (next: BuilderView) => {
       if (next === "tuning" && view !== "tuning") captureToolEvent("tuning_opened", { from: "tab", tool: "hub" });
@@ -691,7 +692,8 @@ export function BuilderShell({
   const readingFresh = profile.state.kind === "ready" && Boolean(reading?.fresh);
   const synopsis = useDeckSynopsis(
     deck.id,
-    view === "analysis",
+    // Analysis draws the overview; Tuning's Suggested changes reads whether there is one (`hasOverview`).
+    view === "analysis" || view === "tuning",
     `${listKey}|${reading?.analyzedAt ?? ""}|${readingFresh}`,
   );
   // ...AND UNTIL EVERYTHING ELSE THE TAB DRAWS HAS ANSWERED (Hugh's staging walk, 2026-09-25):
@@ -1556,35 +1558,35 @@ export function BuilderShell({
   );
   // The land cell offers Mana Balance only for a deck with a color to count (design table, R3).
   const coloredPip = hasColoredPip(cards, [deck.commander, ...(deck.partner ? [deck.partner] : [])]);
-  // The Analysis tab's moments (discovery R1). M2 at the deck's size; M3 over it and M4 at it, each standing in for its
-  // own shortcut only while that shortcut is not drawn (audit resolution 2), which the provider decides.
-  // Not while Analysis is the open tab: the tab is then where the reader already is.
+  // The Tuning tab's moments (discovery R1, moved from Analysis by tool discovery B2). M2 at the deck's size; M3 over it
+  // and M4 at it, each standing in for its own shortcut only while that shortcut is not drawn (audit resolution 2), which
+  // the provider decides. Not while Tuning is the open tab: the tab is then where the reader already is.
   const atSize = built === bodySize;
-  const offAnalysis = view !== "tuning";
+  const offTuning = view !== "tuning";
   // The tab is the moment's control but never the tool's target: a landing reaches the tool itself (its tile).
   const suggestedMoment = useMomentAnchor("suggested-changes", {
-    eligible: atSize && offAnalysis,
+    eligible: atSize && offTuning,
     copy: momentsCopy.suggestedChanges,
     target: false,
   });
   const cutsTabMoment = useMomentAnchor("proposed-cuts", {
-    eligible: built > bodySize && offAnalysis,
+    eligible: built > bodySize && offTuning,
     copy: momentsCopy.proposedCuts(built - bodySize),
     fallback: true,
   });
   // A colorless deck gets no Mana Balance moment anywhere: the tool would only say there is no color to count.
   const manaTabMoment = useMomentAnchor("mana-balance", {
-    eligible: atSize && offAnalysis && coloredPip,
+    eligible: atSize && offTuning && coloredPip,
     copy: momentsCopy.manaBalance,
     fallback: true,
   });
-  const analysisTabRef = useMergedRef(suggestedMoment.ref, cutsTabMoment.ref, manaTabMoment.ref);
-  const analysisTabDescribedBy =
+  const tuningTabRef = useMergedRef(suggestedMoment.ref, cutsTabMoment.ref, manaTabMoment.ref);
+  const tuningTabDescribedBy =
     suggestedMoment["aria-describedby"] ?? cutsTabMoment["aria-describedby"] ?? manaTabMoment["aria-describedby"];
   // Suggested changes v2 (plan 2026-10-27, UI PRs 5a and 5b), on this reader's switch: the 99 the tool keeps a deck at, the links
   // to the tools that bring a deck back there, and what the "What we noticed" chips read (README item 2, plan H5).
   // `at` is the deck on the tool's 99 scale: the built count, with a partner's second slot added back.
-  // Always offered: Proposed cuts' own switch is retired (2026-10-31), and so is the Analysis tab's it mounts on (2026-11-01).
+  // Always offered: Proposed cuts' own switch is retired (2026-10-31), and so is the tab's it mounts on (2026-11-01).
   const proposedCutsPress = () => { setView("tuning"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); };
   const topOffPress = () => {
     setView("deck");
@@ -1619,7 +1621,8 @@ export function BuilderShell({
   }
   // The Tuning tab's reading (tool discovery B2): the permits the Analysis tab would hand on, and none while a first
   // press still holds its loader (so Suggested changes stays dimmed until the verdict paints).
-  const tuningPermits = hold === null && reading ? slotDeck(reading.profile).permits : null;
+  const tuningShown = tuningReading(profile.state, hold);
+  const tuningPermits = tuningShown ? slotDeck(tuningShown.profile).permits : null;
   const considerOwned = suggestions.filter((s) => s.owned).length;
   // Mounted inside the hub's tile, where it opens fresh each visit and the tile is its landing target.
   const suggestedPanel = (permits: readonly Bracket[]) => (
@@ -1908,8 +1911,7 @@ export function BuilderShell({
                     over={built - bodySize}
                     bodySize={bodySize}
                     next={row.next}
-                    // N2b (discovery R3): on the Analysis tab (Proposed cuts' own switch is retired). With the hub
-                    // off, the press lands on the panel the tab mounts directly (R3 gap 7).
+                    // N2b (discovery R3): opens Proposed cuts in the Tuning tab (tool discovery B2).
                     onProposedCuts={proposedCutsPress}
                   />
                 ) : row.kind === "spokenForTwice" ? (
@@ -1979,7 +1981,7 @@ export function BuilderShell({
               })}
               view={view}
               onViewChange={changeView}
-              anchor={{ view: "tuning", ref: analysisTabRef, describedBy: analysisTabDescribedBy }}
+              anchor={{ view: "tuning", ref: tuningTabRef, describedBy: tuningTabDescribedBy }}
             />
 
             {view === "analysis" ? (
@@ -2101,7 +2103,8 @@ export function BuilderShell({
                             degraded={degraded}
                           />
                         ) : null,
-                        counts: { owned: considerOwned, toBuy: suggestions.length - considerOwned },
+                        // A failed read (`degraded`) draws no status rather than a false "nothing to consider".
+                        counts: degraded ? null : { owned: considerOwned, toBuy: suggestions.length - considerOwned },
                       },
                       {
                         tool: "suggested" as const,
@@ -2123,10 +2126,10 @@ export function BuilderShell({
                   deckId={deck.id}
                   games={games}
                   summary={gameSummary}
-                  // Suggested changes lives on the Analysis tab over a reading, and the header's
-                  // chip is the stored reading's own signal.
+                  // Suggested changes is a Tuning tool that reads over a reading, and the header's
+                  // chip is the stored reading's own signal. The link opens Tuning with it open (tool discovery G6).
                   tuned={headerBracket !== null}
-                  onOpenAnalysis={() => setView("analysis")}
+                  onOpenTuning={() => { setView("tuning"); setHubRequest({ tool: "suggested", nonce: (hubNonce.current += 1) }); }}
                   gameOpponents={gameOpponents}
                   opponents={{ you: { name: deck.commander.name, deckName: deck.name, imageUri: deck.commander.imageUri ?? null } }}
                   prefill={offeredPrefill ?? undefined}

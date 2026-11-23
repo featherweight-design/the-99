@@ -10,7 +10,7 @@ export const deckTuningGamesCopy = {
   // Drawn after the findings, only when the deck has a reading and one game or more.
   gamesLine: {
     lead: "Suggested changes reads these games.",
-    link: "It is on the Analysis tab \u2192",
+    link: "It is on the Tuning tab \u2192",
   },
 
   // ── The game note (Surface 1, amends #9's form) ────────────────────────

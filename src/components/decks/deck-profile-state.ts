@@ -39,3 +39,12 @@ export function shownReading(state: ProfileState): Reading | null {
   if (state.kind === "loading" || state.kind === "failed" || state.kind === "illegal") return state.held;
   return null;
 }
+
+/**
+ * Whether the Tuning tab hands Suggested changes a reading (tool discovery B2): the shown reading, held through a
+ * re-analysis, a failure or a refusal, and none while a first press still holds its loader (`hold`), so the tool stays
+ * dimmed until the verdict paints. Hugh, 2026-10-14: Tuning stays put before, during and after an analysis.
+ */
+export function tuningReading(state: ProfileState, hold: "reading" | "writing" | null): Reading | null {
+  return hold === null ? shownReading(state) : null;
+}
