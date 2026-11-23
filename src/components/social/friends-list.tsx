@@ -18,6 +18,7 @@ import { DeleteConfirm, DELETE_CONFIRM_WIDTH } from "../ui/delete-confirm";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { PersonName, personAttrs, type PersonParts } from "../../lib/person-name";
 import { Face } from "./face";
+import { SpareChip } from "./spare-key-item";
 import { BAND, PANEL } from "./section-panel";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useMomentHold } from "../../lib/moments/hold";
@@ -142,11 +143,10 @@ function FriendRow({
           data-spare-chip=""
           {...personAttrs(
             { "aria-label": f.spareChipAria(friend.displayName, sparable) },
-            "relative z-10 inline-flex h-[44px] flex-none items-center gap-[4px] rounded-[8px] px-[6px] font-mono text-[12px] font-medium text-[color:var(--accent-text)] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
+            "relative z-10 inline-flex h-[44px] flex-none items-center gap-[4px] rounded-[8px] px-[4px] no-underline focus-visible:[outline:2px_solid_var(--accent)]",
           )}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z" /></svg>
-          {sparable}
+          <SpareChip gap={4}>{sparable}</SpareChip>
           <PendingReporter href={`/friends/${friend.publicId}/wishlist`} />
         </Link>
       ) : null}

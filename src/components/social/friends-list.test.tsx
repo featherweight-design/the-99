@@ -42,6 +42,9 @@ describe("FriendsList rows", () => {
     expect(chip.getAttribute("href")).toBe(`/friends/${COLIN.publicId}/wishlist`);
     expect(chip.textContent).toBe("3");
     expect(chip.className).toContain("ph-no-capture");
+    // The chip draws the shared spare glyph (the Wishlist key's), not a gift box of its own.
+    expect(chip.querySelector("svg")).not.toBeNull();
+    expect(chip.querySelector("svg path[d*='M7 10']")).toBeNull();
     cleanup();
     draw(true, { [COLIN.publicId]: 0 });
     expect(document.querySelector("[data-spare-chip]")).toBeNull();

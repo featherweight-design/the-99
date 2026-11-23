@@ -22,7 +22,7 @@ import type { HaveItCard } from "../../lib/social/spare-offers";
 const COLIN = named("Colin");
 const line = (id: string, name: string) => ({ oracleId: id, quantity: 1, name, imageUri: null, layout: "normal", backImageUri: null });
 const LINES = [line("a", "Rhystic Study"), line("b", "Sol Ring")];
-const HAVE: HaveItCard = { oracleId: "a", spare: 2, mark: null, requestId: null, daysLeft: null } as HaveItCard;
+const HAVE: HaveItCard = { oracleId: "a", spare: 2, mark: null, requestId: null, daysLeft: null, copies: null } as HaveItCard;
 const draw = (haves: HaveItCard[] = [HAVE]) =>
   render(<FriendWishlist name={COLIN} friendPublicId="pub-1" lines={LINES} haves={haves} />);
 
@@ -75,8 +75,9 @@ describe("You have it on a friend's wishlist", () => {
 
   it("an open ask from the friend carries Yes and No, and a yes reads Accepted", async () => {
     m.answerSpare.mockResolvedValue({ ok: true });
-    draw([{ ...HAVE, mark: "asked", requestId: "req-2", daysLeft: 9 } as HaveItCard]);
+    draw([{ ...HAVE, mark: "asked", requestId: "req-2", daysLeft: 9, copies: 1 } as HaveItCard]);
     fireEvent.click(screen.getByTestId("have-press"));
+    expect(screen.getByRole("dialog").textContent).toContain("Colin asked for 1");
     await act(async () => { fireEvent.click(screen.getByTestId("spare-yes")); });
     expect(m.answerSpare).toHaveBeenCalledWith("req-2", "yes");
     await waitFor(() => expect(screen.getByTestId("have-accepted")).toBeTruthy());
