@@ -1,6 +1,10 @@
-# Finding the tools · R5
+# Finding the tools · R6
 
-Account 1, 2026-11-23. Status: **R5, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R6, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Home in full, Ask, Find, Tuning, Welcome).
+
+**R6 (Hugh's R5 notes, 2026-11-23):** the panel drawn in Home's full company on a busy day: the arrivals banner, an open
+Rule 0 table, a game to log, the welcome strip, the lead story, decks, What's new with unseen rows, Commitments, Friends
+with a badge (board Home in full, H6). It sets the panel's place on a busy day (Q10).
 
 **R5 (Hugh's R4 notes, 2026-11-23):** Home's search was easy to miss, and what a press did was unclear. It becomes a panel
 (call 5, Home): an accent edge, a title and line, a 52px field, and a fan of the reader's own cards under a search lens. On
@@ -123,6 +127,10 @@ Source of truth on main 7563036: `src/lib/decks/builder-tab-specs.ts`, `src/comp
        sheet as the magnifier, with the starter's question typed when a starter was pressed; there is no room in place on
        a phone. Either way it is one search state: one query, one listbox, one set of results.
    - It never retires; the magnifier and ⌘K stay on every screen.
+   - **Its place on a busy day (R6, Q10 A).** Down the main column: the arrivals banner (spans both columns, as shipped),
+     Rule 0's cards (a table, a game to log), then the panel, then the welcome strip and the lead. Things that run out
+     come first; the panel is the first thing that is always there. With no table, no game to log and no banner, it is
+     first under the page head. On a 390 phone on a busy day the panel starts at the fold.
    - **One field, two jobs (R4).** What keeps card search and Ask apart:
      - Card names that read as questions (`Where Ancients Tread`, `Ask Urza`, `Find the Path`, `What Must Be Done`): a
        card whose name equals the query or starts with it always ranks first, tools under it. Tools lead only when no card
@@ -145,6 +153,8 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 - **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
   B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
+- **Q10 · On a busy day, does the panel sit under Rule 0's cards, or above them?** A (drawn, recommended): under them; a
+  table closing tonight and a game to log come first. B: the panel first under the page head always. Board: Home in full.
 - **Q9 · Desktop: does Home's field answer in place, or open the rail's search?** A (drawn, recommended): in place, under
   the panel's field, so the reader's eyes stay where they typed. B: the panel's field is a press that opens the rail's
   dropdown (R4's behaviour), whose list opens at the rail, away from where the reader pressed. Board: Ask, H4 and H5.
@@ -153,6 +163,7 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 | File | What |
 |---|---|
+| `Home.dc.html` | H6 Home in full on a busy day, desktop and phone, and desktop typed in place (R6) |
 | `Main.dc.html` | What changed since R4, the answers, the open questions |
 | `Ask.dc.html` | A0 nothing typed, A1 a question, A3 nothing matches (desktop dropdown and phone sheet); H4 Home's search panel (R5), H5 desktop answering in place; H3 R4's field, kept for the record |
 | `Find.dc.html` | F0–F2 desktop and phone: the call-out with Show them, Free with a button under each tile, the button opens Find a deck; R5 / R4 the row view over the full row (Q8 A / B) |

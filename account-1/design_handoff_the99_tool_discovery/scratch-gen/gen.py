@@ -130,7 +130,7 @@ C5R4 = call("5", "Ask and card search, one field (R4)", ul([
 Q8 = q("Q8", "Phone rows: a Find a deck strip under each row, or the glyph beside it?", "Option A: the strip under the row, the glyph and the word (drawn, R5). Option B: R3's 44px glyph button beside the row; rows stay their height, names lose about ten characters on a full row.", "A. The name is what a reader scans by, and the word matches the tile's button, so phone and desktop read the same.")
 
 C6 = call("6", "Home's search, easier to notice (R5)", ul([
-  f"Its own panel, first under the page head: the welcome strip's accent edge, a wash of the accent fading across, a display title {m('Not sure where to go?')} and a line {m('Ask a question, or look up any card.')}",
+  f"Its own panel, first under the page head on a quiet day (under Rule 0 cards on a busy one, Q10): the welcome strip's accent edge, a wash of the accent fading across, a display title {m('Not sure where to go?')} and a line {m('Ask a question, or look up any card.')}",
   "The field at 52px on the page's own --bg, so it reads as the place to type: the glyph in the accent, the placeholder, ⌘K from md.",
   "Personality, not flash: a small fan of three of the reader's own cards (the three most recently added) with the search's lens over them, the card search empty state's graphic in their art. Right of the field from md; beside the title on a phone.",
   "The starters under the field, on the page's --bg so they read as presses. No motion, no badge."]))
@@ -139,17 +139,29 @@ C7 = call("7", "What pressing it does (R5)", ul([
   "<b>Phone:</b> a press on the field opens the same full-screen search sheet the header's magnifier opens, focused, with the keyboard up (A0 on this board). A starter opens it with the question typed (A1). The phone never draws a dropdown under a field: the keyboard would cover it.",
   "One search underneath: one query, one result list, one recent-cards memory. Typing on Home and then pressing ⌘K shows the same query."]))
 Q9 = q("Q9", "Desktop: results in place under Home's field, or the rail's search?", "Option A: results open in place under the Home field (drawn, H5). Option B: a press moves focus to the rail's search, which opens 12px out from the rail as it does today.", "A. The answer appears where the reader is looking; B makes the eye jump to the left edge and leaves the Home field a fake.")
+C8 = call("8", "Home in full, a busy day (R6)", ul([
+  "Drawn with everything Home can hold at once: the arrivals banner, tonight's Rule 0 table, a game to log, the search panel, the welcome credits, the lead story, your decks, What's new with two unseen, Commitments and Friends (with an unseen badge on Friends).",
+  "Order down the main column: the arrivals banner (spans both columns, as shipped), then Rule 0's cards (they close tonight), then the search panel, then the welcome strip and the lead. The panel is the first thing that is always there, under the things that expire.",
+  "On a quiet day (no table, no game to log, no banner) the panel is first under the page head, as H4.",
+  "On a phone on a busy day the panel starts at the fold (about 810px of 844); on desktop it sits under the two table cards, level with Commitments.",
+  "Pressed on desktop (H6 open), the results drop over the welcome strip and the lead; nothing below moves."]))
+Q10 = q("Q10", "On a busy day, does the search panel sit under Rule 0's cards, or above them?", "Option A: under them (drawn): a table closing tonight and a game to log come first, then the panel. Option B: the panel first under the page head always, and Rule 0's cards under it.", "A. The table and the log run out; the panel is always there, and so are the magnifier and ⌘K. On a quiet day A and B draw the same.")
 boards = {}
-boards["Main.dc.html"] = (1600, 1580, "Main", page("Finding the tools R5: main", 1600, 1580,
- head("Finding the tools · R5",
+boards["Home.dc.html"] = (1700, 4480, "Home in full", page("Finding the tools R6: Home in full", 1700, 4480,
+ head("Home in full, a busy day (R6)", "Home with everything a reader can have at once, so the panel is judged in its real company: an open table, a game to log, the arrivals banner, the lead story, What's new with unseen rows, Commitments, Friends with a badge. Rendered from main 7563036 with the shipped components; names, figures and art are illustrative.")
+ + C8 + Q10
+ + row("Desktop · 1300 and phone · 390, at rest", [dk("d-full", "H6 · Desktop, busy day", "Banner, the table and the game to log, then the panel, the welcome strip, the lead, decks, What's new; Commitments and Friends on the right.", 1000), fig("p-full", 340, "H6 · Phone, busy day", "The same order in one column; the panel starts at the fold.")])
+ + row("Desktop · 1300, typed on Home", [dk("d-full-open", "H6 · Results in place", "The dropdown drops over the welcome strip and the lead; the page under it does not move (Q9 A).", 1000)])))
+boards["Main.dc.html"] = (1600, 1740, "Main", page("Finding the tools R6: main", 1600, 1740,
+ head("Finding the tools · R6",
   "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R5 makes Home's search easier to notice and sets down what pressing it does on a phone and a desktop. Everything else is as R4. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
- + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph)."])
+ + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10)."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
  + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C6 + C7 + '</div>'
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
  + '<div style="display:flex;gap:20px">' + fig("p-h4", 300, "Home, phone", "The panel, first under the page head.") + fig("p-a1", 300, "Pressed, phone", "The full-screen sheet; a starter types its question.") + '</div>'
  + '</div></div>'
- + Q9 + Q8
+ + Q10 + Q9 + Q8
  + note("As R4", ["Ask in the card search: starters, Tools for this, never a dead end; one field, card names first.", "Find a deck: the tile button, the row strip (phone) and button (desktop), the call-out.", "Tuning and Welcome as R1, approved."])))
 
 boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a deck", 1700, 4560,
@@ -181,10 +193,10 @@ boards["Welcome.dc.html"] = (1700, 3700, "Welcome", page("Finding the tools: wel
 
 os.makedirs(out, exist_ok=True)
 for n, (w, h, t, html) in boards.items(): open(os.path.join(out, n), "w").write(html)
-order = ["Main.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
+order = ["Main.dc.html", "Home.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R5", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R6", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)

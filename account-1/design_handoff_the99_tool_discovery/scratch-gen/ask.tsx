@@ -222,7 +222,7 @@ export function HomeSearchPanel({ art, query = "", open = null }: { art: string[
       <div>
         <div className="flex items-start gap-[12px]">
           <div className="min-w-0 flex-1">
-            <h2 className="m-0 font-display text-[19px] font-bold leading-[1.2] text-[color:var(--fg)] md:text-[21px]">{homeSearchCopy.title}</h2>
+            <h2 className="m-0 font-display [text-wrap:balance] text-[19px] font-bold leading-[1.2] text-[color:var(--fg)] md:text-[21px]">{homeSearchCopy.title}</h2>
             <p className="m-0 mt-[3px] text-[13.5px] leading-[1.5] text-[color:var(--fg-muted)]">{homeSearchCopy.line}</p>
           </div>
           <div className="-mt-[4px] -mr-[6px] md:hidden"><Fan art={art} small /></div>

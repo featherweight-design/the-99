@@ -1,4 +1,4 @@
-# States · Finding the tools R5
+# States · Finding the tools R6
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -46,7 +46,8 @@
 ## Home · search panel · R5
 | State | Draws |
 |---|---|
-| Any reader with a collection | The panel (title, line, field, fan, starters), first under the page head, for good. |
+| Any reader with a collection, quiet day | The panel (title, line, field, fan, starters), first under the page head, for good. |
+| Arrivals banner, Rule 0 table or game to log (R6) | Those first, then the panel, then the welcome strip, signature and lead (Q10 A). |
 | No collection yet | Nothing (first-run Home leads with adding cards). |
 | Fewer than three cards with art | The fan draws the ones there are; none with none. The lens stays. |
 | Desktop, field focused, nothing typed | The field ringed (`--accent`, 3px halo); the in-place list opens: the starters and Recent cards. |
