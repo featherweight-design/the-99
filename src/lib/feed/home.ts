@@ -44,7 +44,7 @@ type Executor = Pick<typeof db, "execute">;
 
 /** The card an item is drawn with: the full card image (never the art crop) and the crop for the lead's backdrop. */
 /** `colorIdentity`: the card's own, so a card with no art draws its identity gradient at card shape (`CommanderThumb`). */
-export type FeedCard = { oracleId: string; name: string; image: string | null; art: string | null; colorIdentity: string[] | null };
+export type FeedCard = { oracleId: string; name: string; image: string | null; art: string | null; colorIdentity: string[] | null; layout?: string | null };
 
 /** One item, as the row and the lead draw it. Client-safe: plain data, the time as an ISO string. */
 export type FeedView = {
@@ -210,12 +210,12 @@ export function preconOwnedQuery(userId: string, files: readonly string[]) {
 
 /** The stored kinds' cards, by oracle id. */
 export function feedCardsQuery(ids: readonly string[]) {
-  return sql`select fc.oracle_id as oracle_id, fc.name as name, fc.color_identity as identity, fc.image_uri as image, fc.art_crop_uri as art
+  return sql`select fc.oracle_id as oracle_id, fc.name as name, fc.color_identity as identity, fc.image_uri as image, fc.art_crop_uri as art, fc.layout as layout
     from ${cards} fc where fc.oracle_id = any(${sql.param([...ids])}::uuid[])`;
 }
 
-type CardRow = { oracle_id: string; name: string; identity: string[] | null; image: string | null; art: string | null };
-const toCard = (r: CardRow): FeedCard => ({ oracleId: r.oracle_id, name: r.name, image: r.image, art: r.art, colorIdentity: r.identity ?? null });
+type CardRow = { oracle_id: string; name: string; identity: string[] | null; image: string | null; art: string | null; layout?: string | null };
+const toCard = (r: CardRow): FeedCard => ({ oracleId: r.oracle_id, name: r.name, image: r.image, art: r.art, colorIdentity: r.identity ?? null, ...(r.layout ? { layout: r.layout } : {}) });
 
 const num = (v: unknown): number | null => (typeof v === "number" && Number.isFinite(v) ? v : null);
 
@@ -297,7 +297,7 @@ export function toViews(
         // The card at the reader's store, every printing (the card details link, `storeCardUrl`): no store has a page
         // for one printing that the app can build (Mana Pool measured 2026-11-22, `manapool/links.ts`), so a drop on a
         // named printing links the same search. A card the catalog no longer holds has no name to send, and draws no press.
-        return { ...base, card, outbound: card ? storeCardUrl(store, card.name) : null, drop, ...(store === "manapool" ? {} : { store }) };
+        return { ...base, card, outbound: card ? storeCardUrl(store, card.name, card.layout) : null, drop, ...(store === "manapool" ? {} : { store }) };
       }
       case "trade-match":
         // The card's modal opens on landing (signature card call 9): `?spare=` names it.

@@ -10,8 +10,23 @@
 import { manapoolCardUrl } from "../manapool/links";
 import type { Store } from "./rows";
 
-export function storeCardUrl(store: Store, name: string): string {
-  const q = encodeURIComponent(name);
+/**
+ * The layouts whose stores list the card under its whole `A // B` name. Every other two-named layout (transform, modal
+ * DFC, adventure, flip) is listed under its front face: Card Kingdom's search finds nothing for `Delver of Secrets //
+ * Insectile Aberration` or `Bonecrusher Giant // Stomp`, and finds `Fire // Ice` by its whole name (measured
+ * 2026-11-22).
+ */
+const WHOLE_NAME_LAYOUTS: ReadonlySet<string> = new Set(["split", "aftermath"]);
+
+/** The name a store's search finds the card by: the front face of a two-faced card, else the whole name. */
+export function storeSearchName(name: string, layout?: string | null): string {
+  const at = name.indexOf(" // ");
+  return at > 0 && !(layout && WHOLE_NAME_LAYOUTS.has(layout)) ? name.slice(0, at) : name;
+}
+
+/** `layout` is the card's Scryfall layout, which decides the name another store searches (`storeSearchName`). */
+export function storeCardUrl(store: Store, name: string, layout?: string | null): string {
+  const q = encodeURIComponent(storeSearchName(name, layout));
   switch (store) {
     case "manapool":
       return manapoolCardUrl(name);

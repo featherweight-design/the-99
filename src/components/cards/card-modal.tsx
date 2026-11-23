@@ -855,7 +855,7 @@ export function CardModal({
     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
   // The reader's store (store preference): the payload names it, so the modal needs no provider. Absent, Mana Pool.
   const store = STORE_INFO[card.priceStore ?? "manapool"];
-  const buyUrl = isToken ? card.tokenBuyUrl ?? null : storeCardUrl(store.id, card.name);
+  const buyUrl = isToken ? card.tokenBuyUrl ?? null : storeCardUrl(store.id, card.name, card.layout);
   // A wishlist line that names a printing reads it on the link. Mana Pool has no per-printing page, so the URL stays the
   // card's; a printing that is sold out falls back to the any-printing words, which is what the link is then for.
   const wantedPrinting = !isToken && browsePrintings && !deckScope && wantedId !== null ? card.printings.find((p) => p.scryfallId === wantedId) ?? (card.otherPrintings ?? []).find((p) => p.scryfallId === wantedId) : undefined;

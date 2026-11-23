@@ -349,7 +349,7 @@ export const loadCardDetail = cache(async function loadCardDetail(
   const { eq } = await import("drizzle-orm");
   // The reader's store (store preference): every figure and link the modal draws comes from it. Started with stage 1,
   // since it is keyed on the reader alone; Mana Pool, with no read, while the switch is off for them, and on a failed read.
-  const store = import("../stores/preference").then(({ readerStoreForPage }) => readerStoreForPage(userId, env), (): Store => "manapool");
+  const store = import("../stores/preference").then(({ readerStoreForPage }) => readerStoreForPage(userId, env)).catch((): Store => "manapool");
   // Both started now; only the collection is awaited before branching. An owned card never
   // reads the catalog row, so it must not wait on it either — a slow catalog read would
   // otherwise hold every owned card's modal. `settle` keeps the abandoned read from rejecting

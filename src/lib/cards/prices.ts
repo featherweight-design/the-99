@@ -30,25 +30,13 @@ export async function loadPrintingPrices(oracleId: string, store: Store = "manap
  * its own newest `as_of`, and carries `sold_out`, which `indexPriceRows` sets as the fact's `soldOut`.
  */
 export function printingPricesQuery(oracleId: string, store: Store) {
-  if (store !== "manapool") {
-    return sql`
-    with newest as (select max(as_of) as as_of from printing_store_prices where store = ${store})
-    select n.as_of              as newest_as_of,
-           p.scryfall_id        as scryfall_id,
-           upper(p.set_code)    as set_code,
-           p.collector_number   as collector_number,
-           pp.price_cents       as price_cents,
-           pp.price_cents_foil  as price_cents_foil,
-           pp.price_cents_etched as price_cents_etched,
-           pp.as_of             as as_of,
-           pp.sold_out          as sold_out
-      from newest n
-      left join printings p on p.oracle_id = ${oracleId}
-      left join ${storeRows(store)} pp on pp.scryfall_id = p.scryfall_id
-  `;
-  }
+  const other = store === "manapool" ? null : store;
+  const newestFrom = other ? sql`printing_store_prices where store = ${other}` : sql`printing_prices`;
+  const source = other ? storeRows(other) : sql`printing_prices`;
+  const soldOutCol = other ? sql`,
+           pp.sold_out          as sold_out` : sql``;
   return sql`
-    with newest as (select max(as_of) as as_of from printing_prices)
+    with newest as (select max(as_of) as as_of from ${newestFrom})
     select n.as_of              as newest_as_of,
            p.scryfall_id        as scryfall_id,
            upper(p.set_code)    as set_code,
@@ -56,10 +44,10 @@ export function printingPricesQuery(oracleId: string, store: Store) {
            pp.price_cents       as price_cents,
            pp.price_cents_foil  as price_cents_foil,
            pp.price_cents_etched as price_cents_etched,
-           pp.as_of             as as_of
+           pp.as_of             as as_of${soldOutCol}
       from newest n
       left join printings p on p.oracle_id = ${oracleId}
-      left join printing_prices pp on pp.scryfall_id = p.scryfall_id
+      left join ${source} pp on pp.scryfall_id = p.scryfall_id
   `;
 }
 
