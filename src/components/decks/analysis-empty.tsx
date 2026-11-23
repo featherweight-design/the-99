@@ -181,7 +181,7 @@ export function AnalysisEmpty({
           ) : null}
           {/* The description field, between the second paragraph and Analyze (H35, STATES §1).
               Not drawn during loading — the shipped loading state is unchanged. Suggested changes,
-              whose runs it feeds, is always on wherever the Analysis tab is. */}
+              whose runs it feeds, is always on in the Tuning tab. */}
           {phase === "idle" ? (
             <div className="w-full max-w-[540px]">
               <DeckDescriptionField

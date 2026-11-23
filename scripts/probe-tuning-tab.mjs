@@ -76,10 +76,12 @@ function report(name, ok, detail = "") {
 async function pickDeck(page) {
   if (process.env.PROBE_DECK) return process.env.PROBE_DECK;
   await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
+  // The list streams in after the shell: wait for a deck's link before reading them.
+  await onPage(page, "a[href^='/decks/']").first().waitFor({ state: "attached", timeout: 30_000 }).catch(() => {});
   const href = await onPage(page, "a[href^='/decks/']").evaluateAll((links) =>
     links.map((a) => a.getAttribute("href")).find((h) => /^\/decks\/[0-9a-f-]{36}$/.test(h ?? "")),
   );
-  if (!href) throw new Error("no deck on /decks for the audit user");
+  if (!href) throw new Error(`no deck on /decks for the audit user (at ${new URL(page.url()).pathname})`);
   return href.split("/").pop();
 }
 
@@ -100,7 +102,14 @@ try {
     await tuningTab.waitFor({ state: "attached", timeout: 60_000 }).catch(() => {});
     report(at("the row draws a Tuning tab"), (await tuningTab.count()) === 1, `at ${new URL(page.url()).pathname}`);
     report(at("the row draws no Consider tab"), (await onPage(page, "#tab-consider").count()) === 0);
-    if ((await tuningTab.count()) === 0) { await context.close(); continue; }
+    if ((await tuningTab.count()) === 0) {
+      // What the row drew instead, so a failure names it.
+      const tabs = await page.locator("[role=tab]").evaluateAll((els) => els.map((el) => el.id || el.textContent?.trim()));
+      console.log(`      tabs drawn: ${tabs.join(", ") || "none"}`);
+      if (OUT) await page.screenshot({ path: `${OUT}/no-tuning-tab-${viewport.width}.png` });
+      await context.close();
+      continue;
+    }
 
     await tuningTab.click();
     const hub = onPage(page, "#panel-tuning section[data-tuning-hub]").first();

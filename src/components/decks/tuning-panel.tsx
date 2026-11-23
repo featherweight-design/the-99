@@ -71,7 +71,7 @@ import { creditAgain, creditFirst, creditShortStanding, creditSpent, creditTwo }
 import { ArrivalOrder } from "../ui/arrival-queue";
 
 /**
- * Suggested changes (placement addendum v2): the last section of the Analysis tab, mounted only
+ * Suggested changes (placement addendum v2): a tool in the Tuning tab's hub (tool discovery B2), mounted only
  * over a reading. It reads its own state on mount, as the tab's first open reads a stored
  * analysis, and never spends a credit without a press.
  *

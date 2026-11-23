@@ -15,8 +15,8 @@ import type { DeckPanel } from "./group-toggle";
 
 /**
  * What the builder publishes: the About screen it shows (`view`), and the tab it is on (`tab`). The two differ on
- * Consider, which has no About screen of its own and reads as Your deck, but which "‹ Back to {deck}" must still return
- * to (`?tab=consider`).
+ * Tuning, which has no About screen of its own and reads as Analysis, but which "‹ Back to {deck}" must still return
+ * to (`?tab=tuning`).
  */
 export type BuilderScreen = { view: DeckView; tab: BuilderView };
 

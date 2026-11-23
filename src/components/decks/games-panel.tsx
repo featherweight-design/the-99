@@ -20,9 +20,9 @@ export interface GamesPanelProps {
   deckId: string;
   games: DeckGame[];
   summary: GameSummary;
-  /** Suggested changes is on this deck: the Analysis tab exists and holds a reading. */
+  /** Suggested changes is on this deck: the Tuning tab holds it over a reading. */
   tuned?: boolean;
-  /** Presses the Analysis tab, for the pointer line. */
+  /** Opens the Tuning tab with Suggested changes open, for the pointer line. */
   onOpenTuning?: () => void;
   /** The log form's "Across the table" row, for a reader with `SOCIAL_FRIENDS_ENABLED` on. Absent: the shipped form. */
   opponents?: GameLogFormProps["opponents"];
