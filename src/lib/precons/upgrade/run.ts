@@ -30,6 +30,8 @@ import { loadMixesForCommanders, mixKey, type CommanderPair } from "../../decks/
 import type { RecommendedMix } from "../../decks/mix";
 import type { RoleBasis } from "../../profile/build";
 import type { LineBrackets, StoredPair, UpgradePair } from "./validate";
+import { readerStoreForPage } from "../../stores/preference";
+import type { Store } from "../../stores/rows";
 
 /**
  * Upgrade this precon's read and press (research 2026-11-10). SERVER-ONLY. The actions (`actions.ts`) re-apply the switch and
@@ -78,7 +80,7 @@ export type UpgradePress =
 
 type Deps = {
   base: (fileName: string) => Promise<UpgradeBase | null>;
-  loadFor: (base: UpgradeBase, option: CommanderOption, bracket: BracketTarget) => Promise<UpgradeLoad>;
+  loadFor: (base: UpgradeBase, option: CommanderOption, bracket: BracketTarget, store: Store) => Promise<UpgradeLoad>;
   call: (req: Parameters<UpgradeCallModel>[0]) => Promise<ModelOutcome<UpgradeReply>>;
   bracketOf: (list: BracketList, pairs: readonly UpgradePair[]) => Promise<number | null>;
   /** The bracket facts of the list with the pairs applied, the bracket it plays at and every bracket it permits, which the hold, the reach and the panel's box read (`hold.ts`); null when the read fails. */
@@ -401,7 +403,7 @@ export async function pressUpgrade(
   // "Before" is the box as shipped, whoever leads it, so a run led by the alternate still compares against the precon itself.
   const bracketBefore = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
   if (bracketBefore !== null && bracket < bracketBefore) return { ok: false, reason: "notOffered" };
-  const load = await deps.loadFor(base, lead.option, bracket);
+  const load = await deps.loadFor(base, lead.option, bracket, await readerStoreForPage(userId, env));
   // A pool-less run would pay for two calls that can only come back empty: the alternate may have no index rows of its own.
   if (load.pool.entries.length === 0) return { ok: false, reason: "noPool" };
 

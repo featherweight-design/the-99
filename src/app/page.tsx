@@ -385,6 +385,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     ? await loadTradeAsk(
         [...(feed.lead ? [feed.lead] : []), ...feed.items]
           .flatMap((i) => (i.kind === "trade-match" && i.askable && i.card && i.friend ? [{ oracleId: i.card.oracleId, name: i.card.name, imageUri: i.card.image }] : [])),
+        store,
       )
     : null;
   // Not after a failed read: the cursor would clear items that were never drawn.

@@ -93,7 +93,7 @@ for (const [n, p] of picked.entries()) {
   for (const { c: lead, s: pick, bracket } of take) {
     if (spent + WORST > MAX_USD) { stopped = true; break; }
     const bracketBefore = await LIVE_DEPS.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
-    const load = await loadUpgradeFor(base, lead.option, bracket);
+    const load = await loadUpgradeFor(base, lead.option, bracket, "manapool");
     const input = {
       deckName: load.deckName, deck: load.deck.prompt, pool: load.pool.prompt,
       strategy: { label: pick.label, blurb: pick.blurb, backingNames: pick.backing.map((b) => b.name) },

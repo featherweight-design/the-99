@@ -31,6 +31,8 @@ const m = vi.hoisted(() => ({
   loadYourRequests: vi.fn(async (..._args: unknown[]): Promise<unknown[]> => []),
   noticeTradeMatches: vi.fn(async (..._args: unknown[]) => 0),
   markFriendsSeen: vi.fn(async (..._args: unknown[]) => false),
+  readerStoreForPage: vi.fn(async (..._args: unknown[]) => "manapool"),
+  loadTradeAsk: vi.fn(async (..._args: unknown[]) => null),
 }));
 vi.mock("next/navigation", () => ({
   notFound: () => { throw new Error("NOT_FOUND"); },
@@ -74,6 +76,8 @@ vi.mock("../../lib/social/your-requests", () => ({ loadYourRequests: m.loadYourR
 // The Requests box's foot link asks whether a history exists; `request-history.test.ts` covers the read.
 vi.mock("../../lib/social/request-history", () => ({ hasRequestHistory: vi.fn(async () => false) }));
 vi.mock("../../lib/social/trade-match", () => ({ noticeTradeMatches: m.noticeTradeMatches }));
+vi.mock("../../lib/social/trade-ask", () => ({ loadTradeAsk: m.loadTradeAsk }));
+vi.mock("../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
 vi.mock("../../lib/feed/prefs", () => ({ markFriendsSeen: m.markFriendsSeen }));
 vi.mock("next/server", () => ({ after: m.after }));
 vi.mock("./actions", () => ({
@@ -145,6 +149,15 @@ describe("/friends", () => {
     expect(m.noticeTradeMatches).toHaveBeenCalledWith("user_1", env);
     expect(m.markFriendsSeen).toHaveBeenCalledWith("user_1", env, now);
     expect(m.noticeTradeMatches.mock.invocationCallOrder[0]).toBeLessThan(m.markFriendsSeen.mock.invocationCallOrder[0]);
+  });
+
+  // Store choice: the trade ask's prices are the reader's store's, resolved under the page's own switches.
+  it("prices the trade ask at the reader's store", async () => {
+    m.readerStoreForPage.mockClear().mockResolvedValueOnce("tcgplayer");
+    render(await FriendsPage({ searchParams: query() }));
+    const [, env] = m.loadWaitingOnYou.mock.calls.at(-1)!;
+    expect(m.readerStoreForPage).toHaveBeenCalledWith("user_1", env);
+    expect(m.loadTradeAsk.mock.calls.at(-1)![1]).toBe("tcgplayer");
   });
 
   // Spare requests PR 3d: one ask seen from both accounts. The holder (Sam) answers it in Waiting on you; the asker

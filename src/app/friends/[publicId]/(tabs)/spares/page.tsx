@@ -8,6 +8,8 @@ import { loadFriend } from "../../../../../lib/social/access";
 import { isUuid } from "../../../../../lib/social/rules";
 import { catalogCardName, friendSpareList } from "../../../../../lib/social/friend-page-data";
 import { loadPrices } from "../../../../../lib/decks/price-query";
+import { requestFlags } from "../../../../../lib/flags/request";
+import { readerStoreForPage } from "../../../../../lib/stores/preference";
 import { loadDeckNeed } from "../../../../../lib/decks/deck-need";
 import { parseSpareParams } from "../../../../../lib/social/spare-browse";
 import { FriendSparesTab } from "../../../../../components/social/friend-spares-tab";
@@ -24,7 +26,12 @@ export default async function FriendSparesPage({
 }) {
   const userId = await requireUserId();
   const { publicId } = await params;
-  const [friend, spares] = await Promise.all([loadFriend(userId, publicId), friendSpareList(userId, publicId, true)]);
+  // The reader's store prices the modal's buy tag, as its link goes there.
+  const [friend, spares, store] = await Promise.all([
+    loadFriend(userId, publicId),
+    friendSpareList(userId, publicId, true),
+    requestFlags(userId).then((env) => readerStoreForPage(userId, env)),
+  ]);
   if (!friend) notFound();
   const query = (await searchParams) ?? {};
   const raw = query.spare;
@@ -39,7 +46,7 @@ export default async function FriendSparesPage({
   // `deckNeed` (the decks of the reader's that still need each card) is one more read beside them; it fails soft to {}.
   const [goneName, priced, deckNeed] = await Promise.all([
     spare !== null && !offered ? catalogCardName(spare) : null,
-    loadPrices(spares?.lines.map((l) => l.oracleId) ?? []).catch(() => ({ prices: new Map(), newestAsOf: null })),
+    loadPrices(spares?.lines.map((l) => l.oracleId) ?? [], [], [], store).catch(() => ({ prices: new Map(), newestAsOf: null })),
     spares && spares.lines.length > 0 ? loadDeckNeed(userId) : {},
   ]);
   return (

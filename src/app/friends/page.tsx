@@ -38,6 +38,7 @@ import { WaitingOnYou } from "../../components/social/waiting-on-you";
 import { TradeAskFrame } from "../../components/social/trade-ask";
 import { CardDetailProvider } from "../../components/cards/card-detail-provider";
 import { loadTradeAsk } from "../../lib/social/trade-ask";
+import { readerStoreForPage } from "../../lib/stores/preference";
 import { loadYourRequests } from "../../lib/social/your-requests";
 import { YourRequests } from "../../components/social/your-requests";
 import { RequestsBox } from "../../components/social/requests-box";
@@ -90,6 +91,9 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
     console.warn("[invites] count unreadable; drawing /friends without it", error instanceof Error ? error.message : "");
     return null;
   });
+  // The reader's store (store choice) prices the trade ask's cards. Started here, after any re-read of the switches
+  // above, and read beside the rest; it never rejects (Mana Pool when unreadable).
+  const storeRead = readerStoreForPage(userId, env);
   // Friends and open links from one snapshot, so a redraw never drops a redeemed link before its friend's row.
   // Rule 0's pod rows (plan decision 6): read fresh beside the pods, since this page caches nothing.
   const [profile, { friends, links }, pods, shared, tables, waiting, deckPrefs, mine, hasHistory, sparable] = await Promise.all([
@@ -130,6 +134,7 @@ export default async function FriendsPage({ searchParams }: { searchParams: Prom
   // A trade match's Ask opens its spares sheet over this page (product call 8): the rows' cards and their prices.
   const tradeAsk = await loadTradeAsk(
     waiting.flatMap((r) => (r.kind === "trade-match" && r.askable ? [{ oracleId: r.card.oracleId, name: r.card.name, imageUri: r.card.imageUri }] : [])),
+    await storeRead,
   );
   return (
     <>

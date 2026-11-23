@@ -36,6 +36,8 @@ vi.mock("../../model/allowance", () => ({
 }));
 
 vi.mock("../../cache/soft-failure", () => ({ recordSoftFailure: vi.fn() }));
+const preference = vi.hoisted(() => ({ readerStoreForPage: vi.fn(async (): Promise<string> => "manapool") }));
+vi.mock("../../stores/preference", () => preference);
 
 const { LIVE_DEPS, LINE_BRACKETS_TIMEOUT_MS, PARTNERS_TIMEOUT_MS, lineBracketsOrNone, partnersOrBare, pressUpgrade, readSetBracket, readUpgrade, setPermits } = await import("./run");
 const { recordSoftFailure } = await import("../../cache/soft-failure");
@@ -63,7 +65,7 @@ const base = (opts: { alternate?: boolean } = {}): UpgradeBase => {
     overview: [{ label: "The Overview's plan", blurb: "Play the natives.", cardIds: ["n0", "n1", "n2", "n3", "n4", "n5"] }],
   };
 };
-const loadFor = async (b: UpgradeBase, option: CommanderOption): Promise<UpgradeLoad> => {
+const loadFor = async (b: UpgradeBase, option: CommanderOption, _bracket?: number, _store?: string): Promise<UpgradeLoad> => {
   const lines = withCommanders(b.lines, option.commanderIds);
   return {
     fileName: b.fileName, deckName: b.deckName, option, formerCommander: option.isFace ? null : "Boss", commanderIds: option.commanderIds,
@@ -198,6 +200,16 @@ describe("pressUpgrade", () => {
     expect(await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).toEqual({ ok: false, reason: "short" });
     expect(call).toHaveBeenCalledTimes(2);
     expect(store.finished[0].write).toMatchObject({ status: "done", refunded: true, calls: 2 });
+  });
+
+  it("loads the run's prices at the reader's store", async () => {
+    const { d } = deps(swaps(12));
+    const spy = vi.fn(loadFor);
+    preference.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+    expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { ...d, loadFor: spy }, ENV_VIEW)).ok).toBe(true);
+    expect(preference.readerStoreForPage).toHaveBeenCalledWith("u1", ENV_VIEW);
+    expect(spy.mock.calls[0][3]).toBe("tcgplayer");
   });
 
   it("stores each swap's combo partners on the done write, read over the list with the pairs applied", async () => {

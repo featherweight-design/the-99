@@ -3,6 +3,7 @@ import { and, arrayContained, desc, eq, inArray, notInArray, sql } from "drizzle
 import { db } from "../../../db";
 import { cards, commanderSupportCards, preconCards, precons } from "../../../db/schema";
 import { cheapestNow, loadPrices } from "../../decks/price-query";
+import type { Store } from "../../stores/rows";
 import { loadSupportMeta } from "../../edhrec/support-read";
 import { loadPreconOverview } from "../overview-read";
 import { POOL_READ_MAX } from "./constants";
@@ -68,15 +69,18 @@ export async function loadUpgradeBase(fileName: string): Promise<UpgradeBase | n
   };
 }
 
-/** `bracket` is the player's pick: below 3 no game changer is offered, as none could be kept; at 3 or 4 the affordable ones in the lead's colors are added whatever their inclusion, so the run can land the bracket (`hold.ts`). */
-export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption, bracket: BracketTarget): Promise<UpgradeLoad> {
+/**
+ * `bracket` is the player's pick: below 3 no game changer is offered, as none could be kept; at 3 or 4 the affordable ones in the lead's colors are added whatever their inclusion, so the run can land the bracket (`hold.ts`).
+ * `store` is the reader's (store choice): the run's budget and every add's stored price are that store's.
+ */
+export async function loadUpgradeFor(base: UpgradeBase, option: CommanderOption, bracket: BracketTarget, store: Store): Promise<UpgradeLoad> {
   const lines = withCommanders(base.lines, option.commanderIds);
   const deckIds = new Set(lines.map((l) => l.oracleId));
   const identity = [...new Set(lines.filter((l) => option.commanderIds.includes(l.oracleId)).flatMap((l) => l.colorIdentity))];
   const poolRows = await readPool(option.commanderIds, [...deckIds], bracket < 3);
   if (bracket >= 3) poolRows.push(...(await readGameChangers(option.commanderIds, [...deckIds], identity, poolRows)));
   const ids = [...deckIds, ...poolRows.map((r) => r.oracleId)];
-  const read = await loadPrices(ids);
+  const read = await loadPrices(ids, [], [], store);
   const cents = new Map(ids.map((id) => [id, cheapestNow(read, id)] as const));
   const face = base.options[0];
   return {
