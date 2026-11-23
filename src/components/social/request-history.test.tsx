@@ -4,6 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { named } from "../../lib/person-name/mint";
 import { historyCopy as h } from "../../lib/copy/request-history";
+import { spareCopy } from "../../lib/copy/social";
 import type { HistoryEntry } from "../../lib/social/request-history";
 
 const more = vi.hoisted(() => vi.fn());
@@ -90,6 +91,13 @@ describe("RequestHistory", () => {
     expect(screen.getByText(h.openTheirs(12))).toBeTruthy();
     expect(screen.getByText(h.theirsYes)).toBeTruthy();
     expect(screen.queryByText(/asked you for/)).toBeNull();
+  });
+
+  it("an offer's answered words are the ones Home and Friends already use", () => {
+    const f = named("Rosa");
+    expect(JSON.stringify(h.offer.mine.yes(f, "X"))).toBe(JSON.stringify(spareCopy.request.offer.answered.yes(f, "X")));
+    expect(JSON.stringify(h.offer.mine.no(f, "X"))).toBe(JSON.stringify(spareCopy.request.offer.answered.no(f, "X")));
+    expect(JSON.stringify(h.offer.mine.expired(f, "X"))).toBe(JSON.stringify(h.mine.expired(f, "X")));
   });
 
   it("draws each empty tab's title and where requests come from", () => {
