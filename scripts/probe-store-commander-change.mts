@@ -26,6 +26,7 @@ for (const deck of DECKS) {
     if (cents === m) wrong += 1;
   }
 }
-const ok = compared > 0 && wrong < compared;
+// Stores can agree to the cent on a few cards; on main every figure agrees. Allow a tenth.
+const ok = compared > 0 && wrong <= compared / 10;
 console.log(`${ok ? "PASS" : "FAIL"}  to-buy commanders priced at TCGplayer differ from Mana Pool  (${compared} compared, ${wrong} equal)`);
 process.exit(ok ? 0 : 1);
