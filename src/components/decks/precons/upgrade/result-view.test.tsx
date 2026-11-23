@@ -259,7 +259,8 @@ describe("ResultView's store line (store label)", () => {
 
   it("draws no figure and the unpriced line when a store priced none of the adds to buy", () => {
     render(<ResultView panel={priced} run={run({ toBuy: { cards: 2, cents: 0, priced: 0 } })} lineActions={quiet()} />);
-    expect(within(screen.getByText("To buy").parentElement!).queryByText("$0.00")).toBeNull();
+    // `dollars(0)` draws "$0", so the fact is checked as a whole: the count alone, no figure at all.
+    expect(screen.getByText("To buy").parentElement!.textContent).toBe("To buy2");
     expect(line()!.textContent).toBe("no prices from TCGplayer for these · last checked Monday");
   });
 
