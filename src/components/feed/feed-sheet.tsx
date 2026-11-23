@@ -116,7 +116,7 @@ export function FeedSheet({ items, now, zone, faces, unseen, aside, onDismiss, o
         aria-labelledby="feed-sheet-title"
         data-feed-sheet
         onClick={(e) => e.stopPropagation()}
-        className="flex h-full w-full flex-col overflow-hidden bg-[color:var(--bg)] md:w-[460px] md:[border-left:1px_solid_var(--border-strong)]"
+        className="anim-sheet-in-phone flex h-full w-full flex-col overflow-hidden bg-[color:var(--bg)] md:w-[460px] md:[border-left:1px_solid_var(--border-strong)]"
         style={{ boxShadow: "var(--modal-shadow)" }}
       >
         <div className="flex flex-none flex-col gap-[12px] [border-bottom:1px_solid_var(--border)] px-[16px] pt-[14px] pb-[12px] md:px-[20px] md:pt-[18px]">
