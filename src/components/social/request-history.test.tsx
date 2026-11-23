@@ -20,7 +20,7 @@ const NOW = Date.parse("2026-11-20T12:00:00Z");
 const entry = (n: number, over: Partial<HistoryEntry> = {}): HistoryEntry => ({
   id: `id-${n}`, oracleId: `o-${n}`, card: { name: `Card ${n}`, imageUri: null }, copies: 1, deckName: null,
   other: { publicId: `p-${n}`, displayName: named("Rosa"), commander: null }, state: "yes",
-  createdAt: new Date("2026-11-10T00:00:00Z"), endedAt: new Date("2026-11-12T00:00:00Z"), ...over,
+  createdAt: new Date("2026-11-10T00:00:00Z"), endedAt: new Date("2026-11-12T00:00:00Z"), offer: false, ...over,
 });
 const side = (entries: HistoryEntry[], next: { createdAt: string; id: string } | null = null) => ({ entries, next });
 const view = (asked = side([]), ofYou = side([]), hidden = 0) => render(<RequestHistory asked={asked} ofYou={ofYou} hiddenCount={hidden} nowMs={NOW} />);
@@ -29,7 +29,7 @@ beforeEach(() => more.mockReset());
 afterEach(cleanup);
 
 describe("RequestHistory", () => {
-  it("draws You asked first, with each state's kicker, its day and its line, grouped by month", () => {
+  it("draws From you first, with each state's kicker, its day and its line, grouped by month", () => {
     view(side([
       entry(1, { state: "yes" }),
       entry(2, { state: "no", deckName: "Thopter Factory" }),
@@ -58,12 +58,38 @@ describe("RequestHistory", () => {
     expect(screen.getByRole("button", { name: /Card 1/ }).getAttribute("data-oracle")).toBe("o-1");
   });
 
-  it("switches to Asked of you, where an open ask says where to act and a Yes says the handover is theirs", () => {
+  it("switches to To you, where an open ask says where to act and a Yes says the handover is theirs", () => {
     view(side([entry(1)]), side([entry(7, { state: "open", endedAt: null, createdAt: new Date("2026-11-18T00:00:00Z") }), entry(8, { state: "yes" })]));
     fireEvent.click(screen.getByRole("tab", { name: h.tabs.ofYou }));
     expect(screen.getByText(h.ofYouOpen)).toBeTruthy();
     expect(screen.getByText(h.openTheirs(12))).toBeTruthy();
     expect(screen.getByText(h.theirsYes)).toBeTruthy();
+  });
+
+  it("From you draws an offer with the ask's kickers, `Offered` while open, and its own title and line", () => {
+    view(side([
+      entry(1, { offer: true, state: "open", endedAt: null, createdAt: new Date("2026-11-18T00:00:00Z"), copies: 2 }),
+      entry(2, { offer: true, state: "yes" }),
+      entry(3, { offer: true, state: "no" }),
+      entry(4, { offer: true, state: "withdrawn", endedAt: new Date("2026-11-13T00:00:00Z") }),
+    ]));
+    expect(screen.getByText(h.offer.open)).toBeTruthy();
+    expect(screen.getByText("You offered 2 Card 1 to Rosa")).toBeTruthy();
+    expect(screen.getByText("Rosa said yes to Card 2")).toBeTruthy();
+    expect(screen.getByText("Rosa passed on Card 3")).toBeTruthy();
+    expect(screen.getByText("You withdrew your offer of Card 4 to Rosa")).toBeTruthy();
+    expect(screen.getByText("12 days left. Withdraw it from Rosa’s Wishlist tab.")).toBeTruthy();
+    expect(screen.getAllByText(h.offer.offered("Nov 10")).length).toBe(3);
+  });
+
+  it("To you draws an offer as Waiting on you with the ask's lines, and an offer is not drawn as an ask", () => {
+    view(side([]), side([entry(1, { offer: true, state: "open", endedAt: null, createdAt: new Date("2026-11-18T00:00:00Z") }), entry(2, { offer: true, state: "yes" })]));
+    fireEvent.click(screen.getByRole("tab", { name: h.tabs.ofYou }));
+    expect(screen.getByText(h.ofYouOpen)).toBeTruthy();
+    expect(screen.getByText("Rosa offered you Card 1")).toBeTruthy();
+    expect(screen.getByText(h.openTheirs(12))).toBeTruthy();
+    expect(screen.getByText(h.theirsYes)).toBeTruthy();
+    expect(screen.queryByText(/asked you for/)).toBeNull();
   });
 
   it("draws each empty tab's title and where requests come from", () => {
