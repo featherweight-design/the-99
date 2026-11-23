@@ -72,7 +72,7 @@ describe("the claim reads", () => {
 
   it("opens the card chip's art at the reader's store", async () => {
     await loadCardChip("u", id(7), "cardkingdom");
-    expect(stub.chainArt.mock.calls.at(-1)?.[3]).toBe("cardkingdom");
+    expect((stub.chainArt.mock.calls.at(-1) as unknown[] | undefined)?.[3]).toBe("cardkingdom");
   });
 
   it("reads the card's row from loadCardChip", async () => {
