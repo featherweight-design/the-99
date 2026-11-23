@@ -22,6 +22,7 @@ import { readBuyRowPrices } from "../decks/shopping-rollup";
 import { byTouched } from "../decks/touched";
 import { loadFriendSpares } from "../social/spares";
 import { effectiveLimit, isOverLimit } from "../swaps/limit";
+import type { Store } from "../stores/rows";
 
 /** The tools whose Try it opens a deck, by their registry ids. */
 export const DECK_TOOLS = [
@@ -72,6 +73,8 @@ export function fitsOf(decks: readonly DeckFacts[], tools: readonly DeckToolId[]
 export async function loadToolFits(
   userId: string,
   tools: readonly DeckToolId[],
+  /** The reader's store: a deck is over its limit at the prices its Shopping list draws (store preference). */
+  store: Store = "manapool",
 ): Promise<Partial<Record<DeckToolId, ToolFit>>> {
   if (tools.length === 0) return {};
   const asked = new Set(tools);
@@ -89,7 +92,7 @@ export async function loadToolFits(
     return deck !== undefined && r.oracleId !== deck.commander && r.oracleId !== deck.partner;
   });
   const [overLimit, spared] = await Promise.all([
-    asked.has("stand-ins") ? decksOverLimit(userId, body, byDeck) : new Set<string>(),
+    asked.has("stand-ins") ? decksOverLimit(userId, body, byDeck, store) : new Set<string>(),
     asked.has("friend-spares") ? decksWithSpares(userId, body) : new Set<string>(),
   ]);
   return fitsOf(deckFacts(list, { overLimit, spared, played }), tools);
@@ -137,10 +140,11 @@ async function decksOverLimit(
   userId: string,
   rows: DeckBuyRow[],
   byDeck: ReadonlyMap<string, DeckLimit>,
+  store: Store,
 ): Promise<Set<string>> {
   if (rows.length === 0) return new Set();
   const [read, locked] = await Promise.all([
-    readBuyRowPrices(userId, rows),
+    readBuyRowPrices(userId, rows, store),
     liveLockedIdsByDeck(db, [...new Set(rows.map((r) => r.deckId))]),
   ]);
   const out = new Set<string>();

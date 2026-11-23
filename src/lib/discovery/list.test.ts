@@ -440,4 +440,10 @@ describe("discoveryKey", () => {
   it("keeps two sorts apart", () => {
     expect(discoveryKey("new", [])).not.toEqual(discoveryKey("fit", []));
   });
+
+  // Store preference: Mana Pool's key is unchanged, so the switch off sends no entry cold; another store files apart.
+  it("keeps Mana Pool's key and files another store apart", () => {
+    expect(discoveryKey("fit", [], "manapool")).toEqual(discoveryKey("fit", []));
+    expect(discoveryKey("fit", [], "tcgplayer")).toEqual(["discovery", "fit", "v11", "basis:labels", "hidden:none", "store:tcgplayer"]);
+  });
 });

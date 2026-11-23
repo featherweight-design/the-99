@@ -4,6 +4,8 @@ import { NextRequest } from "next/server";
 const stub = vi.hoisted(() => ({
   userId: "user_1" as string | null,
   load: vi.fn(),
+  store: "manapool" as string,
+  storeWith: [] as unknown[],
 }));
 const observe = vi.hoisted(() => vi.fn());
 vi.mock("../../../lib/rate/observe", () => ({ enforceHit: observe }));
@@ -13,6 +15,10 @@ vi.mock("../../../lib/discovery/payload", () => ({ loadDiscoveryPayload: stub.lo
 // them, untouched (LABEL_ROLE_COUNTS retired, Hugh 2026-10-31: no basis is written over them).
 const RESOLVED = vi.hoisted(() => ({ FEEDBACK_ENABLED: "true" }) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../../lib/flags/request", () => ({ requestFlags: async () => RESOLVED }));
+// The reader's store, read under the same switches the page reads it under.
+vi.mock("../../../lib/stores/preference", () => ({
+  readerStoreForPage: async (userId: string, env: unknown) => (stub.storeWith.push([userId, env]), stub.store),
+}));
 
 import { GET } from "./route";
 import { encodeDiscovery } from "../../../lib/discovery/encode";
@@ -50,7 +56,22 @@ describe("GET /api/discovery-fields", () => {
     const { fields } = await res.json();
     expect(Object.keys(fields)).toEqual(["a", "b"]);
     expect(fields.a.prose).toBe("About a.");
-    expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED);
+    expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED, "manapool");
+  });
+
+  // Store preference: the page keys its payload on the reader's store, so the route must read the same entry, or a
+  // TCGplayer page's withheld rows would rebuild and read a Mana Pool payload.
+  it("reads the payload at the reader's store, decided under their switches", async () => {
+    stub.store = "tcgplayer";
+    stub.storeWith.length = 0;
+    try {
+      const res = await get("sort=fit&b=labels&s=a");
+      expect(res.status).toBe(200);
+      expect(stub.load).toHaveBeenCalledWith("user_1", "fit", RESOLVED, "tcgplayer");
+      expect(stub.storeWith).toEqual([["user_1", RESOLVED]]);
+    } finally {
+      stub.store = "manapool";
+    }
   });
 
   // LABEL_ROLE_COUNTS retired (Hugh 2026-10-31): `b=classifier` is still accepted, but the entry is
@@ -59,7 +80,7 @@ describe("GET /api/discovery-fields", () => {
   it("still accepts a classifier page's basis, reads the labels entry, and answers it no fields", async () => {
     const res = await get("sort=new&b=classifier&s=a");
     expect(res.status).toBe(200);
-    expect(stub.load).toHaveBeenCalledWith("user_1", "new", RESOLVED);
+    expect(stub.load).toHaveBeenCalledWith("user_1", "new", RESOLVED, "manapool");
     expect((await res.json()).fields).toEqual({});
   });
 

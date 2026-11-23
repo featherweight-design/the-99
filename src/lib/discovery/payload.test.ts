@@ -9,6 +9,7 @@ const stub = vi.hoisted(() => ({
   keys: [] as string[][],
   hidden: [] as string[],
   loadedWith: undefined as readonly string[] | undefined,
+  storeWith: undefined as string | undefined,
 }));
 vi.mock("../cache/user-lists", () => ({
   // The data cache as the real one behaves: the value is served, and filed only when `store` agrees.
@@ -21,9 +22,11 @@ vi.mock("../cache/user-lists", () => ({
 }));
 vi.mock("../commanders/hidden", () => ({ loadHiddenIds: async () => stub.hidden }));
 vi.mock("./list", () => ({
-  discoveryKey: (sort: string, hiddenIds: readonly string[]) => ["discovery", sort, hiddenIds.join(",")],
-  loadDiscoveryWithIds: async (_u: string, opts: { hiddenIds?: readonly string[] }) => {
+  discoveryKey: (sort: string, hiddenIds: readonly string[], store = "manapool") =>
+    store === "manapool" ? ["discovery", sort, hiddenIds.join(",")] : ["discovery", sort, hiddenIds.join(","), store],
+  loadDiscoveryWithIds: async (_u: string, opts: { hiddenIds?: readonly string[]; store?: string }) => {
     stub.loadedWith = opts.hiddenIds;
+    stub.storeWith = opts.store;
     return { list: { items: [], sort: "fit" }, oracleIds: [], ...stub.result };
   },
 }));
@@ -59,5 +62,17 @@ describe("loadDiscoveryPayload", () => {
     await loadDiscoveryPayload("u1", "fit", on);
     expect(stub.loadedWith).toEqual([]);
     expect(stub.keys).toEqual([["discovery", "fit", "h1"], ["discovery", "fit", ""]]);
+  });
+
+  // Store preference: the store both keys the entry and prices the load, so one store's payload is never served to a
+  // reader of another, and Mana Pool's key is the one it always was.
+  it("keys the entry on the reader's store and hands the load that store", async () => {
+    stub.keys.length = 0;
+    stub.hidden = [];
+    await loadDiscoveryPayload("u1", "fit", on);
+    expect(stub.storeWith).toBe("manapool");
+    await loadDiscoveryPayload("u1", "fit", on, "tcgplayer");
+    expect(stub.storeWith).toBe("tcgplayer");
+    expect(stub.keys).toEqual([["discovery", "fit", ""], ["discovery", "fit", "", "tcgplayer"]]);
   });
 });

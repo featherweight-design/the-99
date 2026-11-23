@@ -3674,7 +3674,7 @@ Fixture: the account's wishlist must hold a card a friend shares a spare of and 
 
 `pnpm probe:you-have-it-3b` (same environment as 3a: `YHI_PROBE_URL` and `YHI_PROBE_BRANCH` for a scratch branch made from local-dev, `E2E_AUDIT_USER_EMAIL`, `PROBE_BASE`, optional `PROBE_SHOTS`) proves the offerer's side at 390 and 1300. A friend's Wishlist tab draws the call-out (`You have 1 to spare`), the key and a press on the one spare tile; the `You can spare` filter narrows the tiles; the press opens `You have this`; Offer turns the row to `Offered`, the press's aria gains `, offered`, and a holder-initiated `spare_requests` row exists. It writes the per-run wanter (purged in a finally), the friendship and two wishlist rows, so it is refused on production, staging and local-dev. It fails on main, where the tab has no call-out.
 
-## Store choice probes (store-paste, store-stats, store-cards, store-deck-links, store-sets, store-collection)
+## Store choice probes (store-paste, store-stats, store-cards, store-deck-links, store-sets, store-collection, store-discover)
 
 Each proves one slice of the store choice handoff (`design/design_handoff_the99_store_choice`) at 390x844 and 1300x900 for a reader whose chosen store is not Mana Pool, and each fails on `main`, where that slice still speaks Mana Pool. Every one takes `E2E_AUDIT_USER_EMAIL` and `PROBE_BASE=...` (a loopback dev server only) and is read-only.
 
@@ -3684,5 +3684,6 @@ Each proves one slice of the store choice handoff (`design/design_handoff_the99_
 - `pnpm probe:store-deck-links`: a deck's Export dialog and Shopping tab draw no whole-list link for a store with no cart.
 - `pnpm probe:store-sets`: a set page and `/collection/proxies` are priced at the store (`PROBE_PROXY_TCG`, `PROBE_PROXY_MP`: the proxied card's per-printing figures in cents).
 - `pnpm probe:store-collection`: `/collection` sorted by price, in rows and in the grid, speaks every priced card at the store and none at Mana Pool, and a pressed card's details buy there.
+- `pnpm probe:store-discover`: `/commanders/discover` stamps and speaks every priced row at the store and none at Mana Pool, in the first window and in the rows a press of "Show 25 more commanders" fetches from `/api/discovery-fields`.
 
 Fixture: a scratch branch made from local-dev, which the dev server reads, where the audit account has a user `STORE_PREFERENCE_ENABLED` override `on`, `user_prefs.preferred_store = 'tcgplayer'` and `printing_store_prices` rows for tcgplayer. Never staging or production.

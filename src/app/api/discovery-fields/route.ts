@@ -22,6 +22,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { drawFieldsFor } from "../../../lib/discovery/encode";
 import { loadDiscoveryPayload } from "../../../lib/discovery/payload";
 import { requestFlags } from "../../../lib/flags/request";
+import { readerStoreForPage } from "../../../lib/stores/preference";
 import { parseRoleBasis } from "../../../lib/profile/build";
 import { MAX_FIELDS_BATCH } from "../../../lib/discovery/fields-batch";
 
@@ -44,9 +45,10 @@ export async function GET(req: NextRequest) {
   if (slugs.length === 0 || slugs.length > MAX_FIELDS_BATCH || !slugs.every((s) => SLUG.test(s))) {
     return NextResponse.json(null, { status: 400, headers: HEADERS });
   }
-  // The reader's resolved switches: the entry is always counted by label, so this reaches the entry
-  // the page drew.
-  const payload = await loadDiscoveryPayload(userId, sort, await requestFlags(userId));
+  // The reader's resolved switches and store, as the page reads them: the entry is always counted by label and
+  // keyed on the store, so this reaches the entry the page drew.
+  const env = await requestFlags(userId);
+  const payload = await loadDiscoveryPayload(userId, sort, env, await readerStoreForPage(userId, env));
   // The basis the entry was COUNTED by: a labels request whose label read failed just now gets a
   // classifier list back, and a classifier page's figures are not the entry's, so both get no fields
   // and the client's missing-row path reads the page again.

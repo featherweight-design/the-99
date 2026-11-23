@@ -9,6 +9,7 @@ const stub = vi.hoisted(() => ({
   played: [] as { deckId: string }[],
   locked: new Map<string, ReadonlySet<string>>(),
   calls: [] as string[],
+  stores: [] as string[],
 }));
 
 vi.mock("../../db", () => ({
@@ -22,7 +23,7 @@ vi.mock("../decks/availability-query", () => ({
   loadDeckBuyRows: async () => { stub.calls.push("buyRows"); return stub.rows; },
 }));
 vi.mock("../decks/shopping-rollup", () => ({
-  readBuyRowPrices: async () => { stub.calls.push("prices"); return { prices: stub.prices, newestAsOf: new Date("2026-10-16") }; },
+  readBuyRowPrices: async (_u: string, _rows: unknown, store: string) => { stub.calls.push("prices"); stub.stores.push(store); return { prices: stub.prices, newestAsOf: new Date("2026-10-16") }; },
 }));
 vi.mock("../decks/price-query", () => ({
   priceFor: (read: { prices: Map<string, unknown> }, deckId: string, oracleId: string) => read.prices.get(`${deckId}:${oracleId}`) ?? null,
@@ -110,6 +111,11 @@ describe("loadToolFits", () => {
     const at = (cents: number) => ({ cents, foilCents: null, etchedCents: null, asOf });
     stub.prices = new Map([["cheap:c1", at(2000)], ["pricey:c2", at(1500)], ["cmdr:boss", at(9900)]]);
     expect(ids((await loadToolFits("u", ["stand-ins"]))["stand-ins"])).toEqual(["pricey"]);
+    // Store preference: priced at the reader's store, Mana Pool by default.
+    stub.stores.length = 0;
+    await loadToolFits("u", ["stand-ins"], "tcgplayer");
+    await loadToolFits("u", ["stand-ins"]);
+    expect(stub.stores).toEqual(["tcgplayer", "manapool"]);
   });
 
   it("asks for spares once over every deck's missing cards, with no cap, and fits the decks missing a spared card", async () => {
