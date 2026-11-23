@@ -282,6 +282,7 @@
     "probe:tour-credits": "node scripts/probe-tour-credits.mjs",
     "probe:store-paste": "node scripts/probe-store-paste.mjs",
     "probe:store-change": "node scripts/probe-store-change.mjs",
+    "probe:store-first-run": "node scripts/probe-store-first-run.mjs",
     "probe:store-stats": "node scripts/probe-store-stats.mjs",
     "probe:store-cards": "node scripts/probe-store-cards.mjs",
     "probe:store-deck-links": "node scripts/probe-store-deck-links.mjs",
