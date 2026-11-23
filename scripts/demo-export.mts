@@ -434,7 +434,7 @@ const MERGERS: Record<string, (committed: Committed) => Promise<{ values: Partia
       throw new Error("demo:export --merge=bulk: this fixture is not the one the committed file was exported from; nothing written.");
     }
     const { readBulkPlans } = await import("../src/lib/decks/bulk-fill-plans");
-    const plans = await readBulkPlans(userId, ABOUT_DECK_IDS.under, committed.topOff.openSlots, env);
+    const plans = await readBulkPlans(userId, "manapool", ABOUT_DECK_IDS.under, committed.topOff.openSlots, env);
     if (!plans) throw new Error("demo:export --merge=bulk: the under deck's bulk plans did not read (no open slots, or an unresolved commander); nothing written.");
     const drawn = new Set(committed.topOff.candidates.map((c) => c.oracleId));
     const planned = [...plans.collection.oracleIds, ...plans.best.oracleIds];
@@ -477,10 +477,10 @@ if (readId) {
   const read = await loadTheRead(readId, userId);
   if (read.kind !== "done") throw new Error(`demo:export: the stored Help me choose read is ${read.kind}, not done.`);
   const params = { ...emptyParams(), words: WISH, readId, results: true };
-  const page = await loadResultsPage(userId, answersOf(params), 0, read.result);
+  const page = await loadResultsPage(userId, "manapool", answersOf(params), 0, read.result);
   const [decks, themes] = await Promise.all([loadReadDecks(userId), loadIntakeThemes()]);
   // One slice of twelve, as the signed-in list counts them.
-  const trials = await trialFigureRows(userId, env, params, page.rows.slice(0, 12).map((r) => r.oracleId));
+  const trials = await trialFigureRows(userId, "manapool", env, params, page.rows.slice(0, 12).map((r) => r.oracleId));
   const unfilled = page.rows.slice(0, 12).filter((r) => !trials[r.oracleId]).map((r) => r.name);
   if (unfilled.length > 0) failures.push(`Help me choose: no ownership figure for ${unfilled.join(", ")}`);
   choose = projectChoose({ params, page, decks, themes, trials });
@@ -621,7 +621,7 @@ const under = deckReads.find((r) => r.role === "under")!;
 // The bulk pair's two plans, read as `bulkFillOptions` reads them (the action needs a session; `readBulkPlans` is its read).
 const { readBulkPlans } = await import("../src/lib/decks/bulk-fill-plans");
 const underOpen = deckBodySize(under.detail.partner !== null) - under.detail.total;
-const bulkPlans = underOpen > 0 ? await readBulkPlans(userId, under.deckId, underOpen, env) : null;
+const bulkPlans = underOpen > 0 ? await readBulkPlans(userId, "manapool", under.deckId, underOpen, env) : null;
 if (!bulkPlans) throw new Error("demo:export: the under deck's bulk plans did not read (no open slots, or an unresolved commander); nothing written.");
 const topOff = projectTopOff({
   cards: decks.under.cards,

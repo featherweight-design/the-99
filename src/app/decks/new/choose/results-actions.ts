@@ -2,6 +2,7 @@
 
 import { requireUserId } from "../../../../lib/auth";
 import { requestFlags } from "../../../../lib/flags/request";
+import { readerStoreForAction } from "../../../../lib/stores/action-store";
 import { answersOf, parseLiveParams } from "../../../../lib/intake/params";
 import { loadResultsPage, type ResultsPage } from "../../../../lib/intake/rows";
 import { loadTheRead } from "../../../../lib/intake/run-store";
@@ -41,7 +42,7 @@ export async function moreRows(queryString: string, offset: number): Promise<Res
   const p = parseLiveParams(new URLSearchParams(qs));
   // The read `r` names orders the list the same way on every slice, so a pick is never repeated.
   const read = p.readId ? await loadTheRead(p.readId, userId) : null;
-  return loadResultsPage(userId, answersOf(p), offset, read?.kind === "done" ? read.result : null);
+  return loadResultsPage(userId, await readerStoreForAction(userId), answersOf(p), offset, read?.kind === "done" ? read.result : null);
 }
 
 /** At most one slice of rows is counted per call. */
@@ -67,5 +68,5 @@ export async function trialFillRows(commanderOracleIds: string[], queryString: s
   }
   const ids = [...new Set(commanderOracleIds)];
   const p = parseLiveParams(new URLSearchParams(checkQuery(queryString)));
-  return trialFigureRows(userId, env, p, ids);
+  return trialFigureRows(userId, await readerStoreForAction(userId), env, p, ids);
 }

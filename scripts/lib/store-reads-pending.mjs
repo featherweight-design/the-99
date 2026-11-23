@@ -9,14 +9,7 @@
 
 /** Slice 3c-2: intake, decks, commander change. */
 const SLICE_3C2 = [
-  { path: "src/lib/intake/fill-facts.ts", fn: "loadFillGate", n: 1 },
-  { path: "src/lib/intake/fill-facts.ts", fn: "loadBudgetLeftCents", n: 1 },
-  { path: "src/lib/intake/trial.ts", fn: "trialFill", n: 1 },
-  { path: "src/lib/intake/search.ts", fn: "loadSearchFacts", n: 1 },
-  { path: "src/lib/intake/rows.ts", fn: "decorate", n: 2 },
-  { path: "src/lib/intake/rows.ts", fn: "loadCardChip", n: 1 },
   { path: "src/lib/decks/draft-state.ts", fn: "readDraft", n: 1 },
-  { path: "src/lib/decks/fill-plan.ts", fn: "buildFillPlan", n: 1 },
   { path: "src/lib/decks/tuning-read.ts", fn: "readItems", n: 1 },
   { path: "src/lib/decks/versions.ts", fn: "loadVersionDiff", n: 1 },
   { path: "src/lib/commander-change/candidates.ts", fn: "loadChangeCandidates", n: 1 },

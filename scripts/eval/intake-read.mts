@@ -112,7 +112,7 @@ for (const arm of arms) {
   for (const f of FIXTURES) {
     if (only && !only.includes(f.id)) continue;
     if (arm.id === "sonnet" && !f.unfiltered) continue;
-    const inputs = await run.loadTheReadInputs(HUGH, f.words, f.filters, undefined);
+    const inputs = await run.loadTheReadInputs(HUGH, "manapool", f.words, f.filters, undefined);
     if (f.noDecks) inputs.decks = [];
     const system = run.shortlistPrefix(inputs);
     const user = read.shortlistRequest({ words: f.words, filters: f.filters, cards: inputs.cards });

@@ -35,13 +35,13 @@ describe("trialFill", () => {
   it("places the build-around card beside the plan, as the create it predicts does", async () => {
     // The card is placed beside the plan and excluded from its pool, so the plan sees it only
     // through `selected`. Left out, the trial predicts a mana base the create would not build.
-    await trialFill("u", commander, { budgetCents: null, bracket: null, cardOracleId: "card-1" }, ENV_VIEW);
+    await trialFill("u", "manapool", commander, { budgetCents: null, bracket: null, cardOracleId: "card-1" }, ENV_VIEW);
     expect(vi.mocked(placedCardsOf)).toHaveBeenCalledWith(["card-1"]);
     expect(planOptions[0]).toMatchObject({ selected: [PLACED] });
   });
 
   it("places nothing when no card was chosen", async () => {
-    await trialFill("u", commander, { budgetCents: null, bracket: null, cardOracleId: null }, ENV_VIEW);
+    await trialFill("u", "manapool", commander, { budgetCents: null, bracket: null, cardOracleId: null }, ENV_VIEW);
     expect(planOptions[0]).toMatchObject({ selected: [] });
   });
 });
@@ -55,7 +55,7 @@ describe("trialFill's bracket figure (bracket reach R1b)", () => {
 
   it("reads the plan's own finished-deck figure: what it lands in and what is left to buy", async () => {
     plan(short, { permits: [1, 2], buyCents: 3_190 });
-    expect((await trialFill("u", commander, answers, ENV_VIEW)).bracket).toEqual({ target: 3, permits: [1, 2], buyCents: 3_190 });
+    expect((await trialFill("u", "manapool", commander, answers, ENV_VIEW)).bracket).toEqual({ target: 3, permits: [1, 2], buyCents: 3_190 });
   });
 
   it("under own-only reads the sleeveable fill the create builds, under the create's own options", async () => {
@@ -63,16 +63,16 @@ describe("trialFill's bracket figure (bracket reach R1b)", () => {
     // builds, reaches 3 with an owned replacement.
     plan(short, { permits: [1, 2], buyCents: 3_190 });
     plan({ target: 3, kind: "collection", raisers: ["g0"] }, { permits: [3], buyCents: null });
-    const f = await trialFill("u", commander, answers, ENV_VIEW, true);
+    const f = await trialFill("u", "manapool", commander, answers, ENV_VIEW, true);
     expect(vi.mocked(buildFillPlan).mock.calls[1][3]).toMatchObject({ pool: "sleeveable", failClosed: true });
     expect(f.bracket).toEqual({ target: 3, permits: [3], buyCents: null });
   });
 
   it("draws no figure under bracket 3, or with no reach on the plan (the switch off)", async () => {
     plan({ target: 2, kind: "fixed" }, { permits: [1, 2], buyCents: null });
-    expect((await trialFill("u", commander, { ...answers, bracket: 2 }, ENV_VIEW)).bracket).toBeNull();
+    expect((await trialFill("u", "manapool", commander, { ...answers, bracket: 2 }, ENV_VIEW)).bracket).toBeNull();
     plan(undefined);
-    expect((await trialFill("u", commander, answers, ENV_VIEW)).bracket).toBeNull();
+    expect((await trialFill("u", "manapool", commander, answers, ENV_VIEW)).bracket).toBeNull();
     expect(vi.mocked(buildFillPlan)).toHaveBeenCalledTimes(2);
   });
 });
@@ -87,7 +87,7 @@ describe("handOffTrial (bracket reach PR 3b)", () => {
       bracketReach: { target: 3, kind: "collection", raisers: ["gc"] },
       bracketAfter: { permits: [3], buyCents: null }, budgetLeftCents: 5000,
     } as never);
-    const t = await handOffTrial("u", commanderC, answers, ENV_VIEW, true);
+    const t = await handOffTrial("u", "manapool", commanderC, answers, ENV_VIEW, true);
     // Own-only: the create's own options, so the choice is drawn over the create's deck.
     expect(vi.mocked(buildFillPlan).mock.calls.at(-1)![3]).toMatchObject({ pool: "sleeveable", failClosed: true });
     expect(t).toEqual({ permits: [3], placedRaisers: ["gc"], reach: { target: 3, kind: "collection", raisers: ["gc"] }, budgetLeftCents: 5000 });
@@ -96,7 +96,7 @@ describe("handOffTrial (bracket reach PR 3b)", () => {
   it("places the ?select= picks beside the plan with the build-around card, as the create does (round 3)", async () => {
     vi.mocked(buildFillPlan).mockResolvedValueOnce({ rows: [], bracketReach: { target: 3, kind: "fixed" }, bracketAfter: { permits: [3], buyCents: null } } as never);
     vi.mocked(placedCardsOf).mockClear();
-    await handOffTrial("u", commanderC, { ...answers, cardOracleId: "card-1" }, ENV_VIEW, false, ["card-1", "pick-gc"]);
+    await handOffTrial("u", "manapool", commanderC, { ...answers, cardOracleId: "card-1" }, ENV_VIEW, false, ["card-1", "pick-gc"]);
     const call = vi.mocked(buildFillPlan).mock.calls.at(-1)!;
     // Excluded from the pool (so fixed in the reach and charged to the budget) and held (so slots count them).
     expect([...(call[2] ?? [])]).toEqual(["card-1", "pick-gc"]);
@@ -105,7 +105,7 @@ describe("handOffTrial (bracket reach PR 3b)", () => {
 
   it("fills from any cards when not own-only, and reads no reach under bracket 3", async () => {
     vi.mocked(buildFillPlan).mockResolvedValueOnce({ rows: [], bracketReach: { target: 2, kind: "fixed" }, bracketAfter: { permits: [1, 2], buyCents: null } } as never);
-    const t = await handOffTrial("u", commanderC, { ...answers, bracket: 2 }, ENV_VIEW, false);
+    const t = await handOffTrial("u", "manapool", commanderC, { ...answers, bracket: 2 }, ENV_VIEW, false);
     expect(vi.mocked(buildFillPlan).mock.calls.at(-1)![3].pool).toBeUndefined();
     expect(t.permits).toBeNull();
   });

@@ -17,7 +17,7 @@ describe("loadFillGate's budget", () => {
   it("admits a catalog basic it was never given as a candidate", async () => {
     // `planFill`'s `basics` reach the fill without being candidates, so the gate knows nothing of
     // them: no price, no ownership. A basic is never a buy, so the budget must not refuse one.
-    const gate = await loadFillGate({
+    const gate = await loadFillGate({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], candidates: [],
       answers: { budgetCents: 1000, bracket: null, cardOracleId: null },
     });
@@ -37,7 +37,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
 
   it("caps the fill at the set alone, so the set charged first fits and nothing else is bought", async () => {
     await priced();
-    const gate = await loadFillGate({
+    const gate = await loadFillGate({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "spell" })],
       answers: { budgetCents: 2000, bracket: null, cardOracleId: null }, capCents: 3200,
     });
@@ -50,7 +50,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
 
   it("spends no whole-dollar remainder of a raised budget: a $33 budget capped at the $32 set buys no 50¢ card", async () => {
     await priced();
-    const gate = await loadFillGate({
+    const gate = await loadFillGate({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "penny" })],
       answers: { budgetCents: 3300, bracket: null, cardOracleId: null }, capCents: 3200,
     });
@@ -63,7 +63,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
     vi.mocked(loadPrices).mockResolvedValue(new Map([
       ["rhystic", { liveCents: 4950 }], ["quarter", { liveCents: 25 }],
     ]) as unknown as Awaited<ReturnType<typeof loadPrices>>);
-    const gate = await loadFillGate({
+    const gate = await loadFillGate({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "quarter" })],
       answers: { budgetCents: 5000, bracket: null, cardOracleId: null },
     });
@@ -73,7 +73,7 @@ describe("loadFillGate's cap (Hit bracket N, G1)", () => {
 
   it("with no cap, the budget less the set is spent as usual", async () => {
     await priced();
-    const gate = await loadFillGate({
+    const gate = await loadFillGate({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "rhystic" }), card({ oracleId: "spell" })],
       answers: { budgetCents: 5000, bracket: null, cardOracleId: null },
     });
@@ -89,14 +89,28 @@ describe("loadBudgetLeftCents (audit item 10)", () => {
     vi.mocked(loadPrices).mockResolvedValue(new Map([["around", { liveCents: 1500 }]]) as unknown as Awaited<ReturnType<typeof loadPrices>>);
     const { loadBudgetLeftCents } = await import("./fill-facts");
     // Unowned (no availability row), not a basic (the catalog read returns none): charged.
-    expect(await loadBudgetLeftCents({
+    expect(await loadBudgetLeftCents({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: "around" },
     })).toBe(3500);
-    expect(await loadBudgetLeftCents({
+    expect(await loadBudgetLeftCents({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], answers: { budgetCents: 5000, bracket: 3, cardOracleId: null },
     })).toBe(5000);
-    expect(await loadBudgetLeftCents({
+    expect(await loadBudgetLeftCents({ store: "manapool",
       userId: "u", commanderIds: ["cmd"], answers: { budgetCents: null, bracket: 3, cardOracleId: "around" },
     })).toBeNull();
+  });
+});
+
+describe("loadFillGate's store", () => {
+  it("prices the candidates in the reader's store, not Mana Pool's", async () => {
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockClear();
+    await loadFillGate({
+      store: "tcgplayer", userId: "u", commanderIds: ["cmd"], candidates: [card({ oracleId: "spell" })],
+      answers: { budgetCents: 1000, bracket: null, cardOracleId: null },
+    });
+    const calls = vi.mocked(loadPrices).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const c of calls) expect(c[1]).toBe("tcgplayer");
   });
 });

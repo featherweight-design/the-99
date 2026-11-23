@@ -8,6 +8,7 @@ import { loadAvailability } from "../decks/availability-query";
 import { isBasicLand } from "../decks/grouping";
 import type { FillCandidate, FillGate } from "../decks/fill";
 import { loadPrices } from "../discovery/price";
+import type { Store } from "../stores/rows";
 import { isCountedCombo } from "../profile/load";
 import { producesInfiniteTurns } from "../spellbook/combo-features";
 import { buysCopy } from "./buys-card";
@@ -45,6 +46,8 @@ export type DeckAnswers = {
  */
 export async function loadFillGate(args: {
   userId: string;
+  /** The reader's store: the budget is charged at its prices. */
+  store: Store;
   commanderIds: readonly string[];
   answers: DeckAnswers;
   candidates: readonly FillCandidate[];
@@ -78,7 +81,7 @@ export async function loadFillGate(args: {
 
   if (answers.budgetCents !== null) {
     const [prices, availability] = await Promise.all([
-      loadPrices(ids),
+      loadPrices(ids, args.store),
       loadAvailability(args.userId, { oracleIds: ids, excludeDeckId: args.excludeDeckId }),
     ]);
     const owned = new Set(args.candidates.filter((c) => c.owned).map((c) => c.oracleId));
@@ -146,6 +149,7 @@ async function chargePlaced(
  */
 export async function loadBudgetLeftCents(args: {
   userId: string;
+  store: Store;
   commanderIds: readonly string[];
   answers: DeckAnswers;
   placedIds?: readonly string[];
@@ -156,7 +160,7 @@ export async function loadBudgetLeftCents(args: {
   const placed = placedIdsOf(args.commanderIds, args.answers.cardOracleId, args.placedIds);
   if (placed.length === 0) return budgetCents;
   const [prices, availability] = await Promise.all([
-    loadPrices(placed),
+    loadPrices(placed, args.store),
     loadAvailability(args.userId, { oracleIds: placed, excludeDeckId: args.excludeDeckId }),
   ]);
   return budgetCents - await chargePlaced(placed, (id) => prices.get(id)?.liveCents ?? null, availability);

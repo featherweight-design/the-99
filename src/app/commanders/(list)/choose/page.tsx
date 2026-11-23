@@ -28,6 +28,8 @@ import { helpMeChooseHistoryCopy as historyCopy } from "../../../../lib/copy/hel
 import { loadChooseHistory, loadPastRead } from "../../../../lib/intake/history-read";
 import { choosePath } from "../../../../lib/commanders/place-paths";
 import { requestFlags } from "../../../../lib/flags/request";
+import { readerStoreForPage } from "../../../../lib/stores/preference";
+import type { Store } from "../../../../lib/stores/rows";
 import { answersOf, parseLiveParams, serializeChooseParams, type ChooseParams } from "../../../../lib/intake/params";
 import { answerChips } from "../../../../lib/intake/present";
 import { isAnyOf } from "../../../../lib/intake/rank";
@@ -71,6 +73,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // The reader first: the switches are theirs (`requestFlags`).
   const userId = await requireUserId();
   const env = await requestFlags(userId);
+  const store = await readerStoreForPage(userId, env);
   // On the Commanders place the strip is the way out, so the form draws no "back to New deck" link.
   const chooseAt = choosePath(true);
   const rawQuery = await searchParams;
@@ -141,7 +144,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   const openedFromHistory = !!words && !!p.readId && sp.get(PAST_PARAM) === "1";
   const [card, [served, allowance, pastAt]] = await Promise.all([
     // `undefined` when the read failed, which says nothing about the card; `null` when it is no card.
-    p.card ? loadCardChip(userId, p.card).catch(() => undefined) : null,
+    p.card ? loadCardChip(userId, p.card, store).catch(() => undefined) : null,
     // The standing is read AFTER the read's state: reading the state can reap an abandoned read and
     // refund its credit, and a standing read beside it could count the credit the panel says came back.
     (async () => {
@@ -258,6 +261,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
           >
             <Results
               userId={userId}
+              store={store}
               params={p}
               themeLabels={themeLabels}
               cardName={card?.name ?? null}
@@ -282,6 +286,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
 /** The search, streamed under the bar. A failure is the search-failed state, never the error page. */
 async function Results({
   userId,
+  store,
   params,
   themeLabels,
   cardName,
@@ -294,6 +299,7 @@ async function Results({
   past,
 }: {
   userId: string;
+  store: Store;
   params: ChooseParams;
   themeLabels: Record<string, string>;
   cardName: string | null;
@@ -309,7 +315,7 @@ async function Results({
 }) {
   let page;
   try {
-    page = await loadResultsPage(userId, answersOf(params), 0, picks);
+    page = await loadResultsPage(userId, store, answersOf(params), 0, picks);
   } catch (error) {
     // Next's own control flow (a bailout, a redirect) passes through untouched.
     unstable_rethrow(error);

@@ -84,9 +84,9 @@ async function main() {
       const other = new Set(b.rows.map((r) => r.oracleId));
       return a.rows.filter((r) => !other.has(r.oracleId)).length;
     };
-    const created = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: createAnswers, env: flags });
-    const retried = await buildFillPlan(USER, commanders, new Set(), { selected: [], ...(retry ? { answers: retry } : {}), env: flags });
-    const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [], env: flags });
+    const created = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], answers: createAnswers, env: flags });
+    const retried = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], ...(retry ? { answers: retry } : {}), env: flags });
+    const plain = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], env: flags });
     check("the retry fills as the create did", ids(retried) === ids(created),
       `${retried.rows.length} rows retried, ${created.rows.length} created, ${unowned(retried)} unowned in the retry`);
     check("and not as the plain build the retry used to fill", ids(retried) !== ids(plain),

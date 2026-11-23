@@ -3,6 +3,7 @@
 // `bulkFillOptions`) read their plans from one place; the landing demo's exporter (no session) reads them here in a later PR.
 import { eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
+import type { Store } from "../stores/rows";
 import { cards, deckCards } from "../../db/schema";
 import { requireDeck } from "./read";
 import { deckBodySize } from "./deck-size";
@@ -95,6 +96,7 @@ export async function topOffAllowList(userId: string, inputs: FillInputs): Promi
  */
 export async function planFromPool(
   userId: string,
+  store: Store,
   deckId: string,
   inputs: FillInputs,
   openSlots: number,
@@ -125,6 +127,7 @@ export async function planFromPool(
         // is narrowed to cards with a free copy.
         excludeDeckId: deckId,
         env,
+        store,
         // BOUNDED BY THE DECK, not only by the caller. `Number.isInteger` accepts 1e308, and
         // `chooseBulkFill`'s shape guard says nothing about size.
         //
@@ -179,6 +182,7 @@ export function sleeveableIds(plan: { rows: readonly FillRow[] }) {
  */
 export async function readBulkPlans(
   userId: string,
+  store: Store,
   deckId: string,
   openSlots: number,
   env: NodeJS.ProcessEnv,
@@ -186,8 +190,8 @@ export async function readBulkPlans(
   const inputs = await gatherFillInputs(deckId, userId);
   if (!inputs) return null;
   const allowed = await topOffAllowList(userId, inputs);
-  const collection = await planFromPool(userId, deckId, inputs, openSlots, "sleeveable", allowed, env);
-  const best = await planFromPool(userId, deckId, inputs, openSlots, "all", allowed, env);
+  const collection = await planFromPool(userId, store, deckId, inputs, openSlots, "sleeveable", allowed, env);
+  const best = await planFromPool(userId, store, deckId, inputs, openSlots, "all", allowed, env);
   return {
     collection: { oracleIds: sleeveableIds(collection), shortfalls: collection.shortfalls, measuredTypes: collection.measuredTypes },
     best: { oracleIds: sleeveableIds(best), shortfalls: best.shortfalls, measuredTypes: best.measuredTypes },

@@ -43,7 +43,7 @@ import { buildFillPlan } from "./fill-plan";
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["G"], manaCost: "{G}" }];
 const env = envViewWith({});
 const call = (sets?: string[], own = false) =>
-  buildFillPlan("u", commanders, new Set(), {
+  buildFillPlan("u", commanders, new Set(), { store: "manapool",
     selected: [], env,
     answers: { budgetCents: null, bracket: null, cardOracleId: null, ...(sets ? { sets } : {}) },
     ...(own ? { pool: "sleeveable" as const } : {}),

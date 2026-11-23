@@ -17,6 +17,7 @@ import {
 } from "../../db/schema";
 import { requireUserId } from "../../lib/auth";
 import { requestFlags } from "../../lib/flags/request";
+import { readerStoreForAction } from "../../lib/stores/action-store";
 import {
   insertOpponentsIn, opponentCommandersValid, parseOpponents, resolveOpponentsIn, SeatRefused, withTableSeats, type OpponentInput,
 } from "../../lib/decks/game-opponents";
@@ -113,6 +114,7 @@ export async function createDeck(
   if (!isCreateBuildKind(build)) throw new Error("unknown build kind");
   const userId = await requireUserId();
   const env = await requestFlags(userId);
+  const store = await readerStoreForAction(userId);
   // A guided build rides Upgrade this precon's switch (no switch of its own) and needs its picks: refused before anything is written.
   if (build === "guided" && (!preconUpgradeEnabled(env) || guided === null)) throw new Error("guided build is not available");
   // *Hit bracket N* is the bracket reach's choice, made on Help me choose's hand-off (its switch is retired, always on).
@@ -277,6 +279,7 @@ export async function createDeck(
           ...(asked.pool === "own" ? { pool: "sleeveable" as const, failClosed: true } : {}),
         }),
         env,
+        store,
       },
     );
     // What the filled deck stores of *Hit bracket N*: true only when the plan placed the set to
@@ -576,6 +579,7 @@ export async function deleteDeck(deckId: string): Promise<void> {
 export async function fillDeck(deckId: string): Promise<void> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
+  const store = await readerStoreForAction(userId);
   const deck = await requireDeck(deckId, userId);
   const [commander] = await db.select().from(cards).where(eq(cards.oracleId, deck.commanderOracleId));
   if (!commander) return;
@@ -608,6 +612,7 @@ export async function fillDeck(deckId: string): Promise<void> {
       // The retry fills the way the create was asked to: from the player's own cards.
       ...(deck.answerOwnedOnly ? { pool: "sleeveable" as const, failClosed: true, excludeDeckId: deck.id } : {}),
       env,
+      store,
     },
   );
   // The card first, then the plan, which is already sized to the slots the card leaves; the cap
@@ -1921,8 +1926,9 @@ export async function bulkFillOptions(
   try {
     const userId = await requireUserId();
     const env = await requestFlags(userId);
+    const store = await readerStoreForAction(userId);
     // The plans are read in `bulk-fill-plans.ts`, which the landing demo's export reads too: sequentially, not `Promise.all`.
-    const plans = await readBulkPlans(userId, deckId, openSlots, env);
+    const plans = await readBulkPlans(userId, store, deckId, openSlots, env);
     if (!plans) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
     return { ok: true, collection: plans.collection, best: plans.best };
   } catch (err) {
@@ -1963,10 +1969,11 @@ export async function chooseBulkFill(
   try {
     const userId = await requireUserId();
     const env = await requestFlags(userId);
+    const store = await readerStoreForAction(userId);
     const inputs = await gatherFillInputs(deckId, userId);
     if (!inputs) return { ok: false, message: synergyCopy.lastSlots.topUpFailed };
     const plan = await planFromPool(
-      userId, deckId, inputs, openSlots, "sleeveable", await topOffAllowList(userId, inputs), env,
+      userId, store, deckId, inputs, openSlots, "sleeveable", await topOffAllowList(userId, inputs), env,
     );
     // FEWER THAN THE SLOTS IS A VALID ANSWER, and the residual is what made that untrue.
     //

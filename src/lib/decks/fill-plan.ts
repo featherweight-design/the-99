@@ -28,6 +28,7 @@ import { bracketReach, bringsForbidden, reachOverRows, type BracketReach, type R
 import type { Bracket } from "../intake/rank";
 import { buysCopy } from "../intake/buys-card";
 import { loadPrices } from "../discovery/price";
+import type { Store } from "../stores/rows";
 
 /**
  * Which of these cards have a printing in one of these sets ("printed in", the Sets answer's own
@@ -73,6 +74,8 @@ export async function buildFillPlan(
    *  pool; every other caller fills from everything, to the whole body less any cards it places
    *  beside the plan (`selected`). */
   options: Pick<PlanFillArgs, "slots" | "pool" | "held"> & {
+    /** The reader's store: the budget gate and the reach price cards at its figures. */
+    store: Store;
     /** The deck being filled, so its OWN claims are not counted against it when
      *  `pool: "sleeveable"` narrows to cards with a free copy. */
     excludeDeckId?: string;
@@ -292,7 +295,7 @@ export async function buildFillPlan(
       ).filter((c) => !onlyOracleIdsMiss(options.onlyOracleIds, c.oracleId))
     : [];
 
-  const { answers, selected, onlyOracleIds, ...fillOptions } = options;
+  const { answers, selected, onlyOracleIds, store, ...fillOptions } = options;
   // THE ASKED SETS (Help me choose's Sets answer, or a set the words named): which owned cards,
   // claimed ones included, have a printing in them. A basic land is skipped (its printings span
   // every set and say nothing about the deck). A decoration of the order, so a failed read fills
@@ -380,7 +383,7 @@ export async function buildFillPlan(
       // What the build-around card leaves of the budget (audit item 10): a set to buy is over
       // budget against that, never against the whole budget.
       loadBudgetLeftCents({
-        userId, commanderIds, answers, placedIds: [...excludeOracleIds],
+        userId, store, commanderIds, answers, placedIds: [...excludeOracleIds],
         excludeDeckId: fillOptions.excludeDeckId,
       }),
     ]);
@@ -395,7 +398,7 @@ export async function buildFillPlan(
     const raisingIds = raising.map((c) => c.oracleId);
     const [availability, prices] = raising.length === 0 ? [new Map(), new Map()] : await Promise.all([
       loadAvailability(userId, { oracleIds: raisingIds, excludeDeckId: fillOptions.excludeDeckId }),
-      loadPrices(raisingIds),
+      loadPrices(raisingIds, store),
     ]);
     const free = new Set(raising.filter((c) => !buysCopy(c.owned, availability.get(c.oracleId))).map((c) => c.oracleId));
     const reachFacts: ReachFacts = { ...facts, free: (id) => free.has(id), priceOf: (id) => prices.get(id)?.liveCents ?? null };
@@ -454,7 +457,7 @@ export async function buildFillPlan(
   }).catch((err) => { console.warn("buildFillPlan: no win-condition sets", err); return [] as string[][]; });
   const gate = answers
     ? await loadFillGate({
-      userId, commanderIds, answers,
+      userId, store, commanderIds, answers,
       // A bought raiser the pool does not carry is priced and counted like any candidate.
       candidates: [...gateCandidates, ...boughtRaisers.filter((c) => !gateCandidates.includes(c))],
       placedIds: [...excludeOracleIds], excludeDeckId: fillOptions.excludeDeckId,
