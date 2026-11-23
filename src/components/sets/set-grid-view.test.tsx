@@ -5,6 +5,7 @@ import { render, screen, fireEvent, act, within } from "@testing-library/react";
 import { NARROW_HIDE, SetGridView } from "./set-grid-view";
 import { placeCells, type SetPrinting } from "../../lib/sets/completion";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { StoreProvider } from "../stores/store-provider";
 
 const replace = vi.fn();
 let search = "";
@@ -420,6 +421,29 @@ describe("SetGridView — the cost strip's scope", () => {
     );
     expect(screen.getByText("Cost to finish the extras")).toBeInTheDocument();
     expect(screen.getByText("Send 2 to Mana Pool")).toBeInTheDocument();
+  });
+
+  it("offers no send at a store with no cart, and still costs the missing cards there", () => {
+    // Mass Entry is Mana Pool's: at another store (store preference) the figure stays and the button does not.
+    render(
+      <StoreProvider store="tcgplayer">
+        <SetGridView
+          code="dsk"
+          name="Duskmourn"
+          iconSvgUri={null}
+          releasedAt="2026-09-01"
+          ownedFingerprint=""
+          artGeneration={0}
+          cells={placeCells([p("1")], [])}
+          prices={priced(["s-1"])}
+          newestAsOf="2026-09-08 09:00:00"
+          baseSetSize={1}
+          staleAsOf={null}
+        />
+      </StoreProvider>,
+    );
+    expect(screen.queryByText(/^Send \d+ to/)).toBeNull();
+    expect(screen.getByText("over 1 of the 1 missing")).toBeInTheDocument();
   });
 });
 

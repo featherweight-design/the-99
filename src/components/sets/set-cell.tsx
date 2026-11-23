@@ -24,6 +24,8 @@ import { formatCents, priceOf, priceState, type PriceFact } from "../../lib/deck
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { PriceTag } from "../cards/price-tag";
+import { storeCopy } from "../../lib/copy/store";
+import { useStoreInfo } from "../stores/store-provider";
 import { PriceFigure, priceSpoken } from "../collection/price-figure";
 import { copiesPriceCode } from "../../lib/collection/copy-price";
 import type { Cell } from "../../lib/sets/completion";
@@ -61,6 +63,8 @@ export function SetCell({
   onOpen?: (oracleId: string) => void;
 }) {
   const num = cell.collectorNumber;
+  // The store the cell's price is from (store preference): it names the no-figure states.
+  const store = useStoreInfo();
   // An explicit aria-label on the button REPLACES everything its descendants would have
   // contributed, so the price tag's own labels — sold out, never stocked, foil only — and
   // the two marks were announced to nobody. They are built into the name instead.
@@ -70,9 +74,9 @@ export function SetCell({
   const qualifiers = [
     cell.owned && cell.foilOnly ? setPageCopy.cell.foilAria : null,
     cell.owned && cell.byName ? setPageCopy.unpinned.aria(cell.name) : null,
-    !cell.owned && state === "soldOut" ? setPageCopy.cellPrice.soldOut : null,
+    !cell.owned && state === "soldOut" ? storeCopy.noStockAria(store, "soldOut") : null,
     !cell.owned && state === "absent"
-      ? (price ? setPageCopy.cellPrice.noFigure : setPageCopy.cellPrice.neverStocked)
+      ? storeCopy.noStockAria(store, price ? "noFigure" : "neverStocked")
       : null,
     // `priceState` calls etched-only availability `foilOnly` too, and the visible tag says
     // so; the name must not omit what the tag shows.
@@ -92,7 +96,7 @@ export function SetCell({
   // the dearest when several), in every sort (Hugh, 2026-10-13), as plain text rather than a tag: the tag is a
   // carrier of missing.
   const ownedCode = cell.owned ? ownedPriceCode(cell, price, newestAsOf) : undefined;
-  const ownedSpoken = priceSpoken(ownedCode);
+  const ownedSpoken = priceSpoken(ownedCode, store);
   const label = [
     setPageCopy.cell.aria(cell.name, num, cell.owned, foilQualified ? undefined : money),
     ...qualifiers,
@@ -193,7 +197,7 @@ export function SetCell({
         ) : null
       ) : (
         <span className="mt-[4px] block">
-          <PriceTag fact={price} newestAsOf={newestAsOf} />
+          <PriceTag fact={price} newestAsOf={newestAsOf} store={store} />
         </span>
       )}
     </button>

@@ -56,6 +56,7 @@ import { SearchIcon } from "../ui/search-icon";
 import { CARD_GRID_TRACKS } from "../ui/card-grid";
 import { UNDER_HEADER } from "../ui/under-header";
 import { noteAppScroll } from "../../lib/ui/reveal";
+import { useStoreInfo } from "../stores/store-provider";
 
 export type SetGridViewProps = {
   code: string;
@@ -101,6 +102,8 @@ export function SetGridView(props: SetGridViewProps) {
     ownedFingerprint, artGeneration,
   } = props;
   const params = useSearchParams();
+  // The store the page's prices are from (store preference); Mana Pool outside a provider.
+  const store = useStoreInfo();
   // Every cell opens the shipped modal. Prev/Next pages through the cells as drawn, so
   // the sibling list is the order on screen rather than the order rows came back in.
   const { open, openOracleId, setSiblings, close } = useCardDetail();
@@ -325,6 +328,7 @@ export function SetGridView(props: SetGridViewProps) {
       byId.set(p.scryfallId, {
         cents: p.cents, foilCents: p.foilCents, etchedCents: p.etchedCents,
         asOf: parseAsOf(p.asOf),
+        ...(p.soldOut && { soldOut: true as const }),
       });
     }
     return byId;
@@ -438,7 +442,9 @@ export function SetGridView(props: SetGridViewProps) {
   // Explicitly null for an empty list rather than relying on the builder to return it:
   // the strip's contract is that a null href means "nothing to send", and keeping that
   // decision here means a change in the builder cannot quietly produce a "Send 0" link.
-  const buyHref = sending.length === 0
+  // Only a store with a cart takes a whole list (store preference): with another store there is nothing to send to,
+  // so the strip draws its figure and no button.
+  const buyHref = sending.length === 0 || !store.cart
     ? null
     : manapoolAddDeckUrl(sending.map((c) => ({ name: c.name, quantity: 1 })));
 

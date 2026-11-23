@@ -9,6 +9,9 @@
 
 import Link from "next/link";
 import { requireUserId } from "../../../../lib/auth";
+import { requestFlags } from "../../../../lib/flags/request";
+import { readerStoreForPage } from "../../../../lib/stores/preference";
+import { StoreProvider } from "../../../../components/stores/store-provider";
 import { cacheForUser } from "../../../../lib/cache/user-lists";
 import { loadSetGrid } from "../../../../lib/sets/read";
 import { fingerprintOf, placeCells } from "../../../../lib/sets/completion";
@@ -43,8 +46,12 @@ export default async function SetGridPage({
   // stale, it is a different shape, and it would otherwise be served for up to the hour-long
   // ceiling with the field simply absent: here that means a warm grid keeps handing the
   // modal a front with no back, which is exactly the printing mismatch this shape closes.
-  const grid = await cacheForUser(userId, ["set-grid-3", code.toLowerCase()], () =>
-    loadSetGrid(userId, code));
+  //
+  // The reader's store (store preference) prices the grid and keys the entry, so a store change can never serve
+  // another store's figures from a warm cache. Mana Pool while the switch is off for them or the read fails.
+  const store = await readerStoreForPage(userId, await requestFlags(userId));
+  const grid = await cacheForUser(userId, ["set-grid-3", code.toLowerCase(), store], () =>
+    loadSetGrid(userId, code, store));
 
   if (!grid) {
     return (
@@ -84,6 +91,7 @@ export default async function SetGridPage({
           which printing is owned. `SetGridClient` turns that signal into the recheck the
           delta strip needs, including when the reader closes the modal before the write
           returns. */}
+      <StoreProvider store={store}>
       <SetGridClient
         code={grid.set.code}
         name={grid.set.name}
@@ -96,6 +104,7 @@ export default async function SetGridPage({
         ownedFingerprint={ownedFingerprint}
         staleAsOf={staleAsOf}
       />
+      </StoreProvider>
     </Shell>
   );
 }

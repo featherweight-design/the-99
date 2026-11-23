@@ -1,0 +1,37 @@
+{
+  "feature": "Store choice UI-3b-1: set pages and the proxy list in the reader's store (handoff design_handoff_the99_store_choice)",
+  "note": "Needs a server on a scratch branch of local-dev where the audit account (user_3HdjdocERCjunk0zJQFDWyHkTd4) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set to the store being photographed, printing_store_prices rows for that store, and one live proxy. Run once per store with preferred_store changed between runs and the out directory copied aside. This inventory writes nothing.",
+  "out": "contact-sheets/store-choice-ui3b1",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "set-page",
+      "label": "Set page (Commander Masters): the cost strip and the cells' figures in the reader's store; Send N to Mana Pool only where the store has a cart",
+      "view": "src/components/sets/set-grid-view.tsx",
+      "steps": [
+        { "goto": "/collection/sets/cmm", "wait": "[data-set-cost]", "settle": 3000 }
+      ]
+    },
+    {
+      "id": "set-strip-open",
+      "label": "Set page, phone: the cost strip opened by a press, its caveats and send in the reader's store",
+      "view": "src/components/sets/cost-strip.tsx",
+      "widths": ["phone"],
+      "steps": [
+        { "goto": "/collection/sets/cmm", "wait": "[data-set-cost]", "settle": 3000 },
+        { "click": "[data-set-cost-toggle]:visible", "settle": 800 }
+      ]
+    },
+    {
+      "id": "proxies",
+      "label": "Collection, Proxies: each proxy's figure and the list's total in the reader's store",
+      "view": "src/components/decks/proxy-list-view.tsx",
+      "steps": [
+        { "goto": "/collection/proxies", "settle": 3000 }
+      ]
+    }
+  ]
+}

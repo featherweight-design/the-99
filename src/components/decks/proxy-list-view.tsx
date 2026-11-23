@@ -16,6 +16,7 @@ import { formatCents, priceOf, priceState, provenanceForm } from "../../lib/deck
 import { proxyCopy } from "../../lib/copy/proxies";
 import type { ProxyRow } from "../../lib/decks/proxy-list";
 import { HoverPreviewProvider } from "./hover-preview";
+import { STORE_INFO, type StoreInfo } from "../../lib/stores/info";
 
 /** The two states that carry a real amount. `soldOut` does not: its figure is a
  *  last-known price for something nobody is selling. */
@@ -53,8 +54,11 @@ export function ProxyListView({
   newestAsOf,
   hasDecks,
   hasCollection,
+  store = STORE_INFO.manapool,
 }: {
   rows: ProxyRow[];
+  /** The store the figures are from (store preference). */
+  store?: StoreInfo;
   /** The newest run in the price table — what `priceState` compares each row's
    *  own `asOf` against to tell live stock from a frozen last-known figure. */
   newestAsOf: Date | null;
@@ -82,9 +86,13 @@ export function ProxyListView({
   // Folded together, an existing ManaPool row was made to claim it had never
   // been stocked.
   const soldOut = rows.filter((r) => states.get(r.oracleId) === "soldOut").length;
-  const neverStocked = rows.filter(
-    (r) => states.get(r.oracleId) === "absent" && !r.price,
-  ).length;
+  // Only Mana Pool's feed keeps a history, so only there is a card with no row "never stocked". At another store
+  // (store preference) every card it does not price has simply no price from it, and says so.
+  const history = store.id === "manapool";
+  const neverStocked = history
+    ? rows.filter((r) => states.get(r.oracleId) === "absent" && !r.price).length
+    : 0;
+  const noFigure = history ? 0 : rows.filter((r) => states.get(r.oracleId) === "absent").length;
   // TABLE-level staleness, which row-to-row comparison cannot see: when the
   // newest run itself is old, every figure here is current relative to the
   // others and out of date against the shop. Disclosed once, beside the total,
@@ -140,6 +148,11 @@ export function ProxyListView({
             {neverStocked > 0 && (
               <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
                 {proxyCopy.cost.unpriced(neverStocked)}
+              </span>
+            )}
+            {noFigure > 0 && (
+              <span className="ml-[6px] font-mono text-[11px]" style={{ color: "var(--fg-locked)" }}>
+                {proxyCopy.cost.noFigure(noFigure, store.name)}
               </span>
             )}
             {soldOut > 0 && (

@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { loadPrices } from "./price-query";
+import type { Store } from "../stores/rows";
 import type { PriceFact } from "./price";
 import { loadOpeningPrintings } from "../cards/opening-printing";
 import { recordSoftFailure } from "../cache/soft-failure";
@@ -47,7 +48,8 @@ export type ProxyRow = {
 
 export type ProxyList = { rows: ProxyRow[]; newestAsOf: Date | null };
 
-export async function loadProxyList(userId: string): Promise<ProxyList> {
+/** `store` is the reader's store (store preference): every figure, and the printing an unowned card opens on, are its. */
+export async function loadProxyList(userId: string, store: Store = "manapool"): Promise<ProxyList> {
   const { rows } = await db.execute<{
     oracle_id: string;
     name: string;
@@ -141,11 +143,11 @@ export async function loadProxyList(userId: string): Promise<ProxyList> {
   // The throwing read: a failed one must not read as "owns none", which would give every owned proxy the shop's
   // printing instead of its own. On failure the rows keep their catalog fields.
   const [prices, ownedRead, opening] = await Promise.all([
-    loadPrices(rows.map((r) => r.oracle_id)),
+    loadPrices(rows.map((r) => r.oracle_id), [], [], store),
     // The printing the player owns (the one card details opens) where they own one...
     readOwnedPrintings(userId, rows.map((r) => r.oracle_id)).catch(() => { recordSoftFailure(); return null; }),
     // ...else the printing card details open an unowned card on, so the art, the set and the rarity are that one's.
-    loadOpeningPrintings(rows.map((r) => r.oracle_id)),
+    loadOpeningPrintings(rows.map((r) => r.oracle_id), store),
   ]);
   const ownedArt = ownedRead ?? new Map<string, OwnedPrinting>();
   // Never for a card the reader owns (even one whose copy has no art: it keeps the catalog's fields as a whole), and

@@ -17,6 +17,8 @@
 
 import { and, eq, inArray, notInArray, sql } from "drizzle-orm";
 import { db } from "../../db";
+import { storeRows } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { cardArtPreferences, cards, collectionItems, printings, sets } from "../../db/schema";
 import {
   indexFiguresOf, orderWithSubsetsAfterParent, placeCells,
@@ -64,6 +66,8 @@ export type PrintingPriceRow = {
   foilCents: number | null;
   etchedCents: number | null;
   asOf: string;
+  /** Another store's printing with every priced finish at zero (`storeRows`): `priceState` draws it sold out. */
+  soldOut?: true;
 };
 
 export type SetGrid = {
@@ -337,6 +341,31 @@ export async function searchSets(query: string): Promise<SetIndexRow[]> {
 }
 
 /**
+ * The statement, apart so a test can read it. THE STORE NAMES THE TABLE (store preference), as `loadPrices` in
+ * price-query.ts does: Mana Pool's statement is the text it always was, byte for byte, and another store reads its own
+ * rows of `printing_store_prices` (`storeRows`) against its own newest `as_of`, carrying `sold_out` for `priceState`.
+ */
+export function setPricesQuery(code: string, store: Store) {
+  const other = store === "manapool" ? null : store;
+  const newestFrom = other ? sql`printing_store_prices where store = ${other}` : sql`printing_prices`;
+  const source = other ? storeRows(other) : sql`printing_prices`;
+  const soldOutCol = other ? sql`,
+           pp.sold_out                      as sold_out` : sql``;
+  return sql`
+    with newest as (select max(as_of) as as_of from ${newestFrom})
+    select n.as_of::text                    as newest_as_of,
+           pp.scryfall_id                   as scryfall_id,
+           pp.price_cents                   as cents,
+           pp.price_cents_foil              as foil_cents,
+           pp.price_cents_etched            as etched_cents,
+           pp.as_of::text                   as as_of${soldOutCol}
+      from newest n
+      left join printings p on p.set_code = ${code}
+      left join ${source} pp on pp.scryfall_id = p.scryfall_id
+  `;
+}
+
+/**
  * Prices for every printing in one set, keyed by printing rather than by oracle card:
  * a cell IS a printing, so the deck-side oracle-keyed read cannot answer this.
  *
@@ -345,22 +374,11 @@ export async function searchSets(query: string): Promise<SetIndexRow[]> {
  * card on the page read as sold out at once. Liveness is deliberately NOT filtered here;
  * `priceState` decides it, and a stale row reaching the caller is what sold out means.
  */
-async function loadSetPrices(code: string): Promise<{
+async function loadSetPrices(code: string, store: Store = "manapool"): Promise<{
   prices: PrintingPriceRow[];
   newestAsOf: string | null;
 }> {
-  const result = await db.execute(sql`
-    with newest as (select max(as_of) as as_of from printing_prices)
-    select n.as_of::text                    as newest_as_of,
-           pp.scryfall_id                   as scryfall_id,
-           pp.price_cents                   as cents,
-           pp.price_cents_foil              as foil_cents,
-           pp.price_cents_etched            as etched_cents,
-           pp.as_of::text                   as as_of
-      from newest n
-      left join printings p on p.set_code = ${code}
-      left join printing_prices pp on pp.scryfall_id = p.scryfall_id
-  `);
+  const result = await db.execute(setPricesQuery(code, store));
 
   const rows = result.rows as Array<{
     newest_as_of: string | null;
@@ -369,6 +387,7 @@ async function loadSetPrices(code: string): Promise<{
     foil_cents: number | null;
     etched_cents: number | null;
     as_of: string | null;
+    sold_out?: boolean | null;
   }>;
 
   const newestAsOf = rows[0]?.newest_as_of ?? null;
@@ -381,6 +400,7 @@ async function loadSetPrices(code: string): Promise<{
       foilCents: r.foil_cents,
       etchedCents: r.etched_cents,
       asOf: r.as_of,
+      ...(r.sold_out ? { soldOut: true as const } : {}),
     });
   }
   return { prices, newestAsOf };
@@ -410,7 +430,7 @@ export async function loadOwnershipInSet(userId: string, code: string): Promise<
 }
 
 /** Everything one set page needs. Null when no such set exists. */
-export async function loadSetGrid(userId: string, code: string): Promise<SetGrid | null> {
+export async function loadSetGrid(userId: string, code: string, store: Store = "manapool"): Promise<SetGrid | null> {
   const lower = code.toLowerCase();
   const [meta] = await db
     .select({
@@ -439,7 +459,7 @@ export async function loadSetGrid(userId: string, code: string): Promise<SetGrid
     // cost figure, so a transient outage would tell every reader that nothing in the set
     // has ever been carried — and `cacheForUser` would remember that for an hour. An
     // error page is loud, wrong for one request, and recovers on the next.
-    loadSetPrices(lower),
+    loadSetPrices(lower, store),
     picksFor(userId, lower),
   ]);
   // A set our catalog holds no card from — a token sheet, a minigame, most memorabilia —

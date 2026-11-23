@@ -284,6 +284,7 @@
     "probe:store-stats": "node scripts/probe-store-stats.mjs",
     "probe:store-cards": "node scripts/probe-store-cards.mjs",
     "probe:store-deck-links": "node scripts/probe-store-deck-links.mjs",
+    "probe:store-sets": "node scripts/probe-store-sets.mjs",
     "probe:welcome-strip": "node scripts/probe-welcome-strip.mjs",
     "probe:about-banner": "tsx scripts/probe-about-banner.mts",
     "probe:commit-offer": "node scripts/probe-commit-offer.mjs",

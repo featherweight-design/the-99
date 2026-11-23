@@ -337,10 +337,11 @@ export const setPageCopy = {
         : `${n} have never been stocked and are not in this figure`,
     // Stocked, but the feed carries no usable figure for it. Neither "never stocked" nor
     // "sold out" is true of these.
-    noFigure: (n: number) =>
+    // `store` is the reader's store's name (store preference).
+    noFigure: (n: number, store: string) =>
       n === 1
-        ? "1 has no price from Mana Pool and isn’t in this figure"
-        : `${n} have no price from Mana Pool and aren’t in this figure`,
+        ? `1 has no price from ${store} and isn’t in this figure`
+        : `${n} have no price from ${store} and aren’t in this figure`,
     soldOut: (n: number) =>
       n === 1
         ? "1 is sold out and is not in this figure"
@@ -414,7 +415,6 @@ export const setPageCopy = {
     foil: "◆ FOIL",
     foilAria: "You hold this in foil",
     noStock: "no stock",
-    noStockAria: "Never stocked at Mana Pool",
     // The qualifier is the finish word the buy tag chose — foil or etched — because
     // priceState collapses both into one state and only the column says which.
     qualifiedPrice: (finish: string, p: string) => `◆ ${finish} ${p}`,
