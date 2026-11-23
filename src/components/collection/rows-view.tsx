@@ -30,6 +30,7 @@ import { DateFigure, dateSpoken } from "./date-figure";
 import { PriceFigure, priceSpoken } from "./price-figure";
 import { useStoreInfo } from "../stores/store-provider";
 import { PreviewButton } from "../ui/preview-button";
+import { FindADeckButton, type FindADeckButtons } from "./find-a-deck-button";
 
 const RARITY_DOT: Record<BrowseListCard["rarity"], string> = {
   common: "var(--fg-muted)", uncommon: "var(--fg-body)", rare: "var(--accent)", mythic: "var(--warning)",
@@ -45,6 +46,7 @@ export function RowsView({
   busy = false,
   showPrice = false,
   showAdded = false,
+  findADeck = null,
 }: {
   cards: BrowseListCard[];
   /** Where the latest Show more began, so the tiles it added fade in (E9); null reveals nothing. */
@@ -64,6 +66,8 @@ export function RowsView({
   onOpen: (oracleId: string, opener: HTMLElement) => void;
   /** The row whose card is being fetched, which shows the click landed. */
   pendingOracleId?: string | null;
+  /** Free alone with a deck (tool discovery call 1): a Find a deck control beside each Commander-legal row. */
+  findADeck?: FindADeckButtons | null;
 }) {
   const zone = useZone();
   // The store the figures are from (store preference), so each spoken price names it.
@@ -90,7 +94,8 @@ export function RowsView({
           state === "over" ? "[box-shadow:inset_0_0_0_1px_var(--avail-over-border)]" : "";
         const pending = pendingOracleId === c.oracleId;
         const spokenPrice = showPrice ? priceSpoken(c.price, store) : showAdded ? dateSpoken(c, zone) : null;
-        return (
+        const door = findADeck && !findADeck.illegal.has(c.oracleId) ? findADeck : null;
+        const row = (
         <PreviewButton
           key={c.oracleId}
           imageUri={c.imageUri}
@@ -110,7 +115,7 @@ export function RowsView({
           // §Row Container: grid template columns, gap 10/16px, padding 10px 12px / 12px 18px, radius 7px, bg --surface, border 1px --border
           // Background and border are utilities, not inline style: inline values
           // outrank the hover: variants and neither hover state ever lands.
-          className={`${ROW_SHELL_GRID} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px] ${reveal.className ?? ""}`}
+          className={`${ROW_SHELL_GRID} ${door ? "max-md:rounded-b-none md:min-w-0 md:flex-1" : ""} text-left gap-[10px] md:gap-[16px] py-[10px] md:py-[12px] px-[12px] md:px-[18px] md:cursor-pointer bg-[color:var(--surface)] hover:bg-[color:var(--surface-raised)] [--row-bg:var(--surface)] hover:[--row-bg:var(--surface-raised)] ${border} ${overRing} [grid-template-columns:38px_1fr_76px_auto] md:[grid-template-columns:52px_1fr_90px_150px_92px_18px] ${reveal.className ?? ""}`}
         >
           <CollectionRowCells card={c} showPrice={showPrice} showAdded={showAdded} />
           {/* The desktop chevron, the row's last column. */}
@@ -118,6 +123,17 @@ export function RowsView({
             ›
           </span>
         </PreviewButton>
+        );
+        if (!door) return row;
+        // Free alone (tool discovery call 1, R4 Q8 A): a sibling of the row, never nested in it. On a phone the
+        // strip sits under the row inside its outline; from md the button sits 6px beside it at its height.
+        const name = printedNameOf(c);
+        return (
+          <div key={c.oracleId} data-find-a-deck-row="" className="flex flex-col md:flex-row md:gap-[6px]">
+            {row}
+            <FindADeckButton place="strip" cardName={name} onPress={(el) => door.onPress(c.oracleId, el, "strip")} />
+            <FindADeckButton place="side" cardName={name} onPress={(el) => door.onPress(c.oracleId, el, "side")} />
+          </div>
         );
       })}
 

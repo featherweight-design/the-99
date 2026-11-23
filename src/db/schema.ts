@@ -2391,6 +2391,12 @@ export const userPrefs = pgTable(
      */
     feedOfferClosedAt: timestamp("feed_offer_closed_at", { withTimezone: true }),
     /**
+     * When this reader closed the collection's Find a deck call-out with its ✕ (tool discovery call 1): the call-out
+     * never draws again. Written once, only while null (`closeFindADeck`, `lib/collection/find-a-deck.ts`), because of
+     * the stamp trigger above.
+     */
+    findADeckClosedAt: timestamp("find_a_deck_closed_at", { withTimezone: true }),
+    /**
      * The news kinds this reader has PUSH on (push notifications, `lib/push/`): the same closed set and the same shape as
      * `feed_kinds`, kind -> when it was turned on, and `isKindOn`'s rule (`spare-request` is on by default). A push kind
      * sends only what arrived after its stamp, so turning one on never pushes yesterday's news. Written only when the map

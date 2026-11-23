@@ -11,11 +11,12 @@ import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
+import { captureToolEvent } from "../../lib/analytics/posthog";
 
 const copy = swapToolsCopy.fits;
 
 /** The door's two-diamond glyph, drawn rather than typed so it takes the accent's outline. */
-function Glyph() {
+export function FitsGlyph() {
   return (
     <span aria-hidden="true" className="flex gap-[3px]">
       {[0, 1].map((i) => (
@@ -76,7 +77,10 @@ export function FitsDoor({
       type="button"
       data-testid="fits-door"
       aria-describedby={findMoment["aria-describedby"]}
-      onClick={onPress}
+      onClick={() => {
+        captureToolEvent("find_a_deck_opened", { from: "card_door" });
+        onPress();
+      }}
       aria-label={copy.calloutAria(cardName)}
       className={
         // `relative` paints the door over the coarse-pointer hit of an ExternalLink stacked above it (the card
@@ -86,7 +90,7 @@ export function FitsDoor({
         + (layout === "column" ? "min-h-[44px] text-[14px]" : "text-[13.5px]")
       }
     >
-      <Glyph />
+      <FitsGlyph />
       <span className="[border-bottom:1px_solid_var(--accent-shadow)]">{copy.callout} →</span>
     </button>
   );

@@ -58,6 +58,10 @@ import { PAGE_SIZE, parseBrowseParams } from "../../lib/collection/window";
 import { REVEAL_DONE_MS } from "../ui/reveal-from";
 import type { CollectionRow } from "../../lib/collection/list-wire";
 import { useCollectionFields } from "./use-collection-fields";
+import { FindADeckCallout } from "./find-a-deck-callout";
+import { FIND_A_DECK_FROM_PLACE, type FindADeckButtons } from "./find-a-deck-button";
+import type { FindADeckState } from "../../lib/collection/find-a-deck";
+import { captureToolEvent } from "../../lib/analytics/posthog";
 
 
 /**
@@ -244,6 +248,7 @@ export function CollectionBrowser({
   pricesFailed = false,
   viewHint = NO_VIEW_HINT,
   savedToken = null,
+  findADeck = null,
 }: {
   /**
    * The list, whole cards and WITHHELD ones (list payload plan, PR 4): the page ships the draw
@@ -278,6 +283,8 @@ export function CollectionBrowser({
   viewHint?: ViewHint;
   /** What the browser's saved copy of the fetched draw fields is good for (`lib/collection/saved-token`); null keeps no copy. */
   savedToken?: string | null;
+  /** The Find a deck call-out and buttons' facts (tool discovery call 1); null when the read failed, and nothing draws. */
+  findADeck?: FindADeckState | null;
 }) {
   const search = useSearchParams();
   // A withheld row lacks only draw fields, which none of the filters, sorts, counts or options
@@ -594,6 +601,31 @@ export function CollectionBrowser({
     [openDetail, siblings],
   );
 
+  // Tool discovery call 1. Drawn while the reader has a deck and the Free count the menu reads is above zero; on
+  // Free alone the call-out drops `Show them` and every Commander-legal card gets the labelled button.
+  const freeCount = availabilityOptions.find((o) => o.code === "free")?.count ?? 0;
+  const availability = filters.availability ?? [];
+  const freeAlone = availability.length === 1 && availability[0] === "free";
+  const findADeckOn = findADeck !== null && findADeck.hasDeck;
+  const illegalIds = useMemo(() => new Set(findADeck?.illegal ?? []), [findADeck]);
+  const findADeckButtons = useMemo<FindADeckButtons | null>(
+    () =>
+      findADeckOn && freeAlone
+        ? {
+            illegal: illegalIds,
+            onPress: (id, opener, place) => {
+              captureToolEvent("find_a_deck_opened", { from: FIND_A_DECK_FROM_PLACE[place] });
+              openDetail(id, siblings, undefined, { opener, view: "fits" });
+            },
+          }
+        : null,
+    [findADeckOn, freeAlone, illegalIds, openDetail, siblings],
+  );
+  const showFreeCards = useCallback(() => {
+    captureToolEvent("find_a_deck_opened", { from: "callout_show_them" });
+    updateFilters({ ...filters, availability: ["free"] });
+  }, [filters, updateFilters]);
+
   // A `?card=` on arrival opens the modal, but only when the id is actually in the
   // filtered and sorted list the link also describes — an id filtered out by the
   // rest of the URL is not a card this page is showing. Mount-only: after that the
@@ -702,6 +734,10 @@ export function CollectionBrowser({
         </p>
       ) : null}
 
+      {findADeckOn && !findADeck.closed && freeCount > 0 && (freeAlone || availability.length === 0) ? (
+        <FindADeckCallout count={freeCount} free={freeAlone} rows={resolvedView === "rows"} onShow={showFreeCards} />
+      ) : null}
+
       {/* Wrapping only the cards: the provider is a `div`, and the page's section is a flex column whose
           `flex-1` child is the list, so the wrapper takes over that sizing and the chassis above stays a direct child. */}
       <HoverPreviewProvider className="flex flex-1 flex-col">
@@ -731,16 +767,16 @@ export function CollectionBrowser({
         // (`mayBeHidden`), or a phone downloads a screen of art it never shows.
         <>
           <div className="hidden md:block">
-            <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} mayBeHidden />
+            <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} mayBeHidden findADeck={findADeckButtons} />
           </div>
           <div className="md:hidden">
-            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
+            <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} findADeck={findADeckButtons} />
           </div>
         </>
       ) : resolvedView === "rows" ? (
-        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
+        <RowsView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} findADeck={findADeckButtons} />
       ) : (
-        <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} />
+        <GridView cards={windowed} totalCards={sorted.length} onShowMore={showMore} revealFrom={revealFrom} onOpen={onOpen} pendingOracleId={pendingOracleId} busy={!complete} showPrice={sort === "price"} showAdded={sort === "added"} findADeck={findADeckButtons} />
       )}
       </HoverPreviewProvider>
     </>

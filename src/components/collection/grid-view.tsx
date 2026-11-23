@@ -36,6 +36,7 @@ import { GhostButton } from "../ui/button";
 import { HydratedImg } from "../ui/hydrated-art";
 import { revealOf } from "../ui/reveal-from";
 import { ArrivalOrder } from "@/components/ui/arrival-queue";
+import { FindADeckButton, type FindADeckButtons } from "./find-a-deck-button";
 
 /**
  * Past three glyphs (facts plus the combo lemniscate), the meta line draws the first two and
@@ -68,6 +69,7 @@ export function GridView({
   mayBeHidden = false,
   showPrice = false,
   showAdded = false,
+  findADeck = null,
 }: {
   cards: BrowseListCard[];
   /** Where the latest Show more began, so the tiles it added fade in (E9); null reveals nothing. */
@@ -97,6 +99,8 @@ export function GridView({
    * plain <img> even when hidden and never fetches a lazy one that is.
    */
   mayBeHidden?: boolean;
+  /** Free alone with a deck (tool discovery call 1): a Find a deck button under each Commander-legal tile. */
+  findADeck?: FindADeckButtons | null;
 }) {
   const zone = useZone();
   // The store the figures are from (store preference), so each spoken price names it.
@@ -143,7 +147,7 @@ export function GridView({
         const tooMany = allMarks.length > maxMarks;
         const shownMarks = tooMany ? allMarks.slice(0, maxMarks - 1) : allMarks;
         const moreCount = tooMany ? allMarks.length - shownMarks.length : 0;
-        return (
+        const tile = (
         <button
           key={c.oracleId}
           type="button"
@@ -377,6 +381,15 @@ export function GridView({
             }
           />
         </button>
+        );
+        const door = findADeck && !findADeck.illegal.has(c.oracleId) ? findADeck : null;
+        if (!door) return tile;
+        // Free alone (tool discovery call 1): the labelled button 6px under the tile, the tile's own width.
+        return (
+          <div key={c.oracleId} className="flex min-w-0 flex-col gap-[6px]">
+            {tile}
+            <FindADeckButton place="tile" cardName={printedNameOf(c)} onPress={(el) => door.onPress(c.oracleId, el, "tile")} />
+          </div>
         );
       })}
 
