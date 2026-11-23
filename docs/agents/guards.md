@@ -350,6 +350,24 @@ back at `lib/collection/browse` fails the standing test.
   file (a scalar `email` parameter, a dynamic `import("../auth")` and a generic `callModel<Reply>(` among them), so a
   guard that always answered clean would fail.
 
+## check:store-reads
+
+`pnpm check:store-reads` (`scripts/lib/store-reads.mjs`, test `scripts/lib/store-reads.test.mts`) holds every call under `src/` to a
+store-taking read to the reader's store (store choice, design #3200). The guarded reads are `loadPrices` in both
+`src/lib/decks/price-query.ts` (store fourth) and `src/lib/discovery/price.ts` (store second), `readBuyRowPrices`,
+`loadOwnedPrintingPrices` and `loadOpeningArt`. Each defaults its `store` to Mana Pool, so a call that leaves it out compiles and
+prices a TCGplayer reader in Mana Pool, beside figures from their own store. The check is type-aware: it resolves each call
+through import aliases, namespaces and the `@/` path to the declaration, finds that declaration's `store` parameter by name,
+and fails a call with no argument at that position (a spread is given the benefit of the doubt). It throws if a guarded read
+loses its `store` parameter, rather than passing its calls. Test files are skipped; scripts (the landing demo's exporter,
+which stays Mana Pool) are outside `src/`.
+
+Calls not yet threaded are listed by file and enclosing function in `scripts/lib/store-reads-pending.mjs`, one section per
+slice (3c-2, 3c-3). A slice deletes its own entries; an entry whose call now passes a store is a finding, so the list only
+shrinks, and nothing new is added to it. Pass `readerStoreForPage(userId, env)` on a reader's surface, or `"manapool"` where the
+surface is Mana Pool by rule (the cart, a signed-out page). Its failure paths, each seen to fire on a fixture tree: every import
+spelling, each read at its own store position, a pending entry gone stale, a read that lost its parameter.
+
 ## The Fan Content notice's guards
 
 `src/lib/copy/fan-content-notice.test.ts` pins the two passages to the brief's own text (change the brief first). `src/components/shell/fan-content-notice.test.tsx` measures `--fg-muted` against `--bg` in all six theme blocks (>= 4.5:1, at the figures Design measured), fails if the component names a color token beyond `--fg-muted`, `--border` and the link's `--fg`, `--fg-faint`, `--accent`, or uses `fixed`, `sticky`, state or a request API. `shell.test.tsx` asserts the two mounts (one per branch, a sibling AFTER `<main>` signed in, none inside it, so the pending screen's `inert` does not reach it). `pnpm probe:fan-content-notice` reads resolved geometry on the five signed-out routes and, with `E2E_AUDIT_USER_EMAIL`, the signed-in shell, at 390 and 1300: one notice, last in the document, starting at or below the fold (or the tab bar's top edge), not fixed, six lines or fewer at 390, its last line clearing the bar once scrolled.

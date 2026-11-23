@@ -185,6 +185,14 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:third-party-names
 
+      # Every price and art read that takes the reader's store defaults it to Mana Pool, so a call that leaves it out
+      # still compiles and prices a reader who chose another store in Mana Pool. Type-aware: it builds the program over
+      # src/ and judges each call at the read's own `store` parameter; calls not yet threaded are listed by file and
+      # function in scripts/lib/store-reads-pending.mjs, which only shrinks.
+      - name: Store reads
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:store-reads
+
       # A server module that takes a value (a constant, a hook) from a "use client" module gets a client reference,
       # not the value: it typechecks, lints and builds, and a page renders the wrong thing. Components are the one
       # thing a server module may take from one.

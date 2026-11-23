@@ -89,7 +89,10 @@ export async function loadOpeningPrintings(
   return out;
 }
 
-/** `loadOpeningPrintings`, as the art alone: oracle id to the image the card opens on. */
-export async function loadOpeningArt(oracleIds: readonly string[]): Promise<Map<string, string>> {
-  return new Map([...(await loadOpeningPrintings(oracleIds))].map(([id, p]) => [id, p.imageUri] as const));
+/**
+ * `loadOpeningPrintings`, as the art alone: oracle id to the image the card opens on. The store picks which printing
+ * an unowned card opens on (its cheapest live one there), so a page draws the art its card details will open on.
+ */
+export async function loadOpeningArt(oracleIds: readonly string[], store: Store = "manapool"): Promise<Map<string, string>> {
+  return new Map([...(await loadOpeningPrintings(oracleIds, store))].map(([id, p]) => [id, p.imageUri] as const));
 }
