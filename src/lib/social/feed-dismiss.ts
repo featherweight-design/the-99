@@ -28,7 +28,8 @@ export function parseDismissKey(raw: unknown): DismissTarget | null {
 /**
  * The one write. A stored item is dismissed only when it is the reader's own row. An ask only when the reader holds
  * it: under its own `ask:<id>` key, which Waiting on you reads (a holder with the kind off has no feed item for it),
- * and under the holder's feed item for it when there is one, so its Home item goes too. Idempotent. Apart for a test.
+ * and under the holder's feed item for it when there is one, so its Home item goes too. An OFFER is the wanter's to hide the
+ * same way (they are its `asker_user_id`). Idempotent. Apart for a test.
  */
 export function dismissQuery(userId: string, t: DismissTarget): SQL {
   if (t.kind === "catalog") {
@@ -42,6 +43,13 @@ export function dismissQuery(userId: string, t: DismissTarget): SQL {
     select dfi.user_id, 'item:' || dfi.id::text from ${feedItems} dfi
     join ${spareRequests} dsr on dsr.id = ${t.requestId}::uuid and dsr.holder_user_id = dfi.user_id and dsr.initiated_by = 'asker'
     where dfi.user_id = ${userId} and dfi.kind = 'spare-request' and dfi.dedupe_key = dsr.id::text and dfi.data ->> 'answer' is null
+    union all
+    select dor.asker_user_id, 'ask:' || dor.id::text from ${spareRequests} dor
+    where dor.id = ${t.requestId}::uuid and dor.asker_user_id = ${userId} and dor.initiated_by = 'holder'
+    union all
+    select dof.user_id, 'item:' || dof.id::text from ${feedItems} dof
+    join ${spareRequests} dor on dor.id = ${t.requestId}::uuid and dor.asker_user_id = dof.user_id and dor.initiated_by = 'holder'
+    where dof.user_id = ${userId} and dof.kind = 'spare-request' and dof.dedupe_key = dor.id::text and dof.data ->> 'answer' is null
     on conflict do nothing`;
   }
   return sql`insert into ${feedDismissals} (user_id, key)

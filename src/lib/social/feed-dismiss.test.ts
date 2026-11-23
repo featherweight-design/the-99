@@ -48,7 +48,12 @@ describe("dismissQuery", () => {
     expect(sql).toContain(`select dsr.holder_user_id, 'ask:' || dsr.id::text from "spare_requests" dsr where dsr.id = $1::uuid and dsr.holder_user_id = $2 and dsr.initiated_by = 'asker' union all`);
     expect(sql).toContain(`join "spare_requests" dsr on dsr.id = $3::uuid and dsr.holder_user_id = dfi.user_id and dsr.initiated_by = 'asker'`);
     expect(sql).toContain("where dfi.user_id = $4 and dfi.kind = 'spare-request' and dfi.dedupe_key = dsr.id::text and dfi.data ->> 'answer' is null");
-    expect(params).toEqual([ID, "u1", ID, "u1"]);
+    expect(params).toEqual([ID, "u1", ID, "u1", ID, "u1", ID, "u1"]);
+  });
+  it("hides an OFFER for the wanter, its asker_user_id, under the same key and on its open feed item", () => {
+    const { sql } = render(dismissQuery("u1", { kind: "ask", requestId: ID }));
+    expect(sql).toContain(`select dor.asker_user_id, 'ask:' || dor.id::text from "spare_requests" dor where dor.id = $5::uuid and dor.asker_user_id = $6 and dor.initiated_by = 'holder' union all`);
+    expect(sql).toContain(`join "spare_requests" dor on dor.id = $7::uuid and dor.asker_user_id = dof.user_id and dor.initiated_by = 'holder'`);
   });
 });
 

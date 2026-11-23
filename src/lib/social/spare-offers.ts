@@ -9,17 +9,21 @@
  * card against the friend's own ask of it, and the other way round, through the existing `asked` outcome (a unique
  * violation lands there too). E2: a No to an offer starts the same 14-day cooldown, for the same offerer and card only.
  */
-import { and, eq, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { friendLinks, spareRequests } from "../../db/schema";
+import { cards, feedDismissals, friendLinks, socialProfiles, spareRequests, wishlistItems } from "../../db/schema";
+import { named } from "../person-name/mint";
 import { resolveFriend } from "./access";
 import { isUuid } from "./rules";
-import { askRefusal, capCopies, isAnswer, openFloor, requestState, type AskRefusal, type PriorAsk, type StoredStatus } from "./spare-request-rules";
+import { askRefusal, capCopies, daysLeft, isAnswer, offerAnswerData, offerData, openFloor, requestState, type AskRefusal, type PriorAsk, type StoredStatus } from "./spare-request-rules";
 import {
-  askLockQuery, expireStaleQuery, inAskTransaction, lockFriendshipQuery, type AnswerOutcome, type AskOutcome, type CloseOutcome,
+  askLockQuery, expireStaleQuery, faceOf, inAskTransaction, lockFriendshipQuery, type AnswerOutcome, type AskOutcome, type CloseOutcome,
+  type OtherSide,
 } from "./spare-requests";
+import { recordFeedItem } from "./feed-write";
 import { loadOwnOffered } from "./spares";
-import { loadFriendWantedGap } from "./wishlist";
+import { loadFriendsWantedPairs, loadFriendWantedGap } from "./wishlist";
+import { MAX_SPARES_BATCH } from "./client-rules";
 
 /** `min(spare, wants − held)`, at least 1 (G3): the offerer's spares against what the friend still lacks. */
 export function offerCopies(spare: number, gap: number): number {
@@ -64,6 +68,9 @@ export async function offerSpare(
       .insert(spareRequests)
       .values({ askerUserId: wanterId, holderUserId: offererId, oracleId, createdAt: now, copies, initiatedBy: "holder", standalone: true })
       .returning({ id: spareRequests.id });
+    // The wanter's own item, in the same transaction (an ask's item lands on its holder the same way): the offer waits
+    // on THEIR answer. Written nothing for a wanter with the kind off.
+    await recordFeedItem(tx, { userId: wanterId, kind: "spare-request", dedupeKey: row.id, oracleId, friendUserId: offererId, data: offerData(), now });
     return { ok: true, id: row.id };
   });
   // The unique-index fallback (`asked` from the shared transaction) only fires on a friend's open request with someone
@@ -109,12 +116,13 @@ export function answerOfferQuery(wanterId: string, requestId: string, answer: "y
       and aor.created_at > ${openFloor(now).toISOString()}::timestamptz
       and exists (select 1 from ${friendLinks} afl
         where afl.user_id = aor.asker_user_id and afl.friend_user_id = aor.holder_user_id for share)
-    returning aor.id`;
+    returning aor.id, aor.holder_user_id, aor.oracle_id`;
 }
 
 /**
- * The wanter answers an offer made to them. Yes changes nothing else in the app (as an ask's Yes). Telling the offerer
- * (feed item and push) is the friend side's job, a later step.
+ * The wanter answers an offer made to them. Yes changes nothing else in the app (as an ask's Yes). An answer that lands
+ * tells the offerer in the SAME transaction: a `spare-request` feed item on them marked `offer` and with the answer
+ * (`offerAnswerData`), whose push `recordFeedItem` queues. Nothing is written for an answer that changed no row.
  */
 export async function answerOffer(wanterId: string, requestId: unknown, answer: unknown, now = new Date()): Promise<AnswerOutcome> {
   if (!isUuid(requestId) || !isAnswer(answer)) return { ok: false, reason: "gone" };
@@ -122,7 +130,111 @@ export async function answerOffer(wanterId: string, requestId: unknown, answer: 
     const [who] = (await tx.execute<{ holder_user_id: string }>(offererQuery(wanterId, requestId))).rows;
     if (!who) return { ok: false, reason: "gone" } as const;
     await tx.execute(lockFriendshipQuery(wanterId, who.holder_user_id));
-    const done = await tx.execute(answerOfferQuery(wanterId, requestId, answer, now));
-    return (done.rowCount ?? done.rows.length) > 0 ? ({ ok: true } as const) : ({ ok: false, reason: "gone" } as const);
+    const done = await tx.execute<{ id: string; holder_user_id: string; oracle_id: string }>(answerOfferQuery(wanterId, requestId, answer, now));
+    const row = done.rows[0];
+    if (!row) return { ok: false, reason: "gone" } as const;
+    await recordFeedItem(tx, {
+      userId: row.holder_user_id, kind: "spare-request", dedupeKey: row.id, oracleId: row.oracle_id, friendUserId: wanterId,
+      data: offerAnswerData(answer), now,
+    });
+    return { ok: true } as const;
+  });
+}
+
+/** The state of the viewer's spare of a card on a friend's wishlist, as the tile's mark draws it (handoff states). */
+export type OfferMark = "asked" | "offered" | "accepted";
+
+/**
+ * Per card, what stands between the viewer and one friend about the card: `asked` (the friend asked the viewer for it,
+ * open), `offered` (the viewer offered it, open), `accepted` (a Yes on one of the viewer's spares: the friend's ask, or the viewer's offer). Anything else draws no mark: no row,
+ * declined, expired, withdrawn. One statement over the friend's rows against the viewer's spare (asks of the viewer and the viewer's offers), through the live friendship; an
+ * open row wins over an older Yes. Reads only requests the viewer is party to.
+ */
+export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, oracleIds: readonly unknown[], now = new Date()): Promise<Map<string, OfferMark>> {
+  const ids = [...new Set(oracleIds.filter(isUuid))];
+  const out = new Map<string, OfferMark>();
+  if (!isUuid(friendPublicId) || ids.length === 0) return out;
+  const rows = await db
+    .select({
+      oracleId: spareRequests.oracleId, status: spareRequests.status, createdAt: spareRequests.createdAt,
+      initiatedBy: spareRequests.initiatedBy,
+    })
+    .from(spareRequests)
+    .innerJoin(socialProfiles, and(eq(socialProfiles.publicId, friendPublicId)))
+    .innerJoin(friendLinks, and(eq(friendLinks.userId, viewerId), eq(friendLinks.friendUserId, socialProfiles.userId)))
+    // The friend as asker, the viewer as holder: the friend's own ask of the viewer, or the viewer's offer to them.
+    .where(and(inArray(spareRequests.oracleId, ids), eq(spareRequests.askerUserId, socialProfiles.userId), eq(spareRequests.holderUserId, viewerId)));
+  for (const r of rows) {
+    const state = requestState({ status: r.status as StoredStatus, createdAt: r.createdAt }, now);
+    const mark: OfferMark | null = state === "open" ? (r.initiatedBy === "holder" ? "offered" : "asked") : state === "yes" ? "accepted" : null;
+    if (!mark) continue;
+    const had = out.get(r.oracleId);
+    if (!had || (mark !== "accepted" && had === "accepted")) out.set(r.oracleId, mark);
+  }
+  return out;
+}
+
+/**
+ * Per friend, how many of their still-wanted cards the viewer can spare (G7: the `/friends` chip). Keyed by the
+ * friend's public id; a friend with none is absent. Cards go through `loadOwnOffered` (the viewer's own rule) in
+ * batches; a friend's quantity or `held` never reaches here.
+ */
+export async function loadSparableCounts(viewerId: string): Promise<Map<string, number>> {
+  const pairs = await loadFriendsWantedPairs(viewerId);
+  const out = new Map<string, number>();
+  if (pairs.length === 0) return out;
+  const oracles = [...new Set(pairs.map((p) => p.oracleId))];
+  const spare = new Set<string>();
+  const batches: string[][] = [];
+  for (let i = 0; i < oracles.length; i += MAX_SPARES_BATCH) batches.push(oracles.slice(i, i + MAX_SPARES_BATCH));
+  for (const got of await Promise.all(batches.map((b) => loadOwnOffered(viewerId, b)))) for (const id of got.keys()) spare.add(id);
+  for (const p of pairs) if (spare.has(p.oracleId)) out.set(p.publicId, (out.get(p.publicId) ?? 0) + 1);
+  return out;
+}
+
+/** An offer waiting on the reader's Yes or No (the wanter): who offers, which card, how many they have, and what the reader wants. */
+export type IncomingOffer = {
+  id: string; oracleId: string; card: { name: string; imageUri: string | null };
+  /** The copies the offerer put on the table (their spare, capped by what the reader lacks). */
+  copies: number;
+  /** What the reader's own wishlist line wants of the card. */
+  want: number;
+  offerer: OtherSide;
+  createdAt: Date; daysLeft: number;
+};
+
+/** The reader's open, unexpired offers from current friends, newest first; a ✕ (`ask:<id>`) hides one. Apart for a test. */
+export function incomingOffersQuery(wanterId: string, now: Date): SQL {
+  return sql`select ior.id, ior.oracle_id, ior.created_at, ior.copies, iop.public_id::text as public_id, iop.display_name,
+      ic.name as card_name, ic.image_uri as card_image,
+      (select max(iw.quantity) from ${wishlistItems} iw where iw.user_id = ior.asker_user_id and iw.oracle_id = ior.oracle_id) as want,
+      icc.oracle_id as commander_oracle_id, icc.name as commander_name, icc.art_crop_uri as commander_art
+    from ${spareRequests} ior
+    join ${friendLinks} ifl on ifl.user_id = ior.asker_user_id and ifl.friend_user_id = ior.holder_user_id
+    join ${socialProfiles} iop on iop.user_id = ior.holder_user_id
+    join ${cards} ic on ic.oracle_id = ior.oracle_id
+    left join ${cards} icc on icc.oracle_id = iop.commander_oracle_id
+    where ior.asker_user_id = ${wanterId} and ior.initiated_by = 'holder' and ior.status = 'open'
+      and ior.created_at > ${openFloor(now).toISOString()}::timestamptz
+      and not exists (select 1 from ${feedDismissals} idd where idd.user_id = ior.asker_user_id and idd.key = 'ask:' || ior.id::text)
+    order by ior.created_at desc, ior.id`;
+}
+
+type OfferRow = {
+  id: string; oracle_id: string; created_at: Date | string; copies: number; public_id: string; display_name: string;
+  card_name: string; card_image: string | null; want: number | null;
+  commander_oracle_id: string | null; commander_name: string | null; commander_art: string | null;
+};
+
+/** The offers waiting on the reader, as Waiting on you draws them. One whose card left the reader's wishlist stays out: nothing to want. */
+export async function loadIncomingOffers(wanterId: string, now = new Date()): Promise<IncomingOffer[]> {
+  const rows = (await db.execute<OfferRow>(incomingOffersQuery(wanterId, now))).rows as OfferRow[];
+  return rows.flatMap((r) => {
+    if (r.want === null) return [];
+    const createdAt = new Date(r.created_at);
+    return [{
+      id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies), want: Number(r.want),
+      offerer: { publicId: r.public_id, displayName: named(r.display_name), commander: faceOf(r) }, createdAt, daysLeft: daysLeft(createdAt, now),
+    }];
   });
 }

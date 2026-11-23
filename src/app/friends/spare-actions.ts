@@ -18,6 +18,7 @@ import {
   answerSpareRequest, askForSpare, askInsteadForSpare, closeSpareRequest, markAnswerSeen,
   type AnswerOutcome, type AskOutcome, type CloseOutcome,
 } from "../../lib/social/spare-requests";
+import { answerOffer, offerSpare, withdrawOffer } from "../../lib/social/spare-offers";
 import { loadAnsweredRequest, type YourRequest } from "../../lib/social/your-requests";
 import { requestFlags } from "../../lib/flags/request";
 
@@ -62,7 +63,7 @@ export async function refreshFriendsAction(): Promise<void> {
 export async function closeSpareAction(requestId: string): Promise<CloseOutcome> {
   const { userId, env } = await reader();
   const out = await closeSpareRequest(userId, requestId, env);
-  if (out.ok) revalidatePath("/friends");
+  if (out.ok) after(() => revalidatePath("/friends"));
   return out;
 }
 
@@ -70,7 +71,7 @@ export async function closeSpareAction(requestId: string): Promise<CloseOutcome>
 export async function answerSpareAction(requestId: string, answer: "yes" | "no"): Promise<AnswerOutcome> {
   const { userId, env } = await reader();
   const out = await answerSpareRequest(userId, requestId, answer, env);
-  if (out.ok) revalidatePath("/friends");
+  if (out.ok) after(() => revalidatePath("/friends"));
   return out;
 }
 
@@ -93,4 +94,29 @@ export async function openAnswerAction(key: string): Promise<OpenAnswerOutcome> 
   // moved its own cursor, and every diamond there would go at once.
   if (await markAnswerSeen(userId, request.id, env, now)) after(() => revalidatePath("/friends"));
   return { ok: true, request: { ...request, unseen: false }, counted: request.unseen };
+}
+
+/**
+ * Offer (You have it): the reader's spare of a card on a friend's wishlist, offered to that friend. The friend's
+ * `friendPublicId` and the card are checked in the library; a refusal is the ask's own outcome and never reads as done.
+ * Nothing is revalidated: the sheet that pressed it draws the reply.
+ */
+export async function offerSpareAction(input: { friendPublicId: string; oracleId: string }): Promise<AskOutcome> {
+  const { userId } = await reader();
+  const f = fields(input);
+  return offerSpare(userId, f.friendPublicId, f.oracleId);
+}
+
+/** ✕ on the reader's own open offer: withdraws it, nobody told. */
+export async function withdrawOfferAction(requestId: string): Promise<CloseOutcome> {
+  const { userId } = await reader();
+  return withdrawOffer(userId, requestId);
+}
+
+/** Yes or No on an offer made to the reader (the wanter). The offerer is told in the same write. */
+export async function answerOfferAction(requestId: string, answer: "yes" | "no"): Promise<AnswerOutcome> {
+  const { userId } = await reader();
+  const out = await answerOffer(userId, requestId, answer);
+  if (out.ok) after(() => revalidatePath("/friends"));
+  return out;
 }

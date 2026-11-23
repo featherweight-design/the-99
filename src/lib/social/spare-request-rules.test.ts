@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, expiresAt, isAnswer, openFloor, requestState, shownFloor,
+  askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, expiresAt, isAnswer, isOfferItem, offerAnswerData, offerData, answerOf, openFloor, requestState, shownFloor,
   type PriorAsk,
 } from "./spare-request-rules";
 
@@ -167,5 +167,15 @@ describe("askRefusal across directions (You have it, E1 and E2)", () => {
     const no = prior({ status: "no", answeredAt: ago(3), initiatedBy: "asker" });
     expect(askRefusal([no], "h", NOW, "holder")).toBeNull();
     expect(askRefusal([{ ...no, initiatedBy: undefined }], "h", NOW)).toBe("declined");
+  });
+});
+
+describe("offer items", () => {
+  it("are told apart by `offer`, and an offer's answer carries both markers", () => {
+    expect(isOfferItem(offerData())).toBe(true);
+    expect(isOfferItem(offerAnswerData("no"))).toBe(true);
+    expect(answerOf(offerAnswerData("yes"))).toBe("yes");
+    expect(isOfferItem({ answer: "yes" })).toBe(false);
+    expect(isOfferItem(null)).toBe(false);
   });
 });

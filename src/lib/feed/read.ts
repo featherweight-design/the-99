@@ -27,7 +27,7 @@ import { RELEASE_SET_TYPES } from "../catalog/index-due";
 import { answerOpened, feedFriend, storedFeedBranch, type FeedFriend } from "../social/feed-items";
 import { storePreferenceEnabled } from "../stores/flag";
 import { unseenAnswersCount } from "../social/spare-requests";
-import { answerOf, type Answer } from "../social/spare-request-rules";
+import { answerOf, isOfferItem, type Answer } from "../social/spare-request-rules";
 import { availableFeedKinds } from "./flag";
 import type { DropSale } from "./drop-lines";
 import { kindEnabledAt } from "./kind-gate";
@@ -207,6 +207,8 @@ export type FeedItem =
       data: Record<string, unknown>;
       /** A spare request's answer to the reader's OWN ask (`answerOf`), or null: an incoming ask, or another kind. */
       answer: Answer | null;
+      /** A spare request item of an OFFER (You have it, `isOfferItem`): the wanter's, or the offerer's answer. */
+      offer?: boolean;
     });
 
 export type FeedRow = {
@@ -240,6 +242,7 @@ export function toFeedItem(r: FeedRow): FeedItem {
     friend: feedFriend(r.friend_public_id, r.friend_name),
     data: r.data ?? {},
     answer: r.kind === "spare-request" ? answerOf(r.data) : null,
+    offer: r.kind === "spare-request" && isOfferItem(r.data),
   };
 }
 

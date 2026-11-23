@@ -50,6 +50,15 @@ export const answerData = (answer: Answer, standalone: boolean): { answer: Answe
  * Shopping's buy press, since the card may be on no deck's list. False on an item written before the marker.
  */
 export const answerStandalone = (data: Record<string, unknown> | null | undefined): boolean => data?.standalone === true;
+/**
+ * An OFFER's feed items (You have it) share the kind too, told apart by `offer: true`: the wanter's own item for an
+ * offer made to them (`offerData`), and the offerer's item for the wanter's answer (`offerAnswerData`), which also
+ * carries `answer`. The ask's rules read an item with `answer` as an answer to the READER's ask; `isOfferItem` is the
+ * one test that says which direction the item's request runs.
+ */
+export const offerData = (): { offer: true } => ({ offer: true });
+export const offerAnswerData = (answer: Answer): { answer: Answer; offer: true } => ({ answer, offer: true });
+export const isOfferItem = (data: Record<string, unknown> | null | undefined): boolean => data?.offer === true;
 /** The answer a `spare-request` item's `data` carries, or null for an incoming ask. */
 export const answerOf = (data: Record<string, unknown> | null | undefined): Answer | null => (isAnswer(data?.answer) ? data.answer : null);
 

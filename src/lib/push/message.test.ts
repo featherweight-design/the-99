@@ -13,6 +13,14 @@ const post = (key: string, title: string, kind: "secret-lair" | "commander-deckl
 const combo = (key: string, batch = "u-1"): PushItem => ({ kind: "combo", key, batch, oracleId: `o-${key}`, variantId: "1-2", a: "Thassa's Oracle", b: "Demonic Consultation", added: "Demonic Consultation", image: `img-${key}` });
 
 describe("one item of each kind (the handoff's table)", () => {
+  it("tells an offer and its answer in their own words, never as an ask", () => {
+    const card = "Lathliss, Dragon Queen";
+    const offer = (key: string, friend: string, said?: "yes" | "no"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card, image: null, offer: true, ...(said ? { answer: said } : {}) });
+    expect(toMessage([offer("o1", "Max")])).toMatchObject({ title: "Max is offering you Lathliss, Dragon Queen", body: "Answer in Friends.", route: "/friends", tag: "spare-request:o1" });
+    expect(toMessage([offer("o2", "Colin", "yes")])).toMatchObject({ title: "Colin said yes to Lathliss, Dragon Queen" });
+    expect(toMessage([offer("o3", "Chris", "no")])).toMatchObject({ title: "Chris passed on Lathliss, Dragon Queen" });
+  });
+
   it("new set: the set's page", () => {
     const m = toMessage([set("eoe", "Edge of Eternities")]);
     expect(m).toMatchObject({ title: "Edge of Eternities is out", body: "281 cards. See the set.", route: "/collection/sets/eoe", tag: "new-set", keys: ["eoe"] });
