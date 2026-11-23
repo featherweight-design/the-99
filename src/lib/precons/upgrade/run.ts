@@ -349,20 +349,20 @@ export function offered(base: UpgradeBase): (OfferedCommander & { option: Comman
  * panel reprices them as it draws, one price read and no model call, and a card that store does not price draws no tag and
  * adds nothing to the To buy total (it still counts as a card to buy). Null with the switch off (the stored figures draw as
  * they always did, whichever store a run was pressed at) or when the read fails (the stored figures, rather than no panel).
- * `store` is the reader's store when the caller has already read it (a press), so one request reads it once.
+ * `store` is the reader's store, read once per request by the caller (`readerStoreForPage`).
  */
-async function repricedAdds(userId: string, stored: readonly StoredUpgrade[], env: NodeJS.ProcessEnv, deps: Deps, store?: Store): Promise<RepricedAdds | null> {
+async function repricedAdds(userId: string, stored: readonly StoredUpgrade[], env: NodeJS.ProcessEnv, deps: Deps, store: Store): Promise<RepricedAdds | null> {
   if (!storePreferenceEnabled(env)) return null;
   const adds = [...new Set(stored.flatMap((r) => r.pairs.map((p) => p.addId)))];
   if (adds.length === 0) return null;
-  return deps.prices(adds, store ?? await readerStoreForPage(userId, env)).catch((e: unknown) => {
+  return deps.prices(adds, store).catch((e: unknown) => {
     console.error("upgrade panel: price read failed; drawing the runs' stored prices", e);
     recordSoftFailure();
     return null;
   });
 }
 
-async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJS.ProcessEnv, deps: Deps, store?: Store): Promise<UpgradePanel> {
+async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJS.ProcessEnv, deps: Deps, store: Store): Promise<UpgradePanel> {
   const [stored, allowance] = await Promise.all([
     readUpgrades(userId, base.fileName),
     readAllowance(userId, now, "precon_upgrade").then((a) => withPayments(a, env)),
@@ -423,8 +423,9 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
 export async function readUpgrade(userId: string, fileName: string, deps: Deps = LIVE_DEPS, env: NodeJS.ProcessEnv): Promise<UpgradePanel | null> {
   const now = deps.now();
   await reapUpgrades(userId, fileName, now);
-  const base = await deps.base(fileName);
-  return base ? panelFor(userId, base, now, env, deps) : null;
+  // The reader's store beside the box: the panel prices the runs' adds at it (ruling A); Mana Pool with the switch off.
+  const [base, store] = await Promise.all([deps.base(fileName), readerStoreForPage(userId, env)]);
+  return base ? panelFor(userId, base, now, env, deps, store) : null;
 }
 
 export async function pressUpgrade(
