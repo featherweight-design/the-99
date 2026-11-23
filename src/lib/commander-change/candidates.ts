@@ -24,6 +24,7 @@ import { isLandFace } from "../cards/facet";
 import { isBasicLand } from "../decks/grouping";
 import type { PriceFact } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { addAbility, canPair, partnerAbility } from "../decks/partner";
 import { canonicalPair } from "../edhrec/pair-order";
 import { isCommanderCandidate } from "../recs/score";
@@ -287,6 +288,8 @@ async function supportHits(
 export async function loadChangeCandidates(
   deckId: string,
   userId: string,
+  /** The reader's store: a candidate to buy is priced there. */
+  store: Store,
 ): Promise<ChangeCandidates | null> {
   const [deck] = await db.select({
     commander: decks.commanderOracleId, partner: decks.partnerOracleId,
@@ -374,7 +377,7 @@ export async function loadChangeCandidates(
   ]);
   const toBuyIds = asked.filter((id) => !owned.has(id));
   const prices = toBuyIds.length > 0
-    ? await loadPrices(toBuyIds).catch(() => null)
+    ? await loadPrices(toBuyIds, [], [], store).catch(() => null)
     : null;
 
   const build = (k: { ids: string[]; deckCount: number }): Candidate => {

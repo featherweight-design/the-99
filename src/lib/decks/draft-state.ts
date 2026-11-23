@@ -289,7 +289,7 @@ async function readDraft(
   // cost track, the basics set or the row facts.
   // The version's body goes with them: a half that arrives out of the 99 keeps that card's copy.
   const commanderRows = commander
-    ? await loadCommanderRows(userId, deckId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)))
+    ? await loadCommanderRows(userId, deckId, commander.from, commander.to, new Set(before.map((c) => c.oracleId)), store)
     : null;
   const commanderNames = new Map((commanderRows?.rows ?? []).map((r) => [r.oracleId, r.name]));
   // A commander-only draft has changes and no card row: its state is the empty

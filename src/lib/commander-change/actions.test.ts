@@ -14,6 +14,7 @@ const transaction = vi.fn();
 vi.mock("../../db", () => ({ db: { transaction: (...a: unknown[]) => transaction(...a) } }));
 const loadChangeCandidates = vi.fn();
 vi.mock("./candidates", () => ({ loadChangeCandidates: (...a: unknown[]) => loadChangeCandidates(...a) }));
+vi.mock("../stores/action-store", () => ({ readerStoreForAction: async () => "tcgplayer" }));
 const revalidateClaims = vi.fn();
 vi.mock("../decks/revalidate-claims", () => ({ revalidateClaims: (...a: unknown[]) => revalidateClaims(...a) }));
 
@@ -85,6 +86,11 @@ describe("readChangeCandidates at the request boundary", () => {
   it("answers null for a malformed deck id without reading", async () => {
     expect(await readChangeCandidates("nope")).toBeNull();
     expect(loadChangeCandidates).not.toHaveBeenCalled();
+  });
+
+  it("reads the candidates at the reader's store", async () => {
+    await readChangeCandidates(DECK);
+    expect(loadChangeCandidates).toHaveBeenCalledWith(DECK, "user_1", "tcgplayer");
   });
 });
 

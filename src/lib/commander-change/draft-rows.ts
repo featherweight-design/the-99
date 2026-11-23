@@ -9,6 +9,7 @@ import { db } from "../../db";
 import { cards, collectionItems } from "../../db/schema";
 import type { PriceFact } from "../decks/price";
 import { loadPrices } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import type { CommanderPair } from "./pending";
 
 export type CommanderRow = {
@@ -32,6 +33,8 @@ const members = (p: CommanderPair) =>
 
 export async function loadCommanderRows(
   userId: string, deckId: string, from: CommanderPair, to: CommanderPair, versionBody: ReadonlySet<string>,
+  /** The reader's store: a commander to buy is priced there. */
+  store: Store,
 ): Promise<CommanderRows> {
   const fromIds = members(from);
   const toIds = members(to);
@@ -54,7 +57,7 @@ export async function loadCommanderRows(
   // the trade buys nothing, whether or not the collection holds it.
   const ownedIds = heldIds(owned.map((o) => o.oracleId), toIds, versionBody);
   const toBuy = buyIds(fromIds, toIds, ownedIds);
-  const prices = toBuy.length > 0 ? await loadPrices(toBuy).catch(() => null) : null;
+  const prices = toBuy.length > 0 ? await loadPrices(toBuy, [], [], store).catch(() => null) : null;
   return {
     rows: commanderRows(fromIds, toIds, ownedIds, facts, prices?.prices ?? null),
     newestAsOf: prices?.newestAsOf ?? null,
