@@ -48,7 +48,12 @@ export type HubToolSpec =
 
 /** A shortcut's ask: open `tool`, or with `tool: null` return to the tiles (N1 lands on Suggested changes' tile, so a
  *  tool left open must close first). `nonce` makes a second press of the same shortcut count. */
-export type HubRequest = { tool: TuningTool | null; nonce: number };
+export type HubRequest = {
+  tool: TuningTool | null; nonce: number;
+  /** An element inside the tool to land on in place of its heading (the role strip's `consider →`: that role's shelf). The
+   *  hub waits for it as it waits for a heading, since a tool draws nothing until its first read lands. */
+  focusId?: string;
+};
 
 const clock = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -183,7 +188,7 @@ export function TuningHub({
   // What is open, and how it was opened: a tile or a shortcut moves focus to the tool's heading,
   // a shortcut also brings the Tuning heading to the top, and a tab keeps focus on the tab row so
   // the arrow keys keep working. `seq` makes every opening its own event.
-  const [opening, setOpening] = useState<{ tool: TuningTool; focus: boolean; scroll: boolean; early?: boolean; seq: number } | null>(null);
+  const [opening, setOpening] = useState<{ tool: TuningTool; focus: boolean; scroll: boolean; early?: boolean; focusId?: string; seq: number } | null>(null);
   const openTool = opening?.tool ?? null;
   const [tiles, setTiles] = useState<HubTiles | null>(null);
   const [now, setNow] = useState(() => Date.now());
@@ -311,7 +316,7 @@ export function TuningHub({
       setOpening(null);
     } else if (tools.some((t) => t.tool === asked)) {
       setReview(null);
-      setOpening((prev) => ({ tool: asked, focus: true, scroll: true, early: true, seq: (prev?.seq ?? 0) + 1 }));
+      setOpening((prev) => ({ tool: asked, focus: true, scroll: true, early: true, focusId: request.focusId, seq: (prev?.seq ?? 0) + 1 }));
     }
   }
 
@@ -355,7 +360,7 @@ export function TuningHub({
         reveal(held);
       }
       // The tool's own heading keeps its landmark (README, other decisions 2); focus moves to it.
-      const id = HEADING_IDS[opening.tool];
+      const id = opening.focusId ?? HEADING_IDS[opening.tool];
       const heading = id ? toolRef.current?.querySelector<HTMLElement>(`#${id}`) : null;
       if (opening.focus && !heading) return false;
       if (!late && opening.scroll && toolRef.current?.querySelector("[data-hub-pending]")) return false;
@@ -366,7 +371,9 @@ export function TuningHub({
       if (!late && opening.scroll && !(toolRef.current && toolDrew(toolRef.current))) return false;
       // A shortcut already moved the page and holds the room for it: a second reveal here would pull a
       // reader who has scrolled on back, or restart the first one's animation.
-      if (opening.scroll && !movedEarly) reveal(sectionRef.current);
+      // A request for a target inside the tool brings that target up instead, once it has drawn.
+      if (opening.focusId && heading) reveal(heading, "start");
+      else if (opening.scroll && !movedEarly) reveal(sectionRef.current);
       if (!opening.focus || !heading) return true;
       if (!heading.hasAttribute("tabindex")) heading.setAttribute("tabindex", "-1");
       heading.focus({ preventScroll: true });

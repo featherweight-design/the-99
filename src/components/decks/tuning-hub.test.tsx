@@ -372,6 +372,18 @@ describe("TuningHub opening a tool", () => {
     expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
   });
 
+  it("lands a request's focusId inside the tool once its first read draws it, in place of the tool's heading (role strip consider →)", async () => {
+    const scroll = vi.mocked(reveal);
+    scroll.mockClear();
+    read.mockImplementation(() => new Promise((resolve) => setTimeout(() => resolve(empty), 30)));
+    const panel = <section><h2 id="cuts-heading">Proposed cuts</h2><h3 id="shelf-ramp">Ramp</h3></section>;
+    render(<TuningHub deckId="d" drawn tools={[suggested(), { tool: "cuts", panel, over: 6, total: 106 }]} request={{ tool: "cuts", nonce: 1, focusId: "shelf-ramp" }} />);
+    // The target is not in the DOM when the request is answered: the panel draws only after the hub's first read.
+    const shelf = await screen.findByRole("heading", { name: "Ramp" });
+    await waitFor(() => expect(document.activeElement).toBe(shelf));
+    expect(scroll).toHaveBeenCalledWith(shelf, "start");
+  });
+
   it("moves the page for a shortcut at once, while the tool is still counting, and holds a screen of height while it is open", async () => {
     const scroll = vi.mocked(reveal);
     scroll.mockClear();

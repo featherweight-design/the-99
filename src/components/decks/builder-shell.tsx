@@ -613,10 +613,12 @@ export function BuilderShell({
     [],
   );
   // Every way into Consider: the Tuning tab, with Consider open in its hub.
-  const openConsider = useCallback(() => {
+  // `focusId` is the hub's landing target in place of Consider's heading (`seeShelf`'s shelf).
+  const askConsider = useCallback((focusId?: string) => {
     setView("tuning");
-    setHubRequest({ tool: "consider", nonce: (hubNonce.current += 1) });
+    setHubRequest({ tool: "consider", nonce: (hubNonce.current += 1), focusId });
   }, []);
+  const openConsider = useCallback(() => askConsider(), [askConsider]);
   // The tab row's press. Opening Tuning is counted (plan §6) as the hub itself: a press opens no tool.
   const changeView = useCallback(
     (next: BuilderView) => {
@@ -1490,25 +1492,18 @@ export function BuilderShell({
   // clear it — which the react-compiler rule rightly rejects.
   const shelvedRoles = useMemo(() => rolesWithShelves(suggestions), [suggestions]);
 
-  // Consider is a Tuning tool (tool discovery B2): a way into it opens the Tuning tab and asks the hub for it, and the
-  // shelf is in the DOM only once the hub has answered, which is when the request clears.
-  const pendingShelf = useRef<MixRole | null>(null);
+  // Consider is a Tuning tool (tool discovery B2): a way into it opens the Tuning tab and asks the hub for it. The shelf
+  // draws only once Consider's first read lands, after the request is answered, so the hub lands on it (`focusId`).
   const seeShelf = useCallback(
     (role: MixRole) => {
       if (document.getElementById(`shelf-${role}`)) {
         scrollToShelf(role);
         return;
       }
-      pendingShelf.current = role;
-      openConsider();
+      askConsider(`shelf-${role}`);
     },
-    [openConsider],
+    [askConsider],
   );
-  useEffect(() => {
-    if (view !== "tuning" || hubRequest !== null || !pendingShelf.current) return;
-    scrollToShelf(pendingShelf.current);
-    pendingShelf.current = null;
-  }, [view, hubRequest]);
 
   // The to-do card's unresolved `Look`, and the same two-step move as seeShelf above
   // for the same reason — the group is not in the DOM until the view and the
