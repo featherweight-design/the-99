@@ -15,6 +15,7 @@
 import { and, asc, desc, eq, inArray, or, sql, type SQL } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "../../db";
+import type { Store } from "../stores/rows";
 import { cards, deckGameAxes, deckGameOpponents, deckGames, deckVersions, decks } from "../../db/schema";
 import { withArt } from "../decks/deck-opponents-read";
 import { deckIdentity } from "../decks/format";
@@ -308,11 +309,12 @@ async function readMarks(gameIds: string[]): Promise<Map<string, { worked: GameA
 /**
  * One window of the viewer's game history. Pass `cursor` (from the previous window's `next`) to continue; a cursor
  * that is not one this module wrote reads as the first window. Aggregates ride the first window only.
- * Throws when the read fails: a history that silently lacked its opponents would say "none".
+ * Throws when the read fails: a history that silently lacked its opponents would say "none". `store` is the reader's
+ * store: each opponent commander's art is the printing it carries (store choice).
  */
 export async function loadGameHistory(
   viewerId: string,
-  opts: { filter?: GameHistoryFilter; cursor?: string | null; zone?: string | null } = {},
+  opts: { store: Store; filter?: GameHistoryFilter; cursor?: string | null; zone?: string | null },
 ): Promise<GameHistory> {
   const filter = opts.filter ?? {};
   const cursor = decodeCursor(opts.cursor);
@@ -325,7 +327,7 @@ export async function loadGameHistory(
   const ids = page.map((r) => r.id);
   const deckRows = [...new Map(page.map((r) => [r.deckId, r])).values()];
   const [seats, marks, owned] = await Promise.all([
-    loadHistorySeats(viewerId, ids).then(withArt),
+    loadHistorySeats(viewerId, ids).then((seats) => withArt(seats, opts.store)),
     readMarks(ids),
     // Fail-soft: a deck whose owned copy is unresolved keeps the oracle art.
     resolveCommanderPrintingsByDeck(viewerId, deckRows.flatMap((r) => (r.commanderOracleId ? [{ deckId: r.deckId, commanderOracleId: r.commanderOracleId }] : []))),

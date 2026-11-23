@@ -113,7 +113,7 @@ describe("/decks' games prop", () => {
     history.load.mockResolvedValueOnce(FIRST);
     const page = await visit({ view: "games" });
     expect(history.load).toHaveBeenCalledTimes(1);
-    expect(history.load).toHaveBeenCalledWith("user_1", { filter: {}, zone: "America/Denver" });
+    expect(history.load).toHaveBeenCalledWith("user_1", { store: "manapool", filter: {}, zone: "America/Denver" });
     expect(page.props.games?.failed).toBe(false);
     expect(page.props.games?.data?.games).toEqual(FIRST.games);
     expect(page.props.games?.data?.next).toBe(FIRST.next);
@@ -130,7 +130,7 @@ describe("/decks' games prop", () => {
     const page = await visit({ view: "games", deck: "d1", result: "win", friend: "f1", against: "c1" });
     // Played against is one choice: the friend wins over a commander the address also names.
     const filter = { deckId: "d1", result: "win", friend: "f1" };
-    expect(history.load).toHaveBeenCalledWith("user_1", { filter, zone: "America/Denver" });
+    expect(history.load).toHaveBeenCalledWith("user_1", { store: "manapool", filter, zone: "America/Denver" });
     expect(page.props.games?.data?.filter).toEqual(filter);
   });
 
