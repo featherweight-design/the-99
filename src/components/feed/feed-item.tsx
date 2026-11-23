@@ -399,7 +399,7 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null }: {
       <div className="flex min-w-0 flex-col gap-[3px]">
         <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
-          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : c.kicker[item.kind]}</span>
+          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : item.offer ? c.offerKicker : c.kicker[item.kind]}</span>
           {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
           <small data-feed-age className={`${KICKER_AGE} ${ageInk}`}>{when ?? drop?.age ?? feedAge(item.at, now)}</small>
         </div>

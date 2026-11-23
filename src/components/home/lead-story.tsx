@@ -157,7 +157,7 @@ export function LeadStory({
       )}
       <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
         <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
-          <span className="min-w-0">{receipt ? receipt.kind : feedCopy.home.kicker[item.kind]}</span>
+          <span className="min-w-0">{receipt ? receipt.kind : offer ? feedCopy.home.offerKicker : feedCopy.home.kicker[item.kind]}</span>
           <small className="flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case before:mr-[7px] before:content-['·']">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
         </p>
         <h3 id="home-lead-title" className="m-0 font-display [overflow-wrap:anywhere] text-[18px] leading-[1.25] font-bold text-[color:var(--fg)] md:text-[22px]">

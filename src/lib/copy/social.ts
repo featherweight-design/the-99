@@ -116,7 +116,7 @@ export const socialCopy = {
     // The row's link to the friend's page (R2 P1), spoken; the › itself is drawn.
     openAria: (name: ThirdPartyName) => personText`${name}’s page`,
     /** The per-friend chip (You have it): how many of their wanted cards the reader can spare; it opens their wishlist. */
-    spareChipAria: (name: ThirdPartyName, n: number) => personText`You can spare ${String(n)} of ${name}’s wanted ${n === 1 ? "card" : "cards"}`,
+    spareChipAria: (name: ThirdPartyName, n: number) => personText`You can spare ${String(n)} of ${name}’s wanted cards`,
   },
 
   // A friend's page, `/friends/[publicId]` (Social R2 P2, P3; handoff `social-r2 · copy strings.ts` friend block).

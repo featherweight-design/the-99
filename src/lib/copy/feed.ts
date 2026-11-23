@@ -241,6 +241,8 @@ export const feedCopy = {
     },
     /** The kicker of an answer to the reader's own spare request (spare requests handoff, board `Asker-States`). */
     answerKicker: "Your request",
+    /** The kicker of an offer to the reader (You have it), as Waiting on you's row names it. */
+    offerKicker: "Spare offer",
     /**
      * The ✕ on a What's new item, its lead story and a Waiting on you row (Hugh's ruling 2026-10-27): it hides the item
      * for good and answers nothing. Placeholders for `/copy-review`.
