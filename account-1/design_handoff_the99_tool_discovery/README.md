@@ -1,6 +1,11 @@
-# Finding the tools · R4
+# Finding the tools · R5
 
-Account 1, 2026-11-23. Status: **R4, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R5, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Ask, Find, Tuning, Welcome).
+
+**R5 (Hugh's R4 notes, 2026-11-23):** Home's search was easy to miss, and what a press did was unclear. It becomes a panel
+(call 5, Home): an accent edge, a title and line, a 52px field, and a fan of the reader's own cards under a search lens. On
+desktop the answers open in place under the panel's field (Q9 A, recommended); on a phone a tap opens the same full-screen
+sheet as the magnifier.
 
 **R4 (Hugh's R3 notes, 2026-11-23):** rows redrawn over the full shipped row (marks, combo, foil, pips, dates); the phone's
 row button becomes a strip under the row (Q8). Home's search stays for good, first under the page head. No model call for Ask
@@ -101,10 +106,23 @@ Source of truth on main 7563036: `src/lib/decks/builder-tab-specs.ts`, `src/comp
      questions: "spare", "extra", "not in a deck", "make better", "improve", "build", "buy", "cheaper"...). A query of two
      or more words that hits a list draws that tool; a card-name hit always draws its cards too. Free, instant, works
      offline once loaded, and nothing typed leaves the page.
-   - **Home (R4), for good:** first under the page head, above the welcome strip: the field drawn as a press (48px,
-     `--surface-sunken`, the glyph, `Search cards, or ask a question`, `⌘K` from md; 720px wide from 1180) that opens the
-     search, and the four starters under it, one row that scrolls sideways on a phone and wraps from md. A starter opens
-     the search with its question typed. It never retires; the magnifier and ⌘K stay on every screen.
+   - **Home (R5), for good, a panel:** first under the page head, above the welcome strip. Not flashy, but it reads as
+     the page's first thing to do:
+     - The panel: radius 12, a 1px edge of `--accent` mixed 55% into `--border`, a wash from 10% `--accent` at the left to
+       `--surface` by 60%. Title `Not sure where to go?` (display, 21 from md, 19 on a phone), line `Ask a question, or look
+       up any card.` (13.5, `--fg-muted`).
+     - The field: 52px, `--bg` on the tinted panel, `--border-strong` edge, the glyph in `--accent`, `Search cards, or ask a
+       question`, `⌘K` from md; 720px wide from 1180, short of the fan below it.
+     - The fan: three of the reader's own cards (most recent adds, as Recent cards), tilted -14°, 0°, 14°, with an
+       `--accent` lens over them; right of the panel from md, beside the title on a phone. Decorative (`aria-hidden`); with
+       fewer than three cards it draws what there is, none with no art.
+     - The four starters under the field: one row that scrolls sideways on a phone and wraps from md.
+     - **What a press does (Hugh's R4 question).** Desktop: the panel's own field takes the typing, and the answers open in
+       place under it (Q9 A): the shipped dropdown's surface (`--surface-raised`, the rail dropdown's shadow), the same
+       listbox as the rail's search, and Esc or ✕ closes it back to the panel. Phone: a tap opens the same full-screen
+       sheet as the magnifier, with the starter's question typed when a starter was pressed; there is no room in place on
+       a phone. Either way it is one search state: one query, one listbox, one set of results.
+   - It never retires; the magnifier and ⌘K stay on every screen.
    - **One field, two jobs (R4).** What keeps card search and Ask apart:
      - Card names that read as questions (`Where Ancients Tread`, `Ask Urza`, `Find the Path`, `What Must Be Done`): a
        card whose name equals the query or starts with it always ranks first, tools under it. Tools lead only when no card
@@ -127,13 +145,16 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 - **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
   B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
+- **Q9 · Desktop: does Home's field answer in place, or open the rail's search?** A (drawn, recommended): in place, under
+  the panel's field, so the reader's eyes stay where they typed. B: the panel's field is a press that opens the rail's
+  dropdown (R4's behaviour), whose list opens at the rail, away from where the reader pressed. Board: Ask, H4 and H5.
 
 ## Files
 
 | File | What |
 |---|---|
-| `Main.dc.html` | What changed since R2, the answers, the open questions |
-| `Ask.dc.html` | A0 nothing typed, A1 a question, A3 nothing matches (desktop dropdown and phone sheet); H3 Home's search |
+| `Main.dc.html` | What changed since R4, the answers, the open questions |
+| `Ask.dc.html` | A0 nothing typed, A1 a question, A3 nothing matches (desktop dropdown and phone sheet); H4 Home's search panel (R5), H5 desktop answering in place; H3 R4's field, kept for the record |
 | `Find.dc.html` | F0–F2 desktop and phone: the call-out with Show them, Free with a button under each tile, the button opens Find a deck; R5 / R4 the row view over the full row (Q8 A / B) |
 | `Tuning.dc.html` | T0 today's tab row; T1 the Tuning tab; T2 Consider open in it |
 | `Welcome.dc.html` | H0 Home's strip (unchanged); S0 the sheet today; S1 proposed |

@@ -1,4 +1,4 @@
-# States · Finding the tools R4
+# States · Finding the tools R5
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -43,11 +43,16 @@
 | A tool's switch off for this reader | That tool never answers (`requestFlags`). |
 | Offline | As shipped (S7). Tools still answer; the reader's numbers are those the page holds, or left out. |
 
-## Home · search · R4
+## Home · search panel · R5
 | State | Draws |
 |---|---|
-| Any reader with a collection | The field and the starters, first under the page head, for good. |
+| Any reader with a collection | The panel (title, line, field, fan, starters), first under the page head, for good. |
 | No collection yet | Nothing (first-run Home leads with adding cards). |
-| Field pressed | The search opens (phone sheet, desktop dropdown), nothing typed. |
-| A starter pressed | The search opens with the question typed. |
+| Fewer than three cards with art | The fan draws the ones there are; none with none. The lens stays. |
+| Desktop, field focused, nothing typed | The field ringed (`--accent`, 3px halo); the in-place list opens: the starters and Recent cards. |
+| Desktop, typing | The in-place list under the field: `Tools for this`, then the cards, as the rail's search ranks them. |
+| Desktop, Esc / ✕ / press outside | The list closes; the query clears on ✕ only. |
+| Desktop, ⌘K or the rail magnifier | The rail's dropdown as shipped; Home's field is not focused. |
+| Phone, field pressed | The full-screen search sheet, nothing typed. |
+| A starter pressed | Desktop: typed into the panel's field, answers in place. Phone: the sheet with it typed. |
 | A starter whose tool cannot answer this reader (no deck for Find a deck) | That starter is left out; the row closes up. |

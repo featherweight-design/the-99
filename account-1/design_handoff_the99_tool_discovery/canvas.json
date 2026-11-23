@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-23T17:00:00Z"
  },
- "title": "Finding the tools R4",
+ "title": "Finding the tools R5",
  "launch": {
   "view": "canvas"
  },
@@ -14,14 +14,14 @@
    "x": 0,
    "y": 0,
    "w": 1600,
-   "h": 1850,
+   "h": 1580,
    "title": "Main"
   },
   "Ask.dc.html": {
    "x": 1720,
    "y": 0,
    "w": 1700,
-   "h": 3080,
+   "h": 3710,
    "title": "Ask"
   },
   "Find.dc.html": {

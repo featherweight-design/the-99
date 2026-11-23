@@ -51,3 +51,9 @@ export const welcomeSheetChanges = {
     { id: "find-a-deck", name: "Find a deck", where: "A card in no deck", short: "free", cost: "free" },
   ],
 };
+
+// R5: Home's search panel.
+export const homeSearchCopy = {
+  title: "Not sure where to go?",
+  line: "Ask a question, or look up any card.",
+};

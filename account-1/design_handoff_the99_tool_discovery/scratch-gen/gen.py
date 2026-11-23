@@ -128,18 +128,29 @@ C5R4 = call("5", "Ask and card search, one field (R4)", ul([
       "<b>Measuring.</b> The search event records which group the press came from (tool or card), never the text, so card lookups and questions read apart."]),
   "Why one field: new players will not know which of two boxes to use, and the app's rule is one control per action."]))
 Q8 = q("Q8", "Phone rows: a Find a deck strip under each row, or the glyph beside it?", "Option A: the strip under the row, the glyph and the word (drawn, R5). Option B: R3's 44px glyph button beside the row; rows stay their height, names lose about ten characters on a full row.", "A. The name is what a reader scans by, and the word matches the tile's button, so phone and desktop read the same.")
+
+C6 = call("6", "Home's search, easier to notice (R5)", ul([
+  f"Its own panel, first under the page head: the welcome strip's accent edge, a wash of the accent fading across, a display title {m('Not sure where to go?')} and a line {m('Ask a question, or look up any card.')}",
+  "The field at 52px on the page's own --bg, so it reads as the place to type: the glyph in the accent, the placeholder, ⌘K from md.",
+  "Personality, not flash: a small fan of three of the reader's own cards (the three most recently added) with the search's lens over them, the card search empty state's graphic in their art. Right of the field from md; beside the title on a phone.",
+  "The starters under the field, on the page's --bg so they read as presses. No motion, no badge."]))
+C7 = call("7", "What pressing it does (R5)", ul([
+  "<b>Desktop:</b> the Home field IS the search field. Typing there opens the results in place, the same dropdown the rail's search draws (same groups, same keys, same foot), anchored under the Home field and its width. The rail's search does not open; the page is not covered. Esc or a press outside closes it and keeps the text.",
+  "<b>Phone:</b> a press on the field opens the same full-screen search sheet the header's magnifier opens, focused, with the keyboard up (A0 on this board). A starter opens it with the question typed (A1). The phone never draws a dropdown under a field: the keyboard would cover it.",
+  "One search underneath: one query, one result list, one recent-cards memory. Typing on Home and then pressing ⌘K shows the same query."]))
+Q9 = q("Q9", "Desktop: results in place under Home's field, or the rail's search?", "Option A: results open in place under the Home field (drawn, H5). Option B: a press moves focus to the rail's search, which opens 12px out from the rail as it does today.", "A. The answer appears where the reader is looking; B makes the eye jump to the left edge and leaves the Home field a fake.")
 boards = {}
-boards["Main.dc.html"] = (1600, 1850, "Main", page("Finding the tools R4: main", 1600, 1850,
- head("Finding the tools · R4",
-  "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R4 redraws Find a deck's rows over the full shipped row, puts a search field on Home for good, and sets down how card search and Ask share one field. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
- + note("Since R3", ["Rows are drawn over the full shipped row (marks, combo, foil, pips, dates); the phone's button becomes a strip under the row (call 1, Q8).", "Home's field stays for good and moves up, first under the page head (R3 Q7 withdrawn: it asked whether the Home field should go away after three uses; it no longer does).", "No model call for Ask (R3 Q6, settled).", "Tuning and Welcome as R1, the tile button as R2, approved."])
+boards["Main.dc.html"] = (1600, 1580, "Main", page("Finding the tools R5: main", 1600, 1580,
+ head("Finding the tools · R5",
+  "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R5 makes Home's search easier to notice and sets down what pressing it does on a phone and a desktop. Everything else is as R4. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
+ + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph)."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
- + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C5R4 + C1R4 + call("2, 3", "As R1, approved", ul(["Tuning gets its own tab after Analysis; Consider leaves the tab row and becomes Tuning's first tile. Analysis keeps the reading.", "Where credits work: every row lands, the Tuning rows name the tab, and a free block names Consider and Find a deck."])) + '</div>'
+ + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C6 + C7 + '</div>'
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
- + '<div style="display:flex;gap:20px">' + fig("p-h3", 300, "Home, the search for good", "First under the page head.") + fig("p-r5", 300, "Collection rows, Free", "A Find a deck strip under each row.") + '</div>'
+ + '<div style="display:flex;gap:20px">' + fig("p-h4", 300, "Home, phone", "The panel, first under the page head.") + fig("p-a1", 300, "Pressed, phone", "The full-screen sheet; a starter types its question.") + '</div>'
  + '</div></div>'
- + Q8
- + note("Not changed", ["Card search's card results, recents, Add several and its keys.", "The card window's Find a deck door and its moment (M8).", "The Availability filter, its options and its chip.", "Home's strip, the first-run tour."])))
+ + Q9 + Q8
+ + note("As R4", ["Ask in the card search: starters, Tools for this, never a dead end; one field, card names first.", "Find a deck: the tile button, the row strip (phone) and button (desktop), the call-out.", "Tuning and Welcome as R1, approved."])))
 
 boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a deck", 1700, 4560,
  head("Q1 · How a player finds the deck a card fits (R4)", "/collection's Cards tab. F0 the call-out on All, its Show them applying the shipped Availability: Free. F1 narrowed to Free, a Find a deck button under each tile (approved R2). R5 and R4 the row view over the full shipped row, phone options A and B. F2 the button opens Find a deck straight (shipped view, Killian, one deck fits).")
@@ -148,12 +159,13 @@ boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a
  + row("Desktop · 1300", [dk("d-f2", "F2 · The button opens Find a deck", "The card window straight on the view; ← the card goes to its details.", 780)])
  + row("Phone · 390", [ph("p-f0", "F0 · All", "Show them under the line, 44px."), ph("p-f1", "F1 · Free", "Names keep their whole line; the button sits under the tile."), ph("p-f2", "F2 · Find a deck", "The phone card window, on the view.")])))
 
-boards["Ask.dc.html"] = (1700, 3080, "Ask", page("Finding the tools R4: Ask", 1700, 3080,
- head("Q4 · Ask: questions that lead to the tools", "The shipped card search, open over Home. A0 nothing typed: the starter questions above Recent cards. A1 a question: the tools that answer it, above the cards. A3 nothing matches: never a dead end. H3 Home's search, for good (R4).")
+boards["Ask.dc.html"] = (1700, 3710, "Ask", page("Finding the tools R5: Ask", 1700, 3710,
+ head("Q4 · Ask: questions that lead to the tools", "The shipped card search, open over Home. A0 nothing typed: the starter questions above Recent cards. A1 a question: the tools that answer it, above the cards. A3 nothing matches: never a dead end. H4 Home's search panel and H5 its results in place on desktop (R5).")
  + row("Desktop · 1300, the search's dropdown", [dk("d-a0", "A0 · Nothing typed", "Starters above Recent cards; the placeholder says it takes questions.", 760), dk("d-a1", "A1 · A question", "Tools for this: name, cost, the shipped line, your number, where it lands.", 760)])
- + row("Desktop · 1300", [dk("d-a3", "A3 · Nothing matches", "The starters again and About’s tool list.", 760), dk("d-h3", "H3 · Home (R4)", "The field for good, first under the page head; the starters under it.", 780)])
+ + row("Desktop · 1300", [dk("d-a3", "A3 · Nothing matches", "The starters again and About’s tool list.", 760), dk("d-h4", "H4 · Home (R5)", "The panel: accent edge, title, the field at 52px, the fan under the lens.", 780)])
+ + row("Desktop · 1300, pressed on Home (R5)", [dk("d-h5", "H5 · Results in place", "Typed on Home: the rail's dropdown, anchored under the Home field. Q9 A.", 1000)])
  + row("Phone · 390, the search sheet", [ph("p-a0", "A0 · Nothing typed", "Starters wrap, 44px each."), ph("p-a1", "A1 · A question", "Three tools; no card names match."), ph("p-a3", "A3 · Nothing matches", "Starters, then About.")])
- + row("Phone · 390", [ph("p-h3", "H3 · Home, phone (R4)", "Under the page head; the starters scroll sideways.")])))
+ + row("Phone · 390", [ph("p-h4", "H4 · Home, phone (R5)", "The panel; the fan beside the title; the starters scroll sideways."), ph("p-a1", "Pressed · the sheet", "The same full-screen search as the magnifier.")])))
 
 boards["Tuning.dc.html"] = (1700, 3920, "Tuning", page("Finding the tools: Tuning", 1700, 3920,
  head("Q2 · Tuning gets a tab", "T0 today's tab row (Tuning is the last section of Analysis, under the whole reading). T1 the Tuning tab's landing. T2 Consider opened inside it, the shipped panel.")
@@ -173,6 +185,6 @@ order = ["Main.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welco
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R4", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R5", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)

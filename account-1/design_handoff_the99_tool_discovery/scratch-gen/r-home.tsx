@@ -7,7 +7,7 @@ import { WhereCreditsWork, Row } from "../src/components/welcome/where-credits-w
 import { writtenForYouCopy } from "../src/lib/copy/discovery";
 import { Lock } from "../src/components/ui/lock";
 import { welcomeFreeCopy, WhatYouCanDo } from "./find";
-import { HomeSearch, HomeAsk, PhoneSheet, DeskDropdown, Starters, RecentRows, ToolAnswers, NoTool, ANSWERS } from "./ask";
+import { HomeSearchPanel, HomeSearch, HomeAsk, PhoneSheet, DeskDropdown, Starters, RecentRows, ToolAnswers, NoTool, ANSWERS } from "./ask";
 const G = globalThis as any;
 const NOW = new Date("2026-11-23T15:00:00Z");
 const facts: any = { lot: "held", units: 3, left: 3, expiresAtMs: Date.UTC(2026, 10, 30, 12), days: 7, teaser: true, free: 1 };
@@ -37,10 +37,11 @@ const freeBlock = (
   </>
 );
 const deck = (id: string, name: string, cmd: string, art: string, ci: string[]): any => ({ id, name, createdAt: NOW, commanderName: cmd, commanderColorIdentity: ci, commanderImageUri: `art/c-${art}.jpg`, commanderArtCropUri: `art/a-${art}.jpg`, partnerName: null, partnerColorIdentity: null, folderId: null, folderName: null, built: 99, ownedCount: 93, toBuyCount: 6, unresolvedCount: 0, pendingChanges: 0, versionNumber: 3, lastPlayedAt: null, lastEditedAt: NOW, lastCommittedAt: NOW, inUseElsewhere: 0, proxiedCount: 0, statusPill: "built", bracket: null });
-function home(name: string, dev: "phone" | "desk", sheet: any | null, free = false, todo: boolean | "ask" | "search" = false, over: any = null) {
+function home(name: string, dev: "phone" | "desk", sheet: any | null, free = false, todo: boolean | "ask" | "search" | "panel" = false, panel: any = {}, over: any = null) {
   G.__VW = dev === "desk" ? 1300 : 390; G.__INLINE = true; G.__FREEBLOCK = free ? freeBlock : undefined;
   const strip0 = <WelcomeStrip facts={facts} sheet={sheet ?? today} place="dashboard" />;
-  const strip = todo === "search" ? <><div className="order-0"><HomeSearch /></div>{strip0}</> : todo ? <>{strip0}<div className="order-1 mt-[4px] min-[1180px]:order-none">{todo === "ask" ? <HomeAsk /> : <WhatYouCanDo spares={212} deck="Ashen Banner Parade" />}</div></> : strip0;
+  const ART = ["art/c-killian.jpg", "art/c-lathliss.jpg", "art/c-ghalta.jpg"];
+  const strip = todo === "panel" ? <><div className="order-0 relative z-[5]"><HomeSearchPanel art={ART} {...panel} /></div>{strip0}</> : todo === "search" ? <><div className="order-0"><HomeSearch /></div>{strip0}</> : todo ? <>{strip0}<div className="order-1 mt-[4px] min-[1180px]:order-none">{todo === "ask" ? <HomeAsk /> : <WhatYouCanDo spares={212} deck="Ashen Banner Parade" />}</div></> : strip0;
   const html = shell(
     <Dashboard stats={{ totalCards: 4492, uniqueCards: 2926 }} lastUpdated={new Date("2026-11-21T12:00:00Z")} timeZone="UTC" ready={null}
       inUse={new Map()} decks={[deck("d1", "Ashen Banner Parade", "Ashling, the Limitless", "ashling", ["W", "U", "B", "R", "G"])]} commitments={null}
@@ -63,6 +64,8 @@ for (const dev of ["phone", "desk"] as const) {
   home(`${d}-h2`, dev, null, false, "ask");
   home(`${d}-h3`, dev, null, false, "search");
   const desk = dev === "desk";
+  home(`${d}-h4`, dev, null, false, "panel");
+  if (desk) home(`${d}-h5`, dev, null, false, "panel", { query: "where do my spare cards go", open: <ToolAnswers answers={ANSWERS.spares} /> }, null);
   const Frame = (q: string, body: any) => (desk ? <DeskDropdown query={q} body={body} /> : <PhoneSheet query={q} body={body} />);
   home(`${d}-a0`, dev, null, false, false, Frame("", <><Starters /><RecentRows rows={RECENT} /></>));
   home(`${d}-a1`, dev, null, false, false, Frame("where do my spare cards go", <ToolAnswers answers={ANSWERS.spares} />));

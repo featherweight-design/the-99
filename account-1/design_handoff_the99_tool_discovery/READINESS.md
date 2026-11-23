@@ -1,6 +1,6 @@
-# READINESS · Finding the tools R4
+# READINESS · Finding the tools R5
 
-**Verdict: Amber, for Hugh's review.** One open question (README, Q8). Every gap below has an answer proposed.
+**Verdict: Amber, for Hugh's review.** Two open questions (README, Q8 and Q9). Every gap below has an answer proposed.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -33,8 +33,11 @@
 - **G13 · Ranking in one field (R4).** The search merges two lists: card hits whose name equals or starts with the
   query rank first; then tool answers; then the rest of the card hits. One listbox, two `role="group"` children with
   labels. Tool phrases never match a single word other than a tool's own name.
-- **G14 · Home's field.** A press that opens the shell's search (`openSearch`), with `?q=` for a starter; no second
-  search state. Lives in `Dashboard` above `props.welcome`, `order-0` below 1180.
+- **G14 · Home's panel (R5).** Lives in `Dashboard` above `props.welcome`, `order-0` below 1180. One search state:
+  the panel's field and the rail's search share the search provider's query and results; the panel renders the same
+  listbox component in its own anchored popover from md (Q9 A), and on a phone calls `openSearch` (`?q=` for a starter).
+  Only one is open at a time: opening the rail's search closes the panel's list. The fan reads the three most recent adds
+  the Recent cards list already loads; no new query.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks

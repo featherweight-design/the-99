@@ -193,3 +193,64 @@ export function HomeSearch() {
     </section>
   );
 }
+
+/** R5: Home's search as its own panel, so it reads as a place to start rather than one more field. The accent edge the
+ *  welcome strip uses, a short title and line, the field at 52px, the starters, and (personality, not flash) a small fan
+ *  of three of the reader's own cards with the search's lens over it, the card search empty state's graphic in their art. */
+export const homeSearchCopy = { title: "Not sure where to go?", line: "Ask a question, or look up any card." };
+function Fan({ art, small = false }: { art: string[]; small?: boolean }) {
+  const w = small ? 38 : 70, h = small ? 53 : 98;
+  const lens = small ? 26 : 46;
+  return (
+    <div aria-hidden className="relative flex-none" style={{ width: small ? 92 : 168, height: small ? 70 : 128 }}>
+      {art.map((a, i) => (
+        <img key={a} src={a} alt="" className="absolute rounded-[5px] shadow-[0_8px_18px_rgba(0,0,0,0.5)] [border:1px_solid_rgba(0,0,0,0.4)]"
+          style={{ width: w, height: h, left: (small ? 8 : 14) + i * (small ? 20 : 36), top: small ? 6 : 10, transform: `rotate(${(i - 1) * 14}deg)`, zIndex: i === 1 ? 2 : 1, objectFit: "cover" }} />
+      ))}
+      <span className="absolute z-[3] rounded-full border-[3px] border-solid border-[color:var(--accent)] shadow-[0_8px_18px_rgba(0,0,0,0.45)]"
+        style={{ width: lens, height: lens, left: small ? 46 : 92, top: small ? 30 : 58, background: "color-mix(in srgb, var(--bg) 30%, transparent)" }} />
+      <span className="absolute z-[3] origin-left rotate-45 rounded-[3px] bg-[color:var(--accent)]" style={{ width: small ? 14 : 24, height: small ? 3 : 5, left: small ? 67 : 129, top: small ? 53 : 99 }} />
+    </div>
+  );
+}
+export function HomeSearchPanel({ art, query = "", open = null }: { art: string[]; query?: string; open?: any }) {
+  return (
+    <section aria-label={homeSearchCopy.title}
+      className="relative overflow-visible rounded-[12px] px-[16px] pt-[14px] pb-[14px] md:px-[20px] md:pt-[16px] md:pb-[16px] [border:1px_solid_color-mix(in_srgb,var(--accent)_55%,var(--border))]"
+      style={{ background: "linear-gradient(100deg, color-mix(in srgb, var(--accent) 10%, var(--surface)) 0%, var(--surface) 60%)" }}>
+      <div className="hidden md:block absolute right-[28px] top-[50%] -translate-y-1/2"><Fan art={art} /></div>
+      <div>
+        <div className="flex items-start gap-[12px]">
+          <div className="min-w-0 flex-1">
+            <h2 className="m-0 font-display text-[19px] font-bold leading-[1.2] text-[color:var(--fg)] md:text-[21px]">{homeSearchCopy.title}</h2>
+            <p className="m-0 mt-[3px] text-[13.5px] leading-[1.5] text-[color:var(--fg-muted)]">{homeSearchCopy.line}</p>
+          </div>
+          <div className="-mt-[4px] -mr-[6px] md:hidden"><Fan art={art} small /></div>
+        </div>
+        <div>
+          <div className="relative mt-[12px] md:max-w-[calc(100%-200px)] min-[1180px]:max-w-[720px]">
+            <div className={`flex h-[52px] w-full items-center gap-[10px] rounded-[10px] bg-[color:var(--bg)] px-[14px] text-[15.5px] ${open ? "[border:1px_solid_var(--accent)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--accent)_22%,transparent)]" : "[border:1px_solid_var(--border-strong)]"}`}>
+              <span className="text-[color:var(--accent)]"><SearchGlyph size={19} stroke={1.9} /></span>
+              <span className={`min-w-0 flex-1 truncate ${query ? "text-[color:var(--fg)]" : "text-[color:var(--fg-faint)]"}`}>{query || askCopy.placeholder}</span>
+              {query ? <span className="flex h-[28px] w-[28px] items-center justify-center rounded-full bg-[color:var(--surface-raised)] text-[12px] text-[color:var(--fg-muted)]">✕</span>
+                : <kbd aria-hidden className="hidden rounded-[5px] px-[6px] py-[2px] font-mono text-[10.5px] text-[color:var(--fg-faint)] [border:1px_solid_var(--border-strong)] md:inline">⌘K</kbd>}
+            </div>
+            {open ? (
+              <div className="absolute left-0 right-0 top-[60px] z-30 flex flex-col overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[6px] shadow-[0_22px_50px_rgba(0,0,0,0.6)]">
+                <div>{open}</div>
+                <p className="m-0 flex items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-[14px] pt-[9px] pb-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]"><span>↑ ↓ to move · ↵ to open · esc to close</span><span>⌘K opens this from anywhere</span></p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      </div>
+      <ul role="list" aria-label={askCopy.starters.heading} className="relative -mx-[16px] m-0 mt-[12px] md:max-w-[calc(100%-200px)] flex list-none gap-[8px] overflow-x-auto px-[16px] pb-[2px] md:mx-0 md:flex-wrap md:overflow-visible md:px-0 [scrollbar-width:none]">
+        {askCopy.starters.questions.map((q) => (
+          <li key={q} className="flex-none">
+            <button type="button" className="flex min-h-[40px] cursor-pointer items-center whitespace-nowrap rounded-full bg-[color:var(--bg)] px-[13px] text-[13px] text-[color:var(--fg)] [border:1px_solid_var(--border-strong)] md:min-h-[34px]">{q}</button>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
