@@ -66,17 +66,26 @@ export function requestState(r: { status: StoredStatus; createdAt: Date }, now: 
   return r.status;
 }
 
-export type PriorAsk = { holderUserId: string; status: StoredStatus; createdAt: Date; answeredAt: Date | null };
+/** Who started a request (You have it, G1): the asker (an ask) or the holder (an offer). */
+export type Initiator = "asker" | "holder";
+
+export type PriorAsk = {
+  holderUserId: string; status: StoredStatus; createdAt: Date; answeredAt: Date | null;
+  /** Absent reads as an ask. */
+  initiatedBy?: Initiator;
+};
 
 /** Why the asker may not ask this holder for this card now, or null. `asks` are the asker's asks for the card. */
 export type AskRefusal = "asked" | "declined";
 
-export function askRefusal(asks: readonly PriorAsk[], holderUserId: string, now: Date): AskRefusal | null {
+export function askRefusal(asks: readonly PriorAsk[], holderUserId: string, now: Date, direction: Initiator = "asker"): AskRefusal | null {
   // A withdrawn ask holds nothing: neither the card nor a cooldown (G1).
   const held = asks.filter((a) => a.status !== "withdrawn");
   if (held.some((a) => requestState(a, now) === "open")) return "asked";
   const floor = declineFloor(now).getTime();
-  if (held.some((a) => a.holderUserId === holderUserId && a.status === "no" && a.answeredAt !== null && a.answeredAt.getTime() > floor)) {
+  // An open request in EITHER direction holds the card (the one-open index spans both: E1). A No holds only its own
+  // direction back: a friend's No to my offer never blocks them asking me, nor me answering theirs (E2).
+  if (held.some((a) => (a.initiatedBy ?? "asker") === direction && a.holderUserId === holderUserId && a.status === "no" && a.answeredAt !== null && a.answeredAt.getTime() > floor)) {
     return "declined";
   }
   return null;

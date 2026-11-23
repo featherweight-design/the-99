@@ -4432,7 +4432,16 @@ export const spareRequests = pgTable("spare_requests", {
    * status, and for an ask withdrawn before this column existed (no date is claimed for those).
    */
   withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
+  /**
+   * Who started it (You have it, G1). `asker` is an ask: the asker wants the holder's spare. `holder` is an OFFER: the
+   * holder, who has a spare of a card the asker (the friend whose wishlist it is on) wants, sent it first. An offer
+   * keeps the ask's columns (the wanter is `asker_user_id`, the one with the copy `holder_user_id`), so expiry, one
+   * open row per card and the purge stay one path; the ANSWER is the asker's. Every ask read and write filters
+   * `initiated_by = 'asker'`; the offer reads filter `'holder'`.
+   */
+  initiatedBy: text("initiated_by").notNull().default("asker"),
 }, (t) => [
+  check("spare_requests_initiated_by_check", sql`${t.initiatedBy} in ('asker', 'holder')`),
   uniqueIndex("spare_requests_one_open").on(t.askerUserId, t.oracleId).where(sql`${t.status} = 'open'`),
   index("spare_requests_holder_idx").on(t.holderUserId, t.status),
   index("spare_requests_asker_idx").on(t.askerUserId, t.createdAt),

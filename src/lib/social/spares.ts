@@ -25,6 +25,7 @@ import { resolveFriend, type Reader } from "./access";
 import { commanderCard, commanderColumns, facePrinting, faceJoin, toCommander, type ProfileCommander } from "./commander";
 import { named } from "../person-name/mint";
 import type { ThirdPartyName } from "../person-name/brand";
+import { MAX_SPARES_BATCH } from "./client-rules";
 import { isUuid } from "./rules";
 import { isOffered, spareCount } from "./spare-rules";
 import { spareSettingsIn, type SpareSettings } from "./spare-settings";
@@ -350,4 +351,16 @@ export async function loadFriendSpareList(viewerId: string, publicId: unknown, w
   });
   lines.sort(spareLineOrder);
   return { pods: shown.pods, friend: shown, lines, wishlist };
+}
+
+/**
+ * The viewer's OWN copies of the named cards that they can spare (You have it, G2): each card's spare count under their
+ * rule (`owned − hard − soft`, then Settings › Spares' threshold and Keep), whether or not those spares are shared with
+ * any pod. Reads only the viewer's rows. A card with nothing to spare is absent. Null when the ids are not a batch
+ * (1 to `MAX_SPARES_BATCH` card ids), checked before anything is read.
+ */
+export async function loadMyCopies(viewerId: string, oracleIds: readonly unknown[]): Promise<{ oracleId: string; spare: number }[] | null> {
+  if (oracleIds.length === 0 || oracleIds.length > MAX_SPARES_BATCH || !oracleIds.every(isUuid)) return null;
+  const offered = await loadOwnOffered(viewerId, oracleIds as string[]);
+  return [...offered].map(([oracleId, spare]) => ({ oracleId, spare })).sort((a, b) => (a.oracleId < b.oracleId ? -1 : 1));
 }

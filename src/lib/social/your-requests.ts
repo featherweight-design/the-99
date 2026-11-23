@@ -87,7 +87,7 @@ export async function loadYourRequests(userId: string, _env: NodeJS.ProcessEnv, 
  */
 export function answeredRequestIdQuery(userId: string, feedItemId: string): SQL {
   return sql`select asr.id from ${feedItems} afi
-    join ${spareRequests} asr on asr.id::text = afi.dedupe_key and asr.asker_user_id = afi.user_id
+    join ${spareRequests} asr on asr.id::text = afi.dedupe_key and asr.asker_user_id = afi.user_id and asr.initiated_by = 'asker'
     where afi.user_id = ${userId} and afi.id = ${feedItemId}::uuid and afi.kind = 'spare-request'
       and afi.data ->> 'answer' is not null`;
 }

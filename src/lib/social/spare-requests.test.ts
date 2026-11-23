@@ -66,7 +66,7 @@ describe("expireStaleQuery", () => {
 describe("answerQuery", () => {
   const { q, params } = render(answerQuery("h", REQ, "no", NOW));
   it("answers only the holder's own open, unexpired ask", () => {
-    expect(q).toMatch(/where asr\.id = \$3 and asr\.holder_user_id = \$4 and asr\.status = 'open' and asr\.created_at > \$5::timestamptz/);
+    expect(q).toMatch(/where asr\.id = \$3 and asr\.holder_user_id = \$4 and asr\.initiated_by = 'asker' and asr\.status = 'open' and asr\.created_at > \$5::timestamptz/);
     expect(params.slice(0, 5)).toEqual(["no", NOW.toISOString(), REQ, "h", openFloor(NOW).toISOString()]);
   });
   it("only while the holder still holds the friendship, read on the row's own two ids", () => {
@@ -97,7 +97,7 @@ describe("answerSpareRequest tells the asker", () => {
     const { tx } = await run([ROW]);
     await answerSpareRequest("h", REQ, "yes", ON, NOW);
     const sent = tx.execute.mock.calls.map((c) => render((c as unknown as [SQL])[0]).q);
-    expect(sent[0]).toMatch(/^select aar\.asker_user_id from "spare_requests" aar where aar\.id = \$1 and aar\.holder_user_id = \$2$/);
+    expect(sent[0]).toMatch(/^select aar\.asker_user_id from "spare_requests" aar where aar\.id = \$1 and aar\.holder_user_id = \$2 and aar\.initiated_by = 'asker'$/);
     expect(sent[1]).toBe(render(lockFriendshipQuery("h", "a")).q);
     expect(sent[2]).toMatch(/^update "spare_requests" asr set status/);
   });
@@ -133,7 +133,7 @@ describe("incomingAsksQuery", () => {
   const { q, params } = render(incomingAsksQuery("h", NOW));
   it("the holder's open, unexpired asks, joined to the live friendship, never a Clerk id out", () => {
     expect(q).toMatch(/join "friend_links" ifl on ifl\.user_id = isr\.holder_user_id and ifl\.friend_user_id = isr\.asker_user_id/);
-    expect(q).toMatch(/where isr\.holder_user_id = \$1 and isr\.status = 'open' and isr\.created_at > \$2::timestamptz/);
+    expect(q).toMatch(/where isr\.holder_user_id = \$1 and isr\.initiated_by = 'asker' and isr\.status = 'open' and isr\.created_at > \$2::timestamptz/);
     expect(q).toMatch(/^select isr\.id, isr\.oracle_id, isr\.created_at, isr\.copies, isp\.public_id::text as public_id, isp\.display_name,/);
     expect(q).not.toMatch(/asker_user_id as|asker_user_id,/);
     expect(params).toEqual(["h", openFloor(NOW).toISOString()]);
@@ -178,14 +178,14 @@ describe("loadIncomingAsks (G3: a card the holder no longer offers leaves Waitin
 describe("the asker's ✕ (G1)", () => {
   it("withdraws only the asker's own OPEN, unexpired ask", () => {
     const { q, params } = render(withdrawQuery("a", REQ, NOW));
-    expect(q).toBe(`update "spare_requests" wdr set status = 'withdrawn', withdrawn_at = $1::timestamptz where wdr.id = $2 and wdr.asker_user_id = $3 and wdr.status = 'open' and wdr.created_at > $4::timestamptz returning wdr.id`);
+    expect(q).toBe(`update "spare_requests" wdr set status = 'withdrawn', withdrawn_at = $1::timestamptz where wdr.id = $2 and wdr.asker_user_id = $3 and wdr.initiated_by = 'asker' and wdr.status = 'open' and wdr.created_at > $4::timestamptz returning wdr.id`);
     expect(params).toEqual([NOW.toISOString(), REQ, "a", openFloor(NOW).toISOString()]);
   });
 
   it("clears an answered or expired ask from the asker's list, never deleting it, writing an open one past its days expired", () => {
     const { q, params } = render(clearQuery("a", REQ, NOW));
     expect(q).toMatch(/^update "spare_requests" csr set asker_cleared_at = \$1::timestamptz, status = case when csr\.status = 'open' then 'expired' else csr\.status end/);
-    expect(q).toMatch(/where csr\.id = \$2 and csr\.asker_user_id = \$3 and csr\.asker_cleared_at is null and \(csr\.status in \('yes', 'no', 'expired'\) or \(csr\.status = 'open' and csr\.created_at <= \$4::timestamptz\)\) returning csr\.id$/);
+    expect(q).toMatch(/where csr\.id = \$2 and csr\.asker_user_id = \$3 and csr\.initiated_by = 'asker' and csr\.asker_cleared_at is null and \(csr\.status in \('yes', 'no', 'expired'\) or \(csr\.status = 'open' and csr\.created_at <= \$4::timestamptz\)\) returning csr\.id$/);
     expect(q).not.toMatch(/delete/);
     expect(params).toEqual([NOW.toISOString(), REQ, "a", openFloor(NOW).toISOString()]);
   });
@@ -209,7 +209,7 @@ describe("the asker's ✕ (G1)", () => {
 describe("Ask instead (G1: one transaction)", () => {
   it("withdraws only the asker's own open, unexpired ask for THIS card to ANOTHER friend", () => {
     const { q, params } = render(withdrawForInsteadQuery("a", REQ, CARD, "h2", NOW));
-    expect(q).toBe(`update "spare_requests" isr set status = 'withdrawn', withdrawn_at = $1::timestamptz where isr.id = $2 and isr.asker_user_id = $3 and isr.oracle_id = $4 and isr.status = 'open' and isr.created_at > $5::timestamptz and isr.holder_user_id <> $6 returning isr.id`);
+    expect(q).toBe(`update "spare_requests" isr set status = 'withdrawn', withdrawn_at = $1::timestamptz where isr.id = $2 and isr.asker_user_id = $3 and isr.oracle_id = $4 and isr.status = 'open' and isr.created_at > $5::timestamptz and isr.holder_user_id <> $6 and isr.initiated_by = 'asker' returning isr.id`);
     expect(params).toEqual([NOW.toISOString(), REQ, "a", CARD, openFloor(NOW).toISOString(), "h2"]);
   });
 
@@ -303,7 +303,7 @@ describe("myAsksQuery", () => {
   const { q, params } = render(myAsksQuery("a", NOW));
   it("the asker's asks to current friends since the shown floor, naming the holder by public id", () => {
     expect(q).toMatch(/join "friend_links" mfl on mfl\.user_id = msr\.asker_user_id and mfl\.friend_user_id = msr\.holder_user_id/);
-    expect(q).toMatch(/where msr\.asker_user_id = \$1 and msr\.created_at > \$2::timestamptz and msr\.status <> 'withdrawn' and msr\.asker_cleared_at is null order by/);
+    expect(q).toMatch(/where msr\.asker_user_id = \$1 and msr\.initiated_by = 'asker' and msr\.created_at > \$2::timestamptz and msr\.status <> 'withdrawn' and msr\.asker_cleared_at is null order by/);
     expect(q).not.toMatch(/asker_user_id,|holder_user_id,|holder_user_id as/);
     expect(params).toEqual(["a", shownFloor(NOW).toISOString()]);
   });
@@ -382,7 +382,7 @@ describe("the Friends badge's spare-request queries", () => {
   it("waiting: the holder's open, unexpired asks from current friends", () => {
     const { q, params } = render(waitingAsksCountQuery("h", NOW));
     expect(q).toMatch(/join "friend_links" wfl on wfl\.user_id = wsr\.holder_user_id and wfl\.friend_user_id = wsr\.asker_user_id/);
-    expect(q).toMatch(/where wsr\.holder_user_id = \$1 and wsr\.status = 'open' and wsr\.created_at > \$2::timestamptz and not exists \(/);
+    expect(q).toMatch(/where wsr\.holder_user_id = \$1 and wsr\.initiated_by = 'asker' and wsr\.status = 'open' and wsr\.created_at > \$2::timestamptz and not exists \(/);
     // A hidden ask (✕) is not counted: the holder's own feed item for it carries the dismissal.
     expect(q).toMatch(/where dfi\.user_id = wsr\.holder_user_id and dfi\.kind = 'spare-request' and dfi\.dedupe_key = wsr\.id::text and dfi\.data ->> 'answer' is null\)$/);
     expect(params).toEqual(["h", openFloor(NOW).toISOString()]);
@@ -410,7 +410,7 @@ describe("markAnswerSeenQuery (small items item 3)", () => {
     const { sql, params } = new PgDialect().sqlToQuery(markAnswerSeenQuery("a", "44444444-4444-4444-8444-444444444444", NOW));
     const q = sql.replace(/\s+/g, " ");
     expect(q).toBe(
-      "update \"spare_requests\" asr set asker_seen_at = $1::timestamptz where asr.id = $2::uuid and asr.asker_user_id = $3 and asr.status in ('yes', 'no') and asr.asker_seen_at is null",
+      "update \"spare_requests\" asr set asker_seen_at = $1::timestamptz where asr.id = $2::uuid and asr.asker_user_id = $3 and asr.initiated_by = 'asker' and asr.status in ('yes', 'no') and asr.asker_seen_at is null",
     );
     expect(params).toEqual([NOW.toISOString(), "44444444-4444-4444-8444-444444444444", "a"]);
   });

@@ -37,10 +37,10 @@ export function dismissQuery(userId: string, t: DismissTarget): SQL {
   if (t.kind === "ask") {
     return sql`insert into ${feedDismissals} (user_id, key)
     select dsr.holder_user_id, 'ask:' || dsr.id::text from ${spareRequests} dsr
-    where dsr.id = ${t.requestId}::uuid and dsr.holder_user_id = ${userId}
+    where dsr.id = ${t.requestId}::uuid and dsr.holder_user_id = ${userId} and dsr.initiated_by = 'asker'
     union all
     select dfi.user_id, 'item:' || dfi.id::text from ${feedItems} dfi
-    join ${spareRequests} dsr on dsr.id = ${t.requestId}::uuid and dsr.holder_user_id = dfi.user_id
+    join ${spareRequests} dsr on dsr.id = ${t.requestId}::uuid and dsr.holder_user_id = dfi.user_id and dsr.initiated_by = 'asker'
     where dfi.user_id = ${userId} and dfi.kind = 'spare-request' and dfi.dedupe_key = dsr.id::text and dfi.data ->> 'answer' is null
     on conflict do nothing`;
   }

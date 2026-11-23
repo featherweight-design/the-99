@@ -269,6 +269,18 @@ The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbat
   - **The header avatar** (G9): under the switch the shell reads the player's own display name and signature card (`ownHeaderFace`, a read that never creates a profile) and the account button draws that art, else the display name's initials; the menu's head names the display name. Off, the menu keeps Clerk's name.
   - **Retiring single-use links** (G7): under the switch, Add a friend no longer makes single-use links or the invite QR; links already open keep working until they expire.
 
+## Offers: You have it (2026-11-22)
+
+An offer is an ask turned around: the holder of a spare presses Offer on a friend's wishlist card, and the friend answers.
+It is a `spare_requests` row with `initiated_by = 'holder'` (migration 0269), the wanter in `asker_user_id` and the
+offerer in `holder_user_id`, so expiry, withdraw and the purge stay one path. **Every ask statement filters
+`initiated_by = 'asker'`; every offer statement `'holder'`**: a new `spare_requests` read says which. Written only by
+`spare-offers.ts` (`offerSpare`, `withdrawOffer`, `answerOffer`). E1: the one-open index stays (wanter, card), so an open
+offer and an open ask for a card collide through the existing `asked` outcome (pinned in `spare-offers.test.ts`). E2: a No
+to an offer holds the same offerer back 14 days (`askRefusal`'s direction), and a No in one direction never blocks the
+other. Copies are `min(spare, wants − held)` (`offerCopies`); `held` is the friend's data, read by `loadFriendWantedGap`
+in the write and never sent to a client. `loadMyCopies` is the viewer's own spares under their rule, shared or not.
+
 ## Log reminder (Home's Game to log card)
 
 A game the viewer played at a closed table and has not logged stays loggable until the table's keep window ends (`tableKept`, a week past its clock). Home draws it as one card, read per request by `loadHomeLogGames` (`src/lib/social/rule-zero-log-home.ts`, registered in `PER_REQUEST_READS`, never in Home's cached payload): a raw candidate query over the viewer's own result seats (joined to the table unaliased, because the `rule-zero-open.ts` window fragments render `"rule_zero_tables"."col"`, and to the viewer's own pod membership), then `tableGamesIn` under each table's grant so the seats, result and deck come from the one shared read the closed page uses. A game is its result seat's `started_at` in whole milliseconds, the same id the Log URL carries (`game=`). The ✕ writes `rule_zero_log_hidden` (`hideLogReminder`, `rule-zero-log-hidden.ts`): one row per (player, table, game), selected from the viewer's own result row so no one can hide a reminder they do not hold, and cleaned by `purgeAccount` and the table's cascade. Hiding is optimistic on the client and never revalidates Home; Undo deletes the row. A hidden reminder only hides the card (and, from PR 3, its push); `Log this game` on the closed page stays.
