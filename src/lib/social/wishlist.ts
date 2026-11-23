@@ -54,15 +54,15 @@ export async function loadFriendWishlist(viewerId: string, friendPublicId: unkno
 }
 
 /**
- * How many copies of each named card the friend still lacks (You have it, G3): `wants − held` summed over the friend's
- * still-wanted lines, through the viewer's own friend grant like `friendWishlistQuery`. A card the friend does not
+ * How many copies of each named card the friend still lacks (You have it, G3): `wants − held` of the friend's neediest
+ * still-wanted line (the largest, never a sum: two lines can count the same copies), through the viewer's own friend grant like `friendWishlistQuery`. A card the friend does not
  * want (or already holds enough of) is absent. SERVER ONLY: `held` is the friend's data, so this feeds a write's
  * copy count and is never sent to a client (the tab draws `wants N`, nothing more).
  */
 export function friendWantedGapQuery(viewerId: string, friendPublicId: string, oracleIds: readonly string[], q: Reader = db) {
   const held = heldCopies(wishlistItems.userId, wishlistItems.oracleId, wishlistItems.scryfallId);
   return q
-    .select({ oracleId: wishlistItems.oracleId, gap: sql<number>`sum(${wishlistItems.quantity} - ${held})::int` })
+    .select({ oracleId: wishlistItems.oracleId, gap: sql<number>`max(${wishlistItems.quantity} - ${held})::int` })
     .from(wishlistItems)
     .innerJoin(friendLinks, and(eq(friendLinks.friendUserId, wishlistItems.userId), eq(friendLinks.userId, viewerId)))
     .innerJoin(socialProfiles, and(eq(socialProfiles.userId, wishlistItems.userId), eq(socialProfiles.publicId, friendPublicId)))

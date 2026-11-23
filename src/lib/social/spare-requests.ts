@@ -153,7 +153,7 @@ async function prepareAsk(
 }
 
 /** Thrown inside a transaction to roll it back while handing its refusal out. */
-export class Refused extends Error {
+class Refused extends Error {
   constructor(readonly outcome: AskOutcome) {
     super("refused");
   }
