@@ -15,6 +15,7 @@ const m = vi.hoisted(() => ({
   answerSpareRequest: vi.fn(),
   markAnswerSeen: vi.fn(),
   loadAnsweredRequest: vi.fn(),
+  loadOfferAnswer: vi.fn(),
 }));
 vi.mock("../../lib/auth", () => ({ requireUserId: m.requireUserId }));
 vi.mock("../../lib/flags/request", () => ({ requestFlags: m.requestFlags }));
@@ -26,8 +27,9 @@ vi.mock("../../lib/social/spare-requests", () => ({
   closeSpareRequest: m.closeSpareRequest, answerSpareRequest: m.answerSpareRequest, markAnswerSeen: m.markAnswerSeen,
 }));
 vi.mock("../../lib/social/your-requests", () => ({ loadAnsweredRequest: m.loadAnsweredRequest }));
+vi.mock("../../lib/social/request-history", () => ({ loadOfferAnswer: m.loadOfferAnswer }));
 
-import { answerSpareAction, askInsteadAction, askSpareAction, closeSpareAction, openAnswerAction } from "./spare-actions";
+import { answerSpareAction, askInsteadAction, askSpareAction, closeSpareAction, openAnswerAction, openOfferAnswerAction } from "./spare-actions";
 
 // The reader's resolved switches, a sentinel compared by identity: the actions hand it on, and read no switch of their own.
 const ENV = { SENTINEL: "reader" };
@@ -126,5 +128,21 @@ describe("openAnswerAction (small items item 3)", () => {
     expect(await openAnswerAction(KEY)).toEqual({ ok: false });
     expect(m.markAnswerSeen).not.toHaveBeenCalled();
     expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+});
+
+describe("openOfferAnswerAction (You have it R2)", () => {
+  const KEY = "item:66666666-6666-4666-8666-666666666666";
+  it("opens the reader's own offer answer by its Home key and writes nothing (no stamp, no revalidation)", async () => {
+    m.loadOfferAnswer.mockResolvedValueOnce({ id: REQ, state: "yes", offer: true });
+    expect(await openOfferAnswerAction(KEY)).toEqual({ ok: true, entry: { id: REQ, state: "yes", offer: true } });
+    expect(m.loadOfferAnswer).toHaveBeenCalledWith("user_1", KEY, expect.any(Date));
+    expect(m.markAnswerSeen).not.toHaveBeenCalled();
+    expect(m.revalidatePath).not.toHaveBeenCalled();
+  });
+
+  it("refuses a key that names none of the reader's offers", async () => {
+    m.loadOfferAnswer.mockResolvedValueOnce(null);
+    expect(await openOfferAnswerAction(KEY)).toEqual({ ok: false });
   });
 });

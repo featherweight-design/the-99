@@ -19,6 +19,7 @@ import {
   type AnswerOutcome, type AskOutcome, type CloseOutcome,
 } from "../../lib/social/spare-requests";
 import { answerOffer, offerSpare, withdrawOffer } from "../../lib/social/spare-offers";
+import { loadOfferAnswer, type HistoryEntry } from "../../lib/social/request-history";
 import { loadAnsweredRequest, type YourRequest } from "../../lib/social/your-requests";
 import { requestFlags } from "../../lib/flags/request";
 
@@ -94,6 +95,21 @@ export async function openAnswerAction(key: string): Promise<OpenAnswerOutcome> 
   // moved its own cursor, and every diamond there would go at once.
   if (await markAnswerSeen(userId, request.id, env, now)) after(() => revalidatePath("/friends"));
   return { ok: true, request: { ...request, unseen: false }, counted: request.unseen };
+}
+
+/** The offerer's answer sheet's open: the one request-history row its key names (`loadOfferAnswer`), or refused. */
+export type OpenOfferAnswerOutcome = { ok: true; entry: HistoryEntry } | { ok: false };
+
+/**
+ * An offerer's answer item on Home, opened over Home (You have it R2, board `Sheet`): the one request-history row the item's
+ * key names. Writes nothing: the offerer has no answer-seen stamp, so the item's diamond goes for the visit only (the caller's
+ * `onSeen`). `key` is the item's own Home key; the server resolves it to the reader's own offer, so a stranger's, an
+ * ask's or a non-answer item names nothing.
+ */
+export async function openOfferAnswerAction(key: string): Promise<OpenOfferAnswerOutcome> {
+  const { userId } = await reader();
+  const entry = await loadOfferAnswer(userId, key, new Date());
+  return entry ? { ok: true, entry } : { ok: false };
 }
 
 /**

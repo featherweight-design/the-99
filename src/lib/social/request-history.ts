@@ -6,7 +6,8 @@
  */
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
-import { cards, decks, friendLinks, printings, socialProfiles, spareRequests } from "../../db/schema";
+import { cards, decks, feedItems, friendLinks, printings, socialProfiles, spareRequests } from "../../db/schema";
+import { parseDismissKey } from "./feed-dismiss";
 import { named } from "../person-name/mint";
 import type { OtherSide, AskCard } from "./spare-requests";
 import type { ProfileCommander } from "./commander";
@@ -52,7 +53,7 @@ export function validCursor(c: HistoryCursor): boolean {
  * side never sees it). The other side is the row's other user either way. The friendship join is the viewer's own row
  * (`friend_links.user_id = viewer`). Fetches one row past the page to know a next exists.
  */
-export function requestHistoryQuery(viewerId: string, direction: HistoryDirection, cursor: HistoryCursor | null, limit = HISTORY_PAGE): SQL {
+export function requestHistoryQuery(viewerId: string, direction: HistoryDirection, cursor: HistoryCursor | null, limit = HISTORY_PAGE, only: string | null = null): SQL {
   const asked = direction === "asked";
   // An ask is started by its asker, an offer by its holder: the starter and the other side follow `initiated_by`, not the column.
   const starter = sql`(case when hsr.initiated_by = 'asker' then hsr.asker_user_id else hsr.holder_user_id end)`;
@@ -65,6 +66,7 @@ export function requestHistoryQuery(viewerId: string, direction: HistoryDirectio
     : sql`((hsr.initiated_by = 'asker' and hsr.holder_user_id = ${viewerId}) or (hsr.initiated_by = 'holder' and hsr.asker_user_id = ${viewerId}))`;
   const notWithdrawn = asked ? sql`` : sql` and hsr.status <> 'withdrawn'`;
   const after = cursor && validCursor(cursor) ? sql` and (hsr.created_at, hsr.id) < (${cursor.createdAt}::timestamptz, ${cursor.id}::uuid)` : sql``;
+  const one = only === null ? sql`` : sql` and hsr.id = ${only}::uuid`;
   return sql`select hsr.id, hsr.oracle_id, hsr.status, hsr.created_at, hsr.answered_at, hsr.withdrawn_at, to_char(hsr.created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"') as cursor_at, hsr.copies, (hsr.initiated_by = 'holder') as offer,
       hsp.public_id::text as public_id, hsp.display_name, hc.name as card_name, hc.image_uri as card_image, hdk.name as deck_name,
       hcc.oracle_id as commander_oracle_id, hcc.name as commander_name, coalesce(hfp.art_crop_uri, hcc.art_crop_uri) as commander_art
@@ -75,7 +77,7 @@ export function requestHistoryQuery(viewerId: string, direction: HistoryDirectio
     left join ${decks} hdk on hdk.id = hsr.deck_id and hdk.user_id = hsr.asker_user_id and hsr.initiated_by = 'asker'
     left join ${cards} hcc on hcc.oracle_id = hsp.commander_oracle_id
     left join ${printings} hfp on hfp.scryfall_id = hsp.commander_printing_id and hfp.oracle_id = hsp.commander_oracle_id
-    where ${mineIsViewer}${notWithdrawn}${after}
+    where ${mineIsViewer}${notWithdrawn}${after}${one}
     order by hsr.created_at desc, hsr.id desc
     limit ${limit + 1}`;
 }
@@ -111,22 +113,24 @@ function faceOf(r: Pick<Row, "commander_oracle_id" | "commander_name" | "command
   return { oracleId: r.commander_oracle_id, name: r.commander_name, artCropUri: r.commander_art };
 }
 
+function entryOf(r: Row, now: Date): HistoryEntry {
+  const createdAt = new Date(r.created_at);
+  const answeredAt = r.answered_at === null ? null : new Date(r.answered_at);
+  const withdrawnAt = r.withdrawn_at === null ? null : new Date(r.withdrawn_at);
+  const state = requestState({ status: r.status, createdAt }, now);
+  return {
+    id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
+    deckName: r.deck_name, other: { publicId: r.public_id, displayName: named(r.display_name), commander: faceOf(r) },
+    state, createdAt, endedAt: endedAtOf(state, { createdAt, answeredAt, withdrawnAt }), offer: r.offer === true,
+  };
+}
+
 export async function loadRequestHistory(
   viewerId: string, direction: HistoryDirection, cursor: HistoryCursor | null = null, now = new Date(), q: Executor = db,
 ): Promise<HistoryPage> {
   const rows = (await q.execute<Row>(requestHistoryQuery(viewerId, direction, cursor))).rows as Row[];
   const page = rows.slice(0, HISTORY_PAGE);
-  const entries = page.map((r): HistoryEntry => {
-    const createdAt = new Date(r.created_at);
-    const answeredAt = r.answered_at === null ? null : new Date(r.answered_at);
-    const withdrawnAt = r.withdrawn_at === null ? null : new Date(r.withdrawn_at);
-    const state = requestState({ status: r.status, createdAt }, now);
-    return {
-      id: r.id, oracleId: r.oracle_id, card: { name: r.card_name, imageUri: r.card_image }, copies: Number(r.copies),
-      deckName: r.deck_name, other: { publicId: r.public_id, displayName: named(r.display_name), commander: faceOf(r) },
-      state, createdAt, endedAt: endedAtOf(state, { createdAt, answeredAt, withdrawnAt }), offer: r.offer === true,
-    };
-  });
+  const entries = page.map((r) => entryOf(r, now));
   const last = page[page.length - 1];
   const next = rows.length > HISTORY_PAGE && last ? { createdAt: last.cursor_at, id: last.id } : null;
   return { entries, next };
@@ -144,4 +148,30 @@ export async function hasRequestHistory(viewerId: string, q: Executor = db): Pro
     q.execute(requestHistoryQuery(viewerId, "received", null, 1)),
   ]);
   return asked.rows.length > 0 || received.rows.length > 0;
+}
+
+/**
+ * The offer an OFFERER's answer item on Home names (`item:<feed id>`): the reader's own stored answer item
+ * (`answerOffer`'s `recordFeedItem`, marked `offer`), whose `dedupe_key` is the offer it answers, joined to that offer as
+ * the reader's own (`initiated_by = 'holder'`, the holder the reader). Apart for a test.
+ */
+export function offerAnswerIdQuery(userId: string, feedItemId: string): SQL {
+  return sql`select aor.id from ${feedItems} ofi
+    join ${spareRequests} aor on aor.id::text = ofi.dedupe_key and aor.holder_user_id = ofi.user_id and aor.initiated_by = 'holder'
+    where ofi.user_id = ${userId} and ofi.id = ${feedItemId}::uuid and ofi.kind = 'spare-request'
+      and ofi.data ->> 'offer' = 'true' and ofi.data ->> 'answer' is not null and aor.status in ('yes', 'no')`;
+}
+
+/**
+ * The one request-history row an offerer's answer item opens over Home (You have it R2): read through the same query as
+ * `/friends/requests` (the live friendship joined in the statement), so the sheet and the list say the same thing. Null
+ * when the key names no answer to the reader's own offer, or the friend is gone.
+ */
+export async function loadOfferAnswer(userId: string, key: string, now = new Date(), q: Executor = db): Promise<HistoryEntry | null> {
+  const target = typeof key === "string" ? parseDismissKey(key) : null;
+  if (target?.kind !== "item") return null;
+  const id = (await q.execute<{ id: string }>(offerAnswerIdQuery(userId, target.id))).rows[0]?.id;
+  if (!id) return null;
+  const row = (await q.execute<Row>(requestHistoryQuery(userId, "asked", null, 1, id))).rows[0] as Row | undefined;
+  return row ? entryOf(row, now) : null;
 }

@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("../../db", () => ({ db: { execute: vi.fn() } }));
 
-import { endedAtOf, hiddenHistoryCountQuery, validCursor, HISTORY_PAGE, loadRequestHistory, requestHistoryQuery } from "./request-history";
+import { endedAtOf, hiddenHistoryCountQuery, loadOfferAnswer, offerAnswerIdQuery, validCursor, HISTORY_PAGE, loadRequestHistory, requestHistoryQuery } from "./request-history";
 
 const render = (q: SQL) => {
   const { sql, params } = new PgDialect().sqlToQuery(q);
@@ -109,5 +109,32 @@ describe("loadRequestHistory", () => {
     const page = await loadRequestHistory("viewer", "asked", null, new Date("2026-12-01T00:00:00Z"), { execute: async () => ({ rows: [row(1, { status: "open", answered_at: null })] }) } as never);
     expect(page.next).toBeNull();
     expect(page.entries[0].state).toBe("expired");
+  });
+});
+
+describe("offerAnswerIdQuery and the one-row read (You have it R2)", () => {
+  const ITEM = "66666666-6666-4666-8666-666666666666";
+  it("names the offer only through the reader's own stored answer item, joined to the offer as the reader's own (qualified)", () => {
+    const { q, params } = render(offerAnswerIdQuery("viewer", ITEM));
+    expect(q).toContain(`join "spare_requests" aor on aor.id::text = ofi.dedupe_key and aor.holder_user_id = ofi.user_id and aor.initiated_by = 'holder'`);
+    expect(q).toContain("ofi.user_id = $1 and ofi.id = $2::uuid and ofi.kind = 'spare-request'");
+    expect(q).toContain("ofi.data ->> 'offer' = 'true' and ofi.data ->> 'answer' is not null and aor.status in ('yes', 'no')");
+    expect(params).toEqual(["viewer", ITEM]);
+  });
+
+  it("filters the history query to the one row, qualified, keeping the friendship join", () => {
+    const { q, params } = render(requestHistoryQuery("viewer", "asked", null, 1, ITEM));
+    expect(q).toContain("and hsr.id = $3::uuid order by");
+    expect(q).toContain('join "friend_links" hfl');
+    expect(params).toEqual(["viewer", "viewer", ITEM, 2]);
+  });
+
+  it("reads nothing for a key that is not a feed item's, or an item that names no offer", async () => {
+    const q = { execute: vi.fn().mockResolvedValue({ rows: [] }) };
+    expect(await loadOfferAnswer("viewer", "ask:66666666-6666-4666-8666-666666666666", new Date(), q)).toBeNull();
+    expect(await loadOfferAnswer("viewer", "nonsense", new Date(), q)).toBeNull();
+    expect(q.execute).not.toHaveBeenCalled();
+    expect(await loadOfferAnswer("viewer", `item:${ITEM}`, new Date(), q)).toBeNull();
+    expect(q.execute).toHaveBeenCalledTimes(1);
   });
 });

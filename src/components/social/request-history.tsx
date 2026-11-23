@@ -53,7 +53,8 @@ function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number, zone: string |
   return { kind: e.state === "open" ? h.ofYouOpen : h.kind[e.state], ink, on, title: h.theirs(e.other.displayName, e.card.name, e.copies), detail };
 }
 
-function Picture({ e }: { e: HistoryEntry }) {
+/** The row's picture: the card with the friend's face on its corner. Shared with the offerer's answer sheet. */
+export function HistoryPicture({ e }: { e: HistoryEntry }) {
   return (
     <span aria-hidden className="relative h-[64px] w-[46px]">
       {e.card.imageUri ? (
@@ -100,7 +101,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
                   >
                     {/* The padding lives inside: the trigger's own inline `padding: 0` outranks any class on it. */}
                     <span className="grid grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] px-[14px] py-[12px] md:gap-x-[14px] md:px-[16px]">
-                    <Picture e={e} />
+                    <HistoryPicture e={e} />
                     <span className="flex min-w-0 flex-col gap-[3px]">
                       <span className="m-0 flex min-w-0 items-center gap-[7px]">
                         <span className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${t.ink}`}>{t.kind}</span>

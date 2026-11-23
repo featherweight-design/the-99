@@ -651,3 +651,13 @@ export const sparesSearchCopy = {
     clear: "Clear all filters",
   },
 } as const;
+
+/** You have it R2 (board `Sheet`): the offerer's answer sheet over Home. The row's kicker words are request history's. */
+export const offerSheetCopy = {
+  title: "Your offer",
+  close: "Close",
+  yesDetail: "Hand it over when you meet; your collection stays as it is until you change it.",
+  noDetail: spareCopy.request.offer.answered.noLine,
+  /** The line under, mono: when it was offered and how many. */
+  meta: (on: string, copies: number) => `Offered ${on} · ${copies === 1 ? "1 copy" : `${copies} copies`}`,
+};
