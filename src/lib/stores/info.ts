@@ -33,9 +33,13 @@ export const STORE_INFO: Readonly<Record<Store, StoreInfo>> = {
   cardkingdom: { id: "cardkingdom", name: "Card Kingdom", figure: "listing", cart: false, paste: { name: "Deck Builder", url: PASTE_URLS.cardkingdom } },
 };
 
-/** The text a paste page reads: one `1 Name` line per card, the quantity first. */
+/**
+ * The text a paste page reads: one `1 Name` line per card, the quantity first. Both pages (TCGplayer's Mass Entry and
+ * Card Kingdom's Deck Builder) error on a card named `Front // Back`, as Hugh measured on staging 2026-11-23, so a
+ * two-faced or split card is listed by its front face alone.
+ */
 export function pasteListText(lines: readonly { name: string; quantity: number }[]): string {
-  return lines.map((l) => `${l.quantity} ${l.name}`).join("\n");
+  return lines.map((l) => `${l.quantity} ${l.name.split(" // ")[0]}`).join("\n");
 }
 
 /** Settings' Store section's id: the anchor Change store lands on (`/settings#settings-store`), which washes it. */
