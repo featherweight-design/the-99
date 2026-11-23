@@ -32,17 +32,21 @@ describe("Store", () => {
     expect(screen.getByText(C.foot)).toBeTruthy();
   });
 
-  it("saves the pressed store, holding every row disabled until the write lands", async () => {
+  it("saves the pressed store, holding every row (focus kept) until the write lands", async () => {
     let land!: (v: unknown) => void;
     m.save.mockReturnValueOnce(new Promise((r) => (land = r)));
     render(<StoreSection store="manapool" />);
     fireEvent.click(radio("Card Kingdom"));
     expect(m.save).toHaveBeenCalledWith("cardkingdom");
     expect(radio("Card Kingdom").checked).toBe(true);
-    expect(screen.getAllByRole("radio").every((r) => (r as HTMLInputElement).disabled)).toBe(true);
+    expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-disabled") === "true" && !(r as HTMLInputElement).disabled)).toBe(true);
+    // A press while the write is in flight is refused.
+    fireEvent.click(radio("TCGplayer"));
+    expect(m.save).toHaveBeenCalledTimes(1);
+    expect(radio("Card Kingdom").checked).toBe(true);
     await act(async () => land({ ok: true, changed: true }));
     expect(radio("Card Kingdom").checked).toBe(true);
-    expect(radio("Mana Pool").disabled).toBe(false);
+    expect(radio("Mana Pool").hasAttribute("aria-disabled")).toBe(false);
     expect(screen.queryByRole("alert")).toBeNull();
   });
 

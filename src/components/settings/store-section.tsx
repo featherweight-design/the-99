@@ -2,7 +2,7 @@
 // Settings' Store section (store choice handoff, call 1, Setting S1 to S6), first on the page while
 // `STORE_PREFERENCE_ENABLED` is on for the reader. One radio row per store, drawn as Your decks' rows with the upload
 // choice's ring; the rows come from `STORES`, so a new store is one more row and one more line of copy. Saved as it
-// changes, one write at a time like the other sections: the rows are disabled while a write is in flight, and a write
+// changes, one write at a time like the other sections: the rows are held (aria-disabled, refusing a press) while a write is in flight, and a write
 // that fails puts the last saved store back and says so in the shared social toast. `#settings-store` is where Change
 // store lands; arriving on it washes the whole section for two seconds (`useWashFromHash`).
 
@@ -70,13 +70,15 @@ export function StoreSection({ store }: { store: Store }) {
           const picked = on === id;
           return (
             <div key={id} className="[&+&]:[border-top:1px_solid_var(--border)]">
-              <label data-store-row={id} className="flex min-h-[44px] cursor-pointer items-start gap-[12px] rounded-[8px] py-[9px] has-[:focus-visible]:shadow-[0_0_0_2px_var(--accent)]">
+              <label data-store-row={id} className="flex min-h-[44px] cursor-pointer has-[[aria-disabled]]:cursor-default items-start gap-[12px] rounded-[8px] py-[9px] has-[:focus-visible]:shadow-[0_0_0_2px_var(--accent)]">
                 <input
                   type="radio"
                   name="settings-store"
                   value={id}
                   checked={picked}
-                  disabled={saving}
+                  // Held, not `disabled`: a disabled radio drops keyboard focus to the page mid-write, so the press
+                  // is refused in `save` and the row only reads as unavailable until the write lands.
+                  aria-disabled={saving || undefined}
                   onChange={() => save(id)}
                   className="sr-only"
                 />

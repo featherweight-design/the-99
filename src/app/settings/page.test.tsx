@@ -1,5 +1,6 @@
-// /settings (menu and Home PR 3 and 4): Notifications comes first, then Spares, Your decks and Account; the collection
-// list is read only when a card is kept back.
+// /settings (menu and Home PR 3 and 4): Notifications comes first, then Spares, Your decks and Account, with Store
+// above them all while the store switch is on (store choice, call 1); the collection list is read only when a card is
+// kept back.
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 const m = vi.hoisted(() => ({
@@ -13,6 +14,7 @@ const m = vi.hoisted(() => ({
   ownDisplayName: vi.fn(),
   readHeldPaid: vi.fn(),
   readPlanFacts: vi.fn(),
+  readerStore: vi.fn(async (): Promise<string> => "manapool"),
   readerStoreForPage: vi.fn(async (): Promise<string> => "manapool"),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
@@ -32,7 +34,7 @@ vi.mock("../../components/settings/spares-section", () => ({ SparesSection: () =
 vi.mock("../../components/settings/friend-decks-section", () => ({ FriendDecksSection: () => null }));
 vi.mock("../../components/settings/news-section", () => ({ NewsSection: () => null }));
 vi.mock("../../components/settings/store-section", () => ({ StoreSection: () => null }));
-vi.mock("../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
+vi.mock("../../lib/stores/preference", () => ({ readerStore: m.readerStore, readerStoreForPage: m.readerStoreForPage }));
 
 import SettingsPage from "./page";
 import { NewsSection } from "../../components/settings/news-section";
@@ -79,7 +81,7 @@ describe("/settings", () => {
 
   it("draws Store first, at the reader's store, while the store switch is on for them (store choice, call 1)", async () => {
     m.env = { STORE_PREFERENCE_ENABLED: "true" };
-    m.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    m.readerStore.mockResolvedValueOnce("tcgplayer");
     const el = await SettingsPage();
     expect(sections(el).map((c) => c.type)).toEqual([StoreSection, NewsSection, SparesSection, FriendDecksSection, Suspense]);
     expect(sections(el)[0].props.store).toBe("tcgplayer");
@@ -88,7 +90,17 @@ describe("/settings", () => {
   it("draws no Store section and reads no store for it while the switch is off", async () => {
     const el = await SettingsPage();
     expect(sections(el).some((c) => c.type === StoreSection)).toBe(false);
-    expect(m.readerStoreForPage).not.toHaveBeenCalled();
+    expect(m.readerStore).not.toHaveBeenCalled();
+  });
+
+  it("draws no Store section, rather than Mana Pool checked, when the store read fails", async () => {
+    m.env = { STORE_PREFERENCE_ENABLED: "true" };
+    m.readerStore.mockRejectedValueOnce(new Error("db down"));
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const el = await SettingsPage();
+    expect(sections(el).some((c) => c.type === StoreSection)).toBe(false);
+    expect(sections(el)[0].type).toBe(NewsSection);
+    spy.mockRestore();
   });
 
   it("draws the Spares section with the reader's threshold and shared pods", async () => {

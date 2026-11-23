@@ -15,11 +15,13 @@
 //
 //   PROBE_BASE=http://localhost:3158 PROBE_DECK=<deck id> pnpm probe:store-change
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
+import { neon } from "@neondatabase/serverless";
 import { chromium } from "playwright";
 import { requireEnv } from "./lib/env.mjs";
+import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { onPage, onPageRole } from "./lib/surface.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
 const PASSWORD = process.env.E2E_AUDIT_USER_PASSWORD;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 {
@@ -114,7 +116,7 @@ async function pressStore(page, store) {
   await section.locator(`[data-store-row=${store}]`).click();
   await posted;
   await page.waitForFunction(
-    () => [...document.querySelectorAll("#settings-store input[type=radio]")].every((r) => !r.disabled),
+    () => [...document.querySelectorAll("#settings-store input[type=radio]")].every((r) => !r.hasAttribute("aria-disabled")),
     null,
     { timeout: 15_000 },
   );
@@ -145,17 +147,27 @@ async function run(size) {
 
     if (!start) return;
     const other = start === "cardkingdom" ? "tcgplayer" : "cardkingdom";
-    await pressStore(page, other);
-    const saved = await chosen(page);
-    check(saved === other, `${size.name}: the pressed store survives a reload`, String(saved));
-    await pressStore(page, start);
-    const back = await chosen(page);
-    check(back === start, `${size.name}: the starting store is put back`, String(back));
+    try {
+      await pressStore(page, other);
+      const saved = await chosen(page);
+      check(saved === other, `${size.name}: the pressed store survives a reload`, String(saved));
+    } finally {
+      // Reload first (a throw may have left another page open); a press on the store already checked saves nothing.
+      if ((await chosen(page)) !== start) await pressStore(page, start);
+      const back = await chosen(page);
+      check(back === start, `${size.name}: the starting store is put back`, String(back));
+    }
   } finally {
     await browser.close();
   }
 }
 
+// It writes the audit account's store through the dev server, which reads the same DATABASE_URL: refuse production,
+// staging and local-dev by `neon.branch_id` before the first page.
+{
+  const [row] = await neon(DATABASE_URL)`select current_setting('neon.branch_id', true) as branch`;
+  assertScratchBranch(row?.branch, "probe:store-change");
+}
 await clerkSetup();
 for (const size of WIDTHS) await run(size);
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
