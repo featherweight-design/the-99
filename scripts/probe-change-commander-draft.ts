@@ -95,7 +95,7 @@ async function main() {
   const v1 = (await commitVersion(deckId, null, undefined, undefined)).version;
 
   const readAll = async () => {
-    const state = await loadDraftState(deckId, USER);
+    const state = await loadDraftState(deckId, USER, "manapool");
     const list = await listDecksWithStats(USER, "name", { includeDeckState: true });
     const claims = await loadAvailability(USER, { oracleIds: [x] });
     const claim = claims.get(x)?.claims.find((c) => c.id === deckId);

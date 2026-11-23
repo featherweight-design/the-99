@@ -22,6 +22,7 @@ import { releasableClaims } from "./draft-shape";
 import { pullSources, type Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { loadPrices, pricesForDeck, type PriceRead } from "./price-query";
+import type { Store } from "../stores/rows";
 import { formatCents, formatPriceFigure, priceState, summarisePrices } from "./price";
 import { newestVersion, versionCards } from "./versions";
 import { isBasicLand, type DeckDetailCard } from "./grouping";
@@ -253,6 +254,7 @@ type DraftRead = {
 async function readDraft(
   deckId: string,
   userId: string,
+  store: Store,
   detailed: boolean,
 ): Promise<DraftRead> {
   const { version, before, draft, live } = await readSnapshot(deckId, userId);
@@ -350,7 +352,7 @@ async function readDraft(
   const prices = priceAsked.length > 0
     // Pick-aware (deck printings): a changed card the deck has picked a printing of is priced as its
     // own row on the deck page prices it, so the review screen and the deck never disagree.
-    ? await loadPrices(priceAsked, await readHeldPricePicks(userId, [deckId]))
+    ? await loadPrices(priceAsked, await readHeldPricePicks(userId, [deckId]), [], store)
         .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) }))
         .catch(() => null)
     : null;
@@ -434,8 +436,8 @@ async function readDraft(
   };
 }
 
-export async function loadDraftState(deckId: string, userId: string): Promise<DraftState> {
-  return (await readDraft(deckId, userId, false)).state;
+export async function loadDraftState(deckId: string, userId: string, store: Store): Promise<DraftState> {
+  return (await readDraft(deckId, userId, store, false)).state;
 }
 
 /** The committed list reduced to what the mix strip and the type distribution
@@ -550,8 +552,8 @@ function returnsFromCommand(state: DraftState, oracleId: string, added: boolean)
  * it. `quantity` on each row is the DELTA, which is what the row's figure means
  * — `3 → 1` is one row that lost two copies, never a row for two copies.
  */
-export async function loadDraftRows(deckId: string, userId: string): Promise<DraftRows> {
-  const read = await readDraft(deckId, userId, true);
+export async function loadDraftRows(deckId: string, userId: string, store: Store): Promise<DraftRows> {
+  const read = await readDraft(deckId, userId, store, true);
   const { state } = read;
 
   const built: DraftRow[] = [];

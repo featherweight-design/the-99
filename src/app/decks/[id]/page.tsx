@@ -306,7 +306,7 @@ async function DeckBuilderBody({
   // Not swallowed either, and for the stronger version of the same reason: a failed read would
   // take the to-do card's pending row away, and a deck with pending changes and no row offers no
   // route to Review, where a commit is made, at all.
-  const draftRead = early(perf.timed("draft", () => loadDraftState(id, userId)));
+  const draftRead = early(perf.timed("draft", async () => loadDraftState(id, userId, await storeRead)));
   // v0 (precons PR 6b): a linked deck's precon list, read from `precon_cards` and never a version.
   // Started here with no test of the link first, because the read IS the test: owner-scoped, and an
   // unlinked deck joins no row. A failed read draws no v0, rather than failing the deck.

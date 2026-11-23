@@ -114,13 +114,13 @@ async function main() {
 
   // Move the pick back to the Collection's printing: the version must still draw what it recorded.
   await fixture.execute(sql`delete from deck_printings where deck_id = ${deckId}`);
-  const inDiff = await loadVersionDiff(v2.id, v1.id, USER, deckId, undefined);
+  const inDiff = await loadVersionDiff(v2.id, v1.id, USER, deckId, "manapool", undefined);
   check("the diff's In row draws the printing the newer version recorded", inDiff.in.find((c) => c.oracleId === card.oracle_id)?.imageUri, other.image_uri);
 
   // v3: the card removed. Its Out row is the OLDER version's record.
   await fixture.execute(sql`delete from deck_cards where deck_id = ${deckId}`);
   const { version: v3 } = await commitVersion(deckId, "probe v3", undefined, undefined);
-  const outDiff = await loadVersionDiff(v3.id, v2.id, USER, deckId, undefined);
+  const outDiff = await loadVersionDiff(v3.id, v2.id, USER, deckId, "manapool", undefined);
   check("the diff's Out row draws the printing the older version recorded", outDiff.out.find((c) => c.oracleId === card.oracle_id)?.imageUri, other.image_uri);
 
   // DECK TILES (`/decks`, Home): two decks led by one OWNED commander, one with a pick. Each tile

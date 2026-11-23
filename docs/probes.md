@@ -3682,6 +3682,7 @@ Each proves one slice of the store choice handoff (`design/design_handoff_the99_
 - `pnpm probe:store-stats`: every money figure on `/decks` and Home is the store's.
 - `pnpm probe:store-cards`: a card's details buy at the store.
 - `pnpm probe:store-deck-links`: a deck's Export dialog and Shopping tab draw no whole-list link for a store with no cart.
+- `pnpm probe:store-draft`: the review-changes page prices a draft's adds at the reader's store, never Mana Pool's. Read only; needs a scratch branch with store prices, `PROBE_DECK` (an audit-account deck with draft adds) and `PROBE_USER`; it keeps its own `DATABASE_URL` over the worktree's env file.
 - `pnpm probe:store-sets`: a set page and `/collection/proxies` are priced at the store (`PROBE_PROXY_TCG`, `PROBE_PROXY_MP`: the proxied card's per-printing figures in cents).
 - `pnpm probe:store-collection`: `/collection` sorted by price, in rows and in the grid, speaks every priced card at the store and none at Mana Pool, and a pressed card's details buy there.
 - `pnpm probe:store-discover`: `/commanders/discover` stamps and speaks every priced row at the store and none at Mana Pool, in the first window and in the rows a press of "Show 25 more commanders" fetches from `/api/discovery-fields`.

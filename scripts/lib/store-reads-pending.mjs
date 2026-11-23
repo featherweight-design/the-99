@@ -9,9 +9,6 @@
 
 /** Slice 3c-2: intake, decks, commander change. */
 const SLICE_3C2 = [
-  { path: "src/lib/decks/draft-state.ts", fn: "readDraft", n: 1 },
-  { path: "src/lib/decks/tuning-read.ts", fn: "readItems", n: 1 },
-  { path: "src/lib/decks/versions.ts", fn: "loadVersionDiff", n: 1 },
   { path: "src/lib/commander-change/candidates.ts", fn: "loadChangeCandidates", n: 1 },
   { path: "src/lib/commander-change/draft-rows.ts", fn: "loadCommanderRows", n: 1 },
 ];

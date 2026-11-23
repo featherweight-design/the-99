@@ -79,7 +79,7 @@ export default async function ChangesPage({
   // One read, not two: `loadDraftRows` calls the same loader `loadDraftState`
   // does and returns its answer on `state`. Asking for both in a `Promise.all`
   // runs the whole diff, availability and price chain twice for one page.
-  const { state, rows } = await loadDraftRows(id, userId);
+  const { state, rows } = await loadDraftRows(id, userId, await storeRead);
 
   // The spine's `Commit as v1` offer, re-derived: a versionless list exactly its
   // pair-aware body size with nothing unresolved. `commitDeckVersion` enforces
