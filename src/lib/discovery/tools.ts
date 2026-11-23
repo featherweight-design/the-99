@@ -120,27 +120,28 @@ export function pageToolLanding(
 
 /**
  * Every place a welcome sheet's Try it, a `?tool=` or an Ask answer can land (tool discovery Y1): the 14 showcase tools
- * plus two that are not in the showcase, Consider (Tuning's hub tool) and Overview (the Analysis tab). A `Landing`
+ * plus two that are not in the showcase, Consider (Tuning's hub tool) and Overview (the Analysis tab). A `LandingSpot`
  * carries no `target`, `credit` or `group`, so neither extra reaches the showcase, `TargetId` or the moments; About and
  * `TOOLS` are unchanged.
  */
-export type Landing = { id: string; lands: ToolLands; needsDeck: boolean };
+// Named apart from `page-tools.ts`'s `Landing` and `landingFor`, which land an About label, not a tool.
+export type LandingSpot = { id: string; lands: ToolLands; needsDeck: boolean };
 
 export const LANDINGS = [
   ...TOOLS.map(({ id, lands, needsDeck }) => ({ id, lands, needsDeck })),
   { id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true },
   { id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true },
-] as const satisfies readonly Landing[];
+] as const satisfies readonly LandingSpot[];
 
 export type LandingId = ToolId | "consider" | "overview";
 
-const LANDING_BY_ID = new Map<string, Landing>(LANDINGS.map((l) => [l.id, l]));
+const LANDING_BY_ID = new Map<string, LandingSpot>(LANDINGS.map((l) => [l.id, l]));
 
 export function isLandingId(v: unknown): v is LandingId {
   return typeof v === "string" && LANDING_BY_ID.has(v);
 }
 
 /** The landing an id names, or null for anything else (a stale `?tool=` or answer id included). */
-export function landingFor(id: unknown): Landing | null {
+export function landingSpotFor(id: unknown): LandingSpot | null {
   return typeof id === "string" ? (LANDING_BY_ID.get(id) ?? null) : null;
 }

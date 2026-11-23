@@ -160,7 +160,7 @@ Tests:
 
 Each one becomes a 🔸 row in that PR's `## Design review` table.
 
-- **Y1 · Landings for `consider`, `overview` and `find-a-deck-read` (PR C).** `TOOLS` stays the 14-tool showcase, so About is unchanged. `tools.ts` gains `LANDINGS`, which is `TOOLS` plus two entries that are not in the showcase. A `Landing` type carries `id`, `lands` and `needsDeck`, and no `target`, `credit` or `group`, so neither entry reaches the showcase, `TargetId` or the moments. The sheet's Try it builds its href from `LANDINGS`, not from `showcaseGroups`. `fits.ts` gives both a deck rule (the most recently touched deck), and `welcome-read.ts` loads it:
+- **Y1 · Landings for `consider`, `overview` and `find-a-deck-read` (PR C).** `TOOLS` stays the 14-tool showcase, so About is unchanged. `tools.ts` gains `LANDINGS`, which is `TOOLS` plus two entries that are not in the showcase. A `LandingSpot` type (named apart from `page-tools.ts`'s `Landing`; `landingSpotFor` reads one) carries `id`, `lands` and `needsDeck`, and no `target`, `credit` or `group`, so neither entry reaches the showcase, `TargetId` or the moments. The sheet's Try it builds its href from `LANDINGS`, not from `showcaseGroups`. `fits.ts` gives both a deck rule (the most recently touched deck), and `welcome-read.ts` loads it:
   - `consider`: `{ kind: "deck", tab: "tuning", tool: "consider" }` (`LANDINGS` shipped ahead of B1 with `tab: "consider"`, today's Consider tab; B1 moves it to `tuning` with the three tune tools), needs a deck
   - `overview`: `{ kind: "deck", tab: "analysis" }`, needs a deck
 

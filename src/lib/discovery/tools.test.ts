@@ -3,7 +3,7 @@ import { tuningHubCopy } from "../copy/tuning-hub";
 import { isMomentId } from "../moments/registry";
 import { FLAGS } from "../flags/registry";
 import { isTargetId } from "./targets";
-import { LANDINGS, TOOLS, deckToolLanding, isLandingId, isToolId, landingFor, toolLanding } from "./tools";
+import { LANDINGS, TOOLS, deckToolLanding, isLandingId, isToolId, landingSpotFor, toolLanding } from "./tools";
 
 const allOn = () => true;
 
@@ -119,12 +119,12 @@ describe("deckToolLanding", () => {
 describe("LANDINGS (tool discovery Y1)", () => {
   it("is every showcase tool, as the registry lands it, plus Consider and Overview", () => {
     expect(LANDINGS.map((l) => l.id)).toEqual([...TOOLS.map((t) => t.id), "consider", "overview"]);
-    for (const t of TOOLS) expect(landingFor(t.id)).toEqual({ id: t.id, lands: t.lands, needsDeck: t.needsDeck });
+    for (const t of TOOLS) expect(landingSpotFor(t.id)).toEqual({ id: t.id, lands: t.lands, needsDeck: t.needsDeck });
   });
 
   it("lands Consider on the Consider tab (Tuning from B1) and Overview on the Analysis tab, each needing a deck", () => {
-    expect(landingFor("consider")).toEqual({ id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true });
-    expect(landingFor("overview")).toEqual({ id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true });
+    expect(landingSpotFor("consider")).toEqual({ id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true });
+    expect(landingSpotFor("overview")).toEqual({ id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true });
   });
 
   it("keeps the two extras out of the showcase", () => {
@@ -134,7 +134,7 @@ describe("LANDINGS (tool discovery Y1)", () => {
     }
     expect(isLandingId("nope")).toBe(false);
     expect(isLandingId(["consider"])).toBe(false);
-    expect(landingFor("nope")).toBeNull();
-    expect(landingFor(["consider"])).toBeNull();
+    expect(landingSpotFor("nope")).toBeNull();
+    expect(landingSpotFor(["consider"])).toBeNull();
   });
 });
