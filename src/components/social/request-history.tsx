@@ -1,6 +1,6 @@
 "use client";
-// Request history (#2984, R1d; `design_handoff_the99_request_history`): every spare request the reader made (You asked) and
-// every one made of them (Asked of you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
+// Request history (#2984, R1d; `design_handoff_the99_request_history`): every spare request the reader made or offered (From you) and
+// every one made or offered to them (To you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
 // (card at card shape, the friend's face in the corner, kicker, title, line) with no ✕ and no Ask again: the live list keeps
 // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
 import Link from "next/link";
@@ -29,11 +29,22 @@ const monthOf = (d: Date, zone: string | null) => {
   return `${new Date(Date.UTC(2000, w.mo - 1, 1)).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" })} ${w.y}`;
 };
 
-function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number, zone: string | null): { kind: string; ink: string; on: string | null; title: PersonParts; detail: string } {
+function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number, zone: string | null): { kind: string; ink: string; on: string | null; title: PersonParts; detail: string | PersonParts } {
   const ink = e.state === "open" ? "text-[color:var(--accent-text)]" : e.state === "yes" ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]";
   // A withdrawal from before `withdrawn_at` existed has no date to claim: the kicker draws none.
   const on = e.endedAt === null ? null : formatShortDeckDate(e.endedAt, zone);
   const left = () => daysLeft(e.createdAt, new Date(nowMs));
+  if (e.offer) {
+    // You have it R2: an offer. The ask's shell and kickers; `Offered` while open; the title and the line say offer.
+    const o = h.offer;
+    if (tab === "asked") {
+      const detail = e.state === "open" ? o.openMine(e.other.displayName, left()) : o.offered(formatShortDeckDate(e.createdAt, zone));
+      const title = e.state === "open" ? o.mine.open(e.other.displayName, e.card.name, e.copies) : o.mine[e.state](e.other.displayName, e.card.name);
+      return { kind: e.state === "open" ? o.open : h.kind[e.state], ink, on, title, detail };
+    }
+    const detail = e.state === "open" ? h.openTheirs(left()) : e.state === "yes" ? h.theirsYes : e.state === "no" ? h.theirsNo : h.theirsExpired;
+    return { kind: e.state === "open" ? h.ofYouOpen : h.kind[e.state], ink, on, title: o.theirs(e.other.displayName, e.card.name, e.copies), detail };
+  }
   if (tab === "asked") {
     const detail = e.state === "open" ? h.openMine(e.deckName, left()) : h.asked(e.deckName, formatShortDeckDate(e.createdAt, zone));
     return { kind: h.kind[e.state], ink, on, title: h.mine[e.state](e.other.displayName, e.card.name), detail };
@@ -96,7 +107,7 @@ function Rows({ entries, tab, nowMs }: { entries: readonly HistoryEntry[]; tab: 
                         {t.on !== null && <small className="font-mono text-[10px] text-[color:var(--fg-faint)]">{t.on}</small>}
                       </span>
                       <span className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]"><PersonText text={t.title} /></span>
-                      <span className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{t.detail}</span>
+                      <span className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]"><PersonText text={t.detail} /></span>
                     </span>
                     </span>
                   </CardDetailTrigger>

@@ -289,8 +289,11 @@ the row holds the answer it reports (no asker clear; the item's own ✕ hides it
 `ask:<id>` dismissal, written for the wanter by `dismissQuery`. Push words: `spareOffer`, `spareOfferAnswer`
 (`copy/push.ts`). Reads: `loadIncomingOffers` (Waiting on you rows), `loadOfferMarks` (a tile's `asked` / `offered` /
 `accepted` per card, one friend), `loadSparableCounts` (the `/friends` chip: friends' still-wanted cards the viewer can
-spare, batched through `loadOwnOffered`). Actions: `offerSpareAction`, `withdrawOfferAction`, `answerOfferAction`. The
-offerer has no Your requests history row for an offer (the mark and the answer item tell them); a later round may add one.
+spare, batched through `loadOwnOffered`). Actions: `offerSpareAction`, `withdrawOfferAction`, `answerOfferAction`. Request
+history (`/friends/requests`) reads both kinds: its tabs split by who STARTED the row (`From you` is an ask you made or an offer you
+made, `To you` the reverse), `requestHistoryQuery` and `hiddenHistoryCountQuery` key on `initiated_by`, and `HistoryEntry.offer`
+makes the row draw `Offered` / `You offered ... to ...`. An offer carries no deck line (the deck join is asks only), and a withdrawn
+row is hidden on the non-starter's side for both kinds.
 
 ## Log reminder (Home's Game to log card)
 

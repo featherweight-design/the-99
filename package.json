@@ -463,6 +463,7 @@
     "probe:autocapture-names": "tsx scripts/probe-autocapture-names.mts",
     "probe:you-have-it-3a": "tsx scripts/probe-you-have-it-3a.mts",
     "probe:you-have-it-3b": "tsx scripts/probe-you-have-it-3b.mts",
+    "probe:you-have-it-r2a": "tsx scripts/probe-you-have-it-r2a.mts",
     "prepare": "husky || true"
   },
   "dependencies": {
