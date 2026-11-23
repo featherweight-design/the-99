@@ -63,7 +63,7 @@ export async function refreshFriendsAction(): Promise<void> {
 export async function closeSpareAction(requestId: string): Promise<CloseOutcome> {
   const { userId, env } = await reader();
   const out = await closeSpareRequest(userId, requestId, env);
-  if (out.ok) revalidatePath("/friends");
+  if (out.ok) after(() => revalidatePath("/friends"));
   return out;
 }
 
@@ -71,7 +71,7 @@ export async function closeSpareAction(requestId: string): Promise<CloseOutcome>
 export async function answerSpareAction(requestId: string, answer: "yes" | "no"): Promise<AnswerOutcome> {
   const { userId, env } = await reader();
   const out = await answerSpareRequest(userId, requestId, answer, env);
-  if (out.ok) revalidatePath("/friends");
+  if (out.ok) after(() => revalidatePath("/friends"));
   return out;
 }
 
@@ -117,6 +117,6 @@ export async function withdrawOfferAction(requestId: string): Promise<CloseOutco
 export async function answerOfferAction(requestId: string, answer: "yes" | "no"): Promise<AnswerOutcome> {
   const { userId } = await reader();
   const out = await answerOffer(userId, requestId, answer);
-  if (out.ok) revalidatePath("/friends");
+  if (out.ok) after(() => revalidatePath("/friends"));
   return out;
 }

@@ -146,8 +146,8 @@ export type OfferMark = "asked" | "offered" | "accepted";
 
 /**
  * Per card, what stands between the viewer and one friend about the card: `asked` (the friend asked the viewer for it,
- * open), `offered` (the viewer offered it, open), `accepted` (a Yes either way). Anything else draws no mark: no row,
- * declined, expired, withdrawn. One statement over both directions between the two, through the live friendship; an
+ * open), `offered` (the viewer offered it, open), `accepted` (a Yes on one of the viewer's spares: the friend's ask, or the viewer's offer). Anything else draws no mark: no row,
+ * declined, expired, withdrawn. One statement over the friend's rows against the viewer's spare (asks of the viewer and the viewer's offers), through the live friendship; an
  * open row wins over an older Yes. Reads only requests the viewer is party to.
  */
 export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, oracleIds: readonly unknown[], now = new Date()): Promise<Map<string, OfferMark>> {
@@ -185,9 +185,9 @@ export async function loadSparableCounts(viewerId: string): Promise<Map<string, 
   if (pairs.length === 0) return out;
   const oracles = [...new Set(pairs.map((p) => p.oracleId))];
   const spare = new Set<string>();
-  for (let i = 0; i < oracles.length; i += MAX_SPARES_BATCH) {
-    for (const id of (await loadOwnOffered(viewerId, oracles.slice(i, i + MAX_SPARES_BATCH))).keys()) spare.add(id);
-  }
+  const batches: string[][] = [];
+  for (let i = 0; i < oracles.length; i += MAX_SPARES_BATCH) batches.push(oracles.slice(i, i + MAX_SPARES_BATCH));
+  for (const got of await Promise.all(batches.map((b) => loadOwnOffered(viewerId, b)))) for (const id of got.keys()) spare.add(id);
   for (const p of pairs) if (spare.has(p.oracleId)) out.set(p.publicId, (out.get(p.publicId) ?? 0) + 1);
   return out;
 }
