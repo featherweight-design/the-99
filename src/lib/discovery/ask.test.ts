@@ -18,6 +18,9 @@ describe("ask matching", () => {
   it("answers one word only when it is a tool's own name", () => {
     expect(matchTools("precons", all)).toEqual(["precons"]);
     expect(matchTools("wishlist", all)).toEqual(["wishlist"]);
+    // The query is stemmed before the name check, so a plural name is listed in both forms.
+    expect(matchTools("friends", all)).toEqual(["friends"]);
+    expect(matchTools("stats", all)).toEqual(["lineup"]);
     expect(matchTools("spare", all)).toEqual([]);
     expect(matchTools("sol", all)).toEqual([]);
   });

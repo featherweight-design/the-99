@@ -48,9 +48,9 @@ const NAME_WORDS: Partial<Record<ToolId, readonly string[]>> = {
   precons: ["precons", "precon"],
   wishlist: ["wishlist"],
   matchups: ["matchups", "matchup"],
-  friends: ["friends"],
+  friends: ["friends", "friend"],
   "collection-sync": ["sync"],
-  lineup: ["stats"],
+  lineup: ["stats", "stat"],
 };
 
 /** How many tools answer a question at most. */
