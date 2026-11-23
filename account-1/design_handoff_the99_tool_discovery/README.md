@@ -1,6 +1,8 @@
-# Finding the tools · R10
+# Finding the tools
 
-Account 1, 2026-11-23. Status: **R10, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-23 (R10, every question settled as drawn).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+
+**Approved (Hugh, 2026-11-23):** every open question settled A; PostHog dashboards to ship with the build (below).
 
 **R10 (Hugh's R9 note, 2026-11-23):** Show all no longer expands What's new in place (10+ items would stretch the
 rail). The rail and the phone column keep five rows; Show all N opens a sheet: 460px from the right on desktop over a
@@ -165,35 +167,58 @@ Source of truth on main 7563036: `src/lib/decks/builder-tab-specs.ts`, `src/comp
      - Why one field: a new player will not know which of two boxes to use, and the app's rule is one control per action.
 6. **Phone and desktop:** one design.
 
-## Open questions (Hugh)
+## Decisions (Hugh, 2026-11-23)
 
-Settled: Tuning always lands on its tiles (R1 Q1, A); the free block stays in Where credits work (R1 Q2, A); the labelled
-button under each tile (R2 Q4, A); no model call for Ask (R3 Q6, A). Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What
-you can do), R3 Q7 (it asked whether Home's field should go away after three uses; it now stays for good).
+Every question settled, as drawn:
+- R1 Q1 A: Tuning always lands on its tiles. R1 Q2 A: the free block stays in Where credits work.
+- R2 Q4 A: the labelled Find a deck button under each tile. R3 Q6 A: no model call for Ask.
+- Q8 A: phone rows get a Find a deck strip under the row (Find, R5).
+- Q9 A: on desktop, Home's field answers in place under the panel (Ask, H4, H5).
+- Q10 A: on a busy day the panel sits under Rule 0's cards (Home in full).
+- Q11 A: the welcome credits become the panel's foot; What's new under the lead (Order and first run).
+- Q12 A: no search on the first-run Home; the panel arrives with the first Home after the collection.
+- Q13 A: What's new tops the desktop rail, compact rows, `Choose notifications` beside the heading (Calmer Home).
+- Q14 A: Home's section headings in the display face with the accent diamond (Calmer Home).
+- Q15 A: Show all opens a sheet (right on desktop, full screen on a phone) with kind chips and day groups (Show all).
 
-- **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
-  B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
-- **Q15 · Show all: a sheet, or expand in place?** A (drawn, recommended): the sheet, with kind chips (only kinds
-  present; All first) and day groups; Clear all clears what the chip shows; Esc, ✕ or the scrim closes, focus back to
-  Show all. B: expand in place as shipped. Board: Show all.
-- **Q13 · What's new in the desktop rail?** A (drawn, recommended): top of the rail above Commitments and Friends; rows
-  draw as on a phone (action under the text); `Choose notifications` (R9) beside the heading as on a phone; the foot keeps one line. B:
-  under the lead in the main column (R7 A). Phone unchanged either way. Board: Calmer Home.
-- **Q14 · Stronger section headings?** A (drawn, recommended): What's new, Pick up where you left off, Friends and
-  Commitments in the display face at 17px, `--fg`, led by the accent diamond (7px, rotated); counts in mono `--accent-text`;
-  10px more above each; the deck list's `last touched` caption hidden below sm. B: the shipped 10px mono labels.
-- **Q11 · (settled A)** How should a busy Home be ordered? A (recommended): the welcome credits become the panel's foot (the shipped
-  strip, edge dropped, its ✕ closes only that line) and What's new moves under the lead story, decks after. B: Rule 0's
-  cards, the lead and What's new, then the panel, then decks. C: no panel; a 40px accent-edged field in the page head,
-  starters in its open state. Board: Order and first run.
-- **Q12 · (settled A)** Does the first-run Home get search? A (recommended): no; first run keeps its one job, the starters all need a
-  collection, step 1 already offers Add cards by hand, and the magnifier is there. The panel arrives with the first Home
-  after the collection is read. B: an unnumbered `Look up any card` row after step 3, before Add your friends.
-- **Q10 · On a busy day, does the panel sit under Rule 0's cards, or above them?** A (drawn, recommended): under them; a
-  table closing tonight and a game to log come first. B: the panel first under the page head always. Board: Home in full.
-- **Q9 · Desktop: does Home's field answer in place, or open the rail's search?** A (drawn, recommended): in place, under
-  the panel's field, so the reader's eyes stay where they typed. B: the panel's field is a press that opens the rail's
-  dropdown (R4's behaviour), whose list opens at the rail, away from where the reader pressed. Board: Ask, H4 and H5.
+Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What you can do), R3 Q7 (Home's field stays for good).
+
+## Engagement metrics (PostHog), build with the feature
+
+Hugh, 2026-11-23: the build ships with PostHog dashboards that track whether players find the tools. Plan to read them
+2 to 4 weeks after launch before designing more (next candidate if the numbers are thin: in-the-moment nudges through
+the moments system, e.g. after a collection upload or on a deck short of cards).
+
+**Events** (client, production hostnames only, Clerk id as today, `release` and `standalone` as every event; never the
+query text, a card name a player typed, or another reader's name; the field keeps `ph-no-capture`):
+
+| Event | Properties | Sent when |
+|---|---|---|
+| `search_opened` | `from`: `home_field`, `home_starter`, `rail`, `header`, `cmdk`; `starter`: starter id or null | Any search opens |
+| `ask_result` | `tools`: matched tool ids (0 to 3); `cards`: `none` / `some`; `words`: 1, 2, 3+ | A question settles (debounced, once per query) |
+| `ask_miss` | `words`: 1, 2, 3+ | A query of 2+ words matches no tool and no card |
+| `ask_tool_pressed` | `tool`; `from`: `home_inline`, `rail`, `phone_sheet`; `rank`: 1 to 3 | A tool answer is pressed |
+| `find_a_deck_opened` | `from`: `callout_show_them`, `tile_button`, `row_strip`, `row_button`, `card_door`, `ask` | The Find a deck view opens |
+| `tuning_opened` | `tool`: `consider`, `suggested`, `mana`, `cuts`, `history`, or null for the tab; `from`: `tab`, `welcome_sheet`, `ask`, `url` | The Tuning tab or a tool in it opens |
+| `welcome_where_opened` | `from`: `panel_foot`, `first_run` | Where credits work opens |
+| `feed_show_all` | `count`: bucket (6 to 10, 11 to 20, 21+) | The Show all sheet opens |
+| `feed_sheet_filter` | `kind` | A chip is pressed |
+
+**Dashboards** (one PostHog dashboard, `Finding the tools`, plus an insight each):
+1. **New-player tool discovery funnel**, readers in their first 14 days: Home viewed, `search_opened`, `ask_tool_pressed`
+   or `find_a_deck_opened` or `tuning_opened`, then the tool used (a Find a deck read run or a credit spent, from the
+   existing server events or the credits ledger). Broken down by entry point.
+2. **Ask quality**, weekly: `ask_result` with a tool against `ask_miss`; top tools pressed; starters pressed. The miss
+   rate drives which phrase lists to grow (no query text is ever stored, so misses are reviewed by count and word bucket).
+3. **Find a deck entry points**: `find_a_deck_opened` by `from`, phone against desktop (answers whether the phone strip,
+   Q8, is used).
+4. **Home panel**: `search_opened` from the Home field and starters against the rail, header and ⌘K; per-reader share.
+5. **Welcome credits**: `welcome_where_opened` from the panel foot, and credits spent in the lot's 7 days, against the
+   two weeks before launch.
+6. **What's new**: `feed_show_all` opens by count bucket, filter use by kind, Clear all from the sheet.
+
+Baseline: two weeks of tool use before launch (credits ledger, Find a deck and Tuning page views) so each dashboard
+has a before.
 
 ## Files
 

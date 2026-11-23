@@ -1,6 +1,6 @@
-# READINESS · Finding the tools R10
+# READINESS · Finding the tools
 
-**Verdict: Amber, for Hugh's review.** Six open questions (README, Q8, Q9, Q10, Q13, Q14, Q15); Q11 and Q12 settled A. Every gap below has an answer proposed.
+**Verdict: Green.** Approved by Hugh 2026-11-23; every question settled (README, Decisions). Every gap below has an answer.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -56,6 +56,10 @@
   Waiting on you keeps the in-place expand. The sheet reads the feed the page already holds (no fetch). Rows are
   `FeedItemRow` with the compact layout (G17). Kind chips filter client side; Clear all sends the shown keys to
   `clearFeedItemsAction` (capped by `CLEAR_ALL_MAX` as today). Day groups: Today (24h), This week (7 days), Earlier.
+- **G21 · Engagement metrics (Hugh, 2026-11-23).** The events in README § Engagement metrics ship in the same PRs as the
+  surfaces they measure, through the existing `<Analytics />` client (production hostnames only; no query text, no typed
+  card names, no third-party names). The `Finding the tools` PostHog dashboard and its six insights are built before
+  launch, with a two-week baseline. A unit test per event asserts its properties carry no free text.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
