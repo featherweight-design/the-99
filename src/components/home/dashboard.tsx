@@ -255,13 +255,13 @@ export function Dashboard(props: DashboardProps) {
       {feed && props.pushVisit && <PushLanding visit={props.pushVisit} />}
       <TradeAskFrame payload={props.tradeAsk ?? null}>
       <HeldLeadProvider>
-      <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
+      <div data-dismiss-scope className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
             build, What's new, the resume block, Friends, Commitments (G16; Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
             in the right column, so there is one invite watch and one dialog. A screen reader reads the DOM order at
             every width, which this layout already accepts for Commitments. */}
         {/* The lead's ✕ hands focus on to What's new's first row (`nextDismiss`); the rows keep their own section's scope. */}
-        <div data-dismiss-scope className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+        <div className="contents min-[1180px]:flex min-[1180px]:min-w-0 min-[1180px]:flex-auto min-[1180px]:flex-col min-[1180px]:gap-[11px]">
           {/* Rule 0's cards head the main column (board H6-H8): the right rail starts level with them from 1180, and below it
               they are first in the one column. Drawn once. 10px apart; 12px to the next block (the column's 11px gap + 1). */}
           {(tables.length > 0 || (props.logGames?.length ?? 0) > 0) && (
@@ -282,8 +282,6 @@ export function Dashboard(props: DashboardProps) {
             // At zero cards it ranks nothing and leaves on its own (S12: absent, not empty).
             props.ready && <ReadyToBuild ready={props.ready} inUse={props.inUse} />
           )}
-          {/* Direction B: What's new directly under the lead story (tool-discovery R7, Q11 A), then the decks; Friends and Commitments follow on a phone. */}
-          {feed && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-1 min-[1180px]:order-none" />}
           {/* Sliced here rather than inside the section, so the section draws
               what it is handed and the ordering stays testable without a DOM.
               `decks.length` rides alongside as the footer's total — the figure
@@ -310,8 +308,12 @@ export function Dashboard(props: DashboardProps) {
             would leave a blank rail squeezing the resume rows beside it for a
             block that is not there. */}
         {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
-        {(props.commitments !== null || props.friends) && (
+        {(feed || props.commitments !== null || props.friends) && (
           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+            {/* Direction B: What's new directly under the lead story below 1180 (tool-discovery R7, Q11 A), and the top of this rail
+                from 1180 (G17), in compact rows. One element, so one set of rows and one sheet: the columns are `contents` below 1180
+                and `order` places it. */}
+            {feed && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-1 min-[1180px]:order-none" />}
             {props.commitments !== null && (
               <div className={`${feed ? "order-5" : "order-3"} flex flex-col min-[1180px]:order-none`}>
                 <CommitmentsCard

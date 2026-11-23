@@ -1,7 +1,7 @@
 // The tool discovery events' guard (plan §6, handoff G21): one case per event, each built as the app builds it, and
 // every string value a member of its property's closed set. A prop typed `string` fails the build (below).
 import { describe, expect, it } from "vitest";
-import { FIND_A_DECK_FROM, TOOL_EVENT_VALUES, WELCOME_WHERE_FROM, type ToolEvents } from "./tool-events";
+import { FEED_COUNT_BUCKET, FIND_A_DECK_FROM, TOOL_EVENT_VALUES, WELCOME_WHERE_FROM, feedCountBucket, type ToolEvents } from "./tool-events";
 
 /** The events whose props admit any string: `never` while every prop is a closed set. */
 type OpenProp = {
@@ -32,5 +32,21 @@ describe("tool discovery events", () => {
   it("welcome_where_opened carries only `from`, from its closed set", () => {
     for (const from of WELCOME_WHERE_FROM) closed("welcome_where_opened", { from });
     expect(() => closed("welcome_where_opened", { from: "a card name" as never })).toThrow();
+  });
+
+  it("feed_show_all carries a count bucket only", () => {
+    for (const count of FEED_COUNT_BUCKET) closed("feed_show_all", { count });
+    expect(() => closed("feed_show_all", { count: "12" as never })).toThrow();
+    expect([6, 10, 11, 20, 21, 99].map(feedCountBucket)).toEqual(["6_to_10", "6_to_10", "11_to_20", "11_to_20", "21_plus", "21_plus"]);
+  });
+
+  it("feed_sheet_filter carries a feed kind, never a label", () => {
+    closed("feed_sheet_filter", { kind: "price-drop" });
+    expect(() => closed("feed_sheet_filter", { kind: "Price drops" as never })).toThrow();
+  });
+
+  it("feed_sheet_clear carries a bucket and whether a chip narrowed it", () => {
+    closed("feed_sheet_clear", { count: "6_to_10", filtered: "kind" });
+    expect(() => closed("feed_sheet_clear", { count: "6_to_10", filtered: "yes" as never })).toThrow();
   });
 });

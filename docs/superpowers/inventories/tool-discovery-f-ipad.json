@@ -1,0 +1,50 @@
+{
+  "feature": "Finding the tools, step F: What's new in the rail on an iPad (1180x820 landscape, 820x1180 portrait)",
+  "clearAbout": true,
+  "note": "Read-only. Companion to tool-discovery-f.json.",
+  "out": "contact-sheets/tool-discovery-f-ipad",
+  "rows": [
+    {
+      "id": "home-rail",
+      "label": "Home: What's new on top of the right rail from 1180 (compact rows); under the lead below it",
+      "view": "src/components/home/dashboard.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "show-all-sheet",
+      "label": "Show all sheet: All chip, day groups, the fixed foot",
+      "view": "src/components/feed/feed-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show all \\d+",
+          "waitDialog": "What’s new",
+          "settle": 1200
+        }
+      ]
+    }
+  ],
+  "widths": [
+    {
+      "label": "ipad-landscape",
+      "width": 1180,
+      "height": 820
+    },
+    {
+      "label": "ipad-portrait",
+      "width": 820,
+      "height": 1180
+    }
+  ]
+}

@@ -236,9 +236,9 @@ Each PR adds `docs/superpowers/inventories/tool-discovery-<pr>.json` and runs `n
 | Card search: nothing typed, a question, nothing matches (rail dropdown, phone sheet) | ☐ | ☐ | | D |
 | Home: the panel, typing in place, the credits foot | ☐ | ☐ | ☐ | E1 |
 | Home: quiet day and busy day order, section heads | ☐ | ☐ | ☐ | E2 |
-| Home rail from 1180, What's new on top | | ☐ | | F |
-| Show all sheet: All and one chip | ☐ | ☐ | | F |
-| `/friends` Waiting on you (in-place expand unchanged) | ☐ | ☐ | | F |
+| Home rail from 1180, What's new on top | | ✅ | | F |
+| Show all sheet: All and one chip | ✅ | ✅ | | F |
+| `/friends` Waiting on you (in-place expand unchanged) | ✅ | ✅ | | F |
 
 Sameness checks: the Consider panel inside Tuning is the same import as before (`ConsiderPanel`). Home's in-place list and the rail's dropdown render the same listbox component. Each is checked with `pnpm check:shared` against the inventory's `shares` block.
 

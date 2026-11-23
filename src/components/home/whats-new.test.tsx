@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 const nav = vi.hoisted(() => ({ refresh: vi.fn() }));
 const save = vi.hoisted(() => vi.fn());
@@ -10,7 +10,7 @@ vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => null
 
 import { FEED_SHOWN, TEASE_ORDER, WhatsNew, feedGroups, teasedKinds } from "./whats-new";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
-import { feedCopy } from "../../lib/copy/feed";
+import { feedCopy, feedSheetCopy } from "../../lib/copy/feed";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const view = (n: number, hoursAgo: number, o: Partial<FeedView> = {}): FeedView => ({
@@ -57,34 +57,41 @@ describe("WhatsNew, Upcoming drops", () => {
 });
 
 describe("WhatsNew, kinds on", () => {
-  it("shows five, then Show all N expands the list in place", () => {
+  it("shows five, then Show all N opens the sheet and leaves the rail at five", () => {
     const items = Array.from({ length: 9 }, (_, i) => view(i, i + 1));
     render(<WhatsNew feed={chosen(items, { unseen: 3 })} now={NOW} />);
     expect(screen.getAllByRole("listitem")).toHaveLength(FEED_SHOWN);
     expect(screen.getByText("4 more")).toBeInTheDocument();
     expect(screen.getByText("· 3 new")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("link", { name: /Choose notifications/ })).toHaveAttribute("href", "/settings");
+    expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Show all 9" }));
-    expect(screen.getAllByRole("listitem")).toHaveLength(9);
-    expect(screen.queryByRole("button", { name: /Show all/ })).toBeNull();
+    const dialog = screen.getByRole("dialog", { name: "What\u2019s new" });
+    expect(dialog.querySelectorAll("li")).toHaveLength(9);
+    expect(screen.getAllByRole("listitem").filter((li) => !dialog.contains(li))).toHaveLength(FEED_SHOWN);
   });
 
-  it("moves focus to the first row Show all reveals, since the press itself leaves", () => {
+  it("closes the sheet on Esc and on its ✕", () => {
     const items = Array.from({ length: 7 }, (_, i) => view(i, i + 1));
     render(<WhatsNew feed={chosen(items)} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: "Show all 7" }));
-    const sixth = screen.getAllByRole("listitem")[FEED_SHOWN];
-    // The row's named press, never its picture link (aria-hidden, out of the tab order).
-    expect(document.activeElement).toBe(sixth.querySelector("[data-feed-press]"));
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Show all 7" }));
+    fireEvent.click(screen.getByRole("button", { name: feedSheetCopy.close }));
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("focuses the row Show all REVEALED when the groups put it ahead of a row already shown", () => {
-    // Feed order: an older item first, then five from today. Cut to five: the older one (Earlier) and four of today.
-    // Expanded, the fifth of today lands before the older row, which was shown all along.
-    const items = [view(9, 48), ...Array.from({ length: 5 }, (_, i) => view(i, i + 1))];
-    render(<WhatsNew feed={chosen(items)} now={NOW} />);
+  it("a chip narrows the sheet to its kind, and the head count stays the total", () => {
+    const items = [view(1, 2), view(2, 3), view(3, 4), view(4, 5), view(5, 6), view(6, 7, { kind: "price-drop" })];
+    render(<WhatsNew feed={chosen(items, { on: ["new-set", "price-drop"] })} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: "Show all 6" }));
-    expect(document.activeElement?.closest("li")?.textContent).toContain("Set 4");
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /Price drops/ }));
+    expect(dialog.querySelectorAll("li")).toHaveLength(1);
+    expect(within(dialog).getByText(/^6/)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: /^All/ }));
+    expect(dialog.querySelectorAll("li")).toHaveLength(6);
   });
 
   it("draws no footer at five or fewer, and no count with nothing unseen", () => {
@@ -113,7 +120,7 @@ describe("WhatsNew, kinds on", () => {
       "Nothing new right now. We’ll tell you here when a wishlist card gets cheaper or a new set comes out.",
     );
     expect(container.querySelector("[data-feed-quiet-fan]")?.getAttribute("aria-hidden")).toBe("true");
-    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Choose notifications/ })).toBeInTheDocument();
   });
 
   it("teases only two kinds, never the whole list, in tease order", () => {
@@ -168,7 +175,7 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     expect(line(container)?.parentElement?.lastElementChild).toBe(line(container));
     expect(container.querySelector("[data-feed-opt-in]")).toBeNull();
     expect(screen.queryAllByRole("checkbox")).toHaveLength(0);
-    expect(screen.queryByRole("link", { name: /Choose your notifications/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Choose notifications/ })).toBeNull();
   });
 
   it("with no kind on, draws the offer line alone, with no quiet line and no rule", () => {
@@ -191,11 +198,11 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
   it("after its ✕ with no kind on, the off line and the head's way back (small items 6, item 6)", async () => {
     closeOffer.mockResolvedValue({ ok: true, changed: true });
     const { container } = render(<WhatsNew feed={allOff} now={NOW} />);
-    expect(screen.queryByRole("link", { name: /Choose your notifications/ })).toBeNull();
+    expect(screen.queryByRole("link", { name: /Choose notifications/ })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
     expect(line(container)).toBeNull();
     expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(`${feedCopy.home.offLead} ${feedCopy.home.offRest}`);
-    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toHaveAttribute("href", "/settings");
+    expect(screen.getByRole("link", { name: /Choose notifications/ })).toHaveAttribute("href", "/settings");
     await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
   });
 
@@ -209,7 +216,7 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     expect(line(container)).toBeNull();
     expect(container.querySelector("[data-feed-quiet-fan]")).toBeNull();
     expect(container.querySelector("[data-feed-quiet]")!.textContent).toBe(`${feedCopy.home.offLead} ${feedCopy.home.offRest}`);
-    expect(screen.getByRole("link", { name: /Choose your notifications/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Choose notifications/ })).toBeInTheDocument();
   });
 
   it("puts the line back, and takes the off line away, when the ✕'s write throws", async () => {

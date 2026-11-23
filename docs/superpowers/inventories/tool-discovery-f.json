@@ -1,0 +1,50 @@
+{
+  "feature": "Finding the tools, step F (tool-discovery G17, G20): What's new tops Home's right rail from 1180 in compact rows, and Show all opens a sheet (kind chips, day groups, a fixed foot) at every width. /friends' Waiting on you keeps its in-place expand",
+  "clearAbout": true,
+  "note": "Read-only: Show all is pressed, nothing is cleared. Needs a reader whose feed holds more than five items (the local-dev fixture account, every feed kind on). The 390 and 1300 sheets are this inventory; the iPad rail (1180x820, 820x1180) is tool-discovery-f-ipad.json. The /friends row photographs the fixture's empty Waiting on you; the in-place expand itself is held by waiting-on-you.test.tsx, whose component this PR does not touch.",
+  "out": "contact-sheets/tool-discovery-f",
+  "rows": [
+    {
+      "id": "home-rail",
+      "label": "Home: What's new on top of the right rail from 1180 (compact rows); under the lead below it",
+      "view": "src/components/home/dashboard.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "show-all-sheet",
+      "label": "Show all sheet: All chip, day groups, the fixed foot",
+      "view": "src/components/feed/feed-sheet.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-whats-new]",
+          "settle": 2000
+        },
+        {
+          "clickRole": "button",
+          "name": "^Show all \\d+",
+          "waitDialog": "What’s new",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "friends-waiting",
+      "label": "/friends: Waiting on you (in-place expand, file untouched; the fixture's tab is empty)",
+      "view": "src/components/social/waiting-on-you.tsx",
+      "steps": [
+        {
+          "goto": "/friends",
+          "wait": "h1",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}
