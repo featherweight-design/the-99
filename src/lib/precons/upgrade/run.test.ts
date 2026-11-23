@@ -209,7 +209,7 @@ describe("readUpgrade", () => {
 describe("pressUpgrade", () => {
   it("runs the picked strategy, computes the bracket in code and settles the credits spent", async () => {
     const { d, call } = deps(swaps(12));
-    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+    store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
     const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
     expect(out.ok).toBe(true);
     expect(call).toHaveBeenCalledTimes(1);
@@ -254,7 +254,7 @@ describe("pressUpgrade", () => {
     const { d } = deps(swaps(12));
     const spy = vi.fn(loadFor);
     preference.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
-    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+    store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
     expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { ...d, loadFor: spy }, ENV_VIEW)).ok).toBe(true);
     expect(preference.readerStoreForPage).toHaveBeenCalledWith("u1", ENV_VIEW);
     expect(spy.mock.calls[0][3]).toBe("tcgplayer");
@@ -277,7 +277,7 @@ describe("pressUpgrade", () => {
   it("stores each swap's combo partners on the done write, read over the list with the pairs applied", async () => {
     const { d } = deps(swaps(12));
     d.partners.mockImplementation(async (_l, pairs) => pairs.map((p, i) => ({ ...p, cutCombo: null, addCombo: i === 0 ? { oracleId: "n1", name: "Native 1" } : null })));
-    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+    store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
     expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).ok).toBe(true);
     const [list, pairs] = d.partners.mock.calls[0];
     expect(list).toMatchObject({ commanderIds: ["cmd"] });
@@ -292,7 +292,7 @@ describe("pressUpgrade", () => {
       store.finished.length = 0;
       const { d } = deps(swaps(12));
       d.partners.mockImplementation(fail as never);
-      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
       const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
       expect(out.ok).toBe(true);
       expect(store.finished).toHaveLength(1);
@@ -310,7 +310,7 @@ describe("pressUpgrade", () => {
       vi.mocked(recordSoftFailure).mockClear();
       const { d } = deps(swaps(12));
       d.partners.mockImplementation(() => new Promise<StoredPair[]>(() => {}));
-      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
       const pending = pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
       await vi.advanceTimersByTimeAsync(PARTNERS_TIMEOUT_MS);
       const out = await pending;
@@ -385,7 +385,7 @@ describe("the alternate commander", () => {
 
   it("runs with the alternate as commander and the box's commander among the 99, stored under its own key", async () => {
     const { d, call } = deps(swaps(12), true);
-    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "alt/3/burn" }];
+    store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "alt/3/burn" }];
     const out = await pressUpgrade("u1", "boss.json", "alt", 3, "burn", d, ENV_VIEW);
     expect(out.ok).toBe(true);
     expect(store.start).toHaveBeenCalledWith("u1", "boss.json", { key: "alt/3/burn", label: "Burn", bracketTarget: 3, listFp: expect.any(String) }, expect.any(String), NOW);
@@ -412,7 +412,7 @@ describe("the alternate commander", () => {
 
   it("compares a run led by the alternate against the box as shipped", async () => {
     const { d } = deps(swaps(12), true);
-    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "alt/3/burn" }];
+    store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "alt/3/burn" }];
     await pressUpgrade("u1", "boss.json", "alt", 3, "burn", d, ENV_VIEW);
     expect(d.bracketOf).toHaveBeenNthCalledWith(1, expect.objectContaining({ commanderIds: ["cmd"] }), []);
     expect(d.bracketOf).toHaveBeenNthCalledWith(2, expect.objectContaining({ commanderIds: ["alt"] }), expect.any(Array));
@@ -474,7 +474,7 @@ describe("per-card bracket lines (fresh start R2)", () => {
   it("are stored on the done write, keyed to each pair's add", async () => {
     const { d } = deps(swaps(12));
     d.lineBrackets.mockImplementation(async (_l, pairs) => pairs.map((p) => ({ addBracketAfter: p.addId === "p0" ? [3] : null, cutBracketAfter: null })));
-    store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+    store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
     store.finished.length = 0;
     expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).ok).toBe(true);
     const written = store.finished[0].write.pairs as StoredPair[];
@@ -487,7 +487,7 @@ describe("per-card bracket lines (fresh start R2)", () => {
       store.finished.length = 0;
       const { d } = deps(swaps(12));
       d.lineBrackets.mockImplementation(fail as never);
-      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
       expect((await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW)).ok).toBe(true);
       const write = store.finished[0].write;
       expect(write.status).toBe("done");
@@ -519,7 +519,7 @@ describe("per-card bracket lines (fresh start R2)", () => {
       store.finished.length = 0;
       const { d } = deps(swaps(12));
       d.lineBrackets.mockImplementation(hung);
-      store.runs = [{ id: "run-1", status: "done", pairs: [], strategyKey: "cmd/3/overview:0" }];
+      store.runs = [{ id: "run-1", status: "done", createdAt: NOW, pairs: [], strategyKey: "cmd/3/overview:0" }];
       const pressed = pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", d, ENV_VIEW);
       await vi.advanceTimersByTimeAsync(LINE_BRACKETS_TIMEOUT_MS + 1);
       expect((await pressed).ok).toBe(true);
