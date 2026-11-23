@@ -6,6 +6,7 @@ import { WelcomeStrip } from "../src/components/welcome/welcome-strip";
 import { named } from "../src/lib/person-name/mint";
 import { HomeSearchPanel, ToolAnswers, ANSWERS, HeadSearch, FirstRunSearchRow } from "./ask";
 import { FirstRunChecklist } from "../src/components/home/first-run";
+import { FeedSheet } from "./feed-sheet";
 const G = globalThis as any;
 const NOW = new Date("2026-11-23T15:00:00Z");
 const facts: any = { lot: "held", units: 3, left: 3, expiresAtMs: Date.UTC(2026, 10, 30, 12), days: 7, teaser: true, free: 1 };
@@ -50,7 +51,7 @@ const LOG: any = { gameMs: Date.parse("2026-11-20T03:00:00Z"), startedAt: new Da
 const ARRIVALS: any = { lines: [{ kind: "set", code: "trc", name: "Star Trek Commander", revealed: 15 }], href: "/decks/precons?sort=newest#announced", keys: ["trc"] };
 const ART = ["art/c-killian.jpg", "art/c-lathliss.jpg", "art/c-ghalta.jpg"];
 const SHEET: any = { shape: "decks", lead: [], line: null, rows: [] };
-function full(name: string, dev: "phone" | "desk", panel: any = {}, alt: "" | "a" | "c" = "") {
+function full(name: string, dev: "phone" | "desk", panel: any = {}, alt: "" | "a" | "c" = "", over: any = null, feed: any = null) {
   G.__VW = dev === "desk" ? 1300 : 390; G.__INLINE = true; G.__BADGES = { home: 2, friends: 1 }; G.__FOOT = true; G.__FACE = { name: "You", art: "art/a-tam.jpg", commander: null };
   const ws = <WelcomeStrip facts={facts} sheet={SHEET} place="dashboard" />;
   const strip = alt === "a" ? <div className="order-0 relative z-[5]"><HomeSearchPanel art={ART} {...panel} foot={ws} /></div>
@@ -60,12 +61,28 @@ function full(name: string, dev: "phone" | "desk", panel: any = {}, alt: "" | "a
     <Dashboard stats={{ totalCards: 4492, uniqueCards: 2926 }} lastUpdated={new Date("2026-11-21T12:00:00Z")} timeZone="UTC" ready={null}
       inUse={new Map()} decks={DECKS} commitments={{ inUse: 488, overCommitted: 2 } as any}
       shopping={{ byDeck: new Map([["d1", { copies: 6, cents: 2140 }], ["d2", { copies: 8, cents: 3120 }], ["d4", { copies: 19, cents: 7480 }], ["d5", { copies: 2, cents: 1520 }]]), total: { copies: 35, cents: 14260, pricedCopies: 35 } } as any} welcome={strip}
-      feed={FEED} zone="UTC" archive friends={FRIENDS} tables={[TABLE]} logGames={[LOG]} arrivals={ARRIVALS} now={NOW.toISOString()} commandersPlace />,
-    "/", null);
+      feed={feed ?? FEED} zone="UTC" archive friends={FRIENDS} tables={[TABLE]} logGames={[LOG]} arrivals={ARRIVALS} now={NOW.toISOString()} commandersPlace />,
+    "/", over);
   writeFileSync(`dz/frames/${name}.html`, html);
   G.__VW = 0; G.__FOOT = false;
 }
 full("p-full", "phone");
+// R10: twelve items; the rail and the column keep five; Show all opens the sheet.
+const MORE = [
+  ...FEED.items,
+  view(8, { kind: "trade-match", unseen: true, href: "/friends/p2", name: null, card: card("gi2", "Giada, Font of Hope", "giada", ["W"]), friend: { publicId: "p2", displayName: named("Maya") } }),
+  view(30, { kind: "price-drop", href: null, outbound: "https://example.com", name: null, card: card("jc", "Jace, the Mind Sculptor", "jace", ["U"]), drop: { fromCents: 2400, toCents: 1980, printing: null } }),
+  view(50, { kind: "combo", href: null, opens: "sa", name: null, card: card("sa", "Sai, Master Thopterist", "sai", ["U"]), combo: { pieces: ["Sai, Master Thopterist", "Wizard's Staff"], added: "Sai, Master Thopterist", variantId: "v4" } }),
+  view(90, { kind: "new-set", name: "Marvel Super Heroes", setSize: 312 }),
+  view(200, { kind: "price-drop", href: null, outbound: "https://example.com", name: null, card: card("pa", "Path to Exile", "path", ["W"]), drop: { fromCents: 420, toCents: 310, printing: null } }),
+];
+const FEED12: any = { ...FEED, items: MORE, unseen: 3 };
+for (const dev of ["phone", "desk"] as const) {
+  const d = dev === "desk" ? "d" : "p";
+  full(`${d}-r10`, dev, {}, "a", null, FEED12);
+  full(`${d}-r10s`, dev, {}, "a", <FeedSheet items={MORE} now={NOW.toISOString()} fresh={3} desk={dev === "desk"} />, FEED12);
+  full(`${d}-r10k`, dev, {}, "a", <FeedSheet items={MORE} now={NOW.toISOString()} fresh={3} kind="price-drop" desk={dev === "desk"} />, FEED12);
+}
 for (const dev of ["phone", "desk"] as const) {
   const d = dev === "desk" ? "d" : "p";
   full(`${d}-ra`, dev, {}, "a");

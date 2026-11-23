@@ -1,6 +1,6 @@
-# READINESS · Finding the tools R9
+# READINESS · Finding the tools R10
 
-**Verdict: Amber, for Hugh's review.** Five open questions (README, Q8, Q9, Q10, Q13, Q14); Q11 and Q12 settled A. Every gap below has an answer proposed.
+**Verdict: Amber, for Hugh's review.** Six open questions (README, Q8, Q9, Q10, Q13, Q14, Q15); Q11 and Q12 settled A. Every gap below has an answer proposed.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -51,6 +51,11 @@
 - **G19 · Game to log's ✕ (R9).** `HomeLogCard`'s single-game `Hide` is `absolute right-[4px] top-[4px]` at every width
   (`xl:right-[6px] xl:top-[6px] xl:h-[32px] xl:w-[32px]`), no longer `xl:static xl:order-last`; Log this game keeps its
   shipped classes and sits where Open the table does. The many-games card's row ✕ is unchanged.
+- **G20 · Show all sheet (R10, Q15 A).** `ShowAllFooter`'s press on Home opens a `FeedSheet` dialog (`role="dialog"`,
+  `aria-modal`, focus trapped, Esc closes, focus returns to the press) instead of `useShowAll`'s in-place expand; `/friends`'
+  Waiting on you keeps the in-place expand. The sheet reads the feed the page already holds (no fetch). Rows are
+  `FeedItemRow` with the compact layout (G17). Kind chips filter client side; Clear all sends the shown keys to
+  `clearFeedItemsAction` (capped by `CLEAR_ALL_MAX` as today). Day groups: Today (24h), This week (7 days), Earlier.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks

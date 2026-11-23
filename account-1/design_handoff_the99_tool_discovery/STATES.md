@@ -1,4 +1,4 @@
-# States · Finding the tools R8
+# States · Finding the tools R10
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -79,3 +79,14 @@
 | From 1180, feed quiet or offer | The quiet or offer state at the rail's top, as shipped otherwise. |
 | Below 1180 | What's new under the lead (R7 A); rows as shipped. |
 | Any width | Section headings in the display face with the diamond; counts in mono. |
+
+## What's new, Show all sheet · R10 (Q15 A)
+| State | Draws |
+|---|---|
+| 5 items or fewer | No Show all; the foot as shipped. |
+| More than 5 | Five rows; Show all N opens the sheet. |
+| Sheet open, All | Every item, Today / This week / Earlier; chips for the kinds present. |
+| A chip pressed | Only that kind; empty groups leave; the count in the head stays the total. |
+| Clear all | Clears the shown items; the sheet closes when none are left. |
+| ✕ on a row | That row leaves; the counts update. |
+| Esc / ✕ / scrim | Closes; focus back on Show all. |

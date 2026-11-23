@@ -1,6 +1,11 @@
-# Finding the tools · R9
+# Finding the tools · R10
 
-Account 1, 2026-11-23. Status: **R9, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R10, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+
+**R10 (Hugh's R9 note, 2026-11-23):** Show all no longer expands What's new in place (10+ items would stretch the
+rail). The rail and the phone column keep five rows; Show all N opens a sheet: 460px from the right on desktop over a
+scrim, full screen on a phone. Head: What's new, the count, a bare ✕, kind chips with counts. Body: Today, This week,
+Earlier. Fixed foot: Past announcements, Choose notifications, Clear all (Q15).
 
 **R9 (Hugh's R8 notes, 2026-11-23):** checked against two screenshots of a live Home. The fixture now draws What's
 new's foot (Past announcements, Clear all, Show all N), deck pills, bracket marks and copies to buy, five friends, the
@@ -168,6 +173,9 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 - **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
   B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
+- **Q15 · Show all: a sheet, or expand in place?** A (drawn, recommended): the sheet, with kind chips (only kinds
+  present; All first) and day groups; Clear all clears what the chip shows; Esc, ✕ or the scrim closes, focus back to
+  Show all. B: expand in place as shipped. Board: Show all.
 - **Q13 · What's new in the desktop rail?** A (drawn, recommended): top of the rail above Commitments and Friends; rows
   draw as on a phone (action under the text); `Choose notifications` (R9) beside the heading as on a phone; the foot keeps one line. B:
   under the lead in the main column (R7 A). Phone unchanged either way. Board: Calmer Home.
@@ -191,6 +199,7 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 | File | What |
 |---|---|
+| `ShowAll.dc.html` | R10: Show all as a sheet, All and Price drops, desktop and phone |
 | `Calm.dc.html` | R8, R9: R7 A against R9 (What's new in the rail, display headings), desktop and phone |
 | `Order.dc.html` | R7: the busy Home three ways (A, B, C) on desktop and phone; first run with and without search |
 | `Home.dc.html` | H6 Home in full on a busy day, desktop and phone, and desktop typed in place (R6) |

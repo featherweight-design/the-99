@@ -66,3 +66,13 @@ export const firstRunSearchCopy = {
 
 // R9: What's new heading link (feedCopy.choose), shorter so it fits beside the heading in the desktop rail.
 export const feedChooseCopy = { choose: "Choose notifications" }; // was "Choose your notifications"
+
+// R10: What's new's Show all sheet.
+export const feedSheetCopy = {
+  title: "What’s new",
+  count: (n: number, fresh: number) => (fresh > 0 ? `${n} · ${fresh} new` : `${n}`),
+  all: "All",
+  kinds: { "price-drop": "Price drops", combo: "Combos", "new-set": "New sets", "trade-match": "Trade matches" },
+  thisWeek: "This week",
+  close: "Close What’s new",
+};

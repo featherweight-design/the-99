@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-23T17:00:00Z"
  },
- "title": "Finding the tools R9",
+ "title": "Finding the tools R10",
  "launch": {
   "view": "canvas"
  },
@@ -14,53 +14,60 @@
    "x": 0,
    "y": 0,
    "w": 1600,
-   "h": 2060,
+   "h": 2220,
    "title": "Main"
   },
-  "Calm.dc.html": {
+  "ShowAll.dc.html": {
    "x": 1720,
+   "y": 0,
+   "w": 1700,
+   "h": 1970,
+   "title": "Show all"
+  },
+  "Calm.dc.html": {
+   "x": 3540,
    "y": 0,
    "w": 1700,
    "h": 4770,
    "title": "Calmer Home"
   },
   "Order.dc.html": {
-   "x": 3540,
+   "x": 5360,
    "y": 0,
    "w": 1700,
    "h": 5770,
    "title": "Order and first run"
   },
   "Home.dc.html": {
-   "x": 5360,
+   "x": 7180,
    "y": 0,
    "w": 1700,
    "h": 4480,
    "title": "Home in full"
   },
   "Ask.dc.html": {
-   "x": 7180,
+   "x": 9000,
    "y": 0,
    "w": 1700,
    "h": 3710,
    "title": "Ask"
   },
   "Find.dc.html": {
-   "x": 9000,
+   "x": 10820,
    "y": 0,
    "w": 1700,
    "h": 4560,
    "title": "Find"
   },
   "Tuning.dc.html": {
-   "x": 10820,
+   "x": 12640,
    "y": 0,
    "w": 1700,
    "h": 3920,
    "title": "Tuning"
   },
   "Welcome.dc.html": {
-   "x": 12640,
+   "x": 14460,
    "y": 0,
    "w": 1700,
    "h": 3700,
@@ -69,6 +76,7 @@
  },
  "order": [
   "Main.dc.html",
+  "ShowAll.dc.html",
   "Calm.dc.html",
   "Order.dc.html",
   "Home.dc.html",
