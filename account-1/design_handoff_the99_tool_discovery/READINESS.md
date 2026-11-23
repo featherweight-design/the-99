@@ -1,7 +1,6 @@
 # READINESS · Finding the tools
 
-**Verdict: Green for R1 to R10** (approved by Hugh 2026-11-23; every question settled, README Decisions). **R11 (spare
-offers): Green on its recommended answers**, pending Hugh's review of Q16 to Q18; G22 to G25 are written against them.
+**Verdict: Green.** Approved by Hugh 2026-11-23 through R11; every question settled (README, Decisions). Every gap below has an answer.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL

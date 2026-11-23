@@ -91,7 +91,7 @@
 | ✕ on a row | That row leaves; the counts update. |
 | Esc / ✕ / scrim | Closes; focus back on Show all. |
 
-## Spare offers on Home · R11 (Q16 A, Q17 A, Q18 A, recommended)
+## Spare offers on Home · R11 (Q16 A, Q17 A, Q18 A)
 | State | Draws |
 |---|---|
 | An unanswered, open offer to the reader | It leads at both widths: kicker `Spare offer`, `Max is offering you <card>`, `Max has 1 spare. You want 1.`, Yes, No, `14 days left`; ✕ in the card's top right. |

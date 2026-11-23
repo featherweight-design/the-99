@@ -1,6 +1,6 @@
 # Finding the tools
 
-Account 1, 2026-11-23. Status: **R1 to R10 approved by Hugh 2026-11-23 (every question settled as drawn). R11 (spare offers on Home) in review: Q16 to Q18 open.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-23 (R11, every question settled as drawn, Q1 to Q18).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
 
 **Approved (Hugh, 2026-11-23):** every open question settled A; PostHog dashboards to ship with the build (below).
 
@@ -193,10 +193,10 @@ Every question settled, as drawn:
 - Q14 A: Home's section headings in the display face with the accent diamond (Calmer Home).
 - Q15 A: Show all opens a sheet (right on desktop, full screen on a phone) with kind chips and day groups (Show all).
 
-Open (R11, Spare offers board; recommended A):
-- Q16: an unanswered, open ask or offer always leads over news, newest first.
-- Q17: the lead's ✕ in the card's top right corner.
-- Q18: a non-leading ask or offer answers in its What's new row; `Answer in Friends.` retires on Home.
+R11 (Spare offers board):
+- Q16 A: an unanswered, open ask or offer always leads over news, newest first.
+- Q17 A: the lead's ✕ in the card's top right corner.
+- Q18 A: a non-leading ask or offer answers in its What's new row; `Answer in Friends.` retires on Home.
 
 Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What you can do), R3 Q7 (Home's field stays for good).
 
