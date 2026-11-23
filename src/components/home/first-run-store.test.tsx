@@ -43,11 +43,13 @@ describe("FirstRunStoreRow", () => {
     expect(m.save).toHaveBeenCalledWith("tcgplayer");
     expect(checked("TCGplayer")).toBe(true);
     expect(screen.queryByRole("dialog")).toBeNull();
-    // One write at a time: a press while it is in flight is refused.
+    // One write at a time: the chosen segment says it is saving, and a press while it is in flight is refused.
+    expect(radio("TCGplayer").getAttribute("aria-busy")).toBe("true");
     fireEvent.click(radio("Card Kingdom"));
     expect(m.save).toHaveBeenCalledTimes(1);
     await act(async () => land({ ok: true, changed: true }));
     expect(checked("TCGplayer")).toBe(true);
+    expect(radio("TCGplayer").getAttribute("aria-busy")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
   });
 

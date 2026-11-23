@@ -14,10 +14,13 @@ import { useStoreChoice } from "../stores/use-store-choice";
 import { SegmentedSwitch } from "../ui/segmented-switch";
 
 const c = storeCopy.firstRun;
-const SEGMENTS = STORES.map((id) => ({ value: id, label: STORE_INFO[id].name, data: { "data-store-segment": id } as const }));
+// While a write is in flight the chosen segment says so (`aria-busy` and the switch's pending pip), and a further press
+// waits for it, as Settings holds its rows.
+const segments = (saving: boolean, on: Store) =>
+  STORES.map((id) => ({ value: id, label: STORE_INFO[id].name, data: { "data-store-segment": id } as const, busy: saving && id === on }));
 
 export function FirstRunStoreRow({ store }: { store: Store }) {
-  const { on, save, toast, clearToast } = useStoreChoice(store);
+  const { on, saving, save, toast, clearToast } = useStoreChoice(store);
   return (
     <section
       aria-labelledby="first-run-store-title"
@@ -41,7 +44,7 @@ export function FirstRunStoreRow({ store }: { store: Store }) {
           size="compact"
           fill
           ariaLabel={storeCopy.settings.groupLabel}
-          segments={SEGMENTS}
+          segments={segments(saving, on)}
           value={on}
           onChange={save}
         />

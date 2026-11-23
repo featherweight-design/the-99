@@ -142,6 +142,7 @@ describe("Home's first-run store row", () => {
 
   it("draws no row while the switch is off", async () => {
     stub.uniqueCards = 0;
+    rollup.store.mockResolvedValue("cardkingdom");
     expect((await firstRun()).props.store).toBeNull();
   });
 

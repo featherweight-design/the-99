@@ -149,11 +149,17 @@ async function run(size, start) {
       const settings = await page.locator("#settings-store input[type=radio]:checked").getAttribute("value");
       check(settings === other, `${size.name}: Settings shows the store chosen at first run`, String(settings));
     } finally {
-      const back = await home(page);
-      await back.waitFor({ timeout: 30_000 });
-      if ((await chosenSegment(back)) !== start) await press(page, back, start);
-      const now = await chosenSegment(await home(page));
-      check(now === start, `${size.name}: the starting store is put back`, String(now));
+      // Put the starting store back through the page. A failure here is a failed check, not a throw: the run's own
+      // finally restores the column directly either way.
+      try {
+        const back = await home(page);
+        await back.waitFor({ timeout: 30_000 });
+        if ((await chosenSegment(back)) !== start) await press(page, back, start);
+        const now = await chosenSegment(await home(page));
+        check(now === start, `${size.name}: the starting store is put back`, String(now));
+      } catch (error) {
+        check(false, `${size.name}: the starting store is put back`, String(error?.message ?? error));
+      }
     }
   } finally {
     await browser.close();
@@ -167,17 +173,43 @@ const sql = neon(DATABASE_URL);
   const [row] = await sql`select current_setting('neon.branch_id', true) as branch`;
   assertScratchBranch(row?.branch, "probe:store-first-run");
 }
-const [{ store: saved } = {}] = await sql`select preferred_store as store from user_prefs where user_id = ${USER}`;
+// The account the probe signs in as must be the one whose rows it parks and whose store it presses: check before any
+// write, so a wrong PROBE_USER_ID moves nobody's rows.
+await clerkSetup();
+{
+  const browser = await chromium.launch();
+  try {
+    const page = await browser.newPage();
+    await signIn(page);
+    const signedIn = await page.evaluate(() => window.Clerk.user?.id ?? null);
+    if (signedIn !== USER) throw new Error(`PROBE_USER_ID is not the account E2E_AUDIT_USER_EMAIL signs in as; nothing was written`);
+  } finally {
+    await browser.close();
+  }
+}
+
+const [prefs] = await sql`select preferred_store as store from user_prefs where user_id = ${USER}`;
+const saved = prefs?.store ?? null;
 const start = saved ?? "manapool";
-await sql`update collection_items set user_id = ${PARKED} where user_id = ${USER}`;
-await sql`update decks set user_id = ${PARKED} where user_id = ${USER}`;
+// Each restore runs on its own, so one that throws never leaves the other table parked.
+const restore = async (label, statement) => {
+  try {
+    await statement();
+  } catch (error) {
+    failures += 1;
+    console.log(`FAIL  restore ${label}  (${error?.message ?? error})`);
+  }
+};
 try {
-  await clerkSetup();
+  await sql`update collection_items set user_id = ${PARKED} where user_id = ${USER}`;
+  await sql`update decks set user_id = ${PARKED} where user_id = ${USER}`;
   for (const size of WIDTHS) await run(size, start);
 } finally {
-  await sql`update collection_items set user_id = ${USER} where user_id = ${PARKED}`;
-  await sql`update decks set user_id = ${USER} where user_id = ${PARKED}`;
-  console.log("restored the parked collection and decks");
+  await restore("collection_items", () => sql`update collection_items set user_id = ${USER} where user_id = ${PARKED}`);
+  await restore("decks", () => sql`update decks set user_id = ${USER} where user_id = ${PARKED}`);
+  // The column exactly as found: a press always stores a store, so "never chose" (null, or no row) is put back too.
+  await restore("preferred_store", () => sql`update user_prefs set preferred_store = ${saved} where user_id = ${USER}`);
+  console.log("restored the parked collection, decks and store");
 }
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

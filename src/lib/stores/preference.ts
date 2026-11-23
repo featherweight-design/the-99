@@ -42,7 +42,7 @@ export function readerStoreForPage(userId: string, env: NodeJS.ProcessEnv): Prom
   return readerStoreOrNull(userId, env).then((store): Store => {
     if (store) return store;
     // Inside a cached load this keeps the fallback page out of the list cache. A page that reads the store before
-    // its cache (Home, /decks) is outside that scope, so this does nothing there; its payload is then keyed on
+    // its cache (/decks; Home reads it through `readerStoreOrNull`) is outside that scope, so this does nothing there; its payload is then keyed on
     // "manapool" and drawn wholly in Mana Pool, which is correct for that key.
     recordSoftFailure();
     return "manapool";

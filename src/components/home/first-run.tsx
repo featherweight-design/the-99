@@ -220,10 +220,11 @@ export function FirstRunChecklist({
         {/* The install row (install onboarding R1c): only for a player who left the tour before its Install stop, and
             decided on the client, so the server draws nothing here. */}
         <InstallRow />
-        {/* Friends (Discovery R3·3, addendum-friends-home §3): last, under step 3, and never numbered, so the kicker
-            stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
         {signature}
+        {/* The store row (store choice Q1): after step 3 and the signature row, never numbered and never blocking. */}
         {store && <FirstRunStoreRow store={store} />}
+        {/* Friends (Discovery R3·3, addendum-friends-home §3): under step 3 and the store row, and never numbered, so the
+            kicker stays Step 1 of 3. Live from the first visit while the steps above it are locked, and it stays once done. */}
         {friends && <FirstRunFriendsRow {...friends} />}
         {news && <FirstRunNewsRow />}
         {/* The tour's precon line follows step 1's ways group, which always offers Precons I own. */}
