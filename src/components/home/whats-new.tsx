@@ -31,6 +31,7 @@ import { AnswerSheetProvider, useAnswerSheet } from "./answer-sheet";
 import { SocialToast, type SocialToastState } from "../social/social-toast";
 import { CLEAR_ALL_MAX } from "../../lib/social/feed-dismiss-limits";
 import { HOME_HEADING_ID } from "./home-heading";
+import { HomeSectionHead } from "./home-section-head";
 import { HoverPreviewProvider } from "../decks/hover-preview";
 import { PendingReporter } from "../shell/pending-reporter";
 import { Checkbox } from "../ui/checkbox";
@@ -53,7 +54,6 @@ export function feedGroups(items: readonly FeedView[], now: string, expanded: bo
   };
 }
 
-const HEAD = "m-0 flex items-baseline gap-[8px] font-mono text-[10px] font-normal tracking-[.14em] text-[color:var(--fg-faint)] uppercase";
 const ROWS = "m-0 list-none p-0 [&>li+li]:[border-top:1px_solid_var(--border)]";
 const DAY = "m-0 px-[14px] pt-[9px] font-mono text-[9px] font-medium tracking-[.14em] text-[color:var(--fg-locked)] uppercase";
 
@@ -180,18 +180,24 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
 
   return (
     <section aria-labelledby="home-whats-new" data-dismiss-scope data-whats-new={chosen ? (feed.items.length + drops > 0 ? "items" : "quiet") : feed.on.length > 0 ? "quiet" : "offer"} className={`flex flex-col gap-[12px] min-[1180px]:gap-[11px] ${className}`}>
-      <h2 id="home-whats-new" tabIndex={-1} className={HEAD}>
+      <HomeSectionHead
+        id="home-whats-new"
+        tabIndex={-1}
+        className="mt-[10px]"
+        count={count > 0 ? c.newCount(count) : undefined}
+        aside={
+          /* The way back, wherever the reader has chosen: the ✕ this visit saved an empty choice too (small items 6). */
+          chosen || offerGone ? (
+            <Link href="/settings" className="ml-auto flex items-center gap-[4px] font-sans text-[12.5px] font-normal tracking-normal text-[color:var(--fg-muted)]">
+              {c.choose}
+              <i aria-hidden className="text-[15px] leading-none text-[color:var(--fg-faint)] not-italic">›</i>
+              <PendingReporter href="/settings" />
+            </Link>
+          ) : null
+        }
+      >
         {c.head}
-        {count > 0 && <em className="tracking-[.14em] text-[color:var(--fg-locked)] not-italic lowercase">{c.newCount(count)}</em>}
-        {/* The way back, wherever the reader has chosen: the ✕ this visit saved an empty choice too (small items 6). */}
-        {(chosen || offerGone) && (
-          <Link href="/settings" className="ml-auto flex items-center gap-[4px] font-sans text-[12.5px] tracking-normal text-[color:var(--fg-muted)] normal-case">
-            {c.choose}
-            <i aria-hidden className="text-[15px] leading-none text-[color:var(--fg-faint)] not-italic">›</i>
-            <PendingReporter href="/settings" />
-          </Link>
-        )}
-      </h2>
+      </HomeSectionHead>
       <div ref={root} className="flex flex-col overflow-hidden rounded-[14px] [border:1px_solid_var(--border)] bg-[color:var(--surface-inset)]">
         {!chosen ? (
           (feed.on.length > 0 || !offer || offerGone) && <Quiet on={feed.on} />

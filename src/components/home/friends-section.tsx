@@ -22,6 +22,7 @@ import { PendingReporter } from "../shell/pending-reporter";
 import { Face } from "../social/face";
 import { useAddFriend } from "../social/use-add-friend";
 import { SteadyLabel } from "../ui/steady-label";
+import { HomeSectionHead } from "./home-section-head";
 
 const h = socialCopy.home;
 /** Five seats at both widths (R2.2); past five, four faces and the count. */
@@ -58,11 +59,10 @@ export function FriendsSection({ you, friends, links, now, invites = null, frien
   const faceHref = (publicId: string) => `/friends/${publicId}`;
   return (
     <section aria-labelledby="home-friends-head" className={`flex flex-col gap-[12px] text-[color:var(--fg-body)] min-[1180px]:gap-[11px] ${className}`}>
-      <div className="flex min-h-[24px] items-center justify-between gap-[12px] min-[1180px]:min-h-[14px]">
-        <h2 id="home-friends-head" className="m-0 font-mono text-[10px] font-normal uppercase tracking-[.14em] text-[color:var(--fg-faint)]">
+      <div className="mt-[10px] flex min-h-[24px] items-center justify-between gap-[12px] min-[1180px]:min-h-[20px]">
+        <HomeSectionHead id="home-friends-head" count={friends.length > 0 ? h.headCount(friends.length) : undefined}>
           {h.head}
-          {friends.length > 0 && <> <span className="tracking-[.08em]">{h.headCount(friends.length)}</span></>}
-        </h2>
+        </HomeSectionHead>
         {friends.length > 0 && (
           <Link
             href="/friends"

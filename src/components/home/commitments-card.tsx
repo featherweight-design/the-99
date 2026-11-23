@@ -24,6 +24,7 @@ import { CountUp } from "@/components/ui/count-up";
 import { countParts } from "../../lib/ui/count-parts";
 import type { ReactNode } from "react";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { HomeSectionHead } from "./home-section-head";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { formatCents } from "../../lib/decks/price";
 import type { Commitments } from "../../lib/home/commitments";
@@ -69,10 +70,8 @@ export function CommitmentsCard({
   const toBuy = c.toBuyValue(shopping.total.copies, formatCents(shopping.total.cents));
   return (
     <section data-commitments="" className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
-      {/* §SectionLabel, with this instance's own `margin-top: 4`. */}
-      <h2 className="m-0 mt-[4px] flex-none font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
-        {c.commitmentsHeading}
-      </h2>
+      {/* §SectionLabel as Home's section heading (R8), with this instance's own top margin: 4 and the 10 R8 adds. */}
+      <HomeSectionHead className="mt-[14px] flex-none">{c.commitmentsHeading}</HomeSectionHead>
 
       <div className="flex flex-col gap-[11px] rounded-[14px] border border-[color:var(--border)] bg-[color:var(--surface-inset)] p-[14px]">
         <Row

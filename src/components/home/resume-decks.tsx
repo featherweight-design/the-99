@@ -31,6 +31,7 @@ import { TRUNCATES } from "../decks/truncates";
 import { BracketChip } from "../decks/bracket-chip";
 import { StatusPillBadge } from "../decks/status-pill";
 import { ArtWash } from "../ui/art-wash";
+import { HomeSectionHead } from "./home-section-head";
 
 export const RESUME_COUNT = 4;
 
@@ -332,16 +333,14 @@ export function ResumeDecks({
 
   return (
     <section className="flex flex-col gap-[12px] min-[1180px]:gap-[11px]">
-      <div className="mt-[6px] flex flex-none items-baseline gap-[8px]">
-        {/* §SectionLabel, with this instance's own `margin-top: 6`. */}
-        <h2 className="m-0 font-mono text-[10px] font-normal tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
-          {refreshCopy.home.resumeHeading}
-        </h2>
+      <div className="mt-[16px] flex flex-none items-baseline gap-[8px]">
+        {/* §SectionLabel as Home's section heading (R8), with this instance's own top margin: 6 and the 10 R8 adds. */}
+        <HomeSectionHead>{refreshCopy.home.resumeHeading}</HomeSectionHead>
         {/* The caption, at the label's own weight. It states what the order
             means; it is not a control, and the block has only ever had one
             order — a dropdown here would imply a list, which is the thing this
             round deleted. */}
-        <span className="font-mono text-[10px] tracking-[0.14em] text-[color:var(--fg-locked)] lowercase">
+        <span className="hidden font-mono text-[10px] tracking-[0.14em] text-[color:var(--fg-locked)] lowercase sm:inline">
           {refreshCopy.home.resumeSortCaption}
         </span>
       </div>

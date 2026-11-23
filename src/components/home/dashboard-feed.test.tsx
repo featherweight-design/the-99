@@ -89,16 +89,27 @@ describe("Home, direction B", () => {
     expect(order).toEqual([true, false]);
   });
 
-  it("orders the phone's blocks: resume, What's new, Friends, Commitments", () => {
+  it("orders the phone's blocks: What's new under the lead, the decks, Friends, Commitments", () => {
     const { container } = render(<Dashboard {...BASE} feed={chosen([view(1)])} />);
     const ordered = (el: Element) => el.closest('[class^="order-"], [class*=" order-"]');
     const orderOf = (el: Element | null) => Number(/(?:^|\s)order-(\d)/.exec(el?.className ?? "")?.[1]);
     const whatsNew = container.querySelector("[data-whats-new]");
     const friends = ordered(container.querySelector("#home-friends-head")!);
     const commitments = ordered(screen.getByText("Commitments"));
-    expect(orderOf(whatsNew)).toBe(3);
+    const resume = container.querySelector("#home-whats-new")!.closest("section")!.parentElement!.querySelector("[class*='order-2']");
+    expect(orderOf(whatsNew)).toBe(1);
+    expect(orderOf(resume)).toBe(2);
     expect(orderOf(friends)).toBe(4);
     expect(orderOf(commitments)).toBe(5);
+  });
+
+  it("draws What's new directly under the lead and before the decks (G16)", () => {
+    const { container } = render(<Dashboard {...BASE} feed={chosen([view(1)], { lead: LEAD, unseen: 1 })} />);
+    const follows = (a: Element, b: Element) => Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+    const lead = container.querySelector("[data-lead-story]")!;
+    const whatsNew = container.querySelector("[data-whats-new]")!;
+    expect(follows(lead, whatsNew)).toBe(true);
+    expect(follows(whatsNew, screen.getByRole("heading", { name: "Pick up where you left off" }))).toBe(true);
   });
 
   it("a busy feed: five shown and Show all N", () => {

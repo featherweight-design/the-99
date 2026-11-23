@@ -272,8 +272,9 @@ export function Dashboard(props: DashboardProps) {
               {props.logGames && props.logGames.length > 0 ? <HomeLogCard games={props.logGames} now={new Date(props.now)} /> : null}
             </div>
           )}
-          {props.signature}
+          {/* Rule 0's cards, then the credits and the signature ask, then the lead (Q10 A): things that run out come first. */}
           {props.welcome}
+          {props.signature}
           {/* Direction B: the lead story where Ready to build stood, which leaves Home. */}
           {feed ? (
             <LeadSlot lead={lead} now={props.now} face={lead?.friend ? faces.get(lead.friend.publicId) ?? null : null} />
@@ -281,6 +282,8 @@ export function Dashboard(props: DashboardProps) {
             // At zero cards it ranks nothing and leaves on its own (S12: absent, not empty).
             props.ready && <ReadyToBuild ready={props.ready} inUse={props.inUse} />
           )}
+          {/* Direction B: What's new directly under the lead story (tool-discovery R7, Q11 A), then the decks; Friends and Commitments follow on a phone. */}
+          {feed && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-1 min-[1180px]:order-none" />}
           {/* Sliced here rather than inside the section, so the section draws
               what it is handed and the ordering stays testable without a DOM.
               `decks.length` rides alongside as the footer's total — the figure
@@ -299,8 +302,6 @@ export function Dashboard(props: DashboardProps) {
               />
             )}
           </div>
-          {/* Direction B: What's new under the resume block, before Friends and Commitments on a phone. */}
-          {feed && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-3 min-[1180px]:order-none" />}
         </div>
 
         {/* The column exists only when a card in it does. Null when the availability

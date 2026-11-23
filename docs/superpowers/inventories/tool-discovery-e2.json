@@ -1,0 +1,36 @@
+{
+  "feature": "Finding the tools, PR E2: Home order, section heads, Game to log ✕",
+  "note": "Needs a SCRATCH branch off local-dev with scripts/seed-rule-zero-fixture.mts then scripts/seed-log-reminder-fixture.mts (Home draws two Game to log rows, Friends, Commitments, the resume decks). The one-game row hides a game first.",
+  "out": "contact-sheets/tool-discovery-e2",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "ipad-portrait", "width": 820, "height": 1180 },
+    { "label": "ipad-landscape", "width": 1180, "height": 820 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "shares": { "binding": "HomeSectionHead", "module": "src/components/home/home-section-head" },
+  "rows": [
+    {
+      "id": "home-heads",
+      "label": "Home: What's new under the lead, the shared section heads (resume decks)",
+      "view": "src/components/home/resume-decks.tsx",
+      "fullPage": true,
+      "steps": [{ "goto": "/", "wait": "[data-testid=\"home-log-card\"]", "settle": 1500 }]
+    },
+    {
+      "id": "home-friends-head",
+      "label": "Home: Friends head",
+      "view": "src/components/home/friends-section.tsx",
+      "fullPage": true,
+      "steps": [{ "goto": "/", "wait": "#home-friends-head", "settle": 1000 }]
+    },
+    {
+      "id": "home-commitments-head",
+      "label": "Home: Commitments head",
+      "view": "src/components/home/commitments-card.tsx",
+      "fullPage": true,
+      "steps": [{ "goto": "/", "wait": "[data-testid=\"home-log-card\"]", "settle": 1000 }]
+    }
+  ]
+}
