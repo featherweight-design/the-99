@@ -33,6 +33,9 @@ export type HubToolSpec =
   | { tool: "consider"; panel: ReactNode; toolbar: ReactNode | null; counts: { owned: number; toBuy: number } | null }
   | {
     tool: "suggested"; panel: ReactNode | null;
+    /** No panel yet because the stored reading's peek has not answered: the tile waits, dimmed, on its own purpose rather
+     *  than saying the deck needs an analysis it may already have. */
+    pending?: boolean;
     /** Suggested changes v2 on (plan 2026-10-27, UI PR 5a): the deck's count on the tool's 99 scale, how far it is from its
      *  body size (over positive, under negative), and the way to Top off on Your deck. Off, the tile is as shipped. */
     v2?: { at: number; over: number; onTopOff?: () => void } | null;
@@ -122,6 +125,9 @@ function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number, hasCuts 
         tool: "suggested", purpose: under ? tile.under(v2.at) : tile.over(v2.over), cost: "", status: "", statusPhone: "",
         running: false, offer: false, inert: true, link,
       };
+    }
+    if (spec.panel === null && spec.pending) {
+      return { tool: "suggested", purpose: v2 ? suggestedChangesV2Copy.tile.purpose : t.purpose, cost: "", status: "", statusPhone: "", running: false, offer: false, inert: true };
     }
     if (spec.panel === null) {
       return { tool: "suggested", purpose: t.needsReading, cost: "", status: "", statusPhone: "", running: false, offer: false, inert: true };

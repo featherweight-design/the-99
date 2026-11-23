@@ -2393,6 +2393,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   line, and that a Cut collapses its row without the offer returning. The same flags must be given
   to the server and the probe (locks are in the fingerprint).
 
+- `pnpm probe:tuning-tab` (tool discovery B2) presses the deck page's tab row at 390x844, 820x1180 and
+  1300x900 on the audit account's first deck: a Tuning tab and no Consider tab; pressing Tuning draws the
+  hub in `#panel-tuning` with Consider as its first tile; pressing Consider draws its list in the hub;
+  Analysis carries no hub; and the retired `?tab=consider` arrives on Tuning with Consider open. Read
+  only, loopback `PROBE_BASE` only. On main the first check fails: there is no Tuning tab.
+
 - `pnpm probe:tuning-hub-stays-put` proves the Analysis tab's Tuning hub stays where it is, as the same
   node, before, during and after an analysis, at 1300x900 and 390x844 (Hugh, 2026-10-14). Two cases,
   each on decks it clones under the audit account and deletes in a `finally`, with every ledger row

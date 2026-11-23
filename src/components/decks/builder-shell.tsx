@@ -1936,7 +1936,7 @@ export function BuilderShell({
             />
 
             {/* Role Counter Strip. One mount, at "Your deck", whether or not Analysis is on:
-                its "consider →" cells switch this shell to Consider, so the strip has to
+                its "consider →" cells open Consider in the Tuning tab, so the strip has to
                 live on the spine that owns the tab switch rather than inside one panel. */}
             <RoleCounterStrip
               mix={mix}
@@ -2109,6 +2109,8 @@ export function BuilderShell({
                       {
                         tool: "suggested" as const,
                         panel: tuningPermits ? suggestedPanel(tuningPermits) : null,
+                        // Tuning has no opening loader: until the peek answers, the tile waits rather than saying "needs a reading".
+                        pending: tuningPermits === null && isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
                         // The hub reads `at`, `over` and `onTopOff` off the run's own figures.
                         v2: suggestedV2,
                       },

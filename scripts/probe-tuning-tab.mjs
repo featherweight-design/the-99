@@ -8,7 +8,7 @@
 //  5. the retired `?tab=consider` arrives on Tuning with Consider open.
 // On main (before B2) step 1 fails: there is no Tuning tab. Screenshots of step 3 land in PROBE_OUT for the contact sheet.
 //
-// Run by hand against `next dev`: `PROBE_BASE=http://localhost:3258 [PROBE_DECK=<id>] node scripts/probe-tuning-tab.mjs`.
+// Run by hand against `next dev`: `PROBE_BASE=http://localhost:3258 [PROBE_DECK=<id>] pnpm probe:tuning-tab`. Loopback only.
 import { mkdirSync } from "node:fs";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -21,6 +21,12 @@ const { E2E_AUDIT_USER_PASSWORD: PASSWORD } = FIXTURE
   ? { E2E_AUDIT_USER_PASSWORD: null }
   : requireEnv(["E2E_AUDIT_USER_PASSWORD"]);
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+{
+  const u = new URL(BASE);
+  if (u.protocol !== "http:" || !["localhost", "127.0.0.1"].includes(u.hostname) || u.port === "") {
+    throw new Error(`probe:tuning-tab refuses PROBE_BASE ${BASE}: a loopback server with a port only.`);
+  }
+}
 const OUT = process.env.PROBE_OUT ?? null;
 
 const VIEWPORTS = [

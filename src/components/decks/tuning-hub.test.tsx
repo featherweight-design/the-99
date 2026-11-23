@@ -87,6 +87,13 @@ describe("TuningHub landing", () => {
     expect(tile("suggested").textContent).toContain(copy.tools.suggested.needsReading);
   });
 
+  it("draws Suggested changes waiting on its purpose, not \"needs a reading\", while the stored reading's peek is pending", () => {
+    render(<TuningHub deckId="d" drawn tools={[{ tool: "suggested", panel: null, pending: true }, cuts(4)]} />);
+    expect(tile("suggested").hasAttribute("data-inert")).toBe(true);
+    expect(tile("suggested").textContent).toContain(copy.tools.suggested.purpose);
+    expect(tile("suggested").textContent).not.toContain(copy.tools.suggested.needsReading);
+  });
+
   it("makes each tool's tile its landing target, an inert one too, and History none (discovery R2, E11)", async () => {
     let targets: Targets | null = null;
     function Grab() {
