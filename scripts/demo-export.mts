@@ -557,7 +557,7 @@ const deckReads = await Promise.all(DECK_ROLES.map(async (role) => {
       await readHeldPricePicks(userId, [deckId]),
     )),
     soft(`${role} deck combo marks`, loadInDeckPartners({ deckOracleIds, commanderOracleIds: commanderIds })),
-    ranked.length > 0 ? chainArt(userId, null, ranked.map((c) => c.oracleId)) : new Map<string, string>(),
+    ranked.length > 0 ? chainArt(userId, null, ranked.map((c) => c.oracleId), "manapool") : new Map<string, string>(),
     candidateCards.length > 0 ? soft(`${role} deck Top off facts`, loadCandidateFacts(candidateCards.map((c) => c.oracleId), deckOracleIds)) : new Map(),
     candidateCards.length > 0
       ? soft(`${role} deck Top off combos`, loadCompletionPartners({ deckOracleIds, commanderOracleIds: commanderIds, candidateOracleIds: comboLookupIds(candidateCards, []) }))
@@ -645,7 +645,7 @@ const { readFitsRead } = await import("../src/lib/swaps/fits-read-run");
 const { projectFits } = await import("../src/lib/demo/project-decks");
 const shared = cards.find((c) => c.name === SHARED);
 if (!shared) throw new Error(`demo:export: the collection holds no ${SHARED}, the card step 8 opens; nothing written.`);
-const [fitsList, fitsPanel] = await Promise.all([loadFits(userId, shared.oracleId), readFitsRead(userId, shared.oracleId, undefined, env)]);
+const [fitsList, fitsPanel] = await Promise.all([loadFits(userId, shared.oracleId, "manapool"), readFitsRead(userId, shared.oracleId, undefined, env, "manapool")]);
 // The stored read is the paid run's (`demo:generate`'s which-deck step), found by its `fits_reads` id.
 const fitsReadId = storedId("which-deck", "fits_reads");
 if (!fitsReadId) skipped.push("which-deck (needs --run)");

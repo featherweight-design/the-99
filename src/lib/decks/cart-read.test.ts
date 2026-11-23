@@ -88,9 +88,8 @@ describe("loadCart", () => {
     readBuyRowPrices.mockRejectedValue(new Error("price read failed"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     chainArt.mockResolvedValue(new Map([["sol", "owned-sol.jpg"]]));
-    expect((await loadCart("user")).lines[0].imageUri).toBe("owned-sol.jpg");
-    // The first three arguments only: the fourth is the env, which a test never compares or prints.
-    expect(chainArt.mock.calls[0].slice(0, 3)).toEqual(["user", null, ["sol"]]);
+    expect((await loadCart("user", "tcgplayer")).lines[0].imageUri).toBe("owned-sol.jpg");
+    expect(chainArt.mock.calls[0]).toEqual(["user", null, ["sol"], "tcgplayer"]);
     selects.length = 0;
     selects.push(
       [{ total: 21 }],

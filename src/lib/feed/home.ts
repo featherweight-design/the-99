@@ -324,7 +324,7 @@ export function toViews(
  * chain card details uses (\`chainArt\`: the reader's own printing, else the one details opens on), so its hover preview
  * and its press show one picture; the catalog's representative stays where the chain has none.
  */
-export async function lookups(userId: string, items: readonly FeedItem[], q: Executor, _env: NodeJS.ProcessEnv) {
+export async function lookups(userId: string, items: readonly FeedItem[], q: Executor, _env: NodeJS.ProcessEnv, store: Store) {
   const codes = items.flatMap((i) => (i.kind === "new-set" ? [i.code] : []));
   const files = items.flatMap((i) => (i.kind === "new-precon" ? [i.fileName] : []));
   const ids = [
@@ -342,7 +342,7 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
     run<CardRow & { file_name: string }>(preconCommandersQuery(files), files.length > 0),
     run<{ file_name: string; total: number; owned: number }>(preconOwnedQuery(userId, files), files.length > 0),
     run<CardRow>(feedCardsQuery(ids), ids.length > 0),
-    chainArt(userId, null, ids),
+    chainArt(userId, null, ids, store),
   ]);
   return {
     sets: new Map(setRows.map((r) => [r.code, { ...toCard(r), size: r.size === null ? null : Number(r.size) }])),
@@ -380,7 +380,7 @@ export async function loadHomeFeed(
     const id = i.kind === "commander-decklists" ? parseCatalogKey(i.kind, i.key) : null;
     return id ? [id] : [];
   });
-  const [found, targets] = await Promise.all([lookups(userId, items, q, env), loadPostListTargets(posts, now, q)]);
+  const [found, targets] = await Promise.all([lookups(userId, items, q, env, store), loadPostListTargets(posts, now, q)]);
   const views = withListTargets(toViews(items, found, store), targets);
   const feed = offer.length > 0 ? { ...splitLead(views, on), offer } : splitLead(views, on);
   // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's

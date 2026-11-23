@@ -20,6 +20,7 @@ import { offendingIds, rulesViolations } from "./rules-violations";
 import { touches, type LoggedEntry, type ReadingMarks } from "./touches";
 import { sameList } from "../profile/stored";
 import { readProfileHead } from "../profile/load";
+import type { Store } from "../stores/rows";
 
 /** `imageUri`: the printing card details open (the deck's pick, else the one the reader owns, else the catalog's), filled by `loadDeckNotices`; null until then. */
 export type NoticeCard = { oracleId: string; name: string; imageUri: string | null };
@@ -86,6 +87,7 @@ export async function liveOffendingIds(tx: Tx, deckId: string, commanderIds: rea
 export async function loadDeckNotices(
   deckId: string,
   userId: string,
+  store: Store | Promise<Store>,
 ): Promise<DeckNotices | null> {
   // The deck, its reading and its cards from ONE snapshot: read apart, an edit or an analysis
   // committing between them pairs a reading's marks with a list it never described.
@@ -155,7 +157,7 @@ export async function loadDeckNotices(
     ...data.flatMap((d) => d.cards.map((c) => c.oracleId)),
     ...violations.notLegal,
     ...violations.outsideColors.map((v) => v.oracleId),
-  ]);
+  ], store);
   const artOf = (id: string) => art.get(id) ?? byId.get(id)?.imageUri ?? null;
   // The catalog's name first; the name the entry was written with when the catalog no longer has
   // the card (a removed combo keeps `detail.names` for exactly this).

@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "../auth";
+import { readerStoreForAction } from "../stores/action-store";
 import { requestFlags } from "../flags/request";
 import { isUuid } from "../uuid";
 import { pressFitsRead, readFitsRead, type FitsReadPanel, type FitsReadPress } from "./fits-read-run";
@@ -16,12 +17,12 @@ export async function readFitsReadAction(oracleId: string): Promise<FitsReadPane
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   if (!isUuid(oracleId)) return null;
-  return readFitsRead(userId, oracleId, undefined, env);
+  return readFitsRead(userId, oracleId, undefined, env, readerStoreForAction(userId));
 }
 
 export async function pressFitsReadAction(oracleId: string): Promise<FitsReadPress> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
   if (!isUuid(oracleId)) return { ok: false, reason: "notFound" };
-  return pressFitsRead(userId, oracleId, undefined, env);
+  return pressFitsRead(userId, oracleId, undefined, env, readerStoreForAction(userId));
 }

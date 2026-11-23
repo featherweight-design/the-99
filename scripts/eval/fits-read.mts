@@ -115,7 +115,7 @@ for (const n of wanted) if (!idOf.has(n)) throw new Error(`card not found on sta
 type Loaded = NonNullable<Awaited<ReturnType<typeof loadFitsReadInputs>>>;
 const loads = new Map<string, Loaded>();
 for (const name of wanted) {
-  const l = await loadFitsReadInputs(HUGH, idOf.get(name)!, { allDecks: true });
+  const l = await loadFitsReadInputs(HUGH, idOf.get(name)!, "manapool", { allDecks: true });
   if (!l) throw new Error(`loadFits found no card for ${name}`);
   loads.set(name, l);
 }

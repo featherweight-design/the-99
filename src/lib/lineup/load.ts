@@ -168,7 +168,7 @@ async function readBuilds(userId: string, ids: string[], brews: ReadonlySet<stri
   const every = [...lists.list, ...lists.commanders].filter((c) => bodied.has(c.deckId));
   const shared = sharedCards(every, availability, buys, bodied);
   // Each preview shows the printing card details opens (the owned-printing chain, at the draw), else the catalog's.
-  const art = await chainArt(userId, null, shared.map((c) => c.oracleId));
+  const art = await chainArt(userId, null, shared.map((c) => c.oracleId), store);
   return { builds, asOf: prices.newestAsOf, shared: withChainArt(shared, art), lists: every, collection };
 }
 

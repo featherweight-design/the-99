@@ -6,6 +6,7 @@ import { cardBracketFlags, cards, collectionItems } from "../../../db/schema";
 import { chainArt } from "../../../lib/cards/chain-art";
 import { nameSearch } from "../../../lib/cards/name-search";
 import { requireUserId } from "../../../lib/auth";
+import { readerStoreForAction } from "../../../lib/stores/action-store";
 import type { CardNoteFacts } from "../../../lib/bracket/card-note";
 import { isTutor } from "../../../lib/bracket/tutor-targets";
 import { isGameCardWhere } from "../../../lib/cards/game-card-where";
@@ -82,6 +83,9 @@ export async function searchCards(
   const userId = await requireUserId();
   const match = nameSearch(query);
   if (!match) return [];
+  // The reader's store, asked now so its reads overlap the search query below rather than queue behind it: this
+  // action fires per keystroke. Never rejects (Mana Pool on a failed read).
+  const storeRead = readerStoreForAction(userId);
   const { flavorHits } = match;
   // The user's collection, summed per card once and joined in — rather than a
   // correlated subquery, which the select list and the owned-only filter would
@@ -146,7 +150,7 @@ export async function searchCards(
     // The art a row is drawn with: the printing card details opens, rather than the catalog's one arbitrary
     // printing per card (the player's own copy, the deck's pick where it holds the card, else the printing an
     // unowned card opens on). Fail-soft inside `chainArt`.
-    chainArt(userId, deckId ?? null, rows.map((r) => r.oracleId)),
+    storeRead.then((store) => chainArt(userId, deckId ?? null, rows.map((r) => r.oracleId), store)),
   ]);
   return rows.map(({ oracleText, keywords, gameChanger, massLandDenial, extraTurn, ...row }) => ({
     ...row,

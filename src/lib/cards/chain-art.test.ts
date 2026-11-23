@@ -7,6 +7,7 @@ const calls = vi.hoisted(() => ({
   ownedArgs: undefined as unknown,
   deckArgs: undefined as unknown,
   openingArgs: undefined as unknown,
+  openingStore: undefined as unknown,
   fail: false,
 }));
 
@@ -14,7 +15,7 @@ vi.mock("../collection/owned-printings", () => ({
   readOwnedPrintings: async (...args: unknown[]) => { calls.ownedArgs = args; if (calls.fail) throw new Error("ownership read failed"); return calls.owned; },
 }));
 vi.mock("./opening-printing", () => ({
-  loadOpeningArt: async (ids: string[]) => { calls.openingArgs = ids; return new Map([...calls.opening].filter(([id]) => ids.includes(id))); },
+  loadOpeningArt: async (ids: string[], store?: string) => { calls.openingArgs = ids; calls.openingStore = store; return new Map([...calls.opening].filter(([id]) => ids.includes(id))); },
 }));
 vi.mock("../decks/printings", () => ({
   readDeckOwnedPrintings: async (...args: unknown[]) => { calls.deckArgs = args; if (calls.fail) throw new Error("ownership read failed"); return calls.deck; },
@@ -29,6 +30,7 @@ beforeEach(() => {
   calls.ownedArgs = undefined;
   calls.deckArgs = undefined;
   calls.openingArgs = undefined;
+  calls.openingStore = undefined;
   calls.fail = false;
 });
 
@@ -38,16 +40,16 @@ describe("chainArt", () => {
   it("asks the deck's chain when a deck is in context, and the player's owned printing when none is", async () => {
     calls.deck = new Map([["a", { imageUri: "deck-pick.jpg" }]]);
     calls.owned = new Map([["a", { imageUri: "owned.jpg" }]]);
-    expect(await chainArt("u", "d", ["a"])).toEqual(new Map([["a", "deck-pick.jpg"]]));
+    expect(await chainArt("u", "d", ["a"], "manapool")).toEqual(new Map([["a", "deck-pick.jpg"]]));
     expect(calls.deckArgs).toEqual(["u", "d", ["a"]]);
     expect(calls.ownedArgs).toBeUndefined();
-    expect(await chainArt("u", null, ["a"])).toEqual(new Map([["a", "owned.jpg"]]));
+    expect(await chainArt("u", null, ["a"], "manapool")).toEqual(new Map([["a", "owned.jpg"]]));
     expect(calls.ownedArgs).toEqual(["u", ["a"]]);
   });
 
   it("leaves out a card with no owned art, a null id and a printing with no image", async () => {
     calls.deck = new Map([["a", { imageUri: "a.jpg" }], ["b", { imageUri: null }]]);
-    const got = await chainArt("u", "d", ["a", "b", "c", null, undefined, "a"]);
+    const got = await chainArt("u", "d", ["a", "b", "c", null, undefined, "a"], "manapool");
     expect([...got]).toEqual([["a", "a.jpg"]]);
     expect(calls.deckArgs).toEqual(["u", "d", ["a", "b", "c"]]);
   });
@@ -57,9 +59,21 @@ describe("chainArt", () => {
   it("falls back to the opening printing for a card no owned printing resolves, and asks only for those", async () => {
     calls.owned = new Map([["a", { imageUri: "owned-a.jpg" }]]);
     calls.opening = new Map([["b", "opening-b.jpg"]]);
-    const got = await chainArt("u", null, ["a", "b", "c"]);
+    const got = await chainArt("u", null, ["a", "b", "c"], "manapool");
     expect([...got].sort()).toEqual([["a", "owned-a.jpg"], ["b", "opening-b.jpg"]]);
     expect(calls.openingArgs).toEqual(["b", "c"]);
+  });
+
+  it("asks for the opening printing at the reader's store", async () => {
+    calls.opening = new Map([["b", "opening-b.jpg"]]);
+    await chainArt("u", null, ["b"], "cardkingdom");
+    expect(calls.openingStore).toBe("cardkingdom");
+  });
+
+  it("takes the store as a pending read and waits for it only at the opening printing", async () => {
+    calls.opening = new Map([["b", "opening-b.jpg"]]);
+    await chainArt("u", null, ["b"], Promise.resolve("tcgplayer"));
+    expect(calls.openingStore).toBe("tcgplayer");
   });
 
   // A failed ownership read says nothing about ownership: it must not send an owned card through the unowned rule
@@ -67,20 +81,20 @@ describe("chainArt", () => {
   it("answers nothing, and applies no opening printing, when the ownership read fails", async () => {
     calls.fail = true;
     calls.opening = new Map([["a", "opening-a.jpg"]]);
-    expect(await chainArt("u", null, ["a"])).toEqual(new Map());
-    expect(await chainArt("u", "d", ["a"])).toEqual(new Map());
+    expect(await chainArt("u", null, ["a"], "manapool")).toEqual(new Map());
+    expect(await chainArt("u", "d", ["a"], "manapool")).toEqual(new Map());
     expect(calls.openingArgs).toBeUndefined();
   });
 
   it("does not send a card the reader owns, whose printing has no art, through the unowned rule", async () => {
     calls.owned = new Map([["a", { imageUri: null }]]);
     calls.opening = new Map([["a", "opening-a.jpg"], ["b", "opening-b.jpg"]]);
-    expect([...(await chainArt("u", null, ["a", "b"]))]).toEqual([["b", "opening-b.jpg"]]);
+    expect([...(await chainArt("u", null, ["a", "b"], "manapool"))]).toEqual([["b", "opening-b.jpg"]]);
     expect(calls.openingArgs).toEqual(["b"]);
   });
 
   it("reads nothing for no ids", async () => {
-    expect(await chainArt("u", "d", [null])).toEqual(new Map());
+    expect(await chainArt("u", "d", [null], "manapool")).toEqual(new Map());
     expect(calls.deckArgs).toBeUndefined();
   });
 });

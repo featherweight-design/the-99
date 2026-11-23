@@ -25,6 +25,7 @@ const stub = vi.hoisted(() => ({
 
 vi.mock("next/cache", () => ({ revalidatePath: (p: string) => void stub.paths.push(p) }));
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user-1" }));
+vi.mock("../../lib/stores/action-store", () => ({ readerStoreForAction: async () => "manapool" }));
 vi.mock("../../lib/decks/read", () => ({ requireDeck: async () => ({ id: DECK, commanderOracleId: "c", partnerOracleId: null }) }));
 vi.mock("../../lib/decks/notes-read", () => ({
   readDeckNotes: async () => {
