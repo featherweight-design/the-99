@@ -147,6 +147,7 @@ function FriendRow({
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true"><path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 110-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 100-5C13 2 12 7 12 7z" /></svg>
           {sparable}
+          <PendingReporter href={`/friends/${friend.publicId}/wishlist`} />
         </Link>
       ) : null}
       {linkable ? <span aria-hidden className="flex-none px-[4px] text-[18px] leading-none text-[color:var(--fg-muted)]">›</span> : null}
