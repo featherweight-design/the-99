@@ -6,6 +6,10 @@
 // add stored at $1.00, a figure neither store charges for these cards, so the stored total ($2.00) and the repriced one
 // cannot agree. Fails on main: the result draws the stored $2.00.
 //
+// The store line (addendum-upgrade-store): under the four facts the result names the store whose figures it draws, in the
+// strip's words, 8px under the facts and 3px in from their edge, inside the sheet at both widths and on one row at 1300.
+// Fails on main: there is no line.
+//
 // FIXTURE: a scratch branch of local-dev, which the dev server reads, where the audit account has a user
 // STORE_PREFERENCE_ENABLED and PRECON_UPGRADE_ENABLED overrides 'on', user_prefs.preferred_store = 'tcgplayer' and
 // printing_store_prices rows for tcgplayer. The probe writes one model_calls row and one precon_upgrades row of the
@@ -44,7 +48,9 @@ const check = (ok, label, saw) => {
   if (!ok) failures += 1;
   console.log(`${ok ? "PASS" : "FAIL"}  ${label}  (${saw})`);
 };
+// The app drops the decimals of a whole-dollar figure ($57), so a figure is read in either form.
 const dollars = (cents) => `$${(cents / 100).toFixed(2)}`;
+const figureIs = (text, cents) => text.includes(dollars(cents)) || (cents % 100 === 0 && text.includes(`$${cents / 100}`));
 
 async function signIn(page) {
   await setupClerkTestingToken({ page });
@@ -156,7 +162,27 @@ async function walk(page, size, expected) {
   const figure = (await label.locator("xpath=following-sibling::span[1]").textContent().catch(() => null))?.trim() ?? "";
   const stored = dollars(STORED_CENTS * 2);
   check(figure !== "" && !figure.includes(stored), `${size.name} To buy is not the stored ${stored}`, figure || "no figure");
-  check(figure.includes(dollars(expected.cents)), `${size.name} To buy is today's price at ${expected.store}, ${dollars(expected.cents)}`, figure || "no figure");
+  check(figureIs(figure, expected.cents), `${size.name} To buy is today's price at ${expected.store}, ${dollars(expected.cents)}`, figure || "no figure");
+
+  const line = dialog.locator("[data-upgrade-price-line]").first();
+  await line.waitFor({ state: "attached", timeout: 10_000 }).catch(() => {});
+  const text = (await line.textContent().catch(() => null))?.trim() ?? "";
+  check(
+    /^TCGplayer market prices · averages of recent sales, so a listing can differ · last checked /.test(text),
+    `${size.name} the line names the reader's store and the market note, dated`, text || "no line",
+  );
+  const box = await line.evaluate((el) => {
+    const r = el.getBoundingClientRect();
+    const g = el.previousElementSibling.getBoundingClientRect();
+    const sheet = el.closest('[role="dialog"]').getBoundingClientRect();
+    return { top: r.top, left: r.left + parseFloat(getComputedStyle(el).paddingLeft), right: r.right, height: r.height, gridBottom: g.bottom, gridLeft: g.left, sheetRight: sheet.right };
+  }).catch(() => null);
+  if (box) {
+    check(Math.abs(box.top - box.gridBottom - 8) <= 1, `${size.name} the line sits 8px under the facts`, `${(box.top - box.gridBottom).toFixed(1)}px`);
+    check(Math.abs(box.left - box.gridLeft - 3) <= 1, `${size.name} the line sits 3px in from the facts' edge`, `${(box.left - box.gridLeft).toFixed(1)}px`);
+    check(box.right <= box.sheetRight + 0.5, `${size.name} the line stays inside the sheet`, `right ${box.right.toFixed(0)} of ${box.sheetRight.toFixed(0)}`);
+    if (size.width >= 1000) check(box.height < 20, `${size.name} the line is one row`, `${box.height.toFixed(1)}px high`);
+  }
 }
 
 await clerkSetup();

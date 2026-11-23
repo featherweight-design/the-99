@@ -7,12 +7,12 @@ const strat = (key: string) => ({ key, label: key, blurb: "b", source: "edhrec" 
 const lead = (key: string, strategies = ["spells", "tokens"]): OfferedCommander => ({ key, isFace: true, cards: [], line: null, strategies: strategies.map(strat) });
 const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
   boxBracket: 2, boxPermits: [1, 2], commanders: [lead("a"), lead("b", ["tokens"])], runs: [], listFp: "x", cards: {}, figures: {},
-  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, priceStore: null,
   ...over,
 });
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r", status: "done", strategyKey: runKey("a", 3, "spells"), strategyLabel: "Spells", refunded: false, createdAt: new Date(), pricesAsOf: new Date(), pairs: [],
-  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
+  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0, priced: 0 }, pricesDated: { behind: false, when: "Monday" }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });
 
 describe("bracketOffers", () => {

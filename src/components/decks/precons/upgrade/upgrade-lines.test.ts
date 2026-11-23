@@ -18,7 +18,7 @@ const panel: UpgradePanel = {
     cut1: { owned: true, typeLine: "Artifact", image: null, typeGroup: "Artifacts", role: "ramp" },
   },
   figures: { muddle: FIG },
-  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, priceStore: null,
 };
 const pair = (n: number, over: Partial<PanelRun["pairs"][number]> = {}) => ({
   cutId: `cut${n}`, cut: `Cut ${n}`, addId: `add${n}`, add: `Add ${n}`, addCents: 120, reason: `Add reason ${n}`, cutReason: `Cut reason ${n}`, position: n, ...over,
@@ -26,7 +26,7 @@ const pair = (n: number, over: Partial<PanelRun["pairs"][number]> = {}) => ({
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
   id: "r1", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pricesAsOf: new Date("2026-11-10T12:00:00Z"),
   pairs: [pair(1), pair(2)], buyTotalCents: 240, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
-  toBuy: { cards: 1, cents: 120 }, owned: 1, themes: {}, deck: null, seenAt: null, unpicked: [], ...over,
+  toBuy: { cards: 1, cents: 120, priced: 1 }, pricesDated: { behind: false, when: "Monday" }, owned: 1, themes: {}, deck: null, seenAt: null, unpicked: [], ...over,
 });
 
 describe("upgradeLines (fresh start R2, call 9)", () => {

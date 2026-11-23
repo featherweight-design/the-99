@@ -23,12 +23,12 @@ const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
   boxBracket: 2, boxPermits: [1, 2], figures: {},
   commanders: [lead("rootha", "Rootha", [strat("spellslinger", "Spells")]), lead("muddle", "Muddle", [strat("tokens", "Tokens")])],
   runs: [], listFp: "x", cards: {},
-  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null },
+  allowance: { used: 0, limit: 5, reopensAt: null, nextAt: null }, priceStore: null,
   ...over,
 });
 const run: PanelRun = {
   id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pricesAsOf: new Date("2026-11-10T12:00:00Z"), pairs: [],
-  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
+  buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0, priced: 0 }, pricesDated: { behind: false, when: "Monday" }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>
   render(<UpgradeFlow fileName="prismari.json" precon="Prismari Artistry" panel={p} art={new Map()} onClose={() => {}} {...extra} />);

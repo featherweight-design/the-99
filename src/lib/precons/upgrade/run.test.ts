@@ -127,7 +127,9 @@ describe("readUpgrade", () => {
     expect(prices).toHaveBeenCalledWith(["p0", "p1", "p2"], "tcgplayer");
     expect(panel!.runs[0].pairs.map((p) => p.addCents)).toEqual([450, 0, 125]);
     // The run's total and price date follow the repriced figures, so nothing on the panel quotes the store it was pressed at.
-    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 3, cents: 575 }, buyTotalCents: 575, pricesAsOf: TODAY });
+    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 3, cents: 575, priced: 2 }, buyTotalCents: 575, pricesAsOf: TODAY });
+    // The line names the store the figures were read at; a card that store does not price is not counted as priced.
+    expect(panel!.priceStore).toBe("tcgplayer");
     store.runs = [];
   });
 
@@ -138,10 +140,13 @@ describe("readUpgrade", () => {
     const prices = vi.fn(async (): Promise<RepricedAdds> => { throw new Error("down"); });
     const off = await readUpgrade("u1", "boss.json", { ...d, prices }, ENV_VIEW);
     expect(prices).not.toHaveBeenCalled();
-    expect(off!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 300 } });
+    expect(off!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 300, priced: 1 } });
+    // Stored figures carry no store: the price line is not drawn for them.
+    expect(off!.priceStore).toBeNull();
     const failed = await readUpgrade("u1", "boss.json", { ...d, prices }, { ...ENV_VIEW, STORE_PREFERENCE_ENABLED: "true" });
     expect(prices).toHaveBeenCalledTimes(1);
     expect(failed!.runs[0].pairs).toEqual([old]);
+    expect(failed!.priceStore).toBeNull();
     expect(failed!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 300 }, buyTotalCents: 300, pricesAsOf: NOW });
     expect(recordSoftFailure).toHaveBeenCalled();
     store.runs = [];
