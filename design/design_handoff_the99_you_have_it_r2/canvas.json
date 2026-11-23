@@ -1,0 +1,50 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-23T15:40:00Z"
+ },
+ "title": "You have it R2",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 2080,
+   "title": "Main"
+  },
+  "History.dc.html": {
+   "x": 1820,
+   "y": 0,
+   "w": 1700,
+   "h": 2060,
+   "title": "History"
+  },
+  "Sheet.dc.html": {
+   "x": 3640,
+   "y": 0,
+   "w": 1700,
+   "h": 2280,
+   "title": "Sheet"
+  },
+  "Threshold.dc.html": {
+   "x": 5460,
+   "y": 0,
+   "w": 1700,
+   "h": 3460,
+   "title": "Threshold"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "History.dc.html",
+  "Sheet.dc.html",
+  "Threshold.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
