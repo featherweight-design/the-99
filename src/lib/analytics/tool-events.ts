@@ -8,11 +8,17 @@
 export const FIND_A_DECK_FROM = ["callout_show_them", "tile_button", "row_strip", "row_button", "card_door"] as const;
 export type FindADeckFrom = (typeof FIND_A_DECK_FROM)[number];
 
+/** Where the Where credits work sheet was opened from: Home's welcome strip, or the /credits Welcome cell. */
+export const WELCOME_WHERE_FROM = ["home_strip", "credits_cell"] as const;
+export type WelcomeWhereFrom = (typeof WELCOME_WHERE_FROM)[number];
+
 export type ToolEvents = {
   find_a_deck_opened: { from: FindADeckFrom };
+  welcome_where_opened: { from: WelcomeWhereFrom };
 };
 
 /** Each event's closed sets, property by property: what the guard test checks a built event against. */
 export const TOOL_EVENT_VALUES: { [E in keyof ToolEvents]: { [P in keyof ToolEvents[E]]: readonly ToolEvents[E][P][] } } = {
   find_a_deck_opened: { from: FIND_A_DECK_FROM },
+  welcome_where_opened: { from: WELCOME_WHERE_FROM },
 };

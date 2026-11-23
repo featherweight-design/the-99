@@ -115,6 +115,13 @@ export function WhereCreditsWork({
           <ul role="list" className={LIST}>
             {sheet.rows.map((r) => <Row key={r.id} row={r} />)}
           </ul>
+          <p data-welcome-free className="m-0 flex items-center gap-[8px] border-t border-t-[color:var(--border)] pb-[3px] pt-[9px] font-mono text-[11px] text-[color:var(--fg-muted)]">
+            <i aria-hidden className="block h-[6px] w-[6px] flex-none rotate-45 border border-[color:var(--fg-faint)]" />
+            {sheet.freeLine}
+          </p>
+          <ul role="list" aria-label={sheet.freeLine} className={LIST}>
+            {sheet.free.map((r) => <Row key={r.id} row={r} />)}
+          </ul>
           {teaser ? (
             <div className="mt-[2px] border-t border-t-[color:var(--border)]">
               <Link

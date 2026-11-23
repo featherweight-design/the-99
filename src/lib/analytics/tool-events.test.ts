@@ -1,7 +1,7 @@
 // The tool discovery events' guard (plan §6, handoff G21): one case per event, each built as the app builds it, and
 // every string value a member of its property's closed set. A prop typed `string` fails the build (below).
 import { describe, expect, it } from "vitest";
-import { FIND_A_DECK_FROM, TOOL_EVENT_VALUES, type ToolEvents } from "./tool-events";
+import { FIND_A_DECK_FROM, TOOL_EVENT_VALUES, WELCOME_WHERE_FROM, type ToolEvents } from "./tool-events";
 
 /** The events whose props admit any string: `never` while every prop is a closed set. */
 type OpenProp = {
@@ -27,5 +27,10 @@ describe("tool discovery events", () => {
   it("find_a_deck_opened carries only `from`, from its closed set", () => {
     for (const from of FIND_A_DECK_FROM) closed("find_a_deck_opened", { from });
     expect(() => closed("find_a_deck_opened", { from: "Sol Ring" as never })).toThrow();
+  });
+
+  it("welcome_where_opened carries only `from`, from its closed set", () => {
+    for (const from of WELCOME_WHERE_FROM) closed("welcome_where_opened", { from });
+    expect(() => closed("welcome_where_opened", { from: "a card name" as never })).toThrow();
   });
 });

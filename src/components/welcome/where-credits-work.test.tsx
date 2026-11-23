@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
 import { showcaseCopy, writtenForYouCopy } from "../../lib/copy/discovery";
@@ -21,7 +21,7 @@ const GROUPS: ShowcaseGroup[] = [
     card("suggested-changes", { kind: "deck", href: "/decks/d1?tool=suggested-changes", deck: "D", more: 0 }),
   ] },
 ];
-const sheet = (cards: number, decks: number) => welcomeSheet({ written: writtenForYouCopy.rows, cards, decks, groups: GROUPS })!;
+const sheet = (cards: number, decks: number) => welcomeSheet({ written: writtenForYouCopy.rows, cards, decks, groups: GROUPS, firstDeckId: "d1" })!;
 
 function open(cards: number, decks: number, f = facts(), teaser = f.teaser) {
   render(<main><WhereCreditsWork facts={f} sheet={sheet(cards, decks)} teaser={teaser} onClose={() => {}} /></main>);
@@ -43,6 +43,18 @@ describe("WhereCreditsWork", () => {
     }
   });
 
+  it("draws the free block before the teaser, in every shape: the line once, each row with a free pill", () => {
+    for (const [cards, decks] of [[0, 0], [12, 0], [12, 2]]) {
+      const d = open(cards, decks);
+      expect(d.querySelectorAll("[data-welcome-free]")).toHaveLength(1);
+      expect(within(d).getByText("No credit needed")).toBeTruthy();
+      for (const id of ["consider", "find-a-deck"]) {
+        expect(d.querySelector(`[data-welcome-row="${id}"]`)!.textContent).toContain("free");
+      }
+      cleanup();
+    }
+  });
+
   it("before a collection: the lock line once and no Try it", () => {
     const d = open(0, 0);
     expect(within(d).getAllByText(refreshCopy.firstRun.step2Locked)).toHaveLength(1);
@@ -61,9 +73,13 @@ describe("WhereCreditsWork", () => {
   it("with a deck: About's order and Try it on the four tools with a landing", () => {
     const d = open(12, 2);
     const ids = [...d.querySelectorAll("[data-welcome-row]")].map((e) => e.getAttribute("data-welcome-row"));
-    expect(ids).toEqual(writtenForYouCopy.rows.map((r) => r.id));
+    expect(ids).toEqual([...writtenForYouCopy.rows.map((r) => r.id), "consider", "find-a-deck"]);
     expect(d.querySelector("[data-welcome-line]")).toBeNull();
-    expect(tries(d).map((a) => a.getAttribute("data-welcome-try"))).toEqual(["suggested", "look-deeper", "help-me-choose", "upgrade"]);
+    expect(tries(d).map((a) => a.getAttribute("data-welcome-try"))).toEqual([
+      "overview", "suggested", "look-deeper", "help-me-choose", "find-a-deck-read", "upgrade", "consider", "find-a-deck",
+    ]);
+    expect(tries(d).map((a) => a.getAttribute("href"))).toContain("/decks/d1?tab=analysis");
+    expect(tries(d).map((a) => a.getAttribute("href"))).toContain("/collection?avail=free");
   });
 
   it("a row with a landing reads name, cost, where, then Try it", () => {

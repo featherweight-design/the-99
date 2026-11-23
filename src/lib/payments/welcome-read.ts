@@ -145,5 +145,5 @@ export function welcomeSheetFor(env: NodeJS.ProcessEnv, facts: { cards: number; 
     hasSyncBase: false,
     place: true,
   });
-  return welcomeSheet({ written: written.rows, cards: facts.cards, decks: facts.decks.length, groups });
+  return welcomeSheet({ written: written.rows, cards: facts.cards, decks: facts.decks.length, groups, firstDeckId: facts.decks[0]?.id ?? null });
 }

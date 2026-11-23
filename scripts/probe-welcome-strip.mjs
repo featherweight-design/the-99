@@ -144,7 +144,9 @@ async function firstRun(browser, w, email) {
     check(await dialog.locator("[data-welcome-line=lock]").count() === 1, `${w.name} first-run: the lock line once`, `${await dialog.locator("[data-welcome-line]").count()} line(s)`);
     check(await dialog.locator("[data-welcome-try]").count() === 0, `${w.name} first-run: no Try it`, `${await dialog.locator("[data-welcome-try]").count()}`);
     check(await dialog.locator("[data-welcome-teaser]").count() === 1, `${w.name} first-run: the teaser at the foot`, "teaser");
-    check(await dialog.locator("[data-welcome-row]").count() === 6, `${w.name} first-run: six rows`, `${await dialog.locator("[data-welcome-row]").count()}`);
+    check(await dialog.locator("[data-welcome-row]").count() === 8, `${w.name} first-run: six rows and the two free ones`, `${await dialog.locator("[data-welcome-row]").count()}`);
+    check(await dialog.locator("[data-welcome-free]").count() === 1 && (await dialog.locator("[data-welcome-free]").textContent()) === "No credit needed", `${w.name} first-run: the free line once, before the teaser`, "free line");
+    check(await dialog.locator("[data-welcome-row=consider], [data-welcome-row=find-a-deck]").count() === 2, `${w.name} first-run: Consider and Find a deck rows`, "free rows");
     await page.keyboard.press("Escape");
     await dialog.waitFor({ state: "detached", timeout: 5_000 });
     check(true, `${w.name} first-run: Escape closes the sheet`, "closed");
@@ -210,6 +212,32 @@ async function dashboard(browser, w, email) {
   }
 }
 
+/** A deck of the reader's own: Try it on every row, pressed, and where each lands. */
+async function withDeck(browser, w, email, deckId) {
+  const ctx = await browser.newContext({ viewport: { width: w.width, height: w.height } });
+  const page = await ctx.newPage();
+  try {
+    await signIn(page, email);
+    const strip = await homeStrip(page, w, "with a deck");
+    const dialog = await openSheetFrom(page, strip);
+    const tries = await dialog.locator("[data-welcome-try]").evaluateAll((els) => els.map((e) => e.getAttribute("data-welcome-try")));
+    check(["overview", "find-a-deck-read", "consider", "find-a-deck"].every((id) => tries.includes(id)), `${w.name} with a deck: Try it on Overview, Which deck needs it most?, Consider and Find a deck`, tries.join(","));
+    const hrefOf = (id) => dialog.locator(`[data-welcome-try=${id}]`).getAttribute("href");
+    check((await hrefOf("overview")) === `/decks/${deckId}?tab=analysis`, `${w.name} with a deck: Overview opens the deck's Analysis tab`, String(await hrefOf("overview")));
+    check((await hrefOf("find-a-deck")) === "/collection?avail=free", `${w.name} with a deck: Find a deck opens the Free cards`, String(await hrefOf("find-a-deck")));
+    for (const [id, want] of [["find-a-deck-read", /\/collection\?avail=free/], ["consider", new RegExp(`/decks/${deckId}`)]]) {
+      await dialog.locator(`[data-welcome-try=${id}]`).click();
+      await page.waitForURL(want, { timeout: 30_000 });
+      check(true, `${w.name} with a deck: pressing Try it on ${id} navigates`, page.url().replace(BASE, ""));
+      await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
+      const again = await homeStrip(page, w, "with a deck, again");
+      await openSheetFrom(page, again);
+    }
+  } finally {
+    await ctx.close();
+  }
+}
+
 const ids = new Map();
 async function userIdOf(email) {
   if (!ids.has(email)) {
@@ -249,6 +277,13 @@ try {
     for (const w of WIDTHS) {
       await dashboard(browser, w, email);
       // Back to undismissed for the next width (and for a kept account's contact sheet).
+      await sql`update user_prefs set welcome_strip_dismissed_at = null where user_id = ${userId}`;
+    }
+    // A deck in: every row can open.
+    const [{ id: deckId }] = await sql`insert into decks (user_id, name, commander_oracle_id)
+      select ${userId}, 'Probe deck', oracle_id from cards where type_line like 'Legendary Creature%' limit 1 returning id`;
+    for (const w of WIDTHS) {
+      await withDeck(browser, w, email, deckId);
       await sql`update user_prefs set welcome_strip_dismissed_at = null where user_id = ${userId}`;
     }
   }

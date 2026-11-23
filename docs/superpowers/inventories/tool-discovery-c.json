@@ -1,0 +1,33 @@
+{
+  "feature": "Finding the tools, PR C: the welcome sheet's Try it on every row and the free block",
+  "note": "Needs a SCRATCH branch off local-dev, a welcome lot for the audit account (credit_grants source 'welcome', 15 units), PAYMENTS_ENABLED, PRECON_UPGRADE_ENABLED and WELCOME_CREDITS_ENABLED on in flag_overrides. The audit account has decks, so the sheet is the decks shape.",
+  "out": "contact-sheets/tool-discovery-c",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "shares": { "binding": "WhereCreditsWork", "module": "src/components/welcome/where-credits-work" },
+  "rows": [
+    {
+      "id": "home-strip-sheet",
+      "label": "Home: the strip's Where they work sheet, free block before the teaser",
+      "view": "src/components/welcome/welcome-strip.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-welcome-where]", "settle": 1500 },
+        { "click": "[data-welcome-where]" },
+        { "wait": "[data-welcome-free]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "credits-cell-sheet",
+      "label": "/credits: the Welcome cell's sheet, no teaser",
+      "view": "src/components/credits/balance.tsx",
+      "steps": [
+        { "goto": "/credits", "wait": "[data-cell=welcome] [data-welcome-where]", "settle": 1500 },
+        { "clickRole": "button", "name": "^Where they work" },
+        { "wait": "[data-welcome-free]", "settle": 800 }
+      ]
+    }
+  ]
+}

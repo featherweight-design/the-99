@@ -44,17 +44,31 @@ describe("welcomeSheet", () => {
   });
 
   it("with a deck: About's order, Try it on the tools with a landing the resolver gives", () => {
-    const s = welcomeSheet({ written: rows, cards: 12, decks: 2, groups: groups("d1") })!;
+    const s = welcomeSheet({ written: rows, cards: 12, decks: 2, groups: groups("d1"), firstDeckId: "d1" })!;
     expect(s.shape).toBe("decks");
     expect(s.line).toBeNull();
     expect(s.rows.map((r) => [r.id, r.tryHref])).toEqual([
-      ["overview", null],
+      ["overview", "/decks/d1?tab=analysis"],
       ["suggested", "/decks/d1?tool=x"],
       ["look-deeper", "/decks/d1?tool=x"],
       ["help-me-choose", "/decks/new/choose?tool=help-me-choose"],
-      ["find-a-deck-read", null],
+      ["find-a-deck-read", "/collection?avail=free"],
       ["upgrade", "/decks/precons"],
     ]);
+  });
+
+  it("the free block: Consider and Find a deck, with Try it only once a deck exists", () => {
+    const withDeck = welcomeSheet({ written: rows, cards: 12, decks: 2, groups: groups("d1"), firstDeckId: "d1" })!;
+    expect(withDeck.freeLine).toBe("No credit needed");
+    expect(withDeck.free.map((r) => [r.id, r.short, r.tryHref])).toEqual([
+      ["consider", "free", "/decks/d1?tab=consider"],
+      ["find-a-deck", "free", "/collection?avail=free"],
+    ]);
+    for (const [cards, decks] of [[0, 0], [12, 0]]) {
+      const s = welcomeSheet({ written: rows, cards, decks, groups: groups(null) })!;
+      expect(s.free.map((r) => r.id)).toEqual(["consider", "find-a-deck"]);
+      expect(s.free.every((r) => r.tryHref === null)).toBe(true);
+    }
   });
 
   it("with a deck nothing fits, a deck tool's row has no Try it", () => {
@@ -147,6 +161,8 @@ describe("tourCreditsFor", () => {
     expect(list.map((r) => r.id)).toEqual([...s.lead, ...s.rows].map((r) => r.id));
     expect(list.find((r) => r.id === "upgrade")).toEqual({ id: "upgrade", name: "Upgrade this precon", short: "2 per run", cost: "2 credits per run" });
     expect(Object.keys(list[0]).sort()).toEqual(["cost", "id", "name", "short"]);
+    // The free block never reaches the tour: it lists only what spends a credit.
+    expect(list.some((r) => r.id === "consider" || r.id === "find-a-deck")).toBe(false);
     expect(tourCreditsFor(null)).toBeNull();
   });
 });
