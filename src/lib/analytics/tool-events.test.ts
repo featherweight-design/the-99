@@ -2,13 +2,20 @@
 // every string value a member of its property's closed set. A prop typed `string` fails the build (below).
 import { describe, expect, it } from "vitest";
 import {
+  ASK_CARDS,
+  ASK_COUNT,
+  ASK_PRESSED_FROM,
+  ASK_RANK,
+  ASK_TOOL_IDS,
+  ASK_WORDS,
   FEED_COUNT_BUCKET,
   FIND_A_DECK_FROM,
+  SEARCH_OPENED_FROM,
   TOOL_EVENT_VALUES,
-  feedCountBucket,
   TUNING_OPENED_FROM,
   TUNING_OPENED_TOOL,
   WELCOME_WHERE_FROM,
+  feedCountBucket,
   type ToolEvents,
 } from "./tool-events";
 
@@ -62,5 +69,18 @@ describe("tool discovery events", () => {
   it("tuning_opened carries only `from` and `tool`, each from its closed set", () => {
     for (const from of TUNING_OPENED_FROM) for (const tool of TUNING_OPENED_TOOL) closed("tuning_opened", { from, tool });
     expect(() => closed("tuning_opened", { from: "tab", tool: "Sol Ring" as never })).toThrow();
+  });
+
+  it("find_a_deck_opened admits the Ask press", () => {
+    expect(FIND_A_DECK_FROM).toContain("ask");
+  });
+
+  it("the Ask events carry shapes and ids, never a query", () => {
+    for (const from of SEARCH_OPENED_FROM) closed("search_opened", { from });
+    for (const words of ASK_WORDS) closed("ask_miss", { words });
+    closed("ask_result", { count: ASK_COUNT[2], first: ASK_TOOL_IDS[0], cards: ASK_CARDS[1], words: ASK_WORDS[2] });
+    closed("ask_result", { count: "0", first: "none", cards: "none", words: "3+" });
+    for (const tool of ASK_TOOL_IDS) closed("ask_tool_pressed", { tool, from: ASK_PRESSED_FROM[1], rank: ASK_RANK[0] });
+    expect(() => closed("ask_miss", { words: "where can my spare cards go" as never })).toThrow();
   });
 });

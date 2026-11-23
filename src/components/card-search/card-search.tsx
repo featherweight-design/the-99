@@ -8,7 +8,7 @@
 // into load as one chunk on the reader's first intent (`SearchLayer`), so a page nobody searches from ships neither
 // card details nor the copy those states reuse. Until it lands the field types and the bar runs.
 
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   createContext,
   useCallback,
@@ -31,7 +31,13 @@ import type { CardSearchRow, CardSignals } from "../../lib/card-search/search";
 import { isAddShortcut } from "../../lib/card-search/shortcut";
 import { afterDialogsReleased, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
-import { cardSearchCopy } from "../../lib/copy/card-search";
+import { captureToolEvent } from "../../lib/analytics/posthog";
+import type { SEARCH_OPENED_FROM } from "../../lib/analytics/tool-events";
+import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
+import type { ToolCardModel } from "../../lib/discovery/showcase";
+import { toolHref } from "./ask-results";
+import { askWords } from "../../lib/discovery/ask";
+import { useAsk } from "./use-ask";
 import { SearchField } from "../ui/text-field";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
 import { noteAppScroll } from "../../lib/ui/reveal";
@@ -62,7 +68,7 @@ export type SearchPhase = "idle" | "searching" | "results" | "failed";
 
 type CardSearchContextValue = {
   /** Opens the search with the field focused, inside the caller's own press (the iOS keyboard needs that). */
-  openSearch: (opener: HTMLElement | null) => void;
+  openSearch: (opener: HTMLElement | null, from: (typeof SEARCH_OPENED_FROM)[number]) => void;
   /** Starts the results' code downloading: a pointer or focus resting on the control is intent. */
   warmSearch: () => void;
   /** Closes the search; focus goes back to whatever opened it. */
@@ -79,7 +85,9 @@ type CardSearchContextValue = {
   online: boolean;
   /** What ↑ ↓ and ↵ move through: the results while searching, else the recent cards; nothing offline. */
   list: readonly CardSearchRow[];
-  /** The keyboard's place in `list`, or -1. Option ids are `${listboxId}-${index}`. */
+  /** How many tool answers sit above `list` in the one listbox (Ask, D); they take the first places of `active`. */
+  toolCount: number;
+  /** The keyboard's place in the tools then `list`, or -1. Option ids are `${listboxId}-${index}`. */
   active: number;
   /** A read is in flight, or its rows' code is: the 2px bar (S3). */
   busy: boolean;
@@ -162,7 +170,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   }, []);
 
   const openSearch = useCallback(
-    (opener: HTMLElement | null) => {
+    (opener: HTMLElement | null, from: (typeof SEARCH_OPENED_FROM)[number]) => {
+      captureToolEvent("search_opened", { from });
       openerRef.current = opener;
       setReturned(null);
       warmSearch();
@@ -268,6 +277,24 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // D2: on the desktop the dropdown opens on recents with the first one active, so ↵ opens it and the arrows move from
   // there. The phone keeps none: nothing on a touch sheet is keyboard-active.
   const active = moved === -1 && desktop && !searching && list.length > 0 ? 0 : moved;
+  // Ask (D): the tools a typed question answers sit above the cards, and ↑ ↓ walk both as one list: the tools take the
+  // first places, so a card's place is `active - toolCount`.
+  const ask = useAsk({ open, online, query: trimmed, searching });
+  const toolCount = Layer === null || !online || phase === "failed" ? 0 : ask.tools.length;
+  // The shape of each settled query, once (never its text): the tools that answered, whether card names matched, how many words.
+  const askSettled = open && searching && online && phase === "results" && ask.tools.length === ask.ids.length;
+  const askReported = useRef("");
+  useEffect(() => {
+    if (!askSettled) return;
+    if (askReported.current === trimmed) return;
+    askReported.current = trimmed;
+    const n = askWords(trimmed).length;
+    const words = n >= 3 ? "3+" : (String(n) as "1" | "2");
+    const count = String(Math.min(ask.ids.length, 3)) as "0" | "1" | "2" | "3";
+    const cards = rows.length > 0 ? "some" : "none";
+    captureToolEvent("ask_result", { count, first: ask.ids[0] ?? "none", cards, words });
+    if (n >= 2 && ask.ids.length === 0 && rows.length === 0) captureToolEvent("ask_miss", { words });
+  }, [askSettled, trimmed, ask.ids, rows.length]);
 
   const pick = useCallback(
     (from: readonly CardSearchRow[], index: number) => {
@@ -444,22 +471,40 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     inputRef.current?.focus();
   }, [userId]);
 
+  const router = useRouter();
+  // A press on a tool's answer: it lands where the answer says (the tool's page or deck, or New deck), and the search
+  // closes. Counted by the tool and its place in the answers, never the words typed.
+  const pressTool = useCallback(
+    (tool: ToolCardModel, index: number) => {
+      if (bodyRef.current?.closest("[inert]")) return;
+      captureToolEvent("ask_tool_pressed", { tool: tool.id, from: desktop ? "rail" : "phone_sheet", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
+      if (tool.id === "find-a-deck") captureToolEvent("find_a_deck_opened", { from: "ask" });
+      close();
+      router.push(toolHref(tool));
+    },
+    [close, router, desktop],
+  );
+
   const onFieldKey = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.nativeEvent.isComposing) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        if (list.length === 0) return;
+        const total = toolCount + list.length;
+        if (total === 0) return;
         e.preventDefault();
-        setActive(e.key === "ArrowDown" ? (active + 1) % list.length : active <= 0 ? list.length - 1 : active - 1);
+        setActive(e.key === "ArrowDown" ? (active + 1) % total : active <= 0 ? total - 1 : active - 1);
       } else if (e.key === "Enter" && active >= 0) {
         e.preventDefault();
-        if (canAdd && isAddShortcut(e)) {
+        if (active < toolCount) {
+          const tool = ask.tools[active];
+          if (tool && !e.repeat) pressTool(tool, active);
+        } else if (canAdd && isAddShortcut(e)) {
           // A held ⌘↵ adds once: its repeats would land on the veil, or on a second ask the host drops.
-          if (!e.repeat) addCard(list, active);
-        } else pick(list, active);
+          if (!e.repeat) addCard(list, active - toolCount);
+        } else pick(list, active - toolCount);
       }
     },
-    [list, active, pick, canAdd, addCard],
+    [list, active, pick, canAdd, addCard, toolCount, ask.tools, pressTool],
   );
 
   // Escape clears a query first, then closes (README call 7).
@@ -480,6 +525,15 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setPhase((p) => (p === "failed" ? "idle" : p));
   }, []);
 
+  // A starter types its question into the field, so the answers below are the ones a typed question gets.
+  const onStarter = useCallback(
+    (q: string) => {
+      changeQuery(q);
+      inputRef.current?.focus();
+    },
+    [changeQuery],
+  );
+
   const retry = useCallback(() => {
     if (searching) setAttempt((n) => n + 1);
     else setRecentsFailed(false);
@@ -499,6 +553,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       searching,
       online,
       list,
+      toolCount,
       active,
       busy,
       listboxId: LISTBOX_ID,
@@ -511,7 +566,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       pick,
       retry,
     }),
-    [openSearch, warmSearch, close, open, veiled, query, changeQuery, phase, searching, online, list, active, busy, canAdd, placeBody, onFieldKey, escape, onClear, pick, retry],
+    [openSearch, warmSearch, close, open, veiled, query, changeQuery, phase, searching, online, list, toolCount, active, busy, canAdd, placeBody, onFieldKey, escape, onClear, pick, retry],
   );
 
   const layerProps: SearchLayerProps = {
@@ -537,6 +592,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     recentsFailed,
     open,
     openCardRef,
+    ask: { ids: ask.ids, tools: ask.tools, starters: ask.starters, onStarter, onPressTool: pressTool, onNavigate: close },
     onAddSeveral: canAdd ? addSeveral : null,
     onAdd: canAdd ? addCard : null,
     addedTo,
@@ -576,7 +632,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
 /** The phone's full-screen sheet (S1 to S7's frame): the field row, the bar, and the host the results draw into. */
 function PhoneFrame() {
-  const { isOpen, veiled, query, setQuery, list, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
+  const { isOpen, veiled, query, setQuery, list, toolCount, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, online } =
     useContext(CardSearchContext)!;
   const sheetRef = useRef<HTMLDivElement>(null);
   // The page behind the open phone sheet is inert (the veil, a later sibling, is exempt); the sheet itself is the host.
@@ -681,12 +737,12 @@ function PhoneFrame() {
             </span>
           }
           role="combobox"
-          aria-expanded={list.length > 0}
+          aria-expanded={list.length + toolCount > 0}
           aria-controls={listboxId}
           aria-autocomplete="list"
           aria-activedescendant={active >= 0 ? `${listboxId}-${active}` : undefined}
-          aria-label={cardSearchCopy.label}
-          placeholder={cardSearchCopy.label}
+          aria-label={askCopy.placeholder}
+          placeholder={askCopy.placeholder}
           autoComplete="off"
           autoCorrect="off"
           autoCapitalize="none"
@@ -792,7 +848,7 @@ export function CardSearchIcon() {
       aria-expanded={search.isOpen}
       onPointerDown={search.warmSearch}
       onFocus={search.warmSearch}
-      onClick={(e) => search.openSearch(e.currentTarget)}
+      onClick={(e) => search.openSearch(e.currentTarget, "header")}
       className={`mr-[2px] flex h-11 w-11 flex-none items-center justify-center rounded-[12px] ${
         search.isOpen ? "bg-[color:var(--elevated)] text-[color:var(--fg)]" : "text-[color:var(--fg-muted)]"
       }`}

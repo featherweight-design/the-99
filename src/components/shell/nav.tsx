@@ -593,7 +593,7 @@ function RailSearchSlot({ bind }: { bind: ReturnType<typeof useRailTag>["bind"] 
         data-rail-search=""
         {...bind("#card-search", `${cardSearchCopy.label} ${shortcut.label}`)}
         onPointerDown={search.warmSearch}
-        onClick={(e) => search.openSearch(e.currentTarget)}
+        onClick={(e) => search.openSearch(e.currentTarget, "rail")}
         className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] ${RAIL_TOUCH_SLOT} ${
           search.isOpen
             ? "bg-elevated text-[color:var(--fg)]"

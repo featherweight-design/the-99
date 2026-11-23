@@ -12,7 +12,12 @@ import { useCallback, useEffect, useRef, type MutableRefObject } from "react";
 import { createPortal } from "react-dom";
 import type { CardSearchRow } from "../../lib/card-search/search";
 import { isAddShortcut } from "../../lib/card-search/shortcut";
-import { cardSearchCopy } from "../../lib/copy/card-search";
+import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
+import { askWords } from "../../lib/discovery/ask";
+import type { ToolId } from "../../lib/discovery/tools";
+import type { ToolCardModel } from "../../lib/discovery/showcase";
+import { NoCards, NoTool, Starters, ToolRow, ToolsHeading } from "./ask-results";
+import { SearchListbox } from "./search-listbox";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { CardDetailProvider, useCardDetail, type SiblingCard } from "../cards/card-detail-provider";
 import type { SearchPhase } from "./card-search";
@@ -68,7 +73,22 @@ export type SearchLayerProps = {
   onAdd?: ((from: readonly CardSearchRow[], index: number) => void) | null;
   /** The card a row's + just saved copies of (C6, C-D3). */
   addedTo?: string | null;
+  /**
+   * Ask (D): the tools the typed question answers (`ids` at once, `tools` once read), the starters this reader sees, a
+   * starter's press (types it) and a tool answer's press (lands it). The tools take the first places of `active`.
+   */
+  ask?: {
+    ids: ToolId[];
+    tools: ToolCardModel[];
+    starters: string[];
+    onStarter: (q: string) => void;
+    onPressTool: (tool: ToolCardModel, index: number) => void;
+    /** A link inside the answers (`Every tool, in About`) was followed: the search closes. */
+    onNavigate: () => void;
+  };
 };
+
+const NO_ASK: NonNullable<SearchLayerProps["ask"]> = { ids: [], tools: [], starters: [], onStarter: () => {}, onPressTool: () => {}, onNavigate: () => {} };
 
 export function SearchLayer(props: SearchLayerProps) {
   // A fresh provider for each route: a navigation drops a read still in flight and any card or sheet stacked over
@@ -139,20 +159,23 @@ const SKELETON_WIDTHS: ReadonlyArray<readonly [string, string, string, string]> 
   ["70%", "44%", "60%", "34%"],
 ];
 
-function SearchBody(p: SearchLayerProps) {
+function SearchBody(props: SearchLayerProps) {
+  const p = { ...props, ask: props.ask ?? NO_ASK };
   const stale = p.rowsFor !== p.query;
   const settled = p.open && p.searching && p.online && !stale && p.phase === "results";
   const { onAnnounce } = p;
+  const tools = p.ask.tools;
 
   // The count, or the no-results line, once the results have stood still for half a second.
   useEffect(() => {
     if (!settled) return;
-    const text = p.rows.length === 0 ? collectionEditCopy.add.noResultsTitle(p.query) : cardSearchCopy.count(p.rows.length);
+    const cards = p.rows.length === 0 ? (tools.length > 0 ? askCopy.noCards : collectionEditCopy.add.noResultsTitle(p.query)) : cardSearchCopy.count(p.rows.length);
+    const text = tools.length > 0 ? `${askCopy.tools.heading}: ${tools.map((t) => t.copy.name).join(", ")}. ${cards}` : cards;
     // Emptied first, so a second search with the same count is still heard (the region only speaks a change).
     onAnnounce("");
     const timer = window.setTimeout(() => onAnnounce(text), ANNOUNCE_AFTER_MS);
     return () => window.clearTimeout(timer);
-  }, [settled, p.rows.length, p.query, onAnnounce]);
+  }, [settled, p.rows.length, p.query, onAnnounce, tools]);
 
   // Offline is the frame's own (it cannot wait for this chunk).
   if (!p.online) return null;
@@ -161,12 +184,15 @@ function SearchBody(p: SearchLayerProps) {
     // Above Recent cards, and above the empty state when there are none (C2, C-D1). The search is open but nothing is
     // typed: once a query is, the results stand alone (C3, C-D2's dropdown).
     const way = p.onAddSeveral ? <AddSeveralRow onPress={p.onAddSeveral} /> : null;
-    if (!p.recentsHeld) return <>{way}<Empty /></>;
-    if (p.recentsFailed) return <>{way}<Failed onRetry={p.onRetry} /></>;
-    if (p.recentRows.length === 0) return way;
+    // The starter questions sit under Add several and above Recent cards (Y6: the ones this reader has an answer to).
+    const starters = <Starters questions={p.ask.starters} onPick={p.ask.onStarter} />;
+    if (!p.recentsHeld) return <>{way}{starters}<Empty /></>;
+    if (p.recentsFailed) return <>{way}{starters}<Failed onRetry={p.onRetry} /></>;
+    if (p.recentRows.length === 0) return <>{way}{starters}</>;
     return (
       <>
         {way}
+        {starters}
         <div className="flex items-center justify-between px-4 pt-[14px] pb-[6px] md:px-[14px] md:pt-2">
           <h3 className="font-mono text-[10.5px] font-medium tracking-[0.14em] text-[color:var(--fg-faint)] uppercase">
             {cardSearchCopy.recent.heading}
@@ -218,12 +244,62 @@ function SearchBody(p: SearchLayerProps) {
     );
   }
 
+  const toolsOn = tools.length > 0;
+  const toolRows = tools.map((t, i) => (
+    <ToolRow
+      key={t.id}
+      model={t}
+      id={`${p.listboxId}-${i}`}
+      first={i === 0}
+      active={i === p.active}
+      onPress={() => p.ask.onPressTool(t, i)}
+      onKey={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          p.ask.onPressTool(t, i);
+        } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          focusStep(e.currentTarget, e.key === "ArrowDown" ? 1 : -1);
+        }
+      }}
+    />
+  ));
+  const withTools = (cards: React.ReactNode) => (
+    <SearchListbox
+      id={p.listboxId}
+      label={cardSearchCopy.label}
+      groups={[
+        { key: "tools", label: askCopy.tools.heading, heading: <ToolsHeading />, children: toolRows },
+        { key: "cards", label: askCopy.tools.cards, children: cards },
+      ]}
+    />
+  );
+
   if (p.rows.length === 0) {
+    // Nothing answers: the tools part is the "Nothing here answers that yet" state, never a dead end. A tool that
+    // answers with no card name is `Tools for this` over the one line `No card names match.`
+    if (toolsOn) return withTools(<NoCards />);
+    if (p.ask.ids.length === 0 && askWords(p.query).length >= 2) {
+      return <NoTool questions={p.ask.starters} onPick={p.ask.onStarter} onNavigate={p.ask.onNavigate} />;
+    }
     return (
       <div className={BOX}>
         <p className="text-[15.5px] font-semibold text-[color:var(--fg)] md:text-[14.5px]">{collectionEditCopy.add.noResultsTitle(p.query)}</p>
         <p className="text-[14px] leading-[1.6] text-[color:var(--fg-muted)] md:text-[13.5px] md:leading-[1.55]">{collectionEditCopy.add.noResultsBody}</p>
       </div>
+    );
+  }
+
+  if (toolsOn) {
+    return (
+      <>
+        {withTools(<><p className={META}>{cardSearchCopy.count(p.rows.length)}</p><Rows {...p} from={p.rows} matchQuery={p.rowsFor} offset={tools.length} bare /></>)}
+        {p.rows.length >= RESULTS_LIMIT ? (
+          <p className="border-t border-solid border-[color:var(--border)] px-4 py-[14px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">
+            {cardSearchCopy.limitReached}
+          </p>
+        ) : null}
+      </>
     );
   }
 
@@ -300,17 +376,19 @@ function Rows({
   onPick,
   onAdd,
   addedTo,
-}: SearchLayerProps & { from: CardSearchRow[]; matchQuery: string }) {
-  return (
-    <div role="listbox" id={listboxId} aria-label={cardSearchCopy.label}>
+  offset = 0,
+  bare = false,
+}: SearchLayerProps & { from: CardSearchRow[]; matchQuery: string; offset?: number; bare?: boolean }) {
+  const options = (
+    <>
       {from.map((row, i) => (
         <SearchRow
           key={row.oracleId}
           row={row}
           query={matchQuery}
-          id={`${listboxId}-${i}`}
+          id={`${listboxId}-${offset + i}`}
           first={i === 0}
-          active={i === active}
+          active={offset + i === active}
           returned={row.oracleId === returned}
           added={row.oracleId === returned && row.oracleId === addedTo}
           onPick={() => onPick(from, i)}
@@ -326,16 +404,27 @@ function Rows({
               onPick(from, i);
             } else if (e.key === "ArrowDown" || e.key === "ArrowUp") {
               e.preventDefault();
-              const options = e.currentTarget.parentElement?.querySelectorAll<HTMLElement>('[role="option"]');
-              if (!options || options.length === 0) return;
-              const next = e.key === "ArrowDown" ? (i + 1) % options.length : (i - 1 + options.length) % options.length;
-              options[next]?.focus();
+              focusStep(e.currentTarget, e.key === "ArrowDown" ? 1 : -1);
             }
           }}
         />
       ))}
+    </>
+  );
+  // With tools above them, the cards are one group of the search's one listbox (`SearchListbox` draws it).
+  return bare ? options : (
+    <div role="listbox" id={listboxId} aria-label={cardSearchCopy.label}>
+      {options}
     </div>
   );
+}
+
+/** Moves focus to the next or previous option of the listbox an option sits in, across its groups. */
+function focusStep(from: HTMLElement, by: 1 | -1) {
+  const options = from.closest('[role="listbox"]')?.querySelectorAll<HTMLElement>('[role="option"]');
+  if (!options || options.length === 0) return;
+  const at = Array.from(options).indexOf(from);
+  options[(at + by + options.length) % options.length]?.focus();
 }
 
 /** S1: graphic A (the brand fan with the lens), the title and the line. No card art anywhere in it. */

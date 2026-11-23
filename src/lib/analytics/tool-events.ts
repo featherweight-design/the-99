@@ -5,8 +5,10 @@
  */
 import { FEED_KINDS, type FeedKind } from "../feed/kinds";
 
-/** Where a press that asks for Find a deck came from (counted at the press, before the card arrives): the call-out's Show them, a tile's button, a phone row's strip, a desktop row's button, or the card window's door. */
-export const FIND_A_DECK_FROM = ["callout_show_them", "tile_button", "row_strip", "row_button", "card_door"] as const;
+import { TOOLS, type ToolId } from "../discovery/tools";
+
+/** Where a press that asks for Find a deck came from (counted at the press, before the card arrives): the call-out's Show them, a tile's button, a phone row's strip, a desktop row's button, the card window's door, or an Ask answer in the card search. */
+export const FIND_A_DECK_FROM = ["callout_show_them", "tile_button", "row_strip", "row_button", "card_door", "ask"] as const;
 export type FindADeckFrom = (typeof FIND_A_DECK_FROM)[number];
 
 /** Where the Where credits work sheet was opened from: Home's welcome strip, or the /credits Welcome cell. */
@@ -26,6 +28,15 @@ export type TuningOpenedFrom = (typeof TUNING_OPENED_FROM)[number];
  *  set is README's; B2 sends `hub` and `consider` (the retired `?tab=consider`), and the other tools wait on a way in that names them. */
 export const TUNING_OPENED_TOOL = ["hub", "consider", "suggested", "mana", "cuts", "history"] as const;
 export type TuningOpenedTool = (typeof TUNING_OPENED_TOOL)[number];
+/** Ask in the card search (D): where the search was opened from, where an answer was pressed, and the shape of a query, never its text. */
+export const SEARCH_OPENED_FROM = ["rail", "header", "cmdk"] as const;
+export const ASK_PRESSED_FROM = ["rail", "phone_sheet"] as const;
+export const ASK_WORDS = ["1", "2", "3+"] as const;
+export const ASK_COUNT = ["0", "1", "2", "3"] as const;
+export const ASK_CARDS = ["none", "some"] as const;
+export const ASK_RANK = ["1", "2", "3"] as const;
+/** Every tool's id, the closed set an Ask event names a tool from. */
+export const ASK_TOOL_IDS: readonly ToolId[] = TOOLS.map((t) => t.id as ToolId);
 
 export type ToolEvents = {
   find_a_deck_opened: { from: FindADeckFrom };
@@ -37,6 +48,12 @@ export type ToolEvents = {
   /** Clear all in the sheet: how many it cleared, and whether a chip had narrowed it. */
   feed_sheet_clear: { count: FeedCountBucket; filtered: "all" | "kind" };
   tuning_opened: { from: TuningOpenedFrom; tool: TuningOpenedTool };
+  search_opened: { from: (typeof SEARCH_OPENED_FROM)[number] };
+  /** Once per settled query: how many tools answered (and the best), whether card names matched, how many words. */
+  ask_result: { count: (typeof ASK_COUNT)[number]; first: ToolId | "none"; cards: (typeof ASK_CARDS)[number]; words: (typeof ASK_WORDS)[number] };
+  /** A query of two or more words that matched no tool and no card. */
+  ask_miss: { words: (typeof ASK_WORDS)[number] };
+  ask_tool_pressed: { tool: ToolId; from: (typeof ASK_PRESSED_FROM)[number]; rank: (typeof ASK_RANK)[number] };
 };
 
 /** Each event's closed sets, property by property: what the guard test checks a built event against. */
@@ -47,4 +64,8 @@ export const TOOL_EVENT_VALUES: { [E in keyof ToolEvents]: { [P in keyof ToolEve
   feed_sheet_filter: { kind: FEED_KINDS },
   feed_sheet_clear: { count: FEED_COUNT_BUCKET, filtered: ["all", "kind"] },
   tuning_opened: { from: TUNING_OPENED_FROM, tool: TUNING_OPENED_TOOL },
+  search_opened: { from: SEARCH_OPENED_FROM },
+  ask_result: { count: ASK_COUNT, first: [...ASK_TOOL_IDS, "none"], cards: ASK_CARDS, words: ASK_WORDS },
+  ask_miss: { words: ASK_WORDS },
+  ask_tool_pressed: { tool: ASK_TOOL_IDS, from: ASK_PRESSED_FROM, rank: ASK_RANK },
 };
