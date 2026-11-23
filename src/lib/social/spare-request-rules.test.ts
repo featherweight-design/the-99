@@ -145,3 +145,27 @@ describe("capCopies (G2)", () => {
     expect(capCopies(500, 500)).toBe(99);
   });
 });
+
+describe("askRefusal across directions (You have it, E1 and E2)", () => {
+  const prior = (over: Partial<PriorAsk>): PriorAsk => ({ holderUserId: "h", status: "open", createdAt: ago(1), answeredAt: null, ...over });
+
+  it("an open ask or an open offer holds the card either way: asked", () => {
+    expect(askRefusal([prior({ initiatedBy: "holder" })], "h", NOW)).toBe("asked");
+    expect(askRefusal([prior({ initiatedBy: "asker" })], "h", NOW, "holder")).toBe("asked");
+    expect(askRefusal([prior({ holderUserId: "other", initiatedBy: "holder" })], "h", NOW, "holder")).toBe("asked");
+  });
+
+  it("a No to an offer holds the same offerer back, and nothing else", () => {
+    const no = prior({ status: "no", answeredAt: ago(3), initiatedBy: "holder" });
+    expect(askRefusal([no], "h", NOW, "holder")).toBe("declined");
+    expect(askRefusal([no], "h", NOW)).toBeNull();
+    expect(askRefusal([no], "other", NOW, "holder")).toBeNull();
+    expect(askRefusal([{ ...no, answeredAt: ago(15) }], "h", NOW, "holder")).toBeNull();
+  });
+
+  it("a No to an ask never holds back an offer, and an unmarked prior reads as an ask", () => {
+    const no = prior({ status: "no", answeredAt: ago(3), initiatedBy: "asker" });
+    expect(askRefusal([no], "h", NOW, "holder")).toBeNull();
+    expect(askRefusal([{ ...no, initiatedBy: undefined }], "h", NOW)).toBe("declined");
+  });
+});

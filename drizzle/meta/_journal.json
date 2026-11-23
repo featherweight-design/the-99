@@ -1870,6 +1870,13 @@
       "when": 1795383915326,
       "tag": "0268_store_preference",
       "breakpoints": true
+    },
+    {
+      "idx": 269,
+      "version": "7",
+      "when": 1795392343594,
+      "tag": "0269_spare_offers",
+      "breakpoints": true
     }
   ]
 }

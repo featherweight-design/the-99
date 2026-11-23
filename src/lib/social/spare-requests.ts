@@ -38,12 +38,12 @@ import { recordFeedItem } from "./feed-write";
 import { isUuid } from "./rules";
 import {
   answerData, askRefusal, askShown, askerState, capCopies, daysLeft, declineFloor, isAnswer, openFloor, requestState, shownFloor,
-  type AskRefusal, type AskerState, type PriorAsk, type StoredStatus,
+  type AskRefusal, type AskerState, type Initiator, type PriorAsk, type StoredStatus,
 } from "./spare-request-rules";
 import { loadFriendSpares, loadOwnOffered } from "./spares";
 
 type Executor = Pick<typeof db, "execute">;
-type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+export type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
 export type AskOutcome = { ok: true; id: string } | { ok: false; reason: "not-friend" | "not-spare" | "gone" | AskRefusal };
 export type AnswerOutcome = { ok: true } | { ok: false; reason: "gone" };
@@ -120,11 +120,11 @@ export async function askIn(tx: Tx, a: Asking): Promise<AskOutcome> {
   const prior = await tx
     .select({
       holderUserId: spareRequests.holderUserId, status: spareRequests.status,
-      createdAt: spareRequests.createdAt, answeredAt: spareRequests.answeredAt,
+      createdAt: spareRequests.createdAt, answeredAt: spareRequests.answeredAt, initiatedBy: spareRequests.initiatedBy,
     })
     .from(spareRequests)
     .where(and(eq(spareRequests.askerUserId, a.askerId), eq(spareRequests.oracleId, a.oracleId)));
-  const refusal = askRefusal(prior.map((p) => ({ ...p, status: p.status as StoredStatus })), a.holderId, a.now);
+  const refusal = askRefusal(prior.map((p) => ({ ...p, status: p.status as StoredStatus, initiatedBy: p.initiatedBy as Initiator })), a.holderId, a.now);
   if (refusal) return { ok: false, reason: refusal };
   const [row] = await tx
     .insert(spareRequests)
@@ -153,13 +153,13 @@ async function prepareAsk(
 }
 
 /** Thrown inside a transaction to roll it back while handing its refusal out. */
-class Refused extends Error {
+export class Refused extends Error {
   constructor(readonly outcome: AskOutcome) {
     super("refused");
   }
 }
 
-async function inAskTransaction(body: (tx: Tx) => Promise<AskOutcome>): Promise<AskOutcome> {
+export async function inAskTransaction(body: (tx: Tx) => Promise<AskOutcome>): Promise<AskOutcome> {
   try {
     return await db.transaction(async (tx) => {
       const out = await body(tx);
@@ -195,7 +195,7 @@ export function withdrawForInsteadQuery(askerId: string, requestId: string, orac
   return sql`update ${spareRequests} isr set status = 'withdrawn', withdrawn_at = ${now.toISOString()}::timestamptz
     where isr.id = ${requestId} and isr.asker_user_id = ${askerId} and isr.oracle_id = ${oracleId}
       and isr.status = 'open' and isr.created_at > ${openFloor(now).toISOString()}::timestamptz
-      and isr.holder_user_id <> ${holderId}
+      and isr.holder_user_id <> ${holderId} and isr.initiated_by = 'asker'
     returning isr.id`;
 }
 
@@ -228,7 +228,7 @@ export async function askInsteadForSpare(
 /** ✕ on an OPEN ask (G1): the asker's own, still open and unexpired. Nobody is told. One row back means it landed. */
 export function withdrawQuery(askerId: string, requestId: string, now: Date): SQL {
   return sql`update ${spareRequests} wdr set status = 'withdrawn', withdrawn_at = ${now.toISOString()}::timestamptz
-    where wdr.id = ${requestId} and wdr.asker_user_id = ${askerId}
+    where wdr.id = ${requestId} and wdr.asker_user_id = ${askerId} and wdr.initiated_by = 'asker'
       and wdr.status = 'open' and wdr.created_at > ${openFloor(now).toISOString()}::timestamptz
     returning wdr.id`;
 }
@@ -242,7 +242,7 @@ export function clearQuery(askerId: string, requestId: string, now: Date): SQL {
   const floor = openFloor(now).toISOString();
   return sql`update ${spareRequests} csr set asker_cleared_at = ${now.toISOString()}::timestamptz,
       status = case when csr.status = 'open' then 'expired' else csr.status end
-    where csr.id = ${requestId} and csr.asker_user_id = ${askerId} and csr.asker_cleared_at is null
+    where csr.id = ${requestId} and csr.asker_user_id = ${askerId} and csr.initiated_by = 'asker' and csr.asker_cleared_at is null
       and (csr.status in ('yes', 'no', 'expired') or (csr.status = 'open' and csr.created_at <= ${floor}::timestamptz))
     returning csr.id`;
 }
@@ -260,13 +260,13 @@ export async function closeSpareRequest(
 
 /** Who asked: the holder's own request's asker, read before the answer so both friendship rows lock in order first. */
 export function answerAskerQuery(holderId: string, requestId: string): SQL {
-  return sql`select aar.asker_user_id from ${spareRequests} aar where aar.id = ${requestId} and aar.holder_user_id = ${holderId}`;
+  return sql`select aar.asker_user_id from ${spareRequests} aar where aar.id = ${requestId} and aar.holder_user_id = ${holderId} and aar.initiated_by = 'asker'`;
 }
 
 /** The answer, apart so a test can render it: one row back means it landed. */
 export function answerQuery(holderId: string, requestId: string, answer: "yes" | "no", now: Date): SQL {
   return sql`update ${spareRequests} asr set status = ${answer}, answered_at = ${now.toISOString()}::timestamptz
-    where asr.id = ${requestId} and asr.holder_user_id = ${holderId} and asr.status = 'open'
+    where asr.id = ${requestId} and asr.holder_user_id = ${holderId} and asr.initiated_by = 'asker' and asr.status = 'open'
       and asr.created_at > ${openFloor(now).toISOString()}::timestamptz
       and exists (select 1 from ${friendLinks} afl
         where afl.user_id = asr.holder_user_id and afl.friend_user_id = asr.asker_user_id for share)
@@ -337,7 +337,7 @@ export function incomingAsksQuery(holderId: string, now: Date): SQL {
     left join ${decks} idk on idk.id = isr.deck_id and idk.user_id = isr.asker_user_id
     left join ${cards} icc on icc.oracle_id = isp.commander_oracle_id
     left join ${printings} ifp on ifp.scryfall_id = isp.commander_printing_id and ifp.oracle_id = isp.commander_oracle_id
-    where isr.holder_user_id = ${holderId} and isr.status = 'open'
+    where isr.holder_user_id = ${holderId} and isr.initiated_by = 'asker' and isr.status = 'open'
       and isr.created_at > ${openFloor(now).toISOString()}::timestamptz
       ${notDismissedAsk(sql`isr`)}
     order by isr.created_at desc, isr.id`;
@@ -427,7 +427,7 @@ export function myAsksQuery(askerId: string, now: Date, oracleIds?: readonly str
     left join ${decks} mdk on mdk.id = msr.deck_id and mdk.user_id = msr.asker_user_id
     left join ${cards} mcc on mcc.oracle_id = msp.commander_oracle_id
     left join ${printings} mfp on mfp.scryfall_id = msp.commander_printing_id and mfp.oracle_id = msp.commander_oracle_id
-    where msr.asker_user_id = ${askerId} and msr.created_at > ${shownFloor(now).toISOString()}::timestamptz
+    where msr.asker_user_id = ${askerId} and msr.initiated_by = 'asker' and msr.created_at > ${shownFloor(now).toISOString()}::timestamptz
       and msr.status <> 'withdrawn' and ${cleared}${only}
     order by msr.created_at desc, msr.id`;
 }
@@ -568,7 +568,7 @@ export function waitingAsksCountQuery(holderId: string, now: Date): SQL {
   return sql`select count(*)::int as n
     from ${spareRequests} wsr
     join ${friendLinks} wfl on wfl.user_id = wsr.holder_user_id and wfl.friend_user_id = wsr.asker_user_id
-    where wsr.holder_user_id = ${holderId} and wsr.status = 'open'
+    where wsr.holder_user_id = ${holderId} and wsr.initiated_by = 'asker' and wsr.status = 'open'
       and wsr.created_at > ${openFloor(now).toISOString()}::timestamptz
       ${notDismissedAsk(sql`wsr`)}`;
 }
@@ -580,7 +580,7 @@ export function waitingAsksCountQuery(holderId: string, now: Date): SQL {
 function unseenAnswers(askerId: string, now: Date): SQL {
   return sql`select 1 from ${spareRequests} usr
     join ${friendLinks} ufl on ufl.user_id = usr.asker_user_id and ufl.friend_user_id = usr.holder_user_id
-    where usr.asker_user_id = ${askerId} and usr.status in ('yes', 'no') and usr.asker_cleared_at is null
+    where usr.asker_user_id = ${askerId} and usr.initiated_by = 'asker' and usr.status in ('yes', 'no') and usr.asker_cleared_at is null
       and usr.answered_at > ${openFloor(now).toISOString()}::timestamptz
       and (usr.asker_seen_at is null or usr.answered_at > usr.asker_seen_at)
       and usr.answered_at > coalesce(
@@ -612,7 +612,7 @@ export function markAnswersSeenQuery(askerId: string, now: Date): SQL {
  */
 export function markAnswerSeenQuery(askerId: string, requestId: string, now: Date): SQL {
   return sql`update ${spareRequests} asr set asker_seen_at = ${now.toISOString()}::timestamptz
-    where asr.id = ${requestId}::uuid and asr.asker_user_id = ${askerId} and asr.status in ('yes', 'no')
+    where asr.id = ${requestId}::uuid and asr.asker_user_id = ${askerId} and asr.initiated_by = 'asker' and asr.status in ('yes', 'no')
       and asr.asker_seen_at is null`;
 }
 

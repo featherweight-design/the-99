@@ -64,7 +64,7 @@ export function requestHistoryQuery(viewerId: string, direction: HistoryDirectio
     left join ${decks} hdk on hdk.id = hsr.deck_id and hdk.user_id = hsr.asker_user_id
     left join ${cards} hcc on hcc.oracle_id = hsp.commander_oracle_id
     left join ${printings} hfp on hfp.scryfall_id = hsp.commander_printing_id and hfp.oracle_id = hsp.commander_oracle_id
-    where ${mine} = ${viewerId}${notWithdrawn}${after}
+    where ${mine} = ${viewerId} and hsr.initiated_by = 'asker'${notWithdrawn}${after}
     order by hsr.created_at desc, hsr.id desc
     limit ${limit + 1}`;
 }
@@ -72,7 +72,7 @@ export function requestHistoryQuery(viewerId: string, direction: HistoryDirectio
 /** How many requests the history would show the viewer (a withdrawn ask never shows on the holder's side) that name someone who is not a friend now. A count: no names are read (G3). */
 export function hiddenHistoryCountQuery(viewerId: string): SQL {
   return sql`select count(*)::int as n from ${spareRequests} hcr
-    where ((hcr.asker_user_id = ${viewerId}) or (hcr.holder_user_id = ${viewerId} and hcr.status <> 'withdrawn'))
+    where hcr.initiated_by = 'asker' and ((hcr.asker_user_id = ${viewerId}) or (hcr.holder_user_id = ${viewerId} and hcr.status <> 'withdrawn'))
       and not exists (
         select 1 from ${friendLinks} hcl
         where hcl.user_id = ${viewerId}

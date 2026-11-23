@@ -89,7 +89,7 @@ function readerStoreSql(viewerId: string, storeOn: boolean): SQL {
  */
 export function answerOpened(viewerId: string, key: SQL): SQL {
   return sql`exists (select 1 from ${feedItems} ofi
-    join ${spareRequests} osr on osr.id::text = ofi.dedupe_key and osr.asker_user_id = ofi.user_id
+    join ${spareRequests} osr on osr.id::text = ofi.dedupe_key and osr.asker_user_id = ofi.user_id and osr.initiated_by = 'asker'
     where 'item:' || ofi.id::text = ${key} and ofi.user_id = ${viewerId} and ofi.kind = 'spare-request'
       and ofi.data ->> 'answer' is not null
       and osr.asker_seen_at is not null and osr.asker_seen_at >= osr.answered_at)`;

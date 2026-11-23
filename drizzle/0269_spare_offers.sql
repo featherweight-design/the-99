@@ -1,0 +1,2 @@
+ALTER TABLE "spare_requests" ADD COLUMN "initiated_by" text DEFAULT 'asker' NOT NULL;--> statement-breakpoint
+ALTER TABLE "spare_requests" ADD CONSTRAINT "spare_requests_initiated_by_check" CHECK ("spare_requests"."initiated_by" in ('asker', 'holder'));
