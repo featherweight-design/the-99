@@ -1,0 +1,404 @@
+--- a/src/lib/copy/request-history.ts
++++ b/src/lib/copy/request-history.ts
+@@ -5,8 +5,9 @@
+ export const historyCopy = {
+   back: "‹ Friends",
+   title: "Request history",
+-  line: "Every spare you’ve asked for, and every one asked of you. Newest first.",
+-  tabs: { asked: "You asked", ofYou: "Asked of you" },
++  line: "Every spare you’ve asked for or offered, and every one asked of you or offered to you. Newest first.",
++  /** You have it R2: the tabs split by who started it, so an offer you made sits with your asks (`From you`). */
++  tabs: { asked: "From you", ofYou: "To you" },
+   kind: { open: "Requested", yes: "Accepted", no: "Declined", expired: "No answer", withdrawn: "Withdrawn" },
+   ofYouOpen: "Waiting on you",
+   mine: {
+@@ -20,14 +21,28 @@
+   asked: (deck: string | null, on: string) => (deck ? `For ${deck} · asked ${on}` : `Asked ${on}`),
+   openMine: (deck: string | null, days: number) => `${deck ? `For ${deck} · ` : ""}still open, ${days} ${days === 1 ? "day" : "days"} left`,
+   openTheirs: (days: number) => `${days} ${days === 1 ? "day" : "days"} left. Answer it under Waiting on you.`,
++  /** You have it R2: an OFFER's row. The kicker words are the ask's but for open (`Offered`); the title and the line say it is an offer. */
++  offer: {
++    open: "Offered",
++    mine: {
++      open: (f: ThirdPartyName, c: string, n: number) => (n > 1 ? personText`You offered ${n} ${c} to ${f}` : personText`You offered ${c} to ${f}`),
++      yes: (f: ThirdPartyName, c: string) => personText`${f} said yes to ${c}`, // = spareCopy.request.offer.answered.yes
++      no: (f: ThirdPartyName, c: string) => personText`${f} passed on ${c}`, // = spareCopy.request.offer.answered.no
++      expired: (f: ThirdPartyName, c: string) => personText`${f} didn’t answer about ${c}`, // = historyCopy.mine.expired
++      withdrawn: (f: ThirdPartyName, c: string) => personText`You withdrew your offer of ${c} to ${f}`,
++    },
++    openMine: (f: ThirdPartyName, days: number) => personText`${days} ${days === 1 ? "day" : "days"} left. Withdraw it from ${f}’s Wishlist tab.`,
++    offered: (on: string) => `Offered ${on}`,
++    theirs: (f: ThirdPartyName, c: string, n: number) => (n > 1 ? personText`${f} offered you ${n} ${c}` : personText`${f} offered you ${c}`),
++  },
+   theirsYes: "You said yes. The handover is between you.",
+   theirsNo: "You said no.",
+   theirsExpired: "It ran out after 14 days without an answer.",
+   older: "Show older requests",
+   olderFailed: "Couldn’t load older requests. Try again.",
+-  exFriends: "Requests with people you’re no longer friends with don’t show here. Add them back and they return.",
+-  emptyAsked: { title: "You haven’t asked for a spare yet", body: "Ask a friend from a card’s spares in Shopping or on their Spares tab." },
+-  emptyOfYou: { title: "Nobody has asked you for a spare yet", body: "When a friend asks for one of your spares, it waits on you on Friends." },
++  exFriends: "Requests and offers with people you’re no longer friends with don’t show here. Add them back and they return.",
++  emptyAsked: { title: "Nothing from you yet", body: "Ask a friend from a card’s spares in Shopping or on their Spares tab, or offer one from their Wishlist tab." },
++  emptyOfYou: { title: "Nothing to you yet", body: "When a friend asks for one of your spares, or offers you one, it waits on you on Friends." },
+   /** The Friends page's one Requests box (R1d): its tabs, the foot link and a tab's empty state. DRAFT for /copy-review. */
+   box: {
+     label: "Requests",
+--- a/src/lib/social/request-history.ts
++++ b/src/lib/social/request-history.ts
+@@ -28,6 +28,8 @@
+   createdAt: Date;
+   /** When it ended: the answer's time for a Yes or No, the 14th day for no answer, the withdrawal's time (null for one withdrawn before `withdrawn_at` existed), the day asked while open. */
+   endedAt: Date | null;
++  /** You have it R2: an offer (`initiated_by = 'holder'`). From you: the viewer offered it; To you: offered to the viewer. */
++  offer?: boolean;
+ };
+ export type HistoryPage = { entries: HistoryEntry[]; next: HistoryCursor | null };
+ 
+--- a/src/components/social/request-history.tsx
++++ b/src/components/social/request-history.tsx
+@@ -29,11 +29,22 @@
+   return `${new Date(Date.UTC(2000, w.mo - 1, 1)).toLocaleDateString("en-US", { month: "long", timeZone: "UTC" })} ${w.y}`;
+ };
+ 
+-function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number, zone: string | null): { kind: string; ink: string; on: string | null; title: PersonParts; detail: string } {
++function rowText(e: HistoryEntry, tab: HistoryTab, nowMs: number, zone: string | null): { kind: string; ink: string; on: string | null; title: PersonParts; detail: string | PersonParts } {
+   const ink = e.state === "open" ? "text-[color:var(--accent-text)]" : e.state === "yes" ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]";
+   // A withdrawal from before `withdrawn_at` existed has no date to claim: the kicker draws none.
+   const on = e.endedAt === null ? null : formatShortDeckDate(e.endedAt, zone);
+   const left = () => daysLeft(e.createdAt, new Date(nowMs));
++  if (e.offer) {
++    // You have it R2: an offer. The ask's shell and kickers; `Offered` while open; the title and the line say offer.
++    const o = h.offer;
++    if (tab === "asked") {
++      const detail = e.state === "open" ? o.openMine(e.other.displayName, left()) : o.offered(formatShortDeckDate(e.createdAt, zone));
++      const title = e.state === "open" ? o.mine.open(e.other.displayName, e.card.name, e.copies) : o.mine[e.state](e.other.displayName, e.card.name);
++      return { kind: e.state === "open" ? o.open : h.kind[e.state], ink, on, title, detail };
++    }
++    const detail = e.state === "open" ? h.openTheirs(left()) : e.state === "yes" ? h.theirsYes : e.state === "no" ? h.theirsNo : h.theirsExpired;
++    return { kind: e.state === "open" ? h.ofYouOpen : h.kind[e.state], ink, on, title: o.theirs(e.other.displayName, e.card.name, e.copies), detail };
++  }
+   if (tab === "asked") {
+     const detail = e.state === "open" ? h.openMine(e.deckName, left()) : h.asked(e.deckName, formatShortDeckDate(e.createdAt, zone));
+     return { kind: h.kind[e.state], ink, on, title: h.mine[e.state](e.other.displayName, e.card.name), detail };
+@@ -96,7 +107,7 @@
+                         {t.on !== null && <small className="font-mono text-[10px] text-[color:var(--fg-faint)]">{t.on}</small>}
+                       </span>
+                       <span className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]"><PersonText text={t.title} /></span>
+-                      <span className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{t.detail}</span>
++                      <span className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]"><PersonText text={t.detail} /></span>
+                     </span>
+                     </span>
+                   </CardDetailTrigger>
+--- a/src/lib/copy/feed.ts
++++ b/src/lib/copy/feed.ts
+@@ -238,9 +238,13 @@
+       seeLists: "See the lists",
+       /** An answer to the reader's own spare request: opens that one request over Home (small items item 3). */
+       answer: "Your request",
++      /** You have it R2: the friend's answer to the reader's OFFER opens that offer over Home (board Sheet). */
++      offerAnswer: "Your offer",
+     },
+     /** The kicker of an answer to the reader's own spare request (spare requests handoff, board `Asker-States`). */
+     answerKicker: "Your request",
++    /** You have it R2: the kicker of the friend's answer to the reader's offer (shipped, it read `Your request`). */
++    offerAnswerKicker: "Your offer",
+     /** The kicker of an offer to the reader (You have it), as Waiting on you's row names it. */
+     offerKicker: "Spare offer",
+     /**
+--- a/src/components/feed/feed-item.tsx
++++ b/src/components/feed/feed-item.tsx
+@@ -79,8 +79,8 @@
+         // An OFFER (You have it): the friend's answer to the reader's offer, or the offer made to the reader.
+         const o = spareCopy.request.offer;
+         if (item.answer) return item.answer === "yes"
+-          ? { title: o.answered.yes(friend, card), line: o.answered.yesLine, press: null }
+-          : { title: o.answered.no(friend, card), line: o.answered.noLine, press: null };
++          ? { title: o.answered.yes(friend, card), line: o.answered.yesLine, press: c.press.offerAnswer }
++          : { title: o.answered.no(friend, card), line: o.answered.noLine, press: c.press.offerAnswer };
+         return { title: c.title.spareOffer(friend, card), line: c.line.spareOffer, press: null };
+       }
+       if (item.answer) return { ...answerText(item, friend, card), press: c.press.answer };
+@@ -399,7 +399,7 @@
+       <div className="flex min-w-0 flex-col gap-[3px]">
+         <div className="flex min-w-0 items-center gap-[7px]">
+           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
+-          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? c.answerKicker : item.offer ? c.offerKicker : c.kicker[item.kind]}</span>
++          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? (item.offer ? c.offerAnswerKicker : c.answerKicker) : item.offer ? c.offerKicker : c.kicker[item.kind]}</span>
+           {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
+           <small data-feed-age className={`${KICKER_AGE} ${ageInk}`}>{when ?? drop?.age ?? feedAge(item.at, now)}</small>
+         </div>
+--- a/src/lib/social/spare-offers.ts
++++ b/src/lib/social/spare-offers.ts
+@@ -176,7 +176,9 @@
+ }
+ 
+ /** What a friend's Wishlist tab draws of one card the viewer can spare (`HaveItCard.mark` null: nothing is open or agreed). */
+-export type HaveItCard = { oracleId: string; spare: number; mark: OfferMark | null; requestId: string | null; daysLeft: number | null };
++export type HaveItCard = { oracleId: string; spare: number; mark: OfferMark | null; requestId: string | null; daysLeft: number | null;
++  /** You have it R2, PROPOSAL: spare copies, but fewer than the reader's Offer threshold (Settings › Spares): that threshold. */
++  under?: number };
+ 
+ /**
+  * The friend's wishlist cards the viewer can spare, each with its mark (You have it, PR 3b): the viewer's own spare rule
+--- a/src/lib/copy/social.ts
++++ b/src/lib/copy/social.ts
+@@ -575,8 +575,21 @@
+  * tab marking the cards the reader can spare, and the sheet that offers one. Reused shipped strings are named in comments.
+  */
+ export const haveItCopy = {
+-  key: { spare: "you can spare", asked: "asked you", offered: "offered", accepted: "accepted" },
++  key: { spare: "you can spare", asked: "asked you", offered: "offered", accepted: "accepted",
++    /** You have it R2, PROPOSAL: a spare under the reader's Offer threshold. */
++    under: "under your threshold" },
+   aria: (card: string) => `You can spare ${card}`,
++  /** You have it R2, PROPOSAL: the below-threshold tile and sheet. */
++  under: {
++    aria: (card: string, min: number) => `You have a spare ${card}, under your threshold of ${min}`,
++    sub: (min: number) => `under your threshold of ${min}`,
++    foot: (min: number) => `You offer a card only when you have ${min} or more spare copies.`,
++    settings: "Change it in Settings ›",
++    /** After the call-out's body when some spares can be offered; alone when none can. */
++    more: (n: number) => (n === 1 ? "1 more is under your threshold." : `${n} more are under your threshold.`),
++    title: (n: number) => (n === 1 ? "You have 1 spare under your threshold" : `You have ${n} spares under your threshold`),
++    body: (names: string, min: number) => `${names}. You offer a card from ${min} spare copies; change it in Settings › Spares.`,
++  },
+   /** The press's aria with its mark, as `spareCopy.request.markAria` does for the Wishlist tab's press. */
+   markAria: (base: string, mark: "asked" | "offered" | "accepted") => `${base}, ${mark === "asked" ? "asked you" : mark}`,
+   title: "You have this",
+--- a/src/lib/copy/settings.ts
++++ b/src/lib/copy/settings.ts
+@@ -11,6 +11,8 @@
+     /** The threshold sentence, around the stepper: `Offer a card only when I have [2] or more spare copies.` */
+     before: "Offer a card only when I have",
+     after: "or more spare copies.",
++    /** You have it R2, PROPOSAL: the pointer under the threshold sentence. */
++    alsoOffer: "This also decides which cards you can offer from a friend’s wishlist.",
+     stepperLabel: "Spare copies a card needs before it is offered",
+     fewer: "Fewer",
+     more: "More",
+--- a/src/components/social/friend-wishlist-have.tsx
++++ b/src/components/social/friend-wishlist-have.tsx
+@@ -29,7 +29,7 @@
+ 
+ /** The tile's press: the 26px outlined box with the spare glyph and its mark, over the caption's lower right. */
+ export function HavePress({ line, have, open, onOpen }: { line: HaveLine; have: HaveItCard; open: boolean; onOpen: () => void }) {
+-  const base = h.aria(line.name);
++  const base = have.under ? h.under.aria(line.name, have.under) : h.aria(line.name);
+   return (
+     <span className="absolute bottom-[8px] right-[6px] z-[1] flex md:bottom-[9px] md:right-[8px]">
+       <button
+@@ -39,14 +39,19 @@
+         aria-haspopup="dialog"
+         aria-expanded={open}
+         onClick={onOpen}
+-        className={`${SPARE_PRESS_FADE} ${TOUCH_HIT} flex h-[26px] min-w-[26px] cursor-pointer items-center justify-center rounded-[6px] bg-transparent px-[5px] [border:1px_solid_var(--border-strong)] ${open ? "ring-2 ring-[color:var(--accent)] ring-offset-2" : ""}`}
++        className={`${SPARE_PRESS_FADE} ${TOUCH_HIT} flex h-[26px] min-w-[26px] cursor-pointer items-center justify-center rounded-[6px] bg-transparent px-[5px] ${have.under ? "[border:1px_dashed_var(--border-dashed)]" : "[border:1px_solid_var(--border-strong)]"} ${open ? "ring-2 ring-[color:var(--accent)] ring-offset-2" : ""}`}
+       >
+-        <MarkedSpareGlyph mark={glyphMark(have)} size={16} testId="have-glyph" />
++        {have.under ? <UnderGlyph size={16} /> : <MarkedSpareGlyph mark={glyphMark(have)} size={16} testId="have-glyph" />}
+       </button>
+     </span>
+   );
+ }
+ 
++/** You have it R2, PROPOSAL: the spare glyph, unmarked, in the faint ink: a spare your Offer threshold holds back. */
++export function UnderGlyph({ size }: { size: number }) {
++  return <span data-mark="under" className="inline-flex text-[color:var(--fg-faint)]"><SpareGlyph size={size} /></span>;
++}
++
+ /** A tile's face for the friend's list: its wants line takes the press's height once any tile draws a press. */
+ export function HaveTileFace({ tile, eager, press }: { tile: WishlistTileCard; eager: boolean; press: boolean }) {
+   return <WishlistTileFace tile={tile} eager={eager} pressRoom={press ? 1 : 0} tall={press} />;
+@@ -56,13 +61,18 @@
+ export function HaveCallout({ names, haves, total, filter, onFilter }: {
+   names: readonly string[]; haves: readonly HaveItCard[]; total: number; filter: HaveFilter; onFilter: (f: HaveFilter) => void;
+ }) {
++  const offerable = haves.filter((c) => !c.under);
++  const under = haves.filter((c) => c.under);
+   if (haves.length === 0) return null;
+-  const marks = new Set(haves.map((c) => c.mark));
+-  const key: Array<{ label: string; mark: SpareMark }> = [
+-    { label: h.key.spare, mark: null },
++  const min = under[0]?.under ?? 0;
++  const nameOf = (c: HaveItCard) => names[haves.indexOf(c)];
++  const marks = new Set(offerable.map((c) => c.mark));
++  const key: Array<{ label: string; mark: SpareMark | "under" }> = [
++    ...(offerable.length ? [{ label: h.key.spare, mark: null }] : []),
+     ...(marks.has("asked") ? [{ label: h.key.asked, mark: "requested" as const }] : []),
+     ...(marks.has("offered") ? [{ label: h.key.offered, mark: "requested" as const }] : []),
+     ...(marks.has("accepted") ? [{ label: h.key.accepted, mark: "accepted" as const }] : []),
++    ...(under.length ? [{ label: h.key.under, mark: "under" as const }] : []),
+   ];
+   return (
+     <div data-testid="have-callout" className={`${SPARE_PRESS_FADE} mt-[14px] flex flex-col gap-[10px]`}>
+@@ -74,12 +84,14 @@
+           tone="action"
+           next={false}
+           mark={<SpareGlyph size={16} />}
+-          title={h.callout.title(haves.length)}
+-          body={h.callout.body(h.callout.names(names))}
++          title={offerable.length ? h.callout.title(offerable.length) : h.under.title(under.length)}
++          body={offerable.length
++            ? `${h.callout.body(h.callout.names(offerable.map(nameOf)))}${under.length ? ` ${h.under.more(under.length)}` : ""}`
++            : h.under.body(h.callout.names(under.map(nameOf)), min)}
+         />
+       </div>
+       <div className="flex flex-wrap items-center gap-x-[16px] gap-y-[8px]">
+-        <SegmentedSwitch<HaveFilter>
++        {offerable.length > 0 && <SegmentedSwitch<HaveFilter>
+           kind="radio"
+           size="compact"
+           ariaLabel={h.callout.filterAria}
+@@ -87,13 +99,13 @@
+           onChange={onFilter}
+           segments={[
+             { value: "all", label: h.callout.filterAll, count: total },
+-            { value: "spare", label: h.callout.filterSpare, count: haves.length },
++            { value: "spare", label: h.callout.filterSpare, count: offerable.length },
+           ]}
+-        />
++        />}
+         <ul data-testid="have-key" className="m-0 flex list-none flex-wrap items-center gap-x-[14px] gap-y-[4px] p-0 font-mono text-[10.5px] text-[color:var(--fg-faint)]">
+           {key.map((k) => (
+             <li key={k.label} className="inline-flex items-center gap-[6px]">
+-              <MarkedSpareGlyph mark={k.mark} size={14} />
++              {k.mark === "under" ? <UnderGlyph size={14} /> : <MarkedSpareGlyph mark={k.mark} size={14} />}
+               {k.label}
+             </li>
+           ))}
+@@ -141,7 +153,7 @@
+     }
+   }
+ 
+-  const foot = have.mark === "asked" ? h.foot.asked(friend) : have.mark === "offered" ? h.foot.offered(friend) : have.mark === "accepted" ? h.foot.accepted(friend) : h.foot.offer(friend);
++  const foot = have.under ? h.under.foot(have.under) : have.mark === "asked" ? h.foot.asked(friend) : have.mark === "offered" ? h.foot.offered(friend) : have.mark === "accepted" ? h.foot.accepted(friend) : h.foot.offer(friend);
+   return (
+     <HoverPreviewProvider waitForMove>
+     <ModalChrome title={h.title} closeLabel={h.close} onClose={onClose} width={640}>
+@@ -164,13 +176,13 @@
+         <section className="flex flex-col gap-[8px]">
+           <h3 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{h.section(1)}</h3>
+           <div className="flex items-center gap-[12px] rounded-[10px] px-[13px] py-[11px] [border:1px_solid_var(--border)]">
+-            <MarkedSpareGlyph mark={glyphMark(have)} size={20} />
++            {have.under ? <UnderGlyph size={20} /> : <MarkedSpareGlyph mark={glyphMark(have)} size={20} />}
+             <span className="flex min-w-0 flex-1 flex-col">
+               <span className="text-[13.5px] font-semibold text-[color:var(--fg)]">{h.spare(have.spare)}</span>
+-              <span className="text-[12px] text-[color:var(--fg-muted)]">{have.mark === "offered" && have.daysLeft !== null ? h.daysLeft(have.daysLeft) : h.spareSub}</span>
++              <span className="text-[12px] text-[color:var(--fg-muted)]">{have.under ? h.under.sub(have.under) : have.mark === "offered" && have.daysLeft !== null ? h.daysLeft(have.daysLeft) : h.spareSub}</span>
+             </span>
+             <span ref={cell} tabIndex={-1} className="flex flex-none items-center outline-none">
+-              {have.mark === null ? (
++              {have.under ? null : have.mark === null ? (
+                 <button
+                   type="button"
+                   data-testid="have-offer"
+@@ -201,7 +213,7 @@
+             </span>
+           </div>
+         </section>
+-        <p data-testid="have-foot" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={foot} /></p>
++        <p data-testid="have-foot" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={foot} />{have.under ? <> <a href="/settings#spares" className="font-medium text-[color:var(--accent-text)] no-underline">{h.under.settings}</a></> : null}</p>
+       </div>
+       {toast.node}
+     </ModalChrome>
+--- a/src/components/social/friend-wishlist.tsx
++++ b/src/components/social/friend-wishlist.tsx
+@@ -27,7 +27,8 @@
+   const [opened, setOpened] = useState<string | null>(null);
+   const have = new Map(haves.map((c) => [c.oracleId, { ...c, ...patches[c.oracleId] }]));
+   const spareLines = lines.filter((l) => have.has(l.oracleId));
+-  const shown = filter === "spare" ? spareLines : lines;
++  // R2, PROPOSAL: a spare under the Offer threshold draws its muted press but stays out of the filter.
++  const shown = filter === "spare" ? spareLines.filter((l) => !have.get(l.oracleId)!.under) : lines;
+   const openedLine = opened ? lines.find((l) => l.oracleId === opened) : undefined;
+   const openedHave = opened ? have.get(opened) : undefined;
+   // The tiles in their order, so card details steps through the friend's list.
+--- a/src/components/settings/spares-section.tsx
++++ b/src/components/settings/spares-section.tsx
+@@ -108,6 +108,8 @@
+         <Stepper value={min} saving={saving} onStep={step} />
+         <span>{c.after}</span>
+       </div>
++      {/* You have it R2, PROPOSAL: the pointer, under the sentence it qualifies. */}
++      <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.alsoOffer}</p>
+       <WhoSees pods={pods} />
+       <h3 className="m-0 mt-[22px] font-mono text-[10.5px] font-medium uppercase tracking-[0.14em] text-[color:var(--fg-faint)]">{c.keptHead(shown.length)}</h3>
+       <p className="m-0 mt-[6px] text-[13px] leading-[1.55] text-[color:var(--fg-muted)]">{c.keptExplain}</p>
+--- a/src/components/home/offer-answer-sheet.tsx
++++ b/src/components/home/offer-answer-sheet.tsx
+@@ -0,0 +1,74 @@
++"use client";
++// You have it R2, PROPOSAL (handoff `design_handoff_the99_you_have_it_r2`, board `Sheet`): the friend's answer to the
++// reader's OFFER, opened over Home from its What's new item ("Your offer ›"). The mirror of the ask's answer sheet
++// (`answer-sheet.tsx`, small items item 3) with the request-history row in place of the Your requests row: the offerer
++// has no Your requests row and nothing to clear, so the sheet has no Clear. The item's own ✕ still only hides the item.
++// The foot goes to Request history, whose From you tab holds the offer.
++import Link from "next/link";
++import { ModalChrome } from "../decks/receipt-modal";
++import { PersonText, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
++import { KICKER_AGE } from "../feed/kicker-age";
++import { feedAge } from "../../lib/feed/age";
++import { RequestPicture } from "../social/your-requests";
++import { spareCopy } from "../../lib/copy/social";
++import { historyCopy } from "../../lib/copy/request-history";
++
++/** Every new string (the handoff's `copy strings.ts` holds the same). */
++export const offerSheetCopy = {
++  title: "Your offer",
++  close: "Close",
++  /** The row's kicker words are request history's (`historyCopy.kind`). */
++  yesDetail: "Hand it over when you meet; your collection stays as it is until you change it.",
++  noDetail: "Nothing else changes.", // = spareCopy.request.offer.answered.noLine
++  /** The line under, mono: when it was offered and how many. */
++  meta: (on: string, copies: number) => `Offered ${on} · ${copies === 1 ? "1 copy" : `${copies} copies`}`,
++  all: historyCopy.box.history, // "Request history ›"
++};
++
++export type OfferAnswer = {
++  id: string; answer: "yes" | "no"; answeredAt: Date; offeredOn: string; copies: number;
++  card: { name: string; imageUri: string | null };
++  friend: { displayName: ThirdPartyName; commander: { oracleId: string; name: string; artCropUri: string | null } | null };
++};
++
++export function OfferAnswerSheet({ offer, now }: { offer: OfferAnswer; now: Date }) {
++  const c = offerSheetCopy;
++  const o = spareCopy.request.offer.answered;
++  const yes = offer.answer === "yes";
++  const title: PersonParts = yes ? o.yes(offer.friend.displayName, offer.card.name) : o.no(offer.friend.displayName, offer.card.name);
++  return (
++    <ModalChrome
++      title={c.title}
++      closeLabel={c.close}
++      onClose={() => {}}
++      width={560}
++      fit
++      foot={
++        <div className="flex min-h-[52px] items-center px-[16px] pb-[8px] [border-top:1px_solid_var(--border)] md:min-h-[46px] md:justify-end md:px-[18px] md:pb-0">
++          <Link href="/friends/requests" className="flex min-h-[44px] items-center font-sans text-[13.5px] font-medium text-[color:var(--accent-text)] no-underline">
++            {c.all}
++          </Link>
++        </div>
++      }
++    >
++      <div
++        data-testid="offer-sheet-row"
++        data-state={offer.answer}
++        className="mx-[16px] mb-[16px] mt-[14px] grid grid-cols-[46px_minmax(0,1fr)] items-center gap-x-[12px] rounded-[14px] bg-[color:var(--surface-inset)] px-[14px] py-[12px] [border:1px_solid_var(--border)] md:mx-[18px] md:mb-[18px] md:mt-[16px] md:gap-x-[14px] md:px-[16px]"
++      >
++        <RequestPicture a={{ card: offer.card, holder: offer.friend } as never} />
++        <div className="flex min-w-0 flex-col gap-[3px]">
++          <p className="m-0 flex min-w-0 items-center gap-[7px]">
++            <span className={`truncate font-mono text-[9.5px] font-medium uppercase tracking-[.12em] ${yes ? "text-[color:var(--success)]" : "text-[color:var(--fg-faint)]"}`}>
++              {historyCopy.kind[offer.answer]}
++            </span>
++            <small className={`${KICKER_AGE} text-[color:var(--fg-faint)]`}>{feedAge(offer.answeredAt.toISOString(), now.toISOString())}</small>
++          </p>
++          <p className="m-0 text-[14px] font-semibold leading-[1.35] text-[color:var(--fg)] [overflow-wrap:anywhere]"><PersonText text={title} /></p>
++          <p className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-body)] [overflow-wrap:anywhere]">{yes ? c.yesDetail : c.noDetail}</p>
++          <p className="m-0 mt-[2px] font-mono text-[10.5px] text-[color:var(--fg-muted)]">{c.meta(offer.offeredOn, offer.copies)}</p>
++        </div>
++      </div>
++    </ModalChrome>
++  );
++}
