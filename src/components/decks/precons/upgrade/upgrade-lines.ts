@@ -26,7 +26,7 @@ export function picksOf(addIds: readonly string[], cutIds: readonly string[]): U
  */
 export function upgradeLines(panel: UpgradePanel, run: PanelRun): LineItem[] {
   const unpicked = new Set(run.unpicked);
-  const asOf = new Date(run.createdAt);
+  const asOf = new Date(run.pricesAsOf);
   const base = { rationaleShort: "", evidence: [], verdict: "pending" as const, applies: true, locked: false, applySet: null, verdictAt: null };
   const adds = run.pairs.map((p): LineItem => {
     const card = panel.cards[p.addId];
@@ -35,7 +35,7 @@ export function upgradeLines(panel: UpgradePanel, run: PanelRun): LineItem[] {
       ...base, side: "add", id, position: p.position, cardOracleId: p.addId, cardName: p.add,
       cardTypeLine: card?.typeLine ?? "", cardImageUri: card?.image ?? null, rationale: p.reason,
       owned: card?.owned ?? false, ownedQuantity: card?.owned ? 1 : 0, availability: card?.owned ? card.availability ?? null : null,
-      // The run's own price for the add, as its facts count it; a card the run priced at nothing draws no tag.
+      // The add's price as the run's facts count it (today's, at the reader's store, when the panel repriced it); a card the run priced at nothing draws no tag.
       price: p.addCents > 0 ? { cents: p.addCents, foilCents: null, etchedCents: null, asOf } : null,
       bracketAfter: p.addBracketAfter ?? null, inDeck: false,
       typeGroup: card?.typeGroup, role: card?.role ?? null, picked: !unpicked.has(id),

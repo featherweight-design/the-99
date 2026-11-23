@@ -274,7 +274,7 @@ export function ResultView({ panel, run, fileName = "", press = null, after = nu
         startedAt={null}
         report={null}
         permits={upgradePermits(panel, run) as Bracket[]}
-        newestPriceAsOf={new Date(run.createdAt)}
+        newestPriceAsOf={new Date(run.pricesAsOf)}
         figures={figuresOf(panel, run)}
         drift={null}
         actions={actions}

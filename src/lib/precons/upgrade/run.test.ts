@@ -6,6 +6,7 @@ import { assembleDeck, assemblePool, boxFingerprint, optionFor, withCommanders, 
 import type { UpgradeBase, UpgradeLoad } from "./load";
 import type { UpgradeReply } from "./prompt";
 import type { LineBrackets, StoredPair, UpgradePair } from "./validate";
+import type { RepricedAdds } from "./run";
 
 vi.mock("../../../db", () => ({ db: {} }));
 // The live `bracketOf` is exercised with these stand-ins: what it hands the verdict is what is asserted, the verdict itself is `slotDeck`'s.
@@ -45,6 +46,7 @@ const { readDoneUpgrade, readUpgrades } = await import("./store");
 const { loadDeckProfileFromHead } = await import("../../profile/load");
 
 const NOW = new Date(Date.UTC(2026, 10, 10, 7));
+const TODAY = new Date(Date.UTC(2026, 10, 22, 7));
 const USAGE = { inputTokens: 10, outputTokens: 5, cacheReadTokens: 0, cacheWriteTokens: 0 };
 
 const fields = { manaCost: null, keywords: [], cmc: 3, commanderLegal: true, quantity: 1, colorIdentity: ["U"] } as const;
@@ -82,7 +84,7 @@ function deps(reply: UpgradeReply | { fail: "upstream_busy" } | "throw", alterna
     if ("fail" in reply) return { ok: false as const, errorClass: reply.fail };
     return { ok: true as const, value: reply, usage: USAGE };
   });
-  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), lineBrackets: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> => pairs.map(() => ({ addBracketAfter: null, cutBracketAfter: null }))), now: () => NOW } };
+  return { call, d: { base: async () => base({ alternate }), loadFor, call, bracketOf: vi.fn(async (_l: unknown, pairs: readonly unknown[]) => (pairs.length === 0 ? 2 : 3)), bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), prices: vi.fn(async () => ({ cents: new Map<string, number | null>(), asOf: null })), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<StoredPair[]> => pairs.map((p) => ({ ...p, cutCombo: null, addCombo: null }))), lineBrackets: vi.fn(async (_l: unknown, pairs: readonly UpgradePair[]): Promise<LineBrackets[] | null> => pairs.map(() => ({ addBracketAfter: null, cutBracketAfter: null }))), now: () => NOW } };
 }
 
 beforeEach(() => {
@@ -109,6 +111,47 @@ describe("readUpgrade", () => {
     expect(panel!.cards["new-1"]).toEqual({ cmc: 1, identity: ["U"], owned: false });
     expect(panel!.cards["new-2"]).toEqual({ owned: true });
     expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 120 }, owned: 1, deck: { id: "d1", name: "Rootha Upgraded" } });
+    store.runs = [];
+  });
+
+  it("reprices every run's adds at the reader's store as it draws, with the store switch on (ruling A)", async () => {
+    const { d } = deps(swaps(12));
+    const pair = (addId: string, addCents: number, position: number) => ({ cutId: `n${position}`, cut: "Native", addId, add: addId, addCents, reason: "r", cutReason: null, position });
+    store.runs = [{ id: "r1", status: "done", strategyKey: "cmd/3/overview:0", strategyLabel: "Plan", refunded: false, createdAt: NOW, pairs: [pair("p0", 300, 1), pair("p1", 300, 2), pair("p2", 300, 3)], buyTotalCents: 900, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x" }];
+    preference.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    // p1 has no price at that store: no tag and nothing toward the total, though it is still a card to buy.
+    const prices = vi.fn(async (ids: readonly string[]) => ({ cents: new Map<string, number | null>(ids.map((id) => [id, id === "p0" ? 450 : id === "p1" ? null : 125])), asOf: TODAY }));
+    const panel = await readUpgrade("u1", "boss.json", { ...d, prices }, { ...ENV_VIEW, STORE_PREFERENCE_ENABLED: "true" });
+    expect(preference.readerStoreForPage).toHaveBeenCalledWith("u1", expect.objectContaining({ STORE_PREFERENCE_ENABLED: "true" }));
+    expect(prices).toHaveBeenCalledTimes(1);
+    expect(prices).toHaveBeenCalledWith(["p0", "p1", "p2"], "tcgplayer");
+    expect(panel!.runs[0].pairs.map((p) => p.addCents)).toEqual([450, 0, 125]);
+    // The run's total and price date follow the repriced figures, so nothing on the panel quotes the store it was pressed at.
+    expect(panel!.runs[0]).toMatchObject({ toBuy: { cards: 3, cents: 575 }, buyTotalCents: 575, pricesAsOf: TODAY });
+    store.runs = [];
+  });
+
+  it("draws the runs' stored prices with the store switch off, or when the price read fails", async () => {
+    const { d } = deps(swaps(12));
+    const old = { cutId: "n6", cut: "Native 6", addId: "p0", add: "Pool 0", addCents: 300, reason: "r", cutReason: null, position: 1 };
+    store.runs = [{ id: "r1", status: "done", strategyKey: "cmd/3/overview:0", strategyLabel: "Plan", refunded: false, createdAt: NOW, pairs: [old], buyTotalCents: 300, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x" }];
+    const prices = vi.fn(async (): Promise<RepricedAdds> => { throw new Error("down"); });
+    const off = await readUpgrade("u1", "boss.json", { ...d, prices }, ENV_VIEW);
+    expect(prices).not.toHaveBeenCalled();
+    expect(off!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 300 } });
+    const failed = await readUpgrade("u1", "boss.json", { ...d, prices }, { ...ENV_VIEW, STORE_PREFERENCE_ENABLED: "true" });
+    expect(prices).toHaveBeenCalledTimes(1);
+    expect(failed!.runs[0].pairs).toEqual([old]);
+    expect(failed!.runs[0]).toMatchObject({ toBuy: { cards: 1, cents: 300 }, buyTotalCents: 300, pricesAsOf: NOW });
+    expect(recordSoftFailure).toHaveBeenCalled();
+    store.runs = [];
+  });
+
+  it("reads no prices when the runs name no adds", async () => {
+    const { d } = deps(swaps(12));
+    store.runs = [{ id: "r1", status: "done", strategyKey: "cmd/3/overview:0", strategyLabel: "Plan", refunded: false, createdAt: NOW, pairs: [], buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x" }];
+    await readUpgrade("u1", "boss.json", d, { ...ENV_VIEW, STORE_PREFERENCE_ENABLED: "true" });
+    expect(d.prices).not.toHaveBeenCalled();
     store.runs = [];
   });
 
@@ -212,6 +255,20 @@ describe("pressUpgrade", () => {
     expect(spy.mock.calls[0][3]).toBe("tcgplayer");
   });
 
+  it("reprices the run it just pressed at the store the press read, reading the store once", async () => {
+    const { d } = deps(swaps(12));
+    preference.readerStoreForPage.mockClear();
+    preference.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    const pair = { cutId: "n6", cut: "Native 6", addId: "p0", add: "Pool 0", addCents: 300, reason: "r", cutReason: null, position: 1 };
+    store.runs = [{ id: "run-1", status: "done", strategyKey: "cmd/3/overview:0", strategyLabel: "Plan", refunded: false, createdAt: NOW, pairs: [pair], buyTotalCents: 300, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x" }];
+    const prices = vi.fn(async () => ({ cents: new Map<string, number | null>([["p0", 450]]), asOf: TODAY }));
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { ...d, prices }, { ...ENV_VIEW, STORE_PREFERENCE_ENABLED: "true" });
+    expect(out.ok && out.run.pairs[0].addCents).toBe(450);
+    expect(preference.readerStoreForPage).toHaveBeenCalledTimes(1);
+    expect(prices).toHaveBeenCalledWith(["p0"], "tcgplayer");
+    store.runs = [];
+  });
+
   it("stores each swap's combo partners on the done write, read over the list with the pairs applied", async () => {
     const { d } = deps(swaps(12));
     d.partners.mockImplementation(async (_l, pairs) => pairs.map((p, i) => ({ ...p, cutCombo: null, addCombo: i === 0 ? { oracleId: "n1", name: "Native 1" } : null })));
@@ -298,7 +355,7 @@ describe("the input ceiling", () => {
     const huge = "word ".repeat(40_000);
     big.deck = assembleDeck(deckLines.map((l, i) => (i === 1 ? { ...l, oracleText: huge } : l)), new Map());
     const { call } = deps(swaps(12));
-    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: async () => [], lineBrackets: async () => [], now: () => NOW }, ENV_VIEW);
+    const out = await pressUpgrade("u1", "boss.json", "cmd", 3, "overview:0", { base: async () => base(), loadFor: async () => big, call, bracketOf: async () => 2, bracketsOf: async () => ({ gameChangers: [], massLandDenial: [], twoCardCombos: [], plays: 3 as const, permits: [3] }), facts: async () => new Map(), decks: async () => new Map(), prices: vi.fn(async () => ({ cents: new Map<string, number | null>(), asOf: null })), owned: async () => new Set<string>(), availability: async () => new Map(), labels: async () => null, mixes: async () => new Map(), partners: async () => [], lineBrackets: async () => [], now: () => NOW }, ENV_VIEW);
     expect(out).toEqual({ ok: false, reason: "tooBig" });
     expect(store.start).not.toHaveBeenCalled();
   });

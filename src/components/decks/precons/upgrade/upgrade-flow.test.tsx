@@ -27,7 +27,7 @@ const panel = (over: Partial<UpgradePanel> = {}): UpgradePanel => ({
   ...over,
 });
 const run: PanelRun = {
-  id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pairs: [],
+  id: "r", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pricesAsOf: new Date("2026-11-10T12:00:00Z"), pairs: [],
   buyTotalCents: 0, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 0, cents: 0 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [],
 };
 const open = (p = panel(), extra: Partial<Parameters<typeof UpgradeFlow>[0]> = {}) =>

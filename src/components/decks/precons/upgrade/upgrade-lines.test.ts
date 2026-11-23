@@ -24,7 +24,7 @@ const pair = (n: number, over: Partial<PanelRun["pairs"][number]> = {}) => ({
   cutId: `cut${n}`, cut: `Cut ${n}`, addId: `add${n}`, add: `Add ${n}`, addCents: 120, reason: `Add reason ${n}`, cutReason: `Cut reason ${n}`, position: n, ...over,
 });
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
-  id: "r1", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
+  id: "r1", status: "done", strategyKey: "muddle/3/spellslinger", strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pricesAsOf: new Date("2026-11-10T12:00:00Z"),
   pairs: [pair(1), pair(2)], buyTotalCents: 240, bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x",
   toBuy: { cards: 1, cents: 120 }, owned: 1, themes: {}, deck: null, seenAt: null, unpicked: [], ...over,
 });
