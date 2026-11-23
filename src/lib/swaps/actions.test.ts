@@ -79,7 +79,7 @@ describe("addFromFits", () => {
 describe("loadFitsAction", () => {
   it("reads for the signed-in reader", async () => {
     await loadFitsAction(CARD);
-    expect(vi.mocked(loadFits).mock.calls[0] as unknown[]).toEqual(["user_1", CARD]);
+    expect(vi.mocked(loadFits).mock.calls[0] as unknown[]).toEqual(["user_1", CARD, "tcgplayer"]);
   });
 
   it("answers null for a malformed id", async () => {

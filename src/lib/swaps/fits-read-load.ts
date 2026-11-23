@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
+import type { Store } from "../stores/rows";
 import { liveLockedIdsByDeck } from "../decks/locks";
 import { readLabels } from "../labels/read";
 import type { Job } from "../labels/types";
@@ -89,9 +90,10 @@ type ListRow = { deck_id: string; oracle_id: string; name: string; type_line: st
 export async function loadFitsReadInputs(
   userId: string,
   oracleId: string,
+  store: Store,
   opts: { allDecks?: boolean } = {},
 ): Promise<FitsReadLoad | null> {
-  const fits = await loadFits(userId, oracleId);
+  const fits = await loadFits(userId, oracleId, store);
   if (!fits) return null;
   const listed = fitsReadCandidates(fits);
 

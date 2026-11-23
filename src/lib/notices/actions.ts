@@ -12,6 +12,7 @@ import { revalidatePath } from "next/cache";
 import { after } from "next/server";
 
 import { requireUserId } from "../auth";
+import { readerStoreForAction } from "../stores/action-store";
 import { isUuid } from "../uuid";
 import { markNoticesRead } from "./mark";
 import { loadDeckNotices, type DeckNotices } from "./read";
@@ -23,13 +24,13 @@ import { loadDeckNotices, type DeckNotices } from "./read";
 export async function peekNotices(deckId: string): Promise<DeckNotices | null> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return null;
-  return loadDeckNotices(deckId, userId);
+  return loadDeckNotices(deckId, userId, await readerStoreForAction(userId));
 }
 
 export async function openNotices(deckId: string): Promise<DeckNotices | null> {
   const userId = await requireUserId();
   if (!isUuid(deckId)) return null;
-  const notices = await loadDeckNotices(deckId, userId);
+  const notices = await loadDeckNotices(deckId, userId, await readerStoreForAction(userId));
   if (!notices) return null;
   const legalMarked = await markNoticesRead(deckId, userId, notices.readMarks);
   // Deferred, as every revalidating action here is: in the action's own run it would re-render the

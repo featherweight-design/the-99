@@ -11,6 +11,7 @@ import { toFeedItem, type FeedRow } from "../feed/read";
 import { isStoredKind, LOG_PUSH_KIND, SEAT_PUSH_KIND, type CatalogKind, type FeedKind, type StoredKind } from "../feed/kinds";
 import { storedItemsByKeyQuery } from "../social/feed-items";
 import { storePreferenceEnabled } from "../stores/flag";
+import { readerStoreForPage } from "../stores/preference";
 import { loadLogGames } from "../social/rule-zero-log-home";
 import { unseenSeatNotices } from "../social/rule-zero-notice";
 import { isUuid } from "../social/rules";
@@ -44,8 +45,10 @@ export async function resolvePushItems(
   const catalog = feedRefs.flatMap((r) => (isStoredKind(r.kind) ? [] : [{ kind: r.kind as CatalogKind, key: r.key }]));
   const queries = [storedItemsByKeyQuery(userId, stored, now, storePreferenceEnabled(env)), catalogItemsByKeyQuery(userId, catalog, now)].filter((x) => x !== null);
   const found = (await Promise.all(queries.map((query) => q.execute<FeedRow>(query)))).flatMap(({ rows }) => (rows as FeedRow[]).map(toFeedItem));
-  // The store only builds a price drop's press out to the store, which a push never draws (it opens the card on Home).
-  const views = queries.length === 0 ? [] : toViews(found, await lookups(userId, found, q, env), "manapool");
+  // The reader's store: a card's art opens on the printing their store carries (`chainArt`). The store only builds a price
+  // drop's press out to the store, which a push never draws (it opens the card on Home).
+  const store = queries.length === 0 ? null : await readerStoreForPage(userId, env);
+  const views = store === null ? [] : toViews(found, await lookups(userId, found, q, env, store), "manapool");
   const byKey = new Map(views.map((v) => [`${v.kind}\u0000${v.key}`, v]));
   const tableIds = seats.flatMap((r) => { const id = tableIdOfSeatKey(r.key); return isUuid(id) ? [id] : []; });
   const notices = new Map((await unseenSeatNotices(userId, tableIds, q)).map((n) => [n.tableId, n]));

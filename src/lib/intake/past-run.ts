@@ -3,6 +3,7 @@ import { and, desc, eq, inArray, or } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, decks } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
+import type { Store } from "../stores/rows";
 import type { ReadPicks } from "./the-read";
 
 /**
@@ -23,6 +24,7 @@ export async function loadGonePicks(
   userId: string,
   ids: readonly string[],
   since: Date,
+  store: Store,
 ): Promise<GonePick[]> {
   if (ids.length === 0) return [];
   const [found, built, art] = await Promise.all([
@@ -33,7 +35,7 @@ export async function loadGonePicks(
       .where(and(eq(decks.userId, userId), or(inArray(decks.commanderOracleId, [...ids]), inArray(decks.partnerOracleId, [...ids]))))
       .orderBy(desc(decks.createdAt)),
     // The printing card details open on (the reader's own copy, else the catalog's), which the row previews.
-    chainArt(userId, null, ids),
+    chainArt(userId, null, ids, store),
   ]);
   const card = new Map(found.map((c) => [c.id, c]));
   // The query is newest first, so the first deck seen for a commander is its newest. Only a deck made

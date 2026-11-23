@@ -278,7 +278,7 @@ async function DeckBuilderBody({
   // The move-card picker lists every other deck by name, as it always has.
   // The notes read is its own, uncached read, outside the two cached ones above (a write revalidates the
   // route, and nothing cached holds a note).
-  const notesRead = early(detailRead.then((d) => (d ? perf.timed("notes", () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null })) : null)));
+  const notesRead = early(detailRead.then((d) => (d ? perf.timed("notes", async () => readDeckNotes(id, userId, { commanderOracleId: d.commander.oracleId, partnerOracleId: d.partner?.oracleId ?? null }, await storeRead)) : null)));
   const allDecksRead = early(perf.timed("listDecks", () => listDecksWithStats(userId, "name")));
   // The reader's shelves, for the header menu's Move (the deck's own shelf rides on its list row).
   // A failed read costs the menu its Move row and nothing else.
@@ -356,7 +356,7 @@ async function DeckBuilderBody({
   // The header's notice tag, read WITH the page so it paints with the header rather than arriving
   // after it. A failed read draws no tag, as a deck with no notices does; the shell reads again
   // after mount in that case.
-  const initialNotices = carried.then(() => perf.timed("notices", () => loadDeckNotices(id, userId))).catch(() => null);
+  const initialNotices = carried.then(() => perf.timed("notices", async () => loadDeckNotices(id, userId, await storeRead))).catch(() => null);
   // The deck's tokens start with the rest of the wave and are awaited where the page is assembled. Off,
   // nothing is read at all. `loadDeckTokens` never rejects: a failed read is a value the group draws.
   // The makers draw the art the deck's own rows draw (an owned or picked printing), so the read waits for the
@@ -437,7 +437,7 @@ async function DeckBuilderBody({
             // catalog's one arbitrary printing per card. Read here, inside the synergy read's own slot in the wave, so it overlaps the
             // other five reads rather than following them; overlaid below at the draw, not in the cached
             // loader `/commanders/[slug]` shares.
-            const art = await perf.timed("topOffArt", () => chainArt(userId, null, read.map((c) => c.oracleId)));
+            const art = await perf.timed("topOffArt", async () => chainArt(userId, null, read.map((c) => c.oracleId), await storeRead));
             return { ranked: read, ownedArt: art };
           })
         : { ranked: [], ownedArt: new Map<string, string>() },

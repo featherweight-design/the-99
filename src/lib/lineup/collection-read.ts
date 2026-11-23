@@ -93,7 +93,7 @@ export async function readCollection(userId: string, needs: readonly Need[], hea
 
   const wanted = owned.filter((r) => hits.has(r.oracleId));
   // Each wanted name previews the printing card details opens: the one the player owns (the chain, at the draw).
-  const art = await chainArt(userId, null, wanted.map((r) => r.oracleId));
+  const art = await chainArt(userId, null, wanted.map((r) => r.oracleId), store);
   return {
     asOf: read.newestAsOf,
     collection: {

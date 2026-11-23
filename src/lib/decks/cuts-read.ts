@@ -30,6 +30,7 @@ import type { CutsRun, CutsState, CutItem } from "../tuning/cuts-state";
 import type { CutsReport } from "../tuning/cuts-validate";
 import { PROPOSED_CUTS_TOOL } from "../tuning/limits";
 import { reapCutoff } from "../tuning/reaper";
+import { readerStoreForPage } from "../stores/preference";
 import { liveLockedIds } from "./locks";
 import { profileOfHead } from "./tuning-read";
 
@@ -198,6 +199,8 @@ export async function readCutsState(
   deckId: string, userId: string, now: Date = new Date(), runId: string | null = null, env: NodeJS.ProcessEnv,
 ): Promise<CutsState> {
   await reapCutsRuns(deckId, userId, now);
+  // The reader's store, asked now and awaited at the art read so it overlaps the reads between (as `readTuning` does).
+  const storeRead = readerStoreForPage(userId, env);
 
   const runOf = cutsRunsOfDeck(deckId);
   const mine = eq(deckSuggestionRuns.userId, userId);
@@ -269,7 +272,7 @@ export async function readCutsState(
   const run: CutsRun | null = newest ? { ...newest, status: newest.status as CutsRun["status"] } : null;
   // A cut is a card in this deck: the hover preview draws the deck's pick, else the owned printing, as
   // card details does (`chainArt`), not the catalog's arbitrary one.
-  const art = await chainArt(userId, deckId, rows.map((r) => r.cutOracleId));
+  const art = await chainArt(userId, deckId, rows.map((r) => r.cutOracleId), await storeRead);
   return {
     run,
     items: rows.map((r): CutItem => ({ ...r, cutImageUri: art.get(r.cutOracleId) ?? r.cutImageUri, verdict: r.verdict as CutItem["verdict"] })),

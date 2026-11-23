@@ -24,6 +24,7 @@ import { loadCompletionPartners } from "../combos/near-miss";
 import { cardThemes, creatureSubtypes, keyCreatureType, THEME_ORDER, type Theme } from "../recs/themes";
 import { loadUniversalStaples } from "../staples/universal";
 import { loadCreatureTypes } from "./gather";
+import type { Store } from "../stores/rows";
 
 export type FitRole = "ramp" | "draw" | "removal" | "wipes" | "land";
 
@@ -152,7 +153,7 @@ type CardRowDb = {
 /**
  * The whole read for one card, for the signed-in reader. Null when the card does not exist.
  */
-export async function loadFits(userId: string, oracleId: string): Promise<FitsRead | null> {
+export async function loadFits(userId: string, oracleId: string, store: Store): Promise<FitsRead | null> {
   const [cardRes, deckRes] = await Promise.all([
     db.execute<CardRowDb>(sql`
       select oracle_id, name, color_identity, commander_legal, type_line, oracle_text, keywords
@@ -240,7 +241,7 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
     const theme = themeReason(themed, cards, r.commander_types, isType);
     if (theme) reasons.set(r.id, { kind: "theme", ...theme });
   }));
-  await withPartnerArt(userId, reasons);
+  await withPartnerArt(userId, reasons, store);
 
   const a = availability.get(oracleId);
   return shapeFits(card, rows, roleCounts, mixes, { owned: a?.owned ?? 0, free: a ? a.free : null }, staples.has(oracleId), reasons);
@@ -253,12 +254,12 @@ export async function loadFits(userId: string, oracleId: string): Promise<FitsRe
  * every piece (`chainArt`), plus one `cards` read for the catalog fallback. Fail-soft: a failed read leaves the
  * piece without a preview.
  */
-async function withPartnerArt(userId: string, reasons: Map<string, FitReason>): Promise<void> {
+async function withPartnerArt(userId: string, reasons: Map<string, FitReason>, store: Store): Promise<void> {
   const combos = [...reasons.values()].flatMap((r) => (r.kind === "combo" ? [r] : []));
   if (combos.length === 0) return;
   const ids = [...new Set(combos.map((r) => r.with.oracleId))];
   const [owned, catalog] = await Promise.all([
-    chainArt(userId, null, ids),
+    chainArt(userId, null, ids, store),
     db.select({ oracleId: cardsTable.oracleId, imageUri: cardsTable.imageUri }).from(cardsTable).where(inArray(cardsTable.oracleId, ids))
       .then((rows) => new Map(rows.map((x) => [x.oracleId, x.imageUri] as const)))
       .catch(() => new Map<string, string | null>()),

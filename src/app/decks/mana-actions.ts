@@ -20,6 +20,7 @@ import { recordToolCount } from "../../lib/tuning/tool-counts";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isUuid } from "../../lib/uuid";
 import { readerStoreForAction } from "../../lib/stores/action-store";
+import type { Store } from "../../lib/stores/rows";
 
 /**
  * Mana Balance's free count (tier 1): the evidence for one of the reader's decks, read fresh on
@@ -44,11 +45,11 @@ export async function readManaHelpFor(deckId: string, color: string): Promise<Ma
   const userId = await requireUserId();
   const read = await helpFor(deckId, color, userId);
   if (!read) return null;
-  const { deckId: id, listKey, ...help } = read;
+  const { deckId: id, listKey, store, ...help } = read;
   // `listKey` is the write's precondition and History's key, never sent to the client.
   // The row, its hover preview and the card details it opens draw one printing: the deck's pick, then the
   // one the player owns, else the one an unowned card opens on (`chainArt`, as Suggested changes and Proposed cuts do).
-  const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId));
+  const art = await chainArt(userId, id, help.staples.map((s) => s.oracleId), store);
   const shown = art.size === 0 ? help : { ...help, staples: help.staples.map((s) => (art.has(s.oracleId) ? { ...s, imageUri: art.get(s.oracleId) } : s)) };
   // History's row for this help, once per list and color: it reopens with exactly what was shown here.
   if (shown.inIdentity) {
@@ -87,14 +88,14 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
 
 /** Improve my mana for one of the reader's decks, read fresh, with the key of the list it was read from:
  *  null on any refusal or failed read. */
-async function helpFor(deckId: string, color: string, userId: string): Promise<(ManaHelp & { deckId: string; listKey: string }) | null> {
+async function helpFor(deckId: string, color: string, userId: string): Promise<(ManaHelp & { deckId: string; listKey: string; store: Store }) | null> {
   if (!isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
   const [deck, store] = await Promise.all([getDeckDetail(deckId, userId, undefined), readerStoreForAction(userId)]);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;
   const help = await loadManaHelp(deck, userId, color as BalanceColor, store);
-  return help ? { ...help, deckId: deck.id, listKey: listFingerprintOf(deck) } : null;
+  return help ? { ...help, deckId: deck.id, listKey: listFingerprintOf(deck), store } : null;
 }
 
 export type ManaTradeResult = { ok: true; applyId: string } | { ok: false; message: string };

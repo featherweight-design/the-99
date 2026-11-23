@@ -1,13 +1,14 @@
 import { recordSoftFailure } from "../cache/soft-failure";
 import { readOwnedPrintings } from "../collection/owned-printings";
 import { readDeckOwnedPrintings } from "../decks/printings";
+import type { Store } from "../stores/rows";
 import { loadOpeningArt } from "./opening-printing";
 
 /**
  * The art a card is drawn with for this player, down the chain card details uses: the deck's chosen
  * printing where a deck is in context (`deckPickFor`, then the Collection's), else the printing the
  * player owns, and for a card they do not own the printing card details open it on (`loadOpeningArt`: the oracle's own
- * when the shop carries it, else the cheapest it does). A card with no such printing is absent, and the caller keeps
+ * when the reader's store carries it, else the cheapest it does; store choice). A card with no such printing is absent, and the caller keeps
  * the catalog representative it already holds (`cards.image_uri`).
  *
  * ONE RULE FOR A SURFACE THAT DRAWS A CARD WITHOUT OPENING IT: Suggested changes, Proposed cuts, the
@@ -26,6 +27,7 @@ export async function chainArt(
   userId: string,
   deckId: string | null,
   oracleIds: readonly (string | null | undefined)[],
+  store: Store,
 ): Promise<Map<string, string>> {
   const ids = [...new Set(oracleIds.filter((id): id is string => typeof id === "string"))];
   const art = new Map<string, string>();
@@ -45,7 +47,7 @@ export async function chainArt(
   // The cards the read confirms absent are cards the reader does not own: they open on the opening printing, so
   // the preview and the press show one picture. A card the reader owns whose printing has no art is in the map
   // and keeps what the caller holds. Fail-soft inside `loadOpeningArt`.
-  for (const [id, uri] of await loadOpeningArt(ids.filter((id) => !printings.has(id)))) art.set(id, uri);
+  for (const [id, uri] of await loadOpeningArt(ids.filter((id) => !printings.has(id)), store)) art.set(id, uri);
   return art;
 }
 

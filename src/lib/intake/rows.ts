@@ -187,7 +187,7 @@ export async function loadCardChip(
 ): Promise<CardChip | null> {
   // The search's own card read, so the chip names exactly the card the search applied: a card it
   // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.
-  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId], store), chainArt(userId, null, [oracleId])]);
+  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId], store), chainArt(userId, null, [oracleId], store)]);
   if (!row) return null;
   return { oracleId, name: row.name, imageUri: art.get(oracleId) ?? row.imageUri, owned: row.owned, held: row.held, price: slotFor(prices.get(oracleId)) };
 }

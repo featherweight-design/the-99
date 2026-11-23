@@ -13,6 +13,7 @@ import { and, asc, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckCards, deckNotes } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
+import type { Store } from "../stores/rows";
 import { parseBody, tagIds } from "./notes-body";
 
 export type { DeckNotesView, NoteDrawn, NoteView, NotesResult } from "./notes-types";
@@ -34,6 +35,7 @@ export async function readDeckNotes(
   deckId: string,
   userId: string,
   deck: { commanderOracleId: string; partnerOracleId: string | null },
+  store: Store,
 ): Promise<DeckNotesView> {
   // Stamped before the first query, not after the last: a read that began before a write and finished after
   // it holds the old rows, and must not outrank the read the write's own action makes afterwards.
@@ -46,7 +48,7 @@ export async function readDeckNotes(
     : await Promise.all([
         db.select({ id: cards.oracleId, name: cards.name, imageUri: cards.imageUri }).from(cards).where(inArray(cards.oracleId, ids)),
         db.select({ id: deckCards.oracleId }).from(deckCards).where(and(eq(deckCards.deckId, deckId), inArray(deckCards.oracleId, ids))),
-        chainArt(userId, deckId, ids),
+        chainArt(userId, deckId, ids, store),
       ]);
   const nameOf = new Map(names.map((n) => [n.id, n.name]));
   const catalogArt = new Map(names.map((n) => [n.id, n.imageUri]));

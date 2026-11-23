@@ -74,7 +74,7 @@ export async function loadStandInsAction(deckId: string, cutOracleId: string, fu
 export async function loadFitsAction(oracleId: string): Promise<FitsRead | null> {
   const userId = await requireUserId();
   if (!isUuid(oracleId)) return null;
-  return loadFits(userId, oracleId);
+  return loadFits(userId, oracleId, await readerStoreForAction(userId));
 }
 
 /**

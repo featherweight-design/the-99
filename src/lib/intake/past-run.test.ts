@@ -33,7 +33,7 @@ describe("loadGonePicks", () => {
       { commander: id(1), partner: null, id: "deck-new", name: "Newest", createdAt: new Date("2026-10-13T00:00:00Z") },
       { commander: id(1), partner: null, id: "deck-old", name: "Older", createdAt: new Date("2026-10-01T00:00:00Z") },
     ];
-    expect(await loadGonePicks("u", [id(1), id(2)], RUN)).toEqual([
+    expect(await loadGonePicks("u", [id(1), id(2)], RUN, "manapool")).toEqual([
       { oracleId: id(1), name: "Commander 1", imageUri: "i1", artCropUri: "c1", deck: { id: "deck-new", name: "Newest" } },
       { oracleId: id(2), name: "Commander 2", imageUri: "i2", artCropUri: "c2", deck: null },
     ]);
@@ -41,27 +41,27 @@ describe("loadGonePicks", () => {
 
   it("leaves out a card the catalog dropped, and reads nothing for no picks", async () => {
     rows.cards = [card(1)];
-    expect((await loadGonePicks("u", [id(1), id(9)], RUN)).map((p) => p.oracleId)).toEqual([id(1)]);
-    expect(await loadGonePicks("u", [], RUN)).toEqual([]);
+    expect((await loadGonePicks("u", [id(1), id(9)], RUN, "manapool")).map((p) => p.oracleId)).toEqual([id(1)]);
+    expect(await loadGonePicks("u", [], RUN, "manapool")).toEqual([]);
   });
 
   it("does not say a deck made before the run is why a pick went", async () => {
     rows.cards = [card(1)];
     rows.decks = [{ commander: id(1), partner: null, id: "deck-old", name: "Older", createdAt: new Date("2026-10-01T00:00:00Z") }];
-    expect((await loadGonePicks("u", [id(1)], RUN))[0].deck).toBeNull();
+    expect((await loadGonePicks("u", [id(1)], RUN, "manapool"))[0].deck).toBeNull();
   });
 
   it("previews the printing card details open, else the catalog's", async () => {
     rows.cards = [card(1), card(2)];
     art.map = new Map([[id(1), "owned-1"]]);
-    const got = await loadGonePicks("u", [id(1), id(2)], RUN);
+    const got = await loadGonePicks("u", [id(1), id(2)], RUN, "manapool");
     expect(got.map((p) => p.imageUri)).toEqual(["owned-1", "i2"]);
   });
 
   it("counts a deck that helms the pick as its partner", async () => {
     rows.cards = [card(2)];
     rows.decks = [{ commander: id(5), partner: id(2), id: "deck-pair", name: "Pair", createdAt: new Date("2026-10-13T00:00:00Z") }];
-    expect((await loadGonePicks("u", [id(2)], RUN))[0].deck).toEqual({ id: "deck-pair", name: "Pair" });
+    expect((await loadGonePicks("u", [id(2)], RUN, "manapool"))[0].deck).toEqual({ id: "deck-pair", name: "Pair" });
   });
 });
 

@@ -5,6 +5,7 @@ import { requireUserId } from "../../lib/auth";
 import { isUuid } from "../../lib/uuid";
 import { requireDeck } from "../../lib/decks/read";
 import { deckSurfaces } from "../../lib/decks/revalidate";
+import { readerStoreForAction } from "../../lib/stores/action-store";
 import { readDeckNotes, type NotesResult } from "../../lib/decks/notes-read";
 import { checkBody, tagIds, withCurrentNames } from "../../lib/decks/notes-body";
 import {
@@ -35,7 +36,7 @@ async function fresh(
   deck: { commanderOracleId: string; partnerOracleId: string | null },
 ): Promise<NotesResult> {
   surfaces(deckId);
-  const notes = await readDeckNotes(deckId, userId, deck).catch((err) => {
+  const notes = await readDeckNotes(deckId, userId, deck, await readerStoreForAction(userId)).catch((err) => {
     console.error("readDeckNotes after a write failed", err);
     return null;
   });

@@ -53,7 +53,7 @@ export async function loadCart(
     // Off any decklist: who holds each owned copy, user-wide. A card owned in no copies has no row.
     loadAvailability(userId, { oracleIds }),
     // The printing card details opens for a line's card, so the preview shows it; the catalog's art otherwise.
-    chainArt(userId, null, oracleIds),
+    chainArt(userId, null, oracleIds, store),
   ]);
 
   const ownership = new Map<string, Ownership>();
