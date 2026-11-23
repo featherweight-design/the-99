@@ -11,6 +11,7 @@ import { PersonText, personAttrs, type ThirdPartyName } from "../../lib/person-n
 import { SPARE_REQUEST_DAYS } from "../../lib/social/spare-request-rules";
 import type { HaveItCard } from "../../lib/social/spare-offers";
 import { CardDetailTrigger } from "../cards/card-detail-provider";
+import { HoverPreviewProvider } from "../decks/hover-preview";
 import { ModalChrome } from "../decks/receipt-modal";
 import { ReplacingLine, Thumb } from "../decks/stand-ins-sheet";
 import { TodoRow } from "../decks/todo-card";
@@ -142,6 +143,7 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
 
   const foot = have.mark === "asked" ? h.foot.asked(friend) : have.mark === "offered" ? h.foot.offered(friend) : have.mark === "accepted" ? h.foot.accepted(friend) : h.foot.offer(friend);
   return (
+    <HoverPreviewProvider waitForMove>
     <ModalChrome title={h.title} closeLabel={h.close} onClose={onClose} width={640}>
       <div data-testid="have-sheet" className="flex flex-col gap-[12px] px-[16px] pb-[24px] pt-[14px] md:gap-[14px] md:px-[18px] md:pb-[18px] md:pt-[16px]">
         <section className="flex flex-col gap-[6px] rounded-[10px] bg-[color:var(--bg)] px-[13px] pb-[12px] pt-[11px] [border:1px_solid_var(--border)]">
@@ -203,5 +205,6 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
       </div>
       {toast.node}
     </ModalChrome>
+    </HoverPreviewProvider>
   );
 }
