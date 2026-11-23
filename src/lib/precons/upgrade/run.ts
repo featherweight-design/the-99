@@ -341,8 +341,8 @@ export function offered(base: UpgradeBase): (OfferedCommander & { option: Comman
  * Every run's adds priced now at the reader's store (store choice, ruling A), or null to draw the prices the runs stored. A run
  * stores each add's price at the store it was pressed in, so after a store switch its stored figures are the other store's: the
  * panel reprices them as it draws, one price read and no model call, and a card that store does not price draws no tag and
- * counts nothing. Null with the switch off (every run was pressed at Mana Pool, and its figures draw as they did) or when the
- * read fails (the stored figures, rather than no panel).
+ * adds nothing to the To buy total (it still counts as a card to buy). Null with the switch off (every run was pressed at
+ * Mana Pool, and its figures draw as they did) or when the read fails (the stored figures, rather than no panel).
  */
 async function repricedAdds(userId: string, stored: readonly StoredUpgrade[], env: NodeJS.ProcessEnv, deps: Deps): Promise<Map<string, number | null> | null> {
   if (!storePreferenceEnabled(env)) return null;
