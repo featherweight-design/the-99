@@ -75,7 +75,34 @@ async function walk(browser, width) {
     const setup = page.getByTestId("tracker-setup");
     await setup.waitFor({ timeout: 60_000 });
     report(L("Random is the default"), (await setup.getByRole("button", { name: "Random", exact: true }).getAttribute("aria-pressed")) === "true");
+    // The board stands dealt and still for a beat before the first throw (PRE_ROLL_MS, 1000 ms), so the throw is seen starting.
+    await page.evaluate(() => {
+      const w = window;
+      w.__roll = { t0: performance.now(), board: null, moved: false, start: null };
+      const read = () => [...document.querySelectorAll("[data-testid=tracker-panel]")].map((p) => JSON.stringify(p.getBoundingClientRect()));
+      const tick = () => {
+        const r = w.__roll;
+        const now = performance.now() - r.t0;
+        const panels = read();
+        if (panels.length) {
+          if (r.board === null) r.board = { at: now, panels };
+          else if (r.start === null && panels.join() !== r.board.panels.join()) r.moved = true;
+        }
+        const dice = document.getElementById("tracker-dice");
+        const flying = dice && getComputedStyle(dice).visibility === "visible";
+        const round = document.querySelector("[data-testid=first-roll]")?.getAttribute("data-round");
+        if (r.start === null && (flying || (round !== null && round !== undefined && Number(round) >= 0))) r.start = now;
+        if (now < 4000) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+      w.__roll.t0 = performance.now();
+    });
     await setup.getByRole("button", { name: "Start", exact: true }).click();
+    await page.waitForFunction(() => window.__roll.start !== null, null, { timeout: 8000 }).catch(() => {});
+    const pre = await page.evaluate(() => window.__roll);
+    report(L("the board is up before the dice are thrown"), pre.board !== null && pre.start !== null && pre.board.at < pre.start, `board ${Math.round(pre.board?.at ?? -1)} ms, throw ${Math.round(pre.start ?? -1)} ms`);
+    report(L("the throw starts after the 1000 ms hold"), pre.board !== null && pre.start !== null && pre.start - pre.board.at >= 900, `${Math.round((pre.start ?? 0) - (pre.board?.at ?? 0))} ms after the board drew`);
+    report(L("the board holds still for the hold"), pre.board !== null && !pre.moved);
 
     const roll = page.getByTestId("first-roll");
     if (!report(L("Start under Random throws the d20s"), await roll.waitFor({ state: "attached", timeout: 15_000 }).then(() => true, () => false))) {

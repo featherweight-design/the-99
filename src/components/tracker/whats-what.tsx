@@ -8,7 +8,7 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
-import { centre, edgePoint, placeLabels, type Box, type Placing, type Pt } from "../../lib/tracker/guide-place";
+import { centre, edgePoint, placeLabels, placeRow, rowLabelWidth, type Box, type Placing, type Pt } from "../../lib/tracker/guide-place";
 import type { Device } from "../../lib/tracker/layouts";
 import { useYieldMoment } from "../moments/moments-context";
 
@@ -32,9 +32,13 @@ const ALL: readonly Id[] = ["round", "monarch", "initiative", "dayNight", "dice"
 const RING = 5;
 const CLEAR = 10;
 
-type Plan = { header: Box; labels: Map<Id, Box>; targets: Target[]; leaders: { from: Pt; to: Pt }[] };
+/** A leader runs from a label's near edge to its control; a labelled row starts each at its own button's x, clamped to the label. */
+const ROW_LEAD = 40;
+const COLUMN_FOOT_W = 120;
 
-function measure(root: HTMLElement, canvas: HTMLElement): Plan | null {
+type Plan = { header: Box; labels: Map<Id, Box>; widths: Map<Id, number>; targets: Target[]; leaders: { from: Pt; to: Pt }[] };
+
+function measure(root: HTMLElement, canvas: HTMLElement, base: number): Plan | null {
   const o = root.getBoundingClientRect();
   const rel = (el: Element): Box => {
     const r = el.getBoundingClientRect();
@@ -70,6 +74,12 @@ function measure(root: HTMLElement, canvas: HTMLElement): Plan | null {
     targets.push({ id: "endTurn", box: rel(end), round: false, panel: p ? rel(p) : undefined });
   }
 
+  // Every label starts at its base width; a labelled row narrows them below so all seven fit across the canvas.
+  const widths = new Map<Id, number>();
+  for (const id of ALL) {
+    const el = root.querySelector<HTMLElement>(`[data-ww="${id}"]`);
+    if (el) el.style.width = `${base}px`;
+  }
   const size = (id: string): { w: number; h: number } => {
     const el = root.querySelector<HTMLElement>(`[data-ww="${id}"]`);
     return { w: el?.offsetWidth ?? 0, h: el?.offsetHeight ?? 0 };
@@ -79,25 +89,82 @@ function measure(root: HTMLElement, canvas: HTMLElement): Plan | null {
   const grow = (b: Box, by: number): Box => ({ x: b.x - by, y: b.y - by, w: b.w + by * 2, h: b.h + by * 2 });
   const avoid = targets.map((t) => grow(t.box, RING + CLEAR));
 
+  // A row strip: one label over each button in the buttons' order, so each leader is short, straight and crosses nothing.
+  const rowIds = new Set<Id>();
+  const rowFrom = new Map<Id, Pt>();
+  const rowLabels = new Map<Id, Box>();
+  const rowLegs: [Pt, Pt][] = [];
+  const strip = targets.filter((t) => STRIP.some(([id]) => id === t.id)).sort((a, b) => a.box.x - b.box.x);
+  if (spine && spine.w >= spine.h && strip.length > 0) {
+    const footY = (panel ? centre(panel) : { x: 0, y: bounds.y + bounds.h }).y;
+    const side: -1 | 1 = footY > centre(spine).y ? -1 : 1;
+    const lit = targets.filter((t) => t.id === "endTurn" || t.id === "sheet");
+    const setWidth = (id: string, w: number) => {
+      const el = root.querySelector<HTMLElement>(`[data-ww="${id}"]`);
+      if (el) el.style.width = `${w}px`;
+    };
+    const overlaps = (a: Box, b: Box) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+    let chosen: { group: typeof strip; boxes: Box[]; sd: -1 | 1; rowW: number } | null = null;
+    for (const sd of [side, side === -1 ? 1 : -1] as const) {
+      // A control sitting between the strip and the row (End turn, the sheet chevron) joins the row, so its label is not boxed in behind the others.
+      const beside = lit.filter((t) => (sd === -1 ? centre(t.box).y < spine.y : centre(t.box).y > spine.y + spine.h) && Math.abs(centre(t.box).y - centre(spine).y) < 160);
+      const group = [...strip, ...beside].sort((a, b) => a.box.x - b.box.x);
+      for (const t of [...strip, ...lit]) setWidth(t.id, base);
+      const rowW = rowLabelWidth(bounds, group.length, base);
+      for (const t of group) setWidth(t.id, rowW);
+      const buttons = group.map((t) => grow(t.box, RING));
+      const sizes = group.map((t) => size(t.id));
+      for (let lead = ROW_LEAD; lead <= ROW_LEAD + 120 && !chosen; lead += 8) {
+        const got = placeRow(bounds, buttons, sizes, sd, lead);
+        if (got && got.every((b) => avoid.every((a) => !overlaps(b, a)))) chosen = { group, boxes: got, sd, rowW };
+      }
+      if (chosen) break;
+    }
+    if (chosen) {
+      const { group, boxes, sd, rowW } = chosen;
+      group.forEach((t, i) => {
+        rowIds.add(t.id);
+        widths.set(t.id, rowW);
+        rowLabels.set(t.id, boxes[i]);
+        const b = boxes[i];
+        const from = { x: Math.min(Math.max(centre(t.box).x, b.x + 10), b.x + b.w - 10), y: sd === -1 ? b.y + b.h : b.y };
+        rowFrom.set(t.id, from);
+        avoid.push(b);
+        rowLegs.push([from, centre(t.box)]);
+      });
+    } else {
+      for (const t of [...strip, ...lit]) setWidth(t.id, base);
+    }
+  }
+
   const column = !!spine && spine.h > spine.w;
   const foot = panel ?? null;
   const stripC = spine ? centre(spine) : { x: bounds.x + bounds.w / 2, y: bounds.y + bounds.h / 2 };
   const footC = foot ? centre(foot) : { x: stripC.x, y: bounds.y + bounds.h };
-  // Away from the foot panel: a row goes on the far side of it vertically; a column alternates unless the panel sits to one side.
-  const away = column ? (Math.abs(footC.x - stripC.x) > 40 ? (footC.x < stripC.x ? 1 : -1) : 0) : footC.y > stripC.y ? -1 : 1;
+  // A row goes on the far side of the foot panel vertically; a column alternates sides (addendum P1).
+  const away = footC.y > stripC.y ? -1 : 1;
+  // In the narrow column the foot panel's labels are slimmer and go first, so they keep their spot beside the control (addendum P1).
+  if (column) {
+    for (const t of targets) {
+      if (t.ringOnly || STRIP.some(([id]) => id === t.id)) continue;
+      const el = root.querySelector<HTMLElement>(`[data-ww="${t.id}"]`);
+      if (el) el.style.width = `${COLUMN_FOOT_W}px`;
+      widths.set(t.id, COLUMN_FOOT_W);
+    }
+  }
   const items: Placing[] = [];
   let k = 0;
   for (const t of targets) {
-    if (t.ringOnly || !ALL.includes(t.id)) continue;
+    if (t.ringOnly || !ALL.includes(t.id) || rowIds.has(t.id)) continue;
     const s = size(t.id);
     const c = centre(t.box);
     if (STRIP.some(([id]) => id === t.id)) {
-      const side = column ? (away !== 0 ? away : k % 2 === 0 ? -1 : 1) : away;
+      const side = column ? (k % 2 === 0 ? -1 : 1) : away;
       k++;
       const ideal = column
         ? { x: c.x + side * (s.w / 2 + t.box.w / 2 + 18), y: c.y }
         : { x: c.x, y: c.y + side * (s.h / 2 + t.box.h / 2 + 22) };
-      items.push({ id: t.id, size: s, ideal });
+      items.push({ id: t.id, size: s, ideal, to: c });
     } else {
       const p = t.panel ?? bounds;
       const pc = centre(p);
@@ -105,13 +172,15 @@ function measure(root: HTMLElement, canvas: HTMLElement): Plan | null {
       const dy = pc.y - c.y;
       const d = Math.hypot(dx, dy) || 1;
       const reach = Math.max(s.w, s.h) / 2 + 20;
-      items.push({ id: t.id, size: s, ideal: { x: c.x + (dx / d) * reach, y: c.y + (dy / d) * reach }, home: t.panel });
+      items.push({ id: t.id, size: s, ideal: { x: c.x + (dx / d) * reach, y: c.y + (dy / d) * reach }, home: t.panel, to: c });
     }
   }
-  const placed = placeLabels(bounds, avoid, [header, ...items]);
+  const isStrip = (i: Placing) => STRIP.some(([id]) => id === i.id);
+  const placed = placeLabels(bounds, avoid, [header, ...(column ? [...items.filter((i) => !isStrip(i)), ...items.filter(isStrip)] : items)], rowLegs);
   const headerBox = placed.get("header")!;
   const labels = new Map<Id, Box>();
   for (const it of items) labels.set(it.id as Id, placed.get(it.id)!);
+  for (const [id, b] of rowLabels) labels.set(id, b);
 
   // The header is not a target's, but the later labels keep clear of it: placed first above, so `placeLabels` knows it.
   const leaders: Plan["leaders"] = [];
@@ -119,9 +188,10 @@ function measure(root: HTMLElement, canvas: HTMLElement): Plan | null {
     const lb = labels.get(t.id);
     if (!lb || t.ringOnly) continue;
     const c = centre(t.box);
-    const from = edgePoint(lb, c);
+    const rowStart = rowFrom.get(t.id);
+    const from = rowStart ?? edgePoint(lb, c);
     const ring = grow(t.box, RING);
-    const lc = centre(lb);
+    const lc = rowStart ?? centre(lb);
     let to: Pt;
     if (t.round) {
       const r = Math.max(ring.w, ring.h) / 2;
@@ -132,11 +202,12 @@ function measure(root: HTMLElement, canvas: HTMLElement): Plan | null {
     } else to = edgePoint(ring, lc);
     leaders.push({ from, to });
   }
-  return { header: headerBox, labels, targets, leaders };
+  return { header: headerBox, labels, widths, targets, leaders };
 }
 
 export function WhatsWhat({ canvas, device, onClose }: { canvas: React.RefObject<HTMLElement | null>; device: Device; onClose: () => void }) {
   const tablet = device === "tablet";
+  const w = tablet ? 200 : 148;
   const root = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -152,7 +223,7 @@ export function WhatsWhat({ canvas, device, onClose }: { canvas: React.RefObject
 
   useLayoutEffect(() => {
     const run = () => {
-      if (root.current && canvas.current) setPlan(measure(root.current, canvas.current));
+      if (root.current && canvas.current) setPlan(measure(root.current, canvas.current, w));
     };
     run();
     const ro = new ResizeObserver(run);
@@ -162,7 +233,7 @@ export function WhatsWhat({ canvas, device, onClose }: { canvas: React.RefObject
       ro.disconnect();
       window.removeEventListener("resize", run);
     };
-  }, [canvas]);
+  }, [canvas, w]);
 
   const close = () => {
     if (closing.current) return;
@@ -201,7 +272,6 @@ export function WhatsWhat({ canvas, device, onClose }: { canvas: React.RefObject
 
   const lineSize = tablet ? "text-[13px] leading-[1.35]" : "text-[12px] leading-[1.35]";
   const nameSize = tablet ? "text-[14px]" : "text-[13px]";
-  const w = tablet ? 200 : 148;
   const surface = "absolute rounded-[10px] bg-[color:var(--elevated)] px-3 py-2 shadow-[0_12px_30px_rgba(0,0,0,.45),inset_0_0_0_1px_var(--border-strong)]";
   const pick = (id: Id) => copy[id][tablet ? 1 : 2];
   const grow = (b: Box, by: number): Box => ({ x: b.x - by, y: b.y - by, w: b.w + by * 2, h: b.h + by * 2 });
@@ -277,7 +347,7 @@ export function WhatsWhat({ canvas, device, onClose }: { canvas: React.RefObject
             data-ww={id}
             data-testid={`whats-what-${id}`}
             className={surface}
-            style={{ width: w, ...(box ? { left: box.x, top: box.y } : { visibility: "hidden", left: 0, top: 0 }) }}
+            style={{ width: plan?.widths.get(id) ?? w, ...(box ? { left: box.x, top: box.y } : { visibility: "hidden", left: 0, top: 0 }) }}
           >
             <span className={"block font-semibold text-[color:var(--fg)] " + nameSize}>{name}</span>
             <span className={"mt-0.5 block text-[color:var(--fg-body)] " + lineSize}>{pick(id)}</span>

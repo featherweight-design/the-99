@@ -21,6 +21,9 @@ const LAND_MS = 500;
 /** How long a tied round's numbers stay up before the tied seats throw again. */
 const TIE_MS = 1200;
 
+/** The board stands as dealt this long before the first throw, so the throw is seen starting (not already in the air). */
+export const PRE_ROLL_MS = 1000;
+
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function FirstRoll({ rolls, layout, seats, onDone }: { rolls: Rolls; layout: Layout; seats: readonly PlaySeat[]; onDone: () => void }) {
@@ -29,6 +32,8 @@ export function FirstRoll({ rolls, layout, seats, onDone }: { rolls: Rolls; layo
   useEffect(() => {
     let live = true;
     void (async () => {
+      // Reduced motion throws nothing, so there is nothing to see begin: no hold.
+      if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) await wait(PRE_ROLL_MS);
       for (let i = 0; i < rolls.rounds.length && live; i++) {
         if (i > 0) await wait(TIE_MS);
         if (!live) return;
