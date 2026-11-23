@@ -27,6 +27,8 @@ import { SettingsView } from "../../components/settings/settings-view";
 import { SparesSection } from "../../components/settings/spares-section";
 import { NewsSection } from "../../components/settings/news-section";
 import { FriendDecksSection } from "../../components/settings/friend-decks-section";
+import { StoreSection } from "../../components/settings/store-section";
+import { storePreferenceEnabled } from "../../lib/stores/flag";
 
 export default async function SettingsPage() {
   const userId = await requireUserId();
@@ -36,15 +38,19 @@ export default async function SettingsPage() {
   // and the PUBLIC key a browser subscribes with. Unavailable, the section is as shipped. The private key never leaves
   // the server.
   const config = pushAvailable(env) ? pushConfig(env) : null;
-  const [news, pushOn, spares, deckPrefs] = await Promise.all([
+  // Store (store choice handoff, call 1): first, and only while the reader's switch is on; off, the page is as shipped.
+  const storeOn = storePreferenceEnabled(env);
+  const [news, pushOn, spares, deckPrefs, store] = await Promise.all([
     loadNewsSettings(userId, env),
     config ? loadPushKinds(userId, pushableFeedKinds(env)) : null,
     loadSpares(userId, env),
     loadFriendDeckPrefs(userId),
+    storeOn ? readerStoreForPage(userId, env) : null,
   ]);
   const push = config && pushOn ? { publicKey: config.publicKey, on: pushOn, kinds: pushableFeedKinds(env) } : null;
   return (
     <SettingsView>
+      {store ? <StoreSection store={store} /> : null}
       <NewsSection kinds={news} push={push} />
       <SparesSection {...spares} />
       <FriendDecksSection prefs={deckPrefs} />

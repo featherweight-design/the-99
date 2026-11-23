@@ -14,6 +14,7 @@ import { parseQuery } from "../../../lib/decks/cart-sort";
 import { requestFlags } from "../../../lib/flags/request";
 import { hasFriend } from "../../../lib/social/has-friend";
 import { readerStoreForPage } from "../../../lib/stores/preference";
+import { storePreferenceEnabled } from "../../../lib/stores/flag";
 import { StoreProvider } from "../../../components/stores/store-provider";
 
 export const metadata: Metadata = { title: allDecksCartCopy.title };
@@ -59,7 +60,7 @@ export default async function AllDecksShoppingPage({
   const newest = cart.newestAsOf ? new Date(cart.newestAsOf) : null;
   const provenance = newest ? provenanceForm(newest, await readNow()) : null;
   return (
-    <StoreProvider store={store}>
+    <StoreProvider store={store} canChange={storePreferenceEnabled(env)}>
     <CartView
       cart={cart}
       provenance={provenance}

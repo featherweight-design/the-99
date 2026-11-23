@@ -6,6 +6,9 @@ export const OTHER_STORES: readonly OtherStore[] = ["tcgplayer", "cardkingdom"];
 /** Every store the app quotes. Mana Pool is the default: a reader with no preference reads its tables. */
 export type Store = "manapool" | OtherStore;
 
+/** Every store the app quotes, Mana Pool first: the order Settings lists them in. */
+export const STORES: readonly Store[] = ["manapool", ...OTHER_STORES];
+
 /** One row of `printing_store_prices` / `token_store_prices`, before the catalog lookup splits them. */
 export type StorePriceRow = {
   scryfallId: string;

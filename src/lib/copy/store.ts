@@ -1,8 +1,30 @@
 // Store choice (design #3200, `design_handoff_the99_store_choice/copy strings.ts`). Every string that names a store
 // takes its StoreInfo, never a literal, so a new store needs no copy change beyond its own entry.
 import type { StoreInfo } from "../stores/info";
+import type { Store } from "../stores/rows";
 
 export const storeCopy = {
+  // ── Settings · Store (the first section, call 1) ─────────────────────
+  settings: {
+    /** The mono section head, drawn uppercase by CSS. */
+    head: "Store",
+    explain: "Prices and buy links across the app come from the store you pick.",
+    /** One line per store under its name: what its prices are. */
+    rows: {
+      manapool: "Listing prices, and one link that fills a cart with a whole list.",
+      tcgplayer: "Market prices, an average of recent sales, so a listing can cost more or less.",
+      cardkingdom: "Card Kingdom’s own prices. Buy links open one card at a time.",
+    } satisfies Record<Store, string>,
+    /** The one place the app says Mana Pool is the default (call 5). */
+    foot: "Mana Pool is the default. Changing store changes every price, buy link and price-drop alert.",
+    groupLabel: "Store for prices and buy links",
+    failed: "We couldn’t save that. Try again.", // toast, role alert
+  },
+
+  // ── Change store (call 2): trails the strip's and the cart's provenance line ─
+  change: "Change store",
+  changeAria: (s: StoreInfo) => `Change store, now ${s.name}`,
+
   // ── Provenance (the strip's line 2, the cart's checkout box) ─────────
   provenance: (s: StoreInfo) => (s.figure === "market" ? `${s.name} market prices` : `single-copy prices on ${s.name}`),
   provenanceUnpriced: (s: StoreInfo) => `no prices from ${s.name} for these`,

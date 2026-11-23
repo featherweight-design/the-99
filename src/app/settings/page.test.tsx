@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   ownDisplayName: vi.fn(),
   readHeldPaid: vi.fn(),
   readPlanFacts: vi.fn(),
+  readerStoreForPage: vi.fn(async (): Promise<string> => "manapool"),
 }));
 vi.mock("@clerk/nextjs/server", () => ({ currentUser: m.currentUser }));
 vi.mock("../friends/sender-profile", () => ({ ensureSenderProfile: m.ensureSenderProfile }));
@@ -30,12 +31,15 @@ vi.mock("../../lib/feed/prefs", () => ({ loadNewsSettings: m.loadNewsSettings })
 vi.mock("../../components/settings/spares-section", () => ({ SparesSection: () => null }));
 vi.mock("../../components/settings/friend-decks-section", () => ({ FriendDecksSection: () => null }));
 vi.mock("../../components/settings/news-section", () => ({ NewsSection: () => null }));
+vi.mock("../../components/settings/store-section", () => ({ StoreSection: () => null }));
+vi.mock("../../lib/stores/preference", () => ({ readerStoreForPage: m.readerStoreForPage }));
 
 import SettingsPage from "./page";
 import { NewsSection } from "../../components/settings/news-section";
 import { SparesSection } from "../../components/settings/spares-section";
 import { FriendDecksSection } from "../../components/settings/friend-decks-section";
 import { AccountSection } from "../../components/settings/account-section";
+import { StoreSection } from "../../components/settings/store-section";
 import { Suspense } from "react";
 import { AccountSlot } from "./account-slot";
 
@@ -47,6 +51,7 @@ const news = (el: unknown) => sections(el).find((c) => c.type === NewsSection);
 
 beforeEach(() => {
   vi.clearAllMocks();
+  m.env = {};
   m.loadKeptBack.mockResolvedValue([]);
   m.loadCollectionList.mockResolvedValue({ cards: [], pricesFailed: false });
   m.loadNewsSettings.mockResolvedValue([{ kind: "new-set", on: true }]);
@@ -70,6 +75,20 @@ describe("/settings", () => {
     expect((sections(el)[3].props.children as El).type).toBe(AccountSlot);
     expect(m.currentUser).not.toHaveBeenCalled();
     expect(news(el)!.props.kinds).toEqual([{ kind: "new-set", on: true }]);
+  });
+
+  it("draws Store first, at the reader's store, while the store switch is on for them (store choice, call 1)", async () => {
+    m.env = { STORE_PREFERENCE_ENABLED: "true" };
+    m.readerStoreForPage.mockResolvedValueOnce("tcgplayer");
+    const el = await SettingsPage();
+    expect(sections(el).map((c) => c.type)).toEqual([StoreSection, NewsSection, SparesSection, FriendDecksSection, Suspense]);
+    expect(sections(el)[0].props.store).toBe("tcgplayer");
+  });
+
+  it("draws no Store section and reads no store for it while the switch is off", async () => {
+    const el = await SettingsPage();
+    expect(sections(el).some((c) => c.type === StoreSection)).toBe(false);
+    expect(m.readerStoreForPage).not.toHaveBeenCalled();
   });
 
   it("draws the Spares section with the reader's threshold and shared pods", async () => {

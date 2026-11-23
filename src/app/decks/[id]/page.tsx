@@ -94,6 +94,7 @@ import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARA
 import { isUuid } from "../../../lib/uuid";
 import { requestFlags } from "../../../lib/flags/request";
 import { readerStoreForPage } from "../../../lib/stores/preference";
+import { storePreferenceEnabled } from "../../../lib/stores/flag";
 import { StoreProvider } from "../../../components/stores/store-provider";
 import { preconUpgradeEnabled } from "../../../lib/precons/upgrade/flag";
 import { GuidedRunLine } from "../../../components/decks/guided/guided-run-line";
@@ -813,7 +814,7 @@ async function DeckBuilderBody({
     >
       {/* The guided build's line (G6): drawn from its own read, so the cached payload above never carries a run. */}
       {preconUpgradeEnabled(env) && <GuidedRunLine deckId={id} deckName={detail.name} refused={query[GUIDED_REFUSED_PARAM] === GUIDED_REFUSED_VALUE} />}
-      <StoreProvider store={await storeRead}>
+      <StoreProvider store={await storeRead} canChange={storePreferenceEnabled(env)}>
         <ZoneProvider zone={await resolveZone()}>{landed}</ZoneProvider>
       </StoreProvider>
     </DeckTokensProvider>
