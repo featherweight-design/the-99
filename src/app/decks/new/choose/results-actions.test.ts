@@ -18,6 +18,7 @@ vi.mock("../../../../lib/flags/request", async () => {
 
 const stub = vi.hoisted(() => ({ execute: vi.fn(), trial: vi.fn(), page: vi.fn(), read: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../../../lib/stores/action-store", () => ({ readerStoreForAction: async () => "manapool" }));
 vi.mock("../../../../db", () => ({ db: { execute: stub.execute } }));
 vi.mock("../../../../lib/intake/trial", () => ({ trialFill: stub.trial }));
 vi.mock("../../../../lib/intake/rows", () => ({ loadResultsPage: stub.page }));
@@ -57,7 +58,7 @@ describe("trialFillRows", () => {
     stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"], mana_cost: "{4}{R}{G}{W}" }] });
     await trialFillRows([LEGAL], "?t=dinosaurs");
     expect(text(stub.execute.mock.calls[0][0])).toContain("c.mana_cost");
-    expect(stub.trial.mock.calls[0][1]).toMatchObject({ manaCost: "{4}{R}{G}{W}" });
+    expect(stub.trial.mock.calls[0][2]).toMatchObject({ manaCost: "{4}{R}{G}{W}" });
   });
 
   it("hands the trial the reader's resolved switches, not the environment", async () => {
@@ -66,7 +67,7 @@ describe("trialFillRows", () => {
     const resolved = envViewWith({ SENTINEL: "resolved-for-user_1" });
     vi.mocked(requestFlags).mockResolvedValueOnce(resolved);
     await trialFillRows([LEGAL], "?t=dinosaurs");
-    expect(stub.trial.mock.calls[0][3] === resolved).toBe(true);
+    expect(stub.trial.mock.calls[0][4] === resolved).toBe(true);
   });
 
   it("answers an id the rule does not return with null, and runs no fill for it", async () => {
@@ -74,14 +75,14 @@ describe("trialFillRows", () => {
     expect(out[FORGED]).toBeNull();
     expect(out[LEGAL]).not.toBeNull();
     expect(stub.trial).toHaveBeenCalledTimes(1);
-    expect(stub.trial.mock.calls[0][1]).toMatchObject({ oracleId: LEGAL });
+    expect(stub.trial.mock.calls[0][2]).toMatchObject({ oracleId: LEGAL });
   });
 
   it("fills with no card, whatever an old address's retired card answer says (F1)", async () => {
     const CARD = "0000aaaa-0000-4000-8000-0000000000cc";
     stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
     await trialFillRows([LEGAL], `?a=${CARD}`);
-    expect(stub.trial.mock.calls[0][2]).toMatchObject({ cardOracleId: null });
+    expect(stub.trial.mock.calls[0][3]).toMatchObject({ cardOracleId: null });
   });
 
   // Review rounds 1 and 2: the row's figures predict the deck its press builds, which fills toward the sets.
@@ -90,14 +91,14 @@ describe("trialFillRows", () => {
     catalog.load.mockResolvedValueOnce({ themes: [], index: buildPhraseIndex([], [], [{ code: "blb", name: "Bloomburrow" }]) } as never);
     stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
     await trialFillRows([LEGAL], "?p=PIP&w=mostly%20Bloomburrow");
-    expect(stub.trial.mock.calls[0][2]).toMatchObject({ sets: ["pip", "blb"] });
+    expect(stub.trial.mock.calls[0][3]).toMatchObject({ sets: ["pip", "blb"] });
   });
 
   it("hands the trial the picked sets alone when the catalog read fails", async () => {
     stub.execute.mockResolvedValueOnce({ rows: [{ oracle_id: LEGAL, name: "Gishath", color_identity: ["R", "G", "W"] }] });
     await trialFillRows([LEGAL], "?p=pip&w=mostly%20Bloomburrow");
     expect(catalog.load).toHaveBeenCalled();
-    expect(stub.trial.mock.calls[0][2]).toMatchObject({ sets: ["pip"] });
+    expect(stub.trial.mock.calls[0][3]).toMatchObject({ sets: ["pip"] });
   });
 
   it("refuses more than a slice, a non-uuid, or an oversized query before any read", async () => {
@@ -115,7 +116,7 @@ const pageArgs = (call: unknown[] | undefined) => call ?? [];
 describe("moreRows", () => {
   it("hands the parsed answers and the offset to the page loader", async () => {
     await moreRows("?t=dinosaurs&b=150", 12);
-    expect(pageArgs(stub.page.mock.calls[0])).toEqual(["user_1", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12, null]);
+    expect(pageArgs(stub.page.mock.calls[0])).toEqual(["user_1", "manapool", expect.objectContaining({ themes: ["dinosaurs"], budgetDollars: 150 }), 12, null]);
   });
 
   it("orders a slice by the reader's own done read, and by nothing for any other state", async () => {
@@ -124,18 +125,18 @@ describe("moreRows", () => {
     stub.read.mockResolvedValueOnce({ kind: "done", result });
     await moreRows(`?t=dinosaurs&r=${READ}`, 12);
     expect(stub.read).toHaveBeenCalledWith(READ, "user_1");
-    expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", expect.anything(), 12, result]);
+    expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", "manapool", expect.anything(), 12, result]);
     // Pending, or a read that is not this reader's (`none`): the free order.
     for (const state of [{ kind: "pending", phase: null }, { kind: "none" }]) {
       stub.read.mockResolvedValueOnce(state);
       await moreRows(`?t=dinosaurs&r=${READ}`, 12);
-      expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", expect.anything(), 12, null]);
+      expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", "manapool", expect.anything(), 12, null]);
     }
   });
 
   it("ignores the retired card answer (F1)", async () => {
     await moreRows("?t=dinosaurs&a=0000aaaa-0000-4000-8000-000000000001", 0);
-    expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", expect.objectContaining({ card: null }), 0, null]);
+    expect(pageArgs(stub.page.mock.lastCall)).toEqual(["user_1", "manapool", expect.objectContaining({ card: null }), 0, null]);
   });
 
   it("refuses a forged offset or query before any read", async () => {

@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import { db } from "../../db";
+import type { Store } from "../stores/rows";
 import type { ChooseParams } from "./params";
 import { backing, bestFit, isAnyOf, type Bracket } from "./rank";
 import { loadCardChip, type CardChip } from "./rows";
@@ -40,13 +41,14 @@ export type HandOffAnswers = {
  */
 export async function loadHandOffAnswers(
   userId: string,
+  store: Store,
   commanderId: string,
   p: ChooseParams,
 ): Promise<HandOffAnswers> {
   const [vocabulary, card, [row], printings] = await Promise.all([
     p.themes.length > 0 ? loadIntakeThemes().catch(() => []) : Promise.resolve([]),
     // `undefined` when the read failed; `null` when it says there is no such card.
-    p.card ? loadCardChip(userId, p.card).catch(() => undefined) : Promise.resolve(null),
+    p.card ? loadCardChip(userId, p.card, store).catch(() => undefined) : Promise.resolve(null),
     db.execute(sql`
       select cs.deck_count, cs.tags, c.type_line,
         ${p.card ? sql`(select csc.inclusion from commander_support_cards csc

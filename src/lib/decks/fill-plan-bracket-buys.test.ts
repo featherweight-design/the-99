@@ -67,7 +67,7 @@ const short = (buyCents: number) => ({
   buy: { raisers: ["rhystic"], buyCents, overBudget: false },
 });
 const call = (over: { bracketBuys?: boolean; budgetCents?: number | null; own?: boolean; budgetRaised?: boolean } = {}) =>
-  buildFillPlan("u", commanders, new Set(), {
+  buildFillPlan("u", commanders, new Set(), { store: "manapool",
     selected: [], env: ON,
     answers: {
       budgetCents: over.budgetCents ?? 5000, bracket: 3, cardOracleId: null, bracketBuys: over.bracketBuys ?? false,
@@ -152,7 +152,7 @@ describe("buildFillPlan's Hit bracket N", () => {
 
   it("reads the label of a bought raiser no pool carries (own-only), so it is counted by label", async () => {
     m.skeleton.mockResolvedValue({ skeleton: { roleTargets: { of: "labels", targets: {} }, composition: null, staples: [] } });
-    await buildFillPlan("u", commanders, new Set(), {
+    await buildFillPlan("u", commanders, new Set(), { store: "manapool",
       selected: [], env: ON,
       pool: "sleeveable", failClosed: true,
       answers: { budgetCents: 5000, bracket: 3, cardOracleId: null, bracketBuys: true },
@@ -185,7 +185,7 @@ describe("buildFillPlan's Hit bracket N", () => {
 
   // HELP_ME_CHOOSE_ENABLED is retired (always on): only a bracket answer decides the reach's buying half.
   it("reads the top cards under own-only with a bracket answer, whatever Help me choose's retired variable says", async () => {
-    await buildFillPlan("u", commanders, new Set(), {
+    await buildFillPlan("u", commanders, new Set(), { store: "manapool",
       selected: [], env: envViewWith({ HELP_ME_CHOOSE_ENABLED: "off" }), pool: "sleeveable", failClosed: true,
       answers: { budgetCents: null, bracket: 3, cardOracleId: null },
     });
@@ -193,7 +193,7 @@ describe("buildFillPlan's Hit bracket N", () => {
   });
 
   it("reads no top cards under own-only with no bracket answer", async () => {
-    await buildFillPlan("u", commanders, new Set(), {
+    await buildFillPlan("u", commanders, new Set(), { store: "manapool",
       selected: [], env: ON, pool: "sleeveable", failClosed: true,
       answers: { budgetCents: null, bracket: null, cardOracleId: null },
     });
@@ -210,7 +210,7 @@ describe("buildFillPlan's Hit bracket N", () => {
       target: 5, kind: "short", collectionPermits: [1, 2], collectionRaisers: ["owned-1"],
       buy: { raisers: ["rhystic"], buyCents: 3200, overBudget: false },
     });
-    await buildFillPlan("u", commanders, new Set(), {
+    await buildFillPlan("u", commanders, new Set(), { store: "manapool",
       selected: [], env: ON, answers: { budgetCents: 5000, bracket: 5, cardOracleId: null, bracketBuys: true },
     });
     expect(planArgs().boughtRaisers.map((c: { oracleId: string }) => c.oracleId)).toEqual(["rhystic"]);
@@ -236,7 +236,7 @@ describe("the buy pool's order", () => {
 
   it("ranks by inclusion with no answers too (a plain create)", async () => {
     edhrec();
-    await buildFillPlan("u", commanders, new Set(), { selected: [], env: ON });
+    await buildFillPlan("u", commanders, new Set(), { store: "manapool", selected: [], env: ON });
     expect(handed()).toEqual(["Wipe", "Removal", "Low Creature"]);
   });
 
@@ -256,7 +256,7 @@ describe("the chosen build", () => {
     vi.mocked(getEdhrecData).mockResolvedValue({ data: { inclusionByName: {}, topCards: ["Rhystic Study"], tags: TAGS } } as never);
   });
 
-  const ask = (themes?: string[]) => buildFillPlan("u", commanders, new Set(), {
+  const ask = (themes?: string[]) => buildFillPlan("u", commanders, new Set(), { store: "manapool",
     selected: [], env: ON,
     answers: { budgetCents: null, bracket: null, cardOracleId: null, ...(themes ? { themes, themeJoin: "any" as const } : {}) },
   });
@@ -271,12 +271,12 @@ describe("the chosen build", () => {
 
   it("lets the themes asked win over a stored build, and reads a stored build for a path with no answers", async () => {
     m.build.mockResolvedValue(null);
-    await buildFillPlan("u", commanders, new Set(), {
+    await buildFillPlan("u", commanders, new Set(), { store: "manapool",
       selected: [], env: ON, build: { themes: ["Stored"], join: "all" },
       answers: { budgetCents: null, bracket: null, cardOracleId: null, themes: ["Asked"], themeJoin: "any" },
     });
     expect(m.build).toHaveBeenLastCalledWith(commanders[0].oracleId, TAGS, ["Asked"], "any");
-    await buildFillPlan("u", commanders, new Set(), { selected: [], env: ON, build: { themes: ["Stored"], join: "all" } });
+    await buildFillPlan("u", commanders, new Set(), { store: "manapool", selected: [], env: ON, build: { themes: ["Stored"], join: "all" } });
     expect(m.build).toHaveBeenLastCalledWith(commanders[0].oracleId, TAGS, ["Stored"], "all");
   });
 

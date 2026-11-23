@@ -37,7 +37,7 @@ const deps = (shortlist: ModelOutcome<ShortlistReply>, judge: ModelOutcome<Judge
   judge: vi.fn(async () => judge),
   now: () => 0,
 });
-const input = { readId: "r", words: "scary horrors", filters: { colors: [], match: "contains" as const, themes: [], budgetDollars: null, bracket: null } };
+const input = { readId: "r", store: "manapool" as const, words: "scary horrors", filters: { colors: [], match: "contains" as const, themes: [], budgetDollars: null, bracket: null } };
 
 beforeEach(() => {
   allowance.read.mockReset().mockResolvedValue(OPEN);

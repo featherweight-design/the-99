@@ -34,22 +34,22 @@ describe("loadResultsPage under a read", () => {
   const picks = { picks: [{ oracleId: id(20), reason: [{ text: "First." }] }, { oracleId: id(5), reason: [{ text: "Second." }] }] };
 
   it("puts the read's picks first, in its order, with their lines, then the rest in the free order", async () => {
-    const page = await loadResultsPage("u", answers, 0, picks);
+    const page = await loadResultsPage("u", "manapool", answers, 0, picks);
     expect(page.rows.map((r) => r.name).slice(0, 4)).toEqual(["Commander 20", "Commander 5", "Commander 1", "Commander 2"]);
     expect(page.rows[0].reason).toEqual([{ text: "First." }]);
     expect(page.rows[2].reason).toBeUndefined();
   });
 
   it("continues the same list across slices: no pick repeated, no free row skipped", async () => {
-    const first = await loadResultsPage("u", answers, 0, picks);
-    const second = await loadResultsPage("u", answers, RESULT_PAGE, picks);
-    const all = [...first.rows, ...second.rows, ...(await loadResultsPage("u", answers, RESULT_PAGE * 2, picks)).rows].map((r) => r.oracleId);
+    const first = await loadResultsPage("u", "manapool", answers, 0, picks);
+    const second = await loadResultsPage("u", "manapool", answers, RESULT_PAGE, picks);
+    const all = [...first.rows, ...second.rows, ...(await loadResultsPage("u", "manapool", answers, RESULT_PAGE * 2, picks)).rows].map((r) => r.oracleId);
     expect(new Set(all).size).toBe(30);
     expect(second.rows.some((r) => r.reason)).toBe(false);
   });
 
   it("leaves the free order alone with no read", async () => {
-    const page = await loadResultsPage("u", answers, 0, null);
+    const page = await loadResultsPage("u", "manapool", answers, 0, null);
     expect(page.rows.map((r) => r.name).slice(0, 2)).toEqual(["Commander 1", "Commander 2"]);
   });
 });
@@ -65,13 +65,13 @@ describe("the claim reads", () => {
   it("narrows the owned rows' claim read to the owned rows", async () => {
     const owned = (i: number) => ({ ...ranked(i), candidate: { ...ranked(i).candidate, owned: true } });
     stub.search.mockResolvedValue({ rows: [owned(1), ranked(2)], order: "owned", tooNarrow: null, card: null });
-    await loadResultsPage("u", answers, 0, null);
+    await loadResultsPage("u", "manapool", answers, 0, null);
     const [, opts] = vi.mocked(loadAvailability).mock.calls[0];
     expect(opts?.oracleIds).toEqual([id(1)]);
   });
 
   it("reads the card's row from loadCardChip", async () => {
-    await loadCardChip("u", id(7));
+    await loadCardChip("u", id(7), "manapool");
     expect(stub.cardRow.mock.calls[0]).toEqual(["u", id(7)]);
   });
 });
@@ -83,7 +83,7 @@ describe("loadResultsPage: picks the search no longer lists (History's aged run)
       { oracleId: id(99), reason: [{ text: "Built since." }] },
       { oracleId: id(98), reason: [{ text: "Not ranked." }] },
     ] };
-    const page = await loadResultsPage("u", answers, 0, picks);
+    const page = await loadResultsPage("u", "manapool", answers, 0, picks);
     expect(page.gone).toEqual([id(99), id(98)]);
     expect(page.rows[0].name).toBe("Commander 5");
     expect(page.rows.some((r) => r.oracleId === id(99))).toBe(false);
@@ -98,19 +98,39 @@ describe("loadResultsPage: picks the search no longer lists (History's aged run)
       { oracleId: id(99), reason: [{ text: "Built since." }] },
       { oracleId: id(98), reason: [{ text: "Hidden since." }] },
     ] };
-    const page = await loadResultsPage("u", answers, 0, picks);
+    const page = await loadResultsPage("u", "manapool", answers, 0, picks);
     expect(page.gone).toEqual([id(99)]);
     expect(page.hiddenPicks).toBe(1);
   });
 
   it("asks for hidden ids only when a pick is unlisted", async () => {
     loadHiddenIds.mockClear();
-    await loadResultsPage("u", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] });
+    await loadResultsPage("u", "manapool", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] });
     expect(loadHiddenIds).not.toHaveBeenCalled();
   });
 
   it("has none gone with no read, and none when every pick is still listed", async () => {
-    expect((await loadResultsPage("u", answers, 0, null)).gone).toEqual([]);
-    expect((await loadResultsPage("u", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] })).gone).toEqual([]);
+    expect((await loadResultsPage("u", "manapool", answers, 0, null)).gone).toEqual([]);
+    expect((await loadResultsPage("u", "manapool", answers, 0, { picks: [{ oracleId: id(3), reason: [{ text: "x" }] }] })).gone).toEqual([]);
+  });
+});
+
+describe("loadCardChip's store", () => {
+  it("prices the chip in the reader's store", async () => {
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockClear();
+    await loadCardChip("u", id(7), "cardkingdom");
+    for (const c of vi.mocked(loadPrices).mock.calls) expect(c[1]).toBe("cardkingdom");
+  });
+});
+
+describe("loadResultsPage's store", () => {
+  it("prices the rows in the reader's store", async () => {
+    const { loadPrices } = await import("../discovery/price");
+    vi.mocked(loadPrices).mockClear();
+    await loadResultsPage("u", "tcgplayer", answers);
+    const calls = vi.mocked(loadPrices).mock.calls;
+    expect(calls.length).toBeGreaterThan(0);
+    for (const c of calls) expect(c[1]).toBe("tcgplayer");
   });
 });

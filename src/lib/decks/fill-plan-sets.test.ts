@@ -43,7 +43,7 @@ import { buildFillPlan } from "./fill-plan";
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["G"], manaCost: "{G}" }];
 const env = envViewWith({});
 const call = (sets?: string[], own = false) =>
-  buildFillPlan("u", commanders, new Set(), {
+  buildFillPlan("u", commanders, new Set(), { store: "manapool",
     selected: [], env,
     answers: { budgetCents: null, bracket: null, cardOracleId: null, ...(sets ? { sets } : {}) },
     ...(own ? { pool: "sleeveable" as const } : {}),
@@ -100,5 +100,18 @@ describe("buildFillPlan's set preference", () => {
     m.execute.mockRejectedValue(new Error("down"));
     await call(["blb"]);
     expect(marked()).toEqual([]);
+  });
+});
+
+describe("buildFillPlan's store", () => {
+  it("hands the reader's store to the budget and gate reads", async () => {
+    const { loadFillGate, loadBudgetLeftCents } = await import("../intake/fill-facts");
+    await buildFillPlan("u", commanders, new Set(), {
+      store: "cardkingdom", selected: [], env,
+      answers: { budgetCents: 5000, bracket: null, cardOracleId: null },
+    });
+    const calls = [...vi.mocked(loadBudgetLeftCents).mock.calls, ...vi.mocked(loadFillGate).mock.calls];
+    expect(calls.length).toBeGreaterThan(0);
+    for (const c of calls) expect(c[0]).toMatchObject({ store: "cardkingdom" });
   });
 });

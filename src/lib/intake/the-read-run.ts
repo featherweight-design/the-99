@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 
 import { db } from "../../db";
 import type { Billed } from "../model/allowance";
+import type { Store } from "../stores/rows";
 import { callModel, type ModelOutcome } from "../model/client";
 import { collectionDigest, loadReadCards, loadReadDecks, type TaggedCard } from "./the-read-load";
 import {
@@ -120,13 +121,14 @@ export type TheReadInputs = {
 
 export async function loadTheReadInputs(
   userId: string,
+  store: Store,
   words: string,
   filters: ReadFilters,
   tagged: readonly TaggedCard[] = [],
 ): Promise<TheReadInputs> {
   const [list, facts, decks, collection, catalog] = await Promise.all([
     loadPoolList(),
-    loadSearchFacts(userId, { ...filters, card: null }),
+    loadSearchFacts(userId, store, { ...filters, card: null }),
     loadReadDecks(userId),
     collectionDigest(userId),
     loadIntakeCatalog(),
@@ -165,7 +167,7 @@ export function shortlistPrefix(inputs: Pick<TheReadInputs, "list" | "pool" | "n
 /** One press, end to end: what a probe, the eval and a test call. */
 export async function runTheRead(
   userId: string,
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; ask?: string },
+  input: { readId: string; store: Store; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; ask?: string },
   deps: TheReadDeps = defaultTheReadDeps(),
   inputs?: TheReadInputs,
 ): Promise<TheReadOutcome> {
@@ -181,7 +183,7 @@ export async function runTheRead(
  */
 export async function beginTheRead(
   userId: string,
-  input: { readId: string; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; ask?: string },
+  input: { readId: string; store: Store; words: string; filters: ReadFilters; tagged?: readonly TaggedCard[]; ask?: string },
   deps: TheReadDeps = defaultTheReadDeps(),
   /** The inputs, or a loader for them (a test counts its calls); omitted, they are read here. */
   inputs?: TheReadInputs | (() => Promise<TheReadInputs>),
@@ -200,7 +202,7 @@ export async function beginTheRead(
   if (await hasRunningRead(userId, new Date(started0))) return { kind: "in_flight" };
   // And one press per player at a time through the pool read and the reservation, so a burst reads
   // the pool once, not once per press.
-  const load = typeof inputs === "function" ? inputs : inputs ? async () => inputs : () => loadTheReadInputs(userId, input.words, input.filters, input.tagged ?? []);
+  const load = typeof inputs === "function" ? inputs : inputs ? async () => inputs : () => loadTheReadInputs(userId, input.store, input.words, input.filters, input.tagged ?? []);
   const admitted = await withReadAdmission(userId, async () => {
     // A press that arrives after another has reserved and let go finds the admission free, so the
     // running read is looked for again here, before anything is loaded.

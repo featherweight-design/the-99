@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { db } from "../../db";
 import { chainArt } from "../cards/chain-art";
 import { loadOpeningArt } from "../cards/opening-printing";
+import type { Store } from "../stores/rows";
 import { resolveOwnedPrintings } from "../collection/owned-printings";
 import { loadHiddenIds } from "../commanders/hidden";
 import { hardDecks } from "../decks/availability";
@@ -84,11 +85,12 @@ export type ResultsPage = Pick<SearchResult, "order" | "tooNarrow"> & {
  */
 export async function loadResultsPage(
   userId: string,
+  store: Store,
   answers: Answers,
   offset = 0,
   picks: ReadPicks | null = null,
 ): Promise<ResultsPage> {
-  const outcome = await searchCommanders(userId, answers);
+  const outcome = await searchCommanders(userId, store, answers);
   const ordered = picks ? reorder(outcome.rows, (r) => r.candidate.oracleId, picks) : outcome.rows;
   const slice = ordered.slice(offset, offset + RESULT_PAGE);
   const reasons = new Map((picks?.picks ?? []).map((p) => [p.oracleId, p.reason]));
@@ -98,7 +100,7 @@ export async function loadResultsPage(
   const unlisted = (picks?.picks ?? []).filter((p) => !listed.has(p.oracleId)).map((p) => p.oracleId);
   const [hiddenIds, rows] = await Promise.all([
     unlisted.length > 0 ? loadHiddenIds(userId) : Promise.resolve([]),
-    decorate(userId, slice, answers.sets ?? []),
+    decorate(userId, store, slice, answers.sets ?? []),
   ]);
   const hidden = new Set(hiddenIds);
   const gone = unlisted.filter((id) => !hidden.has(id));
@@ -114,7 +116,7 @@ export async function loadResultsPage(
   };
 }
 
-async function decorate(userId: string, slice: readonly Ranked[], sets: readonly string[]): Promise<ResultRow[]> {
+async function decorate(userId: string, store: Store, slice: readonly Ranked[], sets: readonly string[]): Promise<ResultRow[]> {
   if (slice.length === 0) return [];
   // A decoration: a failed read draws rows with no tag rather than no rows.
   const index = sets.length === 0 ? null : await loadCommanderPrintings().catch(() => null);
@@ -132,9 +134,9 @@ async function decorate(userId: string, slice: readonly Ranked[], sets: readonly
       .then((r) => new Map((r.rows as { oracle_id: string; image_uri: string | null; art_crop_uri: string | null }[]).map((x) => [x.oracle_id, x]))),
     owned.length === 0 ? Promise.resolve(new Map()) : resolveOwnedPrintings(userId, owned),
     owned.length === 0 ? Promise.resolve(new Map()) : loadAvailability(userId, { oracleIds: owned }),
-    loadPrices(ids),
+    loadPrices(ids, store),
     // A commander the reader does not own previews the printing card details open it on, not the catalog's arbitrary one.
-    loadOpeningArt(unowned),
+    loadOpeningArt(unowned, store),
   ]);
   return slice.map(({ candidate: c, themeFits, cardFit }) => {
     const mine = printings.get(c.oracleId);
@@ -181,10 +183,11 @@ export type CardChip = {
 export async function loadCardChip(
   userId: string,
   oracleId: string,
+  store: Store,
 ): Promise<CardChip | null> {
   // The search's own card read, so the chip names exactly the card the search applied: a card it
   // drops (a basic, one not commander-legal, one that no longer exists) draws no chip either.
-  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId]), chainArt(userId, null, [oracleId])]);
+  const [row, prices, art] = await Promise.all([loadCardRow(userId, oracleId), loadPrices([oracleId], store), chainArt(userId, null, [oracleId])]);
   if (!row) return null;
   return { oracleId, name: row.name, imageUri: art.get(oracleId) ?? row.imageUri, owned: row.owned, held: row.held, price: slotFor(prices.get(oracleId)) };
 }

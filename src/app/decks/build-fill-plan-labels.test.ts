@@ -43,7 +43,7 @@ import { buildFillPlan } from "../../lib/decks/fill-plan";
 
 const commanders = [{ oracleId: "cmd", name: "C", colorIdentity: ["G"], manaCost: "{G}" }];
 const skeleton = (of: string) => ({ roleTargets: { of, targets: {} }, composition: null, staples: [] });
-const call = () => buildFillPlan("u", commanders, new Set(), { selected: [], env: process.env });
+const call = () => buildFillPlan("u", commanders, new Set(), { store: "manapool", selected: [], env: process.env });
 const labels = new Map([["pool-1", ["draw"]]]);
 
 beforeEach(() => {

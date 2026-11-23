@@ -54,7 +54,7 @@ async function main() {
     ).rows[0];
     const commanders = [{ oracleId: cmd.oracle_id, name: cmd.name, colorIdentity: cmd.color_identity, manaCost: cmd.mana_cost }];
     // Any cards, no budget, no bracket: the answers the measured deck was made with.
-    const plan = await buildFillPlan(FIXTURE_USER, commanders, new Set(), {
+    const plan = await buildFillPlan(FIXTURE_USER, commanders, new Set(), { store: "manapool",
       selected: [], env: await resolveFlagsStrict(FIXTURE_USER), answers: { budgetCents: null, bracket: null, cardOracleId: null },
     });
 

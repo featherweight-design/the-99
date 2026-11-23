@@ -6,6 +6,7 @@ import { capToBody } from "../decks/fill";
 import { isBasicLand } from "../decks/grouping";
 import { loadPrices, slotFor } from "../discovery/price";
 import { db } from "../../db";
+import type { Store } from "../stores/rows";
 import { sql } from "drizzle-orm";
 import { buysCopy } from "./buys-card";
 import type { DeckAnswers } from "./fill-facts";
@@ -54,6 +55,7 @@ export type TrialFigures = {
 
 export async function trialFill(
   userId: string,
+  store: Store,
   // `manaCost` feeds the basics pip census in `planFill`; required so a caller cannot omit it.
   commander: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null },
   answers: DeckAnswers,
@@ -66,7 +68,7 @@ export async function trialFill(
   // The card is placed beside the plan below, so the plan counts it, as the create this trial
   // predicts does.
   const plan = await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
-    answers, selected: await placedCardsOf(card ? [card] : []), env,
+    answers, selected: await placedCardsOf(card ? [card] : []), env, store,
   });
   // The plan is sized to the slots the card leaves (`buildFillPlan` plans body - placed), and the
   // cap is kept exactly as `createDeck` and `fillDeck` keep it, as the rule the body obeys.
@@ -74,14 +76,14 @@ export async function trialFill(
   const ids = [...new Set(rows.map((r) => r.oracleId))];
 
   const [prices, availability, facts, bracket] = await Promise.all([
-    loadPrices(ids),
+    loadPrices(ids, store),
     loadAvailability(userId, { oracleIds: ids }),
     db.execute(sql`
       select c.oracle_id, c.type_line,
         exists (select 1 from collection_items ci where ci.user_id = ${userId} and ci.oracle_id = c.oracle_id) as owned
       from cards c where c.oracle_id = any(${sql.param(ids)}::uuid[])
     `).then((r) => new Map((r.rows as { oracle_id: string; type_line: string; owned: boolean }[]).map((x) => [x.oracle_id, x]))),
-    bracketFigure(userId, commander, answers, env, ownedOnly, plan),
+    bracketFigure(userId, store, commander, answers, env, ownedOnly, plan),
   ]);
 
   let owned = 0;
@@ -117,6 +119,7 @@ export async function trialFill(
  */
 async function bracketFigure(
   userId: string,
+  store: Store,
   commander: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null },
   answers: DeckAnswers,
   env: NodeJS.ProcessEnv,
@@ -127,7 +130,7 @@ async function bracketFigure(
   const card = answers.cardOracleId;
   const deck = ownedOnly
     ? await buildFillPlan(userId, [commander], new Set(card ? [card] : []), {
-      answers, selected: await placedCardsOf(card ? [card] : []), pool: "sleeveable", failClosed: true, env,
+      answers, selected: await placedCardsOf(card ? [card] : []), pool: "sleeveable", failClosed: true, env, store,
     })
     : plan;
   if (!deck.bracketReach || !deck.bracketAfter) return null;
@@ -144,6 +147,7 @@ async function bracketFigure(
  */
 export async function handOffTrial(
   userId: string,
+  store: Store,
   commander: { oracleId: string; name: string; colorIdentity: string[]; manaCost: string | null },
   answers: DeckAnswers,
   env: NodeJS.ProcessEnv,
@@ -161,7 +165,7 @@ export async function handOffTrial(
 }> {
   const placed = [...new Set([...(answers.cardOracleId ? [answers.cardOracleId] : []), ...placedIds])];
   const plan = await buildFillPlan(userId, [commander], new Set(placed), {
-    answers, selected: await placedCardsOf(placed), env,
+    answers, selected: await placedCardsOf(placed), env, store,
     ...(ownedOnly ? { pool: "sleeveable" as const, failClosed: true } : {}),
   });
   if (answers.bracket === null || answers.bracket < 3 || !plan.bracketReach || !plan.bracketAfter) {

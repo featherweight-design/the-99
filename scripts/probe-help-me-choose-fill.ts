@@ -58,11 +58,11 @@ async function main() {
     manaCost: cmd.mana_cost ?? null,
   }];
 
-  const plain = await buildFillPlan(USER, commanders, new Set(), { selected: [], env: flags });
-  const budgeted = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: flags });
-  const bracketed = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null }, env: flags });
+  const plain = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], env: flags });
+  const budgeted = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: flags });
+  const bracketed = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], answers: { budgetCents: null, bracket: 2, cardOracleId: null }, env: flags });
   // Any bracket answer is a target that places raisers (section 5), so "no gate" is an empty answer set.
-  const unasked = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { budgetCents: null, bracket: null, cardOracleId: null }, env: flags });
+  const unasked = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], answers: { budgetCents: null, bracket: null, cardOracleId: null }, env: flags });
 
   console.log("\n1. The budget, priced independently");
   const ids = (p: typeof plain) => p.rows.map((r) => r.oracleId);
@@ -92,7 +92,7 @@ async function main() {
   const selCents = prices.get(selection.oracleId)?.liveCents ?? 0;
   const { placedCardsOf } = await import("../src/lib/decks/costs-of");
   const withSelection = await buildFillPlan(USER, commanders, new Set([selection.oracleId]),
-    { selected: await placedCardsOf([selection.oracleId]), answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: flags });
+    { store: "manapool", selected: await placedCardsOf([selection.oracleId]), answers: { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, env: flags });
   check("a placed selection is charged: it and the fill's buys fit the cap together", selCents + spend(withSelection) <= BUDGET_CENTS,
     `selection $${(selCents / 100).toFixed(2)} + fill $${(spend(withSelection) / 100).toFixed(2)} against $${BUDGET_CENTS / 100}`);
 
@@ -132,7 +132,7 @@ async function main() {
 
   console.log("\n4. A row's trial figures");
   const { trialFill } = await import("../src/lib/intake/trial");
-  const trial = await trialFill(USER, commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, flags);
+  const trial = await trialFill(USER, "manapool", commanders[0], { budgetCents: BUDGET_CENTS, bracket: null, cardOracleId: null }, flags);
   check("the trial fill fills the body, owns what it can and prices the rest within the budget",
     trial.body === budgeted.filled && trial.owned < trial.body && trial.buyCents <= BUDGET_CENTS && trial.unpricedCard === null,
     `own ${trial.owned} of ${trial.body}, about $${(trial.buyCents / 100).toFixed(2)} to buy`);
@@ -140,13 +140,13 @@ async function main() {
     `trial ${trial.buyCents}, independent ${spend(budgeted)}`);
   // The plan fills a whole body beside the build-around card, so without the cap its row makes 100.
   const around = plain.rows.find((r) => r.quantity === 1)!.oracleId;
-  const withCard = await trialFill(USER, commanders[0], { budgetCents: null, bracket: null, cardOracleId: around }, flags);
+  const withCard = await trialFill(USER, "manapool", commanders[0], { budgetCents: null, bracket: null, cardOracleId: around }, flags);
   check("with a build-around card the trial body is still the whole body, never one over",
     withCard.body === plain.filled, `body ${withCard.body}, plain ${plain.filled}`);
 
   console.log("\n5. The bracket as a target, read independently");
   const ask3 = { budgetCents: null, bracket: 3 as const, cardOracleId: null };
-  const reached = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: ask3, env: flags });
+  const reached = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], answers: ask3, env: flags });
   const reach = reached.bracketReach;
   console.log(`   reach: ${JSON.stringify(reach)}`);
   check("a bracket answer always comes back with a reach", reach !== undefined, reach?.kind ?? "none");
@@ -186,7 +186,7 @@ async function main() {
     check("the fill places no card the buying half would buy", !raised.some((id) => toBuy.includes(id)), `${raised.length} placed`);
     // HIT BRACKET N (plan PR 3b): the player's pick places the buying set, every card of it, filed
     // `source: "bracket"`, and the deck then reaches the target by the analysis's own arithmetic.
-    const hit = await buildFillPlan(USER, commanders, new Set(), { selected: [], answers: { ...ask3, bracketBuys: true }, env: flags });
+    const hit = await buildFillPlan(USER, commanders, new Set(), { store: "manapool", selected: [], answers: { ...ask3, bracketBuys: true }, env: flags });
     const hitPlaced = hit.rows.filter((r) => r.source === "bracket").map((r) => r.oracleId);
     const hitFacts = await loadBracketGateFacts([...commanders.map((c) => c.oracleId), ...hit.rows.map((r) => r.oracleId)]);
     const hitPermits = permitsOf(commanders.map((c) => c.oracleId), [...commanders.map((c) => c.oracleId), ...hit.rows.map((r) => r.oracleId)], hitFacts);
@@ -196,7 +196,7 @@ async function main() {
     check("Hit still fills the whole body", hit.filled === plain.filled, `${hit.filled} against ${plain.filled}`);
   }
   // THE ROW FIGURE: the trial reads the bracket its own rows land in.
-  const trialed = await trialFill(USER, commanders[0], ask3, flags);
+  const trialed = await trialFill(USER, "manapool", commanders[0], ask3, flags);
   console.log(`   trial bracket: ${JSON.stringify(trialed.bracket)}`);
   check("a trial for a bracket-3 answer carries the bracket its rows land in", trialed.bracket !== null && trialed.bracket.permits.length > 0,
     trialed.bracket ? trialed.bracket.permits.join("-") : "none");

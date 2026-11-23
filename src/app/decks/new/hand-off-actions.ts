@@ -8,6 +8,7 @@ import { loadAvailability } from "../../../lib/decks/availability-query";
 import { buysCopy } from "../../../lib/intake/buys-card";
 import { requireUserId } from "../../../lib/auth";
 import { requestFlags } from "../../../lib/flags/request";
+import { readerStoreForAction } from "../../../lib/stores/action-store";
 import { validateCreateAnswers, type CreateAnswers } from "../../../lib/intake/answers";
 import { handOffTrial } from "../../../lib/intake/trial";
 import { handOffReachOf, type HandOffReach } from "../../../lib/intake/hand-off-reach";
@@ -37,6 +38,7 @@ export async function handOffBracketReach(
 ): Promise<HandOffReach | null> {
   const userId = await requireUserId();
   const env = await requestFlags(userId);
+  const store = await readerStoreForAction(userId);
   if (typeof commanderOracleId !== "string" || !isUuid(commanderOracleId)) throw new Error("commander not found");
   if (!Array.isArray(selectedOracleIds) || !selectedOracleIds.every((id) => typeof id === "string")) throw new Error("bad selection");
   const asked = validateCreateAnswers({ ...create, bracketBuys: false });
@@ -67,6 +69,7 @@ export async function handOffBracketReach(
   const budgetCents = asked.budgetDollars === null ? null : asked.budgetDollars * 100;
   const trial = await handOffTrial(
     userId,
+    store,
     { oracleId: commander.oracleId, name: commander.name, colorIdentity: commander.colorIdentity, manaCost: commander.manaCost },
     {
       budgetCents, bracket: asked.bracket, cardOracleId, ...(asked.sets.length > 0 ? { sets: asked.sets } : {}),
@@ -100,7 +103,7 @@ export async function handOffBracketReach(
     ...(reach.kind === "short" && reach.buy ? reach.buy.raisers : []),
   ])];
   const [chips, gameChangers] = await Promise.all([
-    Promise.all(ids.map(async (id) => [id, await loadCardChip(userId, id)] as const)),
+    Promise.all(ids.map(async (id) => [id, await loadCardChip(userId, id, store)] as const)),
     ids.length === 0 ? new Set<string>() : db.select({ oracleId: cards.oracleId }).from(cards)
       .where(and(inArray(cards.oracleId, ids), eq(cards.gameChanger, true)))
       .then((rows) => new Set(rows.map((r) => r.oracleId))),

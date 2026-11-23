@@ -15,6 +15,7 @@ import { serializeChooseParams } from "../../../lib/intake/params";
 import { loadIntakeCatalog } from "../../../lib/intake/search";
 import { choosePath } from "../../../lib/commanders/place-paths";
 import { requestFlags } from "../../../lib/flags/request";
+import { readerStoreForPage } from "../../../lib/stores/preference";
 import { loadGuidedOffer } from "../../../lib/guided/offer";
 import { preconUpgradeEnabled } from "../../../lib/precons/upgrade/flag";
 
@@ -41,7 +42,7 @@ export default async function NewDeckPage({
     if (commander) {
       // A Help me choose result's press carries the results' own params beside `commander`.
       const asked = handOffFrom(searchParamsOf(raw));
-      const answers = asked ? await loadHandOffAnswers(userId, commander.oracleId, asked) : null;
+      const answers = asked ? await loadHandOffAnswers(userId, await readerStoreForPage(userId, await requestFlags(userId)), commander.oracleId, asked) : null;
       // The sets the create (and the Bracket row's trial) fill toward: the picked ones plus any
       // the typed words name. A failed catalog read is the picked sets alone.
       const fillSets = asked && answers

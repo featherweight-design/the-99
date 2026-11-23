@@ -11,6 +11,7 @@ import { notHiddenBy } from "../commanders/hidden";
 import { notBuiltBy } from "../decks/built";
 import { isBasicLand } from "../decks/grouping";
 import { loadPrices } from "../discovery/price";
+import type { Store } from "../stores/rows";
 import type { EdhrecTag } from "../edhrec/parse";
 import { printedIn } from "../sets/printed-in-sql";
 import { loadCommanderPrintings } from "../sets/printed-in-read";
@@ -114,8 +115,8 @@ export async function loadPhraseIndex(themes: readonly VocabularyTheme[]): Promi
 /** The search, with the build-around card's own facts for its chip (owned, price, flags). */
 export type SearchOutcome = SearchResult & { card: CardFacts | null };
 
-export async function searchCommanders(userId: string, asked: Answers): Promise<SearchOutcome> {
-  const facts = await loadSearchFacts(userId, asked);
+export async function searchCommanders(userId: string, store: Store, asked: Answers): Promise<SearchOutcome> {
+  const facts = await loadSearchFacts(userId, store, asked);
   return { ...rankCandidates(facts.candidates, facts.answers, facts.card, facts.tribes), card: facts.card };
 }
 
@@ -123,7 +124,7 @@ export async function searchCommanders(userId: string, asked: Answers): Promise<
 export type SearchFacts = { answers: Answers; candidates: Candidate[]; card: CardFacts | null; tribes: Tribes };
 
 /** Exported so `measure-intake-tribes` ranks exactly what the search does, twice, from one read. */
-export async function loadSearchFacts(userId: string, asked: Answers): Promise<SearchFacts> {
+export async function loadSearchFacts(userId: string, store: Store, asked: Answers): Promise<SearchFacts> {
   // The card is resolved FIRST. A card id that parses but names no card any more (a stale link), or
   // one the intake could never have offered (a basic, a banned card), is dropped, as every invalid
   // answer is, and the search then runs as if no card were asked: every read below, the owned
@@ -170,7 +171,7 @@ export async function loadSearchFacts(userId: string, asked: Answers): Promise<S
   const lookup = card === null ? ids : [...ids, card];
   const [flags, prices, combos] = await Promise.all([
     loadBracketFlags(lookup),
-    loadPrices(lookup),
+    loadPrices(lookup, store),
     card === null ? Promise.resolve(new Map<string, { combos: number; loops: number }>()) : loadCombosWith(card),
   ]);
 

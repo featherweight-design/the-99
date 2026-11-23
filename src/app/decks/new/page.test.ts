@@ -7,6 +7,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const COMMANDER = "0000aaaa-0000-4000-8000-00000000000c";
 const stub = vi.hoisted(() => ({ answers: vi.fn(), listable: vi.fn() }));
 vi.mock("../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../../lib/flags/request", async () => {
+  const { ENV_VIEW } = await import("@/test/env-view");
+  return { requestFlags: vi.fn(async () => ENV_VIEW) };
+});
+vi.mock("../../../lib/stores/preference", () => ({ readerStoreForPage: async () => "manapool" }));
 vi.mock("../../../lib/decks/pre-filled-commander", () => ({
   loadPreFilledCommander: async (_u: string, id: string) => ({ oracleId: id, name: "Gishath", typeLine: "Legendary Creature", colorIdentity: ["R", "G", "W"], imageUri: null }),
 }));

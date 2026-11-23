@@ -8,6 +8,7 @@ import { db } from "../../db";
 import { handOffSets } from "./hand-off";
 import type { ChooseParams } from "./params";
 import { isCandidate, loadIntakeCatalog } from "./search";
+import type { Store } from "../stores/rows";
 import { trialFill, type TrialFigures } from "./trial";
 
 /** Fills run this many at a time: each is a whole `buildFillPlan`, and a slice of twelve at once
@@ -20,6 +21,7 @@ const CONCURRENCY = 4;
  */
 export async function trialFigureRows(
   userId: string,
+  store: Store,
   env: NodeJS.ProcessEnv,
   p: ChooseParams,
   ids: string[],
@@ -63,6 +65,7 @@ export async function trialFigureRows(
       out[id] = c
         ? await trialFill(
           userId,
+          store,
           { oracleId: id, name: c.name, colorIdentity: c.color_identity ?? [], manaCost: c.mana_cost },
           answers,
           env,
