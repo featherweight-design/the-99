@@ -19,6 +19,7 @@ import { formatCents, type PriceSummary, type ProvenanceForm } from "../../lib/d
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
 import { ExternalLink } from "../ui/external-link";
 import { storeCopy } from "../../lib/copy/store";
+import { StoreDoor } from "../stores/store-door";
 import { StorePasteRow } from "../stores/store-paste-row";
 import { useStoreInfo } from "../stores/store-provider";
 
@@ -150,6 +151,7 @@ export function PriceStrip({
             ...(dated.behind ? [priceCopy.strip.behind] : []),
             ...(showFigure && store.cart ? [priceCopy.strip.cartNote] : []),
           ].join(" · ")}
+          <StoreDoor />
         </p>
         {/* The 44px is the ROW's height, never the link's box — the link stays
             inline text, so the words get a full-height target vertically while

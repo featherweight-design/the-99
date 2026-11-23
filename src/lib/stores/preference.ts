@@ -11,9 +11,9 @@ import { db } from "../../db";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { userPrefs } from "../../db/schema";
 import { storePreferenceEnabled } from "./flag";
-import { OTHER_STORES, type Store } from "./rows";
+import { STORES, type Store } from "./rows";
 
-export const STORES: readonly Store[] = ["manapool", ...OTHER_STORES];
+export { STORES };
 
 /** A value as a store the app quotes, or null: the closed set `user_prefs_preferred_store_check` holds. */
 export function parseStore(value: unknown): Store | null {

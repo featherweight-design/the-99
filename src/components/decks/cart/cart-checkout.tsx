@@ -9,6 +9,7 @@ import { formatCents, type ProvenanceForm } from "../../../lib/decks/price";
 import type { CartFigures } from "../../../lib/decks/cart";
 import { ExternalLink } from "../../ui/external-link";
 import { storeCopy } from "../../../lib/copy/store";
+import { StoreDoor } from "../../stores/store-door";
 import { StorePasteRow } from "../../stores/store-paste-row";
 import { useStoreInfo } from "../../stores/store-provider";
 
@@ -55,7 +56,7 @@ export function CartCheckout({
       {deckCount === 0 ? (
         // A4: the provenance line stays (STATES A4); no figure, no link, no sends.
         <>
-          <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}</p>
+          <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}<StoreDoor /></p>
           <p className="m-0 pt-[4px] pb-[12px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)]">
             {copy.checkout.noneSelected}
           </p>
@@ -77,7 +78,7 @@ export function CartCheckout({
             {copy.checkout.copiesLine(total.copies, deckCount)}
           </p>
           <div>
-            <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}</p>
+            <p className="m-0 font-mono text-[9.5px] leading-[1.5] text-[color:var(--fg-locked)]">{provenanceLine}<StoreDoor /></p>
             {!store.cart ? (
               // No whole-list link (call 6): the line says so, then the paste row; no sends line, since nothing is sent.
               <>

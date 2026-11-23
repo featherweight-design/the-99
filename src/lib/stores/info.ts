@@ -37,3 +37,7 @@ export const STORE_INFO: Readonly<Record<Store, StoreInfo>> = {
 export function pasteListText(lines: readonly { name: string; quantity: number }[]): string {
   return lines.map((l) => `${l.quantity} ${l.name}`).join("\n");
 }
+
+/** Settings' Store section's id: the anchor Change store lands on (`/settings#settings-store`), which washes it. */
+export const STORE_SETTINGS_ID = "settings-store";
+export const STORE_SETTINGS_HREF = `/settings#${STORE_SETTINGS_ID}`;
