@@ -262,4 +262,18 @@ describe("reviewHelp: a past help reopened from History", () => {
   it("marks every trade when today's help could not be read", () => {
     expect(reviewHelp(helpOf([trade("a", "forest")]), null).noLonger).toEqual(["a"]);
   });
+
+  // Store choice: a History read under one store, reopened under another, draws no figure of the old store's.
+  it("draws today's prices, and none for a staple today's help does not list", () => {
+    const pricedTrade = (id: string, out: string, cents: number | null): TradeMove => {
+      const t = trade(id, out);
+      return { ...t, staple: { ...t.staple, priceCents: cents } };
+    };
+    const past = helpOf([pricedTrade("a", "forest", 500), pricedTrade("c", "wastes", 900)]);
+    const today = helpOf([pricedTrade("a", "forest", 420)]);
+    const shown = reviewHelp(past, today);
+    expect(shown.staples.map((s) => s.priceCents)).toEqual([420, null]);
+    expect(shown.trades.map((t) => t.staple.priceCents)).toEqual([420, null]);
+    expect(reviewHelp(past, null).staples.map((s) => s.priceCents)).toEqual([null, null]);
+  });
 });

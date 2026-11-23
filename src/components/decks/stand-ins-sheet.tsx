@@ -15,6 +15,7 @@ import { Fragment, useCallback, useEffect, useRef, useState, type Ref } from "re
 
 import { printedFaceName } from "../../lib/collection/browse";
 import { swapToolsCopy } from "../../lib/copy/swap-tools";
+import { useStoreInfo } from "../stores/store-provider";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { provenanceForm, type PriceFact } from "../../lib/decks/price";
 import { loadStandInsAction, takeStandInAction, undoSwapAction } from "../../lib/swaps/actions";
@@ -383,6 +384,7 @@ export function StandInsSheet({
   fromCard?: boolean;
 }) {
   const tools = useSwapTools();
+  const store = useStoreInfo();
   const { close: closeCard } = useCardDetail();
   const [load, setLoad] = useState<Load>({ state: "loading" });
   // Friends' spares of this card (Social R2 PR 8a), read beside the stand-ins.
@@ -775,7 +777,7 @@ export function StandInsSheet({
         ))}</ArrivalOrder>
 
         {shown?.foot && provenance ? (
-          <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>{copy.foot(provenance.when)}</p>
+          <p className="m-0 font-mono text-[9.5px] leading-[1.5]" style={{ color: "var(--fg-locked)" }}>{copy.foot(store, provenance.when)}</p>
         ) : null}
       </div>
     </ModalChrome>

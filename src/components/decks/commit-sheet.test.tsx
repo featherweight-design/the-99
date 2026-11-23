@@ -7,6 +7,8 @@
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
+import { STORE_INFO } from "../../lib/stores/info";
+import { StoreProvider } from "../stores/store-provider";
 import type { BucketedAdd } from "../../lib/decks/draft-diff";
 import type { DraftAdd, DraftState } from "../../lib/decks/draft-shape";
 import { COMMIT_RECEIPT_HASH, DRAFT_ANNOUNCER_ID } from "./draft-announcer";
@@ -217,15 +219,27 @@ describe("CommitSheet", () => {
   it("links out to Mana Pool with the buy list, and only when there is one", () => {
     sheet();
     expect(
-      screen.getByRole("link", { name: copy.linkOut }).getAttribute("href"),
+      screen.getByRole("link", { name: copy.linkOut(STORE_INFO.manapool) }).getAttribute("href"),
     ).toContain("manapool.com/add-deck?deck=");
 
     cleanup();
     // Every card coming in has a free copy: the money block is absent whole, and
     // the link with it — there is nothing to shop for.
     sheet({ state: { ...STATE_36, adds: [], buyCount: 0, unfreeCount: 0, total: null } });
-    expect(screen.queryByRole("link", { name: copy.linkOut })).toBeNull();
+    expect(screen.queryByRole("link", { name: copy.linkOut(STORE_INFO.manapool) })).toBeNull();
     expect(screen.queryByText(copy.buyHeading)).toBeNull();
+  });
+
+  // Store choice, call 6: a whole-list link, so a store with no cart gets none, though the buy block still draws.
+  it("draws no link out for a store with no cart", () => {
+    render(
+      <StoreProvider store="tcgplayer">
+        <CommitSheet deckId="d" state={STATE_36} rows={ROWS_36} cardCount={CARD_COUNT} onCancel={vi.fn()} />
+      </StoreProvider>,
+    );
+    expect(screen.queryByRole("link", { name: copy.linkOut(STORE_INFO.tcgplayer) })).toBeNull();
+    expect(screen.queryByRole("link", { name: copy.linkOut(STORE_INFO.manapool) })).toBeNull();
+    expect(screen.getByText(copy.buyHeading)).toBeTruthy();
   });
 
   it("announces the version's real size, from the server's own count", async () => {

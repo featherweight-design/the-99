@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
+import { STORE_INFO } from "../../lib/stores/info";
+import { StoreProvider } from "../stores/store-provider";
 import { noteDeckRoute, resetDeckVisitForTests } from "../../lib/decks/visit";
 import { NO_TAPPED_LANDS } from "../../lib/mana/lands-tapped";
 import type { ManaColor, ManaSupplyCardRow } from "../../lib/mana/supply";
@@ -97,6 +99,19 @@ describe("ImproveDoor: the step", () => {
 });
 
 describe("ImproveDoor: the result", () => {
+  // Store choice: a staple to buy links to the reader's store, named in its label and its spoken name.
+  it("links a staple to buy at the reader's store", async () => {
+    const read = vi.fn(async (_d: string, c: string) => helpFor(c as BalanceColor));
+    render(<StoreProvider store="tcgplayer">{door(read)}</StoreProvider>);
+    fireEvent.click(screen.getByRole("button", { name: copy.door.button }));
+    fireEvent.click(screen.getAllByRole("radio")[0]);
+    await screen.findByRole("heading", { name: copy.help.head("red") });
+    const toBuy = document.querySelector("[data-mana-staple='s1']") as HTMLElement;
+    const link = within(toBuy).getByRole("link", { name: copy.help.buyAria(STORE_INFO.tcgplayer, "Rockfall Vale") });
+    expect(link.getAttribute("href")).toContain("tcgplayer.com");
+    expect(link.textContent).toContain(copy.help.buyLink(STORE_INFO.tcgplayer));
+  });
+
   it("draws swaps, staples owned first with their facts, and a buy link for the rest", async () => {
     const read = vi.fn(async (_d: string, c: string) => helpFor(c as BalanceColor));
     render(door(read));
@@ -109,7 +124,7 @@ describe("ImproveDoor: the result", () => {
     const toBuy = document.querySelector("[data-mana-staple='s1']") as HTMLElement;
     expect(toBuy.textContent).toContain(copy.help.toBuy);
     expect(toBuy.textContent).toContain(copy.help.rate.commander(42, "Gishath"));
-    expect(within(toBuy).getByRole("link", { name: copy.help.buyAria("Rockfall Vale") }).getAttribute("href")).toContain("Rockfall%20Vale");
+    expect(within(toBuy).getByRole("link", { name: copy.help.buyAria(STORE_INFO.manapool, "Rockfall Vale") }).getAttribute("href")).toContain("Rockfall%20Vale");
     const owned = document.querySelector("[data-mana-staple='s2']") as HTMLElement;
     expect(owned.textContent).toContain(copy.help.owned(1));
     expect(owned.textContent).toContain(copy.help.rate.identity(23, "3-color"));

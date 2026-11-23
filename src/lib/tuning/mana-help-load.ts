@@ -5,6 +5,7 @@ import { readCutSupport } from "../decks/cuts-read";
 import { loadDeckMix } from "../decks/deck-mix";
 import { liveLockedIds } from "../decks/locks";
 import type { DeckDetail } from "../decks/read";
+import type { Store } from "../stores/rows";
 import type { BalanceColor } from "./mana-balance";
 import { loadManaInputs } from "./mana-balance-load";
 import { helpAddColor, type BasicCatalog, type ManaHelp } from "./mana-help";
@@ -41,6 +42,7 @@ export async function loadManaHelp(
   deck: DeckDetail,
   userId: string,
   color: BalanceColor,
+  store: Store = "manapool",
 ): Promise<ManaHelp | null> {
   const inputs = await loadManaInputs(deck);
   if (!inputs) return null;
@@ -50,7 +52,7 @@ export async function loadManaHelp(
   const basics = Object.fromEntries(entries) as BasicCatalog;
   const [locked, candidates, namedCuts, support, mix] = await Promise.all([
     liveLockedIds(db, deck.id),
-    loadManaStaples(deck, userId),
+    loadManaStaples(deck, userId, store),
     readNamedCuts(deck.id, userId),
     // The rarest off-plan land goes first; with no list every one reads 0 and they go by name.
     readCutSupport(deck.commander.oracleId, deck.partner?.oracleId ?? null).catch(() => null),

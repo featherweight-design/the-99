@@ -24,6 +24,7 @@ const state = vi.hoisted(() => ({
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../lib/stores/action-store", () => ({ readerStoreForAction: async () => "manapool" }));
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));

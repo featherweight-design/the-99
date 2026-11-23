@@ -18,6 +18,7 @@ import type { ManaPanelData } from "../../lib/tuning/mana-view";
 import { recordToolCount } from "../../lib/tuning/tool-counts";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isUuid } from "../../lib/uuid";
+import { readerStoreForAction } from "../../lib/stores/action-store";
 
 /**
  * Mana Balance's free count (tier 1): the evidence for one of the reader's decks, read fresh on
@@ -73,7 +74,7 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(row.summary.color)) return reviewHelp(row.summary.help, null);
-  const today = await loadManaHelp(deck, userId, row.summary.color as BalanceColor);
+  const today = await loadManaHelp(deck, userId, row.summary.color as BalanceColor, await readerStoreForAction(userId));
   if (!today) return null;
   return reviewHelp(row.summary.help, today);
 }
@@ -86,7 +87,7 @@ async function helpFor(deckId: string, color: string, userId: string): Promise<(
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;
-  const help = await loadManaHelp(deck, userId, color as BalanceColor);
+  const help = await loadManaHelp(deck, userId, color as BalanceColor, await readerStoreForAction(userId));
   return help ? { ...help, deckId: deck.id, listKey: listFingerprintOf(deck) } : null;
 }
 

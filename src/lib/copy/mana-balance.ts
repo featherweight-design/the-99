@@ -5,6 +5,8 @@
 //   - Karsten is named only in the "What Needs means" line and the citation (brief ruling 2).
 
 /** Karsten's article, the source of every Needed figure and the land formula. */
+import type { StoreInfo } from "../stores/info";
+
 export const KARSTEN_ARTICLE_URL =
   "https://www.tcgplayer.com/content/article/How-Many-Sources-Do-You-Need-to-Consistently-Cast-Your-Spells-A-2022-Update/dc23a7d2-0a16-4c0b-ad36-586fcca03ad8/";
 
@@ -129,8 +131,8 @@ export const manaBalanceCopy = {
     staples: (commander: string) => `Staples ${commander} decks run · owned first`,
     owned: (free: number) => `owned · ${free} free`,
     toBuy: "to buy",
-    buyLink: "Mana Pool",
-    buyAria: (name: string) => `Buy ${name} at Mana Pool, opens in a new tab`,
+    buyLink: (s: StoreInfo) => s.name,
+    buyAria: (s: StoreInfo, name: string) => `Buy ${name} at ${s.name}, opens in a new tab`,
     rate: {
       commander: (p: number, name: string) => `in ${p}% of ${name} decks`,
       pair: (p: number) => `in ${p}% of this pairing’s decks`,

@@ -102,10 +102,20 @@ export type ManaHelp = {
  * A past help read as History reopens it: its own trades and staples, with each trade checked
  * against today's help for the same color. A trade applies only when today's help still offers the
  * same staple for the same card out, which is the check `applyManaTrade` makes before it writes.
+ *
+ * Its prices are today's, read from the reader's store now (store choice: totals never mix stores). A staple
+ * today's help does not list has no figure, rather than the one its own read stored, which may be another store's.
  */
 export function reviewHelp(past: ManaHelp, today: ManaHelp | null): ManaHelp {
   const offered = new Set((today?.trades ?? []).map((t) => `${t.staple.oracleId}|${t.out.id}`));
-  return { ...past, noLonger: past.trades.filter((t) => !offered.has(`${t.staple.oracleId}|${t.out.id}`)).map((t) => t.staple.oracleId) };
+  const prices = new Map([...(today?.staples ?? []), ...(today?.trades ?? []).map((t) => t.staple)].map((s) => [s.oracleId, s.priceCents]));
+  const priced = (s: StapleCandidate): StapleCandidate => ({ ...s, priceCents: prices.get(s.oracleId) ?? null });
+  return {
+    ...past,
+    staples: past.staples.map(priced),
+    trades: past.trades.map((t) => ({ ...t, staple: priced(t.staple) })),
+    noLonger: past.trades.filter((t) => !offered.has(`${t.staple.oracleId}|${t.out.id}`)).map((t) => t.staple.oracleId),
+  };
 }
 
 const isBasicType = (typeLine: string) => isLandFace(typeLine) && /\bBasic\b/.test(typeLine);

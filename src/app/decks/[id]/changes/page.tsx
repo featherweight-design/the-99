@@ -24,6 +24,8 @@ import { isUuid } from "../../../../lib/uuid";
 import { commanderKeyParts } from "../../../../lib/commander-change/mix-key";
 import { requestFlags } from "../../../../lib/flags/request";
 import { switchBits } from "../../../../lib/flags/resolve";
+import { StoreProvider } from "../../../../components/stores/store-provider";
+import { readerStoreForPage } from "../../../../lib/stores/preference";
 
 // Versioned like every other cached payload here, though since the deployment joined every
 // `cacheForUser` key (`cache/deployment.ts`) a deploy already keeps a mix that grows a field
@@ -62,6 +64,9 @@ export default async function ChangesPage({
   const userId = await requireUserId();
   // The reader's switches, resolved once for this render (admin PR 6b).
   const env = await requestFlags(userId);
+  // The reader's store, for the commit sheet's whole-list link (store choice, call 6): drawn only where it has a
+  // cart. Started now so it rides beside the reads below.
+  const storeRead = readerStoreForPage(userId, env);
 
   // The ownership guard every deck route carries. `loadDraftRows` takes a
   // `userId` to scope availability, NOT to prove the deck is this reader's —
@@ -202,6 +207,7 @@ export default async function ChangesPage({
   const shownMix = settled.classifierTargets ? await loadDeckMix(id, userId, "classifier") : mix;
 
   return (
+    <StoreProvider store={await storeRead}>
     <ZoneProvider zone={await resolveZone()}>
     <ReviewChanges
       mix={shownMix}
@@ -222,5 +228,6 @@ export default async function ChangesPage({
       cardCount={detail.built}
     />
     </ZoneProvider>
+    </StoreProvider>
   );
 }

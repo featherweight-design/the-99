@@ -24,6 +24,7 @@ import { releasedCopies, type DraftState } from "../../lib/decks/draft-shape";
 // a browser. See `src/lib/client-bundle-safety.test.ts`.
 import type { DraftRows } from "../../lib/decks/draft-state";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
+import { useStoreInfo } from "../stores/store-provider";
 import { GhostButton, PrimaryButton } from "../ui/button";
 import { COMMIT_RECEIPT_HASH, draftAnnouncer } from "./draft-announcer";
 import { MutationError } from "./mutation-error";
@@ -104,6 +105,7 @@ export function CommitSheet({
   onWriteState,
   onCancel,
 }: CommitSheetProps) {
+  const store = useStoreInfo();
   const router = useRouter();
   const noteId = useId();
   const [pending, startTransition] = useTransition();
@@ -162,7 +164,9 @@ export function CommitSheet({
     const name = names.get(a.oracleId);
     return a.shortfall > 0 && name ? [{ name, quantity: a.shortfall }] : [];
   });
-  const shopHref = manapoolAddDeckUrl(buyList);
+  // A whole-list link, so only for a store with a cart (store choice, call 6): absent for any other, as it is with
+  // nothing to buy.
+  const shopHref = store.cart ? manapoolAddDeckUrl(buyList) : null;
 
   const footer = (
     <span className="font-mono text-[10px] md:text-[11px] text-[color:var(--fg-faint)]">
@@ -276,7 +280,7 @@ export function CommitSheet({
                     rel="noopener"
                     className="inline-flex items-center justify-center w-full md:w-auto min-h-[44px] md:min-h-0 md:py-[9px] md:px-[14px] rounded-[8px] md:rounded-[7px] font-sans font-semibold text-[13px] md:text-[12.5px] no-underline text-[color:var(--accent-text)] [border:1px_solid_var(--border-strong)]"
                   >
-                    {copy.linkOut}
+                    {copy.linkOut(store)}
                   </a>
                 )}
               </div>

@@ -10,6 +10,7 @@ import { removeOneCopy } from "../decks/remove-card";
 import { DECK_ADD_FALLBACK_MESSAGE, type DeckMutationResult } from "../decks/mutation-result";
 import { deckSurfaces } from "../decks/revalidate";
 import { revalidateClaims } from "../decks/revalidate-claims";
+import { readerStoreForAction } from "../stores/action-store";
 import { isUuid } from "../uuid";
 import { loadFits, type FitsRead } from "./fits";
 import { loadStandIns, type StandInsRead } from "./gather";
@@ -63,7 +64,7 @@ export async function setShoppingLimitAction(deckId: string, cents: number | nul
 export async function loadStandInsAction(deckId: string, cutOracleId: string, full = false): Promise<StandInsRead | null> {
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(cutOracleId)) return null;
-  return loadStandIns(deckId, userId, cutOracleId, full === true);
+  return loadStandIns(deckId, userId, cutOracleId, full === true, await readerStoreForAction(userId));
 }
 
 /**

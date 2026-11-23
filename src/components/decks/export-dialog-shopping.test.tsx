@@ -3,13 +3,16 @@
 // spoken for by another deck is on it too. Both the dot and the count had said
 // otherwise.
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { exportShoppingCopy } from "../../lib/copy/decks-builder";
+import { exportLinkOutCopy, exportShoppingCopy } from "../../lib/copy/decks-builder";
+import type { Store } from "../../lib/stores/rows";
+import { StoreProvider } from "../stores/store-provider";
 import { ExportDialog } from "./export-dialog";
 
-function openShoppingTab() {
+function openShoppingTab(store: Store = "manapool") {
   render(
+    <StoreProvider store={store}>
     <ExportDialog
       deckName="Kykar, Wind's Fury"
       commanderName="Kykar, Wind's Fury"
@@ -21,7 +24,8 @@ function openShoppingTab() {
       ]}
       open
       onClose={vi.fn()}
-    />,
+    />
+    </StoreProvider>,
   );
   // Both the mobile and the desktop subtree mount; the tab is switched on the
   // shared state, so clicking either moves both.
@@ -41,5 +45,16 @@ describe("ExportDialog shopping tab", () => {
     openShoppingTab();
     expect(screen.getAllByText(exportShoppingCopy.countMeta(3)).length).toBeGreaterThan(0);
     expect(screen.queryByText(/unowned/)).toBeNull();
+  });
+
+  // Store choice, call 6: the whole-list link needs a cart, so only Mana Pool's draws it. The list and its copy
+  // button stay for any other store.
+  it("links out to the cart for Mana Pool, and to nothing for a store with no cart", () => {
+    openShoppingTab();
+    expect(screen.getAllByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) }).length).toBeGreaterThan(0);
+    cleanup();
+    openShoppingTab("tcgplayer");
+    expect(screen.queryByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeNull();
+    expect(screen.getAllByLabelText("Not owned").length).toBeGreaterThan(0);
   });
 });

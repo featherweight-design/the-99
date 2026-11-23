@@ -69,7 +69,7 @@ export function feedText(item: FeedView): { title: string | PersonParts; line: R
             {item.drop.printing ? c.line.priceDropAt(item.drop.printing) : c.line.priceDrop}
           </>
         ) : null,
-        // Only with somewhere to go: a card the catalog no longer holds has no name to send to Mana Pool.
+        // Only with somewhere to go: a card the catalog no longer holds has no name to send to a store.
         press: item.outbound ? (item.store ? storeCopy.feedBuy(STORE_INFO[item.store]) : c.press.priceDrop) : null,
       };
     case "trade-match":
@@ -247,7 +247,7 @@ export function FeedPress({
       </button>
     );
   }
-  // Off the app (a price drop's card on Mana Pool): a new tab, drawn as card details' link out is (its own label), the link-out icon and
+  // Off the app (a price drop's card at the reader's store): a new tab, drawn as card details' link out is (its own label), the link-out icon and
   // the spoken new-tab suffix (`ExternalLink`'s), never a router link.
   if (item.outbound) {
     return (
