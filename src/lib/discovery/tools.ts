@@ -26,7 +26,11 @@ import type { TargetId } from "./targets";
 export type ToolGroup = "start" | "tune" | "buy" | "own" | "play";
 
 /** Where Try it opens: a deck's tab, or a route. `view: "shopping"` is Your deck's Shopping filter. */
-export type ToolLands = { kind: "deck"; tab: BuilderView; view?: "shopping" } | { kind: "route"; href: string };
+/**
+ * Where a tool lands. The deck form names the builder tab, the Shopping view on the Deck tab, and `tool`, a hub tool the
+ * tab opens on (Tuning's Consider, tool discovery Y1).
+ */
+export type ToolLands = { kind: "deck"; tab: BuilderView; view?: "shopping"; tool?: "consider" } | { kind: "route"; href: string };
 
 export type Tool = {
   id: string;
@@ -113,4 +117,30 @@ export function pageToolLanding(
   const landing = toolLanding(value, isOn);
   if (landing === null || landing.tool !== page || landing.lands.kind !== "route") return null;
   return landing as ToolLanding & { lands: Extract<ToolLands, { kind: "route" }> };
+}
+
+/**
+ * Every place a welcome sheet's Try it, a `?tool=` or an Ask answer can land (tool discovery Y1): the 14 showcase tools
+ * plus two that are not in the showcase, Consider (Tuning's hub tool) and Overview (the Analysis tab). A `Landing`
+ * carries no `target`, `credit` or `group`, so neither extra reaches the showcase, `TargetId` or the moments; About and
+ * `TOOLS` are unchanged.
+ */
+export type Landing = { id: string; lands: ToolLands; needsDeck: boolean };
+
+export const LANDINGS = [
+  ...TOOLS.map(({ id, lands, needsDeck }) => ({ id, lands, needsDeck })),
+  { id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true },
+  { id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true },
+] as const satisfies readonly Landing[];
+
+export type LandingId = ToolId | "consider" | "overview";
+
+const LANDING_BY_ID = new Map<string, Landing>(LANDINGS.map((l) => [l.id, l]));
+
+export function isLandingId(v: unknown): v is LandingId {
+  return typeof v === "string" && LANDING_BY_ID.has(v);
+}
+
+export function landingFor(id: LandingId): Landing {
+  return LANDING_BY_ID.get(id)!;
 }

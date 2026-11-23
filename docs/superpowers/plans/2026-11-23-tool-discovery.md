@@ -161,10 +161,10 @@ Tests:
 Each one becomes a 🔸 row in that PR's `## Design review` table.
 
 - **Y1 · Landings for `consider`, `overview` and `find-a-deck-read` (PR C).** `TOOLS` stays the 14-tool showcase, so About is unchanged. `tools.ts` gains `LANDINGS`, which is `TOOLS` plus two entries that are not in the showcase. A `Landing` type carries `id`, `lands` and `needsDeck`, and no `target`, `credit` or `group`, so neither entry reaches the showcase, `TargetId` or the moments. The sheet's Try it builds its href from `LANDINGS`, not from `showcaseGroups`. `fits.ts` gives both a deck rule (the most recently touched deck), and `welcome-read.ts` loads it:
-  - `consider`: `{ kind: "deck", tab: "tuning", tool: "consider" }`, needs a deck
+  - `consider`: `{ kind: "deck", tab: "consider", tool: "consider" }` (the builder's Tuning tab is `BuilderView` `"consider"`; there is no `"tuning"` view), needs a deck
   - `overview`: `{ kind: "deck", tab: "analysis" }`, needs a deck
 
-  The `?tool=` resolver and the deck picker (`fits.ts`) read `LANDINGS`. `ROW_TOOL` maps `overview` to `overview` and `find-a-deck-read` to the existing `find-a-deck` (`/collection?avail=free`). Ask's tool answers (PR D) match over `TOOLS` plus `consider`. Consider's name and line come from `tuningTabCopy.consider`, because `showcaseCopy.tools` has no Consider. `ToolLands`' deck form gains an optional `tool`, the hub tool to open; B2 adds it.
+  The `?tool=` resolver and the deck picker (`fits.ts`) read `LANDINGS`. `ROW_TOOL` maps `overview` to `overview` and `find-a-deck-read` to the existing `find-a-deck` (`/collection?avail=free`). Ask's tool answers (PR D) match over `TOOLS` plus `consider`. Consider's name and line come from `tuningTabCopy.consider`, because `showcaseCopy.tools` has no Consider. `ToolLands`' deck form gains an optional `tool`, the hub tool to open; it shipped with `LANDINGS` ahead of C, and B2 reads it.
 - **Y2 · The Consider tile's status line (PR B2).** It follows the hub tiles' shipped status pattern:
   - Loading: no status line, and the tile keeps its height, as the other tiles do before their reads land.
   - Both counts zero: `nothing to consider` (`tuningTabCopy.consider.none`).

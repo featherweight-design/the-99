@@ -3,7 +3,7 @@ import { tuningHubCopy } from "../copy/tuning-hub";
 import { isMomentId } from "../moments/registry";
 import { FLAGS } from "../flags/registry";
 import { isTargetId } from "./targets";
-import { TOOLS, deckToolLanding, isToolId, toolLanding } from "./tools";
+import { LANDINGS, TOOLS, deckToolLanding, isLandingId, isToolId, landingFor, toolLanding } from "./tools";
 
 const allOn = () => true;
 
@@ -113,5 +113,26 @@ describe("deckToolLanding", () => {
   it("lands a Tuning tool on the Analysis tab, which always draws", () => {
     expect(deckToolLanding("suggested-changes", () => false)?.lands).toEqual({ kind: "deck", tab: "analysis" });
     expect(deckToolLanding("top-off", () => false)?.tool).toBe("top-off");
+  });
+});
+
+describe("LANDINGS (tool discovery Y1)", () => {
+  it("is every showcase tool, as the registry lands it, plus Consider and Overview", () => {
+    expect(LANDINGS.map((l) => l.id)).toEqual([...TOOLS.map((t) => t.id), "consider", "overview"]);
+    for (const t of TOOLS) expect(landingFor(t.id)).toEqual({ id: t.id, lands: t.lands, needsDeck: t.needsDeck });
+  });
+
+  it("lands Consider on the Tuning tab's Consider and Overview on the Analysis tab, each needing a deck", () => {
+    expect(landingFor("consider")).toEqual({ id: "consider", lands: { kind: "deck", tab: "consider", tool: "consider" }, needsDeck: true });
+    expect(landingFor("overview")).toEqual({ id: "overview", lands: { kind: "deck", tab: "analysis" }, needsDeck: true });
+  });
+
+  it("keeps the two extras out of the showcase", () => {
+    for (const id of ["consider", "overview"]) {
+      expect(isLandingId(id)).toBe(true);
+      expect(isToolId(id)).toBe(false);
+    }
+    expect(isLandingId("nope")).toBe(false);
+    expect(isLandingId(["consider"])).toBe(false);
   });
 });
