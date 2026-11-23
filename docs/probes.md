@@ -1976,7 +1976,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   an About page opens the index (W6). About Addendum R4 adds W7 at 390 on `/about/decks#your-deck`: pin 3 (Lock
   cards) pressed docks its label, `window.scrollY` unchanged, the dock 12px above the tab bar and clear of the lit
   region's halo; pin 1 swaps it; ✕ (`Close`) takes it away with focus on the label's line. And W8 at both widths on
-  `/about/decks#analysis`: a press on a tool card's picture and on its body leaves the URL unchanged, each card has at
+  `/about/decks#tuning`: a press on a tool card's picture and on its body leaves the URL unchanged, each card has at
   most one `[data-tool-card-press]`, and at 1300 the row's buttons share one `getBoundingClientRect().bottom`. Every
   check presses the control and reads the URL and the lit state. Its R6 walks (the one-time sheet, the legacy `about_v` cookie, a forged
   `x-about-sheet` header) and its `--flip` walk retired with the sheet and the gate in About visual PR 6b; the banner
@@ -2398,6 +2398,12 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   hub in `#panel-tuning` with Consider as its first tile; pressing Consider draws its list in the hub;
   Analysis carries no hub; and the retired `?tab=consider` arrives on Tuning with Consider open. Read
   only, loopback `PROBE_BASE` only. On main the first check fails: there is no Tuning tab.
+
+- `pnpm probe:tuning-about` (tool discovery B3) presses the Tuning tab and then the ? at 390x844 (the
+  header's) and 1300x900 (the rail's): About opens on `/about/decks#tuning`, a section named Tuning that draws
+  the Suggested changes, Proposed cuts and Mana Balance labels (still keyed `decks/analysis/*`), and the
+  Analysis section draws none of them; the ? on Analysis still opens `#analysis`. Read only, loopback
+  `PROBE_BASE` only. On main the first check fails: Tuning read as Analysis, so the ? landed on `#analysis`.
 
 - `probe:tuning-hub-stays-put` (retired with tool discovery B2): it held the Tuning hub still on the
   Analysis tab through an Analyze press. The hub now has its own tab, so the two never share a screen.

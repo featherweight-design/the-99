@@ -741,7 +741,7 @@ async function scrollToElement(page, selector) {
 
 /** Opens a fixture deck's view, as the pages' deck captures do. */
 async function deckView(page, view) {
-  if (view !== "your-deck" && view !== "analysis" && view !== "games" && view !== "versions") await pressTab(page, "Your deck");
+  if (view !== "your-deck" && view !== "analysis" && view !== "tuning" && view !== "games" && view !== "versions") await pressTab(page, "Your deck");
   await DECK_VIEW_STEPS[view](page);
 }
 

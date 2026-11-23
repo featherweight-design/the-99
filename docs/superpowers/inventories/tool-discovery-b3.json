@@ -1,0 +1,40 @@
+{
+  "feature": "Finding the tools, PR B3: About labels for Tuning (handoff design_handoff_the99_tool_discovery, READINESS G7; plan 2026-11-23-tool-discovery.md §3 B3)",
+  "note": "The Tuning section is reached two ways: by address (/about/decks#tuning) and by PRESSING the ? on the deck's Tuning tab, which a URL sweep cannot see. Its pictures are the existing captures (the un-analyzed deck's for desktop Mana Balance) until the About pages are re-captured, a follow-up.",
+  "out": "contact-sheets/tool-discovery-b3",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "about-tuning",
+      "label": "/about/decks#tuning: the Tuning section, its sub line and the Suggested changes, Proposed cuts and Mana Balance labels",
+      "view": "src/lib/copy/about-pages.ts",
+      "steps": [
+        { "goto": "/about/decks#tuning", "wait": "section#tuning", "settle": 2500 },
+        { "scrollTo": "section#tuning", "settle": 800 }
+      ]
+    },
+    {
+      "id": "about-analysis",
+      "label": "/about/decks#analysis: Analysis keeps the bracket, findings and Describe your deck",
+      "view": "src/lib/copy/about-pages.ts",
+      "steps": [
+        { "goto": "/about/decks#analysis", "wait": "section#analysis", "settle": 2500 },
+        { "scrollTo": "section#analysis", "settle": 800 }
+      ]
+    },
+    {
+      "id": "question-from-tuning",
+      "label": "/decks/[id], Tuning, the ? pressed: About opens on Tuning",
+      "view": "src/components/decks/builder-screen.ts",
+      "steps": [
+        { "goto": "/decks/${TOOL_DECK}", "wait": "#tab-tuning", "settle": 2500 },
+        { "click": "#tab-tuning", "settle": 2000 },
+        { "scroll": 0, "settle": 600 },
+        { "openHelp": true, "settle": 2500 }
+      ]
+    }
+  ]
+}

@@ -185,7 +185,7 @@ export function screenModel(
   return { shots, labels };
 }
 
-/** A label's region: every label's `region` is `<area>/<section>/<label id>`, which is its key (`labelKey`); pinned by
+/** A label's region: every label's `region` is its key (`labelKey`), `<area>/<section>/<label id>` where it was first drawn; pinned by
  *  `pins.test.ts`, so the manifest's boxes are read by the key the reader's label carries. */
 export function regionOf(l: Pick<VisibleUnit, "key">): string {
   return l.key;

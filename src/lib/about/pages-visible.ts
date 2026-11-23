@@ -28,8 +28,18 @@ import {
 import { LEGACY_ENTRY_SWITCH as ENTRY_SWITCH } from "./legacy-entry-switch";
 import { isFirstRun, lineKept, type SeenState } from "./visible";
 
-export const labelKey = (section: Pick<AboutSection, "area" | "id">, label: Pick<AboutLabel, "id">) =>
-  `${section.area}/${section.id}/${label.id}`;
+// A label's key is its region, `<area>/<section>/<label id>` where it was first drawn. A label that moves section keeps
+// it (tool discovery B3 moved three from Analysis to Tuning), since the key is its seen and notice state.
+export const labelKey = (label: Pick<AboutLabel, "region">) => label.region;
+
+/** The section that draws the label keyed `key`, and the label: read from the pages, never out of the key itself. */
+export function labelAt(key: string): { section: AboutSection; label: AboutLabel } | null {
+  for (const section of ABOUT_SECTIONS) {
+    const label = section.labels.find((l) => l.region === key);
+    if (label) return { section, label };
+  }
+  return null;
+}
 export const ruleKey = (id: AboutRuleId) => `rule/${id}`;
 export const sentenceKey = (key: string, sw: AboutSwitch) => `${key}@${sw}`;
 
@@ -126,7 +136,7 @@ export function visibleSections(
     ...s,
     // A sub-line's switched sentence is cut as a label's is; a sub-line is never announced, so its switches are not kept.
     sub: resolveText(s.sub, s.subSentences, env)[0],
-    labels: s.labels.flatMap((l) => unit(labelKey(s, l), s, "label", l, env) ?? []),
+    labels: s.labels.flatMap((l) => unit(labelKey(l), s, "label", l, env) ?? []),
     rules: s.rules.flatMap((id) => unit(ruleKey(id), s, "rule", ABOUT_RULES[id], env) ?? []),
   }));
 }

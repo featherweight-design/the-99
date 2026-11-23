@@ -101,25 +101,29 @@ describe("/about/[area]", () => {
     expect(html).toContain("On this page");
   });
 
-  it("every Analysis label has its line and pin, whatever the retired switches say (Review Focus 2)", async () => {
+  it("every Analysis and Tuning label has its line and pin, whatever the retired switches say (Review Focus 2)", async () => {
     // Every Analysis label hung on the tab, and the tab's switch is retired (always on, 2026-11-01), as Suggested
     // changes' (its label and Describe your deck's) and Proposed cuts' are: their names set off move nothing. No live
-    // switch hides a label in any area any more, so the list is always whole, numbered from 1 with no gap.
-    const TOOLS = ["decks/analysis/suggested", "decks/analysis/describe", "decks/analysis/cuts"];
+    // switch hides a label in any area any more, so the list is always whole, numbered from 1 with no gap. Suggested
+    // changes and Proposed cuts moved to Tuning's section in tool discovery B3, keeping their keys.
+    const TOOLS = { analysis: ["decks/analysis/describe"], tuning: ["decks/analysis/suggested", "decks/analysis/cuts"] };
     const DESCRIBE = "in a sentence or two. Suggested changes uses it";
     const CUTS = "counts where a deck over 100 runs long";
-    const analysis = async () => (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
+    const section = async (id: string) => (await draw("decks")).props.sections.find((s) => s.id === id)!;
     expect(renderToStaticMarkup(await draw("decks"))).toContain(DESCRIBE);
-    const on = await analysis();
-    m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off", TUNING_ENABLED: "off", ANALYSIS_TAB_ENABLED: "off" });
-    const retired = await analysis();
-    for (const width of ["phone", "desktop"] as const) {
-      expect(on[width].labels.map((l) => l.key)).toEqual(expect.arrayContaining(TOOLS));
-      expect(retired[width].labels.map((l) => l.key)).toEqual(on[width].labels.map((l) => l.key));
-      expect(retired[width].shots.flatMap((s) => s.pins).map((p) => p.key)).toEqual(on[width].shots.flatMap((s) => s.pins).map((p) => p.key));
-      const all = ABOUT_SECTIONS.find((s) => s.area === "decks" && s.id === "analysis")!.labels.length;
-      expect(retired[width].labels).toHaveLength(all);
-      expect(retired[width].labels.map((l) => l.n)).toEqual(Array.from({ length: all }, (_, i) => i + 1));
+    for (const id of ["analysis", "tuning"] as const) {
+      m.env = ALL_ON;
+      const on = await section(id);
+      m.env = env({ ...(ALL_ON as Record<string, string>), PROPOSED_CUTS_ENABLED: "off", TUNING_ENABLED: "off", ANALYSIS_TAB_ENABLED: "off" });
+      const retired = await section(id);
+      for (const width of ["phone", "desktop"] as const) {
+        expect(on[width].labels.map((l) => l.key)).toEqual(expect.arrayContaining(TOOLS[id]));
+        expect(retired[width].labels.map((l) => l.key)).toEqual(on[width].labels.map((l) => l.key));
+        expect(retired[width].shots.flatMap((s) => s.pins).map((p) => p.key)).toEqual(on[width].shots.flatMap((s) => s.pins).map((p) => p.key));
+        const all = ABOUT_SECTIONS.find((s) => s.area === "decks" && s.id === id)!.labels.length;
+        expect(retired[width].labels).toHaveLength(all);
+        expect(retired[width].labels.map((l) => l.n)).toEqual(Array.from({ length: all }, (_, i) => i + 1));
+      }
     }
     // All of them reach the page.
     const html = renderToStaticMarkup(await draw("decks"));
@@ -138,17 +142,17 @@ describe("/about/[area]", () => {
   });
 
   it("draws each section's Try it from the tools whose labels it draws, its Where line aimed at the label (call 6)", async () => {
-    const analysis = (await draw("decks")).props.sections.find((s) => s.id === "analysis")!;
-    expect(analysis.tools.map((c) => c.card.id)).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
-    const cuts = analysis.tools.find((c) => c.card.id === "proposed-cuts")!;
-    expect(cuts.card.showMe).toBe("/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis");
+    const tuning = (await draw("decks")).props.sections.find((s) => s.id === "tuning")!;
+    expect(tuning.tools.map((c) => c.card.id)).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
+    const cuts = tuning.tools.find((c) => c.card.id === "proposed-cuts")!;
+    expect(cuts.card.showMe).toBe("/about/decks?lit=decks%2Fanalysis%2Fcuts#tuning");
     // The press is still Try it, unchanged.
     expect(cuts.card.state).toMatchObject({ kind: "deck", href: "/decks/d1?tool=proposed-cuts" });
     // Each width's own picture: the 390 crop on a phone, the tool's desktop crop from md.
     expect(cuts.phone?.src).toMatch(/^\/about\/shots\//);
     expect(cuts.desktop?.src).toBe("/about/pages/amonkhet/desktop/tools/proposed-cuts.webp");
     const html = renderToStaticMarkup(await draw("decks"));
-    expect(html).toContain('href="/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis"');
+    expect(html).toContain('href="/about/decks?lit=decks%2Fanalysis%2Fcuts#tuning"');
     // The card's Where line (R4 board 5) replaces its Show me link.
     expect(html).toContain("Show it above ↑");
     expect(html).not.toContain("How it works ›");
@@ -230,7 +234,7 @@ describe("/about/[area]", () => {
     const lit = "decks/analysis/cuts";
     const fresh = await draw("decks", { lit });
     expect(fresh.props.initialLit).toBe(lit);
-    expect(fresh.props.landable[lit]).toEqual({ isNew: true, section: "analysis" });
+    expect(fresh.props.landable[lit]).toEqual({ isNew: true, section: "tuning" });
     const drawn = fresh.props.sections.flatMap((s) => [...s.desktop.labels, ...s.phone.labels, ...s.rules].map((l) => l.key));
     expect(Object.keys(fresh.props.landable).sort()).toEqual([...new Set(drawn)].sort());
     const freshHtml = renderToStaticMarkup(fresh);
@@ -238,7 +242,7 @@ describe("/about/[area]", () => {
     expect(freshHtml).toContain('data-about-landing-card="proposed-cuts"');
     m.seen = { version: 16, ids: [lit] };
     const told = await draw("decks", { lit });
-    expect(told.props.landable[lit]).toEqual({ isNew: false, section: "analysis" });
+    expect(told.props.landable[lit]).toEqual({ isNew: false, section: "tuning" });
     const html = renderToStaticMarkup(told);
     expect(html).not.toContain("data-about-new");
     expect(html).not.toContain("data-about-landing-card");
@@ -293,7 +297,7 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
   it("lands a rule the ? names, lit, with no New tag", async () => {
     const el = await draw("decks", { from: "/credits", lit: "rule/credits" });
     expect(el.props.initialLit).toBe("rule/credits");
-    expect(el.props.landable["rule/credits"]).toEqual({ isNew: false, section: "analysis" });
+    expect(el.props.landable["rule/credits"]).toEqual({ isNew: false, section: "tuning" });
     const html = renderToStaticMarkup(el);
     expect(html).toMatch(/data-rule="rule\/credits" data-lit=""/);
     expect(html).not.toContain("data-about-new");
@@ -313,7 +317,7 @@ describe("/about/[area], reached by the ? (PR 6a)", () => {
     const el = await draw("decks", { from: "/settings", lit: "rule/pick" });
     expect(el.props.initialLit).toBeNull();
     expect(el.props.landable).not.toHaveProperty(["rule/pick"]);
-    expect(el.props.sections.map((s) => s.id)).toContain("analysis");
+    expect(el.props.sections.map((s) => s.id)).toContain("tuning");
     expect(el.props.back).toEqual({ from: "/settings", screen: "Settings" });
   });
 });

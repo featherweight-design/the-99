@@ -487,15 +487,13 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
     area: "decks",
     id: "analysis",
     name: "Analysis",
-    sub: `Which bracket your deck sits in, and why. Suggested changes, Proposed cuts and Mana Balance help you tune it.${ABOUT_SCREEN_OFF}`,
+    sub: `Which bracket your deck sits in, and why.${ABOUT_SCREEN_OFF}`,
     subSentences: {
       "Which bracket your deck sits in, and why.": "ANALYSIS_TAB_ENABLED",
-      // Proposed cuts follows the Analysis tab (its own switch is retired), which Mana Balance already needs.
-      " Suggested changes, Proposed cuts and Mana Balance help you tune it.": ["TUNING_ENABLED", "MANA_BALANCE_ENABLED"],
       [ABOUT_SCREEN_OFF]: "!ANALYSIS_TAB_ENABLED",
     },
     screens: [{ screen: "deck", view: "analysis" }],
-    captures: { phone: ["p-deck-analysis", "p-deck-analysis-read", "p-analysis-tuning"], desktop: ["d-analysis", "d-analysis-tuning", "d-analysis-describe"] },
+    captures: { phone: ["p-deck-analysis", "p-deck-analysis-read"], desktop: ["d-analysis", "d-analysis-describe"] },
     labels: [
       {
         id: "bracket",
@@ -515,6 +513,35 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         since: 16,
         legacy: ["deck-analysis"],
       },
+      {
+        id: "describe",
+        region: "decks/analysis/describe",
+        lead: "Describe your deck",
+        rest: " in a sentence or two. Suggested changes uses it to understand what the deck is for.",
+        flag: "TUNING_ENABLED",
+        since: 16,
+        legacy: ["suggested-changes"],
+      },
+    ],
+    rules: ["intent"],
+    tools: [],
+  },
+  {
+    // Tool discovery B3 (READINESS G7): Suggested changes, Proposed cuts and Mana Balance moved to the Tuning tab in B2,
+    // so their labels moved here. Their region keys stay `decks/analysis/*`: a region is also the label's seen and
+    // notice key, and renaming it would tell every reader the same three labels as New again.
+    area: "decks",
+    id: "tuning",
+    name: "Tuning",
+    sub: "Tools for this deck. Suggested changes, Proposed cuts and Mana Balance help you tune it.",
+    subSentences: {
+      // Proposed cuts' own switch is retired; the sentence still follows the Tuning and Mana Balance switches.
+      " Suggested changes, Proposed cuts and Mana Balance help you tune it.": ["TUNING_ENABLED", "MANA_BALANCE_ENABLED"],
+    },
+    screens: [{ screen: "deck", view: "tuning" }],
+    // Desktop Mana Balance is still pictured on the un-analyzed deck's shot until the About pages are re-captured.
+    captures: { phone: ["p-analysis-tuning"], desktop: ["d-analysis-tuning", "d-analysis-describe"] },
+    labels: [
       {
         id: "suggested",
         region: "decks/analysis/suggested",
@@ -543,15 +570,6 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         legacy: ["proposed-cuts"],
       },
       {
-        id: "describe",
-        region: "decks/analysis/describe",
-        lead: "Describe your deck",
-        rest: " in a sentence or two. Suggested changes uses it to understand what the deck is for.",
-        flag: "TUNING_ENABLED",
-        since: 16,
-        legacy: ["suggested-changes"],
-      },
-      {
         id: "mana",
         region: "decks/analysis/mana",
         lead: "Mana Balance",
@@ -561,7 +579,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         legacy: ["mana-balance"],
       },
     ],
-    rules: ["pick", "intent", "credits"],
+    rules: ["pick", "credits"],
     tools: ["suggested-changes", "proposed-cuts", "mana-balance"],
   },
   {

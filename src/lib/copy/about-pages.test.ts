@@ -106,7 +106,7 @@ describe("about pages copy model", () => {
 
   it("aims every tool's first Show me label at a section that lists the tool (the handoff's placement)", () => {
     for (const t of TOOLS) {
-      const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => `${x.area}/${x.id}/${l.id}` === t.labels[0]));
+      const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => l.region === t.labels[0]));
       expect(s, t.id).toBeDefined();
       expect(s!.tools, t.id).toContain(t.id);
     }
@@ -168,8 +168,8 @@ describe("about pages copy model", () => {
       expect(Boolean(r.edge), r.name).toBe(r.tag?.text === "picked");
       expect(Boolean(r.dim), r.name).toBe(r.tag?.text === "pick");
     }
-    const analysis = ABOUT_SECTIONS.find((s) => s.id === "analysis")!;
-    expect(analysis.rules[0]).toBe("pick");
+    const tuning = ABOUT_SECTIONS.find((s) => s.id === "tuning")!;
+    expect(tuning.rules[0]).toBe("pick");
   });
 
   it("keeps the shipped empty-handed row with v2 off and draws the two dashed v2 rows with it on", () => {

@@ -33,7 +33,7 @@ describe("the light tables match the page copy", () => {
       } else {
         const label = section!.labels.find((l) => l.id === (row.lit as { label: string }).label);
         expect(label, id).toBeDefined();
-        expect(key).toBe(labelKey(section!, label!));
+        expect(key).toBe(labelKey(label!));
       }
     }
   });
@@ -63,6 +63,7 @@ describe("questionLanding", () => {
     const where: Record<DeckView, string> = {
       "your-deck": "decks/your-deck",
       analysis: "decks/analysis",
+      tuning: "decks/tuning",
       versions: "decks/versions",
       games: "decks/games",
       stats: "decks/stats",
@@ -85,7 +86,7 @@ describe("questionLanding", () => {
       ["/collection/history", "collection", "upload", "rule/replace"],
       ["/collection/wishlist", "collection", "cards", "collection/cards/tabs"],
       ["/settings", "home", "whats-new", "home/whats-new/lead"],
-      ["/credits", "decks", "analysis", "rule/credits"],
+      ["/credits", "decks", "tuning", "rule/credits"],
       ["/decks/shopping", "shopping", "all-decks", "shopping/all-decks/total"],
       ["/decks/shopping?view=friend", "shopping", "all-decks", "shopping/all-decks/total"],
     ];
@@ -122,7 +123,7 @@ describe("questionLanding", () => {
 describe("questionHref", () => {
   it("writes from, then lit when there is one, then the section", () => {
     expect(questionHref(at("/collection/replace"), "/collection/replace")).toBe("/about/collection?from=%2Fcollection%2Freplace#upload");
-    expect(questionHref(at("/credits"), "/credits")).toBe("/about/decks?from=%2Fcredits&lit=rule%2Fcredits#analysis");
+    expect(questionHref(at("/credits"), "/credits")).toBe("/about/decks?from=%2Fcredits&lit=rule%2Fcredits#tuning");
   });
 
   it("goes to the index with no landing", () => {

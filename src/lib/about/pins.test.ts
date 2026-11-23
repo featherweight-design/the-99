@@ -4,7 +4,7 @@ import { SWITCH_NAMES } from "../flags/registry";
 import { PAGE_WIDTHS, type PageShot } from "./page-shots";
 import { visibleSections, type VisibleSection } from "./pages-visible";
 import {
-  BRACKET_ARM, BRACKET_EDGE, BRACKET_MIN, HALO_REACH, MAX_PINS, PIN_GAP, PIN_GUTTER, PIN_SIZE, haloAt, pinsAt, placePins, regionOf,
+  BRACKET_ARM, BRACKET_EDGE, BRACKET_MIN, HALO_REACH, MAX_PINS, PIN_GAP, PIN_GUTTER, PIN_SIZE, haloAt, pinsAt, placePins,
   screenModel, type Box, type PlacedPin,
 } from "./pins";
 
@@ -198,7 +198,10 @@ describe("the shipped pages, every switch on", () => {
   const envs = [ALL_ON];
 
   it("every label's region is its key, so the manifest is read by the key the reader carries", () => {
-    for (const s of ABOUT_SECTIONS) for (const l of s.labels) expect(l.region).toBe(regionOf({ key: `${s.area}/${s.id}/${l.id}` }));
+    // `<area>/<section>/<label id>` where the label was first drawn: Tuning's three keep `decks/analysis/*` (B3).
+    for (const s of ABOUT_SECTIONS) for (const l of s.labels) {
+      expect(l.region, l.region).toMatch(new RegExp(`^${s.area}/[a-z-]+/${l.id}$`));
+    }
   });
 
   it("pins every drawn label on a capture, at most five a picture, at both widths, in every section", () => {

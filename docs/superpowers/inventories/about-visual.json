@@ -248,17 +248,17 @@
       ]
     },
     {
-      "id": "about-tryit-decks-analysis",
-      "label": "/about/decks#analysis: Try it panel (phone: folded, two peeking edges and N more tools; desktop: one row, buttons on one baseline)",
+      "id": "about-tryit-decks-tuning",
+      "label": "/about/decks#tuning: Try it panel (phone: folded, two peeking edges and N more tools; desktop: one row, buttons on one baseline)",
       "view": "src/components/about/pages/try-it.tsx",
       "steps": [
         {
-          "goto": "/about/decks#analysis",
+          "goto": "/about/decks#tuning",
           "wait": "[data-about-shot][data-loaded]",
           "settle": 800
         },
         {
-          "scrollTo": "[data-try-it='analysis']"
+          "scrollTo": "[data-try-it='tuning']"
         },
         {
           "settle": 400
@@ -267,23 +267,23 @@
     },
     {
       "id": "about-tryit-more-phone",
-      "label": "/about/decks#analysis: Try it, N more tools pressed: open, no peeks, Show fewer (phone)",
+      "label": "/about/decks#tuning: Try it, N more tools pressed: open, no peeks, Show fewer (phone)",
       "view": "src/components/about/pages/try-it.tsx",
       "widths": [
         "phone"
       ],
       "steps": [
         {
-          "goto": "/about/decks#analysis",
+          "goto": "/about/decks#tuning",
           "wait": "[data-about-shot][data-loaded]",
           "settle": 800
         },
         {
-          "click": "[data-try-it='analysis'] [data-try-it-more]",
+          "click": "[data-try-it='tuning'] [data-try-it-more]",
           "settle": 400
         },
         {
-          "scrollTo": "[data-try-it='analysis']"
+          "scrollTo": "[data-try-it='tuning']"
         },
         {
           "settle": 400

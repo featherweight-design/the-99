@@ -183,8 +183,8 @@ async function r4Walk(browser, width) {
   }
 
   // W8. A tool card has one press: the picture and the body go nowhere; a desktop row's buttons share one baseline.
-  await page.goto(`${BASE}/about/decks#analysis`, { waitUntil: "networkidle" });
-  const card = page.locator(`[data-try-it='analysis'] [data-try-it-width='${W}'] [data-tool-card]`).first();
+  await page.goto(`${BASE}/about/decks#tuning`, { waitUntil: "networkidle" });
+  const card = page.locator(`[data-try-it='tuning'] [data-try-it-width='${W}'] [data-tool-card]`).first();
   await card.waitFor({ timeout: 20_000 });
   await card.evaluate((el) => el.scrollIntoView({ block: "center" }));
   await page.waitForTimeout(400);
@@ -198,7 +198,7 @@ async function r4Walk(browser, width) {
   report(L("W8 the card has at most one press"), presses <= 1, String(presses));
   if (desk) {
     const bottoms = await page
-      .locator("[data-try-it='analysis'] [data-try-it-width='desktop'] [data-tool-card-press]")
+      .locator("[data-try-it='tuning'] [data-try-it-width='desktop'] [data-tool-card-press]")
       .evaluateAll((els) => els.map((e) => Math.round(e.getBoundingClientRect().bottom)));
     // Under two buttons there is no baseline to share: skipped, not failed (an account without qualifying decks).
     if (bottoms.length < 2) console.log(`  skip ${L("W8 a desktop row's buttons share one baseline")}: ${bottoms.length} button(s)`);

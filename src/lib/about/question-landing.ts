@@ -34,6 +34,7 @@ export const SCREEN_SECTIONS: Readonly<Partial<Record<AboutScreen | `deck:${Deck
   decks: "decks/your-decks",
   "deck:your-deck": "decks/your-deck",
   "deck:analysis": "decks/analysis",
+  "deck:tuning": "decks/tuning",
   "deck:versions": "decks/versions",
   "deck:games": "decks/games",
   "deck:stats": "decks/stats",
@@ -64,7 +65,7 @@ export const ABOUT_Q_LANDINGS: Readonly<Record<QuestionLandingId, QuestionLandin
   // /commanders/choose
   "new-deck@choose": { lands: "commanders/for-you", lit: { label: "places" } },
   settings: { lands: "home/whats-new", lit: { label: "lead" } },
-  credits: { lands: "decks/analysis", lit: { rule: "credits" } },
+  credits: { lands: "decks/tuning", lit: { rule: "credits" } },
   // The all-decks cart (Small items 7, item 6): its section pictures the cart but lists no screen, so the ? lights the total.
   cart: { lands: "shopping/all-decks", lit: { label: "total" } },
 };

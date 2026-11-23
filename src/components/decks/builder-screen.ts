@@ -14,23 +14,21 @@ import type { DeckPanel } from "./group-toggle";
 // reads anything back). With the ? off there is no provider, and publishing does nothing.
 
 /**
- * What the builder publishes: the About screen it shows (`view`), and the tab it is on (`tab`). The two differ on
- * Tuning, which has no About screen of its own and reads as Analysis, but which "‹ Back to {deck}" must still return
- * to (`?tab=tuning`).
+ * What the builder publishes: the About screen it shows (`view`), and the tab it is on (`tab`), which "‹ Back to
+ * {deck}" returns to (`?tab=tuning`). The two differ only on the deck tab, whose About screen follows its panel.
  */
 export type BuilderScreen = { view: DeckView; tab: BuilderView };
 
 export const BuilderScreenContext = createContext<((screen: BuilderScreen | null) => void) | null>(null);
 
-/** The deck view the builder's state shows. Tuning has no About screen of its own, so it reads as Analysis. */
+/** The deck view the builder's state shows. Tuning has its own About screen since tool discovery B3. */
 export function deckViewOf(view: BuilderView, filter: "all" | "shopping", panel: DeckPanel): DeckView {
   switch (view) {
     case "analysis":
     case "games":
     case "versions":
-      return view;
     case "tuning":
-      return "analysis";
+      return view;
     case "deck":
       if (panel === "stats" || panel === "notes") return panel;
       return filter === "shopping" ? "shopping" : "your-deck";

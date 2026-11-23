@@ -15,7 +15,7 @@ vi.mock("next/link", () => ({
 }));
 vi.mock("../../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 
-const SHOW_ME = "/about/decks?lit=decks%2Fanalysis%2Fcuts#analysis";
+const SHOW_ME = "/about/decks?lit=decks%2Fanalysis%2Fcuts#tuning";
 const LINK = { href: SHOW_ME, label: "Show it above ↑" };
 const SHOT = { src: "/x.webp", width: 780, height: 520, halo: { x: 0.1, y: 0.1, w: 0.2, h: 0.2 } };
 
