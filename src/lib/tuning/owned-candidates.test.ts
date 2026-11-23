@@ -57,7 +57,8 @@ describe("loadOwnedCandidates", () => {
 
   it("prices the candidates at the reader's store", async () => {
     calls.pages = [page(0, 3)];
-    await loadOwnedCandidates({ ...args, store: "tcgplayer" });
+    // A cap, so the price read runs: with no cap nothing is priced.
+    await loadOwnedCandidates({ ...args, limits: { capCents: 300, sets: [] }, store: "tcgplayer" });
     expect(calls.stores).toEqual(["tcgplayer"]);
   });
 

@@ -85,7 +85,8 @@ describe("loadFocusCandidates", () => {
 
   it("prices the candidates at the reader's store", async () => {
     vi.mocked(loadPrices).mockClear();
-    await loadFocusCandidates({ ...base, store: "tcgplayer" }, reader([row("rock", "Artifact", 50, "{T}: Add {C}.")]));
+    // A cap, so the price read runs: with no cap nothing is priced.
+    await loadFocusCandidates({ ...base, limits: { ...base.limits, capCents: 1000 }, store: "tcgplayer" }, reader([row("rock", "Artifact", 50, "{T}: Add {C}.")]));
     expect(vi.mocked(loadPrices).mock.calls.map((c) => c[3])).toEqual(["tcgplayer"]);
   });
 
