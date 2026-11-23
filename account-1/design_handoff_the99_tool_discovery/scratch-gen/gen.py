@@ -183,6 +183,32 @@ boards["ShowAll.dc.html"] = (1700, 1970, "Show all", page("Finding the tools R10
  + C13 + Q15
  + row("Desktop · 1300", [dk("d-r10s", "Show all · All", "The sheet over Home; Today, This week, Earlier.", 760), dk("d-r10k", "Show all · Price drops", "A chip filters; the groups keep their order.", 760)])
  + row("Phone · 390", [ph("p-r10s", "Show all · All", "Full screen; the chips scroll sideways."), ph("p-r10k", "Show all · Price drops", "Filtered.")])))
+C14 = call("14", "One lead for an ask and an offer (R11)", ul([
+  "The shipped lead already draws an offer: kicker Spare offer, <i>Max is offering you Avenger of Zendikar</i>, <i>Max has 1 spare. You want 1.</i>, Yes, No, 14 days left. An ask draws the same story with its own kicker and line. No new component.",
+  "<b>Why desktop showed a row:</b> the lead is the highest-ranked unseen item (<code>leadStory</code>), not a width rule. When a trade match outranks the offer, the offer drops into What's new as <i>Answer in Friends.</i> with no presses. That is the desktop frame you saw.",
+  "<b>Proposed rank:</b> anything waiting on the reader with a deadline (an offer or an ask, unanswered, open) leads over news, the newest first. So the offer leads at both widths (Q16).",
+  "<b>The ✕ moves to the corner</b>, as on Game to log (R9): Yes, No and the days left own the action line, and the text keeps 26px clear of the ✕ (Q17).",
+  "<b>A second ask that does not lead</b> answers in its row: the detail line, then the shipped row presses (36px Yes, No, days left), ✕ in the row's corner. <i>Answer in Friends.</i> retires on Home (Q18). Answering lands the shipped receipt in place."]))
+C15 = call("15", "Friends badge (R11)", ul([
+  "The shipped badge (#3221): one count on Friends for offers and asks waiting on the reader, in the rail (desktop) and the tab bar (phone). Drawn at 1, Max's offer alone; the proposed Home frames read 2, the offer plus Rui's ask.",
+  "It falls as each is answered or runs out, and is gone at 0. Its label is the shipped words (<code>badgeWords</code>): <i>Friends, 1 waiting on you</i>."]))
+C16 = call("16", "The offerer's answer on Home (R11)", ul([
+  "When Max answers the reader's offer, Home's row reads <i>Max said yes to Avenger of Zendikar</i> / <i>The handover is between you.</i> with <b>Your offer ›</b>, the kicker Your offer.",
+  "Your offer › opens the shipped answer sheet (#3242): the request history row, accepted or declined, Offered date and copies, and Request history › in its foot. A centred 560px sheet on desktop; a bottom sheet on a phone. It is no longer display only, so nothing new is needed here: drawn to confirm."]))
+Q16 = q("Q16", "Does an offer or ask always lead over news?", "A: yes, anything waiting on you with a deadline leads, newest first (drawn). B: keep today's rank, and the offer can sit in What's new.", "A. It is the only item that expires and needs the reader's answer; it should not depend on what else came in that day.")
+Q17 = q("Q17", "Where does the lead's ✕ go?", "A: the card's top right corner (drawn), as on Game to log. B: at the end of Yes, No and the days left, as shipped.", "A. Your rule from R9: a press and its ✕ never share a line.")
+Q18 = q("Q18", "A non-leading ask or offer in What's new", "A: answer in the row: Yes, No, days left (drawn). B: keep Answer in Friends. with no press.", "A. One place to answer from Home, the same presses as Friends' Waiting on you.")
+boards["Offers.dc.html"] = (1700, 5540, "Spare offers", page("Finding the tools R11: spare offers on Home", 1700, 5540,
+ head("Spare offers on Home (R11)", "Max offers the reader Avenger of Zendikar. Today against proposed, at 1300 and 390, then the Friends badge and the offerer's side. Rendered from main bb4832f8 with the shipped components; Avenger of Zendikar stands in for Nissa, Worldsoul Speaker, whose art is not in the fixtures.")
+ + C14 + Q16 + Q17 + Q18
+ + row("The lead · desktop 1300", [dk("d-of-today-c", "Today", "When a trade match outranks the offer, the trade match leads.", 760), dk("d-of-lead-c", "Proposed", "The offer leads; the ✕ in the corner; Yes, No, 14 days left alone on the line.", 760)])
+ + row("What's new · desktop rail", [fig("d-of-today-x", 336, "Today", "The offer as a row: Answer in Friends., no presses."), fig("d-of-lead-x", 336, "Proposed", "Rui's ask, not leading, answers in its row; ✕ in the corner."), dk("d-of-lead", "Proposed · Home in full", "The offer leads under the search panel; Rui's ask tops the rail.", 760)])
+ + row("Phone · 390", [ph("p-of-today-l", "Today", "The lead as shipped: the ✕ on the Yes and No line."), ph("p-of-lead-l", "Proposed · the lead", "The ✕ in the corner."), ph("p-of-lead-n", "Proposed · What's new", "Rui's ask answers in its row.")])
+ + C15
+ + row("Friends badge · 1 waiting", [fig("d-of-badge", 180, "Desktop rail", "On the Friends icon."), fig("p-of-badge", 390, "Phone tab bar", "On Friends; Home's own badge clears while on Home.")])
+ + C16
+ + row("The offerer's side · Max said yes", [fig("d-of-ans-x", 336, "Desktop rail", "Your offer › on the row."), dk("d-of-anss", "Your offer, opened", "The shipped sheet over Home.", 760)])
+ + row("Phone · 390", [ph("p-of-ans-n", "The row", "Kicker Your offer; Your offer ›."), ph("p-of-anss", "Your offer, opened", "The bottom sheet.")])))
 boards["Calm.dc.html"] = (1700, 4770, "Calmer Home", page("Finding the tools R8: a calmer busy Home", 1700, 4770,
  head("A calmer busy Home (R8, R9)", "R7 A (left) against R9 (right), the same reader. R8 moves What's new into the empty desktop rail and makes Home's section headings easy to find.")
  + C12 + C11 + Q13 + Q14
@@ -201,16 +227,16 @@ boards["Home.dc.html"] = (1700, 4480, "Home in full", page("Finding the tools R6
  + C8 + Q10
  + row("Desktop · 1300 and phone · 390, at rest", [dk("d-full", "H6 · Desktop, busy day", "Banner, the table and the game to log, then the panel, the welcome strip, the lead, decks, What's new; Commitments and Friends on the right.", 1000), fig("p-full", 340, "H6 · Phone, busy day", "The same order in one column; the panel starts at the fold.")])
  + row("Desktop · 1300, typed on Home", [dk("d-full-open", "H6 · Results in place", "The dropdown drops over the welcome strip and the lead; the page under it does not move (Q9 A).", 1000)])))
-boards["Main.dc.html"] = (1600, 2220, "Main", page("Finding the tools R10: main", 1600, 2220,
- head("Finding the tools · R10",
+boards["Main.dc.html"] = (1600, 1960, "Main", page("Finding the tools R11: main", 1600, 1960,
+ head("Finding the tools · R11",
   "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R5 makes Home's search easier to notice and sets down what pressing it does on a phone and a desktop. Everything else is as R4. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
- + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10).", "R7: three orders for a busy Home (Q11) and search on first run (Q12), on the Order and first run board. Settled: Q11 A, Q12 A.", "R8: What’s new in the desktop rail (Q13) and stronger section headings (Q14), on the Calmer Home board.", "R9: the real Home\u2019s missing parts added (What\u2019s new foot with Show all, pills, brackets, footer), seat art on the table and log cards, the log card\u2019s ✕ top right, Choose notifications.", "R10: Show all opens a sheet (Q15), on the Show all board."])
+ + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10).", "R7: three orders for a busy Home (Q11) and search on first run (Q12), on the Order and first run board. Settled: Q11 A, Q12 A.", "R8: What’s new in the desktop rail (Q13) and stronger section headings (Q14), on the Calmer Home board.", "R9: the real Home\u2019s missing parts added (What\u2019s new foot with Show all, pills, brackets, footer), seat art on the table and log cards, the log card\u2019s ✕ top right, Choose notifications.", "R10: Show all opens a sheet (Q15), on the Show all board.", "R11: spare offers on Home: one lead for an ask and an offer, the ✕ in its corner, asks answered in their row, the Friends badge, the offerer\u2019s answer (Q16 to Q18), on the Spare offers board."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
  + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C6 + C7 + '</div>'
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
  + '<div style="display:flex;gap:20px">' + fig("p-h4", 300, "Home, phone", "The panel, first under the page head.") + fig("p-a1", 300, "Pressed, phone", "The full-screen sheet; a starter types its question.") + '</div>'
  + '</div></div>'
- + Q15 + Q13 + Q14 + Q10 + Q9 + Q8
+ + note("Settled", ["Q1 to Q15 all settled as drawn (A); approved 2026-11-23 and handed off in PR #3243. Only Q16 to Q18 are open."]) + Q16 + Q17 + Q18
  + note("As R4", ["Ask in the card search: starters, Tools for this, never a dead end; one field, card names first.", "Find a deck: the tile button, the row strip (phone) and button (desktop), the call-out.", "Tuning and Welcome as R1, approved."])))
 
 boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a deck", 1700, 4560,
@@ -242,10 +268,10 @@ boards["Welcome.dc.html"] = (1700, 3700, "Welcome", page("Finding the tools: wel
 
 os.makedirs(out, exist_ok=True)
 for n, (w, h, t, html) in boards.items(): open(os.path.join(out, n), "w").write(html)
-order = ["Main.dc.html", "ShowAll.dc.html", "Calm.dc.html", "Order.dc.html", "Home.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
+order = ["Main.dc.html", "Offers.dc.html", "ShowAll.dc.html", "Calm.dc.html", "Order.dc.html", "Home.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R10", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R11", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)

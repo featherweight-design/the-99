@@ -76,3 +76,7 @@ export const feedSheetCopy = {
   thisWeek: "This week",
   close: "Close What’s new",
 };
+
+// R11: spare offers on Home. No new strings: the lead, the row presses, the badge and the sheet all use shipped copy
+// (feedCopy.home.offerKicker, spareCopy.request.offer.detail / incomingDetail, AnswerPresses, badgeWords, offerSheetCopy).
+// Home stops drawing feedCopy.line.spareOffer / spareRequest ("Answer in Friends.") on an answerable row (Q18 A).

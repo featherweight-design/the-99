@@ -1,8 +1,20 @@
 # Finding the tools
 
-Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-23 (R10, every question settled as drawn).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R1 to R10 approved by Hugh 2026-11-23 (every question settled as drawn). R11 (spare offers on Home) in review: Q16 to Q18 open.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
 
 **Approved (Hugh, 2026-11-23):** every open question settled A; PostHog dashboards to ship with the build (below).
+
+**R11 (Hugh's prompt "Home lead and Friends badge for spare offers", 2026-11-23):** folded into this Home revisit,
+drawn from main bb4832f8 against `design_handoff_the99_you_have_it/` and `_r2/` (Spare offers board).
+- **One lead for an ask and an offer.** The shipped `LeadStory` already draws `LeadAsk.offer` (kicker `Spare offer`, the
+  detail line, Yes, No, days left); no new component. The desktop frame that showed the offer as a What's new row with
+  `Answer in Friends.` is rank, not width: `leadStory` picks the highest-ranked unseen item, and a trade match outranked
+  the offer. Proposed (Q16 A): an unanswered, open ask or offer leads over news at both widths, newest first.
+- **The lead's ✕ to the card's top right corner** (Q17 A), as Game to log (R9): Yes, No and the days left own the line.
+- **A non-leading ask or offer answers in its What's new row** (Q18 A): the detail line, the shipped row presses
+  (`AnswerPresses size="row"`), its ✕ in the row's corner. `Answer in Friends.` retires on Home.
+- **Friends badge:** as shipped (#3221), one count for offers and asks waiting on the reader; drawn at 1.
+- **The offerer's answer:** as shipped (#3242), `Your offer ›` opens `OfferAnswerSheet`; drawn to confirm, nothing new.
 
 **R10 (Hugh's R9 note, 2026-11-23):** Show all no longer expands What's new in place (10+ items would stretch the
 rail). The rail and the phone column keep five rows; Show all N opens a sheet: 460px from the right on desktop over a
@@ -180,6 +192,11 @@ Every question settled, as drawn:
 - Q13 A: What's new tops the desktop rail, compact rows, `Choose notifications` beside the heading (Calmer Home).
 - Q14 A: Home's section headings in the display face with the accent diamond (Calmer Home).
 - Q15 A: Show all opens a sheet (right on desktop, full screen on a phone) with kind chips and day groups (Show all).
+
+Open (R11, Spare offers board; recommended A):
+- Q16: an unanswered, open ask or offer always leads over news, newest first.
+- Q17: the lead's ✕ in the card's top right corner.
+- Q18: a non-leading ask or offer answers in its What's new row; `Answer in Friends.` retires on Home.
 
 Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What you can do), R3 Q7 (Home's field stays for good).
 
