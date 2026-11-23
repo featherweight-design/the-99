@@ -364,7 +364,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   let feedFailed = false;
   if (!data.firstRun) {
     try {
-      const served = await loadHomeFeed(userId, env, now);
+      // The reader's store: a price drop's press goes there (the drops read are that store's).
+      const served = await loadHomeFeed(userId, env, now, undefined, store);
       // Its own read: a failure draws the feed without the group, never no feed.
       const drops = await loadUpcomingDrops(userId, now).catch((error: unknown) => {
         console.error("home: the upcoming drops could not be read", error instanceof Error ? error.message : "");

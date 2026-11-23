@@ -16,6 +16,13 @@ const row = (over: Partial<PrintingPriceRow> = {}): PrintingPriceRow => ({
 });
 
 describe("indexPriceRows", () => {
+  it("carries a store row's sold_out as the fact's soldOut, and leaves Mana Pool's rows without one", () => {
+    const { byScryfallId } = indexPriceRows([row(), row({ scryfall_id: "s-2", set_code: "C20", sold_out: true }), row({ scryfall_id: "s-3", set_code: "C19", sold_out: false })]);
+    expect("soldOut" in byScryfallId["s-1"]!).toBe(false);
+    expect(byScryfallId["s-2"]?.soldOut).toBe(true);
+    expect("soldOut" in byScryfallId["s-3"]!).toBe(false);
+  });
+
   it("indexes one printing under both its id and its set/number key", () => {
     const { byScryfallId, byPrintingKey } = indexPriceRows([row()]);
 

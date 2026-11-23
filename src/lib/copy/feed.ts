@@ -2,6 +2,8 @@
 // section (announcements handoff R1b-1, `R1b-Settings.dc.html`), placeholder copy from the board.
 import type { FeedKind } from "../feed/kinds";
 import { personText, type PersonParts, type ThirdPartyName } from "../person-name/brand";
+import { storeCopy } from "./store";
+import { STORE_INFO } from "../stores/info";
 
 // The lines that name a friend. Push text names the friend as a plain string (`toPushItem` reveals it, the one server-side
 // reveal), so a plain name still yields a string; a branded one (Home's feed, Waiting on you) yields parts.
@@ -214,7 +216,7 @@ export const feedCopy = {
       newPrecon: "Open in Precons",
       /** The card on Mana Pool, in a new tab (Hugh, 2026-10-27). Its own words, shorter than card details' link out; the
        *  link-out icon and the spoken new-tab suffix are `FeedPress`'s, as `ExternalLink` draws them. */
-      priceDrop: "Buy at Mana Pool",
+      priceDrop: storeCopy.feedBuy(STORE_INFO.manapool),
       tradeMatch: seeSpares,
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
       tradeMatchAsk: askFriend,

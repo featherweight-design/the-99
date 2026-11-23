@@ -21,7 +21,8 @@ import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, collectionItems, preconCards, precons, printings, sets } from "../../db/schema";
 import { chainArt } from "../cards/chain-art";
-import { manapoolCardUrl } from "../manapool/links";
+import { storeCardUrl } from "../stores/links";
+import type { Store } from "../stores/rows";
 import { wishlistPrintingLabel } from "../wishlist/printing-label";
 import { compareNames } from "../person-name";
 import type { ThirdPartyName } from "../person-name/brand";
@@ -64,12 +65,14 @@ export type FeedView = {
   /** The card whose shipped detail the press opens: a combo's first piece. */
   opens: string | null;
   /**
-   * An address OFF the app the press opens in a new tab: a price drop's card on Mana Pool, by the card details link's
-   * own builder (`manapoolCardUrl`; Hugh's ruling 2026-10-27, the menu-home plan's product call 7, over the boards'
+   * An address OFF the app the press opens in a new tab: a price drop's card at the reader's store, by the card details
+   * link's own builder (`storeCardUrl`; Hugh's ruling 2026-10-27, the menu-home plan's product call 7, over the boards'
    * "Open the card"), or a Wizards post on magic.wizards.com (`wizardsPostUrl`), through the app's own redirect
    * `/out/wizards/<contentful id>` (`wizardsOutRoute`, Announcements UI 3b). Null on every other item.
    */
   outbound: string | null;
+  /** A price drop's store (store preference), whose name its press reads. Absent, Mana Pool; on no other item. */
+  store?: Store;
   /** A Wizards post (Secret Lair, Commander decklists, Wizards news): what its row and its lead draw. Null or absent on every other item. */
   post?: PostView | null;
   /** A new set's or precon's name. */
@@ -241,6 +244,8 @@ export function toViews(
     /** A trade match's press asks (always, since `SOCIAL_FRIENDS_ENABLED` retired). */
     askable?: boolean;
   },
+  /** The reader's store: a price drop's press goes there. The drops read are already that store's (`storedItemsQuery`). */
+  store: Store = "manapool",
 ): FeedView[] {
   return items.map((item): FeedView => {
     const base = {
@@ -289,10 +294,10 @@ export function toViews(
         const number = typeof item.data.collectorNumber === "string" ? item.data.collectorNumber : null;
         const printing = set !== null && number !== null ? wishlistPrintingLabel({ setCode: set, collectorNumber: number }) : null;
         const drop = from !== null && to !== null ? { fromCents: from, toCents: to, printing } : null;
-        // The card on Mana Pool, every printing (the card details link): Mana Pool has no card page for one printing
-        // (measured 2026-11-22, `manapool/links.ts`), so a drop on a named printing links the same grid. A card the
-        // catalog no longer holds has no name to send, and draws no press.
-        return { ...base, card, outbound: card ? manapoolCardUrl(card.name) : null, drop };
+        // The card at the reader's store, every printing (the card details link, `storeCardUrl`): no store has a page
+        // for one printing that the app can build (Mana Pool measured 2026-11-22, `manapool/links.ts`), so a drop on a
+        // named printing links the same search. A card the catalog no longer holds has no name to send, and draws no press.
+        return { ...base, card, outbound: card ? storeCardUrl(store, card.name) : null, drop, ...(store === "manapool" ? {} : { store }) };
       }
       case "trade-match":
         // The card's modal opens on landing (signature card call 9): `?spare=` names it.
@@ -345,7 +350,9 @@ export async function lookups(userId: string, items: readonly FeedItem[], q: Exe
  * Home's What's new for this reader. The lead story is the first unseen item by
  * `LEAD_PRIORITY` (`leadStory`), and it leaves the list it heads.
  */
-export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: Date, q: Executor & Pick<typeof db, "select"> = db): Promise<HomeFeed | null> {
+export async function loadHomeFeed(
+  userId: string, env: NodeJS.ProcessEnv, now: Date, q: Executor & Pick<typeof db, "select"> = db, store: Store = "manapool",
+): Promise<HomeFeed | null> {
   const available = availableFeedKinds(env);
   const prefs = await readFeedPrefs(userId, q);
   const effective = effectiveKinds(prefs);
@@ -367,7 +374,7 @@ export async function loadHomeFeed(userId: string, env: NodeJS.ProcessEnv, now: 
     return id ? [id] : [];
   });
   const [found, targets] = await Promise.all([lookups(userId, items, q, env), loadPostListTargets(posts, now, q)]);
-  const views = withListTargets(toViews(items, found), targets);
+  const views = withListTargets(toViews(items, found, store), targets);
   const feed = offer.length > 0 ? { ...splitLead(views, on), offer } : splitLead(views, on);
   // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
   // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).

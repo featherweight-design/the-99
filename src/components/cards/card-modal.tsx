@@ -23,13 +23,14 @@ import { PanelWishlistFoot, PrintingsButton, PrintingsPanel } from "./printings-
 import { setWishlistPrintingAction } from "../../app/collection/wishlist/actions";
 import { PriceTag } from "./price-tag";
 import { priceKeyFor } from "../../lib/cards/price-lookup";
-import { priceState } from "../../lib/cards/price-fact";
+import { priceOf, priceState } from "../../lib/cards/price-fact";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { HELP_STOP_ID, helpStop, useCardDetailsOpen, useCardDetailsUp } from "../../lib/a11y/help-over-dialog";
-import { manapoolCardUrl } from "../../lib/manapool/links";
+import { storeCardUrl } from "../../lib/stores/links";
+import { STORE_INFO } from "../../lib/stores/info";
+import { storeCopy } from "../../lib/copy/store";
 import { useTargets } from "../discovery/targets-provider";
-import { cardLinkOutCopy } from "../../lib/copy/collection-browse";
 import { wishlistPrintingCopy } from "../../lib/copy/wishlist";
 import { wishlistPrintingView } from "../../lib/wishlist/printing-line";
 import { useCardSheetGestures, type SheetSnap } from "./card-sheet-gesture";
@@ -45,7 +46,7 @@ import { FitsDoor } from "./fits-door";
 import { CardModalSheet } from "./card-modal-sheet";
 import { CardModalArtSide } from "./card-modal-art-side";
 import { runEscapeLadder, useCardTurnHandlers, useFocusReturns, usePagedInitialFocus, usePagingKeys, useSheetSnap } from "./card-modal-hooks";
-import { CardZoomLayer, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, underCardRows, useOwnHeight } from "./card-modal-parts";
+import { CardZoomLayer, MarketNote, PriceFrom, TurningArt, UnderCard, cardFace, cardPrice, NEIGHBOR_MIN_WIDTH, NeighborPlate, ZOOM_REGION, underCardRows, useOwnHeight } from "./card-modal-parts";
 import { ArrivalOrder } from "../ui/arrival-queue";
 import { FoilFilm } from "../ui/foil-film";
 import { Glare } from "./card-turn";
@@ -852,17 +853,26 @@ export function CardModal({
   // printings TP2): drawn only where a deck can save the pick.
   const hasPicker = ownedPrintings.length > 1
     && (isToken ? deckPrinting?.save !== undefined : deckPrinting === undefined || deckPrinting.save !== undefined);
-  const buyUrl = isToken ? card.tokenBuyUrl ?? null : manapoolCardUrl(card.name);
+  // The reader's store (store preference): the payload names it, so the modal needs no provider. Absent, Mana Pool.
+  const store = STORE_INFO[card.priceStore ?? "manapool"];
+  const buyUrl = isToken ? card.tokenBuyUrl ?? null : storeCardUrl(store.id, card.name);
   // A wishlist line that names a printing reads it on the link. Mana Pool has no per-printing page, so the URL stays the
   // card's; a printing that is sold out falls back to the any-printing words, which is what the link is then for.
   const wantedPrinting = !isToken && browsePrintings && !deckScope && wantedId !== null ? card.printings.find((p) => p.scryfallId === wantedId) ?? (card.otherPrintings ?? []).find((p) => p.scryfallId === wantedId) : undefined;
   const wantedSoldOut = wantedPrinting?.scryfallId !== undefined && card.prices != null
     && priceState(card.prices.byScryfallId[wantedPrinting.scryfallId] ?? null, card.prices.newestAsOf) === "soldOut";
-  const buyLabel = isToken
-    ? cardLinkOutCopy.token
-    : wantedPrinting && !wantedSoldOut
-      ? wishlistPrintingCopy.linkOut(wantedPrinting.setCode.toUpperCase(), wantedPrinting.collectorNumber)
-      : cardLinkOutCopy.card;
+  // With no figure from another store, the link is a search, not a claim the store sells it (`Look for it at`). Mana
+  // Pool keeps its shipped words in every state, so the switch off changes nothing.
+  // "A figure" is any live printing in any finish: the link is for any printing, so one priced printing makes it true.
+  const storeHasFigure = store.id === "manapool" || (card.prices != null
+    && Object.values(card.prices.byScryfallId).some((f) => priceOf(f, priceState(f, card.prices!.newestAsOf)) !== null));
+  const buyLabel = !storeHasFigure
+    ? storeCopy.lookFor(store)
+    : isToken
+      ? storeCopy.tokenLinkOut(store)
+      : wantedPrinting && !wantedSoldOut
+        ? storeCopy.linkOutPrinting(store, wantedPrinting.setCode.toUpperCase(), wantedPrinting.collectorNumber)
+        : storeCopy.linkOut(store);
   // M8 (discovery R1): Find a deck's moment is for a card the reader owns and no deck uses, read off this card's own
   // claims (`fitsDoor` decides only that the door is drawn). A card with no availability read is not counted as unused.
   const fitsMoment = card.quantity > 0 && !deckHolds && card.availability != null
@@ -1221,7 +1231,7 @@ export function CardModal({
 
   const { price, fromCents, figured } = cardPrice(card, resolved);
   const priceTag = price ? (
-    <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone />
+    <PriceTag fact={price.fact} newestAsOf={card.prices?.newestAsOf ?? null} standalone store={store} />
   ) : null;
   // The same split `PriceTag` makes, and for the reason recorded there: an
   // `aria-label` on a bare span lands on the generic role and is dropped, so the
@@ -1232,8 +1242,15 @@ export function CardModal({
   // question about a card under a picture of a printing nobody identified. The
   // stack keeps its silence; this line only ever qualifies a figure that is
   // already on screen.
+  // A market store's note rides after the figure, and after `from $x` when it shows; never beside `no stock`.
+  const marketNote = store.figure === "market" && figured;
   const fromLine = (phone: boolean) =>
-    fromCents === null ? null : <PriceFrom cents={fromCents} phone={phone} />;
+    fromCents === null && !marketNote ? null : (
+      <>
+        {fromCents !== null && <PriceFrom cents={fromCents} phone={phone} store={store} />}
+        {marketNote && <MarketNote phone={phone} />}
+      </>
+    );
 
   /**
    * The art in the modal ITSELF turns now (#2). It used to swap one background
@@ -1401,6 +1418,7 @@ export function CardModal({
               want={card.wishlist.want}
               owned={card.quantity}
               onWrite={() => { onProxyWrite?.(); onWishlistWrite?.(); }}
+              store={store}
               printingView={browsePrintings && !isToken && !deckScope
                 ? wishlistPrintingView({ cardName: card.name, printings: [...card.printings, ...others], wantedId, previewId, prices: card.prices })
                 : null}

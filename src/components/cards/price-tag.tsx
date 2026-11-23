@@ -24,12 +24,15 @@ import {
 } from "../../lib/decks/price";
 import { priceCopy } from "../../lib/copy/price";
 import { setPageCopy } from "../../lib/copy/set-collections";
+import { storeCopy } from "../../lib/copy/store";
+import type { StoreInfo } from "../../lib/stores/info";
 
 export function PriceTag({
   fact,
   newestAsOf,
   className,
   standalone = false,
+  store,
 }: {
   /** The feed's row for THIS printing, or null when it carried none. */
   fact: PriceFact | null;
@@ -52,6 +55,11 @@ export function PriceTag({
    * there is no server render for a browser clock to disagree with.
    */
   standalone?: boolean;
+  /**
+   * The store the fact is from (store preference), for the sentence and the no-figure name. Absent, Mana Pool's
+   * shipped strings, which are that store's forms of the same copy.
+   */
+  store?: StoreInfo;
 }) {
   const state = priceState(fact, newestAsOf);
   const cents = fact ? priceOf(fact, state) : null;
@@ -82,11 +90,8 @@ export function PriceTag({
     // Three histories behind one tag: never carried, carried and sold out, and
     // carried with no usable figure. `priceState` returns `absent` for the first
     // and the third, and the presence of a row is what tells them apart.
-    const label = state === "soldOut"
-      ? setPageCopy.cellPrice.soldOut
-      : fact
-        ? setPageCopy.cellPrice.noFigure
-        : setPageCopy.cellPrice.neverStocked;
+    const history = state === "soldOut" ? "soldOut" : fact ? "noFigure" : "neverStocked";
+    const label = store ? storeCopy.noStockAria(store, history) : setPageCopy.cellPrice[history];
     const visual = (
       <span
         className={className ? `${base} ${className}` : base}
@@ -138,8 +143,8 @@ export function PriceTag({
   const form = newestAsOf ? provenanceForm(newestAsOf, new Date()) : null;
   const sentence = form
     ? (form.behind
-        ? priceCopy.aria.pricedBehind(figure, form.when)
-        : priceCopy.aria.priced(figure, form.when))
+        ? (store ? storeCopy.aria.pricedBehind(store, figure, form.when) : priceCopy.aria.pricedBehind(figure, form.when))
+        : (store ? storeCopy.aria.priced(store, figure, form.when) : priceCopy.aria.priced(figure, form.when)))
     : figure;
   return speak(sentence, visual);
 }

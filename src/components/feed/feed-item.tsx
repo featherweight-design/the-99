@@ -15,6 +15,8 @@
 import Link from "next/link";
 import { useId, useState, type ReactNode } from "react";
 import { twMerge } from "tailwind-merge";
+import { storeCopy } from "../../lib/copy/store";
+import { STORE_INFO } from "../../lib/stores/info";
 import { feedCopy } from "../../lib/copy/feed";
 import { spareCopy } from "../../lib/copy/social";
 import { PersonText, personAttrs, type PersonParts, type ThirdPartyName } from "../../lib/person-name";
@@ -68,7 +70,7 @@ export function feedText(item: FeedView): { title: string | PersonParts; line: R
           </>
         ) : null,
         // Only with somewhere to go: a card the catalog no longer holds has no name to send to Mana Pool.
-        press: item.outbound ? c.press.priceDrop : null,
+        press: item.outbound ? (item.store ? storeCopy.feedBuy(STORE_INFO[item.store]) : c.press.priceDrop) : null,
       };
     case "trade-match":
       return { title: c.title.tradeMatch(friend, card), line: c.line.tradeMatch, press: item.askable ? c.press.tradeMatchAsk(friend) : c.press.tradeMatch(friend) };
@@ -252,7 +254,7 @@ export function FeedPress({
       <a href={item.outbound} target="_blank" rel="noopener" data-feed-press className={`${className} ${stretch}`} aria-describedby={describedBy}>
         {/* One inline run, so a press that wraps (the lead's button on a phone) keeps the icon on the label's last word,
             bound as `ExternalLink` binds it, rather than standing alone as a flex item. */}
-        {/* An outbound press (a card on Mana Pool, a post) names nobody, so its label is a plain string. */}
+        {/* An outbound press (a card at the reader’s store, a post) names nobody, so its label is a plain string. */}
         {typeof label === "string" ? <LinkOutLabel>{label}</LinkOutLabel> : <PersonText text={label} />}
         <span className="sr-only">{NEW_TAB_SUFFIX}</span>
       </a>

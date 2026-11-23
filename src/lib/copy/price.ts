@@ -82,19 +82,18 @@ export const priceCopy = {
   // qualifier out would be the longer half of the pair.
   cheapest: {
     from: (figure: string) => `from ${figure}`,
-    aria: (figure: string) => `cheapest non-foil printing of this card is ${figure} at Mana Pool`,
+    aria: (figure: string) => storeCopy.cheapestAria(STORE_INFO.manapool, figure),
   },
 
   // ── Accessible names ──────────────────────────────────────────────────
   // Spoken once per price, on the tile only. The decklist row passes no label:
   // the word `buy` already sits in that row's reading order.
   aria: {
-    priced: (figure: string, when: string) =>
-      `${figure} at Mana Pool, last checked ${when}`,
+    // Mana Pool's forms of `storeCopy.aria` (store choice): a surface that knows the reader's store calls that.
+    priced: (figure: string, when: string) => storeCopy.aria.priced(STORE_INFO.manapool, figure, when),
     // Same sentence with the behind clause appended, rather than a second
     // sentence — one utterance per price, however old the table is.
-    pricedBehind: (figure: string, when: string) =>
-      `${figure} at Mana Pool, last checked ${when}, these prices are behind`,
+    pricedBehind: (figure: string, when: string) => storeCopy.aria.pricedBehind(STORE_INFO.manapool, figure, when),
   },
 
   // ── The export dialog's correction ────────────────────────────────────

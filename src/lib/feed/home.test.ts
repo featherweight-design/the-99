@@ -180,6 +180,19 @@ describe("toViews", () => {
     expect(toViews([trade], empty)[0].askable).toBe(false);
   });
 
+  it("sends a price drop to the reader's store, naming it only when it is not Mana Pool (store preference)", () => {
+    const drop = { kind: "price-drop", key: "item:p", createdAt: NOW, unseen: true, oracleId: "g", variantId: null, friend: null, answer: null, data: { fromCents: 640, toCents: 310 } } as FeedItem;
+    const cards = new Map([["g", { oracleId: "g", name: "Sol Ring", image: null, art: null, colorIdentity: null }]]);
+    const shipped = toViews([drop], { ...empty, cards })[0];
+    expect(shipped.outbound).toBe("https://manapool.com/cards?q=Sol%20Ring");
+    expect("store" in shipped).toBe(false);
+    expect(toViews([drop], { ...empty, cards }, "manapool")[0]).toEqual(shipped);
+    expect(toViews([drop], { ...empty, cards }, "tcgplayer")[0]).toMatchObject({
+      outbound: "https://www.tcgplayer.com/search/magic/product?productLineName=magic&q=Sol%20Ring",
+      store: "tcgplayer",
+    });
+  });
+
   it("gives a spare request (a later round) no press", () => {
     const item = { kind: "spare-request", key: "item:s", createdAt: NOW, unseen: true, oracleId: null, variantId: null, friend: { publicId: "p", displayName: named("Peter") }, data: {} } as FeedItem;
     expect(toViews([item], empty)[0]).toMatchObject({ href: null, opens: null, outbound: null, friend: { displayName: named("Peter") }, answer: null });
