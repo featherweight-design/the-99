@@ -1,6 +1,8 @@
 import { eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { printingPrices, printings } from "../../db/schema";
+import { storeRows } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 
 export type PriceAggRow = {
   oracleId: string;
@@ -51,8 +53,27 @@ export function slotFor(row: PriceAggRow | undefined): PriceSlot {
  * between "priced" and "not stocked", and it is the reason `everPriced` is a
  * separate column rather than an inference from a missing row.
  */
-export async function loadPrices(oracleIds: string[]): Promise<Map<string, PriceAggRow>> {
+export async function loadPrices(oracleIds: string[], store: Store = "manapool"): Promise<Map<string, PriceAggRow>> {
   if (oracleIds.length === 0) return new Map();
+  // Another store (store preference, design #3200) reads its own rows of `printing_store_prices`, shaped by
+  // `storeRows`, against its own newest `as_of`: liveness is measured per store, never across them. A printing the
+  // store reports sold out is not live, so a card all of whose printings are sold out there draws "not stocked",
+  // as a Mana Pool card whose rows froze does. Mana Pool's statement below is untouched.
+  if (store !== "manapool") {
+    const found = await db.execute<PriceAggRow>(sql`
+      with newest as (select max(as_of) as as_of from printing_store_prices where store = ${store})
+      select p.oracle_id as "oracleId",
+             min(pp.price_cents) filter (where pp.as_of = (select as_of from newest)
+                                           and not pp.sold_out and pp.price_cents is not null) as "liveCents",
+             bool_or(pp.price_cents is not null) as "everPriced",
+             bool_or(pp.as_of = (select as_of from newest) and not pp.sold_out) as "live"
+      from printings p
+      join ${storeRows(store)} pp on pp.scryfall_id = p.scryfall_id
+      where p.oracle_id = any(${sql.param(oracleIds)}::uuid[])
+      group by p.oracle_id
+    `);
+    return new Map(found.rows.map((r) => [r.oracleId, { ...r, liveCents: r.liveCents === null ? null : Number(r.liveCents) }]));
+  }
   const newest = sql`(select max(${printingPrices.asOf}) from ${printingPrices})`;
 
   const rows = await db

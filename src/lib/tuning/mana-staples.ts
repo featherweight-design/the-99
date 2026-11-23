@@ -11,6 +11,7 @@ import type { DeckDetail } from "../decks/read";
 import { loadSourceMana } from "../decks/source-mana";
 import { loadStatsLabels } from "../decks/stats-labels";
 import type { ManaColor } from "../mana/supply";
+import type { Store } from "../stores/rows";
 import { classifyRoles } from "../recs/roles";
 import { countCondition, identityCondition } from "../staples/condition";
 
@@ -35,6 +36,9 @@ export type StapleCandidate = {
   priceCents: number | null;
   /** The card's art, for Mana Balance's 22×31 thumbnail. */
   imageUri?: string | null;
+  /** The card's layout, so a store's name search finds a two-faced card by the face it lists (`storeCardUrl`).
+   *  Absent on a help History stored before stores. */
+  layout?: string | null;
 };
 
 const strength = (f: StapleFact) => (f.kind === "identity" ? f.commanders / Math.max(1, f.commanderTotal) : (f.inclusion ?? -1));
@@ -68,6 +72,8 @@ export function rankStaples(candidates: readonly StapleCandidate[], helps: reado
 export async function loadManaStaples(
   deck: DeckDetail,
   userId: string,
+  /** The reader's store: each staple's figure and buy link are that store's. */
+  store: Store = "manapool",
 ): Promise<StapleCandidate[] | null> {
   const commanders = [deck.commander, ...(deck.partner ? [deck.partner] : [])];
   const identity = [...new Set(commanders.flatMap((c) => c.colorIdentity))];
@@ -115,7 +121,7 @@ export async function loadManaStaples(
   if (!lands || !sources) return null;
   const [availability, prices] = await Promise.all([
     loadAvailability(userId, { oracleIds: pool.map((r) => r.oracleId), excludeDeckId: deck.id }),
-    loadPrices(pool.map((r) => r.oracleId)),
+    loadPrices(pool.map((r) => r.oracleId), store),
   ]);
   return pool.flatMap((r): StapleCandidate[] => {
     const produces = lands[r.oracleId] ?? sources[r.oracleId] ?? [];
@@ -131,6 +137,20 @@ export async function loadManaStaples(
       free: availability.get(r.oracleId)?.free ?? 0,
       priceCents: prices.get(r.oracleId)?.liveCents ?? null,
       imageUri: r.imageUri,
+      layout: r.layout,
     }];
   });
+}
+
+/** Staple figures as the reader's store prices them now, with each card's layout for its link (`storeCardUrl`):
+ *  what History's reopened help draws (`reviewHelp`), since a stored help carries the figures of the store it was read in. */
+export type StaplePricing = ReadonlyMap<string, { priceCents: number | null; layout: string | null }>;
+
+export async function loadStaplePricing(oracleIds: string[], store: Store): Promise<StaplePricing> {
+  if (oracleIds.length === 0) return new Map();
+  const [rows, prices] = await Promise.all([
+    db.select({ oracleId: cards.oracleId, layout: cards.layout }).from(cards).where(inArray(cards.oracleId, oracleIds)),
+    loadPrices(oracleIds, store),
+  ]);
+  return new Map(rows.map((r) => [r.oracleId, { priceCents: prices.get(r.oracleId)?.liveCents ?? null, layout: r.layout }]));
 }

@@ -22,6 +22,7 @@ import { GhostButton } from "@/components/ui/button";
 import { ExternalLink } from "../ui/external-link";
 import { TOUCH_HIT } from "../ui/touch-hit";
 import { manapoolAddDeckUrl } from "../../lib/manapool/links";
+import { useStoreInfo } from "../stores/store-provider";
 import {
   exportDialogCopy,
   exportLinkOutCopy,
@@ -246,7 +247,10 @@ function DialogContent({
   onClose,
   isMobile,
 }: DialogContentProps) {
-  const shoppingUrl = manapoolAddDeckUrl(shoppingCards);
+  // A whole-list link, so only for a store with a cart (store choice, call 6). The Shopping tab's list and its copy
+  // button stand in for any other store, as the paste row does on the strip.
+  const store = useStoreInfo();
+  const shoppingUrl = store.cart ? manapoolAddDeckUrl(shoppingCards) : null;
 
   return (
     <>
@@ -618,8 +622,8 @@ function DialogContent({
         )}
       </div>
 
-      {/* Buy the shopping list at Mana Pool. Absent — not disabled — on the
-          Decklist tab and when there is nothing left to buy. */}
+      {/* Buy the shopping list at Mana Pool, the store with a cart. Absent, not disabled, on the
+          Decklist tab, when there is nothing left to buy, and for a store with no cart. */}
       {shoppingUrl && tab === "shopping" && (
         <div
           className="flex items-center"

@@ -6,7 +6,8 @@ import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { getDeckDetail } from "../../lib/decks/read";
 import { revalidateClaims } from "../../lib/decks/revalidate-claims";
 import { BALANCE_COLORS, type BalanceColor } from "../../lib/tuning/mana-balance";
-import { reviewHelp, type ManaHelp } from "../../lib/tuning/mana-help";
+import { helpStapleIds, reviewHelp, type ManaHelp } from "../../lib/tuning/mana-help";
+import { loadStaplePricing } from "../../lib/tuning/mana-staples";
 import { isManaHelpSummary } from "../../lib/tuning/history";
 import { db } from "../../db";
 import { deckToolCounts } from "../../db/schema";
@@ -18,6 +19,7 @@ import type { ManaPanelData } from "../../lib/tuning/mana-view";
 import { recordToolCount } from "../../lib/tuning/tool-counts";
 import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { isUuid } from "../../lib/uuid";
+import { readerStoreForAction } from "../../lib/stores/action-store";
 
 /**
  * Mana Balance's free count (tier 1): the evidence for one of the reader's decks, read fresh on
@@ -69,24 +71,29 @@ export async function readManaHelpReview(deckId: string, countId: string): Promi
   // Today's help for that color. A color the commander's identity no longer holds offers nothing,
   // so every stored trade is truly stale; a read that FAILED is not a re-check, so it returns null
   // and the door draws its own failure state rather than calling every trade gone.
-  const deck = await getDeckDetail(deckId, userId, undefined);
+  const [deck, store] = await Promise.all([getDeckDetail(deckId, userId, undefined), readerStoreForAction(userId)]);
   if (!deck) return null;
+  const past = row.summary.help;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
-  if (!identity.includes(row.summary.color)) return reviewHelp(row.summary.help, null);
-  const today = await loadManaHelp(deck, userId, row.summary.color as BalanceColor);
+  const inIdentity = identity.includes(row.summary.color);
+  const [today, now] = await Promise.all([
+    inIdentity ? loadManaHelp(deck, userId, row.summary.color as BalanceColor, store) : null,
+    loadStaplePricing(helpStapleIds(past), store),
+  ]);
+  if (!inIdentity) return reviewHelp(past, null, now);
   if (!today) return null;
-  return reviewHelp(row.summary.help, today);
+  return reviewHelp(past, today, now);
 }
 
 /** Improve my mana for one of the reader's decks, read fresh, with the key of the list it was read from:
  *  null on any refusal or failed read. */
 async function helpFor(deckId: string, color: string, userId: string): Promise<(ManaHelp & { deckId: string; listKey: string }) | null> {
   if (!isUuid(deckId) || !(BALANCE_COLORS as readonly string[]).includes(color)) return null;
-  const deck = await getDeckDetail(deckId, userId, undefined);
+  const [deck, store] = await Promise.all([getDeckDetail(deckId, userId, undefined), readerStoreForAction(userId)]);
   if (!deck) return null;
   const identity = [deck.commander, ...(deck.partner ? [deck.partner] : [])].flatMap((c) => c.colorIdentity);
   if (!identity.includes(color)) return null;
-  const help = await loadManaHelp(deck, userId, color as BalanceColor);
+  const help = await loadManaHelp(deck, userId, color as BalanceColor, store);
   return help ? { ...help, deckId: deck.id, listKey: listFingerprintOf(deck) } : null;
 }
 

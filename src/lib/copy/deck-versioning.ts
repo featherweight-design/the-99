@@ -25,6 +25,8 @@
  * itself — `history.heading`, `history.gamesHeld` and `changed.delta`.
  */
 
+import type { StoreInfo } from "../stores/info";
+
 /**
  * `1 card` / `2 cards`. Every figure in this module is a row or a copy count, so
  * one is an ordinary value for all of them and not an edge case: a draft with a
@@ -337,8 +339,9 @@ export const deckVersioningCopy = {
         .filter(Boolean).join(" · "),
     buyBackLink: (n: number) =>
       `the ${plural(n, "row")} ${n === 1 ? "is" : "are"} on the review page ↑`,
-    // The only link-out in this feature. See OVERLAPS.md, call 1.
-    linkOut: "Open in Mana Pool",
+    // The only link-out in this feature. See OVERLAPS.md, call 1. A whole-list link, so drawn only for a store
+    // with a cart (store choice, call 6).
+    linkOut: (s: StoreInfo) => `Open in ${s.name}`,
 
     pullHeading: (n: number) => `Back in the pool · ${n}`,
     // The same label without its count, for the width that draws the figure

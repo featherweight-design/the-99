@@ -22,7 +22,8 @@ import { chainArt } from "../cards/chain-art";
 
 import { db } from "../../db";
 import { loadAvailability } from "../decks/availability-query";
-import { loadPrices } from "../decks/price-query";
+import { loadPrices, storeRows } from "../decks/price-query";
+import type { Store } from "../stores/rows";
 import { keyCreatureType } from "../recs/themes";
 import { loadUniversalStaples } from "../staples/universal";
 import { heldCardTypes, labelPatterns } from "../labels/match";
@@ -138,6 +139,8 @@ async function readNoncreatureSubtypes(): Promise<Set<string>> {
 /** `full` reads every stand-in of every group, for `Show all` on a group the first read capped. */
 export async function loadStandIns(
   deckId: string, userId: string, cutOracleId: string, full: boolean,
+  /** The reader's store: the cheapest slice is that store's, and every stand-in's figure. */
+  store: Store = "manapool",
 ): Promise<StandInsRead | null> {
   const deckRows = await db.execute<{ commander: string; partner: string | null }>(sql`
     select commander_oracle_id as commander, partner_oracle_id as partner
@@ -200,7 +203,7 @@ export async function loadStandIns(
       spell
         ? spellPool({
           deck, userId, identity, draft, mv: original.cmc, roles: job.kind === "spell" ? job.roles : [],
-          labels: patterns, cut: cutOracleId, staples: sql.param([...staples]),
+          labels: patterns, cut: cutOracleId, staples: sql.param([...staples]), store,
         })
         : landPool({ deck, userId, identity, draft, cut: cutOracleId }),
     ).then((r) => r.rows),
@@ -210,7 +213,7 @@ export async function loadStandIns(
   const ownedIds = candidates.filter((r) => (r.owned ?? 0) > 0).map((r) => r.oracle_id);
   const [availability, priced, labels] = await Promise.all([
     ownedIds.length > 0 ? loadAvailability(userId, { oracleIds: ownedIds, excludeDeckId: deckId }) : new Map(),
-    loadPrices([cutOracleId, ...candidates.map((r) => r.oracle_id)]),
+    loadPrices([cutOracleId, ...candidates.map((r) => r.oracle_id)], [], [], store),
     // The candidates' labels, beside the original's: a pair is compared by its labels only when both carry one.
     originalLabels
       ? readLabels(candidates.map((r) => r.oracle_id)).then((m) => m.set(cutOracleId, [...originalLabels]))
@@ -303,19 +306,28 @@ export function spellPool(a: PoolArgs & {
   roles: SpellRole[] | "any";
   labels: readonly string[];
   staples: ReturnType<typeof sql.param>;
+  /** The store whose cheapest cards fill the unlisted slices. Mana Pool, the default, renders the statement as it was. */
+  store?: Store;
 }) {
   const guards = (alias: string) => sql.raw(`
     ${alias}.commander_legal
     and ${alias}.type_line !~* '^[^/]*\\mland\\M'
   `);
+  // The store names the table, as `loadPrices` does: Mana Pool's fragments render the text this statement had before
+  // stores, and another store reads its own rows against its own newest `as_of`, its sold-out printings left out.
+  const other = a.store && a.store !== "manapool" ? a.store : null;
+  const source = other ? storeRows(other) : sql`printing_prices`;
+  const newestFrom = other ? sql`printing_store_prices where store = ${other}` : sql`printing_prices`;
+  const inStock = other ? sql`
+        and not pp.sold_out` : sql``;
   return sql`
-    with newest as (select max(as_of) as as_of from printing_prices),
+    with newest as (select max(as_of) as as_of from ${newestFrom}),
     unlisted as (
       select p.oracle_id
-      from printing_prices pp
+      from ${source} pp
       join printings p on p.scryfall_id = pp.scryfall_id
       join cards u on u.oracle_id = p.oracle_id
-      where pp.as_of = (select as_of from newest)
+      where pp.as_of = (select as_of from newest)${inStock}
         and ${guards("u")}
         and u.color_identity <@ ${a.identity}::text[]
         and u.cmc <= ${a.mv}
@@ -334,11 +346,11 @@ export function spellPool(a: PoolArgs & {
     -- jobs, so a stand-in no role word finds can still reach the sheet. One containment per key.
     labelled as (
       select p.oracle_id
-      from printing_prices pp
+      from ${source} pp
       join printings p on p.scryfall_id = pp.scryfall_id
       join cards u on u.oracle_id = p.oracle_id
       join card_labels cl on cl.oracle_id = u.oracle_id
-      where pp.as_of = (select as_of from newest)
+      where pp.as_of = (select as_of from newest)${inStock}
         and ${guards("u")}
         and u.color_identity <@ ${a.identity}::text[]
         and u.cmc <= ${a.mv}

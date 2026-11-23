@@ -21,13 +21,22 @@ const state = vi.hoisted(() => ({
   revalidated: [] as unknown[][],
   helpRows: [] as unknown[],
   helpFails: false,
+  pricing: new Map<string, { priceCents: number | null; layout: string | null }>(),
+  pricingReads: [] as unknown[][],
+  store: "manapool",
+  helpStores: [] as string[],
 }));
 
 vi.mock("../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
+vi.mock("../../lib/stores/action-store", () => ({ readerStoreForAction: async () => state.store }));
 vi.mock("../../lib/decks/read", () => ({ getDeckDetail: async () => state.deck }));
 vi.mock("../../lib/profile/fingerprint", () => ({ listFingerprint: (list: unknown) => { state.fingerprinted = list; return "list-fp"; } }));
 vi.mock("../../lib/tuning/mana-balance-load", () => ({ loadManaBalance: async () => state.balance }));
-vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string) => (state.helpFails ? null : { color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
+vi.mock("../../lib/tuning/mana-help-load", () => ({ loadManaHelp: async (_d: unknown, _u: string, c: string, store: string) => (state.helpStores.push(store), state.helpFails ? null : { color: c, inIdentity: true, staples: state.staples, trades: state.trades }) }));
+vi.mock("../../lib/tuning/mana-staples", async (orig) => ({
+  ...(await orig<typeof import("../../lib/tuning/mana-staples")>()),
+  loadStaplePricing: async (ids: string[], store: string) => { state.pricingReads.push([ids, store]); return state.pricing; },
+}));
 vi.mock("../../db", () => ({ db: { select: () => ({ from: () => ({ where: () => ({ limit: async () => state.helpRows }) }) }) } }));
 vi.mock("../../lib/tuning/mana-trade", () => ({
   applyTrade: async (deckId: string, userId: string, trade: { cutOracleId: string; addOracleId: string }, listKey: string) => {
@@ -120,6 +129,17 @@ describe("readManaBalance with a partner", () => {
 });
 
 describe("readManaHelpFor (the action)", () => {
+  it("reads the help in the reader's store, so each staple's figure is the store its link names", async () => {
+    state.store = "tcgplayer";
+    state.helpStores = [];
+    try {
+      await readManaHelpFor(DECK, "G");
+      expect(state.helpStores).toEqual(["tcgplayer"]);
+    } finally {
+      state.store = "manapool";
+    }
+  });
+
   it("answers a color in the commander's identity, and records that help for History, keyed on the list and the color", async () => {
     const shown = await readManaHelpFor(DECK, "G");
     expect(shown).toEqual({ color: "G", inIdentity: true, staples: [], trades: [] });
@@ -208,6 +228,35 @@ describe("readManaHelpReview (History's re-review)", () => {
     const shown = await readManaHelpReview(DECK, COUNT);
     expect(shown?.trades.map((t) => t.staple.oracleId)).toEqual(["s1", "s2"]);
     expect(shown?.noLonger).toEqual(["s2"]);
+  });
+
+  it("reads today's help and the staples' figures in the reader's store", async () => {
+    state.helpRows = [{ summary: { color: "G", help: past } }];
+    state.store = "cardkingdom";
+    state.helpStores = [];
+    state.pricingReads = [];
+    try {
+      await readManaHelpReview(DECK, COUNT);
+      expect(state.helpStores).toEqual(["cardkingdom"]);
+      expect(state.pricingReads.map((r) => r[1])).toEqual(["cardkingdom"]);
+    } finally {
+      state.store = "manapool";
+    }
+  });
+
+  it("prices every staple it lists in the reader's store now, offered today or not, with its layout", async () => {
+    state.helpRows = [{ summary: { color: "G", help: past } }];
+    state.trades = [trade("s1", "forest")];
+    state.pricing = new Map([["s2", { priceCents: 310, layout: "split" }]]);
+    state.pricingReads = [];
+    try {
+      const shown = await readManaHelpReview(DECK, COUNT);
+      expect(state.pricingReads).toEqual([[["s1", "s2"], "manapool"]]);
+      expect(state.helpStores.at(-1)).toBe("manapool");
+      expect(shown?.trades.map((t) => [t.staple.priceCents, t.staple.layout])).toEqual([[null, undefined], [310, "split"]]);
+    } finally {
+      state.pricing = new Map();
+    }
   });
 
   it("is null for an id that names no help read (the reader, deck and tool filter is pinned in mana-help-read.test)", async () => {

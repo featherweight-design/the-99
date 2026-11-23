@@ -22,7 +22,8 @@ import type { DeckMutationResult } from "../../lib/decks/mutation-result";
 import { manaBalanceCopy as copy } from "../../lib/copy/mana-balance";
 import type { PriceFact } from "../../lib/decks/price";
 import { askInVisit, isNewestAsk, isVisit, setVisitValue, subscribeVisit, visitToken, visitValue } from "../../lib/decks/visit";
-import { manapoolCardUrl } from "../../lib/manapool/links";
+import { storeCardUrl } from "../../lib/stores/links";
+import { useStoreInfo } from "../stores/store-provider";
 import type { BalanceColor, ColorEvidence, ColorOrderEntry } from "../../lib/tuning/mana-balance";
 import type { ManaHelp, SourceChange, TradeMove } from "../../lib/tuning/mana-help";
 import type { StapleCandidate, StapleFact } from "../../lib/tuning/mana-staples";
@@ -518,6 +519,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
   refused: string | null;
 }) {
   const { open } = useCardDetail();
+  const store = useStoreInfo();
   // The decklist's preview and intent prefetch, so a hover or a tap-and-hold acts as it does on a list row.
   const preview = usePreviewRow(staple.imageUri);
   const intent = useCardIntent(staple.oracleId, staple.imageUri);
@@ -553,13 +555,13 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
             {/* With no price there is nothing to buy at: R3b's priceless staple draws no tag and no link. */}
             {staple.priceCents === null ? null : <BuyTag variant="row" {...priceOf(staple.priceCents)} />}
             {staple.priceCents === null ? null : <a
-              href={manapoolCardUrl(staple.name)}
+              href={storeCardUrl(store.id, staple.name, staple.layout)}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label={copy.help.buyAria(staple.name)}
+              aria-label={copy.help.buyAria(store, staple.name)}
               className="text-[color:var(--accent-text)] hover:text-[color:var(--accent-hover)] transition-colors"
             >
-              <LinkOutLabel>{copy.help.buyLink}</LinkOutLabel>
+              <LinkOutLabel>{copy.help.buyLink(store)}</LinkOutLabel>
             </a>}
           </span>
         )}

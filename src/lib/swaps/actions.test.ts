@@ -12,6 +12,7 @@ vi.mock("../decks/read", () => ({ requireDeck: vi.fn(async () => ({ id: "deck" }
 vi.mock("../decks/remove-card", () => ({ removeOneCopy: vi.fn(async () => true) }));
 vi.mock("./fits", () => ({ loadFits: vi.fn(async () => ({ fits: [] })) }));
 vi.mock("./gather", () => ({ loadStandIns: vi.fn() }));
+vi.mock("../stores/action-store", () => ({ readerStoreForAction: vi.fn(async () => "tcgplayer") }));
 vi.mock("./take", () => ({ setShoppingLimit: vi.fn(), takeStandIn: vi.fn(), undoSwap: vi.fn() }));
 vi.mock("../decks/add-card", () => ({
   addCardToDeckFor: vi.fn(async () => ({ result: { ok: true }, wrote: "added" })),
@@ -175,9 +176,9 @@ describe("the swap tools' reads and writes", () => {
     expect(vi.mocked(takeStandIn).mock.calls[0]).toEqual([DECK, "user_1", CUT, CARD]);
   });
 
-  it("loadStandInsAction hands the stand-ins read its arguments", async () => {
+  it("loadStandInsAction hands the stand-ins read its arguments and the reader's store", async () => {
     vi.mocked(loadStandIns).mockResolvedValueOnce(null);
     await loadStandInsAction(DECK, CUT, true);
-    expect(vi.mocked(loadStandIns).mock.calls[0]).toEqual([DECK, "user_1", CUT, true]);
+    expect(vi.mocked(loadStandIns).mock.calls[0]).toEqual([DECK, "user_1", CUT, true, "tcgplayer"]);
   });
 });

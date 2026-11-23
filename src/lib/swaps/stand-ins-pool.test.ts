@@ -57,6 +57,24 @@ describe("spellPool's label slice (the run plan's Task 5)", () => {
   };
   const compile = (roles: SpellRole[] | "any", labels: string[]) => dialect.sqlToQuery(spellPool({ ...args, roles, labels }));
 
+  // Store choice: Mana Pool renders the statement it had before stores; another store reads its own rows, its own
+  // newest snapshot, and leaves its sold-out printings out.
+  it("reads Mana Pool's table by default, and another store's own rows when given one", () => {
+    const patterns = [JSON.stringify([{ space: "role", kind: "removal" }])];
+    const base = dialect.sqlToQuery(spellPool({ ...args, roles: ["removal"], labels: patterns }));
+    const manapool = dialect.sqlToQuery(spellPool({ ...args, roles: ["removal"], labels: patterns, store: "manapool" }));
+    expect({ sql: manapool.sql, params: manapool.params }).toEqual({ sql: base.sql, params: base.params });
+    expect(base.sql).toMatch(/select max\(as_of\) as as_of from printing_prices\)/);
+    expect(base.sql.match(/from printing_prices pp/g)).toHaveLength(2);
+    expect(base.sql).not.toMatch(/printing_store_prices|sold_out/);
+
+    const tcg = dialect.sqlToQuery(spellPool({ ...args, roles: ["removal"], labels: patterns, store: "tcgplayer" }));
+    expect(tcg.sql).not.toMatch(/from printing_prices pp/);
+    expect(tcg.sql).toMatch(/from printing_store_prices where store = \$\d+\)/);
+    expect(tcg.sql.match(/and not pp\.sold_out/g)).toHaveLength(2);
+    expect(tcg.params).toContain("tcgplayer");
+  });
+
   it("reads no label when it is given none, so an unlabelled original leaves the text pool alone", () => {
     expect(compile(["removal"], []).sql).not.toMatch(/card_labels|labelled/);
   });
