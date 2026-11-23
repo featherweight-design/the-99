@@ -20,6 +20,10 @@ export const findCopy = {
     bodyAll: "See which of your decks each one could go in.",
     show: "Show them",
     bodyFree: "Press Find a deck under a card to see which of your decks it fits.",
+    /** R3: the row view (the phone's default). The phone row's button is the glyph alone; desktop rows carry the word. */
+    bodyFreeRows: "Press Find a deck beside a card to see which of your decks it fits.",
+    /** The phone row's button is the glyph alone, so the line draws the glyph it names (lead, glyph, rest). */
+    bodyFreeRowsPhone: { lead: "Press", rest: "beside a card to see which of your decks it fits." },
     dismiss: "Dismiss",
   },
   button: "Find a deck",
@@ -52,7 +56,7 @@ export function FitPress({ name, open = false }: { name: string; open?: boolean 
 }
 
 /** The call-out: the deck page's to-do card row as a statement (the you-have-it R3 call-out), with a bare ✕. */
-export function FindCallout({ n, on }: { n: number; on?: boolean | "r1" }) {
+export function FindCallout({ n, on, rows = false }: { n: number; on?: boolean | "r1"; rows?: boolean }) {
   const c = findCopy.callout;
   return (
     <section aria-label={c.eyebrow} className="mt-[12px] overflow-hidden rounded-[12px] bg-[color:var(--surface-rail)] [border:1px_solid_var(--border-strong)] md:mt-[16px]">
@@ -64,7 +68,7 @@ export function FindCallout({ n, on }: { n: number; on?: boolean | "r1" }) {
         <span aria-hidden className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-[8px] bg-[color:color-mix(in_srgb,var(--accent)_14%,var(--bg))]"><FitsGlyph /></span>
         <div className="min-w-0 flex-1 md:flex md:flex-wrap md:items-baseline md:gap-x-[12px]">
           <p className="m-0 text-[13.5px] font-semibold leading-[1.4] text-[color:var(--fg)]">{c.title(n)}</p>
-          <p className="m-0 mt-[2px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)] md:mt-0 md:text-[12.5px]">{on === "r1" || on === undefined ? c.body : on ? c.bodyFree : c.bodyAll}</p>
+          <p className="m-0 mt-[2px] text-[12px] leading-[1.5] text-[color:var(--fg-muted)] md:mt-0 md:text-[12.5px]">{on === "r1" || on === undefined ? c.body : on ? (rows ? <><span className="md:hidden">{c.bodyFreeRowsPhone.lead} <span className="inline-flex translate-y-[-1px] items-center rounded-[5px] px-[5px] py-[3px] align-middle [border:1px_solid_var(--border-strong)]"><FitsGlyph px={5} /></span> {c.bodyFreeRowsPhone.rest}</span><span className="hidden md:inline">{c.bodyFreeRows}</span></> : c.bodyFree) : c.bodyAll}</p>
           {on === false ? <GhostButton className={`${ACTION_SIZE} mt-[10px] md:hidden`}>{c.show}</GhostButton> : null}
         </div>
         {on === false ? <GhostButton className={`${ACTION_SIZE} hidden flex-none md:inline-flex md:min-h-[36px]`}>{c.show}</GhostButton> : null}
@@ -169,5 +173,17 @@ export function WhatYouCanDo({ spares, deck }: { spares: number; deck: string })
         ))}
       </ul>
     </section>
+  );
+}
+
+/** R3: the row view's button, a sibling of the row (a row is one button; nothing nests in it), the row's full height.
+ *  Phone: 44px wide, the glyph alone, its name `Find a deck for <card>`. From md: the glyph and `Find a deck`. */
+export function FitRowButton({ name, open = false }: { name: string; open?: boolean }) {
+  return (
+    <button type="button" aria-label={findCopy.pressAria(name)} aria-haspopup="dialog" aria-expanded={open} data-dz="fitr"
+      className={`flex w-[44px] flex-none cursor-pointer items-center justify-center gap-[8px] rounded-[7px] bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] text-[12.5px] font-medium text-[color:var(--fg)] md:w-[136px] ${open ? "outline-solid outline-2 outline-offset-[2px] outline-[color:var(--accent)]" : ""}`}>
+      <FitsGlyph px={6} />
+      <span className="hidden whitespace-nowrap md:inline">{findCopy.button}</span>
+    </button>
   );
 }

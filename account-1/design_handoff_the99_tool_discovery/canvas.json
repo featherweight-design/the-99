@@ -4,7 +4,7 @@
   "v": 1,
   "at": "2026-11-23T17:00:00Z"
  },
- "title": "Finding the tools R2",
+ "title": "Finding the tools R3",
  "launch": {
   "view": "canvas"
  },
@@ -14,22 +14,22 @@
    "x": 0,
    "y": 0,
    "w": 1600,
-   "h": 2180,
+   "h": 2000,
    "title": "Main"
   },
-  "Find.dc.html": {
+  "Ask.dc.html": {
    "x": 1720,
    "y": 0,
    "w": 1700,
-   "h": 3440,
-   "title": "Find"
+   "h": 3080,
+   "title": "Ask"
   },
-  "Home.dc.html": {
+  "Find.dc.html": {
    "x": 3540,
    "y": 0,
    "w": 1700,
-   "h": 1540,
-   "title": "Home"
+   "h": 4560,
+   "title": "Find"
   },
   "Tuning.dc.html": {
    "x": 5360,
@@ -48,8 +48,8 @@
  },
  "order": [
   "Main.dc.html",
+  "Ask.dc.html",
   "Find.dc.html",
-  "Home.dc.html",
   "Tuning.dc.html",
   "Welcome.dc.html"
  ],

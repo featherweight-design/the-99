@@ -1,29 +1,30 @@
-// Finding the tools R2: every NEW or CHANGED string (placeholders for /copy-review). Shipped strings are reused as named.
+// Finding the tools R3: every NEW or CHANGED string (placeholders for /copy-review). Shipped strings are reused as named.
 export const findADeckCalloutCopy = {
   eyebrow: "Find a deck",
   title: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck`,
   bodyAll: "See which of your decks each one could go in.",
   show: "Show them",
   bodyFree: "Press Find a deck under a card to see which of your decks it fits.",
+  // R3, the row view: from md the button carries the word; on a phone the line draws the glyph between lead and rest.
+  bodyFreeRows: "Press Find a deck beside a card to see which of your decks it fits.",
+  bodyFreeRowsPhone: { lead: "Press", rest: "beside a card to see which of your decks it fits." },
   dismiss: "Dismiss", // = welcomeCreditsCopy.strip.dismiss (accessible name of the bare ✕)
   button: "Find a deck", // = swapToolsCopy.fits title
   buttonAria: (card: string) => `Find a deck for ${card}`, // = swapToolsCopy.fits.calloutAria
 };
 
-export const whatYouCanDoCopy = {
-  eyebrow: "What you can do",
-  close: "Hide What you can do", // accessible name of the bare ✕
-  free: "free",
-  freeToStart: "free to start",
-  spares: {
-    title: "Find a home for your spare cards",
-    line: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck. See which of your decks each one fits.`,
+// R3: Ask (replaces R2's whatYouCanDoCopy). Tool names, lines and costs are the shipped showcaseCopy.tools and hub costs.
+export const askCopy = {
+  placeholder: "Search cards, or ask a question", // replaces cardSearchCopy.label as placeholder and field name
+  starters: {
+    heading: "Not sure where to go? Ask",
+    questions: ["Where can my spare cards go?", "How do I make my deck better?", "What can I build with my cards?", "What should I buy next?"],
   },
-  tune: {
-    title: (deck: string) => `Make ${deck} better`,
-    line: "Cards you own that fill what it’s short of, then swaps and cuts.",
-  },
-  build: { title: "Build another deck", line: "Commanders your cards can already lead, the closest first." },
+  tools: { heading: "Tools for this" },
+  yours: { spares: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck` },
+  noCards: "No card names match.",
+  noTool: { title: "Nothing here answers that yet", body: "Try one of these, or search a card by name.", about: "Every tool, in About" },
+  home: { heading: "Not sure where to go?" },
 };
 
 export const tuningTabCopy = {

@@ -1,6 +1,6 @@
-# READINESS · Finding the tools R2
+# READINESS · Finding the tools R3
 
-**Verdict: Amber, for Hugh's review.** Two open questions (README, Q4 and Q5). Every gap below has an answer proposed.
+**Verdict: Amber, for Hugh's review.** Two open questions (README, Q6 and Q7). Every gap below has an answer proposed.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -9,8 +9,8 @@
   is unknown (`availabilityOk` false).
 - **G3 · The button opens the view.** `CardDetailProvider` gains an open-with-view entry (`openCard(id, { view: "fits" })`)
   so the window mounts on `FitsView` with `onBack` to the card; focus returns to the button on close.
-- **G4 · Row view.** Not drawn: the rows view gets the button as the row's trailing control (44px, glyph and label from
-  md, glyph alone below it with the label as its accessible name) while narrowed.
+- **G4 · Row view (drawn R3).** `RowsView` wraps each row in a flex row with the button as the row button's sibling
+  (never nested). The button's name is `Find a deck for <card>` at every width.
 - **G5 · Consider's desktop toolbar.** Today it rides the deck tabs' row; inside Tuning it rides the hub's underline row
   at its right end (not drawn). Phone: the panel's own toolbar row, as drawn.
 - **G6 · Retargets.** `builder-view.ts` gains `tuning`, loses `consider`; `?view=consider` and stored last-views map to
@@ -23,15 +23,15 @@
 - **G9 · Welcome sheet.** `ROW_TOOL` gains `overview` (deck Analysis) and `find-a-deck-read` (`/collection?avail=free`);
   `welcomeSheet` returns a `free` list drawn under the rows by shape. The tour's Credits stop lists the spenders only.
 
-- **G10 · What you can do: retiring.** Each row keys on a tool already tracked for moments (`find-a-deck`, the Tuning tab
-  open, `/commanders` visited); the moments' spent store records "opened". The ✕ is one per-account flag, as the welcome
-  strip's. Read once with Home's payload; no new query beyond the free count Collection already computes (a count-only
-  read on Home).
-- **G11 · What you can do: placement.** Inside `Dashboard`'s main column after `props.welcome`, `order-1` below 1180 so
-  it stays under the strip. Rule 0 tables and the signature ask keep their places above.
+- **G10 · Ask matching.** `TOOLS` entries gain `ask: string[]` phrases; a pure `matchTools(query, flags)` returns up to three
+  ids, best first (phrase hits, then word hits), unit tested against the starters and a miss list. Runs client side in
+  the search's own chunk beside the card read; no new request. Withdrawn R2 G10/G11 (What you can do).
+- **G11 · Ask numbers and misses.** An answer's own number comes from data the page already has (the Free count the
+  collection reads, a deck's open slots); one that is not loaded is left out, never fetched for the row. A miss is one
+  PostHog count with no query text (`ph-no-capture` stays on the field).
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
 - Every board renders, no broken images, no clipped frame (measured with support.js stripped).
-- Frames rendered from main 7563036 with the shipped components; new parts in `scratch-gen/find.tsx` (R2: `FindCallout` `on`, `FitButton`, `WhatYouCanDo`) and the hub
+- Frames rendered from main 7563036 with the shipped components; new parts in `scratch-gen/find.tsx` (R2: `FindCallout` `on`, `FitButton`; R3: `FitRowButton`, and `ask.tsx` for Ask) and the hub
   patch described in `scratch-gen/HOW.md`. Figures, set codes and art are illustrative.

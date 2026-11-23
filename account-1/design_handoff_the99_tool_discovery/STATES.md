@@ -1,4 +1,4 @@
-# States · Finding the tools R2
+# States · Finding the tools R3
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -20,17 +20,36 @@
 | Back (← card) | The card's details, the door under the store link as shipped. |
 | Close | Focus returns to the button. |
 
-## Home · What you can do · R2
+## Find a deck button (beside a row) · R3
 | State | Draws |
 |---|---|
+| List not narrowed to Free alone | Nothing; the row as shipped. |
+| Narrowed to Free alone, phone | 44px glyph button beside each row; the call-out's phone line draws the glyph. |
+| Narrowed to Free alone, from md | 136px glyph and `Find a deck` beside each row. |
+| Card not Commander-legal | No button; the row runs the full width. |
+| Pressed / Back / Close | As the tile's button. |
+
+## Ask (card search) · R3
+| State | Draws |
+|---|---|
+| Open, nothing typed, recents | Add several (as shipped), the starters, Recent cards. |
+| Open, nothing typed, no recents | Add several, the starters, the shipped empty state. |
+| A starter pressed | The question typed in; the results as for a typed question. |
+| Query hits a tool's phrases | `Tools for this` (1 to 3), then the cards: rows as shipped, or `No card names match.` |
+| Query hits card names only | The shipped results. No tools heading. |
+| Query hits nothing | `Nothing here answers that yet`, the starters, `Every tool, in About ›`. |
+| A tool needs a deck, reader has none | The answer draws with the tool's shipped `none` line in place of the reader's number; the press lands on New deck. |
+| A tool's switch off for this reader | That tool never answers (`requestFlags`). |
+| Offline | As shipped (S7). Tools still answer; the reader's numbers are those the page holds, or left out. |
+
+## Home · Ask · R3
+| State | Draws |
+|---|---|
+| Reader has a deck, Ask not yet used three times from Home | `Not sure where to go?`, the field as a press, the starters. |
+| Used three times from Home (Q7 A) | Nothing. |
 | No deck yet | Nothing (Home's ways in already lead). |
-| Closed (✕), for this account | Nothing, for good. |
-| Every row retired | Nothing. |
-| Spares: Free count above 0, Find a deck never opened | `Find a home for your spare cards` with the count. |
-| Tune: a deck, Tuning tab never opened | `Make <deck> better`, the most recently touched deck. |
-| Build: Commanders never opened since the first deck | `Build another deck`. |
-| A row's tool opened from anywhere | That row leaves on the next visit (not mid-visit). |
-| Phone / from 1180 | One column / three across. |
+| Field pressed | The search opens (phone sheet, desktop dropdown), nothing typed. |
+| A starter pressed | The search opens with the question typed. |
 
 ## Deck tabs
 | Deck | Row |
