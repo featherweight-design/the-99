@@ -6,21 +6,13 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { askStartAction, askToolsAction } from "../../app/ask-actions";
-import { matchTools, startersFor } from "../../lib/discovery/ask";
-import { toolCardOf, type ToolCardModel } from "../../lib/discovery/showcase";
-import { TOOLS, type Tool, type ToolId } from "../../lib/discovery/tools";
+import type { ToolCardModel } from "../../lib/discovery/showcase";
+import type { ToolId } from "../../lib/discovery/tools";
+
+type Engine = typeof import("./ask-engine");
 
 // The card search's own debounce (`card-search.tsx`), restated so the two settle together without an import cycle.
 const SEARCH_DEBOUNCE_MS = 150;
-
-/** A tool's answer with nothing read: a route tool lands on its page, a deck tool on the deck list. */
-function offlineModel(id: ToolId): ToolCardModel {
-  const t = (TOOLS as readonly Tool[]).find((x) => x.id === id);
-  if (!t) throw new Error(`unknown tool ${id}`);
-  const m = toolCardOf(t, { isOn: () => true, fits: {}, deckCount: 1, hasSyncBase: true, place: true });
-  // A deck tool with no deck read lands on the list of decks: the reader picks one there.
-  return m.state.kind === "none" ? { ...m, state: { kind: "page", href: "/decks", label: m.copy.press ?? m.copy.name } } : m;
-}
 
 type Start = { hasDecks: boolean; off: ToolId[] };
 
@@ -31,9 +23,21 @@ export type Ask = {
   tools: ToolCardModel[];
   /** The starters this reader sees (Y6). */
   starters: string[];
+  /** How many words the typed question has (for the events), 0 until the matcher has loaded. */
+  words: number;
 };
 
 export function useAsk({ open, online, query, searching }: { open: boolean; online: boolean; query: string; searching: boolean }): Ask {
+  // The registry and matcher load when the search first opens, not with the shell (see `ask-engine.ts`).
+  const [engine, setEngine] = useState<Engine | null>(null);
+  useEffect(() => {
+    if (!open || engine) return;
+    let live = true;
+    import("./ask-engine").then((m) => live && setEngine(m)).catch(() => {});
+    return () => {
+      live = false;
+    };
+  }, [open, engine]);
   const [start, setStart] = useState<Start | null>(null);
   const [startFailed, setStartFailed] = useState(false);
   useEffect(() => {
@@ -54,16 +58,16 @@ export function useAsk({ open, online, query, searching }: { open: boolean; onli
   }, [start]);
   // Online, a switch-off tool must not flash before the reader's switches arrive, so nothing matches until they have; offline (or
   // unread) every tool answers from the registry, as the fallback cards do.
-  const waiting = online && start === null && !startFailed;
-  const ids = useMemo(() => (searching && !waiting ? matchTools(query, on) : []), [searching, waiting, query, on]);
+  const waiting = engine === null || (online && start === null && !startFailed);
+  const ids = useMemo(() => (engine && searching && !waiting ? engine.matchTools(query, on) : []), [engine, searching, waiting, query, on]);
   const key = ids.join(",");
   const [read, setRead] = useState<{ key: string; models: ToolCardModel[] }>({ key: "", models: [] });
   const seq = useRef(0);
   useEffect(() => {
-    if (key === "") return;
+    if (key === "" || !engine) return;
     const wanted = key.split(",") as ToolId[];
     const n = ++seq.current;
-    const fallback = () => setRead({ key, models: wanted.map(offlineModel) });
+    const fallback = () => setRead({ key, models: wanted.map(engine.offlineModel) });
     if (!online) {
       fallback();
       return;
@@ -74,8 +78,9 @@ export function useAsk({ open, online, query, searching }: { open: boolean; onli
         .catch(() => n === seq.current && fallback());
     }, SEARCH_DEBOUNCE_MS);
     return () => window.clearTimeout(timer);
-  }, [key, online]);
+  }, [key, online, engine]);
 
-  const starters = useMemo(() => startersFor(on, start?.hasDecks ?? null), [on, start]);
-  return { ids, tools: read.key === key ? read.models : [], starters };
+  const starters = useMemo(() => (engine ? engine.startersFor(on, start?.hasDecks ?? null) : []), [engine, on, start]);
+  const words = useMemo(() => (engine ? engine.askWords(query).length : 0), [engine, query]);
+  return { ids, tools: read.key === key ? read.models : [], starters, words };
 }

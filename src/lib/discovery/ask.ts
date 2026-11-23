@@ -117,6 +117,3 @@ export function startersFor(on: (id: ToolId) => boolean, hasDecks: boolean | nul
     return !(hasDecks === false && answers.every((id) => id === "find-a-deck"));
   });
 }
-
-/** About's index (its Tools tab redirects there, `legacy-href.ts`): where `Every tool, in About` goes. */
-export const ABOUT_TOOLS_HREF = "/about";

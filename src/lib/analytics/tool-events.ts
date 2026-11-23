@@ -5,7 +5,7 @@
  */
 import { FEED_KINDS, type FeedKind } from "../feed/kinds";
 
-import { TOOLS, type ToolId } from "../discovery/tools";
+import type { ToolId } from "../discovery/tools";
 
 /** Where a press that asks for Find a deck came from (counted at the press, before the card arrives): the call-out's Show them, a tile's button, a phone row's strip, a desktop row's button, the card window's door, or an Ask answer in the card search. */
 export const FIND_A_DECK_FROM = ["callout_show_them", "tile_button", "row_strip", "row_button", "card_door", "ask"] as const;
@@ -36,7 +36,14 @@ export const ASK_COUNT = ["0", "1", "2", "3"] as const;
 export const ASK_CARDS = ["none", "some"] as const;
 export const ASK_RANK = ["1", "2", "3"] as const;
 /** Every tool's id, the closed set an Ask event names a tool from. */
-export const ASK_TOOL_IDS: readonly ToolId[] = TOOLS.map((t) => t.id as ToolId);
+export const ASK_TOOL_IDS = [
+  "help-me-choose", "precons", "top-off", "proposed-cuts", "suggested-changes", "mana-balance", "stand-ins",
+  "friend-spares", "find-a-deck", "wishlist", "collection-sync", "matchups", "lineup", "friends",
+] as const satisfies readonly ToolId[];
+// Written out rather than read off the registry: this module is in Home's startup graph, which keeps the registry (and the
+// Tuning copy it imports) out. A tool added to the registry and missing here fails this line.
+const everyToolId: Exclude<ToolId, (typeof ASK_TOOL_IDS)[number]> extends never ? true : never = true;
+void everyToolId;
 
 export type ToolEvents = {
   find_a_deck_opened: { from: FindADeckFrom };

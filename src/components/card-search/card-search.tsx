@@ -36,7 +36,6 @@ import type { SEARCH_OPENED_FROM } from "../../lib/analytics/tool-events";
 import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
 import type { ToolCardModel } from "../../lib/discovery/showcase";
 import { toolHref } from "./ask-results";
-import { askWords } from "../../lib/discovery/ask";
 import { useAsk } from "./use-ask";
 import { SearchField } from "../ui/text-field";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
@@ -289,19 +288,19 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setActive(-1);
   }
   // The shape of each settled query, once (never its text): the tools that answered, whether card names matched, how many words.
-  const askSettled = open && searching && online && phase === "results" && rowsFor === trimmed && ask.tools.length === ask.ids.length;
+  const askSettled = open && searching && online && phase === "results" && rowsFor === trimmed && ask.words > 0 && ask.tools.length === ask.ids.length;
   const askReported = useRef("");
   useEffect(() => {
     if (!askSettled) return;
     if (askReported.current === trimmed) return;
     askReported.current = trimmed;
-    const n = askWords(trimmed).length;
+    const n = ask.words;
     const words = n >= 3 ? "3+" : (String(n) as "1" | "2");
     const count = String(Math.min(ask.ids.length, 3)) as "0" | "1" | "2" | "3";
     const cards = rows.length > 0 ? "some" : "none";
     captureToolEvent("ask_result", { count, first: ask.ids[0] ?? "none", cards, words });
     if (n >= 2 && ask.ids.length === 0 && rows.length === 0) captureToolEvent("ask_miss", { words });
-  }, [askSettled, trimmed, ask.ids, rows.length]);
+  }, [askSettled, trimmed, ask.ids, ask.words, rows.length]);
 
   const pick = useCallback(
     (from: readonly CardSearchRow[], index: number) => {

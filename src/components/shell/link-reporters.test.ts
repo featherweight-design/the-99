@@ -25,6 +25,8 @@ const EXEMPT: Record<string, string> = {
   "components/cards/read-row.tsx :: `/decks/${deckId}`": KEPT,
   "components/collection/add-cards-sheet.tsx :: PICK_FROM_COLLECTION_HREF":
     "its press closes the sheet, which unmounts the row, so the navigation runs through usePendingPush and the provider reports it",
+  "components/card-search/ask-results.tsx :: ABOUT_TOOLS_HREF":
+    "Every tool, in About: its press closes the search, which unmounts the link before any mark could paint",
   "components/shell/credit-chip.tsx :: \"/credits\"":
     "its press closes the menu, which unmounts the chip, so the navigation runs through usePendingPush and the provider reports it",
   "components/tracker/spine.tsx :: back.href":

@@ -8,7 +8,9 @@ import type { KeyboardEvent } from "react";
 import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
 import type { ToolCardModel } from "../../lib/discovery/showcase";
 import { atPlace } from "../../lib/commanders/place-paths";
-import { ABOUT_TOOLS_HREF } from "../../lib/discovery/ask";
+
+/** About's index (its Tools tab redirects there, `legacy-href.ts`): where `Every tool, in About` goes. Here, not in `ask.ts`, so the shell does not load the tool registry for a link. */
+const ABOUT_TOOLS_HREF = "/about";
 
 const HEADING = "font-mono text-[10.5px] font-medium tracking-[0.14em] text-[color:var(--fg-faint)] uppercase";
 
