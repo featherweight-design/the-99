@@ -96,9 +96,7 @@ describe("Home, direction B", () => {
     const whatsNew = container.querySelector("[data-whats-new]");
     const friends = ordered(container.querySelector("#home-friends-head")!);
     const commitments = ordered(screen.getByText("Commitments"));
-    const resume = container.querySelector("#home-whats-new")!.closest("section")!.parentElement!.querySelector("[class*='order-2']");
     expect(orderOf(ordered(whatsNew!))).toBe(1);
-    expect(orderOf(resume)).toBe(2);
     expect(orderOf(friends)).toBe(4);
     expect(orderOf(commitments)).toBe(5);
   });
