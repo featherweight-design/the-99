@@ -3,7 +3,7 @@ import { getTableConfig } from "drizzle-orm/pg-core";
 import { describe, expect, it } from "vitest";
 
 import { spareRequests } from "../../db/schema";
-import { answerOfferQuery, offerCopies, offererQuery, withdrawOfferQuery } from "./spare-offers";
+import { answerOfferQuery, offerCopies, offererQuery, offerRefusal, withdrawOfferQuery } from "./spare-offers";
 import {
   answerAskerQuery, answerQuery, clearQuery, incomingAsksQuery, myAsksQuery, waitingAsksCountQuery, withdrawQuery,
   unseenAnswersCountQuery, markAnswerSeenQuery, withdrawForInsteadQuery,
@@ -53,5 +53,22 @@ describe("E1: the one-open index spans both directions", () => {
     expect(idx?.config.unique).toBe(true);
     expect(idx?.config.columns.map((c) => ("name" in c ? c.name : ""))).toEqual(["asker_user_id", "oracle_id"]);
     expect(idx?.config.where).toBeDefined();
+  });
+});
+
+describe("offerRefusal keeps a friend's other requests private", () => {
+  const row = (over: Record<string, unknown>) => ({
+    holderUserId: "me", status: "open" as const, createdAt: NOW, answeredAt: null, initiatedBy: "holder" as const, ...over,
+  });
+  it("an open request with someone else reads not-spare, never asked", () => {
+    expect(offerRefusal([row({ holderUserId: "other" })], "me", NOW)).toBe("not-spare");
+    expect(offerRefusal([row({ holderUserId: "other", initiatedBy: "asker" })], "me", NOW)).toBe("not-spare");
+  });
+  it("the offerer's own open offer reads asked", () => {
+    expect(offerRefusal([row({})], "me", NOW)).toBe("asked");
+  });
+  it("a No to this offerer inside the cooldown reads declined; nothing open and no No is clear", () => {
+    expect(offerRefusal([row({ status: "no", answeredAt: NOW })], "me", NOW)).toBe("declined");
+    expect(offerRefusal([], "me", NOW)).toBeNull();
   });
 });

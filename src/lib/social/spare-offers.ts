@@ -14,7 +14,7 @@ import { db } from "../../db";
 import { friendLinks, spareRequests } from "../../db/schema";
 import { resolveFriend } from "./access";
 import { isUuid } from "./rules";
-import { askRefusal, capCopies, isAnswer, openFloor, type PriorAsk, type StoredStatus } from "./spare-request-rules";
+import { askRefusal, capCopies, isAnswer, openFloor, requestState, type AskRefusal, type PriorAsk, type StoredStatus } from "./spare-request-rules";
 import {
   askLockQuery, expireStaleQuery, inAskTransaction, lockFriendshipQuery, type AnswerOutcome, type AskOutcome, type CloseOutcome,
 } from "./spare-requests";
@@ -42,7 +42,7 @@ export async function offerSpare(
   const gap = (await loadFriendWantedGap(offererId, friendPublicId, [oracleId])).get(oracleId);
   if (spare === undefined || gap === undefined) return { ok: false, reason: "not-spare" };
   const copies = offerCopies(spare, gap);
-  return inAskTransaction(async (tx) => {
+  const out = await inAskTransaction(async (tx) => {
     // The wanter's lock for the card, the one their own asks take: an ask and an offer for it decide one at a time.
     await tx.execute(askLockQuery(wanterId, oracleId));
     const links = await tx.execute(lockFriendshipQuery(offererId, wanterId));
@@ -55,13 +55,10 @@ export async function offerSpare(
       })
       .from(spareRequests)
       .where(and(eq(spareRequests.askerUserId, wanterId), eq(spareRequests.oracleId, oracleId)));
-    const refusal = askRefusal(
+    const refusal = offerRefusal(
       prior.map((p) => ({ ...p, status: p.status as StoredStatus, initiatedBy: p.initiatedBy as PriorAsk["initiatedBy"] })),
-      offererId, now, "holder",
+      offererId, now,
     );
-    // A friend's pending ask or offer with SOMEONE ELSE is theirs to keep private: the offerer is told only what an
-    // unrelated stale offer would say (`not-spare`), never that the friend has the card in play elsewhere.
-    if (refusal === "asked" && !prior.some((p) => p.holderUserId === offererId && p.status === "open")) return { ok: false, reason: "not-spare" };
     if (refusal) return { ok: false, reason: refusal };
     const [row] = await tx
       .insert(spareRequests)
@@ -69,6 +66,20 @@ export async function offerSpare(
       .returning({ id: spareRequests.id });
     return { ok: true, id: row.id };
   });
+  // The unique-index fallback (`asked` from the shared transaction) only fires on a friend's open request with someone
+  // else, since this offerer's own open offer is refused above: it is masked like `offerRefusal` masks it.
+  return !out.ok && out.reason === "asked" ? { ok: false, reason: "not-spare" } : out;
+}
+
+/**
+ * Why `offererId` may not offer now, from the wanter's requests for the card. A friend's pending ask or offer with
+ * SOMEONE ELSE is theirs to keep private: the offerer is told only `not-spare`, never that the card is in play
+ * elsewhere. Their own open offer reads `asked`; a No inside the cooldown, `declined`. Pure, for a test.
+ */
+export function offerRefusal(prior: readonly PriorAsk[], offererId: string, now: Date): AskRefusal | "not-spare" | null {
+  const refusal = askRefusal(prior, offererId, now, "holder");
+  if (refusal === "asked" && !prior.some((p) => p.holderUserId === offererId && requestState(p, now) === "open")) return "not-spare";
+  return refusal;
 }
 
 /** The offerer's ✕ on their own open, unexpired offer: nobody is told, and it holds nothing. One row back means it landed. */
