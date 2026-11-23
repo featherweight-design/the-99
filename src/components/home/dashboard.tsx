@@ -257,7 +257,7 @@ export function Dashboard(props: DashboardProps) {
       <HeldLeadProvider>
       <div className="flex min-h-0 flex-auto flex-col gap-[12px] px-[16px] pt-[14px] pb-[16px] min-[1180px]:flex-row min-[1180px]:gap-[20px] min-[1180px]:p-[20px_26px_26px]">
         {/* Below 1180 both columns are `display: contents`, so their blocks are one list and `order` places them: Ready to
-            build, Friends, the resume block, Commitments (Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
+            build, What's new, the resume block, Friends, Commitments (G16; Friends on Home, R2b; readiness gap 3). Friends is drawn ONCE,
             in the right column, so there is one invite watch and one dialog. A screen reader reads the DOM order at
             every width, which this layout already accepts for Commitments. */}
         {/* The lead's ✕ hands focus on to What's new's first row (`nextDismiss`); the rows keep their own section's scope. */}
