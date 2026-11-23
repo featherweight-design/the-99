@@ -1,0 +1,33 @@
+{
+  "feature": "Store choice UI-3a: the deck page's links and figures in the reader's store (handoff design_handoff_the99_store_choice)",
+  "note": "Needs a server on a scratch branch of local-dev where the audit account (user_3HdjdocERCjunk0zJQFDWyHkTd4) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set to the store being photographed and printing_store_prices rows for that store, and owns DECK_ID (HD - Gishath) with cards to buy. Run once per store with preferred_store changed between runs and the out directory copied aside. This inventory writes nothing.",
+  "out": "contact-sheets/store-choice-ui3a",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "export-shopping",
+      "label": "Deck Export, Shopping list tab: Mana Pool draws `Buy these at Mana Pool`; a store with no cart draws only the copy and download",
+      "view": "src/components/decks/export-dialog.tsx",
+      "steps": [
+        { "goto": "/decks/${DECK_ID}", "settle": 3000 },
+        { "clickRole": "button", "name": "^Export", "wait": "[role=dialog]", "settle": 800 },
+        { "clickRole": "button", "name": "^Shopping list$", "settle": 1200 }
+      ]
+    },
+    {
+      "id": "improve-staples",
+      "label": "Mana Balance, Improve my mana for the first color: each staple's figure and buy link in the reader's store",
+      "view": "src/components/decks/mana-improve-door.tsx",
+      "steps": [
+        { "goto": "/decks/${DECK_ID}?tool=mana-balance", "settle": 3000 },
+        { "clickRole": "button", "name": "^Mana Balance", "settle": 2500 },
+        { "clickRole": "button", "name": "^Improve my mana$", "wait": "[role=radio]", "settle": 800 },
+        { "click": "[role=radio]:not([disabled]):visible", "settle": 4000 },
+        { "scrollTo": "a[aria-label$='opens in a new tab']", "settle": 800 }
+      ]
+    }
+  ]
+}
