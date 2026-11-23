@@ -8,6 +8,7 @@
 // link while `teaser`, else `Your free credit comes back each day.`, and no `Where they work`. The date is the reader's own
 // day, drawn after hydration (`useLocalDay`).
 
+import { captureToolEvent } from "../../lib/analytics/posthog";
 import Link from "next/link";
 import { useRef, useState } from "react";
 import { dismissWelcomeStripAction } from "../../app/welcome-actions";
@@ -135,7 +136,10 @@ export function WelcomeStrip({
             ref={where}
             type="button"
             data-welcome-where
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              captureToolEvent("welcome_where_opened", { from: "home_strip" });
+              setOpen(true);
+            }}
             className={`${LINK} cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-[length:inherit] leading-[inherit]`}
           >
             {c.where}

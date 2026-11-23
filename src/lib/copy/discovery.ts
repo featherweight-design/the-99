@@ -117,10 +117,10 @@ export const showcaseCopy = {
 export const writtenForYouCopy = {
   rows: [
     { id: 'overview', name: 'Overview', where: 'A deck’s Analysis tab', what: 'Reads the whole list and says what the deck does and how it wins.', cost: '1 credit each', short: 'each' },
-    { id: 'suggested', name: 'Suggested changes', where: 'A deck’s Analysis tab', what: 'Up to five swaps, read from your games, your notes and the list.', cost: '1 credit per run', short: 'per run' },
-    { id: 'look-deeper', name: 'Proposed cuts', where: 'A deck’s Analysis tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per run', short: 'per run' },
+    { id: 'suggested', name: 'Suggested changes', where: 'A deck’s Tuning tab', what: 'Up to five swaps, read from your games, your notes and the list.', cost: '1 credit per run', short: 'per run' },
+    { id: 'look-deeper', name: 'Proposed cuts', where: 'A deck’s Tuning tab', what: 'Names the cards to cut, not just where the deck runs long.', cost: '1 credit per run', short: 'per run' },
     { id: 'help-me-choose', name: 'Help me choose, with “Anything else?”', where: 'New deck', what: 'Reads what you type and ranks commanders against it.', cost: '1 credit per search', short: 'per search' },
-    { id: 'find-a-deck-read', name: 'Which deck needs it most?', where: 'A card’s details', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
+    { id: 'find-a-deck-read', name: 'Which deck needs it most?', where: 'A card in no deck', what: 'Takes a card through each deck’s plan and names the ones it really helps.', cost: '1 credit per read', short: 'per read' },
     // The one 2-credit tool: the number leads its pill, as the Suggested changes v2 row's `1 or 2 per run` does; the five
     // 1-credit pills stay bare. Listed while the reader's PRECON_UPGRADE_ENABLED is on (`writtenForYou`). Run 12 to 18
     // swaps (`MIN_SWAPS`, `MAX_SWAPS`), flat 2 credits (`UPGRADE_UNITS`).
@@ -135,6 +135,19 @@ export const writtenForYouCopy = {
     short: '1 or 2 per run',
   },
   free: 'Finding a deck’s bracket is free, and so is reopening a past Help me choose.',
+} as const;
+
+/**
+ * The free block of the welcome sheet (tool discovery C): the tools a reader can use without a credit, listed under
+ * the spenders in the reason-line form. `line` is tightened from the design's "Free, no credit needed": each row
+ * carries a `free` pill, so "Free" would be said three times (copy-review rule 7).
+ */
+export const welcomeFreeCopy = {
+  line: 'No credit needed',
+  rows: [
+    { id: 'consider', name: 'Consider', where: 'A deck’s Tuning tab', short: 'free', cost: 'free' },
+    { id: 'find-a-deck', name: 'Find a deck', where: 'A card in no deck', short: 'free', cost: 'free' },
+  ],
 } as const;
 
 // ---- R2·6a · the Reference tab (README-r2 C5, R2b's note). /copy-review 2026-10-17: the search's none and note lines

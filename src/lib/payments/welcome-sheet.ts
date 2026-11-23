@@ -1,8 +1,8 @@
-import { showcaseCopy } from "../copy/discovery";
+import { showcaseCopy, welcomeFreeCopy } from "../copy/discovery";
 import { refreshCopy } from "../copy/refresh";
 import type { ShowcaseGroup, WrittenRow } from "../discovery/showcase";
 import type { TourCredits } from "../discovery/tour-steps";
-import type { ToolId } from "../discovery/tools";
+import { landingSpotFor, type ToolId } from "../discovery/tools";
 import { EXPIRY_WARNING_MS } from "../model/credit-line";
 import type { WelcomeLotKind, WelcomeState } from "./welcome-state";
 
@@ -50,7 +50,7 @@ export function lotFacts(state: WelcomeState, now: Date, free: number): WelcomeF
 }
 
 /** One of the rows, drawn as name, where and cost; `tryHref` is the shipped resolver's landing, or null. */
-export type SheetRow = { id: WrittenRow["id"]; name: string; where: string; short: string; cost: string; tryHref: string | null };
+export type SheetRow = { id: WrittenRow["id"] | (typeof welcomeFreeCopy.rows)[number]["id"]; name: string; where: string; short: string; cost: string; tryHref: string | null };
 
 /**
  * The sheet's list, by the reader's deck state (README R2, "Try it"):
@@ -63,6 +63,9 @@ export type WelcomeSheet = {
   lead: SheetRow[];
   line: { kind: "lock" | "reason"; text: string } | null;
   rows: SheetRow[];
+  /** The tools that cost no credit, drawn under the spenders after `freeLine`. Never in the first-run tour's list. */
+  freeLine: string;
+  free: SheetRow[];
 };
 
 /** The tool each row's Try it opens. Overview and Which deck needs it most? have no landing of their own. */
@@ -72,6 +75,15 @@ const ROW_TOOL: Partial<Record<WrittenRow["id"], ToolId>> = {
   "help-me-choose": "help-me-choose",
 };
 
+/** The people-facing landing of a deck tool on the reader's most recently touched deck, from the shared landing table. */
+function deckLanding(id: "overview" | "consider", deckId: string | null): string | null {
+  const spot = landingSpotFor(id);
+  return deckId && spot?.lands.kind === "deck" ? `/decks/${deckId}?tab=${spot.lands.tab}` : null;
+}
+
+/** Where Find a deck lands: the collection's Free cards, where each card carries the button. */
+const FIND_A_DECK_HREF = "/collection?avail=free";
+
 export function welcomeSheet(input: {
   /** `writtenForYou(suggestedV2, upgrade).rows`. */
   written: readonly WrittenRow[] | null;
@@ -80,27 +92,45 @@ export function welcomeSheet(input: {
   decks: number;
   /** `showcaseGroups` for this reader: its card states are the shipped Try-it resolver's answers. */
   groups: readonly ShowcaseGroup[];
+  /** The reader's most recently touched deck, which Overview and Consider open on; null with none. */
+  firstDeckId?: string | null;
 }): WelcomeSheet | null {
   if (!input.written || input.written.length === 0) return null;
+  const free = (live: boolean): SheetRow[] =>
+    welcomeFreeCopy.rows.map((r) => ({
+      ...r,
+      tryHref: !live ? null : r.id === "consider" ? deckLanding("consider", input.firstDeckId ?? null) : FIND_A_DECK_HREF,
+    }));
+  const freeLine = welcomeFreeCopy.line;
   const states = new Map(input.groups.flatMap((g) => g.cards).map((c) => [c.id, c.state]));
   const row = (r: WrittenRow, live: boolean): SheetRow => {
     const tool = ROW_TOOL[r.id];
     const state = live && tool ? states.get(tool) : undefined;
     // Upgrade's landing is the precon list (G26): a run starts on one precon's page, picked there.
-    const tryHref = live && r.id === "upgrade" ? "/decks/precons" : state && (state.kind === "deck" || state.kind === "page") ? state.href : null;
+    const tryHref = !live
+      ? null
+      : r.id === "upgrade"
+        ? "/decks/precons"
+        : r.id === "overview"
+          ? deckLanding("overview", input.firstDeckId ?? null)
+          : r.id === "find-a-deck-read"
+            ? FIND_A_DECK_HREF
+            : state && (state.kind === "deck" || state.kind === "page")
+              ? state.href
+              : null;
     return { id: r.id, name: r.name, where: r.where, short: r.short, cost: r.cost, tryHref };
   };
   if (input.cards === 0) {
-    return { shape: "locked", lead: [], line: { kind: "lock", text: refreshCopy.firstRun.step2Locked }, rows: input.written.map((r) => row(r, false)) };
+    return { shape: "locked", lead: [], line: { kind: "lock", text: refreshCopy.firstRun.step2Locked }, rows: input.written.map((r) => row(r, false)), freeLine, free: free(false) };
   }
   if (input.decks === 0) {
     // Upgrade this precon needs no deck of the reader's: a precon is the deck. It leads with Help me choose, over the line.
     const noDeckNeeded = (r: WrittenRow) => r.id === "help-me-choose" || r.id === "upgrade";
     const lead = input.written.filter(noDeckNeeded).map((r) => row(r, true));
     const rows = input.written.filter((r) => !noDeckNeeded(r)).map((r) => row(r, false));
-    return { shape: "noDeck", lead, line: rows.length > 0 ? { kind: "reason", text: showcaseCopy.needsADeck } : null, rows };
+    return { shape: "noDeck", lead, line: rows.length > 0 ? { kind: "reason", text: showcaseCopy.needsADeck } : null, rows, freeLine, free: free(false) };
   }
-  return { shape: "decks", lead: [], line: null, rows: input.written.map((r) => row(r, true)) };
+  return { shape: "decks", lead: [], line: null, rows: input.written.map((r) => row(r, true)), freeLine, free: free(true) };
 }
 
 /**

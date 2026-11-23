@@ -4,6 +4,7 @@
 // is given). The cells share one strip, split by a hairline with a small chevron at each join, pointing the way
 // credits are spent. "Reset at" is the reader's own clock, so it is drawn after hydration only.
 
+import { captureToolEvent } from "../../lib/analytics/posthog";
 import { useRef, useState } from "react";
 import { clockTime } from "../../lib/copy/credits";
 import { creditsPageCopy } from "../../lib/copy/credits-page";
@@ -43,7 +44,10 @@ function WelcomeSub({ cell, welcome }: { cell: BalanceCell & { expires: NonNulla
             ref={where}
             type="button"
             data-welcome-where
-            onClick={() => setOpen(true)}
+            onClick={() => {
+              captureToolEvent("welcome_where_opened", { from: "credits_cell" });
+              setOpen(true);
+            }}
             className={`${TOUCH_HIT} cursor-pointer border-0 bg-transparent p-0 text-left font-[inherit] text-[length:inherit] leading-[inherit] text-[color:var(--fg)] underline decoration-[color-mix(in_srgb,var(--accent)_55%,transparent)] underline-offset-[3px]`}
           >
             {w.where}
