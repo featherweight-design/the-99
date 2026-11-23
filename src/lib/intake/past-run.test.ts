@@ -15,8 +15,8 @@ vi.mock("../../db", async () => {
   };
 });
 
-const art = vi.hoisted(() => ({ map: new Map<string, string>() }));
-vi.mock("../cards/chain-art", () => ({ chainArt: async () => art.map }));
+const art = vi.hoisted(() => ({ map: new Map<string, string>(), stores: [] as unknown[] }));
+vi.mock("../cards/chain-art", () => ({ chainArt: async (...a: unknown[]) => (art.stores.push(a[3]), art.map) }));
 
 const { completePastDeckNames, loadGonePicks } = await import("./past-run");
 
@@ -24,9 +24,15 @@ const RUN = new Date("2026-10-10T00:00:00Z");
 const id = (n: number) => `0000aaaa-0000-4000-8000-00000000000${n}`;
 const card = (n: number) => ({ id: id(n), name: `Commander ${n}`, image: `i${n}`, crop: `c${n}` });
 
-beforeEach(() => { rows.cards = []; rows.decks = []; rows.named = []; art.map = new Map(); });
+beforeEach(() => { rows.cards = []; rows.decks = []; rows.named = []; art.map = new Map(); art.stores = []; });
 
 describe("loadGonePicks", () => {
+  it("opens each pick's art at the reader's store", async () => {
+    rows.cards = [card(1)];
+    await loadGonePicks("u", [id(1)], RUN, "tcgplayer");
+    expect(art.stores).toEqual(["tcgplayer"]);
+  });
+
   it("names each pick in the read's order and says which the player has built since", async () => {
     rows.cards = [card(2), card(1)];
     rows.decks = [

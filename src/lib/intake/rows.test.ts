@@ -70,6 +70,11 @@ describe("the claim reads", () => {
     expect(opts?.oracleIds).toEqual([id(1)]);
   });
 
+  it("opens the card chip's art at the reader's store", async () => {
+    await loadCardChip("u", id(7), "cardkingdom");
+    expect(stub.chainArt.mock.calls.at(-1)?.[3]).toBe("cardkingdom");
+  });
+
   it("reads the card's row from loadCardChip", async () => {
     await loadCardChip("u", id(7), "manapool");
     expect(stub.cardRow.mock.calls[0]).toEqual(["u", id(7)]);

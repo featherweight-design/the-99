@@ -88,8 +88,8 @@ describe("loadCart", () => {
     readBuyRowPrices.mockRejectedValue(new Error("price read failed"));
     const spy = vi.spyOn(console, "error").mockImplementation(() => {});
     chainArt.mockResolvedValue(new Map([["sol", "owned-sol.jpg"]]));
-    expect((await loadCart("user")).lines[0].imageUri).toBe("owned-sol.jpg");
-    expect(chainArt.mock.calls[0]).toEqual(["user", null, ["sol"], "manapool"]);
+    expect((await loadCart("user", "tcgplayer")).lines[0].imageUri).toBe("owned-sol.jpg");
+    expect(chainArt.mock.calls[0]).toEqual(["user", null, ["sol"], "tcgplayer"]);
     selects.length = 0;
     selects.push(
       [{ total: 21 }],
