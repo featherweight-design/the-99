@@ -238,9 +238,13 @@ export const feedCopy = {
       seeLists: "See the lists",
       /** An answer to the reader's own spare request: opens that one request over Home (small items item 3). */
       answer: "Your request",
+      /** You have it R2: the friend's answer to the reader's OFFER opens that offer over Home (board `Sheet`). */
+      offerAnswer: "Your offer",
     },
     /** The kicker of an answer to the reader's own spare request (spare requests handoff, board `Asker-States`). */
     answerKicker: "Your request",
+    /** You have it R2: the kicker of the friend's answer to the reader's offer (it read `Your request` before). */
+    offerAnswerKicker: "Your offer",
     /** The kicker of an offer to the reader (You have it), as Waiting on you's row names it. */
     offerKicker: "Spare offer",
     /**

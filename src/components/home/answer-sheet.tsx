@@ -11,16 +11,18 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
-import { closeSpareAction, openAnswerAction } from "../../app/friends/spare-actions";
+import { closeSpareAction, openAnswerAction, openOfferAnswerAction } from "../../app/friends/spare-actions";
 import { dialogsUp } from "../../lib/a11y/dialog";
 import { announceAnswerSeen } from "../shell/answer-seen";
 import { spareCopy } from "../../lib/copy/social";
 import type { FeedView } from "../../lib/feed/home";
+import type { HistoryEntry } from "../../lib/social/request-history";
 import type { YourRequest } from "../../lib/social/your-requests";
 import { ModalChrome } from "../decks/receipt-modal";
 import { personAttrs } from "../../lib/person-name";
 import { PendingReporter } from "../shell/pending-reporter";
 import { useSpareToast } from "../social/spare-answer";
+import { OfferAnswerSheet } from "./offer-answer-sheet";
 import { RequestPicture, RequestText, requestText } from "../social/your-requests";
 
 const m = spareCopy.request.mine;
@@ -38,7 +40,7 @@ type Ctx = {
 const AnswerSheetContext = createContext<Ctx | null>(null);
 export const useAnswerSheet = (): Ctx | null => useContext(AnswerSheetContext);
 
-type Open = { item: FeedView; request: YourRequest; from: HTMLElement };
+type Open = { item: FeedView; from: HTMLElement } & ({ request: YourRequest; entry?: undefined } | { entry: HistoryEntry; request?: undefined });
 
 /**
  * What's new's answer sheet. `onSeen` takes the item's diamond off for the visit; `onCleared` hides the item through
@@ -61,26 +63,44 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
   async function openItem(item: FeedView, from: HTMLElement) {
     if (pending) return;
     setPending(item.key);
-    const out = await openAnswerAction(item.key).catch(() => null);
+    // An answer to the reader's OFFER (You have it R2) opens the request-history row; an answer to their ask, their Your
+    // requests row. Neither is a sheet the other can open: the server resolves the key to the one kind it names.
+    const offered = item.offer === true;
+    const out = offered ? await openOfferAnswerAction(item.key).catch(() => null) : await openAnswerAction(item.key).catch(() => null);
     setPending(null);
-    // The server marked the answer seen whatever happens next, so the diamond, the count and the Friends badge follow it.
+    // The server marked an ask's answer seen whatever happens next (an offer's answer has no stamp: its diamond goes for
+    // the visit), so the diamond, the count and the Friends badge follow it.
     if (out?.ok) {
       onSeen(item.key);
-      if (out.counted) announceAnswerSeen(new Date(out.request.answeredAt ?? 0).toISOString());
+      if ("counted" in out && out.counted) announceAnswerSeen(new Date(out.request.answeredAt ?? 0).toISOString());
     }
     // The item was dismissed while the open was out (its press is gone), or the reader opened another sheet meanwhile:
     // either way they moved on, so the late reply opens nothing and goes nowhere.
     if (!from.isConnected || dialogsUp().length > 0) return;
-    // Refused (cleared since, or the switch off) or failed: /friends, where the press went as it shipped.
-    if (!out?.ok) return router.push("/friends");
-    setOpen({ item, request: out.request, from });
+    // Refused (cleared since, or the switch off) or failed: where the press went as it shipped (an offer's answer is
+    // read on Request history).
+    if (!out?.ok) return router.push(offered ? "/friends/requests" : "/friends");
+    setOpen("entry" in out ? { item, entry: out.entry, from } : { item, request: out.request, from });
   }
   return (
     <AnswerSheetContext.Provider value={{ open: (item, from) => void openItem(item, from), pending }}>
       {children}
-      {open && (
+      {open?.entry && (
+        <OfferAnswerSheet
+          entry={open.entry}
+          now={now}
+          onClose={() => {
+            const back = open.from;
+            setOpen(null);
+            requestAnimationFrame(() => {
+              if (back.isConnected) back.focus();
+            });
+          }}
+        />
+      )}
+      {open?.request && (
         <AnswerSheet
-          {...open}
+          request={open.request}
           now={now}
           onClose={() => {
             const back = open.from;
@@ -104,7 +124,7 @@ export function AnswerSheetProvider({ now, onSeen, onCleared, children }: {
   );
 }
 
-function AnswerSheet({ request, now, onClose, onCleared }: Open & { now: string; onClose: () => void; onCleared: () => void }) {
+function AnswerSheet({ request, now, onClose, onCleared }: { request: YourRequest; now: string; onClose: () => void; onCleared: () => void }) {
   const toast = useSpareToast();
   const [busy, setBusy] = useState(false);
   const text = requestText(request, new Date(now));

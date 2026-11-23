@@ -1,0 +1,40 @@
+{
+  "feature": "You have it R2, PR 3: the offerer's answer sheet (S0 to S2, D0 to D2)",
+  "note": "Needs a SCRATCH branch off local-dev where the reader (the +clerk_test account) has a friend who answered two of their offers, one Yes and one No. probe:you-have-it-r2c seeds it with YHI_KEEP=1.",
+  "out": "contact-sheets/you-have-it-r2-sheet",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "home-offer-answer",
+      "label": "Home: the offerer's answer item reads Your offer",
+      "view": "src/components/feed/feed-item.tsx",
+      "steps": [
+        { "goto": "/", "wait": "button:has-text(\"Your offer\")", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "sheet-accepted",
+      "label": "the Accepted answer sheet",
+      "view": "src/components/home/offer-answer-sheet.tsx",
+      "steps": [
+        { "goto": "/", "wait": "button:has-text(\"Your offer\")", "settle": 1500 },
+        { "click": "li:has-text(\"said yes to\") button:has-text(\"Your offer\")" },
+        { "wait": "[data-testid=\"offer-sheet-row\"]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "sheet-declined",
+      "label": "the Declined answer sheet",
+      "view": "src/components/home/offer-answer-sheet.tsx",
+      "steps": [
+        { "goto": "/", "wait": "button:has-text(\"Your offer\")", "settle": 1500 },
+        { "click": "li:has-text(\"passed on\") button:has-text(\"Your offer\")" },
+        { "wait": "[data-testid=\"offer-sheet-row\"]", "settle": 800 }
+      ]
+    }
+  ]
+}
