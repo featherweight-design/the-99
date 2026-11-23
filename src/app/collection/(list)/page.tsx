@@ -26,6 +26,7 @@ import { pageWindowIds } from "../../../lib/collection/window";
 import { parseSortCookie, withStoredSort } from "../../../lib/collection/sort-options";
 import { searchParamsToQuery } from "../../../lib/commanders/search-params";
 import { loadAvailability } from "../../../lib/decks/availability-query";
+import { loadFindADeckState } from "../../../lib/collection/find-a-deck";
 import {
   EmptyState,
   EmptyStateBody,
@@ -64,7 +65,7 @@ export default async function CollectionPage({
   };
   // The reader's store (store preference): Mana Pool, with no read, while the switch is off for them.
   const storeRead = readerStoreForPage(userId, env);
-  const [stats, { cards, pricesFailed }, ownedSets, availability, savedToken, store] = await Promise.all([
+  const [stats, { cards, pricesFailed }, ownedSets, availability, savedToken, store, findADeck] = await Promise.all([
     perf.timed("stats", () => getCollectionStats(userId)),
     // The heaviest read on this page by an order of magnitude, which is why it
     // is the one cached across visits.
@@ -104,6 +105,9 @@ export default async function CollectionPage({
     // between can only make the copy filed under this token newer than it says, never older.
     savedListToken(userId, env).catch(() => null),
     storeRead,
+    // The Find a deck call-out and buttons (tool discovery call 1): whether the reader has a deck, closed the call-out,
+    // and which of their cards are not Commander-legal. Quiet failure: null draws neither.
+    perf.timed("findADeck", () => loadFindADeckState(userId)).catch(() => null),
   ]);
 
   // Flattened onto the cards here: a Map cannot cross the server/client
@@ -178,6 +182,7 @@ export default async function CollectionPage({
           pricesFailed={pricesFailed}
           viewHint={viewHint}
           savedToken={savedToken}
+          findADeck={findADeck}
         />
       </StoreProvider>
     </section>

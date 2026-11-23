@@ -1877,6 +1877,13 @@
       "when": 1795392343594,
       "tag": "0269_spare_offers",
       "breakpoints": true
+    },
+    {
+      "idx": 270,
+      "version": "7",
+      "when": 1795466178569,
+      "tag": "0270_user_prefs_find_a_deck_closed",
+      "breakpoints": true
     }
   ]
 }

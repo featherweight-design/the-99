@@ -73,8 +73,12 @@ export type CardDetailContextValue = {
      * `comboOnly`: with `comboVariantId`, the combo's sheet opens ON ITS OWN, with no card details under it (the feed's combo item,
      * small items 12 PR 3b), headed by `comboOnly.added` (the piece the reader's write added). A combo that can no longer be
      * read falls back to the card's details, as `combo` alone opens them.
+     *
+     * `view: "fits"`: the card opens on Find a deck's view (tool discovery call 1, the button under a free card), and
+     * its back goes to the card's details. A card whose own payload shuts the door (not Commander-legal, no deck)
+     * lands on its details.
      */
-    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string } },
+    opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string }; view?: "fits" },
   ) => void;
   /** The id whose fetch is in flight, so its trigger can show the click landed. */
   pendingOracleId: string | null;

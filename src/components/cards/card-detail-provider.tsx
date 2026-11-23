@@ -404,6 +404,14 @@ export function CardDetailProvider({
   // (`show`): a read that fails leaves the original on screen, which must not then name itself as
   // its own way back, and two presses before the first read lands push the original once.
   const pendingPartner = useRef<{ from: TrailEntry; to: string } | null>(null);
+  // FIND A DECK'S VIEW (handoff R2, following swap tools, on the card as `fitsRead`): the door
+  // opens the view inside this card's own dialog rather than stacking the picker. Keyed on the card,
+  // so a card opened from the view (a partner, with the way back) leaves it standing for the return.
+  const [fitsViewFor, setFitsViewFor] = useState<string | null>(null);
+  // An open that asked to land on Find a deck (tool discovery call 1, `opts.view`): the card it is for. Spent
+  // when a card arrives (`show`), which opens the view only if that card is the one asked for and its own
+  // payload opens the door (Commander-legal, a deck, the read): otherwise the card lands on its details.
+  const viewOnArrival = useRef<string | null>(null);
   // The card the live one is a partner of, which its way back names. The trail is the LIVE slot's:
   // a card lifted under a sheet takes its own into `Held`, so a card over that sheet starts clean.
   const partnerOf = trail.at(-1)?.card ?? null;
@@ -605,6 +613,11 @@ export function CardDetailProvider({
     // rather than inside the updater, which must stay pure.
     // A partner landing puts the card it was asked from on the trail; anything else landing drops
     // the ask.
+    const viewFor = viewOnArrival.current;
+    if (viewFor !== null && next) {
+      viewOnArrival.current = null;
+      if (viewFor === next.oracleId && next.commanderLegal && next.hasDecks && next.fitsRead) setFitsViewFor(next.oracleId);
+    }
     const partner = pendingPartner.current;
     if (partner && next) pendingPartner.current = null;
     if (partner && next && next.oracleId === partner.to) {
@@ -701,7 +714,12 @@ export function CardDetailProvider({
       // open one again. Without this the modal left standing is one no write can reach: an
       // art pick made in it would evict a card `evict` no longer believes is open, and the
       // pick would sit there uncorrected.
-      const giveUp = () => { openRef.current = shownRef.current; };
+      const giveUp = () => {
+        openRef.current = shownRef.current;
+        // An ask to land on Find a deck dies with the read it was for: it must not wait for this card to arrive by
+        // some later path that never asked for the view.
+        if (viewOnArrival.current === oracleId) viewOnArrival.current = null;
+      };
       setFailed(false);
       if (hit) {
         setPendingOracleId(null);
@@ -841,9 +859,11 @@ export function CardDetailProvider({
       oracleId: string,
       list?: readonly Sibling[],
       atPrinting?: (PreferredPrinting & { imageUri?: string | null; backImageUri?: string | null; scryfallId?: string }) | null,
-      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string } },
+      opts?: { door?: boolean; art?: string | null; opener?: HTMLElement | null; combo?: boolean; comboVariantId?: string; comboOnly?: { added: string }; view?: "fits" },
     ) => {
       warmCardModal();
+      // Every open restates where it lands, so an older ask for Find a deck never outlives it.
+      viewOnArrival.current = opts?.view === "fits" ? oracleId : null;
       // Every open restates what the feed's sheet was: a new open abandons a read of it still running.
       feedComboRead.current++;
       setFeedComboReading(false);
@@ -905,12 +925,8 @@ export function CardDetailProvider({
   // is evicted so its block reads again (the partner now in the deck).
   const [comboSheet, setComboSheet] = useState<{ card: BrowseCard; combo: CardCombo } | null>(null);
   const comboReread = useRef<string | null>(null);
-  // FIND A DECK'S VIEW (handoff R2, following swap tools, on the card as `fitsRead`): the door
-  // opens the view inside this card's own dialog rather than stacking the picker. Keyed on the card,
-  // so a card opened from the view (a partner, with the way back) leaves it standing for the return.
   // What the reader did on the read's rows, and whether a read is running, are kept per card for the
-  // visit, so neither is lost to that round trip.
-  const [fitsViewFor, setFitsViewFor] = useState<string | null>(null);
+  // visit, so neither is lost to that round trip. The card whose view is up is `fitsViewFor`, above.
   const [fitsMemory, setFitsMemory] = useState<Record<string, FitsViewMemory>>({});
   const [fitsReading, setFitsReading] = useState<ReadonlySet<string>>(() => new Set());
   const fitsDoor = (c: BrowseCard) => (c.commanderLegal && c.hasDecks
@@ -957,6 +973,7 @@ export function CardDetailProvider({
     // Or a read abandoned by the close could still commit its printing onto the next card
     // the reader opens.
     pendingAt.current = null;
+    viewOnArrival.current = null;
     show(null);
     setPendingOracleId(null);
     setFailed(false);

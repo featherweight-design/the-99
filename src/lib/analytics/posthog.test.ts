@@ -212,6 +212,16 @@ describe("captureScanFallback", () => {
   });
 });
 
+describe("captureToolEvent", () => {
+  it("sends the event by name with its closed-set props, and nothing else", async () => {
+    const m = await load();
+    void m.startAnalytics(LIVE);
+    m.captureToolEvent("find_a_deck_opened", { from: "tile_button" });
+    await settle();
+    expect(posthog.capture.mock.calls.at(-1)).toEqual(["find_a_deck_opened", { from: "tile_button" }]);
+  });
+});
+
 describe("posthogCspHosts", () => {
   it("names nothing without a key", async () => {
     const { posthogCspHosts } = await load();

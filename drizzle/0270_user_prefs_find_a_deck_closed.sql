@@ -1,0 +1,1 @@
+ALTER TABLE "user_prefs" ADD COLUMN "find_a_deck_closed_at" timestamp with time zone;

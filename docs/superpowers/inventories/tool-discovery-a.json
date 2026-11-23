@@ -1,0 +1,42 @@
+{
+  "feature": "Finding the tools, PR A: the collection's Find a deck call-out and the labelled button beside each Free card (handoff design_handoff_the99_tool_discovery, Find.dc.html F0 to F2 and R4; plan 2026-11-23-tool-discovery.md §3 A)",
+  "note": "Photographed over a SCRATCH branch off local-dev (migration 0270 applied), signed in as the +clerk_test account, which has a deck with a commander and cards in no deck. `pnpm probe:find-a-deck` resets the reader's `find_a_deck_closed_at` in its finally; reset it again before a sheet if the ✕ was pressed since.",
+  "out": "contact-sheets/tool-discovery-a",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "ipad", "width": 820, "height": 1180 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "all-grid",
+      "label": "/collection grid, All: the call-out under the chassis, with Show them",
+      "view": "src/components/collection/find-a-deck-callout.tsx",
+      "steps": [{ "goto": "/collection?view=grid", "wait": "[data-find-a-deck-callout=\"all\"]", "settle": 1500 }]
+    },
+    {
+      "id": "free-grid",
+      "label": "/collection?avail=free grid: the call-out without Show them, a Find a deck button under each tile",
+      "view": "src/components/collection/find-a-deck-button.tsx",
+      "steps": [{ "goto": "/collection?view=grid&avail=free", "wait": "[data-find-a-deck=\"tile\"]", "settle": 1500 }]
+    },
+    {
+      "id": "free-rows",
+      "label": "/collection?avail=free rows: the strip inside each row on a phone, the side button from md",
+      "view": "src/components/collection/rows-view.tsx",
+      "steps": [{ "goto": "/collection?view=rows&avail=free", "wait": "[data-find-a-deck-row]", "settle": 1500 }]
+    },
+    {
+      "id": "fits-from-row",
+      "label": "the card window, opened from a row's button straight on Find a deck",
+      "view": "src/components/collection/browser.tsx",
+      "widths": ["phone", "desktop"],
+      "steps": [
+        { "goto": "/collection?view=rows&avail=free", "wait": "[data-find-a-deck-row]", "settle": 1500 },
+        { "click": "[data-find-a-deck]:visible" },
+        { "wait": "[data-testid=\"fits-view\"] section", "settle": 1500 }
+      ]
+    }
+  ]
+}

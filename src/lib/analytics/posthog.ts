@@ -14,6 +14,7 @@ import type { CaptureResult, PostHog, PostHogConfig, Properties } from "posthog-
 
 import { redactLinkTokens, scrubUrl } from "../sentry/scrub";
 import type { Evidence } from "./sign-out-evidence";
+import type { ToolEvents } from "./tool-events";
 
 import { isProductionHostname, posthogApiHost } from "./hosts";
 
@@ -187,6 +188,14 @@ export function captureSurveyShown(): void {
  */
 export function captureScanFallback(e: { kind: string; from: string; to: string; reason: string }): void {
   withClient((posthog) => posthog.capture("scan_fallback", { kind: e.kind, from: e.from, to: e.to, reason: e.reason }));
+}
+
+/**
+ * A tool discovery event (plan §6): the name and its props are `ToolEvents`' closed sets, so nothing typed by a
+ * reader can be sent. The identity is what `identifyReader` already set.
+ */
+export function captureToolEvent<E extends keyof ToolEvents>(name: E, props: ToolEvents[E]): void {
+  withClient((posthog) => posthog.capture(name, { ...props }));
 }
 
 /**

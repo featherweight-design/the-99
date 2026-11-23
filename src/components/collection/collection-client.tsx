@@ -21,6 +21,7 @@ import type { CardArt } from "../../lib/collection/browse";
 import type { OwnedSetMeta } from "../../lib/collection/set-filter";
 import { decodeCollection, type CollectionRow, type CollectionWire } from "../../lib/collection/list-wire";
 import type { ViewHint } from "./browser";
+import type { FindADeckState } from "../../lib/collection/find-a-deck";
 
 export function CollectionClient({
   wire,
@@ -29,6 +30,7 @@ export function CollectionClient({
   pricesFailed = false,
   viewHint,
   savedToken = null,
+  findADeck = null,
 }: {
   wire: CollectionWire;
   ownedSets: OwnedSetMeta[];
@@ -39,6 +41,8 @@ export function CollectionClient({
   viewHint?: ViewHint;
   /** The token the server says the browser's saved fields are good for (`lib/collection/saved-token`); null keeps none. */
   savedToken?: string | null;
+  /** The Find a deck call-out's and buttons' read (`loadFindADeckState`); null (absent or failed) draws neither. */
+  findADeck?: FindADeckState | null;
 }) {
   // Decoded once per payload: the same wire identity is the same list, so everything below
   // that compares `cards` by identity keeps working.
@@ -96,6 +100,7 @@ export function CollectionClient({
         pricesFailed={pricesFailed}
         viewHint={viewHint}
         savedToken={savedToken}
+        findADeck={findADeck}
       />
     </CardDetailProvider>
   );

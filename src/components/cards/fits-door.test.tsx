@@ -1,5 +1,8 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+
+const capture = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/analytics/posthog", () => ({ captureToolEvent: capture }));
 
 import { FitsDoor } from "./fits-door";
 
@@ -14,5 +17,13 @@ describe("FitsDoor", () => {
     expect(screen.queryByTestId("fits-door-reading")).toBeNull();
     expect(screen.getByTestId("fits-door")).toBe(button);
     expect(document.activeElement).toBe(button);
+  });
+
+  it("sends find_a_deck_opened from the card door, then opens", () => {
+    const onPress = vi.fn();
+    render(<FitsDoor cardName="Sol Ring" onPress={onPress} pickerOpen={false} layout="row" />);
+    fireEvent.click(screen.getByTestId("fits-door"));
+    expect(capture).toHaveBeenCalledWith("find_a_deck_opened", { from: "card_door" });
+    expect(onPress).toHaveBeenCalledTimes(1);
   });
 });
