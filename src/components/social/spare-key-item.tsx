@@ -3,7 +3,7 @@
 // context with its hook. Pure: no action, no read, no per-user import. `spare-markers.tsx` (the provider that fills the
 // context) and `friend-spares.tsx` re-export these, so every old import path keeps working.
 
-import { createContext, useContext } from "react";
+import { createContext, useContext, type ReactNode } from "react";
 import type { FriendSpare } from "../../lib/social/spares";
 import type { AskStateLine } from "../../lib/social/spare-requests";
 import { spareCopy } from "../../lib/copy/social";
@@ -66,6 +66,16 @@ export function SpareGlyph({ size }: { size: number }) {
       <circle cx="16.5" cy="9.5" r="2.6" />
       <path d="M15.5 14.2c2.6-.3 4.6 1.3 5.1 4.3" />
     </svg>
+  );
+}
+
+/** The count chip (`.sp2`): the glyph and a figure in fact ink on a fact tint. Friend rows on the modal and /friends draw it. */
+export function SpareChip({ gap = 6, children }: { gap?: 4 | 6; children: ReactNode }) {
+  return (
+    <span className={`inline-flex h-[22px] flex-none items-center ${gap === 4 ? "gap-[4px]" : "gap-[6px]"} rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]`}>
+      <SpareGlyph size={13} />
+      {children}
+    </span>
   );
 }
 

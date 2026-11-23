@@ -585,6 +585,8 @@ export const haveItCopy = {
   section: (n: number) => `Your spares · ${n}`,
   spare: (n: number) => (n === 1 ? "1 spare" : `${n} spares`),
   spareSub: "not in a deck or draft",
+  /** The row's title once the friend has an open ask on the card (`Colin asked for 1`). */
+  asked: (friend: ThirdPartyName, n: number) => personText`${friend} asked for ${n}`,
   offer: "Offer",
   offerAria: (friend: ThirdPartyName, card: string) => personText`Offer ${friend} ${card}`,
   offered: "Offered",

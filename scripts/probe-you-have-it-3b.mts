@@ -1,7 +1,7 @@
 // pnpm probe:you-have-it-3b (run: tsx scripts/probe-you-have-it-3b.mts): "You have it" UI 3b, the OFFERER's side, in a real
 // browser against a real database. The signed-in `+clerk_test` account is the OFFERER (the reader); a per-run made-up id is
 // the WANTER, a friend whose wishlist wants a card the reader can spare:
-//   1. the friend's Wishlist tab draws the call-out (`You have 1 to spare`), the filter, the key and a press on the tile;
+//   1. the friend's Wishlist tab draws the call-out (`You have 2 to spare`), the filter, the key and a press on the tile;
 //   2. the filter `You can spare` narrows the tiles to the spare card;
 //   3. pressing the tile opens `You have this`; pressing Offer turns the row to `Offered` and the press's aria to
 //      `, offered`, and a holder-initiated spare_requests row exists;
@@ -91,8 +91,10 @@ async function main() {
     const got = mine.length ? await loadOwnOffered(viewer, mine.map((r) => r.oracle_id)) : new Map<string, number>();
     const Z = [...got.keys()][0];
     if (!Z) throw new Error("the reader owns no card they can spare on this branch");
+    const Z2 = [...got.keys()][1] ?? null;
     const { rows: nm } = await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${Z}`);
     const face = nm[0].name.split(" // ")[0];
+    const face2 = Z2 ? ((await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${Z2}`)).rows[0].name.split(" // ")[0]) : "";
 
     await friends.ensureProfile(viewer, "Alpha");
     await friends.ensureProfile(WANTER, "Max");
@@ -101,7 +103,12 @@ async function main() {
     await friends.redeemInvite(viewer, inv.token);
     const wanterPublic = (await db.execute<{ p: string }>(sql`select public_id::text as p from social_profiles where user_id = ${WANTER}`)).rows[0].p;
     await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity) values (${WANTER}, ${Z}, 1)`);
-    // A second card the reader cannot spare, so the filter has something to hide.
+    // The friend's own open ask of a second spare card, for the asked row (title, Yes / No on their own line).
+    if (Z2) {
+      await db.execute(sql`insert into wishlist_items (user_id, oracle_id, quantity) values (${WANTER}, ${Z2}, 1)`);
+      await db.execute(sql`insert into spare_requests (asker_user_id, holder_user_id, oracle_id, status, copies, initiated_by) values (${WANTER}, ${viewer}, ${Z2}, 'open', 1, 'asker')`);
+    }
+    // A card the reader cannot spare, so the filter has something to hide.
     const { rows: other } = await db.execute<{ oracle_id: string }>(sql`
       select c.oracle_id from cards c where c.oracle_id <> ${Z} and exists (select 1 from printings p where p.oracle_id = c.oracle_id)
         and not exists (select 1 from collection_items ci where ci.user_id = ${viewer} and ci.oracle_id = c.oracle_id) order by c.oracle_id limit 1`);
@@ -114,27 +121,35 @@ async function main() {
       const callout = onPage(page, '[data-testid="have-callout"]').first();
       await callout.waitFor({ state: "attached", timeout: 30_000 });
       const ct = ((await callout.textContent()) ?? "").replace(/\s+/g, " ");
-      check(`${vp.label} call-out title`, /You have 1 to spare/.test(ct), ct.slice(0, 100));
+      check(`${vp.label} call-out title`, /You have 2 to spare/.test(ct), ct.slice(0, 100));
       check(`${vp.label} call-out names the card`, ct.includes(face), ct.slice(0, 140));
       check(`${vp.label} key line`, /you can spare/.test(((await onPage(page, '[data-testid="have-key"]').first().textContent()) ?? "")));
-      check(`${vp.label} one press for one spare card`, (await onPage(page, '[data-testid="have-press"]').count()) === 1);
+      // The key sits on its own line under the switch at both widths (the mock draws it under, never beside).
+      const kb = await onPage(page, '[data-testid="have-key"]').first().boundingBox();
+      const sb = await onPage(page, '[role="tablist"], [role="radiogroup"]').first().boundingBox().catch(() => null);
+      check(`${vp.label} key sits under the switch`, !!kb && (!sb || kb.y >= sb.y + sb.height - 1), `${kb?.y} vs ${sb ? sb.y + sb.height : "n/a"}`);
+      check(`${vp.label} one press per spare card`, (await onPage(page, '[data-testid="have-press"]').count()) === (Z2 ? 2 : 1));
       const tiles = () => onPage(page, 'ul.grid > li').count();
       const before = await tiles();
       // The press can land before hydration: press again until the tiles narrow (a few tries), then judge.
-      for (let t = 0; t < 8 && (await tiles()) !== 1; t++) {
+      for (let t = 0; t < 8 && (await tiles()) !== (Z2 ? 2 : 1); t++) {
         await onPage(page, 'button:has-text("You can spare")').first().click();
         await page.waitForTimeout(400);
       }
-      check(`${vp.label} filter narrows to the spare card`, (await tiles()) === 1 && before === 2, `${before} -> ${await tiles()}`);
+      check(`${vp.label} filter narrows to the spare card`, (await tiles()) === (Z2 ? 2 : 1) && before === (Z2 ? 3 : 2), `${before} -> ${await tiles()}`);
       await onPage(page, 'button:has-text("All")').first().click();
       const sw = await page.evaluate(() => [document.documentElement.scrollWidth, window.innerWidth]);
       check(`${vp.label} no horizontal overflow`, sw[0] <= sw[1], `${sw[0]} vs ${sw[1]}`);
       await page.screenshot({ path: `${SHOTS}/wishlist-${vp.label}.png`, fullPage: true });
 
-      const press = onPage(page, '[data-testid="have-press"]').first();
+      const press = onPage(page, `[data-testid="have-press"][aria-label*="${face}"]`).first();
       await press.click();
       const sheet = onPage(page, '[data-testid="have-sheet"]').first();
       await sheet.waitFor({ state: "visible", timeout: 10_000 });
+      // Offer is the shared Ask press: an outline, never a solid fill; the row's mark sits in a tile.
+      const offerStyle = await sheet.locator('[data-testid="have-offer"]').first().evaluate((el: Element) => { const c = getComputedStyle(el); return [c.backgroundColor, c.borderTopWidth, c.fontWeight]; });
+      check(`${vp.label} Offer is the outlined Ask press`, offerStyle[0] === "rgba(0, 0, 0, 0)" && offerStyle[1] === "1px" && Number(offerStyle[2]) >= 600, offerStyle.join(" "));
+      check(`${vp.label} sheet row draws the spare glyph in its tile`, (await sheet.locator('span:has(> svg)').count()) > 0);
       check(`${vp.label} sheet opens with the card and Offer`, (await sheet.textContent())?.includes(face) === true && (await sheet.locator('[data-testid="have-offer"]').count()) === 1);
       await page.waitForTimeout(700); // the sheet's own entrance
       await page.screenshot({ path: `${SHOTS}/sheet-${vp.label}.png` });
@@ -142,6 +157,7 @@ async function main() {
         await sheet.locator('[data-testid="have-offer"]').click();
         await sheet.locator('[data-testid="have-offered"]').waitFor({ state: "visible", timeout: 15_000 });
         check("Offer turns the row to Offered", true);
+        check("Offered carries its mark", (await sheet.locator('[data-testid="have-offered"] svg').count()) === 1);
         const st = (await db.execute<{ n: string }>(sql`select count(*)::text as n from spare_requests where holder_user_id = ${viewer} and asker_user_id = ${WANTER} and initiated_by = 'holder'`)).rows[0].n;
         check("a holder-initiated request exists", st === "1", st);
         await page.keyboard.press("Escape");
@@ -149,6 +165,30 @@ async function main() {
         check("the press reads offered", /offered$/.test(aria), aria);
         await page.screenshot({ path: `${SHOTS}/wishlist-offered-${vp.label}.png`, fullPage: true });
       } else await page.keyboard.press("Escape");
+      if (Z2) {
+        // The friend's ask of the second spare: the row names them and the count, Yes / No sit under the row.
+        await onPage(page, `[data-testid="have-press"][aria-label*="${face2}"]`).first().click();
+        const asked = onPage(page, '[data-testid="have-sheet"]').first();
+        await asked.waitFor({ state: "visible", timeout: 10_000 });
+        await page.waitForTimeout(700);
+        const at = ((await asked.textContent()) ?? "").replace(/\s+/g, " ");
+        check(`${vp.label} asked row names the friend and the count`, /Max asked for 1/.test(at), at.slice(0, 160));
+        const yb = await asked.locator('[data-testid="spare-yes"]').boundingBox();
+        const rb = await asked.locator('[data-testid="have-offer"], [data-testid="have-offered"]').count();
+        check(`${vp.label} asked row carries Yes and No`, !!yb && rb === 0);
+        await page.screenshot({ path: `${SHOTS}/sheet-asked-${vp.label}.png` });
+        await page.keyboard.press("Escape");
+      }
+      // /friends: the per-friend chip draws the shared spare glyph, not a gift box.
+      // A press-driven navigation can still be in flight (ERR_ABORTED): go again once it settles.
+      await page.goto(`${BASE}/friends`, { waitUntil: "domcontentloaded" }).catch(async () => {
+        await page.waitForTimeout(1000);
+        await page.goto(`${BASE}/friends`, { waitUntil: "domcontentloaded" });
+      });
+      const chip = onPage(page, "[data-spare-chip]").first();
+      await chip.waitFor({ state: "attached", timeout: 30_000 });
+      check(`${vp.label} chip draws the shared spare glyph`, (await chip.locator("svg path[d^='M3.5 19']").count()) === 1 && (await chip.locator("svg path[d^='M20 12v8']").count()) === 0);
+      await page.screenshot({ path: `${SHOTS}/friends-${vp.label}.png` });
     }
   } finally {
     try {

@@ -20,7 +20,7 @@ import { InfoTip } from "../ui/info-tip";
 import { Face } from "./face";
 import { SocialToast, type SocialToastState } from "./social-toast";
 import { useGotIt } from "../decks/got-it";
-import { SpareGlyph, isOpen } from "./spare-key-item";
+import { SpareChip, isOpen } from "./spare-key-item";
 import { useCartGotIt } from "../decks/cart/cart-got-it";
 
 /** One Ask or Ask instead from the modal: the friend, the card and the copies the row is short. */
@@ -160,10 +160,7 @@ export function FriendSpareSection({ spares, card, first }: { spares: readonly F
                 <PersonText text={spareCopy.via(s.friend.pods)} />
               </span>
             </span>
-            <span className="inline-flex h-[22px] flex-none items-center gap-[6px] rounded-[4px] px-[7px] font-mono text-[11.5px] text-[color:var(--fact)] bg-[color-mix(in_oklab,var(--fact)_14%,transparent)]">
-              <SpareGlyph size={13} />
-              {spareCopy.count(s.spare)}
-            </span>
+            <SpareChip>{spareCopy.count(s.spare)}</SpareChip>
           </li>
         ))}
       </ul>
@@ -172,10 +169,10 @@ export function FriendSpareSection({ spares, card, first }: { spares: readonly F
   );
 }
 
-const ASK_PRESS = "flex flex-none cursor-pointer items-center justify-center whitespace-nowrap bg-transparent font-sans disabled:cursor-default";
+export const ASK_PRESS = "flex flex-none cursor-pointer items-center justify-center whitespace-nowrap bg-transparent font-sans disabled:cursor-default";
 /** The press's box: the modal's friend row (`.ask`, 36px at phone, 32px from md), Your requests' row, or the all-decks
  *  cart's action stack. */
-const ASK_SIZE = {
+export const ASK_SIZE = {
   sheet: "h-[36px] min-w-[64px] rounded-[9px] px-[14px] text-[13px] md:h-[32px] md:rounded-[8px]",
   /** Your requests' Ask again on `/friends` (`.fi .ac .ask`): 36px at both widths. */
   row: "h-[36px] min-w-[64px] rounded-[9px] px-[14px] text-[13px] md:rounded-[8px]",
@@ -189,9 +186,9 @@ const ASK_SIZE = {
 } as const;
 /** The status in a size's place: the cart's reads 12.5px on desktop (`.act .fst`), the rest 13. */
 const STATUS_SIZE: Record<keyof typeof ASK_SIZE, string> = { sheet: "", row: "", cart: "xl:text-[12.5px]" };
-const ASK_INK = "font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]";
+export const ASK_INK = "font-semibold text-[color:var(--accent-text)] [border:1px_solid_var(--accent)]";
 const ASK_ALT_INK = "font-medium text-[color:var(--fg-body)] [border:1px_solid_var(--border-strong)]";
-const STATUS = "inline-flex flex-none items-center gap-[6px] whitespace-nowrap font-sans text-[13px] font-medium";
+export const STATUS = "inline-flex flex-none items-center gap-[6px] whitespace-nowrap font-sans text-[13px] font-medium";
 
 /** The rows with Ask (`.fsx2`, `.fsr`): one sub line and one thing on the right per friend, the ⓘ, the state line. */
 function RequestSection({ spares, card, requests, first }: { spares: readonly FriendSpare[]; card: SectionCard; requests: RequestsCtx; first?: string }) {

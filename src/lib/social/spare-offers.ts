@@ -143,7 +143,7 @@ export async function answerOffer(wanterId: string, requestId: unknown, answer: 
 
 /** The state of the viewer's spare of a card on a friend's wishlist, as the tile's mark draws it (handoff states). */
 export type OfferMark = "asked" | "offered" | "accepted";
-export type OfferMarkRow = { mark: OfferMark; requestId: string; daysLeft: number };
+export type OfferMarkRow = { mark: OfferMark; requestId: string; daysLeft: number; copies: number };
 
 /**
  * Per card, what stands between the viewer and one friend about the card: `asked` (the friend asked the viewer for it,
@@ -158,7 +158,7 @@ export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, 
   const rows = await db
     .select({
       id: spareRequests.id, oracleId: spareRequests.oracleId, status: spareRequests.status, createdAt: spareRequests.createdAt,
-      initiatedBy: spareRequests.initiatedBy,
+      initiatedBy: spareRequests.initiatedBy, copies: spareRequests.copies,
     })
     .from(spareRequests)
     .innerJoin(socialProfiles, and(eq(socialProfiles.publicId, friendPublicId)))
@@ -170,13 +170,13 @@ export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, 
     const mark: OfferMark | null = state === "open" ? (r.initiatedBy === "holder" ? "offered" : "asked") : state === "yes" ? "accepted" : null;
     if (!mark) continue;
     const had = out.get(r.oracleId);
-    if (!had || (mark !== "accepted" && had.mark === "accepted")) out.set(r.oracleId, { mark, requestId: r.id, daysLeft: daysLeft(r.createdAt, now) });
+    if (!had || (mark !== "accepted" && had.mark === "accepted")) out.set(r.oracleId, { mark, requestId: r.id, daysLeft: daysLeft(r.createdAt, now), copies: r.copies });
   }
   return out;
 }
 
 /** What a friend's Wishlist tab draws of one card the viewer can spare (`HaveItCard.mark` null: nothing is open or agreed). */
-export type HaveItCard = { oracleId: string; spare: number; mark: OfferMark | null; requestId: string | null; daysLeft: number | null };
+export type HaveItCard = { oracleId: string; spare: number; mark: OfferMark | null; requestId: string | null; daysLeft: number | null; copies: number | null };
 
 /**
  * The friend's wishlist cards the viewer can spare, each with its mark (You have it, PR 3b): the viewer's own spare rule
@@ -195,7 +195,7 @@ export async function loadHaveIt(viewerId: string, friendPublicId: unknown, orac
   for (const got of spares) {
     for (const [oracleId, spare] of got) {
       const m = marks.get(oracleId);
-      out.push({ oracleId, spare, mark: m?.mark ?? null, requestId: m?.requestId ?? null, daysLeft: m?.daysLeft ?? null });
+      out.push({ oracleId, spare, mark: m?.mark ?? null, requestId: m?.requestId ?? null, daysLeft: m?.daysLeft ?? null, copies: m?.copies ?? null });
     }
   }
   return out;

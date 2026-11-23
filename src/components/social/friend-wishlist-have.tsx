@@ -21,6 +21,7 @@ import { WishlistTileFace, type WishlistTileCard } from "../wishlist/wishlist-ti
 import { SPARE_PRESS_FADE } from "../wishlist/wishlist-spare-press";
 import { AnswerPresses, useSpareAnswer, useSpareToast } from "./spare-answer";
 import { MarkedSpareGlyph, SpareGlyph, type SpareMark } from "./spare-key-item";
+import { ASK_INK, ASK_PRESS, ASK_SIZE, STATUS } from "./friend-spares";
 
 export type HaveFilter = "all" | "spare";
 export type HaveLine = { oracleId: string; name: string; imageUri: string | null; quantity: number };
@@ -78,7 +79,7 @@ export function HaveCallout({ names, haves, total, filter, onFilter }: {
           body={h.callout.body(h.callout.names(names))}
         />
       </div>
-      <div className="flex flex-wrap items-center gap-x-[16px] gap-y-[8px]">
+      <div className="flex flex-col items-start gap-[10px]">
         <SegmentedSwitch<HaveFilter>
           kind="radio"
           size="compact"
@@ -163,31 +164,48 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
         </section>
         <section className="flex flex-col gap-[8px]">
           <h3 className="m-0 font-mono text-[10px] font-normal uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{h.section(1)}</h3>
-          <div className="flex items-center gap-[12px] rounded-[10px] px-[13px] py-[11px] [border:1px_solid_var(--border)]">
-            <MarkedSpareGlyph mark={glyphMark(have)} size={20} />
-            <span className="flex min-w-0 flex-1 flex-col">
-              <span className="text-[13.5px] font-semibold text-[color:var(--fg)]">{h.spare(have.spare)}</span>
-              <span className="text-[12px] text-[color:var(--fg-muted)]">{have.mark === "offered" && have.daysLeft !== null ? h.daysLeft(have.daysLeft) : h.spareSub}</span>
-            </span>
-            <span ref={cell} tabIndex={-1} className="flex flex-none items-center outline-none">
-              {have.mark === null ? (
-                <button
-                  type="button"
-                  data-testid="have-offer"
-                  disabled={offering}
-                  onClick={offer}
-                  {...personAttrs(
-                    { "aria-label": h.offerAria(friend, line.name) },
-                    "h-[36px] cursor-pointer rounded-[8px] bg-[color:var(--fg)] px-[16px] font-sans text-[13px] font-medium text-[color:var(--bg)] [border:1px_solid_var(--fg)] disabled:cursor-default disabled:opacity-60",
-                  )}
-                >
-                  {h.offer}
-                </button>
-              ) : have.mark === "offered" ? (
-                <span data-testid="have-offered" className="font-mono text-[12px] text-[color:var(--fg-muted)]">{h.offered}</span>
-              ) : have.mark === "accepted" ? (
-                <span data-testid="have-accepted" className="font-mono text-[12px] text-[color:var(--success)]">{h.accepted}</span>
-              ) : (
+          <div className="flex flex-col gap-[10px]">
+            <div className="flex items-center gap-[12px]">
+              <span className="inline-flex size-[30px] flex-none items-center justify-center rounded-[8px] bg-[color:var(--bg)] [border:1px_solid_var(--border)]">
+                <MarkedSpareGlyph mark={glyphMark(have)} size={18} />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+                <span className="text-[15px] font-semibold leading-[normal] text-[color:var(--fg)]">
+                  {have.mark === "asked" ? <PersonText text={h.asked(friend, have.copies ?? 1)} /> : h.spare(have.spare)}
+                </span>
+                <span className="font-mono text-[11.5px] leading-[1.45] text-[color:var(--fg-faint)]">
+                  {have.mark === "offered" && have.daysLeft !== null ? h.daysLeft(have.daysLeft) : have.mark === "asked" ? `${h.spare(have.spare)} · ${h.spareSub}` : h.spareSub}
+                </span>
+              </span>
+              <span ref={cell} tabIndex={-1} className="flex flex-none items-center outline-none">
+                {have.mark === null ? (
+                  <button
+                    type="button"
+                    data-testid="have-offer"
+                    disabled={offering}
+                    onClick={offer}
+                    {...personAttrs(
+                      { "aria-label": h.offerAria(friend, line.name) },
+                      `${ASK_PRESS} ${ASK_SIZE.sheet} ${ASK_INK} disabled:opacity-60`,
+                    )}
+                  >
+                    {h.offer}
+                  </button>
+                ) : have.mark === "offered" ? (
+                  <span data-testid="have-offered" className={`${STATUS} text-[color:var(--fg-muted)]`}>
+                    <MarkedSpareGlyph mark="requested" size={16} />
+                    {h.offered}
+                  </span>
+                ) : have.mark === "accepted" ? (
+                  <span data-testid="have-accepted" className={`${STATUS} text-[color:var(--success)]`}>
+                    <MarkedSpareGlyph mark="accepted" size={16} />
+                    {h.accepted}
+                  </span>
+                ) : null}
+              </span>
+            </div>
+            {have.mark === "asked" ? (
+              <div className="[&>span]:md:justify-start">
                 <AnswerPresses
                   friend={friend}
                   card={line.name}
@@ -197,8 +215,8 @@ export function HaveSheet({ line, have, friend, friendPublicId, onClose, onChang
                   onAnswer={(a) => void reply(a)}
                   size="row"
                 />
-              )}
-            </span>
+              </div>
+            ) : null}
           </div>
         </section>
         <p data-testid="have-foot" className="m-0 text-[12.5px] leading-[1.5] text-[color:var(--fg-muted)]"><PersonText text={foot} /></p>
