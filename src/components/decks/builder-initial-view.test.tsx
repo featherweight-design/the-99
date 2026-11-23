@@ -252,9 +252,9 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
     expect(last(await opened("deck", null))).toBe("your-deck");
   });
 
-  it("publishes Tuning as its own tab, reading as Analysis (tool discovery B2)", async () => {
+  it("publishes Tuning as its own tab and view (tool discovery B2, B3)", async () => {
     const publish = await opened("tuning", null);
-    expect(publish.mock.calls.at(-1)?.[0]).toEqual({ view: "analysis", tab: "tuning" });
+    expect(publish.mock.calls.at(-1)?.[0]).toEqual({ view: "tuning", tab: "tuning" });
   });
 
   it("ignores it on any other tab: the deck tab, once chosen, opens on its list", async () => {

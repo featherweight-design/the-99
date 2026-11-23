@@ -29,12 +29,12 @@ describe("pageTools", () => {
   it("places every tool, with every switch on, in the section of its first label, in the section's own order", () => {
     const got = placed(ALL_ON);
     expect([...got.values()].flat().sort()).toEqual(TOOLS.map((t) => t.id).sort());
-    expect(got.get("decks/analysis")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
+    expect(got.get("decks/tuning")).toEqual(["suggested-changes", "proposed-cuts", "mana-balance"]);
     expect(got.get("decks/your-decks")).toEqual(["lineup", "precons"]);
     expect(got.get("commanders/for-you")).toEqual(["help-me-choose"]);
     for (const t of TOOLS) {
-      const [area, section] = t.labels[0].split("/");
-      expect(got.get(`${area}/${section}`)).toContain(t.id);
+      const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => l.region === t.labels[0]))!;
+      expect(got.get(`${s.area}/${s.id}`)).toContain(t.id);
     }
   });
 
@@ -42,7 +42,7 @@ describe("pageTools", () => {
     const all = visibleSections(ALL_ON);
     // The label alone gone, the tool's own switch still on: the card goes with it.
     const noCuts = all.map((s) => ({ ...s, labels: s.labels.filter((l) => l.key !== "decks/analysis/cuts") }));
-    expect(placed(ALL_ON, noCuts).get("decks/analysis")).toEqual(["suggested-changes", "mana-balance"]);
+    expect(placed(ALL_ON, noCuts).get("decks/tuning")).toEqual(["suggested-changes", "mana-balance"]);
     // A section left with no card is absent: Help me choose's labels gone, For you holds no card.
     const HMC = TOOLS.find((t) => t.id === "help-me-choose")!.labels as readonly string[];
     const noChoose = all.map((s) => ({ ...s, labels: s.labels.filter((l) => !HMC.includes(l.key)) }));
@@ -52,8 +52,8 @@ describe("pageTools", () => {
   it("aims each card's Show me at its label: the label's page, lit, at its section", () => {
     for (const cards of pageTools(visibleSections(ALL_ON), input(ALL_ON)).values()) {
       for (const c of cards) {
-        const [area, section] = c.label.split("/");
-        expect(c.showMe).toBe(`/about/${area}?lit=${encodeURIComponent(c.label)}#${section}`);
+        const s = ABOUT_SECTIONS.find((x) => x.labels.some((l) => l.region === c.label))!;
+        expect(c.showMe).toBe(`/about/${s.area}?lit=${encodeURIComponent(c.label)}#${s.id}`);
       }
     }
   });
@@ -87,13 +87,13 @@ describe("landableIn and landingFor", () => {
   });
 
   it("lands on a rule with its section, never marked New, and nowhere once its switch is off (Review Focus 2)", () => {
-    expect(landingFor("rule/credits", land({ version: 16, ids: [] }), cards)).toMatchObject({ key: "rule/credits", section: "analysis", isNew: false });
+    expect(landingFor("rule/credits", land({ version: 16, ids: [] }), cards)).toMatchObject({ key: "rule/credits", section: "tuning", isNew: false });
     expect(landingFor("rule/proxy", landableIn("shopping", visible, { version: 16, ids: [] }), cards)).toMatchObject({ section: "deck-shopping" });
     expect(landingFor("rule/lock", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "your-deck" });
     expect(landingFor("rule/intent", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "analysis" });
     // Suggested changes v2's pick card (the intent rule, the example before, always draws since the Analysis tab's switch
     // retired).
-    expect(landingFor("rule/pick", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "analysis" });
+    expect(landingFor("rule/pick", land({ version: 16, ids: [] }), cards)).toMatchObject({ section: "tuning" });
     expect(landingFor("rule/pick", land({ version: 16, ids: [] }, visibleSections(without("SUGGESTED_CHANGES_V2_ENABLED"))), cards)).toBeNull();
   });
 
@@ -127,6 +127,6 @@ describe("landableIn and landingFor", () => {
   });
 
   it("reveals the label's own section", () => {
-    expect(landingFor(cuts, land({ version: 16, ids: [] }), cards)?.section).toBe("analysis");
+    expect(landingFor(cuts, land({ version: 16, ids: [] }), cards)?.section).toBe("tuning");
   });
 });

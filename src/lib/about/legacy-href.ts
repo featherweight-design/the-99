@@ -54,7 +54,7 @@ export const LEGACY_SECTIONS: Readonly<Record<string, `${string}/${string}`>> = 
   "review-and-commit": "decks/your-deck",
   "auto-fill": "decks/your-deck",
   "deck-analysis": "decks/analysis",
-  "suggested-changes": "decks/tuning",
+  "suggested-changes": "decks/analysis",
   "suggested-changes@SUGGESTED_CHANGES_V2_ENABLED": "decks/tuning",
   "proposed-cuts": "decks/tuning",
   "mana-balance": "decks/tuning",
