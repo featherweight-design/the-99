@@ -1,6 +1,6 @@
-# READINESS · Finding the tools R7
+# READINESS · Finding the tools R8
 
-**Verdict: Amber, for Hugh's review.** Five open questions (README, Q8 to Q12). Every gap below has an answer proposed.
+**Verdict: Amber, for Hugh's review.** Five open questions (README, Q8, Q9, Q10, Q13, Q14); Q11 and Q12 settled A. Every gap below has an answer proposed.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -42,6 +42,12 @@
   the page hands it to the panel as `foot` rather than to `props.welcome`. Its ✕ and dismiss action are unchanged.
 - **G16 · What's new under the lead (R7, Q11 A).** In `Dashboard`, `WhatsNew` renders right after `LeadSlot` and before
   the resume block; below 1180 its `order-3` becomes `order-1` with the decks at `order-2`. No data change.
+- **G17 · What's new in the rail (R8, Q13 A).** From 1180 `WhatsNew` renders first in the right column; below 1180 it
+  keeps its main-column order. `FeedItemRow` gains a `compact` layout (the phone grid at any width) used in the rail, and
+  the heading's Choose your notifications link moves into the list foot when compact.
+- **G18 · Home section headings (R8, Q14 A).** One shared `HomeSectionHead` for What's new, resume decks, Friends and
+  Commitments: display 17px, `--fg`, the accent diamond, counts mono `--accent-text`; ids and `aria-labelledby` unchanged.
+  The resume caption is `hidden sm:inline`.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks

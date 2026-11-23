@@ -1,6 +1,10 @@
-# Finding the tools · R7
+# Finding the tools · R8
 
-Account 1, 2026-11-23. Status: **R7, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **R8, for Hugh's review.** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+
+**R8 (Hugh's R7 notes, 2026-11-23):** Q11 A and Q12 A settled (credits in the panel's foot, What's new under the lead; no
+search on first run). On top of A: What's new moves to the top of the empty desktop rail (Q13), and Home's section
+headings move from 10px faint mono labels to the display face with the accent diamond (Q14).
 
 **R7 (Hugh's R6 notes, 2026-11-23):** a busy Home buries What's new (last block) and the welcome credits (a thin strip
 between two loud blocks). Three orders drawn (Q11): A folds the credits into the search panel's foot and moves What's
@@ -158,11 +162,17 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 - **Q8 · Phone rows: a Find a deck strip under each row, or the glyph beside it?** A (drawn, recommended): the strip.
   B: R3's 44px glyph button beside the row. Board: Find, R5 (A) and R4 (B).
-- **Q11 · How should a busy Home be ordered?** A (recommended): the welcome credits become the panel's foot (the shipped
+- **Q13 · What's new in the desktop rail?** A (drawn, recommended): top of the rail above Commitments and Friends; rows
+  draw as on a phone (action under the text); Choose your notifications moves into the list's foot beside Clear all. B:
+  under the lead in the main column (R7 A). Phone unchanged either way. Board: Calmer Home.
+- **Q14 · Stronger section headings?** A (drawn, recommended): What's new, Pick up where you left off, Friends and
+  Commitments in the display face at 17px, `--fg`, led by the accent diamond (7px, rotated); counts in mono `--accent-text`;
+  10px more above each; the deck list's `last touched` caption hidden below sm. B: the shipped 10px mono labels.
+- **Q11 · (settled A)** How should a busy Home be ordered? A (recommended): the welcome credits become the panel's foot (the shipped
   strip, edge dropped, its ✕ closes only that line) and What's new moves under the lead story, decks after. B: Rule 0's
   cards, the lead and What's new, then the panel, then decks. C: no panel; a 40px accent-edged field in the page head,
   starters in its open state. Board: Order and first run.
-- **Q12 · Does the first-run Home get search?** A (recommended): no; first run keeps its one job, the starters all need a
+- **Q12 · (settled A)** Does the first-run Home get search? A (recommended): no; first run keeps its one job, the starters all need a
   collection, step 1 already offers Add cards by hand, and the magnifier is there. The panel arrives with the first Home
   after the collection is read. B: an unnumbered `Look up any card` row after step 3, before Add your friends.
 - **Q10 · On a busy day, does the panel sit under Rule 0's cards, or above them?** A (drawn, recommended): under them; a
@@ -175,6 +185,7 @@ you can do), R3 Q7 (it asked whether Home's field should go away after three use
 
 | File | What |
 |---|---|
+| `Calm.dc.html` | R8: R7 A against R8 (What's new in the rail, display headings), desktop and phone |
 | `Order.dc.html` | R7: the busy Home three ways (A, B, C) on desktop and phone; first run with and without search |
 | `Home.dc.html` | H6 Home in full on a busy day, desktop and phone, and desktop typed in place (R6) |
 | `Main.dc.html` | What changed since R4, the answers, the open questions |

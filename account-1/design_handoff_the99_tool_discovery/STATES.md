@@ -1,4 +1,4 @@
-# States · Finding the tools R7
+# States · Finding the tools R8
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -71,3 +71,11 @@
 |---|---|
 | No collection | First run as shipped; no panel. Search through the magnifier and ⌘K. |
 | Option B | An unnumbered `Look up any card` row after step 3; a press opens the card search, nothing typed. |
+
+## Desktop rail and headings · R8 (Q13 A, Q14 A)
+| State | Draws |
+|---|---|
+| From 1180, feed with items | What's new tops the rail (compact rows, Choose your notifications beside Clear all), then Commitments, Friends. |
+| From 1180, feed quiet or offer | The quiet or offer state at the rail's top, as shipped otherwise. |
+| Below 1180 | What's new under the lead (R7 A); rows as shipped. |
+| Any width | Section headings in the display face with the diamond; counts in mono. |
