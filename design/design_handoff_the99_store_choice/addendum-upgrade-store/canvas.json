@@ -1,0 +1,50 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-23T21:10:00Z"
+ },
+ "title": "Precon upgrade store label",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1700,
+   "h": 2000,
+   "title": "Main"
+  },
+  "Stores.dc.html": {
+   "x": 1820,
+   "y": 0,
+   "w": 2240,
+   "h": 1540,
+   "title": "Stores"
+  },
+  "Adds.dc.html": {
+   "x": 4180,
+   "y": 0,
+   "w": 1700,
+   "h": 880,
+   "title": "Adds"
+  },
+  "Empty.dc.html": {
+   "x": 6000,
+   "y": 0,
+   "w": 2240,
+   "h": 1540,
+   "title": "Empty"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Stores.dc.html",
+  "Adds.dc.html",
+  "Empty.dc.html"
+ ],
+ "notes": {},
+ "designSystems": []
+}
