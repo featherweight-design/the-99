@@ -11,16 +11,15 @@ import type { BuilderTabSpec } from "../../components/decks/builder-tabs";
 import { addPanelCopy } from "../copy/decks-builder";
 import { deckVersioningCopy, historyOriginCopy } from "../copy/deck-versioning";
 import { gameLogCopy } from "../copy/game-log";
+import { tuningHubCopy } from "../copy/tuning-hub";
 
 export function builderTabSpecs({
   built,
-  suggestionCount,
   gameCount,
   versionCount,
   hasOrigin = false,
 }: {
   built: number;
-  suggestionCount: number;
   gameCount: number;
   versionCount: number;
   /** A linked deck's v0 (precons R3 K14): a row in the rail, so the tab draws on a linked brew. */
@@ -44,10 +43,12 @@ export function builderTabSpecs({
       // figure beside it would be read as one of the counts inside it.
       accessibleName: addPanelCopy.tabs.analysisAria,
     },
+    // Tool discovery B2: the Tuning hub's own tab, Consider its first tool. Always drawn and never counted: the hub draws
+    // for any deck, and its tools carry their own figures on their tiles.
     {
-      id: "consider",
-      label: addPanelCopy.tabs.consider,
-      accessibleName: addPanelCopy.tabs.considerAria(suggestionCount),
+      id: "tuning",
+      label: tuningHubCopy.title,
+      accessibleName: tuningHubCopy.tabAria,
     },
     {
       id: "games",

@@ -90,7 +90,7 @@ import { DeckTokensProvider } from "../../../components/decks/deck-tokens-contex
 import { GotItProvider } from "../../../components/decks/got-it";
 import { ChangeCommanderProvider } from "../../../components/decks/change-commander-context";
 import { readShoppingLimit } from "../../../lib/swaps/read";
-import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, TAB_PARAM } from "../../../lib/decks/builder-view";
+import { BODY_PARAM, initialBuilderView, readBuilderView, readDeckBody, readHubTool, TAB_PARAM } from "../../../lib/decks/builder-view";
 import { isUuid } from "../../../lib/uuid";
 import { requestFlags } from "../../../lib/flags/request";
 import { readerStoreForPage } from "../../../lib/stores/preference";
@@ -767,6 +767,8 @@ async function DeckBuilderBody({
       nearCombos={nearCombos}
       // `?panel=`: the ?'s way back to Shopping, Stats or Notes (About PR 6a); the builder reads it on the deck tab only.
       initialBody={readDeckBody(query[BODY_PARAM])}
+      // Consider is a Tuning tool (tool discovery B2): a Consider landing or the retired `?tab=consider` opens it there.
+      initialHubTool={landing ? landing.lands.tool ?? null : readHubTool(query[TAB_PARAM])}
       initialView={initialBuilderView(
         landing?.lands.tab ?? readBuilderView(query[TAB_PARAM]),
         // A linked brew's Versions tab holds v0 (K14), so a URL naming it lands there.

@@ -21,10 +21,17 @@ vi.mock("../../app/decks/actions", () => ({
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../lib/notices/actions", () => ({ peekNotices: vi.fn(async () => null), openNotices: vi.fn(async () => null) }));
 
-const seen = vi.hoisted(() => ({ panel: null as null | Record<string, unknown> }));
-vi.mock("./analysis-panel", () => ({
-  AnalysisPanel: (p: Record<string, unknown>) => { seen.panel = p; return null; },
+const seen = vi.hoisted(() => ({ hub: null as null | Record<string, unknown> }));
+vi.mock("./tuning-hub", () => ({
+  TuningHub: (p: Record<string, unknown>) => { seen.hub = p; return null; },
 }));
+// A reading held, so the Tuning tab hands Suggested changes its permits and the hub its panel (tool discovery B2).
+vi.mock("./use-deck-profile", async (importActual) => {
+  const actual = await importActual<typeof import("./use-deck-profile")>();
+  const { deckProfile } = await import("./__fixtures__/deck-profile");
+  const state = { kind: "ready" as const, profile: deckProfile(), analyzedAt: "2026-01-02T00:00:00.000Z", fresh: true, versionNumber: null };
+  return { ...actual, useDeckProfile: () => ({ state, request: vi.fn(), peek: vi.fn(), peekSettled: true }) };
+});
 vi.mock("./synopsis-state", () => ({
   useDeckSynopsis: () => ({ view: { kind: "ready", state: {}, busy: false, current: true }, write: vi.fn(), retry: vi.fn() }),
 }));
@@ -53,16 +60,16 @@ const DECK = {
 
 /** The props the shell hands Suggested changes' panel, with the reader's v2 switch as given. */
 function panelProps(suggestedChangesV2: boolean): { runFigures?: RunFigures; v2: unknown } {
-  seen.panel = null;
+  seen.hub = null;
   render(
     <BuilderShell mix={recommendedMix(null, false)} deck={DECK} suggestions={[]} degraded={false} firstRun={false}
       commanderIdentity={["B", "R", "G"]} arrivedFromImport={false} newestAsOf={null}
-      suggestedChangesV2={suggestedChangesV2} initialView="analysis" />,
+      suggestedChangesV2={suggestedChangesV2} initialView="tuning" />,
   );
   // Suggested changes mounts inside the Tuning hub's tile (its own switch is retired): the first tool the hub is handed.
   type Panel = ReactElement<{ runFigures?: RunFigures; v2: unknown }>;
-  const hub = (seen.panel as unknown as { hub: (permits: number[]) => ReactElement<{ tools: { tool: string; panel?: Panel | null }[] }> }).hub;
-  const suggested = hub([2]).props.tools.find((t) => t.tool === "suggested")!;
+  const hub = seen.hub as unknown as { tools: { tool: string; panel?: Panel | null }[] };
+  const suggested = hub.tools.find((t) => t.tool === "suggested")!;
   return suggested.panel!.props;
 }
 

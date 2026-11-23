@@ -1,9 +1,9 @@
 "use client";
 
 // The Tuning hub (tuning hub handoff R1, canvas A; design table `TuningHub`, `ToolTile`, `Tool
-// switch`). The last section of the Analysis tab: a tile per tool, in a fixed order, each saying
+// switch`). The Tuning tab's panel (tool discovery B2): a tile per tool, in a fixed order, each saying
 // what it does and what it costs, and a tool opening in place of the tiles with no route change.
-// `openTool` lives HERE, so it resets whenever the Analysis tabpanel unmounts, which it does on
+// `openTool` lives HERE, so it resets whenever the Tuning tabpanel unmounts, which it does on
 // every tab switch (`builder-shell.tsx`), on leaving the page and on a reload (A6). Runs are read
 // from the ledger on mount, so a run still in flight reappears on its tile.
 
@@ -28,6 +28,9 @@ const WATCH_MS = 3000;
 const SHOWN_WAIT_MS = 10_000;
 
 export type HubToolSpec =
+  /** Consider (tool discovery B2): the shipped Consider list, opened in place. `toolbar` rides the desktop tab row's right
+   *  end while it is open (READINESS G5); the phone keeps the panel's own. `counts` is the list's owned and to-buy split. */
+  | { tool: "consider"; panel: ReactNode; toolbar: ReactNode | null; counts: { owned: number; toBuy: number } | null }
   | {
     tool: "suggested"; panel: ReactNode | null;
     /** Suggested changes v2 on (plan 2026-10-27, UI PR 5a): the deck's count on the tool's 99 scale, how far it is from its
@@ -42,7 +45,7 @@ export type HubToolSpec =
 
 /** A shortcut's ask: open `tool`, or with `tool: null` return to the tiles (N1 lands on Suggested changes' tile, so a
  *  tool left open must close first). `nonce` makes a second press of the same shortcut count. */
-export type HubRequest = { tool: TuningTool | "consider" | null; nonce: number };
+export type HubRequest = { tool: TuningTool | null; nonce: number };
 
 const clock = (ms: number) => {
   const s = Math.max(0, Math.floor(ms / 1000));
@@ -54,10 +57,11 @@ const shortDate = (iso: string) => new Date(iso).toLocaleDateString("en-US", { m
  *  heading while its first read is pending, which is replaced when it lands, so the first heading
  *  found is not the one to take. */
 const HEADING_IDS: Partial<Record<TuningTool, string>> = {
-  suggested: "tuning-heading", mana: "mana-heading", cuts: "cuts-heading", history: "history-heading",
+  consider: "consider-heading", suggested: "tuning-heading", mana: "mana-heading", cuts: "cuts-heading", history: "history-heading",
 };
 
 const NAMES: Record<TuningTool, string> = {
+  consider: copy.tools.consider.name,
   suggested: copy.tools.suggested.name,
   mana: copy.tools.mana.name,
   cuts: copy.tools.cuts.name,
@@ -91,6 +95,13 @@ function runStatus(run: HubTileRun | null, words: string, outcome: (run: Extract
 }
 
 function tileOf(spec: HubToolSpec, tiles: HubTiles | null, now: number, hasCuts = false): TileView {
+  if (spec.tool === "consider") {
+    // The list's own split (README Q2). No counts yet (still reading, or the read failed) draws no status (Y2); a list with
+    // nothing in it says so, and a single zero side still draws.
+    const c = spec.counts;
+    const status = !c ? "" : c.owned + c.toBuy === 0 ? copy.tools.consider.none : copy.tools.consider.status(c.owned, c.toBuy);
+    return { tool: "consider", purpose: copy.tools.consider.purpose, cost: copy.tools.consider.cost, status, statusPhone: status, running: false, offer: false, inert: false };
+  }
   if (spec.tool === "history") {
     const h = tiles?.history;
     const status = h ? copy.tools.history.runs(h.runs, h.running) : "";
@@ -298,8 +309,7 @@ export function TuningHub({
       // No tile to hand focus back to: the tile the reader last left belongs to an earlier open, not this one.
       setLeftTool(null);
       setOpening(null);
-    } else if (asked !== "consider" && tools.some((t) => t.tool === asked)) {
-      // `consider` is asked for from tool discovery B2, when Consider becomes the hub's first tile.
+    } else if (tools.some((t) => t.tool === asked)) {
       setReview(null);
       setOpening((prev) => ({ tool: asked, focus: true, scroll: true, early: true, seq: (prev?.seq ?? 0) + 1 }));
     }
@@ -476,7 +486,7 @@ export function TuningHub({
     else open("cuts", { focus: true, scroll: true });
   };
   // History's chips: the run-making tools this hub draws.
-  const historyTools = tools.flatMap((t): HistoryTool[] => (t.tool === "history" ? [] : [t.tool]));
+  const historyTools = tools.flatMap((t): HistoryTool[] => (t.tool === "history" || t.tool === "consider" ? [] : [t.tool]));
   // A tool that stopped being offered while it was open finishes in place (C8); one that is not
   // drawn at all (its switch is off) never opens.
   const opened = openTool ? tools.find((t) => t.tool === openTool) ?? null : null;
@@ -510,16 +520,18 @@ export function TuningHub({
       ref={sectionRef}
       aria-labelledby="tuning-hub-heading"
       data-tuning-hub=""
-      className={`flex flex-col gap-[12px] pt-[16px] ${opened ? "md:gap-[14px]" : ""}`}
-      style={{ borderTop: "1px solid var(--border)", scrollMarginTop: 16 }}
+      className={`flex flex-col gap-[12px] ${opened ? "md:gap-[14px]" : ""}`}
+      style={{ scrollMarginTop: 16 }}
     >
-      <h2 id="tuning-hub-heading" tabIndex={-1} className="outline-none font-display text-[17px] font-normal md:text-[19px]" style={{ color: "var(--fg)" }}>
+      {/* The Tuning tab names the panel (tool discovery B2), so the heading is for screen readers and focus alone. */}
+      <h2 id="tuning-hub-heading" tabIndex={-1} className="sr-only">
         {copy.title}
       </h2>
       {opened && openedView ? (
         <>
           {/* DESKTOP: an underline tab row, deliberately unlike the deck tabs' filled pills. */}
-          <div role="tablist" aria-label={copy.title} className="anim-gentle-in hidden gap-[22px] md:flex" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="anim-gentle-in hidden items-end gap-[16px] md:flex" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div role="tablist" aria-label={copy.title} className="flex gap-[22px]">
             {[null, ...tools.map((t) => t.tool)].map((id, i) => {
               const active = id === opened.tool;
               const view = id ? views.find((v) => v.tool === id) : null;
@@ -555,6 +567,11 @@ export function TuningHub({
                 </button>
               );
             })}
+          </div>
+          {/* Consider's sort and counts ride the row's right end (READINESS G5): a peer of the tablist, never inside it. */}
+          {opened.tool === "consider" && opened.toolbar ? (
+            <div data-hub-toolbar="" className="ml-auto flex items-center gap-[12px] pb-[8px]">{opened.toolbar}</div>
+          ) : null}
           </div>
           {/* PHONE: the tool alone, with a 44px way back; the landing is the switcher. */}
           <div className="anim-gentle-in flex items-center justify-between md:hidden">
@@ -599,8 +616,8 @@ export function TuningHub({
           {holding && short && opened.tool === "cuts" ? (
             <div ref={otherToolsRef} data-other-tools="" role="group" aria-labelledby={otherToolsLabelId} className="flex flex-col gap-[10px] pt-[16px]" style={{ borderTop: "1px solid var(--border)" }}>
               <span id={otherToolsLabelId} className="font-mono text-[10.5px] font-medium uppercase tracking-[0.14em]" style={{ color: "var(--fg-faint)" }}>{copy.otherTools}</span>
-              <div className="grid grid-cols-1 gap-[8px] md:grid-cols-3 md:gap-[10px] md:[&>*]:min-h-[96px]">
-                {views.filter((v) => v.tool !== "cuts").map((v) => <ToolTile key={v.tool} view={v} onOpen={() => open(v.tool, { focus: true, scroll: true })} onLink={followLink} />)}
+              <div className="grid grid-cols-1 gap-[8px] md:grid-cols-4 md:gap-[10px] md:[&>*]:min-h-[96px]">
+                {views.filter((v) => v.tool !== "cuts").map((v) => <ToolTile key={v.tool} view={v} narrow onOpen={() => open(v.tool, { focus: true, scroll: true })} onLink={followLink} />)}
               </div>
             </div>
           ) : null}
@@ -642,7 +659,7 @@ const TILE_TARGETS: Partial<Record<TuningTool, TargetId>> = {
   suggested: "suggested-changes", mana: "mana-balance", cuts: "proposed-cuts",
 };
 
-function ToolTile({ view, onOpen, onLink }: { view: TileView; onOpen: () => void; onLink?: (go: "topOff" | "cuts") => void }) {
+function ToolTile({ view, onOpen, onLink, narrow = false }: { view: TileView; onOpen: () => void; onLink?: (go: "topOff" | "cuts") => void; narrow?: boolean }) {
   const name = NAMES[view.tool];
   const targetRef = useTarget(TILE_TARGETS[view.tool] ?? null);
   const markInk = view.running ? "var(--accent-text)" : view.inert ? "var(--fg-locked)" : "var(--fg-body)";
@@ -688,7 +705,8 @@ function ToolTile({ view, onOpen, onLink }: { view: TileView; onOpen: () => void
       )}
     </>
   );
-  const shell = "flex min-h-[44px] flex-col gap-[6px] rounded-[10px] px-[14px] py-[12px] text-left md:min-h-[112px] md:px-[16px] md:py-[14px]";
+  // Consider spans both columns of the landing from md (README Q2); the Other tools row gives every tile one cell.
+  const shell = `flex min-h-[44px] flex-col gap-[6px] rounded-[10px] px-[14px] py-[12px] text-left md:min-h-[112px] md:px-[16px] md:py-[14px] ${view.tool === "consider" && !narrow ? "md:col-span-2" : ""}`;
   if (view.inert) {
     return (
       <div ref={targetRef} data-tool-tile={view.tool} data-inert="" className={shell} style={{ background: "transparent", border: "1px dashed var(--border-dashed)" }}>

@@ -38,6 +38,8 @@ import { deckAnalyzed, holdsOpening, isOpening, useOpenOnce, useOpeningGate } fr
 import { useHeaderBracket } from "./use-header-bracket";
 import { chipAnswer } from "../../lib/bracket/chip-answer";
 import type { Bracket } from "../../lib/bracket/types";
+import { slotDeck } from "../../lib/bracket/slot";
+import { captureToolEvent } from "../../lib/analytics/posthog";
 import { useDeclaration } from "./use-declaration";
 import { useStrategyFocus } from "./use-strategy-focus";
 import { StrategyBlock } from "./strategy-block";
@@ -75,7 +77,7 @@ import { TokensGroup } from "./tokens-group";
 import { firstCommitReady } from "../../lib/decks/first-commit";
 import { BuilderTabs, type BuilderView } from "./builder-tabs";
 import { builderTabSpecs } from "../../lib/decks/builder-tab-specs";
-import { deckViewSearch, drawnView, initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
+import { deckViewSearch, initialBuilderView, type DeckBody } from "../../lib/decks/builder-view";
 import type { FlipDeck } from "../../lib/decks/flip";
 import type { OpenFacts } from "../../lib/decks/open-entry";
 import { DeckPanelContext } from "./deck-panel";
@@ -287,6 +289,8 @@ interface BuilderShellProps {
   /** The tab this visit lands on, read off the URL by the route. Only the
       arrival: switching tabs stays component state, so nothing writes it back. */
   initialView?: BuilderView;
+  /** The Tuning tool the arrival opens on: Consider for a retired `?tab=consider` or a Consider landing (tool discovery B2). */
+  initialHubTool?: "consider" | null;
   /** The body Your deck opens on (`?panel=`, the ?'s way back): applied only when the builder opens on the deck tab. */
   initialBody?: DeckBody | null;
   notesData?: DeckNotesView | null;
@@ -377,6 +381,7 @@ export function BuilderShell({
   labelQueried = null,
   versions = [],
   initialView = "deck",
+  initialHubTool = null,
   initialBody = null,
   notesData = null,
   statsData = null,
@@ -595,6 +600,36 @@ export function BuilderShell({
     },
     [setLockMode],
   );
+  // A shortcut's ask for the hub (the trim line's `Proposed cuts →`), answered once per nonce.
+  // Dropped once the hub has answered it, so a later visit to the tab opens on the landing.
+  // An arrival's `?tab=consider` or a Consider landing opens the hub on Consider (tool discovery B2).
+  const [hubRequest, setHubRequest] = useState<HubRequest | null>(() =>
+    initialHubTool ? { tool: initialHubTool, nonce: 0 } : null,
+  );
+  const hubNonce = useRef(0);
+  const onHubRequestAnswered = useCallback(
+    (nonce: number) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
+    [],
+  );
+  // Every way into Consider: the Tuning tab, with Consider open in its hub.
+  const openConsider = useCallback(() => {
+    setView("tuning");
+    setHubRequest({ tool: "consider", nonce: (hubNonce.current += 1) });
+  }, []);
+  // The tab row's press. Opening Tuning is counted (plan §6), naming the tool a pending request opens it on.
+  const changeView = useCallback(
+    (next: BuilderView) => {
+      if (next === "tuning" && view !== "tuning") captureToolEvent("tuning_opened", { from: "tab", tool: "hub" });
+      setView(next);
+    },
+    [view],
+  );
+  // An arrival on Tuning by its address (`?tab=tuning`, the retired `?tab=consider`, a landing), counted once.
+  useEffect(() => {
+    if (view === "tuning") captureToolEvent("tuning_opened", { from: "url", tool: initialHubTool ?? "hub" });
+    // Arrival only: the tab row's own presses are counted where they are made.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // A nudge's press: open the tool's tab (and Your deck's Shopping view), then land on its target. Only a nudge whose
   // tool is on for this reader is drawn, so the registry's switch is already decided.
   const setDeckPanel = deckPanel[1];
@@ -602,7 +637,8 @@ export function BuilderShell({
     (id: ToolId) => {
       const next = toolLanding(id, () => true);
       if (next === null || next.lands.kind !== "deck") return;
-      setView(drawnView(next.lands.tab));
+      setView(next.lands.tab);
+      if (next.lands.tool) setHubRequest({ tool: next.lands.tool, nonce: (hubNonce.current += 1) });
       if (next.lands.view === "shopping") {
         setDeckPanel("list");
         changeFilter("shopping");
@@ -640,7 +676,8 @@ export function BuilderShell({
   // It never computes one; see `useDeckProfile`.
   const peekProfile = profile.peek;
   useEffect(() => {
-    if (view === "analysis") peekProfile();
+    // Tuning's Suggested changes reads the same reading, so it peeks too.
+    if (view === "analysis" || view === "tuning") peekProfile();
   }, [view, peekProfile]);
   // OPENING THE TAB (§8, 8a). Until the peek answers, an idle tab does not know whether this deck
   // is analyzed, so it must not say "not analyzed". The stored permits say whether there is
@@ -668,19 +705,6 @@ export function BuilderShell({
   const [visit, setVisit] = useState({ view, n: 0 });
   if (visit.view !== view) setVisit({ view, n: view === "analysis" ? visit.n + 1 : visit.n });
   const visitKey = `${deck.id}:${visit.n}`;
-  // The tools (Suggested changes, Proposed cuts, Mana Balance) live in the Tuning hub, which draws wherever the tab
-  // does (none of them has a switch of its own) and mounts each only when opened, so the tab's loader waits on the
-  // landing's own first read instead of on theirs.
-  const [hubSettledKey, setHubSettledKey] = useState<string | null>(null);
-  const onHubSettled = useCallback(() => setHubSettledKey(visitKey), [visitKey]);
-  // A shortcut's ask for the hub (the trim line's `Proposed cuts →`), answered once per nonce.
-  // Dropped once the hub has answered it, so a later visit to the tab opens on the landing.
-  const [hubRequest, setHubRequest] = useState<HubRequest | null>(null);
-  const hubNonce = useRef(0);
-  const onHubRequestAnswered = useCallback(
-    (nonce: number) => setHubRequest((r) => (r?.nonce === nonce ? null : r)),
-    [],
-  );
   // Shared by the empty-state field (`AnalysisEmpty`, via `AnalysisPanel`) and the checklist's
   // own "Describing in place" editor (`TuningPanel`, H35 PR 3 review fix) — the two mounts are
   // mutually exclusive, but both write through the same action.
@@ -696,8 +720,6 @@ export function BuilderShell({
     analyzed: deckAnalyzed({ storedPermits, hasReading: reading !== null, storedUnknown: storedPermitsUnknown }),
     peekPending: isOpening({ shown: true, kind: profile.state.kind, storedPermits, peekSettled: profile.peekSettled, storedUnknown: storedPermitsUnknown }),
     overviewSettled: synopsis.settled,
-    // The hub's landing read stands in for its tools'.
-    cutsSettled: hubSettledKey === visitKey,
   });
   const opening = useOpeningGate(useOpenOnce(holding, visitKey, view === "analysis"), deck.id);
   // The credit note beside each press that also writes, and whether it does (`synopsis-note.ts`).
@@ -1466,23 +1488,25 @@ export function BuilderShell({
   // clear it — which the react-compiler rule rightly rejects.
   const shelvedRoles = useMemo(() => rolesWithShelves(suggestions), [suggestions]);
 
+  // Consider is a Tuning tool (tool discovery B2): a way into it opens the Tuning tab and asks the hub for it, and the
+  // shelf is in the DOM only once the hub has answered, which is when the request clears.
   const pendingShelf = useRef<MixRole | null>(null);
   const seeShelf = useCallback(
     (role: MixRole) => {
-      if (view === "consider") {
+      if (document.getElementById(`shelf-${role}`)) {
         scrollToShelf(role);
         return;
       }
       pendingShelf.current = role;
-      setView("consider");
+      openConsider();
     },
-    [view],
+    [openConsider],
   );
   useEffect(() => {
-    if (view !== "consider" || !pendingShelf.current) return;
+    if (view !== "tuning" || hubRequest !== null || !pendingShelf.current) return;
     scrollToShelf(pendingShelf.current);
     pendingShelf.current = null;
-  }, [view]);
+  }, [view, hubRequest]);
 
   // The to-do card's unresolved `Look`, and the same two-step move as seeShelf above
   // for the same reason — the group is not in the DOM until the view and the
@@ -1536,7 +1560,7 @@ export function BuilderShell({
   // own shortcut only while that shortcut is not drawn (audit resolution 2), which the provider decides.
   // Not while Analysis is the open tab: the tab is then where the reader already is.
   const atSize = built === bodySize;
-  const offAnalysis = view !== "analysis";
+  const offAnalysis = view !== "tuning";
   // The tab is the moment's control but never the tool's target: a landing reaches the tool itself (its tile).
   const suggestedMoment = useMomentAnchor("suggested-changes", {
     eligible: atSize && offAnalysis,
@@ -1561,7 +1585,7 @@ export function BuilderShell({
   // to the tools that bring a deck back there, and what the "What we noticed" chips read (README item 2, plan H5).
   // `at` is the deck on the tool's 99 scale: the built count, with a partner's second slot added back.
   // Always offered: Proposed cuts' own switch is retired (2026-10-31), and so is the Analysis tab's it mounts on (2026-11-01).
-  const proposedCutsPress = () => { setView("analysis"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); };
+  const proposedCutsPress = () => { setView("tuning"); setHubRequest({ tool: "cuts", nonce: (hubNonce.current += 1) }); };
   const topOffPress = () => {
     setView("deck");
     setDeckPanel("list");
@@ -1593,6 +1617,10 @@ export function BuilderShell({
       onProposedCuts: proposedCutsPress,
     };
   }
+  // The Tuning tab's reading (tool discovery B2): the permits the Analysis tab would hand on, and none while a first
+  // press still holds its loader (so Suggested changes stays dimmed until the verdict paints).
+  const tuningPermits = hold === null && reading ? slotDeck(reading.profile).permits : null;
+  const considerOwned = suggestions.filter((s) => s.owned).length;
   // Mounted inside the hub's tile, where it opens fresh each visit and the tile is its landing target.
   const suggestedPanel = (permits: readonly Bracket[]) => (
     <TuningPanel
@@ -1867,7 +1895,7 @@ export function BuilderShell({
                     declaredBracket={declaration.declared}
                     noteCounts={deck.noteCounts}
                     next={row.next}
-                    onConsider={() => setView("consider")}
+                    onConsider={openConsider}
                     onAnnounce={setAnnouncement}
                     onInflight={setFillInflight}
                     openRequest={topOffRequest}
@@ -1917,10 +1945,10 @@ export function BuilderShell({
               wasCounts={wasCounts}
               labelRows={labelRows}
               onSeeCards={setRoleSheet}
-              // N2 (discovery R3): wherever Mana Balance is, which is the always-drawn Analysis tab.
+              // N2 (discovery R3): wherever Mana Balance is, which is the Tuning tab (tool discovery B2).
               onBalanceMana={!coloredPip
                 ? undefined
-                : () => { setView("analysis"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }}
+                : () => { setView("tuning"); setHubRequest({ tool: "mana", nonce: (hubNonce.current += 1) }); }}
               // N1 (discovery R3): a deck at its body size (98 with a partner) offers Suggested changes from a short
               // cell. It lands on Suggested changes' tile in the Tuning hub, which draws wherever the tab does, with or
               // without a reading held (R3 gap 8); it never runs anything.
@@ -1941,30 +1969,18 @@ export function BuilderShell({
                 which EDHREC has nothing to do with. The claim belongs on the
                 shelf that makes it. */}
 
-            {/* The decklist and Consider as peer tabs. The desktop toolbar rides
-                this row; at phone width Consider draws its own toolbar row. */}
+            {/* The builder's tabs. Consider's desktop toolbar rides the Tuning hub's own tab row (tool discovery B2). */}
             <BuilderTabs
               tabs={builderTabSpecs({
                 built,
-                suggestionCount: suggestions.length,
                 gameCount: games.length,
                 versionCount: versions.length,
                 hasOrigin: originApart,
               })}
               view={view}
-              onViewChange={setView}
-              anchor={{ view: "analysis", ref: analysisTabRef, describedBy: analysisTabDescribedBy }}
-            >
-              {view === "consider" && suggestions.length > 0 && (
-                <ConsiderToolbar
-                  sort={sort}
-                  onSortChange={setSort}
-                  ownedCount={suggestions.filter((s) => s.owned).length}
-                  unownedCount={suggestions.filter((s) => !s.owned).length}
-                  degraded={degraded}
-                />
-              )}
-            </BuilderTabs>
+              onViewChange={changeView}
+              anchor={{ view: "tuning", ref: analysisTabRef, describedBy: analysisTabDescribedBy }}
+            />
 
             {view === "analysis" ? (
               <div id="panel-analysis" role="tabpanel" aria-labelledby="tab-analysis" aria-busy={opening !== "off" || undefined}>
@@ -2037,32 +2053,68 @@ export function BuilderShell({
                       />
                     ) : null
                   }
-                  // The hub draws for any deck (Mana Balance needs no reading).
-                  hub={(permits) => (
-                    <TuningHub
-                      // Per deck: the shell survives a move between decks, and the hub's open tool,
-                      // tiles and first-read latch belong to the deck they were read for.
-                      key={deck.id}
-                      deckId={deck.id}
-                      drawn
-                      request={hubRequest}
-                      onRequestAnswered={onHubRequestAnswered}
-                      onSettled={onHubSettled}
-                      tools={[
-                        {
-                          tool: "suggested" as const,
-                          panel: permits ? suggestedPanel(permits) : null,
-                          v2: suggestedV2 ? { at: suggestedV2.at, over: suggestedV2.over, onTopOff: suggestedV2.onTopOff } : null,
-                        },
-                        { tool: "mana" as const, panel: manaPanel },
-                        { tool: "cuts" as const, panel: cutsPanel, over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) },
-                        // History is part of the hub, not a switch of its own: last, whenever the hub draws.
-                        { tool: "history" as const },
-                      ]}
-                    />
-                  )}
                 >
                 </AnalysisPanel>
+                </HoverPreviewProvider>
+              </div>
+            ) : view === "tuning" ? (
+              <div id="panel-tuning" role="tabpanel" aria-labelledby="tab-tuning" className="px-[16px] pt-[18px] pb-[32px] md:px-[30px] md:pt-6 md:pb-10">
+                {/* Tool discovery B2: the Tuning hub in a tab of its own, with Consider its first tool. The hub draws
+                    for any deck (Mana Balance and Consider need no reading). */}
+                <HoverPreviewProvider>
+                  <TuningHub
+                    // Per deck: the shell survives a move between decks, and the hub's open tool,
+                    // tiles and first-read latch belong to the deck they were read for.
+                    key={deck.id}
+                    deckId={deck.id}
+                    drawn
+                    request={hubRequest}
+                    onRequestAnswered={onHubRequestAnswered}
+                    tools={[
+                      {
+                        tool: "consider" as const,
+                        panel: (
+                          <ConsiderPanel
+                      mix={mix}
+                      deckId={deck.id}
+                      declaredBracket={declaration.declared}
+                      noteCounts={deck.noteCounts}
+                      suggestions={suggestions}
+                      deckCards={cards}
+                      deckOracleIds={deckOracleIds}
+                      commanderOracleId={deck.commander.oracleId}
+                      commanderShortName={commanderShortName}
+                      degraded={degraded}
+                      sort={sort}
+                      onSortChange={setSort}
+                      newestAsOf={newestAsOf}
+                      provenance={provenance}
+                      onSeeCards={setRoleSheet}
+                    />
+                        ),
+                        toolbar: suggestions.length > 0 ? (
+                          <ConsiderToolbar
+                            sort={sort}
+                            onSortChange={setSort}
+                            ownedCount={considerOwned}
+                            unownedCount={suggestions.length - considerOwned}
+                            degraded={degraded}
+                          />
+                        ) : null,
+                        counts: { owned: considerOwned, toBuy: suggestions.length - considerOwned },
+                      },
+                      {
+                        tool: "suggested" as const,
+                        panel: tuningPermits ? suggestedPanel(tuningPermits) : null,
+                        // The hub reads `at`, `over` and `onTopOff` off the run's own figures.
+                        v2: suggestedV2,
+                      },
+                      { tool: "mana" as const, panel: manaPanel },
+                      { tool: "cuts" as const, panel: cutsPanel, over: Math.max(0, built - bodySize), total: built + (deck.partner !== null ? 2 : 1) },
+                      // History is part of the hub, not a switch of its own: last, whenever the hub draws.
+                      { tool: "history" as const },
+                    ]}
+                  />
                 </HoverPreviewProvider>
               </div>
             ) : view === "games" ? (
@@ -2094,26 +2146,6 @@ export function BuilderShell({
                   foot={preconLink && !preconOrigin ? <LinkPreconRow deckId={deck.id} deckName={deck.name} picker={preconLink.picker} /> : null}
                 />
               </div>
-            ) : view === "consider" ? (
-              <HoverPreviewProvider>
-              <ConsiderPanel
-              mix={mix}
-                deckId={deck.id}
-                declaredBracket={declaration.declared}
-                noteCounts={deck.noteCounts}
-                suggestions={suggestions}
-                deckCards={cards}
-                deckOracleIds={deckOracleIds}
-                commanderOracleId={deck.commander.oracleId}
-                commanderShortName={commanderShortName}
-                degraded={degraded}
-                sort={sort}
-                onSortChange={setSort}
-                newestAsOf={newestAsOf}
-                provenance={provenance}
-                onSeeCards={setRoleSheet}
-              />
-              </HoverPreviewProvider>
             ) : (
             <div id="panel-deck" role="tabpanel" aria-labelledby="tab-deck">
             {isEmpty ? (
@@ -2225,7 +2257,7 @@ export function BuilderShell({
                     {/* §Swept-empty CTA — links into Consider */}
                     <button
                       type="button"
-                      onClick={() => setView("consider")}
+                      onClick={openConsider}
                       className="font-mono text-[11px] mt-[20px] cursor-pointer text-accent-text hover:text-accent-hover active:text-accent-mid transition-colors"
                     >
                       {recommendationsCopy.sweptEmpty.cta}

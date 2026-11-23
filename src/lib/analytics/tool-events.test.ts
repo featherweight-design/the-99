@@ -1,7 +1,16 @@
 // The tool discovery events' guard (plan §6, handoff G21): one case per event, each built as the app builds it, and
 // every string value a member of its property's closed set. A prop typed `string` fails the build (below).
 import { describe, expect, it } from "vitest";
-import { FEED_COUNT_BUCKET, FIND_A_DECK_FROM, TOOL_EVENT_VALUES, WELCOME_WHERE_FROM, feedCountBucket, type ToolEvents } from "./tool-events";
+import {
+  FEED_COUNT_BUCKET,
+  FIND_A_DECK_FROM,
+  TOOL_EVENT_VALUES,
+  feedCountBucket,
+  TUNING_OPENED_FROM,
+  TUNING_OPENED_TOOL,
+  WELCOME_WHERE_FROM,
+  type ToolEvents,
+} from "./tool-events";
 
 /** The events whose props admit any string: `never` while every prop is a closed set. */
 type OpenProp = {
@@ -48,5 +57,10 @@ describe("tool discovery events", () => {
   it("feed_sheet_clear carries a bucket and whether a chip narrowed it", () => {
     closed("feed_sheet_clear", { count: "6_to_10", filtered: "kind" });
     expect(() => closed("feed_sheet_clear", { count: "6_to_10", filtered: "yes" as never })).toThrow();
+  });
+
+  it("tuning_opened carries only `from` and `tool`, each from its closed set", () => {
+    for (const from of TUNING_OPENED_FROM) for (const tool of TUNING_OPENED_TOOL) closed("tuning_opened", { from, tool });
+    expect(() => closed("tuning_opened", { from: "tab", tool: "Sol Ring" as never })).toThrow();
   });
 });

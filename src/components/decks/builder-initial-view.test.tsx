@@ -9,6 +9,7 @@ import { describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { gameLogCopy } from "../../lib/copy/game-log";
+import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { BuilderView } from "../../lib/decks/builder-view";
 import { recommendedMix } from "../../lib/decks/mix";
@@ -171,10 +172,10 @@ describe("BuilderShell — the tab it opens on", () => {
     );
   });
 
-  it("opens on the consider panel when the arrival names it", async () => {
-    await mount("consider");
+  it("opens on the Tuning tab when the arrival names it", async () => {
+    await mount("tuning");
     expect(within(screen.getAllByRole("tablist")[0]).getByRole("tab", { selected: true })).toHaveTextContent(
-      addPanelCopy.tabs.consider,
+      tuningHubCopy.title,
     );
   });
 
@@ -252,9 +253,9 @@ describe("BuilderShell — the body Your deck opens on (?panel=)", () => {
     expect(last(await opened("deck", null))).toBe("your-deck");
   });
 
-  it("publishes Consider as its own tab, reading as Your deck (Copilot round 2)", async () => {
-    const publish = await opened("consider", null);
-    expect(publish.mock.calls.at(-1)?.[0]).toEqual({ view: "your-deck", tab: "consider" });
+  it("publishes Tuning as its own tab, reading as Analysis (tool discovery B2)", async () => {
+    const publish = await opened("tuning", null);
+    expect(publish.mock.calls.at(-1)?.[0]).toEqual({ view: "analysis", tab: "tuning" });
   });
 
   it("ignores it on any other tab: the deck tab, once chosen, opens on its list", async () => {

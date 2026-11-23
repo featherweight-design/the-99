@@ -47,8 +47,6 @@ describe("addPanelCopy counts at n = 1", () => {
   it("pluralises the tab accessible names", () => {
     expect(addPanelCopy.tabs.deckAria(1)).toBe("Your deck, 1 card");
     expect(addPanelCopy.tabs.deckAria(2)).toBe("Your deck, 2 cards");
-    expect(addPanelCopy.tabs.considerAria(1)).toBe("Cards to consider, 1 suggestion");
-    expect(addPanelCopy.tabs.considerAria(2)).toBe("Cards to consider, 2 suggestions");
   });
 
   it("pluralises the collection provenance line", () => {

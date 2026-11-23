@@ -74,7 +74,7 @@ export interface LastSlotsStripProps {
 
   /** The to-do card's next step: the label, the tint and the only filled press. */
   next: boolean;
-  /** The ran-out row's press: switch the shell to Consider, which has cards to buy. */
+  /** The ran-out row's press: open Consider in the Tuning tab, which has cards to buy. */
   onConsider: () => void;
 
   /** Writes one message per settle to the live region in builder-shell.tsx. */

@@ -17,6 +17,12 @@ export type WelcomeWhereFrom = (typeof WELCOME_WHERE_FROM)[number];
 export const FEED_COUNT_BUCKET = ["1_to_5", "6_to_10", "11_to_20", "21_plus"] as const;
 export type FeedCountBucket = (typeof FEED_COUNT_BUCKET)[number];
 export const feedCountBucket = (n: number): FeedCountBucket => (n <= 5 ? "1_to_5" : n <= 10 ? "6_to_10" : n <= 20 ? "11_to_20" : "21_plus");
+/** Where the Tuning tab or one of its tools was opened from (B2): the tab row, or a URL or landing that named it. `ask` and `welcome_sheet` arrive with D and C. */
+export const TUNING_OPENED_FROM = ["tab", "url"] as const;
+export type TuningOpenedFrom = (typeof TUNING_OPENED_FROM)[number];
+/** The tool the Tuning tab opened on, or `hub` for the tab's tile grid (README's null, kept a closed-set string). */
+export const TUNING_OPENED_TOOL = ["hub", "consider", "suggested", "mana", "cuts", "history"] as const;
+export type TuningOpenedTool = (typeof TUNING_OPENED_TOOL)[number];
 
 export type ToolEvents = {
   find_a_deck_opened: { from: FindADeckFrom };
@@ -27,6 +33,7 @@ export type ToolEvents = {
   feed_sheet_filter: { kind: FeedKind };
   /** Clear all in the sheet: how many it cleared, and whether a chip had narrowed it. */
   feed_sheet_clear: { count: FeedCountBucket; filtered: "all" | "kind" };
+  tuning_opened: { from: TuningOpenedFrom; tool: TuningOpenedTool };
 };
 
 /** Each event's closed sets, property by property: what the guard test checks a built event against. */
@@ -36,4 +43,5 @@ export const TOOL_EVENT_VALUES: { [E in keyof ToolEvents]: { [P in keyof ToolEve
   feed_show_all: { count: FEED_COUNT_BUCKET },
   feed_sheet_filter: { kind: FEED_KINDS },
   feed_sheet_clear: { count: FEED_COUNT_BUCKET, filtered: ["all", "kind"] },
+  tuning_opened: { from: TUNING_OPENED_FROM, tool: TUNING_OPENED_TOOL },
 };

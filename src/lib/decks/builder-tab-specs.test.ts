@@ -2,10 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { builderTabSpecs } from "./builder-tab-specs";
 import { historyOriginCopy } from "../copy/deck-versioning";
+import { tuningHubCopy } from "../copy/tuning-hub";
 
 const base = {
   built: 99,
-  suggestionCount: 12,
   gameCount: 3,
   versionCount: 2,
 };
@@ -17,7 +17,7 @@ describe("which tabs the builder draws", () => {
   it("always draws Analysis, SECOND", () => {
     // ANALYSIS_TAB_ENABLED is retired (always on). Round 0's ruling is a position, not just a presence: fifth would
     // put the newest tab behind the phone row's scroll.
-    expect(ids()).toEqual(["deck", "analysis", "consider", "games", "versions"]);
+    expect(ids()).toEqual(["deck", "analysis", "tuning", "games", "versions"]);
   });
 
   it("gives Analysis no count", () => {
@@ -29,7 +29,7 @@ describe("which tabs the builder draws", () => {
 
   it("keeps Analysis second on a brew, where Versions is absent", () => {
     // The position is relative to the tabs that DO draw.
-    expect(ids({ versionCount: 0 })).toEqual(["deck", "analysis", "consider", "games"]);
+    expect(ids({ versionCount: 0 })).toEqual(["deck", "analysis", "tuning", "games"]);
   });
 
   it("drops Versions on a brew", () => {
@@ -39,10 +39,10 @@ describe("which tabs the builder draws", () => {
 
   // Hugh, 2026-11-15: only Your deck draws a count; the others say theirs in the accessible name alone.
   it("draws a count on Your deck alone", () => {
-    const specs = builderTabSpecs({ ...base, built: 99, suggestionCount: 7, gameCount: 4, versionCount: 3 });
+    const specs = builderTabSpecs({ ...base, built: 99, gameCount: 4, versionCount: 3 });
     expect(specs.filter((t) => t.count !== undefined).map((t) => t.id)).toEqual(["deck"]);
     expect(specs.find((t) => t.id === "deck")?.count).toBe(99);
-    expect(specs.find((t) => t.id === "consider")?.accessibleName).toContain("7");
+    expect(specs.find((t) => t.id === "tuning")?.accessibleName).toBe(tuningHubCopy.tabAria);
     expect(specs.find((t) => t.id === "games")?.accessibleName).toContain("4");
   });
 

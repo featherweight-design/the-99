@@ -1,5 +1,5 @@
 "use client";
-// BuilderTabs — the decklist, Consider, Games and Versions as peers, per design
+// BuilderTabs — the decklist, Analysis, Tuning, Games and Versions as peers, per design
 // table §1. Every cell is a tab over a panel in this document: Versions used to
 // be a link to a route of its own, which made it the one cell that took the deck
 // off screen.

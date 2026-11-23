@@ -283,87 +283,13 @@ describe("AnalysisPanel", () => {
     expect(onRequest).toHaveBeenCalledTimes(1);
   });
 
-  // The Tuning hub mounts every Tuning tool inside its tiles (none has a switch of its own), and is
-  // asked whether a reading is held: it draws for a deck with none when that deck is over 100.
-  describe("the hub slot", () => {
-    const withHub = (state: ProfileState) => {
-      const hub = vi.fn((permits: readonly number[] | null) => <div>hub {permits === null ? "without a reading" : `for ${permits.join(",")}`}</div>);
-      render(
-        <CardDetailProvider fetchCard={async () => null}>
-          <AnalysisPanel state={state} onRequest={onRequest} hub={hub}>
-          </AnalysisPanel>
-        </CardDetailProvider>,
-      );
-      return hub;
-    };
-
-    it("draws over a reading, handed its permits", () => {
-      withHub(ready());
-      expect(screen.getByText(/^hub for/)).toBeInTheDocument();
-    });
-
-    it("is asked with no permits before a first reading", () => {
-      const hub = withHub({ kind: "idle" });
-      expect(hub).toHaveBeenCalledWith(null);
-      expect(screen.getByText("hub without a reading")).toBeInTheDocument();
-    });
-
-    // Hugh, 2026-10-14: Tuning stays put before, during and after an analysis. It is the SAME node
-    // in every state, never under a `hidden` ancestor, and is handed no reading until the verdict
-    // paints, so Suggested changes stays dimmed through a first press's held write.
-    describe("stays drawn through an analysis", () => {
-      type Step = { state: ProfileState; hold?: "reading" | "writing" | null; permits: "none" | "some" };
-      const tree = (step: Step, hub: (p: readonly number[] | null) => React.ReactNode) => (
-        <CardDetailProvider fetchCard={async () => null}>
-          <AnalysisPanel state={step.state} onRequest={onRequest} hold={step.hold ?? null} hub={hub}>
-          </AnalysisPanel>
-        </CardDetailProvider>
-      );
-      const walk = (steps: Step[]) => {
-        const hub = vi.fn((permits: readonly number[] | null) => (
-          <section data-testid="the-hub" data-permits={permits === null ? "none" : "some"}>Tuning</section>
-        ));
-        const { rerender } = render(tree(steps[0], hub));
-        const first = screen.getByTestId("the-hub");
-        for (const step of steps) {
-          rerender(tree(step, hub));
-          const node = screen.getByTestId("the-hub");
-          expect(node).toBe(first);
-          expect(node.closest("[hidden]")).toBeNull();
-          expect(node.getAttribute("data-permits")).toBe(step.permits);
-        }
-      };
-
-      it("a first press that holds through the overview write", () => {
-        walk([
-          { state: { kind: "idle" }, permits: "none" },
-          { state: { kind: "loading", held: null }, hold: "reading", permits: "none" },
-          { state: ready(), hold: "writing", permits: "none" },
-          { state: ready(), hold: null, permits: "some" },
-        ]);
-      });
-
-      it("a press with no hold, a failure, a refusal and a re-analysis", () => {
-        walk([
-          { state: { kind: "idle" }, permits: "none" },
-          { state: { kind: "loading", held: null }, permits: "none" },
-          { state: { kind: "failed", held: null }, permits: "none" },
-          { state: { kind: "illegal", built: 98, size: 99, held: null }, permits: "none" },
-          { state: ready(), permits: "some" },
-          { state: { kind: "loading", held: reading() }, permits: "some" },
-          { state: ready({ fresh: false }), permits: "some" },
-        ]);
-      });
-    });
-  });
-
   // OPENING THE TAB (§8, 8a): the tab draws only its loader. It draws nothing it cannot
   // yet know, because the fetch may resolve to the empty state or to any analyzed shape.
   describe("opening the tab", () => {
     const opening = (phase: "wait" | "loader", state: ProfileState = { kind: "idle" }) =>
       render(
         <CardDetailProvider fetchCard={async () => null}>
-          <AnalysisPanel state={state} onRequest={onRequest} opening={phase} hub={() => <p>tuning</p>}>
+          <AnalysisPanel state={state} onRequest={onRequest} opening={phase}>
           </AnalysisPanel>
         </CardDetailProvider>,
       );

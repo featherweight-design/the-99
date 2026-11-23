@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { deckViewSearch, drawnView, initialBuilderView, readBuilderView, readDeckBody } from "./builder-view";
+import { deckViewSearch, initialBuilderView, readBuilderView, readDeckBody, readHubTool } from "./builder-view";
 
 describe("readBuilderView", () => {
   it("takes the tab a URL names", () => {
-    expect(readBuilderView("consider")).toBe("consider");
     expect(readBuilderView("tuning")).toBe("tuning");
     expect(readBuilderView("games")).toBe("games");
     expect(readBuilderView("deck")).toBe("deck");
@@ -21,6 +20,13 @@ describe("readBuilderView", () => {
     expect(readBuilderView("")).toBe("deck");
     expect(readBuilderView(["consider", "games"])).toBe("deck");
   });
+
+  // Tool discovery B2: Consider is a Tuning tool, and the retired tab's name opens Tuning with Consider open.
+  it("opens Tuning, with Consider asked of its hub, for the retired ?tab=consider", () => {
+    expect(readBuilderView("consider")).toBe("tuning");
+    expect(readHubTool("consider")).toBe("consider");
+    for (const v of [undefined, "", "tuning", "analysis", ["consider"]]) expect(readHubTool(v)).toBeNull();
+  });
 });
 
 describe("initialBuilderView", () => {
@@ -36,13 +42,9 @@ describe("initialBuilderView", () => {
   });
 
   // The count decides the versions arm only. A deck with no version still has a
-  // decklist, a consider panel and a game log.
+  // decklist, a Tuning tab and a game log.
   it("leaves every other tab alone however many versions there are", () => {
-    expect(initialBuilderView("consider", 0)).toBe("consider");
-    // Tool discovery B1: Tuning has no tab of its own yet, so it opens Analysis, where the hub is.
-    expect(initialBuilderView("tuning", 0)).toBe("analysis");
-    expect(drawnView("tuning")).toBe("analysis");
-    expect(drawnView("consider")).toBe("consider");
+    expect(initialBuilderView("tuning", 0)).toBe("tuning");
     expect(initialBuilderView("games", 0)).toBe("games");
     expect(initialBuilderView("deck", 3)).toBe("deck");
   });
@@ -64,8 +66,7 @@ describe("deckViewSearch", () => {
     expect(deckViewSearch("?tab=analysis", "notes")).toBe("?panel=notes");
     expect(deckViewSearch("?panel=stats&tab=games", "your-deck")).toBe("");
     expect(deckViewSearch("?x=1", "shopping")).toBe("?x=1&panel=shopping");
-    // Consider reads as Your deck but is its own tab.
-    expect(deckViewSearch("?panel=stats", "your-deck", "consider")).toBe("?tab=consider");
+    // Tuning reads as Analysis but is its own tab.
     expect(deckViewSearch("?panel=stats", "analysis", "tuning")).toBe("?tab=tuning");
   });
 });

@@ -1,6 +1,6 @@
 // Discovery R3·5: the nudges in the deck page's existing slots. N2 (`balance mana →`), N2b (the over row's `Cuts`) and
-// N1 (`suggest swaps →`, on a deck at its body size) follow the Analysis tab: every Tuning tool's own switch is retired,
-// so the hub draws wherever the tab does and N2 and N2b ask it for their tool. N1 lands as Try it does, through
+// N1 (`suggest swaps →`, on a deck at its body size) follow the Tuning tab (tool discovery B2): every Tuning tool's own
+// switch is retired, so the hub draws wherever the tab does and N2 and N2b ask it for their tool. N1 lands as Try it does, through
 // `?tool=` (R2's landing), after asking the hub back to its tiles.
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,9 +18,9 @@ vi.mock("../../app/decks/actions", () => ({
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 vi.mock("../../lib/notices/actions", () => ({ peekNotices: vi.fn(async () => null), openNotices: vi.fn(async () => null) }));
-// The Analysis tab, standing in to hand back what the shell gave it: drawn only once a press opens the tab.
-const panel = vi.hoisted(() => ({ props: null as null | { hub?: (permits: null) => { props: { request: { tool: string | null; nonce: number } | null } } } }));
-vi.mock("./analysis-panel", () => ({ AnalysisPanel: (p: typeof panel.props) => { panel.props = p; return null; } }));
+// The Tuning hub, standing in to hand back what the shell gave it: drawn only once a press opens the Tuning tab.
+const panel = vi.hoisted(() => ({ props: null as null | { request: { tool: string | null; nonce: number } | null } }));
+vi.mock("./tuning-hub", () => ({ TuningHub: (p: typeof panel.props) => { panel.props = p; return null; } }));
 vi.mock("./synopsis-state", () => ({
   useDeckSynopsis: () => ({ view: { kind: "ready", state: {}, busy: false, current: true }, write: vi.fn(), retry: vi.fn() }),
 }));
@@ -83,14 +83,14 @@ beforeEach(() => {
 
 afterEach(() => vi.restoreAllMocks());
 
-/** What the press asked the hub for: the Analysis tab is open (the panel drew) and the hub is handed the request. */
+/** What the press asked the hub for: the Tuning tab is open (the hub drew) and the hub is handed the request. */
 const hubAsked = () => {
-  expect(panel.props, "the Analysis tab opened").not.toBeNull();
-  return panel.props!.hub!(null).props.request;
+  expect(panel.props, "the Tuning tab opened").not.toBeNull();
+  return panel.props!.request;
 };
 
-describe("BuilderShell — nudges follow the Analysis tab (discovery R3·5)", () => {
-  it("N2: draws balance mana →, opens the Analysis tab and asks the hub for Mana Balance, writing no ?tool=", () => {
+describe("BuilderShell — nudges follow the Tuning tab (discovery R3·5)", () => {
+  it("N2: draws balance mana →, opens the Tuning tab and asks the hub for Mana Balance, writing no ?tool=", () => {
     draw({});
     expect(seen.strip.onBalanceMana).toBeTypeOf("function");
     expect(panel.props).toBeNull();
@@ -99,7 +99,7 @@ describe("BuilderShell — nudges follow the Analysis tab (discovery R3·5)", ()
     expect(written).toEqual([]);
   });
 
-  it("N2b: draws the over row's Cuts, opens the Analysis tab and asks the hub for Proposed cuts, writing no ?tool=", () => {
+  it("N2b: draws the over row's Cuts, opens the Tuning tab and asks the hub for Proposed cuts, writing no ?tool=", () => {
     draw({ built: 101 });
     expect(panel.props).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: tuningHubShortcutsCopy.proposedCutsAria }));

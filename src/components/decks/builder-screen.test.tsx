@@ -15,7 +15,6 @@ describe("deckViewOf", () => {
     expect(deckViewOf("analysis", "shopping", "stats")).toBe("analysis");
     expect(deckViewOf("games", "all", "list")).toBe("games");
     expect(deckViewOf("versions", "all", "list")).toBe("versions");
-    expect(deckViewOf("consider", "shopping", "stats")).toBe("your-deck");
     expect(deckViewOf("tuning", "shopping", "stats")).toBe("analysis");
   });
 });
@@ -44,14 +43,14 @@ describe("usePublishBuilderScreen", () => {
     expect(publish).toHaveBeenLastCalledWith(null);
   });
 
-  it("publishes Consider's own tab beside the Your deck screen it reads as (Copilot round 2)", () => {
+  it("publishes Tuning's own tab beside the Analysis screen it reads as (Copilot round 2)", () => {
     const publish = vi.fn();
     render(
       <BuilderScreenContext.Provider value={publish}>
-        <Builder view="your-deck" tab="consider" />
+        <Builder view="analysis" tab="tuning" />
       </BuilderScreenContext.Provider>,
     );
-    expect(publish).toHaveBeenLastCalledWith({ view: "your-deck", tab: "consider" });
+    expect(publish).toHaveBeenLastCalledWith({ view: "analysis", tab: "tuning" });
   });
 
   it("does nothing with no provider (the ? off)", () => {
