@@ -6,7 +6,7 @@ import { WelcomeStrip } from "../src/components/welcome/welcome-strip";
 import { WhereCreditsWork, Row } from "../src/components/welcome/where-credits-work";
 import { writtenForYouCopy } from "../src/lib/copy/discovery";
 import { Lock } from "../src/components/ui/lock";
-import { welcomeFreeCopy } from "./find";
+import { welcomeFreeCopy, WhatYouCanDo } from "./find";
 const G = globalThis as any;
 const NOW = new Date("2026-11-23T15:00:00Z");
 const facts: any = { lot: "held", units: 3, left: 3, expiresAtMs: Date.UTC(2026, 10, 30, 12), days: 7, teaser: true, free: 1 };
@@ -36,9 +36,10 @@ const freeBlock = (
   </>
 );
 const deck = (id: string, name: string, cmd: string, art: string, ci: string[]): any => ({ id, name, createdAt: NOW, commanderName: cmd, commanderColorIdentity: ci, commanderImageUri: `art/c-${art}.jpg`, commanderArtCropUri: `art/a-${art}.jpg`, partnerName: null, partnerColorIdentity: null, folderId: null, folderName: null, built: 99, ownedCount: 93, toBuyCount: 6, unresolvedCount: 0, pendingChanges: 0, versionNumber: 3, lastPlayedAt: null, lastEditedAt: NOW, lastCommittedAt: NOW, inUseElsewhere: 0, proxiedCount: 0, statusPill: "built", bracket: null });
-function home(name: string, dev: "phone" | "desk", sheet: any | null, free = false) {
+function home(name: string, dev: "phone" | "desk", sheet: any | null, free = false, todo = false) {
   G.__VW = dev === "desk" ? 1300 : 390; G.__INLINE = true; G.__FREEBLOCK = free ? freeBlock : undefined;
-  const strip = <WelcomeStrip facts={facts} sheet={sheet ?? today} place="dashboard" />;
+  const strip0 = <WelcomeStrip facts={facts} sheet={sheet ?? today} place="dashboard" />;
+  const strip = todo ? <>{strip0}<div className="order-1 mt-[4px] min-[1180px]:order-none"><WhatYouCanDo spares={212} deck="Ashen Banner Parade" /></div></> : strip0;
   const html = shell(
     <Dashboard stats={{ totalCards: 4492, uniqueCards: 2926 }} lastUpdated={new Date("2026-11-21T12:00:00Z")} timeZone="UTC" ready={null}
       inUse={new Map()} decks={[deck("d1", "Ashen Banner Parade", "Ashling, the Limitless", "ashling", ["W", "U", "B", "R", "G"])]} commitments={null}
@@ -52,5 +53,6 @@ for (const dev of ["phone", "desk"] as const) {
   home(`${d}-h0`, dev, null);
   home(`${d}-s0`, dev, today);
   home(`${d}-s1`, dev, proposed, true);
+  home(`${d}-h1`, dev, null, false, true);
 }
 console.log("ok");

@@ -1,24 +1,36 @@
-# States · Finding the tools R1
+# States · Finding the tools R2
 
-## Collection call-out and switch (Cards tab, under the chassis)
+## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
 |---|---|
 | No deck, or Free count 0, or closed (✕) | Nothing. The Availability filter as shipped. |
-| Free count N, nothing filtered | Call-out (`N of your cards are in no deck`) and switch, `All` chosen. |
-| Availability = Free alone | Call-out and switch, `In no deck · N` chosen; the `Free` chip as shipped. |
-| Any other filter on (search, colors, type, set, another availability) | Call-out only; the switch hides (the chips say what is on). |
-| Row view | Call-out and switch as in grid. |
 | Reading availability failed (`availabilityOk` false) | Nothing. |
+| Free count N, Availability not Free alone | Call-out: `N of your cards are in no deck` / `See which of your decks each one could go in.` and `Show them`. |
+| `Show them` pressed | Availability = Free, exactly as the menu sets it: chip, URL `avail=free`, the count line. |
+| Availability = Free alone (any other filters too) | Call-out without the button: `Press Find a deck under a card to see which of your decks it fits.` |
+| Row view | The call-out as in grid. |
 
-## Find a deck press (grid tile)
+## Find a deck button (under a grid tile) · R2
 | State | Draws |
 |---|---|
 | List not narrowed to Free alone | Nothing. |
-| Narrowed to Free alone, reader has a deck | Press on every tile (all are free); name line yields 32 / 40px. |
-| Card not Commander-legal | No press (the door's own rule). |
-| Pressed | Box ringed (`--accent` outline 2, offset 2); the card window opens on Find a deck. |
+| Narrowed to Free alone, reader has a deck | A button under every tile (all are free): two diamonds, `Find a deck`. |
+| Card not Commander-legal | No button (the door's own rule); the tile keeps its row height. |
+| Pressed | Ringed (`--accent` outline 2, offset 2); the card window opens on Find a deck. |
 | Back (← card) | The card's details, the door under the store link as shipped. |
-| Close | Focus returns to the press. |
+| Close | Focus returns to the button. |
+
+## Home · What you can do · R2
+| State | Draws |
+|---|---|
+| No deck yet | Nothing (Home's ways in already lead). |
+| Closed (✕), for this account | Nothing, for good. |
+| Every row retired | Nothing. |
+| Spares: Free count above 0, Find a deck never opened | `Find a home for your spare cards` with the count. |
+| Tune: a deck, Tuning tab never opened | `Make <deck> better`, the most recently touched deck. |
+| Build: Commanders never opened since the first deck | `Build another deck`. |
+| A row's tool opened from anywhere | That row leaves on the next visit (not mid-visit). |
+| Phone / from 1180 | One column / three across. |
 
 ## Deck tabs
 | Deck | Row |

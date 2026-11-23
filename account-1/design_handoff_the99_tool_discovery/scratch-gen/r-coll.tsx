@@ -9,7 +9,7 @@ import { collectionChips } from "../src/lib/collection/chips";
 import { collectionChassisCopy } from "../src/lib/copy/collection";
 import { availabilityLabel } from "../src/lib/collection/availability-filter";
 import { projected } from "../src/lib/demo/projected";
-import { FindCallout, FindFilter, FitPress, FitsSheet } from "./find";
+import { FindCallout, FindFilter, FitPress, FitButton, FitsSheet } from "./find";
 const G = globalThis as any;
 const CTX: any = new Proxy({}, { get: (_t, k) => (k === "then" ? undefined : () => undefined) });
 const P: any = projected();
@@ -58,17 +58,17 @@ function bar(on: boolean) {
       resultLine={G.__VW >= 1000 ? collectionChassisCopy.result(shown, TOTAL, 4492, on) : collectionChassisCopy.resultCompact(shown)} />
   );
 }
-export function collection(name: string, o: { dev: "phone" | "desk"; on?: boolean; callout?: boolean; open?: string; sheet?: any }) {
+export function collection(name: string, o: { dev: "phone" | "desk"; on?: boolean; callout?: boolean; open?: string; sheet?: any; r2?: boolean }) {
   G.__VW = o.dev === "desk" ? 1300 : 390;
-  G.__FIT = o.on ? (c: any) => <FitPress name={c.name} open={o.open === c.oracleId} /> : undefined;
+  G.__FIT = o.on ? (c: any) => (o.r2 ? <FitButton name={c.name} open={o.open === c.oracleId} /> : <FitPress name={c.name} open={o.open === c.oracleId} />) : undefined;
   const html = shell(
     <CardDetailContext.Provider value={CTX}>
       <CollectionPlaceHead stats={{ totalCards: 4492, uniqueCards: TOTAL } as any} lastUpdatedLabel="Nov 21" editEnabled historyHasEntries preconPick scan wishlistEnabled {...({} as any)} />
       {bar(!!o.on)}
-      {o.callout !== false ? <div className="px-[14px] md:px-[34px]"><FindCallout n={NFREE} /><FindFilter all={TOTAL} n={NFREE} on={!!o.on} /></div> : null}
+      {o.callout !== false ? <div className="px-[14px] md:px-[34px]">{o.r2 ? <div className="mb-[4px]"><FindCallout n={NFREE} on={!!o.on} /></div> : <><FindCallout n={NFREE} on="r1" /><FindFilter all={TOTAL} n={NFREE} on={!!o.on} /></>}</div> : null}
       <GridView cards={(o.on ? FREEONLY : ALL) as any} totalCards={o.on ? NFREE : TOTAL} onOpen={() => {}} />
     </CardDetailContext.Provider>, "/collection", o.sheet ? W(<CardDetailContext.Provider value={CTX}>{o.sheet}</CardDetailContext.Provider>, "/collection") : null);
-  const css = `<style>div.relative:has(>[class*=bottom-] [data-dz=fit]) [data-collection-tile] .min-w-0.truncate{padding-right:32px}@media(min-width:768px){div.relative:has(>[class*=bottom-] [data-dz=fit]) [data-collection-tile] .min-w-0.truncate{padding-right:40px}}</style>`;
+  const css = o.r2 ? "" : `<style>div.relative:has(>[class*=bottom-] [data-dz=fit]) [data-collection-tile] .min-w-0.truncate{padding-right:32px}@media(min-width:768px){div.relative:has(>[class*=bottom-] [data-dz=fit]) [data-collection-tile] .min-w-0.truncate{padding-right:40px}}</style>`;
   writeFileSync(`dz/frames/${name}.html`, css + html);
   G.__FIT = undefined; G.__VW = 0;
 }
@@ -91,5 +91,8 @@ for (const dev of ["phone", "desk"] as const) {
   collection(`${d}-c0`, { dev });
   collection(`${d}-c1`, { dev, on: true });
   collection(`${d}-c2`, { dev, on: true, open: "o-killian", sheet: <FitsSheet fits={KILLIAN} dev={dev} /> });
+  collection(`${d}-f0`, { dev, r2: true });
+  collection(`${d}-f1`, { dev, on: true, r2: true });
+  collection(`${d}-f2`, { dev, on: true, r2: true, open: "o-killian", sheet: <FitsSheet fits={KILLIAN} dev={dev} /> });
 }
 console.log("ok");

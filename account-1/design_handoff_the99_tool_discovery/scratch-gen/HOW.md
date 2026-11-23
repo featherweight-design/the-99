@@ -8,6 +8,7 @@ query-core override, clerk stub, `use-min-width` server snapshot reads `globalTh
 - `collection/grid-view.tsx`: `GRID_EAGER_TILES = 99`; each tile wrapped in `div.relative` with `{globalThis.__FIT?.(c)}`.
 - `social/social-modal.tsx`: renders inline when `globalThis.__INLINE` (no portal host in SSR).
 - `welcome/where-credits-work.tsx`: `Row` exported; `{globalThis.__FREEBLOCK}` after the rows; `useLocalDay` ready under `__INLINE`.
+R2 frames: `r-coll.tsx` writes f0–f2 (`r2: true`), `r-home.tsx` writes h1; shot with `specs-r2.json`. The scripts need a stub `DATABASE_URL`.
 Fixtures: the landing demo's `projected()` (deck, Find a deck read re-pointed at Killian); art from other handoffs' large
 `c-*.jpg` crops (no stamps). Then `node dz/css.mjs`; `npx tsx dz/r-deck.tsx all`, `dz/r-coll.tsx`, `dz/r-home.tsx`;
 `node dz/shot.mjs dz/specs.json`; PNG to `art/td-*.webp` (crops in the converter); `python3 gen.py repo|canvas <out>`;

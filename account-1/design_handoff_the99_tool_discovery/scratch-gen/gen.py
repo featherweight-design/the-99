@@ -1,4 +1,4 @@
-# Finding the tools R1 (account 1, 2026-11-23): writes the boards twice, for the canvas (/_blob urls from blobs.json)
+# Finding the tools R1, R2 (account 1, 2026-11-23): writes the boards twice, for the canvas (/_blob urls from blobs.json)
 # and for the repo (art/). Usage: python3 gen.py repo|canvas <out>
 import json, sys, os
 mode, out = sys.argv[1], sys.argv[2]
@@ -78,32 +78,54 @@ Q1 = q("Q1", "Does Tuning open straight on Consider while a deck is short?", "On
 Q2 = q("Q2", "Keep the free block in Where credits work?", "The sheet is about credits; the block names two tools that cost none. Option A: keep it (drawn). Option B: the sheet stays spenders only and the Collection call-out carries Find a deck alone.", "A. The sheet is the one place a new player is told what the tools are, and it already says browsing is free.")
 Q3 = q("Q3", "One word for the filter: In no deck, or Free?", "The switch says In no deck; the Availability filter's option and chip say Free (the same state). Option A: rename the shipped option and chip to In no deck, everywhere. Option B: the switch says Free too.", "A. \"Free\" reads as a price to a new player; \"In no deck\" says what it filters.")
 
+
+C1R2 = call("1", "Find a deck, R2: the shipped Free filter is the one control", ul([
+  f"No switch. Availability's {m('Free')} option and chip are the filter, as shipped; R1's All / In no deck switch is gone.",
+  f"On All, the call-out is the door to it: eyebrow {m('Find a deck')}, {m('212 of your cards are in no deck')} / {m('See which of your decks each one could go in.')}, and {m('Show them')}, which applies Availability: Free. A bare ✕ closes it for good.",
+  f"On Free alone, the same call-out without the button: {m('Press Find a deck under a card to see which of your decks it fits.')}",
+  f"Each tile gets a labelled button under it, the tile's full width: the door's two diamonds and {m('Find a deck')} (36px on a phone, 34px from md). The name keeps its whole line, and a reader who has never seen the glyph reads what it does. It opens the card window straight on Find a deck, as R1.",
+  "Drawn only while the list is narrowed to Free alone: on All most cards are in decks, and a button under every tile would be noise."]))
+C4 = call("4", "Home says what you can do, in your words", ul([
+  f"A section on Home under the welcome strip, above Pick up where you left off: {m('What you can do')}. Goals, not tool names, each with the player's own numbers, each one press from the tool that answers it.",
+  f"{m('Find a home for your spare cards')} {m('free')}: {m('212 of your cards are in no deck. See which of your decks each one fits.')} → /collection?avail=free, the call-out above.",
+  f"{m('Make Ashen Banner Parade better')} {m('free to start')}: {m('Cards you own that fill what it’s short of, then swaps and cuts.')} → the deck's Tuning tab (the most recently touched deck).",
+  f"{m('Build another deck')} {m('free')}: {m('Commanders your cards can already lead, the closest first.')} → /commanders.",
+  "Why it reaches the player who skipped the strip: it is page content, not a promo line, it uses their cards and their deck by name, and it does not mention credits at all. The strip keeps the credits story.",
+  f"A row leaves once its tool has been opened from anywhere (the moments' spent store); the section leaves with its last row. A bare ✕ beside the heading closes it for good. Rows only draw when they have something to say: no spares row at 0 cards in no deck, no tune row with no deck. At zero decks Home already draws its ways in, so the section waits for the first deck.",
+  "Phone: one column of rows. From 1180: three across, one row."]))
+Q4 = q("Q4", "In the Free view, a labelled button under each tile, or no button at all?", "Option A: the Find a deck button under every tile (drawn). Option B: no button; in the Free view a tile's own press opens the card window straight on Find a deck, and the call-out says so. B adds nothing to the tile, but it changes what a tile does in one view only, and nothing on the tile says it.", "A. A new player can see the tool and its name on every card, and a tile always does the same thing.")
+Q5 = q("Q5", "Should What you can do retire row by row, or only when hidden?", "Option A: a row leaves once its tool has been opened, and the section leaves with its last row (drawn). Option B: the rows stay until the ✕, as a standing shortcut list.", "A. Home is for what is new to the player; once they have found a tool it lives in its own place.")
 boards = {}
-boards["Main.dc.html"] = (1600, 2860, "Main", page("Finding the tools R1: main", 1600, 2860,
- head("Finding the tools · R1",
-  "Three answers to one complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> Find a deck moves to where the cards are, Tuning gets its own tab with Consider in it, and the welcome sheet sends a new player to both. Rendered from main 7563036 with shipped components (the hub, the Consider panel, the Find a deck view, the to-do card row, the segmented switch, the welcome strip and sheet). Figures and art are illustrative.")
+boards["Main.dc.html"] = (1600, 2180, "Main", page("Finding the tools R2: main", 1600, 2180,
+ head("Finding the tools · R2",
+  "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R2 keeps R1's Tuning tab and welcome sheet as drawn, redoes Find a deck on Collection around the shipped Free filter, and adds a Home section that says what a player can do, for the player who never reads the welcome strip. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
+ + note("Since R1", ["Find a deck: the All / In no deck switch is gone (the shipped Availability: Free filter does the job); the glyph press that cut names short becomes a labelled button under each tile.", "R1's Q3 (rename Free) is withdrawn with the switch: the shipped word stays.", "New: call 4, What you can do on Home (board Home).", "Tuning and Welcome as R1, approved: Tuning always lands on its tiles, and the free block stays in Where credits work (R1 Q1 and Q2, A)."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
- + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C1 + C2 + C3 + '</div>'
+ + '<div style="display:flex;flex-direction:column;gap:16px;flex:1 1 0;min-width:0">' + C1R2 + C4 + call("2, 3", "As R1", ul(["Tuning gets its own tab after Analysis; Consider leaves the tab row and becomes Tuning's first tile. Analysis keeps the reading.", "Where credits work: every row lands, the Tuning rows name the tab, and a free block names Consider and Find a deck."])) + '</div>'
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
- + '<div style="display:flex;gap:20px">' + fig("p-c1", 300, "Collection, In no deck", "Call-out, switch, a press on every tile.") + fig("p-t1", 300, "The Tuning tab", "Consider first, then the shipped tiles.") + '</div>'
- + dk("d-s1", "Where credits work", "Every row lands; the free block at the foot.", 620)
+ + '<div style="display:flex;gap:20px">' + fig("p-h1", 300, "Home, What you can do", "Under the strip, above the decks.") + fig("p-f1", 300, "Collection, Free", "The call-out; a button under each tile.") + '</div>'
  + '</div></div>'
- + Q1 + Q2 + Q3
- + note("Not changed", ["The card window's Find a deck door and its moment (M8).", "The hub's tools, their costs and History.", "Home's strip, its states and its ✕.", "The Analysis tab's reading."])))
+ + Q4 + Q5
+ + note("Not changed", ["The card window's Find a deck door and its moment (M8).", "The Availability filter, its options and its chip.", "Home's strip, its states and its ✕.", "The first-run tour."])))
 
-boards["Find.dc.html"] = (1700, 3440, "Find", page("Finding the tools R1: Find a deck", 1700, 3440,
- head("Q1 · How a player finds the deck a card fits", "/collection's Cards tab. C0 the call-out and switch on All, C1 narrowed to In no deck with a press on every tile, C2 the press opens Find a deck straight (shipped view, Killian, one deck fits). Desktop first, then the phone.")
- + row("Desktop · 1300", [dk("d-c0", "C0 · All", "Call-out and switch; no presses on All.", 780), dk("d-c1", "C1 · In no deck", "The Free chip, the switch on, a press on each tile.", 780)])
- + row("Desktop · 1300", [dk("d-c2", "C2 · The press opens Find a deck", "The card window straight on the view; ← the card goes to its details.", 780)])
- + row("Phone · 390", [ph("p-c0", "C0 · All", "The call-out sits under the chip row, the switch under it."), ph("p-c1", "C1 · In no deck", "Names run clear of the press (the you-have-it fix)."), ph("p-c2", "C2 · Find a deck", "The phone card window, on the view.")])))
+boards["Find.dc.html"] = (1700, 3440, "Find", page("Finding the tools R2: Find a deck", 1700, 3440,
+ head("Q1 · How a player finds the deck a card fits (R2)", "/collection's Cards tab. F0 the call-out on All, its Show them applying the shipped Availability: Free. F1 narrowed to Free, a Find a deck button under each tile. F2 the button opens Find a deck straight (shipped view, Killian, one deck fits). Desktop first, then the phone.")
+ + row("Desktop · 1300", [dk("d-f0", "F0 · All", "The call-out with Show them; no buttons on All.", 780), dk("d-f1", "F1 · Free", "The Free chip as shipped; a labelled button under each tile.", 780)])
+ + row("Desktop · 1300", [dk("d-f2", "F2 · The button opens Find a deck", "The card window straight on the view; ← the card goes to its details.", 780)])
+ + row("Phone · 390", [ph("p-f0", "F0 · All", "Show them under the line, 44px."), ph("p-f1", "F1 · Free", "Names keep their whole line; the button sits under the tile."), ph("p-f2", "F2 · Find a deck", "The phone card window, on the view.")])))
 
-boards["Tuning.dc.html"] = (1700, 3920, "Tuning", page("Finding the tools R1: Tuning", 1700, 3920,
+boards["Home.dc.html"] = (1700, 1540, "Home", page("Finding the tools R2: Home", 1700, 1540,
+ head("Q4 · What you can do, on Home", "H1: a player with one deck, 212 cards in no deck and the welcome strip still up. Three goals in plain words with their own numbers; each row lands on the tool. The strip above is unchanged.")
+ + row("Desktop · 1300", [dk("d-h1", "H1 · Home", "Three across from 1180; the bare ✕ closes it for good.", 1000)])
+ + row("Phone · 390", [ph("p-h1", "H1 · Home, phone", "One column; the cost pill follows the title.")])))
+
+boards["Tuning.dc.html"] = (1700, 3920, "Tuning", page("Finding the tools: Tuning", 1700, 3920,
  head("Q2 · Tuning gets a tab", "T0 today's tab row (Tuning is the last section of Analysis, under the whole reading). T1 the Tuning tab's landing. T2 Consider opened inside it, the shipped panel.")
  + row("Today", [dk("d-t0", "T0 · Today", "Your deck · Analysis · Consider · Games · Versions.", 780), ph("p-t0", "T0 · Today, phone", "Same row.")])
  + row("Desktop · 1300", [dk("d-t1", "T1 · Tuning", "Consider full width first; Suggested changes, Mana Balance, Proposed cuts, History as shipped.", 780), dk("d-t2", "T2 · Consider open", "The hub's underline row; the shipped panel under it.", 780)])
  + row("Phone · 390", [ph("p-t1", "T1 · Tuning", "Stacked tiles, Consider first."), ph("p-t2", "T2 · Consider open", "‹ Tuning and 1 of 5 tools; Consider's own toolbar.")])))
 
-boards["Welcome.dc.html"] = (1700, 3700, "Welcome", page("Finding the tools R1: welcome", 1700, 3700,
+boards["Welcome.dc.html"] = (1700, 3700, "Welcome", page("Finding the tools: welcome", 1700, 3700,
  head("Q3 · The welcome credits point at the tools", "H0 Home's strip, unchanged. S0 Where credits work today. S1 proposed: every row lands, the Tuning rows name the tab, Which deck needs it most? lands on the cards in no deck, and a free block names Consider and Find a deck.")
  + row("Desktop · 1300", [dk("d-h0", "H0 · Home's strip", "Unchanged.", 780), dk("d-s0", "S0 · Today", "Overview and Which deck needs it most? have no Try it.", 780)])
  + row("Desktop · 1300", [dk("d-s1", "S1 · Proposed", "Try it on every row; the free block before the teaser.", 780)])
@@ -111,10 +133,10 @@ boards["Welcome.dc.html"] = (1700, 3700, "Welcome", page("Finding the tools R1: 
 
 os.makedirs(out, exist_ok=True)
 for n, (w, h, t, html) in boards.items(): open(os.path.join(out, n), "w").write(html)
-order = list(boards)
+order = ["Main.dc.html", "Find.dc.html", "Home.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R1", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R2", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)

@@ -1,14 +1,29 @@
-// Finding the tools R1: every NEW or CHANGED string (placeholders for /copy-review). Shipped strings are reused as named.
+// Finding the tools R2: every NEW or CHANGED string (placeholders for /copy-review). Shipped strings are reused as named.
 export const findADeckCalloutCopy = {
   eyebrow: "Find a deck",
   title: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck`,
-  body: "Narrow to them, then press a card’s two diamonds to see which of your decks it fits.",
-  dismiss: "Dismiss", // = welcomeCreditsCopy.strip.dismiss
-  // The switch. Q3: if A, `availabilityCopy.collection.filterFree` becomes "In no deck" too.
-  switchAria: "Show",
-  all: "All ·",
-  free: "In no deck ·",
-  pressAria: (card: string) => `Find a deck for ${card}`, // = swapToolsCopy.fits.calloutAria
+  bodyAll: "See which of your decks each one could go in.",
+  show: "Show them",
+  bodyFree: "Press Find a deck under a card to see which of your decks it fits.",
+  dismiss: "Dismiss", // = welcomeCreditsCopy.strip.dismiss (accessible name of the bare ✕)
+  button: "Find a deck", // = swapToolsCopy.fits title
+  buttonAria: (card: string) => `Find a deck for ${card}`, // = swapToolsCopy.fits.calloutAria
+};
+
+export const whatYouCanDoCopy = {
+  eyebrow: "What you can do",
+  close: "Hide What you can do", // accessible name of the bare ✕
+  free: "free",
+  freeToStart: "free to start",
+  spares: {
+    title: "Find a home for your spare cards",
+    line: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck. See which of your decks each one fits.`,
+  },
+  tune: {
+    title: (deck: string) => `Make ${deck} better`,
+    line: "Cards you own that fill what it’s short of, then swaps and cuts.",
+  },
+  build: { title: "Build another deck", line: "Commanders your cards can already lead, the closest first." },
 };
 
 export const tuningTabCopy = {
