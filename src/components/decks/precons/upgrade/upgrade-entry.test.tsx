@@ -30,7 +30,7 @@ const lead: OfferedCommander = {
   strategies: [{ key: "spellslinger", label: "Spells", blurb: "b", source: "edhrec", backingIds: ["c1"], backing: [{ oracleId: "c1", name: "Card One" }] }],
 };
 const run = (over: Partial<PanelRun> = {}): PanelRun => ({
-  id: "r1", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"),
+  id: "r1", status: "done", strategyKey: runKey("rootha", 3, "spellslinger"), strategyLabel: "Spells", refunded: false, createdAt: new Date("2026-11-10T12:00:00Z"), pricesAsOf: new Date("2026-11-10T12:00:00Z"),
   pairs: [{ cutId: "c", cut: "Cut", addId: "a", add: "Add", addCents: 100, reason: "r", cutReason: null, position: 1 }], buyTotalCents: 100,
   bracketBefore: 2, bracketAfter: 3, bracketTarget: 3, listFp: "x", toBuy: { cards: 1, cents: 100 }, owned: 0, themes: {}, deck: null, seenAt: new Date("2026-11-10T12:01:00Z"), unpicked: [], ...over,
 });

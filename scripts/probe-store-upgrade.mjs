@@ -7,9 +7,10 @@
 // cannot agree. Fails on main: the result draws the stored $2.00.
 //
 // FIXTURE: a scratch branch of local-dev, which the dev server reads, where the audit account has a user
-// STORE_PREFERENCE_ENABLED and PRECON_UPGRADE_ENABLED overrides 'on', user_prefs.preferred_store = 'tcgplayer' and printing_store_prices rows for
-// tcgplayer. The probe writes one model_calls row and one precon_upgrades row of the signed-in account, and deletes both
-// in its `finally`; `assertScratchBranch` refuses production, staging and local-dev before the first write.
+// STORE_PREFERENCE_ENABLED and PRECON_UPGRADE_ENABLED overrides 'on', user_prefs.preferred_store = 'tcgplayer' and
+// printing_store_prices rows for tcgplayer. The probe writes one model_calls row and one precon_upgrades row of the
+// signed-in account (first clearing any an earlier run left), and deletes both in its
+// `finally`; `assertScratchBranch` refuses production, staging and local-dev before the first write.
 //
 //   PROBE_BASE=http://localhost:3161 pnpm probe:store-upgrade
 import { neon } from "@neondatabase/serverless";
@@ -74,10 +75,20 @@ async function signIn(page) {
   return page.evaluate(() => window.Clerk.user.id);
 }
 
+const PROBE_KEY = "probe/3/probe";
+
+/** Every probe run of this account and its model call: a run an earlier, crashed probe left behind would sit beside this one. */
+async function clean(userId) {
+  const left = await sql`delete from precon_upgrades where user_id = ${userId} and strategy_key = ${PROBE_KEY} returning model_call_id`;
+  const calls = left.map((r) => r.model_call_id).filter(Boolean);
+  if (calls.length) await sql`delete from model_calls where id = any(${calls}) and user_id = ${userId}`;
+}
+
 /** One kept run of the signed-in account on the box: the two adds stored at $1.00 each, over two of its own cards. */
-async function seed(userId) {
+async function seed(userId, made) {
   const [{ branch }] = await sql`select current_setting('neon.branch_id', true) as branch`;
   assertScratchBranch(branch, "probe:store-upgrade");
+  await clean(userId);
   const adds = await sql`select oracle_id, name from cards where name = any(${ADDS}) order by name`;
   const cuts = await sql`
     select c.oracle_id, c.name from precon_cards pc join cards c on c.oracle_id = pc.oracle_id
@@ -88,18 +99,25 @@ async function seed(userId) {
     reason: "probe", cutReason: null, position: i + 1,
   }));
   const [call] = await sql`insert into model_calls (user_id, feature) values (${userId}, 'precon_upgrade') returning id`;
+  made.callId = call.id;
   const [run] = await sql`
     insert into precon_upgrades (user_id, precon_file, strategy_key, strategy_label, status, model_call_id, model, pairs,
       buy_total_cents, bracket_before, bracket_after, bracket_target, finished_at, seen_at)
-    values (${userId}, ${FILE}, 'probe/3/probe', 'Store probe', 'done', ${call.id}, 'probe', ${JSON.stringify(pairs)}::jsonb,
+    values (${userId}, ${FILE}, ${PROBE_KEY}, 'Store probe', 'done', ${call.id}, 'probe', ${JSON.stringify(pairs)}::jsonb,
       ${STORED_CENTS * 2}, 2, 3, 3, now(), now())
     returning id`;
-  return { callId: call.id, runId: run.id, addIds: adds.map((a) => a.oracle_id) };
+  made.runId = run.id;
+  made.addIds = adds.map((a) => a.oracle_id);
 }
 
-/** Today's cheapest live figure at the reader's store for each add, summed: what the result should draw. */
+/**
+ * Today's cheapest live figure at the reader's store for each add, summed: what the result should draw. A close reading of
+ * `cheapestNow` over the newest price day; the first check (not the stored figure) holds whatever this reads.
+ */
 async function expectedCents(userId, addIds) {
-  const [{ store }] = await sql`select preferred_store as store from user_prefs where user_id = ${userId}`;
+  const [pref] = await sql`select preferred_store as store from user_prefs where user_id = ${userId}`;
+  const store = pref?.store;
+  if (store !== "tcgplayer") throw new Error(`fixture: the account's store is ${store ?? "unset"}, not tcgplayer`);
   const rows = await sql`
     select p.oracle_id, min(s.price_cents) as cents from printing_store_prices s join printings p on p.scryfall_id = s.scryfall_id
     where s.store = ${store} and p.oracle_id = any(${addIds}) and s.price_cents > 0
@@ -108,7 +126,7 @@ async function expectedCents(userId, addIds) {
   return { store, cents: rows.reduce((n, r) => n + Number(r.cents), 0), priced: rows.length };
 }
 
-async function run(size, userIdOut) {
+async function run(size) {
   const browser = await chromium.launch();
   try {
     const context = await browser.newContext({ viewport: { width: size.width, height: size.height } });
@@ -116,7 +134,6 @@ async function run(size, userIdOut) {
       route.fulfill({ status: 200, contentType: "text/html", body: "<title>stub</title>" }));
     const page = await context.newPage();
     const userId = await signIn(page);
-    userIdOut.id = userId;
     await clearAboutSheet(page, userId);
     return { page, userId, browser };
   } catch (e) {
@@ -143,13 +160,12 @@ async function walk(page, size, expected) {
 }
 
 await clerkSetup();
-let made = null;
+const made = {};
 try {
   for (const size of WIDTHS) {
-    const holder = {};
-    const { page, userId, browser } = await run(size, holder);
+    const { page, userId, browser } = await run(size);
     try {
-      made ??= await seed(userId);
+      if (!made.runId) await seed(userId, made);
       const expected = await expectedCents(userId, made.addIds);
       if (expected.priced !== 2) throw new Error(`fixture: ${expected.priced} of 2 adds priced at ${expected.store}`);
       await walk(page, size, expected);
@@ -158,10 +174,8 @@ try {
     }
   }
 } finally {
-  if (made) {
-    await sql`delete from precon_upgrades where id = ${made.runId}`;
-    await sql`delete from model_calls where id = ${made.callId}`;
-  }
+  if (made.runId) await sql`delete from precon_upgrades where id = ${made.runId}`;
+  if (made.callId) await sql`delete from model_calls where id = ${made.callId}`;
 }
 console.log(failures ? `\n${failures} check(s) failed` : "\nall checks passed");
 process.exit(failures ? 1 : 0);

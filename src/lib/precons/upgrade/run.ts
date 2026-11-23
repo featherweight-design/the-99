@@ -30,6 +30,7 @@ import { loadMixesForCommanders, mixKey, type CommanderPair } from "../../decks/
 import type { RecommendedMix } from "../../decks/mix";
 import type { RoleBasis } from "../../profile/build";
 import type { LineBrackets, StoredPair, UpgradePair } from "./validate";
+import { buyTotalCents } from "./validate";
 import { readerStoreForPage } from "../../stores/preference";
 import { storePreferenceEnabled } from "../../stores/flag";
 import { cheapestNow, loadPrices } from "../../decks/price-query";
@@ -53,7 +54,12 @@ export type PanelRun = StoredUpgrade & {
   deck: RunDeck | null;
   /** The theme each cut came from, by the cut's oracle id: the first strategy the deck backs under this run's commander that the card supports. A cut no strategy backs has none. */
   themes: Record<string, string>;
+  /** The date of the figures its adds draw: today's price read when the panel repriced them (ruling A), else the run's own day. */
+  pricesAsOf: Date;
 };
+
+/** Every run's adds priced now at the reader's store, by oracle id (null when that store has none), and the read's newest price date. */
+export type RepricedAdds = { cents: Map<string, number | null>; asOf: Date | null };
 
 /** A card as a result row draws it, besides its name: its facts, and whether the reader owns a copy. `availability` is the claim picture of an owned card (what the allocation chips draw): absent for a card not owned or when the read could not reach. */
 export type PanelCard = Partial<CardFacts> & { owned: boolean; availability?: Availability } & Partial<PanelLineFacts>;
@@ -95,8 +101,8 @@ type Deps = {
   labels: (cards: readonly { oracleId: string; typeLine: string }[]) => Promise<JobRowsByCard | null>;
   /** Each commander option's recommended mix, by `mixKey` (never throws; a failed chain is the asserted baseline). */
   mixes: (pairs: readonly CommanderPair[], basis: RoleBasis) => Promise<Map<string, RecommendedMix>>;
-  /** Today's cheapest live figure for each of these cards at a store, in cents (null when it has none there): what its buy tag draws (`cheapestNow`). */
-  prices: (oracleIds: readonly string[], store: Store) => Promise<Map<string, number | null>>;
+  /** Today's cheapest live figure for each of these cards at a store, in cents (null when it has none there): what its buy tag draws (`cheapestNow`), with the read's newest price date. */
+  prices: (oracleIds: readonly string[], store: Store) => Promise<RepricedAdds>;
   /** Which of these cards the reader owns at all. */
   owned: (userId: string, oracleIds: readonly string[]) => Promise<Set<string>>;
   /** The claim picture of these cards across the reader's decks. Fail-soft: a read that cannot reach draws no chip. */
@@ -120,7 +126,7 @@ export const LIVE_DEPS: Deps = {
   decks: readRunDecks,
   prices: async (oracleIds, store) => {
     const read = await loadPrices([...oracleIds], [], [], store);
-    return new Map(oracleIds.map((id) => [id, cheapestNow(read, id)] as const));
+    return { cents: new Map(oracleIds.map((id) => [id, cheapestNow(read, id)] as const)), asOf: read.newestAsOf };
   },
   owned: readOwnedOracleIds,
   availability: (userId, oracleIds) => loadAvailability(userId, { oracleIds: [...oracleIds] }).catch((e: unknown) => {
@@ -341,22 +347,22 @@ export function offered(base: UpgradeBase): (OfferedCommander & { option: Comman
  * Every run's adds priced now at the reader's store (store choice, ruling A), or null to draw the prices the runs stored. A run
  * stores each add's price at the store it was pressed in, so after a store switch its stored figures are the other store's: the
  * panel reprices them as it draws, one price read and no model call, and a card that store does not price draws no tag and
- * adds nothing to the To buy total (it still counts as a card to buy). Null with the switch off (every run was pressed at
- * Mana Pool, and its figures draw as they did) or when the read fails (the stored figures, rather than no panel).
+ * adds nothing to the To buy total (it still counts as a card to buy). Null with the switch off (the stored figures draw as
+ * they always did, whichever store a run was pressed at) or when the read fails (the stored figures, rather than no panel).
+ * `store` is the reader's store when the caller has already read it (a press), so one request reads it once.
  */
-async function repricedAdds(userId: string, stored: readonly StoredUpgrade[], env: NodeJS.ProcessEnv, deps: Deps): Promise<Map<string, number | null> | null> {
+async function repricedAdds(userId: string, stored: readonly StoredUpgrade[], env: NodeJS.ProcessEnv, deps: Deps, store?: Store): Promise<RepricedAdds | null> {
   if (!storePreferenceEnabled(env)) return null;
   const adds = [...new Set(stored.flatMap((r) => r.pairs.map((p) => p.addId)))];
   if (adds.length === 0) return null;
-  const store = await readerStoreForPage(userId, env);
-  return deps.prices(adds, store).catch((e: unknown) => {
+  return deps.prices(adds, store ?? await readerStoreForPage(userId, env)).catch((e: unknown) => {
     console.error("upgrade panel: price read failed; drawing the runs' stored prices", e);
     recordSoftFailure();
     return null;
   });
 }
 
-async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJS.ProcessEnv, deps: Deps): Promise<UpgradePanel> {
+async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJS.ProcessEnv, deps: Deps, store?: Store): Promise<UpgradePanel> {
   const [stored, allowance] = await Promise.all([
     readUpgrades(userId, base.fileName),
     readAllowance(userId, now, "precon_upgrade").then((a) => withPayments(a, env)),
@@ -365,7 +371,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
   // Every card a result row names: the pairs' cuts and adds, and the commanders (the box's and the alternate).
   const named = [...new Set([...stored.flatMap((r) => r.pairs.flatMap((p) => [p.cutId, p.addId])), ...offeredNow.flatMap((c) => c.cards.map((k) => k.oracleId))])];
   const [owned, facts, runDecks, availability, repriced] = await Promise.all([
-    deps.owned(userId, named), deps.facts(named), deps.decks(userId, stored.map((r) => r.id)), deps.availability(userId, named), repricedAdds(userId, stored, env, deps),
+    deps.owned(userId, named), deps.facts(named), deps.decks(userId, stored.map((r) => r.id)), deps.availability(userId, named), repricedAdds(userId, stored, env, deps, store),
   ]);
   // One label read for the result's lists (fresh start R2): every card the runs name, for its shelf role, and the box's own
   // cards, which the role heads count. After the facts, which hold an add's type line.
@@ -375,7 +381,10 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
     ...named.filter((id) => !inBox.has(id)).map((id) => ({ oracleId: id, typeLine: facts.get(id)?.typeLine ?? "" })),
   ]);
   const runs = stored.map((stale): PanelRun => {
-    const r = repriced ? { ...stale, pairs: stale.pairs.map((p) => ({ ...p, addCents: repriced.get(p.addId) ?? 0 })) } : stale;
+    const pairs = repriced ? stale.pairs.map((p) => ({ ...p, addCents: repriced.cents.get(p.addId) ?? 0 })) : stale.pairs;
+    // The run's total follows its pairs, so no figure on the panel quotes the store it was pressed at.
+    const r = repriced ? { ...stale, pairs, buyTotalCents: buyTotalCents(pairs) } : stale;
+    const pricesAsOf = repriced?.asOf ?? stale.createdAt;
     const buy = r.pairs.filter((p) => !owned.has(p.addId));
     const strategies = offeredNow.find((c) => r.strategyKey.startsWith(`${c.key}/`))?.strategies ?? [];
     const themes: Record<string, string> = {};
@@ -383,7 +392,7 @@ async function panelFor(userId: string, base: UpgradeBase, now: Date, env: NodeJ
       const t = strategies.find((st) => st.backingIds.includes(p.cutId));
       if (t) themes[p.cutId] = t.label;
     }
-    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, deck: runDecks.get(r.id) ?? null };
+    return { ...r, toBuy: { cards: buy.length, cents: buy.reduce((n, p) => n + p.addCents, 0) }, owned: r.pairs.length - buy.length, themes, deck: runDecks.get(r.id) ?? null, pricesAsOf };
   });
   const cardsOut: Record<string, PanelCard> = {};
   for (const id of named) {
@@ -433,7 +442,8 @@ export async function pressUpgrade(
   // "Before" is the box as shipped, whoever leads it, so a run led by the alternate still compares against the precon itself.
   const bracketBefore = await deps.bracketOf({ commanderIds: base.options[0].commanderIds, cards: assembleDeck(base.lines, new Map()).cards }, []);
   if (bracketBefore !== null && bracket < bracketBefore) return { ok: false, reason: "notOffered" };
-  const load = await deps.loadFor(base, lead.option, bracket, await readerStoreForPage(userId, env));
+  const store = await readerStoreForPage(userId, env);
+  const load = await deps.loadFor(base, lead.option, bracket, store);
   // A pool-less run would pay for two calls that can only come back empty: the alternate may have no index rows of its own.
   if (load.pool.entries.length === 0) return { ok: false, reason: "noPool" };
 
@@ -489,7 +499,7 @@ export async function pressUpgrade(
     throw err;
   }
   // Outside the try: the credits are settled by now, and a failed read here must not be mistaken for a failed run.
-  const panel = await panelFor(userId, base, now, env, deps);
+  const panel = await panelFor(userId, base, now, env, deps, store);
   const run = panel.runs.find((r) => r.id === started.runId);
   return run ? { ok: true, panel, run } : { ok: false, reason: "failed" };
 }
