@@ -2,59 +2,24 @@
 // Settings' Store section (store choice handoff, call 1, Setting S1 to S6), first on the page while
 // `STORE_PREFERENCE_ENABLED` is on for the reader. One radio row per store, drawn as Your decks' rows with the upload
 // choice's ring; the rows come from `STORES`, so a new store is one more row and one more line of copy. Saved as it
-// changes, one write at a time like the other sections: the rows are held (aria-disabled, refusing a press) while a write is in flight, and a write
-// that fails puts the last saved store back and says so in the shared social toast. `#settings-store` is where Change
+// changes through `useStoreChoice`, as the first-run row is: the rows are held (aria-disabled) while a write is in flight,
+// and a write that fails puts the last saved store back and says so in the shared social toast. `#settings-store` is where Change
 // store lands; arriving on it washes the whole section for two seconds (`useWashFromHash`).
 
-import { useEffect, useRef, useState } from "react";
-import { savePreferredStore } from "../../app/settings/store-actions";
 import { storeCopy } from "../../lib/copy/store";
 import { STORE_INFO, STORE_SETTINGS_ID } from "../../lib/stores/info";
 import { STORES, type Store } from "../../lib/stores/rows";
 import { SECTION_HEAD } from "../social/friends-list";
-import { SocialToast, type SocialToastState } from "../social/social-toast";
+import { SocialToast } from "../social/social-toast";
+import { useStoreChoice } from "../stores/use-store-choice";
 import { WASH, useWashFromHash } from "./wash-from-hash";
 
 const c = storeCopy.settings;
 const WASHED = [STORE_SETTINGS_ID];
 
 export function StoreSection({ store }: { store: Store }) {
-  const [toast, setToast] = useState<SocialToastState | null>(null);
-  const toastSeq = useRef(0);
+  const { on, saving, save, toast, clearToast } = useStoreChoice(store);
   useWashFromHash(WASHED);
-
-  // The chosen store, held from the press; a fresh server value always wins (adjusted during render).
-  const [on, setOn] = useState(store);
-  const [served, setServed] = useState(store);
-  if (served !== store) {
-    setServed(store);
-    setOn(store);
-  }
-  // What the server last accepted: a failure puts this back.
-  const saved = useRef(store);
-  useEffect(() => {
-    saved.current = store;
-  }, [store]);
-  const [saving, setSaving] = useState(false);
-
-  async function save(next: Store) {
-    if (saving || next === on) return;
-    setOn(next);
-    setSaving(true);
-    const fail = () => {
-      setOn(saved.current);
-      setToast({ id: ++toastSeq.current, text: c.failed });
-    };
-    try {
-      const r = await savePreferredStore(next);
-      if (r.ok) saved.current = next;
-      else fail();
-    } catch {
-      fail();
-    } finally {
-      setSaving(false);
-    }
-  }
 
   return (
     <section
@@ -101,7 +66,7 @@ export function StoreSection({ store }: { store: Store }) {
         })}
       </div>
       <p className="m-0 mt-[8px] font-mono text-[10.5px] leading-[1.6] text-[color:var(--fg-faint)]">{c.foot}</p>
-      <SocialToast toast={toast} onDone={() => setToast(null)} />
+      <SocialToast toast={toast} onDone={clearToast} />
     </section>
   );
 }

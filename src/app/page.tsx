@@ -17,7 +17,8 @@ import { cachePageForUser, type PageLoad } from "../lib/cache/page-cache";
 import { recordSoftFailure } from "../lib/cache/soft-failure";
 import { announcementsEnabled } from "../lib/announcements/flag";
 import { requestFlags } from "../lib/flags/request";
-import { readerStoreForPage } from "../lib/stores/preference";
+import { readerStoreOrNull } from "../lib/stores/preference";
+import { storePreferenceEnabled } from "../lib/stores/flag";
 import { friendLinksEnabled } from "../lib/friend-links/flag";
 import { faceAskPlaces, facePromptDone } from "../lib/discovery/face-prompt";
 import { SignatureRow, SignatureStrip } from "../components/home/signature-ask";
@@ -201,8 +202,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   // the Ready-to-build pair rotates on it (`dailyPicks`, whose boundary is UTC by Hugh's call),
   // so a pair cached yesterday is never served today.
   // The reader's store (store choice) prices the Commitments row's To buy figure and keys the entry, so a store
-  // change never serves another store's total. An unreadable preference prices in Mana Pool, the default.
-  const store = await readerStoreForPage(userId, env);
+  // change never serves another store's total. An unreadable preference prices in Mana Pool, the default, and draws no
+  // first-run store row, which would otherwise hold Mana Pool over the store the reader chose.
+  const chosenStore = await readerStoreOrNull(userId, env);
+  const store = chosenStore ?? "manapool";
   const data = await cachePageForUser(userId, "home", [now.toISOString().slice(0, 10), store], async (): Promise<PageLoad<HomePayload>> => {
     const [stats, decks, seen, tourSeen] = await Promise.all([
       perf.timed("collectionStats", () => getCollectionStats(userId)),
@@ -407,6 +410,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="first-run" afterAbout={about !== null} />}
         friends={homeFriends && { friends: homeFriends.friends, links: homeFriends.links, now: now.toISOString(), invites, friendLinks: friendLinksEnabled(env) }}
         signature={signatureRow}
+        store={storePreferenceEnabled(env) ? chosenStore : null}
         tables={
           homeTables.length > 0 || homeLogGames.length > 0 ? (
             <>

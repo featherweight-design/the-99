@@ -1,0 +1,27 @@
+{
+  "feature": "Store choice UI-4b: the first-run store row on Home, Where do you buy cards? (handoff design_handoff_the99_store_choice, Q1)",
+  "note": "Needs a server on a scratch branch of local-dev where the audit account (PROBE_USER_ID) has a user STORE_PREFERENCE_ENABLED override 'on', user_prefs.preferred_store set (tcgplayer for the photographed run), and no collection_items or decks rows (park them under another user id for the run and put them back after; pnpm probe:store-first-run does the same itself). This inventory presses no segment and writes nothing; the save is pnpm probe:store-first-run's.",
+  "out": "contact-sheets/store-choice-ui4b",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "first-run-store",
+      "label": "/ first run: the store row after step 3 (and the signature row), before Add your friends, the reader's store chosen",
+      "view": "src/components/home/first-run-store.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-first-run-store]", "settle": 2500, "scrollTo": "[data-first-run-store]" }
+      ]
+    },
+    {
+      "id": "first-run-checklist",
+      "label": "/ first run: the whole checklist, kicker still Step 1 of 3",
+      "view": "src/components/home/first-run.tsx",
+      "steps": [
+        { "goto": "/", "wait": "[data-first-run-store]", "settle": 2500 }
+      ]
+    }
+  ]
+}

@@ -27,6 +27,8 @@ vi.mock("../collection/add-cards-sheet", () => ({
   },
 }));
 
+vi.mock("../../app/settings/store-actions", () => ({ savePreferredStore: vi.fn() }));
+
 const { FirstRunChecklist } = await import("./first-run");
 
 // Add cards by hand is step 1's ways group's third row (no-collection entry S1), not a button beside Paste.
@@ -285,5 +287,22 @@ describe("FirstRunChecklist · the install row (install onboarding R1c)", () => 
     const signature = screen.getByTestId("signature-row");
     expect(row.compareDocumentPosition(signature) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     act(() => withdraw());
+  });
+});
+
+// Store choice (#3200, Q1): an unnumbered row after the signature row, before Add your friends, never a step.
+describe("FirstRunChecklist · the store row", () => {
+  it("draws the reader's store after the signature row, and the kicker still counts three steps", () => {
+    const { container } = render(<FirstRunChecklist store="tcgplayer" signature={<div data-signature-row="" />} />);
+    const row = container.querySelector("[data-first-run-store]")!;
+    expect(row).not.toBeNull();
+    expect(container.querySelector("[data-signature-row]")!.compareDocumentPosition(row) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(within(row as HTMLElement).getByRole("radio", { name: "TCGplayer" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByText("Step 1 of 3")).toBeInTheDocument();
+  });
+
+  it("draws no row without a store (the switch off, or a failed read)", () => {
+    const { container } = render(<FirstRunChecklist store={null} />);
+    expect(container.querySelector("[data-first-run-store]")).toBeNull();
   });
 });
