@@ -1,8 +1,8 @@
 /**
- * Request history (#2984, R1d): every spare request the viewer asked ("You asked") or was asked ("Asked of you"), newest first,
+ * Request history (#2984, R1d): every spare request the viewer asked or offered ("From you") or was asked or offered to ("To you"), by who started the row (an ask starts with the asker, an offer with the holder), newest first,
  * 30 a page. Every read here lives in `src/lib/social/` and joins the viewer's own friendship row in the same statement, so a
  * request whose other side is no longer a friend is simply not read (README Q2: hidden; rows survive `unfriend`, so re-friending
- * restores them). Cleared asks show (✕ sets `asker_cleared_at`, never deletes). A withdrawn ask never shows on the holder's side.
+ * restores them). Cleared asks show (✕ sets `asker_cleared_at`, never deletes). A withdrawn ask or offer never shows on the other side.
  */
 import { sql, type SQL } from "drizzle-orm";
 import { db } from "../../db";

@@ -1,6 +1,6 @@
 "use client";
-// Request history (#2984, R1d; `design_handoff_the99_request_history`): every spare request the reader made (You asked) and
-// every one made of them (Asked of you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
+// Request history (#2984, R1d; `design_handoff_the99_request_history`): every spare request the reader made or offered (From you) and
+// every one made or offered to them (To you), newest first, grouped by month, 30 at a time. The rows are Your requests' shape
 // (card at card shape, the friend's face in the corner, kicker, title, line) with no ✕ and no Ask again: the live list keeps
 // every action, so history only shows. The whole row opens card details. Dates are UTC days, the app's one rule for a stamp.
 import Link from "next/link";

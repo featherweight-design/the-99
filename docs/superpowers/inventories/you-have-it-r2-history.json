@@ -1,0 +1,30 @@
+{
+  "feature": "You have it R2, PR 1: offers in Request history (H1 to H4 phone, D1 and D2 desktop)",
+  "note": "Needs a SCRATCH branch off local-dev where the reader has offers in history (run probe:you-have-it-r2a's seed, or offer from a friend's Wishlist tab). Both tabs are photographed: From you (the default) and To you.",
+  "out": "contact-sheets/you-have-it-r2-history",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "history-from-you",
+      "label": "/friends/requests, From you: the reader's asks and offers",
+      "view": "src/components/social/request-history.tsx",
+      "steps": [
+        { "goto": "/friends/requests", "wait": "[role=\"tabpanel\"]", "settle": 800 }
+      ]
+    },
+    {
+      "id": "history-to-you",
+      "label": "/friends/requests, To you: asks and offers made to the reader",
+      "view": "src/components/social/request-history.tsx",
+      "steps": [
+        { "goto": "/friends/requests", "wait": "[role=\"tabpanel\"]", "settle": 2500 },
+        { "clickRole": "tab", "name": "^To you" },
+        { "wait": "[role=\"tabpanel\"]", "settle": 800 }
+      ]
+    }
+  ]
+}
