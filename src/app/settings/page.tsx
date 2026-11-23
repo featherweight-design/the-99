@@ -21,6 +21,7 @@ import { requestFlags } from "../../lib/flags/request";
 import { listSharedPods } from "../../lib/social/spares";
 import { loadKeptBack, readSpareMin } from "../../lib/social/spare-settings";
 import { loadCollectionList } from "../../lib/collection/payload";
+import { readerStoreForPage } from "../../lib/stores/preference";
 import { keptRows } from "../../lib/settings/kept-rows";
 import { SettingsView } from "../../components/settings/settings-view";
 import { SparesSection } from "../../components/settings/spares-section";
@@ -38,7 +39,7 @@ export default async function SettingsPage() {
   const [news, pushOn, spares, deckPrefs] = await Promise.all([
     loadNewsSettings(userId, env),
     config ? loadPushKinds(userId, pushableFeedKinds(env)) : null,
-    loadSpares(userId),
+    loadSpares(userId, env),
     loadFriendDeckPrefs(userId),
   ]);
   const push = config && pushOn ? { publicKey: config.publicKey, on: pushOn, kinds: pushableFeedKinds(env) } : null;
@@ -54,10 +55,11 @@ export default async function SettingsPage() {
   );
 }
 
-async function loadSpares(userId: string) {
+async function loadSpares(userId: string, env: NodeJS.ProcessEnv) {
   const [spareMin, shared, kept] = await Promise.all([readSpareMin(userId), listSharedPods(userId), loadKeptBack(userId)]);
   // The kept rows are the shipped collection rows, so they draw from the reader's own cached collection list; it is
   // read only when something is kept back.
-  const collection = kept.length > 0 ? (await loadCollectionList(userId)).cards : [];
+  // At the reader's store, the list every other collection surface reads (its cache files one entry per store).
+  const collection = kept.length > 0 ? (await loadCollectionList(userId, await readerStoreForPage(userId, env))).cards : [];
   return { spareMin, pods: shared.map((p) => p.name), kept: keptRows(kept, collection) };
 }

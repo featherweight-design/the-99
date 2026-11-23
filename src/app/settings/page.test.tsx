@@ -87,7 +87,7 @@ describe("/settings", () => {
     }]);
     const el = await SettingsPage();
     const kept = spares(el)!.props.kept as { quantity: number }[];
-    expect(m.loadCollectionList).toHaveBeenCalledWith("user_me");
+    expect(m.loadCollectionList).toHaveBeenCalledWith("user_me", "manapool");
     expect(kept.map((k) => k.quantity)).toEqual([0]);
   });
 

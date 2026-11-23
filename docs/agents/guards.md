@@ -350,6 +350,30 @@ back at `lib/collection/browse` fails the standing test.
   file (a scalar `email` parameter, a dynamic `import("../auth")` and a generic `callModel<Reply>(` among them), so a
   guard that always answered clean would fail.
 
+## check:store-reads
+
+`pnpm check:store-reads` (`scripts/lib/store-reads.mjs`, test `scripts/lib/store-reads.test.mts`) holds every call under `src/` to
+a read that takes the reader's store (store choice, design #3200) to passing one. A function whose positional `store`
+parameter is optional or defaults to Mana Pool (typed `Store`, or defaulted to a store's name) still compiles when a call leaves
+it out, and prices a TCGplayer reader in Mana Pool beside figures from their own store. So every such function declared under
+`src/` is guarded, the price reads themselves (`loadPrices` in `decks/price-query.ts` and `discovery/price.ts`,
+`readBuyRowPrices`, `loadOwnedPrintingPrices`, `loadOpeningArt`) and every wrapper that defaults its own store
+(`loadShoppingRollup`, `loadCollectionList`, `toViews`, ...). A `store` that is a database seam (`reverseCharge`'s) is not one.
+
+Each call is resolved to its declaration through import aliases, namespaces, the `@/` path, re-exports, parentheses and string
+element access, and judged at that declaration's own `store` position. A call fails when it has no argument there, or one whose
+type admits `undefined` (a spread is given the benefit of the doubt). A guarded function referenced any other way (aliased,
+`.call`, handed on) fails too, unless it lands where the store must be given: a parameter or variable typed
+`(ids, store: Store) => ...`. A store inside an options object is not read: those loaders' required `store` fields are
+TypeScript's to enforce. The five price reads are anchors: if one is renamed, moved or loses its default, the check throws rather
+than going quiet. Test files are skipped; scripts (the landing demo's exporter, which stays Mana Pool) are outside `src/`.
+
+Calls not yet threaded are listed in `scripts/lib/store-reads-pending.mjs` by file, enclosing function and count, one section
+per slice (3c-2, 3c-3). A slice deletes its own entries. An entry whose count no longer matches is a finding, so a new call in a
+pending function fails and the list only shrinks; nothing new is added to it. Pass `readerStoreForPage(userId, env)` on a
+reader's surface, or `"manapool"` where the store cannot matter or the surface is Mana Pool by rule (the cart, a push, an
+announcement, the price refresh). Every failure path above has a fixture case in the test.
+
 ## The Fan Content notice's guards
 
 `src/lib/copy/fan-content-notice.test.ts` pins the two passages to the brief's own text (change the brief first). `src/components/shell/fan-content-notice.test.tsx` measures `--fg-muted` against `--bg` in all six theme blocks (>= 4.5:1, at the figures Design measured), fails if the component names a color token beyond `--fg-muted`, `--border` and the link's `--fg`, `--fg-faint`, `--accent`, or uses `fixed`, `sticky`, state or a request API. `shell.test.tsx` asserts the two mounts (one per branch, a sibling AFTER `<main>` signed in, none inside it, so the pending screen's `inert` does not reach it). `pnpm probe:fan-content-notice` reads resolved geometry on the five signed-out routes and, with `E2E_AUDIT_USER_EMAIL`, the signed-in shell, at 390 and 1300: one notice, last in the document, starting at or below the fold (or the tab bar's top edge), not fixed, six lines or fewer at 390, its last line clearing the bar once scrolled.

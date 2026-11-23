@@ -65,7 +65,8 @@ export function toUpcoming(r: UpcomingRow): FeedView {
     unseen: r.unseen === true,
     post: { title: r.title, excerpt: r.excerpt, hero: r.hero, url: r.url, promised: null, lists: 0, sale },
   };
-  return toViews([item], { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() })[0];
+  // An announcement is never a price drop, the one item whose press reads the store.
+  return toViews([item], { sets: new Map(), precons: new Map(), owned: new Map(), cards: new Map() }, "manapool")[0];
 }
 
 export async function loadUpcomingDrops(userId: string, now: Date, q: Executor = db): Promise<FeedView[]> {

@@ -44,7 +44,8 @@ export async function resolvePushItems(
   const catalog = feedRefs.flatMap((r) => (isStoredKind(r.kind) ? [] : [{ kind: r.kind as CatalogKind, key: r.key }]));
   const queries = [storedItemsByKeyQuery(userId, stored, now, storePreferenceEnabled(env)), catalogItemsByKeyQuery(userId, catalog, now)].filter((x) => x !== null);
   const found = (await Promise.all(queries.map((query) => q.execute<FeedRow>(query)))).flatMap(({ rows }) => (rows as FeedRow[]).map(toFeedItem));
-  const views = queries.length === 0 ? [] : toViews(found, await lookups(userId, found, q, env));
+  // The store only builds a price drop's press out to the store, which a push never draws (it opens the card on Home).
+  const views = queries.length === 0 ? [] : toViews(found, await lookups(userId, found, q, env), "manapool");
   const byKey = new Map(views.map((v) => [`${v.kind}\u0000${v.key}`, v]));
   const tableIds = seats.flatMap((r) => { const id = tableIdOfSeatKey(r.key); return isUuid(id) ? [id] : []; });
   const notices = new Map((await unseenSeatNotices(userId, tableIds, q)).map((n) => [n.tableId, n]));

@@ -514,7 +514,7 @@ export async function loadDiscoveryWithIds(
   // on both sides, and this payload is cached (an hour at most), so it can disagree with the detail
   // page until it is rebuilt. The prices and played tags do not wait on either read.
   const [priceRead, playedTags, { basis, fellBack, roleSets, roleTargets }, hiddenIds] = await Promise.all([
-    perfRead("discovery.prices", () => readPrices(candidates.map((c) => c.oracleId), opts.store)),
+    perfRead("discovery.prices", () => readPrices(candidates.map((c) => c.oracleId), opts.store ?? "manapool")),
     perfRead("discovery.playedTags", () => loadPlayedTags(userId)),
     perfRead("discovery.basisAndTargets", () => basisRead.then(async ({ basis, fellBack, roleSets }) => ({
       basis,
