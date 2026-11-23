@@ -2,7 +2,8 @@
 // A component test mocks these away, so a read that skipped the session would pass everywhere else.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const { requireUserId, searchOpponentCommanders, listFriendDecks, listPodSeats, listPickerFriends, listPickerPods } = vi.hoisted(() => ({
+const { readerStoreForAction, requireUserId, searchOpponentCommanders, listFriendDecks, listPodSeats, listPickerFriends, listPickerPods } = vi.hoisted(() => ({
+  readerStoreForAction: vi.fn(),
   requireUserId: vi.fn(),
   searchOpponentCommanders: vi.fn(),
   listFriendDecks: vi.fn(),
@@ -12,6 +13,7 @@ const { requireUserId, searchOpponentCommanders, listFriendDecks, listPodSeats, 
 }));
 vi.mock("../../../lib/auth", () => ({ requireUserId }));
 vi.mock("../../../lib/decks/opponent-commanders", () => ({ searchOpponentCommanders }));
+vi.mock("../../../lib/stores/action-store", () => ({ readerStoreForAction }));
 vi.mock("../../../lib/social/games", () => ({ listFriendDecks, listPodSeats, listPickerFriends, listPickerPods }));
 
 import {
@@ -21,6 +23,7 @@ import {
 beforeEach(() => {
   vi.resetAllMocks();
   requireUserId.mockResolvedValue("user_1");
+  readerStoreForAction.mockResolvedValue("tcgplayer");
   searchOpponentCommanders.mockResolvedValue([{ oracleId: "y" }]);
   listFriendDecks.mockResolvedValue([{ deckId: "d" }]);
   listPodSeats.mockResolvedValue([{ publicId: "p" }]);
@@ -31,6 +34,9 @@ beforeEach(() => {
 describe("the opponent picker's actions", () => {
   it("read as the signed-in reader", async () => {
     expect(await searchOpponentCommandersAction("yur")).toEqual([{ oracleId: "y" }]);
+    // The hits' art is the reader's store's printing (store choice), resolved for this reader.
+    expect(readerStoreForAction).toHaveBeenCalledWith("user_1");
+    expect(searchOpponentCommanders).toHaveBeenCalledWith("yur", "tcgplayer");
     expect(await listFriendDecksAction("f")).toEqual([{ deckId: "d" }]);
     expect(await listPodSeatsAction("p")).toEqual([{ publicId: "p" }]);
     expect(listFriendDecks).toHaveBeenCalledWith("user_1", "f");
@@ -49,6 +55,7 @@ describe("the opponent picker's actions", () => {
     await expect(listPickerFriendsAction()).rejects.toThrow();
     await expect(listPickerPodsAction()).rejects.toThrow();
     expect(searchOpponentCommanders).not.toHaveBeenCalled();
+    expect(readerStoreForAction).not.toHaveBeenCalled();
     expect(listFriendDecks).not.toHaveBeenCalled();
     expect(listPodSeats).not.toHaveBeenCalled();
     expect(listPickerFriends).not.toHaveBeenCalled();

@@ -7,18 +7,22 @@
 
 import { requireUserId } from "../../../lib/auth";
 import { searchOpponentBackgrounds, searchOpponentCommanders, type OpponentCommanderHit } from "../../../lib/decks/opponent-commanders";
+import { readerStoreForAction } from "../../../lib/stores/action-store";
 import { listFriendDecks, listPickerFriends, listPickerPods, listPodSeats, type FriendDeck, type PickerFriend, type PickerPod, type PodSeat } from "../../../lib/social/games";
 
-/** The commanders an "anyone" seat can name, by card name. Catalog data, but still behind sign-in. */
+/**
+ * The commanders an "anyone" seat can name, by card name. Catalog data, but still behind sign-in. Each hit's art is
+ * the printing the reader's store carries (store choice), resolved from their switches for this request.
+ */
 export async function searchOpponentCommandersAction(query: string): Promise<OpponentCommanderHit[]> {
-  await requireUserId();
-  return searchOpponentCommanders(query);
+  const userId = await requireUserId();
+  return searchOpponentCommanders(query, await readerStoreForAction(userId));
 }
 
 /** The seat picker's Background step: a Background by name (opponent Background addendum, G1). */
 export async function searchOpponentBackgroundsAction(query: string): Promise<OpponentCommanderHit[]> {
-  await requireUserId();
-  return searchOpponentBackgrounds(query);
+  const userId = await requireUserId();
+  return searchOpponentBackgrounds(query, await readerStoreForAction(userId));
 }
 
 /** The decks a friend can be seated with, read when the picker opens that friend (G7). */

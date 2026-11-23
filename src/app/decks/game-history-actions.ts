@@ -1,6 +1,7 @@
 "use server";
 
 import { requireUserId } from "../../lib/auth";
+import { readerStoreForAction } from "../../lib/stores/action-store";
 import { resolveZone } from "../../lib/zone/server";
 import { loadGameHistory } from "../../lib/games/history";
 import { cleanGamesFilter } from "../../lib/games/history-filter";
@@ -17,7 +18,8 @@ export async function readGameHistory(filter: GameHistoryFilter = {}): Promise<G
   const userId = await requireUserId();
   try {
     const clean = cleanGamesFilter(filter);
-    return toGamesPayload(await loadGameHistory(userId, { filter: clean, zone: await resolveZone() }), clean);
+    const [store, zone] = await Promise.all([readerStoreForAction(userId), resolveZone()]);
+    return toGamesPayload(await loadGameHistory(userId, { store, filter: clean, zone }), clean);
   } catch {
     return null;
   }
@@ -33,7 +35,7 @@ export async function loadMoreGamesAction(cursor: string, filter: GameHistoryFil
   const userId = await requireUserId();
   if (decodeCursor(cursor) === null) return { ok: false };
   try {
-    const { games, next } = await loadGameHistory(userId, { cursor, filter: cleanGamesFilter(filter) });
+    const { games, next } = await loadGameHistory(userId, { store: await readerStoreForAction(userId), cursor, filter: cleanGamesFilter(filter) });
     return { ok: true, games, next };
   } catch {
     return { ok: false };

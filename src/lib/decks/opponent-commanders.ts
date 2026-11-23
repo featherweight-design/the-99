@@ -13,6 +13,7 @@ import { and, asc, desc, eq, ilike, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { cards } from "../../db/schema";
 import { loadOpeningArt } from "../cards/opening-printing";
+import type { Store } from "../stores/rows";
 import { nameSearch } from "../cards/name-search";
 import { isGameCardWhere } from "../cards/game-card-where";
 import { isCommanderCandidate } from "../recs/score";
@@ -62,7 +63,7 @@ export function commanderSearchOrder(query: string) {
   return [desc(sql`${cards.name} ilike ${`${query.trim().replace(/[\\%_]/g, (m) => `\\${m}`)}%`}`), asc(cards.name)] as const;
 }
 
-export async function searchOpponentCommanders(query: unknown): Promise<OpponentCommanderHit[]> {
+export async function searchOpponentCommanders(query: unknown, store: Store): Promise<OpponentCommanderHit[]> {
   if (typeof query !== "string") return [];
   const match = nameSearch(query);
   if (!match) return [];
@@ -86,7 +87,7 @@ export async function searchOpponentCommanders(query: unknown): Promise<Opponent
     .limit(SCAN);
   const leads = rows.filter(isCommanderCandidate).slice(0, OPPONENT_COMMANDER_HITS);
   if (leads.length === 0) return [];
-  const art = await loadOpeningArt(leads.map((r) => r.oracleId)).catch(() => new Map<string, string>());
+  const art = await loadOpeningArt(leads.map((r) => r.oracleId), store).catch(() => new Map<string, string>());
   return leads.map((r) => ({
     oracleId: r.oracleId,
     name: r.name,
@@ -104,7 +105,7 @@ export async function searchOpponentCommanders(query: unknown): Promise<Opponent
  * commander that chooses one. Commander-legal game cards typed Legendary Enchantment — Background, the half `pairLegal`
  * accepts; the save re-checks the pair, and that check is the one that counts. Same shape as a commander hit.
  */
-export async function searchOpponentBackgrounds(query: unknown): Promise<OpponentCommanderHit[]> {
+export async function searchOpponentBackgrounds(query: unknown, store: Store): Promise<OpponentCommanderHit[]> {
   if (typeof query !== "string") return [];
   const match = nameSearch(query);
   if (!match) return [];
@@ -125,7 +126,7 @@ export async function searchOpponentBackgrounds(query: unknown): Promise<Opponen
     .orderBy(...commanderSearchOrder(query))
     .limit(OPPONENT_COMMANDER_HITS);
   if (rows.length === 0) return [];
-  const art = await loadOpeningArt(rows.map((r) => r.oracleId)).catch(() => new Map<string, string>());
+  const art = await loadOpeningArt(rows.map((r) => r.oracleId), store).catch(() => new Map<string, string>());
   return rows.map((r) => ({
     oracleId: r.oracleId,
     name: r.name,

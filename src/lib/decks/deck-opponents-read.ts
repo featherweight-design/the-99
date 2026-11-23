@@ -8,6 +8,7 @@
  * with no recorded opponents draws no Matchups section at all.
  */
 import { loadOpeningArt } from "../cards/opening-printing";
+import type { Store } from "../stores/rows";
 import { loadCatalogArt } from "./catalog-art";
 import type { DeckGame } from "./games";
 import { listGameOpponents, type GameOpponent, type OpponentCommander } from "./game-opponents";
@@ -32,16 +33,17 @@ export const opponentsWire = (read: DeckOpponents): DeckOpponentsWire => ({
 
 /**
  * The art a thumbnail draws for each commander a seat names, the printing card details opens (the same
- * one the seat picker drew when the seat was filled). Fail-soft: a failed art read leaves the seats
+ * one the seat picker drew when the seat was filled), at the reader's store (store choice: the printing the shop
+ * they chose carries). Fail-soft: a failed art read leaves the seats
  * with initials and the matchups with pips, and never costs the opponents themselves.
  */
-export async function withArt<T extends GameOpponent>(opponents: Map<string, T[]>): Promise<Map<string, T[]>> {
+export async function withArt<T extends GameOpponent>(opponents: Map<string, T[]>, store: Store): Promise<Map<string, T[]>> {
   const ids = new Set<string>();
   for (const seats of opponents.values()) {
     for (const s of seats) for (const c of [s.commander, s.partner]) if (c) ids.add(c.oracleId);
   }
   if (ids.size === 0) return opponents;
-  const art = await loadOpeningArt([...ids]).catch(() => new Map<string, string>());
+  const art = await loadOpeningArt([...ids], store).catch(() => new Map<string, string>());
   // A commander with no priced non-foil printing keeps the catalog's own image, as the seat picker does.
   const bare = [...ids].filter((id) => !art.has(id));
   if (bare.length > 0) for (const [id, uri] of await loadCatalogArt(bare).catch(() => new Map<string, string>())) art.set(id, uri);
@@ -53,12 +55,14 @@ export async function loadDeckOpponents(
   deckId: string,
   userId: string,
   games: readonly DeckGame[],
+  /** The reader's store: each commander's art is the printing that store carries, as the seat picker drew it. */
+  store: Store,
   // Injected so a test can fail the read. The page passes none.
   read: typeof listGameOpponents = listGameOpponents,
 ): Promise<DeckOpponents | null> {
   if (games.length === 0) return null;
   try {
-    const opponents = await withArt(await read(deckId, userId));
+    const opponents = await withArt(await read(deckId, userId), store);
     return { opponents, matchups: summarizeMatchups(games, opponents) };
   } catch (error) {
     console.error("game opponents: the deck's opponents could not be read", error);

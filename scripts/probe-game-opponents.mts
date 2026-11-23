@@ -132,32 +132,32 @@ async function main() {
     // The "anyone" seat's commander search (R3 PR 1): the whole catalog, no owned filter, only what can lead a deck.
     const { rows: named } = await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${C1}`);
     const wanted = named[0].name;
-    const hits = await searchOpponentCommanders(wanted);
+    const hits = await searchOpponentCommanders(wanted, "manapool");
     const hit = hits.find((h) => h.oracleId === C1);
     check("the search finds a commander V does not own, by name", hit !== undefined && hit.name === wanted, JSON.stringify(hits.map((h) => h.name)));
     check("a hit carries its identity in WUBRG order, its cost and a partner reading",
       hit !== undefined && Array.isArray(hit.colorIdentity) && "partner" in hit && "manaCost" in hit && "imageUri" in hit);
     const { rows: plainName } = await db.execute<{ name: string }>(sql`select name from cards where oracle_id = ${NOT_A_COMMANDER}`);
-    check("a card that cannot lead a deck is never offered", !(await searchOpponentCommanders(plainName[0].name)).some((h) => h.oracleId === NOT_A_COMMANDER));
+    check("a card that cannot lead a deck is never offered", !(await searchOpponentCommanders(plainName[0].name, "manapool")).some((h) => h.oracleId === NOT_A_COMMANDER));
     // A legendary land passes the search's SQL narrowing (it is legendary) and fails `isCommanderCandidate` (not a
     // creature, and no "can be your commander" text): only the final filter keeps it out.
     const { rows: land } = await db.execute<{ oracle_id: string; name: string }>(sql`
       select oracle_id, name from cards where commander_legal and type_line like 'Legendary Land%'
         and oracle_text not ilike '%can be your commander%' order by oracle_id limit 1`);
     check("a legendary land is found by the SQL and still never offered", land.length === 1
-      && !(await searchOpponentCommanders(land[0].name)).some((h) => h.oracleId === land[0].oracle_id), land[0]?.name);
+      && !(await searchOpponentCommanders(land[0].name, "manapool")).some((h) => h.oracleId === land[0].oracle_id), land[0]?.name);
     check("a one-letter query, a non-string and a LIKE wildcard offer nothing",
-      (await searchOpponentCommanders("a")).length === 0 && (await searchOpponentCommanders(42)).length === 0
-      && (await searchOpponentCommanders("%%")).length === 0);
-    check("the page is capped", (await searchOpponentCommanders("ar")).length <= 8);
+      (await searchOpponentCommanders("a", "manapool")).length === 0 && (await searchOpponentCommanders(42, "manapool")).length === 0
+      && (await searchOpponentCommanders("%%", "manapool")).length === 0);
+    check("the page is capped", (await searchOpponentCommanders("ar", "manapool")).length <= 8);
     // A broad query matches thousands of cards, nearly all of them not commanders: the window must be filled with
     // commanders, not arbitrary matches, and be the same on every call.
     // "goblin" matches hundreds of non-legendary cards and read 0 commanders when the window was cut before the narrowing.
-    const broad = await searchOpponentCommanders("goblin");
+    const broad = await searchOpponentCommanders("goblin", "manapool");
     check("a broad query still offers commanders, the same ones every call", broad.length === 8
-      && JSON.stringify(broad.map((h) => h.oracleId)) === JSON.stringify((await searchOpponentCommanders("goblin")).map((h) => h.oracleId)),
+      && JSON.stringify(broad.map((h) => h.oracleId)) === JSON.stringify((await searchOpponentCommanders("goblin", "manapool")).map((h) => h.oracleId)),
       String(broad.length));
-    const lead = await searchOpponentCommanders("nissa");
+    const lead = await searchOpponentCommanders("nissa", "manapool");
     check("a name that starts with the query leads", lead.length > 0 && lead[0].name.toLowerCase().startsWith("nissa"), lead[0]?.name);
 
     // The write path.
@@ -174,12 +174,12 @@ async function main() {
 
     // The deck page's read (R3 PR 1): the seats and the matchups, always on (friends' and opponents' switches are retired), never throwing.
     const played = await listDeckGames(mine, V);
-    const loaded = await loadDeckOpponents(mine, V, played);
+    const loaded = await loadDeckOpponents(mine, V, played, "manapool");
     check("the deck read gives each game's seats and a matchup summary", loaded !== null
       && loaded.opponents.get(g1!)?.length === 2 && loaded.matchups.games === played.length && loaded.matchups.recorded === 2,
       JSON.stringify(loaded?.matchups.recorded));
-    check("another player's deck id reads no seats", (await loadDeckOpponents(mine, S, played))?.opponents.size === 0);
-    check("a failing read is null, not a throw", (await loadDeckOpponents(mine, V, played, async () => { throw new Error("down"); })) === null);
+    check("another player's deck id reads no seats", (await loadDeckOpponents(mine, S, played, "manapool"))?.opponents.size === 0);
+    check("a failing read is null, not a throw", (await loadDeckOpponents(mine, V, played, "manapool", async () => { throw new Error("down"); })) === null);
 
     const before = await games(mine);
     check("a stranger cannot be seated, and no game is left behind",
