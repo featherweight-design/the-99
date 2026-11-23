@@ -9,12 +9,6 @@ import type { FindADeckFrom } from "../../lib/analytics/tool-events";
 
 const RING = "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]";
 
-/**
- * Where it sits, each as drawn:
- * - `tile`: under a grid tile, full tile width, 36px on a phone and 34px from md, 6px under the tile.
- * - `strip`: under a phone row, inside its outline: 40px, a `--border` hairline above, bottom corners rounded 7.
- * - `side`: beside a row from md, the row's height, 136px.
- */
 /** What a view needs to draw the buttons: the cards that take none, and the press. */
 export type FindADeckButtons = {
   /** Not Commander-legal: the door would refuse it, so no button draws. */
@@ -22,6 +16,12 @@ export type FindADeckButtons = {
   onPress: (oracleId: string, opener: HTMLElement, place: FindADeckPlace) => void;
 };
 
+/**
+ * Where it sits, each as drawn:
+ * - `tile`: under a grid tile, full tile width, 36px on a phone and 34px from md, 6px under the tile.
+ * - `strip`: under a phone row, inside its outline: 40px, a `--border` hairline above, bottom corners rounded 7.
+ * - `side`: beside a row from md, the row's height, 136px.
+ */
 export type FindADeckPlace = "tile" | "strip" | "side";
 
 /** The event's `from` for each place (plan §6). */
