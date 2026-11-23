@@ -13,6 +13,16 @@ describe("pasteListText", () => {
     ).toBe("1 Sol Ring\n1 Delver of Secrets\n2 Fire\n12 Island");
   });
 
+  it("sums cards that share a front face into one line", () => {
+    expect(
+      pasteListText([
+        { name: "Treasure Map // Treasure Cove", quantity: 1 },
+        { name: "Treasure Map", quantity: 2 },
+        { name: "Sol Ring", quantity: 1 },
+      ]),
+    ).toBe("3 Treasure Map\n1 Sol Ring");
+  });
+
   it("is empty for no lines", () => {
     expect(pasteListText([])).toBe("");
   });

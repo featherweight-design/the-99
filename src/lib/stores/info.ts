@@ -39,7 +39,13 @@ export const STORE_INFO: Readonly<Record<Store, StoreInfo>> = {
  * two-faced or split card is listed by its front face alone.
  */
 export function pasteListText(lines: readonly { name: string; quantity: number }[]): string {
-  return lines.map((l) => `${l.quantity} ${l.name.split(" // ")[0]}`).join("\n");
+  // Two cards that share a front face would otherwise paste as two lines of one name; one line, summed, is unambiguous.
+  const byFace = new Map<string, number>();
+  for (const l of lines) {
+    const face = l.name.split(" // ")[0];
+    byFace.set(face, (byFace.get(face) ?? 0) + l.quantity);
+  }
+  return [...byFace].map(([face, quantity]) => `${quantity} ${face}`).join("\n");
 }
 
 /** Settings' Store section's id: the anchor Change store lands on (`/settings#settings-store`), which washes it. */
