@@ -1748,6 +1748,8 @@ export async function getVersionDiff(
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(versionId)) return null;
   await requireDeck(deckId, userId);
+  // The reader's store, read beside the version lookup: a changed card's price is quoted there.
+  const storeRead = readerStoreForAction(userId);
 
   const [asked] = await db.select({
     number: deckVersions.number,
@@ -1767,13 +1769,14 @@ export async function getVersionDiff(
     .where(and(eq(deckVersions.deckId, deckId), lt(deckVersions.number, asked.number)))
     .orderBy(desc(deckVersions.number))
     .limit(1);
-  if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId, null);
+  const store = await storeRead;
+  if (previous) return loadVersionDiff(versionId, previous.id, userId, deckId, store, null);
   // The first has none: a linked deck's v1 diffs against v0, the precon's list (precons R3 K10), read
   // from the precon and never from a version. An unlinked one answers two empty lists, and so does a
   // started deck's first version, which IS the precon's list (`readDeckOriginAndStart`).
   const read = await readDeckOriginAndStart(userId, deckId);
   const origin = read && read.summary.startVersionId === null ? read : null;
-  return loadVersionDiff(versionId, null, userId, deckId, origin && {
+  return loadVersionDiff(versionId, null, userId, deckId, store, origin && {
     cards: origin.cards,
     nonBasic: origin.nonBasic,
     commanders: [asked.commanderOracleId, ...(asked.partnerOracleId ? [asked.partnerOracleId] : [])],
@@ -1865,7 +1868,7 @@ export async function pullCardFromDeck(
   // reader is about to be shown. A failed read still reports the pull: the card
   // has moved, and losing the sentence about it is not worth undoing that.
   try {
-    const state = await loadDraftState(askingDeckId, userId);
+    const state = await loadDraftState(askingDeckId, userId, await readerStoreForAction(userId));
     // `claimsKnown` false is the loader's degraded answer, and it reports
     // `buyCount: 0` in that state — an honest zero for a figure it could not
     // compute, not a finished shopping list. Quoting it here would tell the

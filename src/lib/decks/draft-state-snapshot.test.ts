@@ -14,7 +14,7 @@ import { loadDraftState } from "./draft-state";
 describe("readDraft's snapshot", () => {
   it("opens repeatable read and never a read-only transaction", async () => {
     transaction.mockRejectedValueOnce(new Error("stop"));
-    await expect(loadDraftState("deck", "user")).rejects.toThrow("stop");
+    await expect(loadDraftState("deck", "user", "manapool")).rejects.toThrow("stop");
     expect(transaction).toHaveBeenCalledTimes(1);
     expect(transaction.mock.calls[0][1]).toEqual({ isolationLevel: "repeatable read" });
   });

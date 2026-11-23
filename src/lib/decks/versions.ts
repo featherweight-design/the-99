@@ -28,6 +28,7 @@ import {
 } from "./printings";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { loadPrices, pricesForDeck } from "./price-query";
+import type { Store } from "../stores/rows";
 import { loadAvailability, loadDeckBuyRows } from "./availability-query";
 import type { Availability } from "./availability";
 import {
@@ -591,6 +592,7 @@ export async function loadVersionDiff(
   previousVersionId: string | null,
   userId: string,
   deckId: string,
+  store: Store,
   /** A linked deck's v1 diffs against v0, which is read from the precon and is never a version. */
   origin: OriginPredecessor | null = null,
 ): Promise<VersionDiffPayload> {
@@ -653,7 +655,7 @@ export async function loadVersionDiff(
     readDeckOwnedPrintings(userId, deckId, all.map((c) => c.oracleId)),
     // Pick-aware, as the deck page prices its rows (deck printings).
     readHeldPricePicks(userId, [deckId])
-      .then((picks) => loadPrices(pricedIds(all), picks))
+      .then((picks) => loadPrices(pricedIds(all), picks, [], store))
       .then((read) => ({ ...read, prices: pricesForDeck(read, deckId) })),
     // Shopping's own bill for this deck, so a row's tag is Shopping's answer rather than a second
     // reading of ownership. User-wide claims inside, narrowed to this deck's rows.

@@ -36,6 +36,8 @@ import type { ValidatedSuggestion, ValidationReport } from "../tuning/validate";
 import { loadJobRows } from "./job-rows";
 import { listDeckGames, type DeckGame } from "./games";
 import { loadPrices } from "./price-query";
+import type { Store } from "../stores/rows";
+import { readerStoreForPage } from "../stores/preference";
 import type { Availability } from "./availability";
 import { loadAvailability } from "./availability-query";
 import { liveLockedIds } from "./locks";
@@ -258,6 +260,8 @@ export async function readTuningState(
   } = {},
   env: NodeJS.ProcessEnv,
 ): Promise<TuningState> {
+  // The reader's store, asked now and awaited where the items are read, so it overlaps the reads between.
+  const storeRead = readerStoreForPage(userId, env);
   // A v2 run past its own, longer cutoff with lines saved settles `ok` and refunded (plan P4); every other one fails.
   await db.transaction((tx) => reapIn(tx, and(
     suggestedRunsOfDeck(deckId),
@@ -311,12 +315,14 @@ export async function readTuningState(
   // and `modelVersionMoved` describe that run). A failed or stopped re-run leaves the set it would have
   // replaced on screen, still open (STATES-tuning-panel.md :42): the failure is about the new
   // run, and nothing the player had was changed by it.
+  // The reader's store: a New card's price is read there, the same store the panel's header names.
+  const store = await storeRead;
   const { items, newestPriceAsOf } = lastOk
-    ? await readItems(lastOk.id, deckId, userId, lastOk.requestedCount !== null)
+    ? await readItems(lastOk.id, deckId, userId, store, lastOk.requestedCount !== null)
     : { items: [], newestPriceAsOf: null };
   // A v2 run still being made (plan P3): the lines it has saved so far, drawn by the panel's poll beside the last set.
   const live = run?.status === "pending" && newest?.requestedCount != null
-    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, true), askOf(newest))
+    ? liveOf(run.id, newest.validationReport, await readItems(run.id, deckId, userId, store, true), askOf(newest))
     : null;
 
   return {
@@ -428,6 +434,7 @@ async function readItems(
   runId: string,
   deckId: string,
   userId: string,
+  store: Store,
   /** A v2 run's lines: each also carries its type group and shelf role (H5). */
   v2 = false,
 ): Promise<{ items: TuningItem[]; newestPriceAsOf: Date | null }> {
@@ -489,7 +496,7 @@ async function readItems(
   // own price and claim rollups do: a card with no price draws no figure, and one with no claim
   // picture draws no mark, rather than the whole set failing to draw.
   const [{ prices, newestAsOf }, claims] = await Promise.all([
-    addIds.length === 0 ? { prices: new Map(), newestAsOf: null } : loadPrices(addIds).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
+    addIds.length === 0 ? { prices: new Map(), newestAsOf: null } : loadPrices(addIds, [], [], store).catch((e): Awaited<ReturnType<typeof loadPrices>> => {
       console.error("tuning items: price read failed", e);
       return { prices: new Map(), newestAsOf: null };
     }),

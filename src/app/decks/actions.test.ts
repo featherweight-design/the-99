@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // failure prints a small object, never the process environment.
 const ENV = vi.hoisted(() => ({}) as unknown as NodeJS.ProcessEnv);
 vi.mock("../../lib/flags/request", () => ({ requestFlags: vi.fn(async () => ENV) }));
+vi.mock("../../lib/stores/action-store", () => ({ readerStoreForAction: vi.fn(async () => "manapool") }));
 
 // The action module imports the db client, which throws at module init without a live URL.
 /** A drizzle `sql` template rendered to something a test can match on.
@@ -529,6 +530,7 @@ import { loadAvailability } from "../../lib/decks/availability-query";
 import { placedCardsOf } from "../../lib/decks/costs-of";
 import { writePullRelease } from "../../lib/decks/pull-release";
 import { loadDraftState } from "../../lib/decks/draft-state";
+import { readerStoreForAction } from "../../lib/stores/action-store";
 import { deckBodySize } from "../../lib/decks/deck-size";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { readDeckSynergy } from "../../lib/decks/deck-synergy";
@@ -2116,7 +2118,7 @@ describe("getVersionDiff", () => {
     );
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(loadVersionDiff).toHaveBeenCalledTimes(1);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID, null]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, V2, USER_ID, DECK_ID, "manapool", null]);
   });
 
   // A v1 has nothing before it, and the diff loader is told so explicitly rather
@@ -2124,7 +2126,7 @@ describe("getVersionDiff", () => {
   it("names no predecessor for the first version", async () => {
     stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, "manapool", null]);
   });
 
   // Precons R3 K10: a linked deck's v1 diffs against v0, read from the precon and never a version.
@@ -2138,8 +2140,16 @@ describe("getVersionDiff", () => {
     await getVersionDiff(DECK_ID, VERSION_ID);
     expect(readDeckOriginAndStart).toHaveBeenCalledWith(USER_ID, DECK_ID);
     expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([
-      VERSION_ID, null, USER_ID, DECK_ID, { cards: [], nonBasic: ["a", "b"], commanders: [CMD] },
+      VERSION_ID, null, USER_ID, DECK_ID, "manapool", { cards: [], nonBasic: ["a", "b"], commanders: [CMD] },
     ]);
+  });
+
+  // A changed card's price is quoted from the reader's own store, never Mana Pool's by default.
+  it("prices the diff from the reader's store", async () => {
+    stub.state.deckVersions.push({ id: VERSION_ID, number: 1, deckId: DECK_ID });
+    vi.mocked(readerStoreForAction).mockResolvedValueOnce("tcgplayer");
+    await getVersionDiff(DECK_ID, VERSION_ID);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0][4]).toBe("tcgplayer");
   });
 
   // A started deck's first version IS v0, the precon's list: it has nothing to diff against.
@@ -2151,7 +2161,7 @@ describe("getVersionDiff", () => {
       nonBasic: ["a", "b"],
     });
     await getVersionDiff(DECK_ID, VERSION_ID);
-    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, null]);
+    expect(vi.mocked(loadVersionDiff).mock.calls[0]).toEqual([VERSION_ID, null, USER_ID, DECK_ID, "manapool", null]);
   });
 });
 
@@ -2476,7 +2486,15 @@ describe("pullCardFromDeck", () => {
     expect(result).toEqual({ ok: true, buy: 7, total: "$241.00" });
     // After the revalidation, so the figures describe the world the reader is
     // about to be shown rather than the one the pull replaced.
-    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID);
+    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID, "manapool");
+  });
+
+  it("reads the asking deck's position from the reader's store", async () => {
+    stub.state.deckRows.push({ oracleId: CARD_A, quantity: 1 });
+    vi.mocked(versionCards).mockResolvedValue([{ oracleId: CARD_A, quantity: 1 }]);
+    vi.mocked(readerStoreForAction).mockResolvedValueOnce("cardkingdom");
+    await pullCardFromDeck(SOURCE_ID, CARD_A, ASKING_ID);
+    expect(loadDraftState).toHaveBeenCalledWith(ASKING_ID, USER_ID, "cardkingdom");
   });
 
   // The card has already moved by then. Failing the pull over the sentence
