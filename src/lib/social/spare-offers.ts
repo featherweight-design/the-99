@@ -143,20 +143,21 @@ export async function answerOffer(wanterId: string, requestId: unknown, answer: 
 
 /** The state of the viewer's spare of a card on a friend's wishlist, as the tile's mark draws it (handoff states). */
 export type OfferMark = "asked" | "offered" | "accepted";
+export type OfferMarkRow = { mark: OfferMark; requestId: string; daysLeft: number };
 
 /**
  * Per card, what stands between the viewer and one friend about the card: `asked` (the friend asked the viewer for it,
  * open), `offered` (the viewer offered it, open), `accepted` (a Yes on one of the viewer's spares: the friend's ask, or the viewer's offer). Anything else draws no mark: no row,
  * declined, expired, withdrawn. One statement over the friend's rows against the viewer's spare (asks of the viewer and the viewer's offers), through the live friendship; an
- * open row wins over an older Yes. Reads only requests the viewer is party to.
+ * open row wins over an older Yes. Reads only requests the viewer is party to. The row's id and days left ride along for the sheet's Yes and No.
  */
-export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, oracleIds: readonly unknown[], now = new Date()): Promise<Map<string, OfferMark>> {
+export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, oracleIds: readonly unknown[], now = new Date()): Promise<Map<string, OfferMarkRow>> {
   const ids = [...new Set(oracleIds.filter(isUuid))];
-  const out = new Map<string, OfferMark>();
+  const out = new Map<string, OfferMarkRow>();
   if (!isUuid(friendPublicId) || ids.length === 0) return out;
   const rows = await db
     .select({
-      oracleId: spareRequests.oracleId, status: spareRequests.status, createdAt: spareRequests.createdAt,
+      id: spareRequests.id, oracleId: spareRequests.oracleId, status: spareRequests.status, createdAt: spareRequests.createdAt,
       initiatedBy: spareRequests.initiatedBy,
     })
     .from(spareRequests)
@@ -169,7 +170,33 @@ export async function loadOfferMarks(viewerId: string, friendPublicId: unknown, 
     const mark: OfferMark | null = state === "open" ? (r.initiatedBy === "holder" ? "offered" : "asked") : state === "yes" ? "accepted" : null;
     if (!mark) continue;
     const had = out.get(r.oracleId);
-    if (!had || (mark !== "accepted" && had === "accepted")) out.set(r.oracleId, mark);
+    if (!had || (mark !== "accepted" && had.mark === "accepted")) out.set(r.oracleId, { mark, requestId: r.id, daysLeft: daysLeft(r.createdAt, now) });
+  }
+  return out;
+}
+
+/** What a friend's Wishlist tab draws of one card the viewer can spare (`HaveItCard.mark` null: nothing is open or agreed). */
+export type HaveItCard = { oracleId: string; spare: number; mark: OfferMark | null; requestId: string | null; daysLeft: number | null };
+
+/**
+ * The friend's wishlist cards the viewer can spare, each with its mark (You have it, PR 3b): the viewer's own spare rule
+ * (`loadOwnOffered`, in batches) joined to `loadOfferMarks`. A card the viewer cannot spare is absent, whatever its row says.
+ * The friend's quantity and `held` stay with the caller's lines and the write: neither is read here.
+ */
+export async function loadHaveIt(viewerId: string, friendPublicId: unknown, oracleIds: readonly string[], now = new Date()): Promise<HaveItCard[]> {
+  const ids = [...new Set(oracleIds)];
+  const batches: string[][] = [];
+  for (let i = 0; i < ids.length; i += MAX_SPARES_BATCH) batches.push(ids.slice(i, i + MAX_SPARES_BATCH));
+  const [spares, marks] = await Promise.all([
+    Promise.all(batches.map((b) => loadOwnOffered(viewerId, b))),
+    loadOfferMarks(viewerId, friendPublicId, ids, now),
+  ]);
+  const out: HaveItCard[] = [];
+  for (const got of spares) {
+    for (const [oracleId, spare] of got) {
+      const m = marks.get(oracleId);
+      out.push({ oracleId, spare, mark: m?.mark ?? null, requestId: m?.requestId ?? null, daysLeft: m?.daysLeft ?? null });
+    }
   }
   return out;
 }
