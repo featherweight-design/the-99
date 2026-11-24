@@ -140,15 +140,15 @@ export function UploadEntry({
         className="block text-[13px] font-semibold mb-[8px]"
         style={{ color: "var(--fg)" }}
       >
-        Paste your list
+        {importReviewCopy.entry.pasteLabel}
       </label>
       <textarea
         id="paste-list"
         value={pasteText}
         onChange={(e) => setPasteText(e.target.value)}
-        aria-label="Paste your card list"
+        aria-label={importReviewCopy.entry.pasteAria}
         maxLength={PASTE_MAX_BYTES}
-        placeholder={"3 Sol Ring\n1 Cultivate\nRhystic Study"}
+        placeholder={importReviewCopy.entry.pastePlaceholder}
         className="h-[300px] w-full rounded-lg p-[14px_16px] font-mono text-[16px] [@media(pointer:fine)]:text-[13px] resize-none"
         style={{
           background: "var(--surface-sunken)",
@@ -159,7 +159,7 @@ export function UploadEntry({
       />
       <div className="mt-[10px] flex items-center justify-between">
         <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
-          {pasteCount > 0 ? `${pasteCount} cards recognized` : ""}
+          {pasteCount > 0 ? importReviewCopy.entry.recognized(pasteCount) : ""}
         </span>
         <div className="flex gap-[8px]">
           <GhostButton
@@ -167,7 +167,7 @@ export function UploadEntry({
             onClick={() => setMode("dropzone")}
             className="text-[13px] px-[16px] py-[10px]"
           >
-            Back
+            {importReviewCopy.entry.back}
           </GhostButton>
           <PrimaryButton
             type="button"
@@ -176,12 +176,12 @@ export function UploadEntry({
             className="text-[13px] px-[16px] py-[10px] disabled:opacity-50"
           >
             {pending
-              ? "Previewing…"
+              ? importReviewCopy.entry.previewing
               : pasteCount === 0
-                ? "Preview list"
+                ? importReviewCopy.entry.previewEmpty
                 : pasteCount === 1
-                  ? "Preview 1 card"
-                  : `Preview ${pasteCount} cards`}
+                  ? importReviewCopy.entry.previewOne
+                  : importReviewCopy.entry.previewMany(pasteCount)}
           </PrimaryButton>
         </div>
       </div>
@@ -198,7 +198,7 @@ export function UploadEntry({
       type="file"
       accept=".csv,text/csv"
       className="hidden"
-      aria-label="Upload collection CSV"
+      aria-label={importReviewCopy.entry.uploadAria}
       onChange={(e) => {
         const f = e.target.files?.[0];
         e.target.value = "";
@@ -359,8 +359,8 @@ export function UploadEntry({
               className="mt-[6px] font-mono text-[10px] md:text-[11px] tracking-[0.06em]"
               style={{ color: "var(--fg-faint)" }}
             >
-              <span className="md:hidden">Moxfield · Archidekt · Deckbox · ManaBox · CSV</span>
-              <span className="hidden md:inline">Moxfield · Archidekt · Deckbox · ManaBox · plain CSV</span>
+              <span className="md:hidden">{importReviewCopy.entry.formatsPhone}</span>
+              <span className="hidden md:inline">{importReviewCopy.entry.formatsWide}</span>
             </div>
             {/* Browse files button — §"Browse files" Button.
                 Deviation vs handoff (#30): (a) desktop mt/mb 14px added — the flat design put the button flush against format meta above and helper text below; needs breathing room. (b) Background moved from an inline style to a Tailwind utility so the hover-state class actually applies (inline styles outrank hover utilities and were shadowing the color swap). (c) Disabled + label swap while the upload transition is pending so the user gets feedback instead of a silent submit. */}
@@ -369,7 +369,7 @@ export function UploadEntry({
               disabled={pending}
               className={`${TOUCH_HIT} text-[13px] md:text-[14px] mt-[16px] md:mt-[14px] md:mb-[14px] px-[20px] md:px-[22px] py-[11px] md:whitespace-nowrap disabled:opacity-60 disabled:cursor-wait`}
             >
-              <SteadyLabel hold={["Uploading…", collectionChassisCopy.upload.browse]}>{pending ? "Uploading…" : collectionChassisCopy.upload.browse}</SteadyLabel>
+              <SteadyLabel hold={[importReviewCopy.entry.uploading, collectionChassisCopy.upload.browse]}>{pending ? importReviewCopy.entry.uploading : collectionChassisCopy.upload.browse}</SteadyLabel>
             </PrimaryButton>
             {/* Helper — §Helper Text: 12/13px --fg-faint, margin-top 14px mobile */}
             <p
@@ -377,13 +377,13 @@ export function UploadEntry({
               style={{ color: "var(--fg-faint)" }}
             >
               <span className="md:hidden">
-                Only a Name and Quantity column are required.{" "}
+                {importReviewCopy.entry.helperPhone}{" "}
                 <button type="button" onClick={(e) => { e.preventDefault(); setMode("paste"); }} className={`${TOUCH_HIT_INLINE} text-[color:var(--accent-text)]`}>
                   {collectionChassisCopy.upload.paste}
                 </button>
               </span>
               <span className="hidden md:inline">
-                We only need a Name and Quantity column: most exports already include them.
+                {importReviewCopy.entry.helperWide}
               </span>
             </p>
           </div>

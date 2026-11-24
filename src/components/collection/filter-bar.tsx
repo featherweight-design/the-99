@@ -21,6 +21,7 @@ import {
 import type { AvailabilityState } from "../../lib/decks/availability";
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
 import { filterCopy } from "../../lib/copy/lanes";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { AvailabilityGlyph } from "../ui/availability-marker";
 import { ColourControl } from "../commanders/rack/colour-control";
@@ -362,7 +363,7 @@ export function FilterBar({
                 onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
                 onClear={() => onFiltersChange({ ...filters, search: "" })}
                 placeholder={collectionChassisCopy.searchPlaceholder.wide}
-                aria-label="Search your cards"
+                aria-label={collectionPlaceCopy.searchAria}
                 ref={searchRef}
               />
               <ColourControl
@@ -500,7 +501,7 @@ export function FilterBar({
             value={filters.search}
             onChange={(e) => onFiltersChange({ ...filters, search: e.target.value })}
             placeholder={collectionChassisCopy.searchPlaceholder.compact}
-            aria-label="Search your cards"
+            aria-label={collectionPlaceCopy.searchAria}
             ref={searchRef}
             // Readiness E4: the field's own clear, the rack's copy key.
             clearLabel={filterCopy.search.clear}

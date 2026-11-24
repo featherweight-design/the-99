@@ -38,6 +38,25 @@ export const collectionBrowseCopy = {
   },
 } as const;
 
+/** The Collection place's head, its empty state and the card lists' show-more press. */
+export const collectionPlaceCopy = {
+  title: "Collection",
+  counts: (total: number, unique: number) =>
+    `${total.toLocaleString("en-US")} cards · ${unique.toLocaleString("en-US")} unique`,
+  lastUpdated: (label: string) => ` · last updated ${label}`,
+  replaceCollection: "Replace collection",
+  replace: "Replace",
+  emptyTitle: "Your collection is empty",
+  searchAria: "Search your cards",
+  showMore: (n: number) => `Show more (${n.toLocaleString()} more)`,
+  /** The set row's trigger label while its panel is open (detail is the chosen set, or empty). */
+  setExpandedAria: (label: string, detail: string) => `${label}${detail}, expanded`,
+  /** The same label with exactly one set chosen, panel closed. */
+  setOneCollapsedAria: (label: string, setName: string) => `${label}, ${setName}, collapsed`,
+  /** Joins the last two names in the history list's deck run. */
+  andJoin: " and ",
+} as const;
+
 /** Card modal. "any printing" because the link is keyed by the oracle card,
  *  not the printing on screen — Mana Pool's grid shows them all. */
 export const cardLinkOutCopy = {

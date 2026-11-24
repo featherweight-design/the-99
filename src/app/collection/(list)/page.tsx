@@ -37,6 +37,7 @@ import { requestFlags } from "../../../lib/flags/request";
 import { readerStoreForPage } from "../../../lib/stores/preference";
 import { StoreProvider } from "../../../components/stores/store-provider";
 import { collectionEditCopy } from "../../../lib/copy/collection-edit";
+import { collectionPlaceCopy } from "../../../lib/copy/collection-browse";
 import { PICK_RECEIPT_PARAM } from "../../../lib/precons/pick";
 import { readPickReceipt, type PickReceipt } from "../../../lib/precons/pick-receipt-read";
 import { PreconPickReceipt } from "../../../components/home/precon-pick-receipt";
@@ -157,7 +158,7 @@ export default async function CollectionPage({
           <CardFan variant="mobile" className="mb-[22px] md:hidden" />
           <CardFan variant="desktop" className="mb-[26px] hidden md:block" />
           <EmptyStateTitle level={2} className="text-[28px]">
-            Your collection is empty
+            {collectionPlaceCopy.emptyTitle}
           </EmptyStateTitle>
           <EmptyStateBody className="mt-3 max-w-[420px] text-[16px]">
             {collectionEditCopy.ways.emptyBody}

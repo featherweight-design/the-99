@@ -22,6 +22,7 @@ import type { HistoryRow } from "../../db/schema";
 import { cartDecksOf, type CartDecks } from "../../lib/collection/deck-line";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { gotItCopy } from "../../lib/copy/i-got-it";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
 import { validTimeZone } from "../../lib/time/zoned";
 import { PendingReporter } from "../shell/pending-reporter";
 import { ReplaceIcon } from "./replace-icon";
@@ -145,7 +146,7 @@ function DeckNames({ decks, linked }: { decks: CartDecks; linked: boolean }) {
   return (
     <>
       {items.map((it, i) => (
-        <span key={i}>{i === 0 ? "" : i === items.length - 1 ? " and " : ", "}{it}</span>
+        <span key={i}>{i === 0 ? "" : i === items.length - 1 ? collectionPlaceCopy.andJoin : ", "}{it}</span>
       ))}
     </>
   );

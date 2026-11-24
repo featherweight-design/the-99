@@ -3,7 +3,50 @@
 // could not make sense of is "unreadable": neither is the app's vocabulary for
 // how it works, only for what the player sees.
 
+import { cards, rows } from "./collection-edit";
+
 export const importReviewCopy = {
+  /** The review screen's own words (titles, the matched figure, the sticky bar's summary and Continue labels). */
+  review: {
+    titlePhone: "Review import",
+    titleDesktop: "Review before you replace",
+    cardWord: (n: number) => (n === 1 ? "card" : "cards"),
+    readyPhone: (n: number) => `${n === 1 ? "card" : "cards"} matched & ready`,
+    readyDesktop: "matched to the Oracle database: ready to import",
+    willBeSkipped: (count: number) => `${rows(count)} will be skipped`,
+    rowsRead: (n: number) => (n === 1 ? "row read" : "rows read"),
+    line: (line: number, setCode: string | null | undefined) => `Line ${line}${setCode ? ` · ${setCode}` : ""}`,
+    importShort: (importCount: number, skipped: number) => `Imports ${cards(importCount)} · skips ${rows(skipped)}`,
+    importLong: (importCount: number, skipped: number) =>
+      `Importing ${cards(importCount)} and skipping ${skipped}.`,
+    replaceShort: (skipped: number, current: number, importCount: number) =>
+      `Skips ${rows(skipped)} · replaces your ${cards(current)} with ${importCount.toLocaleString()}`,
+    replaceLong: (importCount: number, skipped: number, current: number) =>
+      `Importing ${cards(importCount)} and skipping ${skipped}. This replaces your current ${cards(current)}.`,
+    importing: "Importing…",
+    continueImport: "Continue to import →",
+    continueReplace: "Continue to replace →",
+    /** The upload step's header line under the step count. */
+    rowsFigure: (n: number) => `${n.toLocaleString("en-US")} rows`,
+  },
+  /** The upload step's entry: the paste panel and the dropzone's words. */
+  entry: {
+    pasteLabel: "Paste your list",
+    pasteAria: "Paste your card list",
+    pastePlaceholder: "3 Sol Ring\n1 Cultivate\nRhystic Study",
+    recognized: (n: number) => `${n} cards recognized`,
+    back: "Back",
+    previewing: "Previewing…",
+    previewEmpty: "Preview list",
+    previewOne: "Preview 1 card",
+    previewMany: (n: number) => `Preview ${n} cards`,
+    uploadAria: "Upload collection CSV",
+    formatsPhone: "Moxfield · Archidekt · Deckbox · ManaBox · CSV",
+    formatsWide: "Moxfield · Archidekt · Deckbox · ManaBox · plain CSV",
+    uploading: "Uploading…",
+    helperPhone: "Only a Name and Quantity column are required.",
+    helperWide: "We only need a Name and Quantity column: most exports already include them.",
+  },
   stats: {
     /** Desktop issue summary: the count beside it names what it counts. */
     notInCatalog: "names not in the card catalog",

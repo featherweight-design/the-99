@@ -12,7 +12,7 @@ import { GhostButton, PrimaryButton } from "../ui/button";
 import { STEP_BODY, STEP_BODY_ARIA, STEP_FOOT, STEP_FRAME } from "./review-parts";
 import { Crown } from "../ui/crown";
 import { replaceCopy } from "../../lib/copy/replace";
-import { cards, collectionEditCopy, rows } from "../../lib/copy/collection-edit";
+import { collectionEditCopy, rows } from "../../lib/copy/collection-edit";
 import { ReplaceReviewDetail, type ReviewChange } from "./replace-review-detail";
 import { syncBar, syncFigures, type SyncBar, type SyncReviewControls } from "./sync-review";
 import { SteadyLabel } from "../ui/steady-label";
@@ -111,7 +111,7 @@ export function ReviewScreen({
           className="md:hidden flex flex-none items-baseline gap-[12px] p-[18px_18px_14px]"
           style={{ borderBottom: "1px solid var(--border)" }}
         >
-          <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>{syncData ? sr.titlePhone : "Review import"}</span>
+          <span className="font-display font-semibold text-[18px]" style={{ color: "var(--fg)" }}>{syncData ? sr.titlePhone : importReviewCopy.review.titlePhone}</span>
           <span className="ml-auto font-mono text-[10px]" style={{ color: "var(--fg-faint)" }}>{preview.filename}</span>
         </div>
       )}
@@ -132,7 +132,7 @@ export function ReviewScreen({
           className="hidden md:block font-display font-bold text-[29px] mt-[12px]"
           style={{ color: "var(--fg)" }}
         >
-          {mode === "add" ? e.reviewAdd : syncData ? sr.title : "Review before you replace"}
+          {mode === "add" ? e.reviewAdd : syncData ? sr.title : importReviewCopy.review.titleDesktop}
         </h1>
 
         {failed ? (
@@ -182,8 +182,8 @@ export function ReviewScreen({
                   e.addedLabel(addDetail.copiesAfter - addDetail.copiesBefore, addDetail.distinctCards)
                 ) : (
                   <>
-                    <span className="md:hidden">{importCount === 1 ? "card" : "cards"} matched &amp; ready</span>
-                    <span className="hidden md:inline">{importCount === 1 ? "card" : "cards"} {syncData ? sr.matchedLabel : "matched to the Oracle database: ready to import"}</span>
+                    <span className="md:hidden">{importReviewCopy.review.readyPhone(importCount)}</span>
+                    <span className="hidden md:inline">{importReviewCopy.review.cardWord(importCount)} {syncData ? sr.matchedLabel : importReviewCopy.review.readyDesktop}</span>
                   </>
                 )}
               </div>
@@ -222,7 +222,7 @@ export function ReviewScreen({
               className="text-[11.5px] pt-[9px]"
               style={{ color: "var(--fg-faint)", borderTop: "1px solid var(--border)" }}
             >
-              {rows(skippedTotal)} will be skipped
+              {importReviewCopy.review.willBeSkipped(skippedTotal)}
             </div>
           </div>
 
@@ -231,7 +231,7 @@ export function ReviewScreen({
             <div className="flex gap-[8px]">
               <MiniStat number={preview.unmatchedRows.length} numberColor="var(--warning)" label={importReviewCopy.stats.notInCatalogShort} />
               <MiniStat number={preview.parseErrors.length} numberColor="var(--danger)" label={importReviewCopy.stats.unreadable(preview.parseErrors.length)} />
-              <MiniStat number={preview.rowCount} numberColor="var(--fg)" label={preview.rowCount === 1 ? "row read" : "rows read"} />
+              <MiniStat number={preview.rowCount} numberColor="var(--fg)" label={importReviewCopy.review.rowsRead(preview.rowCount)} />
             </div>
             {/* Matches the mini-stat label's 11px/--fg-faint. Its own line because a fourth cell
                 would squeeze all four below the label's legible width on a 360px viewport. */}
@@ -302,7 +302,7 @@ export function ReviewScreen({
                         className="font-mono text-[10px] md:text-[10.5px] mt-0 md:mt-[2px]"
                         style={{ color: "var(--fg-faint)" }}
                       >
-                        Line {r.line}{r.setCode ? ` · ${r.setCode}` : ""}
+                        {importReviewCopy.review.line(r.line, r.setCode)}
                       </span>
                     </span>
                     {/* §Issue Row — Quantity (right): mono 11/12px --fg-faint */}
@@ -411,19 +411,19 @@ export function ReviewScreen({
           ) : isInitialImport ? (
             <>
               <span className="md:hidden">
-                Imports {cards(importCount)} · skips {rows(skipped)}
+                {importReviewCopy.review.importShort(importCount, skipped)}
               </span>
               <span className="hidden md:inline">
-                Importing {cards(importCount)} and skipping {skipped}.
+                {importReviewCopy.review.importLong(importCount, skipped)}
               </span>
             </>
           ) : (
             <>
               <span className="md:hidden">
-                Skips {rows(skipped)} · replaces your {cards(preview.currentCollectionCount)} with {importCount.toLocaleString()}
+                {importReviewCopy.review.replaceShort(skipped, preview.currentCollectionCount, importCount)}
               </span>
               <span className="hidden md:inline">
-                Importing {cards(importCount)} and skipping {skipped}. This replaces your current {cards(preview.currentCollectionCount)}.
+                {importReviewCopy.review.replaceLong(importCount, skipped, preview.currentCollectionCount)}
               </span>
             </>
           )}
@@ -465,10 +465,10 @@ export function ReviewScreen({
                   ? e.pendingReplace
                   : e.confirmReplace
               : pending
-                ? "Importing…"
+                ? importReviewCopy.review.importing
                 : isInitialImport
-                  ? "Continue to import →"
-                  : "Continue to replace →"}
+                  ? importReviewCopy.review.continueImport
+                  : importReviewCopy.review.continueReplace}
           </PrimaryButton>
         </div>
         )}

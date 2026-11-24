@@ -45,6 +45,7 @@ import { COLLECTION_SAVED_EVENT } from "./edit-toast";
 import { ReplaceIcon } from "./replace-icon";
 import { PlaceStrip } from "../place/place-strip";
 import { collectionTabsCopy } from "../../lib/copy/collection";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
 import { refreshCollectionHeader } from "../../app/collection/actions";
 import { wishlistCopy } from "../../lib/copy/wishlist";
 
@@ -210,11 +211,11 @@ export function CollectionPlaceHead({
         <div>
           {current === "cards" ? (
             <h1 className={`sr-only md:not-sr-only ${titleClass}`} style={{ color: "var(--fg)" }}>
-              Collection
+              {collectionPlaceCopy.title}
             </h1>
           ) : (
             <p className={`hidden md:block ${titleClass}`} style={{ color: "var(--fg)" }}>
-              Collection
+              {collectionPlaceCopy.title}
             </p>
           )}
           <p
@@ -223,8 +224,8 @@ export function CollectionPlaceHead({
           >
             {/* Pinned to en-US: a bare toLocaleString() reads the browser's locale once this
                 component hydrates, which can disagree with the server's render. */}
-            {stats.totalCards.toLocaleString("en-US")} cards · {stats.uniqueCards.toLocaleString("en-US")} unique
-            {lastUpdatedLabel ? ` · last updated ${lastUpdatedLabel}` : ""}
+            {collectionPlaceCopy.counts(stats.totalCards, stats.uniqueCards)}
+            {lastUpdatedLabel ? collectionPlaceCopy.lastUpdated(lastUpdatedLabel) : ""}
           </p>
         </div>
         {hasCollection && editEnabled ? (
@@ -252,7 +253,7 @@ export function CollectionPlaceHead({
             className="hidden md:inline-block text-[13px] px-[16px] py-[9px]"
           >
             <ReplaceIcon />
-            Replace collection
+            {collectionPlaceCopy.replaceCollection}
           </GhostButton>
         ) : null}
       </div>
@@ -281,7 +282,7 @@ export function CollectionPlaceHead({
             className="md:hidden ml-auto flex min-h-[44px] items-center px-[10px] text-[13px] text-[color:var(--accent-text)]"
           >
             <ReplaceIcon />
-            Replace
+            {collectionPlaceCopy.replace}
           </a>
         ) : null}
       </PlaceStrip>
