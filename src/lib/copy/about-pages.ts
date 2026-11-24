@@ -714,6 +714,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         flag: null,
         sentences: { " Pick another store in Settings and the prices follow.": "STORE_PREFERENCE_ENABLED" },
         since: 1,
+        // `shopping@STORE_PREFERENCE_ENABLED` is not a Reference entry: no reader holds it, which is what makes the store sentence unseen (announced) for readers who already saw this label. Do not prune it.
         legacy: ["shopping", "shopping@STORE_PREFERENCE_ENABLED"],
       },
       {
