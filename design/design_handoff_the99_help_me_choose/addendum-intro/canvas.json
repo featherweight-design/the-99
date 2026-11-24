@@ -1,0 +1,15 @@
+{
+ "v": 3,
+ "createdOnFiles": {"v": 1, "at": "2026-11-24T03:50:00Z"},
+ "title": "Help me choose · intro",
+ "launch": {"view": "canvas"},
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {"x": 0, "y": 0, "w": 1600, "h": 2560, "title": "Main · what it does, how it helps, what's free · R1"},
+  "Phone.dc.html": {"x": 1680, "y": 0, "w": 1280, "h": 2520, "title": "Phone · full pages · R1"},
+  "Desktop.dc.html": {"x": 3040, "y": 0, "w": 2400, "h": 1320, "title": "Desktop · full pages · R1"}
+ },
+ "order": ["Main.dc.html", "Phone.dc.html", "Desktop.dc.html"],
+ "notes": {},
+ "designSystems": []
+}
