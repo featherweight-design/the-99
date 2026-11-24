@@ -1,0 +1,17 @@
+--- a/src/components/tracker/sheet.tsx	2026-11-24 01:25:53.538344140 +0000
++++ b/src/components/tracker/sheet.tsx	2026-11-24 03:16:54.510296260 +0000
+@@ -206,11 +206,12 @@
+           const hitters = damageCommanders(p, foe.commanders);
+           return (
+             <div key={foe.seat} className={CARD_BOX}>
+-              <div className="relative flex h-[56px] flex-none">
++              {/* A taller art strip (shelf art addendum, A): 104px, the name and steppers on the card's own surface under it. */}
++              <div className="relative flex h-[104px] flex-none">
+                 <ArtStrip arts={artsOf(p, hitters)} className="absolute inset-0" />
+                 <b className="absolute bottom-1.5 left-2.5 text-[13.5px] font-semibold [text-shadow:0_1px_6px_rgba(0,0,0,.9)]">{p.you ? copy.history.you : <PersonName n={p.name} />}</b>
+               </div>
+-              <div className="flex flex-1 flex-col justify-evenly px-2 pb-2 pt-1">
++              <div className="flex flex-none flex-col gap-2 px-2 pb-2 pt-1.5">
+                 {Array.from({ length: hitters }, (_, cmdr) => {
+                   const n = seat.damage[`${foe.seat}:${cmdr}`] ?? 0;
+                   return (
