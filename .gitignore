@@ -67,3 +67,6 @@ docs/superpowers/eval/tuning-v2-refund/
 
 # fixture exports (scripts/fictional-fixtures.mts, FIXTURE_EXPORT_PATH default)
 /scripts/out/
+
+# built before next build by scripts/copy-editor-rows.mts
+/.generated/

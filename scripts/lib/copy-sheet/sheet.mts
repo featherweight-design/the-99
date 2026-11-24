@@ -16,9 +16,12 @@ export function readCopyRows(root: string): CopyRow[] {
   return files.flatMap((f) => copyRows(`${COPY_DIR}/${f}`, readFileSync(join(root, COPY_DIR, f), "utf8")));
 }
 
+/** The sheet's `kind` column: what a reader may do with the row. */
+export const kindOf = (r: CopyRow): "text" | "branch" | "edit in code" => (r.readOnly ? "edit in code" : r.context.includes(" when ") ? "branch" : "text");
+
 export function exportSheet(root: string): { csv: string; editable: number; readOnly: number; branches: number } {
   const rows = readCopyRows(root);
-  const body = rows.map((r) => [r.key, r.file.replace(`${COPY_DIR}/`, ""), r.readOnly ? "edit in code" : r.context.includes(" when ") ? "branch" : "text", r.text, r.placeholders.map((p) => `{${p}}`).join(" "), r.context, ""]);
+  const body = rows.map((r) => [r.key, r.file.replace(`${COPY_DIR}/`, ""), kindOf(r), r.text, r.placeholders.map((p) => `{${p}}`).join(" "), r.context, ""]);
   return {
     csv: toCsv([[...HEADER], ...body]),
     editable: rows.filter((r) => !r.readOnly).length,
