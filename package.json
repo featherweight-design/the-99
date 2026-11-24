@@ -37,6 +37,8 @@
     "measure:sync": "tsx scripts/measure-sync.mts",
     "check:shared": "node scripts/check-shared-imports.mjs",
     "check:copy-drift": "node scripts/check-copy-drift.mjs",
+    "copy:sheet": "tsx scripts/copy-sheet-export.mts",
+    "copy:import": "tsx scripts/copy-sheet-import.mts",
     "check:script-loads": "node scripts/check-script-loads.mjs",
     "record:clerk-strength": "tsx scripts/record-clerk-strength.mts",
     "check:tokens": "node scripts/check-tokens.mjs",
