@@ -3648,6 +3648,12 @@ Fixture: `scripts/seed-log-reminder-fixture.mts` (needs `RZ_FIXTURE_BRANCH` and 
 
 Fixture: the same as `probe:log-reminder` (`seed-rule-zero-fixture.mts`, then `seed-log-reminder-fixture.mts`, on a migrated scratch branch made from local-dev). The hide it presses is stored, so reseed between runs.
 
+## probe:quiet-home
+
+`pnpm probe:quiet-home` (`E2E_AUDIT_USER_EMAIL`, `E2E_AUDIT_USER_PASSWORD`, `CLERK_SECRET_KEY`, `PROBE_BASE=...`, local dev server) proves Quiet Home (tool-discovery addendum R1, design PR #3269) at 390x844, 1300x900, 1180x820 and 820x1180. From 1180 What's new sits in the main column, not the rail, under Pick up where you left off and aligned with it; from 768 its rows draw wide (three grid tracks: art, text, actions), and the phone's two below; below 1180 it stays above the decks; one What's new on the page and nothing overflows. It counts the Home's heading cards first and refuses a busy Home (two or more) rather than measuring the wrong state. `PROBE_SHOTS=<dir>` saves each page. It fails on `main`, where What's new tops the rail from 1180 in compact two-track rows.
+
+Fixture: the audit account with no open table, no game to log and at most a lead story, and at least one What's new row: on a migrated scratch branch made from local-dev, stamp `price-drop` on in its `user_prefs.feed_kinds` and insert one or two `price-drop` `feed_items` (`data` `{fromCents, toCents}`). Read-only once seeded.
+
 ## probe:flag-snapshot-swr
 
 `pnpm probe:flag-snapshot-swr` proves the first request past the switch snapshot's 30-second window does not wait on the snapshot read (`src/lib/flags/snapshot.ts`, stale-while-revalidate). It loads the signed-out landing (`GET /`, where render's `resolveFlags(null)` is the only snapshot reader) in rounds: one request just past the window, then one inside the fresh window, and exits 1 when the median gap exceeds `STALE_BUDGET_MS` (60). On main's memo the gap is the read (2026-11-22, local-dev: 113ms; with the fix 2ms). `PROBE_BASE=http://localhost:3396 pnpm probe:flag-snapshot-swr` against a webpack dev server; it sends no `accept: text/html`, since Clerk's dev instance answers a document request with no dev-browser cookie by a 307 to its handshake. About three minutes for five rounds (`ROUNDS`). Read-only; never production.

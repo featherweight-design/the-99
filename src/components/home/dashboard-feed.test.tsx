@@ -101,24 +101,69 @@ describe("Home, direction B", () => {
     expect(orderOf(commitments)).toBe(5);
   });
 
-  it("draws What's new directly under the lead and before the decks (G16)", () => {
-    // The resume block draws only with a deck to resume, so this render carries one.
-    const resumable = {
-      id: "d1", name: "Atraxa", createdAt: new Date("2026-09-01T00:00:00Z"), commanderName: "Atraxa, Praetors' Voice",
-      commanderColorIdentity: ["W", "U", "B", "G"], commanderImageUri: null, commanderArtCropUri: null, partnerName: null,
-      partnerColorIdentity: null, folderId: null, folderName: null, built: 99, ownedCount: 96, toBuyCount: 3, unresolvedCount: 0,
-      pendingChanges: 0, versionNumber: null, statusPill: "To buy", bracket: null, lastPlayedAt: null,
-      lastEditedAt: new Date("2026-09-01T00:00:00Z"), lastCommittedAt: null, inUseElsewhere: 0, proxiedCount: 0,
-    } as unknown as (typeof BASE)["decks"][number];
-    const { container } = render(<Dashboard {...BASE} decks={[resumable]} feed={chosen([view(1)], { lead: LEAD, unseen: 1 })} />);
-    // Below 1180 the columns are `contents`, so `order` places the blocks: What's new (1) sits between the lead and the
-    // resume block (2); from 1180 it leads the rail by DOM position (G16, G17).
-    const orderOf = (el: Element | null) => Number(/(?:^|\s)order-(\d)/.exec(el?.closest('[class^="order-"], [class*=" order-"]')?.className ?? "")?.[1]);
+  // Quiet Home (tool-discovery addendum R1): fewer than two heading cards (each open table, any game to log, the lead)
+  // and What's new sits in the main column under the resume block, in wide rows; two or more and it tops the rail.
+  const resumable = {
+    id: "d1", name: "Atraxa", createdAt: new Date("2026-09-01T00:00:00Z"), commanderName: "Atraxa, Praetors' Voice",
+    commanderColorIdentity: ["W", "U", "B", "G"], commanderImageUri: null, commanderArtCropUri: null, partnerName: null,
+    partnerColorIdentity: null, folderId: null, folderName: null, built: 99, ownedCount: 96, toBuyCount: 3, unresolvedCount: 0,
+    pendingChanges: 0, versionNumber: null, statusPill: "To buy", bracket: null, lastPlayedAt: null,
+    lastEditedAt: new Date("2026-09-01T00:00:00Z"), lastCommittedAt: null, inUseElsewhere: 0, proxiedCount: 0,
+  } as unknown as (typeof BASE)["decks"][number];
+  const seat = (displayName: string, you = false) => ({ displayName: you ? displayName : named(displayName), you, commander: null });
+  const table = (id: string) => ({
+    tableId: id, podId: "p1", podName: named("Thursday night"), closesAt: new Date("2026-10-23T11:00:00Z"), setByYou: false,
+    setterName: named("Colin"), yourDeck: "Ghalta Stompy", seats: [seat("Hugh", true), seat("Colin")],
+  });
+  const orderOf = (el: Element | null) => Number(/(?:^|\s)order-(\d)/.exec(el?.closest('[class^="order-"], [class*=" order-"]')?.className ?? "")?.[1]);
+  const inRail = (el: Element) => el.closest("[class*='min-[1180px]:w-[316px]']") !== null;
+  const rail = (container: HTMLElement) => container.querySelector("[class*='min-[1180px]:w-[316px]']");
+  const rowsWide = (whatsNew: Element) => {
+    const rows = [...whatsNew.querySelectorAll("[data-feed-item]")];
+    return rows.length > 0 && rows.every((r) => !r.className.includes("max-[1179px]") && r.className.includes("md:grid-cols-[46px_minmax(0,1fr)_auto]"));
+  };
+
+  it("a busy Home (a table and the lead): What's new tops the rail in compact rows, and sits under the lead below 1180 (G16)", () => {
+    const { container } = render(<Dashboard {...BASE} decks={[resumable]} tables={[table("t1")]} feed={chosen([view(1)], { lead: LEAD, unseen: 1 })} />);
     const whatsNew = container.querySelector("[data-whats-new]")!;
     const resume = screen.getByRole("heading", { name: /^Pick up where you left off/ });
     expect(container.querySelector("[data-lead-story]")).not.toBeNull();
     expect(orderOf(whatsNew)).toBeLessThan(orderOf(resume));
-    expect(whatsNew.closest("[class*='min-[1180px]:w-[316px]']")).not.toBeNull();
+    expect(inRail(whatsNew)).toBe(true);
+    expect(rowsWide(whatsNew)).toBe(false);
+  });
+
+  it("a busy Home of two tables and no lead is busy too: each open table counts", () => {
+    const { container } = render(<Dashboard {...BASE} tables={[table("t1"), table("t2")]} feed={chosen([view(1)])} />);
+    expect(inRail(container.querySelector("[data-whats-new]")!)).toBe(true);
+  });
+
+  it("a quiet Home (no table, no game to log, no lead): What's new follows the resume block in the main column, in wide rows", () => {
+    const { container } = render(<Dashboard {...BASE} decks={[resumable]} feed={chosen([view(1)])} />);
+    const whatsNew = container.querySelector("[data-whats-new]")!;
+    const resume = screen.getByRole("heading", { name: /^Pick up where you left off/ });
+    expect(container.querySelectorAll("[data-whats-new]")).toHaveLength(1);
+    expect(inRail(whatsNew)).toBe(false);
+    expect(resume.compareDocumentPosition(whatsNew) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    // Below 1180 it keeps its place above the decks (order 1 before the resume block's 2).
+    expect(orderOf(whatsNew)).toBeLessThan(orderOf(resume));
+    expect(rowsWide(whatsNew)).toBe(true);
+    // The rail still draws for Commitments and Friends.
+    expect(rail(container)).not.toBeNull();
+  });
+
+  it("one heading card is still quiet: the lead alone, or one table alone", () => {
+    const lead = render(<Dashboard {...BASE} feed={chosen([view(1)], { lead: LEAD, unseen: 1 })} />);
+    expect(inRail(lead.container.querySelector("[data-whats-new]")!)).toBe(false);
+    lead.unmount();
+    const one = render(<Dashboard {...BASE} tables={[table("t1")]} feed={chosen([view(1)])} />);
+    expect(inRail(one.container.querySelector("[data-whats-new]")!)).toBe(false);
+  });
+
+  it("a quiet Home with no Commitments and no Friends draws no rail at all", () => {
+    const { container } = render(<Dashboard {...BASE} commitments={null} friends={undefined} feed={chosen([view(1)])} />);
+    expect(container.querySelector("[data-whats-new]")).not.toBeNull();
+    expect(rail(container)).toBeNull();
   });
 
   it("a busy feed: five shown and Show all N", () => {

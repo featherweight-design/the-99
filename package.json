@@ -60,6 +60,7 @@
     "probe:launch-landing": "node scripts/probe-launch-landing.mjs",
     "probe:log-reminder": "node scripts/probe-log-reminder.mjs",
     "probe:home-section-heads": "node scripts/probe-home-section-heads.mjs",
+    "probe:quiet-home": "node scripts/probe-quiet-home.mjs",
     "probe:pending-width": "node scripts/probe-pending-width.mjs",
     "probe:precons-skeleton": "node scripts/probe-precons-skeleton.mjs",
     "probe:launch-scrollbar": "node scripts/probe-launch-scrollbar.mjs",
