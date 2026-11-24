@@ -83,12 +83,14 @@ export type SearchLayerProps = {
     starters: string[];
     onStarter: (q: string) => void;
     onPressTool: (tool: ToolCardModel, index: number) => void;
+    /** The tool whose page is loading (R12 Q20): its row rings and every other answer is inert until the page commits. */
+    opening: ToolId | null;
     /** A link inside the answers (`Every tool, in About`) was followed: the search closes. */
     onNavigate: () => void;
   };
 };
 
-const NO_ASK: NonNullable<SearchLayerProps["ask"]> = { ids: [], tools: [], starters: [], onStarter: () => {}, onPressTool: () => {}, onNavigate: () => {} };
+const NO_ASK: NonNullable<SearchLayerProps["ask"]> = { ids: [], tools: [], starters: [], onStarter: () => {}, onPressTool: () => {}, opening: null, onNavigate: () => {} };
 
 export function SearchLayer(props: SearchLayerProps) {
   // A fresh provider for each route: a navigation drops a read still in flight and any card or sheet stacked over
@@ -253,6 +255,7 @@ function SearchBody(props: SearchLayerProps) {
       id={`${p.listboxId}-${i}`}
       first={i === 0}
       active={i === p.active}
+      opening={p.ask.opening}
       onPress={() => p.ask.onPressTool(t, i)}
       onKey={(e) => {
         if (e.key === "Enter" || e.key === " ") {
@@ -269,6 +272,7 @@ function SearchBody(props: SearchLayerProps) {
     <SearchListbox
       id={p.listboxId}
       label={cardSearchCopy.label}
+      busy={p.ask.opening !== null}
       groups={[
         { key: "tools", label: askCopy.tools.heading, heading: <ToolsHeading />, children: toolRows },
         ...(cards === null ? [] : [{ key: "cards", label: askCopy.tools.cards, children: cards }]),

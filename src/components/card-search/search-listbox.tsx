@@ -14,9 +14,10 @@ export type ListboxGroup = {
   children: ReactNode;
 };
 
-export function SearchListbox({ id, label, groups }: { id: string; label: string; groups: ListboxGroup[] }) {
+/** `busy`: a tool's page is loading (R12 Q20), so the options are announced as busy and take no press. */
+export function SearchListbox({ id, label, groups, busy = false }: { id: string; label: string; groups: ListboxGroup[]; busy?: boolean }) {
   return (
-    <div role="listbox" id={id} aria-label={label}>
+    <div role="listbox" id={id} aria-label={label} aria-busy={busy || undefined} inert={busy || undefined}>
       {groups.map((g) => (
         <div key={g.key} role="group" aria-label={g.label}>
           {g.heading ? <div aria-hidden>{g.heading}</div> : null}
