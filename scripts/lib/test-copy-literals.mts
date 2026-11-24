@@ -2,7 +2,7 @@
 // wording twice: a copy edit then fails the test instead of passing through it. The test imports the copy leaf instead.
 import { readFileSync } from "node:fs";
 import ts from "typescript";
-import { copyRows } from "./copy-sheet/walk.mjs";
+import { copyRows, DATA_ROW } from "./copy-sheet/walk.mjs";
 
 export const MIN_WORDS = 2;
 const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
@@ -12,12 +12,19 @@ export function copyLeaves(files: string[], read: (f: string) => string = (f) =>
   const leaves = new Map<string, string>();
   for (const f of files) {
     for (const r of copyRows(f, read(f))) {
-      if (/[{}]/.test(r.text) || wordCount(r.text) < MIN_WORDS || leaves.has(r.text)) continue;
+      if (/[{}]/.test(r.text) || wordCount(r.text) < MIN_WORDS || leaves.has(r.text) || DATA_ROW.test(r.key)) continue;
       leaves.set(r.text, r.key);
     }
   }
   return leaves;
 }
+
+/** A test's own title describes the case; it is not an assertion on the words. */
+const isTitle = (n: ts.Node) => {
+  const call = n.parent;
+  if (!ts.isCallExpression(call) || call.arguments[0] !== n) return false;
+  return /^(describe|it|test)(\.\w+)*$/.test(call.expression.getText());
+};
 
 export type TestLiteral = { line: number; text: string; key: string };
 
@@ -27,7 +34,7 @@ export function findTestLiterals(file: string, source: string, leaves: Map<strin
   const visit = (n: ts.Node) => {
     if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) {
       const key = leaves.get(n.text);
-      if (key) out.push({ line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1, text: n.text, key });
+      if (key && !isTitle(n)) out.push({ line: sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1, text: n.text, key });
     }
     ts.forEachChild(n, visit);
   };

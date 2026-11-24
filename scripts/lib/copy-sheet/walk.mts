@@ -51,7 +51,11 @@ function quoteOf(n: ts.Node, sf: ts.SourceFile): CopyRow["quote"] {
   return c === "'" ? "'" : c === "`" ? "`" : '"';
 }
 
+/** Card names the about diagrams and landing examples draw are data, matched by where they sit, never by value. */
+export const DATA_ROW = /\.parts\[\d+\]\.name$|\.example\.rows\[/;
+
 function push(ctx: Ctx, key: string, n: ts.Node, row: Pick<CopyRow, "text" | "placeholders" | "context" | "readOnly"> & { isTemplate: boolean; holes?: Record<string, string> }) {
+  if (!row.readOnly && DATA_ROW.test(key)) row = { ...row, readOnly: "edit in code: data, not copy (a card name)" };
   ctx.rows.push({ key, file: ctx.file, holes: {}, ...row, start: n.getStart(ctx.sf), end: n.getEnd(), quote: quoteOf(n, ctx.sf) });
 }
 
