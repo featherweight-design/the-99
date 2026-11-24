@@ -38,6 +38,7 @@
     "check:shared": "node scripts/check-shared-imports.mjs",
     "check:copy-drift": "node scripts/check-copy-drift.mjs",
     "check:inline-copy": "tsx scripts/check-inline-copy.mts",
+    "check:test-copy-literals": "tsx scripts/check-test-copy-literals.mts",
     "check:copy-sheet-roundtrip": "tsx scripts/check-copy-sheet-roundtrip.mts",
     "copy:sheet": "tsx scripts/copy-sheet-export.mts",
     "copy:import": "tsx scripts/copy-sheet-import.mts",
