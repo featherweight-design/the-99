@@ -8,6 +8,9 @@ export type Match = { row: EditorRow; how: "exact" | "pattern" };
 /** A pattern needs this many fixed characters, or `{n}` and `{name}` would match every line on the page. */
 const MIN_LITERAL = 3;
 
+/** Longer text is matched exactly only: a pattern with several holes backtracks badly on a long line it does not fit. */
+const MAX_PATTERN_TEXT = 240;
+
 const squash = (s: string) => s.replace(/\s+/g, " ").trim();
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
@@ -43,6 +46,7 @@ export function matchText(index: RowIndex, visible: string): Match[] {
   if (!text) return [];
   const exact = index.exact.get(text);
   if (exact) return exact.map((row) => ({ row, how: "exact" as const }));
+  if (text.length > MAX_PATTERN_TEXT) return [];
   const hits = index.patterns.filter((p) => p.re.test(text));
   const best = Math.max(0, ...hits.map((p) => p.literal));
   return hits.filter((p) => p.literal === best).map((p) => ({ row: p.row, how: "pattern" as const }));

@@ -2,11 +2,14 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const stub = vi.hoisted(() => ({ user: null as string | null, rows: null as unknown[] | null }));
 vi.mock("../../../../lib/copy-editor/gate", () => ({ copyEditorUser: async () => stub.user }));
-vi.mock("../../../../lib/copy-editor/rows", () => ({ readEditorRows: async () => stub.rows }));
+const read = vi.hoisted(() => vi.fn());
+vi.mock("../../../../lib/copy-editor/rows", () => ({ readEditorRows: read }));
 
 import { GET } from "./route";
 
 beforeEach(() => {
+  read.mockReset();
+  read.mockImplementation(async () => stub.rows);
   stub.user = "user_admin";
   stub.rows = [{ key: "src/lib/copy/a.ts#x", kind: "text", text: "Hi", placeholders: [], context: "", readOnly: "" }];
 });
@@ -17,6 +20,7 @@ describe("GET /api/copy-edit/rows", () => {
     const res = await GET();
     expect(res.status).toBe(404);
     expect(await res.text()).toBe("");
+    expect(read).not.toHaveBeenCalled();
   });
 
   it("returns the rows to the admin, uncached", async () => {

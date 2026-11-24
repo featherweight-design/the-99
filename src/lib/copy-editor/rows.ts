@@ -21,16 +21,18 @@ export type EditorRow = {
 
 export const ROWS_FILE = ".generated/copy-rows.json";
 
-let memo: EditorRow[] | undefined;
+const memo = new Map<string, EditorRow[]>();
 
-/** The generated rows, or null when the build step has not run. Read once per server instance. */
+/** The generated rows, or null when the build step has not run. Read once per server instance, and on every call in development, where the copy files change under a running server. */
 export async function readEditorRows(root: string = process.cwd()): Promise<EditorRow[] | null> {
-  if (memo) return memo;
+  const cached = memo.get(root);
+  if (cached) return cached;
   try {
     const parsed: unknown = JSON.parse(await readFile(join(root, ROWS_FILE), "utf8"));
     if (!Array.isArray(parsed)) return null;
-    memo = parsed as EditorRow[];
-    return memo;
+    const rows = parsed as EditorRow[];
+    if (process.env.NODE_ENV === "production") memo.set(root, rows);
+    return rows;
   } catch {
     return null;
   }

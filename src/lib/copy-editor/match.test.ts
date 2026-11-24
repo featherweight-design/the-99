@@ -47,6 +47,10 @@ describe("matchText", () => {
     expect(matchText(i, "Back to start").map((m) => m.row.key)).toEqual(["x#2"]);
   });
 
+  it("does not run patterns on a long line", () => {
+    expect(keys(`Last active ${"x".repeat(300)}`)).toEqual([]);
+  });
+
   it("matches nothing for empty text", () => {
     expect(keys("   ")).toEqual([]);
   });
