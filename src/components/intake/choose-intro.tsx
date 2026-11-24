@@ -27,7 +27,7 @@ export function ChooseIntro({
   initiallyOpen: boolean;
   /** The example's art; null when the read failed, and the example draws without it. */
   art: IntroArt | null;
-  /** The reader's own free credits a day; null while credits are off, and the line is left out. */
+  /** The reader's own free credits a day; null with no standing (a failed read) or the model-call switch off, and the line is left out. */
   daily: number | null;
 }) {
   const [open, setOpen] = useState(initiallyOpen);
@@ -68,8 +68,8 @@ export function ChooseIntro({
   const jump = () => {
     const box = document.getElementById(CHOOSE_WORDS_ID);
     if (!box) return;
-    // Centred, so neither the sticky header nor the phone's fixed dock covers it.
-    box.scrollIntoView({ block: "center", behavior: "smooth" });
+    // Centered and instant (the form moves nothing: no motion anywhere), so neither the sticky header nor the phone's fixed dock covers it.
+    box.scrollIntoView({ block: "center" });
     box.focus({ preventScroll: true });
   };
 

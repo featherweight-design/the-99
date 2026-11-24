@@ -128,7 +128,7 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               centered
               trailing={<HistoryLink href={`${chooseAt}?v=history`} label={historyCopy.link} />}
             />
-            <ChooseIntro initiallyOpen={introSeen === null} art={introArt} daily={standing && !standing.paused ? standing.limit : null} />
+            <ChooseIntro key={introSeen === null ? "open" : "seen"} initiallyOpen={introSeen === null} art={introArt} daily={standing && !standing.paused ? standing.limit : null} />
             <IntakeForm themes={themes} sets={sets} initial={p} standing={standing} />
           </div>
           <aside className="hidden lg:sticky lg:top-[24px] lg:mt-[34px] lg:block lg:w-[320px] lg:shrink-0 min-[1100px]:w-[380px]">

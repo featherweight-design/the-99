@@ -69,7 +69,7 @@ describe("the Help me choose intro", () => {
     const scroll = vi.fn();
     box.scrollIntoView = scroll;
     fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.paid.jump.replace("?", "\\?")) }));
-    expect(scroll).toHaveBeenCalledWith({ block: "center", behavior: "smooth" });
+    expect(scroll).toHaveBeenCalledWith({ block: "center" });
     expect(document.activeElement).toBe(box);
   });
 });

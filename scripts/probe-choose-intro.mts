@@ -1,7 +1,7 @@
 // pnpm probe:choose-intro (run: tsx scripts/probe-choose-intro.mts): the Help me choose intro (handoff
 // `design_handoff_the99_help_me_choose/addendum-intro`), in a real browser against a real database. At 390, 1300,
 // 1180x820 and 820x1180, with the reader's `user_prefs.choose_intro_seen_at` reset to null first:
-//   1. /decks/new/choose draws the intro open, above the form, with its title and both tiles;
+//   1. /commanders/choose draws the intro open, above the form, with its title and both tiles;
 //   2. the paid tile's "Go to Anything else?" moves focus to the form's box;
 //   3. Hide folds it to one line and writes the mark; a reload draws it folded;
 //   4. pressing the folded line opens it again and leaves the mark set;
@@ -90,7 +90,7 @@ async function main() {
       console.log(`\n== ${vp.label}`);
       await reset(viewer);
       await page.setViewportSize({ width: vp.width, height: vp.height });
-      await page.goto(`${BASE}/decks/new/choose`, { waitUntil: "domcontentloaded" });
+      await page.goto(`${BASE}/commanders/choose`, { waitUntil: "domcontentloaded" });
       const open = onPage(page, '[data-choose-intro="open"]').first();
       await open.waitFor({ state: "visible", timeout: 45_000 });
       check(`${vp.label} no mark: the intro draws open`, await open.isVisible());
@@ -116,7 +116,7 @@ async function main() {
       const jbox = await jump.boundingBox();
       check(`${vp.label} the jump is at least 44px tall`, (jbox?.height ?? 0) >= 44, `${jbox?.height}`);
       await jump.click();
-      await page.waitForTimeout(900);
+      await page.waitForTimeout(400);
       const focused = await page.evaluate(() => document.activeElement?.id ?? "");
       check(`${vp.label} the jump focuses Anything else?`, focused === "choose-words", focused);
       const inView = await box.evaluate((el: Element) => {
