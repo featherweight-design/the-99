@@ -1,8 +1,12 @@
 # Finding the tools
 
-Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-24 (R12, every question settled as drawn, Q1 to Q22).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Search follow-ups, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-24 (R13, every question settled, Q1 to Q23).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Search panel, Search follow-ups, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
 
 **Approved (Hugh, 2026-11-23):** every open question settled A; PostHog dashboards to ship with the build (below).
+
+**R13 (Hugh, 2026-11-24, approved; Search panel board):** the shipped panel's title row was as tall as its card fan
+(120px), leaving dead space between a one-line title and the field. On desktop the fan leaves the title row and sits at
+the panel's right edge, centred on the field and starters (Q23 A). The phone is unchanged.
 
 **R12 (Hugh, 2026-11-24, approved; Search follow-ups board):** on the shipped Home search (main cc89ad77).
 - Bigger tool marks: 28px in a 48px tile (phone), 24px in 40px (dropdown) (Q19).
@@ -210,6 +214,9 @@ R12 (Search follow-ups board):
 - Q20 A: a press keeps the search up in its Opening state until the page commits.
 - Q21 A: a deck tool that fits several decks asks which, inside the search.
 - Q22 A: the landing halo only on a busier screen, and on Help me choose's intro panel until the first run.
+
+R13 (Search panel board):
+- Q23 A, desktop only: the fan beside the field and starters; the phone stays as shipped.
 
 Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What you can do), R3 Q7 (Home's field stays for good).
 
