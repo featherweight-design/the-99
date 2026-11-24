@@ -2,11 +2,13 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 afterEach(cleanup);
 
 const read = (key: string, done: boolean, count: string | null = null): ManifestRow => ({
-  kind: "read", key, label: key === "games" ? "Your games" : "This list", count, done,
+  kind: "read", key, label: key === "games" ? deckTuningCopy.manifest.games : deckTuningCopy.manifest.list, count, done,
 });
 
 describe("ManifestRows: a disclosure, never a control (manifest-affordance addendum)", () => {
@@ -54,7 +56,7 @@ describe("ManifestRows: a disclosure, never a control (manifest-affordance adden
     expect(noGames.closest("ul")).toBeNull();
     expect(list.closest("ul")).not.toBeNull();
     expect(noGames.querySelector('[data-mark="none"]')?.textContent).toBe("–");
-    const button = screen.getByRole("button", { name: "Log a game →" });
+    const button = screen.getByRole("button", { name: deckTuningCopy.manifest.logGame });
     expect(button.className).toMatch(/h-\[44px\]/);
     expect(button.className).toMatch(/md:h-\[38px\]/);
     expect(button.className).not.toMatch(/py-\[12px\]/);
@@ -82,7 +84,7 @@ describe("ManifestRows: a disclosure, never a control (manifest-affordance adden
 describe("ManifestRows: the writing row (H35, PR 3)", () => {
   it("draws the writing row pending, then active, with its own pulsing mark", () => {
     const { rerender } = render(
-      <ManifestRows rows={[read("decklist", true), { kind: "writing", label: "Writing your suggestions…", active: false }]} />,
+      <ManifestRows rows={[read("decklist", true), { kind: "writing", label: deckDescriptionCopy.manifest.writing, active: false }]} />,
     );
     const rows = screen.getAllByTestId("manifest-row");
     const writing = rows[rows.length - 1];
@@ -90,7 +92,7 @@ describe("ManifestRows: the writing row (H35, PR 3)", () => {
     expect(writing.dataset.active).toBeUndefined();
     expect(writing.querySelector('[data-mark="pending"]')).not.toBeNull();
     rerender(
-      <ManifestRows rows={[read("decklist", true), { kind: "writing", label: "Writing your suggestions…", active: true }]} />,
+      <ManifestRows rows={[read("decklist", true), { kind: "writing", label: deckDescriptionCopy.manifest.writing, active: true }]} />,
     );
     const active = screen.getAllByTestId("manifest-row").at(-1)!;
     expect(active.dataset.active).toBe("true");
@@ -102,12 +104,12 @@ describe("ManifestRows: the writing row (H35, PR 3)", () => {
 
   it("shows the long-wait line only once it is given one, under the list", () => {
     const { rerender } = render(
-      <ManifestRows rows={[{ kind: "writing", label: "Writing your suggestions…", active: true }]} />,
+      <ManifestRows rows={[{ kind: "writing", label: deckDescriptionCopy.manifest.writing, active: true }]} />,
     );
     expect(screen.queryByText("Taking longer than usual.")).toBeNull();
     rerender(
       <ManifestRows
-        rows={[{ kind: "writing", label: "Writing your suggestions…", active: true }]}
+        rows={[{ kind: "writing", label: deckDescriptionCopy.manifest.writing, active: true }]}
         writingLong="Taking longer than usual."
       />,
     );
@@ -115,17 +117,17 @@ describe("ManifestRows: the writing row (H35, PR 3)", () => {
   });
 
   it("draws the absent description row dashed, like the empty-games row, with its own link", () => {
-    const row: ManifestRow = { kind: "absent", key: "description", label: "Your description", caption: "none yet", actionLabel: "Describe your deck →" };
+    const row: ManifestRow = { kind: "absent", key: "description", label: deckDescriptionCopy.manifest.description, caption: deckDescriptionCopy.description.rowNone, actionLabel: deckDescriptionCopy.description.rowOpen };
     const onDescribe = vi.fn();
     const { rerender } = render(<ManifestRows rows={[row]} />);
     const [withoutLink] = screen.getAllByTestId("manifest-row");
     expect(withoutLink.dataset.kind).toBe("absent");
     expect(withoutLink.style.border).toBe("1px dashed var(--border-dashed)");
     expect(withoutLink.querySelector('[data-mark="none"]')?.textContent).toBe("–");
-    expect(screen.getByText("none yet")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    expect(screen.getByText(deckDescriptionCopy.description.rowNone)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: deckDescriptionCopy.description.rowOpen })).toBeNull();
     rerender(<ManifestRows rows={[row]} onDescribe={onDescribe} />);
-    const button = screen.getByRole("button", { name: "Describe your deck →" });
+    const button = screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen });
     fireEvent.click(button);
     expect(onDescribe).toHaveBeenCalledOnce();
   });

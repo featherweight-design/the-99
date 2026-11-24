@@ -15,6 +15,7 @@ import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { deckBenchmarksCopy } from "../../lib/copy/deck-benchmarks";
 import type { ProfileState } from "./use-deck-profile";
 import { benchmarksWire } from "./__fixtures__/benchmarks";
+import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 
 const copy = deckAnalysisCopy.panel;
 const AT = new Date().toISOString();
@@ -344,7 +345,7 @@ describe("AnalysisPanel", () => {
 
     it("draws once, before the box and the climb, over a reading", () => {
       withOverview(ready());
-      const overview = screen.getAllByText("the overview");
+      const overview = screen.getAllByText(suggestedChangesV2Copy.intake.readsOverview);
       expect(overview).toHaveLength(1);
       const box = screen.getByTestId("verdict-name");
       const climb = screen.getAllByTestId("climb-rung")[0];
@@ -354,7 +355,7 @@ describe("AnalysisPanel", () => {
 
     it("heads the left column at 1300, with the climb under it and the box spanning both", () => {
       withOverview(ready());
-      const cell = screen.getByText("the overview").parentElement!;
+      const cell = screen.getByText(suggestedChangesV2Copy.intake.readsOverview).parentElement!;
       expect(cell.className).toMatch(/md:col-start-1/);
       expect(cell.className).toMatch(/md:row-start-1/);
       const grid = cell.parentElement!;
@@ -376,7 +377,7 @@ describe("AnalysisPanel", () => {
 
     it("is absent before a first reading", () => {
       withOverview({ kind: "idle" });
-      expect(screen.queryByText("the overview")).toBeNull();
+      expect(screen.queryByText(suggestedChangesV2Copy.intake.readsOverview)).toBeNull();
     });
   });
   // The credit note beside a press that also writes the overview (CREDITS-overview.md 7a to 7e).
@@ -397,10 +398,10 @@ describe("AnalysisPanel", () => {
     it("opens a grade's ledger from its opener, and closes it", () => {
       draw({ kind: "ready", ...reading(), benchmarks: benchmarksWire() });
       expect(screen.queryByRole("dialog")).toBeNull();
-      fireEvent.click(screen.getByRole("button", { name: deckBenchmarksCopy.openAria("Card flow", "High") }));
-      const ledger = screen.getByRole("dialog", { name: "Card flow" });
+      fireEvent.click(screen.getByRole("button", { name: deckBenchmarksCopy.openAria(deckBenchmarksCopy.names.flow, "High") }));
+      const ledger = screen.getByRole("dialog", { name: deckBenchmarksCopy.names.flow });
       expect(within(ledger).getByText("Rhystic Study")).toBeInTheDocument();
-      fireEvent.click(within(ledger).getByRole("button", { name: deckBenchmarksCopy.ledger.closeAria("Card flow") }));
+      fireEvent.click(within(ledger).getByRole("button", { name: deckBenchmarksCopy.ledger.closeAria(deckBenchmarksCopy.names.flow) }));
       expect(screen.queryByRole("dialog")).toBeNull();
     });
 

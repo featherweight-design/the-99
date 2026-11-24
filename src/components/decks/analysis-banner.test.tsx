@@ -5,13 +5,14 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AnalysisBanner } from "./analysis-banner";
+import { deckNoticesCopy } from "../../lib/copy/notices";
 
-const NOTE = "Reads the bracket only. The overview waits until every card is legal in this deck.";
+const NOTE = deckNoticesCopy.check.note;
 
 describe("AnalysisBanner's check note", () => {
   it("describes the press by the note's text alone, and See which opens Notices", () => {
     const onSee = vi.fn();
-    render(<AnalysisBanner mode="stale" busy={false} blocked={null} onRequest={() => {}} note={NOTE} see={{ label: "See which", onPress: onSee }} />);
+    render(<AnalysisBanner mode="stale" busy={false} blocked={null} onRequest={() => {}} note={NOTE} see={{ label: deckNoticesCopy.check.seeWhich, onPress: onSee }} />);
     const press = screen.getByRole("button", { name: "Re-analyze" });
     const id = press.getAttribute("aria-describedby");
     expect(id).toBeTruthy();
@@ -21,7 +22,7 @@ describe("AnalysisBanner's check note", () => {
   });
 
   it("draws no note and no See which over a blocked press (F13)", () => {
-    render(<AnalysisBanner mode="stale" busy={false} onRequest={() => {}} blocked="Add 3 cards to analyze this deck." note={NOTE} see={{ label: "See which", onPress: () => {} }} />);
+    render(<AnalysisBanner mode="stale" busy={false} onRequest={() => {}} blocked="Add 3 cards to analyze this deck." note={NOTE} see={{ label: deckNoticesCopy.check.seeWhich, onPress: () => {} }} />);
     expect(screen.queryByTestId("press-note")).toBeNull();
     expect(screen.queryByRole("button", { name: /See which/ })).toBeNull();
   });

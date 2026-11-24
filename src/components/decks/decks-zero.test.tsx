@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { DecksZero, DecksZeroActions } from "./decks-zero";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 describe("DecksZeroActions", () => {
   it("draws the buildable line only when there is a figure", () => {
@@ -12,8 +14,8 @@ describe("DecksZeroActions", () => {
 
   it("is what /decks' zero state renders, so the two surfaces cannot drift", () => {
     render(<DecksZero buildable={230} cards={3250} />);
-    expect(screen.getByRole("link", { name: "Browse commanders" })).toHaveAttribute("href", "/commanders");
-    expect(screen.getByRole("link", { name: "Import a deck" })).toHaveAttribute("href", "/decks/import");
+    expect(screen.getByRole("link", { name: refreshCopy.zero.browseCommanders })).toHaveAttribute("href", "/commanders");
+    expect(screen.getByRole("link", { name: refreshCopy.decks.importLong })).toHaveAttribute("href", "/decks/import");
     // Draws whatever figure it is handed. That /decks hands it the TRUE count rather than
     // the retired cap of nine is a fact about the page's loader, proved by probe:onboarding.
     expect(screen.getByText("230 commanders buildable from 3,250 cards")).toBeInTheDocument();
@@ -24,18 +26,18 @@ describe("DecksZeroActions", () => {
     render(<DecksZeroActions buildable={230} cards={3250} />);
     const line = screen.getByTestId("decks-zero-choose");
     expect(line).toHaveTextContent("Not sure what to build? Help me choose →");
-    expect(screen.getByRole("link", { name: "Help me choose →" })).toHaveAttribute("href", "/decks/new/choose");
+    expect(screen.getByRole("link", { name: helpMeChooseCopy.door.cta })).toHaveAttribute("href", "/decks/new/choose");
     // Under the buttons and the buildable line, never between them.
     const buildable = screen.getByText("230 commanders buildable from 3,250 cards");
     expect(buildable.compareDocumentPosition(line) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     // A quiet line, never a button: the press itself carries the 32px hit on a phone, and not on desktop.
     expect(line.className).toContain("text-[color:var(--fg-muted)]");
-    const press = screen.getByRole("link", { name: "Help me choose →" });
+    const press = screen.getByRole("link", { name: helpMeChooseCopy.door.cta });
     expect(press.className.split(/\s+/)).toEqual(expect.arrayContaining(["inline-flex", "min-h-[32px]", "sm:inline", "sm:min-h-0"]));
   });
 
   it("draws the door in /decks' zero state too", () => {
     render(<DecksZero buildable={230} cards={3250} />);
-    expect(screen.getByRole("link", { name: "Help me choose →" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: helpMeChooseCopy.door.cta })).toBeInTheDocument();
   });
 });

@@ -33,6 +33,7 @@ const { CartView } = await import("./cart-view");
 import { allDecksCartCopy as copy } from "../../../lib/copy/all-decks-cart";
 import { chassisCopy } from "../../../lib/copy/filter-chassis";
 import type { CartPayload } from "../../../lib/decks/cart";
+import { collectionChassisCopy } from "../../../lib/copy/collection";
 
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
@@ -94,7 +95,7 @@ describe("the cart's chassis (v2 PR 8)", () => {
     expect(container.querySelector("[data-chassis-form='compact']")).toBeTruthy();
     expect(search()).toBeTruthy();
     expect(screen.getByRole("button", { name: copy.sort.trigger(copy.sort.byCard.decks) })).toBeTruthy();
-    expect(screen.getByText("No filters on")).toBeTruthy();
+    expect(screen.getByText(chassisCopy.chips.none)).toBeTruthy();
     expect(resultLine(container)).toBe(copy.result.byCardNoSpare(4));
     // The old heading's words are gone.
     expect(screen.queryByText(/commanders first, then most decks/)).toBeNull();
@@ -114,7 +115,7 @@ describe("the cart's chassis (v2 PR 8)", () => {
     // By deck's sentence says how many cards the search left, as By card's does.
     expect(resultLine(container)).toBe(copy.result.filtered(1, 4));
     // Clear all drops it, and the address with it.
-    fireEvent.click(screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." }));
+    fireEvent.click(screen.getByRole("button", { name: chassisCopy.chips.clearAllAria }));
     expect(live()).toBe("?view=deck");
     expect(screen.getAllByRole("region", { name: /HD - / })).toHaveLength(3);
   });
@@ -192,7 +193,7 @@ describe("the cart's chassis (v2 PR 8)", () => {
 
   it("draws Filters as the shared 44px box, with no hit overlay (Small items 4 item 1)", () => {
     render(<CartView cart={cart()} provenance={provenance} />);
-    const trigger = screen.getByRole("button", { name: "Filter cards" });
+    const trigger = screen.getByRole("button", { name: collectionChassisCopy.sheet.title });
     expect(trigger.className).toContain("h-[44px]");
     expect(trigger.className).toContain("rounded-[10px]");
     expect(trigger.className).toContain("bg-[color:var(--surface-sunken)]");
@@ -221,13 +222,13 @@ describe("the cart's chassis (v2 PR 8)", () => {
     });
     const resize = (to: boolean) => { wide = to; act(() => { listeners.forEach((l) => l()); }); };
     render(<CartView cart={cart()} provenance={provenance} />);
-    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }));
     expect(screen.getByRole("dialog", { name: "Filters" })).toBeTruthy();
     resize(true);
     resize(false);
     // Back below 1000px the sheet is shut: no dialog, and the trigger says so.
     expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Filter cards" }).getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }).getAttribute("aria-expanded")).toBe("false");
   });
 
   it("draws the desktop sort as the labelled menu past the hairline", () => {
@@ -247,7 +248,7 @@ function ownedCart(): CartPayload {
   const c = cart();
   return { ...c, lines: c.lines.map((l) => (l.oracleId === "sol" || l.oracleId === "mox" ? { ...l, owned: 1, heldElsewhere: 1 } : l)) };
 }
-const filtersPill = (on = 0) => screen.getByRole("button", { name: on === 0 ? "Filter cards" : `Filter cards, ${on} on` });
+const filtersPill = (on = 0) => screen.getByRole("button", { name: on === 0 ? collectionChassisCopy.sheet.title : `Filter cards, ${on} on` });
 const deckRegions = () => screen.getAllByRole("region", { name: /HD - / }).map((r) => r.textContent?.match(/HD - [A-Za-z]+/)?.[0]);
 
 describe("the cart's Owned filter (v2 PR 9)", () => {

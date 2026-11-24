@@ -8,6 +8,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { ProvenanceOpener } from "./provenance-panel";
+import { howItWorksCopy } from "../../lib/copy/about";
 
 const copy = deckAnalysisCopy;
 
@@ -41,7 +42,7 @@ describe("How we make these decisions", () => {
   it("draws five rows, and a misses line on every one but game changers", () => {
     draw();
     // Each term is its row's name, then its method tags.
-    const names = ["Game changers", "Mass land denial", "Extra turns", "Two-card infinites", "Tutors"];
+    const names = [deckAnalysisCopy.climb.ruleNames.gameChangers, deckAnalysisCopy.climb.ruleNames.massLandDenial, deckAnalysisCopy.climb.ruleNames.extraTurns, deckAnalysisCopy.climb.ruleNames.twoCardCombos, "Tutors"];
     const terms = screen.getAllByRole("term");
     expect(terms).toHaveLength(names.length);
     terms.forEach((t, i) => expect(t.textContent!.startsWith(names[i]), names[i]).toBe(true));
@@ -71,7 +72,7 @@ describe("How we make these decisions", () => {
       [...t.querySelectorAll("[data-method]")].map((el) => el.getAttribute("data-method")),
     );
     expect(tags).toEqual([["list"], ["rules", "decks"], ["rules", "decks"], ["decks"], ["rules"]]);
-    expect(screen.getAllByRole("term")[0].textContent).toContain("published list");
+    expect(screen.getAllByRole("term")[0].textContent).toContain(howItWorksCopy.methods.list.tag);
   });
 
   // Brief §5.1: the count reads Scryfall's copy of Wizards' list, and the sentence says so.

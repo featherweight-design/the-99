@@ -19,6 +19,7 @@ vi.mock("../../app/moments-actions", () => ({ spendMomentAction: async () => {} 
 
 import { DecksView } from "./decks-view";
 import type { DeckListItem } from "../../lib/decks/read";
+import { decksStatsCopy } from "../../lib/copy/decks-stats";
 
 const NOW = "2026-10-11T12:00:00.000Z";
 const DECK = {
@@ -43,13 +44,13 @@ describe("DecksView: Stats on /decks", () => {
   it("draws no switch and no Stats with the switch off, whatever the URL says (P0)", () => {
     window.history.replaceState(null, "", "/decks?view=stats");
     draw(null);
-    expect(screen.queryByRole("tablist", { name: "Show decks as" })).toBeNull();
+    expect(screen.queryByRole("tablist", { name: decksStatsCopy.view.aria })).toBeNull();
     expect(document.querySelector("[data-decks-stats]")).toBeNull();
   });
 
   it("draws Decks · Stats with Decks selected beside the shelves (P1)", () => {
     draw({ data: null, view: "tiles", foldServer: null });
-    const tabs = screen.getByRole("tablist", { name: "Show decks as" });
+    const tabs = screen.getByRole("tablist", { name: decksStatsCopy.view.aria });
     expect(screen.getByRole("tab", { name: "Decks" }).getAttribute("aria-selected")).toBe("true");
     expect(tabs).toBeTruthy();
     expect(document.querySelector("[data-decks-stats]")).toBeNull();
@@ -85,7 +86,7 @@ describe("DecksView: Stats on /decks", () => {
     });
     render(<DecksView decks={[DECK, second]} folders={[]} shopping={SHOPPING} buildable={0} cards={0} now={NOW} lineup={{ data: null, view: "tiles", foldServer: null }} />);
     fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
-    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    fireEvent.click(screen.getByRole("button", { name: decksStatsCopy.menu.among }));
     await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
     const among = document.querySelector('[data-stats-card="among"]') as HTMLElement;
     expect((among.querySelector("select") as HTMLSelectElement).value).toBe("d1");
@@ -97,7 +98,7 @@ describe("DecksView: Stats on /decks", () => {
     read.stats.mockResolvedValue(STATS);
     draw({ data: null, view: "tiles", foldServer: null });
     fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
-    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    fireEvent.click(screen.getByRole("button", { name: decksStatsCopy.menu.among }));
     await waitFor(() => expect(document.querySelector("[data-decks-stats]")).not.toBeNull());
     expect(document.querySelector('[data-stats-card="among"]')).toBeNull();
     expect(localStorage.getItem("the99:decks:stats:open") ?? "").not.toContain("among");
@@ -109,7 +110,7 @@ describe("DecksView: Stats on /decks", () => {
     draw({ data: null, view: "tiles", foldServer: null });
     const trigger = screen.getByRole("button", { name: /HD - Gishath/, expanded: false });
     fireEvent.click(trigger);
-    fireEvent.click(screen.getByRole("button", { name: "See it among your decks" }));
+    fireEvent.click(screen.getByRole("button", { name: decksStatsCopy.menu.among }));
     await waitFor(() => expect(read.stats).toHaveBeenCalled());
     await Promise.resolve();
     expect(document.querySelector("[data-decks-stats]")).toBeNull();
@@ -119,7 +120,7 @@ describe("DecksView: Stats on /decks", () => {
   it("draws no Stats row in a tile's menu with the switch off", () => {
     draw(null);
     fireEvent.click(screen.getByRole("button", { name: /HD - Gishath/, expanded: false }));
-    expect(screen.queryByRole("button", { name: "See it among your decks" })).toBeNull();
+    expect(screen.queryByRole("button", { name: decksStatsCopy.menu.among })).toBeNull();
   });
 
   it("remembers nothing when the first read fails either", async () => {

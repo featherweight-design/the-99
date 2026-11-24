@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { manaCurve, typeCurve } from "../../lib/decks/stats";
 import type { MoneyStats } from "../../lib/decks/stats-money";
 import { DeckStatsView } from "./deck-stats-view";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 
 const money = (over: Partial<MoneyStats> = {}): MoneyStats => ({
   total: 100,
@@ -91,8 +92,8 @@ describe("DeckStatsView money card", () => {
   it("says Nothing when everything is owned, and drops the To buy legend and the link", () => {
     draw(money({ toBuy: { copies: 0, cents: 0, pricedCopies: 0 }, owned: { copies: 88, cents: 48645, pricedCopies: 88 } }), vi.fn());
     expect(card()).toHaveTextContent("Nothing");
-    expect(card()).toHaveTextContent("every copy is in your collection");
-    expect(within(card()).queryByText("To buy")).toBeNull();
+    expect(card()).toHaveTextContent(deckStatsCopy.money.toBuyNoneSub);
+    expect(within(card()).queryByText(deckStatsCopy.money.legend.toBuy)).toBeNull();
     expect(within(card()).queryByRole("button")).toBeNull();
     expect(card()).not.toHaveTextContent("$0.00");
   });
@@ -111,7 +112,7 @@ describe("DeckStatsView money card", () => {
     expect(card()).toHaveTextContent("8 of 9 copies priced");
     expect(card()).toHaveTextContent("1 copy");
     expect(card()).toHaveTextContent("no price from Mana Pool for this one");
-    expect(card()).toHaveTextContent("no price");
+    expect(card()).toHaveTextContent(deckStatsCopy.money.noPrice);
     expect(card()).not.toHaveTextContent("$0.00");
   });
 
@@ -134,6 +135,6 @@ describe("DeckStatsView money card", () => {
   it("reads an empty owned group as a count, not as a missing price", () => {
     draw(money({ owned: { copies: 0, cents: 0, pricedCopies: 0 }, value: { cents: 7415, pricedCopies: 12, copies: 12 } }));
     expect(card().querySelector('[data-money-figure="OWNED"]')).toHaveTextContent("0 copies");
-    expect(card().querySelector('[data-money-figure="OWNED"]')).not.toHaveTextContent("no price");
+    expect(card().querySelector('[data-money-figure="OWNED"]')).not.toHaveTextContent(deckStatsCopy.money.noPrice);
   });
 });

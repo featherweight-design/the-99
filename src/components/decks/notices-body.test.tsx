@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckNotices } from "../../lib/notices/read";
+import { deckNoticesCopy } from "../../lib/copy/notices";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -56,9 +57,9 @@ describe("the Notices body", () => {
     const { container } = draw({ kind: "none" });
     expect([...container.querySelectorAll("[data-notice-group]")].map((g) => g.getAttribute("data-notice-group")))
       .toEqual(["notLegal", "outsideColors", "gameChangers", "twoCardCombos", "rules"]);
-    expect(screen.getByText("Not legal in Commander")).toBeTruthy();
-    expect(screen.getByText("Not legal in Commander.")).toBeTruthy();
-    expect(screen.getByText("Bracket rules")).toBeTruthy();
+    expect(screen.getByText(deckNoticesCopy.sheet.groups.notLegal)).toBeTruthy();
+    expect(screen.getByText(deckNoticesCopy.sheet.legal.notLegal)).toBeTruthy();
+    expect(screen.getByText(deckNoticesCopy.sheet.groups.rules)).toBeTruthy();
     expect(screen.getAllByText("Sep 21")).toHaveLength(3);
   });
 
@@ -79,7 +80,7 @@ describe("the Notices body", () => {
 
   it("carries the legality foot line when a legality group stands", () => {
     draw({ kind: "none" });
-    expect(screen.getByText("These stay until the cards leave the deck. Reading them does not clear them.")).toBeTruthy();
+    expect(screen.getByText(deckNoticesCopy.sheet.legal.foot)).toBeTruthy();
   });
 
   it("offers Re-analyze when not dirty, and presses it", () => {
@@ -105,7 +106,7 @@ describe("the Notices body", () => {
   });
 
   it("carries the overview check's note on the foot while a legality entry stands, without See which", () => {
-    const note = "Reads the bracket only. The overview waits until every card is legal in this deck.";
+    const note = deckNoticesCopy.check.note;
     const { container } = draw({ kind: "reanalyze", busy: false, failed: null, note, onPress: () => {} });
     const foot = container.querySelector<HTMLElement>("[data-notices-foot='reanalyze']")!;
     const press = within(foot).getByRole("button", { name: "Re-analyze" });
