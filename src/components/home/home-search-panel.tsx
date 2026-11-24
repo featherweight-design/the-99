@@ -111,7 +111,6 @@ export function HomeSearchPanel({ userId, foot }: { userId: string; foot?: React
           <h2 id="home-search-title" className="font-display text-[19px] leading-tight text-[color:var(--fg)] md:text-[21px]">
             {homeSearchCopy.title}
           </h2>
-          <p className="mt-1 text-[13.5px] text-[color:var(--fg-muted)]">{homeSearchCopy.line}</p>
         </div>
         {art.length > 0 ? <Fan art={art} /> : null}
       </div>

@@ -98,7 +98,7 @@ async function run(browser, name, { width, height, touch }) {
       await page.waitForTimeout(500);
       const h1 = await height();
       check(name, "the shelf grows for the panel", h1 > h0, `sheet ${h0} -> ${h1}`);
-      check(name, "the field has focus", await panel.getByRole("searchbox").or(panel.getByRole("textbox")).first().evaluate((el) => el === document.activeElement).catch(() => false), "search field focused");
+      check(name, "focus is not in the set field", await panel.getByRole("searchbox").or(panel.getByRole("textbox")).first().evaluate((el) => el !== document.activeElement).catch(() => false), "search field focused");
       await shot("panel");
       await panel.getByRole("button", { name: /^Close/ }).click();
       await panel.waitFor({ state: "detached", timeout: 3_000 }).catch(() => {});
@@ -184,8 +184,8 @@ async function run(browser, name, { width, height, touch }) {
         const open = await panel.waitFor({ timeout: 5_000 }).then(() => true, () => false);
         check(name, "pressing the tile opens the panel", open, open ? "panel visible" : "no panel");
         if (open) {
-          const focusOk = await page.evaluate(() => document.activeElement?.getAttribute("placeholder")?.startsWith("Search ") === true);
-          check(name, "focus moves to the search field", focusOk, "placeholder-focused");
+          const focusOk = await page.evaluate(() => document.activeElement?.getAttribute("placeholder")?.startsWith("Search ") !== true);
+          check(name, "focus stays off the search field", focusOk, "not placeholder-focused");
           const box = await panel.boundingBox();
           const sBox = await strip().boundingBox();
           check(name, "the panel sits under the strip", !!box && !!sBox && box.y >= sBox.y + sBox.height - 2, `panel y ${Math.round(box?.y ?? -1)}, strip bottom ${Math.round((sBox?.y ?? 0) + (sBox?.height ?? 0))}`);

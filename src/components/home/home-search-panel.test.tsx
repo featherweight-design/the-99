@@ -39,8 +39,7 @@ afterEach(() => {
 describe("Home's search panel", () => {
   it("draws the title, the line and the field", () => {
     mount();
-    expect(screen.getByRole("heading", { name: "Not sure where to go?" })).toBeTruthy();
-    expect(screen.getByText("Ask a question, or look up any card.")).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "What do you want to do?" })).toBeTruthy();
     expect(field().getAttribute("placeholder")).toBe("Search cards, or ask a question");
   });
 

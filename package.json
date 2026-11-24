@@ -134,6 +134,7 @@
     "probe:card-search-ui": "node scripts/probe-card-search-ui.mjs",
     "probe:card-search-followups": "node scripts/probe-card-search-followups.mjs",
     "probe:ask": "node scripts/probe-ask.mjs",
+    "probe:search-fixes": "node scripts/probe-search-fixes.mjs",
     "probe:home-search": "node scripts/probe-home-search.mjs",
     "probe:collection-sort-memory": "node scripts/probe-collection-sort-memory.mjs",
     "probe:card-scan-match": "tsx scripts/probe-card-scan-match.mts",

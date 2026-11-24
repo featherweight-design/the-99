@@ -101,11 +101,11 @@ export const showcaseCopy = {
     'mana-balance': { name: 'Mana Balance', line: 'Counts every source of each color against what your spells ask for.', none: NEEDS_A_FULL_DECK },
     'stand-ins': { name: 'Cheaper stand-ins', line: 'For a card over your price limit: cards that do the same job for less.', none: 'Needs a card over a deck’s price limit. None of yours has one.' },
     'friend-spares': { name: 'Friends’ spares', line: 'A friend’s spare copy of a card your deck still needs, before you buy one.', none: 'Needs a friend with a spare of a card you’re missing. No one has one right now.', door: 'Open Friends →' },
-    'find-a-deck': { name: 'Find a deck', line: 'Reads your decks for the one a card you own fits best.', press: 'Try it on a card you own', none: NEEDS_A_DECK },
+    'find-a-deck': { name: 'Find a deck', line: 'Reads your decks for the one a card you own fits best.', press: 'Try it on a card', none: NEEDS_A_DECK },
     wishlist: { name: 'Wishlist', line: 'Cards you want that no deck is asking for. A card leaves once you have enough.', press: 'Open your wishlist' },
     'collection-sync': { name: 'Collection Sync', line: 'Merges a new file with what you changed here, card by card, and asks only where both moved.', press: 'Upload a file' },
     matchups: { name: 'Matchups', line: 'Splits a deck’s games by the commander, colors or friend across the table.', none: 'Needs a game logged with who you played against.' },
-    lineup: { name: 'Stats for your decks', line: 'Every deck side by side: when each last played, and how it went.', press: 'See your decks on Stats', none: NEEDS_A_DECK },
+    lineup: { name: 'Stats for your decks', line: 'Every deck side by side: when each last played, and how it went.', press: 'Open Stats', none: NEEDS_A_DECK },
     friends: { name: 'Friends and pods', line: 'Add the people you play with, then seat them when you log a game.', press: 'Open Friends' },
   } satisfies Record<string, ToolCopy>,
 } as const;

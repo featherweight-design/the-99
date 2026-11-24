@@ -62,11 +62,14 @@ export function PrintingsPanel({
   const q = query.trim();
   const { hits, groups } = useMemo(() => panelGroups(printings, query), [printings, query]);
 
-  // Focus lands on the search field on open; the owner returns it to the control that opened the panel on close.
-  useEffect(() => { field.current?.focus(); }, []);
+  // Focus lands on the panel itself, never the set field: the printings show first, and a focused field would raise the
+  // phone's keyboard over them. The reader taps the field to narrow. The owner returns focus to the control that opened
+  // the panel on close.
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => { root.current?.focus({ preventScroll: true }); }, []);
 
   return (
-    <div role="group" aria-label={printingStripCopy.panelLabel(cardName)} data-testid="printings-panel" className="flex h-full max-h-full min-h-0 flex-col">
+    <div ref={root} tabIndex={-1} role="group" aria-label={printingStripCopy.panelLabel(cardName)} data-testid="printings-panel" className="flex h-full max-h-full min-h-0 flex-col outline-none">
       <div className="flex flex-none items-center gap-[6px] pl-[16px] pr-[6px] md:pl-[18px]">
         <SearchField
           ref={field}
