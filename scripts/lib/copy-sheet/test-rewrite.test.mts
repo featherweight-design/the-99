@@ -101,7 +101,7 @@ describe("rewriteTests", () => {
   it("does nothing when no test holds the old words", () => {
     const root = tree({ "src/lib/copy/x.ts": COPY, "src/a.test.ts": `a("Something else entirely");\n` });
     const r = rewriteTests([SAVE], root);
-    expect(r).toEqual({ files: new Map(), rewritten: [], hand: [] });
+    expect(r).toEqual({ files: new Map(), rewritten: [], hand: [], soft: [] });
     expect(testsSection(r).join("\n")).toContain("No test holds");
   });
 });
