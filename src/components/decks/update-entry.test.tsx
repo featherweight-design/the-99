@@ -130,6 +130,8 @@ describe("the list step", () => {
     renderEntry();
     expect(screen.getByRole("tab", { name: deckImportCopy.entry.modePaste })).toBeInTheDocument();
     expect(screen.getByRole("tab", { name: deckImportCopy.entry.modeFile })).toBeInTheDocument();
+    // The switch spans a phone's width (Hugh, 2026-11-24).
+    expect(screen.getByRole("tablist").className).toContain("w-full");
     expect(screen.queryByRole("button", { name: /link/i })).not.toBeInTheDocument();
   });
 });

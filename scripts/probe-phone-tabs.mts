@@ -2,7 +2,7 @@
 // phone's width with equal tabs (Hugh, 2026-11-24), in a real browser. At 390, for every row it can reach:
 //   1. the row spans its container's content box (its first child starts at the content's left edge and its last
 //      child ends at the right one, within 1px);
-//   2. its tabs are one width (within 1px), a trailing control (Collection's `Add +`) excepted;
+//   2. its tabs are one width (within 1px); a trailing control (Collection's `Add +`) is not a tab, so only the span counts it;
 //   3. no horizontal page overflow.
 // At 1300 it checks only that the page does not overflow (desktop is unchanged). Read-only: it signs in and loads
 // pages, nothing more. Fails on main, where the tabs keep their content widths.
@@ -44,12 +44,12 @@ async function signIn(page: Page): Promise<void> {
   if (failure) throw new Error(`Clerk sign-in failed: ${failure}`);
 }
 
-type Row = { label: string; path: () => Promise<string | null>; tab: string; trailing?: string };
+type Row = { label: string; path: () => Promise<string | null>; tab: string };
 
 /** Measures the row holding the tabs `tab` matches: its span against its container, and the tabs' widths. */
-async function measure(page: Page, tab: string, trailing?: string) {
+async function measure(page: Page, tab: string) {
   return page.evaluate(
-    ({ tab, trailing }) => {
+    (tab) => {
       const tabs = [...document.querySelectorAll<HTMLElement>(tab)].filter((t) => t.offsetParent !== null);
       if (tabs.length < 2) return null;
       const row = tabs[0].parentElement!;
@@ -63,16 +63,11 @@ async function measure(page: Page, tab: string, trailing?: string) {
       const rcs = getComputedStyle(row);
       const first = kids[0].getBoundingClientRect().left - parseFloat(rcs.paddingLeft) - parseFloat(rcs.borderLeftWidth);
       const last = kids[kids.length - 1].getBoundingClientRect().right + parseFloat(rcs.paddingRight) + parseFloat(rcs.borderRightWidth);
-      const widths = tabs.filter((t) => !(trailing && t.matches(trailing))).map((t) => Math.round(t.getBoundingClientRect().width * 10) / 10);
+      const widths = tabs.map((t) => Math.round(t.getBoundingClientRect().width * 10) / 10);
       return { left, right, rowLeft: r.left, rowRight: r.right, first, last, widths };
     },
-    { tab, trailing },
+    tab,
   );
-}
-
-async function firstHref(page: Page, path: string, selector: string): Promise<string | null> {
-  await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
-  return page.locator(selector).first().getAttribute("href", { timeout: 5_000 }).catch(() => null);
 }
 
 async function main() {
@@ -83,7 +78,7 @@ async function main() {
     await clerkSetup();
     await signIn(page);
     const rows: Row[] = [
-      { label: "Collection place strip", path: async () => "/collection", tab: "nav[aria-label] > [data-testid^='collection-tab-']", trailing: "[data-testid='collection-add-phone']" },
+      { label: "Collection place strip", path: async () => "/collection", tab: "nav[aria-label] > [data-testid^='collection-tab-']" },
       { label: "Commanders place strip", path: async () => "/commanders", tab: "nav[aria-label] > [data-testid^='commanders-tab-']" },
       { label: "Import mode switch", path: async () => "/decks/import", tab: "[role='tablist'] > [role='tab']" },
       {
@@ -99,7 +94,12 @@ async function main() {
       { label: "Shopping view switch", path: async () => "/decks/shopping", tab: "[role='radiogroup'] > [id^='cart-view-']" },
       {
         label: "Friend place strip",
-        path: async () => firstHref(page, "/friends", "a[href^='/friends/']:not([href='/friends/'])"),
+        path: async () => {
+          await page.goto(`${BASE}/friends`, { waitUntil: "networkidle" });
+          // The row link of a friend: `/friends/<publicId>` exactly, never a sub-route such as `/friends/<publicId>/wishlist`.
+          const hrefs = await page.locator("[data-friend-row] a[href^='/friends/']").evaluateAll((as) => as.map((a) => a.getAttribute("href") ?? ""));
+          return hrefs.find((h) => /^\/friends\/[^/]+$/.test(h)) ?? null;
+        },
         tab: "nav[aria-label] > [data-testid^='friend-tab-']",
       },
     ];
@@ -111,7 +111,7 @@ async function main() {
         continue;
       }
       await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
-      const m = await measure(page, row.tab, row.trailing);
+      const m = await measure(page, row.tab);
       if (!m) {
         console.log(`SKIP ${row.label}: fewer than two tabs drawn at ${path}`);
         continue;

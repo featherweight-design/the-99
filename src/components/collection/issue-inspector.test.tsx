@@ -54,6 +54,13 @@ describe("IssueInspector — phone", () => {
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
+  it("lets the two tabs share the row on a phone (Hugh, 2026-11-24)", () => {
+    stubViewport(390);
+    render(<IssueInspector preview={preview(5, 2)} initialTab="unmatched" onClose={vi.fn()} />);
+    for (const tab of screen.getAllByRole("tab")) expect(tab.className).toContain("max-md:basis-0");
+    expect(screen.getByRole("tablist").className).toContain("max-md:gap-0");
+  });
+
   it("never moves the sheet from the tabs, the filter or the list", () => {
     stubViewport(390);
     const onClose = vi.fn();

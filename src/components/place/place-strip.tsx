@@ -53,7 +53,7 @@ export function PlaceStrip({
    * itself, so a strip too narrow for them still scrolls.
    */
   fill?: boolean;
-  /** The trailing control beside the tabs (Collection's `+ Add` / Replace); inside the strip's scroll row. */
+  /** The trailing control beside the tabs (Collection's `Add +` / Replace); inside the strip's scroll row. */
   children?: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -66,7 +66,7 @@ export function PlaceStrip({
     if (pending !== null) setPending(null);
   }
   const effective = pending ?? current;
-  // Five tabs and a labelled trailing control outgrow a 390px phone, so beside five the tabs close up.
+  // Beside five tabs and a labelled trailing control a 390px phone is tight, so five tabs take less padding.
   const compact = tabs.length >= 5;
   return (
     <nav

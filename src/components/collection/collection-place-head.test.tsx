@@ -335,6 +335,7 @@ describe("CollectionPlaceHead \u00b7 Add cards (collection editing)", () => {
     expect(add).toHaveAccessibleName("Add cards");
     expect(add.className).not.toContain("basis-0");
     for (const tab of within(strip()).getAllByRole("link")) expect(tab.className).toContain("max-md:basis-0");
+    expect(within(strip()).getByTestId("collection-tab-cards").className).toContain(wishlist ? "px-[7px]" : "px-[11px]");
   });
 
   it("switch on, empty collection: no Add in the head (the doors live in the empty state)", () => {

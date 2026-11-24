@@ -84,6 +84,8 @@ describe("state 1 — entry", () => {
     expect(screen.getByRole("tab", { name: /Paste a list/ })).toBeTruthy();
     expect(screen.getByRole("tab", { name: /Upload a file/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Moxfield link/ })).toBeNull();
+    // The switch spans a phone's width (Hugh, 2026-11-24).
+    expect(screen.getByRole("tablist").className).toContain("w-full");
     expect(pasteBox()).toBeTruthy();
     expect(nameBox()).toBeTruthy();
   });

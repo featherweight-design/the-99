@@ -119,6 +119,8 @@ describe("a friend's page group", () => {
     expect(html).toMatch(/data-testid="friend-tab-wishlist-count"[^>]*>1</);
     expect(html).toMatch(/data-testid="friend-tab-decks-count"[^>]*>1</);
     expect(html).toContain("<p>tab</p>");
+    // On a phone the strip's tabs share its width (Hugh, 2026-11-24).
+    expect(html.match(/<a[^>]*data-testid="friend-tab-decks"[^>]*>/)?.[0]).toContain("max-md:basis-0");
     // The layout and the tab make the same call, so they share one cached read.
     expect(m.loadFriendDecks).toHaveBeenCalledWith("user_viewer", COLIN.publicId);
   });
