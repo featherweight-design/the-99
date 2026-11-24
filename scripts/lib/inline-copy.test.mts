@@ -20,6 +20,10 @@ describe("findInline", () => {
     const src = `toast.error("Could not save");\nsetError("Try again");\nexport const r = { error: "Pick a commander first" };`;
     expect(kinds(src, "a.ts")).toEqual(["1:toast.error():Could not save", "2:setError():Try again", "3:error:Pick a commander first"]);
   });
+  it("reads a toast with any words and a wording setter only with two, never a state code", () => {
+    const src = `toast("Saved");\nsetError("unknown");\nsetNotice("failed");\nsetAnnounce("Deck saved");\nalert("Are you sure");\nsetView("deck");`;
+    expect(kinds(src, "a.ts")).toEqual(["1:toast():Saved", "4:setAnnounce():Deck saved", "5:alert():Are you sure"]);
+  });
   it("flags a result's message beside ok, but not a bare message", () => {
     const src = `const a = { ok: false, message: "We couldn’t find that deck." };\nconst b = { message: "Plain data here" };`;
     expect(kinds(src, "a.ts")).toEqual(["1:message:We couldn’t find that deck."]);

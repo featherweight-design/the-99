@@ -7,8 +7,10 @@ export type Inline = { line: number; kind: string; text: string };
 
 // Attributes whose value a reader sees or hears.
 const TEXT_ATTRS = new Set(["aria-label", "aria-description", "aria-roledescription", "aria-placeholder", "placeholder", "title", "alt", "label", "tooltip", "description", "heading"]);
-// Calls whose first argument is shown to the reader.
-const SHOWN_CALLS = new Set(["toast", "toast.error", "toast.success", "toast.info", "toast.warning", "setError"]);
+// Calls whose first argument is shown to the reader. A toast takes any words; a state setter takes a code as often as a
+// sentence (`setError("unknown")`), so those count only with two words. Every other call is out of scope.
+const SHOWN_CALLS = new Set(["toast", "toast.error", "toast.success", "toast.info", "toast.warning"]);
+const WORDING_SETTERS = new Set(["setError", "setErrorMessage", "setMessage", "setNotice", "setToast", "setLine", "setHint", "setAnnounce", "announce", "alert", "confirm", "window.alert", "window.confirm"]);
 
 const hasWords = (s: string) => /\p{L}{2,}/u.test(s);
 const multiWord = (s: string) => /\p{L}+\s+\p{L}+/u.test(s);
@@ -56,8 +58,10 @@ export function findInline(file: string, source: string): Inline[] {
       const exprs = ts.isStringLiteral(init) ? [init] : ts.isJsxExpression(init) && init.expression ? shownStrings(init.expression) : [];
       for (const s of exprs) if (hasWords(literalText(s))) add(s, n.name.getText(sf), literalText(s));
     }
-    if (ts.isCallExpression(n) && SHOWN_CALLS.has(calleeName(n.expression)) && n.arguments[0]) {
-      for (const s of shownStrings(n.arguments[0])) if (hasWords(literalText(s))) add(s, `${calleeName(n.expression)}()`, literalText(s));
+    if (ts.isCallExpression(n) && n.arguments[0]) {
+      const callee = calleeName(n.expression);
+      const wording = SHOWN_CALLS.has(callee) ? hasWords : WORDING_SETTERS.has(callee) ? multiWord : null;
+      if (wording) for (const s of shownStrings(n.arguments[0])) if (wording(literalText(s))) add(s, `${callee}()`, literalText(s));
     }
     // A server action's `{ error: "Pick a commander first" }`. Needs two words: `error: "not_found"` is a code.
     // The same for `{ ok: false, message: "We couldn't save that." }`: `message` counts only beside an `ok` flag.
