@@ -202,8 +202,6 @@ export function CollectionPlaceHead({
     throw new Error(`CollectionPlaceHead rendered on an unrecognised path: ${pathname}`);
   }
   const tabs = visibleTabs(current, hasCollection, { enabled: editEnabled, hasEntries: historyShows }, wishlistEnabled);
-  // Beside five tabs the strip closes them up (`PlaceStrip`) and the trailing control is drawn as its mark alone (board WP1).
-  const compact = tabs.length >= 5;
   const titleClass =
     "font-display font-bold m-0 md:text-[30px] md:leading-[45px]";
   return (
@@ -260,30 +258,22 @@ export function CollectionPlaceHead({
       </div>
 
       {/* Place navigation, so a nav of links rather than ARIA tabs (E10): `PlaceStrip`. */}
-      <PlaceStrip tabs={tabs} current={current} ariaLabel={collectionTabsCopy.regionAria} testIdPrefix="collection-tab">
+      {/* On the phone the tabs share the strip's width equally, `Add +` keeping its own width at the end (Hugh, 2026-11-24). */}
+      <PlaceStrip tabs={tabs} current={current} ariaLabel={collectionTabsCopy.regionAria} testIdPrefix="collection-tab" fill>
         {hasCollection && editEnabled ? (
-          // The strip has room for one trailing control beside the tabs, and `+ Add` (70px) fits
-          // where `↻ Replace` (92px) does not; the upload moves into the sheet (B0). Beside five
-          // tabs only the mark fits, in a 44px square, as board WP1 draws its trailing control.
+          // The strip has room for one trailing control beside the tabs: `Add +`, where `↻ Replace`
+          // does not fit; the upload moves into the sheet (B0). Its name keeps the visible word.
+          // `data-about-press` is About's halo on the visible press (R1b, G7).
           <button
             type="button"
             onClick={openAdd}
             aria-haspopup="dialog"
-            aria-label={compact ? collectionEditCopy.head.add : undefined}
+            aria-label={collectionEditCopy.head.add}
             data-testid="collection-add-phone"
-            data-about-press={compact ? undefined : ""}
-            className={`md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center text-[13px] text-[color:var(--accent-text)] ${compact ? "h-[44px] w-[44px] self-center justify-center" : "px-[10px]"}`}
+            data-about-press=""
+            className="md:hidden ml-auto flex min-h-[44px] cursor-pointer items-center whitespace-nowrap px-[10px] text-[13px] text-[color:var(--accent-text)]"
           >
-            {/* `data-about-press`, About's halo on the visible press (R1b, G7): beside five tabs a 36 square centred on the +,
-                since the 44 button runs to the frame's edge; with "Add" drawn, the button itself. */}
-            <span
-              aria-hidden
-              data-about-press={compact ? "" : undefined}
-              className={compact ? "flex h-[36px] w-[36px] items-center justify-center text-[18px]" : "mr-[6px] text-[15px]"}
-            >
-              +
-            </span>
-            {compact ? null : collectionEditCopy.head.addShort}
+            {collectionEditCopy.head.addShort}
           </button>
         ) : hasCollection ? (
           <a

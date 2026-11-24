@@ -39,5 +39,5 @@ export function FriendStrip({
     { place: "spares", href: `${base}/spares`, label: p.tabs.spares, count: counts.spares },
   ];
   const tabs = all.filter((t) => t.count !== undefined || t.place === current);
-  return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" frame={FRIEND_STRIP_FRAME} />;
+  return <PlaceStrip tabs={tabs} current={current} ariaLabel={p.tabsAria} testIdPrefix="friend-tab" frame={FRIEND_STRIP_FRAME} fill />;
 }

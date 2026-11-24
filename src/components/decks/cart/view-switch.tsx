@@ -37,6 +37,8 @@ export function ViewSwitch({
     <SegmentedSwitch
       kind="radio"
       size="compact"
+      // The well spans the phone's width, its segments in equal shares (Hugh, 2026-11-24).
+      fill
       ariaLabel={copy.view.label}
       value={view}
       onChange={onView}

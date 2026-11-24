@@ -474,6 +474,7 @@
     "probe:you-have-it-r2b": "tsx scripts/probe-you-have-it-r2b.mts",
     "probe:find-a-deck": "tsx scripts/probe-find-a-deck.mts",
     "probe:choose-intro": "tsx scripts/probe-choose-intro.mts",
+    "probe:phone-tabs": "tsx scripts/probe-phone-tabs.mts",
     "probe:you-have-it-r2c": "tsx scripts/probe-you-have-it-r2c.mts",
     "prepare": "husky || true"
   },

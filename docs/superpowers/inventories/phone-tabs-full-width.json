@@ -1,0 +1,17 @@
+{
+  "feature": "Phone tab rows fill the width (Hugh, 2026-11-24)",
+  "clearAbout": true,
+  "note": "Below md the tab rows at the top of a page or panel share the full width in equal tabs; Collection's phone add reads `Add +`. Desktop unchanged. The Update mode switch (/decks/<id>/import) draws the same SegmentedSwitch as Import and is measured by probe:phone-tabs; the friend strip and the upload review's issue tabs need a friend or a fresh upload and are covered by unit tests.",
+  "out": "contact-sheets/phone-tabs-full-width",
+  "widths": [
+    { "label": "390", "width": 390, "height": 844 },
+    { "label": "820x1180", "width": 820, "height": 1180 },
+    { "label": "1300", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    { "id": "collection", "label": "/collection: five tabs in equal shares, `Add +` at the end", "view": "src/components/collection/collection-place-head.tsx", "steps": [{ "goto": "/collection", "wait": "[data-testid^='collection-tab-']", "settle": 800 }] },
+    { "id": "commanders", "label": "/commanders: four tabs, strictly equal", "view": "src/components/commanders/commanders-place-head.tsx", "steps": [{ "goto": "/commanders", "wait": "[data-testid^='commanders-tab-']", "settle": 800 }] },
+    { "id": "import", "label": "/decks/import: Paste / Upload switch spans the column", "view": "src/components/decks/import-entry.tsx", "steps": [{ "goto": "/decks/import", "wait": "[role='tablist']", "settle": 800 }] },
+    { "id": "shopping", "label": "/decks/shopping: By card / By deck / By friend spans the column", "view": "src/components/decks/cart/view-switch.tsx", "steps": [{ "goto": "/decks/shopping", "wait": "[role='radiogroup']", "settle": 800 }] }
+  ]
+}

@@ -487,7 +487,7 @@ function TabList({
       role="tablist"
       aria-label={issueInspectorCopy.tabs.ariaLabel}
       onKeyDown={onKeyDown}
-      className="flex items-center gap-[18px]"
+      className="flex items-center gap-[18px] max-md:gap-0"
       style={{ borderBottom: "1px solid var(--border)" }}
     >
       <TabButton
@@ -560,7 +560,8 @@ function TabButton({
       // Padding matches the mock's 10px 4px 13px (pt/px/pb) — split classes to
       // avoid a Tailwind class-order conflict (py-[10px] + pt-[4px] loses to pt-[4px]).
       className={[
-        "flex items-center gap-[8px] pt-[10px] px-[4px] pb-[13px] font-sans font-semibold text-[14px]",
+        // Below md the tabs share the row equally (Hugh, 2026-11-24).
+        "flex items-center gap-[8px] pt-[10px] px-[4px] pb-[13px] font-sans font-semibold text-[14px] max-md:flex-1 max-md:basis-0 max-md:justify-center whitespace-nowrap",
         "cursor-pointer disabled:cursor-not-allowed bg-transparent border-none",
         disabled
           ? "text-[color:var(--fg-locked)]"
