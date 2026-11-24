@@ -31,6 +31,7 @@ function useFanArt(userId: string): string[] {
   );
 }
 
+// The field block's `md:pr-[240px]` is the fan's 180px width, its 28px right offset and a 32px gap: change them together.
 // From `md` the fan leaves the title row for the panel's right edge (R13): one node, placed by CSS, so the phone keeps it beside the title.
 // The fan's tilts by how many cards it draws: -14°, 0°, 14° for three; the ones there are, otherwise.
 const TILTS: Record<number, readonly string[]> = { 1: [""], 2: ["-rotate-[10deg]", "rotate-[10deg]"], 3: ["-rotate-[14deg]", "", "rotate-[14deg]"] };

@@ -85,7 +85,7 @@ async function leg(browser, vp) {
   aboutPrior ??= await captureAboutSeen(userId);
   await clearAboutSheet(page, userId);
   await page.evaluate(([id, art]) => {
-    localStorage.setItem(`card-search:recent:${id}`, JSON.stringify(["a", "b", "c"].map((n) => ({ oracleId: n, name: n, imageUri: art, flavorName: null }))));
+    localStorage.setItem(`card-search:recent:${id}`, JSON.stringify(["a", "b", "c"].map((n) => ({ oracleId: n, name: n, imageUri: `${art}#${n}`, flavorName: null }))));
   }, [userId, ART]);
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
   await panel(page).waitFor({ timeout: 15_000 });
@@ -105,6 +105,7 @@ async function leg(browser, vp) {
     const mid = (m.fan.t + m.fan.b) / 2;
     report(`${tag} the fan is centred on the section, the drawn anchor (R13-C3; no welcome foot is seeded)`, Math.abs(mid - (m.panel.t + m.panel.b) / 2) <= 2, `${Math.round(mid - m.panel.t)} of ${Math.round(m.panel.h)}`);
     report(`${tag} the field starts 12px under the title row`, m.field.t - m.title.b <= 20, `${Math.round(m.field.t - m.title.b)}px under the title text`);
+    report(`${tag} the fan stays inside the panel`, m.fan.t >= m.panel.t && m.fan.b <= m.panel.b, `fan ${Math.round(m.fan.t - m.panel.t)} to ${Math.round(m.fan.b - m.panel.t)} of ${Math.round(m.panel.h)}`);
     report(`${tag} the field and the fan do not overlap`, m.field.r <= m.fan.l + 1, `field right ${Math.round(m.field.r)} fan left ${Math.round(m.fan.l)}`);
     if (m.starters) report(`${tag} the starters do not run under the fan`, m.starters.r <= m.fan.l + 1, `starters right ${Math.round(m.starters.r)}`);
     report(`${tag} the field starts within 70px of the panel top (the title row is one line; was 152px with the fan in it)`, m.field.t - m.panel.t <= 70, `${Math.round(m.field.t - m.panel.t)}px`);
