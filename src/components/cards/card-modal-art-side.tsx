@@ -6,7 +6,7 @@
 import React, { type ReactNode } from "react";
 import { ArtLayer } from "../ui/art-layer";
 import { identityGradient } from "../../lib/cards/gradients";
-import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
+import { cardCarouselCopy, cardModalCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 import { cardZoomCopy } from "../../lib/copy/card-surfaces";
 import { printedNameOf, type BrowseCard } from "../../lib/collection/browse";
 import { FlipControl } from "./card-turn";
@@ -377,7 +377,7 @@ export function CardModalArtSide({
         // window narrowed with the zoom up would otherwise leave it reachable.
         inert={zoomed || viewOpen}
         onClick={onClose}
-        aria-label="Close card details"
+        aria-label={cardModalCopy.closeAria}
         // §Mobile: Art Close Button
         // The 32px plate drawn; a pseudo-element 6px past each edge takes its hit to 44px, as the back pill's does vertically.
         className="md:hidden absolute z-[3] rounded-full flex items-center justify-center bg-[color-mix(in_oklab,var(--bg)_55%,transparent)] text-[color:var(--fg)] before:absolute before:-inset-[6px] before:content-['']"

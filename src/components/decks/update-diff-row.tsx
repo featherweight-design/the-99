@@ -180,7 +180,7 @@ function Marker({ auto }: { auto: boolean }) {
         auto ? "" : "invisible",
       ].join(" ")}
     >
-      auto
+      {copy.auto}
     </span>
   );
 }

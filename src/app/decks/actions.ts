@@ -78,6 +78,7 @@ import {
 } from "../../lib/decks/proxies";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { lockedCardsCopy } from "../../lib/copy/locked-cards";
+import { deckRefusalCopy } from "../../lib/copy/deck-versioning";
 import { addCardToDeckFor, deckValidationContext, revalidateAdd } from "../../lib/decks/add-card";
 import { readDeckOriginAndStart } from "../../lib/precons/start-version";
 import { flushLogsAfterResponse, logEvent } from "../../lib/sentry/log-event";
@@ -1492,7 +1493,7 @@ export async function commitDeckVersion(
   note: string | null,
 ): Promise<CommitResult> {
   const userId = await requireUserId();
-  if (!isUuid(deckId)) return { ok: false, message: "We couldn’t find that deck." };
+  if (!isUuid(deckId)) return { ok: false, message: deckRefusalCopy.deckNotFound };
   // The reader's resolved switches: the commit's bracket snapshot and the analysis pin both build the
   // profile under them, so each finds the entry the reader's own analysis filed.
   const env = await requestFlags(userId);
@@ -1502,12 +1503,12 @@ export async function commitDeckVersion(
   // by name is what keeps `note.trim()` below from throwing a TypeError the action
   // has no result shape for.
   if (note !== null && note !== undefined && typeof note !== "string") {
-    return { ok: false, message: "We couldn’t save that. Your note is unchanged." };
+    return { ok: false, message: deckRefusalCopy.noteNotSaved };
   }
   try {
     await requireDeck(deckId, userId);
   } catch {
-    return { ok: false, message: "We couldn’t find that deck." };
+    return { ok: false, message: deckRefusalCopy.deckNotFound };
   }
 
 
@@ -1519,7 +1520,7 @@ export async function commitDeckVersion(
     const [deck] = await tx.select().from(decks).where(eq(decks.id, deckId)).for("update");
     // Deleted between the ownership check above and this lock. Left to fall
     // through, it reaches commitVersion, which throws rather than refusing.
-    if (!deck) return { ok: false, message: "We couldn’t find that deck." };
+    if (!deck) return { ok: false, message: deckRefusalCopy.deckNotFound };
 
     const previous = await newestVersion(deckId, tx);
     const before = previous ? await versionCards(previous.id, tx) : [];
@@ -1545,7 +1546,7 @@ export async function commitDeckVersion(
       if (body !== expected) {
         return {
           ok: false,
-          message: `A first version has to be a whole deck — ${expected} cards. This one has ${body}.`,
+          message: deckRefusalCopy.firstVersionWhole(expected, body),
         };
       }
       const [unresolved] = await tx.select({ n: sql<number>`count(*)::int` })
@@ -1556,7 +1557,7 @@ export async function commitDeckVersion(
       if ((unresolved?.n ?? 0) > 0) {
         return {
           ok: false,
-          message: "Some lines in this deck never matched a card. Resolve them before cutting v1.",
+          message: deckRefusalCopy.unresolvedLines,
         };
       }
     }
@@ -1707,7 +1708,7 @@ export async function discardDeckDraft(
 ): Promise<DeckMutationResult> {
   const userId = await requireUserId();
   if (!isUuid(deckId) || !isUuid(expectedVersionId)) {
-    return { ok: false, message: "We couldn’t find that deck." };
+    return { ok: false, message: deckRefusalCopy.deckNotFound };
   }
   await requireDeck(deckId, userId);
   // The decks this draft's pulls freed a copy for. The discard deletes those releases, so their buy
@@ -1718,7 +1719,7 @@ export async function discardDeckDraft(
   revalidateClaims(deckId, userId);
   for (const id of askers) revalidateClaims(id, userId);
   if (outcome === "moved") {
-    return { ok: false, message: "We couldn’t discard those. The draft is unchanged." };
+    return { ok: false, message: deckRefusalCopy.discardFailed };
   }
   return { ok: true };
 }
@@ -1817,7 +1818,7 @@ export async function pullCardFromDeck(
 ): Promise<PullResult> {
   const userId = await requireUserId();
   if (!isUuid(sourceDeckId) || !isUuid(oracleId) || !isUuid(askingDeckId)) {
-    return { ok: false, message: "We couldn’t find that card." };
+    return { ok: false, message: deckRefusalCopy.cardNotFound };
   }
   // Both decks, because both are revalidated and both must be the player's.
   await requireDeck(sourceDeckId, userId);
@@ -1827,7 +1828,7 @@ export async function pullCardFromDeck(
   // id the source loses a copy to satisfy a want the same list already holds, and
   // commits that loss — a destructive self-removal dressed as a transfer.
   if (sourceDeckId === askingDeckId) {
-    return { ok: false, message: "A deck can’t pull a card from itself." };
+    return { ok: false, message: deckRefusalCopy.pullFromSelf };
   }
 
   // Which decks the claim on this card is made of, read BEFORE the transaction and used only to decide what to lock

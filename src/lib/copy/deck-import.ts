@@ -522,6 +522,7 @@ export const deckImportCopy = {
       // Promises a comparison, not a creation.
       submit: "Compare with this deck",
       reassure: "Nothing is saved yet.",
+      reassureCounted: (n: number) => `${n} cards. Nothing is saved yet.`,
       reassureMobile: "Nothing is saved until you say so on the next screen.",
       aboutHeading: "What we do with it",
       about:
@@ -532,6 +533,8 @@ export const deckImportCopy = {
     },
 
     diff: {
+      /** The auto tag on a row the update added for you. */
+      auto: "auto",
       heading: "What this list changes",
       // Said above the preview's groups on a deck that has a version: what this
       // paste changes becomes a DRAFT, and nothing about the deck's claims moves

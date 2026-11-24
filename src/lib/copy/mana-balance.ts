@@ -117,6 +117,7 @@ export const manaBalanceCopy = {
     have: (have: number) => `You have ${have}`,
   },
   help: {
+    colorless: "colorless",
     head: (color: string) => `Help adding ${color}`,
     change: "Change color",
     swaps: "Swap basics",

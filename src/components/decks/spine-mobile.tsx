@@ -258,7 +258,7 @@ export function SpineMobile({
             <span style={TRUNCATES}>{commanderDisplayName(commander)}</span>
             {commander.proxied ? <ProxyTag variant="band" /> : null}
             <span style={{ flex: "none", whiteSpace: "nowrap" }}>
-              &nbsp;· {colorLabel(commander.colorIdentity)}
+              {deckHeaderCopy.identityTail(colorLabel(commander.colorIdentity))}
             </span>
           </>
         )}

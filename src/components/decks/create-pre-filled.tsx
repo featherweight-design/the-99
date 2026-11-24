@@ -19,7 +19,7 @@ import {
 } from "../intake/hand-off-answers";
 import { handOffBracketReach } from "../../app/decks/new/hand-off-actions";
 import { fromMineBracket } from "../../lib/intake/hand-off-reach";
-import { addPanelCopy, renameCopy } from "../../lib/copy/decks-builder";
+import { addPanelCopy, createPreFilledCopy, renameCopy } from "../../lib/copy/decks-builder";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import type { CreateAnswers } from "../../lib/intake/answers";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
@@ -219,7 +219,7 @@ export function CreatePreFilled({
         <Link
           href={backHref}
           className="md:hidden text-[color:var(--fg-faint)]"
-          aria-label={handOff ? handOffCopy.backAria : "Back to commander picker"}
+          aria-label={handOff ? handOffCopy.backAria : createPreFilledCopy.backAria}
           style={{ fontSize: 18, lineHeight: 1 }}
         >
           ‹
@@ -237,7 +237,7 @@ export function CreatePreFilled({
               marginBottom: 6,
             }}
           >
-            {handOff ? handOffCopy.back : <>‹ Commanders · {name}</>}
+            {handOff ? handOffCopy.back : createPreFilledCopy.back(name)}
             <PendingReporter href={backHref} />
           </Link>
 
@@ -246,15 +246,15 @@ export function CreatePreFilled({
             className="font-display font-bold text-[20px] md:text-[28px] m-0 md:m-[2px_0_4px]"
             style={{ color: "var(--fg)" }}
           >
-            New deck
+            {createPreFilledCopy.title}
           </h1>
 
           {/* §Subtitle: mobile mono 10px var(--fg-faint) mt 1; desktop IBM Plex Sans 14px var(--fg-muted) mb 26 */}
           <p className="font-mono text-[10px] mt-[1px] md:hidden" style={{ color: "var(--fg-faint)", marginBottom: 0 }}>
-            {handOff && build === "free" ? handOffCopy.subPhone : "Commander selected"}
+            {handOff && build === "free" ? handOffCopy.subPhone : createPreFilledCopy.subPhone}
           </p>
           <p className="font-sans hidden md:block text-[14px]" style={{ color: "var(--fg-muted)", marginBottom: 26 }}>
-            {handOff && build === "free" ? handOffCopy.sub : "Name your deck."}
+            {handOff && build === "free" ? handOffCopy.sub : createPreFilledCopy.sub}
           </p>
         </div>
       </div>
@@ -356,7 +356,7 @@ export function CreatePreFilled({
               className="text-[12.5px] md:text-[13.5px]"
               style={{ color: "var(--fg-body)" }}
             >
-              Legal · validated
+              {createPreFilledCopy.legal}
             </span>
           </div>
 
@@ -367,7 +367,7 @@ export function CreatePreFilled({
               className="font-mono uppercase tracking-[0.14em]"
               style={{ fontSize: 10, color: "var(--fg-faint)", marginBottom: 9 }}
             >
-              Color identity
+              {createPreFilledCopy.colorIdentity}
             </p>
             <div className="flex items-center" style={{ gap: 8 }}>
               {/* §Color identity locked row — pip chips: 22×22px */}
@@ -408,7 +408,7 @@ export function CreatePreFilled({
               className="block font-mono uppercase tracking-[0.14em] mb-[8px] md:mb-[9px]"
               style={{ fontSize: 10, color: "var(--fg-faint)" }}
             >
-              Deck name
+              {createPreFilledCopy.deckName}
             </label>
 
             {/* §Deck name input: bg var(--surface-sunken), border 1px var(--accent) (active), br 8/9px */}
@@ -419,7 +419,7 @@ export function CreatePreFilled({
               value={deckName}
               onChange={(e) => setDeckName(e.target.value)}
               maxLength={DECK_NAME_MAX}
-              placeholder="My awesome deck"
+              placeholder={createPreFilledCopy.namePlaceholder}
               disabled={isPending}
               className={`block w-full rounded-[8px] md:rounded-[9px] p-[12px_14px] md:p-[14px_16px] text-[16px] border-[color:var(--accent)] ${
                 error || (mustChoose && choice === null) ? "mb-[8px]" : "mb-[24px]"
@@ -461,7 +461,7 @@ export function CreatePreFilled({
                 disabled={isPending || deckName.trim().length === 0 || waiting}
                 className="w-full md:w-auto text-[15px] transition-opacity disabled:opacity-40 py-[13px] px-[26px]"
               >
-                <SteadyLabel hold={["Creating…", guidedBuildCopy.press[build]]}>{isPending ? "Creating…" : guidedBuildCopy.press[build]}</SteadyLabel>
+                <SteadyLabel hold={[createPreFilledCopy.creating, guidedBuildCopy.press[build]]}>{isPending ? createPreFilledCopy.creating : guidedBuildCopy.press[build]}</SteadyLabel>
               </PrimaryButton>
 
               {/* §"Change commander" secondary button — ADDENDUM-secondary-cta-colour.md
@@ -471,7 +471,7 @@ export function CreatePreFilled({
                 href={backHref}
                 className="block text-center text-[13px] md:text-[14px] p-[11px_0] md:p-[13px_20px]"
               >
-                {handOff ? handOffCopy.backToResults : "Change commander"}
+                {handOff ? handOffCopy.backToResults : createPreFilledCopy.changeCommander}
               </GhostButton>
             </div>
 
@@ -480,7 +480,7 @@ export function CreatePreFilled({
               className="mt-[20px] text-[12.5px] md:text-[13px] leading-[1.55] md:leading-[1.6] md:border-t md:border-[color:var(--border)] md:pt-[16px]"
               style={{ color: "var(--fg-faint)" }}
             >
-              Cards outside your commander’s color identity won’t be suggested.
+              {createPreFilledCopy.note}
             </p>
           </form>
         </div>

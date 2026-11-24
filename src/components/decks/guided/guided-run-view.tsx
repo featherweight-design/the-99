@@ -81,7 +81,7 @@ function Row({ state, children }: { state: RowState; children: ReactNode }) {
         {state === "done" ? "✓" : state === "now" ? <span className="h-[6px] w-[6px] rounded-full bg-[color:var(--accent)]" /> : null}
       </span>
       <span className={state === "next" ? "text-[color:var(--fg-faint)]" : "text-[color:var(--fg-body)]"}>{children}</span>
-      <span className="sr-only">{state === "done" ? " (done)" : state === "now" ? " (now)" : " (next)"}</span>
+      <span className="sr-only">{copy.stateSr[state]}</span>
     </li>
   );
 }

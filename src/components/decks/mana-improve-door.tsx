@@ -571,7 +571,7 @@ function StapleRow({ staple, siblings, trade, stale = false, picked, commander, 
         <span>{copy.help.adds}</span>
         <span className="inline-flex gap-[3px]">
           {staple.produces.map((c) => (
-            <span key={c} role="img" aria-label={c === "C" ? "colorless" : colorWord(c)} className="inline-flex"><ColorDisc c={c} size={12} /></span>
+            <span key={c} role="img" aria-label={c === "C" ? copy.help.colorless : colorWord(c)} className="inline-flex"><ColorDisc c={c} size={12} /></span>
           ))}
         </span>
       </p>
