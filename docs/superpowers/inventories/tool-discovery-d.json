@@ -35,7 +35,7 @@
         },
         {
           "openSearch": true,
-          "searchWait": "Not sure where to go? Ask",
+          "searchWait": "Try asking",
           "settle": 1200
         }
       ]
@@ -97,7 +97,7 @@
         },
         {
           "clickRail": "Search all cards",
-          "searchWait": "Not sure where to go? Ask",
+          "searchWait": "Try asking",
           "settle": 1200
         }
       ]
