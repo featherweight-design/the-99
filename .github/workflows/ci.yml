@@ -161,6 +161,11 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:inline-copy
 
+      # A test retyping words the app prints instead of reading the copy leaf (diff-based: added lines only).
+      - name: Test copy literals
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:test-copy-literals
+
       # A constraint name Postgres would truncate is invisible to every other step here:
       # drizzle-kit compares its own snapshots, and the failure only appears when the
       # migration RUNS — on a real deployment, the Vercel production build.
