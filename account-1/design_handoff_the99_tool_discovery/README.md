@@ -1,10 +1,10 @@
 # Finding the tools
 
-Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-23 (R11, every question settled as drawn, Q1 to Q18).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Search follow-ups, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-24 (R12, every question settled as drawn, Q1 to Q22).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Search follow-ups, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
 
 **Approved (Hugh, 2026-11-23):** every open question settled A; PostHog dashboards to ship with the build (below).
 
-**R12 (Hugh, 2026-11-24, in review; Search follow-ups board):** on the shipped Home search (main cc89ad77).
+**R12 (Hugh, 2026-11-24, approved; Search follow-ups board):** on the shipped Home search (main cc89ad77).
 - Bigger tool marks: 28px in a 48px tile (phone), 24px in 40px (dropdown) (Q19).
 - A press keeps the search up in an Opening state (ring, spinner, `Opening Precons…`, the progress bar) until the page
   commits, then closes (Q20).
@@ -204,6 +204,12 @@ R11 (Spare offers board):
 - Q16 A: an unanswered, open ask or offer always leads over news, newest first.
 - Q17 A: the lead's ✕ in the card's top right corner.
 - Q18 A: a non-leading ask or offer answers in its What's new row; `Answer in Friends.` retires on Home.
+
+R12 (Search follow-ups board):
+- Q19 A: tool marks 28px in a 48px tile (phone), 24px in 40px (dropdown).
+- Q20 A: a press keeps the search up in its Opening state until the page commits.
+- Q21 A: a deck tool that fits several decks asks which, inside the search.
+- Q22 A: the landing halo only on a busier screen, and on Help me choose's intro panel until the first run.
 
 Withdrawn: R1 Q3 (with the switch), R2 Q5 (with What you can do), R3 Q7 (Home's field stays for good).
 

@@ -268,7 +268,7 @@ boards["Main.dc.html"] = (1600, 2120, "Main", page("Finding the tools R12: main"
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
  + '<div style="display:flex;gap:20px">' + fig("p-h4", 300, "Home, phone", "The panel, first under the page head.") + fig("p-a1", 300, "Pressed, phone", "The full-screen sheet; a starter types its question.") + '</div>'
  + '</div></div>'
- + note("Settled", ["Q1 to Q18 all settled as drawn (A); approved 2026-11-23 and handed off in PR #3243.", "R12 (2026-11-24): Home search follow-ups on the Search follow-ups board. Open: Q19 to Q22."]) + Q19 + Q20 + Q21 + Q22
+ + note("Settled", ["Q1 to Q18 all settled as drawn (A); approved 2026-11-23 and merged in PR #3243.", "R12 (2026-11-24): Home search follow-ups on the Search follow-ups board, Q19 to Q22 settled A; approved."])
  + note("As R4", ["Ask in the card search: starters, Tools for this, never a dead end; one field, card names first.", "Find a deck: the tile button, the row strip (phone) and button (desktop), the call-out.", "Tuning and Welcome as R1, approved."])))
 
 boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a deck", 1700, 4560,
