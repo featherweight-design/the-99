@@ -9,6 +9,7 @@ import { hideChooseIntro } from "../../app/decks/new/choose/actions";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { helpMeChooseIntroCopy as copy } from "../../lib/copy/help-me-choose-intro";
 import type { IntroArt } from "../../lib/intake/intro-art";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { FadingImg } from "../ui/hydrated-art";
 
 /** The form's *Anything else?* box. A fixed id, not `useId`, so the intro's jump link can name it. */
@@ -69,6 +70,8 @@ export function ChooseIntro({
     const box = document.getElementById(CHOOSE_WORDS_ID);
     if (!box) return;
     // Centered and instant (the form moves nothing: no motion anywhere), so neither the sticky header nor the phone's fixed dock covers it.
+    // Marked as the app's, so quick return does not read it as the reader scrolling and bring the phone header back over the box.
+    noteAppScroll();
     box.scrollIntoView({ block: "center" });
     box.focus({ preventScroll: true });
   };
