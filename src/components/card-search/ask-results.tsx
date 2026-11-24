@@ -4,9 +4,10 @@
 // search row's frame (72px on the phone, 58px in the dropdown), so a tool and a card read as one list.
 
 import Link from "next/link";
-import type { KeyboardEvent } from "react";
+import { useState, type KeyboardEvent } from "react";
 import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
-import type { ToolCardModel } from "../../lib/discovery/showcase";
+import type { DeckPick, ToolCardModel } from "../../lib/discovery/showcase";
+import { feedAge } from "../../lib/feed/age";
 import { atPlace } from "../../lib/commanders/place-paths";
 
 /** About's index (its Tools tab redirects there, `legacy-href.ts`): where `Every tool, in About` goes. Here, not in `ask.ts`, so the shell does not load the tool registry for a link. */
@@ -19,9 +20,16 @@ export function toolHref(m: ToolCardModel): string {
   return m.state.kind === "none" ? atPlace("/decks/new/choose", true) : m.state.href;
 }
 
+/** The decks a press on this answer asks the reader to choose between: several fit and the read carried them (a server read; the offline answer carries none). */
+export function picksOf(m: ToolCardModel): DeckPick[] | null {
+  return m.state.kind === "deck" && m.state.more > 0 && m.state.picks ? m.state.picks : null;
+}
+
 /** The mono line at the row's foot: where the press goes. */
 export function toolWhere(m: ToolCardModel): string {
   const s = m.state;
+  const picks = picksOf(m);
+  if (picks) return askCopy.pick.foot(picks.length);
   if (s.kind === "deck") return `${cardSearchCopy.row.inDeck(s.deck)}${s.more > 0 ? ` ${cardSearchCopy.row.moreDecks(s.more)}` : ""}`;
   return s.kind === "page" ? s.label : askCopy.newDeck;
 }
@@ -100,6 +108,95 @@ export function ToolRow({
           <span aria-hidden className="flex-none pl-1">{"›"}</span>
         </span>
       </span>
+    </div>
+  );
+}
+
+/**
+ * The deck picker (R12 Q21, G28): a tool several decks can use swaps the answers for the decks in the same box. The field
+ * keeps focus and the keys (the card search's own `active` walks these rows), so this draws and presses and owns no key.
+ * `opening` names the deck whose page is loading: its row rings and the others dim, as a tool row does.
+ */
+export function DeckPicker({
+  tool,
+  picks,
+  listboxId,
+  active,
+  opening,
+  onBack,
+  onPick,
+}: {
+  tool: ToolCardModel;
+  picks: readonly DeckPick[];
+  listboxId: string;
+  active: number;
+  opening: string | null;
+  onBack: () => void;
+  onPick: (deck: DeckPick, place: number) => void;
+}) {
+  // One clock for every row, read when the picker opens.
+  const [now] = useState(() => new Date().toISOString());
+  const busy = opening !== null;
+  return (
+    <div data-ask-pick="" role="group" aria-label={askCopy.pick.aria(tool.copy.name)}>
+      <div className="flex items-center gap-2 px-2 pt-1 pb-2 md:px-[6px]">
+        <button
+          type="button"
+          data-ask-pick-back=""
+          disabled={busy}
+          onClick={onBack}
+          className="flex h-11 min-w-11 cursor-pointer items-center gap-1 rounded-[8px] px-2 text-[14px] font-medium text-[color:var(--accent-text)] md:h-8 md:text-[13px]"
+        >
+          <span aria-hidden>{"‹"}</span> {askCopy.pick.back}
+        </button>
+      </div>
+      <div className="flex items-center gap-3 px-4 pb-3 md:px-[14px]">
+        <span className="flex min-w-0 flex-1 flex-col gap-[3px]">
+          <span className="flex items-center gap-2">
+            <span className="text-[16px] font-semibold text-[color:var(--fg)] md:text-[15px]">{tool.copy.name}</span>
+            <span className="flex-none rounded-full border border-solid border-[color:var(--border-strong)] px-2 font-mono text-[10.5px] leading-[18px] text-[color:var(--fg-body)]">
+              {tool.credit ?? askCopy.free}
+            </span>
+          </span>
+          <span className="text-[13px] leading-[1.45] text-[color:var(--fg-muted)] md:text-[12.5px]">{askCopy.pick.line(picks.length)}</span>
+        </span>
+      </div>
+      <h3 className={`px-4 pt-1 pb-[6px] md:px-[14px] ${HEADING}`}>{askCopy.pick.heading}</h3>
+      <div id={listboxId} role="listbox" aria-label={askCopy.pick.list} aria-busy={busy || undefined}>
+        {picks.map((d, i) => {
+          const pending = opening === d.id;
+          const dim = busy && !pending;
+          return (
+            <div
+              key={d.id}
+              id={`${listboxId}-${i}`}
+              role="option"
+              aria-selected={i === active}
+              tabIndex={-1}
+              onClick={() => onPick(d, i)}
+              data-ask-pick-deck={d.id}
+              data-ask-pending={pending ? "" : undefined}
+              className={`flex min-h-[64px] cursor-pointer items-center gap-3 rounded-[8px] py-2 pr-[14px] pl-4 outline-none md:min-h-[54px] md:py-[6px] md:pl-[14px] ${
+                i ? "border-t border-solid border-[color:var(--border)]" : ""
+              } ${i === active || pending ? "bg-[color:var(--elevated)]" : ""} ${pending ? "shadow-[inset_0_0_0_1.5px_var(--accent)]" : ""} ${dim ? "opacity-[0.45]" : ""}`}
+            >
+              <span className="block h-[44px] w-[60px] flex-none overflow-hidden rounded-[6px] border border-solid border-[color:var(--border-strong)] md:h-[36px] md:w-[50px]">
+                {d.art ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- card art is a remote Scryfall image
+                  <img src={d.art} alt="" decoding="async" loading="lazy" className="h-full w-full object-cover" />
+                ) : null}
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
+                <span className="truncate font-display text-[15px] font-bold text-[color:var(--fg)] md:text-[14px]">{d.name}</span>
+                <span className={`truncate font-mono text-[11px] ${pending ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}>
+                  {pending ? askCopy.opening(tool.copy.name) : askCopy.pick.meta(d.commander, d.verb, feedAge(d.touched, now))}
+                </span>
+              </span>
+              <span aria-hidden className="flex-none text-[16px] text-[color:var(--fg-faint)]">{"›"}</span>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }

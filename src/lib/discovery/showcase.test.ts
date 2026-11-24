@@ -5,7 +5,7 @@ import type { SwitchName } from "../flags/registry";
 import { showcaseGroups, toolCopyFor, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
 import { TOOLS } from "./tools";
 
-const deck = (id: string, name: string) => ({ id, name });
+const deck = (id: string, name: string) => ({ id, name, commander: `${name} cmdr`, art: null, touched: "2026-10-01T00:00:00.000Z", verb: "edited" as const });
 
 function input(over: Partial<ShowcaseInput> = {}): ShowcaseInput {
   return {
@@ -79,7 +79,14 @@ describe("showcaseGroups", () => {
       }),
     );
     expect(card(groups, "top-off")!.state).toEqual({ kind: "deck", href: "/decks/d1?tool=top-off", deck: "HD - Kratos", more: 0 });
-    expect(card(groups, "mana-balance")!.state).toEqual({ kind: "deck", href: "/decks/d2?tool=mana-balance", deck: "Gishath", more: 2 });
+    expect(card(groups, "mana-balance")!.state).toEqual({
+      kind: "deck",
+      href: "/decks/d2?tool=mana-balance",
+      deck: "Gishath",
+      more: 2,
+      // Several fit: every deck rides along, in order, for Ask's picker. A single fit carries none (above).
+      picks: ["d2", "d3", "d4"].map((id, i) => ({ ...deck(id, ["Gishath", "Atraxa", "Yuriko"][i]!), href: `/decks/${id}?tool=mana-balance` })),
+    });
   });
 
   it("says what a tool needs when no deck fits, with a door only where another screen helps", () => {

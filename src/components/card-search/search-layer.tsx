@@ -15,8 +15,8 @@ import { isAddShortcut } from "../../lib/card-search/shortcut";
 import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
 import { askWords } from "../../lib/discovery/ask";
 import type { ToolId } from "../../lib/discovery/tools";
-import type { ToolCardModel } from "../../lib/discovery/showcase";
-import { NoTool, Starters, ToolRow, ToolsHeading } from "./ask-results";
+import type { DeckPick, ToolCardModel } from "../../lib/discovery/showcase";
+import { DeckPicker, NoTool, picksOf, Starters, ToolRow, ToolsHeading } from "./ask-results";
 import { SearchListbox } from "./search-listbox";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { CardDetailProvider, useCardDetail, type SiblingCard } from "../cards/card-detail-provider";
@@ -85,12 +85,18 @@ export type SearchLayerProps = {
     onPressTool: (tool: ToolCardModel, index: number) => void;
     /** The tool whose page is loading (R12 Q20): its row rings and every other answer is inert until the page commits. */
     opening: ToolId | null;
+    /** The answer whose decks are being chosen between (R12 Q21): the picker takes the box, the answers wait behind it. */
+    picking: ToolCardModel | null;
+    /** The deck whose page is loading from the picker: its row rings and the others dim. */
+    openingDeck: string | null;
+    onPickBack: () => void;
+    onPickDeck: (tool: ToolCardModel, deck: DeckPick, place: number) => void;
     /** A link inside the answers (`Every tool, in About`) was followed: the search closes. */
     onNavigate: () => void;
   };
 };
 
-const NO_ASK: NonNullable<SearchLayerProps["ask"]> = { ids: [], tools: [], starters: [], onStarter: () => {}, onPressTool: () => {}, opening: null, onNavigate: () => {} };
+const NO_ASK: NonNullable<SearchLayerProps["ask"]> = { ids: [], tools: [], starters: [], onStarter: () => {}, onPressTool: () => {}, opening: null, picking: null, openingDeck: null, onPickBack: () => {}, onPickDeck: () => {}, onNavigate: () => {} };
 
 export function SearchLayer(props: SearchLayerProps) {
   // A fresh provider for each route: a navigation drops a read still in flight and any card or sheet stacked over
@@ -182,6 +188,22 @@ function SearchBody(props: SearchLayerProps) {
 
   // Offline is the frame's own (it cannot wait for this chunk).
   if (!p.online) return null;
+
+  const picking = p.ask.picking;
+  const picks = picking ? picksOf(picking) : null;
+  if (picking && picks) {
+    return (
+      <DeckPicker
+        tool={picking}
+        picks={picks}
+        listboxId={p.listboxId}
+        active={p.active}
+        opening={p.ask.openingDeck}
+        onBack={p.ask.onPickBack}
+        onPick={(deck, place) => p.ask.onPickDeck(picking, deck, place)}
+      />
+    );
+  }
 
   if (!p.searching) {
     // Above Recent cards, and above the empty state when there are none (C2, C-D1). The search is open but nothing is

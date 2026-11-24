@@ -38,7 +38,7 @@ vi.mock("../social/spares", () => ({
 import { fitsOf, loadToolFits, type DeckFacts } from "./fits";
 
 const facts = (id: string, over: Partial<DeckFacts> = {}): DeckFacts => ({
-  id, name: id, built: 99, unresolved: 0, size: 99, overLimit: false, friendSpare: false, gameWithOpponents: false, ...over,
+  id, name: id, commander: `${id} cmdr`, art: null, touched: "2026-10-01T00:00:00.000Z", verb: "edited", built: 99, unresolved: 0, size: 99, overLimit: false, friendSpare: false, gameWithOpponents: false, ...over,
 });
 const ids = (fit: { decks: { id: string }[] } | undefined) => fit?.decks.map((d) => d.id);
 
@@ -61,7 +61,7 @@ describe("fitsOf", () => {
 });
 
 const listed = (id: string, touched: string, over: Record<string, unknown> = {}) => ({
-  id, name: id, built: 99, unresolvedCount: 0, partnerName: null,
+  id, name: id, commanderName: `${id} cmdr`, commanderArtCropUri: null, built: 99, unresolvedCount: 0, partnerName: null,
   lastEditedAt: new Date(touched), lastCommittedAt: null, lastPlayedAt: null, ...over,
 });
 

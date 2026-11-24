@@ -35,6 +35,9 @@ export const ASK_WORDS = ["1", "2", "3+"] as const;
 export const ASK_COUNT = ["0", "1", "2", "3"] as const;
 export const ASK_CARDS = ["none", "some"] as const;
 export const ASK_RANK = ["1", "2", "3"] as const;
+/** Which place in the deck picker a press chose (R12 PR B), or `none` for a tool pressed with no picker: a place, never a deck. */
+export const ASK_PICKED = ["none", "1", "2", "3+"] as const;
+export const askPicked = (index: number): (typeof ASK_PICKED)[number] => (index <= 0 ? "1" : index === 1 ? "2" : "3+");
 /** Every tool's id, the closed set an Ask event names a tool from. */
 export const ASK_TOOL_IDS = [
   "help-me-choose", "precons", "top-off", "proposed-cuts", "suggested-changes", "mana-balance", "stand-ins",
@@ -60,7 +63,7 @@ export type ToolEvents = {
   ask_result: { count: (typeof ASK_COUNT)[number]; first: ToolId | "none"; cards: (typeof ASK_CARDS)[number]; words: (typeof ASK_WORDS)[number] };
   /** A query of two or more words that matched no tool and no card. */
   ask_miss: { words: (typeof ASK_WORDS)[number] };
-  ask_tool_pressed: { tool: ToolId; from: (typeof ASK_PRESSED_FROM)[number]; rank: (typeof ASK_RANK)[number] };
+  ask_tool_pressed: { tool: ToolId; from: (typeof ASK_PRESSED_FROM)[number]; rank: (typeof ASK_RANK)[number]; picked: (typeof ASK_PICKED)[number] };
 };
 
 /** Each event's closed sets, property by property: what the guard test checks a built event against. */
@@ -74,5 +77,5 @@ export const TOOL_EVENT_VALUES: { [E in keyof ToolEvents]: { [P in keyof ToolEve
   search_opened: { from: SEARCH_OPENED_FROM },
   ask_result: { count: ASK_COUNT, first: [...ASK_TOOL_IDS, "none"], cards: ASK_CARDS, words: ASK_WORDS },
   ask_miss: { words: ASK_WORDS },
-  ask_tool_pressed: { tool: ASK_TOOL_IDS, from: ASK_PRESSED_FROM, rank: ASK_RANK },
+  ask_tool_pressed: { tool: ASK_TOOL_IDS, from: ASK_PRESSED_FROM, rank: ASK_RANK, picked: ASK_PICKED },
 };

@@ -32,11 +32,11 @@ import { isAddShortcut } from "../../lib/card-search/shortcut";
 import { afterDialogsReleased, leaveDialogsForNavigation, stayInDialogs, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { captureToolEvent } from "../../lib/analytics/posthog";
-import type { SEARCH_OPENED_FROM } from "../../lib/analytics/tool-events";
+import { askPicked, type SEARCH_OPENED_FROM } from "../../lib/analytics/tool-events";
 import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
-import type { ToolCardModel } from "../../lib/discovery/showcase";
+import type { DeckPick, ToolCardModel } from "../../lib/discovery/showcase";
 import type { ToolId } from "../../lib/discovery/tools";
-import { toolHref } from "./ask-results";
+import { picksOf, toolHref } from "./ask-results";
 import { OpenFailedToast } from "./open-failed-toast";
 import { useAsk } from "./use-ask";
 import { SearchField } from "../ui/text-field";
@@ -153,7 +153,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const [handover, setHandover] = useState<{ oracleId: string; siblings: SiblingCard[]; art: string | null; opener: HTMLElement | null } | null>(null);
   const [announcement, setAnnouncement] = useState("");
   // The tool whose page is loading (R12 Q20), and the one whose page did not arrive (its toast).
-  const [opening, setOpening] = useState<{ id: ToolId; name: string } | null>(null);
+  const [opening, setOpening] = useState<{ id: ToolId; name: string; deck?: string } | null>(null);
+  // The answer whose decks the reader is choosing between (R12 Q21): the picker takes the answers' place in the box.
+  const [picking, setPicking] = useState<ToolCardModel | null>(null);
   const [openFailed, setOpenFailed] = useState<string | null>(null);
   const [bodyEl, setBodyEl] = useState<HTMLDivElement | null>(null);
   const online = useOnlineStatus();
@@ -225,6 +227,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setPhase("idle");
     // Closing while a tool opens (Esc, ✕) leaves the page to arrive: a push cannot be taken back.
     setOpening(null);
+    setPicking(null);
     pressedRef.current = false;
     openerRef.current?.focus();
   }, []);
@@ -513,6 +516,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setActive(-1);
     setPhase("idle");
     setOpening(null);
+    setPicking(null);
   }
   // A stalled push that lands late: the search's entry stays under the new route, as for any navigation (no `back()`).
   useEffect(() => {
@@ -529,26 +533,28 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   }, [userId]);
 
   const router = useRouter();
-  // A press on a tool's answer: it lands where the answer says (the tool's page or deck, or New deck), and the search
-  // closes. Counted by the tool and its place in the answers, never the words typed.
-  const pressTool = useCallback(
-    (tool: ToolCardModel, index: number) => {
+  const land = useCallback(
+    (tool: ToolCardModel, index: number, href: string, deck?: DeckPick, place?: number) => {
       if (opening || pressedRef.current || bodyRef.current?.closest("[inert]")) return;
       pressedRef.current = true;
       stalledRef.current = false;
-      captureToolEvent("ask_tool_pressed", { tool: tool.id, from: !desktop ? "phone_sheet" : anchor === "home" ? "home_inline" : "desktop", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
+      captureToolEvent("ask_tool_pressed", {
+        tool: tool.id,
+        from: !desktop ? "phone_sheet" : anchor === "home" ? "home_inline" : "desktop",
+        rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3",
+        picked: place === undefined ? "none" : askPicked(place),
+      });
       if (tool.id === "find-a-deck") captureToolEvent("find_a_deck_opened", { from: "ask" });
       // The search's Back entry stays under the new route. Without this its release reads "closed some other way" before
       // the route has moved, and its `history.back()` cancels the push (a press that only closed).
       leaveDialogsForNavigation();
-      const href = toolHref(tool);
       if (new URL(href, window.location.href).pathname === window.location.pathname) {
         // Same page (Wishlist from the wishlist, a deck tool from that deck): no pathname change will ever close the
         // search, so it closes now and the page updates under it (R12-C1).
         close();
       } else {
         // Held up in the Opening state until the page commits; the pathname change below is what closes it.
-        setOpening({ id: tool.id, name: tool.copy.name });
+        setOpening({ id: tool.id, name: tool.copy.name, deck: deck?.id });
         setAnnouncement(askCopy.opening(tool.copy.name));
         // The options go inert, so focus would drop to the page: it stays in the field, where Esc still closes.
         inputRef.current?.focus({ preventScroll: true });
@@ -558,9 +564,55 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     [close, router, desktop, anchor, opening],
   );
 
+  // A press on a tool's answer: it lands where the answer says (the tool's page or deck, or New deck), and the search
+  // closes. Counted by the tool and its place in the answers, never the words typed. A tool several decks can use opens
+  // the picker first (R12 Q21); one deck, or none, goes straight.
+  const pressTool = useCallback(
+    (tool: ToolCardModel, index: number) => {
+      if (opening || pressedRef.current || bodyRef.current?.closest("[inert]")) return;
+      const picks = picksOf(tool);
+      if (picks) {
+        setPicking(tool);
+        setActive(0);
+        setAnnouncement(askCopy.pick.line(picks.length));
+        inputRef.current?.focus({ preventScroll: true });
+        return;
+      }
+      land(tool, index, toolHref(tool));
+    },
+    [land, opening],
+  );
+  const pressDeck = useCallback(
+    (tool: ToolCardModel, deck: DeckPick, place: number) => land(tool, Math.max(0, ask.tools.findIndex((t) => t.id === tool.id)), deck.href, deck, place),
+    [land, ask.tools],
+  );
+  // Back to the answers, the keyboard's place on the answer it left.
+  const pickBack = useCallback(() => {
+    if (opening) return;
+    setActive(picking ? Math.max(0, ask.tools.findIndex((t) => t.id === picking.id)) : -1);
+    setPicking(null);
+    inputRef.current?.focus({ preventScroll: true });
+  }, [opening, picking, ask.tools]);
+
   const onFieldKey = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
       if (e.nativeEvent.isComposing || opening) return;
+      const picks = picking ? picksOf(picking) : null;
+      if (picking && picks) {
+        // The picker has the keys: the field stays focused and its `active` walks the decks. Backspace is Back here.
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+          e.preventDefault();
+          setActive(e.key === "ArrowDown" ? (active + 1) % picks.length : active <= 0 ? picks.length - 1 : active - 1);
+        } else if (e.key === "Enter" && active >= 0) {
+          e.preventDefault();
+          const deck = picks[active];
+          if (deck && !e.repeat) pressDeck(picking, deck, active);
+        } else if (e.key === "Backspace" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          e.preventDefault();
+          pickBack();
+        }
+        return;
+      }
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         const total = toolCount + list.length;
         if (total === 0) return;
@@ -577,12 +629,13 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
         } else pick(list, active - toolCount);
       }
     },
-    [list, active, pick, canAdd, addCard, toolCount, ask.tools, pressTool, opening],
+    [list, active, pick, canAdd, addCard, toolCount, ask.tools, pressTool, opening, picking, pressDeck, pickBack],
   );
 
   // Escape clears a query first, then closes (README call 7).
   const escape = useCallback(() => {
     if (query.length > 0 && !opening) {
+      setPicking(null);
       setQuery("");
       setActive(-1);
       inputRef.current?.focus();
@@ -592,6 +645,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const changeQuery = useCallback((next: string) => {
     // The field holds still while a tool opens: a new query would swap the answers under the pressed row.
     if (opening) return;
+    setPicking(null);
     setQuery(next);
     setReturned(null);
     // The list under the keys changes with the query (results, then recents), so no old place in it carries over.
@@ -680,7 +734,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     recentsFailed,
     open,
     openCardRef,
-    ask: { ids: ask.ids, tools: ask.tools, starters: ask.starters, onStarter, onPressTool: pressTool, opening: opening?.id ?? null, onNavigate: close },
+    ask: { ids: ask.ids, tools: ask.tools, starters: ask.starters, onStarter, onPressTool: pressTool, opening: opening?.id ?? null, picking, openingDeck: opening?.deck ?? null, onPickBack: pickBack, onPickDeck: pressDeck, onNavigate: close },
     onAddSeveral: canAdd ? addSeveral : null,
     onAdd: canAdd ? addCard : null,
     addedTo,

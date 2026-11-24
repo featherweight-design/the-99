@@ -19,7 +19,7 @@ import { priceFor } from "../decks/price-query";
 import { liveLockedIdsByDeck } from "../decks/locks";
 import { listDecksWithStats, type DeckListItem } from "../decks/read";
 import { readBuyRowPrices } from "../decks/shopping-rollup";
-import { byTouched } from "../decks/touched";
+import { byTouched, touchedBy, type TouchVerb } from "../decks/touched";
 import { loadFriendSpares } from "../social/spares";
 import { effectiveLimit, isOverLimit } from "../swaps/limit";
 import type { Store } from "../stores/rows";
@@ -34,6 +34,11 @@ export type DeckToolId = (typeof DECK_TOOLS)[number];
 export type DeckFacts = {
   id: string;
   name: string;
+  /** The deck's commander, its art crop (null when the printing has none) and when its contents last changed (ISO): what the deck picker draws. */
+  commander: string;
+  art: string | null;
+  touched: string;
+  verb: TouchVerb;
   /** The body's cards, commanders excluded. */
   built: number;
   /** Cards on import lines still unresolved: Top off fills the slots these leave, never the slots they will take. */
@@ -60,12 +65,13 @@ export const FITS: Record<DeckToolId, (d: DeckFacts) => boolean> = {
 };
 
 /** The decks a tool fits, in the order given, which the loader makes most recently touched first (R2 gap 1). */
-export type ToolFit = { decks: { id: string; name: string }[] };
+export type FitDeck = { id: string; name: string; commander: string; art: string | null; touched: string; verb: TouchVerb };
+export type ToolFit = { decks: FitDeck[] };
 
 export function fitsOf(decks: readonly DeckFacts[], tools: readonly DeckToolId[]): Partial<Record<DeckToolId, ToolFit>> {
   const out: Partial<Record<DeckToolId, ToolFit>> = {};
   for (const tool of tools) {
-    out[tool] = { decks: decks.filter(FITS[tool]).map((d) => ({ id: d.id, name: d.name })) };
+    out[tool] = { decks: decks.filter(FITS[tool]).map((d) => ({ id: d.id, name: d.name, commander: d.commander, art: d.art, touched: d.touched, verb: d.verb })) };
   }
   return out;
 }
@@ -112,6 +118,10 @@ export function deckFacts(
   return [...list].sort(byTouched).map((d): DeckFacts => ({
     id: d.id,
     name: d.name,
+    commander: d.commanderName,
+    art: d.commanderArtCropUri,
+    touched: touchedBy(d).at.toISOString(),
+    verb: touchedBy(d).verb,
     built: d.built,
     unresolved: d.unresolvedCount,
     size: deckBodySize(d.partnerName !== null),

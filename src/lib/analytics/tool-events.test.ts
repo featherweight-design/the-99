@@ -5,7 +5,9 @@ import {
   ASK_CARDS,
   ASK_COUNT,
   ASK_PRESSED_FROM,
+  ASK_PICKED,
   ASK_RANK,
+  askPicked,
   ASK_TOOL_IDS,
   ASK_WORDS,
   FEED_COUNT_BUCKET,
@@ -80,8 +82,10 @@ describe("tool discovery events", () => {
     for (const words of ASK_WORDS) closed("ask_miss", { words });
     closed("ask_result", { count: ASK_COUNT[2], first: ASK_TOOL_IDS[0], cards: ASK_CARDS[1], words: ASK_WORDS[2] });
     closed("ask_result", { count: "0", first: "none", cards: "none", words: "3+" });
-    for (const from of ASK_PRESSED_FROM) closed("ask_tool_pressed", { tool: ASK_TOOL_IDS[0], from, rank: ASK_RANK[0] });
-    for (const tool of ASK_TOOL_IDS) closed("ask_tool_pressed", { tool, from: ASK_PRESSED_FROM[1], rank: ASK_RANK[0] });
+    for (const from of ASK_PRESSED_FROM) closed("ask_tool_pressed", { tool: ASK_TOOL_IDS[0], from, rank: ASK_RANK[0], picked: "none" });
+    for (const tool of ASK_TOOL_IDS) closed("ask_tool_pressed", { tool, from: ASK_PRESSED_FROM[1], rank: ASK_RANK[0], picked: "none" });
+    for (const picked of ASK_PICKED) closed("ask_tool_pressed", { tool: ASK_TOOL_IDS[2], from: ASK_PRESSED_FROM[0], rank: ASK_RANK[0], picked });
+    expect([0, 1, 2, 9].map(askPicked)).toEqual(["1", "2", "3+", "3+"]);
     expect(SEARCH_OPENED_FROM).toEqual(expect.arrayContaining(["home_field", "home_starter"]));
     expect(WELCOME_WHERE_FROM).toContain("panel_foot");
     expect(ASK_PRESSED_FROM).toContain("home_inline");
