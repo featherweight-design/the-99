@@ -14,6 +14,12 @@ export const landingCopy = {
   preview: {
     note: "Preview of the landing page. Nothing you enter is saved. Only admins can see this.",
   },
+  /** The short sign-in page `/` draws while the landing's switch is off. */
+  fallback: {
+    sublabel: "THE NINETY-NINE",
+    invite: "Invite-only · access by request",
+    inviteMore: "· a Commander companion",
+  },
   topBar: {
     /** Shipped (the public pages' signed-out block). */
     signIn: "Sign in",

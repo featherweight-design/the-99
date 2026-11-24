@@ -51,6 +51,7 @@ import { SignedOutLanding, landingMetadata } from "./landing-entry";
 import { CheckInPrompt } from "../components/feedback/check-in-prompt";
 import { feedbackEnabled } from "../lib/feedback/flag";
 import { DeletedToast } from "../components/landing/deleted-toast";
+import { landingCopy } from "../lib/copy/landing";
 
 /**
  * What the signed-in Home draws, cached whole. First run draws none of the Dashboard. Both carry the reader's About
@@ -132,7 +133,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         <p
           className="mt-[14px] md:mt-[16px] text-[11px] md:text-[13px] tracking-[0.4em] md:tracking-[0.44em] text-accent-text font-mono uppercase"
         >
-          THE NINETY-NINE
+          {landingCopy.fallback.sublabel}
         </p>
 
         {/* Tagline per §Tagline
@@ -143,7 +144,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         <p
           className="mt-[22px] md:mt-[26px] max-w-[280px] md:max-w-none italic leading-[1.5] text-[17px] md:text-[21px] text-fg-body font-sans"
         >
-          99 problems, but your commander ain’t one.
+          {landingCopy.hero.kicker}
         </p>
 
         {/* Sign in button per §Sign in button
@@ -154,7 +155,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             type="button"
             className="mt-[34px] md:mt-[36px] w-full max-w-[260px] md:w-auto md:max-w-none rounded-[8px] py-[14px] px-0 md:px-[40px] font-semibold text-[15px] font-sans bg-accent hover:bg-accent-hover text-bg transition-colors cursor-pointer border-none"
           >
-            Sign in
+            {landingCopy.topBar.signIn}
           </button>
         </SignInButton>
 
@@ -167,8 +168,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         <p
           className="mt-[18px] md:mt-[20px] text-[11px] md:text-[12px] tracking-[0.04em] text-fg-faint font-mono"
         >
-          Invite-only · access by request
-          <span className="hidden md:inline"> · a Commander companion</span>
+          {landingCopy.fallback.invite}
+          <span className="hidden md:inline">{" "}{landingCopy.fallback.inviteMore}</span>
         </p>
       </section>
       </>

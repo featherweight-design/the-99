@@ -162,10 +162,7 @@ export function BandKicker({ rank, isBestFit }: { rank: number | null; isBestFit
   // line, since the band's label block is measured with it in.
   if (rank === null) return <>{" "}</>;
   return (
-    <>
-      Rank {rank}
-      {isBestFit ? " · your best fit" : ""}
-    </>
+    <>{hideCommanderCopy.rankLine(rank, isBestFit)}</>
   );
 }
 
@@ -200,7 +197,7 @@ export function HeroRankClause({
     </span>
   ) : (
     <span className="font-mono" style={{ fontSize: 13, color: "var(--fg-faint)" }}>
-      Rank #{rank}
+      {hideCommanderCopy.rankHash(rank)}
     </span>
   );
 }

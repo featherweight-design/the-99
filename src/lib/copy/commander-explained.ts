@@ -399,6 +399,9 @@ export const hideCommanderCopy = {
     heading: "Hidden.",
     body: "It stays out of For you, Discover and Help me choose until you bring it back.",
   },
+  /** The hero's rank clause. */
+  rankLine: (rank: number, isBestFit: boolean) => `Rank ${rank}${isBestFit ? " · your best fit" : ""}`,
+  rankHash: (rank: number) => `Rank #${rank}`,
   unhide: "Unhide",
   unhideAria: (name: string) => `Unhide ${name}`,
   /** The quiet line the page offers while the commander is not hidden. WAS: "Hide from my lists",

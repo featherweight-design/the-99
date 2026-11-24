@@ -6,6 +6,8 @@
 // "EDHREC doesn't track this commander" note on rec-card.tsx / detail.tsx.
 
 export const commandersCopy = {
+  /** The ninety-nine as a numeral, the round mark on the empty ranks and the guided banner. */
+  numeral: "XCIX",
   /**
    * `/commanders` at zero cards, the no-collection entry's (Open 7): one button to /collection, where every way in is.
    */
@@ -13,6 +15,46 @@ export const commandersCopy = {
     title: "Nothing to rank yet",
     body: "We rank commanders from the cards you own. Add some and every one you can build shows up here.",
     button: "Add your cards",
+  },
+  /** `/commanders` when the collection was scanned and no card can lead. */
+  emptyRanks: {
+    title: "No commanders in the ranks, yet",
+    bodyMobile: (cardsRead: string) =>
+      `We scanned all ${cardsRead} cards and none can helm a legal 99 on their own. Add a legendary creature and they’ll show up here.`,
+    bodyDesktop: (cardsRead: string) =>
+      `We scanned all ${cardsRead} cards and none can helm a legal 99 on their own. Add a legendary creature, or a planeswalker that can command, and they’ll appear here, ranked.`,
+    addCards: "Add more cards",
+    viewCollection: "View collection",
+    retry: "Retry",
+  },
+  /** The degraded banner's synergy variant. */
+  degradedSynergy: {
+    heading: "Synergy data unavailable",
+    retryNow: "Retry now",
+  },
+  /** A commander page's Pool section. */
+  pool: {
+    heading: "The Pool",
+    size: (n: number) => `${n} card${n === 1 ? "" : "s"} fit this identity`,
+    caption: (name: string) =>
+      `Cards from your collection that fit within ${name}’s color identity and could slot into the 99.`,
+  },
+  /** A commander page's synergy section. */
+  synergy: {
+    heading: "EDHREC Synergy",
+    hidden: "Synergy receipts hidden: EDHREC data unavailable",
+    fitBarNone: "Synergy —",
+    owned: (owned: number, total: number) => `${owned} / ${total} owned`,
+    pctOwned: (pct: number) => `${pct}% owned`,
+    ofTop: (total: number) => `of top ${total}`,
+  },
+  /** The ranking's reveal control and its end line. */
+  reveal: {
+    more: (step: number) => `Show ${step} more`,
+    remaining: (n: number) => `${n.toLocaleString("en-US")} remaining`,
+    moreAria: (step: number, remaining: number) =>
+      `Show ${step} more commanders, ${remaining.toLocaleString("en-US")} remaining`,
+    end: (total: number) => `End of ranking · ${total.toLocaleString("en-US")}`,
   },
   /** The first-run guide's banner on the commanders page. */
   guidedBanner: {

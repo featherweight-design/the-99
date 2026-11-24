@@ -129,7 +129,7 @@ export function GuidedBanner({ uniqueCardsRead, candidateCount, helpMeChoose = f
             className="font-display font-[700]"
             style={{ fontSize: 13, color: "var(--accent-text)", letterSpacing: "0.06em" }}
           >
-            XCIX
+            {commandersCopy.numeral}
           </span>
         </div>
 

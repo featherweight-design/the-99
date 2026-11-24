@@ -17,6 +17,7 @@ import type { CardFacet } from "../../lib/cards/facet";
 import type { SynergyCard } from "../../lib/commanders/synergy-cards";
 import { facetCounts } from "../../lib/commanders/synergy-cards";
 import { explainedCopy } from "../../lib/copy/commander-explained";
+import { commandersCopy } from "../../lib/copy/commanders";
 import { KeyPip } from "../ui/ownership-dot";
 import { synergyCopy } from "../../lib/copy/synergy-discovery";
 import { useDiscardedScroll } from "../ui/scroll-reset";
@@ -149,13 +150,13 @@ export function SynergyPanel({
               className="font-mono"
               style={{ fontSize: 12, color: "var(--fg)" }}
             >
-              {ownedCount} / {edhrecTotal} owned
+              {commandersCopy.synergy.owned(ownedCount, edhrecTotal)}
             </span>
             <span
               className="font-mono"
               style={{ fontSize: 12, color: "var(--success)", marginLeft: "auto" }}
             >
-              {pct}% owned
+              {commandersCopy.synergy.pctOwned(pct)}
             </span>
           </div>
         ) : (
@@ -171,7 +172,7 @@ export function SynergyPanel({
               className="font-mono"
               style={{ fontSize: 14, color: "var(--fg-faint)" }}
             >
-              of top {edhrecTotal}
+              {commandersCopy.synergy.ofTop(edhrecTotal)}
             </span>
             {/* Progress bar track */}
             <div
@@ -198,7 +199,7 @@ export function SynergyPanel({
               className="font-mono"
               style={{ fontSize: 12, color: "var(--success)" }}
             >
-              {pct}% owned
+              {commandersCopy.synergy.pctOwned(pct)}
             </span>
           </div>
         )}

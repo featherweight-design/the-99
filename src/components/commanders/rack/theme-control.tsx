@@ -48,7 +48,7 @@ const LIST_COPY: SetListSheetCopy = {
   optionAriaUnavailable: themesPanelCopy.optionAriaUnavailable,
   announceMatches: themesPanelCopy.announceMatches,
   announceResult: copy.listShown,
-  done: "Back to filters",
+  done: filterCopy.backToFilters,
 };
 
 function toggle(list: readonly string[], code: string): string[] {

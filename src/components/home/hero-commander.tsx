@@ -10,6 +10,7 @@ import { PrimaryButton } from "@/components/ui/button";
 import { commanderDisplayName } from "../../lib/cards/printed-name";
 import { ArtWash, INK_SHADOW } from "@/components/ui/art-wash";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
+import { homeHeroCopy } from "../../lib/copy/home";
 import { refreshCopy } from "../../lib/copy/refresh";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 
@@ -122,7 +123,7 @@ export function HeroCommander({ item, inUse }: { item: CommanderListItem; inUse:
               <span className="text-[color:var(--fg)]">{score}</span>
               {denominator !== null && (
                 <span className="tracking-[0.1em] text-[color:var(--fg-faint)]">
-                  &nbsp;{denominator}
+                  {homeHeroCopy.denominator(denominator)}
                 </span>
               )}
             </div>

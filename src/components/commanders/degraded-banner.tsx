@@ -6,6 +6,7 @@
 
 import { retryRecs } from "../../app/commanders/actions";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { commandersCopy } from "../../lib/copy/commanders";
 import { RetryGhost, RetryLink } from "./retry-submit";
 
 /**
@@ -41,7 +42,7 @@ export function DegradedBanner({
   // The heading is the deck-read failure in both new variants, because that is
   // the one the player can see a control change for: `What's free` goes struck
   // and unselectable, while EDHREC being unreachable changes no affordance.
-  const heading = synergy ? "Synergy data unavailable" : degraded.heading;
+  const heading = synergy ? commandersCopy.degradedSynergy.heading : degraded.heading;
   const bothBody = partial ? degraded.bodyWithSomeSynergy : degraded.bodyWithSynergy;
   const mobileBody = synergy
     ? partial
@@ -62,7 +63,7 @@ export function DegradedBanner({
   // even where the block happens to agree, so a later copy edit cannot move a
   // pixel this ticket did not touch.
   const mobileRetry = synergy ? "Retry" : degraded.retry;
-  const desktopRetry = synergy ? "Retry now" : degraded.retry;
+  const desktopRetry = synergy ? commandersCopy.degradedSynergy.retryNow : degraded.retry;
 
   return (
     <>

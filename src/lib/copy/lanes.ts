@@ -11,6 +11,8 @@ import type { FilterPanelCopy } from "./collection";
 const n = (v: number) => v.toLocaleString("en-US");
 
 export const filterCopy = {
+  /** A set list that is a second layer over the filter sheet: its dismiss names where it returns to. */
+  backToFilters: "Back to filters",
   search: {
     placeholder: "Search",
     placeholderWide: "Search commanders",

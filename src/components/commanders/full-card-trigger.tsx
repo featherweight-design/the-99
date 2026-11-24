@@ -5,6 +5,7 @@
 
 import { useCardDetail, useCardIntent, type Sibling } from "../cards/card-detail-provider";
 import { PENDING_OPACITY } from "./pending";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 
 /** The corners the control sits in. One rule decides all four: **bottom, on
@@ -176,7 +177,7 @@ export function FullCardTrigger({
           height: 44,
           cursor: "pointer",
         }}
-        aria-label="View card details"
+        aria-label={changeCommanderCopy.detailsAria}
         // Never `disabled` while the fetch runs, for the same reason
         // CardDetailTrigger is not: disabling the focused element blurs it, and
         // the modal's focus-return would have nothing to hand focus back to.
