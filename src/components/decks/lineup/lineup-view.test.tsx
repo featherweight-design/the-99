@@ -4,6 +4,7 @@ import type { LineupData, LineupDeck } from "../../../lib/lineup/types";
 import { cardDetailCopy } from "../../cards/card-detail-provider";
 import { IdentityMark } from "./identity-mark";
 import { LineupView } from "./lineup-view";
+import { decksStatsCopy } from "../../../lib/copy/decks-stats";
 
 const NOW = "2026-10-11T12:00:00.000Z";
 const game = (day: string, result: "win" | "loss" = "loss", podSize = 4) => ({ result, playedAt: `${day}T20:00:00.000Z`, podSize });
@@ -38,7 +39,7 @@ describe("LineupView: folding", () => {
     expect(within(card("spread")).getByText("bracket 1–2 holds 1 · 1 not analyzed")).toBeTruthy();
     expect(card("recency").querySelector("[data-stats-summary]")).toBeNull();
     // The head is named by its title, and by the summary while folded; never by the denominator.
-    expect(screen.getByRole("button", { name: "When each deck last played" })).toBe(head("recency"));
+    expect(screen.getByRole("button", { name: decksStatsCopy.recency.title })).toBe(head("recency"));
     expect(head("recency").getAttribute("aria-describedby")).toBe("stats-recency-denom");
     expect(document.getElementById("stats-recency-denom")?.textContent).toBe("2 of 4 played");
     expect(screen.getByRole("button", { name: "Brackets and colors bracket 1–2 holds 1 · 1 not analyzed" })).toBe(head("spread"));
@@ -55,9 +56,9 @@ describe("LineupView: folding", () => {
   it("draws the cards the server's cookie says are open, and Expand all / Collapse all moves every card", () => {
     draw(DATA, "spread");
     expect(head("recency").getAttribute("aria-expanded")).toBe("false");
-    fireEvent.click(screen.getByRole("button", { name: "Expand all" }));
+    fireEvent.click(screen.getByRole("button", { name: decksStatsCopy.fold.expandAll }));
     expect(["recency", "spread"].map((id) => head(id).getAttribute("aria-expanded"))).toEqual(["true", "true"]);
-    fireEvent.click(screen.getByRole("button", { name: "Collapse all" }));
+    fireEvent.click(screen.getByRole("button", { name: decksStatsCopy.fold.collapseAll }));
     expect(["recency", "spread"].map((id) => head(id).getAttribute("aria-expanded"))).toEqual(["false", "false"]);
     expect(localStorage.getItem("the99:decks:stats:open")).toBe("-");
   });
@@ -66,14 +67,14 @@ describe("LineupView: folding", () => {
 describe("LineupView: the door to Games", () => {
   it("offers See every game from the recency card, to the Games view with no filter on", () => {
     draw();
-    const door = within(card("recency")).getByRole("link", { name: "See every game \u203a" });
+    const door = within(card("recency")).getByRole("link", { name: decksStatsCopy.recency.everyGame });
     expect(door.getAttribute("href")).toBe("/decks?view=games");
   });
 
   it("offers none when no deck has a game to see", () => {
     // The positive control: the same card, drawn from data that has games, carries the door.
     const { unmount } = draw();
-    expect(within(card("recency")).queryByRole("link", { name: "See every game \u203a" })).not.toBeNull();
+    expect(within(card("recency")).queryByRole("link", { name: decksStatsCopy.recency.everyGame })).not.toBeNull();
     unmount();
     draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, games: [] })) });
     expect(card("recency")).not.toBeNull();
@@ -97,7 +98,7 @@ describe("LineupView: the filter", () => {
     draw(DATA, "recency,spread");
     expect(screen.getAllByText("4 decks · 1 brew included").length).toBeGreaterThan(0);
     expect(within(card("spread")).getByText("Gishath")).toBeTruthy();
-    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: decksStatsCopy.filter.finished })[0]);
     expect(screen.getAllByText("3 finished decks · 1 brew left out").length).toBeGreaterThan(0);
     expect(within(card("spread")).queryByText("Gishath")).toBeNull();
   });
@@ -106,8 +107,8 @@ describe("LineupView: the filter", () => {
 describe("LineupView: one deck", () => {
   it("says 1 deck under All decks, and counts what Finished only kept when the only deck is a brew", () => {
     draw({ decks: [deck("Gishath", { brew: true })], pricesAsOf: null, shared: null, cardCounts: { all: 0, finished: 0 }, collection: null });
-    expect(screen.getAllByText("1 deck").length).toBeGreaterThan(0);
-    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    expect(screen.getAllByText(decksStatsCopy.filter.one).length).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("radio", { name: decksStatsCopy.filter.finished })[0]);
     expect(screen.getAllByText("0 finished decks · 1 brew left out").length).toBeGreaterThan(0);
   });
 });
@@ -135,7 +136,7 @@ describe("LineupView: recency", () => {
 
   it("says no games are logged when none are, with every deck under Never played", () => {
     draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, games: [] })) });
-    expect(within(card("recency")).getByText("No games logged yet.")).toBeTruthy();
+    expect(within(card("recency")).getByText(decksStatsCopy.recency.noGames)).toBeTruthy();
     expect(within(card("recency")).getByText("4 of 4")).toBeTruthy();
   });
 });
@@ -165,7 +166,7 @@ describe("LineupView: brackets and colors", () => {
   it("marks no deck chosen, though Among compares one: no chip in accent and no ringed segment", () => {
     const b = { manaValue: 3, lands: 36, ramp: 10, draw: 10, removal: 8, valueCents: 100 };
     draw({ ...DATA, decks: DATA.decks.map((d) => ({ ...d, build: b })) }, "spread,among");
-    expect(within(card("among")).getByRole("combobox", { name: "Choose a deck" })).toBeTruthy();
+    expect(within(card("among")).getByRole("combobox", { name: decksStatsCopy.among.selectAria })).toBeTruthy();
     expect(card("spread").querySelector('[class*="border-[color:var(--accent)]"]')).toBeNull();
     expect(card("spread").querySelector('[class*="text-[color:var(--accent-text)]"]')).toBeNull();
     expect([...card("spread").querySelectorAll("[data-stats-color] [aria-hidden] > span")].some((s) => (s as HTMLElement).style.boxShadow)).toBe(false);
@@ -200,7 +201,7 @@ describe("LineupView: among, jobs and worth", () => {
     const ramp = card("among").querySelector('[data-stats-strip="ramp"]') as HTMLElement;
     expect(within(ramp).getByText("1st of 3")).toBeTruthy();
     expect(within(ramp).getByText("median 15")).toBeTruthy();
-    expect((within(card("among")).getByRole("combobox", { name: "Choose a deck" }) as HTMLSelectElement).value).toBe("scrappy");
+    expect((within(card("among")).getByRole("combobox", { name: decksStatsCopy.among.selectAria }) as HTMLSelectElement).value).toBe("scrappy");
   });
 
   it("follows the chosen deck in Among, Jobs and Worth", () => {
@@ -226,7 +227,7 @@ describe("LineupView: among, jobs and worth", () => {
     expect(order()).toEqual(["brago", "tovolar", "scrappy"]);
     expect(within(card("worth")).getByText("$398.17")).toBeTruthy();
     expect(within(card("worth")).getByText("Mana Pool prices, 2h ago")).toBeTruthy();
-    fireEvent.click(within(card("worth")).getByRole("radio", { name: "By name" }));
+    fireEvent.click(within(card("worth")).getByRole("radio", { name: decksStatsCopy.worth.sortName }));
     expect(order()).toEqual(["brago", "scrappy", "tovolar"]);
   });
 
@@ -235,10 +236,10 @@ describe("LineupView: among, jobs and worth", () => {
     draw(BUILT, "worth");
     const group = within(card("worth")).getByRole("radiogroup", { name: "Order" });
     expect(card("worth").querySelector("[aria-pressed]")).toBeNull();
-    const most = within(group).getByRole("radio", { name: "Most first" });
+    const most = within(group).getByRole("radio", { name: decksStatsCopy.worth.sortMost });
     expect(most).toHaveAttribute("aria-checked", "true");
     fireEvent.keyDown(most, { key: "ArrowRight" });
-    expect(within(group).getByRole("radio", { name: "By name" })).toHaveAttribute("aria-checked", "true");
+    expect(within(group).getByRole("radio", { name: decksStatsCopy.worth.sortName })).toHaveAttribute("aria-checked", "true");
     expect([...card("worth").querySelectorAll("[data-stats-worth]")].map((r) => r.getAttribute("data-stats-worth"))).toEqual(["brago", "scrappy", "tovolar"]);
   });
 
@@ -291,36 +292,36 @@ describe("LineupView: cards your decks share", () => {
 
   it("draws the shared cards' filter as a radiogroup, In the most decks chosen first", () => {
     render(<LineupView data={SH} now={NOW} foldServer="shared" viewSwitch={null} />);
-    const group = within(card("shared")).getByRole("radiogroup", { name: "Which cards" });
+    const group = within(card("shared")).getByRole("radiogroup", { name: decksStatsCopy.shared.chipsAria });
     expect(card("shared").querySelector("[aria-pressed]")).toBeNull();
-    expect(within(group).getByRole("radio", { name: "In the most decks" })).toHaveAttribute("aria-checked", "true");
+    expect(within(group).getByRole("radio", { name: decksStatsCopy.shared.chipMost })).toHaveAttribute("aria-checked", "true");
     fireEvent.click(within(group).getByRole("radio", { name: "Wanted more than you own · 1" }));
     expect(within(group).getByRole("radio", { name: "Wanted more than you own · 1" })).toHaveAttribute("aria-checked", "true");
-    expect(within(group).getByRole("radio", { name: "In the most decks" })).toHaveAttribute("aria-checked", "false");
+    expect(within(group).getByRole("radio", { name: decksStatsCopy.shared.chipMost })).toHaveAttribute("aria-checked", "false");
   });
 
   it("says no card is in two decks when the decks share none, and counts one card in the singular", () => {
     render(<LineupView data={{ ...SH, shared: [] }} now={NOW} foldServer="-" viewSwitch={null} />);
-    expect(within(card("shared")).getByText("no card in two decks")).toBeTruthy();
+    expect(within(card("shared")).getByText(decksStatsCopy.summary.sharedNone)).toBeTruthy();
     expect(within(card("shared")).getByText("4 decks · 0 cards")).toBeTruthy();
   });
 
   it("counts every distinct card in scope in the denominator, and says nothing is in scope with zero decks", () => {
     render(<LineupView data={{ ...SH, cardCounts: { all: 120, finished: 100 } }} now={NOW} foldServer="shared" viewSwitch={null} />);
     expect(within(card("shared")).getByText("4 decks · 120 cards")).toBeTruthy();
-    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: decksStatsCopy.filter.finished })[0]);
     expect(within(card("shared")).getByText("3 decks · 100 cards")).toBeTruthy();
   });
 
   it("uses the plural denominator, not the one-deck shorthand, when Finished only keeps no deck", () => {
     render(<LineupView data={{ ...SH, decks: [deck("Gishath", { brew: true }), deck("Kratos", { brew: true })] }} now={NOW} foldServer="shared" viewSwitch={null} />);
-    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: decksStatsCopy.filter.finished })[0]);
     expect(within(card("shared")).getByText("0 decks · 0 cards")).toBeTruthy();
   });
 
   it("says a card is shared once two decks play it, with one deck (T1)", () => {
     render(<LineupView data={{ ...SH, decks: [DATA.decks[0]] }} now={NOW} foldServer="shared" viewSwitch={null} />);
-    expect(within(card("shared")).getByText("Needs two decks.")).toBeTruthy();
+    expect(within(card("shared")).getByText(decksStatsCopy.shared.one)).toBeTruthy();
   });
 });
 
@@ -345,7 +346,7 @@ describe("LineupView: your collection, put to work", () => {
     expect(within(card("collection")).getByText("33% of your copies hold 70% of your value.")).toBeTruthy();
     // One square per 10 copies (4 of 12) and per $10 (21 of 30), filled where in a deck.
     expect(card("collection").querySelectorAll("[data-unit-in]").length).toBe(25);
-    fireEvent.click(screen.getAllByRole("radio", { name: "Finished only" })[0]);
+    fireEvent.click(screen.getAllByRole("radio", { name: decksStatsCopy.filter.finished })[0]);
     expect(within(card("collection")).getByText("25% of your copies hold 50% of your value.")).toBeTruthy();
   });
 
@@ -356,14 +357,14 @@ describe("LineupView: your collection, put to work", () => {
     expect(within(card("collection")).getByText("of Gishath decks")).toBeTruthy();
     fireEvent.click(within(card("collection")).getByRole("radio", { name: "20% or more · 3" }));
     expect(rows()).toEqual(["boots", "beast", "path"]);
-    fireEvent.change(within(card("collection")).getByRole("combobox", { name: "Whose commanders" }), { target: { value: "tovolar" } });
+    fireEvent.change(within(card("collection")).getByRole("combobox", { name: decksStatsCopy.collection.selectAria }), { target: { value: "tovolar" } });
     expect(rows()).toEqual(["beast", "boots"]);
     expect(within(card("collection")).getByRole("radio", { name: "40% or more · 1" })).toBeTruthy();
   });
 
   it("draws the collection cuts as a radiogroup, its string values mapping back to the cut", () => {
     draw(CO, "collection");
-    const group = within(card("collection")).getByRole("radiogroup", { name: "How often their decks run it" });
+    const group = within(card("collection")).getByRole("radiogroup", { name: decksStatsCopy.collection.cutsAria });
     expect(card("collection").querySelector("[aria-pressed]")).toBeNull();
     const forty = within(group).getByRole("radio", { name: "40% or more · 2" });
     expect(forty).toHaveAttribute("aria-checked", "true");
@@ -379,7 +380,7 @@ describe("LineupView: your collection, put to work", () => {
     // The default (All decks, 40%) would count 2.
     expect(card("collection").textContent).toContain("3 wanted by your commanders");
     fireEvent.click(head("collection"));
-    fireEvent.change(within(card("collection")).getByRole("combobox", { name: "Whose commanders" }), { target: { value: "scrappy" } });
+    fireEvent.change(within(card("collection")).getByRole("combobox", { name: decksStatsCopy.collection.selectAria }), { target: { value: "scrappy" } });
     fireEvent.click(head("collection"));
     expect(card("collection").textContent).toContain("1 wanted by your commanders");
   });
@@ -390,7 +391,7 @@ describe("LineupView: your collection, put to work", () => {
     expect(within(card("collection")).getByText(/90 of 120 copies priced/)).toBeTruthy();
     unmount();
     draw({ ...CO, collection: { ...c, pricedCopies: 0, valueCents: 0, all: { ...c.all, inDeckCents: 0 }, finished: { ...c.finished, inDeckCents: 0 } } }, "collection");
-    expect(within(card("collection")).queryByText("VALUE IN A DECK")).toBeNull();
+    expect(within(card("collection")).queryByText(decksStatsCopy.collection.valueIn)).toBeNull();
     expect(within(card("collection")).queryByText(/of your value/)).toBeNull();
     fireEvent.click(head("collection"));
     expect(card("collection").textContent).not.toContain("of the value");

@@ -11,18 +11,20 @@ vi.mock("../../app/cards/tag-actions", () => ({
 import { AnalysisEmpty } from "./analysis-empty";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { deckNoticesCopy } from "../../lib/copy/notices";
 
 // The description box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
 const wiring = { searchDescriptionCards } as unknown as DeckRowWiring;
 const render = (ui: React.ReactElement, options?: Omit<RenderOptions, "wrapper">) =>
   rtlRender(ui, { wrapper: ({ children }) => <DeckRowWiringProvider value={wiring}>{children}</DeckRowWiringProvider>, ...options });
 
-const NOTE = "Reads the bracket only. The overview waits until every card is legal in this deck.";
+const NOTE = deckNoticesCopy.check.note;
 
 describe("AnalysisEmpty's check note", () => {
   it("describes the press by the note's text alone, and See which opens Notices", () => {
     const onSee = vi.fn();
-    render(<AnalysisEmpty phase="idle" onRequest={() => {}} note={NOTE} see={{ label: "See which", onPress: onSee }} />);
+    render(<AnalysisEmpty phase="idle" onRequest={() => {}} note={NOTE} see={{ label: deckNoticesCopy.check.seeWhich, onPress: onSee }} />);
     const press = screen.getByRole("button", { name: "Analyze" });
     const id = press.getAttribute("aria-describedby");
     expect(id).toBeTruthy();
@@ -32,7 +34,7 @@ describe("AnalysisEmpty's check note", () => {
   });
 
   it("draws no note and no See which over a blocked press (F13)", () => {
-    render(<AnalysisEmpty phase="idle" onRequest={() => {}} blocked="Add 3 cards to analyze this deck." note={NOTE} see={{ label: "See which", onPress: () => {} }} />);
+    render(<AnalysisEmpty phase="idle" onRequest={() => {}} blocked="Add 3 cards to analyze this deck." note={NOTE} see={{ label: deckNoticesCopy.check.seeWhich, onPress: () => {} }} />);
     expect(screen.queryByTestId("press-note")).toBeNull();
     expect(screen.queryByRole("button", { name: /See which/ })).toBeNull();
   });
@@ -100,9 +102,9 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
 
   it("draws the field only while idle, never during loading", () => {
     const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} />);
-    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).toBeInTheDocument();
     rerender(<AnalysisEmpty phase="loading" onRequest={() => {}} description={null} />);
-    expect(screen.queryByLabelText("Describe your deck")).toBeNull();
+    expect(screen.queryByLabelText(deckDescriptionCopy.description.label)).toBeNull();
   });
 
   it("awaits the save before the press reads", async () => {
@@ -111,7 +113,7 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     const onSaveDescription = vi.fn(() => new Promise<{ ok: true }>((r) => { resolveSave = r; }));
     const onRequest = vi.fn(() => { order.push("request"); });
     render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Grind it out." } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Grind it out." } });
     fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
     expect(onRequest).not.toHaveBeenCalled();
     // The callback is deferred through one microtask (round 5: a callback that throws
@@ -132,7 +134,7 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
   it("saves nothing when the text is unchanged", () => {
     const onSaveDescription = vi.fn();
     render(<AnalysisEmpty phase="idle" onRequest={() => {}} description="Same." onSaveDescription={onSaveDescription} />);
-    fireEvent.blur(screen.getByLabelText("Describe your deck"));
+    fireEvent.blur(screen.getByLabelText(deckDescriptionCopy.description.label));
     expect(onSaveDescription).not.toHaveBeenCalled();
   });
 
@@ -142,7 +144,7 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
     const onRequest = vi.fn();
     render(<AnalysisEmpty phase="idle" onRequest={onRequest} description="Rocks: Sol Ring" onSaveDescription={onSaveDescription} />);
-    const box = screen.getByLabelText("Describe your deck");
+    const box = screen.getByLabelText(deckDescriptionCopy.description.label);
     fireEvent.change(box, { target: { value: "Rocks: [[Sol" } });
     fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
     fireEvent.blur(box);
@@ -157,23 +159,23 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     const onSaveDescription = vi.fn(async () => ({ ok: false as const, message: "That did not save. Try again." }));
     const onRequest = vi.fn();
     render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Grind it out." } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Grind it out." } });
     fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     expect(onRequest).not.toHaveBeenCalled();
     expect(screen.getByText("That did not save. Try again.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Describe your deck")).not.toHaveAttribute("readonly");
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).not.toHaveAttribute("readonly");
   });
 
   it("does not read, and resets the saving state, when the save rejects", async () => {
     const onSaveDescription = vi.fn(async () => { throw new Error("network"); });
     const onRequest = vi.fn();
     render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Grind it out." } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Grind it out." } });
     fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
     await act(async () => { await Promise.resolve(); await Promise.resolve(); });
     expect(onRequest).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Describe your deck")).not.toHaveAttribute("readonly");
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).not.toHaveAttribute("readonly");
   });
 
   // A callback that THROWS SYNCHRONOUSLY rather than returning a rejected promise — the shape
@@ -189,7 +191,7 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     });
     const onRequest = vi.fn();
     render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
-    const field = screen.getByLabelText("Describe your deck");
+    const field = screen.getByLabelText(deckDescriptionCopy.description.label);
     fireEvent.change(field, { target: { value: "Grind it out." } });
     fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
     await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
@@ -204,23 +206,23 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
   // Pre-open review: a revalidated description must not clobber an unsaved, in-progress edit.
   it("keeps an unsaved edit across a revalidation that brings a different description", () => {
     const { rerender } = render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} />);
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Still typing…" } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Still typing…" } });
     rerender(<AnalysisEmpty phase="idle" onRequest={() => {}} description="Saved from the header." />);
-    expect(screen.getByLabelText("Describe your deck")).toHaveValue("Still typing…");
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).toHaveValue("Still typing…");
   });
 
   // Pre-open review round 2: a successful save on blur announces itself through a status region.
   it("announces a successful save", async () => {
     const onSaveDescription = vi.fn(async () => ({ ok: true as const }));
     render(<AnalysisEmpty phase="idle" onRequest={() => {}} description={null} onSaveDescription={onSaveDescription} />);
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Grind it out." } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Grind it out." } });
     await act(async () => {
-      fireEvent.blur(screen.getByLabelText("Describe your deck"));
+      fireEvent.blur(screen.getByLabelText(deckDescriptionCopy.description.label));
       await Promise.resolve();
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+    expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
   });
 
   // Round 6: Analyze's own success callback calls `onRequest`, which can flip the panel to
@@ -232,13 +234,13 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     const { rerender } = render(
       <AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />,
     );
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Grind it out." } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Grind it out." } });
     fireEvent.click(screen.getByRole("button", { name: "Analyze" }));
     await act(async () => { await Promise.resolve(); await Promise.resolve(); await Promise.resolve(); });
     expect(onRequest).toHaveBeenCalledOnce();
     // The caller's real `onRequest` would switch `phase` to "loading" about now.
     rerender(<AnalysisEmpty phase="loading" onRequest={onRequest} description="Grind it out." onSaveDescription={onSaveDescription} />);
-    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+    expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
   });
 
   // Pre-open review round 2: blur starts a save, then an Analyze click a moment later must join
@@ -252,7 +254,7 @@ describe("AnalysisEmpty's description field (H35, STATES §1)", () => {
     });
     const onRequest = vi.fn();
     render(<AnalysisEmpty phase="idle" onRequest={onRequest} description={null} onSaveDescription={onSaveDescription} />);
-    const field = screen.getByLabelText("Describe your deck");
+    const field = screen.getByLabelText(deckDescriptionCopy.description.label);
     fireEvent.change(field, { target: { value: "Grind it out." } });
     fireEvent.blur(field);
     fireEvent.click(screen.getByRole("button", { name: "Analyze" }));

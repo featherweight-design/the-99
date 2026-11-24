@@ -61,6 +61,7 @@ import { OpenPreconView } from "./open-precon-view";
 import { preconsCopy } from "../../../lib/copy/precons";
 import { cardMarkCopy } from "../../../lib/copy/card-mark";
 import { foilMarkCopy } from "../../../lib/copy/foil-mark";
+import { viewToggleCopy } from "../../../lib/copy/card-surfaces";
 
 const card = (name: string, over: Partial<OpenPreconCard> = {}): OpenPreconCard => ({
   oracleId: name, name, typeLine: "Creature — Eldrazi", manaCost: null, layout: "normal", imageUri: null, quantity: 1, foil: 0,
@@ -90,7 +91,7 @@ describe("OpenPreconView", () => {
     expect(screen.queryByText(/basic lands not counted/)).toBeNull();
     expect(screen.getAllByTestId("group").every((g) => g.dataset.readonly === "true")).toBe(true);
     expect(screen.getByText("Wastes ×15")).toBeInTheDocument();
-    expect(screen.getByText("you own 0 of 1")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.group.own0of1)).toBeInTheDocument();
   });
 
   it("counts a card listed under two printings once in its group's note", () => {
@@ -168,14 +169,14 @@ describe("OpenPreconView", () => {
 
   it("draws the empty-collection band above the own box only without a collection (O5)", () => {
     const { rerender } = render(<OpenPreconView precon={precon()} fromNew={false} />);
-    expect(screen.queryByText("Upload your collection")).toBeNull();
+    expect(screen.queryByText(preconsCopy.empty.action)).toBeNull();
     rerender(<OpenPreconView precon={{ ...precon(), hasCollection: false }} fromNew={false} />);
-    expect(screen.getByRole("link", { name: "Upload your collection" }).getAttribute("href")).toBe("/collection/replace");
+    expect(screen.getByRole("link", { name: preconsCopy.empty.action }).getAttribute("href")).toBe("/collection/replace");
   });
 
   it("names New deck on the back link when the list was opened from it", () => {
     render(<OpenPreconView precon={precon()} fromNew />);
-    expect(screen.getByRole("link", { name: "‹ New deck" }).getAttribute("href")).toBe("/decks/precons?from=new");
+    expect(screen.getByRole("link", { name: preconsCopy.list.backNew }).getAttribute("href")).toBe("/decks/precons?from=new");
   });
 
   it("names every deck that shares the list, not the first two", () => {
@@ -238,7 +239,7 @@ describe("OpenPreconView", () => {
     render(<OpenPreconView precon={precon({ built: [{ deckId: "a", deckName: "HD - Eldrazi", shared: 1, sameCommanders: true, linked: true }] })} fromNew={false} />);
     fireEvent.click(screen.getByRole("button", { name: "Unlink" }));
     const dialog = screen.getByRole("dialog", { name: "Unlink HD - Eldrazi from Eldrazi Unbound?" });
-    expect(within(dialog).getByText("v0 leaves · v1 is first again")).toBeInTheDocument();
+    expect(within(dialog).getByText(preconsCopy.link.unlink.facts.history)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("button", { name: "Unlink" }));
     await waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("We couldn’t confirm that unlinked."));
     expect(linkActions.unlinkPrecon).toHaveBeenCalledWith("a", "EldraziUnbound_CMM");
@@ -250,7 +251,7 @@ describe("OpenPreconView", () => {
       { deckId: "e", deckName: "HD - Eldrazi", commanders: ["Ulalek"], shared: 73, sameCommanders: true, linkedElsewhere: null },
       { deckId: "k", deckName: "Kilo", commanders: ["Kilo"], shared: 6, sameCommanders: false, linkedElsewhere: "Counter Intelligence" },
     ] }} fromNew={false} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Link a deck" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.link.pickDeck.entry })[0]);
     const dialog = screen.getByRole("dialog", { name: "Link a deck to Eldrazi Unbound" });
     const radios = within(dialog).getAllByRole("radio");
     expect(radios.map((r) => r.getAttribute("aria-label"))).toEqual(["Select HD - Eldrazi", "Select Kilo"]);
@@ -271,7 +272,7 @@ describe("OpenPreconView", () => {
 
     it("opens on List, the deck page's well at the list-note line", () => {
       render(<OpenPreconView precon={precon()} fromNew={false} />);
-      expect(screen.getByRole("button", { name: "List view" })).toHaveAttribute("aria-pressed", "true");
+      expect(screen.getByRole("button", { name: viewToggleCopy.deck.list })).toHaveAttribute("aria-pressed", "true");
       expect(screen.getAllByTestId("group").every((g) => g.dataset.view === "list")).toBe(true);
       expect(screen.getByText("Wastes ×15")).toBeInTheDocument();
       expect(screen.queryByTestId("card-tail")).toBeNull();
@@ -280,7 +281,7 @@ describe("OpenPreconView", () => {
     it("draws every group as cards, stores the choice apart from the deck page's, and tiles the basics", () => {
       window.localStorage.setItem("the99:deck-view", "list");
       render(<OpenPreconView precon={precon()} fromNew={false} />);
-      fireEvent.click(screen.getByRole("button", { name: "Card view" }));
+      fireEvent.click(screen.getByRole("button", { name: viewToggleCopy.deck.card }));
       expect(screen.getAllByTestId("group").every((g) => g.dataset.view === "card")).toBe(true);
       expect(window.localStorage.getItem("the99:precons:openView")).toBe("card");
       expect(window.localStorage.getItem("the99:deck-view")).toBe("list");
@@ -288,7 +289,7 @@ describe("OpenPreconView", () => {
       expect(screen.queryByText("Wastes ×15")).toBeNull();
       const tail = screen.getByTestId("card-tail");
       expect(within(tail).getByText("×15")).toBeInTheDocument();
-      expect(within(tail).getByText("basic · not counted")).toBeInTheDocument();
+      expect(within(tail).getByText(preconsCopy.group.basicTag)).toBeInTheDocument();
       expect(screen.getByText(/each card shows the precon’s printing/)).toBeInTheDocument();
     });
 
@@ -343,9 +344,9 @@ describe("OpenPreconView edition switch", () => {
 
   it("starts on the edition the URL named, and draws that edition's printings", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} edition="collector" />);
-    expect(screen.getByRole("radio", { name: "Collector’s Edition" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: preconsCopy.open.edition.collector })).toHaveAttribute("aria-checked", "true");
     expect(viewed("Sol Ring")).toBe("cmc");
-    expect(screen.getByText("Every card in the Collector’s Edition is foil.")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.open.edition.collectorNote)).toBeInTheDocument();
   });
 
   it("draws the head's commander in the chosen edition's art", () => {
@@ -358,14 +359,14 @@ describe("OpenPreconView edition switch", () => {
     };
     render(<OpenPreconView precon={p} fromNew={false} />);
     expect(screen.getByTestId("thumb-early").dataset.src).toBe("plain-art");
-    fireEvent.click(screen.getByRole("radio", { name: "Collector’s Edition" }));
+    fireEvent.click(screen.getByRole("radio", { name: preconsCopy.open.edition.collector }));
     expect(screen.getByTestId("thumb-early").dataset.src).toBe("ce-art");
   });
 
   it("hands Start the chosen edition's own box and its own added date", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} />);
     expect(startProps).toMatchObject({ addFileName: "EldraziUnbound_CMM", addedOn: "2026-10-01T00:00:00.000Z" });
-    fireEvent.click(screen.getByRole("radio", { name: "Collector’s Edition" }));
+    fireEvent.click(screen.getByRole("radio", { name: preconsCopy.open.edition.collector }));
     expect(startProps).toMatchObject({ addFileName: "EldraziUnboundCE_CMM", addedOn: null });
   });
 
@@ -373,7 +374,7 @@ describe("OpenPreconView edition switch", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} />);
     expect(viewed("Sol Ring")).toBe("cmm");
     act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new&edition=collector"); });
-    expect(screen.getByRole("radio", { name: "Collector’s Edition" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: preconsCopy.open.edition.collector })).toHaveAttribute("aria-checked", "true");
     expect(viewed("Sol Ring")).toBe("cmc");
     act(() => { window.history.pushState(null, "", "/decks/precons/EldraziUnbound_CMM?from=new"); });
     expect(viewed("Sol Ring")).toBe("cmm");
@@ -389,7 +390,7 @@ describe("OpenPreconView edition switch", () => {
   it("swaps the printings on a press, keeps the counts, and writes only its own parameter", () => {
     render(<OpenPreconView precon={withCollector()} fromNew={false} />);
     expect(viewed("Sol Ring")).toBe("cmm");
-    fireEvent.click(screen.getByRole("radio", { name: "Collector’s Edition" }));
+    fireEvent.click(screen.getByRole("radio", { name: preconsCopy.open.edition.collector }));
     expect(viewed("Sol Ring")).toBe("cmc");
     expect(screen.getByText("1 of 2")).toBeInTheDocument();
     expect(mirrored.urls.at(-1)).toBe("/decks/precons/EldraziUnbound_CMM?from=new&edition=collector");
@@ -469,7 +470,7 @@ describe("the precon's Overview", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} overview={overview} />);
     const block = screen.getByTestId("precon-overview");
     expect(within(block).getByText("Overview")).toBeInTheDocument();
-    expect(within(block).getByText("written for this precon’s list")).toBeInTheDocument();
+    expect(within(block).getByText(preconsCopy.open.overview.aside)).toBeInTheDocument();
     expect(block.textContent).toContain("Ramp with Sol Ring and swing wide.");
     expect(within(block).getByRole("button", { name: /View full overview/ })).toBeInTheDocument();
     // Order in the header: the own box, then the block, then the list note.
@@ -494,7 +495,7 @@ describe("the precon's Overview", () => {
   it("draws no block, and no placeholder, for a precon with no Overview", () => {
     render(<OpenPreconView precon={precon()} fromNew={false} overview={null} />);
     expect(screen.queryByTestId("precon-overview")).toBeNull();
-    expect(screen.queryByText("written for this precon’s list")).toBeNull();
+    expect(screen.queryByText(preconsCopy.open.overview.aside)).toBeNull();
   });
 });
 

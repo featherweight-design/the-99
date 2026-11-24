@@ -3,6 +3,7 @@
 // commander step and every retry, and the add's refusal lands in the page's own banner.
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { preconsCopy } from "../../lib/copy/precons";
 
 const importDeck = vi.fn();
 const push = vi.fn();
@@ -14,14 +15,14 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 const { ImportEntry } = await import("./import-entry");
 const { deckImportCopy: copy } = await import("../../lib/copy/deck-import");
 
-const LABEL = "I own these cards. Add them to my collection.";
+const LABEL = copy.entry.own;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 const tick = () => screen.getByRole("checkbox", { name: LABEL }) as HTMLInputElement;
 
 function fillPaste(text = "1 Sol Ring\n1 Cultivate") {
-  fireEvent.change(screen.getByLabelText("Your list"), { target: { value: text } });
-  fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Borrowed deck" } });
+  fireEvent.change(screen.getByLabelText(copy.entry.pasteLabel), { target: { value: text } });
+  fireEvent.change(screen.getByLabelText(copy.commander.nameLabel), { target: { value: "Borrowed deck" } });
 }
 
 const submit = () => fireEvent.click(screen.getByRole("button", { name: /^Import \d+ cards$/ }));
@@ -38,8 +39,8 @@ describe("S8: the box", () => {
     render(<ImportEntry />);
     expect(tick().checked).toBe(false);
     // Under the name field and above the import button, in document order.
-    const name = screen.getByLabelText("Deck name");
-    const button = screen.getByRole("button", { name: "Import deck →" });
+    const name = screen.getByLabelText(copy.commander.nameLabel);
+    const button = screen.getByRole("button", { name: copy.entry.submit });
     expect(name.compareDocumentPosition(tick()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(tick().compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -84,9 +85,9 @@ describe("S10: ticked", () => {
     fillPaste();
     fireEvent.click(tick());
     submit();
-    await screen.findByText("Which one’s the commander?");
+    await screen.findByText(copy.commander.heading);
     fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
-    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: copy.commander.submit })[0]);
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     const [first, second] = importDeck.mock.calls.map((c) => c[0]);
     expect(second).toMatchObject({ own: true, commanderOracleId: "oracle-4" });
@@ -102,10 +103,10 @@ describe("S11: the add refused", () => {
     fireEvent.click(tick());
     submit();
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("We couldn’t add those. Your collection is unchanged.");
+    expect(alert.textContent).toContain(preconsCopy.start.owned.addFailed);
     expect(alert.id).toBe("import-failure");
     expect(tick().checked).toBe(true);
-    expect((screen.getByLabelText("Your list") as HTMLTextAreaElement).value).toContain("Sol Ring");
+    expect((screen.getByLabelText(copy.entry.pasteLabel) as HTMLTextAreaElement).value).toContain("Sol Ring");
     expect(push).not.toHaveBeenCalled();
   });
 
@@ -116,7 +117,7 @@ describe("S11: the add refused", () => {
     fireEvent.click(tick());
     submit();
     await screen.findByRole("alert");
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: copy.failures.addFailed.action }));
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     const [first, second] = importDeck.mock.calls.map((c) => c[0]);
     expect(second.actionId).toBe(first.actionId);
@@ -132,14 +133,14 @@ describe("S11: the add refused", () => {
     fireEvent.click(tick());
     submit();
     await screen.findByRole("alert");
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Renamed deck" } });
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.change(screen.getByLabelText(copy.commander.nameLabel), { target: { value: "Renamed deck" } });
+    fireEvent.click(screen.getByRole("button", { name: copy.failures.addFailed.action }));
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     const [first, second] = importDeck.mock.calls.map((c) => c[0]);
     expect(second.name).toBe("Renamed deck");
     expect(second.actionId).toBe(first.actionId);
     // Read once the retry's refusal has drawn the form back (the press shows the reading screen meanwhile).
-    expect(((await screen.findByLabelText("Deck name")) as HTMLInputElement).value).toBe("Renamed deck");
+    expect(((await screen.findByLabelText(copy.commander.nameLabel)) as HTMLInputElement).value).toBe("Renamed deck");
   });
 
   // The row is centred on the phone as drawn: the caller's alignment beats the box's own.
@@ -159,8 +160,8 @@ describe("S11: the add refused", () => {
     fireEvent.click(tick());
     submit();
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("Couldn’t confirm the cards were added. Try again and they won’t be added twice.");
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    expect(alert.textContent).toContain(preconsCopy.start.owned.addUnsure);
+    fireEvent.click(screen.getByRole("button", { name: copy.failures.addFailed.action }));
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     expect(importDeck.mock.calls[1][0].actionId).toBe(importDeck.mock.calls[0][0].actionId);
   });
@@ -175,7 +176,7 @@ describe("S11: the add refused", () => {
     submit();
     await screen.findByRole("alert");
     fireEvent.click(screen.getByRole("tab", { name: copy.entry.modePaste }));
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: copy.failures.addFailed.action }));
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     expect(importDeck.mock.calls[1][0].actionId).toBe(importDeck.mock.calls[0][0].actionId);
   });
@@ -193,12 +194,12 @@ describe("S11: the add refused", () => {
     fillPaste();
     fireEvent.click(tick());
     submit();
-    await screen.findByText("Which one’s the commander?");
+    await screen.findByText(copy.commander.heading);
     fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
-    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: copy.commander.submit })[0]);
     await screen.findByRole("alert");
-    fireEvent.change(screen.getByLabelText("Your list"), { target: { value: "1 Kinnan, Bonder Prodigy\n1 Sol Ring" } });
-    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    fireEvent.change(screen.getByLabelText(copy.entry.pasteLabel), { target: { value: "1 Kinnan, Bonder Prodigy\n1 Sol Ring" } });
+    expect(screen.queryByRole("button", { name: copy.failures.addFailed.action })).toBeNull();
     submit();
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(3));
     expect(importDeck.mock.calls[2][0].commanderOracleId).toBeUndefined();
@@ -216,7 +217,7 @@ describe("S11: the add refused", () => {
     // Disabled, so a browser takes no press on it (jsdom would still toggle one, so none is simulated).
     expect(tick().disabled).toBe(true);
     expect(tick().checked).toBe(true);
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: copy.failures.addFailed.action }));
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     expect(importDeck.mock.calls[1][0]).toMatchObject({ own: true, actionId: importDeck.mock.calls[0][0].actionId });
   });
@@ -228,7 +229,7 @@ describe("S11: the add refused", () => {
     fireEvent.click(tick());
     submit();
     await screen.findByRole("alert");
-    fireEvent.change(screen.getByLabelText("Your list"), { target: { value: "1 Sol Ring\n1 Rhystic Study" } });
+    fireEvent.change(screen.getByLabelText(copy.entry.pasteLabel), { target: { value: "1 Sol Ring\n1 Rhystic Study" } });
     submit();
     await waitFor(() => expect(importDeck).toHaveBeenCalledTimes(2));
     expect(importDeck.mock.calls[1][0].actionId).toMatch(UUID);

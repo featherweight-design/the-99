@@ -10,6 +10,10 @@ import { PRECON_TILES_CLASS } from "./precon-grid";
 import { TILE_SHELL } from "../../ui/card-tile-caption";
 import { earlyListHref } from "../../../lib/announcements/early-list";
 import type { EarlyTile } from "../../../lib/announcements/early-tiles";
+import { helpMeChooseIntroCopy } from "../../../lib/copy/help-me-choose-intro";
+import { adminCopy } from "../../../lib/copy/admin";
+import { preconsCopy } from "../../../lib/copy/precons";
+import { cardModalCopy } from "../../../lib/copy/card-carousel";
 
 // jsdom ships no scrollIntoView; the hash-open tests spy on it, so it must exist first. Only when missing.
 if (!Element.prototype.scrollIntoView) {
@@ -301,7 +305,7 @@ describe("AnnouncedGroup", () => {
       expect(dialog.closest(".invisible")).toBeNull();
       await waitFor(() => expect(dialog.contains(document.activeElement)).toBe(true));
       expect(document.body.style.overflow).toBe("hidden");
-      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: cardModalCopy.closeAria })[0]); });
       await waitFor(() => expect(screen.queryByRole("dialog", { name: /Christine Chapel/ })).toBeNull());
       expect(document.body.style.overflow).not.toBe("hidden");
       // The opener is inside the closed, inert region, so focus goes back to the group's own disclosure.
@@ -326,7 +330,7 @@ describe("AnnouncedGroup", () => {
           printedName: null, quantity: 0, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
         }); });
       const dialog = await screen.findByRole("dialog", { name: /Christine Chapel, Combat Medic/ });
-      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: cardModalCopy.closeAria })[0]); });
       await waitFor(() => expect(screen.queryByRole("dialog", { name: /Christine Chapel/ })).toBeNull());
       expect(document.activeElement).toBe(rowHead);
     });
@@ -350,7 +354,7 @@ describe("AnnouncedGroup", () => {
           printedName: null, quantity: 0, printings: [], setCodes: [], primarySetCode: "", preferredPrinting: null,
         }); });
       const dialog = await screen.findByRole("dialog", { name: /Christine Chapel, Combat Medic/ });
-      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+      await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: cardModalCopy.closeAria })[0]); });
       await waitFor(() => expect(screen.queryByRole("dialog", { name: /Christine Chapel/ })).toBeNull());
       expect(document.activeElement).toBe(head());
     });
@@ -412,7 +416,7 @@ describe("AnnouncedGroup", () => {
 
   it("draws one plate for a set with none revealed (T2)", () => {
     draw({ matches: [match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), [])], opensByItself: true });
-    expect(screen.getByTestId("none-plate")).toHaveTextContent("none revealed yet");
+    expect(screen.getByTestId("none-plate")).toHaveTextContent(preconsCopy.upcoming.nonePlate);
     expect(screen.getByText(wholeText("MDC · Apr 9, 2027 · in 6 months · no commanders revealed yet"))).toBeInTheDocument();
   });
 
@@ -561,7 +565,7 @@ describe("AnnouncedGroup", () => {
       draw({ view: "rows", opensByItself: true, matches: [match(set("mdc", "Darkhold Destiny Commander", "2027-04-09"), [])] });
       const row = screen.getByTestId("announced-row");
       expect(within(row).queryByRole("button")).toBeNull();
-      expect(within(row).getByText("No commanders revealed yet")).toBeInTheDocument();
+      expect(within(row).getByText(preconsCopy.upcoming.noneRow)).toBeInTheDocument();
       expect(within(row).getByTestId("row-plate")).toBeInTheDocument();
     });
   });
@@ -613,7 +617,7 @@ describe("Announced collapse (A1)", () => {
     toggle().focus();
     fireEvent.click(toggle());
     expect(shown()).toHaveLength(15);
-    expect(toggle()).toHaveTextContent("Show fewer");
+    expect(toggle()).toHaveTextContent(preconsCopy.upcoming.showFewer);
     expect(toggle()).toHaveAccessibleName("Show fewer commanders revealed for Star Trek Commander");
     expect(toggle()).toHaveAttribute("aria-expanded", "true");
     expect(document.activeElement).toBe(toggle());
@@ -666,7 +670,7 @@ describe("Announced collapse (A1)", () => {
       });
     });
     const dialog = await screen.findByRole("dialog", { name: /Card 5/ });
-    await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: "Close card details" })[0]); });
+    await act(async () => { fireEvent.click(within(dialog).getAllByRole("button", { name: cardModalCopy.closeAria })[0]); });
     await waitFor(() => expect(screen.queryByRole("dialog", { name: /Card 5/ })).toBeNull());
     expect(document.activeElement).toBe(toggle());
   });
@@ -684,7 +688,7 @@ describe("Announced collapse (A1)", () => {
     const html = renderToString(<G matches={[group(15)]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />);
     expect(html).toContain('data-collapse="trc"');
     expect(html).toContain("li:nth-child(n+3)");
-    expect(html).not.toContain("Show all");
+    expect(html).not.toContain(adminCopy.flags.showAll);
   });
 });
 
@@ -692,7 +696,7 @@ describe("Announced collapse (A1)", () => {
 // Announcements UI 5 (handoff `design_handoff_the99_announcements`, R1b-2, call 5, STATES 3.1, 3.2, 3.10).
 describe("Announced: the new mark and early lists", () => {
   const giada = commander(6, "Giada, Font of Hope", ["W"]);
-  const ghalta = commander(5, "Ghalta, Primal Hunger", ["G"]);
+  const ghalta = commander(5, helpMeChooseIntroCopy.exampleName, ["G"]);
   const early = (position: number, name: string, c: RevealedCommander): EarlyTile => ({
     href: earlyListHref("post-1", position), name,
     commanders: [{ oracleId: c.oracleId, name: c.name, imageUri: c.imageUri, imageUriSmall: c.imageUriSmall, colorIdentity: c.colorIdentity }],
@@ -751,7 +755,7 @@ describe("Announced: the new mark and early lists", () => {
     expect(tile.className).toContain("border-solid");
     expect(tile.className).not.toContain("border-dashed");
     const mark = within(tile).getByTestId("early-mark");
-    expect(mark.textContent).toBe("early list");
+    expect(mark.textContent).toBe(preconsCopy.upcoming.earlyList);
     expect(mark.className).toContain("var(--fact)");
     expect(mark.className).not.toMatch(/border|rounded/);
     expect(within(tile).getByRole("link").getAttribute("href")).toBe(earlyListHref("post-1", 0));
@@ -770,8 +774,8 @@ describe("Announced: the new mark and early lists", () => {
     fireEvent.click(within(row).getByRole("button"));
     const list = within(row).getByTestId("early-row");
     expect(within(list).getByRole("link").getAttribute("href")).toBe(earlyListHref("post-1", 0));
-    expect(within(list).getByTestId("early-mark").textContent).toBe("early list");
-    expect(within(row).getByTestId("waiting-row").textContent).toContain("Ghalta, Primal Hunger");
+    expect(within(list).getByTestId("early-mark").textContent).toBe(preconsCopy.upcoming.earlyList);
+    expect(within(row).getByTestId("waiting-row").textContent).toContain(helpMeChooseIntroCopy.exampleName);
     expect(within(row).getByTestId("to-come").textContent).toBe("1 more list to come");
     expect(within(row).queryByTestId("revealed-strip")).toBeNull();
   });
@@ -803,7 +807,7 @@ describe("Announced: the new mark and early lists", () => {
       fireEvent.click(within(row).getByRole("button"));
       expect(within(row).getAllByTestId("early-row")).toHaveLength(2);
       expect(within(row).queryByTestId("waiting-row")).toBeNull();
-      expect(row.textContent).not.toContain("list to come");
+      expect(row.textContent).not.toContain(preconsCopy.upcoming.listToCome);
     });
   });
 
@@ -825,7 +829,7 @@ describe("Announced: the new mark and early lists", () => {
         const el = drawWith(view, unknown);
         expect(dots(el)).toHaveLength(0);
         expect(within(el).queryByText("Colorless")).toBeNull();
-        expect(within(el).getByTestId("early-mark").textContent).toBe("early list");
+        expect(within(el).getByTestId("early-mark").textContent).toBe(preconsCopy.upcoming.earlyList);
       });
 
       it(`${view}: draws no dots and names no colors for a partly matched pair`, () => {
@@ -874,6 +878,6 @@ describe("Announced: the new mark and early lists", () => {
       <G matches={[match(set("fdc", "Foundations Commander", "2026-11-13"), [giada, ghalta])]} today="2026-10-14" newCodes={[]} opensByItself view="tiles" listed={{}} />,
     );
     expect(container.querySelector('[data-testid="early-tile"]')).toBeNull();
-    expect(container.textContent).not.toContain("early list");
+    expect(container.textContent).not.toContain(preconsCopy.upcoming.earlyList);
   });
 });

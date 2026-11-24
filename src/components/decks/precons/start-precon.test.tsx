@@ -7,6 +7,8 @@ const addAction = vi.hoisted(() => vi.fn());
 vi.mock("../../../app/decks/precon-actions", () => ({ createDeckFromPrecon: action, startPreconOwned: addAction }));
 vi.mock("@clerk/nextjs", () => ({ useAuth: () => ({ userId: "user_A" }) }));
 import { StartPrecon, StartPreconDialog, type UpgradeStart } from "./start-precon";
+import { preconUpgradeDeckCopy } from "../../../lib/copy/precon-upgrade";
+import { preconsCopy } from "../../../lib/copy/precons";
 
 const row: PreconRow = {
   fileName: "MysticIntellect_C19", name: "Mystic Intellect", setCode: "C19", releaseDate: "2019-08-23", twinName: null,
@@ -18,7 +20,7 @@ const row: PreconRow = {
 describe("StartPrecon", () => {
   const open = () => {
     render(<StartPrecon row={row} cards={100} body={99} illegal={["Dockside Extortionist"]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
   };
 
   it("names a card the start keeps that isn't legal, the deck it repeats, and the facts", () => {
@@ -27,7 +29,7 @@ describe("StartPrecon", () => {
     expect(screen.getByText(/1 card isn’t legal in Commander: Dockside Extortionist/)).toBeInTheDocument();
     expect(screen.getByText("You already have HD - Sevinne with this commander. This makes a second deck.")).toBeInTheDocument();
     expect(screen.getByText("all 100")).toBeInTheDocument();
-    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.start.facts.printingsValue)).toBeInTheDocument();
     // The deck is committed on start: no sentence about a draft, and no lead paragraph restating the Cards fact.
     expect(screen.queryByText(/draft/i)).toBeNull();
     expect(screen.queryByText(/Change anything before you commit/)).toBeNull();
@@ -36,7 +38,7 @@ describe("StartPrecon", () => {
 
   it("says what the catalog lacks rather than claiming the precon's whole list", () => {
     render(<StartPrecon row={{ ...row, unmapped: 1 }} cards={99} body={98} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     expect(screen.getByText("99; 1 isn’t in our catalog yet")).toBeInTheDocument();
     expect(screen.queryByText("all 99")).toBeNull();
   });
@@ -44,12 +46,12 @@ describe("StartPrecon", () => {
   it("refuses a name with a control character before sending it, as the server would", () => {
     open();
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "Bad\u007fName" } });
-    expect(screen.getByRole("button", { name: "Start the deck" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: preconsCopy.start.submit })).toBeDisabled();
   });
 
   it("speaks of several illegal cards in the plural", () => {
     render(<StartPrecon row={row} cards={100} body={99} illegal={["Dockside Extortionist", "Trade Secrets"]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     expect(screen.getByText(/2 cards aren’t legal in Commander: Dockside Extortionist, Trade Secrets\. They stay in/)).toBeInTheDocument();
   });
 
@@ -57,8 +59,8 @@ describe("StartPrecon", () => {
     action.mockRejectedValueOnce(new Error("boom"));
     open();
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "My Intellect" } });
-    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t confirm that deck was started. Check your decks before you try again."));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(preconsCopy.start.failed));
     expect(action).toHaveBeenCalledWith("MysticIntellect_C19", "My Intellect");
     expect(screen.getByRole("textbox")).toHaveValue("My Intellect");
   });
@@ -66,7 +68,7 @@ describe("StartPrecon", () => {
   it("will not start an empty name", () => {
     open();
     fireEvent.change(screen.getByRole("textbox"), { target: { value: "   " } });
-    expect(screen.getByRole("button", { name: "Start the deck" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: preconsCopy.start.submit })).toBeDisabled();
   });
 });
 
@@ -91,8 +93,8 @@ describe("StartPrecon, a redirecting action", () => {
     const { redirect } = await import("next/navigation");
     action.mockImplementationOnce(async () => redirect("/decks/d1?from=precon"));
     render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
     await waitFor(() => expect(action).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByRole("alert")).toBeNull();
@@ -103,9 +105,9 @@ describe("StartPrecon, a redirecting action", () => {
     addAction.mockImplementationOnce(async () => redirect("/decks/d1?from=precon"));
     const creates = action.mock.calls.length;
     render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(screen.getByRole("checkbox", { name: /I own this precon/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
     await waitFor(() => expect(addAction).toHaveBeenCalled());
     await new Promise((r) => setTimeout(r, 20));
     expect(screen.queryByRole("alert")).toBeNull();
@@ -119,7 +121,7 @@ describe("StartPrecon, a redirecting action", () => {
 describe("StartPrecon's capped column", () => {
   it("scrolls the body between a pinned title and pinned buttons", () => {
     render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     const dialog = screen.getByRole("dialog");
     const cls = dialog.className.split(/\s+/);
     expect(cls).toEqual(expect.arrayContaining(["flex", "flex-col", "overflow-hidden", "max-h-[88dvh]"]));
@@ -132,7 +134,7 @@ describe("StartPrecon's capped column", () => {
     const title = screen.getByRole("heading");
     expect(body.contains(title)).toBe(false);
     expect(title.parentElement!.className).toContain("flex-none");
-    const start = screen.getByRole("button", { name: "Start the deck" });
+    const start = screen.getByRole("button", { name: preconsCopy.start.submit });
     expect(body.contains(start)).toBe(false);
     expect(start.parentElement!.className).toContain("flex-none");
     // The form between them is the column's flexing child, or the scroller never meets the cap.
@@ -154,8 +156,8 @@ describe("StartPreconDialog, an upgraded start refused", () => {
     action.mockResolvedValueOnce({ ok: false, reason: "picks" });
     const onUnavailable = vi.fn();
     dialog(onUnavailable);
-    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Your picks no longer match this upgrade. Open it again to pick."));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(preconUpgradeDeckCopy.picksStale));
     expect(onUnavailable).not.toHaveBeenCalled();
   });
 
@@ -164,8 +166,8 @@ describe("StartPreconDialog, an upgraded start refused", () => {
     const onUnavailable = vi.fn();
     dialog(onUnavailable);
     fireEvent.click(screen.getByRole("checkbox", { name: /I own this precon/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Your picks no longer match this upgrade. Open it again to pick."));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(preconUpgradeDeckCopy.picksStale));
     expect(onUnavailable).not.toHaveBeenCalled();
   });
 
@@ -173,7 +175,7 @@ describe("StartPreconDialog, an upgraded start refused", () => {
     action.mockResolvedValueOnce({ ok: false, reason: "upgradeUnavailable" });
     const onUnavailable = vi.fn();
     dialog(onUnavailable);
-    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
     await waitFor(() => expect(onUnavailable).toHaveBeenCalled());
   });
 });

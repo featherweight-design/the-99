@@ -9,6 +9,9 @@ vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: (href: string) => window.
 import { PreconListView } from "./precon-list-view";
 import { PreconsDown } from "./precons-down";
 import { arrivalsAcknowledged, resetArrivalsAcknowledged } from "../../home/arrivals-seen";
+import { viewToggleCopy } from "../../../lib/copy/card-surfaces";
+import { chassisCopy } from "../../../lib/copy/filter-chassis";
+import { preconsCopy } from "../../../lib/copy/precons";
 
 const row = (name: string, releaseDate: string, over: Partial<PreconRow> = {}): PreconRow => ({
   fileName: name.replace(/\W/g, ""), name, setCode: "SET", releaseDate, twinName: null,
@@ -58,23 +61,23 @@ describe("PreconListView", () => {
     fireEvent.change(search, { target: { value: "angels commander" } });
     expect(screen.queryByText("Eldrazi Unbound")).toBeNull();
     fireEvent.change(search, { target: { value: "zzzz" } });
-    expect(screen.getByRole("button", { name: "Clear the search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconsCopy.none.clear })).toBeInTheDocument();
   });
 
   it("offers to clear the colors when only the colors emptied the list", () => {
     view({ q: "", colours: ["B"], order: null, view: null });
-    expect(screen.getByRole("button", { name: "Clear the colors" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconsCopy.none.clearColours })).toBeInTheDocument();
   });
 
   it("clears only the search when a search and colors both emptied the list", () => {
     view({ q: "zzzz", colours: ["B"], order: null, view: null });
-    fireEvent.click(screen.getByRole("button", { name: "Clear the search" }));
-    expect(screen.getByRole("button", { name: "Clear the colors" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.none.clear }));
+    expect(screen.getByRole("button", { name: preconsCopy.none.clearColours })).toBeInTheDocument();
   });
 
   it("shows a search as a chip that clears it", () => {
     view({ q: "eldrazi", colours: [], order: null, view: null });
-    expect(screen.queryByText("No filters on")).toBeNull();
+    expect(screen.queryByText(chassisCopy.chips.none)).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: /eldrazi/i }));
     expect(screen.getByText("Calling All Angels")).toBeInTheDocument();
   });
@@ -118,26 +121,26 @@ describe("PreconListView", () => {
 
   it("draws tiles by default, the commander spoken in each tile's link", () => {
     view();
-    expect(screen.getByRole("button", { name: "Tiles view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: viewToggleCopy.precons.tiles })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: /^Eldrazi Unbound, with Eldrazi Unbound Commander\. You own 10 of 80/ })).toBeInTheDocument();
     expect(window.location.search).toBe("");
   });
 
   it("switches to rows, writes view=rows and remembers it, and back to tiles writes nothing", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Rows view" }));
-    expect(screen.getByRole("button", { name: "Rows view" })).toHaveAttribute("aria-pressed", "true");
+    fireEvent.click(screen.getByRole("button", { name: viewToggleCopy.precons.rows }));
+    expect(screen.getByRole("button", { name: viewToggleCopy.precons.rows })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: "Eldrazi Unbound. You own 10 of 80 of its cards." })).toBeInTheDocument();
     expect(window.location.search).toBe("?view=rows");
     expect(window.localStorage.getItem("the99:precons:view")).toBe("rows");
     expect(document.cookie).toContain("precons_view=rows");
-    fireEvent.click(screen.getByRole("button", { name: "Tiles view" }));
+    fireEvent.click(screen.getByRole("button", { name: viewToggleCopy.precons.tiles }));
     expect(window.location.search).toBe("");
   });
 
   it("draws the view the server read from the cookie, and the URL's over it", () => {
     render(<PreconListView rows={rows} hasCollection fromNew={false} initial={{ q: "", colours: [], order: null, view: null }} query="" storedView="rows" />);
-    expect(screen.getByRole("button", { name: "Rows view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: viewToggleCopy.precons.rows })).toHaveAttribute("aria-pressed", "true");
   });
 
   it("keeps the view through a search's mirror", () => {
@@ -151,7 +154,7 @@ describe("PreconListView", () => {
     window.localStorage.setItem("the99:precons:view", "rows");
     window.history.replaceState(null, "", "/decks/precons?view=tiles");
     view({ q: "", colours: [], order: null, view: "tiles" });
-    expect(screen.getByRole("button", { name: "Tiles view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: viewToggleCopy.precons.tiles })).toHaveAttribute("aria-pressed", "true");
     const search = screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0];
     fireEvent.change(search, { target: { value: "eldrazi" } });
     expect(window.location.search).toBe("?q=eldrazi&view=tiles");
@@ -159,12 +162,12 @@ describe("PreconListView", () => {
 
   it("writes no view after a switch back to tiles, through a later filter's mirror", () => {
     view();
-    fireEvent.click(screen.getByRole("button", { name: "Rows view" }));
-    fireEvent.click(screen.getByRole("button", { name: "Tiles view" }));
+    fireEvent.click(screen.getByRole("button", { name: viewToggleCopy.precons.rows }));
+    fireEvent.click(screen.getByRole("button", { name: viewToggleCopy.precons.tiles }));
     const search = screen.getAllByRole("searchbox")[0] ?? screen.getAllByRole("textbox")[0];
     fireEvent.change(search, { target: { value: "eldrazi" } });
     expect(window.location.search).toBe("?q=eldrazi");
-    expect(screen.getByRole("button", { name: "Tiles view" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: viewToggleCopy.precons.tiles })).toHaveAttribute("aria-pressed", "true");
   });
 });
 
@@ -219,10 +222,10 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
     fireEvent.change(search, { target: { value: "chapel" } });
     expect(screen.getAllByText("0 of 2 decklists · 1 announced set").length).toBeGreaterThan(0);
     expect(group()).not.toBeNull();
-    expect(screen.queryByRole("button", { name: "Clear the search" })).toBeNull();
+    expect(screen.queryByRole("button", { name: preconsCopy.none.clear })).toBeNull();
     fireEvent.change(search, { target: { value: "zzzz" } });
     expect(group()).toBeNull();
-    expect(screen.getByRole("button", { name: "Clear the search" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconsCopy.none.clear })).toBeInTheDocument();
   });
 
   it("opens the group while a search matches a set in it, closed as stored otherwise", () => {
@@ -299,7 +302,7 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
     expect(window.location.search).toBe("?q=chapel&sort=newest");
     expect(parsePreconParams(new URLSearchParams(window.location.search)).order).toBe("newest");
     // The view toggle's mirror keeps it too.
-    fireEvent.click(screen.getByRole("button", { name: "Rows view" }));
+    fireEvent.click(screen.getByRole("button", { name: viewToggleCopy.precons.rows }));
     expect(new URLSearchParams(window.location.search).get("sort")).toBe("newest");
   });
 
@@ -316,7 +319,7 @@ describe("PreconListView, the Announced group (upcoming precons)", () => {
 
   it("marks a precon listed in the last 14 days `new ·` before `you own` (L2, L3)", () => {
     draw(undefined, { newFileNames: ["CallingAllAngels"] });
-    const tiles = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes("you own"));
+    const tiles = screen.getAllByRole("listitem").filter((li) => li.textContent?.includes(preconsCopy.row.ownLead));
     const angels = tiles.find((t) => t.textContent?.includes("Calling All Angels"))!;
     const eldrazi = tiles.find((t) => t.textContent?.includes("Eldrazi Unbound"))!;
     expect(angels.textContent).toContain("new · you own");

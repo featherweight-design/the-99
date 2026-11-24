@@ -14,6 +14,10 @@ vi.mock("../../../cards/card-detail-context", async (importActual) => ({
 }));
 vi.mock("../../../../app/decks/actions", () => ({ pullCardFromDeck: vi.fn() }));
 import { UpgradeFlow } from "./upgrade-flow";
+import { checkInCopy } from "../../../../lib/copy/report";
+import { preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
+import { guidedBuildCopy } from "../../../../lib/copy/guided-build";
+import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 
 const strat = (key: string, label: string) => ({ key, label, blurb: `${label} blurb`, source: "edhrec" as const, backingIds: ["c1"], backing: [{ oracleId: "c1", name: "Card One" }] });
 const lead = (key: string, name: string, strategies: ReturnType<typeof strat>[]): OfferedCommander => ({
@@ -40,7 +44,7 @@ describe("UpgradeFlow", () => {
     expect(screen.getByRole("dialog", { name: "Upgrade Prismari Artistry" })).toBeInTheDocument();
     expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
     expect(screen.queryByRole("radio")).toBeNull();
-    expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
+    expect(screen.queryByRole("list", { name: preconUpgradeCopy.flow.stepsLabel })).toBeNull();
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeEnabled();
   });
 
@@ -48,28 +52,28 @@ describe("UpgradeFlow", () => {
     open();
     press("Next · Commander");
     expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
-    expect(screen.getByRole("button", { name: "Next · Bracket" })).toBeDisabled();
-    expect(screen.getByText("Choose who leads.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: guidedBuildCopy.sheet.next.bracket })).toBeDisabled();
+    expect(screen.getByText(preconUpgradeCopy.commander.none)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: /Muddle/ }));
-    expect(screen.getByRole("button", { name: "Next · Bracket" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: guidedBuildCopy.sheet.next.bracket })).toBeEnabled();
   });
 
   it("offers the box's bracket and those above it, the box's own marked, and preselects none", () => {
     open(panel({ boxBracket: 3 }));
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     const rungs = screen.getAllByRole("radio");
     expect(rungs.map((r) => r.getAttribute("data-bracket"))).toEqual(["3", "4"]);
     expect(rungs.every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
-    expect(within(rungs[0]).getByText("where the box plays")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Next · Strategy" })).toBeDisabled();
+    expect(within(rungs[0]).getByText(preconUpgradeCopy.bracket.boxOwn)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: guidedBuildCopy.press.guided })).toBeDisabled();
   });
 
   it("skips a one-option Commander step and a Bracket step for a box at 4", () => {
     open(panel({ boxBracket: 4, commanders: [lead("rootha", "Rootha", [strat("spellslinger", "Spells")])] }));
-    expect(screen.getByRole("button", { name: "Next · Strategy" })).toBeInTheDocument();
-    press("Next · Strategy");
+    expect(screen.getByRole("button", { name: guidedBuildCopy.press.guided })).toBeInTheDocument();
+    press(guidedBuildCopy.press.guided);
     expect(screen.getByText("Worked out for Rootha at bracket 4, from the deck’s own cards.")).toBeInTheDocument();
   });
 
@@ -77,18 +81,18 @@ describe("UpgradeFlow", () => {
     open();
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
     expect(screen.getByText(/uses 2 · /)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
     // Back to Commander through the tracker, and a different one drops the strategy.
     fireEvent.click(screen.getByRole("button", { name: /Commander/ }));
     fireEvent.click(screen.getByRole("radio", { name: /Muddle/ }));
-    press("Next · Bracket");
-    press("Next · Strategy");
-    expect(screen.getByText("Choose a strategy.")).toBeInTheDocument();
+    press(guidedBuildCopy.sheet.next.bracket);
+    press(guidedBuildCopy.press.guided);
+    expect(screen.getByText(preconUpgradeCopy.strategy.none)).toBeInTheDocument();
   });
 
   it("presses the confirm with the three picks once the run is wired", () => {
@@ -96,9 +100,9 @@ describe("UpgradeFlow", () => {
     open(panel(), { onConfirm });
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
     press("Upgrade toward Spells");
     expect(onConfirm).toHaveBeenCalledWith({ commander: "rootha", bracket: 3, strategy: "spellslinger" });
@@ -108,21 +112,21 @@ describe("UpgradeFlow", () => {
     open(panel({ runs: [run] }), { onConfirm: vi.fn() });
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
     expect(screen.getByText(/You ran Spells with Rootha at bracket 3 on Nov 10/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Run it again" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconUpgradeCopy.same.run })).toBeInTheDocument();
   });
 
   it("disables the press and says why when no credits are left", () => {
     open(panel({ allowance: { used: 5, limit: 5, reopensAt: null, nextAt: null } }), { onConfirm: vi.fn() });
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
   });
@@ -131,11 +135,11 @@ describe("UpgradeFlow", () => {
     open(panel({ allowance: { used: 4, limit: 5, reopensAt: null, nextAt: null } }), { onConfirm: vi.fn() });
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
-    expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeCopy.strategy.freeOnly)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
   });
 
@@ -147,21 +151,21 @@ describe("UpgradeFlow", () => {
     it("draws the wait, with the press off and the credits held", () => {
       open(panel(), { view: { kind: "wait", picks: strategyPicks, startedAt: Date.now() }, onConfirm: vi.fn() });
       expect(screen.getByText("Finding swaps toward Spells")).toBeInTheDocument();
-      expect(screen.getByText("Running · 2 credits held")).toBeInTheDocument();
+      expect(screen.getByText(preconUpgradeCopy.wait.held)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
     });
 
     it("a failed run keeps the picks and offers Try again", () => {
       const onRetry = vi.fn();
       open(panel(), { view: { kind: "failed", picks: strategyPicks }, onRetry });
-      expect(screen.getByText("That upgrade didn’t come through. Both credits are back.")).toBeInTheDocument();
-      press("Try again");
+      expect(screen.getByText(preconUpgradeCopy.failed.line)).toBeInTheDocument();
+      press(preconUpgradeCopy.failed.retry);
       expect(onRetry).toHaveBeenCalledOnce();
     });
 
     it("a result carries the Start press off until it is wired, and Try another strategy returns to the strategy with the commander and bracket kept", () => {
       open(panel({ runs: [done] }), { view: { kind: "results", runId: "r" }, onConfirm: vi.fn() });
-      expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+      expect(screen.getByRole("dialog", { name: preconUpgradeCopy.flow.resultTitle })).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "Start the deck with these 2 swaps" })).toHaveAttribute("aria-disabled", "true");
       press(/Try another strategy/);
       expect(screen.getByText("Worked out for Rootha at bracket 3, from the deck’s own cards.")).toBeInTheDocument();
@@ -202,12 +206,12 @@ describe("UpgradeFlow", () => {
       open(panel({ runs: [done] }), { onConfirm: vi.fn() });
       press("Next · Commander");
       fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-      press("Next · Bracket");
+      press(guidedBuildCopy.sheet.next.bracket);
       fireEvent.click(screen.getAllByRole("radio")[1]);
-      press("Next · Strategy");
+      press(guidedBuildCopy.press.guided);
       fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
       press(/Open Nov 10/);
-      expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+      expect(screen.getByRole("dialog", { name: preconUpgradeCopy.flow.resultTitle })).toBeInTheDocument();
     });
   });
 
@@ -225,23 +229,23 @@ describe("UpgradeFlow", () => {
     it("lists every kept run newest first by month, opens one with a way back, and starts a new upgrade", () => {
       open(panel({ runs: [old, run] }));
       press("History");
-      expect(screen.getByText("your past upgrades of this precon · newest first")).toBeInTheDocument();
+      expect(screen.getByText(preconUpgradeCopy.history.sub)).toBeInTheDocument();
       const rows = screen.getAllByRole("button", { name: /led by/ });
       expect(rows.map((r) => r.textContent)).toEqual([expect.stringContaining("Spells · led by Rootha · bracket 3"), expect.stringContaining("Tokens · led by")]);
       fireEvent.click(rows[0]);
       // An unused run draws no note (addendum fresh start, call 5).
       expect(document.querySelector("[data-used-note]")).toBeNull();
-      expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
-      press("‹ History");
-      expect(screen.getByText("your past upgrades of this precon · newest first")).toBeInTheDocument();
-      press("New upgrade");
+      expect(screen.queryByRole("list", { name: preconUpgradeCopy.flow.stepsLabel })).toBeNull();
+      press(preconUpgradeCopy.history.back);
+      expect(screen.getByText(preconUpgradeCopy.history.sub)).toBeInTheDocument();
+      press(preconUpgradeCopy.history.newUpgrade);
       expect(screen.getByText(/We swap 12 to 18 cards/)).toBeInTheDocument();
     });
 
     it("New upgrade starts with nothing picked, whatever was picked before", () => {
       open(panel({ runs: [run] }), { view: { kind: "results", runId: "r" } });
       press("History");
-      press("New upgrade");
+      press(preconUpgradeCopy.history.newUpgrade);
       press("Next · Commander");
       expect(screen.getAllByRole("radio").every((r) => r.getAttribute("aria-checked") === "false")).toBe(true);
     });
@@ -266,7 +270,7 @@ describe("UpgradeFlow", () => {
       const went = [...document.querySelectorAll("[data-run-went]")];
       expect(went.map((w) => w.textContent)).toEqual(["0 swaps · in Prismari Artistry", "9 swaps · credits back · no deck yet"]);
       // `no deck yet` alone takes the accent ink; `in <deck>` stays in the line's faint.
-      const notYet = within(went[1] as HTMLElement).getByText("no deck yet");
+      const notYet = within(went[1] as HTMLElement).getByText(preconUpgradeCopy.history.notYet);
       expect(notYet.className).toContain("text-[color:var(--accent-text)]");
       expect(went[0].querySelector("[class*='accent-text']")).toBeNull();
       // The line wraps on a phone rather than cutting the deck's name.
@@ -281,8 +285,8 @@ describe("UpgradeFlow", () => {
       press("History");
       fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
       expect(screen.getByText("Already in Prismari Artistry. Opening it again uses no credit.")).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "‹ History" })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "‹ Back" })).toBeNull();
+      expect(screen.getByRole("button", { name: preconUpgradeCopy.history.back })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: preconUpgradeCopy.history.backLink })).toBeNull();
       expect(screen.getByRole("button", { name: "Start the deck with these 1 swaps" })).not.toHaveAttribute("aria-disabled");
     });
   });
@@ -293,7 +297,7 @@ describe("UpgradeFlow", () => {
     it("draws Your last upgrade over the intro's lead for the newest kept run, with the History link, and the intro as shipped", () => {
       open(panel({ runs: [old, run] }));
       const block = document.querySelector("[data-last-run]")!;
-      expect(within(block as HTMLElement).getByText("Your last upgrade").className).toContain("font-mono");
+      expect(within(block as HTMLElement).getByText(preconUpgradeCopy.history.kicker).className).toContain("font-mono");
       expect(block.querySelectorAll("[data-run-row]")).toHaveLength(1);
       expect(block.querySelector("[data-run-row]")!.getAttribute("data-run-row")).toBe("r");
       expect(block.querySelector("[data-run-row]")!.className).toContain("border-[color:var(--border-strong)]");
@@ -307,7 +311,7 @@ describe("UpgradeFlow", () => {
     it("draws no block and no History link when no run is kept", () => {
       open();
       expect(document.querySelector("[data-last-run]")).toBeNull();
-      expect(screen.queryByText("Your last upgrade")).toBeNull();
+      expect(screen.queryByText(preconUpgradeCopy.history.kicker)).toBeNull();
       expect(screen.queryByRole("button", { name: "History" })).toBeNull();
     });
 
@@ -315,16 +319,16 @@ describe("UpgradeFlow", () => {
       const onStart = vi.fn();
       open(panel({ runs: [{ ...run, pairs: twelveCards(1) }] }), { onStart });
       fireEvent.click(document.querySelector("[data-last-run] button")!);
-      expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
-      expect(screen.getByRole("button", { name: "‹ Back" })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "‹ History" })).toBeNull();
+      expect(screen.getByRole("dialog", { name: preconUpgradeCopy.flow.resultTitle })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: preconUpgradeCopy.history.backLink })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: preconUpgradeCopy.history.back })).toBeNull();
       expect(screen.queryByRole("button", { name: "History" })).toBeNull();
-      expect(screen.queryByRole("list", { name: "Upgrade steps" })).toBeNull();
+      expect(screen.queryByRole("list", { name: preconUpgradeCopy.flow.stepsLabel })).toBeNull();
       expect(document.querySelector("[data-used-note]")).toBeNull();
       press("Start the deck with these 1 swaps");
       expect(onStart).toHaveBeenCalledWith("r", { adds: ["a0"], cuts: ["c0"] });
-      press("‹ Back");
-      expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
+      press(preconUpgradeCopy.history.backLink);
+      expect(screen.getByText(preconUpgradeCopy.history.kicker)).toBeInTheDocument();
       expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
     });
 
@@ -340,15 +344,15 @@ describe("UpgradeFlow", () => {
     it("a fresh result keeps its History link and tracker, and draws no note even for a run in a deck", () => {
       open(panel({ runs: [{ ...run, pairs: twelveCards(1), deck: { id: "d1", name: "Prismari Artistry" } }] }), { view: { kind: "results", runId: "r" } });
       expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
-      expect(screen.queryByRole("button", { name: "‹ Back" })).toBeNull();
+      expect(screen.queryByRole("button", { name: preconUpgradeCopy.history.backLink })).toBeNull();
       expect(document.querySelector("[data-used-note]")).toBeNull();
     });
 
     it("History's New upgrade returns to the start screen", () => {
       open(panel({ runs: [run] }), { view: { kind: "results", runId: "r" } });
       press("History");
-      press("New upgrade");
-      expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
+      press(preconUpgradeCopy.history.newUpgrade);
+      expect(screen.getByText(preconUpgradeCopy.history.kicker)).toBeInTheDocument();
     });
   });
 });
@@ -384,7 +388,7 @@ describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
   });
 
   it("says a refusal only for the run it was about", () => {
-    open(withPairs(), { view: { kind: "results", runId: "r" }, apply: applyOn({ refusals: { r: "One of these cuts is locked in this deck. Unlock it to apply the swaps." } }) });
+    open(withPairs(), { view: { kind: "results", runId: "r" }, apply: applyOn({ refusals: { r: preconUpgradeDeckCopy.locked } }) });
     expect(screen.getByRole("note")).toHaveTextContent("Unlock it to apply the swaps.");
     expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).toHaveAttribute("aria-disabled", "true");
     cleanup();
@@ -439,9 +443,9 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
   const toStrategy = () => {
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
   };
 
@@ -460,7 +464,7 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     const onClose = vi.fn();
     open(panel(), { onClose });
     isBare(theClose());
-    expect(screen.queryByRole("button", { name: "Not now" })).toBeNull();
+    expect(screen.queryByRole("button", { name: checkInCopy.notNow })).toBeNull();
     expect(screen.queryByRole("button", { name: "Back" })).toBeNull();
     expect(screen.getByRole("button", { name: "Next · Commander" }).className).toContain("flex-1");
     fireEvent.click(theClose());
@@ -473,20 +477,20 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     isBare(theClose());
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     isBare(theClose());
     expect(screen.getByRole("button", { name: "Back" })).toBeInTheDocument();
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     isBare(theClose());
     press("Back");
-    expect(screen.getByRole("button", { name: "Next · Strategy" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: guidedBuildCopy.press.guided })).toBeInTheDocument();
   });
 
   it("Strategy's same-picks ask: the ✕, and its two presses as shipped", () => {
     open(panel({ runs: [run] }), { onConfirm: vi.fn() });
     toStrategy();
-    expect(screen.getByRole("button", { name: "Run it again" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconUpgradeCopy.same.run })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Open Nov 10/ })).toBeInTheDocument();
     isBare(theClose());
   });
@@ -499,7 +503,7 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     const pressOff = screen.getByRole("button", { name: "Upgrade toward Spells" });
     expect(pressOff).toBeDisabled();
     expect(pressOff.className).toContain("flex-1");
-    expect(screen.getByText("Running · 2 credits held")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeCopy.wait.held)).toBeInTheDocument();
     fireEvent.click(theClose());
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -522,8 +526,8 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     open(withPairs, { view: { kind: "results", runId: "r" } });
     press("History");
     isBare(theClose());
-    expect(screen.getByRole("button", { name: "‹ Back" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "New upgrade" }).className).toContain("flex-1");
+    expect(screen.getByRole("button", { name: preconUpgradeCopy.history.backLink })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconUpgradeCopy.history.newUpgrade }).className).toContain("flex-1");
     // The ✕ is the only press named Close.
     expect(screen.getAllByRole("button").filter((b) => b.textContent === "Close")).toHaveLength(0);
   });
@@ -533,7 +537,7 @@ describe("UpgradeFlow's bare close on every step (addendum A3)", () => {
     press("History");
     fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
     isBare(theClose());
-    expect(screen.getByRole("button", { name: "‹ History" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconUpgradeCopy.history.back })).toBeInTheDocument();
   });
 });
 
@@ -543,16 +547,16 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
   const toStrategy = () => {
     press("Next · Commander");
     fireEvent.click(screen.getByRole("radio", { name: /Rootha/ }));
-    press("Next · Bracket");
+    press(guidedBuildCopy.sheet.next.bracket);
     fireEvent.click(screen.getAllByRole("radio")[1]);
-    press("Next · Strategy");
+    press(guidedBuildCopy.press.guided);
     fireEvent.click(screen.getByRole("radio", { name: /Spells/ }));
   };
   afterEach(() => { cleanup(); window.sessionStorage.clear(); });
 
   it("C1a: 1 free credit, payments on: the intro says the shortfall with the link, no standing line, Next stays on", () => {
     open(panel({ allowance: { ...one, payments: true } }));
-    expect(screen.getByText("A free credit covers 1, so you’ll need more credits to run one.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeCopy.intro.shortMore)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Get more credits/ })).toHaveAttribute("href", "/credits");
     expect(screen.queryByText(/this run uses 2/)).toBeNull();
     expect(screen.getByRole("button", { name: "Next · Commander" })).toBeEnabled();
@@ -560,14 +564,14 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
 
   it("C1b: payments off: the off sentence and no link", () => {
     open(panel({ allowance: one }));
-    expect(screen.getByText("A free credit covers 1, so an upgrade can’t run on free credits alone.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeCopy.intro.shortOff)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Get more credits/ })).toBeNull();
   });
 
   it("C2c: 0 credits, payments on: the press line is freeOnly with the link, never the reset time", () => {
     open(panel({ allowance: { ...zero, payments: true } }), { onConfirm: vi.fn() });
     toStrategy();
-    expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeCopy.strategy.freeOnly)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Get more credits/ })).toBeInTheDocument();
     expect(screen.queryByText(/reset at/)).toBeNull();
     expect(screen.getByRole("button", { name: "Upgrade toward Spells" })).toBeDisabled();
@@ -629,7 +633,7 @@ describe("UpgradeFlow: the credits path (addendum credits)", () => {
     open(panel({ allowance: { ...one, pack: 5, paidUsedToday: 20, paidLimit: 20, payments: true } }), { onConfirm: vi.fn() });
     expect(screen.queryByText(/you’ll need more credits/)).toBeNull();
     toStrategy();
-    expect(screen.getByText("An upgrade uses 2 credits, and a free credit covers 1.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeCopy.strategy.freeOnly)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Get more credits/ })).toBeNull();
   });
 
@@ -676,7 +680,7 @@ describe("UpgradeFlow marks a shown result seen (fresh start 1/4)", () => {
     press("Back");
     press("History");
     fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
-    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: preconUpgradeCopy.flow.resultTitle })).toBeInTheDocument();
     expect(seen).toHaveBeenCalledTimes(1);
   });
 
@@ -687,7 +691,7 @@ describe("UpgradeFlow marks a shown result seen (fresh start 1/4)", () => {
     await act(async () => {});
     press("History");
     fireEvent.click(screen.getAllByRole("button", { name: /led by/ })[0]);
-    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: preconUpgradeCopy.flow.resultTitle })).toBeInTheDocument();
     expect(seen).toHaveBeenCalledTimes(2);
   });
 

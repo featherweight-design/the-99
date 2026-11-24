@@ -29,8 +29,8 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 
 const { ImportEntry } = await import("./import-entry");
 
-const pasteBox = () => screen.getByLabelText("Your list");
-const nameBox = () => screen.getByLabelText("Deck name");
+const pasteBox = () => screen.getByLabelText(deckImportCopy.entry.pasteLabel);
+const nameBox = () => screen.getByLabelText(deckImportCopy.commander.nameLabel);
 
 function fillPaste(text = "1 Sol Ring\n1 Cultivate") {
   fireEvent.change(pasteBox(), { target: { value: text } });
@@ -43,7 +43,7 @@ function submit() {
 
 function pickFile(file: File) {
   fireEvent.click(screen.getByRole("tab", { name: /Upload a file/ }));
-  const input = screen.getByLabelText("Deck file", { selector: "input" });
+  const input = screen.getByLabelText(deckImportCopy.entry.fileLabel, { selector: "input" });
   Object.defineProperty(input, "files", { value: [file], configurable: true });
   fireEvent.change(input);
 }
@@ -94,7 +94,7 @@ describe("state 1 — entry", () => {
     render(<ImportEntry />);
     // Before a paste there is no figure to name, so the button carries the
     // generic label rather than promising to import nothing.
-    const button = screen.getByRole("button", { name: "Import deck →" });
+    const button = screen.getByRole("button", { name: deckImportCopy.entry.submit });
     expect(button).toHaveProperty("disabled", true);
     fillPaste();
     expect(screen.getByRole("button", { name: "Import 2 cards" })).toHaveProperty("disabled", false);
@@ -132,7 +132,7 @@ describe("state 1 — entry", () => {
     fireEvent.change(nameBox(), { target: { value: "Borrowed deck" } });
     submit();
     await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
-    expect(screen.queryByText("Which one’s the commander?")).toBeNull();
+    expect(screen.queryByText(deckImportCopy.commander.heading)).toBeNull();
     // No commanderOracleId is sent: the server action reads the declaration itself.
     expect(importDeck.mock.calls[0][0].commanderOracleId).toBeUndefined();
   });
@@ -167,9 +167,9 @@ describe("state 3 — parsing", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Reading the list");
-    expect(screen.getByRole("status").textContent).toBe("Reading the list.");
-    expect(screen.queryByLabelText("Your list")).toBeNull();
+    await screen.findByText(deckImportCopy.parsing.heading);
+    expect(screen.getByRole("status").textContent).toBe(deckImportCopy.parsing.live);
+    expect(screen.queryByLabelText(deckImportCopy.entry.pasteLabel)).toBeNull();
     // No determinate figure: a single server action reports no progress.
     expect(screen.queryByText(/\d+ \/ \d+/)).toBeNull();
 
@@ -186,7 +186,7 @@ describe("state 8 — file rejected", () => {
     pickFile(big);
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("We can’t open that file");
+    expect(alert.textContent).toContain(deckImportCopy.failures.fileRejected.heading);
     expect(alert.textContent).toContain("2 MB");
     expect(alert.textContent).toContain(".csv");
     // One byte over, so the size must not read as the cap it broke.
@@ -199,7 +199,7 @@ describe("state 8 — file rejected", () => {
     pickFile(new File(["x"], "commander-deck.xlsx"));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain(".xlsx");
-    expect(screen.getByRole("button", { name: "Choose another file" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: deckImportCopy.failures.fileRejected.action })).toBeTruthy();
   });
 });
 
@@ -211,10 +211,10 @@ describe("state 9 — nothing matched", () => {
     submit();
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("We couldn’t find any of these cards");
+    expect(alert.textContent).toContain(deckImportCopy.failures.noneMatched.heading);
     expect(alert.textContent).toContain("12 lines");
     expect(pasteBox()).toHaveProperty("value", "1 Sol Ring\n1 Cultivate");
-    expect(screen.getByRole("button", { name: "Clear and start over" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: deckImportCopy.failures.noneMatched.action })).toBeTruthy();
   });
 });
 
@@ -235,7 +235,7 @@ describe("a CSV-shaped upload that failed to parse", () => {
     expect(pasteBox()).toHaveProperty("value", "1 Sol Ring\n1 Cultivate");
     // Mode-agnostic copy on purpose: this is reachable from a paste as well
     // as a file, and the action must not promise a file dialog it cannot open.
-    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: deckImportCopy.failures.badCsv.action })).toBeTruthy();
   });
 });
 
@@ -247,9 +247,9 @@ describe("state 10 — nothing parsed", () => {
     submit();
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("That deck is empty");
-    expect(screen.getByRole("button", { name: "Try a different deck" })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(alert.textContent).toContain(deckImportCopy.failures.empty.heading);
+    expect(screen.getByRole("button", { name: deckImportCopy.failures.empty.action })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: deckImportCopy.failures.badCsv.action })).toBeNull();
   });
 
   it("keeps the list on the page when the server action throws", async () => {
@@ -260,11 +260,11 @@ describe("state 10 — nothing parsed", () => {
     fillPaste();
     submit();
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("That didn’t go through");
+    expect(alert.textContent).toContain(deckImportCopy.failures.unexpected.heading);
     // The cap is the player's to fix, so the banner names it rather than blaming
     // our end and inviting a retry that cannot succeed.
     expect(alert.textContent).toContain("That file is too large (max 2 MB)");
-    expect(screen.getByRole("button", { name: "Back to your list" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: deckImportCopy.failures.unexpected.action })).toBeTruthy();
     expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
     expect(push).not.toHaveBeenCalled();
   });
@@ -308,7 +308,7 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one’s the commander?");
+    await screen.findByText(deckImportCopy.commander.heading);
     expect(screen.getByText("3 legendary creatures in this import")).toBeTruthy();
     const rows = screen.getAllByRole("button", { pressed: false });
     expect(rows.map((r) => r.querySelector("p")?.textContent)).toEqual([
@@ -330,13 +330,13 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one’s the commander?");
+    await screen.findByText(deckImportCopy.commander.heading);
     fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
     // Pre-filled from the entry surface, and editable.
-    const nameField = screen.getByLabelText("Deck name") as HTMLInputElement;
+    const nameField = screen.getByLabelText(deckImportCopy.commander.nameLabel) as HTMLInputElement;
     expect(nameField.value).toBe("Borrowed deck");
     fireEvent.change(nameField, { target: { value: "Atraxa, borrowed" } });
-    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: deckImportCopy.commander.submit })[0]);
 
     await waitFor(() => expect(push).toHaveBeenCalledWith("/decks/deck-1?imported=1"));
     expect(importDeck).toHaveBeenLastCalledWith({
@@ -359,17 +359,17 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one’s the commander?");
+    await screen.findByText(deckImportCopy.commander.heading);
     fireEvent.click(screen.getByRole("button", { name: /Atraxa/ }));
-    fireEvent.change(screen.getByLabelText("Deck name"), {
+    fireEvent.change(screen.getByLabelText(deckImportCopy.commander.nameLabel), {
       target: { value: "Atraxa, borrowed" },
     });
     importDeck.mockResolvedValue({ ok: false, reason: "noneMatched", lineCount: 12, notes: [] });
-    fireEvent.click(screen.getAllByRole("button", { name: "Make the deck →" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: deckImportCopy.commander.submit })[0]);
 
     const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("We couldn’t find any of these cards");
-    expect(screen.queryByText("Which one’s the commander?")).toBeNull();
+    expect(alert.textContent).toContain(deckImportCopy.failures.noneMatched.heading);
+    expect(screen.queryByText(deckImportCopy.commander.heading)).toBeNull();
     // The name edited in the picker survives the trip back, or the player retypes it.
     expect(nameBox()).toHaveProperty("value", "Atraxa, borrowed");
     expect(push).not.toHaveBeenCalled();
@@ -381,8 +381,8 @@ describe("state 11 — commander picker", () => {
     fillPaste();
     submit();
 
-    await screen.findByText("Which one’s the commander?");
-    for (const button of screen.getAllByRole("button", { name: "Make the deck →" })) {
+    await screen.findByText(deckImportCopy.commander.heading);
+    for (const button of screen.getAllByRole("button", { name: deckImportCopy.commander.submit })) {
       expect(button).toHaveProperty("disabled", true);
     }
   });
@@ -396,12 +396,12 @@ describe("state 12 — no legendary creature", () => {
     submit();
 
     const dead = await screen.findByRole("alert");
-    expect(dead.textContent).toContain("There’s no commander in here");
+    expect(dead.textContent).toContain(deckImportCopy.commander.noneHeading);
     expect(dead.textContent).toContain("none of these 99 lines is one");
     expect(dead.textContent).toContain("Nothing was created");
     // No picker, and above all no deck.
-    expect(screen.queryByText("Which one’s the commander?")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Make the deck →" })).toBeNull();
+    expect(screen.queryByText(deckImportCopy.commander.heading)).toBeNull();
+    expect(screen.queryByRole("button", { name: deckImportCopy.commander.submit })).toBeNull();
     expect(push).not.toHaveBeenCalled();
     expect(importDeck).toHaveBeenCalledTimes(1);
   });
@@ -414,14 +414,14 @@ describe("state 12 — no legendary creature", () => {
     fillPaste();
     submit();
 
-    await screen.findByRole("button", { name: "Back to the list" });
-    fireEvent.click(screen.getByRole("button", { name: "Back to the list" }));
+    await screen.findByRole("button", { name: deckImportCopy.commander.noneBack });
+    fireEvent.click(screen.getByRole("button", { name: deckImportCopy.commander.noneBack }));
     // The list is still here, exactly as the reassurance line says.
     expect((pasteBox() as HTMLTextAreaElement).value).toContain("Sol Ring");
 
     submit();
-    await screen.findByRole("button", { name: "Start from a commander instead →" });
-    fireEvent.click(screen.getByRole("button", { name: "Start from a commander instead →" }));
+    await screen.findByRole("button", { name: deckImportCopy.commander.noneCta });
+    fireEvent.click(screen.getByRole("button", { name: deckImportCopy.commander.noneCta }));
     expect(push).toHaveBeenCalledWith("/decks/new");
     expect(pushed).toContain("/decks/new");
   });

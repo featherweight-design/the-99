@@ -7,6 +7,10 @@ import { SpineDesktop } from "./spine-desktop";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { deck, pairDeck, props } from "./spine-fixtures";
+import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
+import { deckHeaderCopy } from "../../lib/copy/decks-builder";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
+import { renameCopy } from "../../lib/copy/decks-builder";
 
 const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
 vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
@@ -155,7 +159,7 @@ describe("SpineDesktop", () => {
   it("swaps the actions slot for Save/Cancel while editing, with no idle hint", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
-    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+    expect(screen.getByLabelText(renameCopy.fieldAria)).toBeTruthy();
     expect(screen.getByRole("button", { name: /Save/ })).toBeTruthy();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeTruthy();
     expect(screen.queryByTestId("spine-rename-hint")).toBeNull();
@@ -200,7 +204,7 @@ describe("SpineDesktop", () => {
   it("holds the field's box across every editing state (H35: both fields, one width)", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
-    const field = screen.getByLabelText("Deck name") as HTMLInputElement;
+    const field = screen.getByLabelText(renameCopy.fieldAria) as HTMLInputElement;
     const box = [field.style.width, field.style.height];
     expect(box).toEqual(["100%", "29px"]);
     // Both fields, one width, 560 or the column's own — set on the wrapper, not the field.
@@ -220,7 +224,7 @@ describe("SpineDesktop", () => {
     saveDeckHeader.mockResolvedValueOnce({ ok: false, message: "That did not save." } as never);
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
-    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    const name = screen.getByLabelText(renameCopy.fieldAria) as HTMLInputElement;
     fireEvent.change(name, { target: { value: "Changed Name" } });
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));
     await screen.findByTestId("spine-rename-hint");
@@ -238,10 +242,10 @@ describe("SpineDesktop", () => {
     const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
     fireEvent.change(description, { target: { value: "New description" } });
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));
-    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved the description."));
+    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved));
     // Still present — and still readable — once the editor itself has closed.
-    expect(screen.queryByLabelText("Deck name")).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+    expect(screen.queryByLabelText(renameCopy.fieldAria)).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
   });
 
   // Pre-open review round 3: the editor already shows the description as its own field, so the
@@ -258,9 +262,9 @@ describe("SpineDesktop", () => {
   // trigger — the same control the feature replaces, found by its shared aria-label.
   it("hides the change-commander door while editing", () => {
     renderSpine(<SpineDesktop {...props} />);
-    expect(screen.getByRole("button", { name: "View card details" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: changeCommanderCopy.detailsAria })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
-    expect(screen.queryByRole("button", { name: "View card details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: changeCommanderCopy.detailsAria })).toBeNull();
   });
 
   // Pre-open review: Save/Cancel sit in a separate column from the fields, so the pair's blur
@@ -269,7 +273,7 @@ describe("SpineDesktop", () => {
   it("does not commit when focus moves from the description field to Cancel", () => {
     renderSpine(<SpineDesktop {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
-    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    const name = screen.getByLabelText(renameCopy.fieldAria) as HTMLInputElement;
     fireEvent.change(name, { target: { value: "Changed Name" } });
     const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
     const cancelButton = screen.getByRole("button", { name: "Cancel" });
@@ -285,7 +289,7 @@ describe("SpineDesktop", () => {
   it("commits when focus moves from the description field to the partner's card trigger", async () => {
     renderSpine(<SpineDesktop {...props} deck={pairDeck} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(pairDeck.name) }));
-    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    const name = screen.getByLabelText(renameCopy.fieldAria) as HTMLInputElement;
     fireEvent.change(name, { target: { value: "Changed Name" } });
     const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
     const partnerTrigger = screen.getByRole("button", { name: new RegExp(pairDeck.partner!.name) });
@@ -359,7 +363,7 @@ describe("SpineDesktop", () => {
   it("drops the Card details pill when the commander has no crop", () => {
     const bare = { ...deck, commander: { ...deck.commander, artCropUri: null } };
     renderSpine(<SpineDesktop {...props} deck={bare} />);
-    expect(screen.queryByRole("button", { name: "View card details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: changeCommanderCopy.detailsAria })).toBeNull();
   });
 });
 
@@ -425,8 +429,8 @@ describe("SpineDesktop — the rename glyph", () => {
   // round cut them for.
   it("names the card-details control in words on desktop", () => {
     renderSpine(<SpineDesktop {...props} />);
-    const control = screen.getByRole("button", { name: "View card details" });
-    expect(control.textContent).toContain("Card details");
+    const control = screen.getByRole("button", { name: changeCommanderCopy.detailsAria });
+    expect(control.textContent).toContain(deckHeaderCopy.cardDetails);
   });
   // Card tags (plan PR 3): the pencil's description takes the `[[` tag. A pick must not blur the pair (it would commit
   // a half-made edit), Enter picks while the list is open rather than saving, and the save sends the BODY, which the
@@ -441,7 +445,7 @@ describe("SpineDesktop — the rename glyph", () => {
     expect(screen.getByRole("listbox").parentElement).toBe(document.body);
     fireEvent.mouseDown(option);
     expect(saveDeckHeader).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+    expect(screen.getByLabelText(renameCopy.fieldAria)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));
     await vi.waitFor(() => expect(saveDeckHeader).toHaveBeenCalledOnce());
     expect(saveDeckHeader).toHaveBeenCalledWith(props.deck.id, { description: "Rocks: [[c0ffee00-0000-4000-8000-000000000001|Sol Ring]]" });
@@ -509,7 +513,7 @@ describe("SpineDesktop — the description's tag-a-card box", () => {
     expect(frame).toHaveClass("border-dashed", "bg-[color:var(--surface-sunken)]");
     const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
     expect(frame).toContainElement(key);
-    expect(frame).toHaveTextContent("tag a card");
+    expect(frame).toHaveTextContent(TAG_A_CARD_WORDS);
     expect(frame).toContainElement(counter(0));
   });
 
@@ -531,7 +535,7 @@ describe("SpineDesktop — the description's tag-a-card box", () => {
     fireEvent.click(key);
     expect(description.value).toContain("[[");
     expect(saveDeckHeader).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+    expect(screen.getByLabelText(renameCopy.fieldAria)).toBeTruthy();
   });
 
   it("a press on the counter or the foot does not blur the pair either", () => {
@@ -542,7 +546,7 @@ describe("SpineDesktop — the description's tag-a-card box", () => {
 
   it("does not commit when focus moves from the description field to the key", () => {
     const description = openEditor();
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Changed Name" } });
+    fireEvent.change(screen.getByLabelText(renameCopy.fieldAria), { target: { value: "Changed Name" } });
     const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
     fireEvent.blur(description, { relatedTarget: key });
     expect(saveDeckHeader).not.toHaveBeenCalled();

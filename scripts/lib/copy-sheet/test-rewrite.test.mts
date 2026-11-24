@@ -108,7 +108,7 @@ describe("rewriteTests", () => {
 
 describe("testsSection", () => {
   it("lists rewritten files and the hand edits, each with its reason", () => {
-    const text = testsSection({ files: new Map(), rewritten: [{ file: "src/a.test.ts", count: 2 }], hand: [{ file: "src/b.test.ts", line: 4, text: "Save the deck", key: "src/lib/copy/x.ts#x.save", why: "a built string" }] }).join("\n");
+    const text = testsSection({ files: new Map(), rewritten: [{ file: "src/a.test.ts", count: 2 }], soft: [], hand: [{ file: "src/b.test.ts", line: 4, text: "Save the deck", key: "src/lib/copy/x.ts#x.save", why: "a built string" }] }).join("\n");
     expect(text).toContain("2 literals in 1 test file");
     expect(text).toContain("`src/a.test.ts` (2)");
     expect(text).toContain("**Test needs a hand edit** (1)");

@@ -2,6 +2,10 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { parseCapDollars, TuningLimitsBox } from "./tuning-limits-box";
+import { printedInPanelCopy } from "../../lib/copy/lanes";
+import { collectionFilterCopy } from "../../lib/copy/collection";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const sets = [{ code: "hob", name: "The Hobbit" }, { code: "hoc", name: "The Hobbit Commander" }];
 
@@ -46,13 +50,13 @@ describe("parseCapDollars", () => {
 describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   it("draws the heading and an empty cap field with the placeholder", () => {
     renderBox();
-    expect(screen.getByText("Kept for this deck")).toBeTruthy();
-    expect(screen.getByLabelText("Most per card")).toHaveValue("");
+    expect(screen.getByText(deckDescriptionCopy.manifest.limits)).toBeTruthy();
+    expect(screen.getByLabelText(deckDescriptionCopy.limits.capLabel)).toHaveValue("");
   });
 
   it("strips only $ and commas, and reports the parsed dollars", () => {
     const { onCapChange } = renderBox();
-    const field = screen.getByLabelText("Most per card");
+    const field = screen.getByLabelText(deckDescriptionCopy.limits.capLabel);
     fireEvent.change(field, { target: { value: "$1,500" } });
     expect(field).toHaveValue("1500");
     expect(onCapChange).toHaveBeenCalledWith(1500);
@@ -64,7 +68,7 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   // exactly as they were, rather than reinterpreted as a different figure.
   it("rejects a decimal paste rather than reinterpreting it as a larger whole-dollar figure", () => {
     const { onCapChange } = renderBox({ capDollars: 10 });
-    const field = screen.getByLabelText("Most per card");
+    const field = screen.getByLabelText(deckDescriptionCopy.limits.capLabel);
     fireEvent.change(field, { target: { value: "$12.50" } });
     expect(field).toHaveValue("10");
     expect(onCapChange).not.toHaveBeenCalled();
@@ -72,7 +76,7 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
 
   it("rejects letters mixed into the figure rather than silently dropping them", () => {
     const { onCapChange } = renderBox({ capDollars: 10 });
-    const field = screen.getByLabelText("Most per card");
+    const field = screen.getByLabelText(deckDescriptionCopy.limits.capLabel);
     fireEvent.change(field, { target: { value: "$1,500abc" } });
     expect(field).toHaveValue("10");
     expect(onCapChange).not.toHaveBeenCalled();
@@ -80,7 +84,7 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
 
   it("reports null once the field is cleared", () => {
     const { onCapChange } = renderBox({ capDollars: 25 });
-    fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "" } });
     expect(onCapChange).toHaveBeenCalledWith(null);
   });
 
@@ -88,7 +92,7 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   // to clear the limit — nothing saves until it is fixed or emptied (pre-open review round 1).
   it("does not save a non-empty invalid cap as no cap", () => {
     const { onCapChange } = renderBox({ capDollars: 25 });
-    const field = screen.getByLabelText("Most per card");
+    const field = screen.getByLabelText(deckDescriptionCopy.limits.capLabel);
     fireEvent.change(field, { target: { value: "0" } });
     expect(field).toHaveValue("0");
     expect(onCapChange).not.toHaveBeenCalled();
@@ -105,19 +109,19 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
         ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecksOffered otherDecks={false} onOtherDecksChange={vi.fn()}
       />,
     );
-    expect(screen.getByLabelText("Most per card")).toHaveValue("25");
+    expect(screen.getByLabelText(deckDescriptionCopy.limits.capLabel)).toHaveValue("25");
     rerender(
       <TuningLimitsBox
         sets={sets} capDollars={50} onCapChange={vi.fn()} onCapDraftInvalid={vi.fn()} selectedSets={[]} onSetsChange={vi.fn()}
         ownedOnly={false} onOwnedOnlyChange={vi.fn()} otherDecksOffered otherDecks={false} onOtherDecksChange={vi.fn()}
       />,
     );
-    expect(screen.getByLabelText("Most per card")).toHaveValue("50");
+    expect(screen.getByLabelText(deckDescriptionCopy.limits.capLabel)).toHaveValue("50");
   });
 
   it("the Set trigger reads Any set with nothing chosen, never Set 0", () => {
     renderBox();
-    expect(screen.getByText("Any set")).toBeTruthy();
+    expect(screen.getByText(collectionFilterCopy.set.triggerNone)).toBeTruthy();
     expect(screen.queryByText("Set 0")).toBeNull();
   });
 
@@ -126,13 +130,13 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   // 1): a forced-desktop panel skips the sheet's focus trap, scroll lock and Back dismissal.
   it("opens the Set control as a phone sheet under the default (narrow) breakpoint", () => {
     renderBox();
-    fireEvent.click(screen.getByText("Any set"));
-    expect(screen.getByRole("dialog", { name: "Filter by printed-in set" })).toHaveAttribute("aria-modal", "true");
+    fireEvent.click(screen.getByText(collectionFilterCopy.set.triggerNone));
+    expect(screen.getByRole("dialog", { name: printedInPanelCopy.panelAriaLabel })).toHaveAttribute("aria-modal", "true");
   });
 
   it("toggles owned-only via the two-way control", () => {
     const { onOwnedOnlyChange } = renderBox();
-    fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+    fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
     expect(onOwnedOnlyChange).toHaveBeenCalledWith(true);
   });
 
@@ -140,8 +144,8 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   // without it, a second arrow press or a Space re-selects the option that is now unchecked.
   it("moves focus to the newly selected option on an arrow press", () => {
     const { onOwnedOnlyChange } = renderBox();
-    const any = screen.getByRole("radio", { name: "Any card" });
-    const own = screen.getByRole("radio", { name: "Only cards I own" });
+    const any = screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny });
+    const own = screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn });
     any.focus();
     fireEvent.keyDown(any, { key: "ArrowRight" });
     expect(onOwnedOnlyChange).toHaveBeenCalledWith(true);
@@ -150,8 +154,8 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
 
   it("Any card is selected by default, Only cards I own once ownedOnly is true", () => {
     renderBox({ ownedOnly: true });
-    expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny })).toHaveAttribute("aria-checked", "false");
   });
 });
 
@@ -170,7 +174,7 @@ describe("Include my other decks", () => {
     const { onOtherDecksChange } = renderBox({ ownedOnly: true, otherDecks: false });
     const box = screen.getByRole("checkbox", { name: /Include my other decks/ });
     expect(box).not.toBeChecked();
-    expect(screen.getByText("Apply asks whether to pull each one from its deck.")).toBeInTheDocument();
+    expect(screen.getByText(deckDescriptionCopy.limits.otherDecksLine)).toBeInTheDocument();
     fireEvent.click(box);
     expect(onOtherDecksChange).toHaveBeenCalledWith(true);
   });
