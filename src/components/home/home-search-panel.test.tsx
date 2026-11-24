@@ -78,7 +78,7 @@ describe("Home's search panel", () => {
     const fan = document.querySelector("[data-home-fan]")!;
     expect(fan.getAttribute("aria-hidden")).toBe("true");
     expect(fan.querySelectorAll("img")).toHaveLength(3);
-    // R13: from md it sits at the panel's right edge, centred on the section, and the field block reserves its room.
+    // R13: from md it sits at the panel's right edge, centred on the whole section (R13-C3: one anchor, even with the welcome foot), and the field block reserves its room.
     expect(document.querySelectorAll("[data-home-fan]")).toHaveLength(1);
     expect(fan.className).toContain("md:absolute");
     expect(fan.className).toContain("md:right-[28px]");

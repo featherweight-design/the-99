@@ -103,7 +103,7 @@ async function leg(browser, vp) {
     report(`${tag} the fan is out of the row (absolute)`, m.fanPosition === "absolute", `${m.fanPosition}`);
     report(`${tag} the fan sits 28px from the panel's right edge`, Math.abs(m.panel.r - m.fan.r - 29) <= 2, `${Math.round(m.panel.r - m.fan.r)}px (28 plus the 1px border)`);
     const mid = (m.fan.t + m.fan.b) / 2;
-    report(`${tag} the fan is centred on the panel`, Math.abs(mid - (m.panel.t + m.panel.b) / 2) <= 2, `${Math.round(mid - m.panel.t)} of ${Math.round(m.panel.h)}`);
+    report(`${tag} the fan is centred on the section, the drawn anchor (R13-C3; no welcome foot is seeded)`, Math.abs(mid - (m.panel.t + m.panel.b) / 2) <= 2, `${Math.round(mid - m.panel.t)} of ${Math.round(m.panel.h)}`);
     report(`${tag} the field starts 12px under the title row`, m.field.t - m.title.b <= 20, `${Math.round(m.field.t - m.title.b)}px under the title text`);
     report(`${tag} the field and the fan do not overlap`, m.field.r <= m.fan.l + 1, `field right ${Math.round(m.field.r)} fan left ${Math.round(m.fan.l)}`);
     if (m.starters) report(`${tag} the starters do not run under the fan`, m.starters.r <= m.fan.l + 1, `starters right ${Math.round(m.starters.r)}`);
