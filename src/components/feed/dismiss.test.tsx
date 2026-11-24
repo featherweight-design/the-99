@@ -72,13 +72,13 @@ describe("the ✕ itself", () => {
     expect(container.querySelector("[data-feed-actions]")!.className).not.toMatch(/pr-\[/);
   });
 
-  it("ends the lead's action line with its ✕, with no reserve on the text column", () => {
+  it("holds the lead's ✕ in the card's top right corner (Q17 A), reserving its width on the text column", () => {
     const { container } = render(<LeadSlot lead={view(9, { key: "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f" })} now={NOW} />);
-    expect(screen.getByRole("heading", { level: 3 }).parentElement!.className).not.toMatch(/pr-\[/);
-    const line = container.querySelector("[data-lead-actions]")!;
-    expect(line.lastElementChild!.hasAttribute("data-feed-dismiss")).toBe(true);
-    // The phone's nudge holds the ✕ on the first line's end (`.d4n.ph .ld .la .x4`).
-    expect(line.lastElementChild!.className.split(/\s+/)).toEqual(expect.arrayContaining(["mt-[-2px]", "md:mt-0"]));
+    expect(screen.getByRole("heading", { level: 3 }).parentElement!.className).toMatch(/pr-\[/);
+    const corner = container.querySelector("[data-lead-x]")!;
+    expect(corner.hasAttribute("data-feed-dismiss") || corner.querySelector("[data-feed-dismiss]") !== null).toBe(true);
+    expect(corner.className).toContain("top-[6px]");
+    expect(container.querySelector("[data-lead-actions] [data-feed-dismiss]")).toBeNull();
   });
 });
 

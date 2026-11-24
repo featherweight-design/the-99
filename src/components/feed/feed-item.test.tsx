@@ -113,7 +113,8 @@ describe("FeedItemRow", () => {
     await screen.findByText(/sparing/i);
     expect(actions.answerSpareAction).toHaveBeenCalledWith("req-9", "yes");
     expect(screen.queryByTestId("spare-yes")).toBeNull();
-    expect(container.querySelector("[data-row-x]")).not.toBeNull();
+    // The receipt is the row's last word: its ✕ leaves with the Yes and No.
+    expect(container.querySelector("[data-row-x]")).toBeNull();
   });
 
   it("gives a spare request (the later round) its accent kicker and no press", () => {
