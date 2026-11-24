@@ -18,7 +18,7 @@ describe("findInline", () => {
   });
   it("flags a toast, setError and a two-word action error", () => {
     const src = `toast.error("Could not save");\nsetError("Try again");\nexport const r = { error: "Pick a commander first" };`;
-    expect(kinds(src, "a.ts")).toEqual(["1:toast.error():Could not save", "2:setError():Try again", "3:error:Pick a commander first"]);
+    expect(kinds(src, "a.ts")).toEqual(["1:toast.error():Could not save", "2:setError():Try again", "3:error::Pick a commander first"]);
   });
   it("reads a toast with any words and a wording setter only with two, never a state code", () => {
     const src = `toast("Saved");\nsetError("unknown");\nsetNotice("failed");\nsetAnnounce("Deck saved");\nalert("Are you sure");\nsetView("deck");`;
@@ -26,11 +26,11 @@ describe("findInline", () => {
   });
   it("flags a result's message beside ok, but not a bare message", () => {
     const src = `const a = { ok: false, message: "We couldn’t find that deck." };\nconst b = { message: "Plain data here" };`;
-    expect(kinds(src, "a.ts")).toEqual(["1:message:We couldn’t find that deck."]);
+    expect(kinds(src, "a.ts")).toEqual(["1:message::We couldn’t find that deck."]);
   });
   it("flags a template literal in a prop and a sentence held in a component const", () => {
     const src = "export const A = ({ n }: { n: string }) => {\n  const heading = ok ? \"Retry now\" : d.heading;\n  return <b aria-label={`Open ${n} now`}>{heading}</b>;\n};";
-    expect(kinds(src)).toEqual(["2:held string:Retry now", "3:aria-label:Open  now"]);
+    expect(kinds(src)).toEqual(["2:held string:Retry now", "3:aria-label:Open now"]);
     expect(kinds(src, "a.ts")).toEqual([]);
   });
   it("leaves data, symbols, codes and values from copy alone", () => {
