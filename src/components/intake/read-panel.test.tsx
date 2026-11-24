@@ -9,7 +9,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const router = { push: vi.fn(), refresh: vi.fn() };
 vi.mock("next/navigation", () => ({ useRouter: () => router }));
-vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: vi.fn(), theReadState: vi.fn() }));
+vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: vi.fn(), theReadState: vi.fn(), hideChooseIntro: vi.fn(async () => ({ ok: true })) }));
 
 const { ReadAnnouncer, ReadPanel, ReadScope, DimWhileReading, useReportPool, useReadPhase } = await import("./read-panel");
 const { phaseOf } = await import("../../lib/intake/read-phase");

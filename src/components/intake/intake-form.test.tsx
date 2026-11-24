@@ -6,7 +6,7 @@ import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
-vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push }));
+vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push, hideChooseIntro: vi.fn(async () => ({ ok: true })) }));
 const searchTag = vi.hoisted(() => vi.fn(async (surface: string, query: string) => {
   void surface; void query;
   return [{ oracleId: "3f1c2b7e-0a4d-4c55-9a67-1b2c3d4e5f60", name: "Rhystic Study", typeLine: "Enchantment", imageUri: null, commanderLegal: true }];

@@ -5,7 +5,7 @@ import { act, fireEvent, within, render, screen, waitFor } from "@testing-librar
 import { describe, expect, it, vi } from "vitest";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
-vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push }));
+vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push, hideChooseIntro: vi.fn(async () => ({ ok: true })) }));
 vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: vi.fn(async () => []) }));
 vi.mock("../../app/decks/new/choose/form-reach-actions", () => ({ formReachData: vi.fn(async () => ({ cards: [] })) }));
 

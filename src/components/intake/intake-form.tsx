@@ -9,6 +9,7 @@
 // dock over the tab bar on the phone (create-picker's dock), whose measured height the form
 // reserves under itself. No motion anywhere (STATES invariant).
 
+import { CHOOSE_WORDS_ID } from "./choose-intro";
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
 import { useTarget } from "../discovery/targets-provider";
 
@@ -131,7 +132,7 @@ export function IntakeForm({
   // words will not be read before a free search runs.
   const lineDeskId = useId();
   const linePhoneId = useId();
-  const wordsId = useId();
+  const wordsId = CHOOSE_WORDS_ID;
 
   // The dock is `fixed` and reserves nothing of its own; measured, as create-picker measures its
   // own, so the last field never sits under it.
