@@ -154,7 +154,7 @@ function Example({ art }: { art: IntroArt | null }) {
     <div className="mt-[14px] min-w-0 md:mt-[22px]">
       <p className="m-0 font-mono text-[11px] uppercase tracking-[0.1em] text-[color:var(--fg-muted)]">{copy.exampleAsk}</p>
       <div className="mt-[8px] overflow-hidden rounded-[10px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface)]">
-        {art?.lead && <FadingImg src={art.lead} alt="" loading="lazy" className="block h-[64px] w-full object-cover md:h-[88px]" />}
+        {art?.lead && <FadingImg src={art.lead} alt="" className="block h-[64px] w-full object-cover md:h-[88px]" />}
         <div className="p-[10px_12px_12px]">
           <p className="m-0 flex items-baseline gap-[8px]">
             <span className="font-mono text-[11px] text-[color:var(--accent-text)]">1</span>
@@ -172,7 +172,7 @@ function Example({ art }: { art: IntroArt | null }) {
           <div key={i} className="flex items-center gap-[8px]">
             <span className="w-[10px] font-mono text-[11px] text-[color:var(--fg-muted)]">{i + 2}</span>
             {src ? (
-              <FadingImg src={src} alt="" loading="lazy" className="h-[22px] w-[32px] flex-none rounded-[3px] object-cover" />
+              <FadingImg src={src} alt="" className="h-[22px] w-[32px] flex-none rounded-[3px] object-cover" />
             ) : (
               <span className="h-[22px] w-[32px] flex-none rounded-[3px] bg-[color:var(--surface-raised)]" />
             )}
