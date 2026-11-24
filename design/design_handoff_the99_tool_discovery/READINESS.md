@@ -1,6 +1,6 @@
 # READINESS · Finding the tools
 
-**Verdict: Yellow** (engineering readiness audit, 2026-11-23, amending Design's Green). Hugh approved the design through R11 and every question is settled, but G6, G9 and G22 do not match the code, four states are undrawn, and the copy had not been reviewed. Each gap is settled from the nearest drawn pattern in `docs/superpowers/plans/2026-11-23-tool-discovery.md` (sections 1, 4, 5 and 7); nothing returns to Design.
+**Verdict: Green.** Approved by Hugh 2026-11-24 through R12; every question settled (README, Decisions). Every gap below has an answer.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -74,6 +74,23 @@
   A row whose ask ran out keeps `Answer in Friends.` until the next read drops it. The rail's compact layout (G17) applies.
 - **G25 · Friends badge and the offerer's sheet (R11).** No change: the badge (#3221) and `OfferAnswerSheet` (#3242) as
   shipped. The badge falls by one as a row or the lead is answered (the existing `announceAnswerSeen`).
+- **G26 · Tool marks (R12, Q19 A).** `ask-results.tsx` `Mark`: tile `h-12 w-12 rounded-[12px] md:h-10 md:w-10
+  md:rounded-[10px]`, glyph 28px (`md:` 24px). Row heights unchanged (72px, 58px).
+- **G27 · Opening state (R12, Q20 A).** `pressTool` no longer closes before `router.push`: it marks the row pending
+  (`data-ask-pending`: inset 1.5px `--accent` ring on `--elevated`, a 22px spinner in the tile, the foot `Opening {name}…`
+  in `--accent-text`, the other rows at 45% and inert), shows the shipped `SearchProgress`, and closes when the pathname
+  changes (the existing `PendingReporter`/navigation-commit signal), keeping `leaveDialogsForNavigation`. Esc and ✕ cancel
+  (close, no push afterwards). A push that errors restores the row and raises the shipped toast. Phone and dropdown alike.
+- **G28 · Deck picker (R12, Q21 A).** `CardState` `deck` with `more > 0` gains the fitting decks (id, name, commander,
+  art crop, last edited), from the same `loadToolFits` read. Its foot reads `Pick a deck · {n} can use it`; a press swaps
+  the listbox for the picker in the same host: `‹ Answers`, the tool's name and cost chip, `Which deck? {n} of yours can
+  use it.`, then one option per deck, last touched first (64px phone, 54px dropdown). Enter or a press opens
+  `tryHref(/decks/{id}, tool)` with G27's state on that row; Backspace on an empty field or ‹ Answers returns. One deck:
+  straight there, as shipped. The event `ask_tool_pressed` gains `picked: "1" | "2" | "3+"` (deck rank, never a name).
+- **G29 · Landing halo (R12, Q22 A).** `useToolLanding` haloes only targets on a busier screen: the Tuning tiles,
+  Top off, Cheaper stand-ins, Friends' spares, Matchups, Find a deck's Free chip. Precons, Wishlist, Collection Sync,
+  Stats for your decks and Friends land at the top with no halo and spend no moment. Help me choose's target moves from
+  the form's first answer to the intro panel (`ChooseIntro`, #3266) while it is open; folded (after the first run), no halo.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
@@ -81,14 +98,3 @@
 - R11 frames rendered from main bb4832f8 (`scratch-gen/r-offers.tsx`, `sp-of.json`, `src-patches/` for the ✕ and row toggles).
 - Frames rendered from main 7563036 with the shipped components; new parts in `scratch-gen/find.tsx` (R2: `FindCallout` `on`, `FitButton`; R3: `FitRowButton`, and `ask.tsx` for Ask) and the hub
   patch described in `scratch-gen/HOW.md`. Figures, set codes and art are illustrative.
-
-## Errata (engineering audit, 2026-11-23)
-
-| Item | As written | In the code | Resolution |
-|---|---|---|---|
-| G6, moments | M3 and M4 move to Tuning; M2 (the reading) stays | M2 is `suggested-changes`; M2, M3 and M4 all anchor on the Analysis tab button | All three move to the Tuning tab; the to-do card (M3) and land cell (M4) shortcut anchors stay |
-| G6, URL | `?view=consider` | The parameter is `?tab=consider` (`builder-view.ts`) | `?tab=consider` reads as Tuning with Consider open |
-| G9, landings | `ROW_TOOL` gains `overview` and `find-a-deck-read` | `TOOLS` has no entry for either, nor for Consider, and `TOOLS` drives About's showcase | `LANDINGS` = `TOOLS` plus `consider` and `overview`, outside the showcase; `find-a-deck-read` maps to `find-a-deck` |
-| G22 | Proposes ranking an answerable ask above every kind | `LEAD_PRIORITY` already ranks `spare-request` first; the frame's offer lost because it was seen | A seen, still-answerable ask or offer leads (Q16 A "always"); the unseen rule stays for news |
-| STATES R8 row | `Choose your notifications` | R9 renamed it | `Choose notifications` (G17) |
-| `copy strings.ts` `freeLine` | `Free, no credit needed` | Each row under it carries a `free` pill | `No credit needed` (copy review, rule 7) |

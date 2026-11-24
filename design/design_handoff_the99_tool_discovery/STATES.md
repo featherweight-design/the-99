@@ -1,4 +1,4 @@
-# States · Finding the tools R11
+# States · Finding the tools R12
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -101,3 +101,18 @@
 | Ran out while on screen | The row keeps `Answer in Friends.` with no presses until the next read. |
 | Friends badge | The count of offers and asks waiting on the reader (rail and tab bar); none at 0. |
 | The reader's offer answered | Row kicker `Your offer`, `Max said yes to <card>` / `The handover is between you.`, `Your offer ›` opens the shipped sheet. |
+
+## Home search follow-ups · R12 (Q19 A to Q22 A)
+| State | Draws |
+|---|---|
+| Tool row at rest | 48px tile, 28px wrench (phone); 40px tile, 24px (dropdown). |
+| A tool pressed, page loading | The row ringed, spinner in the tile, `Opening {name}…`; other rows dim; the progress bar on top. |
+| The page commits | The search closes onto it. |
+| Esc or ✕ while opening | Closes; the navigation is dropped. |
+| The push fails | The row back at rest; the shipped toast. |
+| A deck tool, one deck fits | Foot `in {deck}`; a press opens it, as shipped. |
+| A deck tool, several fit | Foot `Pick a deck · {n} can use it`; a press shows the picker in the same box. |
+| The picker | `‹ Answers`; name and cost; `Which deck? {n} of yours can use it.`; the decks, last touched first. |
+| Landing on a busier screen | The target haloed (2.4s), as shipped. |
+| Landing on Help me choose, intro open | The intro panel haloed. |
+| Landing on Help me choose, intro folded, or on a page that is the tool | Top of the page, no halo. |
