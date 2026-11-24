@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { branchName, commitMessage, prBody } from "./lib/copy-sheet/land.mjs";
 import { applySheet } from "./lib/copy-sheet/sheet.mjs";
+import { rewriteTests, testsSection, type TestRewrite } from "./lib/copy-sheet/test-rewrite.mjs";
 
 const args = process.argv.slice(2);
 const flag = (f: string) => args.includes(f);
@@ -35,11 +36,20 @@ function printChanges(changes: { key: string; from: string; to: string }[]) {
   for (const c of changes) console.log(`${c.key}\n  - ${c.from}\n  + ${c.to}`);
 }
 
+/** Tests that hold a changed row's old words are rewritten to read the leaf; the rest are named for a hand edit. */
+function withTests(root: string, applied: ReturnType<typeof applySheet>): { files: Map<string, string>; tests: TestRewrite } {
+  const tests = rewriteTests(applied.changes, root);
+  console.log(testsSection(tests).join("\n"));
+  return { files: new Map([...applied.files, ...tests.files]), tests };
+}
+
 if (flag("--local")) {
   const root = resolve(rootAt >= 0 ? args[rootAt + 1] : process.cwd());
   try {
-    const { files, changes } = applySheet(csv, root);
+    const applied = applySheet(csv, root);
+    const { changes } = applied;
     printChanges(changes);
+    const { files } = withTests(root, applied);
     for (const [file, src] of files) writeFileSync(join(root, file), src);
     console.log(`${changes.length} change${changes.length === 1 ? "" : "s"} in ${files.size} file${files.size === 1 ? "" : "s"}`);
   } catch (e) {
@@ -90,13 +100,15 @@ try {
   if (existsSync(tree)) throw new Error(`${tree} already exists: one import a minute; wait or remove it`);
   run("git", ["worktree", "add", "-q", "-b", branch, tree, "origin/main"], repo);
   made = true;
-  const { files, changes } = applySheet(csv, tree);
+  const applied = applySheet(csv, tree);
+  const { changes } = applied;
   printChanges(changes);
   if (changes.length === 0) {
     console.log("No changed rows: nothing to do.");
     cleanup();
     process.exit(0);
   }
+  const { files, tests } = withTests(tree, applied);
   if (flag("--dry")) {
     console.log(`${changes.length} change${changes.length === 1 ? "" : "s"} in ${files.size} file${files.size === 1 ? "" : "s"} (dry run, nothing pushed)`);
     cleanup();
@@ -119,7 +131,7 @@ try {
   }
   run("git", ["push", "-q", "-u", "origin", branch], tree);
   pushed = true;
-  writeFileSync(join(scratch, "b.md"), prBody(changes, names));
+  writeFileSync(join(scratch, "b.md"), prBody(changes, names, tests));
   const url = run("gh", ["pr", "create", "--title", `Copy sheet: ${changes.length} wording change${changes.length === 1 ? "" : "s"}`, "--body-file", join(scratch, "b.md")], tree);
   console.log(`Opened ${url}. Copy-review the old -> new list in the body before it lands.`);
   cleanup();
