@@ -10,7 +10,7 @@ Hugh: compact chips approved; asked why the name sits at the top on some boards 
 
 - **One anatomy.** Shipped: the iPad grid boards (`foot: true`, F12/F18/F19) put the name on the outer edge and a 52 px foot toward the strip; every other board (phone, iPad ends) put name, deck, badges, End turn and the sheet button in one 44 px row toward the strip (F04). R2: every board draws the name and deck on the outer edge and one controls row toward the strip (End turn, badges, sheet button); `foot` now only picks the 52 px sizes. The out face follows. Phone one-on-each-side goes from 4 + "+5" to 6 + "+3".
 - **+N is a quick look.** It turns into a ✕ and opens a read-only card from the seat's inner edge toward the table's middle (the panel's width, min 268, max 420, turned with the seat, lifted over neighbours). Every badge in row order with short words (commander up to its comma, counter name, Tax, Monarch); damage and poison read 8/21, 3/10. ✕, a tap off it, or Escape closes it; it closes if the seat goes out or badges clear. No steppers: the sheet button stays the way to change counts.
-- Q1 is settled by Hugh's note (quick view). Q2 stays open.
+- Q1 is settled by Hugh's note (quick view). Q2 settled A by Hugh (End turn keeps its label).
 
 ## The problem (measured on the shipped PlaySurface)
 

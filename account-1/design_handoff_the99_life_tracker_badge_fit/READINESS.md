@@ -1,6 +1,6 @@
 # READINESS · every badge fits · 🟡 Yellow (R1, awaiting Hugh)
 
-R2. Green once Q2 is settled.
+R2. Q2 settled (A). Green once Hugh approves R2.
 
 - R2 changes the panel anatomy on phone and the iPad ends boards (name to the outer edge). `panel-who` now holds name and deck only and `panel-foot` exists on every board: What's what's label anchors for name, End turn, sheet and badges must be re-checked on phone boards.
 - The quick look lifts its seat cell with `z-index: 40` (the cell's `container-type: size` makes it a stacking context); check it clears the spine and the What's what scrim.
