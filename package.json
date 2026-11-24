@@ -103,6 +103,7 @@
     "probe:tracker-layout-parity": "node scripts/probe-tracker-layout-parity.mjs",
     "probe:tracker-spine": "node scripts/probe-tracker-spine.mjs",
     "probe:tracker-badges": "node scripts/probe-tracker-badges.mjs",
+    "probe:tracker-badge-fit": "node scripts/probe-tracker-badge-fit.mjs",
     "probe:tracker-art-crop": "node scripts/probe-tracker-art-crop.mjs",
     "probe:tracker-coin": "node scripts/probe-tracker-coin.mjs",
     "probe:tracker-tablet": "node scripts/probe-tracker-tablet.mjs",

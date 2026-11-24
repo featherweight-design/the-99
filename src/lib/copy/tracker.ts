@@ -57,6 +57,18 @@ export const trackerCopy = {
     badge: (what: string, n: number) => `${what} ${n}`,
     badgeTax: (n: number) => `Tax +${n}`,
     badgeAria: (text: string) => `${text}. Open it in the sheet`,
+    /** The compact badge's visible figure: "8" (damage or a counter), "+4" (tax). The full words stay in its aria-label. */
+    badgeFigure: (n: number) => `${n}`,
+    badgeTaxFigure: (n: number) => `+${n}`,
+    /** The last chip when the row cannot hold every badge: how many more there are; it opens the quick look. */
+    badgeMore: (n: number) => `+${n}`,
+    badgeMoreAria: (n: number) => `${n} more. Show every badge`,
+    /** The peek: every badge with its words, opened from +N. */
+    peekLabel: "Every badge",
+    peekClose: "Close",
+    peekTax: "Tax",
+    /** After a damage or poison figure in the peek: "8/21", "3/10". */
+    peekOf: (n: number) => `/${n}`,
     monarch: "Monarch",
     initiative: "Initiative",
     noDeck: "no deck",

@@ -2,7 +2,7 @@
 // width. It starts a game on the fixture table, then writes four entries into the device's saved game (localStorage,
 // so nothing reaches the database and it may run against local-dev): seat B's commander deals seat A 6, seat A casts
 // its commander once (tax +2), seat A takes 2 poison, and seat B's commander deals seat C 21. After a reload it
-// measures what the boards draw: the badge pills (24px on the phone's name row, 28px in the tablet foot, the from-
+// measures what the boards draw: the badge pills (24px on the phone, 28px on the tablet and desktop, both in the controls row, the from-
 // commander's art and name, "Tax +2", the counter), each badge opening the sheet on its tab, the Out face (the word in
 // Cinzel 26, the cause naming the commander, the art at .22), the 0.45s rotateY flip, its reversal on Undo, and no
 // flip under reduced motion. On main the badges are counters only, the Out face greys the whole panel with "Out ·" in
@@ -120,7 +120,8 @@ try {
     check("damage pill: the commander's name and 6", !!dmg && (!fromName || dmg.startsWith(fromName)), `${dmg} / ${fromName}`);
     check("tax pill: Tax +2", labels.includes("Tax +2. Open it in the sheet"));
     check("counter pill: Poison 2", labels.includes("Poison 2. Open it in the sheet"));
-    check("order: damage, tax, counters", labels.indexOf(dmg) < labels.indexOf("Tax +2. Open it in the sheet") && labels.indexOf("Tax +2. Open it in the sheet") < labels.indexOf("Poison 2. Open it in the sheet"));
+    // Fit addendum: what ends the game leads (damage 6/21 and poison 2/10 by their fraction of lethal), then tax.
+    check("order: damage, poison, tax", labels.indexOf(dmg) < labels.indexOf("Poison 2. Open it in the sheet") && labels.indexOf("Poison 2. Open it in the sheet") < labels.indexOf("Tax +2. Open it in the sheet"));
     const first = badges.first();
     const bs = await first.evaluate((el) => ({ h: el.offsetHeight, r: getComputedStyle(el).borderRadius, f: getComputedStyle(el).fontSize, ff: getComputedStyle(el).fontFamily, bg: getComputedStyle(el).backgroundColor }));
     check(`badge ${w.badge}px tall`, bs.h === w.badge, String(bs.h));
@@ -133,7 +134,7 @@ try {
       check(`damage pill art ${w.badge === 24 ? 18 : 20}px`, iw === (w.badge === 24 ? 18 : 20), String(iw));
     } else console.log("SKIP  damage pill art (the from seat has no art)");
     const where = await first.evaluate((el) => (el.closest('[data-testid="panel-foot"]') ? "foot" : el.closest('[data-testid="panel-who"]') ? "who" : "none"));
-    check(`badges sit in the ${w.badge === 24 ? "who" : "foot"} row`, where === (w.badge === 24 ? "who" : "foot"), where);
+    check("badges sit in the controls row (panel-foot) on every board", where === "foot", where);
     // The badges never overflow the panel: the row clips them inside the pane.
     const fits = await a.getByTestId("panel-badges").evaluate((el) => {
       const row = el.parentElement.getBoundingClientRect();

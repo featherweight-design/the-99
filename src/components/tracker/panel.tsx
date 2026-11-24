@@ -4,7 +4,7 @@
 // and End turn on the active seat, and the flipped Out face. The panel is laid out in its own upright frame and turned
 // to face its seat (`Cell.rot`), so every control lives where that player's hand is.
 
-import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { trackerCopy } from "../../lib/copy/tracker";
 import { lifeSize, type Cell } from "../../lib/tracker/layouts";
 import { commanderArt, commanderOf, TAX_PER_CAST, type PlaySeat } from "../../lib/tracker/seat";
@@ -210,33 +210,44 @@ export function Panel({
     .sort((a, b) => b.n - a.n || a.key.localeCompare(b.key));
   const topTax = Math.max(...state.tax.slice(0, state.commanders)) * TAX_PER_CAST;
   const setCounters = COUNTER_KEYS.filter((k) => state.counters[k] > 0);
-  const hasBadges = hits.length > 0 || topTax > 0 || setCounters.length > 0 || monarch || initiative;
-  const badges = hasBadges ? (
-    <div className={"-my-[10px] flex min-w-0 items-center overflow-hidden py-[10px] " + (foot ? "gap-[6px]" : "shrink gap-[5px]")} data-testid="panel-badges">
-      {hits.map((h) => {
-        const art = commanderArt(h.p, h.cmdr);
-        const text = copy.badge(commanderOf(h.p, h.cmdr) ?? trackerCopy.sheet.commanderFallback, h.n);
-        return (
-          <Badge key={h.key} foot={foot} text={text} onPress={() => onSheet("damage")} lead={art ? "img" : "none"}>
-            {/* eslint-disable-next-line @next/next/no-img-element -- the seat's own art, already loaded by its panel */}
-            {art ? <img src={art} alt="" className={"shrink-0 rounded-full object-cover object-top " + (foot ? "size-5" : "size-[18px]")} /> : null}
-          </Badge>
-        );
-      })}
-      {topTax > 0 ? (
-        <Badge foot={foot} text={copy.badgeTax(topTax)} onPress={() => onSheet("tax")}>
-          <TaxUpIcon size={12} />
-        </Badge>
-      ) : null}
-      {setCounters.map((k) => (
-        <Badge key={k} foot={foot} text={copy.badge(trackerCopy.counters[k].name, state.counters[k])} onPress={() => onSheet("counters", k)}>
-          <CounterIcon kind={k} size={12} />
-        </Badge>
-      ))}
-      {monarch ? <Badge foot={foot} accent text={copy.monarch}><MonarchIcon size={12} /></Badge> : null}
-      {initiative ? <Badge foot={foot} accent text={copy.initiative}><InitiativeIcon size={12} /></Badge> : null}
-    </div>
-  ) : null;
+  // Every badge as a compact chip. Each is a compact chip (art or icon and a figure; its words live in its aria-label), and the row keeps as many as
+  // fit, whole, with a "+N" chip that opens the sheet on the first one left out (fit addendum).
+  // Damage and poison are the two that end a game, so they lead, the nearest to lethal first (21 damage from one
+  // commander, 10 poison); then tax, the other counters, and the marks.
+  const DAMAGE_LETHAL = 21;
+  const POISON_LETHAL = 10;
+  const lethal: (Chip & { near: number })[] = [
+    ...hits.map((h) => {
+      const art = commanderArt(h.p, h.cmdr);
+      return {
+        key: h.key,
+        near: h.n / DAMAGE_LETHAL,
+        short: shortName(commanderOf(h.p, h.cmdr) ?? trackerCopy.sheet.commanderFallback),
+        of: DAMAGE_LETHAL,
+        text: copy.badge(commanderOf(h.p, h.cmdr) ?? trackerCopy.sheet.commanderFallback, h.n),
+        figure: copy.badgeFigure(h.n),
+        lead: (art ? "img" : "none") as "img" | "none",
+        // eslint-disable-next-line @next/next/no-img-element -- the seat's own art, already loaded by its panel
+        icon: art ? <img src={art} alt="" className={"shrink-0 rounded-full object-cover object-top " + (foot ? "size-5" : "size-[18px]")} /> : null,
+        tab: "damage" as const,
+      };
+    }),
+    ...setCounters.filter((k) => k === "poison").map((k) => ({ ...counterChip(k), near: state.counters[k] / POISON_LETHAL, of: POISON_LETHAL })),
+  ].sort((a, b) => b.near - a.near);
+  const chips: Chip[] = [
+    ...lethal,
+    ...(topTax > 0 ? [{ key: "tax", short: copy.peekTax, text: copy.badgeTax(topTax), figure: copy.badgeTaxFigure(topTax), icon: <TaxUpIcon size={12} />, tab: "tax" as const }] : []),
+    ...setCounters.filter((k) => k !== "poison").map((k) => counterChip(k)),
+    ...(monarch ? [{ key: "monarch", short: copy.monarch, text: copy.monarch, icon: <MonarchIcon size={12} />, accent: true }] : []),
+    ...(initiative ? [{ key: "initiative", short: copy.initiative, text: copy.initiative, icon: <InitiativeIcon size={12} />, accent: true }] : []),
+  ];
+  function counterChip(k: CounterKey): Chip {
+    return { key: k, short: trackerCopy.counters[k].name, text: copy.badge(trackerCopy.counters[k].name, state.counters[k]), figure: copy.badgeFigure(state.counters[k]), icon: <CounterIcon kind={k} size={12} />, tab: "counters", focus: k };
+  }
+  const [peek, setPeek] = useState(false);
+  const closePeek = useCallback(() => setPeek(false), []);
+  if (peek && (chips.length === 0 || out)) setPeek(false);
+  const badges = chips.length > 0 ? <BadgeRow chips={chips} foot={foot} onSheet={onSheet} peek={peek} onPeek={() => setPeek((v) => !v)} /> : null;
   // End turn and the sheet button (F04, F12): in the name row on a phone and the tablet's ends, in the foot on the tablet's grids.
   // A name row under 240 px long (phone 6 Ends' sides) has no room for the label, so End turn keeps only its arrow in a 44 px
   // circle, named by its aria-label (addendum R2, decision 4).
@@ -272,19 +283,22 @@ export function Panel({
     </button>
   );
   const name = (
-    <b className={"min-w-0 shrink truncate font-semibold text-[color:var(--fg)] " + (foot ? "max-w-[150px] text-[18px]" : "mr-1 max-w-[110px] text-[16px]")} data-testid="panel-name">
+    <b className={"min-w-[3ch] shrink-0 truncate font-semibold text-[color:var(--fg)] " + (foot ? "max-w-[150px] text-[18px]" : "max-w-[150px] text-[16px]")} data-testid="panel-name">
       {seat.you ? <>{seat.name as string}</> : <PersonName n={seat.name} />}
     </b>
   );
   const deck = seat.deck === null ? (
-    <i className="shrink-0 font-mono text-[11px] not-italic text-[color:var(--fg-muted)]" data-testid="panel-no-deck">{tablet ? copy.noDeckTablet : copy.noDeck}</i>
+    <i className="min-w-0 shrink-[999] truncate font-mono text-[11px] not-italic text-[color:var(--fg-muted)]" data-testid="panel-no-deck">{tablet ? copy.noDeckTablet : copy.noDeck}</i>
   ) : (
-    <i className={"min-w-0 truncate font-mono not-italic text-[color:var(--fg-body)] " + (foot ? "text-[12.5px]" : "text-[12px]")} data-testid="panel-deck">
+    <i className={"min-w-0 shrink-[999] truncate font-mono not-italic text-[color:var(--fg-body)] " + (foot ? "text-[12.5px]" : "text-[12px]")} data-testid="panel-deck">
       {typeof seat.deck === "string" ? seat.deck : <PersonName n={seat.deck} />}
     </i>
   );
-  const whoRow = "relative z-10 flex shrink-0 whitespace-nowrap " + (foot ? "h-6 items-baseline gap-[10px]" : "h-11 items-center gap-[6px]");
-  const pane = "relative flex h-full w-full " + (foot ? "flex-col-reverse px-[18px] py-4" : "flex-col pb-2 pl-[14px] pr-2 pt-[6px]");
+  // One anatomy on every board (fit addendum R2): the name and deck on the outer edge, the controls row (End turn, badges,
+  // the sheet button) toward the strip. The tablet's grid boards keep their 52px foot sizes; the rest draw it 44px.
+  const whoRow = "relative z-10 flex shrink-0 items-baseline whitespace-nowrap " + (foot ? "h-6 gap-[10px]" : "h-5 gap-2");
+  const pane = "relative flex h-full w-full flex-col-reverse " + (foot ? "px-[18px] py-4" : "pb-[8px] pl-[14px] pr-2 pt-[6px]");
+  const controlsRow = "relative z-10 flex shrink-0 items-center " + (foot ? "h-[52px] gap-2" : "h-11 gap-[6px]");
   const face = "absolute inset-0 overflow-hidden shadow-[inset_0_0_0_1px_var(--border)] [backface-visibility:hidden] [-webkit-backface-visibility:hidden] " + (foot ? "rounded-[18px] " : "rounded-[16px] ");
   // The commander art (F04), split in two halves with a 2px seam for a partner pair (F14).
   const art = (front: boolean) =>
@@ -331,6 +345,7 @@ export function Panel({
         width: `${(cell.w / canvas.w) * 100}%`,
         height: `${(cell.h / canvas.h) * 100}%`,
         containerType: "size",
+        zIndex: peek ? 40 : undefined,
       }}
     >
       {/* The seat's turn sits on this box, which is laid out unturned (a sideways seat's box is the cell's height wide).
@@ -349,6 +364,7 @@ export function Panel({
           data-pane={foot ? "foot" : "who"}
           {...personAttrs({ "aria-label": label }, "relative h-full w-full [perspective:1200px]")}
         >
+          {peek && chips.length > 0 ? <BadgePeek chips={chips} foot={foot} onClose={closePeek} /> : null}
           {/* The flip (F10): the panel turns over to its out face in 0.45s, and back on Undo; under reduced motion it simply changes. */}
           <div
             className="relative h-full w-full [transform-style:preserve-3d] motion-safe:transition-transform motion-safe:duration-[450ms] motion-safe:ease-[cubic-bezier(.4,.1,.2,1)]"
@@ -363,9 +379,6 @@ export function Panel({
                 <div className={whoRow} data-testid="panel-who">
                   {name}
                   {deck}
-                  {foot ? null : badges}
-                  {foot ? null : endTurn}
-                  {foot ? null : sheetButton}
                 </div>
 
                 <div className="relative min-h-0 flex-1">
@@ -455,13 +468,11 @@ export function Panel({
                   })}
                 </div>
 
-                {foot ? (
-                  <div className="relative z-10 flex h-[52px] shrink-0 items-center gap-2" data-testid="panel-foot">
-                    {endTurn}
-                    {badges}
-                    {sheetButton}
-                  </div>
-                ) : null}
+                <div className={controlsRow} data-testid="panel-foot">
+                  {endTurn}
+                  {badges}
+                  {sheetButton}
+                </div>
               </div>
               {pick ? (
                 <button
@@ -488,7 +499,6 @@ export function Panel({
                 <div className={pane}>
                   <div className={whoRow}>
                     {name}
-                    {sheetButton}
                   </div>
                   <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-1 px-3 text-center" data-testid="panel-out">
                     <strong className="font-display text-[26px] font-bold leading-[1.1] text-[color:var(--fg)]">{copy.out}</strong>
@@ -502,6 +512,7 @@ export function Panel({
                       {copy.undo}
                     </button>
                   </div>
+                  <div className={controlsRow}>{sheetButton}</div>
                 </div>
               </div>
             ) : null}
@@ -512,12 +523,181 @@ export function Panel({
   );
 }
 
+/** A commander's name up to its comma, for the peek: "Ghalta, Primal Hunger" reads "Ghalta". */
+const shortName = (full: string) => full.split(",")[0];
+
+type Chip = {
+  key: string;
+  /** The peek's words: the commander's short name, the counter's name, "Tax", "Monarch". */
+  short: string;
+  /** What ends the game at, for damage (21) and poison (10): the peek shows the figure over it. */
+  of?: number;
+  /** The full words ("Ghalta, Primal Hunger 8", "Poison 3"): the chip's aria-label, and the sheet's row. */
+  text: string;
+  /** The figure the chip shows; none for the monarch and initiative marks, which show their icon alone. */
+  figure?: string;
+  icon: ReactNode;
+  lead?: "icon" | "img" | "none";
+  accent?: boolean;
+  tab?: "damage" | "tax" | "counters";
+  focus?: CounterKey;
+};
+
+/**
+ * The badge row (fit addendum): compact chips, kept whole. It measures every chip once in an unseen copy, then shows the
+ * longest run that fits beside a "+N" chip; with room for all, there is no "+N". Its flex basis is the full run, so the
+ * deck name gives way before any chip does, and the name never does.
+ */
+function BadgeRow({ chips, foot, onSheet, peek, onPeek }: {
+  chips: Chip[];
+  foot: boolean;
+  onSheet: (tab?: "damage" | "tax" | "counters", focus?: CounterKey) => void;
+  peek: boolean;
+  onPeek: () => void;
+}) {
+  const row = useRef<HTMLDivElement>(null);
+  const ruler = useRef<HTMLDivElement>(null);
+  const [fit, setFit] = useState(chips.length);
+  const [full, setFull] = useState<number | undefined>(undefined);
+  const sig = chips.map((c) => c.key + (c.figure ?? "")).join("|");
+  useLayoutEffect(() => {
+    const el = row.current;
+    const r = ruler.current;
+    if (!el || !r) return;
+    const gap = foot ? 6 : 5;
+    const measure = () => {
+      const kids = [...r.children] as HTMLElement[];
+      const widths = kids.slice(0, chips.length).map((k) => k.offsetWidth);
+      const more = kids[chips.length]?.offsetWidth ?? 0;
+      const total = widths.reduce((a, w) => a + w, 0) + gap * Math.max(0, widths.length - 1);
+      setFull(total);
+      const room = el.clientWidth;
+      if (total <= room) return setFit(chips.length);
+      let used = more;
+      let n = 0;
+      for (const w of widths) {
+        if (used + gap + w > room) break;
+        used += gap + w;
+        n += 1;
+      }
+      setFit(n);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    ro.observe(r); // the chips change width when the fonts land
+    return () => ro.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-measure when the chips change, by their keys and figures
+  }, [sig, foot]);
+  const shown = chips.slice(0, fit);
+  const left = chips.slice(fit);
+  const chip = (c: Chip) => (
+    <Badge key={c.key} foot={foot} text={c.text} figure={c.figure} accent={c.accent} lead={c.lead} onPress={c.tab ? () => onSheet(c.tab, c.focus) : undefined}>
+      {c.icon}
+    </Badge>
+  );
+  return (
+    <div
+      ref={row}
+      className={"relative -my-[10px] flex min-w-0 items-center py-[10px] " + (foot ? "gap-[6px]" : "gap-[5px]")}
+      style={{ flex: `0 1 ${full ?? 0}px` }}
+      data-testid="panel-badges"
+      data-fit={fit}
+      data-total={chips.length}
+    >
+      {shown.map(chip)}
+      {left.length > 0 ? (
+        <button
+          type="button"
+          onClick={onPeek}
+          aria-expanded={peek}
+          aria-label={peek ? copy.peekClose : copy.badgeMoreAria(left.length)}
+          className={"relative inline-flex shrink-0 items-center justify-center rounded-full bg-[color:var(--elevated)] font-mono font-semibold tabular-nums text-[color:var(--fg)] shadow-[inset_0_0_0_1px_var(--border-strong)] after:absolute after:inset-[-10px_-3px] after:content-[''] "
+            + (foot ? "h-7 px-[10px] text-[12.5px]" : "h-6 px-[8px] text-[11.5px]")}
+          data-peek-toggle=""
+          data-testid="panel-badge-more"
+        >
+          {peek ? <CloseIcon size={foot ? 13 : 12} /> : copy.badgeMore(left.length)}
+        </button>
+      ) : null}
+      {/* The ruler: every chip and a "+N" at their own widths, unseen and out of the flow, for the fit above. */}
+      <div ref={ruler} aria-hidden inert className="pointer-events-none invisible absolute left-0 top-0 flex w-max" data-testid="panel-badges-ruler">
+        {chips.map(chip)}
+        <span className={"inline-flex shrink-0 items-center rounded-full font-mono font-semibold tabular-nums " + (foot ? "h-7 px-[10px] text-[12.5px]" : "h-6 px-[8px] text-[11.5px]")}>
+          {copy.badgeMore(chips.length)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function CloseIcon({ size }: { size: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 12 12" aria-hidden fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+      <path d="M2.5 2.5l7 7M9.5 2.5l-7 7" />
+    </svg>
+  );
+}
+
+/**
+ * The peek (fit addendum R2): +N turns into a ✕ and a card opens from the seat's inner edge toward the middle of the table,
+ * turned to face the seat like its panel, listing every badge with its words and, for damage and poison, how far it is from lethal. A quick look only: it changes nothing and
+ * holds no buttons. The ✕, a tap anywhere off it, or Escape closes it; the sheet button stays the way to change a count.
+ */
+function BadgePeek({ chips, foot, onClose }: { chips: Chip[]; foot: boolean; onClose: () => void }) {
+  const box = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const off = (e: PointerEvent) => {
+      const t = e.target as Element | null;
+      // Its own +N toggles it; any other seat's +N is a tap off this one, so only one quick look is ever open.
+      const seat = box.current?.closest('[data-testid="tracker-panel"]');
+      const own = t?.closest("[data-peek-toggle]");
+      if (box.current?.contains(t) || (own && seat?.contains(own))) return;
+      onClose();
+    };
+    const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("pointerdown", off, true);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("pointerdown", off, true);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [onClose]);
+  return (
+    <div
+      ref={box}
+      role="region"
+      aria-label={copy.peekLabel}
+      className={"absolute bottom-[calc(100%+8px)] left-0 z-50 w-full min-w-[268px] max-w-[420px] rounded-[14px] bg-[color:var(--surface)] shadow-[inset_0_0_0_1px_var(--border-strong),0_10px_30px_rgba(0,0,0,.55)] motion-safe:animate-[life-pending-in_.15s_ease-out] "
+        + (foot ? "p-3" : "px-[10px] py-2")}
+      data-testid="panel-peek"
+    >
+      <ul className={"grid content-start gap-x-4 " + (foot ? "grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-y-1" : "grid-cols-[repeat(auto-fill,minmax(118px,1fr))] gap-y-[2px]")}>
+        {chips.map((c) => (
+          <li key={c.key} className={"flex min-w-0 items-center gap-2 font-mono tabular-nums " + (foot ? "h-8 text-[13px]" : "h-[26px] text-[12px]")} data-testid="peek-row">
+            <span className={"grid shrink-0 place-items-center " + (c.accent ? "text-[color:var(--accent-text)] " : "text-[color:var(--fg-body)] ") + (foot ? "size-5" : "size-[18px]")}>{c.icon}</span>
+            <span className={"min-w-0 flex-1 truncate " + (c.accent ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-body)]")}>{c.short}</span>
+            {c.figure === undefined ? null : (
+              <span className="shrink-0 font-semibold text-[color:var(--fg)]">
+                {c.figure}
+                {c.of ? <span className="font-normal text-[color:var(--fg-muted)]">{copy.peekOf(c.of)}</span> : null}
+              </span>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /**
  * A panel badge (F10 `.bd`, F12 on the tablet): a pill with its icon or the commander's art, then its words. A count
  * opens the sheet where it is changed, over a hit area 10px taller each way; the monarch and initiative marks only show.
  */
-function Badge({ text, foot, accent = false, lead = "icon", onPress, children }: {
+function Badge({ text, figure, foot, accent = false, lead = "icon", onPress, children }: {
   text: string;
+  /** The compact chip's figure; with none, the chip is its icon alone in a circle. */
+  figure?: string;
   foot: boolean;
   accent?: boolean;
   lead?: "icon" | "img" | "none";
@@ -526,19 +706,20 @@ function Badge({ text, foot, accent = false, lead = "icon", onPress, children }:
 }) {
   const cls =
     "relative inline-flex shrink-0 items-center whitespace-nowrap rounded-full bg-[color:color-mix(in_srgb,var(--bg)_82%,transparent)] font-mono tabular-nums "
-    + (foot ? "h-7 gap-[6px] pr-[11px] text-[12.5px] " : "h-6 gap-[5px] pr-[9px] text-[11.5px] ")
-    + (lead === "none" ? (foot ? "pl-[11px] " : "pl-[9px] ") : foot ? "pl-[5px] " : "pl-1 ")
-    + (lead === "icon" ? (foot ? "[&>svg]:ml-1 [&>span:first-child]:ml-1 " : "[&>svg]:ml-[3px] [&>span:first-child]:ml-[3px] ") : "")
+    + (figure === undefined
+      ? (foot ? "size-7 justify-center " : "size-6 justify-center ")
+      : (foot ? "h-7 gap-[5px] pr-[10px] text-[12.5px] " : "h-6 gap-[4px] pr-[8px] text-[11.5px] ")
+        + (lead === "none" ? (foot ? "pl-[10px] " : "pl-[8px] ") : lead === "img" ? (foot ? "pl-1 " : "pl-[3px] ") : foot ? "pl-[9px] " : "pl-[7px] "))
     + (accent ? "text-[color:var(--accent-text)] shadow-[inset_0_0_0_1px_var(--accent)]" : "text-[color:var(--fg-body)] shadow-[inset_0_0_0_1px_var(--border-strong)]");
   return onPress ? (
-    <button type="button" onClick={onPress} aria-label={copy.badgeAria(text)} className={cls + " after:absolute after:inset-[-10px_-3px] after:content-['']"} data-testid="panel-badge">
+    <button type="button" onClick={onPress} aria-label={copy.badgeAria(text)} title={text} className={cls + " after:absolute after:inset-[-10px_-3px] after:content-['']"} data-testid="panel-badge">
       {children}
-      <span aria-hidden>{text}</span>
+      {figure === undefined ? null : <span aria-hidden>{figure}</span>}
     </button>
   ) : (
-    <span role="img" aria-label={text} className={cls} data-testid="panel-badge">
+    <span role="img" aria-label={text} title={text} className={cls} data-testid="panel-badge">
       {children}
-      <span aria-hidden>{text}</span>
+      {figure === undefined ? null : <span aria-hidden>{figure}</span>}
     </span>
   );
 }
