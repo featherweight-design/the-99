@@ -109,12 +109,15 @@ describe("FeedItemRow", () => {
     expect(screen.queryByText("Answer in Friends.")).toBeNull();
     expect(screen.getByTestId("spare-days").textContent).toContain("6");
     expect(container.querySelector("[data-row-x]")?.className).toContain("top-[4px]");
+    // The ✕ draws over the corner, so the text column reserves its width on a phone.
+    expect(container.querySelector("[data-feed-text]")?.className).toContain("pr-[34px]");
     fireEvent.click(screen.getByTestId("spare-yes"));
     await screen.findByText(/sparing/i);
     expect(actions.answerSpareAction).toHaveBeenCalledWith("req-9", "yes");
     expect(screen.queryByTestId("spare-yes")).toBeNull();
     // The receipt is the row's last word: its ✕ leaves with the Yes and No.
     expect(container.querySelector("[data-row-x]")).toBeNull();
+    expect(container.querySelector("[data-feed-text]")?.className).not.toContain("pr-[34px]");
   });
 
   it("gives a spare request (the later round) its accent kicker and no press", () => {
