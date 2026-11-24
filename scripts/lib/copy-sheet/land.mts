@@ -1,6 +1,7 @@
 // The parts of `pnpm copy:import` that decide what the PR says and what the branch is called. Kept pure so a test can
 // pin them; the git and gh calls live in scripts/copy-sheet-import.mts.
 import type { Change } from "./sheet.mjs";
+import { testsSection, type TestRewrite } from "./test-rewrite.mjs";
 
 const pad = (n: number) => String(n).padStart(2, "0");
 
@@ -17,7 +18,7 @@ export function commitMessage(changes: readonly Change[], files: number): string
 }
 
 /** The PR body: every old -> new pair, for the copy-review pass that runs before the PR lands. */
-export function prBody(changes: readonly Change[], files: readonly string[]): string {
+export function prBody(changes: readonly Change[], files: readonly string[], tests?: TestRewrite): string {
   const rows = changes.map((c) => `| \`${c.key.replace("src/lib/copy/", "")}\` | ${cell(c.from)} | ${cell(c.to)} |`);
   return [
     "## Summary",
@@ -37,5 +38,6 @@ export function prBody(changes: readonly Change[], files: readonly string[]): st
     ...rows,
     "",
     "Files: " + files.map((f) => `\`${f}\``).join(", "),
+    ...(tests ? ["", ...testsSection(tests)] : []),
   ].join("\n");
 }
