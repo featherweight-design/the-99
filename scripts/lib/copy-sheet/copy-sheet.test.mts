@@ -88,7 +88,7 @@ describe("validate", () => {
   it("rejects em dash, tells, banned words and British spelling", () => {
     expect(problems(row, "Seen {t} — now")[0]).toMatch(/em dash/);
     expect(problems(row, "Seen {t}!")[0]).toMatch(/exclamation/);
-    expect(problems(row, "Simply seen {t}")[0]).toMatch(/simply/);
+    expect(problems(row, "Simply seen {t}")[0]).toMatch(/"Simply"/);
     expect(problems(row, "Seen {t} in colour")[0]).toMatch(/British/);
   });
   it("allows a bare dash for no value", () => {

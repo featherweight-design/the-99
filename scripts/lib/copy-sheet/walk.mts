@@ -56,9 +56,9 @@ function push(ctx: Ctx, key: string, n: ts.Node, row: Pick<CopyRow, "text" | "pl
 }
 
 /** A text node: a string, or a template whose holes are all plain names. Anything else under it is read-only. */
-function textNode(ctx: Ctx, key: string, n: ts.Node, context: string): boolean {
+function textNode(ctx: Ctx, key: string, n: ts.Node, context: string, force = false): boolean {
   if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) {
-    if (!isCopyText(n.text)) return true;
+    if (!force && !isCopyText(n.text)) return true;
     push(ctx, key, n, { text: n.text, placeholders: [], context, readOnly: "", isTemplate: false });
     return true;
   }
@@ -126,7 +126,8 @@ function fnLeaf(ctx: Ctx, key: string, fn: ts.ArrowFunction | ts.FunctionExpress
   const several = out.length > 1;
   out.forEach((o, i) => {
     const context = `${args}${o.cond.length ? ` when ${o.cond.join(" and ")}` : ""}`;
-    textNode(ctx, several ? `${key}#t${i + 1}` : key, o.node, context);
+    // A function leaf returns text the reader sees, so even a single lowercase word ("card") is copy there.
+    textNode(ctx, several ? `${key}#t${i + 1}` : key, o.node, context, true);
   });
 }
 
