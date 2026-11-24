@@ -84,13 +84,17 @@ describe("rewriteTests", () => {
       "src/clash.test.ts": `const x = 3;\na("Save the deck", x);\n`,
       "src/lib/copy/x.test.ts": `a("Save the deck");\n`,
       "scripts/s.test.mts": `a("Save the deck");\n`,
+      "src/lib/copy/y.ts": `export const x = { other: "Other words here" };\n`,
+      "src/two.test.ts": `a("Save the deck", "Other words here");\n`,
     });
-    const r = rewriteTests([SAVE], root);
-    expect(r.files.size).toBe(0);
+    const r = rewriteTests([SAVE, { key: "src/lib/copy/y.ts#x.other", from: "Other words here", to: "N" }], root);
+    expect([...r.files.keys()]).toEqual(["src/two.test.ts"]);
+    expect(r.files.get("src/two.test.ts")).toBe(`import { x } from "./lib/copy/x";\na(x.save, "Other words here");\n`);
     expect(r.hand.map((h) => `${h.file}: ${h.why}`)).toEqual([
       "scripts/s.test.mts: a script test imports differently",
       "src/clash.test.ts: `x` is already a name in this file",
       "src/lib/copy/x.test.ts: a copy module's own test",
+      "src/two.test.ts: `x` is already a name in this file",
     ]);
   });
 

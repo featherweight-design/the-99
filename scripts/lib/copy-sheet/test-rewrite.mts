@@ -77,7 +77,7 @@ function importEdit(sf: ts.SourceFile, file: string, copyFile: string, name: str
     visit(sf);
     return found;
   })();
-  if (clash) return { why: `\`${name}\` is already a name in this file` };
+  if (clash || [...used.keys()].some((k) => k.endsWith(`#${name}`) && k !== `${copyFile}#${name}`)) return { why: `\`${name}\` is already a name in this file` };
   const open = same.find((i) => i.importClause && !i.importClause.isTypeOnly && !i.importClause.name && i.importClause.namedBindings && ts.isNamedImports(i.importClause.namedBindings));
   const id = `${copyFile}#${name}`;
   if (open) {
