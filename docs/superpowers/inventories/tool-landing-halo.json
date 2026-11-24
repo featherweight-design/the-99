@@ -1,0 +1,48 @@
+{
+  "feature": "R12 PR C: Try it haloes only on a busier screen (G29); Help me choose haloes its open intro (R12-C5)",
+  "note": "Each row lands by ?tool= and is photographed inside the 2.4s halo window. Help me choose needs the reader's choose_intro_seen_at null so the intro draws open. The quiet pages must show no halo.",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 },
+    { "label": "ipad-landscape", "width": 1180, "height": 820 },
+    { "label": "ipad-portrait", "width": 820, "height": 1180 }
+  ],
+  "rows": [
+    {
+      "id": "hmc-open",
+      "label": "/decks/new/choose?tool=help-me-choose: the open intro, haloed",
+      "view": "src/components/intake/choose-intro.tsx",
+      "steps": [{ "goto": "/decks/new/choose?tool=help-me-choose", "wait": "[data-target-halo]", "settle": 400 }]
+    },
+    {
+      "id": "precons",
+      "label": "/decks/precons?tool=precons: the top of the page, no halo",
+      "view": "src/lib/discovery/tools.ts",
+      "steps": [{ "goto": "/decks/precons?tool=precons", "wait": "input[type='search']", "settle": 800 }]
+    },
+    {
+      "id": "wishlist",
+      "label": "/collection/wishlist?tool=wishlist: no halo",
+      "view": "src/lib/discovery/tools.ts",
+      "steps": [{ "goto": "/collection/wishlist?tool=wishlist", "wait": "input[type='search']", "settle": 800 }]
+    },
+    {
+      "id": "sync",
+      "label": "/collection/replace?tool=collection-sync: no halo",
+      "view": "src/lib/discovery/tools.ts",
+      "steps": [{ "goto": "/collection/replace?tool=collection-sync", "wait": "label:has(input[aria-label='Upload collection CSV'])", "settle": 800 }]
+    },
+    {
+      "id": "lineup",
+      "label": "/decks?view=stats&tool=lineup: no halo",
+      "view": "src/lib/discovery/tools.ts",
+      "steps": [{ "goto": "/decks?view=stats&tool=lineup", "wait": "[role='tablist']", "settle": 800 }]
+    },
+    {
+      "id": "friends",
+      "label": "/friends?tool=friends: no halo",
+      "view": "src/lib/discovery/tools.ts",
+      "steps": [{ "goto": "/friends?tool=friends", "wait": "h1", "settle": 800 }]
+    }
+  ]
+}

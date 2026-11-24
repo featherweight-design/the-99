@@ -619,10 +619,14 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (each tool's id taken out first, so the spend is seen), put back exactly in a `finally`, and refuses production,
   staging and local-dev by `neon.branch_id` (`assertScratchBranch`). Run against `next start`; every deck tool it
   lands is always on.
-  Since R2·3 it also lands each tool that has a page of its own, at both widths: Help me choose (the form's first
-  answer), Precons and Wishlist (each page's search), Collection Sync (the drop zone, G14), Stats for your decks (the
-  Tiles · Stats switch on `/decks?view=stats`) and Friends and pods (Add a friend), each by its `?tool=` on that page,
-  with the same halo, strip, spend and no-bubble checks. Find a deck's landing is deferred: `?tool=find-a-deck` on
+  Since R2·3 it also lands each tool that has a page of its own, at both widths, each by its `?tool=` on that page.
+  Since R12 (G29) only a tool on a busier screen haloes: Help me choose haloes its intro panel while it is open
+  (`choose_intro_seen_at` cleared first), with the same halo, strip, spend and no-bubble checks; with the intro folded
+  (the mark set) it strips with no halo and spends nothing. A page that IS the tool (Precons and Wishlist with their
+  search, Collection Sync's drop zone, Stats for your decks on `/decks?view=stats`, Friends and pods) strips the
+  parameter, draws its control, haloes nothing through the halo's window and spends nothing. It writes
+  `choose_intro_seen_at` and puts it back in a `finally`. A scratch branch is named by `TOOL_LANDING_PROBE_URL`, since
+  the env file overrides an inherited `DATABASE_URL`. Find a deck's landing is deferred: `?tool=find-a-deck` on
   `/collection?avail=free` is stripped at once, nothing haloes, and the probe then presses the first row open so the
   card details' `Find a deck for it` is haloed once. A control the page does not draw even without `?tool=` is SKIP;
   one it draws without the landing but not with it is FAIL. Stale ids on a page (unknown, another page's tool, a deck
