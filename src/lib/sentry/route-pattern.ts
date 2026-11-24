@@ -34,6 +34,7 @@ export const ROUTE_PATTERNS: readonly string[] = [
   "/api/card-scan/timing",
   "/api/clerk-webhook",
   "/api/collection-fields",
+  "/api/copy-edit/rows",
   "/api/cron/account-sweep",
   "/api/cron/announcements",
   "/api/cron/invite-sweep",

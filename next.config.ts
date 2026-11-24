@@ -34,7 +34,7 @@ const nextConfig: NextConfig = {
   },
   // The admin's Eval ledgers read the committed ledgers at request time (`readEvalLedgers`), so the
   // deploy carries them into the `/admin` function: they move only with a merge.
-  outputFileTracingIncludes: { "/admin": ["./docs/superpowers/eval/ledger*.jsonl"] },
+  outputFileTracingIncludes: { "/admin": ["./docs/superpowers/eval/ledger*.jsonl"], "/api/copy-edit/rows": ["./.generated/copy-rows.json"] },
   // Security headers on every path (`src/lib/security/headers.ts`); the CSP is report-only.
   async headers() {
     const headers = securityHeaders({

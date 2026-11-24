@@ -7,9 +7,10 @@
     "node": "24.x"
   },
   "scripts": {
+    "predev": "tsx scripts/copy-editor-rows.mts",
     "dev": "next dev",
-    "build": "NODE_OPTIONS=--max-old-space-size=4096 next build",
-    "vercel-build": "tsx scripts/vercel-migrate.ts && NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "build": "tsx scripts/copy-editor-rows.mts && NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "vercel-build": "tsx scripts/vercel-migrate.ts && tsx scripts/copy-editor-rows.mts && NODE_OPTIONS=--max-old-space-size=4096 next build",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run --passWithNoTests",
@@ -42,6 +43,7 @@
     "check:copy-sheet-roundtrip": "tsx scripts/check-copy-sheet-roundtrip.mts",
     "copy:sheet": "tsx scripts/copy-sheet-export.mts",
     "copy:tests": "tsx scripts/copy-tests.mts",
+    "copy:rows": "tsx scripts/copy-editor-rows.mts",
     "copy:import": "tsx scripts/copy-sheet-import.mts",
     "check:script-loads": "node scripts/check-script-loads.mjs",
     "record:clerk-strength": "tsx scripts/record-clerk-strength.mts",
