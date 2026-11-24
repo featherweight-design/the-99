@@ -151,6 +151,11 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:steady-labels
 
+      # An unedited copy sheet must import to zero changes, or the first real edit rewrites a string nobody touched.
+      - name: Copy sheet round trip
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:copy-sheet-roundtrip
+
       # A constraint name Postgres would truncate is invisible to every other step here:
       # drizzle-kit compares its own snapshots, and the failure only appears when the
       # migration RUNS — on a real deployment, the Vercel production build.
