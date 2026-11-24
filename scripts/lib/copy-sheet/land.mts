@@ -13,7 +13,7 @@ export function branchName(now: Date): string {
 const cell = (s: string) => s.replace(/\|/g, "\\|").replace(/\r?\n/g, " ");
 
 export function commitMessage(changes: readonly Change[], files: number): string {
-  return `Copy sheet: ${changes.length} wording change${changes.length === 1 ? "" : "s"} in ${files} file${files === 1 ? "" : "s"}\n\nApplied from an edited copy sheet by pnpm copy:import. Wording only; the CSV is not committed.\n\nCo-Authored-By: Claude Sonnet 5.5 <noreply@anthropic.com>`;
+  return `Copy sheet: ${changes.length} wording change${changes.length === 1 ? "" : "s"} in ${files} file${files === 1 ? "" : "s"}\n\nApplied from an edited copy sheet by pnpm copy:import. Wording only; the CSV is not committed.`;
 }
 
 /** The PR body: every old -> new pair, for the copy-review pass that runs before the PR lands. */
@@ -37,7 +37,5 @@ export function prBody(changes: readonly Change[], files: readonly string[]): st
     ...rows,
     "",
     "Files: " + files.map((f) => `\`${f}\``).join(", "),
-    "",
-    "🤖 Generated with [Claude Code](https://claude.com/claude-code)",
   ].join("\n");
 }

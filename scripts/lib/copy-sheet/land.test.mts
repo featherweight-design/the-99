@@ -19,11 +19,10 @@ describe("copy:import landing text", () => {
     const body = prBody(changes, ["src/lib/copy/a.ts"]);
     expect(body).toMatch(/## Copy review/);
     expect(body).toMatch(/## Design review\n\nNot applicable/);
-    expect(body.trim().endsWith("🤖 Generated with [Claude Code](https://claude.com/claude-code)")).toBe(true);
   });
-  it("counts in the commit subject and keeps the trailer", () => {
+  it("counts in the commit subject and carries no author attribution (whoever runs the import owns the commit)", () => {
     expect(commitMessage(changes, 1).split("\n")[0]).toBe("Copy sheet: 2 wording changes in 1 file");
     expect(commitMessage([changes[0]], 1).split("\n")[0]).toBe("Copy sheet: 1 wording change in 1 file");
-    expect(commitMessage(changes, 1)).toContain("Co-Authored-By: Claude Sonnet 5.5");
+    expect(commitMessage(changes, 1)).not.toContain("Co-Authored-By");
   });
 });

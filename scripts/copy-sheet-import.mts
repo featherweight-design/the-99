@@ -51,15 +51,16 @@ if (flag("--local")) {
 // Every git command below runs from the common repo (works from a worktree too) and names its own worktree, so the
 // caller's branch, index and dirty files are never read or written.
 const here = process.cwd();
-const common = resolve(here, run("git", ["rev-parse", "--git-common-dir"], here));
-const repo = common.endsWith(".git") ? resolve(common, "..") : common;
-run("git", ["fetch", "-q", "origin", "main"], repo);
-const branch = branchName(new Date());
-const tree = join(repo, ".worktrees", branch);
-if (existsSync(tree)) fail(`${tree} already exists: one import a minute; wait or remove it`);
-run("git", ["worktree", "add", "-q", "-b", branch, tree, "origin/main"], repo);
+let repo = here;
+let tree = "";
+let branch = "";
+let made = false;
 let keepBranch = false;
+let pushed = false;
+const scratch = mkdtempSync(join(tmpdir(), "copy-import-"));
 const cleanup = () => {
+  rmSync(scratch, { recursive: true, force: true });
+  if (!made) return;
   try {
     run("git", ["worktree", "remove", "--force", tree], repo);
   } catch {
@@ -72,8 +73,23 @@ const cleanup = () => {
       /* already gone */
     }
   }
+  made = false;
 };
+for (const sig of ["SIGINT", "SIGTERM"] as const) {
+  process.on(sig, () => {
+    cleanup();
+    process.exit(130);
+  });
+}
 try {
+  const common = resolve(here, run("git", ["rev-parse", "--git-common-dir"], here));
+  repo = common.endsWith(".git") ? resolve(common, "..") : common;
+  run("git", ["fetch", "-q", "origin", "main"], repo);
+  branch = branchName(new Date());
+  tree = join(repo, ".worktrees", branch);
+  if (existsSync(tree)) throw new Error(`${tree} already exists: one import a minute; wait or remove it`);
+  run("git", ["worktree", "add", "-q", "-b", branch, tree, "origin/main"], repo);
+  made = true;
   const { files, changes } = applySheet(csv, tree);
   printChanges(changes);
   if (changes.length === 0) {
@@ -93,20 +109,22 @@ try {
   run("pnpm", ["lint"], tree, "inherit");
   const names = [...files.keys()];
   run("git", ["add", ...names], tree);
-  const msg = mkdtempSync(join(tmpdir(), "copy-import-"));
-  writeFileSync(join(msg, "m.txt"), commitMessage(changes, names.length));
-  run("git", ["commit", "-q", "-F", join(msg, "m.txt")], tree);
+  writeFileSync(join(scratch, "m.txt"), commitMessage(changes, names.length));
+  run("git", ["commit", "-q", "-F", join(scratch, "m.txt")], tree);
   keepBranch = true;
   if (flag("--no-pr")) {
     console.log(`Committed on ${branch} in ${tree}. Push and open the PR yourself.`);
+    rmSync(scratch, { recursive: true, force: true });
     process.exit(0);
   }
   run("git", ["push", "-q", "-u", "origin", branch], tree);
-  writeFileSync(join(msg, "b.md"), prBody(changes, names));
-  const url = run("gh", ["pr", "create", "--title", `Copy sheet: ${changes.length} wording change${changes.length === 1 ? "" : "s"}`, "--body-file", join(msg, "b.md")], tree);
+  pushed = true;
+  writeFileSync(join(scratch, "b.md"), prBody(changes, names));
+  const url = run("gh", ["pr", "create", "--title", `Copy sheet: ${changes.length} wording change${changes.length === 1 ? "" : "s"}`, "--body-file", join(scratch, "b.md")], tree);
   console.log(`Opened ${url}. Copy-review the old -> new list in the body before it lands.`);
   cleanup();
 } catch (e) {
   cleanup();
+  if (pushed) console.error(`The branch ${branch} is pushed but the PR was not opened: open it from that branch (the worktree is removed).`);
   fail(e);
 }
