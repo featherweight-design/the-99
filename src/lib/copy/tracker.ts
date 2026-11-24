@@ -60,7 +60,7 @@ export const trackerCopy = {
     /** The compact badge's visible figure: "8" (damage or a counter), "+4" (tax). The full words stay in its aria-label. */
     badgeFigure: (n: number) => `${n}`,
     badgeTaxFigure: (n: number) => `+${n}`,
-    /** The last chip when the row cannot hold every badge: how many more there are; it opens the sheet. */
+    /** The last chip when the row cannot hold every badge: how many more there are; it opens the quick look. */
     badgeMore: (n: number) => `+${n}`,
     badgeMoreAria: (n: number) => `${n} more. Show every badge`,
     /** The peek: every badge with its words, opened from +N. */
