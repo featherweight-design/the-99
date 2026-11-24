@@ -91,4 +91,11 @@ describe("tracker sheet", () => {
     expect(html).not.toContain('data-testid="damage-card"');
     expect(html).toContain("flex h-full w-full flex-col");
   });
+  it("on a phone, lets the commander art fill each damage card under a fade (shelf art, B)", () => {
+    const html = render("damage", game);
+    // The card holds its 176px floor, the art covers it edge to edge, and the player's name rides over the art's head.
+    expect(html).toMatch(/class="relative flex flex-col overflow-hidden[^"]*min-h-\[176px\]"/);
+    expect(html).toContain("rgba(0,0,0,.88)_100%");
+    expect(html).not.toContain("h-[56px]");
+  });
 });
