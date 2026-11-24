@@ -2,7 +2,7 @@ import { atPlace } from "../commanders/place-paths";
 import { showcaseCopy, writtenForYouCopy, type ToolCopy } from "../copy/discovery";
 import { tuningHubCopy } from "../copy/tuning-hub";
 import type { SwitchName } from "../flags/registry";
-import type { DeckToolId, ToolFit } from "./fits";
+import type { DeckToolId, FitDeck, ToolFit } from "./fits";
 import { TOOL_PARAM, TOOLS, type Tool, type ToolGroup, type ToolId } from "./tools";
 
 /**
@@ -16,11 +16,14 @@ export const GROUP_ORDER: readonly ToolGroup[] = ["start", "tune", "buy", "own",
 /** Where the card goes, and what its footer says. */
 export type CardState =
   /** One deck fits, or several: the whole card opens the first (most recently touched); `more` counts the rest. */
-  | { kind: "deck"; href: string; deck: string; more: number }
+  | { kind: "deck"; href: string; deck: string; more: number; picks?: DeckPick[] }
   /** A tool with a page of its own: the whole card opens it, its footer naming where. */
   | { kind: "page"; href: string; label: string }
   /** Nothing fits: not a press. A line saying what the tool needs, and a door when another screen helps. */
   | { kind: "none"; line: string; door: { href: string; label: string } | null };
+
+/** A deck the picker draws (R12 PR B): every fitting deck, most recently touched first, each with where its press lands. */
+export type DeckPick = FitDeck & { href: string };
 
 export type ToolCardModel = {
   id: ToolId;
@@ -67,7 +70,12 @@ function stateOf(tool: Tool, copy: ToolCopy, input: CardInput): CardState {
   if (input.deckCount === 0) return { kind: "none", line: showcaseCopy.needsADeck, door: null };
   const decks = input.fits[id as DeckToolId]?.decks ?? [];
   const [first, ...rest] = decks;
-  if (first) return { kind: "deck", href: tryHref(`/decks/${first.id}`, id), deck: first.name, more: rest.length };
+  if (first) {
+    const state: CardState = { kind: "deck", href: tryHref(`/decks/${first.id}`, id), deck: first.name, more: rest.length };
+    // Several fit: the card carries every one, for Ask's picker (a single fit goes straight to its deck).
+    if (rest.length > 0) state.picks = decks.map((d) => ({ ...d, href: tryHref(`/decks/${d.id}`, id) }));
+    return state;
+  }
   const door = copy.door ? { href: "/friends", label: copy.door } : null;
   return { kind: "none", line: copy.none ?? showcaseCopy.needsADeck, door };
 }

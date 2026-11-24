@@ -1,0 +1,99 @@
+{
+  "feature": "Search follow-ups R12: the deck picker (PR B, Q21/G28)",
+  "note": "The deck picker at rest, drawn from an answer that several of the reader's decks can use (the local-dev fixture): Home's dropdown at 1300 and both iPad widths, the phone sheet at 390. Keys, Opening and the landing are behaviour, proven by scripts/probe-deck-picker.mjs.",
+  "out": "deck-picker",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    },
+    {
+      "label": "ipad-land",
+      "width": 1180,
+      "height": 820
+    },
+    {
+      "label": "ipad-port",
+      "width": 820,
+      "height": 1180
+    }
+  ],
+  "shares": {
+    "binding": "SearchDropdown",
+    "module": "src/components/card-search/search-desktop",
+    "view": "src/components/home/home-search-panel.tsx"
+  },
+  "rows": [
+    {
+      "id": "home-picker",
+      "label": "Home panel, the picker open on an answer",
+      "view": "src/components/home/home-search-panel.tsx",
+      "widths": [
+        "desktop",
+        "ipad-land",
+        "ipad-port"
+      ],
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-home-search-panel]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-home-search-panel] input"
+        },
+        {
+          "fill": "[data-home-search-panel] input",
+          "text": "How do I make my deck better?"
+        },
+        {
+          "wait": "[data-ask-tool]",
+          "settle": 800
+        },
+        {
+          "click": "[data-ask-tool]:has-text(\"Pick a deck\")"
+        },
+        {
+          "wait": "[data-ask-pick]",
+          "settle": 800
+        }
+      ]
+    },
+    {
+      "id": "sheet-picker",
+      "label": "Phone sheet, the picker open on an answer",
+      "view": "src/components/home/home-search-panel.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-home-search-panel]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-home-search-panel] input"
+        },
+        {
+          "waitDialog": "Search all cards"
+        },
+        {
+          "searchType": "How do I make my deck better?",
+          "settle": 3000
+        },
+        {
+          "searchPickText": "Pick a deck",
+          "settle": 1000
+        }
+      ]
+    }
+  ]
+}

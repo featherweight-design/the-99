@@ -323,6 +323,10 @@ async function run(page, steps) {
     if (step.searchPick !== undefined) {
       await searchSheet.getByRole("option").nth(step.searchPick).click({ timeout: 15_000 });
     }
+    // `searchPickText` presses the sheet's first option whose text contains it (an answer by its foot, not its place).
+    if (step.searchPickText !== undefined) {
+      await searchSheet.getByRole("option").filter({ hasText: step.searchPickText }).first().click({ timeout: 15_000 });
+    }
     // Dragging the list lowers the keyboard (S4b): the field gives up focus and the list scrolls.
     if (step.searchScroll !== undefined) {
       await searchSheet.getByRole("combobox").blur();

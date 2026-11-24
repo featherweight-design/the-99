@@ -93,6 +93,16 @@ export const askCopy = {
   /** The pressed tool's foot while its page loads (R12 Q20), and the toast when the page does not arrive. */
   opening: (tool: string) => `Opening ${tool}…`,
   openFailed: (tool: string) => `Couldn’t open ${tool}. Try again.`,
+  /** The deck picker (R12 Q21): a tool several decks can use swaps the answers for the decks, in the same box. */
+  pick: {
+    foot: (n: number) => `Pick a deck · ${n} can use it`,
+    back: "Answers",
+    line: (n: number) => `Which deck? ${n} of yours can use it.`,
+    heading: "Your decks, last touched first",
+    aria: (tool: string) => `${tool}: pick a deck`,
+    list: "Your decks",
+    meta: (commander: string, age: string) => `${commander} · edited ${age}`,
+  },
   /** The cost pill on a tool that spends nothing (a paid one carries its own credit line). */
   free: "free",
   yours: { spares: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck` },
