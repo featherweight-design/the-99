@@ -1,0 +1,41 @@
+// On-page copy editor R1: the UI's own strings, verbatim from the boards. For src/lib/copy/.
+export const copyEditorCopy = {
+  door: "Edit copy",
+  bar: { title: "Editing copy", env: "staging", hintDesktop: "Click any text", hintPhone: "Tap any text", done: "Done",
+    edits: (n: number) => `${n} ${n === 1 ? "edit" : "edits"} ›`, prOpen: (n: number) => `PR #${n} open` },
+  tag: { desktop: "Click to edit", phone: "Tap again to edit" },
+  editor: {
+    now: "Now", new: "New", cancel: "Cancel", add: "Add to edits", update: "Update edit", remove: "Remove edit",
+    words: (n: number, cap: number) => `${n} of ${cap} words`,
+    preview: (text: string) => `Preview: ${text}`,
+    fill: (name: string, value: string) => `{${name}} is filled in by the app (here: ${value}). Drag it to move it; it can’t be deleted.`,
+    whenOne: "When n is 1", otherwise: "Otherwise",
+    whichKey: "These words are used in two places. Which one is this?",
+  },
+  rules: {
+    emDash: "No em dash. Use a comma, a colon or two sentences.",
+    bang: "No exclamation mark.",
+    tooLong: (n: number, kind: string, cap: number) => `${n} words. A ${kind} is ${cap} at most.`,
+    tell: (word: string) => `Leave out “${word}”.`,
+    british: (word: string, us: string) => `Use “${us}”, not “${word}”.`,
+    fillMissing: (name: string) => `{${name}} is missing. Put it back.`,
+  },
+  readOnly: {
+    kind: "read only", copyKey: "Copy key", close: "Close",
+    data: "A theme name from EDHREC’s list, not the app’s wording, so it can’t be changed here.",
+    demo: "A card name in a demo deck, not the app’s wording, so it can’t be changed here.",
+    code: (helper: string) => `Edit in code: built by ${helper}.`,
+  },
+  tray: {
+    title: (n: number) => `Copy edits · ${n}`,
+    sub: "One pull request for all of them. Staging doesn’t change until it merges.",
+    edit: "Edit", redo: "Redo", remove: "Remove", clear: "Clear all", submit: "Open pull request",
+    submitting: "Opening pull request…", working: "Checking the rules, then pushing a branch",
+    doneTitle: "Submitted", opened: (n: number) => `Pull request #${n} opened`,
+    openedBody: (n: number, branch: string) => `${n} edits on ${branch}. Staging shows the new wording once it merges; until then this page keeps today’s text.`,
+    github: "Open on GitHub ↗", done: "Done",
+    failed: "No pull request opened. One edit is out of date; your edits are kept.",
+    stale: (now: string) => `Changed on main since this page loaded (now “${now}”). Reload, then redo this one.`,
+    retry: "Try again",
+  },
+};
