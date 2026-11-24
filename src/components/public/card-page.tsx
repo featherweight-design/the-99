@@ -89,7 +89,7 @@ function BracketFacts({ card }: { card: PublicCard }) {
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-[5px] md:gap-[6px] bg-[color:var(--surface)] px-[12px] py-[11px] md:bg-transparent md:p-0">
-      <dt className={`text-[9.5px] md:text-[10px] ${LABEL}`}>{c.facts[label as keyof typeof c.facts]}</dt>
+      <dt className={`text-[9.5px] md:text-[10px] ${LABEL}`}>{label}</dt>
       <dd className="m-0 text-[13px] md:text-[14px]">{children}</dd>
     </div>
   );
@@ -102,7 +102,7 @@ function FactsRow({ card }: { card: PublicCard }) {
       data-testid="public-facts"
       className="m-0 mt-[18px] grid grid-cols-3 gap-px overflow-hidden rounded-[10px] border border-[color:var(--border)] bg-[color:var(--border)] md:mt-[24px] md:flex md:gap-[44px] md:overflow-visible md:rounded-none md:border-0 md:bg-transparent"
     >
-      <Fact label="identity">
+      <Fact label={c.facts.identity}>
         <span className="inline-flex items-center gap-[7px] text-[color:var(--fg)]">
           {dot ? (
             <span
@@ -114,10 +114,10 @@ function FactsRow({ card }: { card: PublicCard }) {
           {identityLabel(card.colorIdentity)}
         </span>
       </Fact>
-      <Fact label="rarity">
+      <Fact label={c.facts.rarity}>
         <span className="font-mono text-[color:var(--accent-text)]">{rarityLabel(card.rarity)}</span>
       </Fact>
-      <Fact label="commander">
+      <Fact label={c.facts.commander}>
         <span className="text-[color:var(--fg)]">{card.commanderLegal ? c.legal : c.notLegal}</span>
       </Fact>
     </dl>

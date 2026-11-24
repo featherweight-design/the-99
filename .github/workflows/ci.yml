@@ -156,7 +156,7 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:copy-sheet-roundtrip
 
-      # A new user-facing string written inline instead of in src/lib/copy/ (diff-based: added lines only).
+      # A user-facing string written inline instead of in src/lib/copy/ (whole tree).
       - name: Inline copy
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:inline-copy

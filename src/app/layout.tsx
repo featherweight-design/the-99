@@ -14,12 +14,13 @@ import { SkewGuard } from "../components/shell/skew-guard";
 import { INSTALL_PROMPT_CAPTURE } from "../lib/pwa/install-detect";
 import { LAUNCH_DETECT } from "../lib/pwa/launch-detect";
 import { STARTUP_IMAGES } from "../lib/pwa/startup-images";
+import { shellCopy } from "../lib/copy/shell";
 import { FONT_VARIABLES } from "./fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "The 99",
-  description: "MTG Commander companion",
+  title: shellCopy.brandName,
+  description: shellCopy.appDescription,
   // What iOS draws while the installed app launches (`lib/pwa/startup-images.ts`). Android draws its own from the manifest.
   appleWebApp: { startupImage: STARTUP_IMAGES },
 };

@@ -86,6 +86,10 @@ const withPaid = (left: number, total: number, next: Date | null, paidTotal: num
   `${freeHead(left, total, next)} · ${lots(paidTotal, welcomeLeft)}`;
 
 export const creditsCopy = {
+  /** A credit press's accessible name: its label, then what it costs. */
+  pressAria: (label: string) => `${label}. Uses 1 credit.`,
+  /** The same press with no credit left. */
+  pressAriaSpent: (label: string) => `${label}. No credits left.`,
   /**
    * The count and, when one is out, when the next comes back: `4 of 5 left · reset at 2:01 AM`.
    * Exported so a surface composing its own lead around the shared line (the overview's press

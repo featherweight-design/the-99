@@ -38,6 +38,9 @@ export type SeedLine = { name: SwitchName; value: OverrideValue | null; outcome:
 
 export const SEED_UPDATED_BY = "seed";
 
+/** Operator log text for a switch the deadline cut off; the seed script prints it, no reader sees it. */
+const PAST_DEADLINE = "past the deadline";
+
 export const SEED_SQL = `insert into flag_overrides ("switch", scope, group_id, user_id, value, note, updated_by)
 values ($1, 'app', null, null, $2, $3, $4)
 on conflict on constraint flag_overrides_target_key do nothing
@@ -60,7 +63,7 @@ export async function seedFlagDefaults(query: SeedQuery, env: NodeJS.ProcessEnv,
     }
     const left = deadlineAt - now();
     if (left <= 0) {
-      lines.push({ name, value, outcome: "failed", error: "past the deadline" });
+      lines.push({ name, value, outcome: "failed", error: PAST_DEADLINE });
       continue;
     }
     let timer: ReturnType<typeof setTimeout> | undefined;

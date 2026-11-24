@@ -77,6 +77,8 @@ export const flyerCopy = {
   sub: "Try it before it launches. Scan, sign up, tell us what you think.",
   scan: "Scan to join",
   orType: "or type",
+  /** The QR's accessible name; `typed` is the address typed under it. */
+  qrAria: (typed: string) => `QR code for ${typed}`,
   /** The footer's three facts; `domain` is the host the QR and the typed address use (`siteOrigin()`), so they always agree. */
   facts: (domain: string) => ["Free to try", "3 invites for your pod", domain],
 } as const;

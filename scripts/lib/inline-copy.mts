@@ -1,6 +1,5 @@
 // Finds user-facing strings written inline in a component or action instead of in src/lib/copy/. Pure: takes a file's
-// source, returns each offender with its line. The check (scripts/check-inline-copy.mts) keeps only those on lines a
-// diff added, so old inline copy waits for its move PR while new inline copy never lands.
+// source, returns each offender with its line. The check (scripts/check-inline-copy.mts) runs it over the whole tree.
 import ts from "typescript";
 
 export type Inline = { line: number; kind: string; text: string };

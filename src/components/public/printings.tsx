@@ -84,7 +84,7 @@ export function PublicPrintings({
             className={`inline-flex items-center gap-[5px] h-[36px] md:h-[32px] px-[12px] rounded-[7px] border border-dashed border-[color:var(--border-dashed)] text-[12.5px] font-medium text-[color:var(--accent-hover)] no-underline ${folds ? FOLDED : ""}`}
           >
             <LinkOutLabel iconClassName="text-[color:var(--fg-muted)]">{c.morePrintings}</LinkOutLabel>
-            <span className="sr-only"> (opens in a new tab)</span>
+            <span className="sr-only">{c.opensInNewTab}</span>
           </a>
         ) : null}
       </div>

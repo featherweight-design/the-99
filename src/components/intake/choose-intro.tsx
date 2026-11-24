@@ -129,7 +129,7 @@ export function ChooseIntro({
             data-choose-intro-jump=""
             className="-my-[11px] flex min-h-[44px] items-center bg-transparent border-0 p-0 font-mono text-[11.5px] text-[color:var(--accent-text)] cursor-pointer"
           >
-            {copy.paid.jump} <span aria-hidden>&nbsp;↓</span>
+            {copy.paid.jump} <span aria-hidden>{copy.paid.jumpArrow}</span>
           </button>
         </div>
       </div>

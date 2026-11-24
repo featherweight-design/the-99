@@ -25,6 +25,8 @@ export const helpMeChooseIntroCopy = {
     title: "Anything else?",
     line: "Write the deck in your own words, and it reads them against every commander your answers allow. Leave it empty and nothing is spent.",
     jump: "Go to Anything else?",
+    /** The jump link's trailing arrow, set off by a non-breaking space. */
+    jumpArrow: "\u00a0\u2193",
     /** The reader's own daily limit. Omitted while credits are off. */
     daily: (free: number) => (free === 1 ? "1 free credit a day, shared by every tool" : `${free} free credits a day, shared by every tool`),
   },
