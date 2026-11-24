@@ -47,6 +47,10 @@ export const issueInspectorCopy = {
     // The escape hatch these two used to spell out ("or clear the filter to see
     // the full list") is the button rendered directly beneath them.
     action: "Clear filter",
+    /** Screen-reader live region: announced only when the filter matches nothing. */
+    srNoMatches: (query: string, total: number) =>
+      `No matches for ${query}. ${total.toLocaleString()} total in this tab.`,
+    srTotal: (total: number) => `Total available: ${total.toLocaleString()}`,
   },
   emptyFilterErrors: {
     body: (total: number) =>

@@ -23,6 +23,7 @@ import { Sheet } from "../ui/sheet";
 import { useDialogA11y } from "../../lib/a11y/dialog";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { collectionChassisCopy, collectionFilterCopy } from "../../lib/copy/collection";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
 import { toggleAvailability } from "../../lib/collection/availability-filter";
 import type { AvailabilityState } from "../../lib/decks/availability";
 import type { BrowseFilters } from "../../lib/collection/browse";
@@ -338,11 +339,11 @@ function SheetBody({
             // has ends `collapsed`.
             aria-label={
               setsOpen
-                ? `${collectionFilterCopy.set.panelAriaLabel}${setAriaDetail}, expanded`
+                ? collectionPlaceCopy.setExpandedAria(collectionFilterCopy.set.panelAriaLabel, setAriaDetail)
                 : filters.setCodes.length === 0
                   ? collectionFilterCopy.set.triggerAriaCollapsed
                   : filters.setCodes.length === 1
-                    ? `${collectionFilterCopy.set.panelAriaLabel}, ${oneSetName}, collapsed`
+                    ? collectionPlaceCopy.setOneCollapsedAria(collectionFilterCopy.set.panelAriaLabel, oneSetName)
                     : collectionFilterCopy.set.triggerAriaWithSelection(filters.setCodes.length)
             }
             className="flex h-[44px] w-full cursor-pointer items-center justify-between gap-[10px] rounded-lg border border-solid border-[color:var(--border-strong)] bg-transparent px-[13px] text-left font-sans text-[13px] text-[color:var(--fg-body)]"

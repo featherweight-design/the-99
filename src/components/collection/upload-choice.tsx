@@ -8,6 +8,7 @@
 import { useId } from "react";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { momentsCopy } from "../../lib/copy/moments";
+import { importReviewCopy } from "../../lib/copy/import-review";
 import { useMomentAnchor } from "../moments/moments-provider";
 import { ADD_OVERLAP_NOTE_AT } from "../../lib/collection/upload-preview";
 import type { SyncUnavailable, UploadMode } from "../../app/collection/actions";
@@ -373,7 +374,7 @@ export function UploadChoice({
         className={`flex-1 p-[20px_18px] md:max-w-[1280px] md:p-[36px_56px_20px] ${framed ? `${STEP_BODY} focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]` : ""}`}
       >
         <p className="m-0 font-mono text-[11px] tracking-[0.06em] text-[color:var(--fg-faint)]">
-          {c.step(2, 4)} · {filename} · {rows.toLocaleString("en-US")} rows
+          {c.step(2, 4)} · {filename} · {importReviewCopy.review.rowsFigure(rows)}
         </p>
         <h1 id={headingId} className="m-0 mt-[12px] mb-[6px] font-display text-[18px] font-semibold md:text-[29px] md:font-bold">
           {sync ? (

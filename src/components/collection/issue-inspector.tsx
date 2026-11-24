@@ -302,7 +302,7 @@ export function IssueInspector({
           {/* SR-only live region — announces only the zero-match state. */}
           <span className="sr-only" aria-live="polite" aria-atomic="true">
             {showEmptyFilter
-              ? `No matches for ${query}. ${activeTotal.toLocaleString()} total in this tab.`
+              ? issueInspectorCopy.emptyFilter.srNoMatches(query, activeTotal)
               : ""}
           </span>
         </div>
@@ -611,7 +611,7 @@ function EmptyFilter({
         {issueInspectorCopy.emptyFilter.title(query)}
       </p>
       <p className="text-[13px] max-w-[380px]">{bodyText}</p>
-      <p className="sr-only">Total available: {total.toLocaleString()}</p>
+      <p className="sr-only">{issueInspectorCopy.emptyFilter.srTotal(total)}</p>
       <PrimaryButton
         type="button"
         onClick={onClear}

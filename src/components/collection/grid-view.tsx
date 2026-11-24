@@ -29,6 +29,7 @@ import { ComboMark } from "../cards/combo-mark";
 import { FactTooltip } from "../cards/fact-tooltip";
 import { FoilGlint } from "../cards/foil-mark";
 import { foilSpoken } from "../../lib/copy/foil-mark";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
 import { CollectionMarkKey } from "./collection-mark-key";
 import { cardFactName, cardMarkCopy } from "../../lib/copy/card-mark";
 import { CardTileCaption, TILE_ART_CLIP } from "../ui/card-tile-caption";
@@ -400,7 +401,7 @@ export function GridView({
           aria-busy={busy || undefined}
           className="col-span-full mx-auto text-[13px] px-[16px] py-[9px] mt-[6px]"
         >
-          Show more ({(totalCards - cards.length).toLocaleString()} more)
+          {collectionPlaceCopy.showMore(totalCards - cards.length)}
         </GhostButton>
       )}
     </div>
