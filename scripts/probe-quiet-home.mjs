@@ -1,6 +1,6 @@
 // Quiet Home (tool-discovery addendum, design PR #3269), at 390, 1300, 1180x820 and 820x1180. Needs `pnpm dev` and the audit
-// account on a Home with fewer than two heading cards (no open table or game to log, at most the lead story), which is
-// local-dev's audit account as seeded: PROBE_BASE names the server (a localhost, pk_test instance). It reads the Home's
+// account on a Home with fewer than two heading cards (each open table, one for any game to log, the lead story), seeded on a
+// scratch branch made from local-dev (docs/probes.md, probe:quiet-home): PROBE_BASE names the server (a localhost, pk_test instance). It reads the Home's
 // heads first and refuses a busy Home rather than measuring the wrong state.
 //   Q1  from 1180, What's new is in the main column, not the rail: below the resume block and aligned with it
 //   Q2  from 768, its rows draw wide (three tracks: art, text, actions), the rail's compact rows only on a busy Home
@@ -53,17 +53,17 @@ for (const [w, h] of [[390, 844], [1300, 900], [1180, 820], [820, 1180]]) {
       const row = wn[0]?.querySelector("[data-feed-item]");
       return {
         count: wn.length,
-        heads: document.querySelectorAll("[data-lead-story]").length + document.querySelectorAll('[data-testid="home-log-card"]').length + document.querySelectorAll("[data-table-id], [data-rule-zero-table]").length,
+        heads: document.querySelectorAll("[data-lead-story]").length + Math.min(1, document.querySelectorAll('[data-testid="home-log-card"]').length) + document.querySelectorAll('[data-testid="home-table-card"]').length,
         inRail: wn[0]?.closest("[class*='min-[1180px]:w-[316px]']") !== null && getComputedStyle(wn[0].closest("[class*='min-[1180px]:w-[316px]']")).display !== "contents",
         wn: wn[0] ? box(wn[0]) : null,
-        resume: resume ? box(resume.closest("section") ?? resume) : null,
+        resume: resume?.closest("section") ? box(resume.closest("section")) : null,
         tracks: row ? getComputedStyle(row).gridTemplateColumns.split(" ").length : 0,
         overflow: document.documentElement.scrollWidth - innerWidth,
       };
     });
     if (m.heads >= 2) throw new Error(`the Home is busy (${m.heads} heading cards): this probe needs a quiet one`);
     check(m.count === 1, `${at} one What's new on the page (${m.count})`);
-    check(!!m.wn && !!m.resume, `${at} What's new and the resume block both draw`);
+    check(!!m.wn && !!m.resume, `${at} What's new and the resume block's section both draw`);
     check(m.overflow <= 0, `${at} nothing overflows (${m.overflow}px)`);
     if (m.wn && m.resume) {
       if (w >= 1180) {

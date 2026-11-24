@@ -160,6 +160,20 @@ describe("Home, direction B", () => {
     expect(inRail(one.container.querySelector("[data-whats-new]")!)).toBe(false);
   });
 
+  const logGame = (ms: number) => ({
+    gameMs: ms, startedAt: new Date(ms), deckId: "d1", deckName: "Ghalta Stompy", result: { kind: "you" as const },
+    seats: [{ name: "Hugh", you: true, place: 1, artCropUri: null }], loggedAt: null, until: new Date("2026-10-30T00:00:00Z"),
+    tableId: "t9", podName: named("Thursday night"),
+  });
+
+  it("a game to log counts once, however many: alone it is quiet, beside a table it is busy", () => {
+    const one = render(<Dashboard {...BASE} logGames={[logGame(1), logGame(2), logGame(3)]} feed={chosen([view(1)])} />);
+    expect(inRail(one.container.querySelector("[data-whats-new]")!)).toBe(false);
+    one.unmount();
+    const busy = render(<Dashboard {...BASE} logGames={[logGame(1)]} tables={[table("t1")]} feed={chosen([view(1)])} />);
+    expect(inRail(busy.container.querySelector("[data-whats-new]")!)).toBe(true);
+  });
+
   it("a quiet Home with no Commitments and no Friends draws no rail at all", () => {
     const { container } = render(<Dashboard {...BASE} commitments={null} friends={undefined} feed={chosen([view(1)])} />);
     expect(container.querySelector("[data-whats-new]")).not.toBeNull();

@@ -152,7 +152,7 @@ export function Dashboard(props: DashboardProps) {
   const feed = props.feed ?? null;
   const lead = feed?.chosen ? feed.lead : null;
   // A quieter Home: fewer than two cards head the main column (an open table, a game to log, the lead story). What's new
-  // then sits in the main column under the decks, in its wide rows, and the rail keeps Commitments and Friends. Two or more,
+  // then sits in the main column after the resume block (Pick up where you left off), in its wide rows, and the rail keeps Commitments and Friends. Two or more,
   // and the main column is long enough on its own: What's new tops the rail (tool-discovery R8). Decided when Home loads, so
   // dismissing the lead or the log card in a visit does not move it. Below 1180 the one column is unchanged.
   const heads = tables.length + ((props.logGames?.length ?? 0) > 0 ? 1 : 0) + (lead ? 1 : 0);
