@@ -151,7 +151,7 @@ export interface AboutSection {
 }
 
 export const ABOUT_AREAS: readonly AboutAreaCopy[] = [
-  { id: "home", name: "Home", line: "What’s new, what to build next, and the decks you left off." },
+  { id: "home", name: "Home", line: "What’s new, what to build next, and the decks you left off today." },
   { id: "collection", name: "Collection", line: "Every card you own, and how cards get in." },
   { id: "commanders", name: "Commanders", line: "Who to build next, from what you own or what’s worth buying." },
   { id: "decks", name: "Decks", line: "Building a deck, reading it, and keeping its versions." },
