@@ -24,19 +24,22 @@
 // account holds no fixture for it. On every deck tried the invariant holds either way: a drawn target is haloed, an
 // undrawn one is stripped with no halo.
 //
-// IT WRITES one thing: `user_prefs.moments_spent` for the account (a landing spends its tool's moment). Each tool
+// IT WRITES two things: `user_prefs.choose_intro_seen_at` (cleared, then set, then put back) and
+// `user_prefs.moments_spent` for the account (a landing spends its tool's moment). Each tool
 // is landed with its id taken out of the set first, so the spend is observed, and the row is put back exactly in a
 // `finally`. It calls `assertScratchBranch` before that first write, so it runs on a scratch branch off local-dev.
 //
 // The server: `next start` of a build with the worktree's `.env`. Every deck and page tool it lands is always on.
 //
-// THE PAGES (R2·3): each tool with a page of its own, landed by its `?tool=` on that page: the halo on the tool's own
-// control (Help me choose's first answer, the Precons and Wishlist searches, Collection Sync's drop zone, the Tiles ·
-// Stats switch, Add a friend), the parameter stripped, the moment spent. Find a deck's landing is DEFERRED: the
+// THE PAGES (R2·3, R12 G29): each tool with a page of its own, landed by its `?tool=` on that page. Only a tool on a
+// busier screen haloes: Help me choose's intro panel while it is open (the reader's `choose_intro_seen_at` cleared
+// first; with it set, the folded intro takes no halo and spends nothing) and Find a deck's door. A page that IS the
+// tool (Precons, Wishlist, Collection Sync, Lineup, Friends) lands at its top: the parameter stripped, the control
+// drawn, no halo, nothing spent. Find a deck's landing is DEFERRED: the
 // parameter goes at once and the next card details opened halo `Find a deck for it` once, so the probe presses a card
 // open. A control the page does not draw even without `?tool=` (the eligibility preflight) is a SKIP, never a PASS.
 //
-//   PROBE_BASE=http://localhost:3311 pnpm probe:tool-landing
+//   TOOL_LANDING_PROBE_URL=<scratch branch URL> PROBE_BASE=http://localhost:3311 pnpm probe:tool-landing
 import { neon } from "@neondatabase/serverless";
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
@@ -45,7 +48,9 @@ import { assertScratchBranch } from "./lib/scratch-branch.mjs";
 import { PAGE } from "./lib/surface.mjs";
 import { captureAboutSeen, clearAboutSheet, restoreAboutSeen } from "./lib/about-clear.mjs";
 
-const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY, DATABASE_URL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+const { E2E_AUDIT_USER_EMAIL: EMAIL, CLERK_SECRET_KEY } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY", "DATABASE_URL"]);
+// The env file overrides an inherited DATABASE_URL (`lib/env.mjs`), so a scratch branch is named by its own variable.
+const DATABASE_URL = process.env.TOOL_LANDING_PROBE_URL ?? process.env.DATABASE_URL;
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
 {
   const u = new URL(BASE);
@@ -92,12 +97,12 @@ const TOOLS = [
 // details the probe opens after the landing.
 const drawnFirst = (sel) => `[...document.querySelectorAll(${JSON.stringify(`${PAGE} ${sel}`)})].find((e) => e.getClientRects().length > 0) ?? null`;
 const PAGE_TOOLS = [
-  { id: "help-me-choose", name: "Help me choose", path: "/decks/new/choose", find: drawnFirst(`form div[class="rounded-[9px]"]`) },
-  { id: "precons", name: "Precons", path: "/decks/precons", find: `(${drawnFirst("input[type='search']")})?.closest("div.min-w-0") ?? null` },
-  { id: "wishlist", name: "Wishlist", path: "/collection/wishlist", find: `(${drawnFirst("input[type='search']")})?.closest("div.relative") ?? null` },
-  { id: "collection-sync", name: "Collection Sync", path: "/collection/replace", find: drawnFirst("label:has(input[aria-label='Upload collection CSV'])") },
-  { id: "lineup", name: "Stats for your decks", path: "/decks?view=stats", find: `(${drawnFirst("[role='tablist']:has([data-decks-view])")})?.closest("span.inline-flex") ?? null` },
-  { id: "friends", name: null, path: "/friends", find: `[...document.querySelectorAll(${JSON.stringify(`${PAGE} button`)})].find((e) => e.textContent.trim() === "Add a friend" && e.getClientRects().length > 0) ?? null` },
+  { id: "help-me-choose", name: "Help me choose", path: "/decks/new/choose", find: drawnFirst(`[data-choose-intro="open"]`) },
+  { id: "precons", quiet: true, name: "Precons", path: "/decks/precons", find: `(${drawnFirst("input[type='search']")})?.closest("div.min-w-0") ?? null` },
+  { id: "wishlist", quiet: true, name: "Wishlist", path: "/collection/wishlist", find: `(${drawnFirst("input[type='search']")})?.closest("div.relative") ?? null` },
+  { id: "collection-sync", quiet: true, name: "Collection Sync", path: "/collection/replace", find: drawnFirst("label:has(input[aria-label='Upload collection CSV'])") },
+  { id: "lineup", quiet: true, name: "Stats for your decks", path: "/decks?view=stats", find: `(${drawnFirst("[role='tablist']:has([data-decks-view])")})?.closest("span.inline-flex") ?? null` },
+  { id: "friends", quiet: true, name: null, path: "/friends", find: `[...document.querySelectorAll(${JSON.stringify(`${PAGE} button`)})].find((e) => e.textContent.trim() === "Add a friend" && e.getClientRects().length > 0) ?? null` },
   { id: "find-a-deck", name: "Find a deck", path: "/collection?avail=free", card: true, find: `[...document.querySelectorAll("[role='dialog'] [data-testid='fits-door']")].find((e) => e.getClientRects().length > 0) ?? null` },
 ];
 /** How long after the landing the probe looks again for the landed tool's bubble: inside the 2.4s halo, past the
@@ -293,6 +298,44 @@ async function pageDrawsWithoutLanding(page, tool) {
 }
 
 async function walkPages(page, w, userId) {
+  const introBefore = await readIntroSeen(userId);
+  try {
+    await setIntroSeen(userId, null);
+    await walkPageTools(page, w, userId);
+    await walkFoldedIntro(page, w, userId);
+  } finally {
+    await setIntroSeen(userId, introBefore);
+  }
+}
+
+/** Help me choose with the intro folded (R12-C5): the parameter stripped, no halo, nothing spent. */
+async function walkFoldedIntro(page, w, userId) {
+  const label = `${w.name} page help-me-choose, intro folded`;
+  await setIntroSeen(userId, new Date().toISOString());
+  await unspend(userId, "help-me-choose");
+  await page.goto(`${BASE}/decks/new/choose?tool=help-me-choose&probe=1`, { waitUntil: "domcontentloaded" });
+  await page.waitForSelector('[data-choose-intro="folded"]', { timeout: 45_000 }).catch(() => {});
+  await new Promise((done) => setTimeout(done, SECOND_LOOK_MS));
+  const r = await readPage(page, "null", null);
+  const q = new URLSearchParams(r.search);
+  check(!q.has("tool") && q.get("probe") === "1", `${label}: the parameter is stripped, the rest kept`, r.search);
+  check((await page.locator('[data-choose-intro="folded"]').count()) === 1, `${label}: the intro draws folded`);
+  check(r.haloed === 0, `${label}: the folded intro haloes nothing`, `${r.haloed} haloed`);
+  check(!(await spentSoon(userId, "help-me-choose", true)), `${label}: nothing is spent`, "moments_spent");
+}
+
+async function readIntroSeen(userId) {
+  const rows = await sql`select choose_intro_seen_at as at from user_prefs where user_id = ${userId}`;
+  return rows[0]?.at ?? null;
+}
+
+async function setIntroSeen(userId, at) {
+  const rows = await sql`update user_prefs set choose_intro_seen_at = ${at} where user_id = ${userId} returning user_id`;
+  // No prefs row: the intro state cannot be set, so the open and folded walks would prove nothing.
+  if (rows.length !== 1) throw new Error("the account has no user_prefs row: cannot set choose_intro_seen_at");
+}
+
+async function walkPageTools(page, w, userId) {
   for (const tool of PAGE_TOOLS) {
     await unspend(userId, tool.id);
     const label = `${w.name} page ${tool.id}`;
@@ -313,6 +356,15 @@ async function walkPages(page, w, userId) {
       continue;
     }
     check(stripped, `${label}: the parameter is stripped, the rest kept`, r.search);
+    if (tool.quiet) {
+      // G29: the page IS the tool. Its control draws; nothing haloes, nothing is spent, through the halo's window.
+      await new Promise((done) => setTimeout(done, SECOND_LOOK_MS));
+      const later = await readPage(page, tool.find, noteName);
+      if (!later.drawn) skip(label, "the account's page draws no such control");
+      check(r.haloed === 0 && later.haloed === 0, `${label}: a page that is the tool haloes nothing`, `${r.haloed}/${later.haloed} haloed`);
+      check(!(await spentSoon(userId, tool.id, true)), `${label}: a quiet landing spends nothing`, "moments_spent");
+      continue;
+    }
     if (tool.card) {
       // Deferred: nothing haloes before a card is opened; the next card's door does.
       check(r.haloed === 0, `${label}: nothing haloes before a card is opened`, `${r.haloed} haloed`);

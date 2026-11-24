@@ -95,10 +95,10 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
   // read draws codes rather than taking the page down.
   const sets = await loadCommanderPrintings().then((x) => x.sets).catch(() => []);
 
-  // Try it's landing (discovery R2·3): `?tool=help-me-choose` haloes the form's first answer; anything else, and any
-  // `?tool=` on the results (which draw no target), is stripped. Read from the raw query: `toSearchParams` keeps a
-  // repeated parameter's first value.
-  const { landing, request } = pageLanding(rawQuery[TOOL_PARAM], env, "help-me-choose");
+  // Try it's landing (discovery R2·3; R12, G29): `?tool=help-me-choose` haloes the intro panel while it is open; anything
+  // else, and any `?tool=` on the results (which draw no target), is stripped. Read from the raw query: `toSearchParams`
+  // keeps a repeated parameter's first value.
+  const { landing: asked, request } = pageLanding(rawQuery[TOOL_PARAM], env, "help-me-choose");
 
   if (!p.results) {
     // The press's credit standing (F7). A failed read draws the plain button: the submit re-checks.
@@ -116,6 +116,9 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
       loadChooseIntroArt().catch(() => null),
     ]);
     const standing = allowance && toStanding(allowance, now);
+    // Folded (after the first run, or Hide), the intro is no target: the landing is the top of the page, no halo, and
+    // the moment is left unspent (R12-C5).
+    const landing = asked && introSeen !== null ? { ...asked, target: null } : asked;
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
         <ToolLandingMount landing={landing} request={request} />

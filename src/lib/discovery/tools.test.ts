@@ -82,6 +82,13 @@ describe("toolLanding", () => {
     expect(toolLanding("friends", allOn)?.moment).toBeNull();
   });
 
+  // R12, G29: only a busier screen haloes its target; a page that IS the tool lands at its top, so no target.
+  it("haloes only on a busier screen", () => {
+    const haloed = TOOLS.filter((t) => toolLanding(t.id, allOn)?.target !== null).map((t) => t.id);
+    expect(haloed).toEqual(["help-me-choose", "top-off", "proposed-cuts", "suggested-changes", "mana-balance", "stand-ins", "friend-spares", "find-a-deck", "matchups"]);
+    for (const id of ["precons", "wishlist", "collection-sync", "lineup", "friends"]) expect(toolLanding(id, allOn)?.target, id).toBeNull();
+  });
+
   it("lands a tool with no switch whatever the switches say", () => {
     expect(toolLanding("top-off", () => false)?.tool).toBe("top-off");
     expect(toolLanding("matchups", () => false)?.tool).toBe("matchups");

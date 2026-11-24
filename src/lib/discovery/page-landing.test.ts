@@ -3,15 +3,16 @@ import { SWITCH_NAMES } from "../flags/registry";
 import { pageLanding } from "./page-landing";
 import { TOOLS, pageToolLanding, type ToolId } from "./tools";
 
-// Every page a Try it lands on (discovery R2·3), with the tool it reads `?tool=` for and the target it haloes.
-const PAGES: { tool: ToolId; route: string; target: string }[] = [
+// Every page a Try it lands on (discovery R2·3), with the tool it reads `?tool=` for and the target it haloes: none on a
+// page that IS the tool (R12, G29).
+const PAGES: { tool: ToolId; route: string; target: string | null }[] = [
   { tool: "help-me-choose", route: "/decks/new/choose", target: "help-me-choose" },
-  { tool: "precons", route: "/decks/precons", target: "precons" },
+  { tool: "precons", route: "/decks/precons", target: null },
   { tool: "find-a-deck", route: "/collection?avail=free", target: "find-a-deck" },
-  { tool: "wishlist", route: "/collection/wishlist", target: "wishlist" },
-  { tool: "collection-sync", route: "/collection/replace", target: "collection-sync" },
-  { tool: "lineup", route: "/decks?view=stats", target: "lineup" },
-  { tool: "friends", route: "/friends", target: "friends" },
+  { tool: "wishlist", route: "/collection/wishlist", target: null },
+  { tool: "collection-sync", route: "/collection/replace", target: null },
+  { tool: "lineup", route: "/decks?view=stats", target: null },
+  { tool: "friends", route: "/friends", target: null },
 ];
 
 const ALL_ON = Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])) as NodeJS.ProcessEnv;
@@ -25,7 +26,7 @@ describe("pageLanding", () => {
     }
   });
 
-  it.each(PAGES)("lands $tool on its own page, on its own target, with a fresh token per render", ({ tool, target }) => {
+  it.each(PAGES)("lands $tool on its own page, on its own target (or none), with a fresh token per render", ({ tool, target }) => {
     const a = pageLanding(tool, ALL_ON, tool);
     expect(a.landing).toMatchObject({ tool, target, lands: { kind: "route" } });
     expect(a.request).toMatch(/^[0-9a-f-]{36}$/);

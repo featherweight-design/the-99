@@ -11,7 +11,6 @@
 
 import { CHOOSE_WORDS_ID } from "./choose-intro";
 import { createContext, useContext, useEffect, useId, useLayoutEffect, useMemo, useRef, useState, useTransition, type CSSProperties, type ReactNode } from "react";
-import { useTarget } from "../discovery/targets-provider";
 
 import { PRIMARY } from "../ui/button";
 import { ColourControl } from "../commanders/rack/colour-control";
@@ -104,8 +103,6 @@ export function IntakeForm({
     return { text: f.text, tags: f.picked as ReadonlyMap<string, string> };
   });
   const [colors, setColors] = useState<string[]>(initial.colors);
-  // The form's first answer is Help me choose's target: Try it lands on `/decks/new/choose` and haloes it.
-  const chooseTarget = useTarget("help-me-choose");
   const [match, setMatch] = useState(initial.match);
   const [picked, setPicked] = useState<string[]>(initial.themes);
   const [themeJoin, setThemeJoin] = useState(initial.themeJoin);
@@ -307,17 +304,15 @@ export function IntakeForm({
     >
       <LockedContext.Provider value={submitting}>
       <div className="flex flex-col gap-[20px] p-[18px] md:gap-[22px] md:w-[680px] md:max-w-full md:mx-auto md:p-[24px_26px] md:rounded-[12px] md:border md:border-solid md:border-[color:var(--border)] md:bg-[color:var(--surface-rail)]">
-        <div ref={chooseTarget} className="rounded-[9px]">
-          <Field label={copy.intake.colors} caption={colorsCaption}>
-            <ColourControl
-              colors={colors}
-              match={match}
-              onColorsChange={setColors}
-              onMatchChange={setMatch}
-              wide={wide}
-            />
-          </Field>
-        </div>
+        <Field label={copy.intake.colors} caption={colorsCaption}>
+          <ColourControl
+            colors={colors}
+            match={match}
+            onColorsChange={setColors}
+            onMatchChange={setMatch}
+            wide={wide}
+          />
+        </Field>
 
         <Field
           label={copy.intake.theme}

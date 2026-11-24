@@ -10,6 +10,7 @@ import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { helpMeChooseIntroCopy as copy } from "../../lib/copy/help-me-choose-intro";
 import type { IntroArt } from "../../lib/intake/intro-art";
 import { noteAppScroll } from "../../lib/ui/reveal";
+import { useTarget } from "../discovery/targets-provider";
 import { FadingImg } from "../ui/hydrated-art";
 
 /** The form's *Anything else?* box. A fixed id, not `useId`, so the intro's jump link can name it. */
@@ -33,6 +34,8 @@ export function ChooseIntro({
 }) {
   const [open, setOpen] = useState(initiallyOpen);
   const [, startHide] = useTransition();
+  // Try it's landing target (R12, G29): the open panel. Folded, nothing registers, so nothing is haloed.
+  const target = useTarget(open ? "help-me-choose" : null);
 
   if (!open) {
     return (
@@ -77,7 +80,7 @@ export function ChooseIntro({
   };
 
   return (
-    <section aria-labelledby="choose-intro-title" data-choose-intro="open" className={`${PANEL} mx-[18px] mt-[16px] p-[16px] md:mx-0 md:mt-0 md:mb-[20px] md:p-[20px_22px]`}>
+    <section ref={target} aria-labelledby="choose-intro-title" data-choose-intro="open" className={`${PANEL} mx-[18px] mt-[16px] p-[16px] md:mx-0 md:mt-0 md:mb-[20px] md:p-[20px_22px]`}>
       <button
         type="button"
         onClick={hide}

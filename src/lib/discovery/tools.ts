@@ -16,6 +16,11 @@ import type { TargetId } from "./targets";
  *   (handoff call 6: a section's tools follow its labels). The first is the handoff's placement; a later one covers a
  *   switch combination that hides it (Help me choose with the Commanders place off lives under New deck).
  * - `target`: the control a landing haloes. A credit tool's is its Tuning hub tile, never its run press.
+ * - `halo`: whether a landing haloes `target` (R12, G29): only on a busier screen, where the reader would otherwise hunt
+ *   for it (the Tuning tiles, Top off, Cheaper stand-ins, Friends' spares, Matchups, Find a deck's Free chip). A page
+ *   that IS the tool (Precons, Wishlist, Collection Sync, Stats for your decks, Friends) lands at its top with no halo and
+ *   spends no moment; its control stays registered for the moments and the tour. Help me choose's target is its intro
+ *   panel, registered only while the panel is open (R12-C5).
  * - `lands`: a deck's tab (and, within Your deck, the Shopping filter), or a route for a tool with a page of its own.
  * - `credit`: the cost chip the app ALREADY draws for it, verbatim (ruling 5, R2 gap 4), or null where it draws none.
  * - `needsDeck`: the tool answers about the reader's decks, so Try it needs one. A tool that lands on a deck needs
@@ -37,6 +42,7 @@ export type Tool = {
   switch: SwitchName | null;
   labels: readonly [string, ...string[]];
   target: TargetId;
+  halo: boolean;
   lands: ToolLands;
   credit: string | null;
   needsDeck: boolean;
@@ -46,24 +52,24 @@ const hub = tuningHubCopy.tools;
 
 export const TOOLS = [
   // Start a deck
-  { id: "help-me-choose", group: "start", switch: null, labels: ["commanders/for-you/places", "decks/your-decks/new-deck"], target: "help-me-choose", lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
-  { id: "precons", group: "start", switch: null, labels: ["decks/your-decks/precons"], target: "precons", lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
+  { id: "help-me-choose", group: "start", switch: null, labels: ["commanders/for-you/places", "decks/your-decks/new-deck"], target: "help-me-choose", halo: true, lands: { kind: "route", href: "/decks/new/choose" }, credit: null, needsDeck: false },
+  { id: "precons", group: "start", switch: null, labels: ["decks/your-decks/precons"], target: "precons", halo: false, lands: { kind: "route", href: "/decks/precons" }, credit: null, needsDeck: false },
   // Tune it
-  { id: "top-off", group: "tune", switch: null, labels: ["decks/your-deck/mix"], target: "top-off", lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
-  { id: "proposed-cuts", group: "tune", switch: null, labels: ["decks/analysis/cuts"], target: "proposed-cuts", lands: { kind: "deck", tab: "tuning" }, credit: hub.cuts.cost, needsDeck: true },
-  { id: "suggested-changes", group: "tune", switch: null, labels: ["decks/analysis/suggested"], target: "suggested-changes", lands: { kind: "deck", tab: "tuning" }, credit: hub.suggested.cost, needsDeck: true },
-  { id: "mana-balance", group: "tune", switch: null, labels: ["decks/analysis/mana"], target: "mana-balance", lands: { kind: "deck", tab: "tuning" }, credit: hub.mana.cost, needsDeck: true },
+  { id: "top-off", group: "tune", switch: null, labels: ["decks/your-deck/mix"], target: "top-off", halo: true, lands: { kind: "deck", tab: "deck" }, credit: null, needsDeck: true },
+  { id: "proposed-cuts", group: "tune", switch: null, labels: ["decks/analysis/cuts"], target: "proposed-cuts", halo: true, lands: { kind: "deck", tab: "tuning" }, credit: hub.cuts.cost, needsDeck: true },
+  { id: "suggested-changes", group: "tune", switch: null, labels: ["decks/analysis/suggested"], target: "suggested-changes", halo: true, lands: { kind: "deck", tab: "tuning" }, credit: hub.suggested.cost, needsDeck: true },
+  { id: "mana-balance", group: "tune", switch: null, labels: ["decks/analysis/mana"], target: "mana-balance", halo: true, lands: { kind: "deck", tab: "tuning" }, credit: hub.mana.cost, needsDeck: true },
   // Buy smarter
-  { id: "stand-ins", group: "buy", switch: null, labels: ["shopping/deck-shopping/standins"], target: "stand-ins", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
-  { id: "friend-spares", group: "buy", switch: null, labels: ["shopping/deck-shopping/spare"], target: "friend-spares", lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
+  { id: "stand-ins", group: "buy", switch: null, labels: ["shopping/deck-shopping/standins"], target: "stand-ins", halo: true, lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
+  { id: "friend-spares", group: "buy", switch: null, labels: ["shopping/deck-shopping/spare"], target: "friend-spares", halo: true, lands: { kind: "deck", tab: "deck", view: "shopping" }, credit: null, needsDeck: true },
   // Use what you own
-  { id: "find-a-deck", group: "own", switch: null, labels: ["collection/cards/taken"], target: "find-a-deck", lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
-  { id: "wishlist", group: "own", switch: null, labels: ["collection/cards/tabs"], target: "wishlist", lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
-  { id: "collection-sync", group: "own", switch: null, labels: ["collection/upload/drop"], target: "collection-sync", lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
+  { id: "find-a-deck", group: "own", switch: null, labels: ["collection/cards/taken"], target: "find-a-deck", halo: true, lands: { kind: "route", href: "/collection?avail=free" }, credit: null, needsDeck: true },
+  { id: "wishlist", group: "own", switch: null, labels: ["collection/cards/tabs"], target: "wishlist", halo: false, lands: { kind: "route", href: "/collection/wishlist" }, credit: null, needsDeck: false },
+  { id: "collection-sync", group: "own", switch: null, labels: ["collection/upload/drop"], target: "collection-sync", halo: false, lands: { kind: "route", href: "/collection/replace" }, credit: null, needsDeck: false },
   // Play
-  { id: "matchups", group: "play", switch: null, labels: ["decks/games/matchups"], target: "matchups", lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },
-  { id: "lineup", group: "play", switch: null, labels: ["decks/your-decks/decks-stats"], target: "lineup", lands: { kind: "route", href: "/decks?view=stats" }, credit: null, needsDeck: true },
-  { id: "friends", group: "play", switch: null, labels: ["friends/friends/add"], target: "friends", lands: { kind: "route", href: "/friends" }, credit: null, needsDeck: false },
+  { id: "matchups", group: "play", switch: null, labels: ["decks/games/matchups"], target: "matchups", halo: true, lands: { kind: "deck", tab: "games" }, credit: null, needsDeck: true },
+  { id: "lineup", group: "play", switch: null, labels: ["decks/your-decks/decks-stats"], target: "lineup", halo: false, lands: { kind: "route", href: "/decks?view=stats" }, credit: null, needsDeck: true },
+  { id: "friends", group: "play", switch: null, labels: ["friends/friends/add"], target: "friends", halo: false, lands: { kind: "route", href: "/friends" }, credit: null, needsDeck: false },
 ] as const satisfies readonly Tool[];
 
 export type ToolId = (typeof TOOLS)[number]["id"];
@@ -76,8 +82,11 @@ export function isToolId(v: unknown): v is ToolId {
   return typeof v === "string" && BY_ID.has(v);
 }
 
-/** A landing the page can act on: the tool, its target, and the moment it spends (null for a tool with none). */
-export type ToolLanding = { tool: ToolId; target: TargetId; moment: MomentId | null; lands: ToolLands };
+/**
+ * A landing the page can act on: the tool, the target it haloes (null for a tool that lands with no halo, `halo`), and
+ * the moment a halo spends (null for a tool with none).
+ */
+export type ToolLanding = { tool: ToolId; target: TargetId | null; moment: MomentId | null; lands: ToolLands };
 
 /**
  * Whether `?tool=<value>` names a tool this reader can land on: one the registry knows whose switch is on for them
@@ -88,7 +97,7 @@ export function toolLanding(value: unknown, isOn: (name: SwitchName) => boolean)
   if (typeof value !== "string") return null;
   const tool = BY_ID.get(value);
   if (tool === undefined || (tool.switch !== null && !isOn(tool.switch))) return null;
-  return { tool: tool.id as ToolId, target: tool.target, moment: isMomentId(tool.id) ? tool.id : null, lands: tool.lands };
+  return { tool: tool.id as ToolId, target: tool.halo ? tool.target : null, moment: isMomentId(tool.id) ? tool.id : null, lands: tool.lands };
 }
 
 /**
