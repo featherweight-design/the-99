@@ -1,0 +1,18 @@
+# States
+
+Art: `art/ce-<p|d>-<state>.webp` (phone 390 at 2x, desktop 1300 at 1.5x).
+
+| # | State | Art | What shows |
+|---|---|---|---|
+| 1 | Mode off | `off` | The door only: desktop pill bottom right, phone pencil in the header. |
+| 2 | Mode on | `on` | Dashed outlines on editable text, dotted on read-only; the bar. |
+| 3 | Text targeted | `target` | Solid outline and the file · key tag. |
+| 4 | Editor, plain | `ed-plain` | Now / New, word count against the cap. |
+| 5 | Editor, fill-ins | `ed-fill` | `{names}` chip, fill-in note, preview. |
+| 6 | Editor, variations | `ed-var` | Two labelled fields, one preview. Phone target is the History list. |
+| 7 | Editor, rule error | `ed-err` | Em dash, exclamation mark, 9 of 8 words; Add disabled. |
+| 8 | Editor, read-only | `ed-ro` | Lock, reason, Copy key / Close. |
+| 9 | Tray with edits | `tray` | Three rows, Clear all, Open pull request. |
+| 10 | Submitting | `submitting` | Rows locked, spinner. |
+| 11 | Submitted | `submitted` | PR number, branch, Open on GitHub; bar shows PR open. |
+| 12 | Failed | `failed` | Banner, stale row flagged with Redo, Try again. |

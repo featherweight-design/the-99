@@ -1,0 +1,5 @@
+{"v":3,"title":"On-page copy editor","launch":{"view":"canvas"},"pages":[],
+"boards":{"Main.dc.html":{"x":0,"y":0,"w":1600,"h":2900,"title":"Main · locked points, calls, questions · R1"},
+"Phone.dc.html":{"x":1680,"y":0,"w":2140,"h":1880,"title":"Phone · 12 states · R1"},
+"Desktop.dc.html":{"x":3900,"y":0,"w":2340,"h":2860,"title":"Desktop · 12 states · R1"}},
+"order":["Main.dc.html","Phone.dc.html","Desktop.dc.html"],"notes":{},"designSystems":[]}
