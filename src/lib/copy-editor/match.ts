@@ -37,17 +37,16 @@ export function indexRows(rows: readonly EditorRow[]): RowIndex {
 }
 
 /**
- * Every row the text can be. An exact match wins over any pattern. Among patterns only the ones with the most fixed text
+ * Every row the text can be: the rows with these exact words, then the templates they fit. Among patterns only the ones with the most fixed text
  * survive, so "Last active {ago}" beats "{who} {what}". More than one result is the which-key question: the same words
  * live under two keys (the editor asks which one this is).
  */
 export function matchText(index: RowIndex, visible: string): Match[] {
   const text = squash(visible);
   if (!text) return [];
-  const exact = index.exact.get(text);
-  if (exact) return exact.map((row) => ({ row, how: "exact" as const }));
-  if (text.length > MAX_PATTERN_TEXT) return [];
+  const exact = (index.exact.get(text) ?? []).map((row) => ({ row, how: "exact" as const }));
+  if (text.length > MAX_PATTERN_TEXT) return exact;
   const hits = index.patterns.filter((p) => p.re.test(text));
   const best = Math.max(0, ...hits.map((p) => p.literal));
-  return hits.filter((p) => p.literal === best).map((p) => ({ row: p.row, how: "pattern" as const }));
+  return [...exact, ...hits.filter((p) => p.literal === best).map((p) => ({ row: p.row, how: "pattern" as const }))];
 }

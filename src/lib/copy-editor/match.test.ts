@@ -42,9 +42,9 @@ describe("matchText", () => {
     expect(matchText(index, "Pick a theme")[0].row.readOnly).toBe("built by a helper");
   });
 
-  it("prefers an exact match to a pattern", () => {
+  it("lists the exact row first and the template that renders the same words after it, for the which-key question", () => {
     const i = indexRows([row("x#1", "Back to {where}", ["where"]), row("x#2", "Back to start")]);
-    expect(matchText(i, "Back to start").map((m) => m.row.key)).toEqual(["x#2"]);
+    expect(matchText(i, "Back to start").map((m) => `${m.row.key}:${m.how}`)).toEqual(["x#2:exact", "x#1:pattern"]);
   });
 
   it("does not run patterns on a long line", () => {

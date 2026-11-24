@@ -6,8 +6,14 @@ import { dirname, join } from "node:path";
 import type { EditorRow } from "../src/lib/copy-editor/rows";
 import { kindOf, readCopyRows } from "./lib/copy-sheet/sheet.mjs";
 
+// A production deploy never serves the editor (the gate shuts it), so its build does not depend on this step succeeding.
+if (process.env.VERCEL_ENV === "production") {
+  console.log("copy editor rows: skipped on a production deploy");
+  process.exit(0);
+}
+
 const out = join(process.cwd(), ".generated", "copy-rows.json");
-const rows: EditorRow[] = readCopyRows(process.cwd()).map((r) => ({ key: r.key, kind: kindOf(r), text: r.text, placeholders: r.placeholders, context: r.context, readOnly: r.readOnly }));
+const rows: EditorRow[] = readCopyRows(process.cwd()).map((r) => ({ key: r.key, kind: kindOf(r), text: r.text, placeholders: r.placeholders, context: kindOf(r) === "text" ? "" : r.context, readOnly: r.readOnly }));
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify(rows));
 console.log(`copy editor rows: ${rows.length} written to .generated/copy-rows.json`);

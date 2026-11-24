@@ -13,7 +13,7 @@ export type EditorRow = {
   /** Today's text, fill-ins written `{name}`. */
   text: string;
   placeholders: string[];
-  /** The condition that selects a branch, or the call that makes a row read-only. */
+  /** The condition that selects a branch, or the call that makes a row read-only. Empty for a plain text row. */
   context: string;
   /** Empty when editable; otherwise why the row cannot be edited here. */
   readOnly: string;
