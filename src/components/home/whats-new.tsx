@@ -99,7 +99,9 @@ function ArchiveFoot() {
   );
 }
 
-export function WhatsNew({ feed: served, now, faces, zone = null, archive = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; zone?: string | null; archive?: boolean; className?: string }) {
+export function WhatsNew({ feed: served, now, faces, zone = null, archive = false, wide = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; zone?: string | null; archive?: boolean;
+  /** Quiet Home (fewer than two of table, game to log, lead): What's new sits in the main column, so its rows keep the wide layout at every width. */
+  wide?: boolean; className?: string }) {
   const [sheetOpen, setSheetOpen] = useState(false);
   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
   const heldLead = useHeldLead();
@@ -210,7 +212,7 @@ export function WhatsNew({ feed: served, now, faces, zone = null, archive = fals
         ) : (
           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
             <HoverPreviewProvider className="flex flex-col">
-              <Rows items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
+              <Rows wide={wide} items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
                 setSheetOpen(true);
                 captureToolEvent("feed_show_all", { count: feedCountBucket(feed.items.length) });
               }} onDismiss={dismissed.dismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
@@ -276,8 +278,8 @@ function withoutHidden(feed: HomeFeed, hidden: ReadonlySet<string>, goneLead: st
   };
 }
 
-function Rows({ items, upcoming, now, faces, zone, onShowAll, onDismiss, archive, clearCount, onClear }: {
-  items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; onShowAll: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
+function Rows({ wide, items, upcoming, now, faces, zone, onShowAll, onDismiss, archive, clearCount, onClear }: {
+  wide: boolean; items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; onShowAll: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
   /** Everything Clear all would clear (the lead included), and the press; the press shows from two items. */
   clearCount: number; onClear: (pending: string | null) => void;
 }) {
@@ -288,7 +290,7 @@ function Rows({ items, upcoming, now, faces, zone, onShowAll, onDismiss, archive
   const grouped = upcoming.length > 0;
   const labelled = grouped || (today.length > 0 && earlier.length > 0);
   const row = (i: FeedView) => (
-    <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact="rail" face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
+    <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact={wide ? false : "rail"} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
   );
   return (
     <>

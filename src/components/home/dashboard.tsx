@@ -52,7 +52,8 @@ export type DashboardProps = {
   /**
    * The Home feed (menu and Home PR 6), read per request outside the cached payload, or null when the read
    * failed (or absent, in tests). Present, Home is direction B: the lead story heads
-   * the main column, What's new follows the resume block, and Ready to build is gone.
+   * the main column, What's new tops the rail from 1180 on a busy Home and follows the resume block on a quiet one
+   * (Quiet Home), and Ready to build is gone.
    */
   feed?: HomeFeed | null;
   /** `ANNOUNCEMENTS_ENABLED` for this reader: What's new's foot carries Past announcements ›, the way into `/announcements`. */
@@ -150,6 +151,12 @@ export function Dashboard(props: DashboardProps) {
   // Direction B, or null for Home as shipped. The lead leaves the list it heads (`splitLead`).
   const feed = props.feed ?? null;
   const lead = feed?.chosen ? feed.lead : null;
+  // A quieter Home: fewer than two cards head the main column (an open table, a game to log, the lead story). What's new
+  // then sits in the main column after the resume block (Pick up where you left off), in its wide rows, and the rail keeps Commitments and Friends. Two or more,
+  // and the main column is long enough on its own: What's new tops the rail (tool-discovery R8). Decided when Home loads, so
+  // dismissing the lead or the log card in a visit does not move it. Below 1180 the one column is unchanged.
+  const heads = tables.length + ((props.logGames?.length ?? 0) > 0 ? 1 : 0) + (lead ? 1 : 0);
+  const quiet = !!feed && heads < 2;
   // A friend's face for the feed, from the Friends section's own read: no second read of anyone's profile.
   const faces = new Map((props.friends?.friends ?? []).map((f) => [f.publicId, f.commander]));
   // Direction B's rows open the shipped card detail (a price drop's card, a combo's first piece): one provider over
@@ -306,6 +313,7 @@ export function Dashboard(props: DashboardProps) {
               />
             )}
           </div>
+          {feed && quiet && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} wide className="order-1 min-[1180px]:order-none min-[1180px]:mt-[10px]" />}
         </div>
 
         {/* The column exists only when a card in it does. Null when the availability
@@ -314,12 +322,12 @@ export function Dashboard(props: DashboardProps) {
             would leave a blank rail squeezing the resume rows beside it for a
             block that is not there. */}
         {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
-        {(feed || props.commitments !== null || props.friends) && (
+        {((feed && !quiet) || props.commitments !== null || props.friends) && (
           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
-            {/* Direction B: What's new directly under the lead story below 1180 (tool-discovery R7, Q11 A), and the top of this rail
-                from 1180 (G17), in compact rows. One element, so one set of rows and one sheet: the columns are `contents` below 1180
+            {/* Direction B on a busy Home: What's new directly under the lead story below 1180 (tool-discovery R7, Q11 A), and the top
+                of this rail from 1180 (G17), in compact rows. A quiet Home draws it in the main column instead (`quiet`, above). One element, so one set of rows and one sheet: the columns are `contents` below 1180
                 and `order` places it. */}
-            {feed && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-1 min-[1180px]:order-none" />}
+            {feed && !quiet && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-1 min-[1180px]:order-none" />}
             {props.commitments !== null && (
               <div className={`${feed ? "order-5" : "order-3"} flex flex-col min-[1180px]:order-none`}>
                 <CommitmentsCard

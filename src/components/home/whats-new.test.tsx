@@ -57,6 +57,17 @@ describe("WhatsNew, Upcoming drops", () => {
 });
 
 describe("WhatsNew, kinds on", () => {
+  it("keeps the rail's compact rows by default, and the wide rows at every width with `wide` (Quiet Home)", () => {
+    const rows = (c: HTMLElement) => [...c.querySelectorAll("[data-feed-item]")];
+    const compact = render(<WhatsNew feed={chosen([view(1, 2)])} now={NOW} />);
+    expect(rows(compact.container).length).toBeGreaterThan(0);
+    expect(rows(compact.container).every((r) => r.className.includes("md:max-[1179px]:grid-cols-[46px_minmax(0,1fr)_auto]"))).toBe(true);
+    compact.unmount();
+    const wide = render(<WhatsNew feed={chosen([view(1, 2)])} now={NOW} wide />);
+    expect(rows(wide.container).length).toBeGreaterThan(0);
+    expect(rows(wide.container).every((r) => !r.className.includes("max-[1179px]") && r.className.includes("md:grid-cols-[46px_minmax(0,1fr)_auto]"))).toBe(true);
+  });
+
   it("shows five, then Show all N opens the sheet and leaves the rail at five", () => {
     const items = Array.from({ length: 9 }, (_, i) => view(i, i + 1));
     render(<WhatsNew feed={chosen(items, { unseen: 3 })} now={NOW} />);

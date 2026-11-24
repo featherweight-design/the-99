@@ -1,0 +1,20 @@
+{
+  "feature": "Quiet Home (Finding the tools addendum R1): on a quiet day What's new sits in the main column under Pick up where you left off, in wide rows",
+  "clearAbout": true,
+  "note": "Read-only. Serve a branch where the audit account has no open table, no game to log, no lead story, and at least one What's new row (docs/probes.md, probe:quiet-home). The busy layout is unchanged and covered by dashboard-feed.test.tsx.",
+  "out": "contact-sheets/quiet-home",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 },
+    { "label": "ipad-landscape", "width": 1180, "height": 820 },
+    { "label": "ipad-portrait", "width": 820, "height": 1180 }
+  ],
+  "rows": [
+    {
+      "id": "quiet-home",
+      "label": "Home on a quiet day: What's new in the main column",
+      "view": "src/components/home/dashboard.tsx",
+      "steps": [{ "goto": "/", "wait": "[data-whats-new]", "settle": 3000 }]
+    }
+  ]
+}
