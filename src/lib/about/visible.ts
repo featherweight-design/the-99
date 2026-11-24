@@ -5,6 +5,7 @@ import { suggestedChangesV2Enabled } from "../tuning/flag";
 import { paymentsEnabled, welcomeCreditsEnabled } from "../payments/flag";
 import { type AboutLineSwitch, type AboutLineSwitchOne, type AboutSwitch } from "../copy/about";
 import { pushEnabled } from "../push/flag";
+import { storePreferenceEnabled } from "../stores/flag";
 
 /**
  * Each switch read through its feature's OWN flag function, never restated here: an About
@@ -100,6 +101,8 @@ const SWITCHES: Record<AboutSwitch, (env: NodeJS.ProcessEnv) => boolean> = {
   // switch alone, as its flag reads it: the VAPID check (`pushAvailable`) parses keys with `node:crypto`, and this module
   // is imported by `proxy.ts`.
   PUSH_ENABLED: pushEnabled,
+  // Store choice: read through its own flag, so a reader sees the sentence while the choice is offered to them.
+  STORE_PREFERENCE_ENABLED: storePreferenceEnabled,
   // Retired (always on): signature card, a CAPTION line only, the friends entry's face sentence. The name stays the
   // line's historical identity.
   SIGNATURE_CARD_ENABLED: () => true,

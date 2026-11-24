@@ -41,6 +41,8 @@ describe("aboutLine", () => {
     // switches announce them (Small items 7, item 6).
     expect(aboutLine(readerAt(16), visibleSections(ALL_ON))?.ids).toEqual([
       sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
+      // The store choice's sentence on the Shopping total (no reader met a `shopping@STORE_PREFERENCE_ENABLED` id).
+      sentenceKey("shopping/deck-shopping/total", "STORE_PREFERENCE_ENABLED"),
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
     // Shopping for all decks and friends are retired (always on), so a reader drawn with every live switch off is told

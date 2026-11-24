@@ -85,6 +85,8 @@ export type AboutSwitch =
   | 'FRIEND_DECKS_ENABLED'
   // Spare requests (close-out): `friend-spares`' variant, which says a spare is view only while it is off.
   | 'SPARE_REQUESTS_ENABLED'
+  // Store choice (design #3200): the Shopping total's sentence that tells a reader their prices can follow a store of their choosing.
+  | 'STORE_PREFERENCE_ENABLED'
   // Combos one piece away (combos-close close-out): its own entry, and combo-awareness's card-details key.
   | 'NEAR_COMBOS_ENABLED'
   // Strategy focus (handoff design_handoff_the99_strategy_focus): the strategy ring on Analysis and its focus pick.

@@ -68,6 +68,7 @@ export const LEGACY_SECTIONS: Readonly<Record<string, `${string}/${string}`>> = 
   "deck-stats": "decks/stats",
   "notes": "decks/notes",
   "shopping": "shopping/deck-shopping",
+  "shopping@STORE_PREFERENCE_ENABLED": "shopping/deck-shopping",
   "stand-ins": "shopping/deck-shopping",
   "friend-spares": "shopping/deck-shopping",
   "friend-spares@SPARE_REQUESTS_ENABLED": "shopping/deck-shopping",

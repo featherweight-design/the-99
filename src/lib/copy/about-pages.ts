@@ -710,10 +710,12 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         id: "total",
         region: "shopping/deck-shopping/total",
         lead: "The total",
-        rest: " is what this deck still needs at Mana Pool. “Buy these at Mana Pool” opens a cart with them.",
+        rest: " is what this deck still needs at Mana Pool. “Buy these at Mana Pool” opens a cart with them. Pick another store in Settings and the prices follow.",
         flag: null,
+        sentences: { " Pick another store in Settings and the prices follow.": "STORE_PREFERENCE_ENABLED" },
         since: 1,
-        legacy: ["shopping"],
+        // `shopping@STORE_PREFERENCE_ENABLED` is not a Reference entry: no reader holds it, which is what makes the store sentence unseen (announced) for readers who already saw this label. Do not prune it.
+        legacy: ["shopping", "shopping@STORE_PREFERENCE_ENABLED"],
       },
       {
         id: "limit",

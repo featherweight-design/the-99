@@ -205,6 +205,8 @@ describe("seen translation", () => {
     const told = (e: NodeJS.ProcessEnv) => unseenUnits(visibleSections(e), readerAt(16, e)).map((u) => u.key);
     expect(told(ALL_ON)).toEqual([
       sentenceKey("decks/analysis/suggested", "SUGGESTED_CHANGES_V2_ENABLED"),
+      // The store choice's sentence on the Shopping total (no reader met a `shopping@STORE_PREFERENCE_ENABLED` id).
+      sentenceKey("shopping/deck-shopping/total", "STORE_PREFERENCE_ENABLED"),
       "shopping/all-decks/decks", "shopping/all-decks/views", "shopping/all-decks/ask", "shopping/all-decks/buy",
     ]);
     // Every one rides ALL_DECKS_CART_ENABLED, which is retired (always on): set to off, it hides none of them. Ask also
@@ -379,6 +381,25 @@ describe("seen translation", () => {
     expect(unseenUnits(later, after).map((u) => u.key)).toEqual(["home/home/later"]);
     const returning: SeenState = { version: 9, ids: ["x"] };
     expect(afterVisit(visible, "home", returning).version).toBe(9);
+  });
+
+  it("tells the store sentence only to a reader whose store choice is on, and once (store choice)", () => {
+    const total = "shopping/deck-shopping/total";
+    const sentence = " Pick another store in Settings and the prices follow.";
+    const text = (e: NodeJS.ProcessEnv) => units(visibleSections(e)).find((u) => u.key === total)!.text;
+    // Off: the label is drawn without the sentence, and nothing announces it.
+    expect(text(OFF)).not.toContain(sentence.trim());
+    const offReader = readerAt(16, OFF);
+    expect(unseenUnits(visibleSections(OFF), offReader).map((u) => u.key)).not.toContain(sentenceKey(total, "STORE_PREFERENCE_ENABLED"));
+    // On: the sentence is drawn and announced to a reader who has already seen the label, on its own key.
+    expect(text(ALL_ON)).toContain(sentence.trim());
+    const on = visibleSections(ALL_ON);
+    const seen: SeenState = { version: 16, ids: [...readerAt(16, OFF).ids, "placeholder"] };
+    const told = unseenUnits(on, seen).filter((u) => u.key === sentenceKey(total, "STORE_PREFERENCE_ENABLED"));
+    expect(told).toHaveLength(1);
+    // Told once: its acknowledgement leaves nothing to announce.
+    const after: SeenState = { version: 16, ids: [...seen.ids, ...told[0].ack] };
+    expect(unseenUnits(on, after).map((u) => u.key)).not.toContain(sentenceKey(total, "STORE_PREFERENCE_ENABLED"));
   });
 
   it("acknowledging an announcement leaves nothing of it to announce next", () => {
