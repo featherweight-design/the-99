@@ -92,6 +92,8 @@ beforeEach(() => {
 
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 // The notes box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
 const wiring = { searchTuningNotesCards: (query: string) => searchTagCards("tuning", query) } as unknown as DeckRowWiring;
@@ -297,7 +299,7 @@ describe("TuningPanel", () => {
   it("skips the unchanged state and runs directly when the player has typed a note", async () => {
     const d = deps([results]);
     await draw(d);
-    fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.manifest.notes), { target: { value: "more removal" } });
     await press(copy.again);
     expect(screen.queryByTestId("tuning-unchanged")).toBeNull();
     expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "more removal" });
@@ -613,14 +615,14 @@ describe("manifestRows", () => {
   it("always includes a description row in the preview, dashed with its own link when there is none", () => {
     const rows = manifestRows(facts, null, null, readSteps(facts, null));
     const row = rows.find((r) => r.kind !== "writing" && r.key === "description");
-    expect(row).toMatchObject({ kind: "absent", caption: "none yet", actionLabel: "Describe your deck →" });
+    expect(row).toMatchObject({ kind: "absent", caption: deckDescriptionCopy.description.rowNone, actionLabel: deckDescriptionCopy.description.rowOpen });
   });
 
   it("shows the description row as an ordinary filled row once there is one", () => {
     const rows = manifestRows(facts, "go wide", null, readSteps(facts, "go wide"));
     const row = rows.find((r) => r.kind !== "writing" && r.key === "description");
     expect(row?.kind).toBe("read");
-    expect(row && row.kind === "read" ? row.count : undefined).not.toBe("none yet");
+    expect(row && row.kind === "read" ? row.count : undefined).not.toBe(deckDescriptionCopy.description.rowNone);
   });
 
   it("runSteps adds limits and notes rows, only once a run is reading", () => {
@@ -676,7 +678,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
       });
-      const input = screen.getByLabelText("Most per card");
+      const input = screen.getByLabelText(deckDescriptionCopy.limits.capLabel);
       fireEvent.change(input, { target: { value: "1" } });
       fireEvent.change(input, { target: { value: "15" } });
       expect(saveDeckLimits).not.toHaveBeenCalled();
@@ -700,8 +702,8 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
       });
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "15" } });
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
@@ -721,9 +723,9 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
       });
-      const input = screen.getByLabelText("Most per card");
+      const input = screen.getByLabelText(deckDescriptionCopy.limits.capLabel);
       fireEvent.change(input, { target: { value: "10000" } });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       fireEvent.change(input, { target: { value: "100001" } });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
@@ -747,27 +749,27 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "15" } });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
       expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true, capDollars: 15 });
       // The save and its re-read have both landed; the prop is still the old one.
-      expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
-      expect(screen.getByLabelText("Most per card")).toHaveValue("15");
+      expect(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByLabelText(deckDescriptionCopy.limits.capLabel)).toHaveValue("15");
       // The prop catches up: still the choice made.
       const caught: TuningFacts = { ...facts, limits: { capCents: 1500, sets: [], ownedOnly: true } };
       await act(async () => {
         utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={caught} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn })).toHaveAttribute("aria-checked", "true");
       // And a LATER change from elsewhere (another tab) is followed again.
       const later: TuningFacts = { ...facts, limits: { capCents: null, sets: [], ownedOnly: false } };
       await act(async () => {
         utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={later} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny })).toHaveAttribute("aria-checked", "true");
     } finally {
       vi.useRealTimers();
     }
@@ -791,17 +793,17 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       await act(async () => { await vi.advanceTimersByTimeAsync(500); });
-      fireEvent.click(screen.getByRole("radio", { name: "Any card" }));
+      fireEvent.click(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny }));
       await act(async () => { await vi.advanceTimersByTimeAsync(500); });
       // The first save answers and its revalidation lands; the revert's own save then leaves.
       await act(async () => { resolveFirst({ ok: true }); await vi.advanceTimersByTimeAsync(0); });
       await draw({ ...facts, limits: { capCents: null, sets: [], ownedOnly: true } });
       await act(async () => { resolveSecond({ ok: true }); await vi.advanceTimersByTimeAsync(0); });
-      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny })).toHaveAttribute("aria-checked", "true");
       await draw({ ...facts, limits: { capCents: null, sets: [], ownedOnly: false } });
-      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny })).toHaveAttribute("aria-checked", "true");
     } finally {
       vi.useRealTimers();
     }
@@ -823,13 +825,13 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
       expect(saveDeckLimits).toHaveBeenCalledWith("d1", { ownedOnly: true });
       // The first save is now in flight (its promise unresolved). Revert before it lands.
-      fireEvent.click(screen.getByRole("radio", { name: "Any card" }));
+      fireEvent.click(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny }));
       // A revalidation reflecting the FIRST save's value arrives, under a new object reference,
       // while the revert's own request has not even been scheduled yet.
       const revalidated: TuningFacts = { ...facts, limits: { capCents: null, sets: [], ownedOnly: true } };
@@ -838,7 +840,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       });
       // The revert must still read as chosen — not reverted back to "Only cards I own" by the
       // revalidation.
-      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny })).toHaveAttribute("aria-checked", "true");
       resolveFirst({ ok: true });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
@@ -865,12 +867,12 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" })); // true
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn })); // true
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
       expect(saveDeckLimits).toHaveBeenCalledTimes(1); // the first send, unresolved
-      fireEvent.click(screen.getByRole("radio", { name: "Any card" })); // revert: false
+      fireEvent.click(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny })); // revert: false
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
@@ -891,7 +893,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={revalidated} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      expect(screen.getByRole("radio", { name: "Any card" })).toHaveAttribute("aria-checked", "true");
+      expect(screen.getByRole("radio", { name: deckDescriptionCopy.limits.ownAny })).toHaveAttribute("aria-checked", "true");
       resolveSecond({ ok: true });
       await act(async () => {
         await Promise.resolve();
@@ -916,7 +918,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       expect(saveDeckLimits).not.toHaveBeenCalled();
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
@@ -944,12 +946,12 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
         // Typed WHILE the limit save's 500ms debounce is still pending — before press() has
         // read anything.
-        fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "typed during the wait" } });
+        fireEvent.change(screen.getByLabelText(deckDescriptionCopy.manifest.notes), { target: { value: "typed during the wait" } });
         await vi.advanceTimersByTimeAsync(500);
       });
       expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "typed during the wait" });
@@ -970,13 +972,13 @@ describe("TuningPanel: Locked (never cut)", () => {
       });
       return out;
     })();
-    fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
-    expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
+    expect(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn })).toHaveAttribute("aria-checked", "true");
     const revalidated: TuningFacts = { ...facts, limits: { capCents: null, sets: [], ownedOnly: false } };
     await act(async () => {
       utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={revalidated} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
     });
-    expect(screen.getByRole("radio", { name: "Only cards I own" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn })).toHaveAttribute("aria-checked", "true");
   });
 
   // pre-open review round 1: `saveLimits` used to `void` its call, discarding both an
@@ -989,7 +991,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
       });
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "15" } });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
@@ -1010,7 +1012,7 @@ describe("TuningPanel: Locked (never cut)", () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
       expect(d.read).toHaveBeenCalledTimes(1);
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "15" } });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
@@ -1030,7 +1032,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
       });
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "15" } });
       expect(saveDeckLimits).not.toHaveBeenCalled();
       await act(async () => {
         utils.unmount();
@@ -1056,13 +1058,13 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
       });
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "15" } });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
       expect(screen.getByText("Nope.")).toBeInTheDocument();
       // A different field saves fine afterward.
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
         await vi.advanceTimersByTimeAsync(500);
@@ -1117,17 +1119,17 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         utils = render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "50" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "50" } });
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
-      expect(screen.getByLabelText("Most per card")).toHaveValue("50");
+      expect(screen.getByLabelText(deckDescriptionCopy.limits.capLabel)).toHaveValue("50");
       // Another tab's write lands while this cap edit is still dirty — correctly skipped.
       const fromAnotherTab: TuningFacts = { ...facts, limits: { capCents: 7500, sets: [], ownedOnly: false } };
       await act(async () => {
         utils.rerender(<TuningPanel deckId="d1" permits={[3]} facts={fromAnotherTab} onLogGame={vi.fn()} deps={d} printedInSets={[]} />);
       });
-      expect(screen.getByLabelText("Most per card")).toHaveValue("50");
+      expect(screen.getByLabelText(deckDescriptionCopy.limits.capLabel)).toHaveValue("50");
       // This tab's own save acknowledges. No FURTHER prop change follows.
       resolveSave({ ok: true });
       await act(async () => {
@@ -1135,7 +1137,7 @@ describe("TuningPanel: Locked (never cut)", () => {
         await Promise.resolve();
         await Promise.resolve();
       });
-      expect(screen.getByLabelText("Most per card")).toHaveValue("75");
+      expect(screen.getByLabelText(deckDescriptionCopy.limits.capLabel)).toHaveValue("75");
     } finally {
       vi.useRealTimers();
     }
@@ -1153,7 +1155,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={withCap} onLogGame={vi.fn()} deps={deps([fresh])} printedInSets={[]} />);
       });
-      const input = screen.getByLabelText("Most per card");
+      const input = screen.getByLabelText(deckDescriptionCopy.limits.capLabel);
       expect(input).toHaveValue("25");
       fireEvent.change(input, { target: { value: "15" } });
       fireEvent.change(input, { target: { value: "0" } });
@@ -1187,7 +1189,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh], { read })} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: copy.suggest }));
         await vi.advanceTimersByTimeAsync(500);
@@ -1220,7 +1222,7 @@ describe("TuningPanel: Locked (never cut)", () => {
       await act(async () => {
         render(<TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh], { read })} printedInSets={[]} />);
       });
-      fireEvent.click(screen.getByRole("radio", { name: "Only cards I own" }));
+      fireEvent.click(screen.getByRole("radio", { name: helpMeChooseCopy.intake.poolOwn }));
       await act(async () => {
         await vi.advanceTimersByTimeAsync(500);
       });
@@ -1244,23 +1246,23 @@ describe("TuningPanel: Locked (never cut)", () => {
 describe("TuningPanel: Additional notes (H35, PR 3)", () => {
   it("mounts the field above the action row, hidden while reading", async () => {
     await draw(deps([fresh]));
-    expect(screen.getByLabelText("Additional notes")).toBeInTheDocument();
+    expect(screen.getByLabelText(deckDescriptionCopy.manifest.notes)).toBeInTheDocument();
   });
 
   // Hugh, 2026-10-29: the box takes Suggested changes' framed foot (the `[[ ]]` button, "tag a card", the counter).
   it("draws the framed foot Suggested changes uses: the tag button, its words and the counter", async () => {
     await draw(deps([fresh]));
-    const frame = screen.getByLabelText("Additional notes").closest("[data-framed-box]") as HTMLElement;
+    const frame = screen.getByLabelText(deckDescriptionCopy.manifest.notes).closest("[data-framed-box]") as HTMLElement;
     expect(frame).not.toBeNull();
-    expect(within(frame).getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
-    expect(within(frame).getByText("tag a card")).toBeInTheDocument();
+    expect(within(frame).getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria })).toBeInTheDocument();
+    expect(within(frame).getByText(TAG_A_CARD_WORDS)).toBeInTheDocument();
     expect(within(frame).getByText("0 / 500")).toBeInTheDocument();
   });
 
   it("keeps its visible label and the card-tag tip above the frame", async () => {
     await draw(deps([fresh]));
-    const box = screen.getByLabelText("Additional notes");
-    expect(document.querySelector(`label[for="${box.id}"]`)).toHaveTextContent("Additional notes");
+    const box = screen.getByLabelText(deckDescriptionCopy.manifest.notes);
+    expect(document.querySelector(`label[for="${box.id}"]`)).toHaveTextContent(deckDescriptionCopy.manifest.notes);
     const tip = document.querySelector(`button[aria-describedby="${box.id}-info"]`);
     expect(tip).not.toBeNull();
     expect(box).toHaveAttribute("aria-describedby", `${box.id}-info`);
@@ -1275,7 +1277,7 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
   it("sends the typed note to deps.run", async () => {
     const d = deps([fresh, results]);
     await draw(d);
-    fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.manifest.notes), { target: { value: "more removal" } });
     await press(copy.suggest);
     expect(d.run).toHaveBeenCalledWith("d1", { runId: expect.any(String), notes: "more removal" });
   });
@@ -1285,14 +1287,14 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
     try {
       const d = deps([fresh, results]);
       await draw(d);
-      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.manifest.notes), { target: { value: "more removal" } });
       await press(copy.suggest);
       await act(async () => {
         await vi.advanceTimersByTimeAsync(runSteps(facts, "go wide").length * 350);
         await Promise.resolve();
         await Promise.resolve();
       });
-      expect(screen.getByLabelText("Additional notes")).toHaveValue("");
+      expect(screen.getByLabelText(deckDescriptionCopy.manifest.notes)).toHaveValue("");
     } finally {
       vi.useRealTimers();
     }
@@ -1303,13 +1305,13 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
     try {
       const d = deps([fresh, fresh], { run: vi.fn(async () => ({ ok: false as const, message: "no" })) });
       await draw(d);
-      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.manifest.notes), { target: { value: "more removal" } });
       await press(copy.suggest);
       await act(async () => {
         await vi.advanceTimersByTimeAsync(runSteps(facts, "go wide").length * 350);
         await Promise.resolve();
       });
-      expect(screen.getByLabelText("Additional notes")).toHaveValue("more removal");
+      expect(screen.getByLabelText(deckDescriptionCopy.manifest.notes)).toHaveValue("more removal");
     } finally {
       vi.useRealTimers();
     }
@@ -1324,14 +1326,14 @@ describe("TuningPanel: Additional notes (H35, PR 3)", () => {
       const failed: TuningState = { ...fresh, run: { ...okRun, status: "failed", errorClass: "timeout" } };
       const d = deps([fresh, failed], { run: vi.fn(async () => ({ ok: true as const })) });
       await draw(d);
-      fireEvent.change(screen.getByLabelText("Additional notes"), { target: { value: "more removal" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.manifest.notes), { target: { value: "more removal" } });
       await press(copy.suggest);
       await act(async () => {
         await vi.advanceTimersByTimeAsync(runSteps(facts, "go wide").length * 350);
         await Promise.resolve();
         await Promise.resolve();
       });
-      expect(screen.getByLabelText("Additional notes")).toHaveValue("more removal");
+      expect(screen.getByLabelText(deckDescriptionCopy.manifest.notes)).toHaveValue("more removal");
     } finally {
       vi.useRealTimers();
     }
@@ -1343,23 +1345,23 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
 
   it("opens the editor from the dashed description row's link, and Cancel reverts it", async () => {
     await draw(deps([fresh]), noDescription);
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.queryByLabelText("Describe your deck")).toBeNull();
-    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+    expect(screen.queryByLabelText(deckDescriptionCopy.description.label)).toBeNull();
+    expect(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen })).toBeInTheDocument();
   });
 
   it("draws the editor in a tag-a-card foot, the accent edge at rest, and a 72 floor", async () => {
     await draw(deps([fresh]), noDescription);
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    const field = screen.getByLabelText("Describe your deck");
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    const field = screen.getByLabelText(deckDescriptionCopy.description.label);
     expect(field).not.toHaveAttribute("aria-label");
     expect((field as HTMLElement).style.minHeight).toBe("72px");
     const frame = field.closest("[data-framed-box]") as HTMLElement;
     // Scoped to the editor's own frame: the Additional notes box draws the same foot beside it.
-    expect(within(frame).getByText("tag a card")).toBeInTheDocument();
-    expect(within(frame).getByRole("button", { name: "Insert a card tag" })).toBeInTheDocument();
+    expect(within(frame).getByText(TAG_A_CARD_WORDS)).toBeInTheDocument();
+    expect(within(frame).getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria })).toBeInTheDocument();
     expect(frame.className).toContain("border-[color:var(--accent)]");
   });
 
@@ -1367,8 +1369,8 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
     const tall = vi.spyOn(HTMLTextAreaElement.prototype, "scrollHeight", "get").mockReturnValue(110);
     try {
       await draw(deps([fresh]), noDescription);
-      fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-      const field = screen.getByLabelText("Describe your deck") as HTMLTextAreaElement;
+      fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+      const field = screen.getByLabelText(deckDescriptionCopy.description.label) as HTMLTextAreaElement;
       expect(field.style.height).toBe("110px");
       expect(field.className.split(/\s+/)).toContain("overflow-hidden");
     } finally {
@@ -1378,18 +1380,18 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
 
   it("Escape also reverts the editor to the dashed row", async () => {
     await draw(deps([fresh]), noDescription);
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.keyDown(screen.getByLabelText("Describe your deck"), { key: "Escape" });
-    expect(screen.queryByLabelText("Describe your deck")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    fireEvent.keyDown(screen.getByLabelText(deckDescriptionCopy.description.label), { key: "Escape" });
+    expect(screen.queryByLabelText(deckDescriptionCopy.description.label)).toBeNull();
   });
 
   // Copilot review: Escape cancels an IME composition candidate first — it must not also
   // discard the open editor in the same keystroke.
   it("ignores Escape while an IME composition is active", async () => {
     await draw(deps([fresh]), noDescription);
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.keyDown(screen.getByLabelText("Describe your deck"), { key: "Escape", isComposing: true });
-    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    fireEvent.keyDown(screen.getByLabelText(deckDescriptionCopy.description.label), { key: "Escape", isComposing: true });
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).toBeInTheDocument();
   });
 
   it("saves a tagged description as its body, and the row fills", async () => {
@@ -1399,14 +1401,14 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
         <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Rocks: [[Sol" } });
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Rocks: [[Sol" } });
     fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(onSaveDescription).toHaveBeenCalledWith("Rocks: [[c0ffee00-0000-4000-8000-000000000001|Sol Ring]] ");
-    expect(screen.queryByText("none yet")).toBeNull();
+    expect(screen.queryByText(deckDescriptionCopy.description.rowNone)).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
   });
 
@@ -1417,15 +1419,15 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
         <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Go wide, win late." } });
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Go wide, win late." } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(onSaveDescription).toHaveBeenCalledWith("Go wide, win late.");
-    expect(screen.queryByLabelText("Describe your deck")).toBeNull();
-    expect(screen.queryByText("none yet")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    expect(screen.queryByLabelText(deckDescriptionCopy.description.label)).toBeNull();
+    expect(screen.queryByText(deckDescriptionCopy.description.rowNone)).toBeNull();
+    expect(screen.queryByRole("button", { name: deckDescriptionCopy.description.rowOpen })).toBeNull();
     expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
   });
 
@@ -1438,12 +1440,12 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
         <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(screen.getByText(deckDescriptionCopy.description.refused)).toBeInTheDocument();
-    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).toBeInTheDocument();
   });
 
   it("shows the refusal and keeps the editor open when the save fails", async () => {
@@ -1453,12 +1455,12 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
         <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(screen.getByText("Nope.")).toBeInTheDocument();
-    expect(screen.getByLabelText("Describe your deck")).toBeInTheDocument();
+    expect(screen.getByLabelText(deckDescriptionCopy.description.label)).toBeInTheDocument();
   });
 
   // Copilot review round 2: the optimistic state must be NORMALIZED the same way `saveIntent`
@@ -1472,13 +1474,13 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
         <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
       );
     });
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "  Go wide.  " } });
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "  Go wide.  " } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Save" }));
     });
     expect(onSaveDescription).toHaveBeenCalledWith("  Go wide.  ");
-    expect(screen.queryByRole("button", { name: "Describe your deck →" })).toBeNull();
+    expect(screen.queryByRole("button", { name: deckDescriptionCopy.description.rowOpen })).toBeNull();
     // The server's own revalidation echoes back the TRIMMED value it actually stored.
     await act(async () => {
       utils.rerender(
@@ -1492,7 +1494,7 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
         <TuningPanel deckId="d1" permits={[3]} facts={noDescription} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />,
       );
     });
-    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen })).toBeInTheDocument();
   });
 
   // Card tags: the draft is a body (`[[id|Name]]`) and the server stores the name, so the optimistic value is the
@@ -1504,13 +1506,13 @@ describe("TuningPanel: Describing in place (H35, PR 3)", () => {
       <TuningPanel deckId="d1" permits={[3]} facts={facts} onLogGame={vi.fn()} deps={deps([fresh])} onSaveDescription={onSaveDescription} />
     );
     await act(async () => { utils = render(panel(noDescription)); });
-    fireEvent.click(screen.getByRole("button", { name: "Describe your deck →" }));
-    fireEvent.change(screen.getByLabelText("Describe your deck"), { target: { value: "Rocks: [[Sol" } });
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen }));
+    fireEvent.change(screen.getByLabelText(deckDescriptionCopy.description.label), { target: { value: "Rocks: [[Sol" } });
     fireEvent.mouseDown(await screen.findByRole("option", { name: /Sol Ring/ }));
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Save" })); });
     await act(async () => { utils.rerender(panel({ ...noDescription, intent: "Rocks: Sol Ring" })); });
     await act(async () => { utils.rerender(panel(noDescription)); });
-    expect(screen.getByRole("button", { name: "Describe your deck →" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: deckDescriptionCopy.description.rowOpen })).toBeInTheDocument();
   });
 
   describe("the two lists", () => {
@@ -1810,7 +1812,7 @@ describe("TuningPanel: a past run History reopened (re-review)", () => {
       (saveDeckLimits as ReturnType<typeof vi.fn>).mockImplementationOnce(async () => ({ ok: false as const, message: "Nope." }));
       const d = deps([reviewed]);
       const leave = await drawReview(d);
-      fireEvent.change(screen.getByLabelText("Most per card"), { target: { value: "15" } });
+      fireEvent.change(screen.getByLabelText(deckDescriptionCopy.limits.capLabel), { target: { value: "15" } });
       await act(async () => { await vi.advanceTimersByTimeAsync(500); });
       await act(async () => {
         fireEvent.click(screen.getByRole("button", { name: copy.again }));

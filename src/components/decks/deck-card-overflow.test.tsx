@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { redirect } from "next/navigation";
+import { exportDialogCopy } from "../../lib/copy/decks-builder";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 const { deleteDeck, renameDeck } = vi.hoisted(() => ({
   deleteDeck: vi.fn(),
@@ -194,7 +196,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
     expect(screen.getByText("Delete “Atraxa”?")).toBeInTheDocument();
     expect(
       screen.getByText(
-        "Its list, its versions and its game log go with it. Nothing leaves your collection.",
+        refreshCopy.decks.del.body,
       ),
     ).toBeInTheDocument();
     expect(deleteDeck).not.toHaveBeenCalled();
@@ -206,7 +208,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
     open();
     const heading = screen.getByText("Delete “Atraxa”?");
     expect(heading.closest(".overflow-y-auto")).toBeNull();
-    const body = screen.getByRole("button", { name: "Delete deck" }).closest(".overflow-y-auto");
+    const body = screen.getByRole("button", { name: refreshCopy.decks.del.confirm }).closest(".overflow-y-auto");
     expect(body).not.toBeNull();
     expect(body!.className).toContain("min-h-0");
     expect(body!.contains(heading)).toBe(false);
@@ -216,7 +218,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
   it("returns to the menu on Keep it, having deleted nothing", () => {
     deleteDeck.mockReset();
     open();
-    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.decks.del.cancel }));
     expect(screen.getByRole("button", { name: "Rename" })).toBeInTheDocument();
     expect(screen.queryByText("Delete “Atraxa”?")).toBeNull();
     expect(deleteDeck).not.toHaveBeenCalled();
@@ -229,14 +231,14 @@ describe("DeckCardOverflow — the delete confirm", () => {
   it("puts focus in the pane, on the button that changes nothing", () => {
     deleteDeck.mockReset();
     open();
-    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: refreshCopy.decks.del.cancel })).toHaveFocus();
   });
 
   // And hands it back, because the pane unmounts holding it.
   it("returns focus to the row that was pressed", async () => {
     deleteDeck.mockReset();
     open();
-    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.decks.del.cancel }));
     await waitFor(() =>
       expect(screen.getByRole("button", { name: "Delete" })).toHaveFocus(),
     );
@@ -246,7 +248,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
     deleteDeck.mockReset();
     deleteDeck.mockResolvedValue(undefined);
     open();
-    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.decks.del.confirm }));
     await waitFor(() => expect(deleteDeck).toHaveBeenCalledWith("d1"));
   });
 
@@ -256,16 +258,16 @@ describe("DeckCardOverflow — the delete confirm", () => {
     deleteDeck.mockReset();
     deleteDeck.mockRejectedValue(new Error("boom"));
     open();
-    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.decks.del.confirm }));
     const alert = await screen.findByRole("alert");
-    expect(alert).toHaveTextContent("We couldn’t confirm that deck was deleted. Reload to check.");
+    expect(alert).toHaveTextContent(refreshCopy.decks.del.failed);
     // Re-enabled, because the reader's only move is to try again. Awaited rather
     // than read in the alert's own tick: `setError` runs inside the transition,
     // so the alert can commit while `pending` is still true — and while it is,
     // this button is labelled `Deleting…` and the query throws rather than
     // asserting.
     await waitFor(() =>
-      expect(screen.getByRole("button", { name: "Delete deck" })).not.toBeDisabled(),
+      expect(screen.getByRole("button", { name: refreshCopy.decks.del.confirm })).not.toBeDisabled(),
     );
   });
 
@@ -280,7 +282,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
     // outstanding, so a resolved mock would close it before the assertion.
     deleteDeck.mockImplementation(() => new Promise(() => {}));
     open();
-    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.decks.del.confirm }));
     await waitFor(() => expect(deleteDeck).toHaveBeenCalledTimes(1));
 
     fireEvent.click(trigger());
@@ -317,7 +319,7 @@ describe("DeckCardOverflow — the delete confirm", () => {
     window.addEventListener("error", swallowRedirect);
     try {
       open();
-      fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+      fireEvent.click(screen.getByRole("button", { name: refreshCopy.decks.del.confirm }));
       await waitFor(() => expect(deleteDeck).toHaveBeenCalledWith("d1"));
       // Settle the rejection before asserting the absence, or the assertion runs
       // before the catch it is about.
@@ -376,7 +378,7 @@ describe("DeckCardOverflow · Export", () => {
     fireEvent.click(trigger("Atraxa Counters"));
     fireEvent.click(screen.getByRole("button", { name: "Export" }));
     expect(readDeckExport).toHaveBeenCalledWith("d1");
-    const dialog = await screen.findByRole("dialog", { name: "Export deck" });
+    const dialog = await screen.findByRole("dialog", { name: exportDialogCopy.title });
     // In a portal on the body, so a transformed tile cannot pin the fixed overlay to itself.
     expect(trigger("Atraxa Counters").parentElement!.contains(dialog)).toBe(false);
     expect(dialog.textContent).toContain("Sol Ring");
@@ -389,8 +391,8 @@ describe("DeckCardOverflow · Export", () => {
     render(<DeckCardOverflow deckId="d1" deckName="Atraxa Counters" built={99} placement="tile" />);
     fireEvent.click(trigger("Atraxa Counters"));
     fireEvent.click(screen.getByRole("button", { name: "Export" }));
-    await screen.findByRole("button", { name: "Export failed. Try again." });
-    expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull();
+    await screen.findByRole("button", { name: refreshCopy.decks.menu.exportFailed });
+    expect(screen.queryByRole("dialog", { name: exportDialogCopy.title })).toBeNull();
   });
 
   it("holds the menu's other rows while the read is in flight, and returns focus to the ⋯ button on close", async () => {
@@ -405,12 +407,12 @@ describe("DeckCardOverflow · Export", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(screen.getByRole("button", { name: "Rename" })).toHaveProperty("disabled", true);
     land(read);
-    const dialog = await screen.findByRole("dialog", { name: "Export deck" });
+    const dialog = await screen.findByRole("dialog", { name: exportDialogCopy.title });
     // The dialog is in the document before its effects run, and its Escape listener is one of them: an empty act
     // flushes them, or the key lands before anything listens for it (about one run in three).
     await act(async () => {});
     fireEvent.keyDown(dialog, { key: "Escape" });
-    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Export deck" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: exportDialogCopy.title })).toBeNull());
     expect(document.activeElement).toBe(trigger("Atraxa Counters"));
   });
 
@@ -431,7 +433,7 @@ describe("DeckCardOverflow · Export", () => {
       fireEvent.click(screen.getAllByRole("button", { name: "Export" })[1]);
       const reads = [read, { ...read, deckName: "Kenrith Politics", decklistCards: [{ name: "Arcane Signet", quantity: 1 }] }];
       for (const i of order) await act(async () => lands[i](reads[i]));
-      const dialogs = await screen.findAllByRole("dialog", { name: "Export deck" });
+      const dialogs = await screen.findAllByRole("dialog", { name: exportDialogCopy.title });
       expect(dialogs).toHaveLength(1);
       expect(dialogs[0].textContent).toContain("Arcane Signet");
       readDeckExport.mockReset();

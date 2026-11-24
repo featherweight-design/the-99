@@ -20,6 +20,7 @@ import { TokensShoppingGroup } from "./tokens-shopping-group";
 import { boxedOnDesktop, boxedOnPhone, makerColumns } from "./token-makers";
 import { printingLine } from "./token-row";
 import type { DeckToken, DeckTokensRead, TokenMaker } from "../../lib/tokens/read";
+import { tokensCopy } from "../../lib/copy/tokens";
 
 const DECK = "00000000-0000-4000-8000-0000000000d1";
 const maker = (n: number): TokenMaker => ({ oracleId: `m${String(n).padStart(3, "0")}`, name: `Maker ${String(n).padStart(2, "0")}`, imageUri: null });
@@ -49,9 +50,9 @@ describe("TokensGroup presence", () => {
     rerender(<DeckTokensProvider deckId={DECK} read={{ status: "absent" }}><TokensGroup /></DeckTokensProvider>);
     expect(container.innerHTML).toBe("");
     rerender(<DeckTokensProvider deckId={DECK} read={{ status: "failed" }}><TokensGroup /></DeckTokensProvider>);
-    expect(screen.getByText("Tokens couldn’t be read just now.")).toBeTruthy();
+    expect(screen.getByText(tokensCopy.group.failed)).toBeTruthy();
     // The header's note (desktop) and the phone's sub-line are both drawn.
-    expect(screen.getAllByText("not in the 99").length).toBe(2);
+    expect(screen.getAllByText(tokensCopy.group.noteFailed).length).toBe(2);
     // A failed group has no honest count to give, so none is drawn.
     expect(screen.getByRole("heading", { name: "Tokens" })).toBeTruthy();
   });
@@ -67,7 +68,7 @@ describe("the unknown band", () => {
   it("shows once, with the upload link, when the account has not been read", () => {
     draw(ok([token({ state: "unknown" }), token({ oracleId: "b", state: "unknown" })], { read: false }));
     expect(screen.getAllByText(/hasn’t been read for tokens yet/)).toHaveLength(1);
-    expect(screen.getByRole("link", { name: "Upload your collection" }).getAttribute("href")).toBe("/collection");
+    expect(screen.getByRole("link", { name: tokensCopy.unknown.action }).getAttribute("href")).toBe("/collection");
   });
   it("is absent once the account has been read", () => {
     draw(ok([token()]));
@@ -78,30 +79,30 @@ describe("the unknown band", () => {
 describe("a row's states", () => {
   it("upload-owned: the fact and a filled dot, no controls", () => {
     draw(ok([token({ state: "owned", source: "upload" })]));
-    expect(screen.getByText("in your collection")).toBeTruthy();
+    expect(screen.getByText(tokensCopy.row.owned)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Mark the Food token|Unmark the Food token|Add the Food token/ })).toBeNull();
     expect(document.querySelector('[data-token-dot="owned"]')).toBeTruthy();
   });
 
   it("held by an added precon: drawn as the collection's, like an upload, with no hand mark to press", () => {
     draw(ok([token({ state: "owned", source: "precon" })]));
-    expect(screen.getByText("in your collection")).toBeTruthy();
+    expect(screen.getByText(tokensCopy.row.owned)).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Mark the Food token|Unmark the Food token|Add the Food token/ })).toBeNull();
   });
 
   it("marked by hand: held control, no fact, no Shopping control", () => {
     draw(ok([token({ state: "owned", source: "manual" })]));
-    expect(screen.getByRole("button", { name: "Unmark the Food token" }).textContent).toBe("✓ I have one");
-    expect(screen.queryByText("in your collection")).toBeNull();
+    expect(screen.getByRole("button", { name: "Unmark the Food token" }).textContent).toBe(tokensCopy.row.haveOn);
+    expect(screen.queryByText(tokensCopy.row.owned)).toBeNull();
     expect(screen.queryByRole("button", { name: /Add the Food token/ })).toBeNull();
   });
 
   it("not owned: a dashed dot, no fact, and both controls", () => {
     draw(ok([token()]));
     expect(document.querySelector('[data-token-dot="not"]')).toBeTruthy();
-    expect(screen.queryByText("in your collection")).toBeNull();
-    expect(screen.getByRole("button", { name: "Mark the Food token as in your collection" }).textContent).toBe("I have one");
-    expect(screen.getByRole("button", { name: "Add the Food token to this deck’s Shopping list" }).textContent).toBe("Add to Shopping");
+    expect(screen.queryByText(tokensCopy.row.owned)).toBeNull();
+    expect(screen.getByRole("button", { name: "Mark the Food token as in your collection" }).textContent).toBe(tokensCopy.row.have);
+    expect(screen.getByRole("button", { name: "Add the Food token to this deck’s Shopping list" }).textContent).toBe(tokensCopy.row.join);
   });
 
   it("not known: no dot is drawn as owned or not, and the same two controls stay", () => {
@@ -113,7 +114,7 @@ describe("a row's states", () => {
 
   it("joined: the hold state, and both controls", () => {
     draw(ok([token({ joined: true })]));
-    expect(screen.getByRole("button", { name: "Take the Food token off this deck’s Shopping list" }).textContent).toBe("✓ In Shopping");
+    expect(screen.getByRole("button", { name: "Take the Food token off this deck’s Shopping list" }).textContent).toBe(tokensCopy.row.joined);
     expect(screen.getByRole("button", { name: /Mark the Food token/ })).toBeTruthy();
   });
 
@@ -269,15 +270,15 @@ describe("the makers fold", () => {
   it("scrolls where the list can outgrow its cap, and says so", () => {
     draw(ok([token({ makers: makers(7) })]));
     open();
-    expect(screen.getByText("A–Z · scrolls").className).toContain("md:hidden");
+    expect(screen.getByText(tokensCopy.makers.scrolls).className).toContain("md:hidden");
     cleanup();
     draw(ok([token({ makers: makers(18) })]));
     open();
-    expect(screen.getByText("A–Z · scrolls").className).not.toContain("md:hidden");
+    expect(screen.getByText(tokensCopy.makers.scrolls).className).not.toContain("md:hidden");
     cleanup();
     draw(ok([token({ makers: makers(4) })]));
     open();
-    expect(screen.queryByText("A–Z · scrolls")).toBeNull();
+    expect(screen.queryByText(tokensCopy.makers.scrolls)).toBeNull();
   });
 
   it("draws the box's fade only where the box scrolls", () => {
@@ -427,7 +428,7 @@ describe("the Tokens group on Shopping", () => {
   it("on Shopping offers only the remove press: a hand mark on it could not be undone", () => {
     shopping([token({ oracleId: "f1", makers: [], joined: true, name: "Food", price: priced(15) })]);
     expect(screen.queryByRole("button", { name: /Mark the Food token/ })).toBeNull();
-    expect(screen.getByText("from no card in this deck")).toBeTruthy();
+    expect(screen.getByText(tokensCopy.row.noMaker)).toBeTruthy();
     expect(screen.getByRole("button", { name: /Take the Food token off Shopping/ })).toBeTruthy();
   });
 });
@@ -435,7 +436,7 @@ describe("the Tokens group on Shopping", () => {
 describe("a joined token whose maker left the deck", () => {
   it("stays on the deck page, says it has no maker, and offers no fold", () => {
     draw(ok([token({ makers: [], joined: true })]));
-    expect(screen.getByText("from no card in this deck")).toBeTruthy();
+    expect(screen.getByText(tokensCopy.row.noMaker)).toBeTruthy();
     expect(screen.queryByRole("button", { expanded: false })).toBeNull();
     // Not a button at all: nothing to unfold means no focusable control that does nothing.
     expect(screen.queryByRole("button", { name: /from no card in this deck/ })).toBeNull();
@@ -605,7 +606,7 @@ describe("the view", () => {
       token({ oracleId: "d", name: "Treasure", state: "owned", source: "manual" }),
     ]));
     const feet = [...document.querySelectorAll<HTMLElement>("[data-token-foot]")].map((f) => f.textContent);
-    expect(feet).toEqual(["Add to Shopping", "✓ In Shopping", "in your collection", "✓ I have one"]);
+    expect(feet).toEqual([tokensCopy.row.join, tokensCopy.row.joined, tokensCopy.row.owned, tokensCopy.row.haveOn]);
     // `✓ In Shopping` is still the Shopping press: the toggle that takes the token off the list (the details box has no Shopping press).
     const joined = document.querySelectorAll<HTMLElement>("[data-token-foot=shopping] button")[1];
     expect(joined.getAttribute("aria-pressed")).toBe("true");

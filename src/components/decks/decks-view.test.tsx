@@ -35,6 +35,10 @@ import { folderCopy } from "../../lib/copy/folders";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
+import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { chassisCopy } from "../../lib/copy/filter-chassis";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 const NOW = "2026-09-07T12:00:00.000Z";
 
@@ -201,16 +205,16 @@ describe("DecksView", () => {
     render(view([deckOf()]));
     openFilters();
     fireEvent.click(screen.getAllByRole("checkbox", { name: "Draft" })[0]);
-    expect(screen.getByText("No decks match")).toBeInTheDocument();
-    expect(screen.queryByText("No decks yet")).toBeNull();
-    expect(screen.getByRole("button", { name: "Clear filters" })).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.filters.emptyHeading)).toBeInTheDocument();
+    expect(screen.queryByText(refreshCopy.zero.decksHeading)).toBeNull();
+    expect(screen.getByRole("button", { name: refreshCopy.filters.emptyAction })).toBeInTheDocument();
   });
 
   it("Clear filters restores every deck and empties the URL", () => {
     render(view([deckOf()]));
     openFilters();
     fireEvent.click(screen.getAllByRole("checkbox", { name: "Draft" })[0]);
-    fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.filters.emptyAction }));
     expect(screen.getByText("1 deck")).toBeInTheDocument();
     expect(window.location.search).toBe("");
   });
@@ -228,7 +232,7 @@ describe("DecksView", () => {
     const { container } = renderWide(view([deckOf()]));
     // Search, status, colour, last-played — then sort, past the hairline,
     // because sort is not a filter.
-    expect(screen.getByLabelText("Search decks")).toBeInTheDocument();
+    expect(screen.getByLabelText(refreshCopy.filters.searchPlaceholder)).toBeInTheDocument();
     expect(screen.getAllByRole("switch")).toHaveLength(5);
     expect(container.querySelector("[data-chassis-hairline]")).toBeTruthy();
   });
@@ -289,7 +293,7 @@ describe("DecksView", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
     // The trigger the sheet would restore focus to unmounts with it, so the
     // wide form's search field takes the focus rather than losing it to body.
-    expect(screen.getByLabelText("Search decks")).toHaveFocus();
+    expect(screen.getByLabelText(refreshCopy.filters.searchPlaceholder)).toHaveFocus();
   });
 
   it("clears every filter and leaves a non-default sort alone", () => {
@@ -299,7 +303,7 @@ describe("DecksView", () => {
     window.history.replaceState(null, "", "/decks?sort=name&status=Draft");
     render(view([deckOf()]));
     fireEvent.click(
-      screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." }),
+      screen.getByRole("button", { name: chassisCopy.chips.clearAllAria }),
     );
     expect(window.location.search).toBe("?sort=name");
   });
@@ -310,7 +314,7 @@ describe("DecksView", () => {
     fireEvent.click(screen.getAllByRole("checkbox", { name: "Draft" })[0]);
     // Two of each: the desktop header pair and the phone action row, one of
     // which is display:none at any width.
-    expect(screen.getAllByRole("link", { name: "New deck" })).toHaveLength(2);
+    expect(screen.getAllByRole("link", { name: refreshCopy.decks.newDeck })).toHaveLength(2);
     expect(screen.getAllByRole("link", { name: /Import/ })).toHaveLength(2);
   });
 
@@ -318,7 +322,7 @@ describe("DecksView", () => {
   // draws its pair in. As a flex row each button took its label's width.
   it("draws the phone's New deck and Import as two equal grid columns", () => {
     render(view([deckOf()]));
-    const row = screen.getAllByRole("link", { name: "New deck" }).map((a) => a.parentElement!).find((p) => /\bsm:hidden\b/.test(p.className))!;
+    const row = screen.getAllByRole("link", { name: refreshCopy.decks.newDeck }).map((a) => a.parentElement!).find((p) => /\bsm:hidden\b/.test(p.className))!;
     const cls = row.className.split(/\s+/);
     expect(cls).toEqual(expect.arrayContaining(["grid", "grid-cols-2"]));
     expect(cls).not.toContain("flex");
@@ -327,13 +331,13 @@ describe("DecksView", () => {
 
   it("draws Help me choose's door in its zero state, its switch retired (discovery R3 E1)", () => {
     render(view([]));
-    expect(screen.getByRole("link", { name: "Help me choose →" })).toHaveAttribute("href", "/decks/new/choose");
+    expect(screen.getByRole("link", { name: helpMeChooseCopy.door.cta })).toHaveAttribute("href", "/decks/new/choose");
   });
 
   it("draws the zero state, with both routes in, when no deck exists at all", () => {
     render(view([]));
-    expect(screen.getByText("No decks yet")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Browse commanders" })).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.zero.decksHeading)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: refreshCopy.zero.browseCommanders })).toBeInTheDocument();
     // The zero header drops the count and the filter controls, and keeps the
     // two buttons.
     expect(screen.queryByText("0 of 0")).toBeNull();
@@ -363,7 +367,7 @@ describe("DecksView", () => {
   /** A shelf segment by its accessible name, which carries its count. */
   const segment = (name: string, decks: number) =>
     document.querySelector(
-      `[data-shelf-line] button[aria-label="${name}, ${decks === 1 ? "1 deck" : `${decks} decks`}"]`,
+      `[data-shelf-line] button[aria-label="${folderCopy.shelves.aria(name, decks)}"]`,
     );
   const said = () =>
     [...document.querySelectorAll("[aria-live='polite']")].map((r) => r.textContent);
@@ -462,8 +466,8 @@ describe("DecksView", () => {
     const line = document.querySelector<HTMLElement>("[data-shelf-line]")!;
     fireEvent.click(within(line).getByRole("button", { name: /^Actions for/ }));
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    fireEvent.click(screen.getByRole("button", { name: "Delete folder" }));
-    await waitFor(() => expect(screen.queryByRole("button", { name: "Delete folder" })).toBeNull());
+    fireEvent.click(screen.getByRole("button", { name: folderCopy.del.confirm }));
+    await waitFor(() => expect(screen.queryByRole("button", { name: folderCopy.del.confirm })).toBeNull());
     expect(window.location.search).toBe(`?folder=${FOLDER_A}`);
 
     rerender(view(shelvedDecks(), [twoFolders[1]]));
@@ -533,11 +537,11 @@ describe("DecksView", () => {
     ];
     window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
     const { container } = renderWide(view([deckOf({ id: "u1", name: "Unfiled one" })], empty));
-    expect(screen.getByText("Nothing filed here")).toBeInTheDocument();
+    expect(screen.getByText(folderCopy.empty.shelfHeading)).toBeInTheDocument();
     expect(screen.getByText("Draft pile · 0 decks")).toBeInTheDocument();
     // No filter caused this, so the filtered empty's way out would be the wrong
     // one — and the chassis stays mounted above it either way.
-    expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
+    expect(screen.queryByRole("button", { name: refreshCopy.filters.emptyAction })).toBeNull();
     expect(container.querySelector("[data-chassis-row='controls']")).toBeTruthy();
   });
 
@@ -548,7 +552,7 @@ describe("DecksView", () => {
     ];
     window.history.replaceState(null, "", "/decks?folder=none");
     renderWide(view(filed, twoFolders));
-    expect(screen.getByText("Nothing unfiled")).toBeInTheDocument();
+    expect(screen.getByText(folderCopy.empty.unfiledHeading)).toBeInTheDocument();
     expect(screen.getByText("2 decks across 2 folders")).toBeInTheDocument();
     expect(screen.queryByText(/from its own/)).toBeNull();
   });
@@ -558,8 +562,8 @@ describe("DecksView", () => {
     // to clear the filter rather than to leave the shelf.
     window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}&q=zzzz`);
     renderWide(view(shelvedDecks(), twoFolders));
-    expect(screen.getByRole("button", { name: "Clear filters" })).toBeInTheDocument();
-    expect(screen.queryByText("Nothing filed here")).toBeNull();
+    expect(screen.getByRole("button", { name: refreshCopy.filters.emptyAction })).toBeInTheDocument();
+    expect(screen.queryByText(folderCopy.empty.shelfHeading)).toBeNull();
   });
 
   it("draws no shelf line at all when the player has no decks", () => {
@@ -673,7 +677,7 @@ describe("DecksView", () => {
     window.history.replaceState(null, "", `/decks?folder=${FOLDER_A}`);
     const { container } = renderWide(view(shelvedDecks(), twoFolders));
     fireEvent.click(screen.getByRole("button", { name: /New folder/ }));
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Draft pile" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() =>
       expect(
@@ -702,7 +706,7 @@ describe("DecksView", () => {
     // The move list's own last row, not the shelf line's button beside it.
     const rows = screen.getAllByRole("button", { name: /New folder/ });
     fireEvent.click(rows[rows.length - 1]);
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Draft pile" } });
     // The trigger, not the Move row: the row only exists in the panel's MENU
     // mode, so it is already absent while the destination list is up and an
     // assertion against it would pass with no fix at all.
@@ -724,7 +728,7 @@ describe("DecksView", () => {
     fireEvent.click(within(card).getByRole("button", { name: /^Move / }));
     const rows = screen.getAllByRole("button", { name: /New folder/ });
     fireEvent.click(rows[rows.length - 1]);
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Draft pile" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() => expect(segment("Draft pile", 1)).not.toBeNull());
     expect(segment("Unfiled", 0)).not.toBeNull();
@@ -745,7 +749,7 @@ describe("DecksView", () => {
     fireEvent.click(within(card).getByRole("button", { name: /^Move / }));
     const rows = screen.getAllByRole("button", { name: /New folder/ });
     fireEvent.click(rows[rows.length - 1]);
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Draft pile" } });
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Create" }));
     });
@@ -768,7 +772,7 @@ describe("DecksView", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Move / }));
     const rows = screen.getAllByRole("button", { name: /New folder/ });
     fireEvent.click(rows[rows.length - 1]);
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Draft pile" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     await waitFor(() =>
       expect(
@@ -787,7 +791,7 @@ describe("DecksView", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Move / }));
     const rows = screen.getAllByRole("button", { name: /New folder/ });
     fireEvent.click(rows[rows.length - 1]);
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Draft pile" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Draft pile" } });
     fireEvent.click(screen.getByRole("button", { name: "Create" }));
     // The deck whose panel asked — read off the tile the panel belongs to,
     // because the grid's order is the sort's and not this test's — onto the
@@ -956,7 +960,7 @@ describe("DecksView", () => {
     moveFromCard("Unfiled one", "Commander night");
     expect(segment("Commander night", 2)).not.toBeNull();
     await act(async () => answer.reject(new Error("outage")));
-    expect(said()).toContain("We couldn’t confirm that move. Reload to see where the deck is.");
+    expect(said()).toContain(folderCopy.move.failed);
     await waitFor(() => expect(segment("Commander night", 1)).not.toBeNull());
     expect(segment("Unfiled", 1)).not.toBeNull();
     expect(routerStub.refresh).toHaveBeenCalledTimes(1);
@@ -1138,7 +1142,7 @@ describe("the Deck state facet", () => {
   it("filters to the edited drafts from the sheet, and writes the URL", () => {
     render(view([clean(), moved()]));
     openFilters();
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "Edited since last version" })[0]);
+    fireEvent.click(screen.getAllByRole("checkbox", { name: deckStateMarksCopy.filter.hasPending })[0]);
     expect(window.location.search).toBe("?state=pending");
     expect(screen.getByText("mid-tinker")).toBeInTheDocument();
     expect(screen.queryByText("a deck")).not.toBeInTheDocument();
@@ -1154,7 +1158,7 @@ describe("the Deck state facet", () => {
   it("carries a removable chip like every other value", () => {
     render(view([clean(), moved()]));
     openFilters();
-    fireEvent.click(screen.getAllByRole("checkbox", { name: "Edited since last version" })[0]);
+    fireEvent.click(screen.getAllByRole("checkbox", { name: deckStateMarksCopy.filter.hasPending })[0]);
     fireEvent.click(screen.getByRole("button", { name: "Remove filter: Edited since last version" }));
     expect(window.location.search).toBe("");
   });
@@ -1183,7 +1187,7 @@ describe("DecksView head row", () => {
     expect(headRow().className).toContain("sm:grid-cols-2");
     expect(screen.getByRole("link", { name: /Commander precons/ })).toBeInTheDocument();
     // The cart is the paired cell: its phone face is the short title.
-    expect(screen.getByRole("link", { name: /Shopping for all decks/ }).textContent).toContain("Shop all decks");
+    expect(screen.getByRole("link", { name: /Shopping for all decks/ }).textContent).toContain(refreshCopy.home.shopAllDecks);
   });
 
   // Hugh, 2026-10-13: from 640 up the two buttons sat tight against the Decks top bar.

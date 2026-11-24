@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { DeckNotesView, NoteView } from "../../../lib/decks/notes-types";
 import { formatTag } from "../../../lib/decks/notes-body";
 import { formatNoteDate } from "./note-row";
+import { deckDescriptionCopy } from "../../../lib/copy/deck-description";
+import { deckNotesCopy } from "../../../lib/copy/deck-notes";
 
 const stub = vi.hoisted(() => ({
   addNote: vi.fn(),
@@ -59,8 +61,8 @@ afterEach(cleanup);
 describe("an empty deck", () => {
   it("draws the empty state and the input, with no Done group", () => {
     mount(view([]));
-    expect(screen.getByText("The swap you meant to try.")).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Add a note" })).toBeTruthy();
+    expect(screen.getByText(deckNotesCopy.empty.heading)).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder })).toBeTruthy();
     expect(screen.queryByText(/Done \(/)).toBeNull();
   });
 });
@@ -68,8 +70,8 @@ describe("an empty deck", () => {
 describe("a deck with notes", () => {
   it("keeps the pitch above the field and the list, as the empty state draws it", () => {
     mount(view([note("n1", "swap the mana rock")]));
-    expect(screen.getByText("The swap you meant to try.")).toBeTruthy();
-    expect(screen.getByRole("combobox", { name: "Add a note" })).toBeTruthy();
+    expect(screen.getByText(deckNotesCopy.empty.heading)).toBeTruthy();
+    expect(screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder })).toBeTruthy();
     expect(screen.getByText("swap the mana rock")).toBeTruthy();
   });
 
@@ -80,7 +82,7 @@ describe("a deck with notes", () => {
 
   it("takes the accent on the TaggedBox frame when the field has focus", () => {
     mount(view([]));
-    const frame = screen.getByRole("combobox", { name: "Add a note" }).closest("[data-framed-box]") as HTMLElement;
+    const frame = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }).closest("[data-framed-box]") as HTMLElement;
     expect(frame.className).toContain("focus-within:border-[color:var(--accent)]");
     expect(frame.className).toContain("border-[color:var(--border-strong)]");
   });
@@ -136,7 +138,7 @@ describe("the list", () => {
     const done = Array.from({ length: 40 }, (_, i) => note(`d${i}`, `d ${i}`, { doneAt: at(YEAR, 9, 9) }));
     mount(view(open, done));
     expect(screen.getByText(/This deck holds 100 notes/)).toBeTruthy();
-    expect(screen.getByText("done ones count too")).toBeTruthy();
+    expect(screen.getByText(deckNotesCopy.add.atCapNote)).toBeTruthy();
     expect(screen.queryByRole("combobox")).toBeNull();
   });
 });
@@ -144,18 +146,18 @@ describe("the list", () => {
 describe("adding", () => {
   it("sends the text, clears the field and says so", async () => {
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     type(field, "try a sweeper");
     click(screen.getByRole("button", { name: "Add" }));
     expect(stub.addNote).toHaveBeenCalledWith(DECK, "try a sweeper");
     await waitFor(() => expect((field as HTMLInputElement).value).toBe(""));
-    expect(screen.getByRole("status").textContent).toBe("Note added.");
+    expect(screen.getByRole("status").textContent).toBe(deckNotesCopy.announce.added);
   });
 
   it("keeps what was typed and shows the refusal when the write is refused", async () => {
     stub.addNote.mockResolvedValue({ ok: false, message: "We couldn’t save that note. What you typed is still here, so you can try again." });
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     type(field, "keep me");
     click(screen.getByRole("button", { name: "Add" }));
     expect(await screen.findByRole("alert")).toBeTruthy();
@@ -164,7 +166,7 @@ describe("adding", () => {
 
   it("disables Add for whitespace only and takes no more than 140 characters", async () => {
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     type(field, "   ");
     expect((screen.getByRole("button", { name: "Add" }) as HTMLButtonElement).disabled).toBe(true);
     fireEvent.change(field, { target: { value: "a".repeat(140) } });
@@ -174,7 +176,7 @@ describe("adding", () => {
 
   it("offers this deck's cards after [[, picks with Enter and stores the tag with its id", async () => {
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     type(field, "try [[sol");
     expect(await screen.findByRole("option", { name: /Sol Ring/ })).toBeTruthy();
     key(field, "Enter");
@@ -185,7 +187,7 @@ describe("adding", () => {
 
   it("leaves a [[Name]] typed without picking as plain text", async () => {
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     fireEvent.change(field, { target: { value: "see [[Mana Crypt]]" } });
     click(screen.getByRole("button", { name: "Add" }));
     expect(stub.addNote).toHaveBeenCalledWith(DECK, "see [[Mana Crypt]]");
@@ -199,9 +201,9 @@ describe("adding", () => {
   it("inserts [[]] with the [[ ]] button and opens the picker, leaving a field with room under it where it is", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     at(field, 200);
-    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
     expect(field.value).toBe("[[]]");
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
     // The list fits under the field in the window, so the page does not move (Hugh, 2026-10-20).
@@ -210,9 +212,9 @@ describe("adding", () => {
 
   it("floats the open list over the page, outside the panel, so the deck page's sticky Add a card bar cannot cover it", async () => {
     const { container } = mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     at(field, 200);
-    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
     const list = screen.getByRole("listbox");
     // A portal on the body, fixed, at the picker's own z-60: above the bar's z-20 (builder-shell) and the tab bar's z-40.
@@ -224,7 +226,7 @@ describe("adding", () => {
   it("brings the field to the middle of the visible area when the open list itself runs past the window, though the phone cap would fit", async () => {
     vi.mocked(reveal).mockClear();
     const { container } = mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     at(field, 200);
     // From `md` the list has no cap: here it reaches 100px past the window's foot.
     const own = HTMLElement.prototype.getBoundingClientRect;
@@ -234,7 +236,7 @@ describe("adding", () => {
         : own.call(this);
     };
     try {
-      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
       // The list is anchored (a portal that mounts a render after the picker opens, once its place is measured): the
       // reveal must still measure it, which it can only do once the list has mounted (Copilot, #2440 round 1).
@@ -258,9 +260,9 @@ describe("adding", () => {
     document.body.appendChild(bar);
     try {
       mount(view([note("a", "x")]));
-      const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+      const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
       at(field, window.innerHeight - 306);
-      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
       expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
     } finally {
@@ -273,11 +275,11 @@ describe("adding", () => {
     // A reveal is moving the page when the list opens; it settles on the next check.
     vi.mocked(appScrolling).mockReturnValueOnce(true);
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     at(field, window.innerHeight - 100);
     // The caret is in the box already, as when the reader presses from inside it: the list stays open.
     field.focus();
-    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
     expect(reveal).not.toHaveBeenCalled();
     await new Promise((done) => setTimeout(done, 200));
@@ -290,10 +292,10 @@ describe("adding", () => {
     // A reveal is moving the page when the list opens, so the picker's check waits for it to settle...
     vi.mocked(appScrolling).mockReturnValueOnce(true);
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     at(field, window.innerHeight - 100);
     field.focus();
-    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
     // ...and the reader wheels the page before it does: the waiting check is dropped, not run.
     window.dispatchEvent(new WheelEvent("wheel", { deltaY: 40 }));
@@ -312,10 +314,10 @@ describe("adding", () => {
     });
     try {
       mount(view([note("a", "x")]));
-      const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+      const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
       at(field, 200);
       field.focus();
-      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
       expect(reveal).not.toHaveBeenCalled();
       // An autosized box grows by pasted blank lines: its foot drops to 100px above the window's, the list unchanged.
@@ -330,9 +332,9 @@ describe("adding", () => {
   it("brings the field to the middle of the visible area when the open list would not fit under it", async () => {
     vi.mocked(reveal).mockClear();
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     at(field, window.innerHeight - 100);
-    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
     expect(await screen.findByText(/Type a card name/)).toBeTruthy();
     expect(reveal).toHaveBeenCalledWith(field, "center", undefined, expect.any(Function));
   });
@@ -349,9 +351,9 @@ describe("adding", () => {
     Object.defineProperty(window, "visualViewport", { configurable: true, value: vv });
     try {
       mount(view([note("a", "x")]));
-      const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+      const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
       at(field, fieldTop);
-      click(screen.getByRole("button", { name: "Insert a card tag" }));
+      click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
       expect(await screen.findByText(/Type a card name/)).toBeTruthy();
       expect(vi.mocked(reveal).mock.calls.at(-1)?.[3]?.()).toEqual(band);
     } finally {
@@ -362,8 +364,8 @@ describe("adding", () => {
   it("shows any card after the deck's, and a refused search in place", async () => {
     stub.searchNoteCards.mockResolvedValue(null);
     mount(view([note("a", "x")]));
-    type(screen.getByRole("combobox", { name: "Add a note" }), "[[zz");
-    expect(await screen.findByText("We couldn’t search just now.")).toBeTruthy();
+    type(screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }), "[[zz");
+    expect(await screen.findByText(deckNotesCopy.picker.refused)).toBeTruthy();
   });
 });
 
@@ -373,7 +375,7 @@ describe("the freshest view wins", () => {
     const after = { ...view([note("a", "old note"), note("b", "just added")]), readAt: before.readAt + 10 };
     stub.addNote.mockResolvedValue({ ok: true, notes: after });
     const { rerender } = mount(before);
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     type(field, "just added");
     click(screen.getByRole("button", { name: "Add" }));
     expect(await screen.findByText("just added")).toBeTruthy();
@@ -390,7 +392,7 @@ describe("the freshest view wins", () => {
 describe("the add field's guards", () => {
   it("does not submit whitespace on Enter, as the Add button does not either", () => {
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     type(field, "   ");
     key(field, "Enter");
     expect(stub.addNote).not.toHaveBeenCalled();
@@ -398,7 +400,7 @@ describe("the add field's guards", () => {
 
   it("does not submit an unfinished [[query on Enter while the picker is open", () => {
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     type(field, "[[zzq");
     key(field, "Enter");
     expect(stub.addNote).not.toHaveBeenCalled();
@@ -406,9 +408,9 @@ describe("the add field's guards", () => {
 
   it("refuses the [[ ]] button when it would take the field past the cap", () => {
     mount(view([note("a", "x")]));
-    const field = screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement;
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement;
     type(field, "x".repeat(138));
-    click(screen.getByRole("button", { name: "Insert a card tag" }));
+    click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
     expect(field.value).toBe("x".repeat(138));
   });
 });
@@ -463,8 +465,8 @@ describe("a row", () => {
   it("edits in place, keeps the date, and saves the serialized body", async () => {
     const body = `try ${formatTag(SOL, "Sol Ring")}`;
     mount(view([note("a", body, { drawn: [{ kind: "text", text: "try " }, { kind: "tag", oracleId: SOL, name: "Sol Ring", held: true, resolved: true, imageUri: null }] })]));
-    click(screen.getByRole("button", { name: "Edit this note" }));
-    const field = screen.getByRole("combobox", { name: "Edit this note" }) as HTMLInputElement;
+    click(screen.getByRole("button", { name: deckNotesCopy.row.edit }));
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.row.edit }) as HTMLInputElement;
     expect(field.value).toBe("try [[\u2060Sol Ring]]");
     expect(screen.getByText(/the date stays Oct 2/)).toBeTruthy();
     type(field, " today");
@@ -474,27 +476,27 @@ describe("a row", () => {
 
   it("deletes only after the confirm, and Keep it leaves the note", async () => {
     mount(view([note("a", "doomed")]));
-    click(screen.getByRole("button", { name: "Delete this note" }));
-    const pane = screen.getByText("Delete this note?").closest("div")!.parentElement!;
+    click(screen.getByRole("button", { name: deckNotesCopy.row.delete }));
+    const pane = screen.getByText(deckNotesCopy.confirm.heading).closest("div")!.parentElement!;
     // The confirm is brought fully into view, no further than it needs.
     const [revealed, block] = vi.mocked(reveal).mock.calls.at(-1)!;
     expect(block).toBe("nearest");
-    expect((revealed as Element).textContent).toContain("Delete this note?");
-    click(within(pane).getByRole("button", { name: "Keep it" }));
+    expect((revealed as Element).textContent).toContain(deckNotesCopy.confirm.heading);
+    click(within(pane).getByRole("button", { name: deckNotesCopy.confirm.no }));
     expect(stub.deleteNote).not.toHaveBeenCalled();
-    click(screen.getByRole("button", { name: "Delete this note" }));
+    click(screen.getByRole("button", { name: deckNotesCopy.row.delete }));
     click(screen.getByRole("button", { name: "Delete" }));
     expect(stub.deleteNote).toHaveBeenCalledWith(DECK, "a");
   });
 
   it("hands focus back to the control that opened the confirm when Keep it closes it", async () => {
     mount(view([note("a", "doomed")]));
-    const opener = screen.getByRole("button", { name: "Delete this note" });
+    const opener = screen.getByRole("button", { name: deckNotesCopy.row.delete });
     click(opener);
-    const pane = screen.getByText("Delete this note?").closest("div")!.parentElement!;
-    click(within(pane).getByRole("button", { name: "Keep it" }));
+    const pane = screen.getByText(deckNotesCopy.confirm.heading).closest("div")!.parentElement!;
+    click(within(pane).getByRole("button", { name: deckNotesCopy.confirm.no }));
     // jsdom has no media query, so the phone's More button is the one that answers; either is a real opener.
-    const more = screen.getByRole("button", { name: "More for this note" });
+    const more = screen.getByRole("button", { name: deckNotesCopy.row.more });
     await waitFor(() => expect([opener, more]).toContain(document.activeElement));
   });
 });
@@ -504,16 +506,16 @@ describe("the shared tag-a-card box", () => {
 
   it("draws the foot in the frame: the key, its words, then the counter", () => {
     mount(view([]));
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     const frame = field.closest("[data-framed-box]") as HTMLElement;
     expect(frame).toBeTruthy();
-    const foot = within(frame).getByRole("button", { name: "Insert a card tag" }).parentElement!;
+    const foot = within(frame).getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }).parentElement!;
     expect(foot.textContent).toBe("[[ ]]tag a card0 / 140");
   });
 
   it("keeps the counter faint until 120, warns from 120", () => {
     mount(view([]));
-    const field = screen.getByRole("combobox", { name: "Add a note" });
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder });
     type(field, "a".repeat(119));
     expect(counter("119 / 140").getAttribute("style")).toContain("--fg-faint");
     type(field, "a");
@@ -522,12 +524,12 @@ describe("the shared tag-a-card box", () => {
 
   it("has one 'Add a note' placeholder, with no tag hint in it", () => {
     mount(view([]));
-    expect((screen.getByRole("combobox", { name: "Add a note" }) as HTMLInputElement).placeholder).toBe("Add a note");
+    expect((screen.getByRole("combobox", { name: deckNotesCopy.add.placeholder }) as HTMLInputElement).placeholder).toBe(deckNotesCopy.add.placeholder);
   });
 
   it("pins the ⓘ at the line's right edge, top 9, not centered", () => {
     mount(view([]));
-    const info = screen.getByRole("button", { name: "How card tags work" });
+    const info = screen.getByRole("button", { name: deckNotesCopy.help.infoAria });
     expect(info.className).toContain("absolute");
     expect(info.className).toContain("right-[11px]");
     expect(info.className).toContain("top-[9px]");
@@ -545,8 +547,8 @@ describe("the shared tag-a-card box", () => {
 
   it("edits in the field's own frame: Cancel and Save in the row, no accent card around it", () => {
     mount(view([note("a", "try it")]));
-    click(screen.getByRole("button", { name: "Edit this note" }));
-    const field = screen.getByRole("combobox", { name: "Edit this note" }) as HTMLInputElement;
+    click(screen.getByRole("button", { name: deckNotesCopy.row.edit }));
+    const field = screen.getByRole("combobox", { name: deckNotesCopy.row.edit }) as HTMLInputElement;
     expect(field.placeholder).toBe("");
     const li = field.closest("li")!;
     expect(li.className).not.toContain("--accent");

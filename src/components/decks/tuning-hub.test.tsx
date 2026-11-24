@@ -173,7 +173,7 @@ describe("TuningHub opening a tool", () => {
     expect(tile("mana").tagName).toBe("BUTTON");
     expect(tile("mana").textContent).toContain(copy.tools.mana.cost);
     fireEvent.click(tile("mana"));
-    const heading = await screen.findByRole("heading", { name: "Mana Balance" });
+    const heading = await screen.findByRole("heading", { name: copy.tools.mana.name });
     await waitFor(() => expect(document.activeElement).toBe(heading));
   });
 
@@ -192,7 +192,7 @@ describe("TuningHub opening a tool", () => {
     const grid = tile("cuts").parentElement!;
     expect(grid.className.split(/\s+/)).toContain("anim-gentle-in");
     fireEvent.click(tile("cuts"));
-    await screen.findByRole("heading", { name: "Proposed cuts" });
+    await screen.findByRole("heading", { name: copy.tools.cuts.name });
     const panel = () => document.getElementById("tuning-tool-panel")!;
     // On the gentle motion, or holding for it until its content lands (jsdom lays out nothing, so a
     // ResizeObserver there reads the box as empty; the arrival itself is the test below).
@@ -203,8 +203,8 @@ describe("TuningHub opening a tool", () => {
     const phoneHead = screen.getByRole("button", { name: copy.back }).parentElement!;
     expect(phoneHead.className.split(/\s+/)).toEqual(expect.arrayContaining(["anim-gentle-in", "md:hidden"]));
     const first = panel();
-    fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Suggested changes" }));
-    await screen.findByRole("heading", { name: "Suggested changes" });
+    fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: copy.tools.suggested.name }));
+    await screen.findByRole("heading", { name: copy.tools.suggested.name });
     expect(panel()).not.toBe(first);
   });
 
@@ -223,7 +223,7 @@ describe("TuningHub opening a tool", () => {
     try {
       render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
       fireEvent.click(tile("cuts"));
-      await screen.findByRole("heading", { name: "Proposed cuts" });
+      await screen.findByRole("heading", { name: copy.tools.cuts.name });
       const panel = () => document.getElementById("tuning-tool-panel")!;
       // jsdom lays nothing out, so the box reads 0px: still reading.
       expect(panel().classList.contains("gentle-hold")).toBe(true);
@@ -250,8 +250,8 @@ describe("TuningHub opening a tool", () => {
       expect(panel().classList.contains("anim-gentle-in")).toBe(true);
       tall.mockRestore();
       // A busy panel holding a control (a running tool's Stop) is shown at once, never held.
-      fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Suggested changes" }));
-      await screen.findByRole("heading", { name: "Suggested changes" });
+      fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: copy.tools.suggested.name }));
+      await screen.findByRole("heading", { name: copy.tools.suggested.name });
       const tall2 = vi.spyOn(panel(), "getBoundingClientRect").mockReturnValue({ height: 500 } as DOMRect);
       const busy = document.createElement("section");
       busy.setAttribute("aria-busy", "true");
@@ -260,8 +260,8 @@ describe("TuningHub opening a tool", () => {
       expect(panel().classList.contains("gentle-hold")).toBe(false);
       tall2.mockRestore();
       // A tab press is a new arrival: the new tool's panel holds again until its own content lands.
-      fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: "Proposed cuts" }));
-      await screen.findByRole("heading", { name: "Proposed cuts" });
+      fireEvent.click(within(screen.getByRole("tablist")).getByRole("tab", { name: copy.tools.cuts.name }));
+      await screen.findByRole("heading", { name: copy.tools.cuts.name });
       expect(panel().classList.contains("gentle-hold")).toBe(true);
     } finally {
       globalThis.ResizeObserver = RealRO;
@@ -272,11 +272,11 @@ describe("TuningHub opening a tool", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
     expect(document.querySelector("[data-tool-tile]")).toBeNull();
-    const heading = await screen.findByRole("heading", { name: "Proposed cuts" });
+    const heading = await screen.findByRole("heading", { name: copy.tools.cuts.name });
     await waitFor(() => expect(document.activeElement).toBe(heading));
     const tabs = screen.getByRole("tablist");
-    expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual([copy.allTools, "Suggested changes", "Proposed cuts"]);
-    expect(within(tabs).getByRole("tab", { name: "Proposed cuts" }).getAttribute("aria-selected")).toBe("true");
+    expect(within(tabs).getAllByRole("tab").map((t) => t.textContent)).toEqual([copy.allTools, copy.tools.suggested.name, copy.tools.cuts.name]);
+    expect(within(tabs).getByRole("tab", { name: copy.tools.cuts.name }).getAttribute("aria-selected")).toBe("true");
     fireEvent.click(within(tabs).getByRole("tab", { name: copy.allTools }));
     expect(tile("cuts")).not.toBeNull();
     // Focus comes back to the tile of the tool just left, not to nothing.
@@ -299,7 +299,7 @@ describe("TuningHub opening a tool", () => {
     // bring the hub to the top, and the tool would then grow below the fold.
     await waitFor(() => expect(screen.getByRole("heading", { name: "Counting" })).toBeTruthy());
     expect(scroll).not.toHaveBeenCalled();
-    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" })));
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole("heading", { name: copy.tools.cuts.name })));
     expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]"));
   });
 
@@ -325,7 +325,7 @@ describe("TuningHub opening a tool", () => {
     await act(async () => { await Promise.resolve(); });
     fireEvent.click(tile("suggested"));
     const before = read.mock.calls.length;
-    fireEvent.click(screen.getByRole("tab", { name: "Proposed cuts" }));
+    fireEvent.click(screen.getByRole("tab", { name: copy.tools.cuts.name }));
     await act(async () => { await Promise.resolve(); });
     expect(read.mock.calls.length).toBeGreaterThan(before);
   });
@@ -341,11 +341,11 @@ describe("TuningHub opening a tool", () => {
   it("moves between tools with the arrow keys, focus staying on the tab row", async () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("suggested"));
-    const tab = screen.getByRole("tab", { name: "Suggested changes" });
+    const tab = screen.getByRole("tab", { name: copy.tools.suggested.name });
     fireEvent.keyDown(tab, { key: "ArrowRight" });
-    const next = screen.getByRole("tab", { name: "Proposed cuts" });
+    const next = screen.getByRole("tab", { name: copy.tools.cuts.name });
     expect(next.getAttribute("aria-selected")).toBe("true");
-    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: copy.tools.cuts.name })).toBeTruthy();
     await act(async () => {});
     expect(document.activeElement).toBe(next);
   });
@@ -361,7 +361,7 @@ describe("TuningHub opening a tool", () => {
     // The tool's panel draws once the hub's first read has landed, which is a beat after the request is answered: found
     // by waiting for it, never by looking the instant `answered` is called (the read above is slowed on purpose, so the
     // order the test must survive is the slow one, not whichever a fast machine happens to produce).
-    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: copy.tools.cuts.name })).toBeTruthy();
     // The Tuning heading is brought to the top, once the tool's heading has drawn.
     await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
     expect(scroll.mock.calls[0][0]).toBe(document.querySelector("[data-tuning-hub]"));
@@ -370,7 +370,7 @@ describe("TuningHub opening a tool", () => {
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
     expect(tile("cuts")).not.toBeNull();
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 2 }} />);
-    expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: copy.tools.cuts.name })).toBeTruthy();
   });
 
   it("lands a request's focusId inside the tool once its first read draws it, in place of the tool's heading (role strip consider →)", async () => {
@@ -416,7 +416,7 @@ describe("TuningHub opening a tool", () => {
       // Opened from its tile, no hold: nothing changes.
       const first = render(<TuningHub deckId="d" drawn tools={[suggested(), spec]} />);
       fireEvent.click(tile("cuts"));
-      await screen.findByRole("heading", { name: "Proposed cuts" });
+      await screen.findByRole("heading", { name: copy.tools.cuts.name });
       expect(document.querySelector("[data-other-tools]")).toBeNull();
       first.unmount();
       // A shortcut holds the screen, and the short tool leaves the row under the notice, minus Proposed cuts.
@@ -454,7 +454,7 @@ describe("TuningHub opening a tool", () => {
       // Exactly at the held height: the blank space is gone, so is the row.
       const drawn: HubToolSpec = { tool: "cuts", panel: <section><h2 id="cuts-heading">Proposed cuts</h2>Six over</section>, over: 6, total: 106 };
       const first = render(<TuningHub deckId="d" drawn tools={[suggested(), drawn]} request={{ tool: "cuts", nonce: 1 }} />);
-      await screen.findByRole("heading", { name: "Proposed cuts" });
+      await screen.findByRole("heading", { name: copy.tools.cuts.name });
       expect(document.querySelector("[data-other-tools]")).toBeNull();
       first.unmount();
       // One pixel above it: the row shows.
@@ -508,7 +508,7 @@ describe("TuningHub opening a tool", () => {
   it("returns an open tool to the tiles on a request with no tool, opening nothing (discovery R3, N1)", async () => {
     read.mockResolvedValue(empty);
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
-    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: copy.tools.cuts.name })).toBeTruthy();
     // The landing grid is not mounted with a tool open; a tile may only be the "Other tools" row's.
     const other = screen.queryByRole("group", { name: copy.otherTools });
     const open = tile("suggested");
@@ -516,18 +516,18 @@ describe("TuningHub opening a tool", () => {
     expect(tile("cuts")).toBeNull();
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: 2 }} />);
     await waitFor(() => expect(tile("suggested")).not.toBeNull());
-    expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: copy.tools.cuts.name })).toBeNull();
   });
 
   it("moves no focus to a tile left on an earlier open when a request returns to the tiles", async () => {
     read.mockResolvedValue(empty);
     const { rerender } = render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(await waitFor(() => tile("cuts")!));
-    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: copy.tools.cuts.name })).toBeTruthy();
     fireEvent.click(screen.getByRole("tab", { name: copy.allTools }));
     await waitFor(() => expect(tile("cuts")).not.toBeNull());
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "suggested", nonce: 1 }} />);
-    expect(await screen.findByRole("heading", { name: "Suggested changes" })).toBeTruthy();
+    expect(await screen.findByRole("heading", { name: copy.tools.suggested.name })).toBeTruthy();
     (document.activeElement as HTMLElement | null)?.blur();
     rerender(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: null, nonce: 2 }} />);
     await waitFor(() => expect(tile("cuts")).not.toBeNull());
@@ -642,13 +642,13 @@ describe("TuningHub opening a tool", () => {
     (container.firstChild as HTMLElement).hidden = false;
     rerender(<div><TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} /></div>);
     await waitFor(() => expect(scroll).toHaveBeenCalledWith(document.querySelector("[data-tuning-hub]")));
-    expect(document.activeElement).toBe(screen.getByRole("heading", { name: "Proposed cuts" }));
+    expect(document.activeElement).toBe(screen.getByRole("heading", { name: copy.tools.cuts.name }));
   });
 
   it("steps the arrow keys over an inert tool's tab", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(0, 100)]} />);
     fireEvent.click(tile("suggested"));
-    fireEvent.keyDown(screen.getByRole("tab", { name: "Suggested changes" }), { key: "ArrowRight" });
+    fireEvent.keyDown(screen.getByRole("tab", { name: copy.tools.suggested.name }), { key: "ArrowRight" });
     // Proposed cuts is inert at 100, so the next stop wraps to All tools: the landing.
     expect(tile("cuts")?.hasAttribute("data-inert")).toBe(true);
   });
@@ -657,8 +657,8 @@ describe("TuningHub opening a tool", () => {
     Element.prototype.scrollIntoView = vi.fn();
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} request={{ tool: "cuts", nonce: 1 }} />);
     // Open from the first render, but its panel waits for the hub's read, which seeds the visit.
-    expect(screen.queryByRole("heading", { name: "Proposed cuts" })).toBeNull();
-    expect(await screen.findByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: copy.tools.cuts.name })).toBeNull();
+    expect(await screen.findByRole("heading", { name: copy.tools.cuts.name })).toBeTruthy();
     expect(read).toHaveBeenCalledTimes(1);
   });
 
@@ -681,8 +681,8 @@ describe("TuningHub opening a tool", () => {
     render(<TuningHub deckId="d" drawn tools={[suggested(), cuts(6)]} />);
     fireEvent.click(tile("cuts"));
     const panel = screen.getByRole("tabpanel");
-    expect(panel.getAttribute("aria-labelledby")).toBe(screen.getByRole("tab", { name: "Proposed cuts" }).id);
-    expect(screen.getByRole("tab", { name: "Proposed cuts" }).getAttribute("aria-controls")).toBe(panel.id);
+    expect(panel.getAttribute("aria-labelledby")).toBe(screen.getByRole("tab", { name: copy.tools.cuts.name }).id);
+    expect(screen.getByRole("tab", { name: copy.tools.cuts.name }).getAttribute("aria-controls")).toBe(panel.id);
   });
 
   it("puts focus on the Tuning heading when the tool left has gone inert", async () => {
@@ -701,7 +701,7 @@ describe("TuningHub opening a tool", () => {
     fireEvent.click(tile("cuts"));
     // No reading and no longer over: on arrival this deck would draw no hub at all.
     rerender(<TuningHub deckId="d" drawn={false} tools={[suggested(false), cuts(0, 100)]} />);
-    expect(screen.getByRole("heading", { name: "Proposed cuts" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: copy.tools.cuts.name })).toBeTruthy();
   });
 
   it("resets to the landing when it mounts again (the Analysis tabpanel unmounts on a tab switch)", () => {

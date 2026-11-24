@@ -7,10 +7,10 @@ import { join, posix } from "node:path";
 import ts from "typescript";
 import { MIN_WORDS } from "../test-copy-literals.mjs";
 import { COPY_DIR, readCopyRows, type Change } from "./sheet.mjs";
-import type { CopyRow } from "./walk.mjs";
+import { DATA_ROW, type CopyRow } from "./walk.mjs";
 
 export type HandEdit = { file: string; line: number; text: string; key: string; why: string };
-export type TestRewrite = { files: Map<string, string>; rewritten: { file: string; count: number }[]; hand: HandEdit[] };
+export type TestRewrite = { files: Map<string, string>; rewritten: { file: string; count: number }[]; hand: HandEdit[]; soft: HandEdit[] };
 
 const TEST_FILE = /\.test\.(ts|tsx|mts)$/;
 const SKIP_DIRS = new Set(["node_modules", ".next", ".git", ".worktrees", "dist", "coverage"]);
@@ -105,6 +105,8 @@ export type Options = {
   files?: ReadonlySet<string>;
   /** Resolve twin text from the sources the test imports: the twin whose access path the component writes. */
   disambiguate?: boolean;
+  /** `<test file>|<text>` -> the leaf key to read, for a twin the rules above leave open (the author read the component). */
+  picks?: Readonly<Record<string, string>>;
 };
 
 const plain = (r: CopyRow) => !r.readOnly && !r.isTemplate && r.context === "" && r.key.split("#").length === 2;
@@ -132,13 +134,13 @@ function reachedSources(file: string, root: string, seen = new Set<string>(), de
  * `hand` the literals that need a person. Reads `root`'s copy files as they are BEFORE the sheet is applied.
  */
 export function rewriteTests(changes: readonly Change[], root: string, opts: Options = {}): TestRewrite {
-  const all = readCopyRows(root);
+  const all = readCopyRows(root).filter((r) => !DATA_ROW.test(r.key));
   const byKey = new Map(all.map((r) => [r.key, r]));
   const sameText = new Map<string, CopyRow[]>();
   for (const r of all) sameText.set(r.text, [...(sameText.get(r.text) ?? []), r]);
   const byFrom = new Map<string, Change>();
-  for (const c of changes) if (!byFrom.has(c.from)) byFrom.set(c.from, c);
-  const out: TestRewrite = { files: new Map(), rewritten: [], hand: [] };
+  for (const c of changes) if (byKey.has(c.key) && !byFrom.has(c.from)) byFrom.set(c.from, c);
+  const out: TestRewrite = { files: new Map(), rewritten: [], hand: [], soft: [] };
   const words = [...byFrom.keys()].map((t) => t.trim().split(/\s+/)[0]);
   if (byFrom.size === 0) return out;
 
@@ -159,19 +161,38 @@ export function rewriteTests(changes: readonly Change[], root: string, opts: Opt
           const line = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
           const give = (why: string) => hand.push({ file, line, text: n.text, key: change.key, why });
           let use = change;
-          const twins = (sameText.get(change.from) ?? []).filter((r) => r.key !== change.key);
-          if (opts.disambiguate && twins.length) {
+          const sameTexts = sameText.get(change.from) ?? [];
+          const twins = sameTexts.filter((r) => r.key !== change.key);
+          let picked = false;
+          const pick = opts.picks?.[`${file}|${n.text}`];
+          if (pick && byKey.has(pick)) {
+            use = { ...change, key: pick };
+            picked = true;
+          }
+          if (opts.disambiguate && twins.length && !picked) {
+            // Twins render the same words, so any choice keeps the test green; the choice names the leaf a copy edit should reach.
             reached ??= reachedSources(file, root);
-            const cands = (sameText.get(change.from) ?? []).filter(plain).filter((r) => {
-              const [, p = ""] = r.key.split("#");
-              const acc = accessPath(p);
+            const via = (cands: CopyRow[], keep: (r: CopyRow) => boolean) => (cands.length > 1 && cands.some(keep) ? cands.filter(keep) : cands);
+            let cands = sameTexts.filter(plain);
+            cands = via(cands, (r) => {
+              const acc = accessPath(r.key.split("#")[1] ?? "");
               return acc !== null && writes(reached!, acc);
             });
-            if (cands.length === 1) use = { ...change, key: cands[0]!.key };
+            cands = via(cands, (r) => {
+              const mod = r.file.slice(r.file.lastIndexOf("/") + 1).replace(/\.ts$/, "");
+              return new RegExp(`copy/${mod}["']`).test(`${source}\n${reached}`);
+            });
+            if (cands.length === 1) {
+              use = { ...change, key: cands[0]!.key };
+              picked = true;
+            } else if (cands.length > 1 && new Set(cands.map((r) => r.file)).size === 1) {
+              use = { ...change, key: cands[0]!.key };
+              picked = true;
+              out.soft.push({ file, line, text: n.text, key: use.key, why: `first of ${cands.length} twins in one module: ${cands.map((r) => r.key.split("#")[1]).join(", ")}` });
+            }
           }
           const [copyFile, path = ""] = use.key.split("#");
           const row2 = byKey.get(use.key)!;
-          const picked = use !== change;
           const unsafe = unsafePosition(n, sf);
           if (file.startsWith(`${COPY_DIR}/`)) give("a copy module's own test");
           else if (file.startsWith("scripts/")) give("a script test imports differently");

@@ -3,6 +3,9 @@
 // create carries the answers to the fill.
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { guidedBuildCopy } from "../../lib/copy/guided-build";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { createPreFilledCopy, renameCopy } from "../../lib/copy/decks-builder";
 
 const createDeck = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("../../app/decks/actions", () => ({ createDeck }));
@@ -28,30 +31,30 @@ describe("CreatePreFilled", () => {
   it("is today's page when no result brought the player here", () => {
     render(<CreatePreFilled {...base} />);
     expect(screen.getByText("‹ Commanders · Gishath, Sun's Avatar").getAttribute("href")).toBe("/decks/new");
-    expect(screen.getByRole("link", { name: "Back to commander picker" }).getAttribute("href")).toBe("/decks/new");
-    expect(screen.getByText("Change commander").closest("a")!.getAttribute("href")).toBe("/decks/new");
-    expect(screen.getByText("Commander selected")).toBeTruthy();
-    expect(screen.getByText("Name your deck.")).toBeTruthy();
+    expect(screen.getByRole("link", { name: createPreFilledCopy.backAria }).getAttribute("href")).toBe("/decks/new");
+    expect(screen.getByText(createPreFilledCopy.changeCommander).closest("a")!.getAttribute("href")).toBe("/decks/new");
+    expect(screen.getByText(createPreFilledCopy.subPhone)).toBeTruthy();
+    expect(screen.getByText(createPreFilledCopy.sub)).toBeTruthy();
     expect(screen.queryByTestId("hand-off-answers")).toBeNull();
   });
 
   it("sends every way back to the results, and says the deck is built from the answers", () => {
     render(<CreatePreFilled {...base} handOff={handOff()} />);
-    expect(screen.getByText("‹ Help me choose · results").getAttribute("href")).toBe(RESULTS);
+    expect(screen.getByText(helpMeChooseCopy.handOff.back).getAttribute("href")).toBe(RESULTS);
     // The phone's chevron (spoken) and the ghost button (read) both name the results.
-    const backs = screen.getAllByRole("link", { name: "Back to results" });
+    const backs = screen.getAllByRole("link", { name: helpMeChooseCopy.handOff.backAria });
     expect(backs).toHaveLength(2);
     for (const b of backs) expect(b.getAttribute("href")).toBe(RESULTS);
-    expect(screen.getByText("From your answers")).toBeTruthy();
-    expect(screen.getByText("Name your deck. It will be built from your answers.")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.handOff.subPhone)).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.handOff.sub)).toBeTruthy();
     expect(screen.getByTestId("hand-off-answers")).toBeTruthy();
   });
 
   it("puts the answers block after the identity row and before the deck name", () => {
     render(<CreatePreFilled {...base} handOff={handOff()} />);
     const block = screen.getByTestId("hand-off-answers");
-    const label = screen.getByText("Deck name");
-    const identity = screen.getByText("Color identity");
+    const label = screen.getByText(renameCopy.fieldAria);
+    const identity = screen.getByText(createPreFilledCopy.colorIdentity);
     expect(identity.compareDocumentPosition(block) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(block.compareDocumentPosition(label) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -63,20 +66,20 @@ describe("CreatePreFilled", () => {
 
   it("hands the answers to the create", async () => {
     render(<CreatePreFilled {...base} handOff={handOff()} />);
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Stompy" } });
-    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    fireEvent.change(screen.getByLabelText(renameCopy.fieldAria), { target: { value: "Stompy" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText(renameCopy.fieldAria).closest("form")!));
     expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Stompy", undefined, null, handOff().create, "free");
   });
 
   it("marks the free build and creates with it, as today", async () => {
     createDeck.mockClear();
     render(<CreatePreFilled {...base} />);
-    const group = screen.getByRole("radiogroup", { name: "How we build it" });
+    const group = screen.getByRole("radiogroup", { name: guidedBuildCopy.choice.label });
     expect((screen.getByRole("radio", { name: /Free build/ }) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByRole("radio", { name: /Just the commander/ }) as HTMLInputElement).checked).toBe(false);
     expect(group.querySelectorAll("input[type=radio]")).toHaveLength(2);
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Stompy" } });
-    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    fireEvent.change(screen.getByLabelText(renameCopy.fieldAria), { target: { value: "Stompy" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText(renameCopy.fieldAria).closest("form")!));
     expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Stompy", undefined, null, null, "free");
   });
 
@@ -84,8 +87,8 @@ describe("CreatePreFilled", () => {
     createDeck.mockClear();
     render(<CreatePreFilled {...base} />);
     fireEvent.click(screen.getByRole("radio", { name: /Just the commander/ }));
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Blank" } });
-    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    fireEvent.change(screen.getByLabelText(renameCopy.fieldAria), { target: { value: "Blank" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText(renameCopy.fieldAria).closest("form")!));
     expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Blank", undefined, null, null, "empty");
   });
 
@@ -98,8 +101,8 @@ describe("CreatePreFilled", () => {
     const block = screen.getByTestId("build-picks");
     expect(block.textContent).toContain("Your picks · 2");
     expect(block.textContent).toContain("Sol Ring");
-    expect(block.textContent).toContain("not owned");
-    expect(block.textContent).toContain("Every option keeps them.");
+    expect(block.textContent).toContain(guidedBuildCopy.choice.picks.buy);
+    expect(block.textContent).toContain(guidedBuildCopy.choice.picks.kept);
     expect(screen.getByRole("link", { name: "Change on Gishath’s page" }).getAttribute("href")).toBe("/commanders/gishath");
     expect(screen.getByRole("radio", { name: /Just the commander/ }).closest("label")!.textContent).toContain("your 2 picks and 97 empty slots");
   });
@@ -113,8 +116,8 @@ describe("CreatePreFilled", () => {
     createDeck.mockClear();
     render(<CreatePreFilled {...base} handOff={handOff()} />);
     fireEvent.click(screen.getByRole("radio", { name: /Just the commander/ }));
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Blank" } });
-    await act(async () => fireEvent.submit(screen.getByLabelText("Deck name").closest("form")!));
+    fireEvent.change(screen.getByLabelText(renameCopy.fieldAria), { target: { value: "Blank" } });
+    await act(async () => fireEvent.submit(screen.getByLabelText(renameCopy.fieldAria).closest("form")!));
     expect(createDeck).toHaveBeenCalledWith(COMMANDER, "Blank", undefined, null, null, "empty");
   });
 });

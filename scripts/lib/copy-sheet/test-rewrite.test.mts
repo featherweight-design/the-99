@@ -101,14 +101,14 @@ describe("rewriteTests", () => {
   it("does nothing when no test holds the old words", () => {
     const root = tree({ "src/lib/copy/x.ts": COPY, "src/a.test.ts": `a("Something else entirely");\n` });
     const r = rewriteTests([SAVE], root);
-    expect(r).toEqual({ files: new Map(), rewritten: [], hand: [] });
+    expect(r).toEqual({ files: new Map(), rewritten: [], hand: [], soft: [] });
     expect(testsSection(r).join("\n")).toContain("No test holds");
   });
 });
 
 describe("testsSection", () => {
   it("lists rewritten files and the hand edits, each with its reason", () => {
-    const text = testsSection({ files: new Map(), rewritten: [{ file: "src/a.test.ts", count: 2 }], hand: [{ file: "src/b.test.ts", line: 4, text: "Save the deck", key: "src/lib/copy/x.ts#x.save", why: "a built string" }] }).join("\n");
+    const text = testsSection({ files: new Map(), rewritten: [{ file: "src/a.test.ts", count: 2 }], soft: [], hand: [{ file: "src/b.test.ts", line: 4, text: "Save the deck", key: "src/lib/copy/x.ts#x.save", why: "a built string" }] }).join("\n");
     expect(text).toContain("2 literals in 1 test file");
     expect(text).toContain("`src/a.test.ts` (2)");
     expect(text).toContain("**Test needs a hand edit** (1)");
