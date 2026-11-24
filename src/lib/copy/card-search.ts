@@ -101,7 +101,7 @@ export const askCopy = {
     heading: "Your decks, last touched first",
     aria: (tool: string) => `${tool}: pick a deck`,
     list: "Your decks",
-    meta: (commander: string, age: string) => `${commander} · edited ${age}`,
+    meta: (commander: string, verb: string, age: string) => `${commander} · ${verb} ${age}`,
   },
   /** The cost pill on a tool that spends nothing (a paid one carries its own credit line). */
   free: "free",

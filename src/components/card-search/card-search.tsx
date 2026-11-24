@@ -607,7 +607,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
           e.preventDefault();
           const deck = picks[active];
           if (deck && !e.repeat) pressDeck(picking, deck, active);
-        } else if (e.key === "Backspace") {
+        } else if (e.key === "Backspace" && !e.metaKey && !e.ctrlKey && !e.altKey) {
           e.preventDefault();
           pickBack();
         }
@@ -635,6 +635,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // Escape clears a query first, then closes (README call 7).
   const escape = useCallback(() => {
     if (query.length > 0 && !opening) {
+      setPicking(null);
       setQuery("");
       setActive(-1);
       inputRef.current?.focus();

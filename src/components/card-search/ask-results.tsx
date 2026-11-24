@@ -189,7 +189,7 @@ export function DeckPicker({
               <span className="flex min-w-0 flex-1 flex-col gap-[2px]">
                 <span className="truncate font-display text-[15px] font-bold text-[color:var(--fg)] md:text-[14px]">{d.name}</span>
                 <span className={`truncate font-mono text-[11px] ${pending ? "text-[color:var(--accent-text)]" : "text-[color:var(--fg-faint)]"}`}>
-                  {pending ? askCopy.opening(tool.copy.name) : askCopy.pick.meta(d.commander, feedAge(d.edited, now))}
+                  {pending ? askCopy.opening(tool.copy.name) : askCopy.pick.meta(d.commander, d.verb, feedAge(d.touched, now))}
                 </span>
               </span>
               <span aria-hidden className="flex-none text-[16px] text-[color:var(--fg-faint)]">{"›"}</span>

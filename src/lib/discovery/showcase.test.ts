@@ -5,7 +5,7 @@ import type { SwitchName } from "../flags/registry";
 import { showcaseGroups, toolCopyFor, tryHref, writtenForYou, type ShowcaseInput } from "./showcase";
 import { TOOLS } from "./tools";
 
-const deck = (id: string, name: string) => ({ id, name, commander: `${name} cmdr`, art: null, edited: "2026-10-01T00:00:00.000Z" });
+const deck = (id: string, name: string) => ({ id, name, commander: `${name} cmdr`, art: null, touched: "2026-10-01T00:00:00.000Z", verb: "edited" as const });
 
 function input(over: Partial<ShowcaseInput> = {}): ShowcaseInput {
   return {

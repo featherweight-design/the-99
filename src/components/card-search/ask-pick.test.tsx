@@ -7,8 +7,8 @@ import { DeckPicker, picksOf, toolWhere } from "./ask-results";
 // The deck picker (R12 Q21, G28): several fitting decks replace the answers in the same box, most recently touched first.
 vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 
-const pick = (id: string, name: string, edited: string): DeckPick => ({
-  id, name, commander: `${name} cmdr`, art: `https://img/${id}.jpg`, edited, href: `/decks/${id}?tool=top-off`,
+const pick = (id: string, name: string, touched: string): DeckPick => ({
+  id, name, commander: `${name} cmdr`, art: `https://img/${id}.jpg`, touched, verb: "edited", href: `/decks/${id}?tool=top-off`,
 });
 const NOW = Date.parse("2026-11-23T12:00:00.000Z");
 const PICKS = [pick("d1", "Gishath", new Date(NOW - 3 * 3600_000).toISOString()), pick("d2", "Atraxa", new Date(NOW - 3 * 86_400_000).toISOString())];
