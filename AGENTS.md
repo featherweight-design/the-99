@@ -79,6 +79,7 @@ Every `pnpm probe:*` script, its fixture discipline and what it proves lives in 
 - `combos-staples.md` — Spellbook ingest, near combos, `Combo refresh`, staples.
 - `commander-index.md` — the EDHREC index, prose and its caps, labels, `db:index-due`.
 - `commanders-place.md` — the Commanders place and its paths.
+- `copy-sheet.md` — the copy sheet: export the copy files to CSV, import the edited rows as a PR, the round-trip guard.
 - `contact-sheet.md` — contact sheets, `check:shared`, `surface.mjs`.
 - `design-pipeline.md` — handoffs, READINESS, About labels, `design/`.
 - `feature-flags.md` — feature flag resolution.

@@ -1,0 +1,30 @@
+# Copy sheet
+
+A non-engineer edits the app's wording in Google Sheets or Excel; an import turns the changed rows into a PR. Every user-facing string lives in `src/lib/copy/`, so the sheet is a table over those files.
+
+## Run it
+
+- `pnpm copy:sheet [out.csv]` writes the sheet to `~/Downloads/copy-sheet-<date>.csv` (a path inside the repo is refused: the sheet is working material and is never committed). Open it in Sheets or Excel and edit only the **new text** column. Leave a cell blank to leave a string alone.
+- `pnpm copy:import <edited.csv>` can run from any checkout, branch or dirty tree. It makes its own worktree and branch (`copy-sheet-<utc date-time>`) from `origin/main`, applies the changed rows, runs typecheck and lint there, pushes, opens the PR with the old -> new list, and removes the worktree. It needs no published-sheet URL and no Sheets API key. `--dry` validates and prints the list without pushing; `--no-pr` stops after the commit; `--local [--root <dir>]` applies in place to a tree with no git (tests, a hand edit).
+- **Copy-review before the PR lands.** The PR body's old -> new table is the review input (voice, vocabulary, the rules a machine cannot decide). The import only checks what a machine can.
+
+## The sheet
+
+Columns: `key` (`src/lib/copy/<file>#path.to.leaf`), `file`, `kind` (`text`, `branch`, `edit in code`), `current text`, `placeholders`, `context (read only)`, `new text`.
+
+- A function leaf (`(ago) => \`Last active ${ago}\``) is a template: `Last active {ago}`. The arrow function stays.
+- Each text node of a function is its own row: a ternary's two arms, the two words of `plural(n, "card", "cards")`. They get keys `...#t1`, `#t2`; the condition is in `context`, read only.
+- A computed hole (`${xs.length > 1 ? ... : ...}`) is an opaque `{h1}` token. Keep it in the text; its source is in `context`.
+- **Read-only ("edit in code")**: text a row cannot express: a helper call that carries text (`cartPanel("Friend")`), a function body with statements or a `switch`, text joined by a call (`names.join(" and ")`). 22 leaves today; change them in code.
+- A lowercase single token in a bare leaf (`"md"`, `"asc"`) is a code value, not copy, and gets no row. Inside a function leaf every written string is shown text.
+
+## What the import refuses (every bad row at once, with its row number; nothing is applied)
+
+Placeholders that differ from the original's, an em dash (a bare `—` meaning no value is allowed), an exclamation mark, a banned tell word (`simply`, `just`, `easily`, `seamlessly`, `effortlessly`), a short list of British spellings, a length cap where the key names the kind of string (label/cta/button/chip 3 words, eyebrow 5, title/head 8; a hole counts as one word), a read-only row, a key that is not in the files, and a **stale sheet** (the row's current text no longer matches the code: export again).
+
+## Guards
+
+- `pnpm check:copy-sheet-roundtrip` (CI, `checks` list in ci.yml): an unedited export must import to zero changes. It fails on a copy shape the walker and the writer disagree about.
+- `scripts/lib/copy-sheet/*.test.mts` pin each refusal above and an in-place edit per shape (quote kept, template, branch, computed hole, escaping).
+
+Code: `scripts/lib/copy-sheet/{csv,walk,validate,sheet,land}.mts`, `scripts/copy-sheet-{export,import}.mts`.

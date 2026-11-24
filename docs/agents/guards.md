@@ -382,6 +382,7 @@ announcement, the price refresh). Every failure path above has a fixture case in
 
 The rule-form bullets `AGENTS.md` carried for this area until 2026-10-28, verbatim. Where they and the text above differ in wording, both are current.
 
+- `pnpm check:copy-sheet-roundtrip` fails when an unedited export of `src/lib/copy` does not import to zero changes (feature doc: `copy-sheet.md`).
 - `pnpm check:copy-drift` fails when a design table quotes a string the code stopped emitting, in punctuation (`MARKS`) or in words (a rename shape, eight words minimum, prose only). Exact matches are checked across every candidate before near matches. Reach for the matcher before the allowlist: a false positive goes in `scripts/lib/copy-drift-allowlist.mjs` with its reason, as a deliberate diff. It reads `src/lib/copy` and `src/components/**/*.tsx`.
 - `pnpm check:tokens` fails when a component reads a CSS custom property that no theme declares (an unset property fails silently). A read with a fallback is not a miss; a token a component sets on its own element is declared for THAT FILE's subtree only; `globals.css` may resolve against any component's declaration. Tests are skipped.
 - `pnpm check:border-collision` fails on a bare `border-r` or `border-b` in `.tsx`/`.ts`/`.css` under `src`: the mana palette's `r` and `b` theme colors make them also `border-color`. A bare one needs a SIDE-SPECIFIC color with the SAME variant chain (`border-r-[color:var(--border)]`), and a side override repairs one side only.
