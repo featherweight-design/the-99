@@ -90,8 +90,8 @@ describe("tracker panel", () => {
     expect(label("Tax +4")).toBeLessThan(label("Energy 2"));
     // The chip shows its figure, the words ride in the title.
     expect(html).toContain('title="Ghalta, Primal Hunger 6"');
-    expect(html).toContain('<span aria-hidden="">+4</span>');
-    expect(html).not.toMatch(/<span aria-hidden="">Poison 9<\/span>/);
+    expect(html).toMatch(/<span aria-hidden="[^"]*">\+4<\/span>/);
+    expect(html).not.toMatch(/<span aria-hidden="[^"]*">Poison 9<\/span>/);
     expect(html).toContain('data-total="5"');
   });
   it("names the commander that put the seat out", () => {
