@@ -174,3 +174,19 @@ for (const dev of ["phone", "desk"] as const) {
   G.__VW = 0;
 }
 console.log("hmc ok");
+import { ChooseIntro } from "../src/components/intake/choose-intro";
+const INTRO_ART = { lead: "art/crop-ghalta.jpg", behind: ["art/crop-lathliss.jpg", "art/crop-gisa.jpg"] as [string, string] };
+for (const dev of ["phone", "desk"] as const) {
+  const d = dev === "desk" ? "d" : "p";
+  G.__VW = dev === "desk" ? 1300 : 390; G.__INLINE = true; G.__BADGES = { home: 2, friends: 1 };
+  const hc = helpMeChooseCopy.intake;
+  const html = shell(
+    <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]"><div className="md:mx-auto md:w-full md:max-w-[1100px] lg:flex lg:items-start lg:justify-center lg:gap-[40px]"><div className="min-w-0 md:w-[680px] md:max-w-full md:shrink">
+      <ChooseHeader title={hc.title} sub={hc.sub} subPhone={hc.subPhone} centered />
+      <div data-intro="" className="px-[18px] pt-[14px] md:px-0 md:pt-0 md:pb-[22px]"><ChooseIntro folded={false} art={INTRO_ART} freePerDay={1} wordsId="anything-else" /></div>
+      <IntakeForm themes={THEMES} sets={[]} initial={parseLiveParams(new URLSearchParams())} standing={null} />
+    </div></div></div>, "/decks/new/choose", null);
+  writeFileSync(`dz/frames/${d}-s12-hmi.html`, html);
+  G.__VW = 0;
+}
+console.log("hmi ok");

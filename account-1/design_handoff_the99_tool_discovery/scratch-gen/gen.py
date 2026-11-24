@@ -221,12 +221,13 @@ C19 = call("19", "Pick a deck, inside the search (R12)", ul([
   "One deck that fits still goes straight there. ↑ ↓ and Enter work through the picker; Backspace or ‹ Answers goes back."]))
 C20 = call("20", "A highlight only where there is something to find (R12)", ul([
   "Halo when the tool is one part of a busier screen: Suggested changes, Proposed cuts, Mana Balance and Consider (Tuning tiles), Top off, Cheaper stand-ins and Friends' spares (the deck's Shopping view), Matchups (Games), Find a deck (the Free chip).",
-  "No halo when the page is the tool: Help me choose, Precons, Wishlist, Collection Sync, Stats for your decks, Friends. Those land at the top of the page, nothing ringed."]))
+  "<b>Help me choose</b> rings its new intro panel (#3266: what it does, the example, three steps, free against credits) instead of the color picker, for a reader who has not run it yet. After the first run the panel folds to one line, and the landing rings nothing.",
+  "No halo when the page is the tool: Precons, Wishlist, Collection Sync, Stats for your decks, Friends. Those land at the top of the page, nothing ringed."]))
 Q19 = q("Q19", "Tool mark size", "A: 28px in 48px (phone), 24px in 40px (desktop), drawn. B: a smaller step, 24px in 44px (phone) and 22px in 36px.", "A. It reads as an icon at a glance without making the row taller.")
 Q20 = q("Q20", "What a press does while the page loads", "A: the search stays up with the row in its Opening state until the page commits (drawn). B: close at once and lean on each page's own skeleton.", "A. Not every page has a skeleton; the row the reader pressed is where their eyes are.")
 Q21 = q("Q21", "A tool that fits several decks", "A: pick the deck inside the search (drawn). B: open the most recent deck as today, with a deck switcher on arrival.", "A. The choice is made before any page loads, and a credit tool never runs on the wrong deck.")
-Q22 = q("Q22", "When the landing highlights", "A: only on a busier screen, as listed (drawn). B: always, as shipped.", "A. A ring on a page that is the tool points at nothing in particular, like Help me choose's colors.")
-boards["Search.dc.html"] = (1700, 6960, "Search follow-ups", page("Finding the tools R12: Home search follow-ups", 1700, 6960,
+Q22 = q("Q22", "When the landing highlights", "A: on a busier screen, and on Help me choose's intro until the first run; none where the page is the tool (drawn). B: always, as shipped.", "A. The ring points at what explains the tool, never at a single answer like the colors.")
+boards["Search.dc.html"] = (1700, 6920, "Search follow-ups", page("Finding the tools R12: Home search follow-ups", 1700, 6920,
  head("Home search follow-ups (R12)", "Four fixes for the shipped Home search. Rendered from main cc89ad77 with the shipped tool rows; the dropdown is drawn over Home as it opens under the panel's field. Deck names and art are illustrative.")
  + C17 + Q19
  + row("Desktop · 1300", [dk("d-s12-mk0", "Today", "18px wrench, 30px tile.", 760), dk("d-s12-mk1", "Proposed", "24px wrench, 40px tile.", 760)])
@@ -238,7 +239,8 @@ boards["Search.dc.html"] = (1700, 6960, "Search follow-ups", page("Finding the t
  + row("Phone · 390", [ph("p-s12-pk0", "Today", "The first deck only."), ph("p-s12-pk1", "Proposed · answers", "Pick a deck."), ph("p-s12-pk2", "Proposed · the picker", "In the sheet; ‹ Answers goes back.")])
  + C20 + Q22
  + row("Keeps its halo · Suggested changes on Tuning", [dk("d-s12-tun", "Desktop", "The tile is one of five.", 760), ph("p-s12-tun", "Phone", "Scrolled to the tile.")])
- + row("Loses its halo · Help me choose", [dk("d-s12-hmc0", "Today", "Colors ringed: nothing to find there.", 500), dk("d-s12-hmc1", "Proposed", "The page, top first, nothing ringed.", 500), ph("p-s12-hmc0", "Phone · today", "Ringed."), ph("p-s12-hmc1", "Phone · proposed", "Not ringed.")])))
+ + row("Help me choose · desktop", [dk("d-s12-hmc0", "Today", "The colors ringed: one answer of many.", 760), dk("d-s12-hmi", "Proposed", "The intro panel ringed (#3266), the page at the top.", 760)])
+ + row("Help me choose · phone", [ph("p-s12-hmc0", "Today", "The colors ringed."), ph("p-s12-hmi", "Proposed", "The intro ringed; the form under it.")])))
 boards["Calm.dc.html"] = (1700, 4770, "Calmer Home", page("Finding the tools R8: a calmer busy Home", 1700, 4770,
  head("A calmer busy Home (R8, R9)", "R7 A (left) against R9 (right), the same reader. R8 moves What's new into the empty desktop rail and makes Home's section headings easy to find.")
  + C12 + C11 + Q13 + Q14

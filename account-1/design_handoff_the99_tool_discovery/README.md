@@ -9,7 +9,7 @@ Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-23 (R11, every questio
 - A press keeps the search up in an Opening state (ring, spinner, `Opening Precons…`, the progress bar) until the page
   commits, then closes (Q20).
 - A deck tool that fits several decks reads `Pick a deck · N can use it` and opens a picker in the same box (Q21).
-- The landing halo only where the tool is one part of a busier screen; none where the page is the tool (Q22).
+- The landing halo only where the tool is one part of a busier screen; Help me choose rings its new intro panel (#3266) until the first run instead of the colors; none where the page is the tool (Q22).
 
 **R11 (Hugh's prompt "Home lead and Friends badge for spare offers", 2026-11-23):** folded into this Home revisit,
 drawn from main bb4832f8 against `design_handoff_the99_you_have_it/` and `_r2/` (Spare offers board).
