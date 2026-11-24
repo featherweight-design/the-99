@@ -6,7 +6,7 @@ const leaves = copyLeaves(["src/lib/copy/x.ts"], () => copySource);
 
 describe("copyLeaves", () => {
   it("keeps leaves of two or more words with no holes, keyed to their path", () => {
-    expect([...leaves]).toEqual([["Zorp widget", "src/lib/copy/x.ts#save"], ["Frobnicate the quux", "src/lib/copy/x.ts#cta.go"]]);
+    expect([...leaves]).toEqual([["Zorp widget", "src/lib/copy/x.ts#c.save"], ["Frobnicate the quux", "src/lib/copy/x.ts#c.cta.go"]]);
   });
 });
 
@@ -14,8 +14,8 @@ describe("findTestLiterals", () => {
   it("flags a string and a plain template equal to a leaf, with its line", () => {
     const src = `it("x", () => {\n  expect(screen.getByText("Zorp widget")).toBeTruthy();\n  expect(t).toBe(\`Frobnicate the quux\`);\n});`;
     expect(findTestLiterals("a.test.tsx", src, leaves).map((h) => `${h.line}:${h.text}:${h.key}`)).toEqual([
-      "2:Zorp widget:src/lib/copy/x.ts#save",
-      "3:Frobnicate the quux:src/lib/copy/x.ts#cta.go",
+      "2:Zorp widget:src/lib/copy/x.ts#c.save",
+      "3:Frobnicate the quux:src/lib/copy/x.ts#c.cta.go",
     ]);
   });
   it("leaves a one-word leaf, a different string, a substring and a template with a hole alone", () => {
