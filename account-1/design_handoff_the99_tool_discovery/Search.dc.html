@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Finding the tools R12: Home search follow-ups</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#FF6FAE}a:hover{color:#FF9AC6}
+</style>
+</helmet>
+<div style="width:1700px;min-height:6960px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px"><h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif;color:#E6E8F0">Home search follow-ups (R12)</h2><p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1240px">Four fixes for the shipped Home search. Rendered from main cc89ad77 with the shipped tool rows; the dropdown is drawn over Home as it opens under the panel's field. Deck names and art are illustrative.</p></div><div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A"><p style="margin:0;font:600 17px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">17</span> · Bigger tool marks (R12)</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Today the wrench is 18px in a 40px tile (phone) and a 30px tile (desktop). Proposed: 28px in a 48px tile on a phone, 24px in a 40px tile in the dropdown. The row heights stay 72px and 58px, so tools and cards still read as one list.</li></ul></div></div><div style="display:flex;flex-direction:column;gap:6px;padding:16px 20px;border:1px solid #FF6FAE;border-radius:12px"><p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">Q19</span> · Tool mark size</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7">A: 28px in 48px (phone), 24px in 40px (desktop), drawn. B: a smaller step, 24px in 44px (phone) and 22px in 36px.</div><p style="margin:0;font-size:13px;color:#959AAD"><b style="color:#E6E8F0">Recommended:</b> A. It reads as an icon at a glance without making the row taller.</p></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Desktop · 1300</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:760px;flex:none">
+<img src="art/td-d-s12-mk0.webp" alt="Today" style="width:760px;height:501px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Today</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">18px wrench, 30px tile.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:760px;flex:none">
+<img src="art/td-d-s12-mk1.webp" alt="Proposed" style="width:760px;height:501px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">24px wrench, 40px tile.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Phone · 390</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-mk0.webp" alt="Today" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Today</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">18px in 40px.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-mk1.webp" alt="Proposed" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">28px in 48px.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A"><p style="margin:0;font:600 17px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">18</span> · A press opens now, or says it is opening (R12)</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Today a press closes the search, then waits for the page: Precons can take a second or two with nothing on screen.</li><li>Proposed: the search stays up until the new page commits. The pressed row rings in the accent, its tile turns to a spinner, its foot reads <i>Opening Precons…</i>, the other rows dim, and the shipped search progress bar runs across the top. Then the search closes onto the page. A fast page closes it at once, so most presses look immediate.</li><li>Esc or ✕ still closes and cancels; a failed load puts the row back and shows the shipped toast.</li></ul></div></div><div style="display:flex;flex-direction:column;gap:6px;padding:16px 20px;border:1px solid #FF6FAE;border-radius:12px"><p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">Q20</span> · What a press does while the page loads</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7">A: the search stays up with the row in its Opening state until the page commits (drawn). B: close at once and lean on each page's own skeleton.</div><p style="margin:0;font-size:13px;color:#959AAD"><b style="color:#E6E8F0">Recommended:</b> A. Not every page has a skeleton; the row the reader pressed is where their eyes are.</p></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Pressed Precons</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:760px;flex:none">
+<img src="art/td-d-s12-go.webp" alt="Desktop · Opening" style="width:760px;height:501px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Desktop · Opening</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Ring, spinner, Opening Precons…, the bar across the top.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-go.webp" alt="Phone · Opening" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Phone · Opening</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The same in the sheet.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A"><p style="margin:0;font:600 17px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">19</span> · Pick a deck, inside the search (R12)</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Today a deck tool that fits several decks opens the most recent one (<i>in Ashen Banner Parade +3</i>), so the reader cannot choose.</li><li>Proposed: its foot reads <i>Pick a deck · 4 can use it</i>. A press swaps the answers for a picker in the same box: ‹ Answers, the tool's name and cost, <i>Which deck? 4 of yours can use it.</i>, then the decks that fit, last touched first, each with its commander art, name, commander and when it was edited. A deck opens the tool on that deck, with the same Opening state.</li><li>One deck that fits still goes straight there. ↑ ↓ and Enter work through the picker; Backspace or ‹ Answers goes back.</li></ul></div></div><div style="display:flex;flex-direction:column;gap:6px;padding:16px 20px;border:1px solid #FF6FAE;border-radius:12px"><p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">Q21</span> · A tool that fits several decks</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7">A: pick the deck inside the search (drawn). B: open the most recent deck as today, with a deck switcher on arrival.</div><p style="margin:0;font-size:13px;color:#959AAD"><b style="color:#E6E8F0">Recommended:</b> A. The choice is made before any page loads, and a credit tool never runs on the wrong deck.</p></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Desktop · 1300</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:500px;flex:none">
+<img src="art/td-d-s12-pk0.webp" alt="Today" style="width:500px;height:330px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Today</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">in Ashen Banner Parade +3: a press opens that one.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:500px;flex:none">
+<img src="art/td-d-s12-pk1.webp" alt="Proposed · answers" style="width:500px;height:330px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed · answers</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Pick a deck · 4 can use it.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:500px;flex:none">
+<img src="art/td-d-s12-pk2.webp" alt="Proposed · the picker" style="width:500px;height:330px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed · the picker</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Last touched first; a deck opens the tool on it.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Phone · 390</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-pk0.webp" alt="Today" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Today</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The first deck only.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-pk1.webp" alt="Proposed · answers" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed · answers</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Pick a deck.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-pk2.webp" alt="Proposed · the picker" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed · the picker</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">In the sheet; ‹ Answers goes back.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A"><p style="margin:0;font:600 17px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">20</span> · A highlight only where there is something to find (R12)</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7"><ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px"><li>Halo when the tool is one part of a busier screen: Suggested changes, Proposed cuts, Mana Balance and Consider (Tuning tiles), Top off, Cheaper stand-ins and Friends' spares (the deck's Shopping view), Matchups (Games), Find a deck (the Free chip).</li><li>No halo when the page is the tool: Help me choose, Precons, Wishlist, Collection Sync, Stats for your decks, Friends. Those land at the top of the page, nothing ringed.</li></ul></div></div><div style="display:flex;flex-direction:column;gap:6px;padding:16px 20px;border:1px solid #FF6FAE;border-radius:12px"><p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0"><span style="font-family:'IBM Plex Mono',monospace;color:#FF6FAE">Q22</span> · When the landing highlights</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7">A: only on a busier screen, as listed (drawn). B: always, as shipped.</div><p style="margin:0;font-size:13px;color:#959AAD"><b style="color:#E6E8F0">Recommended:</b> A. A ring on a page that is the tool points at nothing in particular, like Help me choose's colors.</p></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Keeps its halo · Suggested changes on Tuning</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:760px;flex:none">
+<img src="art/td-d-s12-tun.webp" alt="Desktop" style="width:760px;height:526px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Desktop</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The tile is one of five.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-tun.webp" alt="Phone" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Phone</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Scrolled to the tile.</p>
+</figcaption>
+</figure></div></div><div style="display:flex;flex-direction:column;gap:14px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#FF6FAE">Loses its halo · Help me choose</span><div style="display:flex;gap:40px;align-items:flex-start;flex-wrap:wrap"><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:500px;flex:none">
+<img src="art/td-d-s12-hmc0.webp" alt="Today" style="width:500px;height:346px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Today</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Colors ringed: nothing to find there.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:500px;flex:none">
+<img src="art/td-d-s12-hmc1.webp" alt="Proposed" style="width:500px;height:346px;display:block;border-radius:12px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Proposed</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">The page, top first, nothing ringed.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-hmc0.webp" alt="Phone · today" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Phone · today</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Ringed.</p>
+</figcaption>
+</figure><figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:292px;flex:none">
+<img src="art/td-p-s12-hmc1.webp" alt="Phone · proposed" style="width:292px;height:632px;display:block;border-radius:28px;border:1px solid #262A35">
+<figcaption style="display:flex;flex-direction:column;gap:6px">
+<p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">Phone · proposed</p>
+<p style="margin:0;font-size:13px;line-height:1.55;color:#959AAD">Not ringed.</p>
+</figcaption>
+</figure></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1700,"height":6960}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

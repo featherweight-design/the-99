@@ -1,8 +1,15 @@
 # Finding the tools
 
-Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-23 (R11, every question settled as drawn, Q1 to Q18).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
+Account 1, 2026-11-23. Status: **Approved by Hugh 2026-11-23 (R11, every question settled as drawn, Q1 to Q18).** Canvas (Design type): https://claude.ai/artifact/V8o2BWkvp4pL8hnqkWM6k3 (Main, Search follow-ups, Spare offers, Show all, Calmer Home, Order and first run, Home in full, Ask, Find, Tuning, Welcome).
 
 **Approved (Hugh, 2026-11-23):** every open question settled A; PostHog dashboards to ship with the build (below).
+
+**R12 (Hugh, 2026-11-24, in review; Search follow-ups board):** on the shipped Home search (main cc89ad77).
+- Bigger tool marks: 28px in a 48px tile (phone), 24px in 40px (dropdown) (Q19).
+- A press keeps the search up in an Opening state (ring, spinner, `Opening Precons…`, the progress bar) until the page
+  commits, then closes (Q20).
+- A deck tool that fits several decks reads `Pick a deck · N can use it` and opens a picker in the same box (Q21).
+- The landing halo only where the tool is one part of a busier screen; none where the page is the tool (Q22).
 
 **R11 (Hugh's prompt "Home lead and Friends badge for spare offers", 2026-11-23):** folded into this Home revisit,
 drawn from main bb4832f8 against `design_handoff_the99_you_have_it/` and `_r2/` (Spare offers board).

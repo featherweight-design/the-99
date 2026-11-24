@@ -209,6 +209,36 @@ boards["Offers.dc.html"] = (1700, 5540, "Spare offers", page("Finding the tools 
  + C16
  + row("The offerer's side · Max said yes", [fig("d-of-ans-x", 336, "Desktop rail", "Your offer › on the row."), dk("d-of-anss", "Your offer, opened", "The shipped sheet over Home.", 760)])
  + row("Phone · 390", [ph("p-of-ans-n", "The row", "Kicker Your offer; Your offer ›."), ph("p-of-anss", "Your offer, opened", "The bottom sheet.")])))
+C17 = call("17", "Bigger tool marks (R12)", ul([
+  "Today the wrench is 18px in a 40px tile (phone) and a 30px tile (desktop). Proposed: 28px in a 48px tile on a phone, 24px in a 40px tile in the dropdown. The row heights stay 72px and 58px, so tools and cards still read as one list."]))
+C18 = call("18", "A press opens now, or says it is opening (R12)", ul([
+  "Today a press closes the search, then waits for the page: Precons can take a second or two with nothing on screen.",
+  "Proposed: the search stays up until the new page commits. The pressed row rings in the accent, its tile turns to a spinner, its foot reads <i>Opening Precons…</i>, the other rows dim, and the shipped search progress bar runs across the top. Then the search closes onto the page. A fast page closes it at once, so most presses look immediate.",
+  "Esc or ✕ still closes and cancels; a failed load puts the row back and shows the shipped toast."]))
+C19 = call("19", "Pick a deck, inside the search (R12)", ul([
+  "Today a deck tool that fits several decks opens the most recent one (<i>in Ashen Banner Parade +3</i>), so the reader cannot choose.",
+  "Proposed: its foot reads <i>Pick a deck · 4 can use it</i>. A press swaps the answers for a picker in the same box: ‹ Answers, the tool's name and cost, <i>Which deck? 4 of yours can use it.</i>, then the decks that fit, last touched first, each with its commander art, name, commander and when it was edited. A deck opens the tool on that deck, with the same Opening state.",
+  "One deck that fits still goes straight there. ↑ ↓ and Enter work through the picker; Backspace or ‹ Answers goes back."]))
+C20 = call("20", "A highlight only where there is something to find (R12)", ul([
+  "Halo when the tool is one part of a busier screen: Suggested changes, Proposed cuts, Mana Balance and Consider (Tuning tiles), Top off, Cheaper stand-ins and Friends' spares (the deck's Shopping view), Matchups (Games), Find a deck (the Free chip).",
+  "No halo when the page is the tool: Help me choose, Precons, Wishlist, Collection Sync, Stats for your decks, Friends. Those land at the top of the page, nothing ringed."]))
+Q19 = q("Q19", "Tool mark size", "A: 28px in 48px (phone), 24px in 40px (desktop), drawn. B: a smaller step, 24px in 44px (phone) and 22px in 36px.", "A. It reads as an icon at a glance without making the row taller.")
+Q20 = q("Q20", "What a press does while the page loads", "A: the search stays up with the row in its Opening state until the page commits (drawn). B: close at once and lean on each page's own skeleton.", "A. Not every page has a skeleton; the row the reader pressed is where their eyes are.")
+Q21 = q("Q21", "A tool that fits several decks", "A: pick the deck inside the search (drawn). B: open the most recent deck as today, with a deck switcher on arrival.", "A. The choice is made before any page loads, and a credit tool never runs on the wrong deck.")
+Q22 = q("Q22", "When the landing highlights", "A: only on a busier screen, as listed (drawn). B: always, as shipped.", "A. A ring on a page that is the tool points at nothing in particular, like Help me choose's colors.")
+boards["Search.dc.html"] = (1700, 6960, "Search follow-ups", page("Finding the tools R12: Home search follow-ups", 1700, 6960,
+ head("Home search follow-ups (R12)", "Four fixes for the shipped Home search. Rendered from main cc89ad77 with the shipped tool rows; the dropdown is drawn over Home as it opens under the panel's field. Deck names and art are illustrative.")
+ + C17 + Q19
+ + row("Desktop · 1300", [dk("d-s12-mk0", "Today", "18px wrench, 30px tile.", 760), dk("d-s12-mk1", "Proposed", "24px wrench, 40px tile.", 760)])
+ + row("Phone · 390", [ph("p-s12-mk0", "Today", "18px in 40px."), ph("p-s12-mk1", "Proposed", "28px in 48px.")])
+ + C18 + Q20
+ + row("Pressed Precons", [dk("d-s12-go", "Desktop · Opening", "Ring, spinner, Opening Precons…, the bar across the top.", 760), ph("p-s12-go", "Phone · Opening", "The same in the sheet.")])
+ + C19 + Q21
+ + row("Desktop · 1300", [dk("d-s12-pk0", "Today", "in Ashen Banner Parade +3: a press opens that one.", 500), dk("d-s12-pk1", "Proposed · answers", "Pick a deck · 4 can use it.", 500), dk("d-s12-pk2", "Proposed · the picker", "Last touched first; a deck opens the tool on it.", 500)])
+ + row("Phone · 390", [ph("p-s12-pk0", "Today", "The first deck only."), ph("p-s12-pk1", "Proposed · answers", "Pick a deck."), ph("p-s12-pk2", "Proposed · the picker", "In the sheet; ‹ Answers goes back.")])
+ + C20 + Q22
+ + row("Keeps its halo · Suggested changes on Tuning", [dk("d-s12-tun", "Desktop", "The tile is one of five.", 760), ph("p-s12-tun", "Phone", "Scrolled to the tile.")])
+ + row("Loses its halo · Help me choose", [dk("d-s12-hmc0", "Today", "Colors ringed: nothing to find there.", 500), dk("d-s12-hmc1", "Proposed", "The page, top first, nothing ringed.", 500), ph("p-s12-hmc0", "Phone · today", "Ringed."), ph("p-s12-hmc1", "Phone · proposed", "Not ringed.")])))
 boards["Calm.dc.html"] = (1700, 4770, "Calmer Home", page("Finding the tools R8: a calmer busy Home", 1700, 4770,
  head("A calmer busy Home (R8, R9)", "R7 A (left) against R9 (right), the same reader. R8 moves What's new into the empty desktop rail and makes Home's section headings easy to find.")
  + C12 + C11 + Q13 + Q14
@@ -227,8 +257,8 @@ boards["Home.dc.html"] = (1700, 4480, "Home in full", page("Finding the tools R6
  + C8 + Q10
  + row("Desktop · 1300 and phone · 390, at rest", [dk("d-full", "H6 · Desktop, busy day", "Banner, the table and the game to log, then the panel, the welcome strip, the lead, decks, What's new; Commitments and Friends on the right.", 1000), fig("p-full", 340, "H6 · Phone, busy day", "The same order in one column; the panel starts at the fold.")])
  + row("Desktop · 1300, typed on Home", [dk("d-full-open", "H6 · Results in place", "The dropdown drops over the welcome strip and the lead; the page under it does not move (Q9 A).", 1000)])))
-boards["Main.dc.html"] = (1600, 1960, "Main", page("Finding the tools R11: main", 1600, 1960,
- head("Finding the tools · R11",
+boards["Main.dc.html"] = (1600, 2120, "Main", page("Finding the tools R12: main", 1600, 2120,
+ head("Finding the tools · R12",
   "One complaint: <i>\"I have a bunch of cards I want to add to my other decks, but I don't know where to go.\"</i> R5 makes Home's search easier to notice and sets down what pressing it does on a phone and a desktop. Everything else is as R4. Rendered from main 7563036 with shipped components. Figures and art are illustrative.")
  + note("Since R4", ["Home's search gets its own panel: accent edge, a title, the field at 52px, a fan of the reader's cards under the search's lens (call 6).", "What pressing it does: in place on desktop, the full-screen sheet on a phone (call 7, Q9).", "Open from R4: Q8 (phone rows, strip or glyph).", "R6: Home in full on a busy day, with a table open, a game to log and notifications (the Home in full board, Q10).", "R7: three orders for a busy Home (Q11) and search on first run (Q12), on the Order and first run board. Settled: Q11 A, Q12 A.", "R8: What’s new in the desktop rail (Q13) and stronger section headings (Q14), on the Calmer Home board.", "R9: the real Home\u2019s missing parts added (What\u2019s new foot with Show all, pills, brackets, footer), seat art on the table and log cards, the log card\u2019s ✕ top right, Choose notifications.", "R10: Show all opens a sheet (Q15), on the Show all board.", "R11: spare offers on Home: one lead for an ask and an offer, the ✕ in its corner, asks answered in their row, the Friends badge, the offerer\u2019s answer (Q16 to Q18), on the Spare offers board."])
  + '<div style="display:flex;gap:40px;align-items:flex-start">'
@@ -236,7 +266,7 @@ boards["Main.dc.html"] = (1600, 1960, "Main", page("Finding the tools R11: main"
  + '<div style="display:flex;flex-direction:column;gap:28px;flex:none;width:620px">'
  + '<div style="display:flex;gap:20px">' + fig("p-h4", 300, "Home, phone", "The panel, first under the page head.") + fig("p-a1", 300, "Pressed, phone", "The full-screen sheet; a starter types its question.") + '</div>'
  + '</div></div>'
- + note("Settled", ["Q1 to Q18 all settled as drawn (A); approved 2026-11-23 and handed off in PR #3243."]) + Q16 + Q17 + Q18
+ + note("Settled", ["Q1 to Q18 all settled as drawn (A); approved 2026-11-23 and handed off in PR #3243.", "R12 (2026-11-24): Home search follow-ups on the Search follow-ups board. Open: Q19 to Q22."]) + Q19 + Q20 + Q21 + Q22
  + note("As R4", ["Ask in the card search: starters, Tools for this, never a dead end; one field, card names first.", "Find a deck: the tile button, the row strip (phone) and button (desktop), the call-out.", "Tuning and Welcome as R1, approved."])))
 
 boards["Find.dc.html"] = (1700, 4560, "Find", page("Finding the tools R4: Find a deck", 1700, 4560,
@@ -268,10 +298,10 @@ boards["Welcome.dc.html"] = (1700, 3700, "Welcome", page("Finding the tools: wel
 
 os.makedirs(out, exist_ok=True)
 for n, (w, h, t, html) in boards.items(): open(os.path.join(out, n), "w").write(html)
-order = ["Main.dc.html", "Offers.dc.html", "ShowAll.dc.html", "Calm.dc.html", "Order.dc.html", "Home.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
+order = ["Main.dc.html", "Search.dc.html", "Offers.dc.html", "ShowAll.dc.html", "Calm.dc.html", "Order.dc.html", "Home.dc.html", "Ask.dc.html", "Find.dc.html", "Tuning.dc.html", "Welcome.dc.html"]
 x = 0; B = {}
 for n in order:
     w, h, t, _ = boards[n]; B[n] = {"x": x, "y": 0, "w": w, "h": h, "title": t}; x += w + 120
-json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R11", "launch": {"view": "canvas"}, "pages": [],
+json.dump({"v": 3, "createdOnFiles": {"v": 1, "at": "2026-11-23T17:00:00Z"}, "title": "Finding the tools R12", "launch": {"view": "canvas"}, "pages": [],
   "boards": B, "order": order, "notes": {}, "designSystems": []}, open(os.path.join(out, "canvas.json"), "w"), indent=1)
 print("wrote", order)
