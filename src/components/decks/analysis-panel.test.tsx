@@ -397,10 +397,10 @@ describe("AnalysisPanel", () => {
     it("opens a grade's ledger from its opener, and closes it", () => {
       draw({ kind: "ready", ...reading(), benchmarks: benchmarksWire() });
       expect(screen.queryByRole("dialog")).toBeNull();
-      fireEvent.click(screen.getByRole("button", { name: deckBenchmarksCopy.openAria("Card flow", "High") }));
-      const ledger = screen.getByRole("dialog", { name: "Card flow" });
+      fireEvent.click(screen.getByRole("button", { name: deckBenchmarksCopy.openAria(deckBenchmarksCopy.names.flow, "High") }));
+      const ledger = screen.getByRole("dialog", { name: deckBenchmarksCopy.names.flow });
       expect(within(ledger).getByText("Rhystic Study")).toBeInTheDocument();
-      fireEvent.click(within(ledger).getByRole("button", { name: deckBenchmarksCopy.ledger.closeAria("Card flow") }));
+      fireEvent.click(within(ledger).getByRole("button", { name: deckBenchmarksCopy.ledger.closeAria(deckBenchmarksCopy.names.flow) }));
       expect(screen.queryByRole("dialog")).toBeNull();
     });
 

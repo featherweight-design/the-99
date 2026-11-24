@@ -8,6 +8,7 @@ import type { ComboRef } from "../../lib/profile/types";
 import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 import { SPELLBOOK_SOURCE } from "../../lib/bracket/sources";
 import { COMMANDER, deckProfile, profileCard } from "./__fixtures__/deck-profile";
+import { cardModalCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -104,7 +105,7 @@ describe("a finding", () => {
     // Desktop budget is two names, the phone's three; both are in the one list.
     expect(gc.textContent).toContain(copy.findings.names(["Rhystic Study (SLD)", "rift"], 1));
     expect(gc.textContent).toContain(copy.findings.names(["Rhystic Study (SLD)", "rift", "drain"], 0));
-    expect(within(gc).getByRole("button", { name: copy.findings.openAria(3, "Game changers") })).toBeTruthy();
+    expect(within(gc).getByRole("button", { name: copy.findings.openAria(3, deckAnalysisCopy.climb.ruleNames.gameChangers) })).toBeTruthy();
   });
 
   it("puts a no-limit chip on tutors, and on nothing else", () => {
@@ -130,7 +131,7 @@ describe("the receipt", () => {
   it("opens a tile grid of the finding's cards, with no fact mark on any tile", () => {
     mount();
     const receipt = openReceipt("gameChangers");
-    expect(within(receipt).getByRole("heading", { name: "Game changers" })).toBeTruthy();
+    expect(within(receipt).getByRole("heading", { name: deckAnalysisCopy.climb.ruleNames.gameChangers })).toBeTruthy();
     const tiles = within(receipt).getAllByTestId("receipt-tile");
     expect(tiles).toHaveLength(3);
     expect(tiles[0].textContent).toBe("Rhystic Study (SLD)");
@@ -141,7 +142,7 @@ describe("the receipt", () => {
   it("closes on its own control, which is named for what it closes", () => {
     mount();
     const receipt = openReceipt("gameChangers");
-    fireEvent.click(within(receipt).getByRole("button", { name: copy.receipt.closeAria("Game changers") }));
+    fireEvent.click(within(receipt).getByRole("button", { name: copy.receipt.closeAria(deckAnalysisCopy.climb.ruleNames.gameChangers) }));
     expect(screen.queryByTestId("receipt-modal")).toBeNull();
   });
 
@@ -237,7 +238,7 @@ describe("a card opened from the receipt", () => {
     mount();
     await act(async () => { fireEvent.click(screen.getByText("open elsewhere")); });
     expect(within(cardDialog()).queryByTestId("card-modal-back")).toBeNull();
-    expect(within(cardDialog()).getAllByRole("button", { name: "Close card details" }).length).toBe(2);
+    expect(within(cardDialog()).getAllByRole("button", { name: cardModalCopy.closeAria }).length).toBe(2);
   });
 
   // The receipt at 760 draws four across (3a).
@@ -265,7 +266,7 @@ describe("a card opened from the receipt", () => {
     await openCardFromReceipt();
     await act(async () => { fireEvent.keyDown(window, { key: "Escape" }); });
     await act(() => new Promise<void>((r) => { setTimeout(r, STACK_DROP_MS); }));
-    fireEvent.click(within(screen.getByTestId("receipt-modal")).getByRole("button", { name: copy.receipt.closeAria("Game changers") }));
+    fireEvent.click(within(screen.getByTestId("receipt-modal")).getByRole("button", { name: copy.receipt.closeAria(deckAnalysisCopy.climb.ruleNames.gameChangers) }));
     expect(screen.queryByTestId("receipt-modal")).toBeNull();
     await act(async () => { fireEvent.click(screen.getByText("open elsewhere")); });
     expect(cardDialog().parentElement!.dataset.stacked).toBeUndefined();

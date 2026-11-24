@@ -7,6 +7,9 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { preconsCopy } from "../../lib/copy/precons";
+import { helpMeChooseHistoryCopy } from "../../lib/copy/help-me-choose-history";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 vi.mock("../../app/decks/actions", () => ({ createDeck: vi.fn() }));
 // Partial, not a bare stub: the component imports `unstable_rethrow` from this
@@ -161,7 +164,7 @@ describe("CreatePicker — the partner list's empty state", () => {
 
   it("falls back to the ordinary no-match message when a query emptied the list", () => {
     enterPairingMode();
-    fireEvent.change(screen.getAllByPlaceholderText("Search commanders…")[0], {
+    fireEvent.change(screen.getAllByPlaceholderText(addPanelCopy.createPicker.searchPlaceholder)[0], {
       target: { value: "zzzznotacommander" },
     });
 
@@ -212,7 +215,7 @@ describe("CreatePicker — Help me choose's door", () => {
     render(<CreatePicker legalCommanders={commanders} helpDoor />);
     const door = screen.getByTestId("help-me-choose-door");
     expect(door.parentElement!.firstElementChild).toBe(door);
-    expect(screen.getByRole("link", { name: "Help me choose →" }).getAttribute("href")).toBe("/decks/new/choose");
+    expect(screen.getByRole("link", { name: helpMeChooseCopy.door.cta }).getAttribute("href")).toBe("/decks/new/choose");
     expect(screen.getByText(addPanelCopy.createPicker.sub)).toBeTruthy();
   });
 
@@ -231,7 +234,7 @@ describe("CreatePicker — Help me choose's door", () => {
     expect(links.filter((l) => /md:hidden/.test(l.className))).toHaveLength(1);
     for (const l of links) {
       expect(l.getAttribute("href")).toBe("/decks/new/choose?v=history");
-      expect(l.textContent).toBe("Your past runs ›");
+      expect(l.textContent).toBe(helpMeChooseHistoryCopy.doorLink);
     }
   });
 
@@ -244,7 +247,7 @@ describe("CreatePicker — Help me choose's door", () => {
     render(<CreatePicker legalCommanders={commanders} helpDoor preconDoor />);
     const help = screen.getByTestId("help-me-choose-door");
     expect(help.nextElementSibling).toBe(screen.getByTestId("precon-door"));
-    expect(screen.getByRole("link", { name: "Browse precons →" }).getAttribute("href")).toBe("/decks/precons?from=new");
+    expect(screen.getByRole("link", { name: preconsCopy.door.cta }).getAttribute("href")).toBe("/decks/precons?from=new");
     expect(screen.getByText(addPanelCopy.createPicker.subDoors)).toBeTruthy();
   });
 

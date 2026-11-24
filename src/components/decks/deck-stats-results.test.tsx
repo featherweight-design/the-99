@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import { manaCurve, typeCurve } from "../../lib/decks/stats";
 import { resultsStats } from "../../lib/decks/stats-results";
 import { DeckStatsView } from "./deck-stats-view";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 
 const g = (result: "win" | "loss" | "draw", day: number, versionNumber: number | null = null) => ({
   result,
@@ -91,7 +92,7 @@ describe("DeckStatsView results card", () => {
 
   it("says the last-five line starts at the sixth game under six games", () => {
     draw(six.slice(1), [v(1, 10)]);
-    expect(card().querySelector("[data-results-trend]")).toHaveTextContent("The last-five line starts at the sixth game.");
+    expect(card().querySelector("[data-results-trend]")).toHaveTextContent(deckStatsCopy.results.lastFiveSoon);
     expect(card().querySelector("[data-result-last-five]")).toBeNull();
   });
 
@@ -106,10 +107,10 @@ describe("DeckStatsView results card", () => {
     expect(rows.map((r) => r.getAttribute("data-result-version"))).toEqual(["3", "2", "1", "unrecorded"]);
     expect(rows[0]).toHaveTextContent("v3");
     expect(rows[0]).toHaveTextContent("current · Aug 30");
-    expect(rows[0]).toHaveTextContent("no games yet");
+    expect(rows[0]).toHaveTextContent(deckStatsCopy.results.noGames);
     expect(rows[0]).not.toHaveTextContent("0–0–0");
     expect(rows[1]).toHaveTextContent("2–0–1");
-    expect(rows[3]).toHaveTextContent("Version not recorded");
+    expect(rows[3]).toHaveTextContent(deckStatsCopy.results.unrecorded);
     expect(rows[3]).toHaveTextContent("1–0–0");
   });
 
@@ -129,7 +130,7 @@ describe("DeckStatsView results card", () => {
     const onLogGame = vi.fn();
     draw([], [v(1, 10)], onLogGame);
     expect(screen.getByRole("figure", { name: "Results, no games" })).toBeInTheDocument();
-    expect(card()).toHaveTextContent("No games logged yet.");
+    expect(card()).toHaveTextContent(deckStatsCopy.results.emptyHead);
     expect(card()).not.toHaveTextContent("0–0–0");
     expect(card().querySelector("[data-results-record]")).toBeNull();
     expect(card().querySelector("[data-results-versions]")).toBeNull();

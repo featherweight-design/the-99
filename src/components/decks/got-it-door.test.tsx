@@ -5,6 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { gotItCopy } from "../../lib/copy/i-got-it";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -64,9 +67,9 @@ describe("Bought this card? in card details (A11)", () => {
     draw();
     await press(screen.getByText("shop poly"));
     expect(links()).toHaveLength(1);
-    expect(links()[0]).toHaveTextContent("Bought this card?");
+    expect(links()[0]).toHaveTextContent(gotItCopy.row.detailsLink);
     const receipt = screen.getByTestId("owned-receipt");
-    expect(receipt).toHaveTextContent("In your collection");
+    expect(receipt).toHaveTextContent(availabilityCopy.collection.detailHeading);
     expect(receipt).toHaveTextContent("none");
     expect(receipt.contains(links()[0])).toBe(true);
     // Never beside Edit copies: that link is /collection's alone.
@@ -182,7 +185,7 @@ describe("Bought this card? beside Add to collection, inside the shell", () => {
     drawInShell();
     await press(screen.getByText("shop poly"));
     expect(links()).toHaveLength(1);
-    expect(links()[0]).toHaveTextContent("Bought this card?");
+    expect(links()[0]).toHaveTextContent(gotItCopy.row.detailsLink);
     expect(edit()).toBeNull();
   });
 
@@ -191,7 +194,7 @@ describe("Bought this card? beside Add to collection, inside the shell", () => {
     await press(screen.getByText("all poly"));
     expect(await screen.findByRole("dialog")).toBeTruthy();
     expect(links()).toHaveLength(0);
-    expect(edit()).toHaveTextContent("Add to collection");
+    expect(edit()).toHaveTextContent(collectionEditCopy.copies.addToCollection);
   });
 
   it("draws no Add to collection on a card a Shopping row opened that the list does not bill (the slot stays Shopping's)", async () => {

@@ -14,8 +14,8 @@ describe("BenchmarksBlock", () => {
     render(<BenchmarksBlock benchmarks={wire()} analyzedAt="2026-10-01T12:00:00Z" />);
     expect(screen.getByRole("heading", { name: copy.heading })).toBeTruthy();
     expect(screen.getByText(copy.caption)).toBeTruthy();
-    expect(screen.getByRole("img", { name: copy.stepAria("Mana velocity", "Typical", 3) })).toBeTruthy();
-    expect(screen.getByRole("img", { name: copy.stepAria("Card flow", "High", 4) })).toBeTruthy();
+    expect(screen.getByRole("img", { name: copy.stepAria(copy.names.velocity, "Typical", 3) })).toBeTruthy();
+    expect(screen.getByRole("img", { name: copy.stepAria(copy.names.flow, "High", 4) })).toBeTruthy();
     expect(screen.getByRole("img", { name: copy.stepAria("Interaction", "Modest", 2) })).toBeTruthy();
   });
 
@@ -35,7 +35,7 @@ describe("BenchmarksBlock", () => {
     const { container } = render(<BenchmarksBlock benchmarks={wire({ win: { step: 4, odds: 0.18, lines: [line], tutors: [] } })} analyzedAt="2026-10-01T12:00:00Z" onOpen={onOpen} />);
     const win = container.querySelector('[data-grade="win"]') as HTMLElement;
     expect(win.textContent).toContain("18%");
-    fireEvent.click(within(win).getByRole("button", { name: copy.openAria("Win speed", "High") }));
+    fireEvent.click(within(win).getByRole("button", { name: copy.openAria(copy.names.win, "High") }));
     expect(onOpen).toHaveBeenCalledWith("win");
     expect(within(win).getByRole("button").textContent).toContain(copy.openCombo(1));
   });
@@ -49,7 +49,7 @@ describe("BenchmarksBlock", () => {
   it("opens a grade's cards, counting its ledger entries", () => {
     const onOpen = vi.fn();
     render(<BenchmarksBlock benchmarks={wire()} analyzedAt="2026-10-01T12:00:00Z" onOpen={onOpen} />);
-    const flow = screen.getByRole("button", { name: copy.openAria("Card flow", "High") });
+    const flow = screen.getByRole("button", { name: copy.openAria(copy.names.flow, "High") });
     expect(flow.textContent).toContain(copy.open(2));
     fireEvent.click(flow);
     expect(onOpen).toHaveBeenCalledWith("flow");

@@ -416,10 +416,10 @@ describe("see all brackets", () => {
     );
     const link = screen.getByTestId("see-all-brackets");
     expect(link.getAttribute("aria-haspopup")).toBe("dialog");
-    expect(link.textContent).toContain("see all brackets");
+    expect(link.textContent).toContain(deckAnalysisCopy.bracketsSheet.open);
     fireEvent.click(link);
-    expect(screen.getByRole("dialog", { name: "All brackets" })).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Close all brackets" }));
-    expect(screen.queryByRole("dialog", { name: "All brackets" })).toBeNull();
+    expect(screen.getByRole("dialog", { name: deckAnalysisCopy.bracketsSheet.title })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: deckAnalysisCopy.bracketsSheet.close }));
+    expect(screen.queryByRole("dialog", { name: deckAnalysisCopy.bracketsSheet.title })).toBeNull();
   });
 });

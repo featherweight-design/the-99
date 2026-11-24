@@ -11,6 +11,8 @@ vi.mock("../../app/cards/tag-actions", () => ({ searchTagCards: search }));
 import { DeckDescriptionField } from "./deck-description-field";
 import { searchDescriptionCards } from "../cards/description-tag-search";
 import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 
 // The description box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
 const wiring = { searchDescriptionCards } as unknown as DeckRowWiring;
@@ -56,7 +58,7 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     // `getByLabelText` alone does not catch this: it matches ANY association strategy
     // (an aria-label included), so the real test is the ARIA accessible-name computation,
     // which prefers aria-label over an associated <label> when both are present.
-    expect(screen.getByRole("combobox")).toHaveAccessibleName("Describe your deck");
+    expect(screen.getByRole("combobox")).toHaveAccessibleName(deckDescriptionCopy.description.label);
   });
 
   it("counts what is typed and calls onChange", () => {
@@ -120,7 +122,7 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     it("changes nothing from the [[ ]] button or typing while its save is out", () => {
       const onChange = vi.fn();
       render(<DeckDescriptionField value="Keep" onChange={onChange} onBlur={() => {}} saving refused={null} />);
-      fireEvent.click(screen.getByRole("button", { name: "Insert a card tag" }));
+      fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
       fireEvent.change(screen.getByRole("combobox"), { target: { value: "Keep more" } });
       expect(onChange).not.toHaveBeenCalled();
     });
@@ -128,8 +130,8 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
     it("draws the [[ ]] key and its words in the frame's foot, and the card-tags tip beside the label", () => {
       render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
       const frame = screen.getByRole("combobox").closest("[data-framed-box]")!;
-      expect(frame.contains(screen.getByRole("button", { name: "Insert a card tag" }))).toBe(true);
-      expect(frame.contains(screen.getByText("tag a card"))).toBe(true);
+      expect(frame.contains(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }))).toBe(true);
+      expect(frame.contains(screen.getByText(TAG_A_CARD_WORDS))).toBe(true);
       const tip = screen.getByRole("button", { name: "How card tags work" });
       expect(frame.contains(tip)).toBe(false);
       expect(document.querySelector('label[for="deck-description-field"]')!.parentElement!.contains(tip)).toBe(true);
@@ -137,7 +139,7 @@ describe("DeckDescriptionField (STATES-deck-description.md §1)", () => {
 
     it("does not blur the pair when the key is pressed", () => {
       render(<DeckDescriptionField value="" onChange={() => {}} onBlur={() => {}} saving={false} refused={null} />);
-      expect(fireEvent.mouseDown(screen.getByRole("button", { name: "Insert a card tag" }))).toBe(false);
+      expect(fireEvent.mouseDown(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }))).toBe(false);
     });
   });
 });

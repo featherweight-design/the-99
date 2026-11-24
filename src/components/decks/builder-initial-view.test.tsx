@@ -12,6 +12,7 @@ import { gameLogCopy } from "../../lib/copy/game-log";
 import type { DeckDetail } from "../../lib/decks/read";
 import type { BuilderView } from "../../lib/decks/builder-view";
 import { recommendedMix } from "../../lib/decks/mix";
+import { DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -205,13 +206,13 @@ describe("BuilderShell — the grouping it opens on", () => {
   it("opens By type with nothing stored, keeps a choice, and opens the next deck on it", async () => {
     window.localStorage.removeItem("the99:deck-grouping");
     const first = await mount("deck");
-    expect(screen.getByRole("radio", { name: "By type" })).toHaveAttribute("aria-checked", "true");
-    fireEvent.click(screen.getByRole("radio", { name: "By role" }));
+    expect(screen.getByRole("radio", { name: DECK_GROUPING_LABELS.type })).toHaveAttribute("aria-checked", "true");
+    fireEvent.click(screen.getByRole("radio", { name: DECK_GROUPING_LABELS.role }));
     expect(window.localStorage.getItem("the99:deck-grouping")).toBe("role");
-    expect(screen.getByRole("radio", { name: "By role" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: DECK_GROUPING_LABELS.role })).toHaveAttribute("aria-checked", "true");
     first.unmount();
     await mount("deck");
-    expect(screen.getByRole("radio", { name: "By role" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("radio", { name: DECK_GROUPING_LABELS.role })).toHaveAttribute("aria-checked", "true");
     window.localStorage.removeItem("the99:deck-grouping");
   });
 });

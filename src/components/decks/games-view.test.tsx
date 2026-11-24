@@ -19,6 +19,7 @@ vi.mock("../../app/decks/game-history-actions", () => ({
 }));
 
 import { GamesView, groupByMonth } from "./games-view";
+import { chassisCopy } from "../../lib/copy/filter-chassis";
 
 const DECK = { id: "deck-sai", name: "HD - Sai", identity: ["U"], commanderName: "Sai", partnerName: null, commanderPrintedName: null, commanderImageUri: null, commanderArtCropUri: null };
 const game = (id: string, playedAt: string, over: Partial<HistoryGame> = {}): HistoryGame => ({
@@ -158,8 +159,8 @@ describe("GamesView: the summary", () => {
     const box = document.querySelector("[data-games-summary]")!;
     expect(box).toHaveTextContent("HD - Sai · pod of 4");
     expect(box).toHaveTextContent(gameHistoryCopy.low);
-    expect(box.textContent).not.toContain("most played");
-    expect(document.querySelector("[data-games-count]")).toHaveTextContent("1 game");
+    expect(box.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
+    expect(document.querySelector("[data-games-count]")).toHaveTextContent(gameLogCopy.cell.subOneGame);
   });
 
   it("gives two games a record and the same low line, and three the most played line instead", () => {
@@ -176,7 +177,7 @@ describe("GamesView: the summary", () => {
 
   it("draws no most played line when two decks tie", () => {
     draw(payload(TWO, {}, summary({ mostPlayed: null })));
-    expect(document.querySelector("[data-games-summary]")?.textContent).not.toContain("most played");
+    expect(document.querySelector("[data-games-summary]")?.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
   });
 });
 
@@ -295,7 +296,7 @@ describe("GamesView: the filters", () => {
     unmount();
     draw(payload(TWO));
     expect(screen.getByRole("button", { name: gameHistoryCopy.filter.open })).toBeInTheDocument();
-    expect(screen.getByText("No filters on")).toBeInTheDocument();
+    expect(screen.getByText(chassisCopy.chips.none)).toBeInTheDocument();
   });
 
   it("names each active filter on a chip with its own way off, and the deck stays in its picker on the phone", () => {
@@ -351,7 +352,7 @@ describe("GamesView: the filters", () => {
     expect(box).toHaveTextContent("5 games logged. 2–3.");
     expect(box).toHaveTextContent("HD - Sai with Colin at the table");
     expect(box).toHaveTextContent("Colin won 2 of the 3 you lost");
-    expect(box.textContent).not.toContain("most played");
+    expect(box.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
     expect(box.textContent).not.toContain(gameHistoryCopy.low);
   });
 

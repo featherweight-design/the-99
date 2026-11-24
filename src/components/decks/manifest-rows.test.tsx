@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { ManifestRows, type ManifestRow } from "./manifest-rows";
+import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 afterEach(cleanup);
 
@@ -54,7 +55,7 @@ describe("ManifestRows: a disclosure, never a control (manifest-affordance adden
     expect(noGames.closest("ul")).toBeNull();
     expect(list.closest("ul")).not.toBeNull();
     expect(noGames.querySelector('[data-mark="none"]')?.textContent).toBe("–");
-    const button = screen.getByRole("button", { name: "Log a game →" });
+    const button = screen.getByRole("button", { name: deckTuningCopy.manifest.logGame });
     expect(button.className).toMatch(/h-\[44px\]/);
     expect(button.className).toMatch(/md:h-\[38px\]/);
     expect(button.className).not.toMatch(/py-\[12px\]/);

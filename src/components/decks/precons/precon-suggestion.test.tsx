@@ -6,6 +6,7 @@ const linkActions = vi.hoisted(() => ({ linkPrecon: vi.fn(), unlinkPrecon: vi.fn
 vi.mock("../../../app/decks/precon-link-actions", () => linkActions);
 import { PreconSuggestion } from "./precon-suggestion";
 import { LinkPreconRow } from "./precon-link-dialogs";
+import { preconsCopy } from "../../../lib/copy/precons";
 
 const match = (name: string, shared: number, of: number, sameCommanders: boolean, over: Partial<PreconMatch> = {}): PreconMatch => ({
   fileName: name.replace(/\W/g, ""), name, setCode: "CMM", releaseDate: "2023-08-04", commanders: ["Ulalek, Fused Atrocity"],
@@ -56,7 +57,7 @@ describe("PreconSuggestion", () => {
 
   it("names two precons in one strip, a Link each, and ✕ dismisses both (K15)", () => {
     render(<PreconSuggestion deckId="d1" deckName="HD" suggestions={[eldrazi, counter]} />);
-    expect(screen.getByText("Looks like this started as one of two precons")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.link.suggestion.leadTwo)).toBeInTheDocument();
     // Each `Link` names its precon to a screen reader.
     expect(screen.getByRole("button", { name: "Link Eldrazi Unbound" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Link Counter Intelligence" })).toBeInTheDocument();
@@ -69,7 +70,7 @@ describe("PreconSuggestion", () => {
   it("confirms before linking, with the precon's own card count (K3), and keeps the dialog on a failure", async () => {
     linkActions.linkPrecon.mockRejectedValueOnce(new Error("boom"));
     render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
-    fireEvent.click(screen.getByRole("button", { name: "Link it" }));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.link.suggestion.link }));
     const dialog = screen.getByRole("dialog", { name: "Link HD - Eldrazi to Eldrazi Unbound" });
     expect(within(dialog).getByText("Eldrazi Unbound · 99 cards · before v1")).toBeInTheDocument();
     expect(within(dialog).getByText("73 of its 85")).toBeInTheDocument();
@@ -85,13 +86,13 @@ describe("LinkPreconRow", () => {
       match("Wretched Ranks", 13, 67, true, { commanders: ["Ghoulcaller Gisa"] }),
       match("Undead Unleashed", 9, 79, false, { commanders: ["Wilhelt, the Rotcleaver"] }),
     ]} />);
-    fireEvent.click(screen.getByRole("button", { name: "Link a precon" }));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.link.versionsRow.cta }));
     return screen.getByRole("dialog", { name: "Which precon was HD - Zombies built from?" });
   };
 
   it("asks for a selection with the button disabled until one is made (K6n)", () => {
     const dialog = open();
-    expect(within(dialog).getByText("Select a precon to link.")).toBeInTheDocument();
+    expect(within(dialog).getByText(preconsCopy.link.pickPrecon.footNone)).toBeInTheDocument();
     expect(within(dialog).getByRole("button", { name: "Link" })).toBeDisabled();
   });
 
@@ -100,7 +101,7 @@ describe("LinkPreconRow", () => {
     const dialog = open();
     fireEvent.click(within(dialog).getByRole("radio", { name: "Select Wretched Ranks" }));
     expect(within(dialog).getByRole("radio", { name: "Unselect Wretched Ranks" })).toHaveAttribute("aria-checked", "true");
-    expect(within(dialog).getByText("Linking adds v0 before v1. Your cards don’t change.")).toBeInTheDocument();
+    expect(within(dialog).getByText(preconsCopy.link.pickPrecon.foot)).toBeInTheDocument();
     fireEvent.click(within(dialog).getByRole("radio", { name: "Unselect Wretched Ranks" }));
     expect(within(dialog).getByRole("button", { name: "Link" })).toBeDisabled();
     fireEvent.click(within(dialog).getByRole("radio", { name: "Select Undead Unleashed" }));
@@ -140,7 +141,7 @@ describe("LinkPreconRow", () => {
 describe("PreconSuggestion layout", () => {
   it("pins the ✕ to the corner and puts the text and Link it on one padded row", () => {
     render(<PreconSuggestion deckId="d1" deckName="HD - Eldrazi" suggestions={[eldrazi]} />);
-    const link = screen.getByRole("button", { name: "Link it" });
+    const link = screen.getByRole("button", { name: preconsCopy.link.suggestion.link });
     const row = link.parentElement!;
     const text = row.firstElementChild as HTMLElement;
     const close = screen.getByRole("button", { name: /^Dismiss the suggestion/ });
