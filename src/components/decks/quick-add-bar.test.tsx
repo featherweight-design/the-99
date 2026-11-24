@@ -9,7 +9,6 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import type { BrowseCard } from "../../lib/collection/browse";
-import { SEARCH_FAILED } from "../../lib/copy/game-seats";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { cardModalCopy } from "../../lib/copy/card-carousel";
 
@@ -1192,7 +1191,7 @@ describe("QuickAddBar — a failed search", () => {
   it("says the seat picker's words, split, and leaves the bar as it was", async () => {
     // The two halves are the seat picker's one line, not new words.
     expect(`${addPanelCopy.quickAdd.searchFailed} ${addPanelCopy.quickAdd.searchRetry}.`).toBe(gameSeatsCopy.picker.failed);
-    expect(addPanelCopy.quickAdd.searchFailed).toBe(SEARCH_FAILED);
+    expect(addPanelCopy.quickAdd.searchFailed).toBe("Couldn’t search just now.");
 
     quietErrors();
     searchCards.mockRejectedValue(new Error("boom"));

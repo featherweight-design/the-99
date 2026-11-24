@@ -5,7 +5,6 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
 import { cardCarouselCopy } from "../../lib/copy/card-carousel";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -90,7 +89,7 @@ describe("ChangeCommanderSheet", () => {
     fireEvent.click(own);
     expect(screen.getAllByTestId("change-commander-row").length).toBe(7 + 5);
     expect(own.getAttribute("aria-expanded")).toBe("true");
-    expect(own.textContent).toContain(addPanelCopy.consider.collapse);
+    expect(own.textContent).toContain(changeCommanderCopy.sheet.showFewer);
     fireEvent.click(buy);
     expect(screen.getAllByTestId("change-commander-row").length).toBe(7 + 10);
     fireEvent.click(own);
@@ -150,7 +149,7 @@ describe("ChangeCommanderSheet", () => {
   it("offers Try again when the read fails", async () => {
     readChangeCandidates.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce(data());
     mount();
-    fireEvent.click(await screen.findByRole("button", { name: addPanelCopy.degraded.retry }));
+    fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
     expect(await screen.findByText("Yours · 1")).toBeTruthy();
   });
 
@@ -183,7 +182,7 @@ describe("ChangeCommanderSheet", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Choose Prosper" }));
     fireEvent.click(screen.getByRole("button", { name: "Make Prosper commander" }));
     expect(await screen.findByText("We couldn’t change the commander. Korvold still leads this deck.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: addPanelCopy.degraded.retry })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 
   it("tells a brew that only another change undoes it", async () => {

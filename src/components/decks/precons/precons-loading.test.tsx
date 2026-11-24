@@ -15,7 +15,7 @@ describe("PreconsLoading", () => {
 
   it("draws the real header, one status line for a screen reader, and shapes the rest of the way", () => {
     const { container } = render(<PreconsLoading />);
-    expect(screen.getByRole("heading", { name: preconsCopy.door.line })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: preconsCopy.list.title })).toBeTruthy();
     expect(screen.getByRole("link", { name: preconsCopy.list.back }).getAttribute("href")).toBe("/decks");
     expect(screen.getByRole("status").textContent).toBe(preconsLoadingCopy.status);
     // Nothing but the header and the status line is exposed: every shape is hidden from a screen reader.

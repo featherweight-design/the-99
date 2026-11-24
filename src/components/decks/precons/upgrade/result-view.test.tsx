@@ -57,7 +57,7 @@ describe("ResultView's head", () => {
     render(<ResultView panel={panel} run={run({ unpicked: ["a-add1", "c-cut1"] })} lineActions={quiet()} />);
     expect(screen.getByText("2 swaps toward Spells")).toBeInTheDocument();
     expect(screen.getByText("Nov 10")).toBeInTheDocument();
-    for (const l of [preconUpgradeCopy.wait.picksLed, "Bracket", preconUpgradeCopy.results.facts.toBuy, preconUpgradeCopy.results.facts.yours]) expect(screen.getByText(l)).toBeInTheDocument();
+    for (const l of [preconUpgradeCopy.results.facts.ledBy, "Bracket", preconUpgradeCopy.results.facts.toBuy, preconUpgradeCopy.results.facts.yours]) expect(screen.getByText(l)).toBeInTheDocument();
     expect(screen.getByText("2 → 3")).toBeInTheDocument();
     // As found: the picks move the bar, not the facts.
     expect(within(screen.getByText(preconUpgradeCopy.results.facts.toBuy).parentElement!).getByText("$1.20")).toBeInTheDocument();
@@ -155,7 +155,7 @@ describe("ResultView's bar: the flow's press in the Apply place (call 11)", () =
   });
 
   it("holds an off press with its line said in the bar, and never applies on its own", () => {
-    const p = press({ off: true, note: preconUpgradeCopy.results.listChanged });
+    const p = press({ off: true, note: "The precon’s list changed after this upgrade, so it can’t start a deck." });
     render(<ResultView panel={panel} run={run()} press={p} lineActions={quiet()} />);
     expect(within(bar()).getByRole("note")).toHaveTextContent("The precon’s list changed");
     expect(apply()).toHaveAttribute("aria-disabled", "true");

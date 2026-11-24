@@ -19,8 +19,6 @@ vi.mock("../../app/decks/game-history-actions", () => ({
 }));
 
 import { GamesView, groupByMonth } from "./games-view";
-import { chassisCopy } from "../../lib/copy/filter-chassis";
-import { helpMeChooseIntroCopy } from "../../lib/copy/help-me-choose-intro";
 
 const DECK = { id: "deck-sai", name: "HD - Sai", identity: ["U"], commanderName: "Sai", partnerName: null, commanderPrintedName: null, commanderImageUri: null, commanderArtCropUri: null };
 const game = (id: string, playedAt: string, over: Partial<HistoryGame> = {}): HistoryGame => ({
@@ -42,7 +40,7 @@ const payload = (games: HistoryGame[], over: Partial<GamesPayload> = {}, sum = s
     byResult: { wins: 9, losses: 12, draws: 2 }, byDeck: [{ deckId: "deck-sai", games: 5 }],
     playedAgainst: {
       friends: [{ publicId: "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b", name: named("Colin"), games: 17, commander: null }],
-      commanders: [{ oracleId: "2121bcb4-f5fe-447f-9112-c7e5b5c45baf", name: helpMeChooseIntroCopy.exampleName, games: 12, artCropUri: null }],
+      commanders: [{ oracleId: "2121bcb4-f5fe-447f-9112-c7e5b5c45baf", name: "Ghalta, Primal Hunger", games: 12, artCropUri: null }],
     },
   },
   ...over,
@@ -160,8 +158,8 @@ describe("GamesView: the summary", () => {
     const box = document.querySelector("[data-games-summary]")!;
     expect(box).toHaveTextContent("HD - Sai · pod of 4");
     expect(box).toHaveTextContent(gameHistoryCopy.low);
-    expect(box.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
-    expect(document.querySelector("[data-games-count]")).toHaveTextContent(gameLogCopy.cell.subOneGame);
+    expect(box.textContent).not.toContain("most played");
+    expect(document.querySelector("[data-games-count]")).toHaveTextContent("1 game");
   });
 
   it("gives two games a record and the same low line, and three the most played line instead", () => {
@@ -178,7 +176,7 @@ describe("GamesView: the summary", () => {
 
   it("draws no most played line when two decks tie", () => {
     draw(payload(TWO, {}, summary({ mostPlayed: null })));
-    expect(document.querySelector("[data-games-summary]")?.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
+    expect(document.querySelector("[data-games-summary]")?.textContent).not.toContain("most played");
   });
 });
 
@@ -297,7 +295,7 @@ describe("GamesView: the filters", () => {
     unmount();
     draw(payload(TWO));
     expect(screen.getByRole("button", { name: gameHistoryCopy.filter.open })).toBeInTheDocument();
-    expect(screen.getByText(chassisCopy.chips.none)).toBeInTheDocument();
+    expect(screen.getByText("No filters on")).toBeInTheDocument();
   });
 
   it("names each active filter on a chip with its own way off, and the deck stays in its picker on the phone", () => {
@@ -353,7 +351,7 @@ describe("GamesView: the filters", () => {
     expect(box).toHaveTextContent("5 games logged. 2–3.");
     expect(box).toHaveTextContent("HD - Sai with Colin at the table");
     expect(box).toHaveTextContent("Colin won 2 of the 3 you lost");
-    expect(box.textContent).not.toContain(gameHistoryCopy.mostPlayed.lead);
+    expect(box.textContent).not.toContain("most played");
     expect(box.textContent).not.toContain(gameHistoryCopy.low);
   });
 
@@ -391,7 +389,7 @@ describe("GamesView: the filters", () => {
     expect(within(sheet).getByRole("button", { name: /Drawn\s*2/ })).toBeInTheDocument();
     expect(within(sheet).getByRole("button", { name: "Show 23 games" })).toBeInTheDocument();
     expect(within(sheet).getByText("Colin")).toBeInTheDocument();
-    expect(within(sheet).getByText(helpMeChooseIntroCopy.exampleName)).toBeInTheDocument();
+    expect(within(sheet).getByText("Ghalta, Primal Hunger")).toBeInTheDocument();
   });
 
   it("never disables an option: a zero stays pressable", () => {
@@ -407,7 +405,7 @@ describe("GamesView: the filters", () => {
     const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
     fireEvent.change(within(sheet).getByRole("searchbox", { name: gameHistoryCopy.filter.search }), { target: { value: "ghal" } });
     expect(within(sheet).queryByText("Colin")).toBeNull();
-    expect(within(sheet).getByText(helpMeChooseIntroCopy.exampleName)).toBeInTheDocument();
+    expect(within(sheet).getByText("Ghalta, Primal Hunger")).toBeInTheDocument();
   });
 
   it("picks a friend in the sheet as one Played against choice", () => {
