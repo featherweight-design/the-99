@@ -141,8 +141,3 @@ export function NoTool({ questions, onPick, onNavigate }: { questions: readonly 
 export function ToolsHeading() {
   return <h3 className={`${HEADING} px-4 pt-[14px] pb-[6px] md:px-[14px] md:pt-2`}>{askCopy.tools.heading}</h3>;
 }
-
-/** Tools answered and no card name matched: the cards part is this one line, never the no-results box. */
-export function NoCards() {
-  return <p aria-hidden className="border-t border-solid border-[color:var(--border)] px-4 py-[14px] text-[13px] text-[color:var(--fg-muted)] md:px-[14px]">{askCopy.noCards}</p>;
-}

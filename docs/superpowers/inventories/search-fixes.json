@@ -1,0 +1,97 @@
+{
+  "feature": "Search fixes: Home panel heading, tool rows without the no-cards line",
+  "note": "Search fixes follow-up to tool discovery D/E1: new heading, no sub line, tool answers draw no \"No card names match.\"",
+  "out": "search-fixes",
+  "clearAbout": true,
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    },
+    {
+      "label": "ipad-land",
+      "width": 1180,
+      "height": 820
+    },
+    {
+      "label": "ipad-port",
+      "width": 820,
+      "height": 1180
+    }
+  ],
+  "shares": {
+    "binding": "SearchDropdown",
+    "module": "src/components/card-search/search-desktop",
+    "view": "src/components/home/home-search-panel.tsx"
+  },
+  "rows": [
+    {
+      "id": "home-panel",
+      "label": "Home panel at rest",
+      "view": "src/components/home/home-search-panel.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-home-search-panel]",
+          "settle": 2500
+        }
+      ]
+    },
+    {
+      "id": "home-answer",
+      "label": "Home panel, a question answered by tool rows",
+      "view": "src/components/home/home-search-panel.tsx",
+      "widths": [
+        "desktop",
+        "ipad-land",
+        "ipad-port"
+      ],
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-home-search-panel]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-home-search-panel] input"
+        },
+        {
+          "fill": "[data-home-search-panel] input",
+          "text": "How do I make my deck better?"
+        },
+        {
+          "wait": "[data-ask-tool]",
+          "settle": 1200
+        }
+      ]
+    },
+    {
+      "id": "sheet-answer",
+      "label": "Phone sheet, a starter question answered by tool rows",
+      "view": "src/components/home/home-search-panel.tsx",
+      "widths": [
+        "phone"
+      ],
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "[data-home-search-panel]",
+          "settle": 1500
+        },
+        {
+          "click": "[data-home-starters] button"
+        },
+        {
+          "waitDialog": "Search all cards",
+          "settle": 4000
+        }
+      ]
+    }
+  ]
+}

@@ -29,7 +29,7 @@ import { searchAllCardsAction, cardSignalsAction } from "../../app/card-search-a
 import { clearRecent, pushRecent, readRecent, type RecentCard } from "../../lib/card-search/recent";
 import type { CardSearchRow, CardSignals } from "../../lib/card-search/search";
 import { isAddShortcut } from "../../lib/card-search/shortcut";
-import { afterDialogsReleased, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
+import { afterDialogsReleased, leaveDialogsForNavigation, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { captureToolEvent } from "../../lib/analytics/posthog";
 import type { SEARCH_OPENED_FROM } from "../../lib/analytics/tool-events";
@@ -501,6 +501,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       if (bodyRef.current?.closest("[inert]")) return;
       captureToolEvent("ask_tool_pressed", { tool: tool.id, from: !desktop ? "phone_sheet" : anchor === "home" ? "home_inline" : "desktop", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
       if (tool.id === "find-a-deck") captureToolEvent("find_a_deck_opened", { from: "ask" });
+      // Close AND navigate: the search's Back entry stays under the new route. Without this its release reads "closed some
+      // other way" before the route has moved, and its `history.back()` cancels the push (a press that only closed).
+      leaveDialogsForNavigation();
       close();
       router.push(toolHref(tool));
     },

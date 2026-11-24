@@ -51,7 +51,7 @@ async function run(page, wide, tag) {
   await page.goto(`${BASE}/`, { waitUntil: "networkidle" });
   const there = await panel(page).waitFor({ timeout: 15_000 }).then(() => true, () => false);
   if (!report(`${tag} Home draws the search panel`, there)) return;
-  report(`${tag} the panel names itself`, /Not sure where to go\?/.test(await panel(page).innerText()));
+  report(`${tag} the panel names itself`, /What do you want to do\?/.test(await panel(page).innerText()));
   const h = await homeField(page).evaluate((el) => Math.round(el.closest("label")?.getBoundingClientRect().height ?? el.getBoundingClientRect().height));
   report(`${tag} the field is 52px`, h === 52, `${h}px`);
   const starters = panel(page).locator("[data-home-starters] button");

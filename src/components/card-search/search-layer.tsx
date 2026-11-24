@@ -16,7 +16,7 @@ import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
 import { askWords } from "../../lib/discovery/ask";
 import type { ToolId } from "../../lib/discovery/tools";
 import type { ToolCardModel } from "../../lib/discovery/showcase";
-import { NoCards, NoTool, Starters, ToolRow, ToolsHeading } from "./ask-results";
+import { NoTool, Starters, ToolRow, ToolsHeading } from "./ask-results";
 import { SearchListbox } from "./search-listbox";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { CardDetailProvider, useCardDetail, type SiblingCard } from "../cards/card-detail-provider";
@@ -169,8 +169,9 @@ function SearchBody(props: SearchLayerProps) {
   // The count, or the no-results line, once the results have stood still for half a second.
   useEffect(() => {
     if (!settled) return;
-    const cards = p.rows.length === 0 ? (tools.length > 0 ? askCopy.noCards : collectionEditCopy.add.noResultsTitle(p.query)) : cardSearchCopy.count(p.rows.length);
-    const text = tools.length > 0 ? `${askCopy.tools.heading}: ${tools.map((t) => t.copy.name).join(", ")}. ${cards}` : cards;
+    // Tools answering with no card name is just the tools: the screen draws no "no card names" line, so none is spoken.
+    const cards = p.rows.length === 0 ? (tools.length > 0 ? "" : collectionEditCopy.add.noResultsTitle(p.query)) : cardSearchCopy.count(p.rows.length);
+    const text = tools.length > 0 ? `${askCopy.tools.heading}: ${tools.map((t) => t.copy.name).join(", ")}.${cards ? ` ${cards}` : ""}` : cards;
     // Emptied first, so a second search with the same count is still heard (the region only speaks a change).
     onAnnounce("");
     const timer = window.setTimeout(() => onAnnounce(text), ANNOUNCE_AFTER_MS);
@@ -264,21 +265,21 @@ function SearchBody(props: SearchLayerProps) {
       }}
     />
   ));
-  const withTools = (cards: React.ReactNode) => (
+  const withTools = (cards: React.ReactNode | null) => (
     <SearchListbox
       id={p.listboxId}
       label={cardSearchCopy.label}
       groups={[
         { key: "tools", label: askCopy.tools.heading, heading: <ToolsHeading />, children: toolRows },
-        { key: "cards", label: askCopy.tools.cards, children: cards },
+        ...(cards === null ? [] : [{ key: "cards", label: askCopy.tools.cards, children: cards }]),
       ]}
     />
   );
 
   if (p.rows.length === 0) {
     // Nothing answers: the tools part is the "Nothing here answers that yet" state, never a dead end. A tool that
-    // answers with no card name is `Tools for this` over the one line `No card names match.`
-    if (toolsOn) return withTools(<NoCards />);
+    // answers with no card name is `Tools for this` alone: no "no card names" line under tools that answered.
+    if (toolsOn) return withTools(null);
     // Tools matched but are still on the way: the searching line, never the no-results box that the tools would then replace.
     if (p.ask.ids.length > 0) return <p className={META}>{cardSearchCopy.searching}</p>;
     if (p.ask.ids.length === 0 && askWords(p.query).length >= 2) {

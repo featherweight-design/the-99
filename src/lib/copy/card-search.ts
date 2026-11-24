@@ -86,14 +86,13 @@ export const askCopy = {
   /** The field's placeholder and its accessible name (the control, rail slot and sheet keep `cardSearchCopy.label`). */
   placeholder: "Search cards, or ask a question",
   starters: {
-    heading: "Not sure where to go? Ask",
+    heading: "Try asking",
     questions: ["Where can my spare cards go?", "How do I make my deck better?", "What can I build with my cards?", "What should I buy next?"],
   },
   tools: { heading: "Tools for this", cards: "Cards" },
   /** The cost pill on a tool that spends nothing (a paid one carries its own credit line). */
   free: "free",
   yours: { spares: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck` },
-  noCards: "No card names match.",
   noTool: { title: "Nothing here answers that yet", body: "Try one of these, or search a card by name.", about: "Every tool, in About" },
   /** A tool answer's accessible name: the tool, what it does, what it costs, where it lands. */
   rowAria: (name: string, line: string, cost: string | null, where: string) => [name, line, cost, where].filter(Boolean).join(", "),

@@ -2601,6 +2601,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   handovers before the Backs, and on a deck page, and checks Escape (clears the query, then closes, focus back on the
   icon). It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
+- `pnpm probe:search-fixes` proves a press on each tool row (a suggested-changes row, the Stats row) lands off Home from Home's popover at 1300 and the phone sheet at 390, and that "No card names match." never draws under tool rows, against a server at `PROBE_BASE`. It writes no row (the About gate is marked seen and put back) and fails on main.
 - `pnpm probe:home-search` proves Home's search panel (tool discovery E1) at 390 and at 1300, against a server at `PROBE_BASE`.
   It checks the panel, its 52px field and its starters; at 1300 that a press on the field opens the answers in place
   (the rail draws no second field), that a question is answered by a tool there, that Esc (twice: clear, then close)

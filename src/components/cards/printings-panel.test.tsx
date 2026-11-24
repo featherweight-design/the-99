@@ -68,11 +68,12 @@ describe("the Search tile and panel", () => {
     render(<PrintingStrip printings={[A, B]} shownKey="a" onSelect={() => {}} onAnnounce={() => {}} cardName="X" colorIdentity={[]} />);
     expect(screen.queryByRole("button", { name: "Search printings" })).toBeNull();
   });
-  it("opens on the tile with focus in the search field and closes on the X, returning focus to the tile", () => {
+  it("opens on the tile with focus on the panel, not the search field, and closes on the X, returning focus to the tile", () => {
     render(<Harness />);
     fireEvent.click(screen.getByRole("button", { name: "Search printings" }));
     expect(screen.getByTestId("printings-panel")).toBeTruthy();
-    expect(document.activeElement).toBe(screen.getByPlaceholderText("Search 4 printings by set"));
+    expect(document.activeElement).toBe(screen.getByTestId("printings-panel"));
+    expect(document.activeElement).not.toBe(screen.getByPlaceholderText("Search 4 printings by set"));
     fireEvent.click(screen.getByRole("button", { name: "Close printings" }));
     expect(screen.queryByTestId("printings-panel")).toBeNull();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Search printings" }));
