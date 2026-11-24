@@ -80,3 +80,13 @@ export const feedSheetCopy = {
 // R11: spare offers on Home. No new strings: the lead, the row presses, the badge and the sheet all use shipped copy
 // (feedCopy.home.offerKicker, spareCopy.request.offer.detail / incomingDetail, AnswerPresses, badgeWords, offerSheetCopy).
 // Home stops drawing feedCopy.line.spareOffer / spareRequest ("Answer in Friends.") on an answerable row (Q18 A).
+
+// R12: Home search follow-ups.
+export const askR12Copy = {
+  opening: (tool: string) => `Opening ${tool}…`,
+  pickFoot: (n: number) => `Pick a deck · ${n} can use it`,
+  pickBack: "Answers", // drawn with a leading ‹
+  pickLine: (n: number) => `Which deck? ${n} of yours can use it.`,
+  pickHeading: "Your decks, last touched first",
+  pickAria: (tool: string) => `${tool}: pick a deck`,
+};

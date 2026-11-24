@@ -1,6 +1,6 @@
 # READINESS · Finding the tools
 
-**Verdict: Yellow** (engineering readiness audit, 2026-11-23, amending Design's Green). Hugh approved the design through R11 and every question is settled, but G6, G9 and G22 do not match the code, four states are undrawn, and the copy had not been reviewed. Each gap is settled from the nearest drawn pattern in `docs/superpowers/plans/2026-11-23-tool-discovery.md` (sections 1, 4, 5 and 7); nothing returns to Design.
+**Verdict: Yellow** (engineering readiness audit of R12, 2026-11-24, amending Design's Green). Approved by Hugh 2026-11-24 through R12; every question settled (README, Decisions) and nothing returns to Design. Four eng-side clarifications (R12-C1 to C4) and one sequencing dependency on #3266 (R12-C5) are settled below from the nearest drawn pattern. Earlier rounds' gaps G1 to G25 stand as written; their Errata table (dropped by the R12 commit) is restored at the end.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -74,6 +74,23 @@
   A row whose ask ran out keeps `Answer in Friends.` until the next read drops it. The rail's compact layout (G17) applies.
 - **G25 · Friends badge and the offerer's sheet (R11).** No change: the badge (#3221) and `OfferAnswerSheet` (#3242) as
   shipped. The badge falls by one as a row or the lead is answered (the existing `announceAnswerSeen`).
+- **G26 · Tool marks (R12, Q19 A).** `ask-results.tsx` `Mark`: tile `h-12 w-12 rounded-[12px] md:h-10 md:w-10
+  md:rounded-[10px]`, glyph 28px (`md:` 24px). Row heights unchanged (72px, 58px).
+- **G27 · Opening state (R12, Q20 A).** `pressTool` no longer closes before `router.push`: it marks the row pending
+  (`data-ask-pending`: inset 1.5px `--accent` ring on `--elevated`, a 22px spinner in the tile, the foot `Opening {name}…`
+  in `--accent-text`, the other rows at 45% and inert), shows the shipped `SearchProgress`, and closes when the pathname
+  changes (the existing `PendingReporter`/navigation-commit signal), keeping `leaveDialogsForNavigation`. Esc and ✕ cancel
+  (close, no push afterwards). A push that errors restores the row and raises the shipped toast. Phone and dropdown alike.
+- **G28 · Deck picker (R12, Q21 A).** `CardState` `deck` with `more > 0` gains the fitting decks (id, name, commander,
+  art crop, last edited), from the same `loadToolFits` read. Its foot reads `Pick a deck · {n} can use it`; a press swaps
+  the listbox for the picker in the same host: `‹ Answers`, the tool's name and cost chip, `Which deck? {n} of yours can
+  use it.`, then one option per deck, last touched first (64px phone, 54px dropdown). Enter or a press opens
+  `tryHref(/decks/{id}, tool)` with G27's state on that row; Backspace on an empty field or ‹ Answers returns. One deck:
+  straight there, as shipped. The event `ask_tool_pressed` gains `picked: "1" | "2" | "3+"` (deck rank, never a name).
+- **G29 · Landing halo (R12, Q22 A).** `useToolLanding` haloes only targets on a busier screen: the Tuning tiles,
+  Top off, Cheaper stand-ins, Friends' spares, Matchups, Find a deck's Free chip. Precons, Wishlist, Collection Sync,
+  Stats for your decks and Friends land at the top with no halo and spend no moment. Help me choose's target moves from
+  the form's first answer to the intro panel (`ChooseIntro`, #3266) while it is open; folded (after the first run), no halo.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
@@ -81,6 +98,41 @@
 - R11 frames rendered from main bb4832f8 (`scratch-gen/r-offers.tsx`, `sp-of.json`, `src-patches/` for the ✕ and row toggles).
 - Frames rendered from main 7563036 with the shipped components; new parts in `scratch-gen/find.tsx` (R2: `FindCallout` `on`, `FitButton`; R3: `FitRowButton`, and `ask.tsx` for Ask) and the hub
   patch described in `scratch-gen/HOW.md`. Figures, set codes and art are illustrative.
+
+## R12 engineering audit (2026-11-24, against origin/main cc89ad770)
+
+**Verdict: Yellow.** Audited cold against current main, which already holds #3259 (Ask in the card search), #3261 (Home's
+search panel), #3263 and #3264 (search fixes: tool rows land, printings focus). The handoff's frames were rendered from this
+same main (cc89ad77), so the surface has not drifted: `ToolRow`, `Mark`, `toolWhere`, `pressTool`, `SearchProgress`, `LANDINGS`
+and `useToolLanding` all exist as G26 to G29 name them. Phone (390) and dropdown/popover (1300) are drawn for every change.
+Nothing is missing that needs Design. Items below are decisions the plan PR records.
+
+### Dimensions
+- **Scope.** Clear: four changes (Q19 to Q22), each with its frames; non-goals implicit (card rows, ranking, matcher untouched). Green.
+- **State coverage.** Rest, pending, commit, cancel, fail, one deck, several decks, picker, landing halo/no halo all drawn (STATES.md:105-118). Undrawn: picker with many decks (R12-C3), typing during Opening (R12-C2), picker offline (R12-C4). Yellow.
+- **Data contract.** G28's fields exist without a new read: `DeckListItem` (`src/lib/decks/read.ts`) carries `commanderName`, `commanderArtCropUri` and the sort key `byTouched` uses; `deckFacts` (`src/lib/discovery/fits.ts:109`) drops them, so `ToolFit.decks` (`fits.ts:63`, `{id, name}`) and `CardState` deck (`showcase.ts:19`) widen. Both cross the `askToolsAction` boundary (`src/app/ask-actions.ts:33`), so the widened state serializes. `loadToolFits` is read once per typed query already; no extra query. Green with the widening.
+- **Codebase fit.** Tokens used (`--accent`, `--elevated`, `--accent-text`, `--fg-faint`) all exist and are already in `ask-results.tsx`. `Mark` is the only tile (`ask-results.tsx:30-42`; one consumer, `search-layer.tsx:250`), so G26 is one component, both widths. Copy goes in `src/lib/copy/card-search.ts` beside `askCopy`; `askR12Copy` there, not a new file. Green.
+- **Cross-cutting.** Analytics: `ask_tool_pressed` gains `picked` (`src/lib/analytics/tool-events.ts` and its test); a deck rank, never a name. A11y and motion: R12-C2. Yellow.
+- **Drift.** None on the surface. One dependency drift: G29 and the README name `ChooseIntro` (#3266) as the Help me choose landing target; #3266 is an OPEN design-only PR (branch design/help-me-choose-intro, handoff approved READY, no code), `ChooseIntro` does not exist on main. R12-C5. Yellow.
+- **Decision log.** README Decisions Q19 to Q22 (README.md:205-209) lock A for each. Green.
+
+### Eng-side clarifications
+- **R12-C1 · A same-path press never commits (the real one).** G27 closes the search "when the pathname changes (the existing `PendingReporter`/navigation-commit signal)". `PendingReporter` (`src/components/shell/pending-reporter.tsx`) feeds the stall report, not the search; the only close-on-navigation the search has is `shownOn !== pathname` (`src/components/card-search/card-search.tsx:478-487`). Tool answers that land on the SAME pathname never change it: Find a deck from `/collection` (`/collection?avail=free`, `tools.ts:60`), Wishlist from the wishlist, and any deck tool from that deck (`/decks/{id}?tool=`). The row would sit in Opening forever. Decision: the commit signal is pathname plus search (`useSearchParams`), compared with the value at press; a same-address press (nothing to navigate) closes at once as today. Also add the shipped 8s stall as the upper bound (R12-C2 fail).
+- **R12-C2 · Cancel and fail cannot be literal.** STATES.md:111 says Esc or ✕ while opening "drops" the navigation, and G27 says "close, no push afterwards", but G27 also pushes before closing, and `router.push` cannot be aborted or reported failed (it resolves nothing, rejects nothing; a failed RSC load lands on `error.tsx`). Decision: Esc and ✕ close the search and supersede the pending push with `router.replace(<the address at press>)` only if a probe proves it cancels (`probe:search-fixes` pattern); otherwise the page that was already requested still arrives and the search is simply closed, and STATES.md's "dropped" reads as "no longer waited on". "A push that errors restores the row and raises the toast" is built as: the 8s stall (`nav-stall.tsx`) or a thrown action restores the row and raises the shipped toast. While Opening: the field is read-only (typing is ignored, not queued), the other rows `inert` and dimmed to 45%, the open row keeps `aria-selected`, `aria-busy` on the listbox, one polite live announcement of `Opening {name}…`, the spinner static under `prefers-reduced-motion`. Phone and dropdown alike (drawn).
+- **R12-C3 · Picker with many decks.** Drawn with 4 decks. Decision: the picker body uses the listbox's own max-height and scroll (the dropdown's and the sheet's), rows 64px phone and 54px dropdown, no cap on count; the active row follows arrows as in the answers list. `‹ Answers` is a button reachable by Tab; Backspace on an empty field returns (nothing is typed in the picker).
+- **R12-C4 · Offline picker and the first-deck fallback.** `offlineModel` (`src/components/card-search/ask-engine.ts:13-17`) builds deck tools with `fits: {}`, landing on `/decks`; it has no deck list, so no picker (the foot stays `Decks`, as shipped). The picker exists only for a server-read answer with `more > 0`. A deck that vanished between read and press lands on its own not-found as today.
+- **R12-C5 · Help me choose's halo waits on #3266.** Until `ChooseIntro` is built, Help me choose keeps its shipped target (the form's first answer) UNCHANGED; moving the halo to the intro is a step of the #3266 build, not of R12's. After #3266: halo `ChooseIntro` while open; folded, none (`pageLanding` for `help-me-choose` returns the landing with no target, spends no moment). Nothing else in G29 depends on it.
+- **R12-C6 · G29 list vs the board.** The board's halo list names Consider (Tuning tile, `LANDINGS` `consider`) and G29 omits it: it keeps its halo. `overview` (deck Analysis, `LANDINGS`) is on neither list: it keeps its halo as shipped. Precons, Wishlist, Collection Sync, Stats for your decks and Friends return no target and spend no moment, at the top of the page; `?tool=` is still stripped through `mirrorUrl`.
+
+### What R12 draws, for the build
+1. **Marks (Q19 A, G26).** `Mark` only: phone tile 48px/12px radius, wrench 28px; from md tile 40px/10px radius, wrench 24px. Row min-heights stay 72 and 58 (tile + padding 64 and 54 fit). Home panel's popover and the rail's dropdown share it.
+2. **Opening state (Q20 A, G27).** Pressed row: 1.5px accent inset ring on `--elevated`, tile glyph becomes a 22px spinner, foot becomes `Opening {name}…` in `--accent-text`; other rows 45% and inert; `SearchProgress` runs across the top; the search closes on commit (R12-C1). Esc and ✕ close (R12-C2); failure restores the row plus the shipped toast. Phone sheet and dropdown/Home popover identical.
+3. **Deck picker (Q21 A, G28).** A deck tool with `more > 0` has foot `Pick a deck · {n} can use it` (n = decks that fit); a press (or Enter) swaps the listbox for: `‹ Answers`, tool name plus cost chip, `Which deck? {n} of yours can use it.`, then one row per fitting deck (commander art crop, name, commander, last edited), last touched first, 64px phone and 54px dropdown. A deck press opens `tryHref(/decks/{id}, tool)` with the Opening state on that row; arrows, Enter, Backspace and ‹ Answers work. One deck fitting still goes straight there. `ask_tool_pressed` gains `picked: "1"|"2"|"3+"`.
+4. **Landing halo (Q22 A, G29).** Halo kept: Tuning tiles (Suggested changes, Proposed cuts, Mana Balance, Consider), Top off, Cheaper stand-ins, Friends' spares, Matchups, Find a deck's Free chip. Removed: Precons, Wishlist, Collection Sync, Stats for your decks, Friends. Help me choose: the intro panel while open, after #3266 builds.
+
+### Copy
+`askR12Copy` (`copy strings.ts`) is unreviewed; `/copy-review` before build (G12). `pickHeading` has no drawn use (aria only); decide in review.
+
 
 ## Errata (engineering audit, 2026-11-23)
 
