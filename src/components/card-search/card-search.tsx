@@ -162,6 +162,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  // Set when an open stalled: the push is still pending, and if it lands late the search closes over a route that moved.
+  const stalledRef = useRef(false);
+  const pressedRef = useRef(false);
   const openCardRef = useRef<OpenCard | null>(null);
   const savedScroll = useRef(0);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -222,8 +225,13 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setPhase("idle");
     // Closing while a tool opens (Esc, ✕) leaves the page to arrive: a push cannot be taken back.
     setOpening(null);
+    pressedRef.current = false;
     openerRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (!opening) pressedRef.current = false;
+  }, [opening]);
 
   // A page that has not committed in eight seconds is a failed press: the row comes back to rest and the toast says so.
   useEffect(() => {
@@ -231,6 +239,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     const t = setTimeout(() => {
       setOpening(null);
       stayInDialogs();
+      stalledRef.current = true;
+      pressedRef.current = false;
       setOpenFailed(askCopy.openFailed(opening.name));
     }, OPEN_STALL_MS);
     return () => clearTimeout(t);
@@ -504,6 +514,12 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setPhase("idle");
     setOpening(null);
   }
+  // A stalled push that lands late: the search's entry stays under the new route, as for any navigation (no `back()`).
+  useEffect(() => {
+    if (!stalledRef.current) return;
+    stalledRef.current = false;
+    leaveDialogsForNavigation();
+  }, [pathname]);
 
   const onClear = useCallback(() => {
     clearRecent(userId);
@@ -517,7 +533,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // closes. Counted by the tool and its place in the answers, never the words typed.
   const pressTool = useCallback(
     (tool: ToolCardModel, index: number) => {
-      if (opening || bodyRef.current?.closest("[inert]")) return;
+      if (opening || pressedRef.current || bodyRef.current?.closest("[inert]")) return;
+      pressedRef.current = true;
+      stalledRef.current = false;
       captureToolEvent("ask_tool_pressed", { tool: tool.id, from: !desktop ? "phone_sheet" : anchor === "home" ? "home_inline" : "desktop", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
       if (tool.id === "find-a-deck") captureToolEvent("find_a_deck_opened", { from: "ask" });
       // The search's Back entry stays under the new route. Without this its release reads "closed some other way" before
