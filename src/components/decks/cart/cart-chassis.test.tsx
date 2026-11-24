@@ -193,7 +193,7 @@ describe("the cart's chassis (v2 PR 8)", () => {
 
   it("draws Filters as the shared 44px box, with no hit overlay (Small items 4 item 1)", () => {
     render(<CartView cart={cart()} provenance={provenance} />);
-    const trigger = screen.getByRole("button", { name: collectionChassisCopy.sheet.title });
+    const trigger = screen.getByRole("button", { name: collectionChassisCopy.sheet.triggerAria(0) });
     expect(trigger.className).toContain("h-[44px]");
     expect(trigger.className).toContain("rounded-[10px]");
     expect(trigger.className).toContain("bg-[color:var(--surface-sunken)]");
@@ -222,13 +222,13 @@ describe("the cart's chassis (v2 PR 8)", () => {
     });
     const resize = (to: boolean) => { wide = to; act(() => { listeners.forEach((l) => l()); }); };
     render(<CartView cart={cart()} provenance={provenance} />);
-    fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }));
+    fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.triggerAria(0) }));
     expect(screen.getByRole("dialog", { name: "Filters" })).toBeTruthy();
     resize(true);
     resize(false);
     // Back below 1000px the sheet is shut: no dialog, and the trigger says so.
     expect(screen.queryByRole("dialog", { name: "Filters" })).toBeNull();
-    expect(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }).getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByRole("button", { name: collectionChassisCopy.sheet.triggerAria(0) }).getAttribute("aria-expanded")).toBe("false");
   });
 
   it("draws the desktop sort as the labelled menu past the hairline", () => {
@@ -248,7 +248,7 @@ function ownedCart(): CartPayload {
   const c = cart();
   return { ...c, lines: c.lines.map((l) => (l.oracleId === "sol" || l.oracleId === "mox" ? { ...l, owned: 1, heldElsewhere: 1 } : l)) };
 }
-const filtersPill = (on = 0) => screen.getByRole("button", { name: on === 0 ? collectionChassisCopy.sheet.title : `Filter cards, ${on} on` });
+const filtersPill = (on = 0) => screen.getByRole("button", { name: collectionChassisCopy.sheet.triggerAria(on) });
 const deckRegions = () => screen.getAllByRole("region", { name: /HD - / }).map((r) => r.textContent?.match(/HD - [A-Za-z]+/)?.[0]);
 
 describe("the cart's Owned filter (v2 PR 9)", () => {

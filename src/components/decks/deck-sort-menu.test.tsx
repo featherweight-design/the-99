@@ -1,8 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { DeckSortMenu } from "./deck-sort-menu";
-import { deckOrderCopy } from "../../lib/copy/deck-order";
-import { refreshCopy } from "../../lib/copy/refresh";
+import { DECK_SORT_LABELS } from "../../lib/decks/sort";
 
 function open(sort: "lastPlayed" | "name" | "newest" | "custom" = "lastPlayed", arrange?: { label: string; count: number; onSelect: () => void }) {
   const onChange = vi.fn();
@@ -54,7 +53,7 @@ describe("DeckSortMenu", () => {
 
   it("lists Custom after Newest", () => {
     const { options } = open("custom");
-    expect(options().map((o) => o.textContent)).toEqual([refreshCopy.filters.lastPlayedHeading, "Name", "Newest", "Custom"]);
+    expect(options().map((o) => o.textContent)).toEqual([DECK_SORT_LABELS.lastPlayed, "Name", "Newest", "Custom"]);
     expect(options()[3]).toHaveAttribute("aria-checked", "true");
   });
 
@@ -66,7 +65,7 @@ describe("DeckSortMenu", () => {
 
     it("is a menuitem past the options, with the count, and runs its action", () => {
       const onSelect = vi.fn();
-      open("name", { label: deckOrderCopy.arrangeAll, count: 5, onSelect });
+      open("name", { label: "Arrange decks…", count: 5, onSelect });
       const row = screen.getByRole("menuitem", { name: /Arrange decks…/ });
       expect(row).toHaveTextContent("5");
       expect(row).not.toHaveAttribute("aria-checked");
@@ -76,7 +75,7 @@ describe("DeckSortMenu", () => {
     });
 
     it("joins the roving focus as the last stop", () => {
-      const { options } = open("custom", { label: deckOrderCopy.arrangeAll, count: 5, onSelect: vi.fn() });
+      const { options } = open("custom", { label: "Arrange decks…", count: 5, onSelect: vi.fn() });
       fireEvent.keyDown(options()[3], { key: "ArrowDown" });
       expect(screen.getByRole("menuitem")).toHaveFocus();
       fireEvent.keyDown(screen.getByRole("menuitem"), { key: "ArrowDown" });
