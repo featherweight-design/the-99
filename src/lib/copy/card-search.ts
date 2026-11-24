@@ -90,6 +90,9 @@ export const askCopy = {
     questions: ["Where can my spare cards go?", "How do I make my deck better?", "What can I build with my cards?", "What should I buy next?"],
   },
   tools: { heading: "Tools for this", cards: "Cards" },
+  /** The pressed tool's foot while its page loads (R12 Q20), and the toast when the page does not arrive. */
+  opening: (tool: string) => `Opening ${tool}…`,
+  openFailed: (tool: string) => `Couldn’t open ${tool}. Try again.`,
   /** The cost pill on a tool that spends nothing (a paid one carries its own credit line). */
   free: "free",
   yours: { spares: (n: number) => `${n.toLocaleString("en-US")} of your cards are in no deck` },

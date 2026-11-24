@@ -26,17 +26,23 @@ export function toolWhere(m: ToolCardModel): string {
   return s.kind === "page" ? s.label : askCopy.newDeck;
 }
 
-/** The tool's mark: one ink on an accent wash, the search row's art slot (40px phone, 30px dropdown). */
-function Mark() {
+/** The tool's mark: one ink on an accent wash, 28px in a 48px tile on the phone and 24px in 40px from md (R12 Q19). While the
+ *  page loads (Q20) the glyph gives way to a 22px spinner, which stands still under reduced motion. */
+function Mark({ pending }: { pending: boolean }) {
   return (
     <span
       aria-hidden
-      className="flex h-10 w-10 flex-none items-center justify-center rounded-[10px] text-[color:var(--accent-text)] md:h-[30px] md:w-[30px] md:rounded-[8px]"
+      data-ask-mark=""
+      className="flex h-12 w-12 flex-none items-center justify-center rounded-[12px] text-[color:var(--accent-text)] md:h-10 md:w-10 md:rounded-[10px]"
       style={{ background: "color-mix(in srgb, var(--accent) 16%, var(--surface))" }}
     >
-      <svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M11.5 3.5a3.6 3.6 0 0 0-4.2 4.8L3.5 12.1a1.6 1.6 0 0 0 2.3 2.3l3.8-3.8a3.6 3.6 0 0 0 4.8-4.2l-2.2 2.2-1.9-.5-.5-1.9z" />
-      </svg>
+      {pending ? (
+        <span data-ask-spin="" className="block h-[22px] w-[22px] rounded-full border-2 border-solid border-[color:var(--accent)] border-t-transparent motion-safe:animate-spin" />
+      ) : (
+        <svg className="h-7 w-7 md:h-6 md:w-6" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M11.5 3.5a3.6 3.6 0 0 0-4.2 4.8L3.5 12.1a1.6 1.6 0 0 0 2.3 2.3l3.8-3.8a3.6 3.6 0 0 0 4.8-4.2l-2.2 2.2-1.9-.5-.5-1.9z" />
+        </svg>
+      )}
     </span>
   );
 }
@@ -46,6 +52,7 @@ export function ToolRow({
   id,
   first,
   active,
+  opening,
   onPress,
   onKey,
 }: {
@@ -53,12 +60,16 @@ export function ToolRow({
   id: string;
   first: boolean;
   active: boolean;
+  /** The tool whose page is loading, if any: this row rings, the others dim. */
+  opening: string | null;
   onPress: () => void;
   onKey?: (e: KeyboardEvent<HTMLDivElement>) => void;
 }) {
   const none = model.state.kind === "none";
   const line = model.state.kind === "none" ? model.state.line : model.copy.line;
-  const where = toolWhere(model);
+  const pending = opening === model.id;
+  const dim = opening !== null && !pending;
+  const where = pending ? askCopy.opening(model.copy.name) : toolWhere(model);
   return (
     <div
       id={id}
@@ -70,11 +81,12 @@ export function ToolRow({
       onKeyDown={onKey}
       data-ask-tool={model.id}
       data-ask-none={none ? "" : undefined}
+      data-ask-pending={pending ? "" : undefined}
       className={`flex min-h-[72px] cursor-pointer items-center gap-3 rounded-[8px] py-2 pr-[14px] pl-4 outline-none md:min-h-[58px] md:py-[7px] md:pl-[14px] ${
         first ? "" : "border-t border-solid border-[color:var(--border)]"
-      } ${active ? "bg-[color:var(--elevated)]" : ""}`}
+      } ${active || pending ? "bg-[color:var(--elevated)]" : ""} ${pending ? "shadow-[inset_0_0_0_1.5px_var(--accent)]" : ""} ${dim ? "opacity-[0.45]" : ""}`}
     >
-      <Mark />
+      <Mark pending={pending} />
       <span className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="flex min-w-0 items-center gap-2">
           <span className="truncate text-[15px] leading-[1.3] font-semibold text-[color:var(--fg)] md:text-[14px]">{model.copy.name}</span>
@@ -84,7 +96,7 @@ export function ToolRow({
         </span>
         <span className="line-clamp-2 text-[13px] leading-[1.4] text-[color:var(--fg-muted)] md:line-clamp-1 md:text-[12.5px]">{line}</span>
         <span className="flex min-w-0 font-mono text-[11.5px] whitespace-nowrap text-[color:var(--fg-faint)] md:text-[11px]">
-          <span className="min-w-0 truncate">{where}</span>
+          <span className={`min-w-0 truncate ${pending ? "text-[color:var(--accent-text)]" : ""}`}>{where}</span>
           <span aria-hidden className="flex-none pl-1">{"›"}</span>
         </span>
       </span>

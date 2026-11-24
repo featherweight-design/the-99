@@ -29,13 +29,15 @@ import { searchAllCardsAction, cardSignalsAction } from "../../app/card-search-a
 import { clearRecent, pushRecent, readRecent, type RecentCard } from "../../lib/card-search/recent";
 import type { CardSearchRow, CardSignals } from "../../lib/card-search/search";
 import { isAddShortcut } from "../../lib/card-search/shortcut";
-import { afterDialogsReleased, leaveDialogsForNavigation, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
+import { afterDialogsReleased, leaveDialogsForNavigation, stayInDialogs, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { captureToolEvent } from "../../lib/analytics/posthog";
 import type { SEARCH_OPENED_FROM } from "../../lib/analytics/tool-events";
 import { askCopy, cardSearchCopy } from "../../lib/copy/card-search";
 import type { ToolCardModel } from "../../lib/discovery/showcase";
+import type { ToolId } from "../../lib/discovery/tools";
 import { toolHref } from "./ask-results";
+import { OpenFailedToast } from "./open-failed-toast";
 import { useAsk } from "./use-ask";
 import { SearchField } from "../ui/text-field";
 import { useOnlineStatus } from "../../lib/pwa/use-online-status";
@@ -150,6 +152,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const veilRef = useRef<HTMLDivElement>(null);
   const [handover, setHandover] = useState<{ oracleId: string; siblings: SiblingCard[]; art: string | null; opener: HTMLElement | null } | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  // The tool whose page is loading (R12 Q20), and the one whose page did not arrive (its toast).
+  const [opening, setOpening] = useState<{ id: ToolId; name: string } | null>(null);
+  const [openFailed, setOpenFailed] = useState<string | null>(null);
   const [bodyEl, setBodyEl] = useState<HTMLDivElement | null>(null);
   const online = useOnlineStatus();
   const desktop = useDesktop();
@@ -157,6 +162,9 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
   const inputRef = useRef<HTMLInputElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  // Set when an open stalled: the push is still pending, and if it lands late the search closes over a route that moved.
+  const stalledRef = useRef(false);
+  const pressedRef = useRef(false);
   const openCardRef = useRef<OpenCard | null>(null);
   const savedScroll = useRef(0);
   const bodyRef = useRef<HTMLDivElement | null>(null);
@@ -215,8 +223,28 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setQuery("");
     setReturned(null);
     setPhase("idle");
+    // Closing while a tool opens (Esc, ✕) leaves the page to arrive: a push cannot be taken back.
+    setOpening(null);
+    pressedRef.current = false;
     openerRef.current?.focus();
   }, []);
+
+  useEffect(() => {
+    if (!opening) pressedRef.current = false;
+  }, [opening]);
+
+  // A page that has not committed in eight seconds is a failed press: the row comes back to rest and the toast says so.
+  useEffect(() => {
+    if (!opening) return;
+    const t = setTimeout(() => {
+      setOpening(null);
+      stayInDialogs();
+      stalledRef.current = true;
+      pressedRef.current = false;
+      setOpenFailed(askCopy.openFailed(opening.name));
+    }, OPEN_STALL_MS);
+    return () => clearTimeout(t);
+  }, [opening]);
 
   // The desktop's dropdown is not modal, and the page behind it keeps its scroll.
   // Held through the veil too: the page behind a picked card must not scroll under the frame that is still up.
@@ -484,7 +512,14 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     setReturned(null);
     setActive(-1);
     setPhase("idle");
+    setOpening(null);
   }
+  // A stalled push that lands late: the search's entry stays under the new route, as for any navigation (no `back()`).
+  useEffect(() => {
+    if (!stalledRef.current) return;
+    stalledRef.current = false;
+    leaveDialogsForNavigation();
+  }, [pathname]);
 
   const onClear = useCallback(() => {
     clearRecent(userId);
@@ -498,21 +533,34 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   // closes. Counted by the tool and its place in the answers, never the words typed.
   const pressTool = useCallback(
     (tool: ToolCardModel, index: number) => {
-      if (bodyRef.current?.closest("[inert]")) return;
+      if (opening || pressedRef.current || bodyRef.current?.closest("[inert]")) return;
+      pressedRef.current = true;
+      stalledRef.current = false;
       captureToolEvent("ask_tool_pressed", { tool: tool.id, from: !desktop ? "phone_sheet" : anchor === "home" ? "home_inline" : "desktop", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
       if (tool.id === "find-a-deck") captureToolEvent("find_a_deck_opened", { from: "ask" });
-      // Close AND navigate: the search's Back entry stays under the new route. Without this its release reads "closed some
-      // other way" before the route has moved, and its `history.back()` cancels the push (a press that only closed).
+      // The search's Back entry stays under the new route. Without this its release reads "closed some other way" before
+      // the route has moved, and its `history.back()` cancels the push (a press that only closed).
       leaveDialogsForNavigation();
-      close();
-      router.push(toolHref(tool));
+      const href = toolHref(tool);
+      if (new URL(href, window.location.href).pathname === window.location.pathname) {
+        // Same page (Wishlist from the wishlist, a deck tool from that deck): no pathname change will ever close the
+        // search, so it closes now and the page updates under it (R12-C1).
+        close();
+      } else {
+        // Held up in the Opening state until the page commits; the pathname change below is what closes it.
+        setOpening({ id: tool.id, name: tool.copy.name });
+        setAnnouncement(askCopy.opening(tool.copy.name));
+        // The options go inert, so focus would drop to the page: it stays in the field, where Esc still closes.
+        inputRef.current?.focus({ preventScroll: true });
+      }
+      router.push(href);
     },
-    [close, router, desktop, anchor],
+    [close, router, desktop, anchor, opening],
   );
 
   const onFieldKey = useCallback(
     (e: KeyboardEvent<HTMLInputElement>) => {
-      if (e.nativeEvent.isComposing) return;
+      if (e.nativeEvent.isComposing || opening) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
         const total = toolCount + list.length;
         if (total === 0) return;
@@ -529,26 +577,28 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
         } else pick(list, active - toolCount);
       }
     },
-    [list, active, pick, canAdd, addCard, toolCount, ask.tools, pressTool],
+    [list, active, pick, canAdd, addCard, toolCount, ask.tools, pressTool, opening],
   );
 
   // Escape clears a query first, then closes (README call 7).
   const escape = useCallback(() => {
-    if (query.length > 0) {
+    if (query.length > 0 && !opening) {
       setQuery("");
       setActive(-1);
       inputRef.current?.focus();
     } else close();
-  }, [query, close]);
+  }, [query, opening, close]);
 
   const changeQuery = useCallback((next: string) => {
+    // The field holds still while a tool opens: a new query would swap the answers under the pressed row.
+    if (opening) return;
     setQuery(next);
     setReturned(null);
     // The list under the keys changes with the query (results, then recents), so no old place in it carries over.
     setActive(-1);
     // A new query is a new attempt: the failure belonged to the last one.
     setPhase((p) => (p === "failed" ? "idle" : p));
-  }, []);
+  }, [opening]);
 
   // A starter types its question into the field, so the answers below are the ones a typed question gets.
   const onStarter = useCallback(
@@ -571,7 +621,8 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     if (searching) setAttempt((n) => n + 1);
     else setRecentsFailed(false);
   }, [searching]);
-  const busy = open && searching && online && (phase === "searching" || Layer === null);
+  // The bar runs for a read in flight and for a pressed tool's page loading (R12 Q20).
+  const busy = open && ((searching && online && (phase === "searching" || Layer === null)) || opening !== null);
 
   const value = useMemo<CardSearchContextValue>(
     () => ({
@@ -629,7 +680,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     recentsFailed,
     open,
     openCardRef,
-    ask: { ids: ask.ids, tools: ask.tools, starters: ask.starters, onStarter, onPressTool: pressTool, onNavigate: close },
+    ask: { ids: ask.ids, tools: ask.tools, starters: ask.starters, onStarter, onPressTool: pressTool, opening: opening?.id ?? null, onNavigate: close },
     onAddSeveral: canAdd ? addSeveral : null,
     onAdd: canAdd ? addCard : null,
     addedTo,
@@ -663,6 +714,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
         {announcement}
       </div>
       {Layer ? <Layer {...layerProps} /> : null}
+      {openFailed ? <OpenFailedToast key={openFailed} text={openFailed} onDone={() => setOpenFailed(null)} /> : null}
     </CardSearchContext.Provider>
   );
 }
@@ -848,6 +900,8 @@ export function SearchProgress() {
 
 /** The longest the frame stays drawn for a card that has not come up. */
 const VEIL_MAX_MS = 4000;
+/** The longest a pressed tool's row stays in its Opening state before the press counts as failed (R12 Q20). */
+const OPEN_STALL_MS = 8000;
 
 const DESKTOP_QUERY = "(min-width: 768px)";
 function subscribeDesktop(onChange: () => void) {
