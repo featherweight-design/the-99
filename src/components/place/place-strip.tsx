@@ -49,8 +49,8 @@ export function PlaceStrip({
   frame?: string;
   /**
    * Under `md` the tabs share the strip's width equally rather than sitting at their own width (Commanders', Hugh 2026-11-15;
-   * Collection's, 2026-11-24). Equal by a zero basis; a trailing control keeps its own width, and a label never shrinks below
-   * itself, so a strip too narrow for them still scrolls.
+   * Collection's, 2026-11-24). Equal by a zero basis; a trailing control keeps its own width, and a tab never shrinks below its
+   * label (`min-w-max`, in place of the 44px floor every phone tab already clears), so a strip too narrow for them scrolls.
    */
   fill?: boolean;
   /** The trailing control beside the tabs (Collection's `Add +` / Replace); inside the strip's scroll row. */
@@ -84,7 +84,7 @@ export function PlaceStrip({
             data-testid={`${testIdPrefix}-${tab.place}`}
             onNavigate={() => setPending(tab.place)}
             className={[
-              `flex min-w-[44px] items-center justify-center ${fill ? "max-md:grow max-md:basis-0 whitespace-nowrap" : ""} ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
+              `flex min-w-[44px] items-center justify-center ${fill ? "max-md:grow max-md:basis-0 max-md:min-w-max whitespace-nowrap" : ""} ${compact ? "px-[7px]" : "px-[11px]"} md:px-[10px] text-[14px]`,
               "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[color:var(--accent)]",
               on
                 ? "font-semibold text-[color:var(--fg)] shadow-[inset_0_-2px_0_var(--accent)]"
