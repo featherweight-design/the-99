@@ -113,6 +113,7 @@ async function main() {
         const title = row?.querySelector("p[id]");
         if (!row || !x || !title) return null;
         title.textContent = "Ann would like to borrow your spare copy of Empyrial Storm for the Commander night on Saturday, and she has two more decks to sort out beforehand";
+        row.scrollIntoView({ block: "center" });
         const hit = x.getBoundingClientRect();
         const range = document.createRange();
         range.selectNodeContents(title);
@@ -121,6 +122,7 @@ async function main() {
         return { lines: new Set(rects.map((r) => Math.round(r.top))).size, overlap: worst };
       });
       report("a long wrapping title stays clear of the row's ✕", !!clash && clash.lines > 1 && clash.overlap <= 0, clash ? `${clash.lines} lines, overlap ${clash.overlap.toFixed(1)}px` : "no row");
+      if (process.env.SHOTS) await page.waitForTimeout(300);
       if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/${vp.label.replace(/\W+/g, "-")}-long.png`, fullPage: false }).catch(() => {});
       await page.screenshot({ path: process.env.SHOTS ? `${process.env.SHOTS}/${vp.label.replace(/\W+/g, "-")}.png` : undefined, fullPage: false }).catch(() => {});
       if (vp.label.startsWith("phone") && process.env.PRESS !== "0") {
