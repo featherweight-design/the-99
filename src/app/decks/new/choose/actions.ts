@@ -17,6 +17,7 @@ import { beginTheRead } from "../../../../lib/intake/the-read-run";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store";
+import { markChooseIntroSeen } from "../../../../lib/intake/intro-seen";
 
 /**
  * The form's submit (rework plan PR 3; F8: the read starts here, never on the results page's load,
@@ -31,6 +32,9 @@ import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store
  *   two calls run after the response (`after`), and the results attach to it by `r`. A repeat lands
  *   on the stored read, charged nothing. No credit left, the owner's share used, or
  *   a read already running: the free results, with the words kept and unread (7l, 7n).
+ * - Every submit whose words pass the caps marks the intro seen (intro G1), an empty box included: the reader has
+ *   used the tool. The mark is written after the response (`after`), so the submit never waits on it and a failed
+ *   mark never stops the run.
  */
 export async function submitChoose(query: string, from: "form" | "results" = "form"): Promise<{ kind: "refused" }> {
   const userId = await requireUserId();
@@ -52,6 +56,7 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   const words = resolved.text.trim();
   // The catalog's name can be longer than the one the address carried: measure again, on the text the prompt gets.
   if (wordsLength(resolved.text) > READ_WORDS_MAX_CHARS) return { kind: "refused" };
+  after(() => markChooseIntroSeen(userId).catch(() => false));
   if (!words) redirect(resultsTarget(path, p, null));
   // Themes and sets reach both prompts as filter lines, outside the player-text boundary. The parser
   // checks their shape only, so a value either picker would not offer refuses the read: the free
@@ -68,6 +73,16 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   // A repeat lands on the stored read, marked so its line says no credit was used (7m).
   if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(path, p, begun.readId, "repeat"));
   redirect(resultsTarget(path, p, null, begun.kind === "in_flight" ? "busy" : null));
+}
+
+/**
+ * The intro's Hide (intro G1): marks it seen, so it draws folded from the next visit on. Revalidates nothing: the panel
+ * folds on the press, and the page's next render reads the mark.
+ */
+export async function hideChooseIntro(): Promise<{ ok: boolean }> {
+  const userId = await requireUserId();
+  // A failed write folds the panel all the same; it draws open again on the next visit.
+  return { ok: await markChooseIntroSeen(userId).then(() => true, () => false) };
 }
 
 /** Whether every theme and set is one the form's pickers offer now. */

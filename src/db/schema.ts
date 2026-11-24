@@ -2358,6 +2358,12 @@ export const userPrefs = pgTable(
      */
     facePromptDoneAt: timestamp("face_prompt_done_at", { withTimezone: true }),
     /**
+     * When this reader was done with Help me choose's intro (help-me-choose intro G1, `lib/intake/intro-seen.ts`): their
+     * first Find commanders of any kind, or the intro's Hide. Written once, only while null, because of the stamp trigger
+     * above. Null is a reader who has not run the tool yet: the intro draws open; set, it draws folded.
+     */
+    chooseIntroSeenAt: timestamp("choose_intro_seen_at", { withTimezone: true }),
+    /**
      * The fewest spare copies of a card this reader offers to friends (menu and Home G3, Settings' Spares
      * stepper, 1 to 9). 1 is every spare, the behavior before the setting existed. Read for a FRIEND only
      * through `src/lib/social/` (`loadFriendSpares`), and written only when it changes, because of the

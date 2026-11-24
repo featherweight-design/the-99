@@ -25,7 +25,10 @@ vi.mock("../../../../lib/cards/tagged-text", async (original) => ({
   resolveTaggedText: tags.resolve,
 }));
 
-import { submitChoose } from "./actions";
+const intro = vi.hoisted(() => ({ mark: vi.fn() }));
+vi.mock("../../../../lib/intake/intro-seen", () => ({ markChooseIntroSeen: intro.mark }));
+
+import { hideChooseIntro, submitChoose } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
 
@@ -35,6 +38,7 @@ beforeEach(async () => {
   const real = await vi.importActual<typeof import("../../../../lib/cards/tagged-text")>("../../../../lib/cards/tagged-text");
   tags.resolve.mockImplementation(real.resolveTaggedText);
   stub.begin.mockReset();
+  intro.mark.mockReset().mockResolvedValue(true);
   stub.after.mockReset();
   vocab.themes.mockReset().mockResolvedValue([{ slug: "landfall", label: "Landfall", commanders: 300 }]);
   vocab.printings.mockReset().mockResolvedValue({ sets: [{ code: "mh3", name: "Modern Horizons 3" }] });
@@ -151,7 +155,9 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
       // Only a read already running names its cause (rb=1); the standing line says the rest.
       expect(to?.includes("rb=1")).toBe(kind === "in_flight");
     }
-    expect(stub.after).not.toHaveBeenCalled();
+    // Nothing of a read is scheduled: the only thing after the response is the intro's mark, once per submit.
+    for (const [scheduled] of stub.after.mock.calls) await scheduled();
+    expect(intro.mark).toHaveBeenCalledTimes(5);
   });
 
   it("refuses words over the cap rather than trimming them", async () => {
@@ -171,5 +177,40 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     const to = await landed(`?w=scary&a=${ID}`);
     expect(stub.begin.mock.calls[0][1].filters.card).toBeNull();
     expect(to).not.toContain("a=");
+  });
+});
+
+describe("the intro's mark (Help me choose intro G1)", () => {
+  const landed = async (query: string) => {
+    try { await submitChoose(query); } catch (e) { return String((e as Error).message).replace("REDIRECT ", ""); }
+  };
+
+  const runAfter = async () => { for (const [scheduled] of stub.after.mock.calls) await scheduled(); };
+
+  it("marks the intro seen after the response, on a submit of any kind, an empty box included", async () => {
+    expect(await landed("?")).toContain("/commanders/choose");
+    expect(intro.mark).not.toHaveBeenCalled();
+    await runAfter();
+    expect(intro.mark).toHaveBeenCalledWith("user_1");
+  });
+
+  it("swallows a mark that cannot be written", async () => {
+    intro.mark.mockRejectedValue(new Error("db down"));
+    expect(await landed("?")).toContain("/commanders/choose");
+    await expect(runAfter()).resolves.toBeUndefined();
+  });
+
+  it("does not mark a submit refused for words over the cap, before or after the catalog's names", async () => {
+    expect(await submitChoose(`?w=${"x".repeat(801)}`)).toEqual({ kind: "refused" });
+    tags.resolve.mockResolvedValueOnce({ text: `${"x".repeat(799)} Rhystic Study`, body: "x", tagged: [] });
+    expect(await submitChoose(`?w=${"x".repeat(799)}`)).toEqual({ kind: "refused" });
+    expect(stub.after).not.toHaveBeenCalled();
+  });
+
+  it("marks the intro seen on Hide, and reports a failed write", async () => {
+    expect(await hideChooseIntro()).toEqual({ ok: true });
+    expect(intro.mark).toHaveBeenCalledWith("user_1");
+    intro.mark.mockRejectedValue(new Error("db down"));
+    expect(await hideChooseIntro()).toEqual({ ok: false });
   });
 });
