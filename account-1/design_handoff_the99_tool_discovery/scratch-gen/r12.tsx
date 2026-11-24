@@ -190,3 +190,7 @@ for (const dev of ["phone", "desk"] as const) {
   G.__VW = 0;
 }
 console.log("hmi ok");
+G.__FANART = ["art/c-ghalta.jpg", "art/c-giada.jpg", "art/c-lathliss.jpg"];
+full("d-s13", "desk", {}, "", null, FEED); full("p-s13", "phone", {}, "", null, FEED);
+G.__FANART = undefined;
+console.log("s13 ok");
