@@ -156,6 +156,11 @@ jobs:
         if: ${{ steps.docs.outputs.docs_only != 'true' }}
         run: pnpm check:copy-sheet-roundtrip
 
+      # A new user-facing string written inline instead of in src/lib/copy/ (diff-based: added lines only).
+      - name: Inline copy
+        if: ${{ steps.docs.outputs.docs_only != 'true' }}
+        run: pnpm check:inline-copy
+
       # A constraint name Postgres would truncate is invisible to every other step here:
       # drizzle-kit compares its own snapshots, and the failure only appears when the
       # migration RUNS — on a real deployment, the Vercel production build.
