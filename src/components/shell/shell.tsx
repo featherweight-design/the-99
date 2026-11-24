@@ -19,6 +19,8 @@ import { LaunchLoader } from "./launch-loader";
 import { LandingCredit } from "../landing/landing-credit";
 import { isAdmin } from "../../lib/admin/access";
 import { adminEnvironment } from "../../lib/admin/environment";
+import { copyEditorOpen } from "../../lib/copy-editor/gate";
+import { CopyEditorProvider } from "../copy-editor/provider";
 import { requestFlags } from "../../lib/flags/request";
 import { FeedbackProvider } from "../feedback/feedback-provider";
 import { feedbackEnabled } from "../../lib/feedback/flag";
@@ -195,6 +197,7 @@ export default async function Shell({
       <SentryReaderTags user={sentryUser} tier={chipAndTier.tier} />
       <GhostSession />
       {pushOn && <PushHeartbeat />}
+      <MaybeCopyEditor on={copyEditorOpen(userId)}>
       <div className="flex min-h-dvh flex-1">
         <NavRail locked={locked} openLock={openLock} theme={theme} {...door} friendsMoment={friendsMoment} badges={badges} />
         {/* The tab-bar reserve is on this column, not on <main>, so the Fan Content notice (a sibling of <main>, a
@@ -236,6 +239,7 @@ export default async function Shell({
           <CollectionEditToast />
         </div>
       </div>
+      </MaybeCopyEditor>
       </HelpRoot>
       </CardSearchRoot>
       </AddCardsHost>
@@ -247,4 +251,9 @@ export default async function Shell({
     </PlacePathsProvider>
     </div>
   );
+}
+
+/** The copy editor's mode and door, for an admin on staging only (`copyEditorOpen`); every other reader's tree is untouched. */
+function MaybeCopyEditor({ on, children }: { on: boolean; children: React.ReactNode }) {
+  return on ? <CopyEditorProvider>{children}</CopyEditorProvider> : children;
 }

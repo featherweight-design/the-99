@@ -1,6 +1,7 @@
 "use client";
 
 import { CardSearchIcon, SearchGlyph, useCardSearch } from "../card-search/card-search";
+import { CopyEditorDoor } from "../copy-editor/provider";
 import { SearchDesktop, useSearchShortcutLabel } from "../card-search/search-desktop";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import Link from "next/link";
@@ -1018,6 +1019,8 @@ export function MobileHeader({
         <OfflinePill place="header" />
         {/* Install, phone only: desktop browsers have their own install button (PWA plan, call 1). */}
         <InstallSlot installed={installed} />
+        {/* The copy editor's pencil, left of search: only where the shell mounted the editor (an admin on staging). */}
+        <CopyEditorDoor />
         {/* Card search, left of the avatar (HP1). Drawn only where the shell mounted the search. */}
         <CardSearchIcon />
         {/* The ? and the avatar, 6px apart (discovery R2·8 row 15). The ? scrolls with the header, as the avatar does. */}
