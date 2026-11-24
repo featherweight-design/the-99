@@ -36,7 +36,7 @@ const LIST_COPY: SetListSheetCopy = {
   announceResult: copy.listShown,
   // Overridden from the shared default: this sheet is always the second layer over the filter
   // sheet, never standalone, so its own dismiss names what pressing it returns to.
-  done: "Back to filters",
+  done: filterCopy.backToFilters,
 };
 
 function toggle(list: readonly string[], code: string): string[] {

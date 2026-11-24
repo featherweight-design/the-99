@@ -8,6 +8,10 @@
 export type LoadingCopy = { heading: string; status: string };
 
 export const shellCopy = {
+  /** The primary navigation landmark's name, on the rail and the phone bar. */
+  navAria: "Primary",
+  /** The phone header's small word over the mark. */
+  headerThe: "THE",
   // One entry per route segment. "Reading your collection" is only true of the
   // collection routes; it used to be the single shared heading and so greeted
   // you on /commanders and /decks too.

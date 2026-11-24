@@ -820,7 +820,7 @@ export function NavRail({
       <nav
         data-rail-nav
         className="flex flex-col items-center gap-1 touch:min-h-0 touch:w-full touch:flex-1 touch:overflow-y-auto touch:pt-[4px] touch:pb-[8px] touch:[scrollbar-width:none] touch:[&::-webkit-scrollbar]:hidden"
-        aria-label="Primary"
+        aria-label={shellCopy.navAria}
       >
         <RailSearchSlot bind={bind} />
         {liveItems(items, locked, openLock).map(({ href, label }) => {
@@ -954,7 +954,7 @@ export function TabBar({
         background: "var(--surface-rail)",
         borderTop: "1px solid var(--border)",
       }}
-      aria-label="Primary"
+      aria-label={shellCopy.navAria}
     >
       {locked ? (
         <>
@@ -1007,7 +1007,7 @@ export function MobileHeader({
             color: "var(--accent-text)",
           }}
         >
-          THE
+          {shellCopy.headerThe}
         </span>
         {/* Adjudication #1: variant="mobile-header" (5/7/5px diamonds, 24px numeral) */}
         <Crowned99 variant="mobile-header" />

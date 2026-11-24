@@ -14,6 +14,7 @@
 // all four mobile frames, so it is built as drawn.
 
 import { REVEAL_STEP } from "../../lib/commanders/reveal-step";
+import { commandersCopy } from "../../lib/copy/commanders";
 
 export { REVEAL_STEP };
 
@@ -56,10 +57,10 @@ export function RevealControl({
         className="font-semibold text-[14.5px] sm:text-[14px]"
         style={{ color: "var(--fg)" }}
       >
-        Show {REVEAL_STEP} more<span className="sm:hidden"> ↓</span>
+        {commandersCopy.reveal.more(REVEAL_STEP)}<span className="sm:hidden"> ↓</span>
       </span>
       <span className="font-mono text-[11px] sm:text-[11.5px] text-[color:var(--fg-faint)] group-hover:text-[color:var(--fg-muted)] group-focus-visible:text-[color:var(--fg-muted)] transition-colors">
-        {remaining.toLocaleString("en-US")} remaining
+        {commandersCopy.reveal.remaining(remaining)}
       </span>
       <span
         aria-hidden
@@ -75,7 +76,7 @@ export function RevealControl({
       type="button"
       onClick={busy ? undefined : onReveal}
       aria-busy={busy || undefined}
-      aria-label={`Show ${REVEAL_STEP} more commanders, ${remaining.toLocaleString("en-US")} remaining`}
+      aria-label={commandersCopy.reveal.moreAria(REVEAL_STEP, remaining)}
       className={[
         "group w-full rounded-lg flex flex-col items-center min-h-[52px] px-[16px] py-[14px] sm:min-h-0 sm:justify-center sm:px-[20px] sm:py-[15px] sm:cursor-pointer bg-[color:var(--surface)] [border:1px_solid_var(--border-strong)] hover:bg-[color:var(--elevated-hover)] hover:[border:1px_solid_var(--border-dashed)] focus-visible:bg-[color:var(--elevated-hover)] focus-visible:[border:1px_solid_var(--border-dashed)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)] transition-colors",
         // With a band the control stays a column at both widths and the shipped
@@ -111,7 +112,7 @@ export function EndOfRanking({ total }: { total: number }) {
         className="font-mono uppercase text-[9.5px] sm:text-[10.5px] tracking-[0.16em]"
         style={{ color: "var(--fg-faint)" }}
       >
-        End of ranking · {total.toLocaleString("en-US")}
+        {commandersCopy.reveal.end(total)}
       </span>
       <Diamond />
       <Hairline />

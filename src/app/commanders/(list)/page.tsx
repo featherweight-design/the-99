@@ -106,7 +106,7 @@ export default async function CommandersPage({
               boxShadow: "0 0 0 8px color-mix(in oklab, var(--accent) 5%, transparent)",
             }}
           >
-            XCIX
+            {commandersCopy.numeral}
           </div>
           <div
             className="hidden sm:flex items-center justify-center"
@@ -123,7 +123,7 @@ export default async function CommandersPage({
               boxShadow: "0 0 0 10px color-mix(in oklab, var(--accent) 5%, transparent)",
             }}
           >
-            XCIX
+            {commandersCopy.numeral}
           </div>
 
           {/* Heading: Cinzel 700, 22px mobile / 30px desktop, --fg */}
@@ -134,7 +134,7 @@ export default async function CommandersPage({
               margin: "26px 0 0",
             }}
           >
-            No commanders in the ranks, yet
+            {commandersCopy.emptyRanks.title}
           </h1>
 
           {/* Body paragraph: 13.5px mobile / 15px desktop */}
@@ -147,14 +147,10 @@ export default async function CommandersPage({
             }}
           >
             <span className="sm:hidden">
-              We scanned all {uniqueCardsRead.toLocaleString()} cards and none
-              can helm a legal 99 on their own. Add a legendary creature and
-              they’ll show up here.
+              {commandersCopy.emptyRanks.bodyMobile(uniqueCardsRead.toLocaleString())}
             </span>
             <span className="hidden sm:inline">
-              We scanned all {uniqueCardsRead.toLocaleString()} cards and none
-              can helm a legal 99 on their own. Add a legendary creature, or a
-              planeswalker that can command, and they’ll appear here, ranked.
+              {commandersCopy.emptyRanks.bodyDesktop(uniqueCardsRead.toLocaleString())}
             </span>
           </p>
 
@@ -171,7 +167,7 @@ export default async function CommandersPage({
               href="/collection/replace"
               className="text-[14px] text-center block p-[12px_0] sm:p-[12px_22px]"
             >
-              Add more cards
+              {commandersCopy.emptyRanks.addCards}
             </PrimaryButton>
 
             {/* "View collection" button — secondary */}
@@ -179,14 +175,14 @@ export default async function CommandersPage({
               href="/collection"
               className="text-[14px] text-center block p-[12px_0] sm:p-[12px_22px]"
             >
-              View collection
+              {commandersCopy.emptyRanks.viewCollection}
             </GhostButton>
 
             {/* Retry — visible when EDHREC was degraded */}
             {degraded && (
               <form action={retryRecs} className="w-full sm:w-auto">
                 <RetryGhost className="text-[14px] w-full p-[12px_0] sm:p-[12px_22px]">
-                  Retry
+                  {commandersCopy.emptyRanks.retry}
                 </RetryGhost>
               </form>
             )}

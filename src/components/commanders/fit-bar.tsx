@@ -4,6 +4,7 @@
 // Legend dots below bar (desktop only, when legend=true).
 
 import type { FitSegmentsResult } from "../../lib/recs/format";
+import { commandersCopy } from "../../lib/copy/commanders";
 
 const SEGMENT_COLORS: Record<"pool" | "roles" | "synergy", string> = {
   pool:    "var(--accent-dim)",
@@ -91,7 +92,7 @@ export function FitBar({ fit, legend = false }: FitBarProps) {
                 className="font-mono"
                 style={{ fontSize: "9.5px", color: "var(--fg-locked)" }}
               >
-                Synergy —
+                {commandersCopy.synergy.fitBarNone}
               </span>
             </div>
           )}

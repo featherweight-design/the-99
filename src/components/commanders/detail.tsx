@@ -11,6 +11,7 @@ import { POOL_WEIGHT, ROLES_WEIGHT, SYNERGY_WEIGHT } from "../../lib/recs/score"
 import type { CommanderDetailScore, RankedCommander } from "../../lib/recs/recommend";
 import { explainedCopy, heroNoteEdits } from "../../lib/copy/commander-explained";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { commandersCopy } from "../../lib/copy/commanders";
 import { FitLegend, type FitLegendSegment } from "./fit-legend";
 import { WhySection } from "./why-section";
 import { FullCardTrigger } from "./full-card-trigger";
@@ -442,14 +443,13 @@ export function CommanderDetail({
               className="font-display font-[600] m-0"
               style={{ fontSize: 20, color: "var(--fg)" }}
             >
-              The Pool
+              {commandersCopy.pool.heading}
             </h2>
             <p
               className="m-0 font-mono"
               style={{ fontSize: 12, color: "var(--fg-faint)" }}
             >
-              {c.colorPoolSize} card{c.colorPoolSize === 1 ? "" : "s"} fit this
-              identity
+              {commandersCopy.pool.size(c.colorPoolSize)}
             </p>
             <p
               className="m-0"
@@ -461,8 +461,7 @@ export function CommanderDetail({
                 maxWidth: 640,
               }}
             >
-              Cards from your collection that fit within{" "}
-              {commanderDisplayName(c)}’s color identity and could slot into the 99.
+              {commandersCopy.pool.caption(commanderDisplayName(c))}
             </p>
           </div>
         </div>
@@ -496,7 +495,7 @@ export function CommanderDetail({
                 className="font-display font-[600] m-0"
                 style={{ fontSize: 20, color: "var(--fg)" }}
               >
-                EDHREC Synergy
+                {commandersCopy.synergy.heading}
               </h2>
               {/* The sub-caption belongs to the panel (brief §panel structure);
                   printing it here as well drew it twice. */}
@@ -526,7 +525,7 @@ export function CommanderDetail({
               className="font-mono"
               style={{ fontSize: 10, color: "var(--fg-locked)" }}
             >
-              Synergy receipts hidden: EDHREC data unavailable
+              {commandersCopy.synergy.hidden}
             </span>
           </div>
         ) : null}
@@ -676,14 +675,13 @@ export function CommanderDetail({
               className="font-display font-[600] m-0"
               style={{ fontSize: 20, color: "var(--fg)" }}
             >
-              The Pool
+              {commandersCopy.pool.heading}
             </h2>
             <p
               className="m-0 font-mono"
               style={{ fontSize: 12, color: "var(--fg-faint)" }}
             >
-              {c.colorPoolSize} card{c.colorPoolSize === 1 ? "" : "s"} fit this
-              identity
+              {commandersCopy.pool.size(c.colorPoolSize)}
             </p>
             <p
               className="m-0"
@@ -695,8 +693,7 @@ export function CommanderDetail({
                 maxWidth: 640,
               }}
             >
-              Cards from your collection that fit within{" "}
-              {commanderDisplayName(c)}’s color identity and could slot into the 99.
+              {commandersCopy.pool.caption(commanderDisplayName(c))}
             </p>
           </div>
 
@@ -728,7 +725,7 @@ export function CommanderDetail({
                 className="font-display font-[600] m-0"
                 style={{ fontSize: 20, color: "var(--fg)" }}
               >
-                EDHREC Synergy
+                {commandersCopy.synergy.heading}
               </h2>
               {/* The sub-caption belongs to the panel (brief §panel structure);
                   printing it here as well drew it twice. */}
@@ -756,7 +753,7 @@ export function CommanderDetail({
                 className="font-mono"
                 style={{ fontSize: 11, color: "var(--fg-faint)" }}
               >
-                Synergy receipts hidden: EDHREC data unavailable
+                {commandersCopy.synergy.hidden}
               </span>
             </div>
           ) : null}
