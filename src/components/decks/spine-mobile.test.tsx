@@ -9,6 +9,8 @@ import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { pairDeck, props } from "./spine-fixtures";
+import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
 vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
@@ -109,11 +111,11 @@ describe("SpineMobile", () => {
     expect(screen.getByRole("button", { name: deckHeaderCopy.export })).toBeTruthy();
     // With no `ChangeCommanderDoor` provider mounted (as here), the door falls back to today's
     // plain card-details trigger — the same control the feature replaces.
-    expect(screen.getByRole("button", { name: "View card details" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: changeCommanderCopy.detailsAria })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
     expect(screen.queryByRole("link", { name: deckImportCopy.update.entryAria(props.deck.name) })).toBeNull();
     expect(screen.queryByRole("button", { name: deckHeaderCopy.export })).toBeNull();
-    expect(screen.queryByRole("button", { name: "View card details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: changeCommanderCopy.detailsAria })).toBeNull();
   });
 
   it("moves the meta row below the divider while editing", () => {
@@ -152,7 +154,7 @@ describe("SpineMobile", () => {
     const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
     const after = reachable.slice(reachable.indexOf(description) + 1);
     // The tag key (inside the frame), then Save and Cancel: nothing unrelated between them.
-    expect(after.slice(0, 3).map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim())).toEqual(["Insert a card tag", renameCopy.save, renameCopy.cancel]);
+    expect(after.slice(0, 3).map((el) => el.getAttribute("aria-label") ?? el.textContent?.trim())).toEqual([deckDescriptionCopy.notes.tagHelp.insertAria, renameCopy.save, renameCopy.cancel]);
   });
 
   it("keeps the editor open when focus moves between the band's fields and the row under the bar", () => {
@@ -216,16 +218,16 @@ describe("SpineMobile", () => {
     const description = screen.getByLabelText(deckDescriptionCopy.description.fieldAria);
     fireEvent.change(description, { target: { value: "New description" } });
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));
-    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent("Saved the description."));
-    expect(screen.queryByLabelText("Deck name")).toBeNull();
-    expect(screen.getByRole("status")).toHaveTextContent("Saved the description.");
+    await vi.waitFor(() => expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved));
+    expect(screen.queryByLabelText(renameCopy.fieldAria)).toBeNull();
+    expect(screen.getByRole("status")).toHaveTextContent(deckDescriptionCopy.announce.descriptionSaved);
   });
 
   it("shows a save refusal as an alert", async () => {
     saveDeckHeader.mockResolvedValueOnce({ ok: false, message: "That did not save." } as never);
     renderSpine(<SpineMobile {...props} />);
     fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.description.pencilAria(props.deck.name) }));
-    const name = screen.getByLabelText("Deck name") as HTMLInputElement;
+    const name = screen.getByLabelText(renameCopy.fieldAria) as HTMLInputElement;
     fireEvent.change(name, { target: { value: "Changed Name" } });
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));
     const alert = await screen.findByRole("alert");
@@ -542,7 +544,7 @@ describe("SpineMobile — the block the ramp is keyed to", () => {
     expect(screen.getByRole("listbox").parentElement).toBe(document.body);
     fireEvent.mouseDown(option);
     expect(saveDeckHeader).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+    expect(screen.getByLabelText(renameCopy.fieldAria)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: /Save/ }));
     await vi.waitFor(() => expect(saveDeckHeader).toHaveBeenCalledOnce());
     expect(saveDeckHeader).toHaveBeenCalledWith(props.deck.id, { description: "Rocks: [[c0ffee00-0000-4000-8000-000000000001|Sol Ring]]" });
@@ -633,7 +635,7 @@ describe("SpineMobile — the description's tag-a-card box", () => {
     expect(frame).toHaveClass("border-dashed", "bg-[color:var(--surface-sunken)]");
     const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
     expect(frame).toContainElement(key);
-    expect(frame).toHaveTextContent("tag a card");
+    expect(frame).toHaveTextContent(TAG_A_CARD_WORDS);
     expect(frame).toContainElement(counter(0));
   });
 
@@ -655,7 +657,7 @@ describe("SpineMobile — the description's tag-a-card box", () => {
     fireEvent.click(key);
     expect(description.value).toContain("[[");
     expect(saveDeckHeader).not.toHaveBeenCalled();
-    expect(screen.getByLabelText("Deck name")).toBeTruthy();
+    expect(screen.getByLabelText(renameCopy.fieldAria)).toBeTruthy();
   });
 
   it("a press on the counter or the foot does not blur the pair either", () => {
@@ -666,7 +668,7 @@ describe("SpineMobile — the description's tag-a-card box", () => {
 
   it("does not commit when focus moves from the description field to the key", () => {
     const description = openEditor();
-    fireEvent.change(screen.getByLabelText("Deck name"), { target: { value: "Changed Name" } });
+    fireEvent.change(screen.getByLabelText(renameCopy.fieldAria), { target: { value: "Changed Name" } });
     const key = screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
     fireEvent.blur(description, { relatedTarget: key });
     expect(saveDeckHeader).not.toHaveBeenCalled();

@@ -5,6 +5,7 @@ import type { DeckListItem } from "../../lib/decks/read";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { formatWhen } from "../../lib/format/when";
 import { socialCopy } from "../../lib/copy/social";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 const overflowProps = vi.hoisted(() => [] as Record<string, unknown>[]);
 vi.mock("./deck-card-overflow", () => ({
@@ -205,7 +206,7 @@ describe("DeckCard", () => {
     );
     expect(container.querySelector("[data-deck-art]")?.innerHTML).toContain("atraxa-crop.jpg");
     expect(screen.getByText("0 / 99")).toBeInTheDocument();
-    expect(screen.getByText("created today")).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.decks.detailDraft)).toBeInTheDocument();
     expect(screen.queryByText(/no commander/i)).toBeNull();
   });
 
@@ -341,7 +342,7 @@ describe("DeckCard", () => {
         now={now}
       />,
     );
-    expect(screen.queryByText("created today")).toBeNull();
+    expect(screen.queryByText(refreshCopy.decks.detailDraft)).toBeNull();
     expect(screen.getByText("0 / 99")).toBeInTheDocument();
   });
 

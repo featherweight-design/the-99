@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { DeckStatsView } from "./deck-stats-view";
 import { manaCurve, typeCurve } from "../../lib/decks/stats";
 import { manaSupply, type ManaSupplyCardRow } from "../../lib/mana/supply";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 
 const base = { curve: manaCurve([]), types: typeCurve([]) };
 let seq = 0;
@@ -37,16 +38,16 @@ describe("DeckStatsView colors card", () => {
   it("opens the tooltip on press, leads it with Every pip is green for one color, and Esc closes it", () => {
     draw([spell("{G}{G}"), land(["G"], 3)]);
     expect(screen.queryByRole("tooltip")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "How this is counted" }));
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.colors.infoLabel }));
     expect(screen.getByRole("tooltip")).toHaveTextContent("Every pip is green. A source counts once for each color it can add");
     expect(screen.getByRole("tooltip")).toHaveTextContent("A card that makes mana in a color we can’t read isn’t counted.");
-    fireEvent.keyDown(screen.getByRole("button", { name: "How this is counted" }), { key: "Escape" });
+    fireEvent.keyDown(screen.getByRole("button", { name: deckStatsCopy.colors.infoLabel }), { key: "Escape" });
     expect(screen.queryByRole("tooltip")).toBeNull();
   });
 
   it("shows the tooltip for a hovering mouse, ignores touch hover, and a press after a hover still pins it", () => {
     draw([spell("{G}"), land(["G"])]);
-    const info = screen.getByRole("button", { name: "How this is counted" });
+    const info = screen.getByRole("button", { name: deckStatsCopy.colors.infoLabel });
     fireEvent.pointerEnter(info, { pointerType: "touch" });
     expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.pointerEnter(info, { pointerType: "mouse" });
@@ -64,7 +65,7 @@ describe("DeckStatsView colors card", () => {
     const id = screen.getByRole("figure", { name: /^Mana colors/ }).getAttribute("aria-describedby")!;
     expect(document.getElementById(id)).toHaveAttribute("hidden");
     // jsdom has no :focus-visible; the keyboard is what sets it in a browser.
-    const info = screen.getByRole("button", { name: "How this is counted" });
+    const info = screen.getByRole("button", { name: deckStatsCopy.colors.infoLabel });
     const matches = vi.spyOn(HTMLElement.prototype, "matches").mockImplementation(() => true);
     act(() => info.focus());
     matches.mockRestore();
@@ -74,7 +75,7 @@ describe("DeckStatsView colors card", () => {
 
   it("closes a pinned tooltip on a press outside it, and not on a press inside", () => {
     draw([spell("{G}"), land(["G"])]);
-    fireEvent.click(screen.getByRole("button", { name: "How this is counted" }));
+    fireEvent.click(screen.getByRole("button", { name: deckStatsCopy.colors.infoLabel }));
     fireEvent.pointerDown(screen.getByRole("tooltip"));
     expect(screen.getByRole("tooltip")).not.toHaveAttribute("hidden");
     fireEvent.pointerDown(document.body);
@@ -83,14 +84,14 @@ describe("DeckStatsView colors card", () => {
 
   it("says so when there are no sources, with every source 0", () => {
     const { container } = draw([spell("{B}"), spell("{R}")]);
-    expect(card()).toHaveTextContent("No lands yet, so no sources are counted.");
+    expect(card()).toHaveTextContent(deckStatsCopy.colors.noLands);
     expect(card()).toHaveTextContent("0 sources");
     expect(container.querySelectorAll("[data-color-row]")).toHaveLength(2);
   });
 
   it("says every source is a land when there is no other, and draws no stripe", () => {
     const { container } = draw([spell("{G}"), land(["G"])]);
-    expect(card()).toHaveTextContent("Every source is a land. This deck has no mana rocks, dorks or land search.");
+    expect(card()).toHaveTextContent(deckStatsCopy.colors.onlyLands);
     expect(container.querySelector("[data-segment=nonland]")).toBeNull();
   });
 

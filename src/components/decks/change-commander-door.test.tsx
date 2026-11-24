@@ -6,6 +6,7 @@ await (await import("../cards/card-detail-provider")).warmCardModal();
 import { FullCardTrigger } from "../commanders/full-card-trigger";
 import { ChangeCommanderDoor } from "./change-commander-door";
 import { ChangeCommanderProvider } from "./change-commander-context";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const html = (node: React.ReactNode) =>
   render(<CardDetailProvider fetchCard={async () => null}>{node}</CardDetailProvider>).container.innerHTML;
@@ -44,25 +45,25 @@ describe("ChangeCommanderDoor with the switch on", () => {
 
   it("offers both halves on desktop, labelled", () => {
     const { getByRole } = on("desktop");
-    expect(getByRole("button", { name: "View card details" })).toBeTruthy();
-    expect(getByRole("button", { name: "Change commander" })).toBeTruthy();
+    expect(getByRole("button", { name: changeCommanderCopy.detailsAria })).toBeTruthy();
+    expect(getByRole("button", { name: changeCommanderCopy.door.single })).toBeTruthy();
   });
 
   it("names the pair on a pair deck, on desktop", () => {
-    expect(on("desktop", true).getByRole("button", { name: "Change pair" })).toBeTruthy();
+    expect(on("desktop", true).getByRole("button", { name: changeCommanderCopy.door.pair })).toBeTruthy();
   });
 
   it("names the phone's icon-only half with the one accessible name, pair or not", () => {
-    expect(on("mobile", true).getByRole("button", { name: "Change commander" })).toBeTruthy();
+    expect(on("mobile", true).getByRole("button", { name: changeCommanderCopy.door.aria })).toBeTruthy();
   });
 
   it("draws the swap half alone when there is no crop, at both widths", () => {
     const desk = on("desktop", false, false);
-    expect(desk.queryByRole("button", { name: "View card details" })).toBeNull();
-    expect(desk.getByRole("button", { name: "Change commander" })).toBeTruthy();
+    expect(desk.queryByRole("button", { name: changeCommanderCopy.detailsAria })).toBeNull();
+    expect(desk.getByRole("button", { name: changeCommanderCopy.door.single })).toBeTruthy();
     desk.unmount();
     const phone = on("mobile", false, false);
-    expect(phone.queryByRole("button", { name: "View card details" })).toBeNull();
-    expect(phone.getByRole("button", { name: "Change commander" })).toBeTruthy();
+    expect(phone.queryByRole("button", { name: changeCommanderCopy.detailsAria })).toBeNull();
+    expect(phone.getByRole("button", { name: changeCommanderCopy.door.aria })).toBeTruthy();
   });
 });

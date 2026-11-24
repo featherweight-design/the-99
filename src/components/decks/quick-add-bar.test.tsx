@@ -9,6 +9,8 @@ import { act, fireEvent, render, screen, waitFor, within } from "@testing-librar
 import { beforeEach, describe, expect, it, onTestFinished, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import type { BrowseCard } from "../../lib/collection/browse";
+import { availabilityCopy } from "../../lib/copy/availability";
+import { cardModalCopy } from "../../lib/copy/card-carousel";
 
 // Typed, so a hand-built result that leaves out a required field fails typecheck rather than
 // reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
@@ -374,7 +376,7 @@ describe("QuickAddBar — the grid and card details", () => {
     const dialog = await screen.findByRole("dialog");
 
     // A press inside the card is outside the bar, and must not clear the search the card was opened from.
-    const close = within(dialog).getAllByRole("button", { name: "Close card details" })[0];
+    const close = within(dialog).getAllByRole("button", { name: cardModalCopy.closeAria })[0];
     fireEvent.pointerDown(close);
     await act(async () => {
       fireEvent.click(close);
@@ -727,7 +729,7 @@ describe("QuickAddBar — result rows", () => {
     await search();
 
     expect(screen.getByText("×5 owned")).toBeInTheDocument();
-    expect(screen.getByText("not owned")).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.quickAdd.rowNotOwned)).toBeInTheDocument();
   });
 
   // The phone row has no room for four columns, so type and ownership fold into
@@ -824,7 +826,7 @@ describe("QuickAddBar — result rows", () => {
     const option = screen.getByRole("row");
     expect(addCell(option)).toHaveAttribute("aria-disabled", "true");
     // The label carries the state, so it does not rest on the greyscale alone.
-    expect(option).toHaveTextContent("✓ In deck");
+    expect(option).toHaveTextContent(addPanelCopy.quickAdd.rowInDeck);
 
     fireEvent.keyDown(field(), { key: "Enter" });
     fireEvent.click(option);
@@ -841,7 +843,7 @@ describe("QuickAddBar — result rows", () => {
 
     const option = screen.getByRole("row");
     expect(addCell(option)).toHaveAttribute("aria-disabled", "true");
-    expect(option).toHaveTextContent("✓ In deck");
+    expect(option).toHaveTextContent(addPanelCopy.quickAdd.rowInDeck);
 
     fireEvent.keyDown(field(), { key: "Enter" });
     fireEvent.click(option);
@@ -874,7 +876,7 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...rhystic, availability: claimed([]) }]);
     mount({ deckOracleIds: [rhystic.oracleId] });
     await search();
-    expect(screen.getByRole("row")).not.toHaveTextContent("none free");
+    expect(screen.getByRole("row")).not.toHaveTextContent(availabilityCopy.marker.hard);
   });
 
   // `inDeck` carves basic lands out so a second Forest stays addable. That
@@ -890,7 +892,7 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...forest, availability: claimed([]) }]);
     mount({ deckOracleIds: [forest.oracleId] });
     await search();
-    expect(screen.getByRole("row")).not.toHaveTextContent("none free");
+    expect(screen.getByRole("row")).not.toHaveTextContent(availabilityCopy.marker.hard);
   });
 
   // The rollup returns a row for every owned card, unclaimed ones included
@@ -916,7 +918,7 @@ describe("QuickAddBar — availability marker", () => {
     searchCards.mockResolvedValue([{ ...korvold, availability: claimed([]) }]);
     mount({ deckOracleIds: [] });
     await search();
-    expect(screen.getByRole("row")).not.toHaveTextContent("none free");
+    expect(screen.getByRole("row")).not.toHaveTextContent(availabilityCopy.marker.hard);
   });
 });
 
@@ -1137,7 +1139,7 @@ describe("QuickAddBar — the card note and its marks", () => {
       fireEvent.click(option());
     });
     // The row is mid-flight: it already reads as in the deck.
-    expect(option()).toHaveTextContent("✓ In deck");
+    expect(option()).toHaveTextContent(addPanelCopy.quickAdd.rowInDeck);
     expect(within(option()).getByTestId("card-note")).toHaveTextContent(
       "A game changer, and your 4th.",
     );

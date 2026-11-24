@@ -17,6 +17,8 @@ import type { OfferedCommander, PanelRun, UpgradePanel } from "../../../../lib/p
 import { suggestedChangesV2Copy } from "../../../../lib/copy/suggested-changes-v2";
 import { combined, demoLineActions, ResultView } from "./result-view";
 import type { UpgradeActionDeps } from "./upgrade-lines";
+import { cardMarkCopy } from "../../../../lib/copy/card-mark";
+import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
 
 const sc = suggestedChangesV2Copy;
 
@@ -55,10 +57,10 @@ describe("ResultView's head", () => {
     render(<ResultView panel={panel} run={run({ unpicked: ["a-add1", "c-cut1"] })} lineActions={quiet()} />);
     expect(screen.getByText("2 swaps toward Spells")).toBeInTheDocument();
     expect(screen.getByText("Nov 10")).toBeInTheDocument();
-    for (const l of ["Led by", "Bracket", "To buy", "Already yours"]) expect(screen.getByText(l)).toBeInTheDocument();
+    for (const l of [preconUpgradeCopy.results.facts.ledBy, "Bracket", preconUpgradeCopy.results.facts.toBuy, preconUpgradeCopy.results.facts.yours]) expect(screen.getByText(l)).toBeInTheDocument();
     expect(screen.getByText("2 → 3")).toBeInTheDocument();
     // As found: the picks move the bar, not the facts.
-    expect(within(screen.getByText("To buy").parentElement!).getByText("$1.20")).toBeInTheDocument();
+    expect(within(screen.getByText(preconUpgradeCopy.results.facts.toBuy).parentElement!).getByText("$1.20")).toBeInTheDocument();
     const commander = screen.getByRole("heading", { name: /^Commander/ }).closest("section")!;
     expect(within(commander).getByText("Rootha takes Muddle’s place in the 99.")).toBeInTheDocument();
     expect(within(commander).queryByRole("button", { name: /Pick/ })).toBeNull();
@@ -164,7 +166,7 @@ describe("ResultView's bar: the flow's press in the Apply place (call 11)", () =
 
   it("draws what follows after the lists and their bar", () => {
     render(<ResultView panel={panel} run={run()} press={press()} after={<button type="button">Try another strategy</button>} lineActions={quiet()} />);
-    const another = screen.getByRole("button", { name: "Try another strategy" });
+    const another = screen.getByRole("button", { name: preconUpgradeCopy.results.another });
     expect(bar().compareDocumentPosition(another) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });
@@ -210,11 +212,11 @@ describe("ResultView's commander marks (A3 calls 7 to 11)", () => {
 
   it("glosses only the commander pair's marks: the pick lines draw none, so an add's fact is not in the key", () => {
     const { unmount } = render(<ResultView panel={marked} run={run({ strategyKey: "pair/3/spellslinger" })} lineActions={quiet()} />);
-    const key = screen.getByRole("group", { name: "What the marks on these cards mean" });
+    const key = screen.getByRole("group", { name: cardMarkCopy.keyRegionAria });
     expect([...key.children].map((c) => c.textContent)).toEqual(["game changer", "tutor"]);
     unmount();
     render(<ResultView panel={marked} run={run({ strategyKey: "rootha/3/spellslinger" })} lineActions={quiet()} />);
-    expect(screen.queryByRole("group", { name: "What the marks on these cards mean" })).toBeNull();
+    expect(screen.queryByRole("group", { name: cardMarkCopy.keyRegionAria })).toBeNull();
   });
 });
 
@@ -260,14 +262,14 @@ describe("ResultView's store line (store label)", () => {
   it("draws no figure and the unpriced line when a store priced none of the adds to buy", () => {
     render(<ResultView panel={priced} run={run({ toBuy: { cards: 2, cents: 0, priced: 0 } })} lineActions={quiet()} />);
     // `dollars(0)` draws "$0", so the fact is checked as a whole: the count alone, no figure at all.
-    expect(screen.getByText("To buy").parentElement!.textContent).toBe("To buy2");
+    expect(screen.getByText(preconUpgradeCopy.results.facts.toBuy).parentElement!.textContent).toBe("To buy2");
     expect(line()!.textContent).toBe("no prices from TCGplayer for these · last checked Monday");
   });
 
   it("draws the stored figure and no line with no store (switch off or read failed), and no line with nothing to buy or on the landing", () => {
     const { unmount } = render(<ResultView panel={panel} run={run()} lineActions={quiet()} />);
     expect(line()).toBeNull();
-    expect(within(screen.getByText("To buy").parentElement!).getByText("$1.20")).toBeInTheDocument();
+    expect(within(screen.getByText(preconUpgradeCopy.results.facts.toBuy).parentElement!).getByText("$1.20")).toBeInTheDocument();
     unmount();
     const none = render(<ResultView panel={priced} run={run({ toBuy: { cards: 0, cents: 0, priced: 0 } })} lineActions={quiet()} />);
     expect(line()).toBeNull();

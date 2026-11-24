@@ -169,7 +169,7 @@ describe("ConsiderPanel — shelves", () => {
 
     const headings = screen.getAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
-      .toEqual(["Ramp", "Threats & synergy"]);
+      .toEqual(["Ramp", addPanelCopy.shelf.labels.other]);
     expect(screen.getByText(/no target · this is the deck’s plan/)).toBeInTheDocument();
   });
 
@@ -403,7 +403,7 @@ describe("ConsiderPanel — a role at or over target (small items 11, item 2)", 
 
   it("orders short, synergy, targetless, at target, then over", () => {
     mount(mixed());
-    expect(labels()).toEqual(["Ramp", "Synergy · Korvold", "Threats & synergy", "Removal", "Wipes"]);
+    expect(labels()).toEqual(["Ramp", "Synergy · Korvold", addPanelCopy.shelf.labels.other, "Removal", "Wipes"]);
   });
 
   it("leads with synergy and folds every role when nothing is short", () => {
@@ -411,7 +411,7 @@ describe("ConsiderPanel — a role at or over target (small items 11, item 2)", 
       suggestions: [suggestion({ name: "Wrath", role: "wipes" }), syn("Avenger")],
       deckCards: [deckCard("wipes", 5)],
     });
-    expect(labels()).toEqual(["Synergy · Korvold", "Threats & synergy", "Wipes"]);
+    expect(labels()).toEqual(["Synergy · Korvold", addPanelCopy.shelf.labels.other, "Wipes"]);
     expect(disclosureFor("Wipes")).toHaveAttribute("aria-expanded", "false");
   });
 
@@ -560,7 +560,7 @@ describe("ConsiderPanel — sort", () => {
 describe("ConsiderPanel — evidence", () => {
   it("says it has no figure rather than drawing a 0% bar", () => {
     mount({ suggestions: [suggestion({ name: "Sol Ring", inclusionPct: null })] });
-    expect(screen.getByText("no EDHREC figure")).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.tile.noInclusion)).toBeInTheDocument();
     expect(screen.queryByText("0%")).toBeNull();
   });
 
@@ -652,7 +652,7 @@ describe("ConsiderPanel — tiles", () => {
   // when a test forces it.
   it("says so when a card has no art on file", () => {
     mount({ suggestions: [suggestion({ name: "Sol Ring", imageUri: null })] });
-    expect(screen.getByText("no art on file")).toBeInTheDocument();
+    expect(screen.getByText(addPanelCopy.tile.noArt)).toBeInTheDocument();
   });
 });
 
@@ -703,7 +703,7 @@ describe("ConsiderPanel — unowned staples", () => {
     expect(unownedAdd.className).toBe(ownedAdd.className);
     expect(unownedAdd.className).not.toContain("bg-accent");
     expect(ownedAdd.className).not.toContain("bg-accent");
-    expect(unownedAdd).toHaveTextContent("Add · to buy");
+    expect(unownedAdd).toHaveTextContent(addPanelCopy.tile.addUnowned);
     expect(ownedAdd).toHaveTextContent("Add");
   });
 
@@ -741,15 +741,15 @@ describe("ConsiderPanel — unowned staples", () => {
 
     const headings = screen.getAllByRole("heading", { level: 3 });
     expect(headings.map((h) => h.querySelector('[data-testid="shelf-label"]')?.textContent))
-      .toEqual(["Ramp", synergyCopy.shelf.label("Korvold"), "Threats & synergy", "Top picks for Korvold"]);
-    expect(screen.getByText("not in your collection")).toBeInTheDocument();
+      .toEqual(["Ramp", synergyCopy.shelf.label("Korvold"), addPanelCopy.shelf.labels.other, "Top picks for Korvold"]);
+    expect(screen.getByText(addPanelCopy.unowned.shelfCoverage)).toBeInTheDocument();
     expect(screen.getByText("· 1 to consider")).toBeInTheDocument();
   });
 
   it("draws no such shelf when the append produced nothing", () => {
     mount({ suggestions: [suggestion({ name: "Sol Ring" })] });
     expect(screen.queryByText(/top picks for/i)).toBeNull();
-    expect(screen.queryByText("not in your collection")).toBeNull();
+    expect(screen.queryByText(addPanelCopy.unowned.shelfCoverage)).toBeNull();
   });
 
   it("states both sides of the provenance line, and only when there are two", () => {
@@ -784,7 +784,7 @@ describe("ConsiderPanel — panel states", () => {
   it("says why the percentages are missing when EDHREC is down", () => {
     mount({ degraded: true });
     expect(screen.getByText(/EDHREC isn’t answering right now/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: addPanelCopy.degraded.retry }));
     expect(refresh).toHaveBeenCalled();
   });
 

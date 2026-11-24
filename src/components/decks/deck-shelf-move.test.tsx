@@ -1,5 +1,6 @@
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { folderCopy } from "../../lib/copy/folders";
 
 const { moveDeckAction, createFolderAction, refresh } = vi.hoisted(() => ({
   moveDeckAction: vi.fn(),
@@ -77,7 +78,7 @@ describe("the deck page's Move", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Cube night" })));
     await flush();
     expect(moveRowName()).toBe("Move · Unfiled");
-    expect(screen.getByRole("status").textContent).toBe("We couldn’t confirm that move. Reload to see where the deck is.");
+    expect(screen.getByRole("status").textContent).toBe(folderCopy.move.failed);
     expect(refresh).toHaveBeenCalledTimes(1);
   });
 
@@ -86,12 +87,12 @@ describe("the deck page's Move", () => {
     createFolderAction.mockResolvedValue({ ok: true, folder: { id: "f2", name: "Pauper" } });
     render(<Header />);
     openMove();
-    fireEvent.click(screen.getByRole("button", { name: "New folder…" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Folder name" }), { target: { value: "Pauper" } });
+    fireEvent.click(screen.getByRole("button", { name: folderCopy.create.actionFromMove }));
+    fireEvent.change(screen.getByRole("textbox", { name: folderCopy.create.placeholder }), { target: { value: "Pauper" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create" })));
     expect(createFolderAction).toHaveBeenCalledWith("Pauper");
     expect(moveDeckAction).toHaveBeenCalledWith("d1", "f2");
-    await waitFor(() => expect(screen.queryByRole("textbox", { name: "Folder name" })).toBeNull());
+    await waitFor(() => expect(screen.queryByRole("textbox", { name: folderCopy.create.placeholder })).toBeNull());
     expect(moveRowName()).toBe("Move · Pauper");
   });
 
@@ -168,10 +169,10 @@ describe("the deck page's Move", () => {
     render(<Header />);
     for (const name of ["Pauper", "Cedh"]) {
       openMove();
-      fireEvent.click(screen.getByRole("button", { name: "New folder…" }));
-      fireEvent.change(screen.getByRole("textbox", { name: "Folder name" }), { target: { value: name } });
+      fireEvent.click(screen.getByRole("button", { name: folderCopy.create.actionFromMove }));
+      fireEvent.change(screen.getByRole("textbox", { name: folderCopy.create.placeholder }), { target: { value: name } });
       await act(async () => fireEvent.click(screen.getByRole("button", { name: "Create" })));
-      await waitFor(() => expect(screen.queryByRole("textbox", { name: "Folder name" })).toBeNull());
+      await waitFor(() => expect(screen.queryByRole("textbox", { name: folderCopy.create.placeholder })).toBeNull());
     }
     openMove();
     expect(screen.getByRole("button", { name: "Pauper" })).toBeTruthy();
