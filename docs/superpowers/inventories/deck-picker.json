@@ -1,7 +1,7 @@
 {
   "feature": "Search follow-ups R12: the deck picker (PR B, Q21/G28)",
   "note": "The deck picker at rest, drawn from an answer that several of the reader's decks can use (the local-dev fixture): Home's dropdown at 1300 and both iPad widths, the phone sheet at 390. Keys, Opening and the landing are behaviour, proven by scripts/probe-deck-picker.mjs.",
-  "out": "deck-picker",
+  "out": "contact-sheets/deck-picker",
   "clearAbout": true,
   "widths": [
     {
