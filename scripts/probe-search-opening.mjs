@@ -137,6 +137,16 @@ async function run(page, wide, tag) {
   report(`${tag} a page that never commits raises the toast`, toast);
   const restored = await page.locator(`[data-ask-tool="${target}"]`).first().evaluate((e) => !e.hasAttribute("data-ask-pending")).catch(() => false);
   report(`${tag} and the row comes back to rest`, restored);
+  if (!wide) {
+    // The stalled press must not leave the sheet's history entry orphaned: closing it takes the entry off.
+    const depth = await page.evaluate(() => navigation.currentEntry.index);
+    await page.keyboard.press("Escape"); // clears the query
+    await page.keyboard.press("Escape"); // closes
+    await page.waitForTimeout(600);
+    report(`${tag} closing the sheet after a stall leaves it`, (await sheet(page).count()) === 0);
+    const back = await page.evaluate(() => navigation.currentEntry.index);
+    report(`${tag} and takes its own entry off the history`, back === depth - 1, `entry ${depth} -> ${back}`);
+  }
   hold2.release();
   await page.unroute("**/*");
 }

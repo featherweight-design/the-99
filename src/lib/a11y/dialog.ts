@@ -548,6 +548,11 @@ export function leaveDialogsForNavigation() {
   for (const entry of backStack) entry.leaving = true;
 }
 
+/** Undoes `leaveDialogsForNavigation` for a navigation that never committed: the dialogs are still on their own entries. */
+export function stayInDialogs() {
+  for (const entry of backStack) entry.leaving = false;
+}
+
 /**
  * Runs `then` once a dialog that just closed has taken its entry back off the history: after the release's one-task
  * wait, and after the `back()` it issued has landed. Card search hands over to card details this way (plan

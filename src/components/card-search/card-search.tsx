@@ -29,7 +29,7 @@ import { searchAllCardsAction, cardSignalsAction } from "../../app/card-search-a
 import { clearRecent, pushRecent, readRecent, type RecentCard } from "../../lib/card-search/recent";
 import type { CardSearchRow, CardSignals } from "../../lib/card-search/search";
 import { isAddShortcut } from "../../lib/card-search/shortcut";
-import { afterDialogsReleased, leaveDialogsForNavigation, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
+import { afterDialogsReleased, leaveDialogsForNavigation, stayInDialogs, useBackDismiss, useScrollLock, visibleFocusables } from "../../lib/a11y/dialog";
 import { inertExemptProps, useInertWhileOpen } from "../../lib/a11y/inert-page";
 import { captureToolEvent } from "../../lib/analytics/posthog";
 import type { SEARCH_OPENED_FROM } from "../../lib/analytics/tool-events";
@@ -230,6 +230,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     if (!opening) return;
     const t = setTimeout(() => {
       setOpening(null);
+      stayInDialogs();
       setOpenFailed(askCopy.openFailed(opening.name));
     }, OPEN_STALL_MS);
     return () => clearTimeout(t);
