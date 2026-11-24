@@ -11,6 +11,7 @@ vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; chil
 vi.mock("../../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 vi.mock("../../../lib/url/mirror", () => ({ mirrorUrl: () => {} }));
 import { PreconPickView } from "./precon-pick-view";
+import { preconsCopy } from "../../../lib/copy/precons";
 
 const row = (fileName: string, name: string, tokens: number, twin: { fileName: string; copies: number; tokens: number } | null = null): PreconRow => ({
   fileName, name, setCode: "TDC", releaseDate: "2025-04-11", twinName: twin ? `${name} CE` : null, commanders: [], identity: ["W"],
@@ -37,13 +38,13 @@ beforeEach(() => {
 describe("Precons I own: the foot", () => {
   it("holds the add at zero, and the press moves focus to the search", () => {
     draw();
-    expect(foot()).toContain("Select the decks you own.");
-    expect(addButton()).toHaveTextContent("Add boxes");
+    expect(foot()).toContain(preconsCopy.pick.leadNone);
+    expect(addButton()).toHaveTextContent(preconsCopy.pick.addHeld);
     expect(addButton()).toHaveAttribute("aria-disabled", "true");
     fireEvent.click(addButton());
     expect(addPrecons).not.toHaveBeenCalled();
     expect(document.activeElement?.tagName).toBe("INPUT");
-    expect(document.activeElement).toHaveAttribute("placeholder", "Search by name, commander or set");
+    expect(document.activeElement).toHaveAttribute("placeholder", preconsCopy.list.search);
   });
 
   it("counts boxes, cards and tokens, and a twin's edition moves them", () => {
@@ -112,13 +113,13 @@ describe("Precons I own: refusals", () => {
     expect(push).not.toHaveBeenCalled();
     expect(screen.getByRole("checkbox", { name: /Abzan Armor/ })).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: /Sultai Arisen/ })).toBeChecked();
-    expect(screen.getAllByText("✓ added just now").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(preconsCopy.pick.landed).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Done" })).toBeInTheDocument();
     expect(foot()).toContain("1 box · 100 cards and 11 tokens");
     const firstId = addPrecons.mock.calls[0][0][1].actionId;
     // Try again re-sends the one box, under the id it had: nothing is retried on its own.
     addPrecons.mockResolvedValueOnce([{ rowFile: "Sultai", ok: true, entryId: "e2" }]);
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.pick.tryAgain }));
     await waitFor(() => expect(push).toHaveBeenCalledWith("/?precons=e1,e3,e2"));
     expect(addPrecons.mock.calls[1][0]).toEqual([{ fileName: "Sultai", edition: "regular", file: "Sultai", actionId: firstId }]);
   });
@@ -156,7 +157,7 @@ describe("Precons I own: refusals", () => {
     tick("Abzan Armor");
     tick("Revival Trance");
     fireEvent.click(addButton());
-    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t confirm the cards were added. Try again and they won’t be added twice.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(preconsCopy.start.owned.addUnsure);
     expect(screen.getByRole("checkbox", { name: /Revival Trance/, hidden: true }).closest("[inert]")).not.toBeNull();
     expect(JSON.parse(window.sessionStorage.getItem("the99:precon-pick-attempts:user_1")!)).toEqual({
       Revival: { edition: "regular", id: addPrecons.mock.calls[0][0][1].actionId },
@@ -211,11 +212,11 @@ describe("Precons I own: refusals", () => {
     draw();
     tick("Abzan Armor");
     fireEvent.click(addButton());
-    expect(await screen.findByRole("alert")).toHaveTextContent("Couldn’t confirm the cards were added. Try again and they won’t be added twice.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(preconsCopy.start.owned.addUnsure);
     expect(screen.getByRole("checkbox", { name: /Abzan Armor/ })).toBeChecked();
     addPrecons.mockResolvedValueOnce([{ rowFile: "Abzan", ok: false }]);
     fireEvent.click(addButton());
-    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t add those. Your collection is unchanged.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(preconsCopy.start.owned.addFailed);
     expect(addPrecons.mock.calls[1][0][0].actionId).toBe(addPrecons.mock.calls[0][0][0].actionId);
     expect(screen.getByRole("checkbox", { name: /Abzan Armor/ })).toBeChecked();
     expect(screen.getByRole("button", { name: "Cancel" })).toBeInTheDocument();
@@ -240,13 +241,13 @@ describe("Precons I own, with cards", () => {
 
   it("keeps the zero-card row's card count with no collection", () => {
     drawWith({ hasCollection: false });
-    expect(rowOf("Abzan Armor").textContent).not.toContain("you own");
+    expect(rowOf("Abzan Armor").textContent).not.toContain(preconsCopy.row.ownLead);
     expect(rowOf("Abzan Armor").textContent).toContain("100 cards");
   });
 
   it("reads `‹ Collection` and goes back there with nothing added (E2)", () => {
     drawWith();
-    expect(screen.getByRole("link", { name: "‹ Collection" })).toHaveAttribute("href", "/collection");
+    expect(screen.getByRole("link", { name: preconsCopy.pick.backCollection })).toHaveAttribute("href", "/collection");
   });
 
   it("marks a box with a standing add, keeps it pickable, and notes the second copy once it is ticked (S17)", () => {
@@ -269,11 +270,11 @@ describe("Precons I own, with cards", () => {
     fireEvent.click(addButton());
     await screen.findByRole("alert");
     expect(within(rowOf("Abzan Armor")).queryByText("✓ added Jun 30")).toBeNull();
-    expect(within(rowOf("Abzan Armor")).getAllByText("✓ added just now").length).toBeGreaterThan(0);
+    expect(within(rowOf("Abzan Armor")).getAllByText(preconsCopy.pick.landed).length).toBeGreaterThan(0);
     // Done carries the landed box back to Collection's receipt.
     fireEvent.click(screen.getByRole("button", { name: "Done" }));
     expect(push).toHaveBeenCalledWith("/collection?precons=e1");
-    expect(screen.getByRole("link", { name: "‹ Collection" })).toHaveAttribute("href", "/collection?precons=e1");
+    expect(screen.getByRole("link", { name: preconsCopy.pick.backCollection })).toHaveAttribute("href", "/collection?precons=e1");
   });
 });
 

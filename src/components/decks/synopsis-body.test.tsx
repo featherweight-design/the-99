@@ -130,8 +130,8 @@ describe("the stages shape (contract 13)", () => {
 
   it("draws Game plan with Early, Mid, Close by position, and not Core strategy", () => {
     drawStages(stage13(), 13);
-    expect(screen.getByRole("heading", { name: "Game plan" })).toBeInTheDocument();
-    expect(screen.queryByText("Core strategy")).toBeNull();
+    expect(screen.getByRole("heading", { name: synopsisCopy.modal.plan.title })).toBeInTheDocument();
+    expect(screen.queryByText(synopsisCopy.modal.primer.strategy)).toBeNull();
     const stages = screen.getAllByTestId("synopsis-stage");
     expect(stages.map((s) => ["Early", "Mid", "Close"].find((l) => s.textContent?.includes(l)))).toEqual(["Early", "Mid", "Close"]);
     // The lead card's image is the first mark's, and the third stage names none, so it has none.
@@ -183,8 +183,8 @@ describe("the stages shape (contract 13)", () => {
 
   it("draws a 12 row exactly as before: Core strategy, the fixed range, no figure, no images", () => {
     drawStages(stage13({ lands: { keep: { low: 2, high: 4 }, sendBack: { none: 0, under: 1, over: 5 } } }), 12);
-    expect(screen.getByRole("heading", { name: "Core strategy" })).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: "Game plan" })).toBeNull();
+    expect(screen.getByRole("heading", { name: synopsisCopy.modal.primer.strategy })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: synopsisCopy.modal.plan.title })).toBeNull();
     expect(screen.getAllByTestId("synopsis-land-range")).toHaveLength(2);
     expect(screen.queryByTestId("synopsis-land-line")).toBeNull();
     expect(screen.queryAllByTestId("synopsis-card-image")).toHaveLength(0);
@@ -195,18 +195,18 @@ describe("the stages shape (contract 13)", () => {
     const short = stage13();
     short.primer!.strategy = ["One.", "Two."];
     drawStages(short, 13);
-    expect(screen.getByRole("heading", { name: "Core strategy" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: synopsisCopy.modal.primer.strategy })).toBeInTheDocument();
     drawStages(stage13(), undefined);
-    expect(screen.getAllByRole("heading", { name: "Core strategy" })).toHaveLength(2);
+    expect(screen.getAllByRole("heading", { name: synopsisCopy.modal.primer.strategy })).toHaveLength(2);
   });
 
   it("draws the alternate commander box only when the content carries one", () => {
     drawStages(stage13(), 13);
     expect(screen.queryByTestId("synopsis-alternate")).toBeNull();
-    expect(screen.queryByText("Alternate commander")).toBeNull();
+    expect(screen.queryByText(synopsisCopy.modal.plan.alternate)).toBeNull();
     drawStages(stage13({ alternate: "[[Sol Ring]] is the other way in." }), 13);
     const box = screen.getByTestId("synopsis-alternate");
-    expect(box).toHaveTextContent("Alternate commander");
+    expect(box).toHaveTextContent(synopsisCopy.modal.plan.alternate);
     expect(box).toHaveTextContent("is the other way in.");
   });
 

@@ -35,6 +35,7 @@ import { gotItCopy } from "../../../lib/copy/i-got-it";
 import type { CartPayload } from "../../../lib/decks/cart";
 import { named } from "../../../lib/person-name/mint";
 import { plain } from "../../../lib/person-name/testing";
+import { collectionChassisCopy } from "../../../lib/copy/collection";
 
 const r = spareCopy.request;
 const NOW = "2026-10-20T00:00:00.000Z";
@@ -407,7 +408,7 @@ describe("By friend's line", () => {
     actions.askSpareAction.mockResolvedValue({ ok: false, reason: "gone" });
     await mount({ initialView: "friend" });
     await act(async () => { fireEvent.click(within(lineIn("Peter", "Ghoulcaller")).getByTestId("friend-spare-ask")); });
-    expect(screen.getByRole("alert").textContent).toContain("We couldn’t send that. Try again.");
+    expect(screen.getByRole("alert").textContent).toContain(spareCopy.request.failed);
     expect(within(lineIn("Peter", "Ghoulcaller")).getByTestId("friend-spare-ask").textContent).toBe(r.ask);
   });
 });
@@ -918,7 +919,7 @@ describe("the Friend filter (v2 PR 9)", () => {
     served = { spares: BOARD, asks: [] };
     await mount();
     fireEvent.change(screen.getByRole("searchbox", { name: copy.filters.search }), { target: { value: "brainstorm" } });
-    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }));
     const pill = (label: string) => within(document.querySelector("[data-friend-pills]") as HTMLElement).getByRole("checkbox", { name: label });
     expect((pill("Colin, 1 card") as HTMLButtonElement).disabled).toBe(false);
     const max = pill("Max, 0 cards") as HTMLButtonElement;
@@ -1062,7 +1063,7 @@ describe("the Friend filter (v2 PR 9)", () => {
     cleanup();
     Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: original });
     await mount();
-    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }));
     const group = screen.getByRole("group", { name: copy.filters.friendHead });
     expect(within(group).getByText(copy.filters.friendReading)).toBeTruthy();
     expect(within(group).queryAllByRole("checkbox")).toHaveLength(0);
@@ -1090,14 +1091,14 @@ describe("the Friend filter (v2 PR 9)", () => {
     cleanup();
     Object.defineProperty(window, "matchMedia", { writable: true, configurable: true, value: original });
     await mount();
-    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }));
     expect(screen.queryByRole("group", { name: copy.filters.friendHead })).toBeNull();
   });
 
   it("draws the phone sheet's friends as equal pills two to a row under Any friend, which spans it (R1b)", async () => {
     served = { spares: BOARD, asks: [] };
     await mount({}, withSol());
-    fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }));
     const grid = document.querySelector("[data-friend-pills]") as HTMLElement;
     expect(grid.className).toContain("grid-cols-[repeat(2,minmax(0,1fr))]");
     const pills = within(grid).getAllByRole("checkbox");
@@ -1135,7 +1136,7 @@ describe("addendum R3", () => {
         land = (spares) => res(spares === "fail" ? { ok: false, json: async () => null } : { ok: true, json: async () => ({ spares }) });
       }));
   const failure = () => screen.queryAllByRole("alert").find((el) => el.textContent?.includes(copy.failedRead.toast)) ?? null;
-  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: "Filter cards" }));
+  const openSheet = () => fireEvent.click(screen.getByRole("button", { name: collectionChassisCopy.sheet.title }));
   const closeSheet = () => fireEvent.click(screen.getByRole("button", { name: copy.filters.show(4) }));
   const friendGroup = () => within(screen.getByRole("group", { name: copy.filters.friendHead }));
 

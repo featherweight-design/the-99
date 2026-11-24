@@ -11,6 +11,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }), uns
 vi.mock("next/link", () => ({ default: ({ href, children }: { href: string; children: React.ReactNode }) => <a href={href}>{children}</a> }));
 vi.mock("../../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 import { StartPrecon } from "./start-precon";
+import { preconsCopy } from "../../../lib/copy/precons";
 
 const row: PreconRow = {
   fileName: "Multiverse_FRC", name: "Multiverse Reforged", setCode: "FRC", releaseDate: "2026-01-01", twinName: null,
@@ -24,10 +25,10 @@ const KEY = "the99:precon-add-attempt:user_A:Multiverse_FRC";
 
 const open = (addedOn: string | null = null) => {
   render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addedOn={addedOn} />);
-  fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+  fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
 };
 const own = () => screen.getByRole("checkbox", { name: /I own this precon/ });
-const press = () => fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+const press = () => fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
 
 beforeEach(() => { create.mockReset(); start.mockReset(); window.sessionStorage.clear(); account.id = "user_A"; });
 
@@ -36,8 +37,8 @@ describe("Start dialog: I own this precon", () => {
     create.mockResolvedValueOnce(undefined);
     open();
     expect(own()).not.toBeChecked();
-    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Start the deck" }));
+    expect(screen.getByText(preconsCopy.start.facts.printingsValue)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: preconsCopy.start.submit }));
     await waitFor(() => expect(create).toHaveBeenCalledWith("Multiverse_FRC", "Multiverse Reforged"));
     expect(start).not.toHaveBeenCalled();
   });
@@ -52,7 +53,7 @@ describe("Start dialog: I own this precon", () => {
   it("says the same printings fact ticked or not: the deck takes the precon's own copies either way", () => {
     open();
     fireEvent.click(own());
-    expect(screen.getByText("this precon’s copies")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.start.facts.printingsValue)).toBeInTheDocument();
   });
 
 
@@ -70,7 +71,7 @@ describe("Start dialog: I own this precon", () => {
     open();
     fireEvent.click(own());
     press();
-    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("We couldn’t add those. Your collection is unchanged."));
+    await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent(preconsCopy.start.owned.addFailed));
     expect(create).not.toHaveBeenCalled();
     press();
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
@@ -95,7 +96,7 @@ describe("Start dialog: I own this precon", () => {
     press();
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     fireEvent.click(screen.getAllByRole("button", { name: "Cancel" })[0]);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(own());
     press();
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
@@ -106,7 +107,7 @@ describe("Start dialog: I own this precon", () => {
   it("keeps a lost start's id across a reload", async () => {
     start.mockRejectedValueOnce(new Error("network")).mockImplementationOnce(redirect);
     const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(own());
     press();
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
@@ -115,7 +116,7 @@ describe("Start dialog: I own this precon", () => {
     // A reload: the page is gone, a new one mounts, and the retry carries the same id.
     first.unmount();
     render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(own());
     press();
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
@@ -125,7 +126,7 @@ describe("Start dialog: I own this precon", () => {
   it("never lends one account's unresolved id to another account signing in on the same tab", async () => {
     start.mockRejectedValueOnce(new Error("network")).mockImplementationOnce(redirect);
     const first = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(own());
     press();
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
@@ -133,7 +134,7 @@ describe("Start dialog: I own this precon", () => {
     first.unmount();
     account.id = "user_B";
     render(<StartPrecon row={row} cards={100} body={99} illegal={[]} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(own());
     press();
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));
@@ -143,7 +144,7 @@ describe("Start dialog: I own this precon", () => {
   it("starts the chosen edition's own box, under its own id", async () => {
     start.mockRejectedValueOnce(new Error("network")).mockImplementation(redirect);
     const view = render(<StartPrecon row={row} cards={100} body={99} illegal={[]} addFileName="MultiverseCE_FRC" />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(own());
     press();
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
@@ -151,7 +152,7 @@ describe("Start dialog: I own this precon", () => {
     fireEvent.click(screen.getAllByRole("button", { name: "Cancel" })[0]);
     // The reader switches to Regular: its box is its own entry, so the start is a new action.
     view.rerender(<StartPrecon row={row} cards={100} body={99} illegal={[]} addFileName={row.fileName} />);
-    fireEvent.click(screen.getAllByRole("button", { name: "Start with this precon" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: preconsCopy.start.button })[0]);
     fireEvent.click(own());
     press();
     await waitFor(() => expect(start).toHaveBeenCalledTimes(2));

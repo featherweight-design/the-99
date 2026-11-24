@@ -42,10 +42,10 @@ describe("AllBracketsSheet", () => {
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(5);
     expect(within(rows[0]).getAllByRole("columnheader").map((h) => h.textContent)).toEqual([
-      "cards allowed", "Exhibition", "Core", "Upgraded", "Optimized", "cEDH",
+      deckAnalysisCopy.bracketsSheet.corner, "Exhibition", "Core", "Upgraded", "Optimized", "cEDH",
     ]);
-    expect(within(rows[1]).getAllByRole("cell").map((c) => c.textContent)).toEqual(["0", "0", "3", "no cap", "no cap"]);
-    expect(within(rows[3]).getAllByRole("cell").map((c) => c.textContent)).toEqual(["0", "no cap", "no cap", "no cap", "no cap"]);
+    expect(within(rows[1]).getAllByRole("cell").map((c) => c.textContent)).toEqual(["0", "0", "3", deckAnalysisCopy.climb.noCap, deckAnalysisCopy.climb.noCap]);
+    expect(within(rows[3]).getAllByRole("cell").map((c) => c.textContent)).toEqual(["0", deckAnalysisCopy.climb.noCap, deckAnalysisCopy.climb.noCap, deckAnalysisCopy.climb.noCap, deckAnalysisCopy.climb.noCap]);
   });
 
   it("transposes on the phone: brackets as rows, the four rules as columns", () => {
@@ -54,7 +54,7 @@ describe("AllBracketsSheet", () => {
     const rows = within(table).getAllByRole("row");
     expect(rows).toHaveLength(6);
     expect(within(rows[3]).getByRole("rowheader").textContent).toBe("Upgraded");
-    expect(within(rows[3]).getAllByRole("cell").map((c) => c.textContent)).toEqual(["3", "0", "no cap", "no cap"]);
+    expect(within(rows[3]).getAllByRole("cell").map((c) => c.textContent)).toEqual(["3", "0", deckAnalysisCopy.climb.noCap, deckAnalysisCopy.climb.noCap]);
   });
 
   it("sets Upgraded's three alone in --fg / 600", () => {

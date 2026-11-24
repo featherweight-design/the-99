@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { folderCopy } from "../../lib/copy/folders";
 
 const stub = vi.hoisted(() => ({
   rename: null as null | (() => unknown),
@@ -69,7 +70,7 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    fireEvent.change(screen.getByLabelText("Folder name"), {
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), {
       target: { value: "Commander evening" },
     });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
@@ -91,7 +92,7 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "   " } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "   " } });
     expect(screen.getByRole("button", { name: "Save" })).toBeDisabled();
   });
 
@@ -100,21 +101,21 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Cube night" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Cube night" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() =>
       expect(screen.getByRole("alert")).toHaveTextContent(
         "A folder named “Cube night” already exists.",
       ),
     );
-    expect(screen.getByLabelText("Folder name")).toHaveValue("Cube night");
+    expect(screen.getByLabelText(folderCopy.create.placeholder)).toHaveValue("Cube night");
   });
 
   it("commits nothing on blur", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    const field = screen.getByLabelText("Folder name");
+    const field = screen.getByLabelText(folderCopy.create.placeholder);
     fireEvent.change(field, { target: { value: "Commander evening" } });
     fireEvent.blur(field);
     expect(stub.calls).toEqual([]);
@@ -134,8 +135,8 @@ describe("ShelfMenu", () => {
     menu(0);
     open();
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    expect(screen.getByText("Nothing is filed here.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Delete folder" })).toBeInTheDocument();
+    expect(screen.getByText(folderCopy.del.bodyEmpty)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: folderCopy.del.confirm })).toBeInTheDocument();
   });
 
   it("deletes, and treats an already-gone folder as done", async () => {
@@ -143,7 +144,7 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    fireEvent.click(screen.getByRole("button", { name: "Delete folder" }));
+    fireEvent.click(screen.getByRole("button", { name: folderCopy.del.confirm }));
     await waitFor(() => expect(onDeleted).toHaveBeenCalled());
     // No error surface: `false` means already gone, and the UI must not invent
     // a failure the query refused to (decision 25).
@@ -158,7 +159,7 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    fireEvent.click(screen.getByRole("button", { name: "Delete folder" }));
+    fireEvent.click(screen.getByRole("button", { name: folderCopy.del.confirm }));
     await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
     expect(onDeleted).not.toHaveBeenCalled();
   });
@@ -168,7 +169,7 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    fireEvent.change(screen.getByLabelText("Folder name"), { target: { value: "Anything" } });
+    fireEvent.change(screen.getByLabelText(folderCopy.create.placeholder), { target: { value: "Anything" } });
     fireEvent.click(screen.getByRole("button", { name: "Save" }));
     // Its own path: the route refreshes and rescues focus, and nothing is
     // announced as though a rename had happened.
@@ -184,7 +185,7 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Rename" }));
-    expect(screen.getByLabelText("Folder name")).toHaveFocus();
+    expect(screen.getByLabelText(folderCopy.create.placeholder)).toHaveFocus();
   });
 
   it("cancels back to the menu rather than closing", () => {

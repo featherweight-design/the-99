@@ -7,15 +7,17 @@ vi.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams(s
 const { PreconsLoading } = await import("./precons-loading");
 import { CARD_TILE_CAPTION_SUB_H } from "../../ui/card-tile-caption";
 import { PRECON_ROWS_CLASS, PRECON_TILES_COLUMNS } from "./precon-grid";
+import { preconsLoadingCopy } from "../../../lib/copy/shell";
+import { preconsCopy } from "../../../lib/copy/precons";
 
 describe("PreconsLoading", () => {
   beforeEach(() => { search = ""; });
 
   it("draws the real header, one status line for a screen reader, and shapes the rest of the way", () => {
     const { container } = render(<PreconsLoading />);
-    expect(screen.getByRole("heading", { name: "Commander precons" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "‹ Decks" }).getAttribute("href")).toBe("/decks");
-    expect(screen.getByRole("status").textContent).toBe("Loading precons");
+    expect(screen.getByRole("heading", { name: preconsCopy.door.line })).toBeTruthy();
+    expect(screen.getByRole("link", { name: preconsCopy.list.back }).getAttribute("href")).toBe("/decks");
+    expect(screen.getByRole("status").textContent).toBe(preconsLoadingCopy.status);
     // Nothing but the header and the status line is exposed: every shape is hidden from a screen reader.
     for (const shape of container.querySelectorAll("[data-testid=tile-skeleton]")) expect(shape.getAttribute("aria-hidden")).toBe("true");
     expect(container.querySelector(".anim-skeleton")).not.toBeNull();
@@ -73,7 +75,7 @@ describe("PreconsLoading", () => {
     search = "pick=own";
     const { container } = render(<PreconsLoading />);
     expect(screen.getByRole("heading", { name: "Precons I own" })).toBeTruthy();
-    expect(screen.getByRole("link", { name: "‹ Home" }).getAttribute("href")).toBe("/");
+    expect(screen.getByRole("link", { name: preconsCopy.pick.backHome }).getAttribute("href")).toBe("/");
     expect(container.querySelector("[data-testid=tile-skeleton]")).toBeNull();
     expect(container.querySelectorAll("[data-testid=pick-row-skeleton]").length).toBeGreaterThan(8);
     expect(container.firstElementChild!.hasAttribute("data-loading-screen")).toBe(true);

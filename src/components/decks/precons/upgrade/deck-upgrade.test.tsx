@@ -3,6 +3,8 @@ import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { DeckUpgrade } from "../../../../lib/precons/upgrade/deck-read";
 import type { UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import { runKey } from "../../../../lib/precons/upgrade/targets";
+import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
+import { preconUpgradeDeckCopy } from "../../../../lib/copy/precon-upgrade";
 
 const refresh = vi.fn();
 const apply = vi.fn();
@@ -52,7 +54,7 @@ const host = (over: Partial<Parameters<typeof DeckUpgradeHost>[0]> = {}) =>
 
 /** The band's press opens the start screen (addendum fresh start, call 12); its `Your last upgrade` row opens the run. */
 function openLast() {
-  fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+  fireEvent.click(screen.getByRole("button", { name: preconUpgradeDeckCopy.entry }));
   fireEvent.click(document.querySelector("[data-last-run] button")!);
 }
 
@@ -64,7 +66,7 @@ describe("DeckUpgradeHost (A2c)", () => {
     expect(screen.getByText("From the Prismari Artistry precon")).toBeInTheDocument();
     expect(screen.getByText("Started from the Prismari Artistry precon")).toBeInTheDocument();
     expect(screen.getByText("You own 41 of its 85.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upgrade precon" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconUpgradeDeckCopy.entry })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /dismiss|close/i })).toBeNull();
   });
 
@@ -77,13 +79,13 @@ describe("DeckUpgradeHost (A2c)", () => {
     const onDismiss = vi.fn();
     host({ receipt: { arrival, added: null, onDismiss } });
     expect(screen.getByText("Started from the Prismari Artistry precon")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Upgrade precon" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: preconUpgradeDeckCopy.entry })).toBeInTheDocument();
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 
   it("draws the shipped receipt alone, ✕ and all, when the deck can't take an upgrade", () => {
     host({ upgrade: null, receipt: { arrival, added: null, onDismiss: vi.fn() } });
-    expect(screen.queryByRole("button", { name: "Upgrade precon" })).toBeNull();
+    expect(screen.queryByRole("button", { name: preconUpgradeDeckCopy.entry })).toBeNull();
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 
@@ -117,9 +119,9 @@ describe("DeckUpgradeHost (A2c)", () => {
     host();
     openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
-    expect(screen.getByRole("note")).toHaveTextContent("Your picks no longer match this upgrade. Open it again to pick.");
+    expect(screen.getByRole("note")).toHaveTextContent(preconUpgradeDeckCopy.picksStale);
     expect(refresh).not.toHaveBeenCalled();
-    expect(screen.queryByText("Those swaps didn’t apply. Your deck hasn’t changed.")).toBeNull();
+    expect(screen.queryByText(preconUpgradeDeckCopy.applyFailed)).toBeNull();
   });
 
   it("says a failed write in the shared toast, and the flow stays", async () => {
@@ -127,15 +129,15 @@ describe("DeckUpgradeHost (A2c)", () => {
     host();
     openLast();
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Apply these 1 swaps" })); });
-    expect(screen.getByText("Those swaps didn’t apply. Your deck hasn’t changed.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeDeckCopy.applyFailed)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Apply these 1 swaps" })).not.toHaveAttribute("aria-disabled");
   });
 
   it("opens on the start screen with the kept run as Your last upgrade, A2c's intro line under it (call 12)", () => {
     host();
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    fireEvent.click(screen.getByRole("button", { name: preconUpgradeDeckCopy.entry }));
     expect(screen.queryByRole("button", { name: "Apply these 1 swaps" })).toBeNull();
-    expect(screen.getByText("Your last upgrade")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeCopy.history.kicker)).toBeInTheDocument();
     expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · no deck yet");
     expect(screen.getByText("Nothing changes until you apply the swaps.")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
@@ -143,7 +145,7 @@ describe("DeckUpgradeHost (A2c)", () => {
 
   it("a run applied to another deck reads in that deck, and still applies here under the note", () => {
     host({ upgrade: upgrade({ panel: { ...panel, runs: [{ ...panel.runs[0], deck: { id: "d9", name: "Muddle Tokens" } }] } }) });
-    fireEvent.click(screen.getByRole("button", { name: "Upgrade precon" }));
+    fireEvent.click(screen.getByRole("button", { name: preconUpgradeDeckCopy.entry }));
     expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · in Muddle Tokens");
     fireEvent.click(document.querySelector("[data-last-run] button")!);
     expect(screen.getByText("Already in Muddle Tokens. Opening it again uses no credit.")).toBeInTheDocument();
@@ -165,10 +167,10 @@ describe("DeckUpgradeHost's band press pulses when a run lands while closed (add
     expect(bandPress().querySelector(".anim-line-pulse")).toBeNull();
     await act(async () => { await vi.advanceTimersByTimeAsync(3100); });
     await act(async () => { await vi.advanceTimersByTimeAsync(10); });
-    expect(bandPress()).toHaveTextContent("Upgrade precon");
+    expect(bandPress()).toHaveTextContent(preconUpgradeDeckCopy.entry);
     expect(bandPress().querySelector(".anim-line-pulse")).not.toBeNull();
     fireEvent.click(bandPress());
-    expect(screen.getByRole("dialog", { name: "Your upgrade" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: preconUpgradeCopy.flow.resultTitle })).toBeInTheDocument();
   });
 
   it("plays no pulse when the watched run fails, and the press then opens the start screen with the older kept run", async () => {
@@ -177,7 +179,7 @@ describe("DeckUpgradeHost's band press pulses when a run lands while closed (add
     host({ upgrade: upgrade({ panel: { ...panel, runs: [pending, panel.runs[0]] } }) });
     await act(async () => { await vi.advanceTimersByTimeAsync(3100); });
     await act(async () => { await vi.advanceTimersByTimeAsync(700); });
-    expect(bandPress()).toHaveTextContent("Upgrade precon");
+    expect(bandPress()).toHaveTextContent(preconUpgradeDeckCopy.entry);
     expect(bandPress().querySelector(".anim-line-pulse")).toBeNull();
     fireEvent.click(bandPress());
     expect(screen.getByRole("dialog", { name: "Upgrade Prismari Artistry" })).toBeInTheDocument();

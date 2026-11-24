@@ -3,6 +3,9 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import type { Candidate, CandidateHalf, ChangeCandidates } from "../../lib/commander-change/candidates";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
+import { cardCarouselCopy } from "../../lib/copy/card-carousel";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -87,7 +90,7 @@ describe("ChangeCommanderSheet", () => {
     fireEvent.click(own);
     expect(screen.getAllByTestId("change-commander-row").length).toBe(7 + 5);
     expect(own.getAttribute("aria-expanded")).toBe("true");
-    expect(own.textContent).toContain("Show fewer");
+    expect(own.textContent).toContain(addPanelCopy.consider.collapse);
     fireEvent.click(buy);
     expect(screen.getAllByTestId("change-commander-row").length).toBe(7 + 10);
     fireEvent.click(own);
@@ -112,7 +115,7 @@ describe("ChangeCommanderSheet", () => {
     // The last drawn row of a folded group: its Next is the first row Show all would add.
     fireEvent.click(screen.getByText("Own 4").closest("button")!);
     await screen.findByRole("dialog", { name: "own 4" });
-    fireEvent.click(screen.getByRole("button", { name: "Next card" }));
+    fireEvent.click(screen.getByRole("button", { name: cardCarouselCopy.nextAria }));
     await waitFor(() => expect(fetchCard).toHaveBeenLastCalledWith("own 5", undefined));
   });
 
@@ -135,7 +138,7 @@ describe("ChangeCommanderSheet", () => {
   it("says who owns none", async () => {
     readChangeCandidates.mockResolvedValue(data({ yours: [] }));
     mount();
-    expect(await screen.findByText("You own none of them yet.")).toBeTruthy();
+    expect(await screen.findByText(changeCommanderCopy.sheet.ownsNone)).toBeTruthy();
   });
 
   it("names the identity when no commander qualifies", async () => {
@@ -147,7 +150,7 @@ describe("ChangeCommanderSheet", () => {
   it("offers Try again when the read fails", async () => {
     readChangeCandidates.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce(data());
     mount();
-    fireEvent.click(await screen.findByRole("button", { name: "Try again" }));
+    fireEvent.click(await screen.findByRole("button", { name: addPanelCopy.degraded.retry }));
     expect(await screen.findByText("Yours · 1")).toBeTruthy();
   });
 
@@ -180,7 +183,7 @@ describe("ChangeCommanderSheet", () => {
     fireEvent.click(await screen.findByRole("button", { name: "Choose Prosper" }));
     fireEvent.click(screen.getByRole("button", { name: "Make Prosper commander" }));
     expect(await screen.findByText("We couldn’t change the commander. Korvold still leads this deck.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: addPanelCopy.degraded.retry })).toBeTruthy();
   });
 
   it("tells a brew that only another change undoes it", async () => {
@@ -217,7 +220,7 @@ describe("ChangeCommanderSheet, a single becoming a pair", () => {
     mount();
     fireEvent.click(await screen.findByRole("button", { name: /^Choose Kratos/ }));
     expect(screen.getByText("Atreus leaves the 99 to lead beside Korvold. The deck stays at 100 cards.")).toBeTruthy();
-    expect(screen.getByText("Stays in the command zone")).toBeTruthy();
+    expect(screen.getByText(changeCommanderCopy.confirm.stays)).toBeTruthy();
   });
 
   it("tells a brew growing to a pair that it can't go back to one commander", async () => {
@@ -253,9 +256,9 @@ describe("ChangeCommanderSheet for a pair", () => {
     readChangeCandidates.mockResolvedValue(halfTradeData());
     mount(true);
     fireEvent.click(await screen.findByRole("button", { name: "Choose Ishai and Reyhan" }));
-    expect(screen.getByText("Leave the command zone")).toBeTruthy();
-    expect(screen.getByText("Lead the deck")).toBeTruthy();
-    expect(screen.queryByText("Moves to the command zone")).toBeNull();
+    expect(screen.getByText(changeCommanderCopy.confirm.outHalfTrade)).toBeTruthy();
+    expect(screen.getByText(changeCommanderCopy.confirm.inPair)).toBeTruthy();
+    expect(screen.queryByText(changeCommanderCopy.confirm.tradeIn)).toBeNull();
     const [outFates, inFates] = screen.getAllByTestId("half-trade-fates");
     expect(outFates.textContent).toBe("into the 98leaves the deck");
     expect(inFates.textContent).toBe("freefrom the 98");
@@ -265,7 +268,7 @@ describe("ChangeCommanderSheet for a pair", () => {
     expect(screen.getByText(
       "Reyhan leaves the 98 for the command zone, and Ishai joins it there. Tymna the Weaver takes Reyhan’s slot, and Thrasios leaves the deck. The deck stays at 98.",
     )).toBeTruthy();
-    expect(screen.getByText("Lands in your pending changes, not yet a version. Discard undoes the whole swap.")).toBeTruthy();
+    expect(screen.getByText(changeCommanderCopy.confirm.landsHalfTrade)).toBeTruthy();
   });
 
   it("rewrites the sentence and the fates when the choice flips, by press or by arrow key, and writes it", async () => {
@@ -392,7 +395,7 @@ describe("CandidateRow and CandidateGroupHeading, mounted alone", () => {
 
     const alone = render(
       <CardDetailProvider fetchCard={async () => null}>
-        <CandidateGroupHeading label="Yours · 1" note="by figure" />
+        <CandidateGroupHeading label="Yours · 1" note={changeCommanderCopy.sheet.groupNote} />
         <CandidateRow
           candidate={d.yours[0]}
           pair={false}
