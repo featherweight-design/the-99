@@ -78,11 +78,18 @@ describe("Home's search panel", () => {
     const fan = document.querySelector("[data-home-fan]")!;
     expect(fan.getAttribute("aria-hidden")).toBe("true");
     expect(fan.querySelectorAll("img")).toHaveLength(3);
+    // R13: from md it sits at the panel's right edge, centred on the section, and the field block reserves its room.
+    expect(document.querySelectorAll("[data-home-fan]")).toHaveLength(1);
+    expect(fan.className).toContain("md:absolute");
+    expect(fan.className).toContain("md:right-[28px]");
+    expect(fan.className).toContain("md:top-1/2");
+    expect(document.querySelector("[data-home-search-field]")!.parentElement!.className).toContain("md:pr-[240px]");
   });
 
   it("draws no fan with no recent cards, and the foot when given one", () => {
     mount(<p>the credits</p>);
     expect(document.querySelector("[data-home-fan]")).toBeNull();
+    expect(document.querySelector("[data-home-search-field]")!.parentElement!.className).not.toContain("md:pr-[240px]");
     expect(screen.getByText("the credits")).toBeTruthy();
   });
 });
