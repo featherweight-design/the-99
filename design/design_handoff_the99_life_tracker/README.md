@@ -48,6 +48,12 @@ Boards in [addendum-whats-what/](addendum-whats-what/README.md), approved by Hug
 strip button and your panel's controls in place over a dimmed board (the tour's spotlight, the moment bubble's labels).
 It shows once per device on the first play and is then the first row of the Menu (⋯), above Back to the table.
 
+## Addendum (2026-11-24): more commander art in the shelf
+
+Boards in [addendum-shelf-art/](addendum-shelf-art/README.md), approved by Hugh 2026-11-24. On a phone each commander
+damage card in the sheet now fills with the commander's art under a fade, with the name over its head and the stepper
+over its foot: the same card as the tablet sheet. iPad and desktop are unchanged.
+
 ## Boards
 
 | Board | What |

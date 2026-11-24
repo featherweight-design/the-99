@@ -1,0 +1,14 @@
+{
+ "v": 3,
+ "createdOnFiles": {"v": 1, "at": "2026-11-24T03:40:00Z"},
+ "title": "Life tracker · more art in the shelf",
+ "launch": {"view": "canvas"},
+ "pages": [],
+ "boards": {
+  "Main.dc.html": {"x": 0, "y": 0, "w": 1600, "h": 2480, "title": "Main · more commander art · R1"},
+  "Phone.dc.html": {"x": 1680, "y": 0, "w": 1600, "h": 3480, "title": "Phone · every seat · R1"}
+ },
+ "order": ["Main.dc.html", "Phone.dc.html"],
+ "notes": {},
+ "designSystems": []
+}
