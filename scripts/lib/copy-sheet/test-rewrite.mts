@@ -13,8 +13,14 @@ export type HandEdit = { file: string; line: number; text: string; key: string; 
 export type TestRewrite = { files: Map<string, string>; rewritten: { file: string; count: number }[]; hand: HandEdit[] };
 
 const TEST_FILE = /\.test\.(ts|tsx|mts)$/;
-const KEY_PATH = /^[A-Za-z_$][\w$]*(\.[A-Za-z_$][\w$]*|\[\d+\])*$/;
 const SKIP_DIRS = new Set(["node_modules", ".next", ".git", ".worktrees", "dist", "coverage"]);
+const IDENT = /^[A-Za-z_$][\w$]*$/;
+/** `a.b[0].friend-spares` as written in code: a segment that is not an identifier takes brackets. */
+export function accessPath(path: string): string | null {
+  const parts = path.match(/\[\d+\]|[^.[\]]+/g);
+  if (!parts || parts.join("") !== path.replace(/\./g, "")) return null;
+  return parts.map((p, i) => (p.startsWith("[") ? p : i === 0 ? p : IDENT.test(p) ? `.${p}` : `["${p}"]`)).join("");
+}
 const wordCount = (s: string) => s.trim().split(/\s+/).filter(Boolean).length;
 
 function testFiles(root: string): string[] {
@@ -94,11 +100,36 @@ function importEdit(sf: ts.SourceFile, file: string, copyFile: string, name: str
   return { ref: name };
 }
 
+export type Options = {
+  /** Only these test files. */
+  files?: ReadonlySet<string>;
+  /** Resolve twin text from the sources the test imports: the twin whose access path the component writes. */
+  disambiguate?: boolean;
+};
+
+const plain = (r: CopyRow) => !r.readOnly && !r.isTemplate && r.context === "" && r.key.split("#").length === 2;
+const RESOLVE = ["", ".ts", ".tsx", "/index.ts", "/index.tsx"];
+
+/** The non-test, non-copy sources a test reaches by relative import, two hops deep: the component under test and its parts. */
+function reachedSources(file: string, root: string, seen = new Set<string>(), depth = 0): string {
+  let text = "";
+  const src = existsSync(join(root, file)) ? readFileSync(join(root, file), "utf8") : "";
+  for (const m of src.matchAll(/from\s+["'](\.{1,2}\/[^"']+)["']/g)) {
+    const base = posix.normalize(posix.join(posix.dirname(file), m[1]!));
+    const hit = RESOLVE.map((s) => base + s).find((c) => existsSync(join(root, c)) && !c.endsWith("/") && /\.(ts|tsx)$/.test(c));
+    if (!hit || seen.has(hit) || hit.startsWith(`${COPY_DIR}/`) || TEST_FILE.test(hit)) continue;
+    seen.add(hit);
+    text += `\n${readFileSync(join(root, hit), "utf8")}`;
+    if (depth < 1) text += reachedSources(hit, root, seen, depth + 1);
+  }
+  return text;
+}
+
 /**
  * The tests under `root` that hold a changed row's old text as a string literal. `files` are the rewritten sources,
  * `hand` the literals that need a person. Reads `root`'s copy files as they are BEFORE the sheet is applied.
  */
-export function rewriteTests(changes: readonly Change[], root: string): TestRewrite {
+export function rewriteTests(changes: readonly Change[], root: string, opts: Options = {}): TestRewrite {
   const all = readCopyRows(root);
   const byKey = new Map(all.map((r) => [r.key, r]));
   const sameText = new Map<string, CopyRow[]>();
@@ -110,6 +141,8 @@ export function rewriteTests(changes: readonly Change[], root: string): TestRewr
   if (byFrom.size === 0) return out;
 
   for (const file of testFiles(root)) {
+    if (opts.files && !opts.files.has(file)) continue;
+    let reached: string | null = null;
     const source = readFileSync(join(root, file), "utf8");
     if (!words.some((w) => source.includes(w))) continue;
     const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
@@ -121,25 +154,36 @@ export function rewriteTests(changes: readonly Change[], root: string): TestRewr
       if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) {
         const change = byFrom.get(n.text);
         if (change) {
-          const row = byKey.get(change.key)!;
           const line = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line + 1;
           const give = (why: string) => hand.push({ file, line, text: n.text, key: change.key, why });
-          const [copyFile, path = ""] = change.key.split("#");
+          let use = change;
           const twins = (sameText.get(change.from) ?? []).filter((r) => r.key !== change.key);
+          if (opts.disambiguate && twins.length) {
+            reached ??= reachedSources(file, root);
+            const cands = (sameText.get(change.from) ?? []).filter(plain).filter((r) => {
+              const [, p = ""] = r.key.split("#");
+              const acc = accessPath(p);
+              return acc !== null && reached!.includes(acc);
+            });
+            if (cands.length >= 1) use = { ...change, key: cands[0]!.key };
+          }
+          const [copyFile, path = ""] = use.key.split("#");
+          const row2 = byKey.get(use.key)!;
+          const picked = use !== change;
           const unsafe = unsafePosition(n, sf);
           if (file.startsWith(`${COPY_DIR}/`)) give("a copy module's own test");
           else if (file.startsWith("scripts/")) give("a script test imports differently");
-          else if (row.readOnly || row.isTemplate || row.context !== "" || change.key.split("#").length > 2) give("a function or computed leaf, not a plain string");
+          else if (row2.readOnly || row2.isTemplate || row2.context !== "" || use.key.split("#").length > 2) give("a function or computed leaf, not a plain string");
           else if (wordCount(change.from) < MIN_WORDS) give("one word: it may be a fixture, not the copy");
-          else if (twins.length) give(`ambiguous: the same words are also ${twins.map((t) => t.key).join(", ")}`);
-          else if (!KEY_PATH.test(path)) give("the key has no plain property path");
+          else if (twins.length && !picked) give(`ambiguous: the same words are also ${twins.map((t) => t.key).join(", ")}`);
+          else if (accessPath(path) === null) give("the key has no plain property path");
           else if (unsafe) give(unsafe);
           else {
             const name = path.split(/[.[]/)[0];
             const got = importEdit(sf, file, copyFile, name, imports);
             if ("why" in got) give(got.why);
             else {
-              const ref = got.ref + path.slice(name.length);
+              const ref = got.ref + accessPath(path)!.slice(name.length);
               edits.push({ start: n.getStart(sf), end: n.getEnd(), text: ts.isJsxAttribute(n.parent) ? `{${ref}}` : ref });
               count++;
             }

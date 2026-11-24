@@ -24,6 +24,21 @@ describe("findTestLiterals", () => {
   });
 });
 
+describe("data rows and titles", () => {
+  const data = `export const c = { diagram: { parts: [{ name: "Sol Ring" }, { name: "Sol Ring now", note: "Sol Ring now" }] }, tools: [{ example: { rows: [["Mind Stone", "Mind Stone"]] } }], note: { parts: "Mind Stone twice" } };`;
+  const l = copyLeaves(["src/lib/copy/y.ts"], () => data);
+  it("skips a card name by where it sits: a part's name and an example row, never by value", () => {
+    expect([...l.values()]).toEqual(["src/lib/copy/y.ts#c.diagram.parts[1].note", "src/lib/copy/y.ts#c.note.parts"]);
+  });
+  it("still flags a real sentence near those keys", () => {
+    expect(findTestLiterals("a.test.ts", `a("Sol Ring now"); a("Mind Stone twice");`, l).map((h) => h.text)).toEqual(["Sol Ring now", "Mind Stone twice"]);
+  });
+  it("lets a describe, it or test title keep the words, and flags the same words as an assertion", () => {
+    const src = `describe("Sol Ring now", () => { it.skip("Mind Stone twice", () => { test("Sol Ring now", () => {}); expect(x).toBe("Mind Stone twice"); }); });`;
+    expect(findTestLiterals("a.test.ts", src, l).map((h) => h.text)).toEqual(["Mind Stone twice"]);
+  });
+});
+
 describe("inTestScope", () => {
   it("reads src and scripts tests, not a copy module's own test or a source file", () => {
     expect(inTestScope("src/components/a.test.tsx")).toBe(true);

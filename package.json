@@ -41,6 +41,7 @@
     "check:test-copy-literals": "tsx scripts/check-test-copy-literals.mts",
     "check:copy-sheet-roundtrip": "tsx scripts/check-copy-sheet-roundtrip.mts",
     "copy:sheet": "tsx scripts/copy-sheet-export.mts",
+    "copy:tests": "tsx scripts/copy-tests.mts",
     "copy:import": "tsx scripts/copy-sheet-import.mts",
     "check:script-loads": "node scripts/check-script-loads.mjs",
     "record:clerk-strength": "tsx scripts/record-clerk-strength.mts",
