@@ -214,14 +214,16 @@ export function Panel({
   // fit, whole, with a "+N" chip that opens the sheet on the first one left out (fit addendum).
   // Damage and poison are the two that end a game, so they lead, the nearest to lethal first (21 damage from one
   // commander, 10 poison); then tax, the other counters, and the marks.
+  const DAMAGE_LETHAL = 21;
+  const POISON_LETHAL = 10;
   const lethal: (Chip & { near: number })[] = [
     ...hits.map((h) => {
       const art = commanderArt(h.p, h.cmdr);
       return {
         key: h.key,
-        near: h.n / 21,
+        near: h.n / DAMAGE_LETHAL,
         short: shortName(commanderOf(h.p, h.cmdr) ?? trackerCopy.sheet.commanderFallback),
-        of: 21,
+        of: DAMAGE_LETHAL,
         text: copy.badge(commanderOf(h.p, h.cmdr) ?? trackerCopy.sheet.commanderFallback, h.n),
         figure: copy.badgeFigure(h.n),
         lead: (art ? "img" : "none") as "img" | "none",
@@ -230,7 +232,7 @@ export function Panel({
         tab: "damage" as const,
       };
     }),
-    ...setCounters.filter((k) => k === "poison").map((k) => ({ ...counterChip(k), near: state.counters[k] / 10, of: 10 })),
+    ...setCounters.filter((k) => k === "poison").map((k) => ({ ...counterChip(k), near: state.counters[k] / POISON_LETHAL, of: POISON_LETHAL })),
   ].sort((a, b) => b.near - a.near);
   const chips: Chip[] = [
     ...lethal,
@@ -243,6 +245,7 @@ export function Panel({
     return { key: k, short: trackerCopy.counters[k].name, text: copy.badge(trackerCopy.counters[k].name, state.counters[k]), figure: copy.badgeFigure(state.counters[k]), icon: <CounterIcon kind={k} size={12} />, tab: "counters", focus: k };
   }
   const [peek, setPeek] = useState(false);
+  const closePeek = useCallback(() => setPeek(false), []);
   if (peek && (chips.length === 0 || out)) setPeek(false);
   const badges = chips.length > 0 ? <BadgeRow chips={chips} foot={foot} onSheet={onSheet} peek={peek} onPeek={() => setPeek((v) => !v)} /> : null;
   // End turn and the sheet button (F04, F12): in the name row on a phone and the tablet's ends, in the foot on the tablet's grids.
@@ -361,7 +364,7 @@ export function Panel({
           data-pane={foot ? "foot" : "who"}
           {...personAttrs({ "aria-label": label }, "relative h-full w-full [perspective:1200px]")}
         >
-          {peek && chips.length > 0 ? <BadgePeek chips={chips} foot={foot} onClose={() => setPeek(false)} /> : null}
+          {peek && chips.length > 0 ? <BadgePeek chips={chips} foot={foot} onClose={closePeek} /> : null}
           {/* The flip (F10): the panel turns over to its out face in 0.45s, and back on Undo; under reduced motion it simply changes. */}
           <div
             className="relative h-full w-full [transform-style:preserve-3d] motion-safe:transition-transform motion-safe:duration-[450ms] motion-safe:ease-[cubic-bezier(.4,.1,.2,1)]"
@@ -646,7 +649,10 @@ function BadgePeek({ chips, foot, onClose }: { chips: Chip[]; foot: boolean; onC
   useEffect(() => {
     const off = (e: PointerEvent) => {
       const t = e.target as Element | null;
-      if (box.current?.contains(t) || t?.closest("[data-peek-toggle]")) return;
+      // Its own +N toggles it; any other seat's +N is a tap off this one, so only one quick look is ever open.
+      const seat = box.current?.closest('[data-testid="tracker-panel"]');
+      const own = t?.closest("[data-peek-toggle]");
+      if (box.current?.contains(t) || (own && seat?.contains(own))) return;
       onClose();
     };
     const esc = (e: KeyboardEvent) => e.key === "Escape" && onClose();

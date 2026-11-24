@@ -119,7 +119,7 @@ try {
       const holds = await row.evaluate((el) => {
         const ruler = el.querySelector("[data-testid='panel-badges-ruler']");
         const kids = [...ruler.children].slice(0, -1);
-        const need = kids.reduce((n, k) => n + k.getBoundingClientRect().width, 0) + 6 * (kids.length - 1);
+        const need = kids.reduce((n, k) => n + k.getBoundingClientRect().width, 0) + (parseFloat(getComputedStyle(el).columnGap) || 6) * (kids.length - 1);
         return need <= el.clientWidth + 1;
       });
       check("with no +N the row really holds every badge", holds, `${s.n} chips`);
