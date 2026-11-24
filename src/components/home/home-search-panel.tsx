@@ -31,12 +31,14 @@ function useFanArt(userId: string): string[] {
   );
 }
 
+// The field block's `md:pr-[240px]` is the fan's 180px width, its 28px right offset and a 32px gap: change them together.
+// From `md` the fan leaves the title row for the panel's right edge (R13): one node, placed by CSS, so the phone keeps it beside the title.
 // The fan's tilts by how many cards it draws: -14°, 0°, 14° for three; the ones there are, otherwise.
 const TILTS: Record<number, readonly string[]> = { 1: [""], 2: ["-rotate-[10deg]", "rotate-[10deg]"], 3: ["-rotate-[14deg]", "", "rotate-[14deg]"] };
 
 function Fan({ art }: { art: string[] }) {
   return (
-    <div aria-hidden data-home-fan="" className="pointer-events-none relative h-[88px] w-[132px] flex-none md:h-[120px] md:w-[180px]">
+    <div aria-hidden data-home-fan="" className="pointer-events-none relative h-[88px] w-[132px] flex-none md:absolute md:top-1/2 md:right-[28px] md:h-[120px] md:w-[180px] md:-translate-y-1/2">
       {art.map((src, i) => (
         <div
           key={src}
@@ -106,7 +108,7 @@ export function HomeSearchPanel({ userId, foot }: { userId: string; foot?: React
       aria-labelledby="home-search-title"
       className="relative rounded-[12px] border border-solid border-[color-mix(in_srgb,var(--accent)_55%,var(--border))] bg-[linear-gradient(90deg,color-mix(in_srgb,var(--accent)_10%,var(--surface)),var(--surface)_60%)]"
     >
-      <div className="flex items-start gap-4 px-4 pt-4 pb-4 md:px-5">
+      <div className="flex items-start gap-4 px-4 pt-4 pb-4 md:px-5 md:pb-3">
         <div className="min-w-0 flex-1">
           <h2 id="home-search-title" className="font-display text-[19px] leading-tight text-[color:var(--fg)] md:text-[21px]">
             {homeSearchCopy.title}
@@ -114,7 +116,7 @@ export function HomeSearchPanel({ userId, foot }: { userId: string; foot?: React
         </div>
         {art.length > 0 ? <Fan art={art} /> : null}
       </div>
-      <div className="px-4 pb-4 md:px-5">
+      <div className={`px-4 pb-4 md:px-5 ${art.length > 0 ? "md:pr-[240px]" : ""}`}>
         {hosted ? (
           // Press outside closes it back to the panel; the field and its answers stand above this.
           <div aria-hidden className="fixed inset-0 z-[39]" onPointerDown={closeSearch} />

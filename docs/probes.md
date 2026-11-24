@@ -2613,6 +2613,7 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   (the rail draws no second field), that a question is answered by a tool there, that Esc (twice: clear, then close)
   returns to the panel and that a starter types into the panel's field; at 390 that a press opens the sheet and a starter
   arrives typed. It writes no row (the About gate is marked seen and put back). Fails on main: Home has no panel there.
+- `pnpm probe:home-fan` proves Finding the tools R13 at 390, 820x1180, 1180x820 and 1300x900: with three recent cards seeded in the browser's storage, the fan is one node, 28px from the panel's right edge and centred on it from `md`, the field starts right under the title and clears the fan, and the phone keeps the fan in the title row. `PROBE_SHOTS=<dir>` also writes one viewport PNG per size. Fails on main. Writes no database row beyond the About gate (put back).
 - `pnpm probe:ask` proves Ask in the card search (tool discovery D) at 390 and at 1300, against a server at `PROBE_BASE`.
   It checks the field's placeholder, the starters' heights (44px phone, 34px dropdown) and that a press types its
   question, that a question about spare cards draws Find a deck under `Tools for this` in the one listbox, that ↓ ↵

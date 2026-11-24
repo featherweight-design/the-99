@@ -149,6 +149,7 @@
     "probe:search-opening": "node scripts/probe-search-opening.mjs",
     "probe:deck-picker": "node scripts/probe-deck-picker.mjs",
     "probe:home-search": "node scripts/probe-home-search.mjs",
+    "probe:home-fan": "node scripts/probe-home-fan.mjs",
     "probe:collection-sort-memory": "node scripts/probe-collection-sort-memory.mjs",
     "probe:card-scan-match": "tsx scripts/probe-card-scan-match.mts",
     "probe:scan-auto": "node scripts/probe-scan-auto.mjs",
