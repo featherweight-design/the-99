@@ -6,8 +6,12 @@ import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 import { exportSheet } from "./lib/copy-sheet/sheet.mjs";
 
+if (process.argv[2]?.startsWith("--")) {
+  console.error("usage: pnpm copy:sheet [out.csv]");
+  process.exit(2);
+}
 const out = resolve(process.argv[2] ?? join(homedir(), "Downloads", `copy-sheet-${new Date().toISOString().slice(0, 10)}.csv`));
-if (out.startsWith(`${resolve(process.cwd())}/`) && !process.argv.includes("--in-repo")) {
+if (out.startsWith(`${resolve(process.cwd())}/`)) {
   console.error("Refusing to write the sheet inside the repository: pass a path outside it (the sheet is never committed).");
   process.exit(1);
 }
