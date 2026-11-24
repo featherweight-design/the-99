@@ -20,6 +20,9 @@ import { ChooseHeader, RESULTS_COLUMN } from "../../../../components/intake/choo
 import { ChooseHistory } from "../../../../components/intake/choose-history";
 import { HistoryLink } from "../../../../components/intake/history-link";
 import { IntakeForm } from "../../../../components/intake/intake-form";
+import { ChooseIntro } from "../../../../components/intake/choose-intro";
+import { readChooseIntroSeen } from "../../../../lib/intake/intro-seen";
+import { loadChooseIntroArt } from "../../../../lib/intake/intro-art";
 import { ReadAsBar } from "../../../../components/intake/read-as-bar";
 import { SearchFailed } from "../../../../components/intake/search-failed";
 import { requireUserId } from "../../../../lib/auth";
@@ -106,6 +109,13 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
     const history = await loadChooseHistory(userId, { path: chooseAt, now }).catch(() => null);
     const allowance = await readAllowance(userId, now, "intake").then((a) => withPayments(a, env)).catch(() => null);
     const historyView = sp.get("v") === "history";
+    // The intro (Help me choose intro, G1/G2): open until the reader has run the tool or pressed Hide. A failed
+    // read of the mark draws it open; a failed art read draws the example without art.
+    const [introSeen, introArt] = await Promise.all([
+      readChooseIntroSeen(userId).catch(() => null),
+      loadChooseIntroArt().catch(() => null),
+    ]);
+    const standing = allowance && toStanding(allowance, now);
     return (
       <div className="flex flex-col pb-[24px] md:px-[40px] md:pb-[48px]">
         <ToolLandingMount landing={landing} request={request} />
@@ -118,7 +128,8 @@ export default async function ChoosePage({ searchParams }: { searchParams: Searc
               centered
               trailing={<HistoryLink href={`${chooseAt}?v=history`} label={historyCopy.link} />}
             />
-            <IntakeForm themes={themes} sets={sets} initial={p} standing={allowance && toStanding(allowance, now)} />
+            <ChooseIntro initiallyOpen={introSeen === null} art={introArt} daily={standing && !standing.paused ? standing.limit : null} />
+            <IntakeForm themes={themes} sets={sets} initial={p} standing={standing} />
           </div>
           <aside className="hidden lg:sticky lg:top-[24px] lg:mt-[34px] lg:block lg:w-[320px] lg:shrink-0 min-[1100px]:w-[380px]">
             <ChooseHistory initial={history} layout="column" />
