@@ -1,6 +1,6 @@
 # READINESS · Finding the tools
 
-**Verdict: Yellow** (engineering readiness audit of R12, 2026-11-24, amending Design's Green). Approved by Hugh 2026-11-24 through R12; every question settled (README, Decisions) and nothing returns to Design. Four eng-side clarifications (R12-C1 to C4) and one sequencing dependency on #3266 (R12-C5) are settled below from the nearest drawn pattern. Earlier rounds' gaps G1 to G25 stand as written; their Errata table (dropped by the R12 commit) is restored at the end.
+**Verdict: Yellow** (engineering readiness audit of R12, 2026-11-24, amending Design's Green). Approved by Hugh 2026-11-24 through R13 (R13: the search panel's fan, G30, desktop only); every question settled (README, Decisions) and nothing returns to Design. Four eng-side clarifications (R12-C1 to C4) and one sequencing dependency on #3266 (R12-C5) are settled below from the nearest drawn pattern. Earlier rounds' gaps G1 to G25 stand as written; their Errata table (dropped by the R12 commit) is restored at the end.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -91,6 +91,10 @@
   Top off, Cheaper stand-ins, Friends' spares, Matchups, Find a deck's Free chip. Precons, Wishlist, Collection Sync,
   Stats for your decks and Friends land at the top with no halo and spend no moment. Help me choose's target moves from
   the form's first answer to the intro panel (`ChooseIntro`, #3266) while it is open; folded (after the first run), no halo.
+- **G30 · Search panel fan (R13, Q23 A).** `home-search-panel.tsx`: from `md`, `Fan` renders outside the title row,
+  `absolute right-[28px] top-1/2 -translate-y-1/2` on the section (`relative`), and the field-and-starters block gains
+  `md:pr-[240px]` so neither runs under it; the title row's bottom padding drops to 12px. Below `md`, the fan stays in the
+  title row exactly as shipped. No fan art (no recent cards): no padding, as today.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
@@ -144,3 +148,27 @@ Nothing is missing that needs Design. Items below are decisions the plan PR reco
 | G22 | Proposes ranking an answerable ask above every kind | `LEAD_PRIORITY` already ranks `spare-request` first; the frame's offer lost because it was seen | A seen, still-answerable ask or offer leads (Q16 A "always"); the unseen rule stays for news |
 | STATES R8 row | `Choose your notifications` | R9 renamed it | `Choose notifications` (G17) |
 | `copy strings.ts` `freeLine` | `Free, no credit needed` | Each row under it carries a `free` pill | `No credit needed` (copy review, rule 7) |
+
+## R13 engineering audit (2026-11-24, addendum: Search panel board, G30, Q23 A)
+
+**Verdict: Yellow.** Audited cold against `src/components/home/home-search-panel.tsx` on current main. Design's Green is amended: the call is buildable as drawn and nothing returns to Design, but five eng-side clarifications are settled below from the drawn pattern.
+
+- Scope: desktop only, phone as shipped, no new strings (`copy strings.ts` unchanged); Q23 settled A. Green.
+- Conflicts: none with R12. R12 touches the Opening state, tool marks and landing halo, not the fan's place. Green.
+- Delta vs shipped: the title row (`flex items-start gap-4 px-4 pt-4 pb-4 md:px-5`) holds title and `Fan` (`md:h-[120px] md:w-[180px]`). G30 moves `Fan` out of that row from `md`, so the row shrinks to the one-line title.
+- Phone: G30 changes nothing below `md`; the fan stays in the row. Green, if every new class is `md:`-prefixed (C1).
+- Tokens: G30 adds only px offsets and padding; no colour. The board's hex values are a rendering surface under `design/`, not shipped. Green.
+- Scratch-gen: `scratch-gen/r12.tsx` is modified by +4 lines and already exists on main. `tsconfig.json` has `exclude: ["node_modules","design"]` and `eslint.config.mjs` ignores `design/**`, so typecheck and lint do not read it. No finding.
+
+### Eng-side clarifications
+- **R13-C1 · Breakpoint.** The split is Tailwind `md` (768), the same as the fan's own `md:` sizes. Every new class is `md:`-prefixed: `md:absolute md:right-[28px] md:top-1/2 md:-translate-y-1/2` on the fan, `md:pr-[240px]` on the field block, `md:pb-3` on the title row. Below 768 the fan renders in the row exactly as shipped, which a single `Fan` placed by CSS alone cannot do (it must live in one DOM spot). Plan: render `Fan` once, in the section, and keep the row's slot with a phone-only wrapper, or render it twice with `md:hidden` and `hidden md:block` and keep `aria-hidden` plus `data-home-fan` unique (the existing test and probes count it). Decide in the plan; do not leave two `data-home-fan` nodes.
+- **R13-C2 · In-between widths (768 to 1179, iPad 820x1180 and 1180x820).** The board draws only 1300 and 390. The field is full width below 1180 (`min-[1180px]:max-w-[720px]`), so from 768 it is the panel width minus 40 and minus the 240 reserve; at 820 that leaves about 500px for the field and starters, and the starters wrap (`md:flex-wrap`). Settled: apply G30 from `md` as written; at 1180 and up the 720px field plus 240 fits inside the panel. 820x1180 and 1180x820 both take the desktop layout (fan right). Probe both before merge.
+- **R13-C3 · Centring.** G30 says "centred on the field and starters" but specifies `top-1/2` of the whole section, which also includes the title row and, when the reader has welcome credits, the foot (the board hides it). Settled: follow the code spec (`top-1/2` of the section) as drawn in the A frame; the offset from true field-and-starters centre is about half the title row and is the drawn result. If the welcome foot makes the fan sit visibly low, the fan stays at `top-1/2` of the section; do not add a second anchor.
+- **R13-C4 · Fan counts and overlays.** The shipped `Fan` draws 1, 2 or 3 cards (`TILTS[art.length]`) at a fixed 180px width, so the 240px reserve holds for each; none gives no fan and no padding (STATES row). While the search is hosted (field `z-40`, answers open, Opening state) the fan stays put, `pointer-events-none`, under the `fixed inset-0 z-[39]` scrim; it is not hidden or moved. Focus, hover and the `⌘K` hint are untouched (the fan is `aria-hidden`).
+- **R13-C5 · Existing test.** `home-search-panel.test.tsx` may assert the fan's place inside the title row; the build PR updates it with a marker check for the new position (route x viewport inventory per feature-acceptance: Home at 390, 820, 1180, 1300).
+
+### Gaps requiring a Design round-trip
+None.
+
+### Decisions inherited
+Q23 A, desktop only, Hugh 2026-11-24; phone as shipped; no new strings; panel about 100px shorter on desktop.
