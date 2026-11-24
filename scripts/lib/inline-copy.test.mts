@@ -8,6 +8,10 @@ describe("findInline", () => {
     const src = `export const A = ({ n }: { n: number }) => (\n  <p>\n    Save your deck\n    {n > 1 ? "Many" : "One deck"}\n    {"Done"}\n  </p>\n);`;
     expect(kinds(src)).toEqual(["3:JSX text:Save your deck", "4:JSX string:Many", "4:JSX string:One deck", "5:JSX string:Done"]);
   });
+  it("reports each written line of a paragraph at its own line", () => {
+    const src = `export const A = () => (\n  <p>\n    First sentence here.\n    Second sentence here.\n  </p>\n);`;
+    expect(kinds(src)).toEqual(["3:JSX text:First sentence here.", "4:JSX text:Second sentence here."]);
+  });
   it("flags the attributes a reader sees or hears, as a literal or inside braces", () => {
     const src = `export const A = () => <input aria-label="Close panel" placeholder={"Search cards"} title={x ? "Pick" : undefined} alt="Cover art" />;`;
     expect(kinds(src).map((k) => k.split(":")[1])).toEqual(["aria-label", "placeholder", "title", "alt"]);
@@ -24,7 +28,7 @@ describe("findInline", () => {
 
 describe("addedLines", () => {
   it("reads the added ranges of each file, with a bare +N meaning one line", () => {
-    const diff = ["+++ b/src/a.tsx", "@@ -1,2 +1,3 @@", "@@ -9 +10 @@", "@@ -20,0 +30,2 @@", "+++ /dev/null", "@@ -1 +0,0 @@"].join("\n");
+    const diff = ["+++ b/src/a.tsx\t", "@@ -1,2 +1,3 @@", "@@ -9 +10 @@", "@@ -20,0 +30,2 @@", "+++ /dev/null", "@@ -1 +0,0 @@"].join("\n");
     expect([...addedLines(diff).get("src/a.tsx")!]).toEqual([1, 2, 3, 10, 30, 31]);
     expect(addedLines(diff).size).toBe(1);
   });

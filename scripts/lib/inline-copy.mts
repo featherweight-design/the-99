@@ -6,7 +6,7 @@ import ts from "typescript";
 export type Inline = { line: number; kind: string; text: string };
 
 // Attributes whose value a reader sees or hears.
-const TEXT_ATTRS = new Set(["aria-label", "aria-description", "aria-roledescription", "aria-placeholder", "placeholder", "title", "alt"]);
+const TEXT_ATTRS = new Set(["aria-label", "aria-description", "aria-roledescription", "aria-placeholder", "placeholder", "title", "alt", "label", "tooltip", "description", "heading"]);
 // Calls whose first argument is shown to the reader.
 const SHOWN_CALLS = new Set(["toast", "toast.error", "toast.success", "toast.info", "toast.warning", "setError"]);
 
@@ -39,7 +39,14 @@ export function findInline(file: string, source: string): Inline[] {
     out.push({ line: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1, kind, text: text.replace(/\s+/g, " ").trim().slice(0, 60) });
 
   const visit = (n: ts.Node) => {
-    if (ts.isJsxText(n) && hasWords(n.text)) add(n, "JSX text", n.text);
+    if (ts.isJsxText(n) && hasWords(n.text)) {
+      // One text node can span a paragraph: report each written line at its own line, so a sentence added inside old text is caught.
+      const start = sf.getLineAndCharacterOfPosition(n.getStart(sf)).line;
+      const first = n.getText(sf).split("\n");
+      first.forEach((l, i) => {
+        if (hasWords(l)) out.push({ line: start + i + 1, kind: "JSX text", text: l.trim().slice(0, 60) });
+      });
+    }
     if (ts.isJsxExpression(n) && n.expression && (ts.isJsxElement(n.parent) || ts.isJsxFragment(n.parent))) {
       for (const s of shownStrings(n.expression)) if (hasWords(literalText(s))) add(s, "JSX string", literalText(s));
     }
@@ -67,7 +74,7 @@ export function addedLines(diff: string): Map<string, Set<number>> {
   let file = "";
   for (const row of diff.split("\n")) {
     if (row.startsWith("+++ ")) {
-      file = row.startsWith("+++ b/") ? row.slice(6) : "";
+      file = row.startsWith("+++ b/") ? row.slice(6).replace(/\t.*$/, "") : "";
       if (file) out.set(file, new Set());
     } else if (file && row.startsWith("@@")) {
       const m = /\+(\d+)(?:,(\d+))?/.exec(row);
