@@ -1884,6 +1884,13 @@
       "when": 1795466178569,
       "tag": "0270_user_prefs_find_a_deck_closed",
       "breakpoints": true
+    },
+    {
+      "idx": 271,
+      "version": "7",
+      "when": 1795491401691,
+      "tag": "0271_user_prefs_choose_intro_seen",
+      "breakpoints": true
     }
   ]
 }

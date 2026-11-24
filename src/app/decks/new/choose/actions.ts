@@ -17,6 +17,7 @@ import { beginTheRead } from "../../../../lib/intake/the-read-run";
 import { loadIntakeThemes } from "../../../../lib/intake/search";
 import { loadCommanderPrintings } from "../../../../lib/sets/printed-in-read";
 import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store";
+import { markChooseIntroSeen } from "../../../../lib/intake/intro-seen";
 
 /**
  * The form's submit (rework plan PR 3; F8: the read starts here, never on the results page's load,
@@ -31,6 +32,8 @@ import { loadTheRead, type TheReadState } from "../../../../lib/intake/run-store
  *   two calls run after the response (`after`), and the results attach to it by `r`. A repeat lands
  *   on the stored read, charged nothing. No credit left, the owner's share used, or
  *   a read already running: the free results, with the words kept and unread (7l, 7n).
+ * - Every submit whose words are within the caps marks the intro seen (intro G1), an empty box included: the reader
+ *   has used the tool. Beside the tag lookup, so it adds no round trip, and a failed mark never stops the run.
  */
 export async function submitChoose(query: string, from: "form" | "results" = "form"): Promise<{ kind: "refused" }> {
   const userId = await requireUserId();
@@ -47,7 +50,10 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   const parsed = parseLiveParams(raw);
   // The cards tagged in the words, looked up: a tag is the catalog's name for its id, and an id the
   // catalog does not hold is plain words. The address keeps the canonical body.
-  const resolved = await resolveTaggedText(parsed.words, { commanderLegalOnly: true });
+  const [resolved] = await Promise.all([
+    resolveTaggedText(parsed.words, { commanderLegalOnly: true }),
+    markChooseIntroSeen(userId).catch(() => false),
+  ]);
   const p = { ...parsed, words: resolved.body };
   const words = resolved.text.trim();
   // The catalog's name can be longer than the one the address carried: measure again, on the text the prompt gets.
@@ -68,6 +74,16 @@ export async function submitChoose(query: string, from: "form" | "results" = "fo
   // A repeat lands on the stored read, marked so its line says no credit was used (7m).
   if (begun.kind === "read" || begun.kind === "nothing") redirect(resultsTarget(path, p, begun.readId, "repeat"));
   redirect(resultsTarget(path, p, null, begun.kind === "in_flight" ? "busy" : null));
+}
+
+/**
+ * The intro's Hide (intro G1): marks it seen, so it draws folded from the next visit on. Revalidates nothing: the panel
+ * folds on the press, and the page's next render reads the mark.
+ */
+export async function hideChooseIntro(): Promise<{ ok: true }> {
+  const userId = await requireUserId();
+  await markChooseIntroSeen(userId);
+  return { ok: true };
 }
 
 /** Whether every theme and set is one the form's pickers offer now. */

@@ -25,7 +25,10 @@ vi.mock("../../../../lib/cards/tagged-text", async (original) => ({
   resolveTaggedText: tags.resolve,
 }));
 
-import { submitChoose } from "./actions";
+const intro = vi.hoisted(() => ({ mark: vi.fn() }));
+vi.mock("../../../../lib/intake/intro-seen", () => ({ markChooseIntroSeen: intro.mark }));
+
+import { hideChooseIntro, submitChoose } from "./actions";
 
 const ID = "0000aaaa-0000-4000-8000-000000000001";
 
@@ -35,6 +38,7 @@ beforeEach(async () => {
   const real = await vi.importActual<typeof import("../../../../lib/cards/tagged-text")>("../../../../lib/cards/tagged-text");
   tags.resolve.mockImplementation(real.resolveTaggedText);
   stub.begin.mockReset();
+  intro.mark.mockReset().mockResolvedValue(true);
   stub.after.mockReset();
   vocab.themes.mockReset().mockResolvedValue([{ slug: "landfall", label: "Landfall", commanders: 300 }]);
   vocab.printings.mockReset().mockResolvedValue({ sets: [{ code: "mh3", name: "Modern Horizons 3" }] });
@@ -171,5 +175,31 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     const to = await landed(`?w=scary&a=${ID}`);
     expect(stub.begin.mock.calls[0][1].filters.card).toBeNull();
     expect(to).not.toContain("a=");
+  });
+});
+
+describe("the intro's mark (Help me choose intro G1)", () => {
+  const landed = async (query: string) => {
+    try { await submitChoose(query); } catch (e) { return String((e as Error).message).replace("REDIRECT ", ""); }
+  };
+
+  it("marks the intro seen on a submit of any kind, an empty box included", async () => {
+    expect(await landed("?")).toContain("/commanders/choose");
+    expect(intro.mark).toHaveBeenCalledWith("user_1");
+  });
+
+  it("runs on when the mark cannot be written", async () => {
+    intro.mark.mockRejectedValue(new Error("db down"));
+    expect(await landed("?")).toContain("/commanders/choose");
+  });
+
+  it("does not mark a submit refused for words over the cap", async () => {
+    expect(await submitChoose(`?w=${"x".repeat(801)}`)).toEqual({ kind: "refused" });
+    expect(intro.mark).not.toHaveBeenCalled();
+  });
+
+  it("marks the intro seen on Hide", async () => {
+    expect(await hideChooseIntro()).toEqual({ ok: true });
+    expect(intro.mark).toHaveBeenCalledWith("user_1");
   });
 });

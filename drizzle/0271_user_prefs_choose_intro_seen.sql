@@ -1,0 +1,1 @@
+ALTER TABLE "user_prefs" ADD COLUMN "choose_intro_seen_at" timestamp with time zone;
