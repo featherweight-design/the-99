@@ -174,7 +174,7 @@ export function testsSection(t: TestRewrite): string[] {
     lines.push("");
   }
   if (t.hand.length) {
-    lines.push(`**Test needs a hand edit** (${t.hand.length}): these literals still hold the old words and will fail after the import until a person edits them.`, "");
+    lines.push(`**Test needs a hand edit** (${t.hand.length}): these tests still type the old text. The orchestrator fixes them on this PR before merge.`, "");
     for (const h of t.hand) lines.push(`- \`${h.file}:${h.line}\` "${h.text.replace(/\n/g, " ")}"${h.key ? ` (\`${h.key.replace("src/lib/copy/", "")}\`)` : ""}: ${h.why}`);
     lines.push("");
   }
