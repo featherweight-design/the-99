@@ -155,7 +155,7 @@ export function LeadStory({
           )}
         </div>
       )}
-      <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className="relative flex min-w-0 flex-1 flex-col gap-[6px]">
+      <div data-testid={receipt ? "spare-receipt-status" : undefined} tabIndex={receipt ? -1 : undefined} className={`relative flex min-w-0 flex-1 flex-col gap-[6px] ${dismiss ? "pr-[26px] md:pr-[30px]" : ""}`}>
         <p className={`m-0 flex items-center gap-[8px] font-mono text-[10px] font-medium tracking-[.14em] uppercase ${answered === "yes" ? "text-[color:var(--success)]" : answered === "no" ? "text-[color:var(--fg-muted)]" : "text-[color:var(--accent-text)]"}`}>
           <span className="min-w-0">{receipt ? receipt.kind : offer ? feedCopy.home.offerKicker : feedCopy.home.kicker[item.kind]}</span>
           <small className="flex-none whitespace-nowrap text-[10.5px] tracking-normal text-[color:var(--fg-muted)] normal-case before:mr-[7px] before:content-['·']">{receipt ? refreshCopy.home.elapsed.justNow : feedAge(item.at, now)}</small>
@@ -166,9 +166,8 @@ export function LeadStory({
         {text.line && <p className="m-0 text-[13px] leading-[1.5] text-[color:var(--fg-body)] md:max-w-[640px] md:text-[13.5px]">{text.line}</p>}
         {lists && <p data-lead-lists className="m-0 font-mono text-[10.5px] text-[color:var(--fg-muted)]">{lists}</p>}
         {/* The action line (board `Dismiss-X`, `.d4n .ld .la`): the press, or Yes, No and the days left, then the ✕ at
-            its end, the band's right edge from desktop. On a phone the ✕ holds the first line's end while the days left
-            wraps under Yes and No. */}
-        {(text.press || (ask && !receipt) || dismiss) && (
+            its end. The ✕ is not in this line: it holds the card's top right corner. */}
+        {(text.press || (ask && !receipt)) && (
           <div data-lead-actions className="mt-[6px] flex min-w-0 flex-nowrap items-start gap-[8px] md:items-center">
             {two && text.press ? (
               // Board `.ld .la .yg2`: the filled See the lists, then the ghost Read the post, 8px 16px apart.
@@ -199,10 +198,11 @@ export function LeadStory({
               <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}
                 onAnswer={(a, from) => void press(a, from)} size="lead" offer={offer} />
             )}
-            {dismiss && <DismissButton title={text.title} onPress={dismiss} className="mt-[-2px] md:mt-0" />}
           </div>
         )}
       </div>
+      {/* The ✕ sits in the card's top right corner (Q17 A), where it stays out of the action line's way. */}
+      {dismiss && <span data-lead-x className="absolute right-[6px] top-[6px] z-[2] md:right-[10px] md:top-[10px]"><DismissButton title={text.title} onPress={dismiss} /></span>}
       {!shared && toast}
     </section>
   );

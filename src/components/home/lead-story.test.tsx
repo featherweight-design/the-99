@@ -202,8 +202,11 @@ describe("LeadStory, a Wizards post (announcements board Lead-Story)", () => {
   });
 
   it("draws its ✕ on a post (feed_dismissals admits post: keys)", () => {
-    render(<LeadStory item={POST} now={NOW} onDismiss={() => {}} />);
+    const { container } = render(<LeadStory item={POST} now={NOW} onDismiss={() => {}} />);
     expect(screen.getByRole("button", { name: /Hide/ })).toBeInTheDocument();
+    // Q17 A: the ✕ holds the card's top right corner, outside the action line.
+    expect(container.querySelector("[data-lead-x]")?.className).toContain("top-[6px]");
+    expect(container.querySelector("[data-lead-actions] button[aria-label^='Hide']")).toBeNull();
   });
 
   it("drops the hero band, and the blur, when the hero fails or there is none", () => {

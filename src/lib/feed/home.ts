@@ -380,18 +380,23 @@ export async function loadHomeFeed(
     const id = i.kind === "commander-decklists" ? parseCatalogKey(i.kind, i.key) : null;
     return id ? [id] : [];
   });
-  const [found, targets] = await Promise.all([lookups(userId, items, q, env, store), loadPostListTargets(posts, now, q)]);
+  // An ask or offer that still waits leads whether or not it was seen (Q16 A), so they are read beside the lookups, and
+  // only when the feed holds a spare-request row that is not an answer. The ask waits on the friend's side whatever the
+  // feed shows, so the match is by card and asker: one open ask per asker and card (the index).
+  const waiting = items.some((i) => i.kind === "spare-request" && !("answer" in i && i.answer));
+  const [found, targets, asks, offers] = await Promise.all([
+    lookups(userId, items, q, env, store),
+    loadPostListTargets(posts, now, q),
+    waiting ? loadIncomingAsks(userId, env, now, q) : Promise.resolve([] as IncomingAsk[]),
+    waiting ? loadIncomingOffers(userId, now) : Promise.resolve([] as IncomingOffer[]),
+  ]);
   const views = withListTargets(toViews(items, found, store), targets);
-  const feed = offer.length > 0 ? { ...splitLead(views, on), offer } : splitLead(views, on);
-  // Only a spare request that leads is answered on Home; its ask is read only then. The ask waits on the friend's
-  // side whatever the feed shows, so the match is by card and asker: one open ask per asker and card (the index).
+  const incoming = [...asks, ...offers.map(offerAsLeadAsk)];
+  const open = answerableKeys(views, asks, offers.map(offerAsLeadAsk));
+  const feed = offer.length > 0 ? { ...splitLead(views, on, open), offer } : splitLead(views, on, open);
   const standalone = new Set(items.flatMap((i) => ("answer" in i && i.answer && answerStandalone(i.data) ? [i.key] : [])));
   const answered = await answerDetails(userId, feed, standalone);
-  if (answered.chosen && answered.lead?.kind === "spare-request") {
-    const asks = answered.lead.offer ? (await loadIncomingOffers(userId, now)).map(offerAsLeadAsk) : await loadIncomingAsks(userId, env, now, q);
-    return withLeadAsk(answered, asks);
-  }
-  return answered;
+  return waiting ? withAsks(answered, incoming) : answered;
 }
 
 /**
@@ -440,18 +445,35 @@ export function withAnswerDetails(
 /** An incoming offer as the lead's ask: the offer's own parts, plus what the reader wants of the card. */
 const offerAsLeadAsk = (o: IncomingOffer): IncomingAsk & { offer: { want: number } } => ({ ...offerAsAsk(o), offer: { want: o.want } });
 
-/** The lead with its ask attached, when one of `asks` is the lead's (its card and its asker). Pure, for the tests. */
-export function withLeadAsk(feed: HomeFeed, asks: readonly (IncomingAsk & { offer?: { want: number } })[]): HomeFeed {
-  if (!feed.chosen || feed.lead?.kind !== "spare-request" || !feed.lead.card || !feed.lead.friend) return feed;
-  const { card, friend } = feed.lead;
-  const ask = asks.find((a) => a.oracleId === card.oracleId && a.asker.publicId === friend.publicId);
-  if (!ask) return feed;
-  return { ...feed, lead: { ...feed.lead, ask: { id: ask.id, spare: ask.spare, copies: ask.copies, deckName: ask.deckName, daysLeft: ask.daysLeft, ...(ask.offer ? { offer: ask.offer } : {}) } } };
+/**
+ * Each answerable spare request, the lead's and every row's, with its ask attached (Q18 A: a row answers in place), by
+ * card and asker among `asks`; a row whose ask is not among them keeps its line. One read serves the whole feed. Pure, for the tests.
+ */
+export function withAsks(feed: HomeFeed, asks: readonly (IncomingAsk & { offer?: { want: number } })[]): HomeFeed {
+  if (!feed.chosen) return feed;
+  const attach = (v: FeedView): FeedView => {
+    if (v.kind !== "spare-request" || v.answer || !v.card || !v.friend) return v;
+    const { card, friend } = v;
+    const ask = asks.find((a) => a.oracleId === card.oracleId && a.asker.publicId === friend.publicId && (a.offer !== undefined) === Boolean(v.offer));
+    return ask ? { ...v, ask: { id: ask.id, spare: ask.spare, copies: ask.copies, deckName: ask.deckName, daysLeft: ask.daysLeft, ...(ask.offer ? { offer: ask.offer } : {}) } } : v;
+  };
+  return { ...feed, lead: feed.lead && attach(feed.lead), items: feed.items.map(attach) };
+}
+
+/** The keys of the spare-request rows whose ask or offer is still open to answer (the read holds only those). Pure, for the tests. */
+export function answerableKeys(views: readonly FeedView[], asks: readonly IncomingAsk[], offers: readonly IncomingAsk[]): Set<string> {
+  const keys = new Set<string>();
+  for (const v of views) {
+    if (v.kind !== "spare-request" || v.answer || !v.card || !v.friend) continue;
+    const { card, friend } = v;
+    if ((v.offer ? offers : asks).some((a) => a.oracleId === card.oracleId && a.asker.publicId === friend.publicId)) keys.add(v.key);
+  }
+  return keys;
 }
 
 /** The lead out of the list, by the shared rule; the head's count is every unseen item, the lead's included. */
-export function splitLead(views: FeedView[], on: FeedKind[]): HomeFeed {
-  const lead = leadStory(views.map((v) => ({ ...v, createdAt: new Date(v.at) })));
+export function splitLead(views: FeedView[], on: FeedKind[], answerable: ReadonlySet<string> = new Set()): HomeFeed {
+  const lead = leadStory(views.map((v) => ({ ...v, createdAt: new Date(v.at) })), answerable);
   const leadView = lead ? views.find((v) => v.key === lead.key) ?? null : null;
   return {
     chosen: true,

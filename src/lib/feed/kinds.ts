@@ -105,12 +105,15 @@ const waits = (i: { kind: FeedKind } & MaybeAnswer): boolean => WAITING_KINDS.in
 
 /**
  * The lead story: the first unseen item by `LEAD_PRIORITY`, newest first within a kind; null when nothing is unseen.
+ * `answerable` are the keys of waiting asks and offers still open to answer: they lead seen or not.
  * An answer item never leads, nor a kind in `NEVER_LEADS`.
  */
-export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt: Date } & MaybeAnswer>(items: readonly T[]): T | null {
+export function leadStory<T extends { kind: FeedKind; unseen: boolean; createdAt: Date; key?: string } & MaybeAnswer>(items: readonly T[], answerable: ReadonlySet<string> = new Set()): T | null {
   let best: T | null = null;
   for (const item of items) {
-    if (!item.unseen || item.answer || NEVER_LEADS.includes(item.kind)) continue;
+    // An ask that still waits on the reader leads seen or not (Q16 A): unseen is the rule for news only.
+    const open = item.key !== undefined && answerable.has(item.key) && WAITING_KINDS.includes(item.kind);
+    if ((!item.unseen && !open) || item.answer || NEVER_LEADS.includes(item.kind)) continue;
     if (!best) {
       best = item;
       continue;
