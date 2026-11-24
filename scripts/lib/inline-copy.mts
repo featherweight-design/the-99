@@ -34,6 +34,7 @@ const calleeName = (e: ts.Expression): string =>
 
 export function findInline(file: string, source: string): Inline[] {
   const sf = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, file.endsWith("x") ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const isComponent = file.endsWith(".tsx");
   const out: Inline[] = [];
   const add = (node: ts.Node, kind: string, text: string) =>
     out.push({ line: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1, kind, text: text.replace(/\s+/g, " ").trim().slice(0, 60) });
@@ -59,8 +60,25 @@ export function findInline(file: string, source: string): Inline[] {
       for (const s of shownStrings(n.arguments[0])) if (hasWords(literalText(s))) add(s, `${calleeName(n.expression)}()`, literalText(s));
     }
     // A server action's `{ error: "Pick a commander first" }`. Needs two words: `error: "not_found"` is a code.
-    if (ts.isPropertyAssignment(n) && n.name.getText(sf) === "error") {
-      for (const s of shownStrings(n.initializer)) if (multiWord(literalText(s))) add(s, "error:", literalText(s));
+    // The same for `{ ok: false, message: "We couldn't save that." }`: `message` counts only beside an `ok` flag.
+    if (ts.isPropertyAssignment(n)) {
+      const key = n.name.getText(sf);
+      const result = ts.isObjectLiteralExpression(n.parent) && n.parent.properties.some((p) => p.name?.getText(sf) === "ok");
+      if (key === "error" || (key === "message" && result)) {
+        for (const s of shownStrings(n.initializer)) if (multiWord(literalText(s))) add(s, `${key}:`, literalText(s));
+      }
+    }
+    // Component files only: a sentence held in a const, object value or return that the component later draws.
+    // Capitalised and two words, so a code value or a status key ("toBuy") passes; fixtures are data.
+    if (isComponent && !n.getSourceFile().fileName.includes("__fixtures__")) {
+      const held =
+        (ts.isPropertyAssignment(n) && n.initializer) || (ts.isVariableDeclaration(n) && n.initializer) || (ts.isReturnStatement(n) && n.expression) || undefined;
+      if (held) {
+        for (const s of shownStrings(held)) {
+          const t = literalText(s);
+          if (/^\p{Lu}\p{L}+(?: \p{L}[\p{L}'’-]*)+[.!?]?$/u.test(t)) add(s, "held string", t);
+        }
+      }
     }
     ts.forEachChild(n, visit);
   };

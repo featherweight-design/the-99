@@ -20,6 +20,15 @@ describe("findInline", () => {
     const src = `toast.error("Could not save");\nsetError("Try again");\nexport const r = { error: "Pick a commander first" };`;
     expect(kinds(src, "a.ts")).toEqual(["1:toast.error():Could not save", "2:setError():Try again", "3:error:Pick a commander first"]);
   });
+  it("flags a result's message beside ok, but not a bare message", () => {
+    const src = `const a = { ok: false, message: "We couldn’t find that deck." };\nconst b = { message: "Plain data here" };`;
+    expect(kinds(src, "a.ts")).toEqual(["1:message:We couldn’t find that deck."]);
+  });
+  it("flags a template literal in a prop and a sentence held in a component const", () => {
+    const src = "export const A = ({ n }: { n: string }) => {\n  const heading = ok ? \"Retry now\" : d.heading;\n  return <b aria-label={`Open ${n} now`}>{heading}</b>;\n};";
+    expect(kinds(src)).toEqual(["2:held string:Retry now", "3:aria-label:Open  now"]);
+    expect(kinds(src, "a.ts")).toEqual([]);
+  });
   it("leaves data, symbols, codes and values from copy alone", () => {
     const src = `export const A = ({ c }: { c: { name: string } }) => (\n  <p className="flex gap-2" data-testid="deck-row" aria-label={copy.close} title={c.name}>\n    ×\n    {c.name}\n    {copy.save}\n    {ok && "x"}\n  </p>\n);\nexport const r = { error: "not_found" };\nreturn {};`;
     expect(kinds(src)).toEqual([]);
