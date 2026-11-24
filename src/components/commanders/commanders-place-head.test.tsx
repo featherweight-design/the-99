@@ -64,7 +64,7 @@ describe("CommandersPlaceHead", () => {
     path.value = "/commanders";
     render(<CommandersPlaceHead counts={null} />);
     for (const place of ["foryou", "discover", "choose", "hidden"]) {
-      expect(screen.getByTestId(`commanders-tab-${place}`).className).toContain("max-md:flex-auto");
+      expect(screen.getByTestId(`commanders-tab-${place}`).className).toContain("max-md:basis-0");
     }
   });
   // Four tabs fit a 390 phone at the strip's own spacing: it closes up only from five.

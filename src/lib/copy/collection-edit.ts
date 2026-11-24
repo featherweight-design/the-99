@@ -24,8 +24,8 @@ export const collectionEditCopy = {
     upload: "Upload a file",
     historyTab: "History",
     add: "Add cards",
-    /** The phone strip's trailing slot, where the longer label does not fit beside four tabs. */
-    addShort: "Add",
+    /** The phone strip's trailing slot, where the longer label does not fit beside the tabs (Hugh, 2026-11-24). */
+    addShort: "Add +",
   },
   empty: {
     uploadTitle: "Upload a file",

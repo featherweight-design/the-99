@@ -330,6 +330,8 @@ export function ImportEntry({ compact = false, ownDefault = false }: {
         <SegmentedSwitch
           kind="tabs"
           tone="neutral"
+          // The well spans the phone's width, its segments in equal shares (Hugh, 2026-11-24).
+          fill
           ariaLabel={copy.entry.heading}
           ids={{ tab: (v) => `${modeIds}-tab-${v}`, panel: (v) => `${modeIds}-panel-${v}` }}
           segments={MODES.map((m) => ({

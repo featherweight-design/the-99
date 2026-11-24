@@ -45,7 +45,7 @@ export const ABOUT_REGIONS = {
   "collection/cards/add": {
     phone: {
       capture: "p-collection",
-      locator: "[data-testid='collection-add-phone'][data-about-press], [data-testid='collection-add-phone'] [data-about-press]",
+      locator: "[data-testid='collection-add-phone'][data-about-press]",
     },
     // A different element at 1300: the head's Add button (`hidden md:flex`).
     desktop: { capture: "d-collection2", locator: "[data-testid='collection-add']:visible" },

@@ -323,24 +323,20 @@ describe("CollectionPlaceHead \u00b7 Add cards (collection editing)", () => {
     expect(within(strip()).getByText("History")).toBeInTheDocument();
   });
 
-  it("switch on, five tabs: the phone's Add is its mark alone, named for a reader, and the tabs close up (WP1)", () => {
+  it.each([
+    ["five tabs", true],
+    ["four tabs", false],
+  ])("switch on, %s: the phone's Add reads `Add +`, named for a reader, and the tabs share the strip equally", (_, wishlist) => {
     pathname = "/collection";
-    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" editEnabled historyHasEntries wishlistEnabled />);
-    expect(tabNames()).toHaveLength(5);
+    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" editEnabled historyHasEntries wishlistEnabled={wishlist} />);
+    expect(tabNames()).toHaveLength(wishlist ? 5 : 4);
     const add = screen.getByTestId("collection-add-phone");
+    expect(add).toHaveTextContent("Add +");
     expect(add).toHaveAccessibleName("Add cards");
-    expect(add).not.toHaveTextContent("Add");
-    expect(add.className).toContain("w-[44px]");
-    expect(add.className).toContain("self-center");
-    expect(within(strip()).getByTestId("collection-tab-cards").className).toContain("px-[7px]");
-  });
-
-  it("switch on, four tabs: the phone's Add keeps its word", () => {
-    pathname = "/collection";
-    render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" editEnabled historyHasEntries />);
-    expect(tabNames()).toHaveLength(4);
-    expect(screen.getByTestId("collection-add-phone")).toHaveTextContent("Add");
-    expect(within(strip()).getByTestId("collection-tab-cards").className).toContain("px-[11px]");
+    expect(add.className).not.toContain("basis-0");
+    for (const tab of within(strip()).getAllByRole("link")) expect(tab.className).toContain("max-md:basis-0");
+    for (const tab of within(strip()).getAllByRole("link")) expect(tab.className).toContain("max-md:min-w-max");
+    expect(within(strip()).getByTestId("collection-tab-cards").className).toContain(wishlist ? "px-[7px]" : "px-[11px]");
   });
 
   it("switch on, empty collection: no Add in the head (the doors live in the empty state)", () => {
