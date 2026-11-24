@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help me choose intro, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width:2400px;min-height:1320px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:28px">
+<div style="display:flex;flex-direction:column;gap:10px">
+<h2 style="margin:0;font:700 30px 'Chakra Petch',sans-serif">Desktop · 1300 · full pages</h2>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7">The panel lives in the form's 680 column; History keeps its column on the right.</p>
+</div>
+<div style="display:flex;gap:40px;align-items:flex-start">
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:720px;flex:none">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#E07A65">Shipped</span>
+<img src="art/hmc-d-base.webp" alt="Shipped desktop page" style="width:720px;height:679px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="font-size:13px;line-height:1.55;color:#959AAD">Title and one sub line, then the form.</figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:720px;flex:none">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#7FC48A">Proposed · first visit</span>
+<img src="art/hmc-d-open.webp" alt="Proposed desktop page, intro open" style="width:720px;height:977px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="font-size:13px;line-height:1.55;color:#959AAD">Intro open: steps under the lead, example on the right, cost tiles across.</figcaption>
+</figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px;width:720px;flex:none">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:#7FC48A">Proposed · after the first run</span>
+<img src="art/hmc-d-fold.webp" alt="Proposed desktop page, intro folded" style="width:720px;height:716px;display:block;border-radius:14px;border:1px solid #262A35">
+<figcaption style="font-size:13px;line-height:1.55;color:#959AAD">Folded to one line beside a History with runs (Q1).</figcaption>
+</figure>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2400,"height":1320}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
