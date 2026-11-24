@@ -53,7 +53,8 @@ function firstSentence(text: string): string {
 }
 
 /** Show me's address for any announced unit: its page, the unit lit, scrolled to its section (`showMeHref`'s shape). */
-export function launchHref(u: Pick<UnseenUnit, "key" | "area" | "section">): string {
+export function launchHref(u: Pick<UnseenUnit, "key" | "area" | "section" | "destination">): string {
+  if (u.destination) return u.destination;
   return `/about/${u.area}?${new URLSearchParams({ [LIT_PARAM]: baseKey(u.key) }).toString()}#${u.section}`;
 }
 
@@ -86,6 +87,7 @@ export function aboutLine(seen: SeenState, visible: readonly VisibleSection[]): 
     lead: ABOUT_PAGE_STRINGS.bannerLead(pageName(u.area)),
     text: launchText(u, visible),
     href: launchHref(u),
+    leavesAbout: Boolean(u.destination),
     icon: u.key.startsWith("rule/") ? null : AREA_ICON[u.area],
   }));
   return { kind: "launches", launches, ids: launches.map((l) => l.key) };

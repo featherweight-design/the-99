@@ -246,6 +246,7 @@ const launch = (key: string, page = "Decks", text = "Matchups splits a deck’s 
   text,
   href: `/about/${page.toLowerCase()}?lit=${encodeURIComponent(key)}#games`,
   icon: glyph ? "/decks" : null,
+  leavesAbout: false,
 });
 const behind = (...launches: AboutLaunch[]): AboutLine => ({ kind: "launches", launches, ids: launches.map((l) => l.key) });
 const MATCHUPS = launch("decks/games/matchups");
@@ -437,6 +438,13 @@ describe("ArrivalsBanner, About's ✕ and acknowledgements", () => {
     first.unmount();
     render(<ArrivalsBanner data={null} about={about} />);
     expect(region()).not.toBeNull();
+  });
+
+  it("a Show me that leaves About answers its launch on the press, with the launch's own ack keys", async () => {
+    const STORE = { ...launch("shopping/deck-shopping/total@STORE_PREFERENCE_ENABLED", "Shopping", "Pick another store in Settings and the prices follow."), href: "/settings#settings-store", leavesAbout: true };
+    render(<ArrivalsBanner data={null} about={behind(STORE)} />);
+    fireEvent.click(screen.getByRole("link", { name: "Show me" }));
+    expect(dismiss).toHaveBeenCalledWith([], STORE.ack);
   });
 
   it("draws no ✕ where it is not closable", () => {

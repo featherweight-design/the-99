@@ -3526,6 +3526,10 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   be `sk_test_`), all removed in its `finally` with every row the user wrote. `PROBE_BASE` must be loopback with a
   port. Needs a `next start` on `PROBE_BASE` over the same database with `LIST_CACHE_ENABLED=true` (Never cut is always on); stop it by its own PID.
 
+## probe:store-show-me
+
+- `pnpm probe:store-show-me` (`E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app PROBE_BASE=http://localhost:<port>`, local dev server only) presses the store choice announcement's Show me on Home's banner at 390x844 and 1300x900. With `STORE_PREFERENCE_ENABLED` on for the account (a per-user `flag_overrides` row marked `probe:store-show-me`, removed in `finally`) and every other About unit seen, the one launch is the sentence on Shopping's total; the probe asserts Show me's href is `/settings#settings-store`, the press lands there with the store section in the viewport, the press writes the sentence's key to `user_prefs.about_seen_ids`, and Home then draws no line. A launch names its own destination with `sentenceDestinations` on its About label; every other launch still opens About and is answered by the About visit. The account's `user_prefs` row is read first and put back exactly; production and staging are refused by branch id.
+
 ## probe:lock-shift
 
 Locking the first card, and unlocking the last, move nothing on the deck page. With Lock cards on it presses the first
