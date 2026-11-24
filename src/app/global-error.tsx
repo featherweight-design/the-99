@@ -7,6 +7,7 @@ import { useSyncExternalStore } from "react";
 
 import { CrashWordmark } from "../components/feedback/crash-wordmark";
 import { reportCopy } from "../lib/copy/report";
+import { shellCopy } from "../lib/copy/shell";
 import { ErrorNotice } from "../components/shell/error-notice";
 import { DEFAULT_THEME, themeCookieValue, themeFor } from "../lib/theme/themes";
 import { FONT_VARIABLES } from "./fonts";
@@ -30,7 +31,7 @@ export default function GlobalError({
   return (
     <html lang="en" data-theme={theme} className={`${FONT_VARIABLES} h-full antialiased`}>
       <body className="flex min-h-full flex-col bg-[color:var(--bg)] text-[color:var(--fg)]">
-        <title>The 99</title>
+        <title>{shellCopy.brandName}</title>
         <CrashWordmark />
         <ErrorNotice boundary="root" error={error} retry={retry} />
         {/* The error code, when the server gave one (small items 8, board 6: C1); nothing is drawn without it. */}

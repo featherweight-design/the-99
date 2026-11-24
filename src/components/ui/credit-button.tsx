@@ -2,6 +2,8 @@
 // A filled (or outlined) button whose credit is a segment inside it after a rule, the segment
 // dropped when no credit is left (tuning hub, Mana Balance feedback).
 
+import { creditsCopy } from "../../lib/copy/credits";
+
 export function CreditButton({ label, credit, filled, blocked, spent, onPress, ariaLabel }: {
   label: string;
   /** The segment after the drawn ◆: `1 credit`. */
@@ -15,7 +17,7 @@ export function CreditButton({ label, credit, filled, blocked, spent, onPress, a
       type="button"
       onClick={onPress}
       disabled={blocked}
-      aria-label={ariaLabel ?? (spent ? `${label}. No credits left.` : `${label}. Uses 1 credit.`)}
+      aria-label={ariaLabel ?? (spent ? creditsCopy.pressAriaSpent(label) : creditsCopy.pressAria(label))}
       className={`flex h-[44px] w-full flex-none items-stretch overflow-hidden rounded-[8px] border border-[color:var(--accent)] text-[13px] font-semibold disabled:opacity-50 md:h-[38px] md:w-auto ${filled ? "bg-[color:var(--accent)] text-[color:var(--bg)]" : "bg-transparent text-[color:var(--accent-text)]"}`}
     >
       <span className="flex flex-1 items-center justify-center px-[16px]">{label}</span>

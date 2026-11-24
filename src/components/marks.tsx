@@ -9,6 +9,7 @@
 // Colors reference brand tokens via CSS custom properties where possible;
 // some design-table values (e.g. card-fan fill layers) are raw hex by spec.
 
+import { shellCopy } from "../lib/copy/shell";
 import { CrownDiamonds, crownBox } from "./ui/crown";
 
 // ---------------------------------------------------------------------------
@@ -157,7 +158,7 @@ export function Crowned99({ variant, className }: Crowned99Props) {
   return (
     <svg
       role="img"
-      aria-label="The 99"
+      aria-label={shellCopy.brandName}
       viewBox={`0 0 ${totalWidth} ${totalHeight}`}
       width={totalWidth}
       height={totalHeight}
@@ -264,7 +265,7 @@ export function CardFan({ variant = "mobile", className }: CardFanProps) {
   return (
     <svg
       role="img"
-      aria-label="Card fan"
+      aria-label={shellCopy.cardFanAria}
       viewBox={`0 0 ${containerW} ${containerH}`}
       width={containerW}
       height={containerH}
@@ -357,7 +358,7 @@ export function XcixSeal({ variant = "mobile", className }: XcixSealProps) {
   return (
     <svg
       role="img"
-      aria-label="XCIX"
+      aria-label={shellCopy.sealNumeral}
       viewBox={`0 0 ${size} ${size}`}
       width={size}
       height={size}
@@ -385,7 +386,7 @@ export function XcixSeal({ variant = "mobile", className }: XcixSealProps) {
         letterSpacing="0.04em"
         fill="var(--fg)"
       >
-        XCIX
+        {shellCopy.sealNumeral}
       </text>
     </svg>
   );

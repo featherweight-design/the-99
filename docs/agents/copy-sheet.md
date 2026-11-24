@@ -25,7 +25,7 @@ Placeholders that differ from the original's, an em dash (a bare `—` meaning n
 
 ## Guards
 
-- `pnpm check:inline-copy` (CI): a diff may not add an inline user-facing string; see `guards.md` for what it flags. It flips from added-lines to the whole tree when the last move PR lands.
+- `pnpm check:inline-copy` (CI): no source file under `src/` may hold an inline user-facing string (whole tree, no allowlist); see `guards.md` for what it flags. It was diff-based until the last of the four move PRs (#3288 to this one) emptied the tree.
 - `pnpm check:test-copy-literals` (CI): a diff may not add a test literal of two or more words equal to a copy leaf; the test imports the leaf. Added-lines only, no allowlist; see `guards.md`.
 - `pnpm check:copy-sheet-roundtrip` (CI, `checks` list in ci.yml): an unedited export must import to zero changes. It fails on a copy shape the walker and the writer disagree about.
 - `scripts/lib/copy-sheet/*.test.mts` pin each refusal above and an in-place edit per shape (quote kept, template, branch, computed hole, escaping).

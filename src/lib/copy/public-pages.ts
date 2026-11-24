@@ -39,6 +39,8 @@ export const publicPagesCopy = {
     printingsNoteNoImage: "Each opens that printing on Scryfall. ◇ is the catalog’s main printing.",
     printingShownLabel: (code: string) => `${code}, the printing shown, on Scryfall`,
     morePrintings: "More on Scryfall",
+    /** Read aloud after the link's label; the leading space keeps the two apart. */
+    opensInNewTab: " (opens in a new tab)",
     showAll: (n: number) => `Show all ${n}`,
     showAllCapped: "Show all 40 here",
     asCommander: (short: string) => `${short} as a commander`,

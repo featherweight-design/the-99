@@ -1,5 +1,6 @@
 import { fanContentNotice } from "../../lib/copy/fan-content-notice";
 import { flyerCopy } from "../../lib/copy/join";
+import { shellCopy } from "../../lib/copy/shell";
 import { flyerTypedParts } from "../../lib/flyer/print-rule";
 
 /**
@@ -13,8 +14,8 @@ export function FlyerSheet({ url, qr }: { url: string; qr: { size: number; d: st
   return (
     <div className="flyer-sheet" data-testid="flyer-sheet">
       <div className="fs-in">
-        <div className="fs-wm" aria-label="The 99">
-          <span className="fs-the">THE</span>
+        <div className="fs-wm" aria-label={shellCopy.brandName}>
+          <span className="fs-the">{shellCopy.headerThe}</span>
           <span className="fs-mk">
             <span className="fs-cr"><i /><i /><i /></span>
             <span className="fs-nn">99</span>
@@ -30,7 +31,7 @@ export function FlyerSheet({ url, qr }: { url: string; qr: { size: number; d: st
             <div className="fs-c fs-r" />
             <div className="fs-c fs-f">
               <span className="fs-ql">{flyerCopy.scan.toUpperCase()}</span>
-              <svg width="212" height="212" viewBox={`0 0 ${qr.size} ${qr.size}`} shapeRendering="crispEdges" role="img" aria-label={`QR code for ${typed.prefix}${typed.code}`}>
+              <svg width="212" height="212" viewBox={`0 0 ${qr.size} ${qr.size}`} shapeRendering="crispEdges" role="img" aria-label={flyerCopy.qrAria(`${typed.prefix}${typed.code}`)}>
                 <path fill="currentColor" d={qr.d} />
               </svg>
               <span className="fs-dm"><i /><i /><i /></span>

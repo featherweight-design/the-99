@@ -12,6 +12,14 @@ export const shellCopy = {
   navAria: "Primary",
   /** The phone header's small word over the mark. */
   headerThe: "THE",
+  /** The wordmark's name: the crash page's title, the mark's accessible name, the flyer's. */
+  brandName: "The 99",
+  /** The page description every tab and link preview carries. */
+  appDescription: "MTG Commander companion",
+  /** The Commanders mark's glyph and its accessible name. */
+  sealNumeral: "XCIX",
+  /** The library motif's accessible name. */
+  cardFanAria: "Card fan",
   // One entry per route segment. "Reading your collection" is only true of the
   // collection routes; it used to be the single shared heading and so greeted
   // you on /commanders and /decks too.
