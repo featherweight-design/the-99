@@ -1,6 +1,9 @@
 # READINESS · every badge fits · 🟡 Yellow (R1, awaiting Hugh)
 
-Green once Q1 and Q2 are settled.
+R2. Green once Q2 is settled.
+
+- R2 changes the panel anatomy on phone and the iPad ends boards (name to the outer edge). `panel-who` now holds name and deck only and `panel-foot` exists on every board: What's what's label anchors for name, End turn, sheet and badges must be re-checked on phone boards.
+- The quick look lifts its seat cell with `z-index: 40` (the cell's `container-type: size` makes it a stacking context); check it clears the spine and the What's what scrim.
 
 - The change is local to `src/components/tracker/panel.tsx` (BadgeRow, Chip, compact Badge) and `src/lib/copy/tracker.ts` (4 keys). `scratch-gen/proposal.diff` is a working draft that renders the boards, not shipped code.
 - Tests to update: `panel.test.tsx` "draws a badge for each counter in play" reads visible text ("Poison 2"); the words move to aria-label/title. jsdom has no layout, so the fit sees 0 width: tests should stub `clientWidth`/`offsetWidth` or assert on `data-total`.

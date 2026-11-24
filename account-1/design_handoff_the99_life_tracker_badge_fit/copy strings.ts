@@ -6,5 +6,11 @@ export const panelBadgeFit = {
   badgeTaxFigure: (n: number) => `+${n}`,
   /** The last chip when the row cannot hold every badge. */
   badgeMore: (n: number) => `+${n}`,
-  badgeMoreAria: (n: number) => `${n} more. Open them in the sheet`,
+  badgeMoreAria: (n: number) => `${n} more. Show every badge`,
+  /** The quick look (R2). */
+  peekLabel: "Every badge",
+  peekClose: "Close",
+  peekTax: "Tax",
+  /** After a damage or poison figure: "8/21", "3/10". */
+  peekOf: (n: number) => `/${n}`,
 };

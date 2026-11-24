@@ -53,14 +53,13 @@ def row(lbl, figs, gap=36): return f'<div style="display:flex;flex-direction:col
 def land(k, cap, note, w=700): return fig(k, w, round(w * 820 / 1180), cap, note)
 def desk(k, cap, note, w=700): return fig(k, w, round(w * 900 / 1440), cap, note)
 def phone(k, cap, note, w=320): return fig(k, w, round(w * 844 / 390), cap, note, 26)
-ZOOM = {"PH4": (760, 136), "PH4a": (760, 136), "PH6": (760, 136), "PS6": (548, 136), "TA4": (1284, 136), "TE6": (634, 136), "TL4": (1126, 152), "TL6": (736, 152), "DK6": (810, 152)}
-def pair(k, title, before, after):
-    w, h = ZOOM[k]; w2, h2 = w // 2, h // 2
-    img = lambda t: f'<img src="{src(t + "-" + k + "-zoom")}" alt="{title}" style="width:{w2}px;height:{h2}px;display:block;border-radius:10px;border:1px solid #262A35">'
-    return f'''<div style="display:flex;flex-direction:column;gap:10px;padding:18px 20px;border:1px solid #262A35;border-radius:14px;background:#11131A;width:{max(w2, 300)}px;flex:none">
+ZOOM = {"PH4": (772, 396), "PH4a": (772, 396), "PH6": (772, 396), "PS6": (560, 326), "TA4": (1296, 732), "TE6": (646, 732), "TL4": (1166, 732), "TL6": (776, 732), "DK6": (850, 800)}
+def pair(k, title, before, after, dw=None):
+    w, h = ZOOM[k]; dw = dw or w // 2; dh = round(h * dw / w)
+    img = lambda t, cap, good: f'<div style="display:flex;flex-direction:column;gap:6px">{tag(cap, good)}<img src="{src(t + "-" + k + "-zoom")}" alt="{title}" style="width:{dw}px;height:{dh}px;display:block;border-radius:12px;border:1px solid #262A35"></div>'
+    return f'''<div style="display:flex;flex-direction:column;gap:12px;padding:18px 20px;border:1px solid #262A35;border-radius:14px;background:#11131A;flex:none">
 <p style="margin:0;font:600 15px 'IBM Plex Sans',sans-serif;color:#E6E8F0">{title}</p>
-<div style="display:flex;flex-direction:column;gap:6px">{tag("Shipped · " + before, False)}{img("base")}</div>
-<div style="display:flex;flex-direction:column;gap:6px">{tag("Proposed · " + after, True)}{img("prop")}</div>
+<div style="display:flex;gap:16px;align-items:flex-start">{img("base", "Shipped · " + before, False)}{img("prop", "R2 · " + after, True)}</div>
 </div>'''
 def call(n, t, body): return f'<div style="display:flex;flex-direction:column;gap:8px;padding:20px 24px;border:1px solid #262A35;border-radius:14px;background:#11131A"><p style="margin:0;font:600 17px \'IBM Plex Sans\',sans-serif;color:#E6E8F0"><span style="font-family:\'IBM Plex Mono\',monospace;color:{A}">{n}</span> · {t}</p><div style="font-size:14px;line-height:1.6;color:#B1B6C7">{body}</div></div>'
 def ul(items): return '<ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">' + "".join(f"<li>{i}</li>" for i in items) + '</ul>'
@@ -75,63 +74,67 @@ def q(n, t, a, b, rec):
 FIX = "Fixture: Chris (you, Sai) has taken commander damage from every other seat (8, 6, 5, 3, 2), carries poison 3, energy 4, experience 2, rad 1 and tax +4, and is the monarch: 9 badges at a 4-seat table, 11 at 6."
 boards = {}
 
-boards["Main"] = (1600, 2820, page("Every badge fits", 1600, 2820, "\n".join([
-  head("Life tracker · every badge fits", "With commander damage from several opponents plus a few counters, a panel's badge row ran out of room and cut the rest off: at a 6-seat table only 1 of 11 badges showed, and on a phone even the player's name was squeezed to a letter. The fix keeps the shipped badge row and makes every badge count: compact chips, the ones that can end the game first, and a +N chip for whatever still does not fit, which opens the sheet. Drawn over the shipped PlaySurface, phone, iPad and desktop. " + FIX),
-  row("Before and after · the loaded player's badge row", [
-    pair("PH4", "Phone · one on each side", "1 of 9, name cut to C", "4 chips + 5 more"),
-    pair("PH6", "Phone · six, ends", "1 of 11", "4 chips + 7 more"),
-    pair("PH4a", "Phone · your turn, End turn shown", "0 of 9", "2 chips + 7 more"),
-    pair("PS6", "Phone · sideways seat (turned to read)", "0 of 11", "2 chips + 9 more"),
-    pair("TL4", "iPad · two and two (foot)", "2 of 9", "all 9"),
-    pair("TA4", "iPad · one on each side", "2 of 9", "all 9"),
-    pair("TL6", "iPad · three and three (foot)", "1 of 11", "4 chips + 7 more"),
-    pair("TE6", "iPad · six, ends", "1 of 11", "3 chips + 8 more"),
-    pair("DK6", "Desktop · three and three", "1 of 11", "5 chips + 6 more"),
+boards["Main"] = (1600, 4540, page("Every badge fits", 1600, 4540, "\n".join([
+  head("Life tracker · every badge fits · R2", "Round 2 on your notes. Compact chips stay. Every panel now has one anatomy: the name and deck on the seat's outer edge, one controls row toward the strip. +N is a quick look, not the sheet. Whole seat panels below, shipped then R2, over the real PlaySurface. " + FIX),
+  label("Why the name moved, and the one rule now"),
+  call("Today", "Two anatomies, set by the board", ul([
+    "The iPad's grid boards (two and two, three and three, three and two, face to face, along one side) draw a 52 px foot toward the strip with End turn, badges and the sheet button, and put the name on the outer edge (F12, F18, F19).",
+    "Every other board (all phone boards and the iPad's ends boards) draws one 44 px name row toward the strip, holding name, deck, badges, End turn and the sheet button together (F04). Same table, two layouts: which one you get depends on the seat count you picked.",
+    "Nothing in the play needs the split. The grid boards came later with the 52 px foot, and the phone row was never moved to match.",
+  ])),
+  call("R2", "One anatomy on every board", ul([
+    "Name and deck on the seat's outer edge, a quiet strip (16 px name, 12 px mono deck; 18 and 12.5 in the iPad foot sizes).",
+    "Toward the strip, one controls row: End turn, the badges, the sheet button at the end. 44 px on phone and the iPad ends, the shipped 52 px foot on the iPad grids.",
+    "The top row stops carrying the name and deck, so it holds more: phone one-on-each-side goes from 4 chips + 5 more to 6 chips + 3 more, phone six ends from 4 + 7 to 6 + 5.",
+    "The out face follows: name on the outer edge, the sheet button in the controls row.",
+  ])),
+  row("Before and after · the loaded player's whole panel", [
+    pair("PH4", "Phone · one on each side", "1 of 9, name cut to C", "6 chips + 3"),
+    pair("PH6", "Phone · six, ends", "1 of 11", "6 chips + 5"),
+    pair("PH4a", "Phone · your turn", "0 of 9", "3 chips + 6"),
+    pair("PS6", "Phone · sideways seat (turned to read)", "0 of 11", "3 chips + 8", 280),
+    pair("TA4", "iPad · one on each side", "2 of 9", "all 9", 440),
+    pair("TL6", "iPad · three and three", "1 of 11", "4 chips + 7", 330),
+    pair("TE6", "iPad · six, ends", "1 of 11", "4 chips + 7", 300),
+    pair("DK6", "Desktop · three and three", "1 of 11", "5 chips + 6", 330),
   ], 24),
-  label("The calls"),
-  call("1", "Compact chips", ul([
-    "Commander damage: the attacker's commander art (18 px, 20 px in the iPad foot) and the figure, " + m("8") + ". Counters: the counter's icon and the figure, " + m("3") + ". Tax: the arrow and " + m("+4") + ". Monarch and initiative: their icon alone in the accent ring.",
-    "The words move off the face, not out of the app: each chip's aria-label stays " + m("Ghalta, Primal Hunger 8. Open it in the sheet") + ", desktop shows it as a hover title, and What's what already names the row (\"What's on you\").",
-    "Same pill as shipped (82% ground, strong border, mono figure); only the label goes. A chip is about 44 px wide instead of up to 210.",
+  label("The quick look"),
+  row("+N opens a card of every badge; ✕ or a tap anywhere else closes it", [
+    phone("prop-P4m", "Phone · one on each side", "The card opens from the seat's inner edge toward the middle of the table, the panel's width, turned to face the seat. Every badge with its words; damage and poison show how far to lethal (8/21, 3/10)."),
+    phone("prop-PSm", "Phone · sideways seat", "Same card, turned with Chris's seat: it opens across the strip toward the table's middle."),
+    land("prop-TLm", "iPad · three and three", "Opens over the strip. Two columns; it never scrolls at 11 badges.", 560),
+  ]),
+  call("Peek", "A quick reference, not a second sheet", ul([
+    "Read only: no steppers and no rows to tap. The sheet button stays the one way to change a count, so the two controls never do the same job.",
+    "+N becomes a ✕ in place while the card is open (aria-expanded; aria-label " + m("Close") + "). A tap anywhere off the card, or Escape, closes it too; it closes by itself if the seat goes out or the badges clear.",
+    "It lists every badge, not only the ones left out, in the same order as the row, so one look answers \"how much is on me\".",
+    "Words: the commander's short name (up to its comma), the counter's name, Tax, Monarch, Initiative. Damage and poison read " + m("8/21") + ", " + m("3/10") + "; the rest show the figure alone.",
+    "Surface " + m("--surface") + " with the strong border and a drop shadow, 14 px radius; the seat is lifted over its neighbours while it is open. Fades in over 150 ms; under reduced motion it simply appears.",
   ])),
-  call("2", "What ends the game leads", ul([
-    "Damage and poison come first, ordered by how close each is to lethal: damage over 21 from that commander, poison over 10. Poison 3 (30%) sits ahead of damage 6 (29%).",
-    "Then tax, then the other counters in their shipped order, then monarch and initiative.",
+  label("Kept from R1"),
+  call("1", "Compact chips and the order", ul([
+    "Damage: the attacker's art and the figure. Counters: the icon and the figure. Tax: the arrow and +4. Monarch and initiative: the icon alone in the accent ring. Full words in each chip's aria-label and a desktop hover title.",
+    "Damage and poison lead, nearest to lethal first; then tax, the other counters, the marks. Chips are never cut; the row keeps the longest run that fits beside +N.",
   ])),
-  call("3", "Whole chips and a +N", ul([
-    "A chip is never cut. The row measures every chip once, unseen, and shows the longest run that fits with a " + m("+N") + " chip after it; with room for all, there is no +N.",
-    "+N is the same pill on " + m("--elevated") + " with a semibold figure, so it reads as a count, not a badge. Its aria-label: " + m("7 more. Open them in the sheet") + ".",
-    "Tapping +N opens the shipped sheet on the tab of the first chip left out (Commander damage, Counters or Tax), focused on that counter where it is one.",
-    "It re-fits on rotate, resize, a new badge or End turn appearing, and when the fonts land.",
-  ])),
-  call("4", "Who gives way", ul([
-    "The player's name never gives way (it keeps its shipped 110 px and 150 px caps). The deck name gives way first, down to nothing, then chips go behind +N.",
-    "End turn and the sheet button keep their shipped sizes.",
-  ])),
-  call("5", "Hit areas", ul([
-    "Chips and +N keep the shipped hit area: 10 px past the pill top and bottom, so 44 px tall in a name row and 48 px in the iPad foot; at 44 to 51 px wide each is a full-size target.",
-  ])),
-  label("Open questions"),
-  q("Q1", "Where does +N go?", "Opens the shipped sheet on the first left-out chip's tab. No new surface; the sheet already lists every damage and counter with its stepper.", "Opens a small popover over the panel listing every chip with its words, each opening its own tab.", "A"),
-  q("Q2", "On your turn, End turn takes room from the chips", "End turn keeps its label. A phone's bottom seat shows 2 chips + 7 more for that one turn (Phone board).", "While chips overflow, End turn drops to its 44 px arrow circle, as the short sideways rows already do; 2 more chips fit.", "A"),
+  label("Open question"),
+  q("Q2", "On your turn, End turn takes room from the chips", "End turn keeps its label. The phone's bottom seat shows 3 chips + 6 for that turn.", "While chips overflow, End turn drops to its 44 px arrow circle, as the short sideways rows already do; 2 more chips fit.", "A"),
 ])))
 
 boards["Phone"] = (1600, 3540, page("Phone", 1600, 3540, "\n".join([
-  head("Phone · full boards", "Every phone layout that seats the loaded player on a long row or a sideways seat. Left of each pair is shipped, right is proposed. " + FIX),
-  row("One on each side", [phone("base-PH4", "Shipped", "The badges crowd the name to \"C\" and the deck to \"S...\"; one badge shows, cut."), phone("prop-PH4", "Proposed", "Name and four chips whole, the nearest to lethal first; +5 opens the sheet.")]),
-  row("Your turn · End turn in the row", [phone("base-PH4a", "Shipped", "End turn takes the row: no badge shows whole."), phone("prop-PH4a", "Proposed (Q2 A)", "Damage 8 and poison 3 stay, +7 for the rest.")]),
-  row("Six, ends · and the sheet +N opens", [phone("base-PH6", "Shipped", "1 of 11."), phone("prop-PH6", "Proposed", "Four chips and +7."), phone("prop-PHm", "Tap +7", "The shipped sheet, on Commander damage: the first chip left out is damage 3 from Dina.")]),
-  row("Three and three · a sideways seat", [phone("base-PS6", "Shipped", "The sideways row reads top to bottom; nothing fits whole."), phone("prop-PS6", "Proposed", "Two chips and +9 down the long edge (Chris, bottom left).")]),
+  head("Phone · full boards · R2", "Shipped on the left of each pair, R2 on the right: one anatomy, compact chips, +N as a quick look. " + FIX),
+  row("One on each side · and its quick look", [phone("base-PH4", "Shipped", "The badges crowd the name to \"C\"; one badge shows, cut."), phone("prop-PH4", "R2", "Name and deck on the outer edge; the row holds 6 chips and +3."), phone("prop-P4m", "Tap +3", "Every badge, with how far to lethal.")]),
+  row("Your turn · End turn in the row", [phone("base-PH4a", "Shipped", "End turn takes the row: no badge shows whole."), phone("prop-PH4a", "R2 (Q2 A)", "End turn, 3 chips and +6.")]),
+  row("Six, ends · and its quick look", [phone("base-PH6", "Shipped", "1 of 11."), phone("prop-PH6", "R2", "Six chips and +5."), phone("prop-PHm", "Tap +5", "Eleven badges in two columns, over the strip and the seats beside.")]),
+  row("Three and three · a sideways seat", [phone("base-PS6", "Shipped", "Nothing fits whole."), phone("prop-PS6", "R2", "Name on the outer edge; 3 chips and +8 along the inner edge (Chris, bottom left)."), phone("prop-PSm", "Tap +8", "The card turns with the seat.")]),
 ])))
 
-boards["Tablet"] = (1600, 3820, page("iPad and desktop", 1600, 3820, "\n".join([
-  head("iPad and desktop · full boards", "The iPad grids put the badges in the 52 px foot beside End turn; the iPad ends put them in the name row. Desktop is classed as a tablet and draws the same. " + FIX),
-  row("Two and two · foot", [land("base-TL4", "Shipped", "Two of nine show; the third is cut at the sheet button."), land("prop-TL4", "Proposed", "All nine fit as chips, no +N.")]),
-  row("One on each side · name row", [land("base-TA4", "Shipped", "Two of nine."), land("prop-TA4", "Proposed", "All nine, beside name and deck.")]),
-  row("Three and three · foot", [land("base-TL6", "Shipped", "One of eleven: Ghalta 8, then half of Zimone."), land("prop-TL6", "Proposed", "Four chips and +7.")]),
-  row("Six, ends · name row", [land("base-TE6", "Shipped", "One of eleven."), land("prop-TE6", "Proposed", "Three chips and +8; the deck name gives way first.")]),
-  row("Desktop 1440 × 900 · and the sheet +N opens", [desk("base-DK6", "Shipped", "One of eleven."), desk("prop-DK6", "Proposed", "Five chips and +6. Hovering a chip shows its words.")]),
-  row("Tap +7 on the iPad", [land("prop-TLm", "The sheet from the seat's edge", "The shipped half-height sheet, on Commander damage.")]),
+boards["Tablet"] = (1600, 4380, page("iPad and desktop", 1600, 4380, "\n".join([
+  head("iPad and desktop · full boards · R2", "The grid boards keep their 52 px foot; the ends boards now match it at 44 px. Desktop is classed as a tablet and draws the same. " + FIX),
+  row("Two and two", [land("base-TL4", "Shipped", "Two of nine show."), land("prop-TL4", "R2", "All nine fit, no +N.")]),
+  row("One on each side · now the same anatomy as the grids", [land("base-TA4", "Shipped", "Name row at the inner edge, two of nine."), land("prop-TA4", "R2", "Name on the outer edge, all nine in the controls row.")]),
+  row("Three and three · and its quick look", [land("base-TL6", "Shipped", "One of eleven."), land("prop-TL6", "R2", "Four chips and +7."), land("prop-TLm", "Tap +7", "The card over the strip.", 460)], 24),
+  row("Six, ends · and its quick look", [land("base-TE6", "Shipped", "One of eleven, name row at the inner edge."), land("prop-TE6", "R2", "Name on the outer edge; 4 chips and +7."), land("prop-TEm", "Tap +7", "Same card.", 460)], 24),
+  row("Desktop 1440 × 900 · and its quick look", [desk("base-DK6", "Shipped", "One of eleven."), desk("prop-DK6", "R2", "Five chips and +6; hover a chip for its words."), desk("prop-DKm", "Click +6", "The same card.", 460)], 24),
 ])))
 
 os.makedirs(out, exist_ok=True)
