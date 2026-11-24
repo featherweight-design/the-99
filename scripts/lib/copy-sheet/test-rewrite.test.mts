@@ -20,7 +20,7 @@ afterEach(() => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true });
 });
 
-const COPY = `export const x = { save: "Save the deck", list: ["Open the deck"], one: "Save", dup: "Same words here", twin: "Same words here", tpl: (n: number) => \`Saved \${n} decks\`, fn: (n: number) => (n === 1 ? "Just one card" : "Many cards") };\n`;
+const COPY = `export const x = { save: "Save the deck", list: ["Open the zorblax"], one: "Save", dup: "Same words here", twin: "Same words here", tpl: (n: number) => \`Saved \${n} decks\`, fn: (n: number) => (n === 1 ? "Just one card" : "Many cards") };\n`;
 const change = (key: string, from: string) => ({ key: `src/lib/copy/x.ts#${key}`, from, to: "New words go here" });
 const SAVE = change("x.save", "Save the deck");
 
@@ -28,9 +28,9 @@ describe("rewriteTests", () => {
   it("rewrites a literal to the leaf and adds the import after the last import", () => {
     const root = tree({
       "src/lib/copy/x.ts": COPY,
-      "src/components/a.test.tsx": `import { it } from "vitest";\nit("q", () => {\n  a("Save the deck");\n  b('Open the deck');\n  c(<i aria-label="Save the deck" />);\n});\n`,
+      "src/components/a.test.tsx": `import { it } from "vitest";\nit("q", () => {\n  a("Save the deck");\n  b('Open the zorblax');\n  c(<i aria-label="Save the deck" />);\n});\n`,
     });
-    const r = rewriteTests([SAVE, change("x.list[0]", "Open the deck")], root);
+    const r = rewriteTests([SAVE, change("x.list[0]", "Open the zorblax")], root);
     expect(r.files.get("src/components/a.test.tsx")).toBe(`import { it } from "vitest";\nimport { x } from "../lib/copy/x";\nit("q", () => {\n  a(x.save);\n  b(x.list[0]);\n  c(<i aria-label={x.save} />);\n});\n`);
     expect(r.rewritten).toEqual([{ file: "src/components/a.test.tsx", count: 3 }]);
     expect(r.hand).toEqual([]);
