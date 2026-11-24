@@ -245,12 +245,12 @@ C21 = call("21", "Home's search panel without the dead space (R13)", ul([
   "Today the fan of cards sits in the title row, so the row is as tall as the fan (120px on desktop) and the field starts far under a one-line title.",
   "<b>A · Fan beside the field:</b> the title row is just the title; the fan moves to the panel's right edge, centred on the field and the starters, in the room the 720px field leaves. On a phone the fan shrinks to 62% beside the title.",
   "<b>B · No fan:</b> title, field, starters; the panel is as short as A, about 100px shorter than today on desktop. The reader's own cards go, so it reads plainer."]))
-Q23 = q("Q23", "Where does the fan go?", "A: beside the field and starters, at the panel's right. B: drop it.", "A. The field sits right under the title and the panel keeps the reader's own cards, which is what makes it look like theirs.")
+Q23 = q("Q23", "Where does the fan go? (settled: A, desktop only)", "A: beside the field and starters, at the panel's right. B: drop it. Hugh, 2026-11-24: A on desktop; the phone stays as shipped.", "A. The field sits right under the title and the panel keeps the reader's own cards.")
 boards["Panel.dc.html"] = (1700, 1960, "Search panel", page("Finding the tools R13: the search panel", 1700, 1960,
  head("Home's search panel, tightened (R13)", "The shipped panel with the reader's three most recent cards in its fan. Today against two options, at 1300 and 390. The welcome credits foot is hidden in these crops; it is unchanged.")
  + C21 + Q23
  + row("Desktop · 1300", [fig("d-s13-0", 860, "Today", "The fan sets the title row's height."), fig("d-s13-a", 860, "A · Fan beside the field", "Title, then the field at once; the fan on the right."), fig("d-s13-b", 860, "B · No fan", "The plainest and shortest.")], gap=24)
- + row("Phone · 390", [fig("p-s13-0", 380, "Today", "The fan is taller than the two-line title."), fig("p-s13-a", 380, "A · Smaller fan", "62% beside the title."), fig("p-s13-b", 380, "B · No fan", "Title on one line.")])))
+ + row("Phone · 390", [fig("p-s13-0", 380, "Today", "The fan is taller than the two-line title."), fig("p-s13-a", 380, "A · Smaller fan (not taken)", "The phone stays as shipped."), fig("p-s13-b", 380, "B · No fan", "Title on one line.")])))
 boards["Calm.dc.html"] = (1700, 4770, "Calmer Home", page("Finding the tools R8: a calmer busy Home", 1700, 4770,
  head("A calmer busy Home (R8, R9)", "R7 A (left) against R9 (right), the same reader. R8 moves What's new into the empty desktop rail and makes Home's section headings easy to find.")
  + C12 + C11 + Q13 + Q14

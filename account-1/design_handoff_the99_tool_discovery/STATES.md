@@ -1,4 +1,4 @@
-# States · Finding the tools R12
+# States · Finding the tools R13
 
 ## Collection call-out (Cards tab, under the chassis) · R2
 | State | Draws |
@@ -116,3 +116,10 @@
 | Landing on a busier screen | The target haloed (2.4s), as shipped. |
 | Landing on Help me choose, intro open | The intro panel haloed. |
 | Landing on Help me choose, intro folded, or on a page that is the tool | Top of the page, no halo. |
+
+## Home search panel · R13 (Q23 A)
+| State | Draws |
+|---|---|
+| Desktop, recent cards with art | Title; the field 12px under it; the fan at the right edge, centred on field and starters. |
+| Desktop, no recent art | Title, field, starters; no right padding. |
+| Phone | As shipped: the fan beside the title. |

@@ -1,6 +1,6 @@
 # READINESS · Finding the tools
 
-**Verdict: Green.** Approved by Hugh 2026-11-24 through R12; every question settled (README, Decisions). Every gap below has an answer.
+**Verdict: Green.** Approved by Hugh 2026-11-24 through R13; every question settled (README, Decisions). Every gap below has an answer.
 
 ## Gaps for engineering
 - **G1 · One filter (R2).** No new control: `Show them` writes `filters.availability = ["free"]` as the menu does, so URL
@@ -91,6 +91,10 @@
   Top off, Cheaper stand-ins, Friends' spares, Matchups, Find a deck's Free chip. Precons, Wishlist, Collection Sync,
   Stats for your decks and Friends land at the top with no halo and spend no moment. Help me choose's target moves from
   the form's first answer to the intro panel (`ChooseIntro`, #3266) while it is open; folded (after the first run), no halo.
+- **G30 · Search panel fan (R13, Q23 A).** `home-search-panel.tsx`: from `md`, `Fan` renders outside the title row,
+  `absolute right-[28px] top-1/2 -translate-y-1/2` on the section (`relative`), and the field-and-starters block gains
+  `md:pr-[240px]` so neither runs under it; the title row's bottom padding drops to 12px. Below `md`, the fan stays in the
+  title row exactly as shipped. No fan art (no recent cards): no padding, as today.
 - **G12 · Copy review.** Every new string is in `copy strings.ts`; none has been through /copy-review.
 
 ## Checks
