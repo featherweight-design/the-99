@@ -10,7 +10,7 @@
   ],
   "rows": [
     { "id": "collection", "label": "/collection: five tabs in equal shares, `Add +` at the end", "view": "src/components/collection/collection-place-head.tsx", "steps": [{ "goto": "/collection", "wait": "[data-testid^='collection-tab-']", "settle": 800 }] },
-    { "id": "commanders", "label": "/commanders: four tabs, strictly equal", "view": "src/components/commanders/commanders-place-head.tsx", "steps": [{ "goto": "/commanders", "wait": "[data-testid^='commanders-tab-']", "settle": 800 }] },
+    { "id": "commanders", "label": "/commanders: four tabs in equal shares, Help me choose at its label's width", "view": "src/components/commanders/commanders-place-head.tsx", "steps": [{ "goto": "/commanders", "wait": "[data-testid^='commanders-tab-']", "settle": 800 }] },
     { "id": "import", "label": "/decks/import: Paste / Upload switch spans the column", "view": "src/components/decks/import-entry.tsx", "steps": [{ "goto": "/decks/import", "wait": "[role='tab'][id$='-tab-paste']", "settle": 800 }] },
     { "id": "shopping", "label": "/decks/shopping: By card / By deck / By friend spans the column", "view": "src/components/decks/cart/view-switch.tsx", "steps": [{ "goto": "/decks/shopping", "wait": "#cart-view-card", "settle": 800 }] }
   ]
