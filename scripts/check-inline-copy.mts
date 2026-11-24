@@ -4,7 +4,7 @@
 // There is no allowlist and no baseline. Fix a failure by adding the string to the copy module and calling it.
 // Data (card names, numbers) is not copy.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { findInline, inScope } from "./lib/inline-copy.mjs";
 
 // Tracked files plus new untracked ones, so a file you have not added yet is still checked.
@@ -15,7 +15,7 @@ const tree = new Set([...list("ls-files"), ...list("ls-files", "--others", "--ex
 let bad = 0;
 let files = 0;
 for (const file of [...tree].sort()) {
-  if (!inScope(file)) continue;
+  if (!inScope(file) || !existsSync(file)) continue; // a tracked file deleted in the working tree has nothing to read
   files++;
   for (const h of findInline(file, readFileSync(file, "utf8"))) {
     bad++;
