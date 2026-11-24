@@ -10,7 +10,8 @@
 
 import { HISTORY_RETENTION_DAYS } from "../collection/retention";
 import { NOVELTY_FLOOR } from "../discovery/floor";
-import type { AboutLineSwitch, AboutScreen, DeckView } from "./about";
+import { STORE_SETTINGS_HREF } from "../stores/info";
+import type { AboutLineSwitch, AboutScreen, AboutSwitch, DeckView } from "./about";
 
 /** History keeps what its retention keeps, so its sentence says how far back, as the legacy entry did. */
 const HISTORY_LINE = ` History lists your changes from the last ${HISTORY_RETENTION_DAYS} days.`;
@@ -31,6 +32,9 @@ export interface AboutLabel {
   rest: string;
   flag: AboutLineSwitch | null;
   sentences?: Partial<Record<string, AboutLineSwitch>>;
+  /** Where Show me goes when one of this label's sentences is announced on its own (keyed by its switch): the sentence
+   *  points at a place outside About. Absent, Show me lands on the label's About page. */
+  sentenceDestinations?: Partial<Record<AboutSwitch, string>>;
   since: number;
   legacy: readonly string[];
 }
@@ -713,6 +717,7 @@ export const ABOUT_SECTIONS: readonly AboutSection[] = [
         rest: " is what this deck still needs at Mana Pool. “Buy these at Mana Pool” opens a cart with them. Pick another store in Settings and the prices follow.",
         flag: null,
         sentences: { " Pick another store in Settings and the prices follow.": "STORE_PREFERENCE_ENABLED" },
+        sentenceDestinations: { STORE_PREFERENCE_ENABLED: STORE_SETTINGS_HREF },
         since: 1,
         // `shopping@STORE_PREFERENCE_ENABLED` is not a Reference entry: no reader holds it, which is what makes the store sentence unseen (announced) for readers who already saw this label. Do not prune it.
         legacy: ["shopping", "shopping@STORE_PREFERENCE_ENABLED"],

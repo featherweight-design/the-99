@@ -58,6 +58,8 @@ export interface VisibleUnit {
   legacy: readonly string[];
   /** The switches of the kept sentences that announce on their own (a negated switch never announces). */
   sentenceSwitches: readonly AboutSwitch[];
+  /** Where Show me goes for a sentence announced on its own, by switch, when it is not the unit's About page. */
+  sentenceDestinations?: Partial<Record<AboutSwitch, string>>;
   /** A drawn label this unit rides: it is never announced on its own while that label is drawn. */
   announcedWith?: string;
   /** A rule's diagram, with every part (and chip) whose switch is off removed, as its sentences are. */
@@ -101,6 +103,7 @@ function unit(
     ...("lead" in u ? { lead: u.lead } : {}),
     switch: u.flag, since: u.since, legacy: u.legacy, sentenceSwitches,
     ...("announcedWith" in u && u.announcedWith ? { announcedWith: u.announcedWith } : {}),
+    ...("sentenceDestinations" in u && u.sentenceDestinations ? { sentenceDestinations: u.sentenceDestinations } : {}),
     ...("diagram" in u ? { diagram: resolveDiagram(u.diagram, env) } : {}),
   };
 }
@@ -180,6 +183,8 @@ export interface UnseenUnit {
   /** What acknowledging this announcement writes: a whole unit's key and the keys of the sentences drawn with it (so
    *  they are not announced on their own next), or a sentence's key alone. A sentence not drawn is not acknowledged. */
   ack: readonly string[];
+  /** Where Show me goes instead of the unit's About page (a sentence that points outside About). */
+  destination?: string;
 }
 
 const unitsOf = (visible: readonly VisibleSection[]) => visible.flatMap((s) => [...s.labels, ...s.rules]);
@@ -196,7 +201,8 @@ export function unseenUnits(visible: readonly VisibleSection[], seen: SeenState)
     if (!unitSeen(u, seen)) return [{ key: u.key, area: u.area, section: u.section, ack: unitKeys(u) }];
     return u.sentenceSwitches.filter((sw) => !sentenceSeen(u, sw, seen)).map((sw) => {
       const key = sentenceKey(u.key, sw);
-      return { key, area: u.area, section: u.section, ack: [key] };
+      const destination = u.sentenceDestinations?.[sw];
+      return { key, area: u.area, section: u.section, ack: [key], ...(destination ? { destination } : {}) };
     });
   });
 }

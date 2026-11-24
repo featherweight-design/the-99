@@ -97,6 +97,17 @@ const PLATE_SIZES = {
   list: "-mt-[2px] h-[28px] w-[28px] rounded-[7px] [&>svg]:h-[16px] [&>svg]:w-[16px]",
 } as const;
 
+/**
+ * Show me on a launch whose destination is not About: no About page visit will answer it, so the press does, writing
+ * the launch's own ack keys as the ✕ does (the server writes only those it still announces).
+ */
+function answerOnPress(launch: AboutLaunch | null): (() => void) | undefined {
+  if (!launch?.leavesAbout) return undefined;
+  return () => {
+    void dismissArrivals([], launch.ack).then((written) => acknowledgeHeld(written ?? []), () => {});
+  };
+}
+
 /** A launch's mark: the nav glyph of the page Show me opens on an accent plate, or the diamond `Mark` for a rule. */
 function LaunchGlyph({ launch, size }: { launch: AboutLaunch; size: "line" | "list" }) {
   if (!launch.icon) return <Mark className={size === "list" ? "mt-[3px]" : ""} />;
@@ -228,6 +239,7 @@ export function ArrivalsBanner({
                 <Link
                   href={launch ? launch.href : ABOUT_INDEX_HREF}
                   data-about-link
+                  onClick={answerOnPress(launch)}
                   className={`${LINK} min-h-[24px] self-start whitespace-nowrap text-[14px] leading-[1.45] sm:min-h-0 sm:self-auto sm:text-[13.5px]`}
                 >
                   {copy.aboutShow}
@@ -281,7 +293,7 @@ export function ArrivalsBanner({
                   <LaunchGlyph launch={l} size="list" />
                   <span className="min-w-0">
                     <LaunchSentence launch={l} />{" "}
-                    <Link href={l.href} data-about-link className={`${LINK} whitespace-nowrap`}>
+                    <Link href={l.href} data-about-link onClick={answerOnPress(l)} className={`${LINK} whitespace-nowrap`}>
                       {copy.aboutShow}
                       <PendingReporter href={l.href} />
                     </Link>

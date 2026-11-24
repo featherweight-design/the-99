@@ -85,6 +85,23 @@ describe("aboutLine", () => {
     });
   });
 
+  it("sends the store choice's launch to Settings' store section and no other launch off About", () => {
+    const key = sentenceKey("shopping/deck-shopping/total", "STORE_PREFERENCE_ENABLED");
+    const line = aboutLine(readerAt(16), visibleSections(ALL_ON));
+    if (line?.kind !== "launches") throw new Error("expected launches");
+    const store = line.launches.find((l) => l.key === key)!;
+    expect(store).toMatchObject({ href: "/settings#settings-store", leavesAbout: true });
+    // Every other launch keeps its About page and is answered by the About visit.
+    for (const l of line.launches.filter((x) => x.key !== key)) {
+      expect(l.href.startsWith("/about/")).toBe(true);
+      expect(l.leavesAbout).toBe(false);
+    }
+    // The press writes the launch's ack: the store sentence is then not announced again.
+    const reader = readerAt(16);
+    const write = aboutDismissal(store.ack, reader, visibleSections(ALL_ON))!;
+    expect(unseenUnits(visibleSections(ALL_ON), { version: write.version, ids: [...reader.ids, ...write.ids] }).map((u) => u.key)).not.toContain(key);
+  });
+
   it("draws a rule with no glyph, so the banner keeps the diamond mark for it", () => {
     const visible = visibleSections(ALL_ON);
     const rule = units(visible).find((u) => u.kind === "rule")!;

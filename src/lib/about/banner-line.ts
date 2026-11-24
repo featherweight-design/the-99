@@ -16,6 +16,8 @@ export type AboutLaunch = {
   text: string;
   /** Show me: the unit's page, lit, scrolled to its section. */
   href: string;
+  /** Show me leaves About (the unit names its own destination): no About page visit will answer it, so the press does. */
+  leavesAbout: boolean;
   /** The nav glyph of the page Show me opens (Shopping uses Decks'), or null for a rule, which keeps the diamond mark. */
   icon: NavHref | null;
 };
