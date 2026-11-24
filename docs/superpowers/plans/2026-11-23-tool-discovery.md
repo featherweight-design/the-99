@@ -128,9 +128,9 @@ One PR open at a time. No stacking. Each PR stays under about 20 files and about
   - `feed_sheet_filter`
   - `feed_sheet_clear`, which is new: README's dashboard 6 counts Clear all and no event covers it
 
-### G · The offer lead, the ✕ move, answering in the row (G22 to G24): held
+### G · The offer lead, the ✕ move, answering in the row (G22 to G24): built
 
-- Released by the orchestrator once Hugh's separate Design prompt settles which source wins.
+- Released by the orchestrator (R11 rulings Q16 A, Q17 A, Q18 A). Probe: `scripts/probe-feed-row-answer.mjs`.
 - It builds after F, because G24's answer-in-row uses F's compact row.
 - Not risky: it changes a Home feed read and touches no schema.
 

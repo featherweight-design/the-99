@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach } from "vitest";
 import { PgDialect } from "drizzle-orm/pg-core";
 import type { SQL } from "drizzle-orm";
 
-const marks = vi.hoisted(() => ({ seen: vi.fn(), notice: vi.fn(), asks: vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []) }));
+const marks = vi.hoisted(() => ({ seen: vi.fn(), notice: vi.fn(), asks: vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []), offers: vi.fn(async (..._a: unknown[]): Promise<unknown[]> => []) }));
 vi.mock("../../db", () => ({ db: {} }));
 vi.mock("./prefs", async (importOriginal) => ({ ...(await importOriginal<typeof import("./prefs")>()), markFeedSeen: marks.seen }));
 vi.mock("../social/trade-match", () => ({ noticeTradeMatches: marks.notice }));
@@ -11,9 +11,13 @@ vi.mock("../social/spare-requests", async (importOriginal) => ({
   loadIncomingAsks: marks.asks,
 }));
 // The reader owns Sai in another printing: the row draws the chain's picture, the one card details opens.
+vi.mock("../social/spare-offers", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../social/spare-offers")>()),
+  loadIncomingOffers: marks.offers,
+}));
 vi.mock("../cards/chain-art", () => ({ chainArt: async () => new Map([["c1", "sai-owned.jpg"]]) }));
 
-import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, splitLead, toViews, withAnswerDetails, withListTargets, withLeadAsk, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
+import { comboPieces, feedCardsQuery, homeFeedAfter, loadHomeFeed, postLists, preconCommandersQuery, preconOwnedQuery, setCardsQuery, answerableKeys, splitLead, toViews, withAnswerDetails, withListTargets, withAsks, wizardsPostUrl, type FeedView, type HomeFeed } from "./home";
 import type { IncomingAsk } from "../social/spare-requests";
 import type { FeedItem } from "./read";
 import { named } from "../person-name/mint";
@@ -293,27 +297,45 @@ describe("a spare request leading Home (spare requests PR 3d)", () => {
   const lead = view({ key: "item:s", kind: "spare-request", card: { oracleId: "c1", name: "Lathliss", image: null, art: null, colorIdentity: null }, friend: { publicId: "p1", displayName: named("Peter") } });
   const feedOf = (l: FeedView | null): HomeFeed => ({ chosen: true, on: ["spare-request"], items: [], unseen: 1, lead: l });
 
+  it("leads with a seen ask that is still answerable, over an unseen trade match, and reads only the open ones (answerableKeys)", () => {
+    const seen = { ...lead, key: "item:seen", unseen: false };
+    const match = view({ key: "item:m", kind: "trade-match", at: "2026-10-23T00:00:00Z" });
+    const open = answerableKeys([seen, match], [incoming()], []);
+    expect([...open]).toEqual(["item:seen"]);
+    const feed = splitLead([match, seen], ["spare-request", "trade-match"], open);
+    expect(feed.chosen && feed.lead?.key).toBe("item:seen");
+    expect(feed.chosen && feed.unseen).toBe(1);
+    const spent = answerableKeys([seen, match], [], []);
+    const none = splitLead([match, seen], ["spare-request", "trade-match"], spent);
+    expect(none.chosen && none.lead?.key).toBe("item:m");
+    expect(answerableKeys([{ ...seen, offer: true }], [incoming()], []).size).toBe(0);
+  });
+
   it("attaches the lead's own ask, by card and asker", () => {
-    const out = withLeadAsk(feedOf(lead), [incoming({ id: "other", oracleId: "c2" }), incoming({ id: "x", asker: { publicId: "p2", displayName: named("Ann"), commander: null } }), incoming()]);
+    const out = withAsks(feedOf(lead), [incoming({ id: "other", oracleId: "c2" }), incoming({ id: "x", asker: { publicId: "p2", displayName: named("Ann"), commander: null } }), incoming()]);
     expect(out.chosen && out.lead?.ask).toEqual({ id: "req-1", spare: 2, copies: 1, deckName: named("Dragons"), daysLeft: 13 });
   });
 
   it("leaves the lead a line when its ask is gone or no longer offered (not among the incoming asks)", () => {
-    const out = withLeadAsk(feedOf(lead), [incoming({ oracleId: "c2" })]);
+    const out = withAsks(feedOf(lead), [incoming({ oracleId: "c2" })]);
     expect(out.chosen && out.lead?.ask).toBeUndefined();
   });
 
-  it("reads the incoming asks only when a spare request leads", async () => {
+  it("reads the incoming asks and offers only when the feed holds a spare request, led or not", async () => {
     marks.asks.mockClear();
+    marks.offers.mockClear();
     marks.asks.mockResolvedValue([incoming()]);
     const ask = row({ kind: "spare-request", key: "item:s", created_at: "2026-10-22T10:00:00Z", oracle_id: "c1", friend_public_id: "p1", friend_name: "Peter" });
     const feed = await loadHomeFeed("u1", SPARE, NOW, fake({}, { feed: [ask], cards: [{ oracle_id: "c1", name: "Lathliss", image: null, art: null }] }));
     expect(marks.asks).toHaveBeenCalledWith("u1", SPARE, NOW, expect.anything());
+    expect(marks.offers).toHaveBeenCalledTimes(1);
     expect(feed?.chosen && feed.lead?.ask?.id).toBe("req-1");
     marks.asks.mockClear();
+    marks.offers.mockClear();
     const drop = row({ kind: "price-drop", key: "item:d", created_at: "2026-10-22T10:00:00Z", oracle_id: "c1", data: { fromCents: 2, toCents: 1 } });
     await loadHomeFeed("u1", ON, NOW, fake({ "price-drop": "2026-10-01T00:00:00Z" }, { feed: [drop] }));
     expect(marks.asks).not.toHaveBeenCalled();
+    expect(marks.offers).not.toHaveBeenCalled();
   });
 });
 

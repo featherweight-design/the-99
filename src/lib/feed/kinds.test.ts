@@ -125,4 +125,18 @@ describe("windowFloor", () => {
     expect(FEED_WINDOW_DAYS).toBe(14);
     expect(windowFloor(at("2026-10-22T12:00:00Z")).toISOString()).toBe("2026-10-08T12:00:00.000Z");
   });
+
+  it("leads with a seen ask that is still open, over an unseen trade match (Q16 A), and not once it has run out", () => {
+    const ask = { ...item("spare-request", "2026-10-20T10:00:00Z", false), key: "ask" };
+    const match = { ...item("trade-match", "2026-10-22T10:00:00Z"), key: "match" };
+    expect(leadStory([match, ask], new Set(["ask"]))?.key).toBe("ask");
+    expect(leadStory([match, ask], new Set())?.key).toBe("match");
+    expect(leadStory([ask], new Set())).toBeNull();
+  });
+
+  it("never lets the answerable set lead an answer or a kind that does not wait", () => {
+    const answer = { ...item("spare-request", "2026-10-22T11:00:00Z", false), key: "a", answer: "yes" };
+    const set = { ...item("new-set", "2026-10-22T11:00:00Z", false), key: "s" };
+    expect(leadStory([answer, set], new Set(["a", "s"]))).toBeNull();
+  });
 });

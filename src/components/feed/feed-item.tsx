@@ -34,9 +34,11 @@ import { NEW_TAB_SUFFIX } from "../ui/external-link";
 import { LinkOutLabel } from "../ui/link-out-icon";
 import { KICKER_AGE } from "./kicker-age";
 import { DismissButton } from "./dismiss";
+import { AnswerPresses, receiptText, useSpareAnswer, type Answer } from "../social/spare-answer";
 import { TradeAskLabel, tradeAskAria, useTradeAsk } from "../social/trade-ask";
 import { useAnswerSheet } from "../home/answer-sheet";
 import { feedAge } from "../../lib/feed/age";
+import { shortName } from "../../lib/cards/short-name";
 import { dropLines, saleAhead } from "../../lib/feed/drop-lines";
 
 const c = feedCopy.home;
@@ -390,10 +392,28 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
   onDismiss?: (from: HTMLElement) => void;
 }) {
   const titleId = useId();
-  const text = feedText(item);
+  const base = feedText(item);
   const lists = listsText(item);
   const two = seesLists(item);
   const waiting = item.kind === "spare-request" && !item.answer;
+  // Q18 A: a waiting ask or offer answers in its own row, and the receipt lands in place of its lines.
+  const ask = waiting ? item.ask ?? null : null;
+  const [answered, setAnswered] = useState<Answer | null>(null);
+  const { busy, answer, toast } = useSpareAnswer();
+  const friend = item.friend?.displayName ?? "";
+  const cardName = item.card?.name ?? "";
+  const offer = ask?.offer !== undefined;
+  const receipt = ask && answered ? receiptText(answered, shortName(cardName), friend, offer) : null;
+  const text = receipt
+    ? { title: receipt.title, line: <PersonText text={receipt.detail} />, press: null }
+    : ask
+      ? { ...base, line: <PersonText text={ask.offer ? spareCopy.request.offer.detail(friend, ask.spare, ask.offer.want) : spareCopy.request.incomingDetail(ask.spare, friend, ask.copies, ask.deckName)} /> }
+      : base;
+  const dismiss = receipt || busy ? undefined : onDismiss;
+  async function press(a: Answer) {
+    if (!ask || busy) return;
+    if (await answer(ask.id, a, offer)) setAnswered(a);
+  }
   // A Secret Lair drop whose sale is ahead says when, in place of its summary (and, off the archive, of its age).
   const sale = item.post?.sale;
   const drop = sale && item.kind === "secret-lair" && saleAhead(sale, new Date(now)) ? dropLines(sale, new Date(now), zone) : null;
@@ -409,7 +429,7 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
       <div className="flex min-w-0 flex-col gap-[3px]">
         <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
-          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{item.answer ? (item.offer ? c.offerAnswerKicker : c.answerKicker) : item.offer ? c.offerKicker : c.kicker[item.kind]}</span>
+          <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{receipt ? receipt.kind : item.answer ? (item.offer ? c.offerAnswerKicker : c.answerKicker) : item.offer ? c.offerKicker : c.kicker[item.kind]}</span>
           {/* The time follows the kind at both widths (small items R1b: `Trade match · 6h ago`). */}
           <small data-feed-age className={`${KICKER_AGE} ${ageInk}`}>{when ?? drop?.age ?? feedAge(item.at, now)}</small>
         </div>
@@ -427,7 +447,14 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
       {/* The action line (board `Dismiss-X`, `.d4n .ac`): the press, then the ✕ at its end. Under the text on a phone
           (the text column's 3px gap plus 2px), the row's third column from desktop. A row with no press keeps the line
           for its ✕ alone. */}
-      {(text.press || onDismiss) && (
+      {ask && !receipt && (
+        <div data-feed-actions data-row-ask className="col-start-2 mt-[7px] flex min-w-0 items-center md:max-[1179px]:col-start-2">
+          <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null} onAnswer={(a) => void press(a)} size="row" offer={offer} />
+        </div>
+      )}
+      {ask && dismiss && <span data-row-x className="absolute right-[4px] top-[4px] md:right-[8px] md:top-[8px]"><DismissButton title={text.title} onPress={dismiss} /></span>}
+      {toast}
+      {!ask && (text.press || onDismiss) && (
         <div data-feed-actions className={`col-start-2 mt-[5px] flex min-w-0 flex-nowrap items-center gap-[8px] ${rowMd(compact, "md:col-start-3 md:row-start-1 md:mt-0 md:justify-end md:gap-[12px]", "md:max-[1179px]:col-start-3 md:max-[1179px]:row-start-1 md:max-[1179px]:mt-0 md:max-[1179px]:justify-end md:max-[1179px]:gap-[12px]")}`}>
           {two && text.press ? (
             // Board `.fi .ac .two`: one line on a phone (16px apart), stacked and right-aligned from `md` (28px each).

@@ -4,6 +4,9 @@ import { fireEvent, render, screen } from "@testing-library/react";
 const open = vi.hoisted(() => vi.fn());
 vi.mock("../cards/card-detail-provider", () => ({ useCardDetailIfAny: () => ({ open }) }));
 
+const actions = vi.hoisted(() => ({ answerSpareAction: vi.fn(), answerOfferAction: vi.fn() }));
+vi.mock("../../app/friends/spare-actions", () => actions);
+
 import { FeedItemRow } from "./feed-item";
 import type { FeedView } from "../../lib/feed/home";
 import { named } from "../../lib/person-name/mint";
@@ -97,6 +100,21 @@ describe("FeedItemRow", () => {
     const { container } = list(<FeedItemRow item={view({ kind: "price-drop", opens: "c", drop: { fromCents: 640, toCents: 310, printing: null } })} now={NOW} />);
     expect(container.querySelector("s")?.textContent).toBe("$6.40");
     expect(container.querySelector("[data-feed-drop]")?.textContent).toBe("↓ $3.10");
+  });
+
+  it("answers a waiting ask in its own row: Yes, No and the days left, the ✕ in the corner, a receipt in place after Yes (Q18 A)", async () => {
+    actions.answerSpareAction.mockResolvedValue({ ok: true });
+    const item = view({ kind: "spare-request", friend: { publicId: "p2", displayName: named("Peter") }, ask: { id: "req-9", spare: 1, copies: 1, deckName: null, daysLeft: 6 } });
+    const { container } = list(<FeedItemRow item={item} now={NOW} onDismiss={() => {}} />);
+    expect(screen.queryByText("Answer in Friends.")).toBeNull();
+    expect(screen.getByTestId("spare-days").textContent).toContain("6");
+    expect(container.querySelector("[data-row-x]")?.className).toContain("top-[4px]");
+    fireEvent.click(screen.getByTestId("spare-yes"));
+    await screen.findByText(/sparing/i);
+    expect(actions.answerSpareAction).toHaveBeenCalledWith("req-9", "yes");
+    expect(screen.queryByTestId("spare-yes")).toBeNull();
+    // The receipt is the row's last word: its ✕ leaves with the Yes and No.
+    expect(container.querySelector("[data-row-x]")).toBeNull();
   });
 
   it("gives a spare request (the later round) its accent kicker and no press", () => {
