@@ -304,17 +304,15 @@ export function IntakeForm({
     >
       <LockedContext.Provider value={submitting}>
       <div className="flex flex-col gap-[20px] p-[18px] md:gap-[22px] md:w-[680px] md:max-w-full md:mx-auto md:p-[24px_26px] md:rounded-[12px] md:border md:border-solid md:border-[color:var(--border)] md:bg-[color:var(--surface-rail)]">
-        <div>
-          <Field label={copy.intake.colors} caption={colorsCaption}>
-            <ColourControl
-              colors={colors}
-              match={match}
-              onColorsChange={setColors}
-              onMatchChange={setMatch}
-              wide={wide}
-            />
-          </Field>
-        </div>
+        <Field label={copy.intake.colors} caption={colorsCaption}>
+          <ColourControl
+            colors={colors}
+            match={match}
+            onColorsChange={setColors}
+            onMatchChange={setMatch}
+            wide={wide}
+          />
+        </Field>
 
         <Field
           label={copy.intake.theme}

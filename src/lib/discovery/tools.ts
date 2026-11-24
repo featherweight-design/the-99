@@ -19,7 +19,8 @@ import type { TargetId } from "./targets";
  * - `halo`: whether a landing haloes `target` (R12, G29): only on a busier screen, where the reader would otherwise hunt
  *   for it (the Tuning tiles, Top off, Cheaper stand-ins, Friends' spares, Matchups, Find a deck's Free chip). A page
  *   that IS the tool (Precons, Wishlist, Collection Sync, Stats for your decks, Friends) lands at its top with no halo and
- *   spends no moment. The target stays registered for the moments and the tour.
+ *   spends no moment; its control stays registered for the moments and the tour. Help me choose's target is its intro
+ *   panel, registered only while the panel is open (R12-C5).
  * - `lands`: a deck's tab (and, within Your deck, the Shopping filter), or a route for a tool with a page of its own.
  * - `credit`: the cost chip the app ALREADY draws for it, verbatim (ruling 5, R2 gap 4), or null where it draws none.
  * - `needsDeck`: the tool answers about the reader's decks, so Try it needs one. A tool that lands on a deck needs

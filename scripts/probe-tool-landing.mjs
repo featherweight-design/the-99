@@ -330,7 +330,9 @@ async function readIntroSeen(userId) {
 }
 
 async function setIntroSeen(userId, at) {
-  await sql`update user_prefs set choose_intro_seen_at = ${at} where user_id = ${userId}`;
+  const rows = await sql`update user_prefs set choose_intro_seen_at = ${at} where user_id = ${userId} returning user_id`;
+  // No prefs row: the intro state cannot be set, so the open and folded walks would prove nothing.
+  if (rows.length !== 1) throw new Error("the account has no user_prefs row: cannot set choose_intro_seen_at");
 }
 
 async function walkPageTools(page, w, userId) {
