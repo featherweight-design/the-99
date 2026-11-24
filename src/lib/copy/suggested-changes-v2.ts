@@ -166,6 +166,9 @@ export const suggestedChangesV2Copy = {
   // PR 6: strings the Wait, Results, Short-Run and Apply boards draw (or a state needs) that the handoff's copy file
   // lacks. Each names the board it is read off. Passed /copy-review 2026-10-28.
   run: {
+    /** The live tally's two figures; the minus is U+2212. */
+    tallyIn: (n: number) => `+${n} in`,
+    tallyOut: (n: number) => `−${n} out`,
     // The results head's `New run` (Results boards): a fresh intake, the request box empty as always.
     newRun: "New run",
     // You asked's quieter line (Results boards: "3 in, 3 out · keep 2 · Core · no cap · any set · any card").

@@ -9,11 +9,12 @@ import { twMerge } from "tailwind-merge";
 
 import type { Finish, FoilFinish, PreferredPrinting } from "../../lib/collection/browse";
 import { usePreviewRow } from "../decks/hover-preview";
+import { cardModalCopy } from "../../lib/copy/card-carousel";
 
 export const cardDetailCopy = {
   triggerAria: (name: string) => `View details for ${name}`,
   loading: "Loading card details…",
-  unavailable: "Card details are unavailable.",
+  unavailable: cardModalCopy.unavailable,
 };
 
 export type CardDetailContextValue = {

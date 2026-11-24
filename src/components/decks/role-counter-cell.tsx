@@ -177,9 +177,7 @@ export function RoleCounterCell({
         >
           {was !== undefined
             ? deckVersioningCopy.pending.mixCellWas(was)
-            : advisory
-              ? `rec ~${target}`
-              : `rec ${target}`}
+            : addPanelCopy.strip.rec(target, advisory)}
         </span>
         {onSeeShelf ? (
           <span className="block font-mono text-[9px] md:text-[10px] mt-[3px] md:mt-0 text-accent-text group-hover:text-accent-hover group-active:text-accent-mid transition-colors">

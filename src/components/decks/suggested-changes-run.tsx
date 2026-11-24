@@ -706,8 +706,8 @@ export function SuggestedChangesRun({
                 <span data-sc-tally-quiet="" className="text-[12px] font-normal" style={{ color: "var(--fg-faint)" }}>{sc.run.nonePicked}</span>
               ) : (
                 <>
-                  <span style={{ color: "var(--success)" }}>{`+${shown.adds} in`}</span>
-                  <span style={{ color: "var(--avail-over-fg)" }}>{`−${shown.cuts} out`}</span>
+                  <span style={{ color: "var(--success)" }}>{sc.run.tallyIn(shown.adds)}</span>
+                  <span style={{ color: "var(--avail-over-fg)" }}>{sc.run.tallyOut(shown.cuts)}</span>
                   {meta ? <span className="text-[11px] font-normal" style={{ color: "var(--fg-faint)" }}>{meta}</span> : null}
                 </>
               )}

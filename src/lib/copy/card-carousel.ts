@@ -51,3 +51,17 @@ export const cardSheetCopy = {
     a11y: (label: string) => `Back to ${label}`,
   },
 } as const;
+
+/** The card details modal's own labels: the close control, the meta grid's field names, the footer's visible Prev / Next. */
+export const cardModalCopy = {
+  closeAria: "Close card details",
+  unavailable: "Card details are unavailable.",
+  meta: {
+    set: "Set",
+    rarity: "Rarity",
+    identity: "Identity",
+    youOwn: "You own",
+  },
+  prev: "‹ Prev",
+  next: "Next ›",
+} as const;

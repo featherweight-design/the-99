@@ -34,6 +34,8 @@ const plural = (n: number, one: string, many: string) =>
   `${n} ${n === 1 ? one : many}`;
 
 export const addPanelCopy = {
+  /** The search footer's note, desktop only. */
+  singletonNote: "Commander is singleton: a card already in the deck can’t be re-added except basic lands.",
   // ── Tabs (replaces the Suggestions | Search tab bar) ──────────────────
   tabs: {
     deck: "Your deck",
@@ -81,6 +83,8 @@ export const addPanelCopy = {
   // and this label is a caption inside it. Ten targets become six.
   strip: {
     cellLink: "consider →",
+    /** The role cell's recommended target; `~` marks an advisory one. */
+    rec: (target: number, advisory: boolean) => (advisory ? `rec ~${target}` : `rec ${target}`),
     // A cell AT or OVER its target with cards opens the cards it counts (small items 11, item 1). Copy-reviewed.
     cardsLink: "cards →",
     cardsAria: (role: string, have: number, target: number) => `${role}, ${have} of ${target}. See the cards we count.`,
@@ -575,6 +579,8 @@ export function builtFragment(built: number, bodySize: number): string {
  * retyped them. Same split the collection's search placeholder needed.
  */
 export const deckHeaderCopy = {
+  /** The identity tail after a commander line: a no-break space, a dot, the color label. */
+  identityTail: (label: string) => `\u00a0· ${label}`,
   export: "Export",
   cardDetails: "Card details",
 } as const;
@@ -649,4 +655,20 @@ export const roleCardsCopy = {
   // both lists, so the lists can sum past the deck.
   lead: (role: string) => `What we count as ${role.toLowerCase()}, A to Z. A card that does two jobs is in both lists.`,
   closeAria: (role: string) => `Close ${role} cards`,
+} as const;
+
+/** The new-deck screen drawn from a commander (create-pre-filled). */
+export const createPreFilledCopy = {
+  backAria: "Back to commander picker",
+  back: (name: string) => `‹ Commanders · ${name}`,
+  title: "New deck",
+  subPhone: "Commander selected",
+  sub: "Name your deck.",
+  legal: "Legal · validated",
+  colorIdentity: "Color identity",
+  deckName: "Deck name",
+  namePlaceholder: "My awesome deck",
+  creating: "Creating…",
+  changeCommander: "Change commander",
+  note: "Cards outside your commander’s color identity won’t be suggested.",
 } as const;

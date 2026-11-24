@@ -11,7 +11,7 @@ import { ArtLayer } from "../ui/art-layer";
 import { identityGradient } from "../../lib/cards/gradients";
 import { printingBrowseCopy, printingPickerCopy } from "../../lib/copy/collection";
 import { printedNameCopy } from "../../lib/copy/card-surfaces";
-import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
+import { cardCarouselCopy, cardModalCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
 import { ManaCost } from "./mana-pips";
 import { ComboPartnersDetail } from "./combo-partners-detail";
@@ -218,7 +218,7 @@ export function CardModalSheet({
         type="button"
         ref={registerCloseRef}
         onClick={onClose}
-        aria-label="Close card details"
+        aria-label={cardModalCopy.closeAria}
         className="hidden md:flex absolute items-center justify-center rounded-full bg-[color:var(--surface-raised)] border border-[color:var(--border-strong)] text-[color:var(--fg-muted)]"
         style={{ top: 22, right: 24, width: 34, height: 34, fontSize: 15 }}
       >
@@ -443,14 +443,14 @@ export function CardModalSheet({
             // Set + collector number of the printing on screen (§Phase 5) — the art is a
             // specific printing now, so the caption names it. A token's details draw this cell
             // alone, across the grid, since a token has no rarity, identity or owned count here.
-            <MetaCell label="Set" value={caption} span={isToken ? 2 : undefined} hint={onlyPrinting ? printingBrowseCopy.onlyPrinting : undefined} />
+            <MetaCell label={cardModalCopy.meta.set} value={caption} span={isToken ? 2 : undefined} hint={onlyPrinting ? printingBrowseCopy.onlyPrinting : undefined} />
           )}
           {isToken ? null : (
             <>
-              <MetaCell label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-              <MetaCell label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+              <MetaCell label={cardModalCopy.meta.rarity} value={RARITY_LABEL[card.rarity]} rarity />
+              <MetaCell label={cardModalCopy.meta.identity} value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
               <MetaCell
-                label="You own"
+                label={cardModalCopy.meta.youOwn}
                 value={`×${card.quantity}`}
                 quantity
                 span={hasPicker ? 2 : undefined}
@@ -492,13 +492,13 @@ export function CardModalSheet({
               onClick={onToggleExpanded}
             />
           ) : tokenNoSet ? null : (
-            <MetaField label="Set" value={caption} hint={onlyPrinting ? printingBrowseCopy.onlyPrinting : undefined} />
+            <MetaField label={cardModalCopy.meta.set} value={caption} hint={onlyPrinting ? printingBrowseCopy.onlyPrinting : undefined} />
           )}
           {isToken ? null : (
             <>
-              <MetaField label="Rarity" value={RARITY_LABEL[card.rarity]} rarity />
-              <MetaField label="Identity" value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
-              <MetaField label="You own" value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
+              <MetaField label={cardModalCopy.meta.rarity} value={RARITY_LABEL[card.rarity]} rarity />
+              <MetaField label={cardModalCopy.meta.identity} value={identityName(card.colorIdentity)} identity={card.colorIdentity} />
+              <MetaField label={cardModalCopy.meta.youOwn} value={`×${card.quantity} ${card.quantity === 1 ? "copy" : "copies"}`} quantity />
             </>
           )}
         </div>
@@ -564,7 +564,7 @@ export function CardModalSheet({
               + (onPrev ? "" : " opacity-40")
             }
           >
-            ‹ Prev
+            {cardModalCopy.prev}
           </button>
           <span className="font-mono text-[11px]" style={{ color: "var(--fg-faint)" }}>
             {cardCarouselCopy.position(position, total)}
@@ -580,7 +580,7 @@ export function CardModalSheet({
               + (onNext ? "" : " opacity-40")
             }
           >
-            Next ›
+            {cardModalCopy.next}
           </button>
         </span>
       ) : null}

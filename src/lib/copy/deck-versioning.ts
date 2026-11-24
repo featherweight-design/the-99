@@ -569,3 +569,22 @@ export const historyOriginCopy = {
   tabAria: (committed: number) =>
     committed === 0 ? "Versions, v0 only, nothing committed yet" : `Versions, v0 and ${plural(committed, "version")} committed`,
 } as const;
+
+/** Refusals the deck server actions and `pullCardFromDeck` return. Each is returned before any write. */
+export const deckRefusalCopy = {
+  deckNotFound: "We couldn’t find that deck.",
+  noteNotSaved: "We couldn’t save that. Your note is unchanged.",
+  firstVersionWhole: (expected: number, body: number) =>
+    `A first version has to be a whole deck — ${expected} cards. This one has ${body}.`,
+  unresolvedLines: "Some lines in this deck never matched a card. Resolve them before cutting v1.",
+  discardFailed: "We couldn’t discard those. The draft is unchanged.",
+  cardNotFound: "We couldn’t find that card.",
+  pullFromSelf: "A deck can’t pull a card from itself.",
+  isCommander: "That card is that deck’s commander.",
+  notWaiting: "That deck isn’t waiting on that card.",
+  claimedElsewhere: "Another deck claimed that card. Open the changes again.",
+  alreadyCovered: "That deck already has the copies it needs.",
+  wouldNotCover: "That deck’s copy wouldn’t cover the shortfall.",
+  notSleeved: "That deck isn’t sleeved yet.",
+  notHeld: "That deck doesn’t hold that card.",
+} as const;

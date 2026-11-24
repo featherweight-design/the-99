@@ -163,7 +163,7 @@ function PhoneLabel({ facts }: { facts: HeaderFacts }) {
               </span>
             </>
           ) : (
-            <span style={{ flex: "none", whiteSpace: "nowrap" }}>&nbsp;· {colorLabel(facts.identity)}</span>
+            <span style={{ flex: "none", whiteSpace: "nowrap" }}>{deckHeaderCopy.identityTail(colorLabel(facts.identity))}</span>
           )}
         </span>
       </div>

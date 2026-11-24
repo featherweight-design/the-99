@@ -10,6 +10,7 @@
 import { and, eq, gt, sql } from "drizzle-orm";
 
 import type { db } from "../../db";
+import { deckRefusalCopy } from "../copy/deck-versioning";
 import { deckCards, deckPrintings, decks } from "../../db/schema";
 import { hardDecks, pullSources } from "./availability";
 import { loadAvailability } from "./availability-query";
@@ -91,14 +92,14 @@ export async function pullInTx(tx: Tx, args: {
 }): Promise<PullInTxResult> {
   const { userId, sourceDeckId, oracleId, askingDeckId, lockIds } = args;
   // A deck cannot pull from itself: the source would lose a copy to satisfy a want the same list already holds.
-  if (sourceDeckId === askingDeckId) return { ok: false, message: "A deck can’t pull a card from itself." };
+  if (sourceDeckId === askingDeckId) return { ok: false, message: deckRefusalCopy.pullFromSelf };
   // Scoped to the reader: a caller that has not checked the source's owner (Apply names it from the client) is refused
   // here as a deck it cannot find.
   const [deck] = await tx.select().from(decks).where(and(eq(decks.id, sourceDeckId), eq(decks.userId, userId)));
 
   // Deleted between the ownership check and this lock. Left to fall through,
   // it reaches commitVersion, which throws rather than refusing.
-  if (!deck) return { ok: false, message: "We couldn’t find that deck." };
+  if (!deck) return { ok: false, message: deckRefusalCopy.deckNotFound };
 
   // Neither commander is a `deck_cards` row, but both are claims, so a deck
   // can be named as a card's holder on the strength of its commander alone.
@@ -109,7 +110,7 @@ export async function pullInTx(tx: Tx, args: {
   // instead that their deck isn't waiting on the card would go looking for a
   // problem with their own draft.
   if (deck.commanderOracleId === oracleId || deck.partnerOracleId === oracleId) {
-    return { ok: false, message: "That card is that deck’s commander." };
+    return { ok: false, message: deckRefusalCopy.isCommander };
   }
 
   // L2: a card the source deck has LOCKED is never pulled out of it. Under that deck's row lock,
@@ -135,7 +136,7 @@ export async function pullInTx(tx: Tx, args: {
   }).from(deckCards).where(eq(deckCards.deckId, askingDeckId)).for("update");
   const add = draftDiff(askingDraft, askingBefore).adds
     .find((a) => a.oracleId === oracleId);
-  if (!add) return { ok: false, message: "That deck isn’t waiting on that card.", skip: "notWaiting" };
+  if (!add) return { ok: false, message: deckRefusalCopy.notWaiting, skip: "notWaiting" };
 
   // And the claim, read under the same locks. An add the reader was offered a
   // pull for is one whose copies are all spoken for; if a copy has come free
@@ -163,7 +164,7 @@ export async function pullInTx(tx: Tx, args: {
   // to authorize a destructive write on a claim half of which is unlocked.
   const unlocked = holders.find((d) => !lockIds.includes(d.id));
   if (unlocked) {
-    return { ok: false, message: "Another deck claimed that card. Open the changes again." };
+    return { ok: false, message: deckRefusalCopy.claimedElsewhere };
   }
 
   // `pullSources` here and `hardDecks` above, deliberately. The guard above asks
@@ -197,7 +198,7 @@ export async function pullInTx(tx: Tx, args: {
     return { ok: false, message: PULL_REFUSED_PROXIED };
   }
   if (bucketed.bucket !== "claimed" || bucketed.shortfall <= 0) {
-    return { ok: false, message: "That deck already has the copies it needs.", skip: "covered" };
+    return { ok: false, message: deckRefusalCopy.alreadyCovered, skip: "covered" };
   }
 
   // The bucket above answers for the CARD: some releasable holder exists. It
@@ -206,17 +207,17 @@ export async function pullInTx(tx: Tx, args: {
   // the senior one's strength and decrement a deck whose copy was never this
   // deck's to take. The named source has to be a releasable holder itself.
   if (!sources.some((d) => d.id === sourceDeckId)) {
-    return { ok: false, message: "That deck’s copy wouldn’t cover the shortfall." };
+    return { ok: false, message: deckRefusalCopy.wouldNotCover };
   }
 
   const version = await newestVersion(sourceDeckId, tx);
-  if (!version) return { ok: false, message: "That deck isn’t sleeved yet." };
+  if (!version) return { ok: false, message: deckRefusalCopy.notSleeved };
   // The VERSION's commander too, not only the live columns checked above: with a commander change
   // pending, the card can sit in the draft's list while the version still leads with it. A
   // release subtracts from the version's LIST claim only, so that pull would empty the draft and
   // leave the asking deck exactly as short as it was.
   if (version.commanderOracleId === oracleId || version.partnerOracleId === oracleId) {
-    return { ok: false, message: "That card is that deck’s commander." };
+    return { ok: false, message: deckRefusalCopy.isCommander };
   }
 
   const before = await versionCards(version.id, tx);
@@ -232,7 +233,7 @@ export async function pullInTx(tx: Tx, args: {
   const inDraft = row !== undefined;
   // Nothing to release: the version does not list it and the draft does not hold it.
   if (!inDraft && !before.some((c) => c.oracleId === oracleId)) {
-    return { ok: false, message: "That deck doesn’t hold that card." };
+    return { ok: false, message: deckRefusalCopy.notHeld };
   }
 
   // A pull takes ONE copy, matching removeCardFromDeck: a deck holding four

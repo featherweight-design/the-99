@@ -80,6 +80,8 @@ export const guidedBuildCopy = {
   },
   /** The run's window (R1 to R5): the title, the picks line, the wait, the result and the failed run. */
   run: {
+    /** Read aloud after a step's label, with the leading space. */
+    stateSr: { done: " (done)", now: " (now)", next: " (next)" },
     title: (deck: string) => `Build ${deck}`,
     close: "Close",
     steps: { label: "Your picks", strategy: "Strategy", bracket: "Bracket", cards: "Cards" },

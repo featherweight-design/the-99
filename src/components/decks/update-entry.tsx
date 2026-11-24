@@ -385,7 +385,7 @@ export function UpdateEntry({ deckId, deckName, bodySize }: { deckId: string; de
         <span className="md:hidden">{copy.update.list.reassureMobile}</span>
         <span className="hidden md:inline">
           {mode === "paste" && pasteCount > 0
-            ? `${pasteCount} cards. ${copy.update.list.reassure}`
+            ? copy.update.list.reassureCounted(pasteCount)
             : copy.update.list.reassure}
         </span>
       </p>
