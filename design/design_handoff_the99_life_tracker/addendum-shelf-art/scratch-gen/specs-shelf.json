@@ -1,0 +1,6 @@
+[{"id":"U4","w":390,"h":844,"layout":"phone-4-around","seats":["you","colin","peter","max"],"click":"[data-testid=tracker-panel][data-seat='0'] [data-testid=panel-sheet]"},
+ {"id":"S4","w":390,"h":844,"layout":"phone-4-around","seats":["you","colin","peter","max"],"click":"[data-testid=tracker-panel][data-seat='1'] [data-testid=panel-sheet]"},
+ {"id":"U6","w":390,"h":844,"layout":"phone-6","seats":["you","colin","peter","max","dee","sam"],"click":"[data-testid=tracker-panel][data-seat='0'] [data-testid=panel-sheet]"},
+ {"id":"S6","w":390,"h":844,"layout":"phone-6","seats":["you","colin","peter","max","dee","sam"],"click":"[data-testid=tracker-panel][data-seat='1'] [data-testid=panel-sheet]"},
+ {"id":"S3","w":390,"h":844,"layout":"phone-3-end","seats":["you","colin","peter"],"click":"[data-testid=tracker-panel][data-seat='1'] [data-testid=panel-sheet]"},
+ {"id":"U2","w":390,"h":844,"layout":"phone-2","seats":["you","colin"],"click":"[data-testid=tracker-panel][data-seat='0'] [data-testid=panel-sheet]"}]
