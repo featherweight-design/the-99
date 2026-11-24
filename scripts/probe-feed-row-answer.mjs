@@ -105,6 +105,23 @@ async function main() {
         } else report("the row draws its ✕", false);
       }
       report("no horizontal scroll", !s.overflow);
+      // A long wrapping title never runs under the row's ✕ (the text column reserves the ✕'s width). The title is
+      // swapped in the page only: the check reads where the title's lines draw against where the ✕ draws.
+      const clash = await page.evaluate(() => {
+        const row = [...document.querySelectorAll("[data-feed-item='spare-request']")].find((r) => r.getBoundingClientRect().width > 0 && /Ann/.test(r.textContent ?? ""));
+        const x = row?.querySelector("[data-row-x] button");
+        const title = row?.querySelector("p[id]");
+        if (!row || !x || !title) return null;
+        title.textContent = "Ann would like to borrow your spare copy of Empyrial Storm for the Commander night on Saturday, and she has two more decks to sort out beforehand";
+        const hit = x.getBoundingClientRect();
+        const range = document.createRange();
+        range.selectNodeContents(title);
+        const rects = [...range.getClientRects()];
+        const worst = Math.max(0, ...rects.map((r) => Math.min(r.right, hit.right) - Math.max(r.left, hit.left)).map((w, i) => (Math.min(rects[i].bottom, hit.bottom) - Math.max(rects[i].top, hit.top) > 0 ? w : 0)));
+        return { lines: new Set(rects.map((r) => Math.round(r.top))).size, overlap: worst };
+      });
+      report("a long wrapping title stays clear of the row's ✕", !!clash && clash.lines > 1 && clash.overlap <= 0, clash ? `${clash.lines} lines, overlap ${clash.overlap.toFixed(1)}px` : "no row");
+      if (process.env.SHOTS) await page.screenshot({ path: `${process.env.SHOTS}/${vp.label.replace(/\W+/g, "-")}-long.png`, fullPage: false }).catch(() => {});
       await page.screenshot({ path: process.env.SHOTS ? `${process.env.SHOTS}/${vp.label.replace(/\W+/g, "-")}.png` : undefined, fullPage: false }).catch(() => {});
       if (vp.label.startsWith("phone") && process.env.PRESS !== "0") {
         const row = page.locator("[data-feed-item='spare-request']", { hasText: "Ann" }).first();

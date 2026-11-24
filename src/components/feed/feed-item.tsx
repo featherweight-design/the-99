@@ -426,7 +426,9 @@ export function FeedItemRow({ item, now, face, onDismiss, when, zone = null, com
       className={`relative grid grid-cols-[46px_minmax(0,1fr)] gap-x-[12px] px-[14px] py-[12px] ${rowMd(compact, "md:grid-cols-[46px_minmax(0,1fr)_auto] md:items-center md:gap-x-[14px] md:px-[16px]", "md:max-[1179px]:grid-cols-[46px_minmax(0,1fr)_auto] md:max-[1179px]:items-center md:max-[1179px]:gap-x-[14px] md:max-[1179px]:px-[16px]")}`}
     >
       <Picture item={item} face={face} compact={compact} />
-      <div className="flex min-w-0 flex-col gap-[3px]">
+      {/* An ask's ✕ sits in the row's corner (below), so the text column keeps clear of it: the ✕'s box (44px at 4px from
+          the edge on a phone, 32px at 8px from `md`) reaches past the row's padding by 34px and 24px. */}
+      <div data-feed-text className={`flex min-w-0 flex-col gap-[3px] ${ask && dismiss ? "pr-[34px] md:pr-[24px]" : ""}`}>
         <div className="flex min-w-0 items-center gap-[7px]">
           {item.unseen && <span data-feed-unseen aria-hidden className="h-[6px] w-[6px] flex-none rotate-45 bg-[color:var(--accent)]" />}
           <span className={`truncate font-mono text-[9.5px] font-medium tracking-[.12em] uppercase ${kickerInk}`}>{receipt ? receipt.kind : item.answer ? (item.offer ? c.offerAnswerKicker : c.answerKicker) : item.offer ? c.offerKicker : c.kicker[item.kind]}</span>
