@@ -108,6 +108,8 @@ export type Options = {
 };
 
 const plain = (r: CopyRow) => !r.readOnly && !r.isTemplate && r.context === "" && r.key.split("#").length === 2;
+/** Whether the source writes this access path whole: `home.title` is not found inside `myhome.title` or `home.titleLong`. */
+const writes = (source: string, acc: string) => new RegExp(`(?<![\\w$.])${acc.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?![\\w$])`).test(source);
 const RESOLVE = ["", ".ts", ".tsx", "/index.ts", "/index.tsx"];
 
 /** The non-test, non-copy sources a test reaches by relative import, two hops deep: the component under test and its parts. */
@@ -163,9 +165,9 @@ export function rewriteTests(changes: readonly Change[], root: string, opts: Opt
             const cands = (sameText.get(change.from) ?? []).filter(plain).filter((r) => {
               const [, p = ""] = r.key.split("#");
               const acc = accessPath(p);
-              return acc !== null && reached!.includes(acc);
+              return acc !== null && writes(reached!, acc);
             });
-            if (cands.length >= 1) use = { ...change, key: cands[0]!.key };
+            if (cands.length === 1) use = { ...change, key: cands[0]!.key };
           }
           const [copyFile, path = ""] = use.key.split("#");
           const row2 = byKey.get(use.key)!;
