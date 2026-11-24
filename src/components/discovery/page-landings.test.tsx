@@ -3,8 +3,9 @@ import { act, cleanup, render, screen } from "@testing-library/react";
 import { useState, type ReactNode } from "react";
 
 // Try it's landing on each tool's own page (discovery R2·3, E11), against the page's REAL control: the page's own
-// reading of `?tool=` (`pageToolLanding`) handed to `ToolLandingMount`, as the server component does. Each page lands
-// (halo on its control, parameter stripped, moment spent), strips a stale id, and strips with its switch off.
+// reading of `?tool=` (`pageToolLanding`) handed to `ToolLandingMount`, as the server component does. A page on a busier
+// screen lands (halo on its control, parameter stripped, moment spent); a page that IS the tool lands with no halo and
+// spends nothing (R12, G29); each strips a stale id.
 
 const spendMomentAction = vi.fn(async (id: unknown) => void id);
 vi.mock("../../app/moments-actions", () => ({ spendMomentAction: (id: unknown) => spendMomentAction(id) }));
@@ -36,6 +37,7 @@ const { MomentsProvider } = await import("../moments/moments-provider");
 const { pageToolLanding } = await import("../../lib/discovery/tools");
 const { emptyParams } = await import("../../lib/intake/params");
 const { IntakeForm } = await import("../intake/intake-form");
+const { ChooseIntro } = await import("../intake/choose-intro");
 const { PreconListView } = await import("../decks/precons/precon-list-view");
 const { FitsDoor } = await import("../cards/fits-door");
 const { WishlistSearch } = await import("../wishlist/wishlist-search");
@@ -68,19 +70,27 @@ const PAGES: {
   /** The tool's own control, as the reader sees it. */
   control: () => HTMLElement;
   open?: () => void;
+  /** A page that is the tool: it lands at its top with no halo (R12, G29). */
+  quiet?: true;
 }[] = [
   {
     tool: "help-me-choose",
     path: "/decks/new/choose",
-    page: () => <IntakeForm themes={[]} initial={emptyParams()} />,
-    // The form's first answer, Colors: the field wrapper holding its label.
-    control: () => screen.getAllByText(/^Colou?rs?/)[0].closest('div[class="rounded-[9px]"]') as HTMLElement,
+    page: () => (
+      <>
+        <ChooseIntro initiallyOpen art={null} daily={null} />
+        <IntakeForm themes={[]} initial={emptyParams()} />
+      </>
+    ),
+    // The intro panel, while it is open (R12, G29).
+    control: () => document.querySelector('[data-choose-intro="open"]') as HTMLElement,
   },
   {
     tool: "precons",
     path: "/decks/precons",
     page: () => <PreconListView rows={[precon]} hasCollection fromNew={false} initial={{ q: "", colours: [], order: null, view: null }} query="" />,
     control: () => screen.getAllByRole("searchbox")[0].closest("div.min-w-0") as HTMLElement,
+    quiet: true,
   },
   {
     tool: "find-a-deck",
@@ -94,18 +104,21 @@ const PAGES: {
     path: "/collection/wishlist",
     page: () => <WishlistSearch onOpenChange={() => {}} onWant={() => {}} onFailure={() => {}} />,
     control: () => screen.getByRole("searchbox").closest("div.relative") as HTMLElement,
+    quiet: true,
   },
   {
     tool: "collection-sync",
     path: "/collection/replace",
     page: () => <UploadEntry currentCardCount={12} onPreview={() => {}} choice />,
     control: () => screen.getByLabelText("Upload collection CSV").closest("label") as HTMLElement,
+    quiet: true,
   },
   {
     tool: "lineup",
     path: "/decks",
     page: () => <StatsViewSwitch view="stats" onView={() => {}} />,
     control: () => screen.getByRole("tablist").closest("span") as HTMLElement,
+    quiet: true,
   },
   {
     tool: "friends",
@@ -114,6 +127,7 @@ const PAGES: {
       <FriendsHead name="Hugh" commander={null} onRename={() => {}} onOpenPicker={() => {}} invitePending={false} held={false} onInvite={() => {}} />
     ),
     control: () => screen.getByRole("button", { name: "Add a friend" }),
+    quiet: true,
   },
 ];
 
@@ -147,7 +161,7 @@ afterEach(() => {
   window.history.replaceState(null, "", "/");
 });
 
-describe.each(PAGES)("Try it's landing on $tool's page", ({ tool, path, page, control, open }) => {
+describe.each(PAGES.filter((p) => !p.quiet))("Try it's landing on $tool's page", ({ tool, path, page, control, open }) => {
   it("haloes the tool's own control and only it, strips the parameter, spends the moment, presses nothing", async () => {
     window.history.replaceState(null, "", `${path}?tool=${tool}&probe=1`);
     mount(tool, page, true);
@@ -160,8 +174,7 @@ describe.each(PAGES)("Try it's landing on $tool's page", ({ tool, path, page, co
     expect(window.location.search).toBe("?probe=1");
     expect(screen.queryByRole("note")).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
-    if (tool === "friends") expect(spendMomentAction).not.toHaveBeenCalled();
-    else expect(spendMomentAction).toHaveBeenCalledWith(tool);
+    expect(spendMomentAction).toHaveBeenCalledWith(tool);
   });
 
   it("strips a stale id with no halo and writes nothing", async () => {
@@ -181,6 +194,39 @@ describe.each(PAGES)("Try it's landing on $tool's page", ({ tool, path, page, co
   // Every tool with a page landing (Help me choose, Precons, Find a deck, `lineup`, the wishlist, Collection Sync and
   // Friends) has no switch left (each retired), so none has an off state to strip on. `tools.test.ts` holds that a tool
   // with a live switch is not landed while it is off.
+});
+
+// A page that IS the tool (R12, G29): its control still draws and stays registered (the moments and the tour use it),
+// but the landing is the top of the page: the parameter is stripped at once, nothing is haloed, no moment is spent.
+describe.each(PAGES.filter((p) => p.quiet))("Try it's quiet landing on $tool's page", ({ tool, path, page, control }) => {
+  it("strips the parameter with no halo and spends nothing", async () => {
+    window.history.replaceState(null, "", `${path}?tool=${tool}&probe=1`);
+    mount(tool, page, true);
+    await flush();
+    expect(control()).not.toBeNull();
+    expect(window.location.search).toBe("?probe=1");
+    act(() => vi.advanceTimersByTime(10_000));
+    await flush();
+    expect(haloed()).toEqual([]);
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
+});
+
+describe("Help me choose with the intro folded", () => {
+  it("registers no target, so a landing haloes nothing and spends nothing", async () => {
+    window.history.replaceState(null, "", "/decks/new/choose?tool=help-me-choose");
+    mount("help-me-choose", () => (
+      <>
+        <ChooseIntro initiallyOpen={false} art={null} daily={null} />
+        <IntakeForm themes={[]} initial={emptyParams()} />
+      </>
+    ), true);
+    await flush();
+    act(() => vi.advanceTimersByTime(10_000));
+    await flush();
+    expect(haloed()).toEqual([]);
+    expect(spendMomentAction).not.toHaveBeenCalled();
+  });
 });
 
 describe("the page targets' own registration", () => {
