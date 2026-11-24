@@ -76,6 +76,24 @@ describe("tracker panel", () => {
     expect(html).toContain('aria-label="Ghalta, Primal Hunger 6. Open it in the sheet"');
     expect(html).toContain('aria-label="Tax +4. Open it in the sheet"');
   });
+  it("leads with what ends the game, draws compact figures, and keeps the words in the label", () => {
+    const from = { ...seat, seat: 2, you: false, commander: "Ghalta, Primal Hunger", art: "/a.jpg" } as PlaySeat;
+    const counters = { ...base.counters, poison: 9, energy: 2 } as SeatState["counters"];
+    const html = renderToStaticMarkup(
+      <Panel cell={cell} canvas={{ w: 390, h: 844 }} seat={seat} state={{ ...base, counters, damage: { "2:0": 6 }, tax: [2, 0] }} active={false} round={1} seats={new Map([[2, from]])} monarch initiative={false} onSheet={() => {}} disabled={false} onLife={() => {}} onEndTurn={() => {}} onUndo={() => {}} />,
+    );
+    const label = (t: string) => html.indexOf(`aria-label="${t}. Open it in the sheet"`);
+    // Poison 9/10 is nearer lethal than 6/21 damage, so it leads; tax and the other counters follow.
+    expect(label("Poison 9")).toBeGreaterThan(-1);
+    expect(label("Poison 9")).toBeLessThan(label("Ghalta, Primal Hunger 6"));
+    expect(label("Ghalta, Primal Hunger 6")).toBeLessThan(label("Tax +4"));
+    expect(label("Tax +4")).toBeLessThan(label("Energy 2"));
+    // The chip shows its figure, the words ride in the title.
+    expect(html).toContain('title="Ghalta, Primal Hunger 6"');
+    expect(html).toContain('<span aria-hidden="">+4</span>');
+    expect(html).not.toMatch(/<span aria-hidden="">Poison 9<\/span>/);
+    expect(html).toContain('data-total="5"');
+  });
   it("names the commander that put the seat out", () => {
     const from = { ...seat, seat: 2, you: false, commander: "Ghalta, Primal Hunger" } as PlaySeat;
     const html = renderToStaticMarkup(
