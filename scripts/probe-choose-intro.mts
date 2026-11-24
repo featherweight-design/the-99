@@ -103,13 +103,13 @@ async function main() {
       });
       check(`${vp.label} the intro sits above the form`, above);
       await page.waitForTimeout(3000);
-      const art = await open.evaluate((el) =>
+      const art = await open.evaluate((el: Element) =>
         [...el.querySelectorAll("img")]
           .filter((i) => i.getClientRects().length > 0)
           .map((i) => ({ w: i.naturalWidth, o: Number(getComputedStyle(i).opacity) })),
       );
       const wantArt = vp.width >= 768 ? 3 : 1;
-      check(`${vp.label} the example draws ${wantArt} pieces of art, loaded and shown`, art.length === wantArt && art.every((a) => a.w > 0 && a.o > 0.5), JSON.stringify(art));
+      check(`${vp.label} the example draws ${wantArt} pieces of art, loaded and shown`, art.length === wantArt && art.every((a: { w: number; o: number }) => a.w > 0 && a.o > 0.5), JSON.stringify(art));
       await page.screenshot({ path: `${SHOTS}/open-${vp.label}.png` });
 
       const jump = onPage(page, "[data-choose-intro-jump]").first();
@@ -119,7 +119,7 @@ async function main() {
       await page.waitForTimeout(900);
       const focused = await page.evaluate(() => document.activeElement?.id ?? "");
       check(`${vp.label} the jump focuses Anything else?`, focused === "choose-words", focused);
-      const inView = await box.evaluate((el) => {
+      const inView = await box.evaluate((el: Element) => {
         const r = el.getBoundingClientRect();
         return r.top >= 0 && r.bottom <= window.innerHeight;
       });

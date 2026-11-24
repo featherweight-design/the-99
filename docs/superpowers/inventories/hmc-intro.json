@@ -1,0 +1,29 @@
+{
+  "feature": "Help me choose intro: how the tool works and what costs a credit, above the form (open state; the folded line is in the probe's shots)",
+  "clearAbout": true,
+  "note": "Read-only: the jump press scrolls and focuses, and writes nothing. Serve a branch where the reader has no choose_intro_seen_at mark.",
+  "out": "contact-sheets/hmc-intro",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 },
+    { "label": "ipad-landscape", "width": 1180, "height": 820 },
+    { "label": "ipad-portrait", "width": 820, "height": 1180 }
+  ],
+  "rows": [
+    {
+      "id": "intro-open",
+      "label": "Help me choose: the intro open above the form",
+      "view": "src/components/intake/choose-intro.tsx",
+      "steps": [{ "goto": "/commanders/choose", "wait": "[data-choose-intro=open]", "settle": 3000 }]
+    },
+    {
+      "id": "intro-jump",
+      "label": "Go to Anything else? lands on the box, focused",
+      "view": "src/components/intake/choose-intro.tsx",
+      "steps": [
+        { "goto": "/commanders/choose", "wait": "[data-choose-intro=open]", "settle": 2500 },
+        { "click": "[data-choose-intro-jump]", "settle": 1500 }
+      ]
+    }
+  ]
+}
