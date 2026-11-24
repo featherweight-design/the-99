@@ -2601,6 +2601,11 @@ Safety rules (restated from AGENTS.md, they govern every entry below):
   handovers before the Backs, and on a deck page, and checks Escape (clears the query, then closes, focus back on the
   icon). It writes nothing but
   the browser's own recent cards. `PROBE_SHOT` names a file for a screenshot when it stops.
+- `pnpm probe:home-search` proves Home's search panel (tool discovery E1) at 390 and at 1300, against a server at `PROBE_BASE`.
+  It checks the panel, its 52px field and its starters; at 1300 that a press on the field opens the answers in place
+  (the rail draws no second field), that a question is answered by a tool there, that Esc (twice: clear, then close)
+  returns to the panel and that a starter types into the panel's field; at 390 that a press opens the sheet and a starter
+  arrives typed. It writes no row (the About gate is marked seen and put back). Fails on main: Home has no panel there.
 - `pnpm probe:ask` proves Ask in the card search (tool discovery D) at 390 and at 1300, against a server at `PROBE_BASE`.
   It checks the field's placeholder, the starters' heights (44px phone, 34px dropdown) and that a press types its
   question, that a question about spare cards draws Find a deck under `Tools for this` in the one listbox, that ↓ ↵

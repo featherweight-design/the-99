@@ -6,6 +6,8 @@ import { welcomeSheet, type WelcomeFacts, type WelcomeSheet } from "../../lib/pa
 
 const dismiss = vi.hoisted(() => vi.fn(async () => ({ dismissed: true })));
 vi.mock("../../app/welcome-actions", () => ({ dismissWelcomeStripAction: dismiss }));
+const captureToolEvent = vi.hoisted(() => vi.fn());
+vi.mock("../../lib/analytics/posthog", async (orig) => ({ ...(await orig<typeof import("../../lib/analytics/posthog")>()), captureToolEvent }));
 
 const { WelcomeStrip, resetWelcomeStripClosed } = await import("./welcome-strip");
 
@@ -111,5 +113,14 @@ describe("WelcomeStrip, presses", () => {
     fireEvent.click(screen.getByRole("button", { name: "Where they work" }));
     const dialog = screen.getByRole("dialog", { name: "Where credits work" });
     expect(within(dialog).queryByRole("link", { name: /See packs/ })).toBeNull();
+  });
+
+  it("as the search panel's foot it has no edge or fill, and counts Where they work from panel_foot", () => {
+    render(<WelcomeStrip facts={facts()} sheet={SHEET} place="panel" />);
+    const s = strip()!;
+    expect(s.className).not.toContain("border");
+    expect(s.className).not.toContain("bg-[color:var(--surface)]");
+    fireEvent.click(within(s).getByRole("button", { name: "Where they work" }));
+    expect(captureToolEvent).toHaveBeenCalledWith("welcome_where_opened", { from: "panel_foot" });
   });
 });

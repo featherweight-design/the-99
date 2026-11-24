@@ -74,7 +74,7 @@ export function WelcomeStrip({
   /** The sheet's list, or null with every row off: then no `Where they work`. */
   sheet: WelcomeSheet | null;
   /** First-run Home sits the strip in the checklist's gutter; the dashboard's column has its own. */
-  place: "first-run" | "dashboard";
+  place: "first-run" | "dashboard" | "panel";
   /** First-run only: the About line is drawn just above, so the strip sits 8px under it rather than under the heading. */
   afterAbout?: boolean;
 }) {
@@ -108,8 +108,13 @@ export function WelcomeStrip({
       aria-label={welcomeCreditsCopy.region}
       ref={tourTarget}
       data-welcome-strip={facts.lot}
-      className={`${margin} flex min-h-[52px] items-center gap-[12px] rounded-[12px] border border-solid py-[7px] pl-[12px] pr-[4px] text-[13.5px] leading-[1.45] text-[color:var(--fg-body)] bg-[color:var(--surface)] ${
-        warn ? "border-[color:color-mix(in_srgb,var(--warning)_60%,var(--border-strong))]" : "border-[color:var(--accent-dim)]"
+      className={`${margin} flex min-h-[52px] items-center gap-[12px] py-[7px] pl-[12px] pr-[4px] text-[13.5px] leading-[1.45] text-[color:var(--fg-body)] ${
+        // As the search panel's foot (G15) it has no edge and no fill of its own: the panel's is the one around it.
+        place === "panel"
+          ? ""
+          : `rounded-[12px] border border-solid bg-[color:var(--surface)] ${
+              warn ? "border-[color:color-mix(in_srgb,var(--warning)_60%,var(--border-strong))]" : "border-[color:var(--accent-dim)]"
+            }`
       }`}
     >
       <Mark n={facts.left} warn={warn} dim={usedUp} />
@@ -137,7 +142,7 @@ export function WelcomeStrip({
             type="button"
             data-welcome-where
             onClick={() => {
-              captureToolEvent("welcome_where_opened", { from: "home_strip" });
+              captureToolEvent("welcome_where_opened", { from: place === "panel" ? "panel_foot" : "home_strip" });
               setOpen(true);
             }}
             className={`${LINK} cursor-pointer border-0 bg-transparent p-0 font-[inherit] text-[length:inherit] leading-[inherit]`}

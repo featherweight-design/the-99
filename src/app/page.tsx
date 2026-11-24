@@ -455,7 +455,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       shopping={data.shopping}
       arrivals={data.arrivals}
       about={about}
-      welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place="dashboard" />}
+      welcome={welcome && <WelcomeStrip facts={welcome} sheet={welcomeSheet} place={data.stats.uniqueCards > 0 ? "panel" : "dashboard"} />}
+      searchUserId={userId}
       signature={signatureStrip}
       noCards={data.stats.uniqueCards === 0}
       feed={feed}

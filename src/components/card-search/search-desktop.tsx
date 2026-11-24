@@ -65,11 +65,10 @@ export function SearchDesktop() {
 }
 
 function DesktopFrame() {
-  const { isOpen, veiled, query, setQuery, list, toolCount, active, listboxId, onFieldKey, closeSearch, busy, placeBody, escape, inputRef, openSearch, warmSearch, searching, online, canAdd } =
+  const { isOpen, veiled, query, setQuery, list, toolCount, active, listboxId, onFieldKey, closeSearch, escape, inputRef, openSearch, warmSearch, anchor } =
     useCardSearch()!;
   const frameRef = useRef<HTMLDivElement>(null);
   const shortcut = useSearchShortcutLabel();
-  const addShortcut = useAddShortcutLabel();
 
   // A resize across md swaps this frame for the other while search is open: the old field unmounts, focus falls to the
   // body, and the new frame's Escape and Tab never hear a key. Put it back in the field the new frame mounts.
@@ -97,7 +96,8 @@ function DesktopFrame() {
     };
     frame.addEventListener("keydown", onKey);
     return () => frame.removeEventListener("keydown", onKey);
-  }, []);
+    // The frame is not drawn while Home's panel hosts the answers, and a new element needs the listener again.
+  }, [anchor]);
 
   // ⌘K on a Mac, Ctrl+K elsewhere, from anywhere including a page field (README call 7). A second press from inside the
   // open field refocuses it. Never while a dialog other than this one is up: it is modal and the page is inert.
@@ -123,9 +123,9 @@ function DesktopFrame() {
     return () => window.removeEventListener("keydown", onKey);
   }, [mac, isOpen, veiled, openSearch, warmSearch, inputRef]);
 
-  // The foot line is D4's: results are up (D2, D2n and DD2 draw none). With the rows' + on it also stands over Recent
-  // cards, whose rows carry the + and take ⌘↵ too (add a card from anywhere C-D1).
-  const showFoot = list.length + toolCount > 0 && (searching || canAdd);
+  // Home's panel hosts the answers while it opened them: this frame draws nothing (its field and results' host would
+  // otherwise be a second input and a second host for the one search), and ⌘K above still works from anywhere.
+  if (anchor === "home") return null;
 
   return (
     <>
@@ -194,27 +194,44 @@ function DesktopFrame() {
             clearClassName={CARD_SEARCH_CLEAR_DESKTOP}
           />
         </div>
-        {/* The dropdown: its own box under the field, the Wishlist panel's look (`.dres`). */}
-        <div className="flex max-h-[min(560px,calc(100dvh-170px))] flex-col overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[6px] shadow-[0_22px_50px_rgba(0,0,0,0.6)]">
-          {busy ? (
-            <div className="mb-1 flex-none">
-              <SearchProgress />
-            </div>
-          ) : null}
-          {/* Offline is drawn by the frame, not the results' chunk, which may not have arrived (S7). */}
-          {online ? null : <SearchOffline />}
-          {/* The results' host (`SearchLayer` portals into it), outside <main>: inert with it under a navigation's
-              screen (`COVERED_WITH_MAIN`). */}
-          <div ref={placeBody} {...{ [COVERED_WITH_MAIN]: "" }} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
-          {showFoot ? (
-            <p className="flex flex-none items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-[14px] pt-[9px] pb-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]">
-              {/* With the rows' + up, the line names the keyboard add too (READINESS O4). */}
-              <span>{canAdd ? cardSearchCopy.keysHintAdd(addShortcut.label) : cardSearchCopy.keysHint}</span>
-              <span>{cardSearchCopy.shortcutFoot(shortcut.label)}</span>
-            </p>
-          ) : null}
-        </div>
+        <SearchDropdown />
       </div>
     </>
+  );
+}
+
+/**
+ * The answers' box: the rail's dropdown, and Home's panel draws the same one under its own field (tool discovery E1, Q9 A).
+ * Whichever frame is mounted hands the provider its `placeBody` here. `maxHeight` is the rail's rule by default; Home's
+ * popover measures the room under its field instead (Y5).
+ */
+export function SearchDropdown({ maxHeight = "max-h-[min(560px,calc(100dvh-170px))]" }: { maxHeight?: string }) {
+  const { list, toolCount, busy, online, placeBody, searching, canAdd } = useCardSearch()!;
+  const shortcut = useSearchShortcutLabel();
+  const addShortcut = useAddShortcutLabel();
+  // The foot line is D4's: results are up (D2, D2n and DD2 draw none). With the rows' + on it also stands over Recent
+  // cards, whose rows carry the + and take ⌘↵ too (add a card from anywhere C-D1).
+  const showFoot = list.length + toolCount > 0 && (searching || canAdd);
+  return (
+    // The dropdown: its own box under the field, the Wishlist panel's look (`.dres`).
+    <div className={`flex ${maxHeight} flex-col overflow-hidden rounded-[12px] border border-solid border-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[6px] shadow-[0_22px_50px_rgba(0,0,0,0.6)]`}>
+      {busy ? (
+        <div className="mb-1 flex-none">
+          <SearchProgress />
+        </div>
+      ) : null}
+      {/* Offline is drawn by the frame, not the results' chunk, which may not have arrived (S7). */}
+      {online ? null : <SearchOffline />}
+      {/* The results' host (`SearchLayer` portals into it), outside <main>: inert with it under a navigation's
+          screen (`COVERED_WITH_MAIN`). */}
+      <div ref={placeBody} {...{ [COVERED_WITH_MAIN]: "" }} className="min-h-0 flex-1 overflow-y-auto overscroll-contain" />
+      {showFoot ? (
+        <p className="flex flex-none items-center justify-between gap-3 border-t border-solid border-[color:var(--border)] px-[14px] pt-[9px] pb-[5px] font-mono text-[11px] text-[color:var(--fg-faint)]">
+          {/* With the rows' + up, the line names the keyboard add too (READINESS O4). */}
+          <span>{canAdd ? cardSearchCopy.keysHintAdd(addShortcut.label) : cardSearchCopy.keysHint}</span>
+          <span>{cardSearchCopy.shortcutFoot(shortcut.label)}</span>
+        </p>
+      ) : null}
+    </div>
   );
 }

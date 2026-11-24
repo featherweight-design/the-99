@@ -64,10 +64,18 @@ const loadLayer = () => import("./search-layer");
 const LISTBOX_ID = "card-search-list";
 
 export type SearchPhase = "idle" | "searching" | "results" | "failed";
+export type SearchAnchor = "rail" | "home";
 
 type CardSearchContextValue = {
   /** Opens the search with the field focused, inside the caller's own press (the iOS keyboard needs that). */
   openSearch: (opener: HTMLElement | null, from: (typeof SEARCH_OPENED_FROM)[number]) => void;
+  /** `openSearch` with a question already typed (Home's starters): one press, the answers drawn for it. */
+  openSearchWith: (opener: HTMLElement | null, from: (typeof SEARCH_OPENED_FROM)[number], text: string) => void;
+  /** Whose field hosts the desktop's answers: the rail's, or Home's panel (opened from `home_field` or `home_starter`). */
+  anchor: SearchAnchor;
+  /** The starters this reader sees (Y6), empty until read. Home's panel draws them at rest, so it asks for the read with `warmStarters`. */
+  starters: string[];
+  warmStarters: () => void;
   /** Starts the results' code downloading: a pointer or focus resting on the control is intent. */
   warmSearch: () => void;
   /** Closes the search; focus goes back to whatever opened it. */
@@ -117,6 +125,9 @@ const NO_SIGNALS: CardSignals = { owned: 0, decks: [], wishlist: false };
 
 export function CardSearchRoot({ userId, children }: { userId: string; children: ReactNode }) {
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState<SearchAnchor>("rail");
+  const [startersWanted, setStartersWanted] = useState(false);
+  const warmStarters = useCallback(() => setStartersWanted(true), []);
   // The results' chunk once it has arrived. Loaded by hand rather than through `next/dynamic`, so a load that fails
   // (offline before the first search) is retried on the next intent or when the connection comes back.
   const [Layer, setLayer] = useState<ComponentType<SearchLayerProps> | null>(null);
@@ -175,7 +186,11 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       setReturned(null);
       warmSearch();
       // Drawn in this press, then focused in it: a focus after an await or an effect leaves the keyboard down on iOS.
-      flushSync(() => setOpen(true));
+      // Home's field hosts the desktop's answers only when it opened them; every other way in is the rail's.
+      flushSync(() => {
+        setAnchor(desktop && from.startsWith("home_") ? "home" : "rail");
+        setOpen(true);
+      });
       inputRef.current?.focus();
       setRecents(readRecent(userId));
       setRecentSignals(null);
@@ -183,7 +198,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       // An ordinary open reads the standing query again: copies, decks or wishes may have moved since.
       setAttempt((n) => n + 1);
     },
-    [userId, warmSearch],
+    [userId, warmSearch, desktop],
   );
 
   // Back online with the sheet up and the results' code still missing: fetch it now.
@@ -193,6 +208,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
 
   const close = useCallback(() => {
     setOpen(false);
+    setAnchor("rail");
     setActive(-1);
     // Leaving the search (Close, Escape, Back) empties the field: it opens fresh next time. A picked card does not come
     // through here, so the search comes back as it was when the card is dismissed.
@@ -278,7 +294,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const active = moved === -1 && desktop && !searching && list.length > 0 ? 0 : moved;
   // Ask (D): the tools a typed question answers sit above the cards, and ↑ ↓ walk both as one list: the tools take the
   // first places, so a card's place is `active - toolCount`.
-  const ask = useAsk({ open, online, query: trimmed, searching });
+  const ask = useAsk({ open: open || startersWanted, online, query: trimmed, searching });
   // Tools count only while they are drawn: not for a stale list (the layer keeps the old rows under the bar), a failed read or no query.
   const toolCount = Layer === null || !online || phase === "failed" || !searching || rowsFor !== trimmed ? 0 : ask.tools.length;
   // A highlighted card must not slide under the tools when they arrive after the cards.
@@ -483,12 +499,12 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const pressTool = useCallback(
     (tool: ToolCardModel, index: number) => {
       if (bodyRef.current?.closest("[inert]")) return;
-      captureToolEvent("ask_tool_pressed", { tool: tool.id, from: desktop ? "desktop" : "phone_sheet", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
+      captureToolEvent("ask_tool_pressed", { tool: tool.id, from: !desktop ? "phone_sheet" : anchor === "home" ? "home_inline" : "desktop", rank: String(Math.min(index + 1, 3)) as "1" | "2" | "3" });
       if (tool.id === "find-a-deck") captureToolEvent("find_a_deck_opened", { from: "ask" });
       close();
       router.push(toolHref(tool));
     },
-    [close, router, desktop],
+    [close, router, desktop, anchor],
   );
 
   const onFieldKey = useCallback(
@@ -540,6 +556,14 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
     [changeQuery],
   );
 
+  const openSearchWith = useCallback(
+    (opener: HTMLElement | null, from: (typeof SEARCH_OPENED_FROM)[number], text: string) => {
+      openSearch(opener, from);
+      changeQuery(text);
+    },
+    [openSearch, changeQuery],
+  );
+
   const retry = useCallback(() => {
     if (searching) setAttempt((n) => n + 1);
     else setRecentsFailed(false);
@@ -549,6 +573,10 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
   const value = useMemo<CardSearchContextValue>(
     () => ({
       openSearch,
+      openSearchWith,
+      anchor,
+      starters: ask.starters,
+      warmStarters,
       warmSearch,
       closeSearch: close,
       isOpen: open,
@@ -572,7 +600,7 @@ export function CardSearchRoot({ userId, children }: { userId: string; children:
       pick,
       retry,
     }),
-    [openSearch, warmSearch, close, open, veiled, query, changeQuery, phase, searching, online, list, toolCount, active, busy, canAdd, placeBody, onFieldKey, escape, onClear, pick, retry],
+    [openSearch, openSearchWith, anchor, ask.starters, warmStarters, warmSearch, close, open, veiled, query, changeQuery, phase, searching, online, list, toolCount, active, busy, canAdd, placeBody, onFieldKey, escape, onClear, pick, retry],
   );
 
   const layerProps: SearchLayerProps = {

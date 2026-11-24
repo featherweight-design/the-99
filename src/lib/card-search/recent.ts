@@ -30,16 +30,29 @@ function isRecent(v: unknown): v is RecentCard {
   );
 }
 
-/** The stored list, newest first; empty when nothing is stored, storage is blocked, or the entry is not ours. */
-export function readRecent(userId: string): RecentCard[] {
+/** The list a stored string holds, newest first; empty when there is none or it is not ours. */
+export function parseRecent(raw: string | null): RecentCard[] {
+  if (!raw) return [];
   try {
-    const raw = window.localStorage.getItem(recentKey(userId));
-    if (!raw) return [];
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter(isRecent).slice(0, RECENT_LIMIT) : [];
   } catch {
     return [];
   }
+}
+
+/** The stored string as it is, or null: a stable snapshot for `useSyncExternalStore`, where a parsed list is new each read. */
+export function readRecentRaw(userId: string): string | null {
+  try {
+    return window.localStorage.getItem(recentKey(userId));
+  } catch {
+    return null;
+  }
+}
+
+/** The stored list, newest first; empty when nothing is stored, storage is blocked, or the entry is not ours. */
+export function readRecent(userId: string): RecentCard[] {
+  return parseRecent(readRecentRaw(userId));
 }
 
 /** `card` moved (or added) to the front, the list cut to the limit. Pure. */

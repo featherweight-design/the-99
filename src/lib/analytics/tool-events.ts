@@ -11,8 +11,8 @@ import type { ToolId } from "../discovery/tools";
 export const FIND_A_DECK_FROM = ["callout_show_them", "tile_button", "row_strip", "row_button", "card_door", "ask"] as const;
 export type FindADeckFrom = (typeof FIND_A_DECK_FROM)[number];
 
-/** Where the Where credits work sheet was opened from: Home's welcome strip, or the /credits Welcome cell. */
-export const WELCOME_WHERE_FROM = ["home_strip", "credits_cell"] as const;
+/** Where the Where credits work sheet was opened from: Home's welcome strip (alone, or as the search panel's foot), or the /credits Welcome cell. */
+export const WELCOME_WHERE_FROM = ["home_strip", "panel_foot", "credits_cell"] as const;
 export type WelcomeWhereFrom = (typeof WELCOME_WHERE_FROM)[number];
 
 /** How many rows a Show all sheet opened on, or a Clear all cleared: a bucket, never the count. */
@@ -29,8 +29,8 @@ export type TuningOpenedFrom = (typeof TUNING_OPENED_FROM)[number];
 export const TUNING_OPENED_TOOL = ["hub", "consider", "suggested", "mana", "cuts", "history"] as const;
 export type TuningOpenedTool = (typeof TUNING_OPENED_TOOL)[number];
 /** Ask in the card search (D): where the search was opened from, where an answer was pressed, and the shape of a query, never its text. */
-export const SEARCH_OPENED_FROM = ["rail", "header", "cmdk"] as const;
-export const ASK_PRESSED_FROM = ["desktop", "phone_sheet"] as const;
+export const SEARCH_OPENED_FROM = ["rail", "header", "cmdk", "home_field", "home_starter"] as const;
+export const ASK_PRESSED_FROM = ["desktop", "phone_sheet", "home_inline"] as const;
 export const ASK_WORDS = ["1", "2", "3+"] as const;
 export const ASK_COUNT = ["0", "1", "2", "3"] as const;
 export const ASK_CARDS = ["none", "some"] as const;
