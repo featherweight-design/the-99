@@ -1,0 +1,80 @@
+--- a/src/components/home/dashboard.tsx	2026-11-24 03:33:57.272786452 +0000
++++ b/src/components/home/dashboard.tsx	2026-11-24 03:39:02.030761382 +0000
+@@ -150,6 +150,12 @@
+   // Direction B, or null for Home as shipped. The lead leaves the list it heads (`splitLead`).
+   const feed = props.feed ?? null;
+   const lead = feed?.chosen ? feed.lead : null;
++  // A quieter Home: fewer than two cards head the main column (an open table, a game to log, the lead story). What's new
++  // then sits in the main column under the decks, in its wide rows, and the rail keeps Commitments and Friends. Two or more,
++  // and the main column is long enough on its own: What's new tops the rail (tool-discovery R8). Decided when Home loads, so
++  // dismissing the lead or the log card in a visit does not move it. Below 1180 the one column is unchanged.
++  const heads = tables.length + ((props.logGames?.length ?? 0) > 0 ? 1 : 0) + (lead ? 1 : 0);
++  const quiet = !!feed && heads < 2;
+   // A friend's face for the feed, from the Friends section's own read: no second read of anyone's profile.
+   const faces = new Map((props.friends?.friends ?? []).map((f) => [f.publicId, f.commander]));
+   // Direction B's rows open the shipped card detail (a price drop's card, a combo's first piece): one provider over
+@@ -306,6 +312,7 @@
+               />
+             )}
+           </div>
++          {feed && quiet && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} wide className="order-1 min-[1180px]:order-none min-[1180px]:mt-[10px]" />}
+         </div>
+ 
+         {/* The column exists only when a card in it does. Null when the availability
+@@ -314,12 +321,12 @@
+             would leave a blank rail squeezing the resume rows beside it for a
+             block that is not there. */}
+         {/* It renders when Commitments or Friends does (G7): with Commitments absent, Friends tops the column. */}
+-        {(feed || props.commitments !== null || props.friends) && (
++        {((feed && !quiet) || props.commitments !== null || props.friends) && (
+           <div className="contents min-[1180px]:flex min-[1180px]:w-[316px] min-[1180px]:flex-none min-[1180px]:flex-col min-[1180px]:gap-[11px]">
+             {/* Direction B: What's new directly under the lead story below 1180 (tool-discovery R7, Q11 A), and the top of this rail
+                 from 1180 (G17), in compact rows. One element, so one set of rows and one sheet: the columns are `contents` below 1180
+                 and `order` places it. */}
+-            {feed && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-1 min-[1180px]:order-none" />}
++            {feed && !quiet && <WhatsNew feed={feed} now={props.now} faces={faces} zone={props.zone ?? null} archive={props.archive ?? false} className="order-1 min-[1180px]:order-none" />}
+             {props.commitments !== null && (
+               <div className={`${feed ? "order-5" : "order-3"} flex flex-col min-[1180px]:order-none`}>
+                 <CommitmentsCard
+--- a/src/components/home/whats-new.tsx	2026-11-24 03:33:57.273739801 +0000
++++ b/src/components/home/whats-new.tsx	2026-11-24 03:39:02.005166177 +0000
+@@ -99,7 +99,9 @@
+   );
+ }
+ 
+-export function WhatsNew({ feed: served, now, faces, zone = null, archive = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; zone?: string | null; archive?: boolean; className?: string }) {
++export function WhatsNew({ feed: served, now, faces, zone = null, archive = false, wide = false, className = "" }: { feed: HomeFeed; now: string; faces?: FeedFaces; zone?: string | null; archive?: boolean;
++  /** Quiet Home (fewer than two of table, game to log, lead): What's new sits in the main column, so its rows keep the wide layout at every width. */
++  wide?: boolean; className?: string }) {
+   const [sheetOpen, setSheetOpen] = useState(false);
+   // A lead the held spare-request receipt displaces is drawn here, among the rows (`held-lead.tsx`).
+   const heldLead = useHeldLead();
+@@ -210,7 +212,7 @@
+         ) : (
+           <AnswerSheetProvider now={now} onSeen={(key) => setOpened((prev) => new Set(prev).add(key))} onCleared={dismissed.dismiss}>
+             <HoverPreviewProvider className="flex flex-col">
+-              <Rows items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
++              <Rows wide={wide} items={feed.items} upcoming={feed.upcoming ?? []} now={now} faces={faces} zone={zone} onShowAll={() => {
+                 setSheetOpen(true);
+                 captureToolEvent("feed_show_all", { count: feedCountBucket(feed.items.length) });
+               }} onDismiss={dismissed.dismiss} archive={archive} clearCount={clearable.length} onClear={clearAll} />
+@@ -276,8 +278,8 @@
+   };
+ }
+ 
+-function Rows({ items, upcoming, now, faces, zone, onShowAll, onDismiss, archive, clearCount, onClear }: {
+-  items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; onShowAll: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
++function Rows({ wide, items, upcoming, now, faces, zone, onShowAll, onDismiss, archive, clearCount, onClear }: {
++  wide: boolean; items: FeedView[]; upcoming: FeedView[]; now: string; faces?: FeedFaces; zone: string | null; onShowAll: () => void; onDismiss: (key: string, from: HTMLElement) => void; archive: boolean;
+   /** Everything Clear all would clear (the lead included), and the press; the press shows from two items. */
+   clearCount: number; onClear: (pending: string | null) => void;
+ }) {
+@@ -288,7 +290,7 @@
+   const grouped = upcoming.length > 0;
+   const labelled = grouped || (today.length > 0 && earlier.length > 0);
+   const row = (i: FeedView) => (
+-    <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact="rail" face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
++    <FeedItemRow key={i.key} item={i} now={now} zone={zone} compact={wide ? false : "rail"} face={i.friend ? faces?.get(i.friend.publicId) ?? null : null} onDismiss={(from) => onDismiss(i.key, from)} />
+   );
+   return (
+     <>
