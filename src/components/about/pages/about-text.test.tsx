@@ -12,7 +12,7 @@ const render = (text: string) => renderToStaticMarkup(createElement(AboutText, {
 const B = (s: string) => `<b class="font-semibold text-[color:var(--fg)]">${s}</b>`;
 
 /** The only units F1, F2 and the friend page change: the cart's total (its second bold phrase) and its views (the lead follows By friend), and the friend page's order (Decks, Wishlist, Spares). */
-const CHANGED = ["shopping/all-decks/total", "shopping/all-decks/views", "friends/friends/friend"];
+const CHANGED = ["shopping/all-decks/total", "shopping/all-decks/views", "friends/friends/friend", "shopping/deck-shopping/total"];
 const changed = (key: string) => CHANGED.some((c) => key.endsWith(`:${c}`));
 
 describe("About's words, rendered (Small items 7, item 6, F1)", () => {
@@ -35,6 +35,13 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
         `By card, By deck|${B(", By friend")} read the same cart three ways. By friend lists each friend’s spares.`,
       );
     }
+  });
+
+  it("draws the store sentence on the Shopping total only for a reader with store choice on", () => {
+    const now = aboutTextSnapshot(render);
+    const base = "The total| is what this deck still needs at Mana Pool. “Buy these at Mana Pool” opens a cart with them.";
+    expect(now["cart|unit:shopping/deck-shopping/total"]).toBe(base);
+    expect(now["on|unit:shopping/deck-shopping/total"]).toBe(`${base} Pick another store in Settings and the prices follow.`);
   });
 
   it("draws text with no marker as the bare string, and each marked phrase in bold", () => {
