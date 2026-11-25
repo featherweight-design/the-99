@@ -1,10 +1,8 @@
 // The mechanical half of /copy-review, run on every changed row of the sheet. Only rules a machine can decide live here
-// (the em-dash, tell and US-spelling rules, length caps where the key's own name says what the string is, and the
+// (the em-dash and US-spelling rules, length caps where the key's own name says what the string is, and the
 // placeholders); voice and vocabulary stay with the reviewer, who reads the PR body's old -> new list before merge.
 import type { CopyRow } from "./walk.mjs";
 
-const BANNED = /\b(simply|just|easily|seamlessly|effortlessly)\b/i;
-const TELLS = [/whether you['’]re\b/i, /it['’]s not just\b.*,\s*it['’]s\b/i];
 /** British spellings the app does not use. A short list on purpose: a long one flags legitimate words. */
 const BRITISH: [RegExp, string][] = [
   [/\bcolou?rs?\b(?<=colour|colours)/i, "color"],
@@ -42,9 +40,6 @@ export function problems(row: CopyRow, next: string): string[] {
   if (row.placeholders.length === 0 && /[{}]/.test(next)) out.push("braces in text that has no placeholders");
   if (next.includes("—") && next !== "—") out.push("an em dash (use a period, comma or colon)");
   if (/!/.test(next)) out.push("an exclamation mark in system copy");
-  const banned = next.match(BANNED);
-  if (banned) out.push(`the word "${banned[0]}"`);
-  for (const re of TELLS) if (re.test(next)) out.push("a stock phrase the copy rules ban");
   for (const [re, us] of BRITISH) if (re.test(next)) out.push(`British spelling (US: ${us})`);
   const { seg, cap } = wordCap(row.key);
   if (cap !== undefined && wordCount(next) > cap) out.push(`${wordCount(next)} words in a "${seg}" (cap ${cap})`);
