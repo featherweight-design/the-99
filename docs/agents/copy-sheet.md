@@ -12,17 +12,18 @@ A non-engineer edits the app's wording in Google Sheets or Excel; an import turn
 
 ## The sheet
 
-Columns: `key` (`src/lib/copy/<file>#path.to.leaf`), `file`, `kind` (`text`, `branch`, `edit in code`), `current text`, `placeholders`, `context (read only)`, `new text`.
+Columns: `key` (`src/lib/copy/<file>#path.to.leaf`), `file`, `kind` (`text`, `branch`, `edit in code`), `current text`, `placeholders` (the row's fill-ins: every `{name}` it may use), `context (read only)`, `new text`.
 
 - A function leaf (`(ago) => \`Last active ${ago}\``) is a template: `Last active {ago}`. The arrow function stays.
 - Each text node of a function is its own row: a ternary's two arms, the two words of `plural(n, "card", "cards")`. They get keys `...#t1`, `#t2`; the condition is in `context`, read only.
 - A computed hole (`${xs.length > 1 ? ... : ...}`) is an opaque `{h1}` token. Keep it in the text; its source is in `context`.
+- **Fill-ins** (`CopyRow.fills`, `walk.mts`): the row's own `{name}` holes plus each parameter of its function that prints as text (typed `string`, `number`, a string or number literal, or a union of those; not an array, object, nullable or untyped one). Every variation of a function gets the same set. A row may drop, repeat or move any of them; a row with a hole it does not have is refused. A plain string arm that gains a fill-in is written back as a template, with backtick, backslash and `${` escaped (`copy-sheet.test.mts` evaluates a hostile edit). A dropped fill-in leaves its parameter unused, so `eslint.config.mjs` turns off the unused-argument check in `src/lib/copy/**` and nowhere else (`lint-scope.test.mts`). Renaming a parameter renames its fill-in, so a sheet or editor edit holding the old name is refused as unknown.
 - **Read-only ("edit in code")**: text a row cannot express: a helper call that carries text (`cartPanel("Friend")`), a function body with statements or a `switch`, text joined by a call (`names.join(" and ")`). 22 leaves today; change them in code.
 - A lowercase single token in a bare leaf (`"md"`, `"asc"`) is a code value, not copy, and gets no row. Inside a function leaf every written string is shown text.
 
 ## What the import refuses (every bad row at once, with its row number; nothing is applied)
 
-Placeholders that differ from the original's, an em dash (a bare `—` meaning no value is allowed), an exclamation mark, a short list of British spellings, a length cap where the key names the kind of string (label/cta/button/chip 3 words, eyebrow 5, title/head 8; a hole counts as one word), a read-only row, a key that is not in the files, and a **stale sheet** (the row's current text no longer matches the code: export again).
+A fill-in the row does not have (dropping one is allowed), a brace outside a fill-in, an em dash (a bare `—` meaning no value is allowed), an exclamation mark, a short list of British spellings, a length cap where the key names the kind of string (label/cta/button/chip 3 words, eyebrow 5, title/head 8; a hole counts as one word), a read-only row, a key that is not in the files, and a **stale sheet** (the row's current text no longer matches the code: export again).
 
 ## Guards
 
