@@ -152,7 +152,7 @@ describe("ReplaceFlow — the first import (prod walk 2026-09-28, item 5a)", () 
     await screen.findByRole("dialog");
     fireEvent.click(screen.getByRole("button", { name: replaceCopy.confirm.keep }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.getAllByRole("heading", { name: collectionEditCopy.upload.confirmReplace }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("heading", { name: replaceCopy.pageTitle(2933) }).length).toBeGreaterThan(0);
     expect(screen.queryByRole("heading", { name: "Add your collection" })).toBeNull();
     expect(screen.getByText("2,933 cards")).toBeInTheDocument();
   });
