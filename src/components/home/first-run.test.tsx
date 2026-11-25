@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { replaceCopy } from "../../lib/copy/replace";
 
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
 // render to send a confirmed upload on to /collection. Outside an app-router
@@ -105,7 +106,7 @@ describe("FirstRunChecklist", () => {
     render(<FirstRunChecklist />);
     expect(screen.getByText(refreshCopy.firstRun.step2Title)).toBeInTheDocument();
     expect(screen.queryByText("Already have a deck elsewhere?")).toBeNull();
-    expect(screen.queryByRole("link", { name: "Import a deck" })).toBeNull();
+    expect(screen.queryByRole("link", { name: /import a deck/i })).toBeNull();
   });
 
   it("draws no Replace collection heading inside its own step-1 card", () => {
@@ -114,7 +115,7 @@ describe("FirstRunChecklist", () => {
     // `‹ Collection` link back to a route the reader has not been to.
     render(<FirstRunChecklist />);
     expect(screen.queryByRole("heading", { name: "Replace collection" })).toBeNull();
-    expect(screen.queryByText("‹ Collection")).toBeNull();
+    expect(screen.queryByText(replaceCopy.backCrumb)).toBeNull();
   });
 
   // Class-level only: jsdom lays nothing out, so these say the rule is in place and

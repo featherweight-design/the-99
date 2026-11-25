@@ -63,7 +63,7 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
     expect(await screen.findByText("This file has no Name column")).toBeTruthy();
     expect(screen.getByRole("alert").textContent).toContain("The 99 needs a Name and a Quantity column in the first row.");
     expect(previewUpload).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "How to export" }));
+    fireEvent.click(screen.getByRole("button", { name: importReviewCopy.errors.noColumn.link }));
     expect(screen.getByRole("dialog", { name: collectionSources.signedIn.title })).toBeTruthy();
   });
 

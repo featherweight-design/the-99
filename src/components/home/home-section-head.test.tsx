@@ -30,12 +30,12 @@ describe("HomeSectionHead", () => {
   it("keeps the count and the aside inside the h2, so aria-labelledby reads all of it", () => {
     render(
       <HomeSectionHead id="home-whats-new" count="· 3 new" aside={<a href="/settings">Choose</a>}>
-        What’s new
+        Fixture heading
       </HomeSectionHead>,
     );
     const h = document.getElementById("home-whats-new")!;
     expect(h.tagName).toBe("H2");
-    expect(h.textContent).toContain("What’s new");
+    expect(h.textContent).toContain("Fixture heading");
     expect(h.textContent).toContain("· 3 new");
     expect(h.querySelector("a")?.textContent).toBe("Choose");
   });

@@ -236,8 +236,8 @@ describe("SparesSheet's kicker and first", () => {
     expect(d.getAllByTestId("friend-spare").map((r) => r.textContent)).toEqual([expect.stringContaining("Ana"), expect.stringContaining("Colin")]);
   });
   it("draws the given kicker, none for null, and lists `first` first", async () => {
-    let d = await sheet({ kicker: "on your wishlist", first: COLIN.publicId });
-    expect(d.getByText("on your wishlist")).toBeTruthy();
+    let d = await sheet({ kicker: "Fixture kicker", first: COLIN.publicId });
+    expect(d.getByText("Fixture kicker")).toBeTruthy();
     expect(d.getAllByTestId("friend-spare").map((r) => r.textContent)).toEqual([expect.stringContaining("Colin"), expect.stringContaining("Ana")]);
     cleanup();
     d = await sheet({ kicker: null });

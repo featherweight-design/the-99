@@ -235,7 +235,7 @@ describe("Edit copies, removal", () => {
     await mount([held("c21", "263", 1)]);
     fireEvent.click(screen.getByRole("button", { name: r.action }));
     expect(save().textContent).toBe(r.confirm(1));
-    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    fireEvent.click(screen.getByRole("button", { name: r.keep(1) }));
     expect(save().textContent).toBe(c.save);
   });
 

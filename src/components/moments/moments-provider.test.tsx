@@ -544,12 +544,12 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
   it("lets the next moment on screen take the window it cancelled", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
-        <Control id="top-off" name="Top off" />
+        <Control id="top-off" name="Fixture tool" />
         <Control id="wishlist" name="Wish" />
         <Suppress id="top-off" />
       </MomentsProvider>,
     );
-    onScreen("Top off");
+    onScreen("Fixture tool");
     onScreen("Wish");
     fireEvent.click(screen.getByRole("button", { name: "land on top-off" }));
     await advance(ARRIVE_MS);
@@ -581,16 +581,16 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
   it("gives the visit back when it closes a bubble before it counts as seen, so the next moment can arrive", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
-        <Control id="top-off" name="Top off" />
+        <Control id="top-off" name="Fixture tool" />
         <Control id="wishlist" name="Wish" />
         <Suppress id="top-off" />
       </MomentsProvider>,
     );
     // Both on screen before the first bubble, so nothing after the suppression announces Wish again.
-    onScreen("Top off");
+    onScreen("Fixture tool");
     onScreen("Wish");
     await advance(ARRIVE_MS);
-    expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+    expect(screen.getByRole("note", { name: "Fixture tool, a tip" })).toBeTruthy();
     act(() => suppressNow!("top-off"));
     await advance(ARRIVE_MS);
     await advance(0);
@@ -619,12 +619,12 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
   it("decides again when it spends the moment a claim was in flight for, so a control already on screen still gets its bubble", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
-        <Control id="top-off" name="Top off" />
+        <Control id="top-off" name="Fixture tool" />
         <Control id="wishlist" name="Wish" />
         <Suppress id="top-off" />
       </MomentsProvider>,
     );
-    onScreen("Top off");
+    onScreen("Fixture tool");
     onScreen("Wish");
     // The window closes and the claim for Top off is taken asynchronously; the landing spends Top off before it lands.
     act(() => {
@@ -633,7 +633,7 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     });
     await advance(0);
     await advance(0);
-    expect(screen.queryByRole("note", { name: "Top off, a tip" })).toBeNull();
+    expect(screen.queryByRole("note", { name: "Fixture tool, a tip" })).toBeNull();
     expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
     // Wish's claim is the one standing: Top off's settled release did not clear it, so another tab is refused.
     await advance(0);
@@ -647,17 +647,17 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     try {
       render(
         <MomentsProvider live={LIVE} spent={[]}>
-          <Control id="top-off" name="Top off" />
+          <Control id="top-off" name="Fixture tool" />
           <Control id="wishlist" name="Wish" />
         </MomentsProvider>,
       );
-      onScreen("Top off");
+      onScreen("Fixture tool");
       onScreen("Wish");
       await wait(ARRIVE_MS + 100);
-      expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+      expect(screen.getByRole("note", { name: "Fixture tool, a tip" })).toBeTruthy();
       other.postMessage("top-off");
       await wait(ARRIVE_MS + 300);
-      expect(screen.queryByRole("note", { name: "Top off, a tip" })).toBeNull();
+      expect(screen.queryByRole("note", { name: "Fixture tool, a tip" })).toBeNull();
       expect(screen.getByRole("note", { name: "Wish, a tip" })).toBeTruthy();
     } finally {
       other.close();
@@ -668,7 +668,7 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
   it("leaves an arrival window already open to run, so a control arriving inside it still takes part in the tie", async () => {
     render(
       <MomentsProvider live={LIVE} spent={[]}>
-        <Control id="top-off" name="Top off" />
+        <Control id="top-off" name="Fixture tool" />
         <Control id="wishlist" name="Wish" />
         <Suppress id="lineup" />
       </MomentsProvider>,
@@ -679,10 +679,10 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
     await advance(0);
     expect(screen.queryByRole("note")).toBeNull();
     await advance(100);
-    onScreen("Top off");
+    onScreen("Fixture tool");
     await advance(ARRIVE_MS - 200);
     // Top off is first in the registry's order, and it arrived inside the window.
-    expect(screen.getByRole("note", { name: "Top off, a tip" })).toBeTruthy();
+    expect(screen.getByRole("note", { name: "Fixture tool, a tip" })).toBeTruthy();
   });
 
   // Mana Balance waits on Suggested changes (`after`): on screen alone, its window passes and shows nothing.
@@ -804,10 +804,10 @@ describe("suppressMoment (the landing, discovery R2 E11)", () => {
 
 describe("a moment's control is its target (discovery R2)", () => {
   function Anchor({ eligible = true, fallback = false, target }: { eligible?: boolean; fallback?: boolean; target?: boolean }) {
-    const a = useMomentAnchor("top-off", { eligible, fallback, target, copy: { tool: "Top off", line: "fills." } });
+    const a = useMomentAnchor("top-off", { eligible, fallback, target, copy: { tool: "Fixture tool", line: "fills." } });
     return (
       <button type="button" {...a}>
-        Top off
+        Fixture tool
       </button>
     );
   }
@@ -824,7 +824,7 @@ describe("a moment's control is its target (discovery R2)", () => {
 
   it("registers while eligible, whatever the live set says", () => {
     expect(drawn(<Anchor />)).toBe(true);
-    expect(screen.getByRole("button", { name: "Top off" }).hasAttribute(HALO_ATTR)).toBe(true);
+    expect(screen.getByRole("button", { name: "Fixture tool" }).hasAttribute(HALO_ATTR)).toBe(true);
   });
 
   it("registers nothing while not eligible, as a fallback, or with target: false", () => {

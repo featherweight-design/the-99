@@ -376,7 +376,7 @@ describe("CollectionFilterSheet", () => {
     // The heading above already names the dimension; a row reading `Set` under a
     // heading reading `Set` tells the reader nothing.
     const { rerender } = render(sheet());
-    expect(screen.getByRole("button", { name: /Filter by set/ })).toHaveTextContent("Any set");
+    expect(screen.getByRole("button", { name: /Filter by set/ })).toHaveTextContent(collectionChassisCopy.sheet.setAny);
     rerender(sheet({ filters: { ...FILTERS, setCodes: ["BLB"] } }));
     expect(screen.getByRole("button", { name: /Filter by set/ })).toHaveTextContent("Bloomburrow");
     rerender(sheet({ filters: { ...FILTERS, setCodes: ["BLB", "LEA"] } }));

@@ -22,7 +22,7 @@ describe("the Help me choose intro", () => {
     for (const s of copy.steps) expect(screen.getAllByText(s.title).length).toBeGreaterThan(0);
     expect(screen.getByText(copy.free.title)).toBeTruthy();
     expect(screen.getByText(helpMeChooseCopy.read.cost)).toBeTruthy();
-    expect(screen.getByText("1 free credit a day, shared by every tool")).toBeTruthy();
+    expect(screen.getByText(copy.paid.daily(1))).toBeTruthy();
   });
 
   it("says the reader's own daily figure, and leaves the line out while credits are off", () => {
