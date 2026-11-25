@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 import { batchCostMicroUsd, batchRates, featureWorstCaseMicroUsd } from "../model/prices";
 import { expiredReserveFor } from "../labels/reserve";
 import { usdToMicro } from "../model/spend-rule";
-import { adminCopy } from "../copy/admin";
 import { costDetail, isFreeRewrite, ledgerName, ledgerRow, percentileCont, shortModel, type CallRow, type DetailRows, type LabelRunRow, type PartRow } from "./costs-detail-rule";
 
 const OCT = { year: 2026, month: 9 };
@@ -239,7 +238,7 @@ describe("the eval ledgers", () => {
   });
 
   it("names a ledger from its file", () => {
-    expect(ledgerName("ledger-help-me-choose.jsonl", "Original")).toBe(adminCopy.costs.featureNames.intake);
+    expect(ledgerName("ledger-fixture-feature.jsonl", "Original")).toBe("Fixture feature");
     expect(ledgerName("ledger.jsonl", "Original")).toBe("Original");
   });
 });
