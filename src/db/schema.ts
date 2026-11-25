@@ -2541,6 +2541,10 @@ export const spellbookVariants = pgTable("spellbook_variants", {
   check("spellbook_variants_bracket_tag_check",
     sql`${t.bracketTag} in ('R', 'S', 'P', 'O', 'C', 'E', 'B')`),
   check("spellbook_variants_card_count_check", sql`${t.cardCount} > 0`),
+  // The combo reads in `near-miss.ts` (`ownOneQuery`, `ownBothPairsQuery` and the other template-free two-card reads) want only a
+  // small slice of this table. The planner, estimating one row, seq-scanned all of it on every open; this partial index names
+  // the slice, so the rows are read by key. Its predicate must match those queries' `where`; `spellbook-pair-index.test.ts` pins it.
+  index("spellbook_variants_pair_idx").on(t.variantId).where(sql`${t.cardCount} = 2 and cardinality(${t.requiresTemplateIds}) = 0`),
 ]);
 
 /**

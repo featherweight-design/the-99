@@ -1891,6 +1891,13 @@
       "when": 1795491401691,
       "tag": "0271_user_prefs_choose_intro_seen",
       "breakpoints": true
+    },
+    {
+      "idx": 272,
+      "version": "7",
+      "when": 1795649360643,
+      "tag": "0272_spellbook_variants_pair_idx",
+      "breakpoints": true
     }
   ]
 }
