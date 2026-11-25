@@ -1,13 +1,15 @@
 "use client";
 // The copy editor's overlay: the rows load once, the page is scanned for known text, each hit is outlined, and the
 // mode's bar says what is going on. While the mode is on a click targets text instead of following links or pressing
-// buttons; Done gives the page back. The editor that opens from a targeted line arrives in the next PR.
+// buttons; Done gives the page back. The editor opens from a targeted line; the tray holds the edits and submits them.
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { copyEditorCopy } from "../../lib/copy/copy-editor";
 import { keyLabel } from "../../lib/copy-editor/key-label";
 import { indexRows, type RowIndex } from "../../lib/copy-editor/match";
 import type { EditorRow } from "../../lib/copy-editor/rows";
 import { Editor } from "./editor";
+import { Tray } from "./tray";
+import { useSubmission } from "./use-submission";
 import { readEdits, writeEdits, type Edit } from "../../lib/copy-editor/edits";
 import { entryAt, OVERLAY_ATTR, place, scanPage, type Entry, type Placed } from "./scan";
 
@@ -48,6 +50,18 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
   const [barTop, setBarTop] = useState(0);
   const [editing, setEditing] = useState<number | null>(null);
   const [edits, setEdits] = useState<Edit[]>(readEdits);
+  const [trayOpen, setTrayOpen] = useState(false);
+  // An edit reopened from the tray: its line may be on another page, so the editor opens without a target box.
+  const [editRow, setEditRow] = useState<EditorRow | null>(null);
+  const trayRef = useRef(false);
+  useEffect(() => {
+    trayRef.current = trayOpen;
+  }, [trayOpen]);
+  const replaceEdits = useCallback((next: Edit[]) => {
+    writeEdits(next);
+    setEdits(next);
+  }, []);
+  const { sub, submit, dismiss } = useSubmission(edits, replaceEdits);
   const editingRef = useRef<number | null>(null);
   useEffect(() => {
     editingRef.current = editing;
@@ -60,6 +74,7 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
       return next;
     });
     setEditing(null);
+    setEditRow(null);
   }, []);
   const entries = useRef<Entry[]>([]);
   const placedRef = useRef<Placed[]>([]);
@@ -154,12 +169,12 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         // The first Esc lets go of the targeted line; the next one ends the mode.
-        if (e.defaultPrevented || editingRef.current !== null) return;
+        if (e.defaultPrevented || editingRef.current !== null || trayRef.current) return;
         if (targetRef.current === null) stop();
         else setTargetId(null);
         return;
       }
-      if (editingRef.current !== null) return;
+      if (editingRef.current !== null || trayRef.current) return;
       if (!e.altKey || (e.key !== "ArrowDown" && e.key !== "ArrowUp")) return;
       e.preventDefault();
       const list = [...placedRef.current].sort((a, b) => a.box.y - b.box.y || a.box.x - b.box.x);
@@ -230,9 +245,15 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
         <span aria-hidden className="inline-block h-2 w-2 flex-none rounded-full bg-[color:var(--warning)]" />
         <span className="font-medium">{copyEditorCopy.bar.title}</span>
         <span className="font-[family-name:var(--font-mono)] text-[11px] text-[color:var(--fg-muted)]">{copyEditorCopy.bar.env}</span>
-        <span role="status" className="min-w-0 flex-1 truncate text-[color:var(--fg-muted)] md:flex-none">
-          {status}
-        </span>
+        {load.state === "ready" && (edits.length > 0 || sub.phase === "sent") ? (
+          <button type="button" aria-haspopup="dialog" aria-expanded={trayOpen} onClick={() => setTrayOpen(true)} className="min-w-0 flex-1 truncate text-left text-[color:var(--accent-text)] md:flex-none">
+            {edits.length > 0 ? copyEditorCopy.barTray.edits(edits.length) : sub.phase === "sent" && sub.pr ? copyEditorCopy.barTray.open(sub.pr.number) : copyEditorCopy.barTray.sent}
+          </button>
+        ) : (
+          <span role="status" className="min-w-0 flex-1 truncate text-[color:var(--fg-muted)] md:flex-none">
+            {status}
+          </span>
+        )}
         {load.state === "error" && (
           <button type="button" onClick={() => {
               setLoad({ state: "loading" });
@@ -250,6 +271,27 @@ export default function Overlay({ on, stop }: { on: boolean; stop: () => void })
         </button>
       </div>
       {opened && rows && <Editor rows={rows} matches={opened.entry.matches} box={opened.box} edits={edits} onSave={saveEdits} onClose={() => setEditing(null)} />}
+      {editRow && rows && (
+        <Editor rows={rows} matches={[{ row: editRow, how: "exact" }]} box={{ x: 8, y: window.innerHeight, w: 0, h: 0 }} edits={edits} onSave={saveEdits} onClose={() => setEditRow(null)} />
+      )}
+      {trayOpen && (
+        <Tray
+          edits={edits}
+          rows={rows}
+          sub={sub}
+          onEdit={(key) => setEditRow(rows?.find((r) => r.key === key) ?? null)}
+          onRemove={(key) => replaceEdits(edits.filter((e) => e.key !== key))}
+          onClear={() => {
+            replaceEdits([]);
+            dismiss();
+          }}
+          onSubmit={submit}
+          onClose={() => {
+            setTrayOpen(false);
+            dismiss();
+          }}
+        />
+      )}
     </div>
   );
 }

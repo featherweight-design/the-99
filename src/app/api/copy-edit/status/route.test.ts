@@ -4,7 +4,7 @@ import { NextRequest } from "next/server";
 const session = vi.fn(async () => ({ userId: null as string | null }));
 vi.mock("@clerk/nextjs/server", () => ({ auth: () => session() }));
 const find = vi.hoisted(() => vi.fn());
-vi.mock("../../../../lib/copy-editor/github", () => ({ findCopyEditPr: find }));
+vi.mock("../../../../lib/copy-editor/github", () => ({ copyEditStatus: find }));
 
 const { GET } = await import("./route");
 

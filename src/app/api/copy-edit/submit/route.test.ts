@@ -94,12 +94,21 @@ describe("POST /api/copy-edit/submit: the body", () => {
   it.each([
     ["an unknown key", { ...edit, key: "src/lib/copy/a.ts#nope" }, "unknown-key"],
     ["a read-only row", { key: ro.key, from: ro.text, to: "Zork plinth two" }, "read-only"],
-    ["a row that changed since it was edited", { ...edit, from: "Zork plinth zero" }, "stale"],
     ["a text the copy sheet's rules refuse (an em dash)", { ...edit, to: `Zork ${String.fromCharCode(0x2014)} plinth` }, "rule"],
   ])("is 422 for %s, naming the row, and starts nothing", async (_name, bad, reason) => {
     const res = await post({ edits: [bad] });
     expect(res.status).toBe(422);
     expect((await res.json()).rows.map((r: { reason: string }) => r.reason)).toContain(reason);
+    expect(enforce).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe("POST /api/copy-edit/submit: a stale row", () => {
+  it("is 409 naming the stale keys (rule-broken rows alongside do not hide them), and starts nothing", async () => {
+    const res = await post({ edits: [{ ...edit, from: "Zork plinth zero" }] });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "stale", keys: [edit.key] });
     expect(enforce).not.toHaveBeenCalled();
     expect(dispatch).not.toHaveBeenCalled();
   });

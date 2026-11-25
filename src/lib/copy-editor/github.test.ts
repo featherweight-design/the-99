@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { dispatchCopyEdit, findCopyEditPr, REPO } from "./github";
+import { copyEditStatus, dispatchCopyEdit, findCopyEditPr, REPO } from "./github";
 
 const edits = [{ key: "src/lib/copy/a.ts#x", from: "Zork plinth one", to: "Zork plinth two" }];
 const reply = (status: number, body?: unknown) => vi.fn(async () => new Response(body === undefined ? null : JSON.stringify(body), { status })) as unknown as typeof fetch;
@@ -43,5 +43,38 @@ describe("findCopyEditPr", () => {
     const doFetch = reply(200, []);
     expect(await findCopyEditPr("t", "main", doFetch)).toEqual({ state: "unknown" });
     expect(doFetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("copyEditStatus", () => {
+  const branch = "copy-edit-20261124-183512-a1b2";
+  const title = `Copy edit ${branch}`;
+  /** A fetch that answers the pulls call, then the runs call. */
+  const twice = (pulls: unknown[], runs: unknown, runsStatus = 200) => {
+    let n = 0;
+    return vi.fn(async () => new Response(JSON.stringify(n++ === 0 ? pulls : runs), { status: n === 1 ? 200 : runsStatus })) as unknown as typeof fetch;
+  };
+  const run = (status: string, conclusion: string | null) => ({ workflow_runs: [{ display_title: "Copy edit copy-edit-20990101-000000-ffff", status: "completed", conclusion: "failure", html_url: "x" }, { display_title: title, status, conclusion, html_url: "https://example.test/run/9" }] });
+
+  it("is the pull request when there is one, without reading runs", async () => {
+    const doFetch = reply(200, [{ number: 7, html_url: "u", state: "open", merged_at: null }]);
+    expect(await copyEditStatus("t", branch, doFetch)).toMatchObject({ state: "open", number: 7 });
+    expect(doFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("is pending while the run is queued or going, and once it succeeded but the pull request is not listed", async () => {
+    expect(await copyEditStatus("t", branch, twice([], run("queued", null)))).toEqual({ state: "pending" });
+    expect(await copyEditStatus("t", branch, twice([], run("in_progress", null)))).toEqual({ state: "pending" });
+    expect(await copyEditStatus("t", branch, twice([], run("completed", "success")))).toEqual({ state: "pending" });
+  });
+
+  it("is failed, with the run link, when the run ended without a pull request", async () => {
+    expect(await copyEditStatus("t", branch, twice([], run("completed", "failure")))).toEqual({ state: "failed", runUrl: "https://example.test/run/9" });
+    expect(await copyEditStatus("t", branch, twice([], run("completed", "cancelled")))).toMatchObject({ state: "failed" });
+  });
+
+  it("is none when no run carries the branch yet, and unknown when runs cannot be read", async () => {
+    expect(await copyEditStatus("t", branch, twice([], { workflow_runs: [] }))).toEqual({ state: "none" });
+    expect(await copyEditStatus("t", branch, twice([], {}, 403))).toEqual({ state: "unknown" });
   });
 });
