@@ -45,6 +45,9 @@ export async function POST(req: NextRequest) {
     else if (row.text !== e.from) refused.push({ key: e.key, reason: "stale" });
     else if (check(row, e.to).problems.length) refused.push({ key: e.key, reason: "rule" });
   }
+  // A line that changed on staging since the edit was made: 409 with the keys, so the tray can show which ones.
+  const stale = refused.filter((r) => r.reason === "stale").map((r) => r.key);
+  if (stale.length) return refuse(409, { error: "stale", keys: stale });
   if (refused.length) return refuse(422, { error: "rejected", rows: refused });
   const token = process.env.COPY_EDIT_DISPATCH_TOKEN;
   if (!token) return refuse(503, { error: "not-configured" });

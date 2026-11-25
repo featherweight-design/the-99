@@ -18,6 +18,10 @@
 //     wrap, read-only panel, the which-key picker. PROBE_ONLY=editor runs just this part (use it under --webpack).
 //     Every assertion needs the dialog, so each FAILS on main (no editor): the door and outlines exist there, a click
 //     on a line opens nothing, and `[role=dialog]` never appears.
+//   8+ the tray (PR 5): the bar's "N edits ›" opens it; Remove, Clear all; Open pull request (submit and status are
+//     mocked in the page: no dispatch ever happens) through submitting, "on its way", "Pull request #N opened" and the
+//     bar's "PR #N open"; the 409 stale banner, a failed run giving the edits back, 429, a dropped request;
+//     Esc closes the tray and not the mode. PROBE_ONLY=tray runs just this part. Each FAILS on main (no tray).
 // SHOTS_DIR=<dir> also writes the per-state screenshots of /commanders/choose used for the contact sheet.
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { readFileSync } from "node:fs";
@@ -825,18 +829,142 @@ async function shots(browser) {
   console.log("contact sheets:\n" + rows.join("\n"));
 }
 
+const TRAY = '[data-copy-editor] [role=dialog][aria-label="Copy edits"]';
+const BRANCH = "copy-edit-20261124-183512-a1b2";
+
+async function runTray(browser) {
+  // With SHOTS_DIR set the tray also runs at both iPad sizes, for the contact sheet.
+  for (const vp of process.env.SHOTS_DIR ? SHOT_VIEWPORTS : VIEWPORTS) {
+    const L = `T ${vp.label}`;
+    const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch });
+    await ctx.addInitScript(() => document.addEventListener("DOMContentLoaded", () => { const st = document.createElement("style"); st.textContent = "nextjs-portal{display:none!important}"; document.head.appendChild(st); }));
+    const page = await ctx.newPage();
+    await signIn(page);
+    await openPage(page, "/commanders/choose");
+    const rows = await page.evaluate(async () => (await (await fetch("/api/copy-edit/rows")).json()).rows);
+    const plain = rows.filter((r) => r.readOnly === "" && r.kind === "text" && r.placeholders.length === 0 && !/[{}]/.test(r.text) && r.text.length > 8).slice(0, 2);
+    const seed = plain.map((r, i) => ({ key: r.key, from: r.text, to: `Probe wording ${i + 1}` }));
+    const SHOTS_T = process.env.SHOTS_DIR;
+    const shot = async (name) => SHOTS_T && (await page.screenshot({ path: `${SHOTS_T}/${vp.label}-tray-${name}.png` }));
+    const prepare = async () => {
+      await page.evaluate((e) => { localStorage.removeItem("the99.copySubmitted"); localStorage.setItem("the99.copyEdits", JSON.stringify(e)); }, seed);
+      await openPage(page, "/commanders/choose");
+      await doorOf(page, vp).first().waitFor({ state: "visible", timeout: 15_000 });
+      await doorOf(page, vp).first().click();
+      await barOf(page).waitFor({ state: "visible", timeout: 5000 });
+      await page.waitForSelector("[data-copy-editor] [data-copy-outline]", { timeout: 10_000 }).catch(() => {});
+    };
+    const barButton = () => barOf(page).locator("button", { hasText: /edits? ›|PR #|Submitted/ });
+    const submitBtn = () => page.locator(`${TRAY} button`, { hasText: /^(Open pull request|Try again)$/ });
+    const mock = async (submit, status) => {
+      await page.unroute("**/api/copy-edit/submit").catch(() => {});
+      await page.unroute("**/api/copy-edit/status**").catch(() => {});
+      await page.route("**/api/copy-edit/submit", submit);
+      await page.route("**/api/copy-edit/status**", status);
+    };
+    const json = (status, body) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
+    check(`${L} 8: the seed has two plain rows to edit`, seed.length === 2);
+
+    // 8 the bar's count opens the tray
+    await prepare();
+    check(`${L} 8: bar shows "2 edits ›"`, (await barButton().innerText().catch(() => "")).trim() === "2 edits ›");
+    await barButton().click();
+    await page.locator(TRAY).waitFor({ state: "visible", timeout: 3000 }).catch(() => {});
+    check(`${L} 8: pressing it opens the tray with 2 rows`, (await page.locator(`${TRAY} li`).count()) === 2);
+    const g = await page.evaluate((sel) => { const r = document.querySelector(sel)?.getBoundingClientRect(); return r ? { w: r.width, b: r.bottom, r: r.right, vw: innerWidth, vh: innerHeight } : null; }, TRAY);
+    if (g) check(`${L} 8: ${vp.touch ? "bottom sheet touches the bottom, full width" : "420px panel inside the viewport"}`, vp.touch ? Math.abs(g.b - g.vh) <= 1 && Math.abs(g.w - g.vw) <= 1 : Math.abs(g.w - 420) <= 1 && g.r <= g.vw, JSON.stringify(g));
+    await shot("edits");
+    // Remove one, then Clear all
+    await page.locator(`${TRAY} li button`, { hasText: "Remove" }).first().click();
+    check(`${L} 8: Remove drops one row and the bar count`, (await page.locator(`${TRAY} li`).count()) === 1 && /1 edit ›/.test(await barButton().innerText()));
+    await page.locator(`${TRAY} button`, { hasText: "Clear all" }).click();
+    check(`${L} 8: Clear all empties the tray and the stored edits`, (await page.locator(`${TRAY} li`).count()) === 0 && (await page.evaluate(() => JSON.parse(localStorage.getItem("the99.copyEdits") ?? "[]").length)) === 0);
+    await shot("empty");
+    // Esc closes the tray and not the mode
+    await page.keyboard.press("Escape");
+    await page.locator(TRAY).waitFor({ state: "detached", timeout: 3000 }).catch(() => {});
+    check(`${L} 8: Esc closes the tray and the mode stays on`, (await page.locator(TRAY).count()) === 0 && (await barOf(page).count()) === 1);
+
+    // 9 submit: 202, then the status moves from none to open
+    let polls = 0;
+    let posted = null;
+    await prepare();
+    await mock(async (route) => { posted = JSON.parse(route.request().postData() ?? "{}"); await new Promise((r) => setTimeout(r, 700)); await route.fulfill(json(202, { branch: BRANCH })); },
+      async (route) => { polls++; await route.fulfill(json(200, polls < 2 ? { state: "pending" } : { state: "open", number: 7, url: "https://github.com/x/y/pull/7" })); });
+    await barButton().click();
+    await submitBtn().click();
+    await page.waitForTimeout(250);
+    check(`${L} 9: while submitting the rows lock and the button reads "Opening pull request…"`, (await page.locator(`${TRAY} button`, { hasText: "Opening pull request…" }).count()) === 1 && (await page.locator(`${TRAY} ul[aria-busy=true]`).count()) === 1);
+    await shot("submitting");
+    await page.locator(`${TRAY} >> text=Pull request on its way`).waitFor({ timeout: 4000 }).catch(() => {});
+    check(`${L} 9: the post carried both edits`, posted?.edits?.length === 2 && posted.edits.every((e) => e.from && e.to));
+    check(`${L} 9: 202 shows "Pull request on its way" with the branch`, (await page.locator(TRAY).innerText()).includes("Pull request on its way") && (await page.locator(TRAY).innerText()).includes(BRANCH));
+    check(`${L} 9: the stored edits are cleared`, (await page.evaluate(() => JSON.parse(localStorage.getItem("the99.copyEdits") ?? "[]").length)) === 0);
+    await page.locator(`${TRAY} >> text=Pull request #7 opened`).waitFor({ timeout: 15_000 }).catch(() => {});
+    check(`${L} 9: the poll turns it into "Pull request #7 opened" with Open on GitHub`, (await page.locator(TRAY).innerText()).includes("Pull request #7 opened") && (await page.locator(`${TRAY} a`, { hasText: "Open on GitHub" }).count()) === 1);
+    await shot("submitted");
+    await page.locator(`${TRAY} button`, { hasText: "Done" }).click();
+    check(`${L} 9: Done closes the tray and the bar reads "PR #7 open"`, (await page.locator(TRAY).count()) === 0 && /PR #7 open/.test(await barButton().innerText()));
+    await openPage(page, "/commanders/choose");
+    await doorOf(page, vp).first().waitFor({ state: "visible", timeout: 15_000 });
+    await doorOf(page, vp).first().click();
+    await barOf(page).waitFor({ state: "visible", timeout: 5000 });
+    check(`${L} 9: a reload still shows the submission in the bar`, (await barButton().count()) === 1 && /Submitted|PR #/.test(await barButton().innerText()));
+
+    // 10 refusals keep the edits
+    await prepare();
+    await mock(async (route) => route.fulfill(json(409, { error: "stale", keys: [seed[0].key] })), async (route) => route.fulfill(json(200, { state: "none" })));
+    await barButton().click();
+    await submitBtn().click();
+    await page.locator(`${TRAY} [role=alert]`).waitFor({ timeout: 4000 }).catch(() => {});
+    check(`${L} 10: 409 shows the out-of-date banner naming one edit`, /One edit is out of date/.test(await page.locator(`${TRAY} [role=alert]`).innerText().catch(() => "")));
+    check(`${L} 10: the stale row carries a danger border and its reason; the other does not`, (await page.locator(`${TRAY} li`).filter({ hasText: "changed on main after your edit" }).count()) === 1);
+    check(`${L} 10: the edits are kept and the button reads "Try again"`, (await page.locator(`${TRAY} li`).count()) === 2 && (await submitBtn().innerText()) === "Try again");
+    await shot("failed");
+    await page.locator(`${TRAY} li button`, { hasText: "Edit" }).first().click();
+    await page.locator(DIALOG).filter({ hasText: "Update edit" }).waitFor({ timeout: 3000 }).catch(() => {});
+    check(`${L} 10: Edit opens the editor on that line`, (await page.locator(`${DIALOG}`).filter({ hasText: "Update edit" }).count()) >= 1);
+    await page.keyboard.press("Escape");
+    for (const [status, text] of [[429, /One a minute/], [503, /did not take it/]]) {
+      await mock(async (route) => route.fulfill(json(status, { error: "x" })), async (route) => route.fulfill(json(200, { state: "none" })));
+      await submitBtn().click();
+      await page.waitForTimeout(400);
+      check(`${L} 10: ${status} shows its own banner and keeps the edits`, text.test(await page.locator(`${TRAY} [role=alert]`).innerText().catch(() => "")) && (await page.locator(`${TRAY} li`).count()) === 2);
+    }
+    await mock(async (route) => route.abort("failed"), async (route) => route.fulfill(json(200, { state: "none" })));
+    await submitBtn().click();
+    await page.waitForTimeout(400);
+    check(`${L} 10: a dropped request shows the network banner and keeps the edits`, /did not get through/.test(await page.locator(`${TRAY} [role=alert]`).innerText().catch(() => "")) && (await page.locator(`${TRAY} li`).count()) === 2);
+
+    // 11 a run that fails gives the edits back
+    await prepare();
+    await mock(async (route) => route.fulfill(json(202, { branch: BRANCH })), async (route) => route.fulfill(json(200, { state: "failed", runUrl: "https://github.com/x/y/actions/runs/9" })));
+    await barButton().click();
+    await submitBtn().click();
+    await page.locator(`${TRAY} [role=alert]`).waitFor({ timeout: 15_000 }).catch(() => {});
+    check(`${L} 11: a failed run shows "The edits weren’t sent", with the run link, and Try again`, /weren’t sent/.test(await page.locator(`${TRAY} [role=alert]`).innerText().catch(() => "")) && (await page.locator(`${TRAY} [role=alert] a`).count()) === 1 && (await submitBtn().count()) === 1);
+    check(`${L} 11: the edits are back in the tray and in storage`, (await page.locator(`${TRAY} li`).count()) === 2 && (await page.evaluate(() => JSON.parse(localStorage.getItem("the99.copyEdits") ?? "[]").length)) === 2);
+    await ctx.close();
+  }
+}
+
 const browser = await chromium.launch();
 try {
   await clerkSetup();
   if (CLOSED) await runGateClosed(browser);
   else {
-    if (process.env.PROBE_ONLY !== "editor") {
+    if (process.env.PROBE_ONLY === "tray") {
+      await runTray(browser);
+    } else if (process.env.PROBE_ONLY !== "editor") {
       await runOpen(browser);
       await runStates(browser);
       if (SHOTS) await shots(browser);
     }
-    await runEditor(browser);
-    if (SHOTS) await editorShots(browser);
+    if (process.env.PROBE_ONLY !== "tray") {
+      await runEditor(browser);
+      if (SHOTS) await editorShots(browser);
+      await runTray(browser);
+    }
   }
 } finally {
   await browser.close();

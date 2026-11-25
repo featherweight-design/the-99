@@ -47,3 +47,32 @@ export async function findCopyEditPr(token: string, branch: string, doFetch: typ
     return { state: "unknown" };
   }
 }
+
+export type EditStatus = PrState | { state: "pending" } | { state: "failed"; runUrl: string };
+
+/**
+ * Where a submitted branch stands: its pull request when there is one, else its workflow run (found by the run name
+ * `Copy edit <branch>`): `pending` while it runs, `failed` when it ended without a pull request. `none` means no run is
+ * visible yet (GitHub lags a dispatch by seconds). Reading runs needs the Actions permission the dispatch already has.
+ */
+export async function copyEditStatus(token: string, branch: string, doFetch: typeof fetch = fetch): Promise<EditStatus> {
+  const pr = await findCopyEditPr(token, branch, doFetch);
+  if (pr.state !== "none") return pr;
+  try {
+    const res = await doFetch(`${API}/repos/${REPO}/actions/workflows/${WORKFLOW_FILE}/runs?event=workflow_dispatch&per_page=30`, {
+      headers: headers(token),
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) return { state: "unknown" };
+    const { workflow_runs: runs } = (await res.json()) as { workflow_runs?: { display_title: string; status: string; conclusion: string | null; html_url: string }[] };
+    const run = runs?.find((r) => r.display_title === `Copy edit ${branch}`);
+    if (!run) return { state: "none" };
+    if (run.status !== "completed") return { state: "pending" };
+    // A success with no pull request listed is GitHub's list catching up: `none`, so the tray's own wait (and its "no
+    // pull request yet" line) covers it instead of a pending that never ends.
+    if (run.conclusion === "success") return { state: "none" };
+    return { state: "failed", runUrl: run.html_url };
+  } catch {
+    return { state: "unknown" };
+  }
+}
