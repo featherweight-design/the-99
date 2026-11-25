@@ -1,4 +1,5 @@
 import { GAME_CHANGER_LIMIT, MASS_LAND_DENIAL_LIMIT, EXTRA_TURN_LIMIT_BRACKET_1 } from "../bracket/rules";
+import { deckDescriptionCopy } from "../copy/deck-description";
 import type { MixRole } from "../decks/mix";
 import type { Bracket } from "../profile/types";
 import type { BracketFlag, CutFacts } from "./cuts";
@@ -173,7 +174,7 @@ export function cutChips(cites: readonly CutCite[], reason: string, ctx: ChipCon
         return { key, kind: "COLOUR", text: `${c.colour} · ${c.cards} ${c.cards === 1 ? "card needs" : "cards need"} it` };
       case "intent": {
         const q = quotedPart(reason);
-        return { key, kind: "YOU SAID", text: q ? `“${q}”` : "your description" };
+        return { key, kind: "YOU SAID", text: q ? `“${q}”` : deckDescriptionCopy.manifest.readDescription };
       }
     }
   });

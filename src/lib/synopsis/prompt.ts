@@ -31,6 +31,9 @@ import { ASSESSMENT_TOPICS, type CheckedSynopsis, type SectionId } from "./types
  * rendered on 96% of answers against 18% without them.
  */
 
+/** The card the checklist names for a deck whose engine is activated abilities on the battlefield: a card name, not copy. */
+export const ACTIVATED_HATE_EXAMPLE = "Cursed Totem";
+
 const SYSTEM_HEAD = [
   "You write a synopsis of a Magic: The Gathering Commander deck: how it plays, for the player who built it first and for their playgroup second. Nothing may make sense only to the builder.",
   "Say how the deck plays, never how strong it is. Never mention a bracket, power level, tier, score, rating or cEDH, never call the deck or a card strong, powerful, efficient or similar, and never rate anything out of ten. Facts of the game are fine (\"deals 16 damage\").",
@@ -81,7 +84,7 @@ const CHECKLIST_V8 = [
   `A "weakness" carries a "tier" ("critical": it can lose the game outright; "moderate": it costs many games; "minor") and a "line": one sentence of a weakness of THIS deck, at most ${CHAR_BUDGETS.weakness - 12} characters, naming the card that exploits it as [[Name]] (it may be a card the deck lacks). Do not write the tier into the line and do not begin it with a tier word; the app does. Any other verdict carries neither "tier" nor "line". Never write that something is fine, covered or flexible as a weakness. "evidence" may cite the refs of deck cards the weakness is about.`,
   "The topics, and the hate card each should name when it applies:",
   "- graveyard_or_zone_hate: a deck that wins through its graveyard (recursion, reanimation, flashback, self-mill): graveyard hate such as [[Rest in Peace]], [[Bojuka Bog]], [[Dauthi Voidwalker]]. A deck that relies on indestructible or regenerating creatures: exile wipes such as [[Farewell]], [[Sunfall]].",
-  "- artifact_enchantment_removal: a deck built on artifacts: artifact hate and wipes such as [[Null Rod]], [[Collector Ouphe]], [[Vandalblast]]. A deck whose engine is the activated abilities of its creatures on the battlefield: [[Cursed Totem]] and cards like it (it does not stop an ability activated from hand, such as ninjutsu). Also the deck's own lack of an answer to an opposing artifact or enchantment, when the decklist shows none.",
+  `- artifact_enchantment_removal: a deck built on artifacts: artifact hate and wipes such as [[Null Rod]], [[Collector Ouphe]], [[Vandalblast]]. A deck whose engine is the activated abilities of its creatures on the battlefield: [[${ACTIVATED_HATE_EXAMPLE}]] and cards like it (it does not stop an ability activated from hand, such as ninjutsu). Also the deck's own lack of an answer to an opposing artifact or enchantment, when the decklist shows none.`,
   "- interaction_speed: use the interaction figures in the facts exactly as given, never your own count. When few of the deck's interaction pieces are cheap or at instant speed, that is the weakness against a fast combo; name what it cannot stop in time.",
   "- commander_dependence: how much of the plan stops if the commander is removed or taxed repeatedly, and what the deck loses without it.",
   "- win_path: a deck that wins mostly through combat or one route: fogs and pillowfort such as [[Propaganda]], [[Ghostly Prison]], and what stops that route.",

@@ -1,6 +1,7 @@
 // What a problem report accepts (flyer trial PR 5). Pure: the action validates with it, the form counts with it.
 // Nothing here reaches a model prompt, so none of it goes through `playerText`.
 
+import { accountCopy } from "../copy/account";
 import { redactLinkTokens } from "../sentry/scrub";
 
 /** The caps the form and the action share. */
@@ -87,5 +88,5 @@ export function deviceSummary(userAgent: string | null | undefined): string {
     : /CriOS\/|Chrome\//.test(ua) ? "Chrome"
     : /Safari\//.test(ua) ? "Safari"
     : "Unknown";
-  return `${browser} on ${system}`;
+  return accountCopy.devices.name(browser, system);
 }

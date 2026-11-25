@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { synopsisCopy } from "../copy/synopsis";
 import { refIndex } from "./claims";
 import { deckNameIndex, HAND_SIZE, normalizeName, type FactCard, type SynopsisFacts } from "./facts";
 import { isLandFace, playableAsLand } from "../cards/facet";
@@ -583,7 +584,7 @@ export function checkShape(doc: OverviewDoc, alternates: readonly string[], shap
     if (doc.keep.length !== STAGES_LIMITS.mulligan) offenders.push(`${doc.keep.length} keep lines, not ${STAGES_LIMITS.mulligan}`);
     if (doc.sendBack.length !== STAGES_LIMITS.mulligan) offenders.push(`${doc.sendBack.length} send-back lines, not ${STAGES_LIMITS.mulligan}`);
     const { min, max } = SECTION_COUNTS.keyCards;
-    if (doc.keyCards.length < min || doc.keyCards.length > max) offenders.push(`${doc.keyCards.length} Key cards, not ${min} to ${max}`);
+    if (doc.keyCards.length < min || doc.keyCards.length > max) offenders.push(`${doc.keyCards.length} ${synopsisCopy.modal.sections.keyCards}, not ${min} to ${max}`);
   }
   if (doc.tips.length < STAGES_LIMITS.tips.min || doc.tips.length > STAGES_LIMITS.tips.max) offenders.push(`${doc.tips.length} tips`);
   offenders.push(...checkAlternateLine(doc, alternates, facts, shape === 3).offenders);

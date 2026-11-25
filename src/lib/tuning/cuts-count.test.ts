@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { deckDescriptionCopy } from "../copy/deck-description";
 import type { Bracket } from "../profile/types";
 import { cutFacts, type CutSupport } from "./cuts";
 import { cutChips, cutCounts, flagAllowance, quotedPart } from "./cuts-count";
@@ -83,7 +84,7 @@ describe("cutChips", () => {
 
   it("quotes the player's own words for an intent cite, and falls back without a quotation", () => {
     expect(cutChips([{ kind: "intent" }], "You wrote “Gishath on six” so.", ctx)[0].text).toBe("“Gishath on six”");
-    expect(cutChips([{ kind: "intent" }], "No quote here.", ctx)[0].text).toBe("your description");
+    expect(cutChips([{ kind: "intent" }], "No quote here.", ctx)[0].text).toBe(deckDescriptionCopy.manifest.readDescription);
     expect(quotedPart("a “b” c")).toBe("b");
   });
 });
