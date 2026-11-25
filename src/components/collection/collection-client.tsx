@@ -42,7 +42,7 @@ export function CollectionClient({
   viewHint?: ViewHint;
   /** The token the server says the browser's saved fields are good for (`lib/collection/saved-token`); null keeps none. */
   savedToken?: string | null;
-  /** The Find a deck call-out's and buttons' read (`loadFindADeckState`); null (absent or failed) draws neither. */
+  /** The Find a deck buttons' read (`loadFindADeckState`); null (absent or failed) draws no button. */
   findADeck?: FindADeckState | null;
   /** Own-both combo pairs: the Two-card combos chip's figure (`comboPairCount` of the list payload). */
   comboPairCount?: number;

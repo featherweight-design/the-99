@@ -1,0 +1,43 @@
+{
+  "feature": "Find a deck call-out removed (quick-filters feedback PR A)",
+  "note": "The call-out above the list is gone on both routes; the strip's In no deck chip stays. Rows read the same component.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    }
+  ],
+  "rows": [
+    {
+      "id": "rest",
+      "label": "/collection: the strip at rest",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "[data-quick-strip]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "free-pressed",
+      "label": "/collection?avail=free: In no deck pressed",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [
+        {
+          "goto": "/collection?avail=free",
+          "wait": "[data-quick-strip]",
+          "settle": 3000
+        }
+      ]
+    }
+  ],
+  "out": "contact-sheets/find-a-deck-callout-removed"
+}

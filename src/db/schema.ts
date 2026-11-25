@@ -2397,9 +2397,8 @@ export const userPrefs = pgTable(
      */
     feedOfferClosedAt: timestamp("feed_offer_closed_at", { withTimezone: true }),
     /**
-     * When this reader closed the collection's Find a deck call-out with its ✕ (tool discovery call 1): the call-out
-     * never draws again. Written once, only while null (`closeFindADeck`, `lib/collection/find-a-deck.ts`), because of
-     * the stamp trigger above.
+     * UNUSED since 2026-11-25: the collection's Find a deck call-out (closed with its ✕, tool discovery call 1) was
+     * removed and nothing reads or writes this column. Kept, not dropped, so no migration rides that removal.
      */
     findADeckClosedAt: timestamp("find_a_deck_closed_at", { withTimezone: true }),
     /**
