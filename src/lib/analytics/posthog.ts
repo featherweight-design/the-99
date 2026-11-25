@@ -14,6 +14,7 @@ import type { CaptureResult, PostHog, PostHogConfig, Properties } from "posthog-
 
 import { redactLinkTokens, scrubUrl } from "../sentry/scrub";
 import type { Evidence } from "./sign-out-evidence";
+import { ENGAGEMENT_SEND_CEILING, type EngagementEvents } from "./engagement-events";
 import type { ToolEvents } from "./tool-events";
 
 import { isProductionHostname, posthogApiHost } from "./hosts";
@@ -195,6 +196,19 @@ export function captureScanFallback(e: { kind: string; from: string; to: string;
  * reader can be sent. The identity is what `identifyReader` already set.
  */
 export function captureToolEvent<E extends keyof ToolEvents>(name: E, props: ToolEvents[E]): void {
+  withClient((posthog) => posthog.capture(name, { ...props }));
+}
+
+const engagementSent = new Map<string, number>();
+
+/**
+ * A core action event (`engagement-events.ts`): closed-set props only, and at most `ENGAGEMENT_SEND_CEILING` sends per
+ * event name per page session, so volume is bounded whatever the traffic. Call it after the action answered ok.
+ */
+export function captureEngagement<E extends keyof EngagementEvents>(name: E, props: EngagementEvents[E]): void {
+  const sent = engagementSent.get(name) ?? 0;
+  if (sent >= ENGAGEMENT_SEND_CEILING[name]) return;
+  engagementSent.set(name, sent + 1);
   withClient((posthog) => posthog.capture(name, { ...props }));
 }
 

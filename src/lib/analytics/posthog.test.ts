@@ -302,3 +302,28 @@ describe("redactCapture", () => {
     expect(redactCapture({ ...base, properties: { n: 3, ok: true, none: null } })?.properties).toEqual({ n: 3, ok: true, none: null });
   });
 });
+
+describe("captureEngagement", () => {
+  it("sends the event with its closed-set props and nothing else", async () => {
+    const m = await load();
+    await m.startAnalytics(LIVE);
+    m.captureEngagement("deck_created", { source: "scratch" });
+    expect(posthog.capture).toHaveBeenCalledWith("deck_created", { source: "scratch" });
+  });
+
+  it("sends each event at most its ceiling per page session", async () => {
+    const m = await load();
+    await m.startAnalytics(LIVE);
+    for (let i = 0; i < 10; i++) m.captureEngagement("deck_created", { source: "scratch" });
+    for (let i = 0; i < 10; i++) m.captureEngagement("deck_card_added", { via: "search" });
+    const names = posthog.capture.mock.calls.map((c) => c[0]);
+    expect(names.filter((n) => n === "deck_created")).toHaveLength(1);
+    expect(names.filter((n) => n === "deck_card_added")).toHaveLength(3);
+  });
+
+  it("is silent while dormant", async () => {
+    const m = await load();
+    m.captureEngagement("deck_game_logged", {});
+    expect(posthog.capture).not.toHaveBeenCalled();
+  });
+});
