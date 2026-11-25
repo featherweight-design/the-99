@@ -44,3 +44,10 @@ Hugh: R2's headline rows still didn't land; A's rows are the favourite, and a dr
 - Keep → "How it's playing" box: band legend (helped / hurt / not marked dots); lead = the shipped headline finding ("Mana is holding it back.") + one line; Helping (tall column) | Hurting + Both ways stacked; each mark row = one pip per game oldest→newest + "up in 1 of 3" / "down in 2 of 3" / "1 up · 1 down". Watch/Mixed retired. Footer band: "Suggested changes uses these games to pick what to cut and add." + "Open Tuning ›".
 - Page head: "3 games logged. 1–2." + facts, with Log a game as the cream primary on the right (phone full width under it).
 - Matchups v3: squares follow a fixed 300px name column, count right after them ("3 games"), past ten games the squares become counted W / L / – squares; Colors rows lead with WUBRG pips and the identity letters; Friend rows lead with the friend's most-played commander art (initials when none). Band count "14 of 20 games".
+
+## R5 (2026-11-25): grounded summary, one-list How it's playing, matchups tidy (boards H-Desktop, H-Phone, H-Fuller)
+- Unlogged seats: dashed tile with an anonymous silhouette, "Someone" / "Seat not logged" (one per missing seat, from the pod size).
+- Games summary grounded in a box (both tabs): band "7 games logged · 4 decks" + record (win-share bar, W/L squares); cells Pods, Played, Last played, and Most played (Decks › Games) or the Log a game cream button (deck tab, so it no longer floats).
+- How it's playing = one list that scales: name | status (Hurting / Both ways / Helping, ordered that way) | one dot per game, oldest first, last 10 at most ("+N earlier" on desktop, hidden on phone) | count ("down in 8 of 14"). "From your marks" dropped. Lead finding + one line above; Open Tuning footer. H-Fuller shows it with 14 games.
+- Keys: both boxes put their key in a row at the bottom of the box, above any footer.
+- Matchups desktop: grid thumb | name | count | squares, so the game count sits left of the squares and rows don't stagger (phone unchanged). Colors rows use the Stats color pips (PIP_STYLE lettered squares, --w/u/b/r/g with --pip-ink-*).

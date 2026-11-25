@@ -944,3 +944,172 @@ board('G-Matchups.dc.html', 'R4 Matchups, fuller', '<div style="display:flex;fle
       + pair(*[labelled(f'DESKTOP · {t.upper()}', mu_desk(t)) for t in ['Commander', 'Colors']]) + pair(labelled('DESKTOP · FRIEND', mu_desk('Friend')))
       + pair(*[labelled(f'PHONE · {t.upper()}', mu_phone(t)) for t in ['Commander', 'Colors', 'Friend']]) + '</div>', 2552)
 print('r4 ok')
+
+# =====================  R5 (Hugh 2026-11-25)  =====================
+CSS5 = '''
+:root{--pip-ink-dark:#14110E;--pip-ink-light:#FFFFFF;--pip-ink-black:#000000}
+/* anonymous seat */
+.st3 .seat.anon{border:1px dashed var(--border-dashed);background:repeating-linear-gradient(135deg,transparent 0 9px,rgba(237,230,216,.025) 9px 18px)}
+.st3 .seat.anon:after{display:none}
+.st3 .seat.anon .sil{position:absolute;right:10px;bottom:0;width:56px;height:60px;color:var(--border-dashed)}
+.st3 .seat.anon .t b{color:var(--fg-muted);font-weight:500;text-shadow:none}
+.st3 .seat.anon .t span{color:var(--fg-locked);font:500 10.5px "IBM Plex Mono",monospace;text-shadow:none}
+/* games summary box */
+.sum .cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.sum .cell2{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-left:1px solid var(--border);min-width:0}
+.sum .cell2:first-child{border-left:0}
+.sum .cell2 .l{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.sum .cell2 .v{font-size:15px;font-weight:500;color:var(--fg);display:flex;align-items:center;gap:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum .cell2 .v img{width:30px;height:30px;border-radius:7px;object-fit:cover;flex:none}
+.sum .cell2 .v small{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.sum .cell2.act{justify-content:center;align-items:flex-end}
+.P .sum .cells{grid-template-columns:repeat(2,minmax(0,1fr))}
+.P .sum .cell2:nth-child(3){border-left:0}
+.P .sum .cell2:nth-child(n+3){border-top:1px solid var(--border)}
+.P .sum .cell2.act{grid-column:1 / -1;border-left:0;align-items:stretch;padding:12px 14px 14px}
+/* How it's playing: one list */
+.hp5{display:flex;flex-direction:column}
+.hp5 .r{display:grid;grid-template-columns:minmax(0,220px) 116px auto minmax(0,1fr);align-items:center;column-gap:16px;min-height:44px;padding:4px 16px;border-top:1px solid var(--border)}
+.hp5 .r:first-child{border-top:0}
+.hp5 .n{font-size:14px;color:var(--fg)}
+.hp5 .st{display:inline-flex;align-items:center;gap:7px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase}
+.hp5 .st i{width:8px;height:8px;border-radius:50%%;flex:none}
+.hp5 .st.d{color:var(--warning)}.hp5 .st.d i{background:var(--warning)}
+.hp5 .st.u{color:var(--success)}.hp5 .st.u i{background:var(--success)}
+.hp5 .st.b{color:var(--fg-muted)}.hp5 .st.b i{background:linear-gradient(90deg,var(--success) 50%%,var(--warning) 50%%)}
+.hp5 .c{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap}
+.hp5 .pips{gap:5px}
+.hp5 .more{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-locked);margin-left:6px}
+.hp5 .more{white-space:nowrap}.P .hp5 .more{display:none}
+.P .hp5 .r{grid-template-columns:minmax(0,1fr) auto;row-gap:6px;padding:10px 14px}
+.P .hp5 .st{grid-column:2;grid-row:1;justify-self:end}
+.P .hp5 .pp{grid-column:1;grid-row:2}
+.P .hp5 .c{grid-column:2;grid-row:2;justify-self:end}
+/* Matchups v4: count before the squares on desktop; Stats pips on Colors */
+.mu4{display:grid;grid-template-columns:56px 280px 64px minmax(0,1fr);align-items:center;column-gap:16px;min-height:56px;padding:8px 16px;border-top:1px solid var(--border)}
+.mu4.cl{grid-template-columns:96px 240px 64px minmax(0,1fr)}
+.mu4:first-of-type{border-top:0}
+.mu4 .g{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap}
+.mu4 .th{width:56px;height:38px;border-radius:7px;overflow:hidden;background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.mu4 .th img{width:100%%;height:100%%;object-fit:cover}
+.mu4 .cp{display:flex;gap:3px}
+.mu4 .cp b{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font:600 10px "IBM Plex Mono",monospace}
+.mu4 .nm{min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu4 .nm span{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint);margin-left:8px}
+.mu4 .sq{display:flex;gap:4px;flex-wrap:wrap}
+.mu4 .rs{width:22px;height:22px;font-size:10.5px;border-radius:5px}
+.mu4 .ct{display:flex;align-items:center;gap:10px}
+.mu4 .ct .rq{display:flex;align-items:center;gap:6px;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.P .mu4,.P .mu4.cl{grid-template-columns:auto minmax(0,1fr) auto;row-gap:7px;padding:10px 14px;align-items:center}
+.P .mu4 .th,.P .mu4 .cp{grid-row:span 2}
+.P .mu4 .th{width:48px;height:34px}
+.P .mu4 .nm{grid-column:2;white-space:normal;line-height:1.3;font-size:13.5px}
+.P .mu4 .body{grid-column:2;grid-row:2}
+.P .mu4 .g{grid-column:3;grid-row:1 / span 2}
+'''.replace('%%', '%')
+CSS = CSS + CSS5
+SIL = ('<svg class="sil" viewBox="0 0 56 60" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true">'
+       '<circle cx="28" cy="20" r="10" stroke-dasharray="3 3"/><path d="M6 60c0-13 10-22 22-22s22 9 22 22" stroke-dasharray="3 3"/>'
+       '<text x="28" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" stroke="none">?</text></svg>')
+def e5_row(g, deck_tab=False):
+    pill = '<span class="pill w">Won</span>' if g['r'] == 'W' else '<span class="pill">Lost</span>'
+    end = '<span class="end"><span class="xbtn">×</span></span>' if deck_tab else f'<a class="end opendk" href="#"><span class="lg">Open {DECKS[g["deck"]]}</span><span class="sm">Open deck</span>{chev(13)}</a>'
+    seats = e4_seat_me(g, False) + ''.join(d_seat(s) for s in g['seats'])
+    seats += f'<div class="seat anon">{SIL}<span class="t"><b>Someone</b><span>Seat not logged</span></span></div>' * max(0, g['pod'] - 1 - len(g['seats']))
+    return (f'<article class="row a-row"><div class="a-top">{pill}<span class="meta">{pods(g["pod"])} · {g["date"]}</span>{end}</div>'
+            f'<div class="st2 st3">{seats}</div>{markgroups(g)}{note(g)}</article>')
+
+def cell(l, v): return f'<div class="cell2"><span class="l">{l}</span><span class="v">{v}</span></div>'
+def summary_decks():
+    return (f'<section class="box sum">{band("7 games logged", "4 decks", rec2(GAMES))}<div class="cells">'
+            + cell('Pods', '2 to 5 players') + cell('Played', 'Oct to Nov 2026') + cell('Last played', 'Nov 19')
+            + cell('Most played', '<img src="art/sai.webp" alt="">HD - Sai <small>3 of 7</small>') + '</div></section>')
+def summary_deck():
+    return (f'<section class="box sum">{band("3 games logged", "HD - Sai", rec2(SAI))}<div class="cells">'
+            + cell('Pods', '2 to 3 players') + cell('Played', 'Oct to Nov 2026') + cell('Last played', 'Nov 1')
+            + '<div class="cell2 act"><span class="btn cream" style="min-height:44px;padding:0 20px;font-size:14px">Log a game</span></div></div></section>')
+
+KEY_HP = ('<div class="key2"><span><span class="pip u"></span>helped</span><span><span class="pip d"></span>hurt</span>'
+          '<span><span class="pip"></span>not marked</span><span>one dot per game, oldest first, last 10 at most</span></div>')
+KEY_MU = ('<div class="key2"><span><span class="rs w">W</span>you won</span><span><span class="rs">L</span>they won</span>'
+          '<span><span class="rs o">–</span>someone else won</span></div>')
+ST = {'d': ('Hurting', 'd'), 'u': ('Helping', 'u'), 'b': ('Both ways', 'b')}
+def hp5_rows(rows, total):
+    out = ''
+    for n, kind, p, u, d in rows:
+        lab, cls = ST[kind]
+        cnt = f'down in {d} of {total}' if kind == 'd' else (f'up in {u} of {total}' if kind == 'u' else f'{u} up · {d} down')
+        more = f'<span class="more">+{total-len(p)} earlier</span>' if total > len(p) else ''
+        out += f'<div class="r"><span class="n">{n}</span><span class="st {cls}"><i></i>{lab}</span><span class="pp" style="display:flex;align-items:center">{more if False else ""}{pips(p)}{more}</span><span class="c">{cnt}</span></div>'
+    return out
+SAI_HP = [('Mana', 'd', 'udd', 1, 2), ('Board presence', 'b', 'u-d', 1, 1), ('Speed', 'u', 'u--', 1, 0), ('Answers', 'u', 'u--', 1, 0),
+          ('Closing the game', 'u', 'u--', 1, 0), ('The deck’s plan', 'u', '-u-', 1, 0), ('Cards in hand', 'u', '--u', 1, 0), ('Comebacks', 'u', '--u', 1, 0)]
+FULL_HP = [('Mana', 'd', 'd-dud-d-dd', 3, 8), ('Answers', 'd', '-d--d-u-d-', 2, 4), ('Board presence', 'b', 'u-d-u-d--u', 4, 3),
+           ('Speed', 'u', 'uu-u-uu-u-', 8, 1), ('Closing the game', 'u', '-u-uu---u-', 6, 0), ('Comebacks', 'u', '--u---u---', 3, 0)]
+def how5(rows, total, lead, sub):
+    return (f'<section class="box">{band("How it’s playing", f"{total} games")}'
+            f'<div class="hp-lead"><h3>{lead}</h3><p>{sub}</p></div>'
+            f'<div class="hp5" style="margin-top:10px;border-top:1px solid var(--border)">{hp5_rows(rows, total)}</div>{KEY_HP}'
+            f'<div class="foot"><p>Suggested changes uses these games to pick what to cut and add.</p><a href="#">Open Tuning{chev(13)}</a></div></section>')
+def cpips(cs): return '<span class="cp">' + ''.join(f'<b style="background:var(--{c.lower()});color:var(--pip-ink-{ {"W":"dark","U":"light","B":"dark","R":"black","G":"light"}[c]})">{c}</b>' for c in cs) + '</span>'
+def mu4(th, name, r=None, counts=None, cl=False):
+    n = len(r) if r else sum(counts)
+    body = sqs(r) if r else cts(*counts)
+    return (f'<div class="mu4{" cl" if cl else ""}">{th}<span class="nm">{name}</span><span class="g">{n} game{"" if n==1 else "s"}</span>'
+            f'<span class="body">{body}</span></div>')
+MU4 = {
+ 'Commander': [mu4(th_art('ishai'), 'Ishai, Ojutai Dragonspeaker', counts=(4, 5, 2)), mu4(th_art('giada'), 'Giada, Font of Hope', list('W–LWL–')),
+               mu4(th_art('ghalta'), 'Ghalta, Primal Hunger', list('LLW')), mu4(th_art('bruse'), 'Bruse Tarl, Boorish Herder', list('W–')),
+               mu4(th_art('kilo'), 'Kilo, Apogee Mind', list('L'))],
+ 'Colors': [mu4(cpips('WUG'), 'Bant', counts=(5, 4, 2), cl=True), mu4(cpips('WUBR'), 'Four colors <span>no G</span>', list('–WLW'), cl=True),
+            mu4(cpips('G'), 'Mono-green', list('LLW'), cl=True), mu4(cpips('UR'), 'Izzet', list('W–'), cl=True), mu4(cpips('WUB'), 'Esper', list('L'), cl=True)],
+ 'Friend': [mu4(th_art('ghalta'), 'Colin', counts=(4, 5, 2)), mu4(th_art('giada'), 'Peter', list('W–L–WL')),
+            mu4(th_art('ishai'), 'Max', list('–LWL–')), mu4('<span class="th">CH</span>', 'Chris', list('LW'))],
+}
+SMALL4 = [mu4(th_art('ishai'), 'Ishai, Ojutai Dragonspeaker', list('L')), mu4(th_art('giada'), 'Giada, Font of Hope', list('–')),
+          mu4(th_art('bruse'), 'Bruse Tarl, Boorish Herder', list('W')), mu4(th_art('ghalta'), 'Ghalta, Primal Hunger', list('L'))]
+def matchups4(rows, count, tab='Commander', phone=False):
+    segs = ''.join(f'<span class="{"on" if t==tab else ""}" style="{"flex:1;justify-content:center" if phone else ""}">{t}</span>' for t in ['Commander', 'Colors', 'Friend'])
+    seg = f'<span class="seg" style="margin-left:auto">{segs}</span>'
+    return (f'<section class="box">{band("Matchups", count, "" if phone else seg)}'
+            + (f'<div style="padding:10px 12px 0"><span class="seg" style="display:flex">{segs}</span></div>' if phone else '')
+            + ''.join(rows) + KEY_MU + '</section>')
+
+def deck_top5(phone=False):
+    tabs = '<div class="dtabs"><span>Your deck<i>99</i></span><span>Analysis</span><span>Tuning</span><span class="on">Games<i>3</i></span><span>Versions<i>4</i></span></div>'
+    return (tabs + '<div style="height:6px"></div>' + summary_deck()
+            + how5(SAI_HP, 3, 'Mana is holding it back.', 'Marked against you in 2 of 3 games.') + matchups4(SMALL4, '3 of 3 games', phone=phone))
+def decks_desktop5():
+    body = ''.join(month_box([g for g in GAMES if g['m'] == k], t, lambda g: e5_row(g)) for k, t in MONTHS)
+    return (f'<div class="D"><div class="rail"><img src="art/rail-decks.png" alt=""></div><div class="main">{decks_head_desktop()}'
+            f'{deck_filters_desktop()}<div class="fstat"><span>No filters on</span><u>Clear all filters</u></div>{summary_decks()}{body}</div></div>')
+def deck_desktop5():
+    body = ''.join(month_box([g for g in SAI if g['m'] == k], t, lambda g: e5_row(g, True)) for k, t in MONTHS)
+    return f'<div class="D"><div class="rail"><img src="art/rail-decks.png" alt=""></div><div class="main" style="padding-top:0">{deck_top5()}{body}</div></div>'
+def phone_decks5():
+    body = ''.join(month_box([g for g in GAMES if g['m'] == k], t, lambda g: e5_row(g)) for k, t in MONTHS)
+    top = ('<h1 class="disp" style="font-size:22px;padding-top:6px">Decks</h1><div style="display:flex;gap:10px"><span class="btn cream" style="flex:1">New deck</span><span class="btn" style="flex:1">Import a deck</span></div>'
+           f'<div style="display:flex;gap:8px"><div class="tile" style="padding:10px 12px"><span style="flex:1;min-width:0"><b>Shop all decks</b><span>199 · $434.58</span></span>{chev()}</div>'
+           f'<div class="tile" style="padding:10px 12px"><span style="flex:1;min-width:0"><b>Precons</b><span>186 decklists</span></span>{chev()}</div></div>'
+           f'<div style="display:flex;align-items:center;gap:8px"><span class="seg"><span>Decks</span><span class="on">Games</span><span>Stats</span></span>'
+           f'<span class="trg" style="margin-left:auto;padding:0 10px"><span class="stk"><img src="art/sai.webp" alt=""><img src="art/gisa.webp" alt=""></span>All decks{caret()}</span></div>'
+           '<div style="display:flex;gap:8px"><span class="btn" style="flex:1">Filter games</span></div>'
+           '<div class="fstat"><span>No filters on</span><u>Clear all filters</u></div>')
+    return (f'<div class="P"><img class="ptop" src="art/p-top.png" alt=""><div class="pm">{top}{summary_decks()}{body}</div>'
+            f'<img class="ptab" src="art/p-tabbar-decks.png" alt=""></div>')
+def phone_deck5():
+    body = ''.join(month_box([g for g in SAI if g['m'] == k], t, lambda g: e5_row(g, True)) for k, t in MONTHS)
+    return (f'<div class="P"><img class="ptop" src="art/p-top.png" alt=""><div class="pm" style="padding-top:0">{deck_top5(True)}{body}</div>'
+            f'<div class="addbar"><span class="f">{srch()} Add a card by name · Bant</span><span class="tog"></span><span style="font-size:12.5px;color:var(--fg-body)">Owned only</span></div>'
+            f'<img class="ptab" src="art/p-tabbar-decks.png" alt="" style="margin-top:0"></div>')
+board('H-Desktop.dc.html', 'R5 Seats, desktop', pair(labelled('DECKS › GAMES', decks_desktop5()), labelled('DECK DETAILS › GAMES · HD - Sai', deck_desktop5())), 2680)
+board('H-Phone.dc.html', 'R5 Seats, phone', pair(labelled('DECKS › GAMES', phone_decks5()), labelled('DECK DETAILS › GAMES', phone_deck5())), 860)
+def full_desk(inner): return f'<div class="D" style="grid-template-columns:minmax(0,1fr);width:1236px;background:transparent"><div>{inner}</div></div>'
+def full_phone(inner): return f'<div class="P" style="padding:0 16px;background:transparent">{inner}</div>'
+FULL_HOW = lambda: how5(FULL_HP, 14, 'Mana is holding it back.', 'Marked against you in 8 of 14 games, and in 4 of the last 5.')
+board('H-Fuller.dc.html', 'R5 fuller states (14 games)', '<div style="display:flex;flex-direction:column;gap:60px">'
+      + pair(labelled('DESKTOP · HOW IT’S PLAYING · 14 GAMES (dots: last 10)', full_desk(FULL_HOW())), labelled('DESKTOP · MATCHUPS · COMMANDER', full_desk(matchups4(MU4['Commander'], '14 of 20 games'))))
+      + pair(labelled('DESKTOP · MATCHUPS · COLORS', full_desk(matchups4(MU4['Colors'], '14 of 20 games', 'Colors'))), labelled('DESKTOP · MATCHUPS · FRIEND', full_desk(matchups4(MU4['Friend'], '14 of 20 games', 'Friend'))))
+      + pair(labelled('PHONE · HOW IT’S PLAYING', full_phone(FULL_HOW())), *[labelled(f'PHONE · MATCHUPS · {t.upper()}', full_phone(matchups4(MU4[t], '14 of 20 games', t, True))) for t in ['Commander', 'Colors', 'Friend']])
+      + '</div>', 2552)
+print('r5 ok')

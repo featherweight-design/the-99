@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R5 Seats, desktop</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+@font-face{font-family:"Cinzel";src:url(art/cinzel-variable.woff2) format("woff2");font-weight:400 900}
+@font-face{font-family:"IBM Plex Sans";src:url(art/ibm-plex-sans-variable.woff2) format("woff2");font-weight:100 700}
+@font-face{font-family:"IBM Plex Mono";src:url(art/ibm-plex-mono-500.woff2) format("woff2");font-weight:500}
+body{margin:0;background:#0f0d0a}
+
+:root{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-inset:#1B1712;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;--danger:#C6533F;}
+.wrap{display:flex;gap:80px;align-items:flex-start;padding:0}
+.P,.D{--bg:#14110E;--surface:#1E1A15;--surface-raised:#211D18;--surface-rail:#1A1611;--surface-inset:#1B1712;--surface-sunken:#18140F;--elevated:#29241F;--border:#2B241B;--border-strong:#3A3229;--border-dashed:#494037;--fg:#EDE6D8;--fg-body:#C0B8A6;--fg-muted:#A59C89;--fg-faint:#948B78;--fg-locked:#6E6654;--accent:#CF8745;--success:#6FA368;--warning:#DEAA29;--fact:#8FA6BE;--danger:#C6533F; box-sizing:border-box;background:var(--bg);font-family:"IBM Plex Sans",system-ui,sans-serif;color:var(--fg);position:relative;font-size:14px}
+.P *,.D *{box-sizing:border-box}
+.P{width:390px;display:flex;flex-direction:column;flex:none}
+.D{width:1300px;display:grid;grid-template-columns:62px minmax(0,1fr);flex:none}
+.rail{background:var(--surface-rail);border-right:1px solid var(--border)}
+.rail img{display:block;width:62px;height:900px;position:sticky;top:0}
+.ptop{display:block;width:390px;height:78px}
+.ptab{display:block;width:390px;height:74px;margin-top:auto}
+.main{min-width:0;padding:24px 32px 40px;display:flex;flex-direction:column;gap:16px}
+.pm{padding:4px 16px 20px;display:flex;flex-direction:column;gap:12px}
+.mono{font-family:"IBM Plex Mono",monospace}
+.faint{color:var(--fg-faint)}.muted{color:var(--fg-muted)}.locked{color:var(--fg-locked)}
+h1,h2,h3,p{margin:0}
+.disp{font-family:"Cinzel",serif;font-weight:700;font-variant:small-caps;letter-spacing:.02em}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:0 14px;border-radius:9px;border:1px solid var(--border-strong);background:transparent;color:var(--fg);font:500 13px "IBM Plex Sans",sans-serif;white-space:nowrap}
+.btn.cream{background:#EDE6D8;color:#14110E;border-color:#EDE6D8;font-weight:600}
+.P .btn{min-height:44px;font-size:14px}
+.tile{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:12px 14px}
+.tile b{font-weight:500;font-size:13.5px;display:block}.tile>span>span{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint)}
+.chev{color:var(--fg-faint);flex:none}
+/* SegmentedSwitch */
+.seg{display:inline-flex;gap:2px;padding:3px;border:1px solid var(--border-strong);border-radius:9px;flex:none}
+.seg span{display:inline-flex;align-items:center;gap:6px;padding:0 12px;min-height:32px;border-radius:7px;font-size:13px;color:var(--fg-muted);font-weight:500}
+.seg span.on{background:var(--elevated);color:var(--fg);font-weight:600}
+.seg span i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:10.5px;color:var(--fg-faint)}
+.P .seg span{min-height:38px;padding:0 13px}
+/* filter trigger (games-filter-controls TRIGGER) */
+.trg{display:inline-flex;align-items:center;gap:8px;white-space:nowrap;border-radius:8px;border:1px solid var(--border-strong);background:var(--elevated);padding:0 12px 0 10px;min-height:38px;font-size:13px;font-weight:500;color:var(--fg)}
+.trg.on{border-color:var(--accent)}
+.trg .lab{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.trg .x{color:var(--fg-muted);margin-left:2px}
+.P .trg{min-height:44px}
+.stk{display:inline-flex}.stk img{width:20px;height:20px;border-radius:5px;object-fit:cover;border:1.5px solid var(--elevated);margin-left:-7px}.stk img:first-child{margin-left:0}
+.vrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.fstat{display:flex;justify-content:space-between;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint)}
+.fstat u{color:var(--fg-locked)}
+.hl{display:flex;flex-direction:column;gap:6px;padding-top:6px}
+.hl h2{font-size:21px}
+.P .hl h2{font-size:19px}
+.facts{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint);line-height:1.8}
+.facts b{color:var(--fg-body);font-weight:500}
+/* the section pattern: SectionPanel box + band, Home's heading type in the band */
+.box{border:1px solid var(--border);border-radius:14px;background:var(--surface-inset);overflow:hidden}
+.band{display:flex;align-items:center;gap:12px;min-height:50px;padding:0 10px 0 16px;background:var(--surface-rail);border-bottom:1px solid var(--border)}
+.hh{display:flex;align-items:center;gap:9px;font-family:"Cinzel",serif;font-weight:600;font-size:17px;line-height:1.2;color:var(--fg)}
+.hh .dia{width:7px;height:7px;transform:rotate(45deg);background:var(--accent);flex:none}
+.hh .ct{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;letter-spacing:.08em;color:var(--accent)}
+.band .rec{margin-left:auto;display:flex;gap:6px;align-items:center;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint)}
+.band .rec b{font-weight:500;color:var(--fg-body)}
+.P .band{min-height:52px;padding-left:14px}
+.P .hh{font-size:16px}
+/* shared row bits */
+.rs{flex:none;display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:7px;font:600 12px "IBM Plex Mono",monospace;border:1px solid var(--border-strong);color:var(--fg-body)}
+.rs.w{border-color:var(--success);color:var(--success)}
+.pill{flex:none;display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:7px;font:600 12px "IBM Plex Sans",sans-serif;border:1px solid var(--border-strong);color:var(--fg-body)}
+.pill.w{border-color:var(--success);color:var(--success);background:color-mix(in srgb,var(--success) 10%,transparent)}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 11px 4px 8px;font:500 10.5px "IBM Plex Mono",monospace;background:var(--elevated);color:var(--fg-body);white-space:nowrap}
+.chip i{width:6px;height:6px;border-radius:50%;flex:none}
+.chip i.g{background:var(--success)}.chip i.y{background:var(--warning)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.mg{display:flex;align-items:flex-start;gap:10px;min-width:0}
+.mg .ml{flex:none;width:52px;padding-top:5px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.mgs{display:flex;flex-wrap:wrap;gap:8px 28px}
+.note{display:flex;gap:10px;min-width:0}
+.note:before{content:"";flex:none;width:2px;border-radius:2px;background:var(--border-strong)}
+.note span{font-style:italic;font-size:12.5px;line-height:1.5;color:var(--fg-muted)}
+.stamp{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:5px;border:1px solid var(--border-strong);font:500 10px "IBM Plex Mono",monospace;color:var(--fg-muted);flex:none;letter-spacing:.02em}
+.face{position:relative;flex:none;width:22px;height:22px;border-radius:5px;overflow:hidden;background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 8.5px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.face img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 20%}
+.tro{color:var(--accent);display:inline-flex;flex:none}
+.xbtn{flex:none;display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:7px;border:1px solid var(--border);color:var(--fg-locked);font:13px "IBM Plex Mono",monospace}
+.P .xbtn{width:44px;height:44px}
+.row{border-top:1px solid var(--border)}
+.row:first-of-type{border-top:0}
+/* ---------- A: seats ---------- */
+.a-row{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.a-top{display:flex;align-items:center;gap:10px}
+.a-top .meta{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.a-top .end{margin-left:auto;display:flex;align-items:center;gap:8px}
+.seats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.seat{position:relative;height:58px;border-radius:9px;overflow:hidden;background:var(--surface-sunken);border:1px solid var(--border)}
+.seat img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 25%;opacity:.5}
+.seat:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,17,14,.92) 0%,rgba(20,17,14,.55) 70%,rgba(20,17,14,.2) 100%)}
+.seat .t{position:absolute;left:10px;right:30px;bottom:8px;z-index:1;display:flex;flex-direction:column;gap:1px}
+.seat .t b{font-size:12.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px}
+.seat .t span{font-size:11.5px;color:var(--fg-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.seat .who{position:absolute;left:10px;top:7px;z-index:1;font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.seat.me{border-color:var(--border-strong)}
+.seat.me img{opacity:.75}
+.seat.win{border:1.5px solid var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 16%,transparent)}
+.seat.win img{opacity:.8}
+.seat .badge{position:absolute;right:7px;top:7px;z-index:1;width:22px;height:22px;border-radius:50%;background:var(--accent);color:#14110E;display:flex;align-items:center;justify-content:center}
+.seat.ini{display:flex}
+.seat.ini .big{position:absolute;right:12px;top:50%;transform:translateY(-50%);font:500 18px "IBM Plex Mono",monospace;color:var(--fg-locked);z-index:1}
+.seat.ini.win .big{right:36px}
+.P .seats{grid-template-columns:repeat(2,minmax(0,1fr))}
+.P .seat{height:54px}
+.P .a-row{padding:14px 14px 16px}
+.P .mgs{flex-direction:column;gap:8px}
+/* ---------- B: ledger ---------- */
+.b-cols{display:grid;grid-template-columns:44px 230px minmax(0,1fr) 150px 280px 74px 30px;column-gap:16px;align-items:start}
+.b-cols.bd{grid-template-columns:44px 64px minmax(0,1fr) 150px 360px 74px 30px}
+.b-hd{padding:9px 16px 8px;border-bottom:1px solid var(--border);font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-locked)}
+.b-row{padding:13px 16px 14px;display:flex;flex-direction:column;gap:10px}
+.b-row .cell{min-height:26px;display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}
+.b-dk{display:flex;align-items:center;gap:10px;min-width:0}
+.b-dk img{width:36px;height:36px;border-radius:7px;object-fit:cover;flex:none}
+.b-dk b{font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.b-dk>span>span{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint);display:flex;gap:6px;align-items:center;margin-top:3px}
+.opp{display:flex;align-items:center;gap:7px;font-size:12.5px;min-width:0;white-space:nowrap}
+.opp .s{color:var(--fg-faint);overflow:hidden;text-overflow:ellipsis}
+.b-win{display:flex;align-items:center;gap:7px;font-size:12.5px;min-height:26px}
+.b-win.me{color:var(--success);font-weight:600}
+.b-date{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);line-height:26px;text-align:right}
+.b-note{padding-left:290px}
+.b-note.bd{padding-left:120px}
+.b-row .chips .chip{padding:3px 9px 3px 7px;font-size:10px}
+.P .b-row{padding:14px}
+.pb-top{display:flex;align-items:center;gap:10px}
+.pb-grid{display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:6px 12px;padding:10px 0 0;border-top:1px solid var(--border)}
+.pb-lab{font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-locked)}
+/* ---------- C: headline rows + game sheet ---------- */
+.c-row{display:flex;align-items:center;gap:14px;min-height:72px;padding:12px 12px 12px 16px}
+.c-art{position:relative;width:44px;height:44px;border-radius:9px;overflow:hidden;flex:none;background:var(--elevated)}
+.c-art img{width:100%;height:100%;object-fit:cover}
+.c-art .rs{position:absolute;right:-1px;bottom:-1px;width:20px;height:20px;font-size:10px;border-radius:6px;background:var(--bg)}
+.c-t{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.c-t h3{font-family:"Cinzel",serif;font-weight:700;font-size:15.5px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.c-t h3 em{font-style:normal;color:var(--success)}
+.c-t .sub{display:flex;align-items:center;gap:7px;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap;overflow:hidden}
+.c-t .sub .n{font:400 12.5px "IBM Plex Sans",sans-serif;color:var(--fg-body)}
+.c-fs{display:flex;align-items:center;flex:none}
+.c-fs .fc{position:relative;width:30px;height:30px;border-radius:8px;overflow:visible;margin-left:-8px;flex:none}
+.c-fs .fc:first-child{margin-left:0}
+.c-fs .fc .in{position:absolute;inset:0;border-radius:8px;overflow:hidden;border:2px solid var(--surface-inset);background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 9px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.c-fs .fc img{width:100%;height:100%;object-fit:cover}
+.c-fs .fc.win .in{border-color:var(--accent)}
+.c-fs .fc .tb{position:absolute;right:-5px;top:-6px;width:16px;height:16px;border-radius:50%;background:var(--accent);color:#14110E;display:flex;align-items:center;justify-content:center;z-index:2}
+.c-date{flex:none;width:52px;text-align:right;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.c-row.sel{background:color-mix(in srgb,var(--accent) 7%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 45%,transparent)}
+.P .c-row{gap:12px;padding:12px 10px 12px 14px;min-height:76px}
+.P .c-t h3{font-size:15px}.P .c-fs .fc{width:28px;height:28px;margin-left:-11px}
+/* game sheet / drawer */
+.gs{display:flex;flex-direction:column;background:var(--surface);border:1px solid var(--border-strong);box-shadow:0 22px 50px rgba(0,0,0,.6)}
+.gs-h{display:flex;align-items:flex-start;gap:12px;padding:16px 10px 14px 18px;border-bottom:1px solid var(--border)}
+.gs-h h3{font-family:"Cinzel",serif;font-weight:700;font-size:20px;line-height:1.25}
+.gs-h .m{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);margin-top:6px}
+.gs-x{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;color:var(--fg-muted);flex:none}
+.gs-s{padding:14px 18px;display:flex;flex-direction:column;gap:10px;border-bottom:1px solid var(--border)}
+.gs-s:last-child{border-bottom:0}
+.gs-l{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.sr{display:flex;align-items:center;gap:12px;min-height:52px;padding:6px 10px;border-radius:10px;background:var(--surface-inset);border:1px solid var(--border)}
+.sr img{width:40px;height:40px;border-radius:8px;object-fit:cover;flex:none}
+.sr .ini2{width:40px;height:40px;border-radius:8px;background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-muted);flex:none}
+.sr .tt{flex:1;min-width:0}.sr .tt b{display:flex;align-items:center;gap:7px;font-size:13.5px;font-weight:600}.sr .tt span{font-size:12px;color:var(--fg-muted)}
+.sr .won{display:flex;align-items:center;gap:6px;font:600 12px "IBM Plex Sans",sans-serif;color:var(--accent);flex:none}
+.sr.win{border-color:var(--accent)}
+.gs-foot{display:flex;gap:10px;padding:14px 18px 18px}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--border-strong);margin:8px auto 0}
+.scrim{position:absolute;inset:0;background:rgba(8,6,4,.62);z-index:20}
+/* deck page bits */
+.dtabs{display:flex;gap:26px;padding:0 32px;border-bottom:1px solid var(--border);margin:0 -32px}
+.dtabs span{padding:18px 0 14px;font-size:14.5px;font-weight:500;color:var(--fg-muted);border-bottom:2px solid transparent;white-space:nowrap}
+.dtabs span i{font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--fg-faint);margin-left:5px}
+.dtabs span.on{color:var(--fg);font-weight:600;border-color:var(--accent)}
+.P .dtabs{gap:20px;padding:0 16px;margin:0 -16px;overflow:hidden}
+.P .dtabs span{padding:13px 0 11px;font-size:14px}
+.keep{padding:14px 16px 16px;display:flex;flex-direction:column;gap:12px}
+.kts{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+.kt{border:1px solid var(--border);border-radius:10px;background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:7px}
+.kt .k1{display:flex;justify-content:space-between;align-items:baseline;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-faint)}
+.kt .k1 b{white-space:nowrap;font-size:14px;letter-spacing:0;text-transform:none;color:var(--success)}
+.kt .bar{height:4px;border-radius:2px;background:var(--success)}
+.kt .bar.mx{background:linear-gradient(90deg,var(--success) 0 33%,var(--warning) 33%)}
+.kt .k2{font:500 10px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.P .kts{grid-template-columns:repeat(2,minmax(0,1fr))}.P .kt .k1{font-size:9px;letter-spacing:.08em;flex-direction:column;align-items:flex-start;gap:4px}.P .mu .n{font-size:13px}
+.mu{display:flex;align-items:center;gap:14px;padding:10px 16px;border-top:1px solid var(--border)}
+.mu:first-of-type{border-top:0}
+.mu img{width:52px;height:38px;border-radius:6px;object-fit:cover;flex:none}
+.mu .n{flex:1;font-size:14px}
+.mu .sq{display:flex;gap:4px}
+.mu .tr{width:52px;display:flex;align-items:center;gap:5px;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.mu .g{width:60px;text-align:right;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.key{padding:10px 16px 12px;border-top:1px solid var(--border);font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.addbar{display:flex;align-items:center;gap:14px;padding:12px 16px;border-top:1px solid var(--border);background:var(--bg)}
+.addbar .f{flex:1;height:44px;border:1px solid var(--border-strong);border-radius:9px;display:flex;align-items:center;gap:10px;padding:0 12px;color:var(--fg-faint);font-size:14px}
+.tog{width:34px;height:20px;border-radius:10px;background:var(--accent);position:relative;flex:none}.tog:after{content:"";position:absolute;right:3px;top:3px;width:14px;height:14px;border-radius:50%;background:#14110E}
+/* filter panels */
+.apanel{position:absolute;z-index:30;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface);box-shadow:0 22px 50px rgba(0,0,0,.6);overflow:hidden;display:flex;flex-direction:column}
+.sf{display:flex;align-items:center;gap:9px;height:40px;margin:10px;border:1px solid var(--border-strong);border-radius:8px;padding:0 11px;color:var(--fg-faint);font-size:13.5px;background:var(--surface-inset)}
+.og{padding:8px 14px 4px;font:500 9.5px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-locked)}
+.opt{display:flex;align-items:center;gap:11px;min-height:44px;padding:0 12px 0 14px;font-size:13.5px}
+.opt img{width:28px;height:28px;border-radius:6px;object-fit:cover;flex:none}
+.opt .ic{width:28px;height:28px;border-radius:6px;flex:none;display:flex;align-items:center;justify-content:center;background:var(--elevated);color:var(--fg-muted)}
+.opt .nm{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.opt .ct{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);min-width:22px;text-align:right}
+.opt .ck{width:16px;color:var(--accent);flex:none;display:flex}
+.opt.on{background:var(--elevated)}
+.opt.on .nm{font-weight:600}
+.pfoot{padding:10px 14px 12px;border-top:1px solid var(--border);font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint);line-height:1.6}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:30;background:var(--surface);border-radius:16px 16px 0 0;border-top:1px solid var(--border-strong);display:flex;flex-direction:column}
+.sh-h{display:flex;align-items:center;padding:6px 4px 6px 18px}
+.sh-h h3{flex:1;font-family:"Cinzel",serif;font-weight:700;font-size:18px}
+.P .opt{min-height:56px;padding:0 16px}
+.P .opt img,.P .opt .ic{width:36px;height:36px;border-radius:8px}
+.cap{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);padding:0 0 10px;letter-spacing:.04em}
+.callout{position:absolute;z-index:40;background:#2b2116;border:1px solid var(--accent);border-radius:8px;padding:8px 10px;font:500 11px/1.45 "IBM Plex Mono",monospace;color:var(--fg);max-width:260px}
+
+/* record in the month band: the result squares themselves, counted */
+.rec2{margin-left:auto;display:flex;align-items:center;gap:10px}
+.rec2 .rq{display:flex;align-items:center;gap:6px;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.rec2 .rq .rs{width:22px;height:22px;font-size:10.5px;border-radius:6px}
+.rec2 .rq.z{color:var(--fg-locked)}.rec2 .rq.z .rs{border-color:var(--border);color:var(--fg-locked)}
+.rec2 .rbar{display:flex;width:64px;height:6px;border-radius:3px;overflow:hidden;background:var(--border-strong)}
+.rec2 .rbar i{display:block;height:100%;background:var(--success)}
+.P .rec2 .rbar{display:none}
+/* the row: headline left, the winner's commander art washing in on the right */
+.d-row{position:relative;overflow:hidden;display:flex;align-items:center;gap:14px;min-height:76px;padding:12px 12px 12px 16px}
+.d-wash{position:absolute;right:0;top:0;bottom:0;width:380px;pointer-events:none;-webkit-mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.55) 45%,#000 100%);mask-image:linear-gradient(90deg,transparent 0%,rgba(0,0,0,.55) 45%,#000 100%)}
+.d-wash img{width:100%;height:100%;object-fit:cover;object-position:50% 25%;opacity:.62}
+.d-wash:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent 40%,rgba(20,17,14,.35))}
+.d-row>*:not(.d-wash){position:relative;z-index:1}
+.d-row .c-t h3 .wf{display:inline-block;vertical-align:-5px;width:22px;height:22px;border-radius:5px;overflow:hidden;margin:0 7px 0 8px;box-shadow:0 0 0 1.5px var(--accent)}
+.d-row .c-t h3 .wf img{width:100%;height:100%;object-fit:cover}
+.d-row .c-t h3 .wf.ini{background:var(--elevated);font:500 9px "IBM Plex Mono",monospace;color:var(--fg-muted);text-align:center;line-height:22px}
+.d-end{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex:none}
+.d-end .d{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.d-end .w{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-locked)}
+.d-row.sel{box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--accent) 55%,transparent);background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.P .d-row{gap:12px;padding:12px 8px 12px 14px;min-height:78px}
+.P .d-wash{width:210px}
+/* the details: seats, less faded than R1 */
+.st2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.st2 .seat{height:84px}
+.st2 .seat img{opacity:.85}
+.st2 .seat:after{background:linear-gradient(180deg,rgba(20,17,14,0) 30%,rgba(20,17,14,.85) 100%)}
+.st2 .seat.me img,.st2 .seat.win img{opacity:.95}
+.st2 .seat .t{right:10px;bottom:9px}
+.st2 .seat .t b{font-size:13.5px;text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.st2 .seat .t span{color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,.8)}
+.st2 .seat .who{color:var(--fg-body);text-shadow:0 1px 4px rgba(0,0,0,.9)}
+.st2 .seat .won{position:absolute;right:8px;top:8px;z-index:1;display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px 0 6px;border-radius:11px;background:var(--accent);color:#14110E;font:600 11px "IBM Plex Sans",sans-serif}
+.st2 .seat.ini .big{top:38%}
+/* Matchups v2: squares in a fixed column, a neutral square for a game somebody else won */
+.mu2{display:grid;grid-template-columns:52px minmax(0,1fr) 172px 60px;align-items:center;column-gap:14px;padding:10px 16px;border-top:1px solid var(--border)}
+.mu2:first-of-type{border-top:0}
+.mu2 img{width:52px;height:38px;border-radius:6px;object-fit:cover}
+.mu2 .n{font-size:14px;min-width:0}
+.mu2 .sq{display:flex;gap:4px}
+.mu2 .g{text-align:right;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.rs.o{border-style:dashed;border-color:var(--border-dashed);color:var(--fg-locked)}
+.P .mu2{grid-template-columns:52px minmax(0,1fr) 50px;row-gap:6px;padding:10px 14px;align-items:start}
+.P .mu2 img{grid-row:span 2}
+.P .mu2 .n{font-size:13.5px;line-height:1.3}
+.P .mu2 .sq{grid-column:2;grid-row:2}
+.P .mu2 .g{grid-column:3;grid-row:1 / span 2;align-self:center}
+.key2{display:flex;flex-wrap:wrap;gap:8px 18px;padding:10px 16px 12px;border-top:1px solid var(--border);font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.key2 span{display:inline-flex;align-items:center;gap:7px}
+.key2 .rs{width:18px;height:18px;font-size:9.5px;border-radius:5px}
+
+.st3{grid-template-columns:repeat(5,minmax(0,1fr))}
+.st3 .seat{height:74px}
+.st3 .seat.none{border-style:dashed;background:transparent}
+.st3 .seat.none:after{display:none}
+.st3 .seat.none .t span{color:var(--fg-faint);text-shadow:none}
+.st3 .seat.ini .big{top:8px;left:10px;right:auto;bottom:auto;transform:none;font-size:14px}
+.P .st3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.P .st3 .seat{height:70px}
+
+:root{--w:#F4E9C4;--u:#3A6AA5;--b:#98748F;--r:#C05A3E;--g:#4B7A46}
+.st3 .seat.empty{border:1px dashed var(--border-dashed);background:transparent}
+.st3 .seat.empty:after{display:none}
+.st3 .seat.empty .t span{color:var(--fg-locked);font:500 10.5px "IBM Plex Mono",monospace;letter-spacing:.06em;text-shadow:none}
+.seat a.open{position:absolute;inset:0;z-index:2;display:block}
+.seat .go{position:absolute;right:8px;bottom:9px;z-index:1;display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px 0 9px;border-radius:12px;background:rgba(20,17,14,.72);border:1px solid rgba(237,230,216,.18);font:500 11.5px "IBM Plex Sans",sans-serif;color:var(--fg)}
+.seat .go svg{color:var(--fg)}
+.opendk{display:inline-flex;align-items:center;gap:4px;min-height:36px;padding:0 6px 0 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--fg-muted);text-decoration:none}
+.opendk svg{color:var(--fg-muted)}
+.opendk .sm{display:none}.P .opendk .lg{display:none}.P .opendk .sm{display:inline}.P .opendk{min-height:44px}.P .hp-r{grid-template-columns:minmax(0,1fr) auto 100px}
+/* page head: headline + primary Log a game on one line */
+.ph{display:flex;align-items:flex-end;gap:20px;padding-top:12px}
+.ph .hl{flex:1;padding-top:0}
+.P .ph{flex-direction:column;align-items:stretch;gap:14px}
+/* How it's playing */
+.hp-lead{padding:16px 16px 4px;display:flex;flex-direction:column;gap:6px}
+.hp-lead h3{font-family:"Cinzel",serif;font-weight:700;font-size:19px;line-height:1.25}
+.hp-lead p{font-size:13.5px;color:var(--fg-body);line-height:1.5}
+.hp-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));grid-auto-rows:min-content;gap:12px;padding:12px 16px 16px}
+.hp-cols .hp-col.tall{grid-row:span 2}
+.hp-col{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:10px;background:var(--surface);overflow:hidden}
+.hp-col h4{margin:0;display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.hp-col h4 i{width:8px;height:8px;border-radius:50%;flex:none}
+.hp-r{display:grid;grid-template-columns:minmax(0,1fr) auto 112px;align-items:center;gap:10px;min-height:38px;padding:4px 12px;border-top:1px solid var(--border)}
+.hp-r:first-of-type{border-top:0}
+.hp-r .n{font-size:13.5px;color:var(--fg)}
+.hp-r .c{white-space:nowrap;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);text-align:right}
+.pips{display:flex;gap:4px}
+.pip{width:10px;height:10px;border-radius:50%;border:1.5px solid var(--border-strong);box-sizing:border-box}
+.pip.u{background:var(--success);border-color:var(--success)}
+.pip.d{background:var(--warning);border-color:var(--warning)}
+.hp-key{display:flex;align-items:center;gap:14px;margin-left:auto;font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.hp-key span{display:inline-flex;align-items:center;gap:6px}
+.foot{display:flex;align-items:center;gap:12px;min-height:48px;padding:4px 8px 4px 16px;border-top:1px solid var(--border);background:var(--surface-rail)}
+.foot p{flex:1;font-size:13px;color:var(--fg-body)}
+.foot a{display:inline-flex;align-items:center;gap:6px;min-height:40px;padding:0 10px;font-size:13px;font-weight:600;color:var(--accent);text-decoration:none;white-space:nowrap}
+.P .hp-cols{grid-template-columns:minmax(0,1fr);padding:12px 14px 14px}
+.P .hp-key{display:none}
+.P .foot{flex-direction:column;align-items:flex-start;gap:0;padding:10px 8px 6px 14px}
+.P .foot a{padding:0}
+/* Matchups v3: squares follow the name; counts past ten */
+.mu3{display:grid;grid-template-columns:56px 300px minmax(0,1fr);align-items:center;column-gap:16px;min-height:56px;padding:8px 16px;border-top:1px solid var(--border)}
+.mu3:first-of-type{border-top:0}
+.mu3 .th{width:56px;height:38px;border-radius:7px;overflow:hidden;background:var(--elevated);display:flex;align-items:center;justify-content:center;gap:2px;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.mu3 .th.pp{background:transparent}
+.mu3 .th img{width:100%;height:100%;object-fit:cover}
+.mu3 .th b{width:8px;height:8px;border-radius:2px;display:block}
+.mu3 .nm{min-width:0;display:flex;flex-direction:column;gap:2px}
+.mu3 .nm b{font-weight:400;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu3 .nm span{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.mu3 .rr{display:flex;align-items:center;gap:14px;min-width:0}
+.mu3 .sq{display:flex;gap:4px;flex-wrap:wrap}
+.mu3 .sq .rs{width:22px;height:22px;font-size:10.5px;border-radius:5px}
+.mu3 .ct{display:flex;align-items:center;gap:10px}
+.mu3 .ct .rq{display:flex;align-items:center;gap:6px;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.mu3 .ct .rs{width:22px;height:22px;font-size:10.5px;border-radius:5px}
+.mu3 .g{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap}
+.P .mu3{grid-template-columns:48px minmax(0,1fr);row-gap:7px;padding:10px 14px;align-items:start}
+.P .mu3 .th{width:48px;height:34px;grid-row:span 2}
+.P .mu3 .nm b{white-space:normal;font-size:13.5px;line-height:1.3}
+.P .mu3 .rr{grid-column:2;justify-content:space-between}
+
+:root{--pip-ink-dark:#14110E;--pip-ink-light:#FFFFFF;--pip-ink-black:#000000}
+/* anonymous seat */
+.st3 .seat.anon{border:1px dashed var(--border-dashed);background:repeating-linear-gradient(135deg,transparent 0 9px,rgba(237,230,216,.025) 9px 18px)}
+.st3 .seat.anon:after{display:none}
+.st3 .seat.anon .sil{position:absolute;right:10px;bottom:0;width:56px;height:60px;color:var(--border-dashed)}
+.st3 .seat.anon .t b{color:var(--fg-muted);font-weight:500;text-shadow:none}
+.st3 .seat.anon .t span{color:var(--fg-locked);font:500 10.5px "IBM Plex Mono",monospace;text-shadow:none}
+/* games summary box */
+.sum .cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr))}
+.sum .cell2{display:flex;flex-direction:column;gap:6px;padding:14px 16px;border-left:1px solid var(--border);min-width:0}
+.sum .cell2:first-child{border-left:0}
+.sum .cell2 .l{font:500 10px "IBM Plex Mono",monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-faint)}
+.sum .cell2 .v{font-size:15px;font-weight:500;color:var(--fg);display:flex;align-items:center;gap:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sum .cell2 .v img{width:30px;height:30px;border-radius:7px;object-fit:cover;flex:none}
+.sum .cell2 .v small{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint)}
+.sum .cell2.act{justify-content:center;align-items:flex-end}
+.P .sum .cells{grid-template-columns:repeat(2,minmax(0,1fr))}
+.P .sum .cell2:nth-child(3){border-left:0}
+.P .sum .cell2:nth-child(n+3){border-top:1px solid var(--border)}
+.P .sum .cell2.act{grid-column:1 / -1;border-left:0;align-items:stretch;padding:12px 14px 14px}
+/* How it's playing: one list */
+.hp5{display:flex;flex-direction:column}
+.hp5 .r{display:grid;grid-template-columns:minmax(0,220px) 116px auto minmax(0,1fr);align-items:center;column-gap:16px;min-height:44px;padding:4px 16px;border-top:1px solid var(--border)}
+.hp5 .r:first-child{border-top:0}
+.hp5 .n{font-size:14px;color:var(--fg)}
+.hp5 .st{display:inline-flex;align-items:center;gap:7px;font:500 10px "IBM Plex Mono",monospace;letter-spacing:.12em;text-transform:uppercase}
+.hp5 .st i{width:8px;height:8px;border-radius:50%;flex:none}
+.hp5 .st.d{color:var(--warning)}.hp5 .st.d i{background:var(--warning)}
+.hp5 .st.u{color:var(--success)}.hp5 .st.u i{background:var(--success)}
+.hp5 .st.b{color:var(--fg-muted)}.hp5 .st.b i{background:linear-gradient(90deg,var(--success) 50%,var(--warning) 50%)}
+.hp5 .c{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap}
+.hp5 .pips{gap:5px}
+.hp5 .more{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-locked);margin-left:6px}
+.hp5 .more{white-space:nowrap}.P .hp5 .more{display:none}
+.P .hp5 .r{grid-template-columns:minmax(0,1fr) auto;row-gap:6px;padding:10px 14px}
+.P .hp5 .st{grid-column:2;grid-row:1;justify-self:end}
+.P .hp5 .pp{grid-column:1;grid-row:2}
+.P .hp5 .c{grid-column:2;grid-row:2;justify-self:end}
+/* Matchups v4: count before the squares on desktop; Stats pips on Colors */
+.mu4{display:grid;grid-template-columns:56px 280px 64px minmax(0,1fr);align-items:center;column-gap:16px;min-height:56px;padding:8px 16px;border-top:1px solid var(--border)}
+.mu4.cl{grid-template-columns:96px 240px 64px minmax(0,1fr)}
+.mu4:first-of-type{border-top:0}
+.mu4 .g{font:500 11px "IBM Plex Mono",monospace;color:var(--fg-faint);white-space:nowrap}
+.mu4 .th{width:56px;height:38px;border-radius:7px;overflow:hidden;background:var(--elevated);display:flex;align-items:center;justify-content:center;font:500 11px "IBM Plex Mono",monospace;color:var(--fg-muted)}
+.mu4 .th img{width:100%;height:100%;object-fit:cover}
+.mu4 .cp{display:flex;gap:3px}
+.mu4 .cp b{width:20px;height:20px;border-radius:4px;display:flex;align-items:center;justify-content:center;font:600 10px "IBM Plex Mono",monospace}
+.mu4 .nm{min-width:0;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu4 .nm span{font:500 10.5px "IBM Plex Mono",monospace;color:var(--fg-faint);margin-left:8px}
+.mu4 .sq{display:flex;gap:4px;flex-wrap:wrap}
+.mu4 .rs{width:22px;height:22px;font-size:10.5px;border-radius:5px}
+.mu4 .ct{display:flex;align-items:center;gap:10px}
+.mu4 .ct .rq{display:flex;align-items:center;gap:6px;font:500 12px "IBM Plex Mono",monospace;color:var(--fg-body)}
+.P .mu4,.P .mu4.cl{grid-template-columns:auto minmax(0,1fr) auto;row-gap:7px;padding:10px 14px;align-items:center}
+.P .mu4 .th,.P .mu4 .cp{grid-row:span 2}
+.P .mu4 .th{width:48px;height:34px}
+.P .mu4 .nm{grid-column:2;white-space:normal;line-height:1.3;font-size:13.5px}
+.P .mu4 .body{grid-column:2;grid-row:2}
+.P .mu4 .g{grid-column:3;grid-row:1 / span 2}
+
+</style>
+</helmet>
+<div class="wrap" style="padding:0"><div><div style="display:flex;flex-direction:column"><div class="cap" style="font:500 13px IBM Plex Mono,monospace;color:#A59C89;padding-bottom:12px">DECKS › GAMES</div><div class="D"><div class="rail"><img src="art/rail-decks.png" alt=""></div><div class="main"><div style="display:flex;align-items:center;justify-content:space-between"><h1 class="disp" style="font-size:22px">Decks</h1><span style="display:flex;gap:10px"><span class="btn">Import</span><span class="btn cream">New deck</span></span></div><div style="display:flex;gap:12px"><div class="tile"><span style="flex:1"><b>Shopping for all decks</b><span>199 to buy · $434.58 · 8 decks</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></div><div class="tile"><span style="flex:1"><b>Commander precons</b><span>186 decklists · newest Nov 13, 2026</span></span><svg class="chev" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></div></div><div class="vrow"><span class="seg"><span>Decks</span><span class="on">Games</span><span>Stats</span></span><span class="trg"><span class="stk"><img src="art/sai.webp" alt=""><img src="art/gisa.webp" alt=""><img src="art/omnath.webp" alt=""></span>All decks <span class="ct mono faint" style="font-size:11px">7</span><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></span><span class="seg"><span class="on">Any result</span><span>Won</span><span>Lost</span><span>Drawn</span></span><span class="trg">Played against<svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg></span></div><div class="fstat"><span>No filters on</span><u>Clear all filters</u></div><section class="box sum"><div class="band"><h2 class="hh"><span class="dia"></span><span>7 games logged</span><span class="ct">· 4 decks</span></h2><span class="rec2"><span class="rbar"><i style="width:29%"></i></span><span class="rq"><span class="rs w">W</span>2</span><span class="rq"><span class="rs">L</span>5</span></span></div><div class="cells"><div class="cell2"><span class="l">Pods</span><span class="v">2 to 5 players</span></div><div class="cell2"><span class="l">Played</span><span class="v">Oct to Nov 2026</span></div><div class="cell2"><span class="l">Last played</span><span class="v">Nov 19</span></div><div class="cell2"><span class="l">Most played</span><span class="v"><img src="art/sai.webp" alt="">HD - Sai <small>3 of 7</small></span></div></div></section><section class="box "><div class="band"><h2 class="hh"><span class="dia"></span><span>November 2026</span><span class="ct">· 4 games</span></h2><span class="rec2"><span class="rbar"><i style="width:0%"></i></span><span class="rq z"><span class="rs w">W</span>0</span><span class="rq"><span class="rs">L</span>4</span></span></div><article class="row a-row"><div class="a-top"><span class="pill">Lost</span><span class="meta">3 players · Nov 19</span><a class="end opendk" href="#"><span class="lg">Open HD - Gisa</span><span class="sm">Open deck</span><svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div><div class="st2 st3"><div class="seat me"><img src="art/gisa.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Gisa<span class="stamp" style="background:rgba(20,17,14,.6)">v2</span></b></span></div><div class="seat"><img src="art/ghalta.webp" alt=""><span class="t"><b>Colin</b><span>Ghalta</span></span></div><div class="seat win"><img src="art/ishai.webp" alt=""><span class="t"><b>Max</b><span>Ishai</span></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div></div><div class="mgs"><div class="mg"><span class="ml">Hurt</span><span class="chips"><span class="chip"><i class="y"></i>Mana</span><span class="chip"><i class="y"></i>Answers</span><span class="chip"><i class="y"></i>Board presence</span></span></div></div><div class="note" style=""><span>“Got stomped.”</span></div></article><article class="row a-row"><div class="a-top"><span class="pill">Lost</span><span class="meta">4 players · Nov 19</span><a class="end opendk" href="#"><span class="lg">Open HD - Omnath</span><span class="sm">Open deck</span><svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div><div class="st2 st3"><div class="seat me"><img src="art/omnath.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Omnath<span class="stamp" style="background:rgba(20,17,14,.6)">v2</span></b></span></div><div class="seat"><img src="art/bruse.webp" alt=""><span class="t"><b>Colin</b><span>Bruse</span></span></div><div class="seat win"><img src="art/giada.webp" alt=""><span class="t"><b>Peter</b><span>Giada</span></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div><div class="seat"><img src="art/kilo.webp" alt=""><span class="t"><b>Max</b><span>Kilo</span></span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>Comebacks</span><span class="chip"><i class="g"></i>The deck’s plan</span></span></div><div class="mg"><span class="ml">Hurt</span><span class="chips"><span class="chip"><i class="y"></i>Cards in hand</span><span class="chip"><i class="y"></i>Answers</span><span class="chip"><i class="y"></i>Board presence</span></span></div></div><div class="note" style=""><span>“Lost to menace and unblockable creatures. Would have won with more aggression or a larger board presence.”</span></div></article><article class="row a-row"><div class="a-top"><span class="pill">Lost</span><span class="meta">3 players · Nov 1</span><a class="end opendk" href="#"><span class="lg">Open HD - Sai</span><span class="sm">Open deck</span><svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div><div class="st2 st3"><div class="seat me"><img src="art/sai.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Sai<span class="stamp" style="background:rgba(20,17,14,.6)">v4</span></b></span></div><div class="seat win"><img src="art/ishai.webp" alt=""><span class="t"><b>Colin</b><span>Ishai</span></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div><div class="seat"><img src="art/giada.webp" alt=""><span class="t"><b>Peter</b><span>Giada</span></span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>Cards in hand</span><span class="chip"><i class="g"></i>Comebacks</span></span></div><div class="mg"><span class="ml">Hurt</span><span class="chips"><span class="chip"><i class="y"></i>Mana</span><span class="chip"><i class="y"></i>Board presence</span></span></div></div><div class="note" style=""><span>“Missed several land drops. Was able to play some cards and stay relevant, but was never threatening enough due to lack of mana.”</span></div></article><article class="row a-row"><div class="a-top"><span class="pill">Lost</span><span class="meta">3 players · Nov 1</span><a class="end opendk" href="#"><span class="lg">Open HD Tune - Sokka</span><span class="sm">Open deck</span><svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div><div class="st2 st3"><div class="seat me"><img src="art/sokka.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD Tune - Sokka<span class="stamp" style="background:rgba(20,17,14,.6)">v0</span></b></span></div><div class="seat"><img src="art/kilo.webp" alt=""><span class="t"><b>Colin</b><span>Kilo</span></span></div><div class="seat ini win"><span class="big">CH</span><span class="t"><b>Chris</b><span>No commander logged</span></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>Speed</span><span class="chip"><i class="g"></i>Mana</span><span class="chip"><i class="g"></i>Answers</span><span class="chip"><i class="g"></i>Board presence</span></span></div></div><div class="note" style=""><span>“Would have closed the game, but lost to an infinite combo.”</span></div></article></section><section class="box "><div class="band"><h2 class="hh"><span class="dia"></span><span>October 2026</span><span class="ct">· 3 games</span></h2><span class="rec2"><span class="rbar"><i style="width:67%"></i></span><span class="rq"><span class="rs w">W</span>2</span><span class="rq"><span class="rs">L</span>1</span></span></div><article class="row a-row"><div class="a-top"><span class="pill w">Won</span><span class="meta">2 players · Oct 30</span><a class="end opendk" href="#"><span class="lg">Open HD - Sai</span><span class="sm">Open deck</span><svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div><div class="st2 st3"><div class="seat me win"><img src="art/sai.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Sai<span class="stamp" style="background:rgba(20,17,14,.6)">v4</span></b></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div><div class="seat"><img src="art/bruse.webp" alt=""><span class="t"><b>Colin</b><span>Bruse</span></span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>Speed</span><span class="chip"><i class="g"></i>Mana</span><span class="chip"><i class="g"></i>Answers</span><span class="chip"><i class="g"></i>Board presence</span><span class="chip"><i class="g"></i>Closing the game</span></span></div></div><div class="note" style=""><span>“Sai was able to press and immediately be a problem. Protection with Lightning Greaves was crucial.”</span></div></article><article class="row a-row"><div class="a-top"><span class="pill">Lost</span><span class="meta">2 players · Oct 30</span><a class="end opendk" href="#"><span class="lg">Open HD - Sai</span><span class="sm">Open deck</span><svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div><div class="st2 st3"><div class="seat me"><img src="art/sai.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Sai<span class="stamp" style="background:rgba(20,17,14,.6)">v4</span></b></span></div><div class="seat win"><img src="art/ghalta.webp" alt=""><span class="t"><b>Colin</b><span>Ghalta</span></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>The deck’s plan</span></span></div><div class="mg"><span class="ml">Hurt</span><span class="chips"><span class="chip"><i class="y"></i>Mana</span></span></div></div><div class="note" style=""><span>“Ghalta on turn four was too much.”</span></div></article><article class="row a-row"><div class="a-top"><span class="pill w">Won</span><span class="meta">5 players · Oct 4</span><a class="end opendk" href="#"><span class="lg">Open HD Tune - Sokka</span><span class="sm">Open deck</span><svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div><div class="st2 st3"><div class="seat me win"><img src="art/sokka.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD Tune - Sokka<span class="stamp" style="background:rgba(20,17,14,.6)">v1</span></b></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div><div class="seat anon"><svg class="sil" viewBox="0 0 56 60" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="28" cy="20" r="10" stroke-dasharray="3 3"/><path d="M6 60c0-13 10-22 22-22s22 9 22 22" stroke-dasharray="3 3"/><text x="28" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" stroke="none">?</text></svg><span class="t"><b>Someone</b><span>Seat not logged</span></span></div><div class="seat anon"><svg class="sil" viewBox="0 0 56 60" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="28" cy="20" r="10" stroke-dasharray="3 3"/><path d="M6 60c0-13 10-22 22-22s22 9 22 22" stroke-dasharray="3 3"/><text x="28" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" stroke="none">?</text></svg><span class="t"><b>Someone</b><span>Seat not logged</span></span></div><div class="seat anon"><svg class="sil" viewBox="0 0 56 60" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="28" cy="20" r="10" stroke-dasharray="3 3"/><path d="M6 60c0-13 10-22 22-22s22 9 22 22" stroke-dasharray="3 3"/><text x="28" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" stroke="none">?</text></svg><span class="t"><b>Someone</b><span>Seat not logged</span></span></div><div class="seat anon"><svg class="sil" viewBox="0 0 56 60" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="28" cy="20" r="10" stroke-dasharray="3 3"/><path d="M6 60c0-13 10-22 22-22s22 9 22 22" stroke-dasharray="3 3"/><text x="28" y="24" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="11" fill="currentColor" stroke="none">?</text></svg><span class="t"><b>Someone</b><span>Seat not logged</span></span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>Comebacks</span><span class="chip"><i class="g"></i>The deck’s plan</span><span class="chip"><i class="g"></i>Closing the game</span></span></div></div><div class="note" style=""><span>“Slow ramp, but the cards came together towards the end for a win.”</span></div></article></section></div></div></div></div><div><div style="display:flex;flex-direction:column"><div class="cap" style="font:500 13px IBM Plex Mono,monospace;color:#A59C89;padding-bottom:12px">DECK DETAILS › GAMES · HD - Sai</div><div class="D"><div class="rail"><img src="art/rail-decks.png" alt=""></div><div class="main" style="padding-top:0"><div class="dtabs"><span>Your deck<i>99</i></span><span>Analysis</span><span>Tuning</span><span class="on">Games<i>3</i></span><span>Versions<i>4</i></span></div><div style="height:6px"></div><section class="box sum"><div class="band"><h2 class="hh"><span class="dia"></span><span>3 games logged</span><span class="ct">· HD - Sai</span></h2><span class="rec2"><span class="rbar"><i style="width:33%"></i></span><span class="rq"><span class="rs w">W</span>1</span><span class="rq"><span class="rs">L</span>2</span></span></div><div class="cells"><div class="cell2"><span class="l">Pods</span><span class="v">2 to 3 players</span></div><div class="cell2"><span class="l">Played</span><span class="v">Oct to Nov 2026</span></div><div class="cell2"><span class="l">Last played</span><span class="v">Nov 1</span></div><div class="cell2 act"><span class="btn cream" style="min-height:44px;padding:0 20px;font-size:14px">Log a game</span></div></div></section><section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>How it’s playing</span><span class="ct">· 3 games</span></h2></div><div class="hp-lead"><h3>Mana is holding it back.</h3><p>Marked against you in 2 of 3 games.</p></div><div class="hp5" style="margin-top:10px;border-top:1px solid var(--border)"><div class="r"><span class="n">Mana</span><span class="st d"><i></i>Hurting</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip u"></span><span class="pip d"></span><span class="pip d"></span></span></span><span class="c">down in 2 of 3</span></div><div class="r"><span class="n">Board presence</span><span class="st b"><i></i>Both ways</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip u"></span><span class="pip"></span><span class="pip d"></span></span></span><span class="c">1 up · 1 down</span></div><div class="r"><span class="n">Speed</span><span class="st u"><i></i>Helping</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip u"></span><span class="pip"></span><span class="pip"></span></span></span><span class="c">up in 1 of 3</span></div><div class="r"><span class="n">Answers</span><span class="st u"><i></i>Helping</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip u"></span><span class="pip"></span><span class="pip"></span></span></span><span class="c">up in 1 of 3</span></div><div class="r"><span class="n">Closing the game</span><span class="st u"><i></i>Helping</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip u"></span><span class="pip"></span><span class="pip"></span></span></span><span class="c">up in 1 of 3</span></div><div class="r"><span class="n">The deck’s plan</span><span class="st u"><i></i>Helping</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip"></span><span class="pip u"></span><span class="pip"></span></span></span><span class="c">up in 1 of 3</span></div><div class="r"><span class="n">Cards in hand</span><span class="st u"><i></i>Helping</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip"></span><span class="pip"></span><span class="pip u"></span></span></span><span class="c">up in 1 of 3</span></div><div class="r"><span class="n">Comebacks</span><span class="st u"><i></i>Helping</span><span class="pp" style="display:flex;align-items:center"><span class="pips"><span class="pip"></span><span class="pip"></span><span class="pip u"></span></span></span><span class="c">up in 1 of 3</span></div></div><div class="key2"><span><span class="pip u"></span>helped</span><span><span class="pip d"></span>hurt</span><span><span class="pip"></span>not marked</span><span>one dot per game, oldest first, last 10 at most</span></div><div class="foot"><p>Suggested changes uses these games to pick what to cut and add.</p><a href="#">Open Tuning<svg class="chev" width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></a></div></section><section class="box"><div class="band"><h2 class="hh"><span class="dia"></span><span>Matchups</span><span class="ct">· 3 of 3 games</span></h2><span class="seg" style="margin-left:auto"><span class="on" style="">Commander</span><span class="" style="">Colors</span><span class="" style="">Friend</span></span></div><div class="mu4"><span class="th"><img src="art/ishai.webp" alt=""></span><span class="nm">Ishai, Ojutai Dragonspeaker</span><span class="g">1 game</span><span class="body"><span class="sq"><span class="rs">L</span></span></span></div><div class="mu4"><span class="th"><img src="art/giada.webp" alt=""></span><span class="nm">Giada, Font of Hope</span><span class="g">1 game</span><span class="body"><span class="sq"><span class="rs o">–</span></span></span></div><div class="mu4"><span class="th"><img src="art/bruse.webp" alt=""></span><span class="nm">Bruse Tarl, Boorish Herder</span><span class="g">1 game</span><span class="body"><span class="sq"><span class="rs w">W</span></span></span></div><div class="mu4"><span class="th"><img src="art/ghalta.webp" alt=""></span><span class="nm">Ghalta, Primal Hunger</span><span class="g">1 game</span><span class="body"><span class="sq"><span class="rs">L</span></span></span></div><div class="key2"><span><span class="rs w">W</span>you won</span><span><span class="rs">L</span>they won</span><span><span class="rs o">–</span>someone else won</span></div></section><section class="box "><div class="band"><h2 class="hh"><span class="dia"></span><span>November 2026</span><span class="ct">· 1 game</span></h2><span class="rec2"><span class="rbar"><i style="width:0%"></i></span><span class="rq z"><span class="rs w">W</span>0</span><span class="rq"><span class="rs">L</span>1</span></span></div><article class="row a-row"><div class="a-top"><span class="pill">Lost</span><span class="meta">3 players · Nov 1</span><span class="end"><span class="xbtn">×</span></span></div><div class="st2 st3"><div class="seat me"><img src="art/sai.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Sai<span class="stamp" style="background:rgba(20,17,14,.6)">v4</span></b></span></div><div class="seat win"><img src="art/ishai.webp" alt=""><span class="t"><b>Colin</b><span>Ishai</span></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div><div class="seat"><img src="art/giada.webp" alt=""><span class="t"><b>Peter</b><span>Giada</span></span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>Cards in hand</span><span class="chip"><i class="g"></i>Comebacks</span></span></div><div class="mg"><span class="ml">Hurt</span><span class="chips"><span class="chip"><i class="y"></i>Mana</span><span class="chip"><i class="y"></i>Board presence</span></span></div></div><div class="note" style=""><span>“Missed several land drops. Was able to play some cards and stay relevant, but was never threatening enough due to lack of mana.”</span></div></article></section><section class="box "><div class="band"><h2 class="hh"><span class="dia"></span><span>October 2026</span><span class="ct">· 2 games</span></h2><span class="rec2"><span class="rbar"><i style="width:50%"></i></span><span class="rq"><span class="rs w">W</span>1</span><span class="rq"><span class="rs">L</span>1</span></span></div><article class="row a-row"><div class="a-top"><span class="pill w">Won</span><span class="meta">2 players · Oct 30</span><span class="end"><span class="xbtn">×</span></span></div><div class="st2 st3"><div class="seat me win"><img src="art/sai.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Sai<span class="stamp" style="background:rgba(20,17,14,.6)">v4</span></b></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div><div class="seat"><img src="art/bruse.webp" alt=""><span class="t"><b>Colin</b><span>Bruse</span></span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>Speed</span><span class="chip"><i class="g"></i>Mana</span><span class="chip"><i class="g"></i>Answers</span><span class="chip"><i class="g"></i>Board presence</span><span class="chip"><i class="g"></i>Closing the game</span></span></div></div><div class="note" style=""><span>“Sai was able to press and immediately be a problem. Protection with Lightning Greaves was crucial.”</span></div></article><article class="row a-row"><div class="a-top"><span class="pill">Lost</span><span class="meta">2 players · Oct 30</span><span class="end"><span class="xbtn">×</span></span></div><div class="st2 st3"><div class="seat me"><img src="art/sai.webp" alt=""><span class="who">You</span><span class="t" style="right:10px"><b>HD - Sai<span class="stamp" style="background:rgba(20,17,14,.6)">v4</span></b></span></div><div class="seat win"><img src="art/ghalta.webp" alt=""><span class="t"><b>Colin</b><span>Ghalta</span></span><span class="won"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 2.5h7v4a3.5 3.5 0 0 1-7 0v-4Z"/><path d="M4.5 4H2.5a1.5 1.5 0 0 0 2 2.3M11.5 4h2a1.5 1.5 0 0 1-2 2.3M8 10v2.5M5.5 13.5h5"/></svg>Won</span></div></div><div class="mgs"><div class="mg"><span class="ml">Helped</span><span class="chips"><span class="chip"><i class="g"></i>The deck’s plan</span></span></div><div class="mg"><span class="ml">Hurt</span><span class="chips"><span class="chip"><i class="y"></i>Mana</span></span></div></div><div class="note" style=""><span>“Ghalta on turn four was too much.”</span></div></article></section></div></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2680,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

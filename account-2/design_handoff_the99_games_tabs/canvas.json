@@ -15,105 +15,126 @@
    "y": 0,
    "w": 1400,
    "h": 1069,
-   "title": "Main \u00b7 three concepts"
+   "title": "Main · three concepts"
   },
   "Filters.dc.html": {
    "x": 1480,
    "y": 0,
    "w": 2680,
    "h": 1602,
-   "title": "Filters \u00b7 custom components (all concepts)"
+   "title": "Filters · custom components (all concepts)"
   },
   "A-Desktop.dc.html": {
    "x": 0,
    "y": 1962,
    "w": 2680,
    "h": 1863,
-   "title": "A Seats \u00b7 desktop"
+   "title": "A Seats · desktop"
   },
   "A-Phone.dc.html": {
    "x": 2760,
    "y": 1962,
    "w": 860,
    "h": 2598,
-   "title": "A Seats \u00b7 phone"
+   "title": "A Seats · phone"
   },
   "B-Desktop.dc.html": {
    "x": 0,
    "y": 4920,
    "w": 2680,
    "h": 1358,
-   "title": "B Ledger \u00b7 desktop"
+   "title": "B Ledger · desktop"
   },
   "B-Phone.dc.html": {
    "x": 2760,
    "y": 4920,
    "w": 860,
    "h": 2533,
-   "title": "B Ledger \u00b7 phone"
+   "title": "B Ledger · phone"
   },
   "C-Desktop.dc.html": {
    "x": 0,
    "y": 7813,
    "w": 4060,
    "h": 1191,
-   "title": "C Headline rows \u00b7 desktop"
+   "title": "C Headline rows · desktop"
   },
   "C-Phone.dc.html": {
    "x": 4140,
    "y": 7813,
    "w": 1330,
    "h": 1735,
-   "title": "C Headline rows \u00b7 phone"
+   "title": "C Headline rows · phone"
   },
   "D-Desktop.dc.html": {
    "x": 0,
    "y": -2103,
    "w": 4060,
    "h": 1207,
-   "title": "R2 Headline rows + seats \u00b7 desktop"
+   "title": "R2 Headline rows + seats · desktop"
   },
   "D-Phone.dc.html": {
    "x": 4140,
    "y": -2103,
    "w": 1330,
    "h": 1743,
-   "title": "R2 Headline rows + seats \u00b7 phone"
+   "title": "R2 Headline rows + seats · phone"
   },
   "E-Desktop.dc.html": {
    "x": 0,
    "y": -5237,
    "w": 2680,
    "h": 1975,
-   "title": "R3 Seats \u00b7 desktop"
+   "title": "R3 Seats · desktop"
   },
   "E-Phone.dc.html": {
    "x": 2760,
    "y": -5237,
    "w": 860,
    "h": 2774,
-   "title": "R3 Seats \u00b7 phone"
+   "title": "R3 Seats · phone"
   },
   "G-Desktop.dc.html": {
    "x": 0,
    "y": -8653,
    "w": 2680,
    "h": 2045,
-   "title": "R4 Seats \u00b7 desktop"
+   "title": "R4 Seats · desktop"
   },
   "G-Phone.dc.html": {
    "x": 2760,
    "y": -8653,
    "w": 860,
    "h": 3056,
-   "title": "R4 Seats \u00b7 phone"
+   "title": "R4 Seats · phone"
   },
   "G-Matchups.dc.html": {
    "x": 3700,
    "y": -8653,
    "w": 2552,
    "h": 1466,
-   "title": "R4 Matchups \u00b7 fuller (14 of 20 games)"
+   "title": "R4 Matchups · fuller (14 of 20 games)"
+  },
+  "H-Desktop.dc.html": {
+   "x": 0,
+   "y": -12190,
+   "w": 2680,
+   "h": 2094,
+   "title": "R5 Desktop · Decks › Games + Deck › Games"
+  },
+  "H-Phone.dc.html": {
+   "x": 2760,
+   "y": -12190,
+   "w": 860,
+   "h": 3177,
+   "title": "R5 Phone · both tabs"
+  },
+  "H-Fuller.dc.html": {
+   "x": 3700,
+   "y": -12190,
+   "w": 2552,
+   "h": 1721,
+   "title": "R5 Fuller · How it’s playing (14 games) + Matchups"
   }
  },
  "order": [
@@ -131,48 +152,58 @@
   "E-Phone.dc.html",
   "G-Desktop.dc.html",
   "G-Phone.dc.html",
-  "G-Matchups.dc.html"
+  "G-Matchups.dc.html",
+  "H-Desktop.dc.html",
+  "H-Phone.dc.html",
+  "H-Fuller.dc.html"
  ],
  "notes": {
   "ta": {
    "x": 0,
    "y": 1702,
-   "text": "A \u00b7 Seats",
+   "text": "A · Seats",
    "kind": "title1",
    "maxW": 3620
   },
   "tb": {
    "x": 0,
    "y": 4660,
-   "text": "B \u00b7 Ledger",
+   "text": "B · Ledger",
    "kind": "title1",
    "maxW": 3620
   },
   "tc": {
    "x": 0,
    "y": 7553,
-   "text": "C \u00b7 Headline rows",
+   "text": "C · Headline rows",
    "kind": "title1",
    "maxW": 5470
   },
   "td": {
    "x": 0,
    "y": -2363,
-   "text": "R2 \u00b7 Headline rows, seats in the details",
+   "text": "R2 · Headline rows, seats in the details",
    "kind": "title1",
    "maxW": 5470
   },
   "te": {
    "x": 0,
    "y": -5497,
-   "text": "R3 \u00b7 Seats, with the fixes",
+   "text": "R3 · Seats, with the fixes",
    "kind": "title1",
    "maxW": 3620
   },
   "tg": {
    "x": 0,
    "y": -8913,
-   "text": "R4 \u00b7 Seats, how it\u2019s playing, fuller matchups",
+   "text": "R4 · Seats, how it’s playing, fuller matchups",
+   "kind": "title1",
+   "maxW": 6252
+  },
+  "th": {
+   "x": 0,
+   "y": -12450,
+   "text": "R5 · Grounded summary, one-list How it’s playing, matchups tidy",
    "kind": "title1",
    "maxW": 6252
   }
