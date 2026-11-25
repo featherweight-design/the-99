@@ -14,6 +14,7 @@
 import { and, eq, inArray, or } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
+import { chainArt } from "../cards/chain-art";
 import { cheapestLiveCents } from "../cards/price-lookup";
 import { loadOwnedPrintingPrices } from "../cards/prices";
 import type { Store } from "../stores/rows";
@@ -96,10 +97,13 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
     .from(cards)
     .where(inArray(cards.oracleId, pieceIds));
   const artById = new Map(art.map((r) => [r.oracleId, r]));
+  // The hover preview shows the printing card details opens: the copy the reader owns, else the catalog's.
+  // Fail-soft: a failed read leaves the catalog art.
+  const ownedArt = await chainArt(userId, null, pieceIds, store).catch(() => new Map<string, string | null>());
   const piece = (p: { oracleId: string; name: string }): ComboPiece => ({
     oracleId: p.oracleId,
     name: p.name,
-    imageUri: artById.get(p.oracleId)?.imageUri ?? null,
+    imageUri: ownedArt.get(p.oracleId) ?? artById.get(p.oracleId)?.imageUri ?? null,
     artCropUri: artById.get(p.oracleId)?.artCropUri ?? null,
   });
 

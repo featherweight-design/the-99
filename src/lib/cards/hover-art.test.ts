@@ -76,6 +76,8 @@ const FEEDERS: Record<string, string> = {
   "components/cards/read-row.tsx": "lib/swaps/fits-read-run.ts",
   // Every card a notice names, down the chain card details uses (`loadDeckNotices`).
   "components/decks/notices-body.tsx": "lib/notices/read.ts",
+  // The combos view's pair cards preview the printing card details opens: the reader's owned copy, else the catalog's (`loadCollectionCombos`).
+  "components/collection/combos-view.tsx": "lib/combos/collection-combos.ts",
   // The button a row or tile IS: the owner (browser.tsx) passes each row's art from its own loader.
   "components/ui/preview-button.tsx": "",
   // The collection's own rows ARE the printing they draw: the collection list resolves its art per owned
