@@ -179,7 +179,7 @@ describe("a friend's page group", () => {
     expect(m.loadFriendSpareList).toHaveBeenCalledWith("user_viewer", COLIN.publicId, true);
     expect(html.indexOf("Fixture Card")).toBeLessThan(html.indexOf("Sol Ring"));
     expect(html).toContain("2 spares");
-    expect(html).toContain("1 spare");
+    expect(html).toContain(p.spares.count(1));
     expect(html.match(/data-testid="spare-on-wishlist"/g)).toHaveLength(1);
     // Neither fixture card has art, so each names itself in the card's place.
     expect(html.match(/data-testid="spare-name"[^>]*>Fixture Card</g)).toHaveLength(1);

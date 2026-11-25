@@ -199,7 +199,7 @@ describe("AccountsList (A1 to A3)", () => {
     await act(async () => fireEvent.click(within(mara).getByRole("button", { name: /Show/ })));
     expect(screen.getByRole("alert")).toHaveTextContent(/^Couldn’t show Mara Q\. Nothing was shown\./);
     expect(mara).not.toHaveAttribute("data-revealed");
-    await act(async () => fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" })));
+    await act(async () => fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: adminMaskCopy.reveal.tryAgain })));
     expect(revealFn).toHaveBeenCalledTimes(2);
   });
 
@@ -278,7 +278,7 @@ describe("AccountsList (A1 to A3)", () => {
       expect(screen.getByText(adminMaskCopy.accounts.enterToLookUp)).toBeInTheDocument();
       const toast = screen.getByRole("alert");
       expect(toast).toHaveTextContent(adminMaskCopy.accounts.lookUpFailed);
-      await act(async () => fireEvent.click(within(toast).getByRole("button", { name: "Try again" })));
+      await act(async () => fireEvent.click(within(toast).getByRole("button", { name: adminMaskCopy.reveal.tryAgain })));
       expect(lookUpFn).toHaveBeenCalledTimes(2);
       expect(rowsShown()).toHaveLength(1);
     });
@@ -360,7 +360,7 @@ describe("AccountsList (A1 to A3)", () => {
       expect(screen.getByRole("alert")).toHaveTextContent("Nothing was shown.");
       // Its Try again asks again, and a toast it leaves behind is not the lookup's.
       revealFn.mockResolvedValue({ ok: true, id: "user_9mara", name: "Mara Quinn", email: "mara@example.com", hidesAt: SOON.toISOString() });
-      await act(async () => fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" })));
+      await act(async () => fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: adminMaskCopy.reveal.tryAgain })));
       expect(screen.queryByRole("alert")).toBeNull();
     });
 

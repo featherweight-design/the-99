@@ -22,7 +22,7 @@ const SHOT = { src: "/x.webp", width: 780, height: 520, halo: { x: 0.1, y: 0.1, 
 const model = (state: ToolCardModel["state"], extra: Partial<ToolCardModel> = {}): ToolCardModel =>
   ({
     id: "proposed-cuts",
-    copy: { name: "Proposed cuts", line: "Counts where a deck runs long." },
+    copy: { name: "Fixture tool", line: "Counts where a deck runs long." },
     credit: null,
     note: null,
     state,
@@ -107,7 +107,7 @@ describe("ToolCard: one press per card", () => {
     const body = where.parentElement!;
     const order = [...body.children].map((e) => e.textContent);
     expect(order).toEqual([
-      "Proposed cuts1 credit",
+      "Fixture tool1 credit",
       "Counts where a deck runs long.",
       "Reads your last commit",
       "Show it above ↑",

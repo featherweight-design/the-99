@@ -125,7 +125,7 @@ describe("FeedItemRow", () => {
 
   it("gives a spare request (the later round) its accent kicker and no press", () => {
     list(<FeedItemRow item={view({ kind: "spare-request", friend: { publicId: "p2", displayName: named("Peter") } })} now={NOW} />);
-    expect(screen.getByText("Spare request").className).toContain("--accent-text");
+    expect(screen.getByText(feedCopy.home.kicker["spare-request"]).className).toContain("--accent-text");
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.queryByRole("button")).toBeNull();
   });
@@ -133,7 +133,7 @@ describe("FeedItemRow", () => {
   it("draws an answer to the reader's own ask as Your request: who spares it, the buy line, a press to /friends off Home, no accent", () => {
     const colin = { publicId: "p3", displayName: named("Colin") };
     list(<FeedItemRow item={view({ kind: "spare-request", friend: colin, answer: "yes", href: "/friends", answerDetail: { others: [], standalone: false } })} now={NOW} />);
-    expect(screen.getByText("Your request").className).not.toContain("--accent-text");
+    expect(screen.getByText(feedCopy.home.answerKicker).className).not.toContain("--accent-text");
     expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toHaveClass("ph-no-capture");
     expect(screen.getByText(spareCopy.request.mine.acceptedDetail)).toBeTruthy();
     // Outside What's new (no answer sheet to open) the press still goes to /friends, as it shipped.
@@ -306,7 +306,7 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
     expect(all.container.querySelector("[data-feed-lists]")!.textContent).toBe("All 5 lists");
     all.unmount();
     const one = list(<FeedItemRow item={post({ kind: "commander-decklists" }, { lists: { n: 1, of: 1 } })} now={NOW} />);
-    expect(one.container.querySelector("[data-feed-lists]")!.textContent).toBe("1 list");
+    expect(one.container.querySelector("[data-feed-lists]")!.textContent).toBe(feedCopy.home.line.listsAll(1));
     one.unmount();
     const none = list(<FeedItemRow item={post({ kind: "commander-decklists" }, { lists: { n: 0, of: 1 } })} now={NOW} />);
     expect(none.container.querySelector("[data-feed-lists]")!.textContent).toBe("0 of 1 list so far");

@@ -89,7 +89,7 @@ describe("FlyerCodes with no codes", () => {
   });
 });
 
-describe("New flyer code", () => {
+describe("minting a flyer code", () => {
   beforeEach(() => {
     makeCode.mockReset().mockResolvedValue({ ok: true, code: "ABC234" });
     refresh.mockClear();
@@ -273,7 +273,7 @@ describe("the launch date row", () => {
 });
 
 // The launch card's top row (flyer admin PR C; CSV.dc.html C3/C4): Download CSV only when the list holds an address.
-describe("Download CSV", () => {
+describe("the CSV export", () => {
   const withListed = (listed: number) => flyersView({ codes: [], listed, held: 40, open: [], holds: [], launchDate: null }, new Date("2026-10-30T12:00:00Z"));
   let saved: { filename: string; type: string; text: string }[];
 

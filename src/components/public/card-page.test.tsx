@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { PublicCard, PublicPrinting } from "../../lib/public/card";
+import { publicPagesCopy } from "../../lib/copy/public-pages";
 import { PublicCardPage } from "./card-page";
 import { PHONE_PRINTINGS } from "./printings";
 
@@ -118,7 +119,7 @@ describe("the public card page", () => {
   it("draws Bracket facts only for a card with any, and says Not legal with no reason", () => {
     draw({ ...rootha, gameChanger: true, commanderLegal: false });
     const facts = screen.getByTestId("public-bracket-facts");
-    expect(within(facts).getByText("Bracket facts")).toBeTruthy();
+    expect(within(facts).getByText(publicPagesCopy.card.bracketFacts)).toBeTruthy();
     expect(within(facts).getByText("game changer")).toBeTruthy();
     expect(within(screen.getByTestId("public-facts")).getByText("Not legal")).toBeTruthy();
   });

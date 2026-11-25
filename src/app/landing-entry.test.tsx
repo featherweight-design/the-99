@@ -72,7 +72,7 @@ describe("landingMetadata", () => {
       description: landingCopy.meta.description,
       url: "/",
       type: "website",
-      siteName: "The 99",
+      siteName: landingCopy.topBar.wordmarkPhone,
     });
     expect(meta.openGraph).not.toHaveProperty("images");
     expect(meta.twitter).toMatchObject({ card: "summary" });

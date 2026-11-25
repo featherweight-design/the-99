@@ -196,7 +196,7 @@ const ca = feedCopy.home.clearAll;
 const LEAD = "item:0f4b1c9e-1d2a-4c3b-8e5f-6a7b8c9d0e1f";
 const clearBtn = () => screen.queryByRole("button", { name: ca.aria });
 
-describe("Clear all", () => {
+describe("the clear-all control", () => {
   it("shows from two items, the lead counted, and not for one", () => {
     const one = render(<WhatsNew feed={feed([view(1)])} now={NOW} />);
     expect(clearBtn()).toBeNull();
@@ -269,7 +269,7 @@ describe("Clear all", () => {
   });
 });
 
-describe("Waiting on you", () => {
+describe("the waiting list", () => {
   const NOW_D = new Date(NOW);
   const trade: WaitingRow = {
     key: "item:aaaaaaaa-1d2a-4c3b-8e5f-6a7b8c9d0e1f", kind: "trade-match", createdAt: new Date(NOW_D.getTime() - 3_600_000), unseen: true,

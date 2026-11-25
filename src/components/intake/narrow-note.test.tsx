@@ -44,7 +44,7 @@ describe("the narrow note", () => {
 
   it("draws the slim bar for a few, and the empty state with a way back for none", () => {
     const { unmount } = render(<NarrowNote count={1} options={options} changeHref="/x" />);
-    expect(screen.getByTestId("narrow-few").textContent).toContain("Only one commander fits all of that");
+    expect(screen.getByTestId("narrow-few").textContent).toContain(helpMeChooseCopy.narrow.few(1));
     unmount();
     render(<NarrowNote count={0} options={options} changeHref="/decks/new/choose?t=dinosaurs" />);
     expect(screen.getByTestId("narrow-none").textContent).toContain(helpMeChooseCopy.narrow.none);

@@ -268,7 +268,7 @@ describe("7g to 7k, 7m: done", () => {
     expect(screen.getByTestId("read-lead").textContent).toMatch(/You have no decks yet, so the lines speak to what you wrote alone\.$/);
     cleanup();
     draw(done(), { hasDecks: null });
-    expect(text()).not.toContain("no decks");
+    expect(text()).not.toContain(helpMeChooseCopy.read.noDecks);
   });
 
   it("says a repeat used no credit (7m)", () => {

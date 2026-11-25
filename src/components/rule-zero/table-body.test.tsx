@@ -25,7 +25,7 @@ const NOW = new Date("2026-10-16T21:40:00Z");
 const draw = (view: TableView) =>
   render(<TableBody view={view} now={NOW} />);
 
-const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
+const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? copy.seat.label(null) as string : `${name}’s seat` });
 const meta = () => screen.getByRole("heading", { level: 1 }).nextElementSibling as HTMLElement;
 const headline = () => within(screen.getByTestId("read-card")).getByRole("heading", { level: 2 });
 
@@ -232,7 +232,7 @@ describe("TableClosed", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(copy.expired.title);
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin"))))).toBeInTheDocument();
     expect(screen.getByText(plain(copy.expired.body(named("Thursday night"), named("Colin")))).className).toContain("ph-no-capture");
-    expect(screen.getByRole("link", { name: "Back to Friends" })).toHaveAttribute("href", "/friends");
+    expect(screen.getByRole("link", { name: copy.expired.back })).toHaveAttribute("href", "/friends");
   });
 
   it("opens the provenance sheet from the read without a card-detail ancestor", () => {

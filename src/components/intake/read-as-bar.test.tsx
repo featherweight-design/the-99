@@ -33,7 +33,7 @@ function bar(props: { card?: CardChip | null; words?: string; empty?: boolean } 
   );
 }
 
-describe("Your answers", () => {
+describe("the read-as answer bar", () => {
   it("draws one read-only chip per answer, in the form's order", () => {
     bar();
     const chips = screen.getAllByTestId("answer-chip").map((c) => c.textContent);
