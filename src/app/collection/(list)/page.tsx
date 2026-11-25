@@ -74,6 +74,9 @@ export default async function CollectionPage({
     // (`cache/deployment.ts`), a deploy retires the previous build's entry on its own, and
     // a new field needs no new `browse-N`. The record of why each one moved:
     //
+    // "browse-7" because the entry gained `comboPairCount` beside the packed cards (the Two-card combos
+    // chip's figure); an entry written by the previous deploy has none, and the deployment id retires it.
+    //
     // "browse-6" because the entry became columns under brotli (`packCollection`), a shape the
     // previous deploy's reader cannot open; the deployment id retires its entries all the same.
     //
