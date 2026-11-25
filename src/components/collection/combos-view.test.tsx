@@ -45,7 +45,7 @@ afterEach(() => {
 describe("CombosView", () => {
   it("draws both fact lines and the NEW tag on the announced pair", async () => {
     stubFetch({ both });
-    render(<CombosView side="both" onSide={() => {}} bothCount={2} newVariantId="v1" wide retry={0} />);
+    render(<CombosView side="both" onSide={() => {}} bothCount={2} newVariantId="v1" wide />);
     await waitFor(() => expect(screen.getByText(copy.inNoDeck)).toBeTruthy());
     expect(screen.getByText(copy.bothIn("Edgar's Bloodline"))).toBeTruthy();
     expect(screen.getAllByText(copy.newTag)).toHaveLength(1);
@@ -54,7 +54,7 @@ describe("CombosView", () => {
 
   it("own one: the missing slot, its price, and Add to wishlist writes the missing card", async () => {
     stubFetch({ one });
-    render(<CombosView side="one" onSide={() => {}} bothCount={2} newVariantId={null} wide retry={0} />);
+    render(<CombosView side="one" onSide={() => {}} bothCount={2} newVariantId={null} wide />);
     await waitFor(() => expect(screen.getByText(`${copy.missing("Key")} · ${copy.priced("$1.10", "Mana Pool")}`)).toBeTruthy());
     expect(screen.getByText(copy.notOwned)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.addToWishlist }));
@@ -65,7 +65,7 @@ describe("CombosView", () => {
   it("the toggle reports the side, and How it works opens the pair's combo sheet", async () => {
     stubFetch({ both });
     const onSide = vi.fn();
-    render(<CombosView side="both" onSide={onSide} bothCount={2} newVariantId={null} wide retry={0} />);
+    render(<CombosView side="both" onSide={onSide} bothCount={2} newVariantId={null} wide />);
     fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.ownOne) }));
     expect(onSide).toHaveBeenCalledWith("one");
     await waitFor(() => screen.getAllByRole("button", { name: copy.howItWorks }));
@@ -75,12 +75,16 @@ describe("CombosView", () => {
 
   it("an empty side is one quiet line, a failed one says so", async () => {
     stubFetch({ both: { side: "both", total: 0, pairs: [] } });
-    const { unmount } = render(<CombosView side="both" onSide={() => {}} bothCount={0} newVariantId={null} wide retry={0} />);
+    const { unmount } = render(<CombosView side="both" onSide={() => {}} bothCount={0} newVariantId={null} wide />);
     await waitFor(() => expect(screen.getByText(copy.emptyBoth)).toBeTruthy());
     unmount();
     stubFetch({});
-    render(<CombosView side="one" onSide={() => {}} bothCount={0} newVariantId={null} wide retry={0} />);
+    render(<CombosView side="one" onSide={() => {}} bothCount={0} newVariantId={null} wide />);
     await waitFor(() => expect(screen.getByText(copy.loadFailed)).toBeTruthy());
+    // Try again asks for the side once more.
+    stubFetch({ one });
+    fireEvent.click(screen.getByRole("button", { name: copy.tryAgain }));
+    await waitFor(() => expect(screen.getByText(copy.notOwned)).toBeTruthy());
   });
 
   it("the result word prefers the unbounded or game-ending feature", () => {

@@ -2,7 +2,7 @@
 
 // Collection quick filters (R2): the combos view, drawn in place of the card list while Two-card combos is pressed.
 // Pairs, not cards: own both (Find a deck, How it works) or own one (the missing card, its price or the draft that
-// wants it, Add to wishlist). One fetch per side per visit, kept here so flipping the toggle back costs nothing; the
+// wants it, Add to wishlist). One fetch per side while the view is open, kept here so flipping the toggle back costs nothing (closing the view drops it); the
 // route is `private, no-store` and the list payload carries only the chip's count.
 import { useEffect, useState } from "react";
 import { addToWishlistAction } from "../../app/collection/wishlist/actions";
@@ -36,7 +36,7 @@ function useComboSide(side: ComboSide, retry: number): Load {
     return () => {
       live = false;
     };
-    // `retry` is the chip's press count: a failed side is asked for again when the reader presses the chip.
+    // `retry` counts Try again presses: a failed side is asked for again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [side, retry]);
   return loaded[side] ?? { kind: "loading" };
@@ -183,7 +183,6 @@ export function CombosView({
   bothCount,
   newVariantId,
   wide,
-  retry,
 }: {
   side: ComboSide;
   onSide: (side: ComboSide) => void;
@@ -191,8 +190,8 @@ export function CombosView({
   bothCount: number;
   newVariantId: string | null;
   wide: boolean;
-  retry: number;
 }) {
+  const [retry, setRetry] = useState(0);
   const load = useComboSide(side, retry);
   const detail = useCardDetail();
   const pairs = load.kind === "ready" ? load.combos.pairs : [];
@@ -219,7 +218,12 @@ export function CombosView({
         <p className="m-0 text-[13px] text-[color:var(--fg-muted)]">{side === "both" ? copy.ownBothLine : copy.ownOneLine}</p>
       </div>
       {load.kind === "failed" ? (
-        <p className="mt-[12px] font-mono text-[11.5px] text-[color:var(--fg-faint)]">{copy.loadFailed}</p>
+        <p className="mt-[12px] flex flex-wrap items-center gap-[10px] font-mono text-[11.5px] text-[color:var(--fg-faint)]">
+          {copy.loadFailed}
+          <button type="button" onClick={() => setRetry((n) => n + 1)} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 font-mono text-[11.5px] text-[color:var(--fg-body)] underline">
+            {copy.tryAgain}
+          </button>
+        </p>
       ) : load.kind === "ready" && pairs.length === 0 ? (
         <p className="mt-[16px] text-[13px] text-[color:var(--fg-muted)]">{side === "both" ? copy.emptyBoth : copy.emptyOne}</p>
       ) : (

@@ -331,7 +331,6 @@ export function CollectionBrowser({
     return search.get("quick") === "combos" ? "both" : null;
   });
   const [newVariantId] = useState<string | null>(() => search.get("new"));
-  const [comboPress, setComboPress] = useState(0);
   // The sort the cookie holds now: what a URL with no `sort` reads as. Starts as the page's hint and follows every press.
   const remembered = useRef<StoredSort | null>(viewHint.sort ?? null);
   const [sort, setSort] = useState<SortKey>(initial.sort);
@@ -604,7 +603,6 @@ export function CollectionBrowser({
   const pressQuick = (key: QuickPressed) => {
     if (key === "combos") {
       // Pressing it again turns it off; pressing it on opens own both. Filters are held, not cleared.
-      setComboPress((n) => n + 1);
       setCombosSide((side) => (side === null ? "both" : null));
       return;
     }
@@ -820,7 +818,7 @@ export function CollectionBrowser({
           `flex-1` child is the list, so the wrapper takes over that sizing and the chassis above stays a direct child. */}
       <HoverPreviewProvider className="flex flex-1 flex-col">
       {combosSide ? (
-        <CombosView side={combosSide} onSide={setCombosSide} bothCount={comboPairCount} newVariantId={newVariantId} wide={chassisWide} retry={comboPress} />
+        <CombosView side={combosSide} onSide={setCombosSide} bothCount={comboPairCount} newVariantId={newVariantId} wide={chassisWide} />
       ) : sorted.length === 0 ? (
         <NoResults
           query={filters.search}
