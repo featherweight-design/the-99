@@ -19,7 +19,7 @@ describe("ExternalLink", () => {
     // drops the suffix's leading space that a screen reader does read.
     expect(container.querySelector(".sr-only")!.textContent).toBe(NEW_TAB_SUFFIX);
     expect(screen.getByRole("link").textContent).toBe(
-      "Buy these at Mana Pool (opens in a new tab)",
+      `Fixture link${NEW_TAB_SUFFIX}`,
     );
   });
 

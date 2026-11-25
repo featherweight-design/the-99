@@ -1,7 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { FilterChassis, type FilterChip } from "./filter-chassis";
-import { viewToggleCopy } from "../../lib/copy/card-surfaces";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
 
 const base = {
@@ -216,11 +215,11 @@ describe("FilterChassis", () => {
         {...base}
         controls={null}
         chips={[]}
-        resultTrailing={<button type="button">Grid view</button>}
+        resultTrailing={<button type="button">Fixture trailing</button>}
       />,
     );
     const row = container.querySelector("[data-chassis-row='result']")!;
-    const trailing = within(row as HTMLElement).getByRole("button", { name: viewToggleCopy.collection.grid });
+    const trailing = within(row as HTMLElement).getByRole("button", { name: "Fixture trailing" });
     expect(trailing).toBeTruthy();
     // Pushed to the edge rather than sitting beside the sentence.
     expect(trailing.parentElement?.className).toContain("ml-auto");

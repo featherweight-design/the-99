@@ -33,7 +33,7 @@ describe("LinkOutLabel", () => {
     const label = container.firstElementChild!;
     expect(label.textContent).toBe("Fixture link label");
     const run = label.querySelector("svg[data-link-out]")!.parentElement!;
-    expect(run.textContent).toBe("Policy");
+    expect(run.textContent).toBe("label");
     expect(run.className).toBe("whitespace-nowrap");
   });
 
