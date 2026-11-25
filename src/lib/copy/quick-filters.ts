@@ -2,6 +2,7 @@
 // Mark names reuse the key's words where they exist (cardFactName, comboAwarenessCopy, foilMarkCopy); chip labels are plural.
 export const quickFilterCopy = {
   lead: "Quick:",
+  pressedMark: "×",
   chips: {
     free: "In no deck",
     combos: "Two-card combos",
@@ -11,6 +12,8 @@ export const quickFilterCopy = {
     massLandDenial: "Mass land denial",
     foil: "Foil",
   },
+  announceOn: (label: string, shown: number) => `${label} on. ${shown} ${shown === 1 ? "card" : "cards"} shown.`,
+  announceOff: (shown: number) => `Quick filter off. ${shown} ${shown === 1 ? "card" : "cards"} shown.`,
   chipAria: (label: string, n: number, on: boolean) =>
     `${label}, ${n}. ${on ? "On. Press to turn off." : "Press to show only these."}`,
   combos: {

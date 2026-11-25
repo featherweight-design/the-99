@@ -314,4 +314,32 @@ describe("FilterChassis", () => {
 
 
 
+
+  it("draws nothing for a quick strip it was not given: the other routes' row 2 is the same as before", () => {
+    // Collection's strip is opt-in. Decks, games, precons, the commanders rack and sets never pass it, and their
+    // row 2 is the placeholder with Clear all inert, or the chips with Clear all live: no hairline, no wrapper.
+    const { container, rerender } = render(<FilterChassis {...base} controls={null} chips={[]} />);
+    expect(container.querySelector("[data-chassis-quick-hairline]")).toBeNull();
+    expect(screen.getByText(chassisCopy.chips.none)).toBeTruthy();
+    expect((screen.getByRole("button", { name: chassisCopy.chips.clearAllAria }) as HTMLButtonElement).disabled).toBe(true);
+    rerender(<FilterChassis {...base} controls={null} chips={[chip("a", "A")]} />);
+    expect(container.querySelector("[data-chassis-quick-hairline]")).toBeNull();
+    expect((screen.getByRole("button", { name: chassisCopy.chips.clearAllAria }) as HTMLButtonElement).disabled).toBe(false);
+  });
+
+  it("draws a given quick strip ahead of the chips, with a hairline only when chips follow, and keeps Clear all live on it", () => {
+    const strip = <span data-testid="strip">strip</span>;
+    const { container, rerender } = render(<FilterChassis {...base} controls={null} chips={[]} quick={strip} quickActive />);
+    const row = container.querySelector("[data-chassis-row='chips']") as HTMLElement;
+    expect(row.firstElementChild).toBe(screen.getByTestId("strip"));
+    // The strip stands in for No filters on, and a pressed chip is a filter, so Clear all is live.
+    expect(screen.queryByText(chassisCopy.chips.none)).toBeNull();
+    expect(container.querySelector("[data-chassis-quick-hairline]")).toBeNull();
+    expect((screen.getByRole("button", { name: chassisCopy.chips.clearAllAria }) as HTMLButtonElement).disabled).toBe(false);
+    rerender(<FilterChassis {...base} controls={null} chips={[chip("a", "A")]} quick={strip} quickActive />);
+    expect(container.querySelector("[data-chassis-quick-hairline]")).toBeTruthy();
+    // A strip with nothing pressed leaves Clear all inert when there are no chips.
+    rerender(<FilterChassis {...base} controls={null} chips={[]} quick={strip} />);
+    expect((screen.getByRole("button", { name: chassisCopy.chips.clearAllAria }) as HTMLButtonElement).disabled).toBe(true);
+  });
 });

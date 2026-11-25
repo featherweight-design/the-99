@@ -1,0 +1,30 @@
+{
+  "feature": "Collection quick filters, PR 2: the chip strip",
+  "note": "One route, three states, four widths. At 1180 and 1300 the strip rides the shared chassis chip row after a `Quick:` lead; at 390 and 820 (the compact form, which never used the chassis) it is its own row under Filters / Sort. `?quick=gc` is a fact chip pressed, `?avail=free` is In no deck pressed, which is the Availability menu's Free: the two controls are one state. The other chassis routes (decks, games, precons, the commanders rack, sets) are pinned unchanged by filter-chassis.test.tsx rather than photographed: the strip is an opt-in prop they never pass.",
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 },
+    { "label": "ipad-landscape", "width": 1180, "height": 820 },
+    { "label": "ipad-portrait", "width": 820, "height": 1180 }
+  ],
+  "rows": [
+    {
+      "id": "rest",
+      "label": "/collection: the strip at rest",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [{ "goto": "/collection", "wait": "[data-quick-strip]", "settle": 3000 }]
+    },
+    {
+      "id": "fact-pressed",
+      "label": "/collection?quick=gc: Game changers pressed",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [{ "goto": "/collection?quick=gc", "wait": "[data-quick-strip]", "settle": 3000 }]
+    },
+    {
+      "id": "free-pressed",
+      "label": "/collection?avail=free: In no deck pressed",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [{ "goto": "/collection?avail=free", "wait": "[data-quick-strip]", "settle": 3000 }]
+    }
+  ]
+}
