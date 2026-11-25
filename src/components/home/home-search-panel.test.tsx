@@ -1,6 +1,8 @@
 import * as React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { askCopy } from "../../lib/copy/card-search";
+import { homeSearchCopy } from "../../lib/copy/home";
 
 const captured: Array<[string, unknown]> = [];
 vi.mock("../../lib/analytics/posthog", () => ({ captureToolEvent: (n: string, p: unknown) => void captured.push([n, p]) }));
@@ -39,8 +41,8 @@ afterEach(() => {
 describe("Home's search panel", () => {
   it("draws the title, the line and the field", () => {
     mount();
-    expect(screen.getByRole("heading", { name: "What do you want to do?" })).toBeTruthy();
-    expect(field().getAttribute("placeholder")).toBe("Search cards, or ask a question");
+    expect(screen.getByRole("heading", { name: homeSearchCopy.title })).toBeTruthy();
+    expect(field().getAttribute("placeholder")).toBe(askCopy.placeholder);
   });
 
   it("on a desktop the field opens the search in place, counted from home_field, and the rail draws no second field", async () => {
@@ -57,10 +59,10 @@ describe("Home's search panel", () => {
 
   it("a starter types its question into the panel's field, counted from home_starter", async () => {
     mount();
-    const starter = await screen.findByRole("button", { name: "Where can my spare cards go?" });
+    const starter = await screen.findByRole("button", { name: askCopy.starters.questions[0] });
     await act(async () => void fireEvent.click(starter));
     expect(captured).toContainEqual(["search_opened", { from: "home_starter" }]);
-    expect((field() as HTMLInputElement).value).toBe("Where can my spare cards go?");
+    expect((field() as HTMLInputElement).value).toBe(askCopy.starters.questions[0]);
   });
 
   it("on a phone the field is a button to the sheet, read-only", async () => {

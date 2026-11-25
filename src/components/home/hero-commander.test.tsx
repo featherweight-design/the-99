@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { HeroCommander } from "./hero-commander";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 // Only the fields the hero renders, the same shape `ready-to-build.test.tsx`
 // uses: `CommanderListItem` has fifteen more, and a fixture listing them all
@@ -78,7 +79,7 @@ describe("HeroCommander", () => {
   // deck without seeing the pool first.
   it("points its one action at the commander's own page", () => {
     render(<HeroCommander item={item()} inUse={0} />);
-    expect(screen.getByRole("link", { name: "See the pool" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: refreshCopy.home.seePool }).getAttribute("href")).toBe(
       "/commanders/atraxa-praetors-voice",
     );
   });
@@ -138,7 +139,7 @@ describe("HeroCommander", () => {
   // `Start this deck` was cut.
   it("spans the card with its one action at both widths", () => {
     render(<HeroCommander item={item()} inUse={0} />);
-    const cta = screen.getByRole("link", { name: "See the pool" });
+    const cta = screen.getByRole("link", { name: refreshCopy.home.seePool });
     expect(cta.className).toContain("w-full");
     expect(cta.className).not.toContain("sm:flex-none");
   });

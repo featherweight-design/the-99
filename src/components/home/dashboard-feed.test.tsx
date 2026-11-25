@@ -47,7 +47,7 @@ const view = (n: number, o: Partial<FeedView> = {}): FeedView => ({
 });
 const LEAD = view(0, {
   kind: "trade-match", unseen: true, key: "lead", name: null, href: "/friends/p1",
-  card: { oracleId: "g", name: "Ghalta, Primal Hunger", image: "g.jpg", art: "g-art.jpg", colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: named("Colin") },
+  card: { oracleId: "g", name: "Fixture card", image: "g.jpg", art: "g-art.jpg", colorIdentity: ["G"] }, friend: { publicId: "p1", displayName: named("Colin") },
 });
 const chosen = (items: FeedView[], o: Partial<Extract<HomeFeed, { chosen: true }>> = {}): HomeFeed => ({ chosen: true, on: ["new-set", "trade-match"], items, unseen: 0, lead: null, ...o });
 
@@ -76,13 +76,13 @@ describe("Home, direction B", () => {
     const lead = container.querySelector("[data-lead-story=trade-match]")!;
     // The About capture finds the lead by this attribute (about-locators.mjs).
     expect(lead).toHaveAttribute("data-feed-lead");
-    expect(lead).toHaveTextContent("Colin has a spare Ghalta, Primal Hunger");
+    expect(lead).toHaveTextContent("Colin has a spare Fixture card");
     expect(lead.querySelector("[data-lead-face] [data-face=art]")).not.toBeNull();
     expect(lead.querySelector('[data-commander-thumb="lead"]')).not.toBeNull();
     expect(screen.getByRole("link", { name: "See Colin’s spares" })).toHaveAttribute("href", "/friends/p1");
     const list = container.querySelector("[data-whats-new=items]")!;
     expect(list.querySelectorAll("[data-feed-item]")).toHaveLength(2);
-    expect(list).not.toHaveTextContent("Ghalta");
+    expect(list).not.toHaveTextContent("Fixture card");
     expect(screen.getByText("· 2 new")).toBeInTheDocument();
     // The lead heads the main column, before the resume slot and What's new.
     const order = [...container.querySelectorAll("[data-lead-story], [data-whats-new]")].map((e) => e.hasAttribute("data-lead-story"));
@@ -230,7 +230,7 @@ describe("Home holding an answered spare request", () => {
     expect(within(lead).getByRole("heading", { level: 3 }).textContent).toBe("You’re sparing Lathliss for Colin");
     const list = container.querySelector<HTMLElement>("[data-whats-new]")!;
     expect(list.querySelector('[data-feed-item="trade-match"]')).not.toBeNull();
-    expect(within(list).getByText("Colin has a spare Ghalta, Primal Hunger")).toBeTruthy();
+    expect(within(list).getByText("Colin has a spare Fixture card")).toBeTruthy();
   });
 
   it("before any answer, the server's lead is the lead and is not repeated in the list", () => {

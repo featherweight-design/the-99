@@ -5,6 +5,7 @@ import type { Landable, PageCard } from "../../lib/discovery/page-tools";
 import { LabelledScreen } from "../about/pages/labelled-screen";
 import { TryIt } from "../about/pages/try-it";
 import { LabelLanding } from "./label-landing";
+import { ABOUT_PAGE_STRINGS } from "../../lib/copy/about-pages";
 
 // Show me's landing (About visual PR 5, call 7, Ways-In board): the label lit through the labelled screen's own state;
 // New, Show me and the tool card only for a label the reader has not been told about (on a phone under the label,
@@ -79,7 +80,7 @@ describe("LabelLanding", () => {
       const line = width(container, w).querySelector(`[data-about-label='${LIT}'] button[aria-pressed]`)!;
       expect(line.getAttribute("aria-pressed")).toBe("true");
       expect(width(container, w).querySelector(`[data-about-label='${LIT}'] [data-about-new]`)?.textContent).toBe("New");
-      expect(width(container, w).querySelector(`[data-about-label='${LIT}'] [data-about-landing-show-me]`)?.textContent).toBe("Show me ›");
+      expect(width(container, w).querySelector(`[data-about-label='${LIT}'] [data-about-landing-show-me]`)?.textContent).toBe(ABOUT_PAGE_STRINGS.toolShowMe);
       // A coarse pointer gives Show me its own 44px row, so its touch target cannot cover the label above.
       const row = width(container, w).querySelector(`[data-about-label='${LIT}'] [data-about-landing-show-me]`)!.parentElement!;
       expect(row.className).toMatch(/pointer-coarse:min-h-\[44px\]/);
@@ -257,7 +258,7 @@ describe("TryIt", () => {
   it("moves focus into an added card with no way in, as the card itself", () => {
     at("/about/decks");
     const none = card("proposed-cuts", "Proposed cuts");
-    const cards = [card("suggested-changes", "Suggested changes"), { ...none, card: { ...none.card, state: { kind: "none", line: "No decks yet" } as unknown as PageCard["card"]["state"] } }];
+    const cards = [card("suggested-changes", "Fixture suggested"), { ...none, card: { ...none.card, state: { kind: "none", line: "Fixture line" } as unknown as PageCard["card"]["state"] } }];
     const { container, getByText } = render(<TryIt sectionId="decks" cards={cards} />);
     fireEvent.click(getByText("1 more tool"));
     const second = container.querySelectorAll<HTMLElement>("[data-try-it-width='phone'] li")[1];
@@ -292,7 +293,7 @@ describe("TryIt", () => {
     // One baseline across the row (R4 README 5.4): the grid stretches its cells and each card fills its own.
     expect(container.querySelector("[data-try-it-width='desktop']")!.className).toContain("items-stretch");
     for (const li of container.querySelectorAll("[data-try-it-width='desktop'] > li")) expect(li.className).toContain("h-full");
-    const links = [...container.querySelectorAll("[data-try-it-width='desktop'] a")].filter((a) => a.textContent === "Show it above ↑");
+    const links = [...container.querySelectorAll("[data-try-it-width='desktop'] a")].filter((a) => a.textContent === ABOUT_PAGE_STRINGS.toolWhere);
     expect(links.map((a) => a.getAttribute("href"))).toEqual(CARDS.map((c) => c.card.showMe));
   });
 

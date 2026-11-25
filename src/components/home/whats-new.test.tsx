@@ -32,8 +32,8 @@ describe("WhatsNew, Upcoming drops", () => {
   });
   it("draws the group above the rows, and labels the rest even when only one day holds rows", () => {
     const { container } = render(<WhatsNew feed={chosen([view(1, 2), view(2, 3)], { upcoming: [drop(9)] })} now={NOW} zone="America/New_York" />);
-    const labels = [...container.querySelectorAll("p")].map((p) => p.textContent).filter((t) => ["Upcoming drops", "Today", "Earlier"].includes(t ?? ""));
-    expect(labels).toEqual(["Upcoming drops", "Today"]);
+    const labels = [...container.querySelectorAll("p")].map((p) => p.textContent).filter((t) => [feedCopy.home.upcoming, "Today", "Earlier"].includes(t ?? ""));
+    expect(labels).toEqual([feedCopy.home.upcoming, "Today"]);
     expect(screen.getByText("Drop 9")).toBeInTheDocument();
     expect(screen.getByText("On sale Mon Oct 26, 1 p.m. your time")).toBeInTheDocument();
   });
@@ -52,7 +52,7 @@ describe("WhatsNew, Upcoming drops", () => {
   });
   it("draws no group when there are no drops", () => {
     render(<WhatsNew feed={chosen([view(1, 2)], { upcoming: [] })} now={NOW} />);
-    expect(screen.queryByText("Upcoming drops")).toBeNull();
+    expect(screen.queryByText(feedCopy.home.upcoming)).toBeNull();
   });
 });
 
@@ -77,7 +77,7 @@ describe("WhatsNew, kinds on", () => {
     expect(screen.getByRole("link", { name: /Choose notifications/ })).toHaveAttribute("href", "/settings");
     expect(screen.queryByRole("dialog")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Show all 9" }));
-    const dialog = screen.getByRole("dialog", { name: "What\u2019s new" });
+    const dialog = screen.getByRole("dialog", { name: feedSheetCopy.title });
     expect(dialog.querySelectorAll("li")).toHaveLength(9);
     expect(screen.getAllByRole("listitem").filter((li) => !dialog.contains(li))).toHaveLength(FEED_SHOWN);
   });
@@ -202,7 +202,7 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     const { container } = render(<WhatsNew feed={empty} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: o.closeAria }));
     expect(line(container)).toBeNull();
-    expect(container.querySelector("[data-feed-quiet]")!.textContent).toContain("a Secret Lair drop is announced");
+    expect(container.querySelector("[data-feed-quiet]")!.textContent).toContain(feedCopy.home.tease["secret-lair"]);
     await waitFor(() => expect(closeOffer).toHaveBeenCalledTimes(1));
   });
 
@@ -265,7 +265,7 @@ describe("WhatsNew, nothing in the window and something to offer (small items 5,
     pick();
     fireEvent.click(screen.getByRole("checkbox", { name: /New sets/ }));
     fireEvent.click(screen.getByRole("button", { name: o.save }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t save that. Try again.");
+    expect(await screen.findByRole("alert")).toHaveTextContent(feedCopy.news.failed);
     // A refusal redraws the page, so the boxes offered are the current ones.
     expect(nav.refresh).toHaveBeenCalled();
   });
@@ -306,7 +306,7 @@ describe("WhatsNew, never chosen: the offer line (announcements call 3)", () => 
     expect(line(container)?.textContent).toContain(o.lead);
     // It names only the kinds this reader can pick, never one they cannot get.
     expect(line(container)?.textContent).toContain("New sets, price drops on your wishlist and combos you can make.");
-    expect(line(container)?.textContent).not.toContain("trade matches");
+    expect(line(container)?.textContent).not.toContain(feedCopy.home.quietName["trade-match"]);
     // Last in the box, under the rows.
     expect(line(container)?.parentElement?.lastElementChild).toBe(line(container));
     expect(screen.getByRole("button", { name: /Pick/ })).toHaveAttribute("aria-expanded", "false");
@@ -340,7 +340,7 @@ describe("WhatsNew, never chosen: the offer line (announcements call 3)", () => 
     expect(boxes).toHaveLength(OFFER.length);
     for (const box of boxes) expect(box).not.toBeChecked();
     expect(document.activeElement).toBe(boxes[0]);
-    expect(screen.getByRole("button", { name: "Show these" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: feedCopy.home.offer.save })).toBeDisabled();
     expect(screen.queryByRole("button", { name: /Pick/ })).toBeNull();
   });
 
@@ -349,7 +349,7 @@ describe("WhatsNew, never chosen: the offer line (announcements call 3)", () => 
     render(<WhatsNew feed={never([view(1, 2)])} now={NOW} />);
     fireEvent.click(screen.getByRole("button", { name: /Pick/ }));
     fireEvent.click(screen.getByRole("checkbox", { name: /Combos you can make/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Show these" }));
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.home.offer.save }));
     await waitFor(() => expect(nav.refresh).toHaveBeenCalled());
     expect(save).toHaveBeenCalledWith(["combo"], [...OFFER]);
     expect(closeOffer).not.toHaveBeenCalled();

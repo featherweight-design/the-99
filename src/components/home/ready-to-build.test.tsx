@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { ReadyToBuild } from "./ready-to-build";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 // Only the fields the hero renders. `CommanderListItem` has fifteen more; a
 // fixture that lists them all is a fixture that breaks when any of them moves.
@@ -60,8 +61,8 @@ describe("ReadyToBuild", () => {
   // `See the pool` takes the filled treatment as the only action left.
   it("gives each hero the one route that survives", () => {
     render(<ReadyToBuild ready={READY} inUse={IN_USE} />);
-    expect(screen.queryAllByRole("link", { name: "Start this deck" })).toHaveLength(0);
-    const pool = screen.getAllByRole("link", { name: "See the pool" });
+    expect(screen.queryAllByRole("link", { name: refreshCopy.home.startDeck })).toHaveLength(0);
+    const pool = screen.getAllByRole("link", { name: refreshCopy.home.seePool });
     expect(pool).toHaveLength(2);
     // The route, not just the words. The old CTA pointed at
     // `/decks/new?commander=<oracleId>`, so a regression to it — or to a
@@ -74,7 +75,7 @@ describe("ReadyToBuild", () => {
   it("drops the more-above line when nothing is above", () => {
     render(<ReadyToBuild ready={{ ...READY, moreCount: 0, floor: 74 }} inUse={IN_USE} />);
     expect(screen.queryByText(/more scored/)).toBeNull();
-    expect(screen.getByRole("link", { name: "All commanders" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: refreshCopy.home.allCommanders })).toBeInTheDocument();
   });
 
   it("renders nothing at all when nothing scored", () => {

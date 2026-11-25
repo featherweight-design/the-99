@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { useState, type ReactNode } from "react";
+import { importReviewCopy } from "../../lib/copy/import-review";
 
 // Try it's landing on each tool's own page (discovery R2·3, E11), against the page's REAL control: the page's own
 // reading of `?tool=` (`pageToolLanding`) handed to `ToolLandingMount`, as the server component does. A page on a busier
@@ -110,7 +111,7 @@ const PAGES: {
     tool: "collection-sync",
     path: "/collection/replace",
     page: () => <UploadEntry currentCardCount={12} onPreview={() => {}} choice />,
-    control: () => screen.getByLabelText("Upload collection CSV").closest("label") as HTMLElement,
+    control: () => screen.getByLabelText(importReviewCopy.entry.uploadAria).closest("label") as HTMLElement,
     quiet: true,
   },
   {
