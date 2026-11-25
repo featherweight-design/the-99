@@ -330,7 +330,7 @@ export function CollectionBrowser({
     if (c === "both" || c === "one") return c;
     return search.get("quick") === "combos" ? "both" : null;
   });
-  const [newVariantId] = useState<string | null>(() => search.get("new"));
+  const [newVariantId, setNewVariantId] = useState<string | null>(() => search.get("new"));
   // The sort the cookie holds now: what a URL with no `sort` reads as. Starts as the page's hint and follows every press.
   const remembered = useRef<StoredSort | null>(viewHint.sort ?? null);
   const [sort, setSort] = useState<SortKey>(initial.sort);
@@ -603,6 +603,7 @@ export function CollectionBrowser({
   const pressQuick = (key: QuickPressed) => {
     if (key === "combos") {
       // Pressing it again turns it off; pressing it on opens own both. Filters are held, not cleared.
+      setNewVariantId(null);
       setCombosSide((side) => (side === null ? "both" : null));
       return;
     }

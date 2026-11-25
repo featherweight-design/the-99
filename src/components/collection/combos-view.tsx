@@ -24,7 +24,8 @@ export function comboResultWord(produces: readonly string[]): string | null {
 type Load = { kind: "loading" } | { kind: "failed" } | { kind: "ready"; combos: CollectionCombos };
 
 /** The two sides' fetches, held for the visit. A side is fetched when first shown; a failed one is retried by the next press. */
-function useComboSide(side: ComboSide, retry: number): Load {
+function useComboSide(side: ComboSide): { load: Load; retry: () => void } {
+  const [attempt, setAttempt] = useState(0);
   const [loaded, setLoaded] = useState<Partial<Record<ComboSide, Load>>>({});
   useEffect(() => {
     if (loaded[side]?.kind === "ready") return;
@@ -36,10 +37,15 @@ function useComboSide(side: ComboSide, retry: number): Load {
     return () => {
       live = false;
     };
-    // `retry` counts Try again presses: a failed side is asked for again.
+    // `attempt` counts Try again presses: a failed side is asked for again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [side, retry]);
-  return loaded[side] ?? { kind: "loading" };
+  }, [side, attempt]);
+  // A retry drops the failed entry first, so the view shows loading again and the press reads as taken.
+  const retry = () => {
+    setLoaded((m) => ({ ...m, [side]: undefined }));
+    setAttempt((n) => n + 1);
+  };
+  return { load: loaded[side] ?? { kind: "loading" }, retry };
 }
 
 function Piece({ piece, width, missing }: { piece: ComboPiece; width: number; missing: boolean }) {
@@ -191,12 +197,14 @@ export function CombosView({
   newVariantId: string | null;
   wide: boolean;
 }) {
-  const [retry, setRetry] = useState(0);
-  const load = useComboSide(side, retry);
+  const { load, retry } = useComboSide(side);
   const detail = useCardDetail();
   const pairs = load.kind === "ready" ? load.combos.pairs : [];
-  const open = (pair: CollectionComboPair, opener: HTMLElement, view?: "fits") =>
-    detail.open(pair.a.oracleId, undefined, undefined, { art: pair.a.imageUri, opener, ...(view ? { view } : comboOpenOpts(pair.variantId)) });
+  const open = (pair: CollectionComboPair, opener: HTMLElement, view?: "fits") => {
+    // Find a deck looks for a home for the card the reader holds; on Own one that is never the missing piece.
+    const target = view && pair.missingId === pair.a.oracleId ? pair.b : pair.a;
+    detail.open(target.oracleId, undefined, undefined, { art: target.imageUri, opener, ...(view ? { view } : comboOpenOpts(pair.variantId)) });
+  };
   const count = (s: ComboSide) => (load.kind === "ready" && load.combos.side === s ? load.combos.total : s === "both" ? bothCount : null);
   return (
     <section data-combos-view className="px-[16px] pb-[24px] pt-[12px] md:px-[34px]" aria-busy={load.kind === "loading" || undefined}>
@@ -220,7 +228,7 @@ export function CombosView({
       {load.kind === "failed" ? (
         <p className="mt-[12px] flex flex-wrap items-center gap-[10px] font-mono text-[11.5px] text-[color:var(--fg-faint)]">
           {copy.loadFailed}
-          <button type="button" onClick={() => setRetry((n) => n + 1)} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 font-mono text-[11.5px] text-[color:var(--fg-body)] underline">
+          <button type="button" onClick={retry} className="min-h-[44px] cursor-pointer border-0 bg-transparent p-0 font-mono text-[11.5px] text-[color:var(--fg-body)] underline">
             {copy.tryAgain}
           </button>
         </p>
