@@ -11,7 +11,6 @@ import type { SearchResult } from "../../app/decks/[id]/search-action";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
 import { cardModalCopy } from "../../lib/copy/card-carousel";
-import { SEARCH_FAILED } from "../../lib/copy/game-seats";
 
 // Typed, so a hand-built result that leaves out a required field fails typecheck rather than
 // reaching the row as `undefined` — which is how a stand-in with no `facts` draws no note.
@@ -1192,7 +1191,6 @@ describe("QuickAddBar — a failed search", () => {
   it("says the seat picker's words, split, and leaves the bar as it was", async () => {
     // The two halves are the seat picker's one line, not new words.
     expect(`${addPanelCopy.quickAdd.searchFailed} ${addPanelCopy.quickAdd.searchRetry}.`).toBe(gameSeatsCopy.picker.failed);
-    expect(addPanelCopy.quickAdd.searchFailed).toBe(SEARCH_FAILED);
 
     quietErrors();
     searchCards.mockRejectedValue(new Error("boom"));

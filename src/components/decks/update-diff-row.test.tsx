@@ -360,12 +360,12 @@ describe("the review page's plate as the card's target", () => {
         sourceLine={null}
         action={
           <button type="button" onClick={() => (pulls += 1)}>
-            Pull it
+            Fixture pull
           </button>
         }
       />,
     );
-    await click(screen.getByRole("button", { name: deckVersioningCopy.review.pull }));
+    await click(screen.getByRole("button", { name: "Fixture pull" }));
     expect(pulls).toBe(1);
     expect(asked).toEqual([]);
   });
