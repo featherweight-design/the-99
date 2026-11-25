@@ -61,7 +61,7 @@ const copy = swapToolsCopy.modal;
 /** Declares a sheet opened over the open card, as the stand-ins sheet does from the door. */
 function OverCard() {
   const { registerSheet } = useCardDetail();
-  useEffect(() => registerSheet("Cheaper stand-ins", undefined, true), [registerSheet]);
+  useEffect(() => registerSheet("Fixture stand-in sheet", undefined, true), [registerSheet]);
   return null;
 }
 function Seed({ receipt }: { receipt?: SwapReceipt }) {
@@ -268,7 +268,7 @@ describe("focus after a take", () => {
         <div data-swap-id="s1"><button type="button">Undo swap</button></div>
       </>,
     );
-    const undo = screen.getByRole("button", { name: "Undo swap" });
+    const undo = screen.getByRole("button", { name: swapToolsCopy.row.undoSwap });
     await press("shop plateau");
     // Paging to another card while the modal stays open: focus stays out of the page behind it.
     await press("shop tower");

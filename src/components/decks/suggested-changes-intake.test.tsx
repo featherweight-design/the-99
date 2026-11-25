@@ -13,7 +13,7 @@ const copy = suggestedChangesV2Copy.intake;
 
 const chips = noticedChips({
   roles: [{ role: "removal", label: "Removal", have: 6, target: 10, advisory: false }, { role: "draw", label: "Draw", have: 7, target: 10, advisory: false }],
-  focus: "+1/+1 counters",
+  focus: "fixture focus",
   game: { note: "ran out of cards by turn 7", date: "Oct 24" },
 });
 
@@ -153,7 +153,7 @@ describe("SameRequestConfirm: what a new run costs (2 credits for more than 10 c
   it("10 or fewer: a credit", () => {
     const { container, unmount } = render(<SameRequestConfirm at={at} count={10} onAgain={() => {}} onOpen={null} />);
     expect(container.textContent).toContain("A new run uses a credit");
-    expect(container.textContent).not.toContain("2 credits");
+    expect(container.textContent).not.toContain(suggestedChangesV2Copy.intake.count.twoCredits);
     unmount();
   });
   it("more than 10: 2 credits", () => {

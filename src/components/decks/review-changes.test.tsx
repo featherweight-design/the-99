@@ -18,6 +18,7 @@ import { BREW, COMMITTED } from "./__fixtures__/draft-state";
 import { ReviewChanges } from "./review-changes";
 import { proxyCopy } from "../../lib/copy/proxies";
 import { recommendedMix } from "../../lib/decks/mix";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -1351,14 +1352,14 @@ describe("ReviewChanges", () => {
         <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold" rows={{ in: [], out: [cut()] }}
           {...SHAPE} state={{ ...STATE, commander: trade }} cardCount={CARD_COUNT} />,
       );
-      expect(screen.getByText("it moves to the command zone")).toBeTruthy();
+      expect(screen.getByText(changeCommanderCopy.review.outNoteToZone)).toBeTruthy();
       unmount();
       render(
         <ReviewChanges mix={TEST_MIX} deckId="d" deckName="Korvold"
           rows={{ in: [], out: [cut(), cut({ oracleId: "o3", name: "Chrome Mox" })] }}
           {...SHAPE} state={{ ...STATE, commander: trade }} cardCount={CARD_COUNT} />,
       );
-      expect(screen.queryByText("it moves to the command zone")).toBeNull();
+      expect(screen.queryByText(changeCommanderCopy.review.outNoteToZone)).toBeNull();
     });
 
     // Change commander: a moved commander is a change the columns do not list, so emptying

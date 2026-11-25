@@ -42,8 +42,8 @@ describe("summaryText", () => {
     expect(summaryText(rows[2])).toBe("6 over · ramp 4 over, draw 2 over");
     expect(summaryText(rows[3])).toBe("5 in, 5 out · 2 added, 2 cut, 1 rejected");
     expect(summaryText(rows[0])).toBe("Reading your deck");
-    expect(summaryText(rows[4])).toBe("didn’t finish · credit back");
-    expect(summaryText({ ...rows[3], outcome: "stopped" })).toBe("stopped while reading · credit back");
+    expect(summaryText(rows[4])).toBe(tuningHubCopy.history.summary.failed);
+    expect(summaryText({ ...rows[3], outcome: "stopped" })).toBe(tuningHubCopy.history.summary.stopped.suggested);
     expect(summaryText({ ...rows[3], summary: { kind: "suggestedOk", in: 4, out: 4, added: 0, cut: 0, rejected: 0 } })).toBe("4 in, 4 out");
   });
 });

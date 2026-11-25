@@ -211,7 +211,7 @@ describe("VersionRail", () => {
 
   it("draws its foot after the last row, where v0 will land (precons R3 K5)", () => {
     render(<VersionRail deckId="deck_1" versions={THREE} foot={<p>Built from a precon?</p>} />);
-    const foot = screen.getByText("Built from a precon?");
+    const foot = screen.getByText(preconsCopy.link.versionsRow.head);
     const rows = screen.getAllByRole("button", { expanded: false });
     expect(rows[2].compareDocumentPosition(foot) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
@@ -352,7 +352,7 @@ describe("VersionRail on a deck started from its precon", () => {
     expect(rows[1].textContent).toContain(historyOriginCopy.originNote("Eldrazi Unbound"));
     expect(rows[0].textContent).not.toContain(historyOriginCopy.originNote("Eldrazi Unbound"));
     cleanup();
-    mountStarted([version({ number: 0, note: "the box" })]);
+    mountStarted([version({ number: 0, note: "a note written by hand" })]);
     expect(screen.getAllByRole("button", { expanded: false })[0].textContent).not.toContain("as the box lists it");
   });
 

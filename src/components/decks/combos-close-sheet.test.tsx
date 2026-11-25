@@ -350,7 +350,7 @@ describe("a row opens its combo inside the sheet", () => {
     // The detail lists every deck holding a copy (G4), committed first; the row names the first and +N.
     ["another deck's", LIST[1].missing.where, "in HD - Gods, A brew, Another brew", "owned"],
     ["a foil price", { kind: "buy", cents: 940, soldOut: false, qualifier: "foil" } as MissingPieceWhere, "$9.40 foil", "buy"],
-    ["sold out", { kind: "buy", cents: null, soldOut: true, qualifier: null } as MissingPieceWhere, priceCopy.tag.soldOut, "buy"],
+    [priceCopy.tag.soldOut, { kind: "buy", cents: null, soldOut: true, qualifier: null } as MissingPieceWhere, priceCopy.tag.soldOut, "buy"],
     ["never stocked", { kind: "buy", cents: null, soldOut: false, qualifier: null } as MissingPieceWhere, "", "buy"],
   ])("writes %s on the missing plate as the row decides it", (_, where, text, dot) => {
     draw([combo("w", "Missing Card", "Avatar Aang", where)]);

@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { StrategyRead } from "@/lib/strategy/load";
 import type { StrategyAxis, StrategyKey } from "@/lib/strategy/score";
 import { StrategyBlock } from "./strategy-block";
+import { strategyFocusCopy } from "../../lib/copy/strategy-focus";
 
 const axis = (key: StrategyAxis["key"], copies: number): StrategyAxis => ({ key, family: "theme", copies, score: copies });
 const ok = (over: Partial<StrategyRead> = {}): StrategyRead => ({
@@ -34,7 +35,7 @@ describe("StrategyBlock", () => {
     expect(document.querySelectorAll('[data-centre="medallion"]').length).toBeGreaterThan(0);
     fireEvent.click(within(group()).getByRole("radio", { name: /Allies/ }));
     expect(onPick).toHaveBeenLastCalledWith("typal:Ally");
-    fireEvent.click(screen.getByRole("button", { name: "Keep it balanced" }));
+    fireEvent.click(screen.getByRole("button", { name: strategyFocusCopy.keepBalanced }));
     expect(onPick).toHaveBeenLastCalledWith(null);
   });
 
@@ -63,7 +64,7 @@ describe("StrategyBlock", () => {
 
   it("draws one box, and no pick, when nothing stands out", () => {
     draw({ strategy: { state: "none" }, focus: null, pending: null });
-    expect(screen.getByText("No strategy stands out yet.")).toBeTruthy();
+    expect(screen.getByText(strategyFocusCopy.none.lead)).toBeTruthy();
     expect(document.querySelector('[data-strategy-empty="none"]')).toBeTruthy();
     expect(screen.queryByRole("radiogroup")).toBeNull();
     expect(screen.queryByText(/No focus yet/)).toBeNull();

@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { EMPTY_FILTERS } from "../../lib/decks/filter";
 import { DeckFilterSheet } from "./deck-filter-sheet";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 /**
  * The desktop column is gone — `decks-view.tsx` mounts the shared
@@ -31,7 +32,7 @@ describe("Deck filters — the sheet the chassis opens on the phone", () => {
 
   it("renders all six statuses whether or not any deck has them", () => {
     render(<DeckFilterSheet open {...props()} onDismiss={() => {}} autoFocusSearch={false} />);
-    for (const label of ["Draft", "Building", "Over", "Unresolved", "To buy", "Complete"]) {
+    for (const label of ["Draft", "Building", "Over", "Unresolved", refreshCopy.status.toBuy, "Complete"]) {
       expect(screen.getByRole("checkbox", { name: label })).toBeInTheDocument();
     }
   });

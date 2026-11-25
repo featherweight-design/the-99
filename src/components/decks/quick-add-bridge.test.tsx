@@ -7,6 +7,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testi
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SearchResult } from "../../app/decks/[id]/search-action";
 import type { AddCardsSheetProps } from "../collection/add-cards-sheet";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 const searchCards = vi.fn<(...args: unknown[]) => Promise<SearchResult[]>>();
 const addCardToDeck = vi.fn(async () => ({ ok: true as const }));
@@ -37,7 +38,7 @@ const { isJustOwned, forgetJustOwned } = await import("../../lib/decks/just-owne
 
 const ghalta: SearchResult = {
   oracleId: "ghalta",
-  name: "Ghalta, Primal Hunger",
+  name: "Fixture Commander",
   typeLine: "Creature",
   cmc: 12,
   owned: true,
@@ -74,7 +75,7 @@ function mount(props: Partial<React.ComponentProps<typeof QuickAddBar>> = {}) {
 
 const field = () => screen.getByRole("combobox");
 const bridge = () => screen.queryByRole("button", { name: addPanelCopy.quickAddEmpty.addToCollection });
-const sheet = () => screen.queryByRole("dialog", { name: "Add cards" });
+const sheet = () => screen.queryByRole("dialog", { name: collectionEditCopy.head.add });
 const toggle = () => screen.getByRole("checkbox", { name: /only cards you own/i });
 
 async function typeAndMiss(q = "ghalta") {
