@@ -91,7 +91,7 @@ describe("AccountInvitesSection (M2)", () => {
     expect(peter).toHaveTextContent("Invited Peterjoined Oct 19");
     expect(within(peter).getByRole("link", { name: adminCopy.invites.open })).toHaveAttribute("href", "/admin/accounts/u_peter");
     const gone = document.querySelector('[data-invited="deleted"]') as HTMLElement;
-    expect(gone).toHaveTextContent("Invited deleted accountjoined Oct 17");
+    expect(gone).toHaveTextContent("Invited Fixture deleted personjoined Oct 17");
     expect(within(gone).queryByRole("link")).toBeNull();
     const waiting = document.querySelector(`[data-waiting="${R1}"]`) as HTMLElement;
     expect(waiting).toHaveTextContent("Waiting · fixture channel · m.chen@example.comsent Oct 20 · returns Oct 27");

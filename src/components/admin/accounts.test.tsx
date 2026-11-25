@@ -478,7 +478,7 @@ describe("AccountPageView (A4 to A7)", () => {
     const off = box.querySelector('[data-switch="WELCOME_CREDITS_ENABLED"]')!;
     expect(within(off as HTMLElement).getByText("Off").className).toContain("var(--fg-muted)");
     expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Announcements, Feedback");
-    expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Buying credits");
+    expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Fixture payments flag");
     expect(screen.queryByText(/disagree/i)).toBeNull();
   });
 
