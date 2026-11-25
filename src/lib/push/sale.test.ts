@@ -6,6 +6,7 @@ import { exemptFromHold } from "./plan";
 import {
   SALE_PUSH_GRACE_MS, SALE_PUSH_IGNORES_HOLD, SALE_PUSH_LEAD_MS, SALE_PUSH_LIVE, enqueueSalePushQuery, parseSaleKey, saleItemsQuery, salePushDue, saleKey, saleSendAt,
 } from "./sale";
+import { pushCopy } from "../copy/push";
 
 const at = (iso: string) => new Date(iso);
 const flat = (s: string) => s.replace(/\s+/g, " ").trim();
@@ -117,10 +118,10 @@ describe("the sale push's words", () => {
   });
   it("says on sale now when a late tick lands after the sale began, with no hour named", () => {
     const late = { zone: "America/New_York", now: at("2026-11-09T17:05:00Z") };
-    expect(toMessage([saleItem()], late)).toMatchObject({ title: "On sale now", body: "Secret Lair: Set Phasers to Superdrop, on the US store." });
-    expect(toMessage([saleItem({ preQueueAt: null })], late).title).toBe("On sale now");
+    expect(toMessage([saleItem()], late)).toMatchObject({ title: pushCopy.one.sale.liveTitle, body: "Secret Lair: Set Phasers to Superdrop, on the US store." });
+    expect(toMessage([saleItem({ preQueueAt: null })], late).title).toBe(pushCopy.one.sale.liveTitle);
     // At the sale's own instant too, and with no device clock the pre-sale words stand.
-    expect(toMessage([saleItem()], { zone: null, now: at("2026-11-09T17:00:00Z") }).title).toBe("On sale now");
+    expect(toMessage([saleItem()], { zone: null, now: at("2026-11-09T17:00:00Z") }).title).toBe(pushCopy.one.sale.liveTitle);
     expect(toMessage([saleItem()]).title).toBe("Pre-queue opens at 8 a.m. PT");
   });
   it("leads with the sale when a late tick lands after the pre-queue opened but before the sale", () => {

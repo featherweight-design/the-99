@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { dropLines, saleAhead, type DropSale } from "./drop-lines";
+import { feedCopy } from "../copy/feed";
 
 const NOW = new Date("2026-11-10T15:00:00Z"); // Tue 10 a.m. in New York
 // Avatar: sale Mon Nov 16, 9 a.m. PT (17:00Z), pre-queue 8 a.m. PT.
@@ -22,18 +23,18 @@ describe("a drop with an hour, for a reader in New York (states 2, 2b, 2c, 3, 4)
   });
   it("marks the pre-queue open, with its line in the past tense", () => {
     expect(dropLines(AVATAR, new Date("2026-11-16T16:30:00Z"), "America/New_York")).toMatchObject({
-      age: "pre-queue open", state: "queue", sale: "On sale Mon Nov 16, 12 p.m. your time", queue: "Pre-queue opened at 11 a.m.",
+      age: feedCopy.home.drop.age.queueOpen, state: "queue", sale: "On sale Mon Nov 16, 12 p.m. your time", queue: "Pre-queue opened at 11 a.m.",
     });
   });
   it("says on sale since once the sale begins, and drops the pre-queue line", () => {
     expect(dropLines(AVATAR, new Date("2026-11-16T17:30:00Z"), "America/New_York")).toMatchObject({
-      age: "on sale now", state: "live", sale: "On sale since 12 p.m. your time", queue: null,
+      age: feedCopy.home.drop.age.live, state: "live", sale: "On sale since 12 p.m. your time", queue: null,
     });
   });
 });
 
 describe("the store's zone (state 7)", () => {
-  const store = { age: "in 6 days", sale: "On sale Mon Nov 16, 9 a.m. PT", queue: "Pre-queue opens at 8 a.m. PT", store: "US store" };
+  const store = { age: "in 6 days", sale: "On sale Mon Nov 16, 9 a.m. PT", queue: "Pre-queue opens at 8 a.m. PT", store: feedCopy.home.drop.store };
   it("is used with no known zone", () => {
     expect(dropLines(AVATAR, NOW, null)).toMatchObject(store);
   });
@@ -58,7 +59,7 @@ describe("a day with no hour (state 1)", () => {
   const DAY: DropSale = { date: "2026-11-23", at: null, preQueueAt: null, zone: null };
   it("says the time is to be announced, whatever the reader's zone", () => {
     for (const zone of [null, "America/New_York", "Asia/Tokyo"]) {
-      expect(dropLines(DAY, NOW, zone)).toEqual({ age: "in 13 days", state: "ahead", sale: "On sale Mon Nov 23, time to be announced", queue: null, store: "US store" });
+      expect(dropLines(DAY, NOW, zone)).toEqual({ age: "in 13 days", state: "ahead", sale: "On sale Mon Nov 23, time to be announced", queue: null, store: feedCopy.home.drop.store });
     }
   });
   it("is today on its own day in the store's zone", () => {

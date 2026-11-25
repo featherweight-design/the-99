@@ -23,7 +23,7 @@ const card = (groups: ReturnType<typeof showcaseGroups>, id: string) =>
 
 // Small items 6, item 3 (About-Errata board, call c): the Try it line follows Suggested changes v2's switch.
 describe("toolCopyFor", () => {
-  const V2_LINE = "Say what to change. Pick from more cards to add and to cut than you need.";
+  const V2_LINE = showcaseCopy.tools["suggested-changes"].lineWhen.SUGGESTED_CHANGES_V2_ENABLED;
   it("draws Suggested changes v2's line with v2 on and the shipped line with it off", () => {
     const on = (n: SwitchName) => n === "SUGGESTED_CHANGES_V2_ENABLED";
     expect(toolCopyFor("suggested-changes", on).line).toBe(V2_LINE);
@@ -95,7 +95,7 @@ describe("showcaseGroups", () => {
     expect(card(groups, "friend-spares")!.state).toEqual({
       kind: "none",
       line: showcaseCopy.tools["friend-spares"].none,
-      door: { href: "/friends", label: "Open Friends →" },
+      door: { href: "/friends", label: showcaseCopy.tools["friend-spares"].door },
     });
     // A deck tool the fits were never asked about reads as none, never as a press with no deck.
     expect(card(groups, "matchups")!.state.kind).toBe("none");
@@ -103,8 +103,8 @@ describe("showcaseGroups", () => {
 
   it("names where a tool with a page of its own goes, with the landing's parameter", () => {
     const groups = showcaseGroups(input());
-    expect(card(groups, "help-me-choose")!.state).toEqual({ kind: "page", href: "/decks/new/choose?tool=help-me-choose", label: "Open Help me choose" });
-    expect(card(groups, "find-a-deck")!.state).toEqual({ kind: "page", href: "/collection?avail=free&tool=find-a-deck", label: "Try it on a card" });
+    expect(card(groups, "help-me-choose")!.state).toEqual({ kind: "page", href: "/decks/new/choose?tool=help-me-choose", label: showcaseCopy.tools["help-me-choose"].press });
+    expect(card(groups, "find-a-deck")!.state).toEqual({ kind: "page", href: "/collection?avail=free&tool=find-a-deck", label: showcaseCopy.tools["find-a-deck"].press });
   });
 
   it("with no decks at all, every tool that reads decks says so, and the rest still open", () => {
@@ -131,7 +131,7 @@ describe("showcaseGroups", () => {
   it("Upgrade switch on: Upgrade this precon is the sixth row, the one priced 2 per run", () => {
     const w = writtenForYou(false, true);
     expect(w.rows).toEqual(writtenForYouCopy.rows);
-    expect(w.rows.at(-1)).toMatchObject({ id: "upgrade", short: "2 per run", cost: "2 credits per run" });
+    expect(w.rows.at(-1)).toMatchObject({ id: "upgrade", short: writtenForYouCopy.rows[5].short, cost: writtenForYouCopy.rows[5].cost });
   });
 
   it("Suggested changes v2 on: its chip says v2's cost (2 credits over 10 changes), every other chip unchanged", () => {

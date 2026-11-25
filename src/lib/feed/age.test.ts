@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { feedAge } from "./age";
+import { refreshCopy } from "../copy/refresh";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const ago = (ms: number) => new Date(new Date(NOW).getTime() - ms).toISOString();
@@ -8,10 +9,10 @@ const HOUR = 3_600_000;
 
 describe("feedAge", () => {
   it("reads 'just now' for anything under an hour, never 0h ago", () => {
-    expect(feedAge(NOW, NOW)).toBe("just now");
-    expect(feedAge(ago(59 * MIN), NOW)).toBe("just now");
+    expect(feedAge(NOW, NOW)).toBe(refreshCopy.home.elapsed.justNow);
+    expect(feedAge(ago(59 * MIN), NOW)).toBe(refreshCopy.home.elapsed.justNow);
     // A future stamp (a clock a little ahead) clamps to the same, not a negative figure.
-    expect(feedAge(new Date(new Date(NOW).getTime() + 5 * MIN).toISOString(), NOW)).toBe("just now");
+    expect(feedAge(new Date(new Date(NOW).getTime() + 5 * MIN).toISOString(), NOW)).toBe(refreshCopy.home.elapsed.justNow);
   });
 
   it("goes on in hours, days and weeks from the hour", () => {

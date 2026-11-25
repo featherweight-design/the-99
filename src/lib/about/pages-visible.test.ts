@@ -489,7 +489,7 @@ describe("a section's sub-line", () => {
   });
 
   it("names the tuning tools on Tuning, not Analysis, whatever their retired switches say (tool discovery B3)", () => {
-    const named = "Tools for this deck. Suggested changes, Proposed cuts and Mana Balance help you tune it.";
+    const named = ABOUT_SECTIONS[9].sub;
     expect(sub(ALL_ON, "tuning")).toBe(named);
     expect(sub(ALL_ON, "analysis")).toBe("Which bracket your deck sits in, and why.");
     expect(sub(off("ANALYSIS_TAB_ENABLED"), "analysis")).toBe("Which bracket your deck sits in, and why.");
@@ -509,7 +509,7 @@ describe("a section's sub-line", () => {
     // Stats is retired (always on): its sentences always draw.
     expect(sub(OFF, "stats")).toContain("curve by card type");
     // Collection editing is retired: its sentence always draws.
-    expect(sub(OFF, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding. Add cards by name or scan them in.");
+    expect(sub(OFF, "cards")).toBe(ABOUT_SECTIONS[2].sub);
     // Ready to build is gone (the feed is always on).
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
     // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too, which
@@ -565,8 +565,8 @@ describe("resolveDiagram", () => {
   it("never draws a negated part of a retired switch", () => {
     const captions = (e: NodeJS.ProcessEnv) => parts(rule(e, "replace").diagram!).flatMap((p) => (p.part === "caption" ? [p.text] : []));
     for (const e of [OFF, ALL_ON]) {
-      expect(captions(e)).toContain("Your Collection, then Replace");
-      expect(captions(e)).not.toContain("Your Collection, then an upload");
+      expect(captions(e)).toContain((ABOUT_RULES.replace.diagram.columns[0].parts[0] as { text: string }).text);
+      expect(captions(e)).not.toContain((ABOUT_RULES.replace.diagram.columns[0].parts[1] as { text: string }).text);
     }
   });
 });

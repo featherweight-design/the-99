@@ -20,12 +20,12 @@ describe("noticedChips", () => {
   it("orders the four as the handoff does: worst role gap, focus, newest game note, second role gap", () => {
     const chips = noticedChips({
       roles: [role("ramp", 9, 10), role("draw", 7, 10), role("removal", 6, 10), role("wipes", 3, 3), role("land", 30, 36, true)],
-      focus: "+1/+1 counters",
+      focus: "fixture focus",
       game: { note: "ran out of cards by turn 7", date: "Oct 24" },
     });
     expect(chips.map((c) => c.id)).toEqual(["role:removal", "focus", "game", "role:draw"]);
     expect(chips[0]).toMatchObject({ kind: "role", text: copy.noticed.roleShortChip("removal"), meta: copy.noticed.roleOf(6, 10), sentence: copy.noticed.roleShort("removal", 6, 10) });
-    expect(chips[1]).toMatchObject({ kind: "focus", text: copy.noticed.focusChip("+1/+1 counters"), meta: copy.noticed.focusMeta, sentence: copy.noticed.focus("+1/+1 counters") });
+    expect(chips[1]).toMatchObject({ kind: "focus", text: copy.noticed.focusChip("fixture focus"), meta: copy.noticed.focusMeta, sentence: copy.noticed.focus("fixture focus") });
     expect(chips[2]).toMatchObject({ kind: "game", text: copy.noticed.gameChip("ran out of cards by turn 7"), meta: "Oct 24" });
     expect(chips[3]).toMatchObject({ kind: "role", text: copy.noticed.roleIsChip("Draw", 7, 10), meta: null, sentence: copy.noticed.roleShort("draw", 7, 10) });
   });

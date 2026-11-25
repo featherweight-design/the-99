@@ -119,27 +119,27 @@ describe("resolveExcludedReport", () => {
 
   describe("a hidden match", () => {
     const hidden = (over: Partial<ExcludedMatch> = {}) =>
-      server({ name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger", ...over });
+      server({ name: "Fixture Card", cause: "hidden", pct: null, slug: "fixture-card", ...over });
     const ex = planeCopy.excluded;
 
     it("names the commander, says it is hidden, and opens its page", () => {
       const out = resolve({ server: [hidden()], listHasRows: false });
       expect(out?.cause).toBe("hidden");
-      expect(out?.heading).toBe("Ghalta, Primal Hunger is here. You hid it");
+      expect(out?.heading).toBe("Fixture Card is here. You hid it");
       expect(out?.body).toBe(
-        "It matches, but you hid it, so it stays out of your lists.",
+        planeCopy.excluded.heldHidden,
       );
-      expect(out?.cta).toBe("Open its page");
+      expect(out?.cta).toBe(planeCopy.excluded.hiddenCta);
       expect(out?.aside).toBe("1 match, 0 shown");
-      expect(out?.slug).toBe("ghalta-primal-hunger");
+      expect(out?.slug).toBe("fixture-card");
     });
 
     it("is one sentence above a live list, naming the commander", () => {
       const out = resolve({ server: [hidden()] });
       expect(out?.heading).toBeNull();
       expect(out?.aside).toBeNull();
-      expect(out?.name).toBe("Ghalta, Primal Hunger");
-      expect(out?.body).toBe(ex.hiddenAlso("Ghalta, Primal Hunger"));
+      expect(out?.name).toBe("Fixture Card");
+      expect(out?.body).toBe(ex.hiddenAlso("Fixture Card"));
       expect(out?.cta).toBe(ex.hiddenCta);
     });
 
@@ -155,13 +155,13 @@ describe("resolveExcludedReport", () => {
 
     it("says \"you hid them\" when every match is hidden, and names the page it opens", () => {
       const out = resolve({
-        server: [hidden(), hidden({ oracleId: "b", name: "Ghalta, Stampede Tyrant", slug: "ghalta-stampede-tyrant" })],
+        server: [hidden(), hidden({ oracleId: "b", name: "Fixture Card Two", slug: "fixture-card-two" })],
         listHasRows: false,
       });
       expect(out?.heading).toBe(ex.heldHiddenHeadingMany(2));
       expect(out?.body).toBe(ex.heldHiddenMany);
-      expect(out?.cta).toBe(ex.hiddenCtaNamed("Ghalta, Primal Hunger"));
-      expect(out?.slug).toBe("ghalta-primal-hunger");
+      expect(out?.cta).toBe(ex.hiddenCtaNamed("Fixture Card"));
+      expect(out?.slug).toBe("fixture-card");
     });
 
     // A held state whose CTA opens one hidden page would leave the floor's match with no way back.

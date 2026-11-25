@@ -75,7 +75,7 @@ describe("collectionChips", () => {
       ],
       availability: [
         { code: "free", label: "Free" },
-        { code: "spoken", label: "Spoken for" },
+        { code: "spoken", label: "Fixture spoken label" },
       ],
     };
     expect(collectionChips({ ...EMPTY, types: ["Creature", "Land"] }, opts)[0].spoken)
@@ -117,7 +117,7 @@ describe("collectionChips", () => {
     const chip = collectionChips(
       { ...EMPTY, availability: ["soft", "hard"] as never },
       { ...options, availability: [
-        { code: "soft", label: "Spoken for" },
+        { code: "soft", label: "Fixture spoken label" },
         { code: "hard", label: "Committed" },
       ] },
     )[0];
@@ -129,7 +129,7 @@ describe("collectionChips", () => {
       { ...EMPTY, availability: ["free", "soft"] as never },
       { ...options, availability: [
         { code: "free", label: "Free" },
-        { code: "soft", label: "Spoken for" },
+        { code: "soft", label: "Fixture spoken label" },
       ] },
     )[0];
     expect(chip.markers).toEqual(["soft"]);
