@@ -44,7 +44,7 @@ describe("POST /api/resend-webhook", () => {
     expect((await call(bounce)).status).toBe(200);
     expect(m.warn).toHaveBeenCalledWith("resend-webhook", "Resend email.bounced", { event: "email.bounced", template: "code" });
     expect(m.logWarn).toHaveBeenCalledWith("resend.webhook", { event: "email.bounced", template: "code" });
-    expect(JSON.stringify([m.warn.mock.calls, m.logWarn.mock.calls])).not.toMatch(/someone@|Your code/);
+    expect(JSON.stringify([m.warn.mock.calls, m.logWarn.mock.calls])).not.toMatch(/someone@|Fixture subject/);
   });
   it("reports a complaint, and ignores any other event or an unreadable body with 200", async () => {
     await call(JSON.stringify({ type: "email.complained", data: {} }));

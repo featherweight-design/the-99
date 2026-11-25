@@ -32,7 +32,7 @@ describe("the states", () => {
     expect(items).toHaveLength(4);
     const subscribe = screen.getByRole("button", { name: "Subscribe · $5 a month" });
     for (const li of items) expect(li.compareDocumentPosition(subscribe) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText(creditsPageCopy.pack.via)).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.plan.via)).toBeTruthy();
     expect(buttons()).toEqual(["Subscribe · $5 a month"]);
     expect(container.querySelector("h2")).toBeNull();
   });
