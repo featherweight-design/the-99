@@ -2,20 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { DiscoveryEmpty, FloorEmpty, NoDecksBanner } from "./discovery-empty";
-import { discoverCopy } from "../../lib/copy/lanes";
 
 const copy = discoveryCopy.empty;
 
 describe("DiscoveryEmpty", () => {
   it("names the lane boundary rather than a spelling hint alone", () => {
     render(<DiscoveryEmpty query="jodah" total={3301} onClearSearch={() => {}} />);
-    expect(screen.getByText(discoverCopy.empty.heading)).toBeTruthy();
+    expect(screen.getByText("No commander by that name")).toBeTruthy();
     expect(screen.getByText(/it’s on your commanders instead/)).toBeTruthy();
   });
 
   it("offers the other lane, carrying the same query", () => {
     render(<DiscoveryEmpty query="jodah" total={3301} onClearSearch={() => {}} />);
-    expect(screen.getByRole("link", { name: discoverCopy.empty.otherLane })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: "Search your commanders" })).toHaveAttribute(
       "href",
       "/commanders?q=jodah",
     );
@@ -24,7 +23,7 @@ describe("DiscoveryEmpty", () => {
   it("clears the query in place rather than routing", () => {
     const onClearSearch = vi.fn();
     render(<DiscoveryEmpty query="jodah" total={3301} onClearSearch={onClearSearch} />);
-    fireEvent.click(screen.getByRole("button", { name: discoverCopy.empty.clearSearch }));
+    fireEvent.click(screen.getByRole("button", { name: "Clear search" }));
     expect(onClearSearch).toHaveBeenCalledOnce();
   });
 });

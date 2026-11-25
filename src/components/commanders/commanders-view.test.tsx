@@ -9,7 +9,6 @@ import type { LanePrintedIn } from "../../lib/sets/printed-in";
 import { hideCommanderCopy } from "../../lib/copy/commander-explained";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { planeCopy } from "../../lib/copy/commanders-plane";
-import { filterCopy } from "../../lib/copy/lanes";
 import { commandersCopy } from "../../lib/copy/lanes";
 
 // The reveal control is unreachable on real data by design — the beta reference
@@ -399,7 +398,7 @@ describe("CommandersView zero states", () => {
     view(results(40));
     searchFor("jodah");
     await screen.findByText(commandersCopy.emptySearch.heading);
-    fireEvent.click(zeroState().getByRole("button", { name: filterCopy.search.clear }));
+    fireEvent.click(zeroState().getByRole("button", { name: commandersCopy.emptySearch.clearSearch }));
     expect(cards()).toHaveLength(REVEAL_STEP);
   });
 
@@ -612,7 +611,7 @@ describe("CommandersView ranking toggle", () => {
   // One treatment is mounted, so these are single elements — the bar's paired
   // desktop/mobile subtrees are gone.
   const segments = (name: string) => screen.getAllByRole("radio", { name });
-  const ALL = commandersCopy.emptyFree.fix;
+  const ALL = commandersCopy.availability.all;
   const FREE = commandersCopy.availability.free;
 
   describe("the saved mode (Hugh, 2026-09-27)", () => {
@@ -1060,7 +1059,7 @@ describe("the first-run banner's door", () => {
 
 // Hide a commander (design_handoff_the99_hide_commander README §1-2, the Rows and Undo boards).
 describe("CommandersView · hiding a row", () => {
-  const ALL = commandersCopy.emptyFree.fix;
+  const ALL = commandersCopy.availability.all;
   const FREE = commandersCopy.availability.free;
   const segment = (name: string) => screen.getAllByRole("radio", { name })[0];
   const glyph = (name: string) => screen.getByRole("button", { name: `Hide ${name}` });
