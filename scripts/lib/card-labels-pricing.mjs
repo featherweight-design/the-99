@@ -18,15 +18,16 @@
 // minimum cacheable prompt length, so its `cache_control` does nothing there.
 import { batchRates } from "../../src/lib/model/prices.ts";
 
-/** @typedef {"haiku" | "sonnet" | "sonnet5"} ModelKey */
+/** @typedef {"haiku" | "sonnet" | "sonnet5" | "sonnet55"} ModelKey */
 
 /**
  * Card labels' default model, read by the builder (`card-labels-build.ts`) and the copy (`copy-card-labels.ts`) alike,
  * so the two cannot drift; `src/lib/admin/models.ts` mirrors it and `card-labels-pricing.test.mts` pins the mirror.
- * Sonnet 4.5, Hugh's pick (2026-09-26), chosen on the restriction family rather than price. Labels are a large spend,
- * so any change to this model goes to Hugh first (2026-10-30).
+ * Sonnet 5.5 since 2026-11-25 (Hugh): Anthropic retires claude-sonnet-4-5 on 2026-11-30, and the weekly cron defaults to
+ * this. It was Sonnet 4.5, Hugh's pick (2026-09-26). Labels are a large spend, so any change to this model goes to Hugh
+ * first (2026-10-30). Eval: docs/superpowers/eval/labels-model-tiering-2026-10-11.md.
  */
-export const DEFAULT_LABEL_MODEL = "claude-sonnet-4-5";
+export const DEFAULT_LABEL_MODEL = "claude-sonnet-5-5";
 
 /** @type {Record<ModelKey, {in:number,out:number,cacheWrite:number,cacheRead:number,caches:boolean}>} */
 export const PRICING = {
@@ -37,6 +38,8 @@ export const PRICING = {
   // $3/$15 here until review caught it, which UNDERSTATED the cap: the reservation is
   // computed from this row, so an opt-in run could be approved below its real ceiling.
   sonnet5: { ...batchRates("claude-sonnet-5"), caches: true },
+  // Sonnet 5.5, $2/$10 standard like Sonnet 5, the card-labels default since 2026-11-25.
+  sonnet55: { ...batchRates("claude-sonnet-5-5"), caches: true },
 };
 
 /**
@@ -60,6 +63,8 @@ export const MODELS = {
   haiku: "claude-haiku-4-5-20251001",
   sonnet: "claude-sonnet-4-5",
 };
+// NOTE: the default run's models are the two above; the default LABEL model (DEFAULT_LABEL_MODEL) is Sonnet 5.5, which
+// is in ALL_MODELS below as `sonnet55`.
 
 /**
  * Every model the runner CAN submit, including opt-in ones.
@@ -77,6 +82,7 @@ export const MODELS = {
 export const ALL_MODELS = {
   ...MODELS,
   sonnet5: "claude-sonnet-5",
+  sonnet55: "claude-sonnet-5-5",
 };
 
 /**

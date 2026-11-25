@@ -65,6 +65,13 @@ describe("the request asks for no prompt caching", () => {
     expect(s5.thinking).toEqual({ type: "disabled" });
   });
 
+  // Sonnet 5.5 is the default label model: no temperature, and thinking off by `between_tools` (it rejects `disabled`).
+  it("omits temperature for Sonnet 5.5 and turns its thinking off with between_tools", () => {
+    const s55 = buildRequest("b-0", "claude-sonnet-5-5", [card]).params;
+    expect(s55).not.toHaveProperty("temperature");
+    expect(s55.thinking).toEqual({ type: "between_tools" });
+  });
+
   it("pins temperature at 0 for the 4.5 family and leaves thinking alone", () => {
     const s45 = buildRequest("b-0", "claude-sonnet-4-5", [card]).params;
     expect(s45.temperature).toBe(0);
@@ -288,6 +295,15 @@ describe("labelIsFresh", () => {
 
   it("keeps a row fresh under its own model, whatever model the build now uses", () => {
     expect(labelIsFresh(v8row({ model: "haiku", inputHash: labelInputHash(card, "haiku", "8") }), card)).toBe(true);
+  });
+
+  // The 2026-11-25 switch to Sonnet 5.5: rows Sonnet 4.5 wrote stay fresh and owe no label on any non-list scope; only a
+  // list: build (redo) relabels them. The current version is the one the rows were written under.
+  it("keeps a Sonnet 4.5 row fresh after the default model is Sonnet 5.5", () => {
+    const row = { model: "claude-sonnet-4-5", promptVersion: LABEL_PROMPT_VERSION, inputHash: labelInputHash(card, "claude-sonnet-4-5") };
+    expect(labelIsFresh(row, card)).toBe(true);
+    expect(needsLabel(card, row, { redo: false, model: "claude-sonnet-5-5" })).toBe(false);
+    expect(needsLabel(card, row, { redo: true, model: "claude-sonnet-5-5" })).toBe(true);
   });
 
   it("stales a row whose card text moved", () => {

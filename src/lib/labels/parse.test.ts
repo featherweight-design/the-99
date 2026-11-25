@@ -3,7 +3,7 @@ import { join } from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import { faceResolver, readKeyedReply, readReply, screenJobs, withoutRepeats } from "./parse";
+import { faceResolver, readKeyedReply, readReply, screenJobs, withoutRepeatedKinds, withoutRepeats } from "./parse";
 
 /**
  * Every case here is a shape the sample actually produced, or a shape that would have
@@ -83,6 +83,33 @@ describe("withoutRepeats", () => {
     const nulled = { ...omitted, rampKind: null };
     expect(withoutRepeats([omitted, nulled])).toEqual([omitted]);
     expect(withoutRepeats([omitted, { ...omitted, restrictedTo: "Goblin" }])).toHaveLength(2);
+  });
+});
+
+describe("withoutRepeatedKinds", () => {
+  const draw = {
+    space: "role", kind: "draw", restrictedTo: null, affects: null,
+    to: null, method: null, trigger: "cast", recurrence: "oneShot", threshold: null, modal: false,
+  };
+
+  it("collapses a repeated kind that differs only in when it happens, keeping the first", () => {
+    const again = { ...draw, trigger: "attack", recurrence: "repeatable" };
+    expect(withoutRepeatedKinds([draw, again])).toEqual([draw]);
+  });
+
+  it("keeps jobs that differ in what they do", () => {
+    const elf = { space: "theme", kind: "tribal", restrictedTo: "Elf", affects: "self" };
+    const ramp = (rampKind: string) => ({ space: "role", kind: "ramp", rampKind });
+    expect(withoutRepeatedKinds([elf, { ...elf, restrictedTo: "Goblin" }])).toHaveLength(2);
+    expect(withoutRepeatedKinds([ramp("tapsForMana"), ramp("fetchesLand")])).toHaveLength(2);
+    expect(withoutRepeatedKinds([draw, { ...draw, kind: "removal" }])).toHaveLength(2);
+  });
+
+  it("collapses a repeat inside a reply, by name and by key", () => {
+    const text = JSON.stringify([{ name: "Eshki", jobs: [draw, { ...draw, trigger: "attack", recurrence: "repeatable" }] }]);
+    expect(readReply(text, ["Eshki"])?.byName.get("Eshki")).toHaveLength(1);
+    const keyed = JSON.stringify([{ key: 1, name: "Eshki", jobs: [draw, { ...draw, trigger: "attack", recurrence: "repeatable" }] }]);
+    expect(readKeyedReply(keyed, [{ oracleId: "o1", name: "Eshki" }])?.byId.get("o1")).toHaveLength(1);
   });
 });
 
