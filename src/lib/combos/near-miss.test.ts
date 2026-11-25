@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { bestPartnerPerCard, castableCandidates, type PairRow } from "./near-miss";
+import { bestPartnerPerCard, castableCandidates, distinctPairs, type PairRow } from "./near-miss";
 
 /** A row as the two queries return it. `produces` defaults to something the system counts. */
 const row = (over: Partial<PairRow>): PairRow => ({
@@ -13,6 +13,9 @@ const row = (over: Partial<PairRow>): PairRow => ({
   missing_id: over.missing_id ?? "partner-1",
   missing_name: over.missing_name ?? "Partner One",
   missing_must_be_commander: over.missing_must_be_commander ?? false,
+  ...(over.present_name !== undefined ? { present_name: over.present_name } : {}),
+  ...(over.held_deck_id !== undefined ? { held_deck_id: over.held_deck_id } : {}),
+  ...(over.held_deck_name !== undefined ? { held_deck_name: over.held_deck_name } : {}),
 });
 
 describe("bestPartnerPerCard", () => {
@@ -112,5 +115,55 @@ describe("bestPartnerPerCard", () => {
   it("reports no others when the card has exactly one partner", () => {
     const out = bestPartnerPerCard([row({ missing_id: "only", missing_name: "Only" })]);
     expect(out.get("card-a")!.otherPartners).toBe(0);
+  });
+});
+
+describe("distinctPairs", () => {
+  const both = (v: string, x: string, y: string, popularity: number | null = 100, produces = ["Infinite mana"]) => [
+    row({ variant_id: v, present_id: x, missing_id: y, missing_name: y.toUpperCase(), popularity, produces }),
+    row({ variant_id: v, present_id: y, missing_id: x, missing_name: x.toUpperCase(), popularity, produces }),
+  ];
+
+  // A+B and B+A are one combo: `ownBothQuery` returns a row per direction, and the chip counts combos.
+  it("folds the two directions of a pair into one", () => {
+    expect(distinctPairs(both("v1", "a", "b"))).toHaveLength(1);
+  });
+
+  // The same two cards in two variants is one pair, held at the more popular variant.
+  it("keeps one pair per two cards, at its most popular variant", () => {
+    const out = distinctPairs([...both("v1", "a", "b", 5), ...both("v2", "a", "b", 9)]);
+    expect(out).toHaveLength(1);
+    expect(out[0].variantId).toBe("v2");
+  });
+
+  it("drops a pair that produces nothing this system counts, and sorts the rest most popular first", () => {
+    const out = distinctPairs([
+      ...both("v1", "a", "b", 5),
+      ...both("v2", "c", "d", 50),
+      ...both("v3", "e", "f", 500, ["Two 1/1 white Soldier creature tokens"]),
+    ]);
+    expect(out.map((p) => p.variantId)).toEqual(["v2", "v1"]);
+  });
+
+  // ONE-SIDED: the row's missing piece is the one the reader lacks, and the pair says which it is.
+  // The view's second state: a pair a deck of the reader's already holds carries that deck, from either direction.
+  it("carries the holding deck, and none when no deck holds the pair", () => {
+    const held = { held_deck_id: "d1", held_deck_name: "Edgar's Bloodline" };
+    const rows = [
+      row({ variant_id: "v1", present_id: "a", missing_id: "b", ...held }),
+      row({ variant_id: "v1", present_id: "b", missing_id: "a", ...held }),
+      row({ variant_id: "v2", present_id: "c", missing_id: "d" }),
+    ];
+    const out = distinctPairs(rows);
+    expect(out.find((p) => p.variantId === "v1")?.heldIn).toEqual({ id: "d1", name: "Edgar's Bloodline" });
+    expect(out.find((p) => p.variantId === "v2")).not.toHaveProperty("heldIn");
+  });
+
+  it("names the missing piece only for the one-sided read", () => {
+    const rows = [row({ variant_id: "v1", present_id: "a", missing_id: "b", missing_name: "Bee", present_name: "Aye" })];
+    expect(distinctPairs(rows)[0].missingId).toBeUndefined();
+    const one = distinctPairs(rows, { oneSided: true })[0];
+    expect(one.missingId).toBe("b");
+    expect([one.a.name, one.b.name].sort()).toEqual(["Aye", "Bee"]);
   });
 });

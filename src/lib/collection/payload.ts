@@ -20,12 +20,20 @@ import type { Store } from "../stores/rows";
 import { packCollection, unpackCollection } from "./packed-list";
 
 class PricesUnread extends Error {
-  constructor(readonly cards: BrowseListCard[]) {
+  constructor(
+    readonly cards: BrowseListCard[],
+    readonly comboPairCount: number,
+  ) {
     super("collection prices unread");
   }
 }
 
-export type CollectionList = { cards: BrowseListCard[]; pricesFailed: boolean };
+/**
+ * `comboPairCount` is the Two-card combos chip's figure: the collection's distinct own-both pairs. It is not per
+ * card, so it rides this entry beside the cards (the fields route cannot carry it), and it retires with the entry:
+ * every write that moves a partner (an upload, an edit, a deck write) already drops the tag.
+ */
+export type CollectionList = { cards: BrowseListCard[]; pricesFailed: boolean; comboPairCount: number };
 
 // A DAY, NOT THE HOUR. The list reads `collection_items`, `card_art_preferences`, `card_bracket_flags`
 // and the Spellbook partners. The key names the user, the catalog generation and the deployment; the
@@ -48,24 +56,25 @@ export async function loadCollectionList(userId: string, store: Store = "manapoo
     let rebuilt: number | null = null;
     const packed = await cacheForUser(
       userId,
-      store === "manapool" ? ["browse-6"] : ["browse-6", store],
+      store === "manapool" ? ["browse-7"] : ["browse-7", store],
       async () => {
         const started = performance.now();
-        const { cards, pricesFailed } = await loadBrowseCards(userId, undefined, store);
+        const { cards, pricesFailed, comboPairCount } = await loadBrowseCards(userId, undefined, store);
         rebuilt = Math.round(performance.now() - started);
-        if (pricesFailed) throw new PricesUnread(cards);
+        if (pricesFailed) throw new PricesUnread(cards, comboPairCount);
         // PACKED: the data cache refuses an entry over 2 MB, which the plain list passes at about
         // 5,400 cards (a 7,256-card reader rebuilt it on every visit). As columns under brotli
-        // (`packCollection`) a 23,960-card list is 1.8 MB. The key moved to `browse-6` with that shape.
-        return packCollection(cards);
+        // (`packCollection`) a 23,960-card list is 1.8 MB. The key moved to `browse-6` with that shape, and to
+        // `browse-7` when the entry gained the combo pair count beside the packed cards.
+        return { packed: packCollection(cards), comboPairCount };
       },
       { ceilingSeconds: LIST_CEILING_SECONDS },
     );
     // A miss is the only line, with no id or count in it; a visit with none was served from the cache.
     if (rebuilt !== null) console.log(`[collection] list rebuilt ${rebuilt}ms`);
-    return { cards: unpackCollection(packed), pricesFailed: false };
+    return { cards: unpackCollection(packed.packed), pricesFailed: false, comboPairCount: packed.comboPairCount };
   } catch (error) {
     if (!(error instanceof PricesUnread)) throw error;
-    return { cards: error.cards, pricesFailed: true };
+    return { cards: error.cards, pricesFailed: true, comboPairCount: error.comboPairCount };
   }
 }

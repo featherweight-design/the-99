@@ -1,6 +1,6 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, it, expect } from "vitest";
-import { inDeckPairsQuery, ownBothQuery, pairsWithOnePiece } from "./near-miss";
+import { inDeckPairsQuery, ownBothPairsQuery, ownBothQuery, ownOneQuery, pairsWithOnePiece } from "./near-miss";
 
 /**
  * THE EMITTED SQL, rendered rather than executed.
@@ -181,5 +181,61 @@ describe("inDeckPairsQuery — emitted SQL", () => {
 
   it("pairs each piece with the OTHER piece, never itself", () => {
     expect(show()).toContain("b.oracle_id <> a.oracle_id");
+  });
+});
+
+describe("ownOneQuery", () => {
+  const sqlText = dialect.sqlToQuery(ownOneQuery("u-1")).sql.replace(/\s+/g, " ");
+
+  // Guards the SET form: the reader's collection is a CTE joined and tested with `not exists`, never an array
+  // parameter (the slower form, `loadOwnBothPartners`), and it is the READER's rows alone.
+  it("reads the collection as a set, scoped to the reader", () => {
+    expect(sqlText).toMatch(/from collection_items where user_id = \$\d+/);
+    expect(sqlText).not.toContain("any(");
+    expect(sqlText).toContain("not exists (select 1 from owned o where o.oracle_id = want.oracle_id)");
+  });
+
+  // Guards the prune before the group and the two-card, template-free rule.
+  it("prunes to pairs holding an owned piece before grouping, two cards, no template", () => {
+    expect(sqlText).toContain("v.card_count = 2 and cardinality(v.requires_template_ids) = 0");
+    expect(sqlText.indexOf("exists (select 1 from spellbook_variant_cards vc2")).toBeLessThan(sqlText.indexOf("group by v.variant_id"));
+    expect(sqlText).toContain("having count(*) = 2");
+  });
+
+  // `must_be_commander` is selected, not filtered: the claim is ownership of one piece.
+  it("selects must_be_commander rather than filtering on it", () => {
+    expect(sqlText).toContain("want.must_be_commander as missing_must_be_commander");
+    expect(sqlText).not.toMatch(/where[^)]*must_be_commander/);
+  });
+});
+
+describe("the assembled-pair rule: the clause drops them, the view keeps them", () => {
+  const clause = dialect.sqlToQuery(ownBothQuery("u-1", null)).sql.replace(/\s+/g, " ");
+  const view = dialect.sqlToQuery(ownBothPairsQuery("u-1", { deck: true })).sql.replace(/\s+/g, " ");
+
+  // Guards the card-detail clause: it must keep excluding a pair a single deck holds both of.
+  it("ownBothQuery still excludes a pair one deck holds both of", () => {
+    expect(clause).toContain("and not exists ( select 1 from decks d");
+  });
+
+  // Guards the view: no exclusion, and the holding deck comes from the reader's own decks, one deterministically.
+  it("ownBothPairsQuery excludes nothing and names one holding deck of the reader's, by name then id", () => {
+    expect(view).not.toContain("not exists");
+    expect(view).toContain("left join lateral ( select d.id, d.name from decks d where d.user_id = $");
+    expect(view).toContain("order by d.name, d.id limit 1");
+    expect(view).toContain("d.commander_oracle_id = a.oracle_id");
+    expect(view).toContain("d.partner_oracle_id = b.oracle_id");
+  });
+
+  // Guards the list's cheaper form: same pair set, no lateral and no deck name, a boolean instead.
+  it("the list's count form has no lateral and the same pair-set text", () => {
+    const count = dialect.sqlToQuery(ownBothPairsQuery("u-1", { deck: false })).sql.replace(/\s+/g, " ");
+    expect(count).not.toContain("lateral");
+    expect(count).not.toContain("d.name");
+    expect(count).toContain("exists (select 1 from decks d where");
+    const pairSet = (q: string) => q.slice(q.indexOf("with owned"), q.indexOf("select p.variant_id"));
+    expect(pairSet(count)).toBe(pairSet(view));
+    const tail = (q: string) => q.slice(q.indexOf("join cards ca"), q.indexOf("left join lateral") > 0 ? q.indexOf("left join lateral") : q.indexOf("where a.oracle_id"));
+    expect(tail(count)).toBe(tail(view));
   });
 });

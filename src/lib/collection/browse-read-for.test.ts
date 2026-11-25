@@ -36,7 +36,7 @@ vi.mock("../cards/prices", () => ({ loadOwnedPrintingPrices: (ids: string[]) => 
 
 const { loadBrowseCards, loadBrowseCardsFor } = await import("./browse-read");
 const { collectionDrawFieldsFor } = await import("./list-wire");
-const { bestPartnerPerCard, ownBothQuery } = await vi.importActual<typeof import("../combos/near-miss")>("../combos/near-miss");
+const { bestPartnerPerCard, distinctPairs, ownBothQuery } = await vi.importActual<typeof import("../combos/near-miss")>("../combos/near-miss");
 
 const A = "11111111-1111-4111-8111-111111111111";
 const B = "22222222-2222-4222-8222-222222222222";
@@ -120,9 +120,10 @@ beforeEach(() => {
   rowsByUser.u2 = [row(A, { exactImageUri: "https://x/other-reader.jpg" })];
   // The real SQL's semantics: owned = the reader's whole collection (NOT the ids); the window narrows
   // only the present side. The real chooser (`bestPartnerPerCard`) shapes the rows.
-  partnersRead.mockImplementation(async ({ userId, oracleIds }: { userId: string; oracleIds?: string[] }) =>
-    bestPartnerPerCard(pairRows(ownedBy(userId), oracleIds ? new Set(oracleIds) : null)),
-  );
+  partnersRead.mockImplementation(async ({ userId, oracleIds }: { userId: string; oracleIds?: string[] }) => {
+    const rows = pairRows(ownedBy(userId), oracleIds ? new Set(oracleIds) : null);
+    return { partners: bestPartnerPerCard(rows), pairs: distinctPairs(rows) };
+  });
 });
 
 /** Every field the fields route draws that a combo or a bracket pass sets, for one card. */
@@ -168,6 +169,15 @@ describe("ownBothQuery: the owned set is the collection, the window is the prese
     expect(owned).not.toContain("any(");
     expect(sql).toMatch(/and a\.oracle_id = any\(\$\d+::uuid\[\]\)/);
     expect(sql).toContain("b.oracle_id in (select oracle_id from owned)");
+  });
+});
+
+describe("loadBrowseCards: the Two-card combos count", () => {
+  // u1 owns five distinct pairs: A-B, A-C (recorded in v2 AND v7, one pair), A-E, B-E and D-F. C-Z reaches a card
+  // u1 does not own. `bestPartnerPerCard` would say four (one partner per card), which is why the chip counts pairs.
+  it("is the whole collection's distinct pairs, A+B and B+A once, a pair in two variants once", async () => {
+    const { comboPairCount } = await loadBrowseCards("u1", async () => new Map());
+    expect(comboPairCount).toBe(5);
   });
 });
 

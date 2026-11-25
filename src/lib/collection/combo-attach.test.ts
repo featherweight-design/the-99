@@ -8,9 +8,12 @@ const card = (oracleId: string): BrowseCard =>
 const partner = (oracleId: string, name: string, otherPartners?: number) =>
   ({ partnerOracleId: oracleId, partnerName: name, otherPartners }) as never;
 
+/** What `loadOwnBothPartners` hands back: the per-card partners and the distinct pairs of the same rows. */
+const reads = (partners: Map<string, unknown>, pairs: unknown[] = []) => ({ partners, pairs });
+
 describe("attachComboPartners", () => {
   it("attaches the partner to the card that has one and nothing to the rest", async () => {
-    const read = vi.fn().mockResolvedValue(new Map([["a", partner("z", "Demonic Consultation")]]));
+    const read = vi.fn().mockResolvedValue(reads(new Map([["a", partner("z", "Demonic Consultation")]])));
     const cards = [card("a"), card("b")];
     await attachComboPartners("u-1", cards, read);
 
@@ -27,7 +30,7 @@ describe("attachComboPartners", () => {
   // them green while every tooltip said `You own both` over a card with four partners.
   it("carries the count of other partners through to the card", async () => {
     const read = vi.fn().mockResolvedValue(
-      new Map([["a", partner("z", "Demonic Consultation", 3)]]),
+      reads(new Map([["a", partner("z", "Demonic Consultation", 3)]])),
     );
     const cards = [card("a")];
     await attachComboPartners("u-1", cards, read);
@@ -38,7 +41,7 @@ describe("attachComboPartners", () => {
   // partner gets, and an explicit 0 would spend payload to say what absence already says.
   it("omits the count when there are no others", async () => {
     const read = vi.fn().mockResolvedValue(
-      new Map([["a", partner("z", "Demonic Consultation", 0)]]),
+      reads(new Map([["a", partner("z", "Demonic Consultation", 0)]])),
     );
     const cards = [card("a")];
     await attachComboPartners("u-1", cards, read);
@@ -47,7 +50,7 @@ describe("attachComboPartners", () => {
   });
 
   it("asks about the collection rather than a list of ids", async () => {
-    const read = vi.fn().mockResolvedValue(new Map());
+    const read = vi.fn().mockResolvedValue(reads(new Map()));
     await attachComboPartners("u-1", [card("a")], read);
     expect(read).toHaveBeenCalledWith({ userId: "u-1" });
     expect(read.mock.calls[0][0]).not.toHaveProperty("oracleIds");
@@ -59,8 +62,16 @@ describe("attachComboPartners", () => {
   it("returns the cards unchanged when the read fails", async () => {
     const read = vi.fn().mockRejectedValue(new Error("down"));
     const cards = [card("a")];
-    await expect(attachComboPartners("u-1", cards, read)).resolves.toBe(cards);
+    await expect(attachComboPartners("u-1", cards, read)).resolves.toEqual({ cards, comboPairCount: 0 });
     expect(cards[0].comboPartner).toBeUndefined();
+  });
+
+  // The Two-card combos chip's figure rides the same read, so the page pays nothing more for it, and a scoped
+  // read (a fields batch) reports 0 because it holds only the batch's pairs.
+  it("reports the distinct pair count of the whole-collection read, and 0 for a scoped one", async () => {
+    const read = vi.fn().mockResolvedValue(reads(new Map(), [{}, {}, {}]));
+    await expect(attachComboPartners("u-1", [card("a")], read)).resolves.toMatchObject({ comboPairCount: 3 });
+    await expect(attachComboPartners("u-1", [card("a")], read, true)).resolves.toMatchObject({ comboPairCount: 0 });
   });
 
   it("does not ask at all for an empty list", async () => {

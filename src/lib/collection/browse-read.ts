@@ -21,6 +21,7 @@ import type { CardBracketFlags } from "../bracket/flags-read";
 import { recordSoftFailure } from "../cache/soft-failure";
 import { perfRead } from "../perf/timing";
 import type { Store } from "../stores/rows";
+import type { DistinctPair } from "../combos/near-miss";
 
 /**
  * Server query — joins collection_items × cards for the user, optionally narrowed to one
@@ -116,27 +117,33 @@ export async function attachComboPartners(
   read?: (args: {
     userId: string;
     oracleIds?: readonly string[];
-  }) => Promise<
-    Map<string, { partnerOracleId: string; partnerName: string; otherPartners?: number }>
-  >,
+  }) => Promise<{
+    partners: Map<string, { partnerOracleId: string; partnerName: string; otherPartners?: number }>;
+    pairs: readonly DistinctPair[];
+  }>,
   /**
    * Answer about these cards only (a batch of the fields route). The pairing still reads the
    * reader's WHOLE collection for the other piece (`ownBothQuery`'s `owned`), so a card's partner
    * is the same one the whole-list read names; only the cards asked about are narrowed.
    */
   scoped = false,
-): Promise<BrowseCard[]> {
-  if (cards.length === 0) return cards;
+): Promise<{ cards: BrowseCard[]; comboPairCount: number }> {
+  if (cards.length === 0) return { cards, comboPairCount: 0 };
   const load = read ?? (await import("../combos/near-miss")).loadOwnBothPartners;
   // NO ID WINDOW. `/collection` ships every card in one payload and windows client-side, so
   // there is no server page to scope to and any card can scroll into view — and passing all
   // 2,805 ids is the SLOWER of the two forms, not the faster one (913ms against 492ms on
   // staging, for the same 65 answers).
-  const partners = await load(scoped ? { userId, oracleIds: cards.map((c) => c.oracleId) } : { userId }).catch(() => {
+  const read1 = await load(scoped ? { userId, oracleIds: cards.map((c) => c.oracleId) } : { userId }).catch(() => {
     recordSoftFailure();
     return null;
   });
-  if (!partners || partners.size === 0) return cards;
+  if (!read1) return { cards, comboPairCount: 0 };
+  const { partners } = read1;
+  // The Two-card combos chip's figure: the whole collection's distinct pairs, so a scoped read (a fields batch)
+  // reports it as 0 and the caller does not use it.
+  const comboPairCount = scoped ? 0 : read1.pairs.length;
+  if (partners.size === 0) return { cards, comboPairCount };
   for (const card of cards) {
     const hit = partners.get(card.oracleId);
     if (hit) {
@@ -144,7 +151,7 @@ export async function attachComboPartners(
       if (hit.otherPartners) card.comboOtherPartners = hit.otherPartners;
     }
   }
-  return cards;
+  return { cards, comboPairCount };
 }
 
 export const loadBrowseCards = cache(async function loadBrowseCards(
@@ -153,7 +160,7 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   readPrices?: (oracleIds: readonly string[], store: Store) => Promise<Map<string, PrintingPrices>>,
   /** The reader's store (store preference): every card's figure and the Price sort read from it alone. */
   store: Store = "manapool",
-): Promise<{ cards: BrowseListCard[]; pricesFailed: boolean }> {
+): Promise<{ cards: BrowseListCard[]; pricesFailed: boolean; comboPairCount: number }> {
   // Spans for the miss-path breakdown (PERF_TIMING=1 only; a pass-through otherwise).
   const aggregated = aggregateCollection(await perfRead("browse.rows", () => selectCollectionRows(userId)));
   // STARTED BEFORE THE TWO PASSES AND AWAITED AFTER THEM, keyed on the cards of the snapshot just
@@ -169,11 +176,11 @@ export const loadBrowseCards = cache(async function loadBrowseCards(
   // read is 492ms of database time that does not overlap with the flags read's own round trip
   // in any way this function can express.
   const withFacts = await perfRead("browse.bracketFacts", () => attachBracketFacts(aggregated));
-  const attached = await perfRead("browse.combos", () => attachComboPartners(userId, withFacts));
+  const { cards: attached, comboPairCount } = await perfRead("browse.combos", () => attachComboPartners(userId, withFacts));
   const read = await perfRead("browse.pricesWait", () => prices);
   const cards = toListCards(attached);
   attachPrices(attached, cards, read);
-  return { cards, pricesFailed: read === null };
+  return { cards, pricesFailed: read === null, comboPairCount };
 });
 
 /**
@@ -192,7 +199,7 @@ export async function loadBrowseCardsFor(userId: string, oracleIds: readonly str
   if (oracleIds.length === 0) return [];
   const aggregated = aggregateCollection(await selectCollectionRows(userId, [...oracleIds]));
   const withFacts = await attachBracketFacts(aggregated);
-  const attached = await attachComboPartners(userId, withFacts, undefined, true);
+  const { cards: attached } = await attachComboPartners(userId, withFacts, undefined, true);
   return toListCards(attached);
 }
 
