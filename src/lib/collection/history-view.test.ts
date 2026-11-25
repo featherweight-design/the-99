@@ -4,6 +4,7 @@ import type { HistoryListEntry } from "./history";
 import {
   clockLabel, dateLabel, entryTitle, fullStamp, groupByDay, groupRows, hasRecent, historyReachesBack, msToLocalMidnight, rowGroup, timeSlot, whenPhrase,
 } from "./history-view";
+import { collectionEditCopy } from "../copy/collection-edit";
 
 const entry = (over: Partial<HistoryListEntry>): HistoryListEntry => ({
   id: "e", seq: 1, createdAt: new Date("2026-10-09T14:02:00Z"), kind: "add", source: null, raised: 1, lowered: 0, rowCount: 1,
@@ -98,7 +99,7 @@ describe("groupByDay in the reader's zone", () => {
 describe("the time slot and the phrase", () => {
   const e = (iso: string) => at(iso);
   it("reads Just now under a minute, N min ago under an hour, then the clock", () => {
-    expect(timeSlot(e("2026-11-18T21:13:30Z"), DEN_NOW, DENVER, "en-US")).toBe("Just now");
+    expect(timeSlot(e("2026-11-18T21:13:30Z"), DEN_NOW, DENVER, "en-US")).toBe(collectionEditCopy.history.justNow);
     expect(timeSlot(e("2026-11-18T21:02:00Z"), DEN_NOW, DENVER, "en-US")).toBe("12 min ago");
     expect(timeSlot(e("2026-11-18T20:14:00Z"), DEN_NOW, DENVER, "en-US")).toBe("1:14 PM");
     expect(timeSlot(e("2026-11-18T15:25:00Z"), DEN_NOW, DENVER, "en-US")).toBe("8:25 AM");
@@ -110,7 +111,7 @@ describe("the time slot and the phrase", () => {
   });
 
   it("phrases a moment inside a sentence, with its own day", () => {
-    expect(whenPhrase(e("2026-11-18T21:13:30Z"), DEN_NOW, DENVER, "en-US")).toBe("just now");
+    expect(whenPhrase(e("2026-11-18T21:13:30Z"), DEN_NOW, DENVER, "en-US")).toBe(collectionEditCopy.history.justNowLower);
     expect(whenPhrase(e("2026-11-18T21:02:00Z"), DEN_NOW, DENVER, "en-US")).toBe("12 min ago");
     expect(whenPhrase(e("2026-11-18T16:30:00Z"), DEN_NOW, DENVER, "en-US")).toBe("today at 9:30 AM");
     expect(whenPhrase(e("2026-11-17T22:15:00Z"), DEN_NOW, DENVER, "en-US")).toBe("yesterday at 3:15 PM");
@@ -124,7 +125,7 @@ describe("the time slot and the phrase", () => {
   });
 
   it("reads a stamp from the future as just now, not a negative age", () => {
-    expect(timeSlot(e("2026-11-18T21:20:00Z"), DEN_NOW, DENVER, "en-US")).toBe("Just now");
+    expect(timeSlot(e("2026-11-18T21:20:00Z"), DEN_NOW, DENVER, "en-US")).toBe(collectionEditCopy.history.justNow);
   });
 
   it("spells the full stamp for the title", () => {
@@ -180,7 +181,7 @@ describe("entryTitle", () => {
   const reach = new Date("2026-10-01T00:00:00Z");
   it("titles an upload by its file, and falls back rather than printing a blank", () => {
     expect(entryTitle(entry({ kind: "upload_replace", uploadFilename: "manabox-oct.csv" }), none, reach, "UTC")).toBe("manabox-oct.csv");
-    expect(entryTitle(entry({ kind: "upload_add", uploadFilename: null }), none, reach, "UTC")).toBe("Untitled change");
+    expect(entryTitle(entry({ kind: "upload_add", uploadFilename: null }), none, reach, "UTC")).toBe(collectionEditCopy.history.untitled);
     // A Sync is titled by its file, never by its first card: a tokens-only Sync names no card at all.
     expect(entryTitle(entry({ kind: "upload_sync", uploadFilename: "The Vault.csv", firstName: "Sol Ring" }), none, reach, "UTC")).toBe("The Vault.csv");
   });
@@ -201,7 +202,7 @@ describe("entryTitle", () => {
     const byId = new Map([["u", undone]]);
     expect(entryTitle(entry({ kind: "revert", revertsId: "u", revertsVisible: true }), byId, reach, "UTC")).toBe("Reverted “x.csv”");
     expect(entryTitle(entry({ kind: "revert", revertsId: "gone", revertsVisible: false }), none, reach, "UTC")).toBe("Reverted a change from before Oct 1");
-    expect(entryTitle(entry({ kind: "revert", revertsId: "old", revertsVisible: true }), none, reach, "UTC")).toBe("Reverted an earlier change");
+    expect(entryTitle(entry({ kind: "revert", revertsId: "old", revertsVisible: true }), none, reach, "UTC")).toBe(collectionEditCopy.history.undidOlder);
   });
 });
 

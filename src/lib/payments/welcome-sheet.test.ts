@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { showcaseCopy, writtenForYouCopy } from "../copy/discovery";
+import { showcaseCopy, writtenForYouCopy, welcomeFreeCopy } from "../copy/discovery";
 import { refreshCopy } from "../copy/refresh";
 import type { ShowcaseGroup } from "../discovery/showcase";
 import { daysUntil, expiringAt, lotFacts, stripFacts, tourCreditsFor, welcomeSheet } from "./welcome-sheet";
@@ -16,7 +16,7 @@ function groups(deck: string | null): ShowcaseGroup[] {
     ({ id, copy: {}, credit: null, state, note: null }) as unknown as ShowcaseGroup["cards"][number];
   const deckState = deck ? { kind: "deck" as const, href: `/decks/${deck}?tool=x`, deck: "D", more: 0 } : { kind: "none" as const, line: "x", door: null };
   return [
-    { group: "start", cards: [card("help-me-choose", { kind: "page", href: "/decks/new/choose?tool=help-me-choose", label: "Help me choose" })] },
+    { group: "start", cards: [card("help-me-choose", { kind: "page", href: "/decks/new/choose?tool=help-me-choose", label: showcaseCopy.tools["help-me-choose"].name })] },
     { group: "tune", cards: [card("proposed-cuts", deckState), card("suggested-changes", deckState)] },
   ];
 }
@@ -59,7 +59,7 @@ describe("welcomeSheet", () => {
 
   it("the free block: Consider and Find a deck, with Try it only once a deck exists", () => {
     const withDeck = welcomeSheet({ written: rows, cards: 12, decks: 2, groups: groups("d1"), firstDeckId: "d1" })!;
-    expect(withDeck.freeLine).toBe("No credit needed");
+    expect(withDeck.freeLine).toBe(welcomeFreeCopy.line);
     expect(withDeck.free.map((r) => [r.id, r.short, r.tryHref])).toEqual([
       ["consider", "free", "/decks/d1?tab=consider"],
       ["find-a-deck", "free", "/collection?avail=free"],
@@ -159,7 +159,7 @@ describe("tourCreditsFor", () => {
     const s = welcomeSheet({ written: rows, cards: 12, decks: 0, groups: groups(null) })!;
     const list = tourCreditsFor(s)!;
     expect(list.map((r) => r.id)).toEqual([...s.lead, ...s.rows].map((r) => r.id));
-    expect(list.find((r) => r.id === "upgrade")).toEqual({ id: "upgrade", name: "Upgrade this precon", short: "2 per run", cost: "2 credits per run" });
+    expect(list.find((r) => r.id === "upgrade")).toEqual({ id: "upgrade", name: writtenForYouCopy.rows[5].name, short: writtenForYouCopy.rows[5].short, cost: writtenForYouCopy.rows[5].cost });
     expect(Object.keys(list[0]).sort()).toEqual(["cost", "id", "name", "short"]);
     // The free block never reaches the tour: it lists only what spends a credit.
     expect(list.some((r) => r.id === "consider" || r.id === "find-a-deck")).toBe(false);

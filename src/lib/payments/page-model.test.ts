@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { packOffers } from "../copy/credits-page";
+import { packOffers, creditsPageCopy } from "../copy/credits-page";
 import { buildCreditsModel, type AllowanceFacts } from "./page-model";
 import type { CreditHistoryRow } from "./return";
 
@@ -79,7 +79,7 @@ describe("buildCreditsModel: cells", () => {
 describe("buildCreditsModel: history", () => {
   it("labels a pack, prices it from the registry, and keys its receipt by the Checkout Session", () => {
     const [h] = model({ switchOn: true, allowance: allowance(), history: [row()], offers }).history;
-    expect(h).toMatchObject({ date: "Oct 2", label: "Credit pack", units: 40, amount: "$5.31", sessionId: "cs_test_1" });
+    expect(h).toMatchObject({ date: "Oct 2", label: creditsPageCopy.hist.pack, units: 40, amount: "$5.31", sessionId: "cs_test_1" });
   });
 
   it("draws what was PAID, never the registry's price: a lot with no payment record draws no amount", () => {
@@ -156,7 +156,7 @@ describe("buildCreditsModel: the plan card and plan history", () => {
     const history = [row({ id: "g2", source: "plan", externalId: "in_2", billingReason: "subscription_cycle" }), row({ id: "g1", source: "plan", externalId: "in_1", billingReason: "subscription_create" })];
     const m = model({ switchOn: true, allowance: allowance(), history, offers, now: NOW, subscription: sub("canceled", false, -1) });
     expect(m.plan?.state).toBe("offer");
-    expect(m.history.map((h) => h.label)).toEqual(["Monthly plan", "Monthly plan, first month"]);
+    expect(m.history.map((h) => h.label)).toEqual([creditsPageCopy.hist.planMonth, creditsPageCopy.hist.planFirst]);
   });
 
   it("E7: the first invoice is labelled by the stored billing reason, never by position", () => {
@@ -165,7 +165,7 @@ describe("buildCreditsModel: the plan card and plan history", () => {
       row({ id: "b", source: "plan", externalId: "in_b", billingReason: null }),
       row({ id: "c", source: "pack", externalId: "cs_c" }),
     ] });
-    expect(m.history.map((h) => h.label)).toEqual(["Monthly plan, first month", "Monthly plan", "Credit pack"]);
+    expect(m.history.map((h) => h.label)).toEqual([creditsPageCopy.hist.planFirst, creditsPageCopy.hist.planMonth, creditsPageCopy.hist.pack]);
   });
 
   it("a plan month's Receipt is fetched by its invoice id, a pack's by its Session", () => {

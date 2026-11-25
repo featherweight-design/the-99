@@ -119,17 +119,17 @@ describe("resolveExcludedReport", () => {
 
   describe("a hidden match", () => {
     const hidden = (over: Partial<ExcludedMatch> = {}) =>
-      server({ name: "Ghalta, Primal Hunger", cause: "hidden", pct: null, slug: "ghalta-primal-hunger", ...over });
+      server({ name: "Fixture Card", cause: "hidden", pct: null, slug: "ghalta-primal-hunger", ...over });
     const ex = planeCopy.excluded;
 
     it("names the commander, says it is hidden, and opens its page", () => {
       const out = resolve({ server: [hidden()], listHasRows: false });
       expect(out?.cause).toBe("hidden");
-      expect(out?.heading).toBe("Ghalta, Primal Hunger is here. You hid it");
+      expect(out?.heading).toBe("Fixture Card is here. You hid it");
       expect(out?.body).toBe(
-        "It matches, but you hid it, so it stays out of your lists.",
+        planeCopy.excluded.heldHidden,
       );
-      expect(out?.cta).toBe("Open its page");
+      expect(out?.cta).toBe(planeCopy.excluded.hiddenCta);
       expect(out?.aside).toBe("1 match, 0 shown");
       expect(out?.slug).toBe("ghalta-primal-hunger");
     });
@@ -138,8 +138,8 @@ describe("resolveExcludedReport", () => {
       const out = resolve({ server: [hidden()] });
       expect(out?.heading).toBeNull();
       expect(out?.aside).toBeNull();
-      expect(out?.name).toBe("Ghalta, Primal Hunger");
-      expect(out?.body).toBe(ex.hiddenAlso("Ghalta, Primal Hunger"));
+      expect(out?.name).toBe("Fixture Card");
+      expect(out?.body).toBe(ex.hiddenAlso("Fixture Card"));
       expect(out?.cta).toBe(ex.hiddenCta);
     });
 
@@ -160,7 +160,7 @@ describe("resolveExcludedReport", () => {
       });
       expect(out?.heading).toBe(ex.heldHiddenHeadingMany(2));
       expect(out?.body).toBe(ex.heldHiddenMany);
-      expect(out?.cta).toBe(ex.hiddenCtaNamed("Ghalta, Primal Hunger"));
+      expect(out?.cta).toBe(ex.hiddenCtaNamed("Fixture Card"));
       expect(out?.slug).toBe("ghalta-primal-hunger");
     });
 

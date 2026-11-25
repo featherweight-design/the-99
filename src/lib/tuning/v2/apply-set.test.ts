@@ -105,6 +105,7 @@ vi.mock("../../profile/load", () => ({ readProfileHead: vi.fn(async () => ({})) 
 vi.mock("./run", () => ({ deckTotal: () => 99, V2_DECK_TOTAL: 99 }));
 
 import { applyPicks, MAX_SET_PULLS, parseSetPulls, undoSet } from "./apply-set";
+import { deckRefusalCopy } from "../../copy/deck-versioning";
 
 const open = (id: string, side: "add" | "cut"): Line => ({
   id, addOracleId: side === "add" ? `o-${id}` : null, cutOracleId: side === "cut" ? `o-${id}` : null,
@@ -197,13 +198,13 @@ describe("applyPicks with staged pulls", () => {
   });
 
   it("refuses the whole set when the pull is refused, naming the line", async () => {
-    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "That card is that deck’s commander." });
+    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: deckRefusalCopy.isCommander });
     const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
-    expect(r).toEqual({ ok: false, refusal: { kind: "pull", itemId: "a1", message: "That card is that deck’s commander." } });
+    expect(r).toEqual({ ok: false, refusal: { kind: "pull", itemId: "a1", message: deckRefusalCopy.isCommander } });
   });
 
   it("treats a copy that came free since as done: no pull recorded, the set applies", async () => {
-    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "That deck already has the copies it needs.", skip: "covered" });
+    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: deckRefusalCopy.alreadyCovered, skip: "covered" });
     const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
     expect(r).toMatchObject({ ok: true, sourceDeckIds: [] });
     expect(fx.updates.some((u) => (u.undoSnapshot as ApplySnapshot | undefined)?.pull)).toBe(false);
@@ -219,7 +220,7 @@ describe("applyPicks with staged pulls", () => {
   });
 
   it("refuses the set on a refusal with the same words but no reason code", async () => {
-    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: "That deck isn’t waiting on that card." });
+    pull.pullInTx.mockResolvedValueOnce({ ok: false, message: deckRefusalCopy.notWaiting });
     const r = await apply([{ itemId: "a1", sourceDeckId: SOURCE }]);
     expect(r).toMatchObject({ ok: false, refusal: { kind: "pull", itemId: "a1" } });
   });

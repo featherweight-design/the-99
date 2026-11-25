@@ -180,7 +180,7 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
   it("B: welcome credits fund it, and the line counts them in the shipped form", () => {
     expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null, welcome: 15 })).toEqual({
       lead: "Uses 2 welcome credits.",
-      why: "A free credit covers up to 10.",
+      why: creditsCopy.two.whyLot,
       count: "1 of 1 free · 15 welcome.",
     });
   });
@@ -188,7 +188,7 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
   it("D: paid credits fund it", () => {
     expect(two({ used: 0, limit: 1, nextAt: null, reopensAt: null, pack: 8 })).toEqual({
       lead: "Uses 2 paid credits.",
-      why: "A free credit covers up to 10.",
+      why: creditsCopy.two.whyLot,
       count: "1 of 1 free · 8\u00a0paid.",
     });
   });
@@ -196,7 +196,7 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
   it("E: the free allowance holds 2, and the line says what the run leaves, in credits", () => {
     expect(two({ used: 0, limit: 5, nextAt: null, reopensAt: null })).toEqual({
       lead: "Uses 2 free credits.",
-      why: "A run above 10 counts 2.",
+      why: creditsCopy.two.whyFree,
       count: "5 of 5 left, 3 after this run.",
     });
     expect(two(base({ used: 0 }))!.count).toBe(`5 of 5 left, 3 after this run · reset at ${t(at(14, 1))}.`);
@@ -217,7 +217,7 @@ describe("a run costing 2 credits (Small items 7, SC-Cost B, D, E)", () => {
     expect(creditLineKind(a)).toBe("limitFree");
     expect(two(a)).toEqual({
       lead: "Uses 2 free credits.",
-      why: "A run above 10 counts 2.",
+      why: creditsCopy.two.whyFree,
       count: `${creditsCopy.limitFree(5, 5, null, back)}.`,
     });
     expect(two(a)!.count).not.toContain("paid.");

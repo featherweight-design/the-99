@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { backScreenName, deckIdOf, safeFrom } from "./back";
+import { ABOUT_BACK_SCREENS } from "../copy/about-pages";
+import { ABOUT_SECTIONS } from "../copy/about-pages";
 
 const DECK = "/decks/0b6c2f4e-1111-4222-8333-444455556666";
 
@@ -64,26 +66,26 @@ describe("safeFrom", () => {
 
 describe("backScreenName", () => {
   it("names a sectioned screen by its section (board: Back to Upload a file)", () => {
-    expect(backScreenName("/collection/replace")).toBe("Upload a file");
+    expect(backScreenName("/collection/replace")).toBe(ABOUT_SECTIONS[3].name);
     expect(backScreenName("/")).toBe("Home");
     expect(backScreenName("/collection")).toBe("Cards");
-    expect(backScreenName("/decks")).toBe("Your decks");
+    expect(backScreenName("/decks")).toBe(ABOUT_SECTIONS[6].name);
   });
 
   it("names a deck by its own name, else by its section", () => {
     expect(backScreenName(DECK, "Sai")).toBe("Sai");
-    expect(backScreenName(DECK, null)).toBe("Your deck");
+    expect(backScreenName(DECK, null)).toBe(ABOUT_SECTIONS[7].name);
   });
 
   it("names each A1 screen", () => {
-    expect(backScreenName("/collection?card=x")).toBe("Card details");
+    expect(backScreenName("/collection?card=x")).toBe(ABOUT_BACK_SCREENS["card-details"]);
     expect(backScreenName("/collection/sets")).toBe("Sets");
     expect(backScreenName("/collection/proxies")).toBe("Proxies");
     expect(backScreenName("/collection/history")).toBe("History");
     expect(backScreenName("/collection/wishlist")).toBe("Wishlist");
-    expect(backScreenName("/decks/new")).toBe("New deck");
-    expect(backScreenName("/decks/precons")).toBe("New deck");
-    expect(backScreenName("/commanders/choose")).toBe("New deck");
+    expect(backScreenName("/decks/new")).toBe(ABOUT_SECTIONS[6].labels[0].lead);
+    expect(backScreenName("/decks/precons")).toBe(ABOUT_SECTIONS[6].labels[0].lead);
+    expect(backScreenName("/commanders/choose")).toBe(ABOUT_SECTIONS[6].labels[0].lead);
     expect(backScreenName("/settings")).toBe("Settings");
     expect(backScreenName("/credits")).toBe("Credits");
   });

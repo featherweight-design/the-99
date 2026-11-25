@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { collapse, messagesFor, toMessage, type PushItem } from "./message";
+import { feedCopy } from "../copy/feed";
+import { pushCopy } from "../copy/push";
 
 const set = (key: string, name: string, batch = "run-1"): PushItem => ({ kind: "new-set", key, batch, name, cards: 281, href: `/collection/sets/${key}` });
 const precon = (key: string, name: string, batch = "run-1"): PushItem => ({ kind: "new-precon", key, batch, name, owned: 31, of: 100, href: `/decks/precons/${key}` });
@@ -16,7 +18,7 @@ describe("one item of each kind (the handoff's table)", () => {
   it("tells an offer and its answer in their own words, never as an ask", () => {
     const card = "Lathliss, Dragon Queen";
     const offer = (key: string, friend: string, said?: "yes" | "no"): PushItem => ({ kind: "spare-request", key, batch: key, friend, card, image: null, offer: true, ...(said ? { answer: said } : {}) });
-    expect(toMessage([offer("o1", "Max")])).toMatchObject({ title: "Max is offering you Lathliss, Dragon Queen", body: "Answer in Friends.", route: "/friends", tag: "spare-request:o1" });
+    expect(toMessage([offer("o1", "Max")])).toMatchObject({ title: "Max is offering you Lathliss, Dragon Queen", body: pushCopy.one.spareOffer.body, route: "/friends", tag: "spare-request:o1" });
     expect(toMessage([offer("o2", "Colin", "yes")])).toMatchObject({ title: "Colin said yes to Lathliss, Dragon Queen" });
     expect(toMessage([offer("o3", "Chris", "no")])).toMatchObject({ title: "Chris passed on Lathliss, Dragon Queen" });
   });
@@ -38,7 +40,7 @@ describe("one item of each kind (the handoff's table)", () => {
     });
   });
   it("trade match: the friend's page", () => {
-    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: "It’s on your wishlist.", route: "/friends/p-colin/spares?spare=o-m1" });
+    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: feedCopy.home.line.tradeMatch, route: "/friends/p-colin/spares?spare=o-m1" });
   });
   it("trade match with spare requests on: the body says to ask, and the tap opens the card's sheet", () => {
     expect(toMessage([{ ...match("m1", "Colin", "p-colin"), askable: true } as PushItem])).toMatchObject({
@@ -46,16 +48,16 @@ describe("one item of each kind (the handoff's table)", () => {
     });
   });
   it("spare request: says where to answer, lands on Friends", () => {
-    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: "Answer in Friends.", route: "/friends", tag: "spare-request:r1" });
+    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: pushCopy.one.spareOffer.body, route: "/friends", tag: "spare-request:r1" });
   });
   it("an answer to the reader's own ask: who spares or keeps it, lands on Your requests, never replaces another", () => {
-    expect(toMessage([answer("a1", "Colin", "yes")])).toMatchObject({ title: "Colin can spare Lathliss, Dragon Queen", body: "The handover is between you.", route: "/friends", tag: "spare-request:a1" });
-    expect(toMessage([answer("a2", "Chris", "no")])).toMatchObject({ title: "Chris is keeping Lathliss, Dragon Queen", body: "Your requests are in Friends.", route: "/friends", tag: "spare-request:a2" });
+    expect(toMessage([answer("a1", "Colin", "yes")])).toMatchObject({ title: "Colin can spare Lathliss, Dragon Queen", body: pushCopy.one.spareOfferAnswer.yes.body, route: "/friends", tag: "spare-request:a1" });
+    expect(toMessage([answer("a2", "Chris", "no")])).toMatchObject({ title: "Chris is keeping Lathliss, Dragon Queen", body: pushCopy.one.spareAnswer.no.body, route: "/friends", tag: "spare-request:a2" });
     expect(messagesFor([answer("a1", "Peter", "yes"), answer("a2", "Peter", "no")], "release")).toHaveLength(2);
   });
   it("combo: names its kind, Home with the first piece open for its combo", () => {
     expect(toMessage([combo("c1")])).toMatchObject({
-      title: "You can make a combo", body: "Thassa's Oracle + Demonic Consultation. You added Demonic Consultation.", route: "/", openCard: "o-c1", openCombo: true, openVariant: "1-2",
+      title: pushCopy.one.combo.title, body: "Thassa's Oracle + Demonic Consultation. You added Demonic Consultation.", route: "/", openCard: "o-c1", openCombo: true, openVariant: "1-2",
     });
   });
 });
@@ -101,7 +103,7 @@ describe("several of one kind, as one", () => {
     expect(toMessage([match("1", "Colin", "p-colin"), match("2", "Peter", "p-peter")])).toMatchObject({ title: "2 spares you want", body: "From Colin and Peter.", route: "/friends" });
   });
   it("combos land on Home with nothing open", () => {
-    expect(toMessage([combo("1"), combo("2"), combo("3"), combo("4")])).toMatchObject({ title: "You can make 4 new combos", body: "From the cards you just added.", route: "/", openCard: null, openCombo: false });
+    expect(toMessage([combo("1"), combo("2"), combo("3"), combo("4")])).toMatchObject({ title: "You can make 4 new combos", body: pushCopy.many.combo.body, route: "/", openCard: null, openCombo: false });
   });
 });
 

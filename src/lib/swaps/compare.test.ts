@@ -1,12 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import { compareLines, fitCompare, type Compare } from "./compare";
+import { swapToolsCopy } from "../copy/swap-tools";
 
 const c = (over: Partial<Compare>): Compare => ({ type: null, keeps: [], gains: [], loses: [], ...over });
 
 describe("the comparison's fit (stand-in row addendum 3a)", () => {
   it("counts one line for a short comparison at both widths", () => {
-    const short = c({ keeps: ["taps for mana", "+1/+1 counters"], loses: ["haste"] });
+    const short = c({ keeps: [swapToolsCopy.sheet.job.tapsForMana, swapToolsCopy.sheet.job.counters], loses: ["haste"] });
     expect(compareLines(short, 560)).toBe(1);
     expect(compareLines(short, 315)).toBe(1);
   });
@@ -14,7 +15,7 @@ describe("the comparison's fit (stand-in row addendum 3a)", () => {
   it("breaks between items, never inside one, and lets a long group start mid-line", () => {
     const long = c({
       keeps: ["removal"],
-      loses: ["protection", "a sacrifice outlet", "death triggers", "free casts", "life gain", "recursion", "tokens"],
+      loses: ["protection", swapToolsCopy.sheet.job.sacOutlet, swapToolsCopy.sheet.job.deathTrigger, swapToolsCopy.sheet.job.castFree, swapToolsCopy.sheet.job.lifegain, "recursion", "tokens"],
     });
     // Too long for one 560px line, and it starts on line one beside KEEPS rather than on a line of its own.
     expect(compareLines(long, 560)).toBe(2);
@@ -22,7 +23,7 @@ describe("the comparison's fit (stand-in row addendum 3a)", () => {
   });
 
   it("drops one gain first, then the gains group, then keeps past the first, and never a loss", () => {
-    const loses = ["protection", "a sacrifice outlet", "death triggers", "free casts", "life gain"];
+    const loses = ["protection", swapToolsCopy.sheet.job.sacOutlet, swapToolsCopy.sheet.job.deathTrigger, swapToolsCopy.sheet.job.castFree, swapToolsCopy.sheet.job.lifegain];
     const over = c({
       keeps: ["removal", "tokens", "mill"],
       gains: ["pumps", "evasion", "mana value 1"],
@@ -38,7 +39,7 @@ describe("the comparison's fit (stand-in row addendum 3a)", () => {
 
   it("drops only the last gain when that is enough", () => {
     // Fits once `mana value 1`, the last gain, goes.
-    const near = c({ keeps: ["taps for mana", "+1/+1 counters"], gains: ["protection", "evasion", "mana value 1"], loses: ["haste", "tokens"] });
+    const near = c({ keeps: [swapToolsCopy.sheet.job.tapsForMana, swapToolsCopy.sheet.job.counters], gains: ["protection", "evasion", "mana value 1"], loses: ["haste", "tokens"] });
     expect(compareLines(near, 560)).toBe(2);
     const fit = fitCompare(near);
     expect(fit.gains).toEqual(["protection", "evasion"]);

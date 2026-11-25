@@ -10,6 +10,8 @@ import {
 } from "./pages-visible";
 import { readerAt as readerAtFloor } from "@/test/about-reader";
 import { NEVER_SEEN, type SeenState } from "./visible";
+import { tokensCopy } from "../copy/tokens";
+import { creditsPageCopy } from "../copy/credits-page";
 
 const readerAt = (floor: number, e: NodeJS.ProcessEnv = ALL_ON): SeenState => readerAtFloor(floor, e);
 
@@ -79,8 +81,8 @@ describe("each sentence follows its own switch", () => {
     ["credits with Proposed cuts, its switches retired", { ANALYSIS_TAB_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" }, "rule/credits", "So does each Proposed cuts run.", undefined],
     ["credits with the bracket and the Overview, the tab's switch retired", { ANALYSIS_TAB_ENABLED: "off" }, "rule/credits", "Reading a bracket is free. Anything written just for you", undefined],
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", undefined],
-    ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", "never expire"],
-    ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
+    ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", creditsPageCopy.del.packsSub],
+    ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", tokensCopy.row.have, undefined],
     ["a fill with Help me choose, its switch retired", {}, "rule/autofill", "any cards will do", undefined],
     ["a fill keeps Help me choose with its retired name off", { HELP_ME_CHOOSE_ENABLED: "off" }, "rule/autofill", "any cards will do", undefined],
     ["friends see the wishlist (its switch and friends' are retired)", {}, "rule/friends-see", "Your wishlist is theirs to read too", undefined],
@@ -489,7 +491,7 @@ describe("a section's sub-line", () => {
   });
 
   it("names the tuning tools on Tuning, not Analysis, whatever their retired switches say (tool discovery B3)", () => {
-    const named = "Tools for this deck. Suggested changes, Proposed cuts and Mana Balance help you tune it.";
+    const named = ABOUT_SECTIONS[9].sub;
     expect(sub(ALL_ON, "tuning")).toBe(named);
     expect(sub(ALL_ON, "analysis")).toBe("Which bracket your deck sits in, and why.");
     expect(sub(off("ANALYSIS_TAB_ENABLED"), "analysis")).toBe("Which bracket your deck sits in, and why.");
@@ -509,7 +511,7 @@ describe("a section's sub-line", () => {
     // Stats is retired (always on): its sentences always draw.
     expect(sub(OFF, "stats")).toContain("curve by card type");
     // Collection editing is retired: its sentence always draws.
-    expect(sub(OFF, "cards")).toBe("Everything you own, card by card, and which copies your decks are holding. Add cards by name or scan them in.");
+    expect(sub(OFF, "cards")).toBe(ABOUT_SECTIONS[2].sub);
     // Ready to build is gone (the feed is always on).
     expect(sub(ALL_ON, "home")).not.toContain("best-fit commanders");
     // Only a spare request ever waits on you, so the sentence saying what comes first hangs on spare requests too, which
@@ -565,8 +567,8 @@ describe("resolveDiagram", () => {
   it("never draws a negated part of a retired switch", () => {
     const captions = (e: NodeJS.ProcessEnv) => parts(rule(e, "replace").diagram!).flatMap((p) => (p.part === "caption" ? [p.text] : []));
     for (const e of [OFF, ALL_ON]) {
-      expect(captions(e)).toContain("Your Collection, then Replace");
-      expect(captions(e)).not.toContain("Your Collection, then an upload");
+      expect(captions(e)).toContain((ABOUT_RULES.replace.diagram.columns[0].parts[0] as { text: string }).text);
+      expect(captions(e)).not.toContain((ABOUT_RULES.replace.diagram.columns[0].parts[1] as { text: string }).text);
     }
   });
 });

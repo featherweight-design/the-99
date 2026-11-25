@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import { emptyParams, type ChooseParams } from "./params";
 import { answerChips, figures, narrowOptions, orderLine } from "./present";
 import type { ResultRow } from "./rows";
+import { helpMeChooseIntroCopy } from "../copy/help-me-choose-intro";
+import { helpMeChooseCopy } from "../copy/help-me-choose";
 
 const labels = { theme: (s: string) => ({ dinos: "Dinosaurs", tokens: "Tokens" })[s] ?? s, card: "Regisaur Alpha" };
 const p = (over: Partial<ChooseParams> = {}): ChooseParams => ({ ...emptyParams(), results: true, ...over });
@@ -14,12 +16,12 @@ const row = (over: Partial<ResultRow> = {}): ResultRow => ({
 describe("orderLine", () => {
   it("names the one answer that ranks, or says every answer does", () => {
     expect(orderLine("fit", p({ themes: ["dinos"] }), labels).title).toBe("Ordered by Dinosaurs");
-    expect(orderLine("fit", p({ themes: ["dinos"], card: "c" }), labels).title).toBe("Ordered by fit to everything you asked");
-    expect(orderLine("owned", p(), labels).title).toBe("Ordered by cards you already have");
+    expect(orderLine("fit", p({ themes: ["dinos"], card: "c" }), labels).title).toBe(helpMeChooseCopy.results.all);
+    expect(orderLine("owned", p(), labels).title).toBe(helpMeChooseCopy.results.byOwned);
     expect(orderLine("owned", p(), labels).sub).toMatch(/^You gave no theme or card, so these are commanders, owned or not,/);
     expect(orderLine("owned", p({ colors: ["r", "g"] }), labels).sub).toMatch(/^You gave colors but no theme or card, so these are Red and Green commanders, owned or not,/);
     // A card the catalog could not name leaves nothing to cite, and never an "undefined".
-    expect(orderLine("fit", p({ card: "c" }), { ...labels, card: null })).toEqual({ title: "Ordered by fit to everything you asked", sub: "" });
+    expect(orderLine("fit", p({ card: "c" }), { ...labels, card: null })).toEqual({ title: helpMeChooseCopy.results.all, sub: "" });
   });
 });
 
@@ -27,7 +29,7 @@ describe("figures", () => {
   it("lights the weakest figure and tags it, dimming the rest", () => {
     const f = figures(row({ themeFits: [{ slug: "dinos", share: 0.4 }], cardFit: 0.12 }), "fit", labels);
     expect(f).toEqual([
-      { pct: 40, text: "of its decks are Dinosaurs", setsRank: false, dim: true },
+      { pct: 40, text: helpMeChooseIntroCopy.exampleFit, setsRank: false, dim: true },
       { pct: 12, text: "of its decks run Regisaur Alpha", setsRank: true, dim: false },
     ]);
   });
@@ -120,11 +122,11 @@ describe("themes asked as any of", () => {
 
   it("orders by the theme each fits best, naming the group", () => {
     expect(orderLine("fit", anyFour, tribal)).toEqual({
-      title: "Ordered by the theme each fits best",
+      title: helpMeChooseCopy.results.byBestTheme,
       sub: "You asked for any of Orcs, Elves, Dwarves or Wizards, so each commander ranks by the one it fits best. Every one it fits is shown.",
     });
     expect(orderLine("fit", { ...anyFour, card: "c" }, tribal)).toEqual({
-      title: "Ordered by fit to everything you asked",
+      title: helpMeChooseCopy.results.all,
       sub: "Each commander ranks by the theme of Orcs, Elves, Dwarves or Wizards it fits best, or by Regisaur Alpha where that figure is lower.",
     });
   });
@@ -162,7 +164,7 @@ describe("themes asked as any of", () => {
 
   it("draws one chip for the group, its names apart and its spoken name whole", () => {
     expect(answerChips(anyFour, tribal)).toEqual([{
-      kind: "any of",
+      kind: helpMeChooseCopy.readAs.kinds.anyOf,
       value: "Orcs, Elves, Dwarves or Wizards",
       names: ["Orcs", "Elves", "Dwarves", "Wizards"],
     }]);
@@ -185,7 +187,7 @@ describe("the Sets answer", () => {
 
   it("draws one printed-in chip of codes, spoken with the names in full", () => {
     expect(answerChips(asked, sets)[1]).toEqual({
-      kind: "printed in",
+      kind: helpMeChooseCopy.readAs.kinds.printedIn,
       value: "The Hobbit or The Hobbit Commander",
       codes: ["HOB", "HOC"],
     });
@@ -201,6 +203,6 @@ describe("the Sets answer", () => {
 describe("own-only", () => {
   it("draws the the-99 chip with its tail, and is never a narrow option", () => {
     const own = p({ themes: ["dinos"], pool: "own" });
-    expect(answerChips(own, labels)[1]).toEqual({ kind: "the 99", value: "from cards you own", tail: "commander owned or not" });
+    expect(answerChips(own, labels)[1]).toEqual({ kind: helpMeChooseCopy.readAs.kinds.pool, value: helpMeChooseCopy.readAs.poolValue, tail: helpMeChooseCopy.readAs.poolTail });
   });
 });
