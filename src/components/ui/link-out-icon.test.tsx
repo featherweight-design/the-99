@@ -29,9 +29,9 @@ describe("LinkOutIcon", () => {
 
 describe("LinkOutLabel", () => {
   it("binds the icon to the last word in one no-wrap run, leaving the words exactly as written", () => {
-    const { container } = render(<LinkOutLabel>Fan Content Policy</LinkOutLabel>);
+    const { container } = render(<LinkOutLabel>Fixture link label</LinkOutLabel>);
     const label = container.firstElementChild!;
-    expect(label.textContent).toBe("Fan Content Policy");
+    expect(label.textContent).toBe("Fixture link label");
     const run = label.querySelector("svg[data-link-out]")!.parentElement!;
     expect(run.textContent).toBe("Policy");
     expect(run.className).toBe("whitespace-nowrap");

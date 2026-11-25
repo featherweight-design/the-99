@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { FilterChassis, type FilterChip } from "./filter-chassis";
+import { viewToggleCopy } from "../../lib/copy/card-surfaces";
+import { chassisCopy } from "../../lib/copy/filter-chassis";
 
 const base = {
   sort: <button type="button">Sort · Recent</button>,
@@ -29,7 +31,7 @@ describe("FilterChassis", () => {
     // Decision 2. The line IS the invariant that keeps the frame a fixed height;
     // a conditionally rendered chip row is the bug this forbids.
     const { container } = render(<FilterChassis {...base} controls={null} chips={[]} />);
-    expect(screen.getByText("No filters on")).toBeTruthy();
+    expect(screen.getByText(chassisCopy.chips.none)).toBeTruthy();
     expect(container.querySelector("[data-chassis-row='chips']")).toBeTruthy();
   });
 
@@ -69,7 +71,7 @@ describe("FilterChassis", () => {
   it("draws no hairline and promises no sort when a route passes none (the Games view)", () => {
     const { container } = render(<FilterChassis onClearAll={() => {}} resultLine="5 games" form="wide" controls={null} chips={[{ key: "a", label: "A", onRemove: vi.fn() }]} />);
     expect(container.querySelector("[data-chassis-hairline]")).toBeNull();
-    expect(screen.getByRole("button", { name: "Clear all filters" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: chassisCopy.chips.clearAllAriaNoSort })).toBeInTheDocument();
   });
 
   it("never lets the control row wrap", () => {
@@ -96,7 +98,7 @@ describe("FilterChassis", () => {
     render(
       <FilterChassis {...base} onClearAll={onClearAll} controls={null} chips={[chip("a", "Status · Playing")]} />,
     );
-    const clear = screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." });
+    const clear = screen.getByRole("button", { name: chassisCopy.chips.clearAllAria });
     fireEvent.click(clear);
     expect(onClearAll).toHaveBeenCalled();
   });
@@ -107,13 +109,13 @@ describe("FilterChassis", () => {
     // re-found. The commander routes migrate onto this frame, so dropping it
     // would remove an established way out and change the focusable structure.
     render(<FilterChassis {...base} controls={null} chips={[]} />);
-    const clear = screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." });
+    const clear = screen.getByRole("button", { name: chassisCopy.chips.clearAllAria });
     expect(clear).toBeDisabled();
   });
 
   it("enables clear-all once there is something to clear", () => {
     render(<FilterChassis {...base} controls={null} chips={[chip("a", "Status · Playing")]} />);
-    expect(screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." }))
+    expect(screen.getByRole("button", { name: chassisCopy.chips.clearAllAria }))
       .toBeEnabled();
   });
 
@@ -160,7 +162,7 @@ describe("FilterChassis", () => {
 
   it("gives clear-all the same 44px target as the chip beside it", () => {
     render(<FilterChassis {...base} controls={null} chips={[chip("a", "x")]} />);
-    const clear = screen.getByRole("button", { name: "Clear all filters. The sort is unchanged." });
+    const clear = screen.getByRole("button", { name: chassisCopy.chips.clearAllAria });
     expect(clear.className).toContain("after:h-[44px]");
     expect(clear.className).toContain("after:min-w-[44px]");
   });
@@ -218,7 +220,7 @@ describe("FilterChassis", () => {
       />,
     );
     const row = container.querySelector("[data-chassis-row='result']")!;
-    const trailing = within(row as HTMLElement).getByRole("button", { name: "Grid view" });
+    const trailing = within(row as HTMLElement).getByRole("button", { name: viewToggleCopy.collection.grid });
     expect(trailing).toBeTruthy();
     // Pushed to the edge rather than sitting beside the sentence.
     expect(trailing.parentElement?.className).toContain("ml-auto");

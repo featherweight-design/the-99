@@ -69,8 +69,8 @@ describe("PrimaryButton", () => {
   // Locked ruling 14: the one filled button on a screen is bone, because accent
   // means "in use / to buy" and a filled CTA is neither.
   it("fills with bone, never accent", () => {
-    render(<PrimaryButton>Start this deck</PrimaryButton>);
-    const cls = screen.getByRole("button", { name: "Start this deck" }).className;
+    render(<PrimaryButton>Fixture button</PrimaryButton>);
+    const cls = screen.getByRole("button", { name: "Fixture button" }).className;
     expect(cls).toContain("bg-[color:var(--fg)]");
     expect(cls).toContain("text-[color:var(--bg)]");
     expect(cls).not.toContain("var(--accent)");

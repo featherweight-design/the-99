@@ -10,7 +10,7 @@ function mount(over: Partial<Parameters<typeof DeleteConfirm>[0]> = {}) {
       heading="Delete “Gishath”?"
       body="Its list goes with it."
       cancelLabel="Keep it"
-      confirmLabel="Delete deck"
+      confirmLabel={"Fixture confirm"}
       pendingLabel="Deleting…"
       pending={false}
       error={null}
@@ -32,7 +32,7 @@ describe("DeleteConfirm, the one delete pane", () => {
 
   it("hands each press to its caller", () => {
     const { onCancel, onConfirm } = mount();
-    fireEvent.click(screen.getByRole("button", { name: "Delete deck" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fixture confirm" }));
     fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).toHaveBeenCalledTimes(1);
@@ -46,7 +46,7 @@ describe("DeleteConfirm, the one delete pane", () => {
 
   it("keeps the confirm's own label in flight when no pending label is given", () => {
     mount({ pending: true, pendingLabel: undefined });
-    expect(screen.getByRole("button", { name: "Delete deck" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Fixture confirm" })).toBeDisabled();
   });
 
   it("says a failure as an alert, inside the pane", () => {

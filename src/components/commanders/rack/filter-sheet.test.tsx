@@ -5,7 +5,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { defaultParams } from "@/lib/commanders/lane-params";
-import { commandersCopy } from "@/lib/copy/lanes";
+import { commandersCopy, filterCopy } from "@/lib/copy/lanes";
 import { FilterSheet } from "./filter-sheet";
 import { resultLineWithAside } from "./result-line";
 
@@ -17,7 +17,7 @@ describe("FilterSheet", () => {
       <FilterSheet open onOpenChange={() => {}} params={defaultParams("discover")} lane="discover" onChange={() => {}} shown={3301} resultLine="3301 of 3301" />,
     );
     const legends = screen.getAllByRole("group").map((g) => g.getAttribute("aria-label"));
-    expect(legends).toEqual(["Color identity"]);
+    expect(legends).toEqual([filterCopy.colour.legend]);
   });
 
   // Reported as redundant: two doors to one control, with one of them behind a
@@ -104,7 +104,7 @@ describe("FilterSheet", () => {
     render(
       <FilterSheet open onOpenChange={() => {}} params={defaultParams("owned")} lane="owned" onChange={onChange} shown={148} resultLine="148 of 148" />,
     );
-    fireEvent.click(screen.getByRole("radio", { name: "Free cards only" }));
+    fireEvent.click(screen.getByRole("radio", { name: commandersCopy.availability.free }));
     expect(onChange).toHaveBeenCalled();
   });
 
