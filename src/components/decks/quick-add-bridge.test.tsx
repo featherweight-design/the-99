@@ -21,15 +21,15 @@ const sheetProps = vi.fn();
 vi.mock("../collection/add-cards-sheet", async () => {
   const { collectionEditCopy: editCopy } = await import("../../lib/copy/collection-edit");
   return {
-  AddCardsSheet: (p: Extract<AddCardsSheetProps, { mode: "add" }>) => {
-    sheetProps(p);
-    return (
-      <div role="dialog" aria-label={editCopy.head.add}>
-        <button type="button" onClick={() => p.onSaved?.(1)}>save</button>
-        <button type="button" onClick={() => p.onClose()}>done</button>
-      </div>
-    );
-  },
+    AddCardsSheet: (p: Extract<AddCardsSheetProps, { mode: "add" }>) => {
+      sheetProps(p);
+      return (
+        <div role="dialog" aria-label={editCopy.head.add}>
+          <button type="button" onClick={() => p.onSaved?.(1)}>save</button>
+          <button type="button" onClick={() => p.onClose()}>done</button>
+        </div>
+      );
+    },
   };
 });
 

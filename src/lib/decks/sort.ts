@@ -17,7 +17,7 @@ export const DEFAULT_DECK_SORT: DeckSort = "lastPlayed";
  * takes the same string, so it now reads `Sort · Last played`.
  */
 export const DECK_SORT_LABELS: Record<DeckSort, string> = {
-  lastPlayed: refreshCopy.filters.lastPlayedHeading,
+  lastPlayed: refreshCopy.decks.sortLastPlayed,
   name: "Name",
   newest: "Newest",
   custom: "Custom",

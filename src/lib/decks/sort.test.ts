@@ -47,7 +47,7 @@ describe("deck sort", () => {
     // capitalised. The trigger takes the same string, so it reads
     // `Sort · Last played`.
     expect(DECK_SORT_LABELS).toEqual({
-      lastPlayed: refreshCopy.filters.lastPlayedHeading,
+      lastPlayed: refreshCopy.decks.sortLastPlayed,
       name: "Name",
       newest: "Newest",
       custom: "Custom",
