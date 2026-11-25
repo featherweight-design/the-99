@@ -113,7 +113,7 @@ describe("FactTooltip", () => {
     await waitFor(() => expect(screen.getByTestId("fact-tooltip")).toBeTruthy(), { timeout: 2000 });
     const bubble = screen.getByTestId("fact-tooltip");
     // One line per entry, in the same chrome and still aria-hidden.
-    expect(Array.from(bubble.children).map((c) => c.textContent)).toEqual([cardMarkCopy.gameChanger, "tutor"]);
+    expect(Array.from(bubble.children).map((c) => c.textContent)).toEqual([cardMarkCopy.gameChanger, cardMarkCopy.tutor]);
     expect(bubble.getAttribute("aria-hidden")).toBe("true");
     cleanup();
     pointer(false);

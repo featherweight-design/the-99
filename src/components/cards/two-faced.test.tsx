@@ -259,7 +259,7 @@ describe("CardModal flip control", () => {
       printings: [
         delver.printings[0],
         {
-          setCode: "SLD", setName: "Secret Lair Drop", collectorNumber: "7",
+          setCode: "SLD", setName: "Fixture Set Name", collectorNumber: "7",
           releasedAt: "2023-01-01", quantity: 1, finishes: { nonfoil: 1 },
           imageUri: ALT_FRONT, backImageUri: ALT_BACK, flavorName: null,
         },
