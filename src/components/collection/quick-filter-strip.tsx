@@ -4,6 +4,7 @@
 // row, phone in its own row under Filters / Sort (`layout`). A chip with no cards is not drawn unless it is pressed, so
 // the reader can always take a press back; all-zero draws nothing and the row falls back to "No filters on".
 import { CardFactMark } from "../cards/card-fact-mark";
+import { noteAppScroll } from "../../lib/ui/reveal";
 import { FitsGlyph } from "../cards/fits-glyph";
 import { FoilMark } from "../cards/foil-mark";
 import { quickFilterCopy } from "../../lib/copy/quick-filters";
@@ -85,7 +86,11 @@ export function QuickFilterStrip({
             aria-label={quickFilterCopy.chipAria(LABEL[key], counts[key], on)}
             data-quick-chip={key}
             onClick={() => onPress(key)}
-            onFocus={(e) => e.currentTarget.scrollIntoView?.({ inline: "nearest", block: "nearest" })}
+            onFocus={(e) => {
+              // The app's scroll, not the reader's (quick return).
+              noteAppScroll();
+              e.currentTarget.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+            }}
             className={[
               "relative flex flex-none cursor-pointer items-center border-0 bg-transparent p-0",
               phone ? "h-[44px]" : "after:absolute after:left-1/2 after:top-1/2 after:h-[44px] after:w-full after:min-w-[44px] after:-translate-x-1/2 after:-translate-y-1/2 after:content-['']",
