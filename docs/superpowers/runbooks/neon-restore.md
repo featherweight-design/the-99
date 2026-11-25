@@ -22,7 +22,7 @@ Restoring while the app is still writing gives you a database that is wrong agai
 
 - **Model calls.** `MODEL_CALLS_ENABLED` is the model-call kill switch (`docs/agents/feature-flags.md`). To stop it without a deploy, set its app-wide row to Killed in the admin. To stop it with the database unreachable, set the `MODEL_CALLS_ENABLED` variable to `off` or `false` on the `the-99` Vercel project and redeploy. Confirm with `GET /api/health`: its `modelCalls` field should read `"off"`. The background jobs read that field through `scripts/lib/model-calls-gate.mjs` and skip when it is off.
 - **Crons.** The only cron pause in the code is `STAGING_CRONS` (`cronPausedHere` in `src/lib/cron/staging-pause.ts`), and it applies to the staging project only: production, local and an unset label always run the crons. There is no production flag. If the crons must stop on production, disable them in the Vercel project's cron settings, and re-enable them when the restore is finished. I have not verified that step in a drill.
-- **Everything else.** Tell Hugh before starting. Players can still write decks, collections and preferences while the app is up, so decide whether to put the app in a maintenance state.
+- **Everything else.** Tell the owner before starting. Players can still write decks, collections and preferences while the app is up, so decide whether to put the app in a maintenance state.
 
 Agent guards block `run_sql` writes on production and require its read-only compute. Any agent helping with a restore reads production only, and never writes to it.
 
@@ -63,7 +63,7 @@ Several things in this repo and its settings key on production's branch ID, not 
 - **Agent guards.** The scripts that fail closed on a target compare the database's `neon.branch_id` with a named value (`PULL_TARGET_BRANCH`, `RESTAMP_TARGET_BRANCH`, `PRECON_OVERVIEW_TARGET_BRANCH`, `CATALOG_COPY_TARGET_BRANCH`, `RECONCILE_READONLY_OK`, `MEASURE_BRANCH` and the others in `docs/agents/`). `assertScratchBranch` (`scripts/lib/scratch-branch.mjs`) refuses production, staging and local-dev by `neon.branch_id`. A stale ID in any of them either refuses a correct run or, worse, stops protecting production.
 - **The scratch-branch workflow.** Scratch branches are made from local-dev, not production, so they do not move. Check that the refuse list in `assertScratchBranch` still names production's current ID.
 - **Vercel environment.** Re-check the production environment variables on the `the-99` project. The name and connection string should be unchanged after a one-step restore, but confirm that the app reads the restored data, not an old branch, and redeploy if a variable changed.
-- **Dashboard secrets keyed on production's branch ID.** Any GitHub environment secret or dashboard setting that records the branch ID needs the new one. Hugh sets rotated secrets by hand: give him the console steps, and do not script them.
+- **Dashboard secrets keyed on production's branch ID.** Any GitHub environment secret or dashboard setting that records the branch ID needs the new one. The owner sets rotated secrets by hand, so give them the console steps and do not script it.
 
 Then prove it the way a deploy is proven: the domain serves the deployment you expect, and a request that reads the database works.
 
