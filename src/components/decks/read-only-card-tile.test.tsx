@@ -32,7 +32,7 @@ describe("ReadOnlyCardTile", () => {
   it("draws an owned card with a dot and no words", () => {
     tile(card({ oracleId: "sol", name: "Sol Ring", owned: true, quantity: 1 }));
     expect(screen.getByLabelText("Owned")).toBeInTheDocument();
-    expect(screen.queryByText("not owned")).toBeNull();
+    expect(screen.queryByText(preconsCopy.open.tileNotOwned)).toBeNull();
   });
 
   it("draws a basic with its copies, no dot, and its arts", () => {

@@ -55,7 +55,7 @@ afterEach(() => {
   window.localStorage.clear();
 });
 
-describe("Start the game", () => {
+describe("the table's game start entry", () => {
   it("opens the tracker for a seated player, and is not there for a pod member off the table (ruling 3)", async () => {
     await draw(TABLES.T1);
     expect(start()?.getAttribute("href")).toBe("/friends/table/table-1/play");

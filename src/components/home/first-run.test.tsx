@@ -98,7 +98,7 @@ describe("FirstRunChecklist", () => {
   it("offers both entries into step 1", () => {
     render(<FirstRunChecklist />);
     expect(screen.getByRole("button", { name: refreshCopy.firstRun.uploadCsv })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Paste a list" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: refreshCopy.firstRun.pasteList })).toBeInTheDocument();
   });
 
   it("names both paths in the locked step 2, and has no import foot", () => {
@@ -129,7 +129,7 @@ describe("FirstRunChecklist", () => {
 
   it("does not let the step card's centring reach the paste panel", () => {
     render(<FirstRunChecklist />);
-    fireEvent.click(screen.getByRole("button", { name: "Paste a list" }));
+    fireEvent.click(screen.getByRole("button", { name: refreshCopy.firstRun.pasteList }));
     const textarea = screen.getByRole("textbox", { name: importReviewCopy.entry.pasteAria });
     // The nearest alignment rule above the textarea must be the flow's own left-aligned,
     // full-width wrapper, not the card's `text-center` / `items-center`.

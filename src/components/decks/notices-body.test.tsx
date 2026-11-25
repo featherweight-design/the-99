@@ -6,6 +6,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { DeckNotices } from "../../lib/notices/read";
 import { deckNoticesCopy } from "../../lib/copy/notices";
+import { deckAnalysisCopy } from "../../lib/copy/deck-analysis";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -102,7 +103,7 @@ describe("the Notices body", () => {
     const foot = container.querySelector<HTMLElement>("[data-notices-foot='reanalyze']")!;
     expect(within(foot).getByRole("status").textContent).toBe("That didn’t work.");
     expect(foot.textContent).not.toContain("Your bracket holds");
-    expect(within(foot).getByRole("button", { name: "Try again" })).toBeTruthy();
+    expect(within(foot).getByRole("button", { name: deckAnalysisCopy.banner.tryAgain })).toBeTruthy();
   });
 
   it("carries the overview check's note on the foot while a legality entry stands, without See which", () => {

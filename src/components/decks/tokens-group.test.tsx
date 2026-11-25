@@ -21,6 +21,7 @@ import { boxedOnDesktop, boxedOnPhone, makerColumns } from "./token-makers";
 import { printingLine } from "./token-row";
 import type { DeckToken, DeckTokensRead, TokenMaker } from "../../lib/tokens/read";
 import { tokensCopy } from "../../lib/copy/tokens";
+import { priceCopy } from "../../lib/copy/price";
 
 const DECK = "00000000-0000-4000-8000-0000000000d1";
 const maker = (n: number): TokenMaker => ({ oracleId: `m${String(n).padStart(3, "0")}`, name: `Maker ${String(n).padStart(2, "0")}`, imageUri: null });
@@ -416,7 +417,7 @@ describe("the Tokens group on Shopping", () => {
 
   it("draws a sold-out token with the shipped sold-out tag, still pressable", () => {
     shopping([{ ...soldier, price: priced(15, new Date("2026-09-01")) }]);
-    expect(screen.getByRole("button", { name: /Mark the Soldier token/ }).textContent).toContain("sold out");
+    expect(screen.getByRole("button", { name: /Mark the Soldier token/ }).textContent).toContain(priceCopy.tag.soldOut);
   });
 
   it("says so when a press threw", async () => {

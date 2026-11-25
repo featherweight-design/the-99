@@ -19,10 +19,10 @@ describe("the order", () => {
   it("orders by theme fit, with the collection deciding nothing (ruling 5)", () => {
     const r = rankCandidates([
       cmd({ name: "Owned lots", ownedSupport: 80, tags: [tag("dinos", 200)] }),
-      cmd({ name: "Best fit", ownedSupport: 0, tags: [tag("dinos", 620)] }),
+      cmd({ name: "Fixture Best fit", ownedSupport: 0, tags: [tag("dinos", 620)] }),
     ], { ...none, themes: ["dinos"] }, null);
     expect(r.order).toBe("fit");
-    expect(names(r)).toEqual(["Best fit", "Owned lots"]);
+    expect(names(r)).toEqual(["Fixture Best fit", "Owned lots"]);
     expect(r.rows[0].themeFits).toEqual([{ slug: "dinos", share: 0.62, typeLine: false }]);
   });
 

@@ -922,7 +922,7 @@ describe("ReviewChanges", () => {
   // The one write this column has. It always succeeds — a restore is an add,
   // and adds never refuse on claims — so what is asserted is where the row goes
   // and which figures follow it, not a guard.
-  describe("Put back", () => {
+  describe("puts a removed card back", () => {
     const cut = (over: Partial<Row> = {}) =>
       row({ oracleId: "o2", name: "Mox Diamond", direction: "out", from: 1, to: 0, ...over });
     const putBack = (name = "Mox Diamond") =>

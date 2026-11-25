@@ -140,7 +140,7 @@ describe("the lead story", () => {
   });
 });
 
-describe("Waiting on you", () => {
+describe("the trade match press in the waiting list", () => {
   it("opens the sheet in place from the trade match's one press, drawn at both widths", async () => {
     await act(async () => { render(inProvider(<WaitingOnYou rows={[trade]} now={new Date(NOW)} />)); });
     const presses = document.querySelectorAll<HTMLElement>("[data-trade-ask-press]");

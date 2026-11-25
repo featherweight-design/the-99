@@ -213,7 +213,7 @@ describe("ResultView's commander marks (A3 calls 7 to 11)", () => {
   it("glosses only the commander pair's marks: the pick lines draw none, so an add's fact is not in the key", () => {
     const { unmount } = render(<ResultView panel={marked} run={run({ strategyKey: "pair/3/spellslinger" })} lineActions={quiet()} />);
     const key = screen.getByRole("group", { name: cardMarkCopy.keyRegionAria });
-    expect([...key.children].map((c) => c.textContent)).toEqual(["game changer", "tutor"]);
+    expect([...key.children].map((c) => c.textContent)).toEqual([cardMarkCopy.gameChanger, "tutor"]);
     unmount();
     render(<ResultView panel={marked} run={run({ strategyKey: "rootha/3/spellslinger" })} lineActions={quiet()} />);
     expect(screen.queryByRole("group", { name: cardMarkCopy.keyRegionAria })).toBeNull();

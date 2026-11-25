@@ -19,7 +19,7 @@ const all: HandOffAnswers = {
   bracket: 2,
 };
 
-describe("Built from your answers", () => {
+describe("the answers block on the hand-off", () => {
   it("draws one row per answer, in the form's order, each with its consequence", () => {
     render(<HandOffAnswersBlock answers={all} changeHref="/decks/new/choose?t=dinosaurs" />);
     const rows = screen.getAllByTestId("hand-off-row").map((r) => r.textContent);

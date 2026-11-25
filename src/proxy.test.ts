@@ -183,7 +183,7 @@ describe("the legal pages", () => {
   });
 });
 
-describe("Report a problem", () => {
+describe("the problem report route", () => {
   // /report is read by a reader the crash screen sends there, signed in or not: public at its exact path, either slash form.
   it("makes /report public at its exact path, and nothing that only starts with it", async () => {
     for (const path of ["/report", "/report/"]) {

@@ -183,7 +183,7 @@ describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
   });
 });
 
-describe("Show me", () => {
+describe("every tool's cross-link label", () => {
   /** A switch with every parent it needs, and nothing else on. */
   const withNeeds = (name: string): Record<string, string> => {
     const out: Record<string, string> = {};
