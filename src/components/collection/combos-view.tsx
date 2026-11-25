@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { addToWishlistAction } from "../../app/collection/wishlist/actions";
 import { comboOpenOpts, useCardDetail } from "../cards/card-detail-context";
 import { ComboGlyph } from "../cards/combo-glyph";
+import { PreviewButton } from "../ui/preview-button";
 import { useStoreInfo } from "../stores/store-provider";
 import { formatCents } from "../../lib/cards/price-fact";
 import { quickFilterCopy } from "../../lib/copy/quick-filters";
@@ -115,7 +116,7 @@ function PairCard({
     <span className="min-w-0 text-[14px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[15px]">
       {pair.a.name} <span className="font-normal text-[color:var(--fg-muted)]">+ {pair.b.name}</span>
       {isNew ? (
-        <span className="ml-[8px] rounded-[4px] border border-[color:var(--accent)] px-[5px] font-mono text-[10px] font-normal text-[color:var(--accent)]">{copy.newTag}</span>
+        <span className="ml-[8px] rounded-[4px] border border-[color:var(--accent)] px-[5px] font-mono text-[10px] font-normal text-[color:var(--accent-text)]">{copy.newTag}</span>
       ) : null}
     </span>
   );
@@ -136,7 +137,8 @@ function PairCard({
   if (!wide) {
     return (
       <li>
-        <button
+        <PreviewButton
+          imageUri={pair.a.imageUri}
           type="button"
           data-combo-pair
           aria-label={quickFilterCopy.combos.pairLabel(pair.a.name, pair.b.name)}
@@ -146,7 +148,7 @@ function PairCard({
           {pieces}
           {text}
           <span aria-hidden className="flex-none text-[color:var(--fg-muted)]">›</span>
-        </button>
+        </PreviewButton>
       </li>
     );
   }
@@ -219,7 +221,7 @@ export function CombosView({
               className={`min-h-[44px] cursor-pointer rounded-[8px] border-0 px-[14px] text-[14px] ${side === s ? "bg-[color:var(--surface)] font-semibold text-[color:var(--fg)]" : "bg-transparent text-[color:var(--fg-muted)]"}`}
             >
               {s === "both" ? copy.ownBoth : copy.ownOne}
-              {count(s) !== null ? <span className="ml-[6px] font-mono text-[12px] text-[color:var(--accent)]">{count(s)}</span> : null}
+              {count(s) !== null ? <span className="ml-[6px] font-mono text-[12px] text-[color:var(--accent-text)]">{count(s)}</span> : null}
             </button>
           ))}
         </div>
