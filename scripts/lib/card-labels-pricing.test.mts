@@ -25,6 +25,7 @@ describe("the label pricing is the canonical table at batch rates", () => {
     haiku: "claude-haiku-4-5",
     sonnet: "claude-sonnet-4-5",
     sonnet5: "claude-sonnet-5",
+    sonnet55: "claude-sonnet-5-5",
   } as const satisfies Record<keyof typeof PRICING, string>;
 
   // COVERAGE first, so a model added to `ALL_MODELS` cannot quietly escape the comparison
@@ -67,6 +68,7 @@ describe("the label pricing after the move to prices.ts", () => {
       haiku: { in: 0.50, out: 2.50, cacheWrite: 0.625, cacheRead: 0.05, caches: false },
       sonnet: { in: 1.50, out: 7.50, cacheWrite: 1.875, cacheRead: 0.15, caches: true },
       sonnet5: { in: 1.00, out: 5.00, cacheWrite: 1.25, cacheRead: 0.10, caches: true },
+      sonnet55: { in: 1.00, out: 5.00, cacheWrite: 1.25, cacheRead: 0.10, caches: true },
     });
   });
 

@@ -1,7 +1,7 @@
 // The pure half of the label build's collect (`scripts/lib/card-labels-build.ts`, `collectBatch`): what
 // one intent's replies stage, given the cards it asked about as the catalog holds them now. Pure, so
 // the keyed match is tested by behaviour, without a database or a provider.
-import { readKeyedReply, withoutRepeats } from "./parse";
+import { readKeyedReply, withoutRepeatedKinds } from "./parse";
 import { labelInputHash } from "./prompt";
 import type { CardRow } from "./publish";
 import type { Job } from "./types";
@@ -43,7 +43,7 @@ export function judgeReplies(intent: AskedIntent, replies: readonly string[], by
     const read = readKeyedReply(text, asked);
     if (read === null) { rejected.push("unparseable"); continue; }
     rejected.push(...read.rejected);
-    for (const [id, kept] of read.byId) got.set(id, withoutRepeats([...(got.get(id) ?? []), ...kept]));
+    for (const [id, kept] of read.byId) got.set(id, withoutRepeatedKinds([...(got.get(id) ?? []), ...kept]));
   }
   const staged = [...got].flatMap(([id, labels]) => {
     const c = byId.get(id);

@@ -45,6 +45,27 @@ export function withoutRepeats<T>(jobs: readonly T[]): T[] {
 }
 
 /**
+ * A card's jobs with a repeated kind collapsed to one (Sonnet 5.5 writes `draw,draw` where the stored label
+ * has one, labels-model-tiering-2026-10-11). Two jobs are the SAME KIND when they agree on space, kind,
+ * rampKind, restrictedTo, affects, to and method, that is, on WHAT they do; they may differ in WHEN
+ * (trigger, recurrence, threshold, modal), and the first is kept. Jobs that differ in what they do stay
+ * (tribal Elf and tribal Goblin, ramp tapsForMana and fetchesLand). Exact repeats go first, as before.
+ */
+export function withoutRepeatedKinds<T>(jobs: readonly T[]): T[] {
+  const seen = new Set<string>();
+  const what = (j: T): string => {
+    const r = (j ?? {}) as Record<string, unknown>;
+    return JSON.stringify(["space", "kind", "rampKind", "restrictedTo", "affects", "to", "method"].map((k) => r[k] ?? null));
+  };
+  return withoutRepeats(jobs).filter((j) => {
+    const key = what(j);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+/**
  * Resolves returned names to the catalog names a batch asked for.
  *
  * Returns `null` for a name the batch does not cover, which the caller records as
@@ -142,7 +163,7 @@ export function readReply(text: string, asked: readonly string[]): {
     for (const r of screened.rejected) rejected.push(`${name}: ${r.problems.join(", ")}`);
     const kept = screened.kept;
     // Two faces of one card come back as two entries and resolve to one name, so they merge.
-    byName.set(name, withoutRepeats([...(byName.get(name) ?? []), ...kept]));
+    byName.set(name, withoutRepeatedKinds([...(byName.get(name) ?? []), ...kept]));
   }
   return { byName, rejected };
 }
@@ -215,7 +236,7 @@ export function readKeyedReply(text: string, asked: readonly AskedCard[]): {
     named.set(key, [...(before ?? []), name === undefined ? "" : foldName(name)]);
     const screened = screenJobs(card.jobs);
     for (const r of screened.rejected) rejected.push(`key ${key}: ${r.problems.join(", ")}`);
-    byId.set(target.oracleId, withoutRepeats([...(byId.get(target.oracleId) ?? []), ...screened.kept]));
+    byId.set(target.oracleId, withoutRepeatedKinds([...(byId.get(target.oracleId) ?? []), ...screened.kept]));
   }
   return { byId, rejected };
 }
