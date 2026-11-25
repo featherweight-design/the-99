@@ -8,6 +8,7 @@
 import { clerkSetup, setupClerkTestingToken } from "@clerk/testing/playwright";
 import { chromium } from "playwright";
 import { gzipSync } from "node:zlib";
+import { writeFileSync } from "node:fs";
 import { requireEnv } from "./lib/env.mjs";
 
 const { E2E_AUDIT_USER_EMAIL: EMAIL } = requireEnv(["E2E_AUDIT_USER_EMAIL", "CLERK_SECRET_KEY"]);
@@ -68,11 +69,17 @@ try {
     await signIn(page);
     // Hold the combos request so the loading state can be seen.
     let payload = null;
+    let fetchedAt = 0;
+    let fetchMs = 0;
     await page.route("**/api/collection-combos*", async (route) => {
       await new Promise((r) => setTimeout(r, HOLD_MS));
+      const startedAt = Date.now();
       const response = await route.fetch();
       const body = await response.body();
+      fetchedAt = Date.now();
+      fetchMs = fetchedAt - startedAt;
       if (!payload) payload = { raw: body.length, gzip: gzipSync(body).length, json: JSON.parse(body.toString()) };
+      if (process.env.DUMP_PAYLOAD) writeFileSync(process.env.DUMP_PAYLOAD, body);
       await route.fulfill({ response, body });
     });
     await page.goto(`${BASE}/collection`, { waitUntil: "domcontentloaded" });
@@ -87,10 +94,15 @@ try {
       `${vp.label}: the list's loading state draws while the pairs load, not a blank`,
     );
     await page.waitForSelector("[data-combo-pair]", { timeout: 30_000 });
-    console.log(`   press to first pair: ${Date.now() - pressedAt - HOLD_MS} ms (held ${HOLD_MS} ms)`);
+    console.log(`   press to first pair: ${Date.now() - pressedAt - HOLD_MS} ms (held ${HOLD_MS} ms); server+transfer ${fetchMs} ms, response handed to first pair ${Date.now() - fetchedAt} ms`);
     const toggle = (label) => page.locator("[data-combos-view] [role=group] button", { hasText: label });
     check(/\d/.test(await toggle("You own one").innerText()), `${vp.label}: the You own one count is there with the first pairs`);
     check(/\d/.test(await toggle("You own both").innerText()), `${vp.label}: the You own both count is there with the first pairs`);
+    if (!payload.json.pieces) {
+      console.log(`   payload (old shape): ${Math.round(payload.raw / 1024)} KB raw, ${Math.round(payload.gzip / 1024)} KB gzip, ${payload.json.both.pairs.length} both + ${payload.json.one.pairs.length} one pairs`);
+      await context.close();
+      continue;
+    }
     const wireOne = payload.json.one.pairs.length;
     const wireBoth = payload.json.both.pairs.length;
     console.log(`   payload: ${Math.round(payload.raw / 1024)} KB raw, ${Math.round(payload.gzip / 1024)} KB gzip, ${wireBoth} both + ${wireOne} one pairs, ${Object.keys(payload.json.pieces).length} cards`);
