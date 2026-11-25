@@ -65,7 +65,8 @@ import { isFreeAlone } from "../../lib/collection/quick-filters";
 import { FIND_A_DECK_FROM_PLACE, type FindADeckButtons } from "./find-a-deck-button";
 import type { FindADeckState } from "../../lib/collection/find-a-deck";
 import { captureToolEvent } from "../../lib/analytics/posthog";
-import { CombosView } from "./combos-view";
+import { CombosView, useCollectionCombos } from "./combos-view";
+import { narrowCombos } from "../../lib/combos/narrow-combos";
 import type { ComboSide } from "../../lib/combos/collection-combos";
 
 
@@ -323,7 +324,8 @@ export function CollectionBrowser({
   const [initial] = useState(() => parseBrowseParams(withStoredSort((key) => search.get(key), viewHint.sort), availabilityOk));
   const [filters, setFilters] = useState<BrowseFilters>(initial.filters);
   // The combos view (Two-card combos pressed): view state beside the filters, never part of them. `?combos=` or
-  // `?quick=combos` opens it; any other filter change takes it back to the card list.
+  // `?quick=combos` opens it. Every filter narrows its pairs and leaves the chip pressed (Hugh 2026-11-25); only
+  // another quick chip takes it back to the card list.
   const [combosSide, setCombosSide] = useState<ComboSide | null>(() => {
     const c = search.get("combos");
     if (c === "both" || c === "one") return c;
@@ -478,7 +480,7 @@ export function CollectionBrowser({
   // Any filter/sort change resets the window — folded into the update
   // callbacks (not an effect) to avoid a cascading render.
   const updateFilters = useCallback(
-    (next: BrowseFilters, intent?: FilterChangeIntent) => {
+    (next: BrowseFilters, intent?: FilterChangeIntent, leavingCombos = false) => {
       // Turning the last pip off returns the mode to Any, as Sets does (#1172) and as removing
       // the colour chip does: `Exactly` with nothing lit filters nothing, the control greys it,
       // and the URL does not write it, so state that kept it would disagree with both.
@@ -510,13 +512,14 @@ export function CollectionBrowser({
         availabilityChangeAnnouncement(
           filters, f, cards, availabilityOptions, totalQuantity, intent,
         );
-      if (message) publishAnnouncement(message);
-      setCombosSide(null);
+      // The messages count cards; with the combos view up the pairs are what the reader is looking at, so none is spoken
+      // rather than a card count that matches nothing on screen.
+      if (message && (combosSide === null || leavingCombos)) publishAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
       setRevealFrom(null);
     },
-    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
+    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement, combosSide],
   );
   const showMore = useCallback(() => {
     setRevealFrom(shown);
@@ -534,6 +537,26 @@ export function CollectionBrowser({
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
   const sorted = useMemo(() => sortCards(filtered, sort, sortDirection), [filtered, sort, sortDirection]);
+  // The combos view: both sides arrive in one request when it first opens, held while `served` (the list as the
+  // server sent it, not the art-patched copy) is the same one; the filters narrow the pairs here, so a keystroke costs no request.
+  const { load: comboLoad, retry: retryCombos } = useCollectionCombos(combosSide !== null, served);
+  const comboPairs = useMemo(() => {
+    if (comboLoad.kind !== "ready") return null;
+    const kept = new Set(filtered.map((c) => c.oracleId));
+    const side = (s: ComboSide) => {
+      const { pairs, truncated } = comboLoad.sides[s];
+      // Every pair of the side is here (a side is bounded only by the server's ceiling), so the count is of the full set;
+      // past the ceiling it is a floor.
+      const narrowed = narrowCombos(pairs, kept, filters);
+      return { pairs: narrowed, count: narrowed.length, floor: truncated };
+    };
+    return { both: side("both"), one: side("one") };
+  }, [comboLoad, filtered, filters]);
+  // Until the pairs land the count is unknown, except Own both's, which the page already carries: showing it over the
+  // Own one side (or a failed load) would be another side's number.
+  const comboShown: number | null =
+    combosSide && comboPairs ? comboPairs[combosSide].count : combosSide === "both" ? comboPairCount : null;
+  const comboFloor = combosSide && comboPairs ? comboPairs[combosSide].floor : false;
 
   const anyFilterActive =
     filters.search.trim() !== "" ||
@@ -603,22 +626,30 @@ export function CollectionBrowser({
     if (key === "combos") {
       // Pressing it again turns it off; pressing it on opens own both. Filters are held, not cleared.
       setNewVariantId(null);
+      // One quick chip at a time: opening the view takes a pressed quick chip (or Free) back, so no filter the strip
+      // no longer shows narrows the pairs unseen.
+      if (combosSide === null && (filters.quick !== undefined || freeAlone)) {
+        updateFilters({ ...filters, quick: undefined, availability: freeAlone ? [] : filters.availability });
+      }
       setCombosSide((side) => (side === null ? "both" : null));
       return;
     }
+    // One quick chip at a time: pressing another takes the combos view back.
+    setCombosSide(null);
     if (key === quickPressed) {
       updateFilters(
         key === "free" ? { ...filters, availability: [] } : { ...filters, quick: undefined },
         key === "free" ? "clear-availability" : undefined,
+        true,
       );
       return;
     }
     // One quick chip at a time: pressing one takes the other back.
     if (key === "free") {
       captureToolEvent("find_a_deck_opened", { from: "quick_chip" });
-      updateFilters({ ...filters, quick: undefined, availability: ["free"] });
+      updateFilters({ ...filters, quick: undefined, availability: ["free"] }, undefined, true);
     } else {
-      updateFilters({ ...filters, quick: key, availability: freeAlone ? [] : filters.availability });
+      updateFilters({ ...filters, quick: key, availability: freeAlone ? [] : filters.availability }, undefined, true);
     }
   };
   const quickStrip = (layout: "wide" | "phone") => (
@@ -755,7 +786,7 @@ export function CollectionBrowser({
     <>
       <FilterBar
         colorOptions={colorOptions}
-        shown={combosSide ? comboPairCount : sorted.length}
+        shown={combosSide ? (comboShown ?? 0) : sorted.length}
         total={cards.length}
         chips={chassisChips}
         quickWide={quickDrawn ? quickStrip("wide") : null}
@@ -771,7 +802,9 @@ export function CollectionBrowser({
         warnResult={!combosSide && sorted.length === 0}
         resultLine={
           combosSide
-            ? quickFilterCopy.combos.result(comboPairCount)
+            ? comboShown === null
+              ? ""
+              : quickFilterCopy.combos.result(comboShown, comboFloor)
             : chassisWide
             ? collectionChassisCopy.result(
                 sorted.length,
@@ -807,7 +840,17 @@ export function CollectionBrowser({
           `flex-1` child is the list, so the wrapper takes over that sizing and the chassis above stays a direct child. */}
       <HoverPreviewProvider className="flex flex-1 flex-col">
       {combosSide ? (
-        <CombosView side={combosSide} onSide={setCombosSide} bothCount={comboPairCount} newVariantId={newVariantId} wide={chassisWide} />
+        <CombosView
+          side={combosSide}
+          onSide={setCombosSide}
+          load={comboLoad}
+          retry={retryCombos}
+          pairs={comboPairs?.[combosSide].pairs ?? []}
+          counts={comboPairs ? { both: comboPairs.both, one: comboPairs.one } : null}
+          filtered={anyFilterActive}
+          newVariantId={newVariantId}
+          wide={chassisWide}
+        />
       ) : sorted.length === 0 ? (
         <NoResults
           query={filters.search}

@@ -1,7 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { useState } from "react";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { quickFilterCopy } from "../../lib/copy/quick-filters";
-import type { CollectionCombos } from "../../lib/combos/collection-combos";
+import type { CollectionCombos, CollectionComboSides, ComboSide } from "../../lib/combos/collection-combos";
+import { compactSides } from "../../lib/combos/combo-wire";
+import { PAGE_SIZE } from "../../lib/collection/window";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
 
 const open = vi.fn();
 const addToWishlist = vi.hoisted(() => vi.fn(async () => ({ ok: true })));
@@ -12,13 +16,14 @@ vi.mock("../cards/card-detail-context", () => ({
 vi.mock("../stores/store-provider", () => ({ useStoreInfo: () => ({ name: "Mana Pool" }) }));
 vi.mock("../../app/collection/wishlist/actions", () => ({ addToWishlistAction: addToWishlist }));
 
-import { CombosView, comboResultWord } from "./combos-view";
+import { CombosView, comboResultWord, useCollectionCombos } from "./combos-view";
 
 const copy = quickFilterCopy.combos;
-const piece = (id: string, name: string) => ({ oracleId: id, name, imageUri: null, artCropUri: null });
+const piece = (id: string, name: string) => ({ oracleId: id, name, imageUri: null, colorIdentity: [], typeLine: "Creature" });
 const both: CollectionCombos = {
   side: "both",
   total: 2,
+  truncated: false,
   pairs: [
     { variantId: "v1", produces: ["Infinite damage"], popularity: 1, a: piece("a", "Aang"), b: piece("b", "Touch") },
     { variantId: "v2", produces: ["Infinite lifeloss"], popularity: 1, a: piece("c", "Blood"), b: piece("d", "Bond"), heldIn: { id: "k", name: "Edgar's Bloodline" } },
@@ -27,15 +32,37 @@ const both: CollectionCombos = {
 const one: CollectionCombos = {
   side: "one",
   total: 1,
+  truncated: false,
   pairs: [{ variantId: "v3", produces: ["Infinite turns"], popularity: 1, a: piece("e", "Vault"), b: piece("f", "Key"), missingId: "f", missingCents: 110, wantedBy: [] }],
 };
 
-function stubFetch(by: Record<string, CollectionCombos | null>) {
-  vi.stubGlobal("fetch", vi.fn(async (url: string) => {
-    const body = by[new URL(url, "http://x").searchParams.get("side") ?? ""] ?? null;
-    return { ok: body !== null, json: async () => body };
-  }));
+function stubFetch(body: CollectionComboSides | null) {
+  vi.stubGlobal("fetch", vi.fn(async () => ({ ok: body !== null, json: async () => (body ? compactSides(body) : null) })));
 }
+
+/** The browser's wiring without the filters: the hook, the side, the pairs of that side. */
+function Harness({ side: first = "both", onSide, newVariantId = null }: { side?: ComboSide; onSide?: (s: ComboSide) => void; newVariantId?: string | null }) {
+  const [side, setSide] = useState<ComboSide>(first);
+  const { load, retry } = useCollectionCombos(true, "served");
+  const sides = load.kind === "ready" ? load.sides : null;
+  return (
+    <CombosView
+      side={side}
+      onSide={(s) => {
+        onSide?.(s);
+        setSide(s);
+      }}
+      load={load}
+      retry={retry}
+      pairs={sides ? sides[side].pairs : []}
+      counts={sides ? { both: { count: sides.both.pairs.length, floor: sides.both.truncated }, one: { count: sides.one.pairs.length, floor: sides.one.truncated } } : null}
+      filtered={false}
+      newVariantId={newVariantId}
+      wide
+    />
+  );
+}
+const empty = (side: ComboSide): CollectionCombos => ({ side, total: 0, truncated: false, pairs: [] });
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
@@ -44,8 +71,8 @@ afterEach(() => {
 
 describe("CombosView", () => {
   it("draws both fact lines and the NEW tag on the announced pair", async () => {
-    stubFetch({ both });
-    render(<CombosView side="both" onSide={() => {}} bothCount={2} newVariantId="v1" wide />);
+    stubFetch({ both, one });
+    render(<Harness newVariantId="v1" />);
     await waitFor(() => expect(screen.getByText(copy.inNoDeck)).toBeTruthy());
     expect(screen.getByText(copy.bothIn("Edgar's Bloodline"))).toBeTruthy();
     expect(screen.getAllByText(copy.newTag)).toHaveLength(1);
@@ -53,8 +80,8 @@ describe("CombosView", () => {
   });
 
   it("own one: the missing slot, its price, and Add to wishlist writes the missing card", async () => {
-    stubFetch({ one });
-    render(<CombosView side="one" onSide={() => {}} bothCount={2} newVariantId={null} wide />);
+    stubFetch({ both, one });
+    render(<Harness side="one" />);
     await waitFor(() => expect(screen.getByText(`${copy.missing("Key")} · ${copy.priced("$1.10", "Mana Pool")}`)).toBeTruthy());
     expect(screen.getByText(copy.notOwned)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: copy.addToWishlist }));
@@ -63,26 +90,69 @@ describe("CombosView", () => {
   });
 
   it("the toggle reports the side, and How it works opens the pair's combo sheet", async () => {
-    stubFetch({ both });
+    stubFetch({ both, one });
     const onSide = vi.fn();
-    render(<CombosView side="both" onSide={onSide} bothCount={2} newVariantId={null} wide />);
-    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.ownOne) }));
-    expect(onSide).toHaveBeenCalledWith("one");
+    render(<Harness onSide={onSide} />);
     await waitFor(() => screen.getAllByRole("button", { name: copy.howItWorks }));
     fireEvent.click(screen.getAllByRole("button", { name: copy.howItWorks })[0]);
     expect(open.mock.calls[0][3]).toMatchObject({ combo: true, comboVariantId: "v1" });
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.ownOne) }));
+    expect(onSide).toHaveBeenCalledWith("one");
+  });
+
+  it("one request fetches both sides, both toggle counts show with the first pairs, and the toggle costs no request", async () => {
+    stubFetch({ both, one });
+    render(<Harness />);
+    await waitFor(() => expect(screen.getByText(copy.inNoDeck)).toBeTruthy());
+    const toggle = (label: string) => screen.getByRole("button", { name: new RegExp(label) }).textContent;
+    expect(toggle(copy.ownBoth)).toContain("2");
+    expect(toggle(copy.ownOne)).toContain("1");
+    fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.ownOne) }));
+    await waitFor(() => expect(screen.getByText(copy.notOwned)).toBeTruthy());
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("windows a long side the way the card list does: a page of pairs, then Show more for the rest", async () => {
+    const many: CollectionCombos = {
+      side: "both",
+      total: PAGE_SIZE + 30,
+      truncated: false,
+      pairs: Array.from({ length: PAGE_SIZE + 30 }, (_, i) => ({ variantId: `m${i}`, produces: [], popularity: i, a: piece(`x${i}`, `Xa${i}`), b: piece(`y${i}`, `Yb${i}`) })),
+    };
+    stubFetch({ both: many, one });
+    const { container } = render(<Harness />);
+    await waitFor(() => expect(container.querySelectorAll("[data-combo-pair]")).toHaveLength(PAGE_SIZE));
+    fireEvent.click(screen.getByRole("button", { name: collectionPlaceCopy.showMore(30) }));
+    expect(container.querySelectorAll("[data-combo-pair]")).toHaveLength(PAGE_SIZE + 30);
+    expect(screen.queryByRole("button", { name: /Show more/ })).toBeNull();
+  });
+
+  it("a side past the server's ceiling reads as a floor, never an exact count", async () => {
+    stubFetch({ both: { ...both, truncated: true }, one });
+    render(<Harness />);
+    await waitFor(() => expect(screen.getByText(copy.inNoDeck)).toBeTruthy());
+    expect(screen.getByRole("button", { name: new RegExp(copy.ownBoth) }).textContent).toContain(copy.count(2, true));
+    expect(copy.count(5000, true)).toBe("5,000+");
+    expect(copy.result(5000, true)).toBe("5,000+ combos");
+  });
+
+  it("draws the list's skeleton, not a blank, until the pairs arrive", async () => {
+    stubFetch({ both, one });
+    const { container } = render(<Harness />);
+    expect(container.querySelector("[data-combos-loading]")).not.toBeNull();
+    await waitFor(() => expect(container.querySelector("[data-combos-loading]")).toBeNull());
   });
 
   it("an empty side is one quiet line, a failed one says so", async () => {
-    stubFetch({ both: { side: "both", total: 0, pairs: [] } });
-    const { unmount } = render(<CombosView side="both" onSide={() => {}} bothCount={0} newVariantId={null} wide />);
+    stubFetch({ both: empty("both"), one: empty("one") });
+    const { unmount } = render(<Harness />);
     await waitFor(() => expect(screen.getByText(copy.emptyBoth)).toBeTruthy());
     unmount();
-    stubFetch({});
-    render(<CombosView side="one" onSide={() => {}} bothCount={0} newVariantId={null} wide />);
+    stubFetch(null);
+    render(<Harness side="one" />);
     await waitFor(() => expect(screen.getByText(copy.loadFailed)).toBeTruthy());
-    // Try again asks for the side once more.
-    stubFetch({ one });
+    // Try again asks once more.
+    stubFetch({ both, one });
     fireEvent.click(screen.getByRole("button", { name: copy.tryAgain }));
     await waitFor(() => expect(screen.getByText(copy.notOwned)).toBeTruthy());
   });

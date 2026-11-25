@@ -1,0 +1,45 @@
+{
+  "feature": "Combos view: loading state, both counts at first paint, filters narrow the pairs with the chip kept (quick-filters feedback PR C, Hugh 2026-11-25)",
+  "note": "Photographed on local dev, signed in as the +clerk_test account. Search narrows the pairs; the chip stays pressed.",
+  "out": "contact-sheets/combos-filters",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "loading",
+      "label": "/collection?combos=both while the pairs load: the list's skeleton, not a blank",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [
+        { "hold": "**/api/collection-combos*", "ms": 8000 },
+        { "goto": "/collection?combos=both", "wait": "[data-combos-loading]" }
+      ]
+    },
+    {
+      "id": "both-counts",
+      "label": "/collection?combos=both loaded: both toggle counts on the first paint",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [{ "goto": "/collection?combos=both", "wait": "[data-combo-pair]", "settle": 1500 }]
+    },
+    {
+      "id": "searched",
+      "label": "a search typed with the chip pressed: the chip stays, the pairs narrow, both counts follow",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [
+        { "goto": "/collection?combos=both", "wait": "[data-combo-pair]" },
+        { "fill": "input[type=search]", "text": "Blood", "settle": 1500 }
+      ]
+    },
+    {
+      "id": "no-match",
+      "label": "a search nothing matches: the quiet no-match line, chip still pressed",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [
+        { "goto": "/collection?combos=both", "wait": "[data-combo-pair]" },
+        { "fill": "input[type=search]", "text": "zzzzqx", "settle": 1500 }
+      ]
+    }
+  ]
+}

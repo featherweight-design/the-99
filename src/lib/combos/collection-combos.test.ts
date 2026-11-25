@@ -29,7 +29,7 @@ vi.mock("../cards/price-lookup", async () => ({
   cheapestLiveCents: (p: { cents: number | null } | undefined) => (p ? p.cents : realCheapest(undefined)),
 }));
 
-const { loadCollectionCombos, MAX_COMBO_PAIRS } = await import("./collection-combos");
+const { loadCollectionCombos, COMBO_SIDE_CEILING, LEGACY_SIDE_PAIRS } = await import("./collection-combos");
 const { loadOwnBothPartners } = await import("./near-miss");
 
 const A = "a";
@@ -50,8 +50,8 @@ describe("loadCollectionCombos", () => {
   it("own-both: one pair for the two directions, no price, no wanted-by, art joined from the catalog", async () => {
     h.execute.mockResolvedValue({ rows: [row("v1", A, B), row("v1", B, A)] });
     h.selectRows.push([
-      { oracleId: A, imageUri: "https://x/a.jpg", artCropUri: null },
-      { oracleId: B, imageUri: null, artCropUri: "https://x/b-art.jpg" },
+      { oracleId: A, imageUri: "https://x/a.jpg", colorIdentity: ["B"], typeLine: "Legendary Creature" },
+      { oracleId: B, imageUri: null },
     ]);
     const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "both" });
     expect(out.total).toBe(1);
@@ -59,6 +59,8 @@ describe("loadCollectionCombos", () => {
     const [p] = out.pairs;
     expect([p.a.oracleId, p.b.oracleId].sort()).toEqual([A, B]);
     expect(p.a.imageUri ?? p.b.imageUri).toBe("https://x/a.jpg");
+    // Colors and type ride along, so the Collection's filters can narrow a pair by a card the reader does not own.
+    expect([p.a, p.b].find((x) => x.oracleId === A)).toMatchObject({ colorIdentity: ["B"], typeLine: "Legendary Creature" });
     expect(p).not.toHaveProperty("missingId");
     expect(h.prices).not.toHaveBeenCalled();
   });
@@ -90,18 +92,37 @@ describe("loadCollectionCombos", () => {
     expect(out.pairs[0].missingCents).toBeNull();
   });
 
-  it("caps the pairs at the most popular and reports the total", async () => {
-    const rows = Array.from({ length: MAX_COMBO_PAIRS + 5 }, (_, i) => row(`v${i}`, `p${i}`, `q${i}`, i));
+  it("carries every pair of a real-size side, most popular first, with nothing truncated", async () => {
+    const rows = Array.from({ length: 911 }, (_, i) => row(`v${i}`, `p${i}`, `q${i}`, i));
     h.execute.mockResolvedValue({ rows });
     const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "both" });
-    expect(out.total).toBe(MAX_COMBO_PAIRS + 5);
-    expect(out.pairs).toHaveLength(MAX_COMBO_PAIRS);
-    expect(out.pairs[0].popularity).toBe(MAX_COMBO_PAIRS + 4);
+    expect(out.total).toBe(911);
+    expect(out.truncated).toBe(false);
+    expect(out.pairs).toHaveLength(911);
+    expect(out.pairs[0].popularity).toBe(910);
+  });
+
+  it("past the safety ceiling the side says so and keeps the most popular pairs", async () => {
+    const rows = Array.from({ length: COMBO_SIDE_CEILING + 5 }, (_, i) => row(`v${i}`, `p${i}`, `q${i}`, i));
+    h.execute.mockResolvedValue({ rows });
+    const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "both" });
+    expect(out.truncated).toBe(true);
+    expect(out.pairs).toHaveLength(COMBO_SIDE_CEILING);
+    expect(out.pairs[0].popularity).toBe(COMBO_SIDE_CEILING + 4);
+  });
+
+  it("a previous deployment's limit still caps a side at its old size", async () => {
+    const rows = Array.from({ length: LEGACY_SIDE_PAIRS + 5 }, (_, i) => row(`v${i}`, `p${i}`, `q${i}`, i));
+    h.execute.mockResolvedValue({ rows });
+    const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "both", limit: LEGACY_SIDE_PAIRS });
+    expect(out.pairs).toHaveLength(LEGACY_SIDE_PAIRS);
+    expect(out.total).toBe(LEGACY_SIDE_PAIRS + 5);
+    expect(out.truncated).toBe(true);
   });
 
   it("answers nothing for an empty read, with no further reads", async () => {
     h.execute.mockResolvedValue({ rows: [] });
-    expect(await loadCollectionCombos({ userId: "u", store: "manapool", side: "one" })).toEqual({ side: "one", total: 0, pairs: [] });
+    expect(await loadCollectionCombos({ userId: "u", store: "manapool", side: "one" })).toEqual({ side: "one", total: 0, truncated: false, pairs: [] });
     expect(h.prices).not.toHaveBeenCalled();
   });
 });
