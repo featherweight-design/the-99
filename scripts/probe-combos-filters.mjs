@@ -96,6 +96,20 @@ try {
     await search.fill("");
     await page.waitForTimeout(400);
     check((await page.locator("[data-combo-pair]").count()) === before, `${vp.label}: clearing the search brings every pair back`);
+    // Own one, a name search AND a colour filter together (the missing card is tested on name, colours and type; the
+    // owned-copy filters do not apply to it): the chip stays, the view stays, and some pairs survive but not all.
+    await page.goto(`${BASE}/collection?combos=one`, { waitUntil: "domcontentloaded" });
+    await page.waitForSelector("[data-combo-pair]", { timeout: 30_000 });
+    const oneAll = await page.locator("[data-combo-pair]").count();
+    await page.goto(`${BASE}/collection?combos=one&q=Blood&c=B`, { waitUntil: "domcontentloaded" });
+    const chipOne = page.locator("[data-quick-strip]:visible button", { hasText: "Two-card combos" }).first();
+    await chipOne.waitFor({ timeout: 30_000 });
+    await page.waitForSelector("[data-combos-view]", { timeout: 30_000 });
+    await page.waitForSelector("[data-combos-loading]", { state: "detached", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    const oneNarrow = await page.locator("[data-combo-pair]").count();
+    check((await chipOne.getAttribute("aria-pressed")) === "true", `${vp.label}: Blood + Black on Own one keeps the chip pressed`);
+    check(oneNarrow > 0 && oneNarrow < oneAll, `${vp.label}: Blood + Black narrows Own one (${oneAll} to ${oneNarrow})`);
     check(
       await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       `${vp.label}: no sideways page scroll`,

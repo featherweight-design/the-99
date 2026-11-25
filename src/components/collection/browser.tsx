@@ -535,9 +535,9 @@ export function CollectionBrowser({
 
   const filtered = useMemo(() => filterCards(cards, filters), [cards, filters]);
   const sorted = useMemo(() => sortCards(filtered, sort, sortDirection), [filtered, sort, sortDirection]);
-  // The combos view: both sides arrive in one request when it first opens, held while `cards` (the served list) is the
-  // same one; the filters narrow the pairs here, so a keystroke costs no request.
-  const { load: comboLoad, retry: retryCombos } = useCollectionCombos(combosSide !== null, cards);
+  // The combos view: both sides arrive in one request when it first opens, held while `served` (the list as the
+  // server sent it, not the art-patched copy) is the same one; the filters narrow the pairs here, so a keystroke costs no request.
+  const { load: comboLoad, retry: retryCombos } = useCollectionCombos(combosSide !== null, served);
   const comboPairs = useMemo(() => {
     if (comboLoad.kind !== "ready") return null;
     const kept = new Set(filtered.map((c) => c.oracleId));
