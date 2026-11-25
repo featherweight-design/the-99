@@ -1,0 +1,112 @@
+{
+  "feature": "Collection quick filters: feature close-out (the whole line)",
+  "note": "Close-out walk against the handoff (design/design_handoff_the99_collection_quick_filters). Run on a local dev server from main: staging's sign-in cannot be scripted (the Clerk testing token is never set for a staging URL). The `feed-link` row needs the marked fixture item: `pnpm tsx scripts/seed-combo-feed-fixture.mts seed` first, `remove` after. `/decks` is the unchanged-chassis control: no quick strip there.",
+  "widths": [
+    {
+      "label": "phone",
+      "width": 390,
+      "height": 844
+    },
+    {
+      "label": "desktop",
+      "width": 1300,
+      "height": 900
+    },
+    {
+      "label": "ipad-landscape",
+      "width": 1180,
+      "height": 820
+    },
+    {
+      "label": "ipad-portrait",
+      "width": 820,
+      "height": 1180
+    }
+  ],
+  "rows": [
+    {
+      "id": "rest",
+      "label": "/collection: the strip at rest (all counts)",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [
+        {
+          "goto": "/collection",
+          "wait": "[data-quick-strip]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "fact-pressed",
+      "label": "/collection?quick=gc: a fact chip pressed",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [
+        {
+          "goto": "/collection?quick=gc",
+          "wait": "[data-quick-strip]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "free-pressed",
+      "label": "/collection?avail=free: In no deck pressed",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [
+        {
+          "goto": "/collection?avail=free",
+          "wait": "[data-quick-strip]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "other-filters",
+      "label": "/collection?c=U&t=Instant: other filters on, live counts",
+      "view": "src/components/collection/browser.tsx",
+      "steps": [
+        {
+          "goto": "/collection?c=U&t=Instant",
+          "wait": "[data-quick-strip]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "combos-both",
+      "label": "/collection?combos=both: Own both",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?combos=both",
+          "wait": "[data-combo-pair]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "combos-one",
+      "label": "/collection?combos=one: Own one",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [
+        {
+          "goto": "/collection?combos=one",
+          "wait": "[data-combo-pair]",
+          "settle": 3000
+        }
+      ]
+    },
+    {
+      "id": "feed-link",
+      "label": "/ : the new-combo feed item, See your combos",
+      "view": "src/components/feed/feed-item.tsx",
+      "steps": [
+        {
+          "goto": "/",
+          "wait": "a[data-feed-combos-view]",
+          "settle": 2500
+        }
+      ]
+    }
+  ]
+}
