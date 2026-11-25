@@ -13,6 +13,13 @@ export type CopyRow = {
   text: string;
   /** Hole names in source order, repeats kept. */
   placeholders: string[];
+  /**
+   * The fill-ins a new text may use, each at most as often as it likes and none required: the row's own holes, plus the
+   * enclosing function's parameters that hold plain text or a number (typed `string`, `number` or a union of literals of
+   * those). A parameter typed anything else, or untyped, could print `null` or `[object Object]`, so it is offered only
+   * where the code already writes it.
+   */
+  fills: string[];
   /** Read-only: the function's arguments and the condition that selects this branch. Editable rows too, for the editor. */
   context: string;
   /** Empty when editable; otherwise why the row is read-only. */
@@ -46,6 +53,21 @@ const nameOf = (p: ts.PropertyName): string | null =>
 
 type Ctx = { file: string; sf: ts.SourceFile; rows: CopyRow[] };
 
+/** A type that prints as itself in a template: `string`, `number`, a literal of either, or a union of those. */
+function printsAsText(t: ts.TypeNode | undefined): boolean {
+  if (!t) return false;
+  if (ts.isParenthesizedTypeNode(t)) return printsAsText(t.type);
+  if (t.kind === ts.SyntaxKind.StringKeyword || t.kind === ts.SyntaxKind.NumberKeyword) return true;
+  if (ts.isLiteralTypeNode(t)) return ts.isStringLiteral(t.literal) || ts.isNumericLiteral(t.literal) || ts.isNoSubstitutionTemplateLiteral(t.literal);
+  if (ts.isUnionTypeNode(t)) return t.types.every(printsAsText);
+  return false;
+}
+
+/** The function's parameters a text may print: plain names whose declared type prints as text (`printsAsText`). */
+export function textParams(fn: ts.SignatureDeclarationBase): string[] {
+  return fn.parameters.filter((p) => ts.isIdentifier(p.name) && !p.dotDotDotToken && !p.questionToken && !p.initializer && printsAsText(p.type)).map((p) => (p.name as ts.Identifier).text);
+}
+
 function quoteOf(n: ts.Node, sf: ts.SourceFile): CopyRow["quote"] {
   const c = n.getText(sf)[0];
   return c === "'" ? "'" : c === "`" ? "`" : '"';
@@ -54,16 +76,17 @@ function quoteOf(n: ts.Node, sf: ts.SourceFile): CopyRow["quote"] {
 /** Card names the about diagrams and landing examples draw are data, matched by where they sit, never by value. */
 export const DATA_ROW = /\.parts\[\d+\]\.name$|\.example\.rows\[/;
 
-function push(ctx: Ctx, key: string, n: ts.Node, row: Pick<CopyRow, "text" | "placeholders" | "context" | "readOnly"> & { isTemplate: boolean; holes?: Record<string, string> }) {
+function push(ctx: Ctx, key: string, n: ts.Node, row: Pick<CopyRow, "text" | "placeholders" | "context" | "readOnly"> & { isTemplate: boolean; holes?: Record<string, string> }, params: readonly string[] = []) {
   if (!row.readOnly && DATA_ROW.test(key)) row = { ...row, readOnly: "edit in code: data, not copy (a card name)" };
-  ctx.rows.push({ key, file: ctx.file, holes: {}, ...row, start: n.getStart(ctx.sf), end: n.getEnd(), quote: quoteOf(n, ctx.sf) });
+  const fills = row.readOnly ? [] : [...new Set([...row.placeholders, ...params])];
+  ctx.rows.push({ key, file: ctx.file, holes: {}, ...row, fills, start: n.getStart(ctx.sf), end: n.getEnd(), quote: quoteOf(n, ctx.sf) });
 }
 
 /** A text node: a string, or a template whose holes are all plain names. Anything else under it is read-only. */
-function textNode(ctx: Ctx, key: string, n: ts.Node, context: string, force = false): boolean {
+function textNode(ctx: Ctx, key: string, n: ts.Node, context: string, force = false, params: readonly string[] = []): boolean {
   if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n)) {
     if (!force && !isCopyText(n.text)) return true;
-    push(ctx, key, n, { text: n.text, placeholders: [], context, readOnly: "", isTemplate: false });
+    push(ctx, key, n, { text: n.text, placeholders: [], context, readOnly: "", isTemplate: false }, params);
     return true;
   }
   if (ts.isTemplateExpression(n)) {
@@ -81,7 +104,7 @@ function textNode(ctx: Ctx, key: string, n: ts.Node, context: string, force = fa
       text += `{${name}}${span.literal.text}`;
     }
     const note = Object.entries(holes).map(([k, v]) => `${k} = ${v.replace(/\s+/g, " ")}`).join("; ");
-    push(ctx, key, n, { text, placeholders: names, context: [context, note].filter(Boolean).join(" | "), readOnly: "", isTemplate: true, holes });
+    push(ctx, key, n, { text, placeholders: names, context: [context, note].filter(Boolean).join(" | "), readOnly: "", isTemplate: true, holes }, params);
     return true;
   }
   return false;
@@ -131,7 +154,7 @@ function fnLeaf(ctx: Ctx, key: string, fn: ts.ArrowFunction | ts.FunctionExpress
   out.forEach((o, i) => {
     const context = `${args}${o.cond.length ? ` when ${o.cond.join(" and ")}` : ""}`;
     // A function leaf returns text the reader sees, so even a single lowercase word ("card") is copy there.
-    textNode(ctx, several ? `${key}#t${i + 1}` : key, o.node, context, true);
+    textNode(ctx, several ? `${key}#t${i + 1}` : key, o.node, context, true, textParams(fn));
   });
 }
 

@@ -20,6 +20,10 @@ Leg 3 is an allowlist, never "not production": staging's own deployment reports 
 - Data text (card names, theme names) is not copy and gets no marker. Hidden text (aria, alt, placeholders) is out of the UI.
 - Edits live in `localStorage` (`the99.copyEdits`); the submission record in `the99.copySubmitted` so a reload keeps following the PR.
 
+## Fill-ins
+
+A `{name}` in a field is a chip (`fill-field.tsx`): drag moves it, its ✕ or Backspace/Delete beside it removes it. The rule is the copy sheet's (see copy-sheet.md, Fill-ins): any fill-in may be dropped, an unknown one is refused, in the editor, the submit route and the import alike. Rows carry `fills`; a row without it (an older rows file) falls back to its placeholders. The insert engine is built and held: `unusedFills(row, text)` lists what a line could add back and `FillFieldHandle.insertFill(name)` puts a chip at the caret, but no control shows them yet.
+
 ## Rules: one set
 
 Client checks call `problems()`, `wordCap`, `wordCount` from `scripts/lib/copy-sheet/validate.mts` (`src/lib/copy-editor/edits.ts`). There is no second rule set. The route re-validates, the workflow re-validates, and `copy:import` validates again.
@@ -39,7 +43,7 @@ Tokens (names only; Hugh sets values):
 
 ## Proof
 
-`node scripts/probe-copy-editor.mjs` (needs a dev server with `ADMIN_USER_IDS`, `ADMIN_ENV_LABEL=staging`, `VERCEL_PROJECT_PRODUCTION_URL=staging.the-99.dev`): door, outlines, targeting, editor, tray (submit and status mocked), and `PROBE_GATE=closed` with one leg missing at a time. Live dispatch proof: the workflow half was run on main with `gh workflow run copy-edit.yml` (opened a PR with CI; closed unmerged, branch deleted). **The route-side dispatch (the submit route calling GitHub with `COPY_EDIT_DISPATCH_TOKEN`) is proven only once an admin presses Open pull request on staging and a PR appears.** That needs a signed-in admin session, and there is no sanctioned headless sign-in to staging, so it waits on Hugh's one real press. Until then it is unproven end to end.
+`node scripts/probe-copy-editor.mjs` (needs a dev server with `ADMIN_USER_IDS`, `ADMIN_ENV_LABEL=staging`, `VERCEL_PROJECT_PRODUCTION_URL=staging.the-99.dev`): door, outlines, targeting, editor (fill-ins removed by ✕ and Backspace, an unknown one refused, a dropped one saved), tray (submit and status mocked), and `PROBE_GATE=closed` with one leg missing at a time. Live dispatch proof: the workflow half was run on main with `gh workflow run copy-edit.yml` (opened a PR with CI; closed unmerged, branch deleted). **The route-side dispatch (the submit route calling GitHub with `COPY_EDIT_DISPATCH_TOKEN`) is proven only once an admin presses Open pull request on staging and a PR appears.** That needs a signed-in admin session, and there is no sanctioned headless sign-in to staging, so it waits on Hugh's one real press. Until then it is unproven end to end.
 
 ## Files
 

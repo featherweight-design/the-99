@@ -21,7 +21,7 @@ export const kindOf = (r: CopyRow): "text" | "branch" | "edit in code" => (r.rea
 
 export function exportSheet(root: string): { csv: string; editable: number; readOnly: number; branches: number } {
   const rows = readCopyRows(root);
-  const body = rows.map((r) => [r.key, r.file.replace(`${COPY_DIR}/`, ""), kindOf(r), r.text, r.placeholders.map((p) => `{${p}}`).join(" "), r.context, ""]);
+  const body = rows.map((r) => [r.key, r.file.replace(`${COPY_DIR}/`, ""), kindOf(r), r.text, r.fills.map((p) => `{${p}}`).join(" "), r.context, ""]);
   return {
     csv: toCsv([[...HEADER], ...body]),
     editable: rows.filter((r) => !r.readOnly).length,
@@ -34,8 +34,10 @@ const escapeFor = (q: CopyRow["quote"], s: string) => s.replace(/\\/g, "\\\\").r
 
 /** The source that replaces a node: the literal or template, quotes kept. */
 function render(row: CopyRow, next: string): string {
-  const text = row.isTemplate ? escapeFor("`", next).replace(/\\\{([^{}]*)\}/g, "{$1}").replace(/\{([^{}]+)\}/g, (_, name: string) => `\${${row.holes[name] ?? name}}`) : escapeFor(row.quote, next);
-  return row.isTemplate ? `\`${text}\`` : `${row.quote}${text}${row.quote}`;
+  // A plain string that gains a fill-in (only one its function passes; `problems` refused any other) becomes a template.
+  const template = row.isTemplate || /\{[^{}]+\}/.test(next);
+  const text = template ? escapeFor("`", next).replace(/\{([^{}]+)\}/g, (_, name: string) => `\${${row.holes[name] ?? name}}`) : escapeFor(row.quote, next);
+  return template ? `\`${text}\`` : `${row.quote}${text}${row.quote}`;
 }
 
 export type Change = { key: string; from: string; to: string };

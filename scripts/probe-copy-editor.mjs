@@ -14,7 +14,7 @@
 // VERCEL_PROJECT_PRODUCTION_URL=staging.the-99.dev; the last is the gate's project leg, which Vercel sets on staging):
 //   PROBE_BASE=http://localhost:3107 E2E_AUDIT_USER_EMAIL=alpha-test+clerk_test@the99.app node scripts/probe-copy-editor.mjs
 //   7+ the editor (PR 4): press a line open, the dialog (popover 420px / bottom sheet), word count, em dash refusal,
-//     chips that cannot be deleted, variation fields, Add to edits / reload / Update / Remove, Esc + focus return, Tab
+//     chips removed by ✕ and Backspace, an unknown fill-in refused, a dropped one saved, variation fields, Add to edits / reload / Update / Remove, Esc + focus return, Tab
 //     wrap, read-only panel, the which-key picker. PROBE_ONLY=editor runs just this part (use it under --webpack).
 //     Every assertion needs the dialog, so each FAILS on main (no editor): the door and outlines exist there, a click
 //     on a line opens nothing, and `[role=dialog]` never appears.
@@ -671,21 +671,66 @@ async function runEditor(browser) {
       check(`${L} 5: Remove edit clears storage and closes`, Array.isArray(st) && st.length === 0 && (await page.locator(DIALOG).count()) === 0, JSON.stringify(st).slice(0, 120) + " " + rmErr);
     }
 
-    // 3: chips
+    // 3: chips. A fill-in moves by drag and is removed by its ✕ or by Backspace/Delete beside it; a fill-in the line's
+    // code does not pass is refused; a line that drops its fill-in saves.
+    const chips = () => page.locator(`${DIALOG} [data-fill]`).count();
+    const field = () => page.locator(`${DIALOG} [role=textbox]`);
+    const addBtn = () => page.locator(`${DIALOG} button`, { hasText: "Add to edits" });
+    // End of the field by keys: macOS Chromium scrolls on End instead of moving the caret, so it takes Meta+ArrowRight.
+    const toEnd = () => page.keyboard.press(process.platform === "darwin" ? "Meta+ArrowRight" : "End");
+    const caretAt = () => page.evaluate(() => { const s = getSelection(); const r = s?.rangeCount ? s.getRangeAt(0) : null; return r ? `${r.startContainer.nodeName}:${r.startOffset}` : "none"; });
     pt = await openClass(page, vp, found, "chip");
-    check(`${L} 3: a {name} line opens an editor with chips${found.chip?.real ? "" : " [FIXTURE]"}`, !!pt && (await page.locator(`${DIALOG} [data-fill]`).count()) > 0);
+    check(`${L} 3: a {name} line opens an editor with chips${found.chip?.real ? "" : " [FIXTURE]"}`, !!pt && (await chips()) > 0);
     if (pt) {
-      const n0 = await page.locator(`${DIALOG} [data-fill]`).count();
-      await page.locator(`${DIALOG} [role=textbox]`).focus();
-      await page.keyboard.press("ControlOrMeta+A");
+      const n0 = await chips();
+      const x = page.locator(`${DIALOG} [data-fill] [data-fill-remove]`).first();
+      const hasX = (await x.count()) > 0;
+      const label = hasX ? await x.getAttribute("aria-label") : null;
+      if (hasX && vp.touch) await x.tap();
+      else if (hasX) await x.click();
+      await page.waitForTimeout(200);
+      check(`${L} 3: pressing a chip's ✕ ("${label}") removes that chip (${n0} -> ${await chips()})`, n0 > 0 && (await chips()) === n0 - 1 && /^Remove /.test(label ?? ""));
+      const focused = await page.evaluate(() => document.activeElement?.getAttribute("role"));
+      check(`${L} 3: focus stays in the field after ✕`, focused === "textbox", String(focused));
+      await closeDialog(page);
+
+      pt = await openClass(page, vp, found, "chip");
+      const n1 = await chips();
+      // The caret goes right after the first chip by real key presses: End, then left past the text that follows it.
+      const after = await page.evaluate((sel) => {
+        const c = document.querySelector(sel);
+        let n = 0;
+        for (let s = c?.nextSibling; s; s = s.nextSibling) n += s.nodeType === Node.TEXT_NODE ? s.data.length : 1;
+        return n;
+      }, `${DIALOG} [data-fill]`);
+      await field().focus();
+      await toEnd();
+      for (let i = 0; i < after; i++) await page.keyboard.press("ArrowLeft");
+      const at = await caretAt();
       await page.keyboard.press("Backspace");
       await page.waitForTimeout(150);
-      const n1 = await page.locator(`${DIALOG} [data-fill]`).count();
-      await page.keyboard.press("ControlOrMeta+A");
-      await page.keyboard.press("Delete");
+      check(`${L} 3: Backspace right after a chip removes it (${n1} -> ${await chips()})`, n1 > 0 && (await chips()) === n1 - 1, `caret ${at}`);
+      const dropped = await field().innerText();
+      check(`${L} 3: a line with its fill-in dropped can be added`, await addBtn().isEnabled().catch(() => false), dropped);
+      await addBtn().click().catch(() => {});
+      await page.waitForTimeout(300);
+      const st = await storedEdits(page);
+      const e = Array.isArray(st) ? st[0] : null;
+      check(`${L} 3: the dropped fill-in is saved (from has {..}, to has none)`, Array.isArray(st) && st.length === 1 && /\{[^{}]+\}/.test(e.from) && !/[{}]/.test(e.to), JSON.stringify(st).slice(0, 200));
+      // Leave nothing behind for the next sections: reopen and Remove edit.
+      pt = await openClass(page, vp, found, "chip");
+      await page.locator(`${DIALOG} button`, { hasText: "Remove edit" }).click({ timeout: 4000 }).catch(() => {});
+      await page.waitForTimeout(300);
+      const left = await storedEdits(page);
+      check(`${L} 3: Remove edit clears the dropped-fill edit`, Array.isArray(st) && st.length === 1 && Array.isArray(left) && left.length === 0, JSON.stringify(left).slice(0, 120));
+
+      pt = await openClass(page, vp, found, "chip");
+      await field().focus();
+      await toEnd();
+      await page.keyboard.type(" {bogus}", { delay: 10 });
       await page.waitForTimeout(150);
-      const n2 = await page.locator(`${DIALOG} [data-fill]`).count();
-      check(`${L} 3: select-all + Backspace/Delete leaves chip count unchanged (${n0} -> ${n1} -> ${n2})`, n0 === n1 && n1 === n2 && n0 > 0);
+      const msg = (await page.locator(`${DIALOG} [role=status]`).innerText().catch(() => "")).replace(/\s+/g, " ");
+      check(`${L} 3: an unknown fill-in {bogus} is refused (Add disabled, reason shown)`, (await addBtn().isDisabled().catch(() => false)) && /\{bogus\} is not a fill-in/i.test(msg), msg.slice(0, 160));
       await closeDialog(page);
     }
 
@@ -744,6 +789,16 @@ async function editorShots(browser) {
       await page.keyboard.type("Probe — edit", { delay: 5 });
       await page.waitForTimeout(150);
       await snap("error");
+      await closeDialog(page);
+    }
+    if (await openClass(page, vp, found, "chip")) {
+      await snap("chip");
+      await page.locator(`${DIALOG} [data-fill] [data-fill-remove]`).first().click({ timeout: 3000 }).catch(() => {});
+      await page.waitForTimeout(150);
+      await snap("chip-removed");
+      await page.keyboard.type(" {bogus}", { delay: 5 });
+      await page.waitForTimeout(150);
+      await snap("chip-unknown");
       await closeDialog(page);
     }
     if (await openClass(page, vp, found, "readonly")) { await snap("readonly"); await closeDialog(page); }

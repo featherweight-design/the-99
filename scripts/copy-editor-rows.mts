@@ -15,7 +15,7 @@ if (process.env.VERCEL_ENV === "production" && process.env.VERCEL_PROJECT_PRODUC
 }
 
 const out = join(process.cwd(), ".generated", "copy-rows.json");
-const rows: EditorRow[] = readCopyRows(process.cwd()).map((r) => ({ key: r.key, kind: kindOf(r), text: r.text, placeholders: r.placeholders, context: kindOf(r) === "text" ? "" : r.context, readOnly: r.readOnly }));
+const rows: EditorRow[] = readCopyRows(process.cwd()).map((r) => ({ key: r.key, kind: kindOf(r), text: r.text, placeholders: r.placeholders, fills: r.fills, context: kindOf(r) === "text" ? "" : r.context, readOnly: r.readOnly }));
 mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, JSON.stringify(rows));
 console.log(`copy editor rows: ${rows.length} written to .generated/copy-rows.json`);

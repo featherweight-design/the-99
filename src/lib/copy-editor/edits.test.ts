@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { baseKey, check, variationLabel, variationsOf } from "./edits";
+import { baseKey, check, unusedFills, variationLabel, variationsOf } from "./edits";
 import type { EditorRow } from "./rows";
 
 const row = (key: string, text: string, over: Partial<EditorRow> = {}): EditorRow => ({ key, kind: "text", text, placeholders: [], context: "", readOnly: "", ...over });
@@ -40,9 +40,27 @@ describe("check", () => {
     expect(check(r, "a — b").problems.length).toBeGreaterThan(0);
     expect(check(r, "one two three four five six seven eight nine").problems.length).toBeGreaterThan(0);
   });
-  it("refuses a dropped fill-in", () => {
+  it("lets a fill-in be dropped, and refuses one the line does not have", () => {
+    const r = row("a.ts#line", "hello {name}", { placeholders: ["name"], fills: ["name", "count"] });
+    expect(check(r, "hello").problems).toEqual([]);
+    expect(check(r, "hi {count} {name}").problems).toEqual([]);
+    expect(check(r, "hi {who}").problems).toEqual(["{who} is not a fill-in this line has ({name} {count})"]);
+  });
+  it("offers a row from an older rows file only its placeholders", () => {
     const r = row("a.ts#line", "hello {name}", { placeholders: ["name"] });
-    expect(check(r, "hello").problems.length).toBeGreaterThan(0);
-    expect(check(r, "hi {name}").problems).toEqual([]);
+    expect(check(r, "hello").problems).toEqual([]);
+    expect(check(r, "hi {count}").problems.length).toBe(1);
+  });
+});
+
+describe("unusedFills", () => {
+  const r = row("a.ts#line", "Step through {tools} of the tools", { placeholders: ["tools"], fills: ["tools", "player"] });
+  it("lists the fill-ins the text leaves out, in the line's order", () => {
+    expect(unusedFills(r, "Step through {tools} of the tools")).toEqual(["player"]);
+    expect(unusedFills(r, "Step through the tools")).toEqual(["tools", "player"]);
+    expect(unusedFills(r, "{player}: {tools}")).toEqual([]);
+  });
+  it("falls back to placeholders", () => {
+    expect(unusedFills({ ...r, fills: undefined }, "none")).toEqual(["tools"]);
   });
 });
