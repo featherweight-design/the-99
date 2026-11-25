@@ -41,7 +41,7 @@ const payload = (games: HistoryGame[], over: Partial<GamesPayload> = {}, sum = s
     byResult: { wins: 9, losses: 12, draws: 2 }, byDeck: [{ deckId: "deck-sai", games: 5 }],
     playedAgainst: {
       friends: [{ publicId: "6f1c2a3b-4d5e-4f60-8a7b-9c0d1e2f3a4b", name: named("Colin"), games: 17, commander: null }],
-      commanders: [{ oracleId: "2121bcb4-f5fe-447f-9112-c7e5b5c45baf", name: "Ghalta, Primal Hunger", games: 12, artCropUri: null }],
+      commanders: [{ oracleId: "2121bcb4-f5fe-447f-9112-c7e5b5c45baf", name: "Fixture Commander", games: 12, artCropUri: null }],
     },
   },
   ...over,
@@ -390,7 +390,7 @@ describe("GamesView: the filters", () => {
     expect(within(sheet).getByRole("button", { name: /Drawn\s*2/ })).toBeInTheDocument();
     expect(within(sheet).getByRole("button", { name: "Show 23 games" })).toBeInTheDocument();
     expect(within(sheet).getByText("Colin")).toBeInTheDocument();
-    expect(within(sheet).getByText("Ghalta, Primal Hunger")).toBeInTheDocument();
+    expect(within(sheet).getByText("Fixture Commander")).toBeInTheDocument();
   });
 
   it("never disables an option: a zero stays pressable", () => {
@@ -406,7 +406,7 @@ describe("GamesView: the filters", () => {
     const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
     fireEvent.change(within(sheet).getByRole("searchbox", { name: gameHistoryCopy.filter.search }), { target: { value: "ghal" } });
     expect(within(sheet).queryByText("Colin")).toBeNull();
-    expect(within(sheet).getByText("Ghalta, Primal Hunger")).toBeInTheDocument();
+    expect(within(sheet).getByText("Fixture Commander")).toBeInTheDocument();
   });
 
   it("picks a friend in the sheet as one Played against choice", () => {

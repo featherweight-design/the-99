@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckNotesView } from "../../../lib/decks/notes-types";
+import { deckNotesCopy } from "../../../lib/copy/deck-notes";
 
 vi.mock("../../../app/decks/notes-actions", () => ({
   addNote: vi.fn(), editNote: vi.fn(), setNoteDone: vi.fn(), deleteNote: vi.fn(), searchNoteCards: vi.fn(),
@@ -31,7 +32,7 @@ describe("notes on an empty deck", () => {
 
   it("opens notes on a commander-only deck with none yet, and All brings the empty state back", () => {
     mount(null);
-    fireEvent.click(screen.getByRole("tab", { name: "Notes, none yet" }));
+    fireEvent.click(screen.getByRole("tab", { name: deckNotesCopy.head.segmentAriaNone }));
     expect(screen.queryByText("the empty state")).toBeNull();
     fireEvent.click(screen.getByRole("tab", { name: /^All/ }));
     expect(screen.getByText("the empty state")).toBeTruthy();

@@ -32,7 +32,7 @@ vi.mock("../../app/decks/[id]/opponent-actions", () => ({
   listPodSeatsAction: async () => [],
 }));
 
-const you = { name: "Ghalta, Primal Hunger", deckName: "Ghalta Stompy", imageUri: null };
+const you = { name: "Fixture Commander", deckName: "Ghalta Stompy", imageUri: null };
 const seatsCopy = gameSeatsCopy.seats;
 const SEATING = "a".repeat(64);
 const prefill: TablePrefill = {

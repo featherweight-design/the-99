@@ -18,11 +18,11 @@ function Typed() {
 describe("ModalChrome initial focus", () => {
   it("lands on the heading, not the close", () => {
     render(
-      <ModalChrome title="Report a problem" closeLabel="Close" onClose={() => {}} width={560}>
+      <ModalChrome title="Fixture modal title" closeLabel="Close" onClose={() => {}} width={560}>
         <button type="button">Send</button>
       </ModalChrome>,
     );
-    const heading = screen.getByRole("heading", { name: "Report a problem" });
+    const heading = screen.getByRole("heading", { name: "Fixture modal title" });
     expect(document.activeElement).toBe(heading);
     expect(document.activeElement).not.toBe(screen.getByRole("button", { name: "Close" }));
   });
@@ -34,7 +34,7 @@ describe("ModalChrome initial focus", () => {
 
   it("draws the close's focus ring inset", () => {
     render(
-      <ModalChrome title="Report a problem" closeLabel="Close" onClose={() => {}} width={560}>
+      <ModalChrome title="Fixture modal title" closeLabel="Close" onClose={() => {}} width={560}>
         <p>Body</p>
       </ModalChrome>,
     );

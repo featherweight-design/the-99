@@ -9,6 +9,7 @@ import { summarisePrices } from "../../lib/decks/price";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { deckNotesCopy } from "../../lib/copy/deck-notes";
 import { cardCopies } from "../../lib/decks/grouping";
+import { DECK_GROUPING_ARIA } from "../../lib/copy/deck-sort";
 
 const provenance: ProvenanceForm = { behind: false, when: "Monday" };
 const summary: PriceSummary = { totalCents: 1240, pricedCopies: 6, totalCopies: 8 };
@@ -166,7 +167,7 @@ describe("GroupToggle view well (#349)", () => {
 // gap — in a toolbar whose wrapping this round is otherwise careful about.
 describe("GroupToggle's auto cluster at zero", () => {
   const row = () =>
-    screen.getByRole("radiogroup", { name: "Group the list" }).parentElement!.parentElement!;
+    screen.getByRole("radiogroup", { name: DECK_GROUPING_ARIA }).parentElement!.parentElement!;
 
   const emptyChildren = () =>
     [...row().children].filter(

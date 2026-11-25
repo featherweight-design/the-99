@@ -2047,7 +2047,7 @@ describe("DecklistRow, one line at every width", () => {
     renderRow(<DecklistRow deckId="d1" card={foiled({ foil: "etched" })} newestAsOf={null} />);
     const name = screen.getByRole("button", { name: new RegExp(`^${cardDetailCopy.triggerAria(card.name)}`) });
     const ids = name.getAttribute("aria-describedby")!.split(" ");
-    expect(ids.map((id) => document.getElementById(id)?.textContent).filter((t) => t === "etched foil")).toHaveLength(1);
+    expect(ids.map((id) => document.getElementById(id)?.textContent).filter((t) => t === foilMarkCopy.name.etched)).toHaveLength(1);
     for (const g of screen.getAllByTestId("foil-mark")) expect(g.getAttribute("aria-hidden")).toBe("true");
   });
 
@@ -2199,6 +2199,7 @@ describe("DecklistRow, inline touch hits", () => {
 });
 
 import { forgetJustOwned, noteJustOwned } from "../../lib/decks/just-owned";
+import { foilMarkCopy } from "../../lib/copy/foil-mark";
 
 // Add a card from anywhere, O9 (D5, S4): a row whose dot fills under it, after a collection save on the page, rings
 // briefly in --success; a proxied row's dot never fills, so it never rings.

@@ -252,7 +252,7 @@ describe("a later version reads differently", () => {
     const row = screen.getByText("version 1").closest("[aria-hidden='true']");
     expect(row).toBeTruthy();
     expect(row!.textContent).toContain("→");
-    expect(row!.textContent).toContain("this version");
+    expect(row!.textContent).toContain(declarationCopy.versionChange.markLabelCurrent);
   });
 
   it("never quotes the player", () => {

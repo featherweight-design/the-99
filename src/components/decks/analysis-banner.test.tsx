@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { AnalysisBanner } from "./analysis-banner";
 
-const NOTE = "Reads the bracket only. The overview waits until every card is legal in this deck.";
+const NOTE = "Fixture check note.";
 
 describe("AnalysisBanner's check note", () => {
   it("describes the press by the note's text alone, and See which opens Notices", () => {

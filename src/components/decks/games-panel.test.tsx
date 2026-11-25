@@ -2,7 +2,7 @@ import { fireEvent, render, screen, waitFor, within } from "@testing-library/rea
 import { describe, expect, it, vi } from "vitest";
 import { GamesPanel } from "./games-panel";
 import { summarizeGames, type DeckGame } from "../../lib/decks/games";
-import { gameLogCopy } from "../../lib/copy/game-log";
+import { gameLogCopy, axisCopy } from "../../lib/copy/game-log";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 
 vi.mock("../../app/decks/actions", () => ({
@@ -148,7 +148,7 @@ describe("GamesPanel — low N", () => {
     const text = container.textContent!;
     // GAME_AXIS_KEYS order: speed, …, mana, …, engine.
     expect(text.indexOf("Speed")).toBeLessThan(text.indexOf("Mana"));
-    expect(text.indexOf("Mana")).toBeLessThan(text.indexOf("The deck’s plan"));
+    expect(text.indexOf("Mana")).toBeLessThan(text.indexOf(axisCopy.engine.label));
   });
 });
 

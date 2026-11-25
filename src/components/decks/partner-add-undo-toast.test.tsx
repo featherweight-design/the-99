@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const undoPartnerAdd = vi.fn();
 vi.mock("../../lib/commander-change/actions", () => ({ undoPartnerAdd: (...a: unknown[]) => undoPartnerAdd(...a) }));
@@ -35,7 +36,7 @@ describe("PartnerAddUndoToast", () => {
     undoPartnerAdd.mockResolvedValue({ ok: false, reason: "changed" });
     render(<PartnerAddUndoToast {...props} />);
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: "Undo" })); });
-    expect(screen.getByRole("alert").textContent).toContain("We couldn’t undo that.");
+    expect(screen.getByRole("alert").textContent).toContain(changeCommanderCopy.partnerUndo.refused);
     expect(screen.queryByRole("button")).toBeNull();
   });
 
