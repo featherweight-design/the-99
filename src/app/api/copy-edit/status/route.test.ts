@@ -15,7 +15,7 @@ const get = (branch: string | null = BRANCH) => GET(new NextRequest(`http://loca
 beforeEach(() => {
   vi.stubEnv("ADMIN_USER_IDS", ADMIN);
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
-  vi.stubEnv("VERCEL_ENV", "preview");
+  vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "staging.the-99.dev");
   vi.stubEnv("COPY_EDIT_DISPATCH_TOKEN", "tok_stub");
   session.mockResolvedValue({ userId: ADMIN });
   find.mockReset().mockResolvedValue({ state: "open", number: 7, url: "https://example.test/7" });
@@ -30,7 +30,7 @@ describe("GET /api/copy-edit/status", () => {
     vi.stubEnv("ADMIN_ENV_LABEL", "production");
     expect((await get()).status).toBe(404);
     vi.stubEnv("ADMIN_ENV_LABEL", "staging");
-    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the-99.dev");
     const res = await get();
     expect(res.status).toBe(404);
     expect(await res.text()).toBe("");

@@ -1,4 +1,4 @@
-// The copy editor's gate: admin AND staging label AND not Vercel production. Each leg is shut on its own with the other
+// The copy editor's gate: admin AND staging label AND the staging Vercel project. Each leg is shut on its own with the other
 // two open, so a test cannot pass because a different leg did the refusing.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,7 +12,7 @@ const ADMIN = "user_admin";
 beforeEach(() => {
   vi.stubEnv("ADMIN_USER_IDS", `${ADMIN},user_other`);
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
-  vi.stubEnv("VERCEL_ENV", "preview");
+  vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "staging.the-99.dev");
   session.mockResolvedValue({ userId: ADMIN });
 });
 afterEach(() => vi.unstubAllEnvs());
@@ -34,10 +34,26 @@ describe("copyEditorOpen", () => {
     expect(copyEditorOpen(ADMIN)).toBe(false);
   });
 
-  it("is shut on a Vercel production deployment, with the admin and the label open", () => {
-    expect(copyEditorOpen(ADMIN, "production")).toBe(false);
-    vi.stubEnv("VERCEL_ENV", "production");
+  it("is shut on any project but staging's, with the admin and the label open", () => {
+    expect(copyEditorOpen(ADMIN, "the-99.dev")).toBe(false);
+    expect(copyEditorOpen(ADMIN, "staging.the-99.dev.evil.test")).toBe(false);
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the-99.dev");
     expect(copyEditorOpen(ADMIN)).toBe(false);
+  });
+
+  it("is shut when the project variable is unset or empty, with the admin and the label open", () => {
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
+    expect(copyEditorOpen(ADMIN)).toBe(false);
+    vi.unstubAllEnvs();
+    vi.stubEnv("ADMIN_USER_IDS", ADMIN);
+    vi.stubEnv("ADMIN_ENV_LABEL", "staging");
+    delete process.env.VERCEL_PROJECT_PRODUCTION_URL;
+    expect(copyEditorOpen(ADMIN)).toBe(false);
+  });
+
+  it("is open on staging's own deployment even though Vercel reports it as production", () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect(copyEditorOpen(ADMIN)).toBe(true);
   });
 });
 
@@ -46,7 +62,7 @@ describe("copyEditorUser", () => {
     expect(await copyEditorUser()).toBe(ADMIN);
   });
 
-  it("is null signed out, for a player, off staging and on production", async () => {
+  it("is null signed out, for a player, off staging and on the production project", async () => {
     session.mockResolvedValue({ userId: null });
     expect(await copyEditorUser()).toBeNull();
     session.mockResolvedValue({ userId: "user_player" });
@@ -55,7 +71,7 @@ describe("copyEditorUser", () => {
     vi.stubEnv("ADMIN_ENV_LABEL", "production");
     expect(await copyEditorUser()).toBeNull();
     vi.stubEnv("ADMIN_ENV_LABEL", "staging");
-    vi.stubEnv("VERCEL_ENV", "production");
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the-99.dev");
     expect(await copyEditorUser()).toBeNull();
   });
 });

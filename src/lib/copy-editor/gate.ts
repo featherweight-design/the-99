@@ -7,11 +7,16 @@ import { adminEnvironment } from "../admin/environment";
  * failing is a 404 (the editor does not exist for anyone else, and a refusal would say it does):
  *  1. the signed-in user is on the admin allowlist (`isAdmin`),
  *  2. the environment label reads `staging` (`ADMIN_ENV_LABEL`),
- *  3. the deployment is not Vercel's production one (`VERCEL_ENV`), so a mislabelled production project is still shut.
+ *  3. the deployment belongs to the staging Vercel project: `VERCEL_PROJECT_PRODUCTION_URL` (a system variable Vercel sets
+ *     per project) is exactly `staging.the-99.dev`. An allowlist, not "not production": staging's own deployment reports
+ *     `VERCEL_ENV=production`, and the production project (`the-99.dev`) or an unset value can never match, even
+ *     mislabelled.
  * Every route and action of the editor calls this; the page-side door only hides a button.
  */
-export function copyEditorOpen(userId: string | null | undefined, vercelEnv: string | undefined = process.env.VERCEL_ENV): boolean {
-  return isAdmin(userId) && adminEnvironment() === "staging" && vercelEnv !== "production";
+export const STAGING_HOST = "staging.the-99.dev";
+
+export function copyEditorOpen(userId: string | null | undefined, project: string | undefined = process.env.VERCEL_PROJECT_PRODUCTION_URL): boolean {
+  return isAdmin(userId) && adminEnvironment() === "staging" && project === STAGING_HOST;
 }
 
 /** The signed-in admin's id, or null (answer 404). */

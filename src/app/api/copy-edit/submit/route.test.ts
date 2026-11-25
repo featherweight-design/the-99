@@ -26,7 +26,7 @@ function post(body: unknown, headers: Record<string, string> = { "content-type":
 beforeEach(() => {
   vi.stubEnv("ADMIN_USER_IDS", ADMIN);
   vi.stubEnv("ADMIN_ENV_LABEL", "staging");
-  vi.stubEnv("VERCEL_ENV", "preview");
+  vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "staging.the-99.dev");
   vi.stubEnv("COPY_EDIT_DISPATCH_TOKEN", "tok_stub");
   session.mockResolvedValue({ userId: ADMIN });
   read.mockReset().mockResolvedValue([row, ro]);
@@ -56,8 +56,14 @@ describe("POST /api/copy-edit/submit: the gate's three legs", () => {
     nothingRan();
   });
 
-  it("is a bare 404 on Vercel's production deployment, with the admin and the label open", async () => {
-    vi.stubEnv("VERCEL_ENV", "production");
+  it("is a bare 404 when the project variable is unset, with the admin and the label open", async () => {
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "");
+    expect((await post({ edits: [edit] })).status).toBe(404);
+    nothingRan();
+  });
+
+  it("is a bare 404 on the production project, with the admin and the label open", async () => {
+    vi.stubEnv("VERCEL_PROJECT_PRODUCTION_URL", "the-99.dev");
     expect((await post({ edits: [edit] })).status).toBe(404);
     nothingRan();
   });
