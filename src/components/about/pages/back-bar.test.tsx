@@ -22,8 +22,8 @@ afterEach(cleanup);
 
 describe("BackBar", () => {
   it("names the screen and goes back to it", () => {
-    render(<BackBar from={FROM} screen="Upload a file" />);
-    const back = screen.getByRole("link", { name: "‹ Back to Upload a file" });
+    render(<BackBar from={FROM} screen="Fixture screen" />);
+    const back = screen.getByRole("link", { name: "‹ Back to Fixture screen" });
     expect(back.getAttribute("href")).toBe(FROM);
     expect(back.closest("[data-about-back]")!.className).toContain("sticky");
   });
@@ -42,7 +42,7 @@ describe("BackBar", () => {
   });
 
   it("draws nothing once the address no longer carries that from", () => {
-    const { container } = render(<BackBar from={FROM} screen="Upload a file" />);
+    const { container } = render(<BackBar from={FROM} screen="Fixture screen" />);
     act(() => window.history.replaceState(null, "", "/about/collection#upload"));
     expect(container.querySelector("[data-about-back]")).toBeNull();
   });
@@ -50,8 +50,8 @@ describe("BackBar", () => {
   it("an On this page chip drops from, keeping the rest of the address", () => {
     const { container } = render(
       <>
-        <BackBar from={FROM} screen="Upload a file" />
-        <OnThisPage sections={[{ id: "cards", name: "Cards" }, { id: "upload", name: "Upload a file" }]} />
+        <BackBar from={FROM} screen="Fixture screen" />
+        <OnThisPage sections={[{ id: "cards", name: "Cards" }, { id: "upload", name: "Fixture screen" }]} />
       </>,
     );
     act(() => {
@@ -64,7 +64,7 @@ describe("BackBar", () => {
   });
 
   it("moves on the header's slide, as the top dock does, so the dock never sits over it mid-slide (Copilot round 3)", () => {
-    const { container } = render(<BackBar from={FROM} screen="Upload a file" />);
+    const { container } = render(<BackBar from={FROM} screen="Fixture screen" />);
     const bar = container.querySelector("[data-about-back]") as HTMLElement;
     for (const cls of UNDER_HEADER.split(" ")) expect(bar.classList).toContain(cls);
   });

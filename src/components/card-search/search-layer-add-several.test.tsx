@@ -32,7 +32,7 @@ afterEach(() => {
   document.body.innerHTML = "";
 });
 
-describe("Add several cards", () => {
+describe("the add-several row", () => {
   it("is the first row above Recent cards, and opens the sheet on a press", () => {
     const { props, host } = draw({ recentsHeld: true, recentRows: [row] });
     const press = way()!;

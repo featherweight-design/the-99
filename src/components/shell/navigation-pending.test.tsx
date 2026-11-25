@@ -41,6 +41,7 @@ const { QuickAddFailedToast } = await import("../decks/quick-add-failed-toast");
 const { TOAST_MS } = await import("../collection/edit-toast");
 const { createPortal } = await import("react-dom");
 const { COVERED_WITH_MAIN } = await import("./covered-layer");
+const { shellCopy: shellLoading } = await import("../../lib/copy/shell");
 
 function Reporter({ href }: { href: string }) {
   return usePendingReport(href) ? <span data-testid={`mark ${href}`} /> : null;
@@ -88,7 +89,7 @@ describe("NavigationPendingProvider", () => {
     expect(overlay()).toBeNull();
     expect(main().hasAttribute("aria-busy")).toBe(false);
     act(() => vi.advanceTimersByTime(1));
-    expect(overlay()?.textContent).toContain("Consulting the council");
+    expect(overlay()?.textContent).toContain(shellLoading.loading.commanders.heading);
     expect(main().getAttribute("aria-busy")).toBe("true");
     // Covered, so out of the keyboard's reach too, not only the pointer's.
     expect(main().inert).toBe(true);
@@ -118,7 +119,7 @@ describe("NavigationPendingProvider", () => {
     act(() => vi.advanceTimersByTime(OVERLAY_AFTER_MS - 1));
     expect(overlay()).toBeNull();
     act(() => vi.advanceTimersByTime(1));
-    expect(overlay()?.textContent).toContain("Casting a wider net");
+    expect(overlay()?.textContent).toContain(shellLoading.loading.discover.heading);
   });
 
   it("escalates at once when a run past 400ms moves from a kept route to an overlay route", () => {
@@ -127,7 +128,7 @@ describe("NavigationPendingProvider", () => {
     expect(overlay()).toBeNull();
     state.pending.set("/decks/abc", false);
     press("/discover");
-    expect(overlay()?.textContent).toContain("Casting a wider net");
+    expect(overlay()?.textContent).toContain(shellLoading.loading.discover.heading);
   });
 
   it("reads a link to the page already open as not pending, so its mark never draws", () => {
@@ -150,7 +151,7 @@ describe("NavigationPendingProvider", () => {
     state.pending.set("/commanders", false);
     press("/discover");
     act(() => vi.advanceTimersByTime(100));
-    expect(overlay()?.textContent).toContain("Casting a wider net");
+    expect(overlay()?.textContent).toContain(shellLoading.loading.discover.heading);
   });
 
   it("lets pointer events through at commit, fades out and unmounts", () => {
@@ -529,11 +530,11 @@ describe("a code-started push", () => {
     await act(async () => vi.advanceTimersByTime(OVERLAY_AFTER_MS - 1));
     expect(overlay()).toBeNull();
     await act(async () => vi.advanceTimersByTime(1));
-    expect(overlay()?.textContent).toContain("Consulting the council");
+    expect(overlay()?.textContent).toContain(shellLoading.loading.commanders.heading);
     // Home's first run swaps out the replace flow that pressed confirm while the receipt loads.
     await act(async () => view.rerender(<Code starter={false} />));
     await act(async () => vi.advanceTimersByTime(1000));
-    expect(overlay()?.textContent).toContain("Consulting the council");
+    expect(overlay()?.textContent).toContain(shellLoading.loading.commanders.heading);
     expect(overlay()?.className).not.toContain("pointer-events-none");
   });
 });

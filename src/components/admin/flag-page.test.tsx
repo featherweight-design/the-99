@@ -141,10 +141,10 @@ describe("SwitchPageView", () => {
   });
 
   it("lists history newest first, as handed in, with notes", () => {
-    const ev: SwitchEvent = { at: AT, actorId: "u2", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: "on", note: "Try it" };
+    const ev: SwitchEvent = { at: AT, actorId: "u2", kind: "override_set", scope: "app", groupId: null, userId: null, oldValue: null, newValue: "on", note: "Fixture note" };
     draw("SUGGESTED_CHANGES_V2_ENABLED", {}, [], [ev, { ...ev, actorId: "u1", kind: "override_cleared", oldValue: "on", newValue: null, note: null }]);
     const items = within(screen.getByTestId("switch-history")).getAllByRole("listitem");
-    expect(items.map((i) => i.textContent)).toEqual(["Oct 11 · 14:02Mara set app-wide: not set → onNote: “Try it”", "Oct 11 · 14:02You cleared app-wide (was on)"]);
+    expect(items.map((i) => i.textContent)).toEqual(["Oct 11 · 14:02Mara set app-wide: not set → onNote: “Fixture note”", "Oct 11 · 14:02You cleared app-wide (was on)"]);
   });
 
   it("warns when Clerk or the overrides could not be read", () => {

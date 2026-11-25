@@ -88,7 +88,7 @@ describe("ArchiveView", () => {
     fireEvent.click(screen.getByRole("button", { name: feedCopy.archive.older }));
     expect(await screen.findByText(feedCopy.archive.failedOlder)).toBeInTheDocument();
     expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(3);
-    fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+    fireEvent.click(screen.getByRole("button", { name: feedCopy.archive.retry }));
     await waitFor(() => expect(container.querySelectorAll("[data-feed-item]")).toHaveLength(4));
     expect(screen.queryByText(feedCopy.archive.failedOlder)).toBeNull();
   });
@@ -97,7 +97,7 @@ describe("ArchiveView", () => {
     load.mockResolvedValue(null);
     view();
     fireEvent.click(screen.getByRole("button", { name: feedCopy.archive.older }));
-    expect(await screen.findByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: feedCopy.archive.retry })).toBeInTheDocument();
   });
 
   it("flips a kind in place, writes the address through mirrorUrl, and serves a held kind without reading again", async () => {
@@ -241,7 +241,7 @@ describe("ArchiveView", () => {
 
   it("names the order beside the jump at a phone, and keeps Show older at 44px at every width", () => {
     const { container } = view();
-    expect(container.querySelector("[data-archive-order]")!.textContent).toBe("newest first");
+    expect(container.querySelector("[data-archive-order]")!.textContent).toBe(feedCopy.archive.newestFirst);
     const older = screen.getByRole("button", { name: feedCopy.archive.older });
     expect(older.className).toContain("min-h-[44px]");
     expect(older.className).not.toContain("md:min-h");

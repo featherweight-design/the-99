@@ -432,7 +432,7 @@ describe("DeckCard", () => {
       );
       // `To buy`: a card is genuinely missing, so the slot stays empty. Reading
       // `1 proxy` here would mean the deck had been called finished.
-      expect(screen.queryByText(/proxy/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(proxyCopy.deckCard.line(1))).not.toBeInTheDocument();
     });
 
     // The seniority defect, moved into the detail row: every card owned, every
