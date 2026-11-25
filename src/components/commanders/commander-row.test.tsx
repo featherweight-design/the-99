@@ -213,7 +213,7 @@ describe("CommanderRow · the gap slot is never empty", () => {
     // LANE-NEUTRAL. The shared row draws this on both lanes, so the body may not
     // name a sort only one of them has: it used to end "cannot appear under
     // Something new", which is false on /commanders.
-    expect(container.textContent).not.toContain("Something new");
+    expect(container.textContent).not.toContain(discoverCopy.order.somethingNew);
   });
 });
 

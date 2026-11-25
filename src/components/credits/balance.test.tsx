@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import { creditsPageCopy } from "../../lib/copy/credits-page";
 import { writtenForYouCopy } from "../../lib/copy/discovery";
 import { stripDay, welcomeCreditsCopy } from "../../lib/copy/welcome-credits";
 import { buildCreditsModel } from "../../lib/payments/page-model";
@@ -52,12 +53,15 @@ describe("the Welcome cell's line", () => {
 
   it("reads credit, not credits, for a total of one", () => {
     const { rerender } = render(<Balance total={1} cells={cells(AT)} freeLimit={1} nextAtMs={null} welcome={null} />);
-    expect(screen.getByText("credit to spend")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.bal.total(1))).toBeTruthy();
     rerender(<Balance total={2} cells={cells(AT)} freeLimit={1} nextAtMs={null} welcome={null} />);
-    expect(screen.getByText("credits to spend")).toBeTruthy();
-    expect(screen.getByRole("region", { name: "credits to spend" })).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.bal.total(2))).toBeTruthy();
+    expect(screen.getByRole("region", { name: creditsPageCopy.bal.total(2) })).toBeTruthy();
     rerender(<Balance total={0} cells={cells(AT)} freeLimit={1} nextAtMs={null} welcome={null} />);
-    expect(screen.getByText("credits to spend")).toBeTruthy();
+    expect(screen.getByText(creditsPageCopy.bal.total(0))).toBeTruthy();
+    // The leaf must still tell one from many: the draws above agree with the
+    // function by construction, so this is what pins the singular.
+    expect(creditsPageCopy.bal.total(1)).not.toBe(creditsPageCopy.bal.total(2));
   });
 
   it("with every row off the date stands alone", () => {

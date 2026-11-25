@@ -29,7 +29,7 @@ const model = (src: string): ScreenModel => ({
   shots: [{ shot: { src, w: 780, h: 1688 }, pins: [{ key: LIT, n: 1, box: [0.1, 0.1, 0.3, 0.1] }] }],
   labels: [
     { key: "decks/analysis/analyze", n: 1, lead: "Analyze", text: " reads the bracket.", region: "x", shot: 0 },
-    { key: LIT, n: 2, lead: "Proposed cuts", text: " counts where a deck runs long.", region: LIT, shot: 0 },
+    { key: LIT, n: 2, lead: "Fixture lead", text: " counts where a deck runs long.", region: LIT, shot: 0 },
   ],
 });
 const card = (id: string, label: string): PageCard => ({
@@ -257,10 +257,10 @@ describe("TryIt", () => {
 
   it("moves focus into an added card with no way in, as the card itself", () => {
     at("/about/decks");
-    const none = card("proposed-cuts", "Proposed cuts");
+    const none = card("proposed-cuts", "Fixture cuts");
     const cards = [card("suggested-changes", "Fixture suggested"), { ...none, card: { ...none.card, state: { kind: "none", line: "Fixture line" } as unknown as PageCard["card"]["state"] } }];
     const { container, getByText } = render(<TryIt sectionId="decks" cards={cards} />);
-    fireEvent.click(getByText("1 more tool"));
+    fireEvent.click(getByText(ABOUT_PAGE_STRINGS.moreTools(1)));
     const second = container.querySelectorAll<HTMLElement>("[data-try-it-width='phone'] li")[1];
     expect(second.contains(document.activeElement)).toBe(true);
     expect(container.querySelector("[data-try-it-fewer]")).not.toBe(document.activeElement);

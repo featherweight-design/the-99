@@ -40,10 +40,10 @@ describe("TargetsProvider", () => {
     render(
       <TargetsProvider>
         <Grab />
-        <Control id="top-off" name="Top off" />
+        <Control id="top-off" name="Fixture control" />
       </TargetsProvider>,
     );
-    const el = screen.getByRole("button", { name: "Top off" });
+    const el = screen.getByRole("button", { name: "Fixture control" });
     expect(api!.haloTarget("top-off")).toBe(true);
     expect(el.hasAttribute(HALO_ATTR)).toBe(true);
     act(() => vi.advanceTimersByTime(HALO_MS - 1));
@@ -75,10 +75,10 @@ describe("TargetsProvider", () => {
     render(
       <TargetsProvider>
         <Grab />
-        <Control id="top-off" name="Top off" />
+        <Control id="top-off" name="Fixture control" />
       </TargetsProvider>,
     );
-    const el = screen.getByRole("button", { name: "Top off" });
+    const el = screen.getByRole("button", { name: "Fixture control" });
     api!.haloTarget("top-off", 1000);
     act(() => vi.advanceTimersByTime(800));
     api!.haloTarget("top-off", 1000);
@@ -337,18 +337,18 @@ describe("TargetsProvider", () => {
     const { unmount } = render(
       <TargetsProvider>
         <Grab />
-        <Control id="top-off" name="Top off" />
+        <Control id="top-off" name="Fixture control" />
       </TargetsProvider>,
     );
-    const el = screen.getByRole("button", { name: "Top off" });
+    const el = screen.getByRole("button", { name: "Fixture control" });
     api!.haloTarget("top-off");
     unmount();
     expect(el.hasAttribute(HALO_ATTR)).toBe(false);
   });
 
   it("does nothing outside the provider", () => {
-    render(<Control id="top-off" name="Top off" />);
-    expect(screen.getByRole("button", { name: "Top off" })).toBeTruthy();
+    render(<Control id="top-off" name="Fixture control" />);
+    expect(screen.getByRole("button", { name: "Fixture control" })).toBeTruthy();
   });
 });
 

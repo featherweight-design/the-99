@@ -547,7 +547,7 @@ describe("edge count: 13-40 cards (both widths capped + disclosure)", () => {
     const disclosureBtn = screen.getByRole("button", { name: /Show all 20 ramp cards/i });
     fireEvent.click(disclosureBtn);
     await waitFor(() => {
-      expect(screen.getByText("Show fewer")).toBeInTheDocument();
+      expect(screen.getByText(recommendationsCopy.coverage.showFewer)).toBeInTheDocument();
     });
   });
 });

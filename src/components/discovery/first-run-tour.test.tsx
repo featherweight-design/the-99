@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TargetId } from "../../lib/discovery/targets";
 import type { TourCredits } from "../../lib/discovery/tour-steps";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 import { pwaInstallCopy } from "../../lib/copy/pwa-install";
 import { creatorNoteCopy } from "../../lib/copy/discovery";
 import { tourCopy } from "../../lib/copy/discovery";
@@ -114,7 +115,7 @@ function Home({
         <Lit id="tour:decks" label="Decks" />
         <Lit id="tour:account" label="Account" />
         {banner && <Lit id="tour:banner" label="About" />}
-        {credits && <Lit id="tour:welcome" label="Welcome credits" />}
+        {credits && <Lit id="tour:welcome" label="Fixture credits label" />}
         {install && (
           // `hidden`: the phone header at desktop width, mounted but not drawn, its ask still offered.
           <div hidden={installHidden}>
@@ -323,7 +324,7 @@ describe("FirstRunTour", () => {
     sessionStorage.clear();
     render(<Home precons={false} />);
     await arrive();
-    expect(card()).not.toHaveTextContent("Precons I own");
+    expect(card()).not.toHaveTextContent(collectionEditCopy.ways.precons);
   });
 
   it("draws the shipped theme picker on step 5", async () => {
@@ -464,7 +465,7 @@ describe("FirstRunTour taken again on a dashboard (R3·2)", () => {
     const { unmount } = render(<Dashboard locked={false} />);
     await arrive();
     expect(card()).toHaveAccessibleDescription(/Pointing at Collection\.$/);
-    expect(card()).not.toHaveTextContent("Precons I own");
+    expect(card()).not.toHaveTextContent(collectionEditCopy.ways.precons);
     expect(document.querySelector("[data-tour-ring]")).not.toBeNull();
     unmount();
     // Step 1's card is registered but the slot is not: nothing is lit, so the tour did not fall back to the card.

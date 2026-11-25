@@ -955,7 +955,7 @@ describe("DiscoveryView", () => {
     expect(container.textContent).toContain(
       planeCopy.excluded.heldHidden,
     );
-    expect(container.textContent).toContain("1 match, 0 shown");
+    expect(container.textContent).toContain(planeCopy.search.heldAside(1));
     expect(screen.getByRole("link", { name: planeCopy.excluded.hiddenCta })).toHaveAttribute(
       "href",
       "/commanders/ghalta-primal-hunger",
@@ -1449,7 +1449,7 @@ describe("DiscoveryView · hiding a row", () => {
     rerender(<DiscoveryView basis="classifier" encoded={shipped({ items: moved, candidateCount: 3 })} />);
     hide.mockResolvedValue(true);
     await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+      fireEvent.click(screen.getByRole("button", { name: hideCommanderCopy.retry }));
     });
     // The next payload leaves Alpha out: its Undo row stands where it stood at the retry, not where it first was.
     rerender(<DiscoveryView basis="classifier" encoded={shipped({ items: moved.slice(0, 2), candidateCount: 2 })} />);

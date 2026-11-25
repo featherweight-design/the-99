@@ -16,7 +16,7 @@ describe("Emphasised", () => {
 
   it("skips a value the sentence's chosen phrasing did not print", () => {
     const { container } = render(
-      <Emphasised text="1 match, 0 shown" values={["7", "0"]} color="red" />,
+      <Emphasised text="1 fixture, 0 shown" values={["7", "0"]} color="red" />,
     );
     expect([...container.querySelectorAll("strong")].map((el) => el.textContent)).toEqual(["0"]);
   });

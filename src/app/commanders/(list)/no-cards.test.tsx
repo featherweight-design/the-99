@@ -44,20 +44,20 @@ async function draw(page: typeof CommandersPage) {
 describe("the rankers at zero cards", () => {
   it("/commanders says there is nothing to rank yet and sends the player to add cards", async () => {
     await draw(CommandersPage);
-    expect(screen.getByRole("heading", { name: "Nothing to rank yet" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: commandersCopy.noCards.title })).toBeInTheDocument();
     expect(
       screen.getByText(commandersCopy.noCards.body),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Add your cards" })).toHaveAttribute("href", "/collection");
+    expect(screen.getByRole("link", { name: commandersCopy.noCards.button })).toHaveAttribute("href", "/collection");
     expect(screen.queryByText("No collection yet")).toBeNull();
   });
 
   it("/discover names what it ranks in its own body", async () => {
     await draw(DiscoverPage);
-    expect(screen.getByRole("heading", { name: "Nothing to rank yet" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: discoveryCopy.noCards.title })).toBeInTheDocument();
     expect(
       screen.getByText(discoveryCopy.noCards.body),
     ).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Add your cards" })).toHaveAttribute("href", "/collection");
+    expect(screen.getByRole("link", { name: discoveryCopy.noCards.button })).toHaveAttribute("href", "/collection");
   });
 });
