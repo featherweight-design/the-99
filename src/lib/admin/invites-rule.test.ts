@@ -37,7 +37,7 @@ describe("who invited an account", () => {
     expect(invitedBy("u_hugh", edges, name)).toEqual({ kind: "founder" });
     expect(invitedBy("u_peter", edges, name)).toEqual({ kind: "deleted", joinedAt: day(19) });
     expect(invitedBy("u_colin", edges, name)).toEqual({ kind: "account", id: "u_hugh", name: "Hugh", joinedAt: day(18) });
-    expect(["u_hugh", "u_peter", "u_colin"].map((id) => invitedByName(invitedBy(id, edges, name)))).toEqual(["founder", "deleted account", "Hugh"]);
+    expect(["u_hugh", "u_peter", "u_colin"].map((id) => invitedByName(invitedBy(id, edges, name)))).toEqual(["founder", adminCopy.invites.deleted, "Hugh"]);
   });
 
   it("names a flyer sign-up by its store label and code, not a founder, and lets an edge win", () => {
@@ -124,11 +124,11 @@ describe("an account's Invites section (M2)", () => {
     expect(s.invitedByFace).toBeNull();
     expect(s.invited).toEqual([
       { id: "u_peter", name: "Peter", face: "PE", joined: "Oct 19" },
-      { id: null, name: "deleted account", face: null, joined: "Oct 17" },
+      { id: null, name: adminCopy.invites.deleted, face: null, joined: "Oct 17" },
     ]);
     expect(s.waitingLines).toEqual([
-      { id: "r1", how: "by email", email: "m•••@e•••.com", sent: "Oct 20", returns: "Oct 27" },
-      { id: "r2", how: "in person", email: "j•••@e•••.com", sent: "Oct 21", returns: "Oct 28" },
+      { id: "r1", how: adminCopy.invites.byEmail, email: "m•••@e•••.com", sent: "Oct 20", returns: "Oct 27" },
+      { id: "r2", how: adminCopy.invites.inPerson, email: "j•••@e•••.com", sent: "Oct 21", returns: "Oct 28" },
     ]);
   });
 

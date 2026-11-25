@@ -82,7 +82,7 @@ describe("AppWideControl", () => {
     await act(async () => fireEvent.click(radio(adminCopy.flag.appOpts.notSet)));
     expect(screen.getByRole("alert").textContent).toContain(adminCopy.flag.saveFailed);
     expect(radio("Off")).toHaveAttribute("aria-checked", "true");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.tryAgain })));
     expect(clear).toHaveBeenCalledTimes(2);
     expect(screen.queryByRole("alert")).toBeNull();
   });
@@ -170,7 +170,7 @@ describe("AppWideControl", () => {
     await act(async () => fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: adminCopy.killConfirm.confirm })));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByRole("alert").textContent).toContain(adminCopy.flag.saveFailed);
-    expect(within(dialog).getByRole("button", { name: "Try again" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("button", { name: adminCopy.flag.tryAgain })).toBeInTheDocument();
   });
 
   it("drops a failed kill's line when its confirm is cancelled, so no Try again re-sends it under the segment", async () => {
@@ -181,7 +181,7 @@ describe("AppWideControl", () => {
     fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: adminCopy.flag.tryAgain })).toBeNull();
     expect(set).toHaveBeenCalledOnce();
   });
 
@@ -201,7 +201,7 @@ describe("AppWideControl", () => {
     render(<AppWideControl name="PUSH_ENABLED" label={"Fixture push flag"} value="on" stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("Off")));
     expect(screen.getByRole("alert").textContent).toBe(STALE);
-    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: adminCopy.flag.tryAgain })).toBeNull();
     expect(refresh).toHaveBeenCalledOnce();
   });
 
@@ -221,7 +221,7 @@ describe("AppWideControl", () => {
     set.mockResolvedValueOnce({ ok: false, error: "failed" }).mockResolvedValueOnce({ ok: false, error: "stale" });
     render(<AppWideControl name="PUSH_ENABLED" label={"Fixture push flag"} value="on" stopped={false} who={WHO} />);
     await act(async () => fireEvent.click(radio("Off")));
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Try again" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.flag.tryAgain })));
     expect(screen.getByRole("alert").textContent).toBe(STALE);
     expect(refresh).toHaveBeenCalledOnce();
   });
@@ -234,7 +234,7 @@ describe("AppWideControl", () => {
     fireEvent.click(radio("Killed"));
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).queryByRole("alert")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: adminCopy.flag.tryAgain })).toBeNull();
   });
 
   it("is disabled under the env stop, except Not set when a row is there to clear (F5)", () => {
@@ -298,7 +298,7 @@ describe("RowControls", () => {
     render(row(false));
     await act(async () => fireEvent.click(radio("Off")));
     expect(screen.getByRole("alert").textContent).toBe(adminCopy.flag.refusal);
-    expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: adminCopy.flag.tryAgain })).toBeNull();
   });
 });
 

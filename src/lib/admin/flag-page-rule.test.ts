@@ -7,6 +7,7 @@ import type { SwitchSnapshot } from "../flags/resolve";
 import { SWITCH_NAMES, switchDefaultsOn, type SwitchName } from "../flags/registry";
 import type { Account } from "./accounts";
 import { fmtWhen, switchPage, type OverrideDetail, type SwitchEvent } from "./flag-page-rule";
+import { adminCopy } from "../copy/admin";
 
 type Env = Partial<Record<SwitchName, string>>;
 const envValues = (env: Env) => Object.fromEntries(SWITCH_NAMES.map((n) => [n, switchDefaultsOn(n) ? (env[n] ?? null) : null])) as Record<SwitchName, string | null>;
@@ -101,7 +102,7 @@ describe("switchPage", () => {
     expect(rung(p, "account")).toMatchObject({ value: "1 account: On", decides: "decides for 1", deciding: true });
     expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: "decides for none", deciding: false });
     expect(rung(p, "app")).toMatchObject({ value: "Off", decides: "decides for 2", deciding: true });
-    expect(rung(p, "fallback")).toMatchObject({ value: "off", tone: "plain", decides: "only with no row", deciding: false });
+    expect(rung(p, "fallback")).toMatchObject({ value: "off", tone: "plain", decides: adminCopy.flag.fallbackIdle, deciding: false });
     expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: on for all 3 accounts", decides: "allows all 3" });
     expect(p.result).toEqual({ state: "mixed", text: "On for 1 of 3: Hugh" });
     expect(p.banner).toBeNull();
@@ -116,7 +117,7 @@ describe("switchPage", () => {
     expect(p.explanations).toEqual([
       { id: "u1", label: "Hugh", on: false, source: "fallback", kill: false },
       { id: "u2", label: "Mara", on: false, source: "group friends", kill: false },
-      { id: "u3", label: "Account ·u3", on: false, source: "account override", kill: false },
+      { id: "u3", label: "Account ·u3", on: false, source: adminCopy.flag.sources.account, kill: false },
     ]);
     expect(p.groups).toEqual([expect.objectContaining({ key: "g1", title: "friends", sub: "2 members", value: "off" })]);
     expect(p.accounts).toEqual([expect.objectContaining({ key: "u3", title: "Account ·u3", sub: "" })]);
@@ -132,18 +133,18 @@ describe("switchPage", () => {
     expect(p.killed).toBe(true);
     expect(p.banner).toEqual({
       kind: "kill",
-      title: "Killed: off for everyone.",
-      body: "Killed beats every account and group override and All features. Pick On, Off or Not set to lift it; the overrides below come back as they were.",
+      title: adminCopy.flag.kill.title,
+      body: adminCopy.flag.kill.body,
     });
     // The Killed rung is the app-wide row, so no App-wide rung follows it.
     expect(p.rungs.map((r) => r.key)).toEqual(["killed", "account", "all", "group", "fallback"]);
-    expect(rung(p, "killed")).toMatchObject({ value: "the app-wide row", tone: "danger", decides: "decides for all 3", deciding: true });
+    expect(rung(p, "killed")).toMatchObject({ value: adminCopy.flag.killedApp, tone: "danger", decides: "decides for all 3", deciding: true });
     expect(rung(p, "account")).toMatchObject({ value: "1 account: On", decides: "refused", deciding: false });
     expect(rung(p, "group")).toMatchObject({ value: "friends: On", decides: "refused", deciding: false });
-    expect(rung(p, "fallback")).toMatchObject({ value: "off", decides: "only with no row", deciding: false });
-    expect(p.groups[0]).toMatchObject({ refused: true, note: "early access", meta: "refused, killed" });
-    expect(p.accounts[0]).toMatchObject({ refused: true, meta: "refused, killed" });
-    expect(p.app).toMatchObject({ value: "Killed", current: "killed", set: true, refused: false, stopped: false, note: "Killed is the kill switch: off for everyone, overrides refused." });
+    expect(rung(p, "fallback")).toMatchObject({ value: "off", decides: adminCopy.flag.fallbackIdle, deciding: false });
+    expect(p.groups[0]).toMatchObject({ refused: true, note: "early access", meta: adminCopy.flag.refusedMeta });
+    expect(p.accounts[0]).toMatchObject({ refused: true, meta: adminCopy.flag.refusedMeta });
+    expect(p.app).toMatchObject({ value: "Killed", current: "killed", set: true, refused: false, stopped: false, note: adminCopy.flag.appKilledNote });
     expect(p.explanations.every((e) => e.kill && e.source === "killed")).toBe(true);
     expect(p.result.text).toBe("Off for all 3 accounts");
   });
@@ -179,8 +180,8 @@ describe("switchPage", () => {
     expect(p.rungs.map((r) => r.key)).toEqual(["killed", "app", "fallback"]);
     expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=off", tone: "danger", decides: "decides for all 3", deciding: true });
     expect(rung(p, "app")).toMatchObject({ decides: "refused", deciding: false });
-    expect(rung(p, "fallback")).toMatchObject({ value: "on", decides: "only with no row" });
-    expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: "refused, killed" });
+    expect(rung(p, "fallback")).toMatchObject({ value: "on", decides: adminCopy.flag.fallbackIdle });
+    expect(p.accounts[0]).toMatchObject({ refused: true, note: "Early look", meta: adminCopy.flag.refusedMeta });
     expect(p.app).toMatchObject({ refused: true, stopped: true, note: "Refused while the env var is off." });
     expect(p.explanations.every((e) => e.kill && e.source === "killed")).toBe(true);
     expect(p.result.text).toBe("Off for all 3 accounts");
@@ -193,7 +194,7 @@ describe("switchPage", () => {
     expect(p.rungs.map((r) => r.key)).toEqual(["killed", "app", "fallback"]);
     expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=off", deciding: true });
     expect(rung(p, "app")).toMatchObject({ value: "Killed", decides: "decides for none", deciding: false });
-    expect(p.app).toMatchObject({ value: "Killed", current: "killed", refused: false, stopped: true, note: "Killed is the kill switch: off for everyone, overrides refused." });
+    expect(p.app).toMatchObject({ value: "Killed", current: "killed", refused: false, stopped: true, note: adminCopy.flag.appKilledNote });
   });
 
   it("prints the env stop's own value: false stops it as off does", () => {
@@ -215,7 +216,7 @@ describe("switchPage", () => {
   it("draws the compound banner when the parent is off for everyone (F4)", () => {
     // Welcome credits under payments: the live compound pair (the Analysis tab's children were the example until it retired).
     const p = page("WELCOME_CREDITS_ENABLED", {}, [ov({ name: "WELCOME_CREDITS_ENABLED", scope: "app", value: "on" })]);
-    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Buying credits, which is off.", body: "Overrides here can’t turn the parent on.", link: "Open Buying credits ›", parent: "PAYMENTS_ENABLED" });
+    expect(p.banner).toMatchObject({ kind: "compound", title: "Off: needs Buying credits, which is off.", body: adminCopy.flag.compound.body, link: "Open Buying credits ›", parent: "PAYMENTS_ENABLED" });
     expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: off for all 3 accounts", decides: "decides for 3", deciding: true });
     expect(p.explanations[0].source).toBe("Buying credits is off");
   });
@@ -226,17 +227,17 @@ describe("switchPage", () => {
     expect(p.plumbing).toBe(true);
     expect(p.rungs.map((r) => r.key)).toEqual(["app", "fallback"]);
     expect(rung(p, "fallback")).toMatchObject({ value: "on", decides: "decides for 3", deciding: true });
-    expect(p.accounts[0].meta).toContain("ignored, plumbing is app-wide only");
+    expect(p.accounts[0].meta).toContain(adminCopy.flag.ignoredMeta);
     expect(p.app.note).toBe("");
     expect(p.result.text).toBe("On for all 3 accounts");
   });
 
   it("writes the app-wide meta and note, naming the compiled default", () => {
     expect(page("FEEDBACK_ENABLED", {}).app).toEqual({
-      value: "Not set",
+      value: adminCopy.flags.app.notSet,
       current: null,
       set: false,
-      meta: "not set: the fallback decides",
+      meta: adminCopy.flag.appNotSet,
       note: "Not set falls back to the flag’s compiled default (off). Killed turns it off for everyone.",
       refused: false,
       stopped: false,

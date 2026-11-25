@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Account } from "./accounts";
 import { buildInviteTree, filterTree, flattenTree, treeDepth, type TreeRow } from "./invite-tree-rule";
 import type { Edge, ReservationRow } from "./invites-rule";
+import { adminCopy } from "../copy/admin";
 
 // The Invites tab's tree (plan `2026-10-16-invites.md`, PR 6b; handoff Admin M4), pure: the board's own tree
 // (Hugh › [Colin › [Peter, a waiting invite], Max › [a waiting invite]], Chris), its rail cells, the deleted sides
@@ -58,7 +59,7 @@ describe("the invite tree", () => {
     expect(by.Colin).toMatchObject({ owner: false, joined: "Oct 18", left: 2, invited: 1 });
     expect(by.Peter).toMatchObject({ joined: "Oct 19", left: 0, invited: 0 });
     const waiting = flattenTree(build().roots).find((r) => r.kind === "waiting" && r.id === "r2");
-    expect(waiting).toMatchObject({ how: "in person", returns: "Oct 26" });
+    expect(waiting).toMatchObject({ how: adminCopy.invites.inPerson, returns: "Oct 26" });
   });
 
   it("counts the accounts drawn, the accounts that joined on an invite, and the invites waiting", () => {

@@ -115,10 +115,10 @@ describe("the chips and the search", () => {
   });
 
   it("matches the name or the variable, case-insensitively", () => {
-    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "SUGGESTED")).toBe(true);
-    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "suggested_changes_v2_en")).toBe(true);
-    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "cuts")).toBe(false);
-    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Suggested changes v2", "  ")).toBe(true);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Fixture v2 flag", "SUGGESTED")).toBe(true);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Fixture v2 flag", "suggested_changes_v2_en")).toBe(true);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Fixture v2 flag", "cuts")).toBe(false);
+    expect(matchesSearch(get("SUGGESTED_CHANGES_V2_ENABLED"), "Fixture v2 flag", "  ")).toBe(true);
   });
 
   it("puts features A to Z by name, then plumbing", () => {

@@ -13,7 +13,7 @@ describe("deleteState and deleteLine", () => {
   it("lets an empty group go, a revoked code included, and draws the hint", () => {
     expect(deleteState(0, [])).toEqual({ kind: "open" });
     expect(deleteState(0, [revoked("MOXB7K")])).toEqual({ kind: "open" });
-    expect(deleteLine({ kind: "open" })).toEqual({ text: "Only an empty group can go: no members, no live flyer codes.", refused: false, codesLink: false });
+    expect(deleteLine({ kind: "open" })).toEqual({ text: adminCopy.groups.delete.hint, refused: false, codesLink: false });
   });
 
   it("refuses members alone, with the count", () => {
@@ -48,35 +48,35 @@ describe("deleteConfirm", () => {
   const o = (label: string): GroupCard["overrides"][number] => ({ name: "FEEDBACK_ENABLED", label, value: "on" });
 
   it("draws the board's confirm: two overrides in words, named, and no codes", () => {
-    const c = deleteConfirm("1337-testers", [o("Overview v2"), o("Suggested changes v2")], []);
+    const c = deleteConfirm("1337-testers", [o("Overview v2"), o("Fixture v2 flag")], []);
     expect(c.title).toBe("Delete 1337-testers?");
     expect(c.lead).toBe(
       "It’s empty, so deleting it changes nothing for any account. Its two feature-flag settings are removed with it, and the name is free to use again.",
     );
     expect(c.facts).toEqual([
       ["Members", "None."],
-      ["Flyer codes", "None."],
-      ["Overrides", "Overview v2 on and Suggested changes v2 on go with it. They reach nobody now."],
-      ["History", "Kept in the admin log, under the group’s name."],
+      [adminCopy.groups.delete.facts.codes, "None."],
+      ["Overrides", "Overview v2 on and Fixture v2 flag on go with it. They reach nobody now."],
+      ["History", adminCopy.groups.delete.historyFact],
     ]);
   });
 
   it("names the codes the flyer trial ended, singular, plural, and beside revoked ones", () => {
     expect(deleteConfirm("beta", [], [ended("MOXB7K")]).facts[1]).toEqual([
-      "Flyer codes",
+      adminCopy.groups.delete.facts.codes,
       "MOXB7K, ended with the flyer trial. It loses its group, so if the trial comes back on, people who join with it land in no group.",
     ]);
     expect(deleteConfirm("beta", [], [ended("MOXB7K"), ended("K2P9QX")]).facts[1]).toEqual([
-      "Flyer codes",
+      adminCopy.groups.delete.facts.codes,
       "MOXB7K and K2P9QX, ended with the flyer trial. They lose their group, so if the trial comes back on, people who join with them land in no group.",
     ]);
     expect(deleteConfirm("beta", [], [revoked("AAAAAA"), ended("MOXB7K")]).facts[1]).toEqual([
-      "Flyer codes",
+      adminCopy.groups.delete.facts.codes,
       "AAAAAA, revoked. It stays on Invites with no group. MOXB7K, ended with the flyer trial. It loses its group, so if the trial comes back on, people who join with it land in no group.",
     ]);
     // A revoked code the trial also ended is revoked, once.
     expect(deleteConfirm("beta", [], [{ code: "AAAAAA", revoked: true, ended: true }]).facts[1]).toEqual([
-      "Flyer codes",
+      adminCopy.groups.delete.facts.codes,
       "AAAAAA, revoked. It stays on Invites with no group.",
     ]);
   });
@@ -84,7 +84,7 @@ describe("deleteConfirm", () => {
   it("handles none and one override, and lists revoked codes", () => {
     const none = deleteConfirm("beta", [], [revoked("MOXB7K"), revoked("K2P9QX")]);
     expect(none.lead).toBe("It’s empty, so deleting it changes nothing for any account. It has no feature-flag settings, and the name is free to use again.");
-    expect(none.facts[1]).toEqual(["Flyer codes", "MOXB7K and K2P9QX, revoked. They stay on Invites with no group."]);
+    expect(none.facts[1]).toEqual([adminCopy.groups.delete.facts.codes, "MOXB7K and K2P9QX, revoked. They stay on Invites with no group."]);
     expect(none.facts[2]).toEqual(["Overrides", "None."]);
     const one = deleteConfirm("beta", [o("Overview v2")], [revoked("MOXB7K")]);
     expect(one.lead).toContain("Its one feature-flag setting is removed with it");

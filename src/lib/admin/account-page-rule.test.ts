@@ -19,6 +19,8 @@ import {
   switchGroups,
   utcClock,
 } from "./account-page-rule";
+import { flagCopy } from "../copy/admin";
+import { adminCopy } from "../copy/admin";
 
 const HUGH = { id: "user_2hugh", name: "Hugh H.", email: "h•••@e•••.com", named: true };
 const MARA = { id: "user_9mara", name: "Mara Q.", email: "m•••@e•••.com", named: true };
@@ -111,10 +113,10 @@ describe("accountTiles (A4, A6, A7)", () => {
   it("draws credits left, spend, presses and the hub, with no reset while credits remain", () => {
     const tiles = accountTiles({ ...base, credits: { used: 2, limit: 5, reopensAt: null } });
     expect(tiles.map((t) => [t.label, t.figure, t.sub])).toEqual([
-      ["Credits now", "3 of 5 left", null],
+      [adminCopy.accounts.cols.credits, "3 of 5 left", null],
       ["Spent in October", "$1.420", null],
       ["Runs", "34", null],
-      ["Tuning hub", "Drawn", "2 of its tools on"],
+      [adminCopy.accounts.tiles.hub, "Drawn", "2 of its tools on"],
     ]);
   });
 
@@ -133,7 +135,7 @@ describe("accountTiles (A4, A6, A7)", () => {
 
   it("draws $0 and 0 for a month with no presses (A6), and a hub that is not drawn", () => {
     const tiles = accountTiles({ ...base, spentMicro: 0, presses: 0, hub: { drawn: false, tools: 1 }, credits: { used: 0, limit: 5, reopensAt: null } });
-    expect(tiles.slice(1).map((t) => [t.figure, t.sub])).toEqual([["$0", null], ["0", null], ["Not drawn", "1 of its tools on"]]);
+    expect(tiles.slice(1).map((t) => [t.figure, t.sub])).toEqual([["$0", null], ["0", null], [adminCopy.accounts.hub.notDrawn, "1 of its tools on"]]);
   });
 });
 
@@ -157,14 +159,14 @@ describe("switchGroups (A4, A5)", () => {
     expect(g.total).toBe(FLAGS.length);
     expect(g.override.length + g.rule.length + g.envOn.length + g.envOff.length).toBe(FLAGS.length);
     expect(g.override.map((l) => [l.name, l.on, l.source])).toEqual([
-      ["PAYMENTS_ENABLED", true, "app-wide override"],
-      ["FEEDBACK_ENABLED", false, "app-wide override"],
+      ["PAYMENTS_ENABLED", true, adminCopy.flag.sources.app],
+      ["FEEDBACK_ENABLED", false, adminCopy.flag.sources.app],
       ["PUSH_ENABLED", true, "group friends"],
-      ["WELCOME_CREDITS_ENABLED", true, "account override"],
+      ["WELCOME_CREDITS_ENABLED", true, adminCopy.flag.sources.account],
     ]);
     // From the fallback: the list cache on, the flyer trial off, its variable unread.
-    expect(g.envOn).toContain("List cache");
-    expect(g.envOff).toContain("Flyer trial");
+    expect(g.envOn).toContain(flagCopy.LIST_CACHE_ENABLED.label);
+    expect(g.envOff).toContain(flagCopy.FLYER_TRIAL_ENABLED.label);
     expect(g.rule).toEqual([]);
   });
 
@@ -196,7 +198,7 @@ describe("featureSpend (A4)", () => {
       { feature: "mystery", presses: 1, micro: 270_000 },
     ])).toEqual([
       { feature: "synopsis", name: "Overview", presses: 12, spent: "$0.640" },
-      { feature: "intake", name: "Help me choose", presses: 9, spent: "$0.270" },
+      { feature: "intake", name: adminCopy.costs.featureNames.intake, presses: 9, spent: "$0.270" },
       { feature: "mystery", name: "mystery", presses: 1, spent: "$0.270" },
     ]);
   });
