@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
 import { indexRows } from "../../lib/copy-editor/match";
+import { landingCopy } from "../../lib/copy/landing";
 import type { EditorRow } from "../../lib/copy-editor/rows";
 import { entryAt, OVERLAY_ATTR, scanPage, type Placed } from "./scan";
 
@@ -18,10 +19,11 @@ describe("scanPage", () => {
     expect(found).toEqual(["a#title", "a#count"]);
   });
 
-  it("gives a bold lead and its body their own rows when the whole line is only a template fit", () => {
-    const steps = indexRows([row("s#b", "Add the rest as you go."), row("s#rest", "Scan cards, or search for them by name."), { ...row("t#add", "Add {h1}"), placeholders: ["h1"] }]);
-    document.body.innerHTML = `<li><span><b>Add the rest as you go.</b> Scan cards, or search for them by name.</span></li>`;
-    expect(scanPage(steps).map((e) => e.matches[0].row.key)).toEqual(["s#b", "s#rest"]);
+  it("gives a bold lead and its body their own rows, beside the whole line's template row (the smaller outline wins a press)", () => {
+    const { b, rest } = landingCopy.bring.firstTimer.steps[1];
+    const steps = indexRows([row("s#b", b), row("s#rest", rest), { ...row("t#add", "Add {h1}"), placeholders: ["h1"] }]);
+    document.body.innerHTML = `<li><span><b>${b}</b> ${rest}</span></li>`;
+    expect(scanPage(steps).map((e) => e.matches[0].row.key)).toEqual(["s#b", "s#rest", "t#add"]);
   });
 
   it("keeps a template row for the whole line beside the rows of its parts", () => {
