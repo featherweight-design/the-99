@@ -16,3 +16,7 @@ Art: `art/ce-<p|d>-<state>.webp` (phone 390 at 2x, desktop 1300 at 1.5x).
 | 10 | Submitting | `submitting` | Rows locked, spinner. |
 | 11 | Submitted | `submitted` | PR number, branch, Open on GitHub; bar shows PR open. |
 | 12 | Failed | `failed` | Banner, stale row flagged with Redo, Try again. |
+
+## Addendum
+
+- `ADDENDUM-insert-fill.md` (2026-11-25, approved): a fill-in can be removed (chip ✕, Backspace) and inserted (Insert at cursor row). States 5a to 5c. Overrides row 4 and the chip line "Moves, never deletes".
