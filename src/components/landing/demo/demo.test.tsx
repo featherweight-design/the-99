@@ -159,7 +159,7 @@ describe("Try it's frame", () => {
     next();
     next();
     // Step 5 carries one label: the Overview costs a credit and the bracket comes with it, so nothing on it reads Free.
-    expect(screen.getAllByTestId("demo-tag").map((t) => t.textContent)).toEqual(["1 credit"]);
+    expect(screen.getAllByTestId("demo-tag").map((t) => t.textContent)).toEqual(landingCopy.demo.steps.find((s) => s.id === "analysis")!.tags.map((t) => t.label));
     expect(screen.queryByText("Free")).toBeNull();
   });
 
@@ -209,7 +209,7 @@ describe("Try it's frame", () => {
     await start();
     next();
     expect(screen.queryByText("Want to try it on your own cards?")).toBeNull();
-    expect(screen.queryByText("Tell me at launch")).toBeNull();
+    expect(screen.queryByTestId("launch-panel")).toBeNull();
     expect(screen.getByRole("button", { name: c.skip })).toBeInTheDocument();
   });
 

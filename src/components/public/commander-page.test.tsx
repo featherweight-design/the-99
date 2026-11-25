@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 
 import type { PublicCommander } from "../../lib/public/commander";
 import { MOST_PLAYED_SHOWN, PublicCommanderPage, SIMILAR_SHOWN, THEMES_SHOWN } from "./commander-page";
+import { publicPagesCopy } from "../../lib/copy/public-pages";
 
 const link = (i: number) => ({ oracleId: `o-${i}`, name: `Card ${i}`, slug: `card-${i}-0000000000${String(i).padStart(2, "0")}`, imageUri: null });
 
@@ -76,7 +77,7 @@ describe("the public commander page", () => {
 
   it("unmounts the prose section, heading too, when there is no sentence", () => {
     draw({ prose: null });
-    expect(screen.queryByText("Why this commander")).toBeNull();
+    expect(screen.queryByText(publicPagesCopy.commander.why)).toBeNull();
     expect(screen.getByTestId("public-commander-sections").firstElementChild?.getAttribute("data-testid")).toBe("public-commander-edhrec");
   });
 
@@ -107,7 +108,7 @@ describe("the public commander page", () => {
   it("draws only the degraded note, with no Retry", () => {
     draw({ state: "degraded", prose: null, rank: null, deckCount: null, tags: [], bracketCounts: {}, signature: [], similar: [] });
     expect(screen.getByTestId("public-commander-sections").children).toHaveLength(1);
-    expect(screen.getByRole("note").textContent).toContain("Deck figures aren’t available right now.");
+    expect(screen.getByRole("note").textContent).toContain(publicPagesCopy.commander.degradedTitle);
     expect(screen.queryByRole("button", { name: /retry/i })).toBeNull();
   });
 

@@ -5,6 +5,8 @@ import type { PublicCard, PublicPrinting } from "../../lib/public/card";
 import { publicPagesCopy } from "../../lib/copy/public-pages";
 import { PublicCardPage } from "./card-page";
 import { PHONE_PRINTINGS } from "./printings";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { cardMarkCopy } from "../../lib/copy/card-mark";
 
 const NO_BRACKET_FLAGS = { massLandDenial: false, massLandDenialSources: [], extraTurn: false, extraTurnSources: [], tutor: false };
 
@@ -44,7 +46,7 @@ describe("the public card page", () => {
     expect(facts.getByText("Legal")).toBeTruthy();
     const chip = screen.getByRole("link", { name: "SOC 8, the printing shown, on Scryfall" });
     expect(chip.getAttribute("href")).toBe("https://scryfall.com/card/soc/8");
-    expect(screen.getByText("Each opens that printing on Scryfall. ◇ is the one pictured.")).toBeTruthy();
+    expect(screen.getByText(publicPagesCopy.card.printingsNote)).toBeTruthy();
     expect(screen.getByRole("link", { name: /Rulings, prices and every printing on Scryfall/ }).getAttribute("href")).toBe("https://scryfall.com/card/soc/8");
     expect(screen.queryByTestId("public-bracket-facts")).toBeNull();
     expect(screen.queryByTestId("public-rules-face-rule")).toBeNull();
@@ -93,8 +95,8 @@ describe("the public card page", () => {
   it("at the read's cap, says first 40 and ends in More on Scryfall", () => {
     draw({ ...rootha, printings: many(40) }, true);
     const section = within(screen.getByTestId("public-printings"));
-    expect(section.getByText("first 40")).toBeTruthy();
-    expect(section.getByRole("button", { name: "Show all 40 here" })).toBeTruthy();
+    expect(section.getByText(publicPagesCopy.card.printingsCapped)).toBeTruthy();
+    expect(section.getByRole("button", { name: publicPagesCopy.card.showAllCapped })).toBeTruthy();
     const more = screen.getByTestId("public-printings-more");
     expect(more.getAttribute("href")).toBe(`https://scryfall.com/search?unique=prints&q=${encodeURIComponent('!"Rootha, Mastering the Moment"')}`);
     expect(more.className).toContain("max-md:hidden");
@@ -102,10 +104,10 @@ describe("the public card page", () => {
 
   it("with no image, fills the box with the identity gradient, captions nothing, and names the main printing", () => {
     draw({ ...rootha, name: "Sol Ring", faces: [{ name: "Sol Ring", typeLine: "Artifact" }], colorIdentity: [], imageUri: null, commanderSlug: null });
-    expect(screen.getByRole("img", { name: "No image for this card" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: publicPagesCopy.card.noImage })).toBeTruthy();
     expect(screen.queryByTestId("public-card-printing")).toBeNull();
     expect(within(screen.getByTestId("public-facts")).getByText("Colorless")).toBeTruthy();
-    expect(screen.getByText("Each opens that printing on Scryfall. ◇ is the catalog’s main printing.")).toBeTruthy();
+    expect(screen.getByText(publicPagesCopy.card.printingsNoteNoImage)).toBeTruthy();
   });
 
   it("marks a printing as the one pictured only when it is the card's own, never a representative that is not", () => {
@@ -120,15 +122,15 @@ describe("the public card page", () => {
     draw({ ...rootha, gameChanger: true, commanderLegal: false });
     const facts = screen.getByTestId("public-bracket-facts");
     expect(within(facts).getByText(publicPagesCopy.card.bracketFacts)).toBeTruthy();
-    expect(within(facts).getByText("game changer")).toBeTruthy();
-    expect(within(screen.getByTestId("public-facts")).getByText("Not legal")).toBeTruthy();
+    expect(within(facts).getByText(cardMarkCopy.gameChanger)).toBeTruthy();
+    expect(within(screen.getByTestId("public-facts")).getByText(publicPagesCopy.card.notLegal)).toBeTruthy();
   });
 
   it("carries the signed-out block, its Sign in to /sign-in, and no price", () => {
     const { container } = draw(rootha);
-    const block = within(screen.getByRole("region", { name: "About The 99" }));
-    expect(block.getByText("This is The 99")).toBeTruthy();
-    expect(block.getByRole("link", { name: "Sign in" }).getAttribute("href")).toBe("/sign-in");
+    const block = within(screen.getByRole("region", { name: publicPagesCopy.signedOut.regionLabel }));
+    expect(block.getByText(publicPagesCopy.signedOut.title)).toBeTruthy();
+    expect(block.getByRole("link", { name: publicPagesCopy.signedOut.signIn }).getAttribute("href")).toBe("/sign-in");
     expect(container.textContent).not.toMatch(/\$\d|Sign up/);
     expect(screen.getAllByRole("link", { name: /Scryfall/ }).some((a) => a.getAttribute("href") === "https://scryfall.com/search")).toBe(true);
   });
@@ -178,7 +180,7 @@ describe("card details outside the signed-in shell", () => {
     await screen.findByRole("dialog", { name: /Sol Ring/ });
     // The card details are up; inside the shell this card would draw its receipt with Add to collection.
     expect(screen.queryByTestId("edit-copies-link")).toBeNull();
-    expect(screen.queryByText("Add to collection")).toBeNull();
-    expect(screen.queryByText("Edit copies")).toBeNull();
+    expect(screen.queryByText(collectionEditCopy.copies.addToCollection)).toBeNull();
+    expect(screen.queryByText(collectionEditCopy.copies.edit)).toBeNull();
   });
 });

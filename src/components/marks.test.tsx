@@ -1,6 +1,7 @@
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { Crowned99 } from "./marks";
+import { shellCopy } from "../lib/copy/shell";
 
 const SQRT2 = Math.SQRT2;
 
@@ -76,7 +77,7 @@ describe("Crowned99", () => {
     it("announces the mark once, as an image named The 99", () => {
       const { svg } = draw("rail-62");
       expect(svg).toHaveAttribute("role", "img");
-      expect(svg).toHaveAttribute("aria-label", "The 99");
+      expect(svg).toHaveAttribute("aria-label", shellCopy.brandName);
     });
   });
 

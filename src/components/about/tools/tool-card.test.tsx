@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
 import { TOOL_DOOR, TOOL_PRESS, ToolCard } from "./tool-card";
+import { showcaseCopy } from "../../../lib/copy/discovery";
+import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 
 // The tool card, one way in (About Addendum R4 board 5): one press per card, the picture inert, the Where line under the
 // description; a deck card's button names its deck, a none card's door is a secondary button, no door no button.
@@ -16,7 +18,7 @@ vi.mock("next/link", () => ({
 vi.mock("../../shell/pending-reporter", () => ({ PendingReporter: () => null }));
 
 const SHOW_ME = "/about/decks?lit=decks%2Fanalysis%2Fcuts#tuning";
-const LINK = { href: SHOW_ME, label: "Show it above ↑" };
+const LINK = { href: SHOW_ME, label: ABOUT_PAGE_STRINGS.toolWhere };
 const SHOT = { src: "/x.webp", width: 780, height: 520, halo: { x: 0.1, y: 0.1, w: 0.2, h: 0.2 } };
 
 const model = (state: ToolCardModel["state"], extra: Partial<ToolCardModel> = {}): ToolCardModel =>
@@ -48,15 +50,15 @@ describe("ToolCard: one press per card", () => {
   });
 
   it("a page card's one button carries its press label", () => {
-    const c = draw({ kind: "page", href: "/precons?tool=precons", label: "Browse precons" });
+    const c = draw({ kind: "page", href: "/precons?tool=precons", label: showcaseCopy.tools.precons.press });
     expect(presses(c).map((a) => [a.getAttribute("href"), a.textContent])).toEqual([["/precons?tool=precons", "Browse precons→"]]);
   });
 
   it("a none card's door is its one button, in the secondary style; no door, no button", () => {
-    const door = draw({ kind: "none", line: "Needs a friend with a spare.", door: { href: "/friends", label: "Open Friends →" } });
+    const door = draw({ kind: "none", line: "Needs a friend with a spare.", door: { href: "/friends", label: showcaseCopy.tools["friend-spares"].door } });
     const [btn, ...others] = presses(door);
     expect(others).toHaveLength(0);
-    expect([btn.getAttribute("href"), btn.textContent]).toEqual(["/friends", "Open Friends →"]);
+    expect([btn.getAttribute("href"), btn.textContent]).toEqual(["/friends", showcaseCopy.tools["friend-spares"].door]);
     expect(btn.className).toBe(TOOL_DOOR);
     expect(btn.className).not.toContain("bg-[color:var(--accent)]");
     expect(door.textContent).toContain("Needs a friend with a spare.");
@@ -68,8 +70,8 @@ describe("ToolCard: one press per card", () => {
   it("only the button and the Where line are links: the picture and the body are no hit area", () => {
     for (const state of [
       { kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 },
-      { kind: "page", href: "/precons", label: "Browse precons" },
-      { kind: "none", line: "x", door: { href: "/friends", label: "Open Friends →" } },
+      { kind: "page", href: "/precons", label: showcaseCopy.tools.precons.press },
+      { kind: "none", line: "x", door: { href: "/friends", label: showcaseCopy.tools["friend-spares"].door } },
     ] as ToolCardModel["state"][]) {
       const c = draw(state);
       const links = [...c.querySelectorAll("a")];
@@ -99,18 +101,18 @@ describe("ToolCard: one press per card", () => {
   });
 
   it("the Where line lights the tool's label (Show me's target) and sits before the button", () => {
-    const c = draw({ kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 }, { note: "Reads your last commit", credit: "1 credit" });
+    const c = draw({ kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 }, { note: "Reads your last commit", credit: "Fixture credit" });
     const where = c.querySelector<HTMLAnchorElement>("[data-tool-card-where]")!;
     expect(where.getAttribute("href")).toBe(SHOW_ME);
-    expect(where.textContent).toBe("Show it above ↑");
+    expect(where.textContent).toBe(ABOUT_PAGE_STRINGS.toolWhere);
     // Shipped order: name and credit chip, line, the mono lines, then Where, then the button.
     const body = where.parentElement!;
     const order = [...body.children].map((e) => e.textContent);
     expect(order).toEqual([
-      "Fixture tool1 credit",
+      "Fixture toolFixture credit",
       "Counts where a deck runs long.",
       "Reads your last commit",
-      "Show it above ↑",
+      ABOUT_PAGE_STRINGS.toolWhere,
       "Try it on Kinnan→",
     ]);
     // Review round 1: a coarse pointer gets a real 44px row, never a hit drawn past the line over the inert body.

@@ -115,7 +115,7 @@ describe("FirstRunChecklist", () => {
     // own column — see the note there. Unconditional, it gave this surface a second title and a
     // `‹ Collection` link back to a route the reader has not been to.
     render(<FirstRunChecklist />);
-    expect(screen.queryByRole("heading", { name: "Replace collection" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: replaceCopy.pageTitle(1) })).toBeNull();
     expect(screen.queryByText(replaceCopy.backCrumb)).toBeNull();
   });
 
