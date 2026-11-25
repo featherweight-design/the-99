@@ -100,10 +100,10 @@ describe("snooze and end", () => {
 });
 
 describe("parseCheckIn", () => {
-  const ok = { rating: 4, uses: ["Shopping", "Decks"], pod: "Maybe", note: "  Love it  " };
+  const ok = { rating: 4, uses: ["Shopping", "Decks"], pod: "Maybe", note: "  Fixture note  " };
 
   it("keeps a good answer, uses in the boards' order and the note trimmed", () => {
-    expect(parseCheckIn(ok)).toEqual({ rating: 4, uses: ["Decks", "Shopping"], pod: "Maybe", note: "Love it" });
+    expect(parseCheckIn(ok)).toEqual({ rating: 4, uses: ["Decks", "Shopping"], pod: "Maybe", note: "Fixture note" });
   });
 
   it("takes the optional answers as nothing", () => {

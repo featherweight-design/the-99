@@ -220,7 +220,7 @@ describe("pendingSummary", () => {
     expect(p.body).toBe("Saving renames testers to beta. Saving changes the description. Saving sets daily credits to 8. Saving adds Jun to beta. Nothing changes for Jun.");
     expect(pendingSummary({ saved: { ...saved, dailyAllowance: 8 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
       title: adminCopy.groups.pending.fields,
-      body: "Saving sets daily credits back to the default.",
+      body: adminCopy.groups.pending.credits(null),
     });
   });
 
@@ -231,7 +231,7 @@ describe("pendingSummary", () => {
       count: 1,
     });
     expect(pendingSummary({ saved: { ...saved, paidDailyLimit: 3 }, draft, rows, selected: new Set(["u_mara"]) })).toMatchObject({
-      body: "Saving sets daily paid runs back to the default.",
+      body: adminCopy.groups.pending.paidLimit(null),
     });
   });
 

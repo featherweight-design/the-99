@@ -138,7 +138,7 @@ describe("staplesBase (the row db:build:staples derives from and inherits)", () 
     const killed = { ok: null, finishedAt: null, report: phaseReport(INDEX_SWEEP_PHASE, "started"), catalogFingerprint: "2:timedout" };
     expect(staplesBase([killed, older])).toEqual({ refusal: "an index build step (index) has not finished (killed, or still running); close it, then rebuild the index" });
     expect(staplesBase([failedStaples, killed, older])).toMatchObject({ refusal: expect.stringMatching(/\(index\) has not finished/) });
-    expect(staplesBase([row(handCloseReport(killed.report, "timed out"), false), older])).toEqual({ refusal: "an index build step failed (index) with no ok step after it" });
+    expect(staplesBase([row(handCloseReport(killed.report, "Fixture hand-close reason"), false), older])).toEqual({ refusal: "an index build step failed (index) with no ok step after it" });
     expect(staplesBase([row(null, false), older])).toEqual({ refusal: "an index build step failed (unmarked) with no ok step after it" });
   });
 

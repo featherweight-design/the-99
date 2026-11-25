@@ -89,7 +89,7 @@ describe("the free match", () => {
 
   it("keys a label carrying symbols by its words", () => {
     expect(phraseKey("+1/+1 Counters")).toBe("1 1 counters");
-    expect(match("+1/+1 counters").chips).toEqual([{ kind: "theme", slug: "plus-1-plus-1-counters", label: "+1/+1 Counters" }]);
+    expect(match(themes[1].label.toLowerCase()).chips).toEqual([{ kind: "theme", slug: themes[1].slug, label: themes[1].label }]);
   });
 });
 

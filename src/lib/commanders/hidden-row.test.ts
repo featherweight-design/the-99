@@ -33,11 +33,11 @@ describe("hiddenLane", () => {
 
   it("picks the refused line by the same lane", () => {
     expect(hiddenListCopy.undoRow.refused(hiddenLane({ ...base, owned: true, ranked: true }))).toBe(
-      "Couldn’t hide that again. Hide it from For you.",
+      hiddenListCopy.undoRow.refused("foryou"),
     );
-    expect(hiddenListCopy.undoRow.refused(hiddenLane(base))).toBe("Couldn’t hide that again. Hide it from Discover.");
+    expect(hiddenListCopy.undoRow.refused(hiddenLane(base))).toBe(hiddenListCopy.undoRow.refused("discover"));
     expect(hiddenListCopy.undoRow.refused(hiddenLane({ ...base, owned: true, ranked: false }))).toBe(
-      "Couldn’t hide that again.",
+      hiddenListCopy.undoRow.refused(null),
     );
   });
 

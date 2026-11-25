@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { collectionChips } from "./chips";
+import { collectionChassisCopy } from "../copy/collection";
 import type { BrowseFilters } from "./browse";
 
 const EMPTY: BrowseFilters = { search: "", colors: [], types: [], setCodes: [] };
@@ -94,7 +95,7 @@ describe("collectionChips", () => {
     // "1 color" with an aria-hidden swatch leaves a screen reader unable to
     // say which hue — unlike a set, which renders as its own name.
     const chip = collectionChips({ ...EMPTY, colors: ["G"] }, options)[0];
-    expect(chip.label).toBe("1 color");
+    expect(chip.label).toBe(collectionChassisCopy.chip.colours(1));
     expect(chip.spoken).toBe("Green");
   });
 

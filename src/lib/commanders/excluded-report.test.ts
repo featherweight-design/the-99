@@ -130,7 +130,7 @@ describe("resolveExcludedReport", () => {
         planeCopy.excluded.heldHidden,
       );
       expect(out?.cta).toBe(planeCopy.excluded.hiddenCta);
-      expect(out?.aside).toBe("1 match, 0 shown");
+      expect(out?.aside).toBe(planeCopy.search.heldAside(1));
       expect(out?.slug).toBe("fixture-card");
     });
 
