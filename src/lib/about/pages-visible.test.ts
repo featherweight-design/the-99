@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ABOUT_RULES, ABOUT_SCREEN_OFF, ABOUT_SECTIONS, diagramColumn, type AboutSection } from "../copy/about-pages";
 import type { AboutLineSwitch } from "../copy/about";
-import { creditsPageCopy } from "../copy/credits-page";
 import { LEGACY_ENTRY_SWITCH } from "./legacy-entry-switch";
 import { FLAGS, SWITCH_NAMES } from "../flags/registry";
 import { TOOLS } from "../discovery/tools";
@@ -19,6 +18,8 @@ const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
 const OFF = env({});
 // The proxy rule's retired tokens sentence, read from the rule that draws it.
 const PROXY_TOKEN_SENTENCE = Object.keys(ABOUT_RULES.proxy.sentences ?? {})[0].trim();
+// The credits rule's payments-gated pack sentence, read from the rule that draws it.
+const PACK_SENTENCE = Object.entries(ABOUT_RULES.credits.sentences ?? {}).find(([, on]) => on === "PAYMENTS_ENABLED")![0].trim();
 // The credits card's Proposed cuts row, read from the card that draws it.
 const CUTS_ROW_NAME = (ABOUT_RULES.credits.diagram!.columns[0].parts[3] as { name: string }).name;
 const units = (v: readonly VisibleSection[]) => v.flatMap((s) => [...s.labels, ...s.rules]);
@@ -84,7 +85,7 @@ describe("each sentence follows its own switch", () => {
     ["credits with Proposed cuts, its switches retired", { ANALYSIS_TAB_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" }, "rule/credits", "So does each Proposed cuts run.", undefined],
     ["credits with the bracket and the Overview, the tab's switch retired", { ANALYSIS_TAB_ENABLED: "off" }, "rule/credits", "Reading a bracket is free. Anything written just for you", undefined],
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", undefined],
-    ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", creditsPageCopy.del.packsSub],
+    ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", PACK_SENTENCE],
     ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", PROXY_TOKEN_SENTENCE, undefined],
     ["a fill with Help me choose, its switch retired", {}, "rule/autofill", "any cards will do", undefined],
     ["a fill keeps Help me choose with its retired name off", { HELP_ME_CHOOSE_ENABLED: "off" }, "rule/autofill", "any cards will do", undefined],
