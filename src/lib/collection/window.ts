@@ -18,6 +18,7 @@ import { parseJoin } from "../discovery/params";
 import { parseTypesParam } from "./type-filter";
 import { parseSetCodesParam } from "./set-filter";
 import { initialAvailability } from "./availability-filter";
+import { isFreeAlone, parseQuick } from "./quick-filters";
 import type { CollectionDrawKey } from "./list-wire";
 import type { AvailabilitySummary } from "../decks/availability";
 
@@ -34,6 +35,9 @@ export function parseBrowseParams(get: (key: string) => string | null, availabil
   const raw = get("sort");
   const sort: SortKey = raw !== null && (SORT_KEYS as readonly string[]).includes(raw) ? (raw as SortKey) : "name";
   const colors = parseColors(get("c"));
+  const availability = initialAvailability(availabilityOk, get("avail"));
+  // One quick chip at a time: In no deck is `avail=free`, so a link carrying both keeps the availability.
+  const quick = isFreeAlone({ availability }) ? undefined : parseQuick(get("quick"));
   return {
     filters: {
       search: get("q") ?? "",
@@ -45,7 +49,8 @@ export function parseBrowseParams(get: (key: string) => string | null, availabil
       match: colors.length > 0 ? parseJoin(get("m")) : "contains",
       types: parseTypesParam(get("t")),
       setCodes: parseSetCodesParam(get("s")),
-      availability: initialAvailability(availabilityOk, get("avail")),
+      availability,
+      ...(quick ? { quick } : {}),
     },
     sort,
     direction: parseSortDirection(get("dir"), sort),

@@ -244,6 +244,7 @@ export const PAGE_ONLY_MODULES = new Map([
  */
 export const PURE_MODULES = new Map([
   ["src/lib/collection/browse.ts", "card-browse types and pure sort, art and finish helpers over rows it is handed; reads no table"],
+  ["src/lib/collection/quick-filters.ts", "the quick chips' keys, bitmask and predicate over a card it is handed; reads no table"],
   ["src/lib/collection/copy-price.ts", "a one-line re-export of `src/lib/cards/copy-price.ts`, which is pure"],
   ["src/lib/decks/availability.ts", "a one-line re-export of `src/lib/cards/availability.ts`, which is pure"],
   ["src/lib/decks/price.ts", "a one-line re-export of `src/lib/cards/price-fact.ts`, which is pure"],

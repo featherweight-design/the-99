@@ -17,6 +17,7 @@ const WUBRG_ORDER: Record<string, number> = { W: 0, U: 1, B: 2, R: 3, G: 4 };
 import type { PrintingPrices } from "../cards/price-lookup";
 import type { Store } from "../stores/rows";
 import { cardPriceCode, priceSortCents } from "./copy-price";
+import { matchesQuick, quickMask, type QuickKey } from "./quick-filters";
 import type { ModalComboPartner } from "../combos/near-miss";
 import type { CardCombos } from "../combos/near-combos";
 import type { CardFact } from "../copy/card-mark";
@@ -389,6 +390,11 @@ export type BrowseListCard = Omit<
    * the browser over the whole list. Absent is silence, never zero.
    */
   price?: number;
+  /**
+   * The quick chips this card answers, one bit each (`quickMask`). A kept column, because `facts` is withheld outside
+   * the first window and a filter or a count cannot wait for it. Absent when 0.
+   */
+  q?: number;
 };
 
 /** Drops what only the modal reads, and rolls the printings up into set counts. */
@@ -414,6 +420,9 @@ export function toListCards(cards: BrowseCard[]): BrowseListCard[] {
     // keeps an undefined key (`"$undefined"`) where JSON drops it: at a few thousand plain cards that
     // is tens of kilobytes, so the list drops the key where there is no film.
     if (list.foil === undefined) delete list.foil;
+    // The quick chips' bits (`quick-filters.ts`): read here, where the printings and facts are both in hand.
+    const q = quickMask(card.facts, printings);
+    if (q !== 0) list.q = q;
     // Set only when present: an absent key costs nothing on the wire, and `undefined` does.
     if (comboPartner) list.comboPartner = { name: comboPartner.name };
     return list;
@@ -447,6 +456,12 @@ export type BrowseFilters = {
    * Absent and empty both mean "no availability filter".
    */
   availability?: AvailabilityState[];
+  /**
+   * The one quick chip that is on (collection quick filters): a card matches when its `q` carries the chip's bit.
+   * ANDs with every other filter. Optional for `availability`'s reason, and In no deck is not a value here: it is
+   * `availability = ["free"]`, so the chip and the menu's Free are one state.
+   */
+  quick?: QuickKey;
 };
 
 export type SortKey = "name" | "quantity" | "set" | "rarity" | "color" | "price" | "added";
@@ -1007,6 +1022,7 @@ export function filterCards(list: BrowseListCard[], f: BrowseFilters): BrowseLis
       setCodes.size > 0 &&
       !c.setCounts.some(([code]) => setCodes.has(code.toLowerCase()))
     ) return false;
+    if (f.quick && !matchesQuick(c, f.quick)) return false;
     if (f.availability && f.availability.length > 0) {
       // No entry reads as free — an unclaimed card and a failed read are the
       // same silence everywhere else in this feature.
