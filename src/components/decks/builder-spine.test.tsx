@@ -10,6 +10,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { BuilderSpine } from "./builder-spine";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 const deck = {
   id: "d1",
@@ -55,8 +56,8 @@ function mount({ status = "Building", ...props }: SpineProps) {
 
 describe("BuilderSpine header", () => {
   it("names the deck's status with the shared pill", () => {
-    mount({ status: "To buy" });
-    expect(screen.getAllByText("To buy").length).toBeGreaterThan(0);
+    mount({ status: refreshCopy.status.toBuy });
+    expect(screen.getAllByText(refreshCopy.status.toBuy).length).toBeGreaterThan(0);
   });
 
   // Rule 2 of the refresh: one filled primary per screen. The assertion reads

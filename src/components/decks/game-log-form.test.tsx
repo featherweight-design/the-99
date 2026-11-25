@@ -4,6 +4,7 @@ import { GameLogForm } from "./game-log-form";
 import { gameLogCopy, axisCopy } from "../../lib/copy/game-log";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
 
 const logGame = vi.fn<(deckId: string, input: unknown) => Promise<{ ok: boolean; message?: string }>>(
   async () => ({ ok: true }),
@@ -308,7 +309,7 @@ describe("GameLogForm", () => {
       expect(counter(0)).toBeInTheDocument();
       const foot = counter(0)!.parentElement!;
       expect(foot).toHaveTextContent(deckDescriptionCopy.notes.tagHelp.insert);
-      expect(foot).toHaveTextContent("tag a card");
+      expect(foot).toHaveTextContent(TAG_A_CARD_WORDS);
       expect(foot.closest("[data-framed-box]")).toContainElement(field());
     });
 

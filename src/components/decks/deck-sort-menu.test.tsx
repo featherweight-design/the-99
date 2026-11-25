@@ -65,8 +65,8 @@ describe("DeckSortMenu", () => {
 
     it("is a menuitem past the options, with the count, and runs its action", () => {
       const onSelect = vi.fn();
-      open("name", { label: "Arrange decks…", count: 5, onSelect });
-      const row = screen.getByRole("menuitem", { name: /Arrange decks…/ });
+      open("name", { label: "Fixture arrange label", count: 5, onSelect });
+      const row = screen.getByRole("menuitem", { name: /Fixture arrange label/ });
       expect(row).toHaveTextContent("5");
       expect(row).not.toHaveAttribute("aria-checked");
       fireEvent.click(row);
@@ -75,7 +75,7 @@ describe("DeckSortMenu", () => {
     });
 
     it("joins the roving focus as the last stop", () => {
-      const { options } = open("custom", { label: "Arrange decks…", count: 5, onSelect: vi.fn() });
+      const { options } = open("custom", { label: "Fixture arrange label", count: 5, onSelect: vi.fn() });
       fireEvent.keyDown(options()[3], { key: "ArrowDown" });
       expect(screen.getByRole("menuitem")).toHaveFocus();
       fireEvent.keyDown(screen.getByRole("menuitem"), { key: "ArrowDown" });

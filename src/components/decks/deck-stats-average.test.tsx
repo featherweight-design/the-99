@@ -5,6 +5,7 @@ import { jobTally } from "../../lib/decks/job-tally";
 import { manaCurve, typeCurve } from "../../lib/decks/stats";
 import { averageComparison, type AverageDeck } from "../../lib/decks/stats-average";
 import { DeckStatsView } from "./deck-stats-view";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 
 const TARGETS = { land: 36, basic: 20, nonbasic: 16, creature: 26, instant: 8, sorcery: 9, artifact: 10, enchantment: 6, planeswalker: 1, battle: 0 };
 const avg = (over: Partial<AverageDeck> = {}): AverageDeck => ({
@@ -106,7 +107,7 @@ describe("DeckStatsView average card", () => {
 
   it("stays a shell without the basis", () => {
     render(<DeckStatsView data={{ curve: manaCurve(cards), types: typeCurve(cards), average: null }} />);
-    expect(screen.getByRole("figure", { name: "Against the average deck" })).toBeInTheDocument();
+    expect(screen.getByRole("figure", { name: deckStatsCopy.cards.average })).toBeInTheDocument();
     expect(document.querySelector("[data-average-basis]")).toBeNull();
   });
 });

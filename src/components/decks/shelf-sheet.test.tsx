@@ -5,7 +5,7 @@ import { ALL_DECKS, UNFILED } from "../../lib/decks/folder-view";
 import type { ShelfSegment } from "./shelf-line";
 
 const segments: ShelfSegment[] = [
-  { shelf: ALL_DECKS, label: "All decks", count: 4 },
+  { shelf: ALL_DECKS, label: "Fixture all shelf", count: 4 },
   { shelf: "f1", label: "Commander night", count: 2 },
   { shelf: "f2", label: "Cube night", count: 1 },
   { shelf: UNFILED, label: "Unfiled", count: 1 },
@@ -16,7 +16,7 @@ describe("pinnedOrder", () => {
     // Errata E8: pinned-first plus an unfiltered list prints the shelf twice.
     expect(pinnedOrder(segments, "f2").map((s) => s.label)).toEqual([
       "Cube night",
-      "All decks",
+      "Fixture all shelf",
       "Commander night",
       "Unfiled",
     ]);
@@ -24,7 +24,7 @@ describe("pinnedOrder", () => {
 
   it("leaves the order alone when the current shelf is already first", () => {
     expect(pinnedOrder(segments, ALL_DECKS).map((s) => s.label)).toEqual([
-      "All decks",
+      "Fixture all shelf",
       "Commander night",
       "Cube night",
       "Unfiled",

@@ -106,7 +106,7 @@ describe("the Notices body", () => {
   });
 
   it("carries the overview check's note on the foot while a legality entry stands, without See which", () => {
-    const note = "Reads the bracket only. The overview waits until every card is legal in this deck.";
+    const note = "Fixture check note.";
     const { container } = draw({ kind: "reanalyze", busy: false, failed: null, note, onPress: () => {} });
     const foot = container.querySelector<HTMLElement>("[data-notices-foot='reanalyze']")!;
     const press = within(foot).getByRole("button", { name: "Re-analyze" });

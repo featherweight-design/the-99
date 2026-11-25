@@ -123,12 +123,12 @@ describe("BuilderTabs — three tabs", () => {
   it("renders no count element when count is omitted", () => {
     render(
       <BuilderTabs
-        tabs={[DECK_TAB, { id: "games", label: "Games", accessibleName: "Games, none logged" }]}
+        tabs={[DECK_TAB, { id: "games", label: "Games", accessibleName: "Fixture tab name" }]}
         view="deck"
         onViewChange={vi.fn()}
       />,
     );
-    expect(tabs()[1]).toHaveAccessibleName("Games, none logged");
+    expect(tabs()[1]).toHaveAccessibleName("Fixture tab name");
     expect(tabs()[1].textContent).toBe("Games");
   });
 });
