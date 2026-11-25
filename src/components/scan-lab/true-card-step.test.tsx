@@ -12,6 +12,7 @@ vi.mock("../../app/lab/scan/actions", () => ({
 }));
 
 import { TrueCardStep } from "./true-card-step";
+import { scanLabCopy } from "../../lib/copy/scan-lab";
 
 const ROW = "11111111-1111-4111-8111-111111111111";
 const WHIR = { oracleId: "22222222-2222-4222-8222-222222222222", name: "Whir of Invention", flavorName: null, imageUri: null };
@@ -19,7 +20,7 @@ const FELIX = { oracleId: "33333333-3333-4333-8333-333333333333", name: "Barrowg
 
 async function type(text: string) {
   vi.useFakeTimers();
-  fireEvent.change(screen.getByRole("searchbox", { name: "Card name" }), { target: { value: text } });
+  fireEvent.change(screen.getByRole("searchbox", { name: scanLabCopy.whatCardField }), { target: { value: text } });
   await act(async () => { await vi.advanceTimersByTimeAsync(200); });
   vi.useRealTimers();
 }
@@ -68,7 +69,7 @@ describe("TrueCardStep", () => {
     await type("whir");
     await act(async () => { fireEvent.click(screen.getByRole("button", { name: /Whir of Invention/ })); });
     expect(onDone).not.toHaveBeenCalled();
-    expect(screen.getByText("That didn’t save. Pick it again or skip.")).toBeTruthy();
+    expect(screen.getByText(scanLabCopy.labelFailed)).toBeTruthy();
   });
 
   it("reports nothing when the save lands after a newer tap closed the step", async () => {

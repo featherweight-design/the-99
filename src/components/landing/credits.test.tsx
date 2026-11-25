@@ -104,9 +104,9 @@ describe("Credits", () => {
       render(<Credits claims={UP} />);
       const rows = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
       const last = rows.filter((t) => t.includes("credit")).pop() ?? "";
-      expect(last).toContain("Upgrade this precon");
+      expect(last).toContain(landingCopy.upgradeTool.name);
       expect(last).toContain(landingCopy.credits.many(2));
-      fireEvent.click(screen.getByRole("button", { name: landingCopy.tip.open("Upgrade this precon") }));
+      fireEvent.click(screen.getByRole("button", { name: landingCopy.tip.open(landingCopy.upgradeTool.name) }));
       expect(screen.getByText(landingCopy.upgradeTool.tip)).toBeInTheDocument();
     });
     it("draws the cost strip, never the three-times picture, with the twice sentence", () => {
@@ -138,7 +138,7 @@ describe("Credits", () => {
       render(<Credits claims={ON} />);
       const paid = screen.getAllByRole("button", { name: /^What is / }).map((b) => b.getAttribute("aria-label"));
       expect(paid).toEqual(landingCopy.tools.map((t) => landingCopy.tip.open(t.name)));
-      expect(screen.queryByText("Upgrade this precon")).toBeNull();
+      expect(screen.queryByText(landingCopy.upgradeTool.name)).toBeNull();
       expect(screen.queryByText(c.costStrip)).toBeNull();
       expect(screen.getByText(c.threeTimes(15))).toBeInTheDocument();
       expect(screen.getByText(c.paid.chip)).toBeInTheDocument();

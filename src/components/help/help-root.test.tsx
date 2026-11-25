@@ -43,7 +43,7 @@ describe("the ?", () => {
     draw();
     press();
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByRole("button", { name: "About this screen" }).hasAttribute("aria-expanded")).toBe(false);
+    expect(screen.getByRole("button", { name: helpPanelCopy.button }).hasAttribute("aria-expanded")).toBe(false);
   });
 
   it("goes to a sectioned screen's section, carrying where it was pressed", () => {

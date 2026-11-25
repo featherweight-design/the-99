@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../../lib/collection/browse";
 import { landingCopy } from "../../../lib/copy/landing";
 import { manapoolCardUrl } from "../../../lib/manapool/links";
-import { cardCarouselCopy } from "../../../lib/copy/card-carousel";
+import { cardCarouselCopy, cardModalCopy } from "../../../lib/copy/card-carousel";
 import { cardZoomCopy, twoFacedCopy } from "../../../lib/copy/card-surfaces";
 import { DemoCardModal, type DemoCardModalProps } from "./demo-card-modal";
 
@@ -89,7 +89,7 @@ describe("the demo's card modal", () => {
     expect(onClose).not.toHaveBeenCalled();
     fireEvent.keyDown(document, { key: "Escape" });
     expect(onClose).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getAllByRole("button", { name: "Close card details" })[0]);
+    fireEvent.click(screen.getAllByRole("button", { name: cardModalCopy.closeAria })[0]);
     expect(onClose).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("dialog").parentElement!);
     expect(onClose).toHaveBeenCalledTimes(3);

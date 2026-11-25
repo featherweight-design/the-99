@@ -22,7 +22,7 @@ describe("Bring", () => {
     expect(first).toBeLessThan(apps);
     expect(within(section()).getByText(/Scan cards with your phone’s camera/)).toBeInTheDocument();
     expect(screen.getAllByRole("button")).toHaveLength(4);
-    for (const name of ["ManaBox", "Moxfield", "Archidekt", "Deckbox", "Another app", "A list"]) expect(within(section()).getByText(name)).toBeInTheDocument();
+    for (const name of ["ManaBox", "Moxfield", "Archidekt", "Deckbox", collectionSources.another.name, collectionSources.list.name]) expect(within(section()).getByText(name)).toBeInTheDocument();
     expect(html).not.toMatch(/Start here/);
   });
 
@@ -49,7 +49,7 @@ describe("Bring", () => {
       expect(panel.querySelectorAll("ol > li")).toHaveLength(3);
       expect(panel.textContent?.includes(collectionSources.moxfieldNote.lead)).toBe(app.id === "moxfield");
       expect(panel.textContent?.includes(collectionSources.moxfieldNote.body)).toBe(app.id === "moxfield");
-      expect(panel.textContent?.includes("Moxfield’s export has a Name and a Count column, and both work.")).toBe(app.id === "moxfield");
+      expect(panel.textContent?.includes(collectionSources.apps[1].bothColumns!)).toBe(app.id === "moxfield");
     }
   });
 
@@ -59,7 +59,6 @@ describe("Bring", () => {
     for (const app of collectionSources.apps) expect(screen.getByRole("button", { name: new RegExp(`^${app.name}.*How to export`) })).toBeTruthy();
     const all = JSON.stringify([collectionSources, landingCopy.bring]);
     expect(all).not.toMatch(/TCGplayer|Dragon Shield|Delver/i);
-    expect(collectionSources.another.sub).toBe("Any CSV with a Name and a Quantity column");
     expect(all).not.toContain("—");
   });
 

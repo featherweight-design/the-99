@@ -7,6 +7,7 @@ import { describe, expect, it } from "vitest";
 import { parseThemeBlocks } from "../../lib/theme/parse-css";
 import { DEFAULT_THEME } from "../../lib/theme/themes";
 import { INK, OgCardImage, PIP } from "./og-card-image";
+import { publicPagesCopy } from "../../lib/copy/public-pages";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const tokens = parseThemeBlocks(readFileSync(join(HERE, "../../app/globals.css"), "utf8")).get(DEFAULT_THEME)!;
@@ -28,7 +29,7 @@ describe("the card's link-preview image (C2)", () => {
     const imgs = [...container.querySelectorAll("img")].map((i) => i.getAttribute("src"));
     expect(imgs).toEqual([rootha.artCropUri, rootha.imageUri]);
     const text = container.textContent!;
-    for (const part of ["Card", "Rootha, Mastering the Moment", "2", "U", "R", "Legendary Creature — Orc Sorcerer", "The Ninety-Nine"]) expect(text).toContain(part);
+    for (const part of ["Card", "Rootha, Mastering the Moment", "2", "U", "R", "Legendary Creature — Orc Sorcerer", publicPagesCopy.shell.wordmark]) expect(text).toContain(part);
   });
 
   it("with no image, draws the identity gradient, the name and the type, and no cost", () => {

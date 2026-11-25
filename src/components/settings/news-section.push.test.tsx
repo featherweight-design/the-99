@@ -448,19 +448,19 @@ describe("the guidance sheet by browser", () => {
   it("Firefox and an unsourced browser each get their own step 1 and foot", async () => {
     asUa(`${IOS} FxiOS/130.0 Safari/605.1.15`);
     let sheet = await openSheet();
-    expect(sheet.textContent).toContain("Tap ⋯ in the bottom bar, then");
+    expect(sheet.textContent).toContain(pushSettingsCopy.sheet.browsers.firefox.step1.lead);
     expect(sheet.textContent).toContain(P.sheet.browsers.firefox.foot);
     cleanup();
     asUa(`${IOS} EdgiOS/129.0 Safari/604.1`);
     sheet = await openSheet();
-    expect(sheet.textContent).toContain("Open your browser’s Share menu.");
+    expect(sheet.textContent).toContain(pushSettingsCopy.sheet.browsers.other.step1.lead);
     expect(sheet.textContent).not.toContain("Chrome’s address bar");
   });
 
   it("an in-app web view is told to open The 99 in Safari", async () => {
     asUa(`${IOS} Instagram 350.0.0.0`);
     const sheet = await openSheet();
-    expect(sheet.textContent).toContain("Open The 99 in Safari.");
+    expect(sheet.textContent).toContain(pushSettingsCopy.sheet.webview.steps[0].lead);
     expect(sheet.textContent).not.toContain(P.sheet.steps[1].strong);
   });
 });

@@ -6,6 +6,7 @@ import { ABOUT_RULES, ABOUT_SECTIONS } from "../../../lib/copy/about-pages";
 import { AboutText } from "./about-text";
 import { PROOF_ENVS, aboutTextSnapshot } from "./about-text.fixture";
 import before from "./about-text.snapshot.json";
+import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
 
 /** The renderer About's labels and sub lines use. */
 const render = (text: string) => renderToStaticMarkup(createElement(AboutText, { text }));
@@ -26,7 +27,7 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
 
   it("changes the two cart units exactly as intended", () => {
     const now = aboutTextSnapshot(render);
-    const total = ` is the selected decks’ missing cards at single-copy prices. ${B("Buy these at Mana Pool")} sends them there.`;
+    const total = ` is the selected decks’ missing cards at single-copy prices. ${B(exportLinkOutCopy.shopping)} sends them there.`;
     expect(now["on|unit:shopping/all-decks/total"]).toBe(`The total|${total}`);
     expect(now["cart|unit:shopping/all-decks/total"]).toBe(`The total|${total}`);
     // Spare requests are always on (SOCIAL_FRIENDS_ENABLED retired), so both readers name By friend.
@@ -97,7 +98,7 @@ describe("the cart's views label follows By friend (F2)", () => {
   // Spare requests are always on (SOCIAL_FRIENDS_ENABLED retired): every reader gets all three views.
   it.each(Object.keys(PROOF_ENVS))("bolds all three views and says what By friend lists (%s)", (reader) => {
     const l = views(PROOF_ENVS[reader]);
-    expect(l.lead).toBe("By card, By deck");
+    expect(l.lead).toBe(ABOUT_SECTIONS[15].labels[2].lead);
     expect(l.text).toBe("**, By friend** read the same cart three ways. By friend lists each friend’s spares.");
   });
 });

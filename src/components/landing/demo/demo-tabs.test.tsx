@@ -12,7 +12,7 @@ describe("DemoTabs cost chips", () => {
         <p>panel</p>
       </DemoTabs>,
     );
-    expect(within(screen.getByTestId("demo-tab-cuts")).getByText("1 credit")).toBeInTheDocument();
+    expect(within(screen.getByTestId("demo-tab-cuts")).getByText(landingCopy.demo.tabs.cost.cuts.label)).toBeInTheDocument();
     expect(within(screen.getByTestId("demo-tab-topOff")).getByText("Free")).toBeInTheDocument();
   });
 
@@ -20,6 +20,6 @@ describe("DemoTabs cost chips", () => {
     const steps = landingCopy.demo.steps;
     expect(steps.find((s) => s.id === "get-to-99")!.tags).toEqual([]);
     expect(steps.find((s) => s.id === "buy")!.tags).toEqual([]);
-    expect(steps.find((s) => s.id === "analysis")!.tags).toEqual([{ kind: "credit", label: "1 credit" }]);
+    expect(steps.find((s) => s.id === "analysis")!.tags).toEqual([{ kind: "credit", label: landingCopy.demo.tabs.cost.cuts.label }]);
   });
 });

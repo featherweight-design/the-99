@@ -4,6 +4,7 @@ import { ABOUT_PAGE_STRINGS, ABOUT_RULES, ABOUT_RULE_IDS } from "../../../lib/co
 import { ruleKey, visibleSections } from "../../../lib/about/pages-visible";
 import { SWITCH_NAMES } from "../../../lib/flags/registry";
 import { currentCard, GoodToKnow, RuleCard, type RuleCardModel } from "./rule-card";
+import { tokensCopy } from "../../../lib/copy/tokens";
 
 // Good to know (About visual PR 4; call 2, call 8 and R3): one card per visible rule, each with its own diagram and the
 // rule's visible words; no heading at all for a section with no rules; a phone dot per card.
@@ -64,7 +65,7 @@ describe("RuleCard", () => {
     const { container } = render(<RuleCard rule={{ key: rule.key, text: rule.text, diagram: rule.diagram! }} />);
     const gone = [...container.querySelectorAll('[data-diagram-part="row"]')].find((r) => r.textContent!.startsWith("Thrasios"))!;
     expect(gone.querySelector(".line-through")!.textContent).toBe("Thrasios");
-    expect(gone.textContent).toContain("not in the file");
+    expect(gone.textContent).toContain((ABOUT_RULES.replace.diagram.columns[0].parts[5] as { tag: { text: string } }).tag.text);
     const one = visibleSections(ALL_ON).flatMap((s) => s.rules).find((r) => r.key === ruleKey("one-copy"))!;
     const rows = [...render(<RuleCard rule={{ key: one.key, text: one.text, diagram: one.diagram! }} />).container
       .querySelectorAll('[data-diagram-part="row"]')];
@@ -129,7 +130,7 @@ describe("GoodToKnow", () => {
     const draw = (e: NodeJS.ProcessEnv) => render(<GoodToKnow sectionId="deck-shopping" rules={rulesOf(e, "deck-shopping")} />);
     for (const e of [ALL_ON, without("DECK_TOKENS_ENABLED")]) {
       const text = draw(e).container.querySelector('[data-rule="rule/proxy"]')!.textContent!;
-      expect(text).toContain("I have one");
+      expect(text).toContain(tokensCopy.row.have);
       expect(text).toContain("Treasure token");
       expect(text).toContain("A proxy comes off the shopping list and uses no copy.");
     }
