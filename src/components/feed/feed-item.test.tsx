@@ -137,7 +137,7 @@ describe("FeedItemRow", () => {
     expect(screen.getByText("Colin can spare Sai, Master Thopterist")).toHaveClass("ph-no-capture");
     expect(screen.getByText(spareCopy.request.mine.acceptedDetail)).toBeTruthy();
     // Outside What's new (no answer sheet to open) the press still goes to /friends, as it shipped.
-    expect(screen.getByRole("link", { name: "Your request ›" }).getAttribute("href")).toBe("/friends");
+    expect(screen.getByRole("link", { name: `${feedCopy.home.answerKicker} ›` }).getAttribute("href")).toBe("/friends");
   });
 
   it("a Yes to a standalone ask says nothing of Shopping's buy press", () => {
