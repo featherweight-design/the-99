@@ -740,3 +740,31 @@ board('D-Phone.dc.html', 'R2 Headline rows + seats, phone', pair(
     labelled('DECK DETAILS › GAMES', phone_deck(lambda g: d_row(g, True, phone=True))),
     labelled('A GAME SELECTED (sheet)', '<div style="position:relative;width:390px;height:844px;overflow:hidden">' + phone_deck(lambda g: d_row(g, True, phone=True)) + sheet2 + '</div>')), 1330)
 print('r2 ok')
+
+# =====================  R3 (Hugh 2026-11-25): back to A's rows, R1/R2 fixes folded in  =====================
+CSS3 = '''
+.st3{grid-template-columns:repeat(5,minmax(0,1fr))}
+.st3 .seat{height:74px}
+.st3 .seat.none{border-style:dashed;background:transparent}
+.st3 .seat.none:after{display:none}
+.st3 .seat.none .t span{color:var(--fg-faint);text-shadow:none}
+.st3 .seat.ini .big{top:auto;bottom:10px;right:12px;transform:none}
+.P .st3{grid-template-columns:repeat(2,minmax(0,1fr))}
+.P .st3 .seat{height:70px}
+'''
+CSS = CSS + CSS3
+def e_row(g, deck_tab=False):
+    pill = '<span class="pill w">Won</span>' if g['r'] == 'W' else '<span class="pill">Lost</span>'
+    end = '<span class="xbtn">×</span>' if deck_tab else chev(16)
+    seats = d_seat(g=g) + ''.join(d_seat(s) for s in g['seats'])
+    if not g['seats']:
+        seats += '<div class="seat none"><span class="t"><span>Nobody logged across the table</span></span></div>'
+    return (f'<article class="row a-row"><div class="a-top">{pill}<span class="meta">{pods(g["pod"])} · {g["date"]}</span><span class="end">{end}</span></div>'
+            f'<div class="st2 st3">{seats}</div>{markgroups(g)}{note(g)}</article>')
+board('E-Desktop.dc.html', 'R3 Seats, desktop', pair(
+    labelled('DECKS › GAMES', decks_desktop(lambda g: e_row(g))),
+    labelled('DECK DETAILS › GAMES · HD - Sai', deck_desktop(lambda g: e_row(g, True)))), 2680)
+board('E-Phone.dc.html', 'R3 Seats, phone', pair(
+    labelled('DECKS › GAMES', phone_decks(lambda g: e_row(g))),
+    labelled('DECK DETAILS › GAMES', phone_deck(lambda g: e_row(g, True)))), 860)
+print('r3 ok')

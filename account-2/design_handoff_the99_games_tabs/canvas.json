@@ -79,6 +79,20 @@
    "w": 1330,
    "h": 1743,
    "title": "R2 Headline rows + seats \u00b7 phone"
+  },
+  "E-Desktop.dc.html": {
+   "x": 0,
+   "y": -5237,
+   "w": 2680,
+   "h": 1975,
+   "title": "R3 Seats \u00b7 desktop"
+  },
+  "E-Phone.dc.html": {
+   "x": 2760,
+   "y": -5237,
+   "w": 860,
+   "h": 2774,
+   "title": "R3 Seats \u00b7 phone"
   }
  },
  "order": [
@@ -91,7 +105,9 @@
   "C-Desktop.dc.html",
   "C-Phone.dc.html",
   "D-Desktop.dc.html",
-  "D-Phone.dc.html"
+  "D-Phone.dc.html",
+  "E-Desktop.dc.html",
+  "E-Phone.dc.html"
  ],
  "notes": {
   "ta": {
@@ -121,6 +137,13 @@
    "text": "R2 \u00b7 Headline rows, seats in the details",
    "kind": "title1",
    "maxW": 5470
+  },
+  "te": {
+   "x": 0,
+   "y": -5497,
+   "text": "R3 \u00b7 Seats, with the fixes",
+   "kind": "title1",
+   "maxW": 3620
   }
  },
  "designSystems": []

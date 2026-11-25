@@ -32,3 +32,8 @@ Hugh's R1 read: B is out; C's light rows + details are strong; A's seats are the
 - Month band record: win share bar + counted W and L squares (zero side dimmed).
 - Details (drawer desktop 460, sheet phone): A's seat tiles at 84px, art barely dimmed, winner ringed with a "🏆 Won" tag; Helped / Hurt groups and the note with no Marks/Note headings.
 - Matchups: a commander only gets L when they won; a game somebody else won is a dashed "–" square (no placings are tracked). Squares sit in one fixed column (desktop) / under the name (phone). Trophy count column dropped (L now means they won). Key is three drawn squares, not a sentence.
+
+## R3 (2026-11-25): back to A's Seats rows (boards E-Desktop, E-Phone)
+Hugh: R2's headline rows still didn't land; A's rows are the favourite, and a drill-down isn't needed when a game's details are this sparse.
+- Row: Lost/Won pill + pod · date, then the seat grid (5 across desktop, 2 phone), seat tiles 74px with art barely dimmed (R1 was too faded), "You" tile with deck + version stamp, winner ringed with a "🏆 Won" tag; Helped / Hurt groups; note. Cross-deck row › opens the deck's Games tab at that game (shipped); deck tab keeps the ✕.
+- Kept from R2: month band record (win-share bar + counted W/L squares), Matchups fixes (L only for the winner, dashed – when someone else won, fixed squares column, no trophy count, three-square key).
