@@ -14,6 +14,7 @@ import type { CaptureResult, PostHog, PostHogConfig, Properties } from "posthog-
 
 import { redactLinkTokens, scrubUrl } from "../sentry/scrub";
 import type { Evidence } from "./sign-out-evidence";
+import { ENGAGEMENT_SEND_CEILING, type EngagementEvents } from "./engagement-events";
 import type { ToolEvents } from "./tool-events";
 
 import { isProductionHostname, posthogApiHost } from "./hosts";
@@ -167,6 +168,7 @@ export function identifyReader(userId: string): void {
  * and count each load as a new visitor.
  */
 export function resetReader(): void {
+  engagementSent.clear(); // the ceiling is per reader: the next one signing in without a reload starts fresh
   withClient((posthog) => {
     if (posthog.get_property("$user_state") !== "identified") return;
     posthog.reset();
@@ -196,6 +198,21 @@ export function captureScanFallback(e: { kind: string; from: string; to: string;
  */
 export function captureToolEvent<E extends keyof ToolEvents>(name: E, props: ToolEvents[E]): void {
   withClient((posthog) => posthog.capture(name, { ...props }));
+}
+
+const engagementSent = new Map<string, number>();
+
+/**
+ * A core action event (`engagement-events.ts`): closed-set props only, and at most `ENGAGEMENT_SEND_CEILING` sends per
+ * event name per reader session, so volume is bounded whatever the traffic. Call it after the action answered ok.
+ */
+export function captureEngagement<E extends keyof EngagementEvents>(name: E, props: EngagementEvents[E]): void {
+  withClient((posthog) => {
+    const sent = engagementSent.get(name) ?? 0;
+    if (sent >= ENGAGEMENT_SEND_CEILING[name]) return;
+    engagementSent.set(name, sent + 1);
+    posthog.capture(name, { ...props });
+  });
 }
 
 /**
