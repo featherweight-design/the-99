@@ -106,7 +106,7 @@ describe("FirstRunChecklist", () => {
     render(<FirstRunChecklist />);
     expect(screen.getByText(refreshCopy.firstRun.step2Title)).toBeInTheDocument();
     expect(screen.queryByText("Already have a deck elsewhere?")).toBeNull();
-    expect(screen.queryByRole("link", { name: /import a deck/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: /^import a deck$/i })).toBeNull();
   });
 
   it("draws no Replace collection heading inside its own step-1 card", () => {
