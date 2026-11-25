@@ -61,7 +61,7 @@ describe("WelcomeStrip, by state", () => {
   it("used up, teaser off: the free credit line and no link", () => {
     render(<WelcomeStrip facts={facts({ lot: "usedUp", left: 0, teaser: false })} sheet={SHEET} place="dashboard" />);
     const s = strip()!;
-    expect(s.textContent).toContain("Your free credit comes back each day.");
+    expect(s.textContent).toContain(welcomeCreditsCopy.strip.freeBack(1));
     expect(within(s).queryByRole("link")).toBeNull();
   });
 

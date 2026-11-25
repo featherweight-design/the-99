@@ -143,7 +143,7 @@ describe("Account", () => {
     expect(await screen.findByText(a.devices.head(2))).toBeTruthy();
     const rows = document.querySelectorAll("[data-device-row]");
     expect([...rows].map((r) => r.getAttribute("data-device-row"))).toEqual(["this", "other"]);
-    expect(rows[0].textContent).toContain("Safari on iPhone");
+    expect(rows[0].textContent).toContain(a.devices.name("Safari", "iPhone"));
     expect(rows[0].textContent).toContain(a.devices.thisDevice);
     expect(rows[0].querySelector("button")).toBeNull();
     expect(rows[1].textContent).toContain("Last active 2 days ago · Oakland, US");

@@ -150,11 +150,11 @@ describe("SuggestionTile — lift line", () => {
   });
 
   // The singular is a real case on this side of zero too, and the positive
-  // formatter already spells it. Asserted as a literal so the test cannot pass
-  // by agreeing with a formatter that is itself wrong.
+  // formatter already spells it. The formatter is the copy under test: the tile
+  // must draw exactly what it returns for one point.
   it("prints a one-point negative figure in the singular", () => {
     mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.01 }, { showNoSynergy: true });
-    expect(screen.getByText("−1 pt")).toBeInTheDocument();
+    expect(screen.getByText(synergyCopy.figure.synergyNegative("1"))).toBeInTheDocument();
   });
 
   // A figure that rounds to zero reaches the same branch as a negative one,

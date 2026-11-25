@@ -509,7 +509,7 @@ describe("the results", () => {
     setup({ ask: ask(10, { restrictions: { capCents: 200, sets: [], ownedOnly: false } }), lines: [...adds(6), ...cuts(9)], report });
     const short = document.querySelector("[data-sc-short]")!.textContent!;
     expect(short).toContain(sc.short.capCredit(1));
-    expect(short).not.toContain("2 credits");
+    expect(short).not.toContain(sc.short.capCredit(2));
   });
 
   it("draws a short run's count and what bound it, and every count follows the shorter list", () => {

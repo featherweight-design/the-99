@@ -442,7 +442,7 @@ describe("selfExcluded, on a deck's own decklist", () => {
       <AvailabilityMarker availability={av} density="row" selfExcluded nameless />,
     );
     // Off the deck page the figure is drawn at one too (Hugh, 2026-09-28).
-    expect(container.textContent).toBe("short 1");
+    expect(container.textContent).toBe(availabilityCopy.marker.over(1));
     expect(markerAria(av, { selfExcluded: true, nameless: true })).toBe(
       "you own 1 too few for the decks that include it",
     );

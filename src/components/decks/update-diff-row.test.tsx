@@ -204,7 +204,7 @@ describe("the review page's mounting", () => {
     const row = draw(<DiffRowOut review card={card({ owned: true, availability })} />);
     const marker = Array.from(row.querySelectorAll("span")).find((s) => /^short\b/.test(s.textContent ?? ""));
     expect(marker?.textContent).toMatch(/^short(,|$)/);
-    expect(row.textContent).not.toContain("short 1");
+    expect(row.textContent).not.toContain(availabilityCopy.marker.over(1));
   });
 
   it("quotes no price on a card leaving the deck", () => {

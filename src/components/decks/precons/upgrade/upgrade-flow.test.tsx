@@ -365,7 +365,7 @@ describe("UpgradeFlow on the deck page (A2c): Apply in place of Start", () => {
 
   it("says the intro's last line in the deck's words, with the version the commit makes", () => {
     open(panel(), { apply: applyOn({ nextVersion: 2 }) });
-    expect(screen.getByText("Nothing changes until you apply the swaps.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeDeckCopy.introVersions(2).head)).toBeInTheDocument();
     expect(screen.getByText(/you commit them as v2\./)).toBeInTheDocument();
     expect(screen.queryByText(/start a deck from it/)).toBeNull();
   });

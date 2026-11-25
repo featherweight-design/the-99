@@ -228,8 +228,7 @@ describe("the sub-line", () => {
     draw("4");
     expect(
       screen.getByText(
-        "This deck can assemble a two-card infinite rather than draw into it, which is past "
-        + "Upgraded. Nothing else in the 99 reaches further.",
+        `${deckAnalysisCopy.verdict.ruledOutAssembled("Upgraded")}. ${deckAnalysisCopy.verdict.nothingFurther}`,
       ),
     ).toBeTruthy();
   });

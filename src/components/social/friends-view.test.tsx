@@ -407,7 +407,7 @@ describe("friend links", () => {
     draw({ links: [link(1, new Date(NOW.getTime() + 7 * 86_400_000 - 60_000)), link(2, new Date("2026-10-16T09:00:00Z"))] });
     expect(screen.getByRole("heading", { name: socialCopy.invites.head(2) })).toBeTruthy();
     expect(screen.getByText("7 days left")).toBeTruthy();
-    expect(screen.getByText("Under a day left").className).toContain("--warning");
+    expect(screen.getByText(socialCopy.invites.left(30_000)).className).toContain("--warning");
   });
 
   it("dates a link made after a redraw against that redraw's clock, not the first load's", () => {
@@ -486,11 +486,11 @@ describe("friend links", () => {
     vi.useFakeTimers({ now: NOW });
     try {
       draw({ links: [link(1, new Date(NOW.getTime() + 86_400_000 + 30_000))] });
-      expect(screen.getByText("1 day left")).toBeTruthy();
+      expect(screen.getByText(socialCopy.invites.left(86_400_000 + 30_000))).toBeTruthy();
       await act(async () => {
         await vi.advanceTimersByTimeAsync(60_000);
       });
-      expect(screen.getByText("Under a day left").className).toContain("--warning");
+      expect(screen.getByText(socialCopy.invites.left(30_000)).className).toContain("--warning");
     } finally {
       vi.useRealTimers();
     }

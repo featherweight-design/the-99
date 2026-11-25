@@ -30,7 +30,7 @@ const AT = new Date("2026-10-16T21:40:00Z");
 const s = copy.swap;
 // A first look: nothing recorded yet, so the own lines come from the swap the page made, not from `seenAt`.
 const S1: TableView = { ...TABLES.S1, seenAt: null };
-const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
+const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? plain(copy.seat.label(null)) : `${name}’s seat` });
 const readCard = () => screen.getByTestId("read-card");
 
 describe("the seats' and the offer's art", () => {
