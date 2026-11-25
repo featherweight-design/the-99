@@ -30,7 +30,7 @@ describe("toolCopyFor", () => {
     expect(toolCopyFor("suggested-changes", () => false).line).toBe(showcaseCopy.tools["suggested-changes"].line);
     expect(card(showcaseGroups(input()), "suggested-changes")!.copy.line).toBe(V2_LINE);
     const off = card(showcaseGroups(input({ isOn: (n) => n !== "SUGGESTED_CHANGES_V2_ENABLED" })), "suggested-changes")!;
-    expect(off.copy.line).toBe("Up to five swaps, read from your games, your notes and the list.");
+    expect(off.copy.line).toBe(showcaseCopy.tools["suggested-changes"].line);
   });
 
   it("leaves a tool with no switched line as it is", () => {

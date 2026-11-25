@@ -5,7 +5,7 @@ import { wishlistPrintingView } from "./printing-line";
 
 const NEWEST = new Date("2026-11-20T00:00:00Z");
 const fact = (cents: number, asOf = NEWEST): PriceFact => ({ cents, foilCents: null, etchedCents: null, asOf });
-const A = { scryfallId: "a", setCode: "SLD", collectorNumber: "2125", setName: "Secret Lair", imageUri: "a.jpg" };
+const A = { scryfallId: "a", setCode: "SLD", collectorNumber: "2125", setName: "Fixture Lair set", imageUri: "a.jpg" };
 const B = { scryfallId: "b", setCode: "STA", collectorNumber: "10", setName: "Strixhaven Mystical Archive", imageUri: "b.jpg" };
 const prices = (byScryfallId: Record<string, PriceFact>): PrintingPrices =>
   ({ byScryfallId, byPrintingKey: {}, ambiguousKeys: new Set(), newestAsOf: NEWEST }) as unknown as PrintingPrices;

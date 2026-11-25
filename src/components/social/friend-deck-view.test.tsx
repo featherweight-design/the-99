@@ -26,6 +26,7 @@ vi.mock("../decks/decklist-group", () => ({
 }));
 
 import { FriendDeckView } from "./friend-deck-view";
+import { preconsCopy } from "../../lib/copy/precons";
 import { socialCopy } from "../../lib/copy/social";
 
 const card = (oracleId: string, name: string, typeLine: string, owned: boolean, extra: Partial<FriendDeckCard> = {}): FriendDeckCard => ({
@@ -88,7 +89,7 @@ describe("FriendDeckView", () => {
     const groups = screen.getAllByTestId("group");
     expect(groups.map((g) => g.querySelector("h2")!.textContent)).toEqual(["Commander", "Creatures", "Artifacts"]);
     for (const g of groups) expect(g.dataset.readonly).toBe("true");
-    expect(within(groups[0]).getByTestId("note").textContent).toBe("you own it");
+    expect(within(groups[0]).getByTestId("note").textContent).toBe(preconsCopy.group.own1);
     expect(screen.getByText("Island ×27")).toBeTruthy();
   });
 

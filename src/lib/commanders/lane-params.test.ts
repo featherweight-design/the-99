@@ -184,7 +184,7 @@ describe("laneQuery", () => {
   });
 });
 
-describe("Printed in", () => {
+describe("the set-code filter", () => {
   it("reads ?p= as lower-cased, deduped, sorted set codes", () => {
     expect(parseLaneParams(sp("p=HOC,hob,,hob"), "discover").printedIn).toEqual(["hob", "hoc"]);
   });

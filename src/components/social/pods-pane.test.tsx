@@ -200,7 +200,7 @@ describe("the owner's ✕", () => {
   });
 });
 
-describe("+ Add friends", () => {
+describe("the add-friends batch dialog", () => {
   it("is the owner's empty seat at the end of the row", () => {
     render(<PodsPane pods={[mine(), theirs()]} sharedIds={[]} friends={FRIENDS} ruleZero={NO_TABLES} />);
     const own = card("Thursday");

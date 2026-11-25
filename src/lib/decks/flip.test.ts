@@ -59,7 +59,7 @@ describe("resolveFlip", () => {
 });
 
 describe("parseTrail", () => {
-  const ok = { ids: ["a"], caption: "All decks", href: "/decks?sort=name", at: 1, seen: ["a"] };
+  const ok = { ids: ["a"], caption: "Fixture caption", href: "/decks?sort=name", at: 1, seen: ["a"] };
   it("accepts a trail and refuses anything else, including a return link off /decks", () => {
     expect(parseTrail(JSON.stringify(ok))).not.toBeNull();
     expect(parseTrail(JSON.stringify({ ...ok, href: "https://evil.example/" }))).toBeNull();

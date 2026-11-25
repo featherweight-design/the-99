@@ -21,7 +21,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("Your decks", () => {
+describe("the friend-decks rules", () => {
   it("draws the head, the intro, both rules at the defaults and the foot", () => {
     render(<FriendDecksSection prefs={{ seeDecks: true, seeUnfinished: false }} />);
     expect(screen.getByRole("heading", { name: C.head })).toBeTruthy();

@@ -14,6 +14,7 @@ import {
   reportWindow,
   splitOrg,
   sumCents,
+  WORKSPACE_NAME,
   workspacesUrl,
 } from "./anthropic-cost-rule";
 
@@ -146,7 +147,7 @@ describe("parseWorkspacePage", () => {
   it("reads items, the archived mark and the next page's cursor", () => {
     const parsed = parseWorkspacePage({
       data: [
-        { id: "ws_99", name: "The 99", archived_at: null },
+        { id: "ws_99", name: WORKSPACE_NAME, archived_at: null },
         { id: "ws_old", name: "Old", archived_at: "2026-01-01T00:00:00Z" },
       ],
       has_more: true,
@@ -154,7 +155,7 @@ describe("parseWorkspacePage", () => {
       last_id: "ws_old",
     })!;
     expect(parsed.items).toEqual([
-      { id: "ws_99", name: "The 99", archived: false },
+      { id: "ws_99", name: WORKSPACE_NAME, archived: false },
       { id: "ws_old", name: "Old", archived: true },
     ]);
     expect(parsed).toMatchObject({ hasMore: true, lastId: "ws_old" });
@@ -180,12 +181,12 @@ describe("matchWorkspace", () => {
   });
 
   it("never guesses between two", () => {
-    expect(matchWorkspace([ws("a", "The 99"), ws("b", "THE 99")])).toEqual({ ok: false, kind: "ambiguous_workspace", count: 2 });
+    expect(matchWorkspace([ws("a", WORKSPACE_NAME), ws("b", WORKSPACE_NAME.toUpperCase())])).toEqual({ ok: false, kind: "ambiguous_workspace", count: 2 });
   });
 
   it("skips an archived workspace of the same name", () => {
-    expect(matchWorkspace([ws("a", "The 99", true), ws("b", "The 99")])).toEqual({ ok: true, id: "b" });
-    expect(matchWorkspace([ws("a", "The 99", true)])).toEqual({ ok: false, kind: "no_workspace" });
+    expect(matchWorkspace([ws("a", WORKSPACE_NAME, true), ws("b", WORKSPACE_NAME)])).toEqual({ ok: true, id: "b" });
+    expect(matchWorkspace([ws("a", WORKSPACE_NAME, true)])).toEqual({ ok: false, kind: "no_workspace" });
   });
 
   it("does not match a name that merely contains it", () => {

@@ -182,7 +182,7 @@ describe("friend seats", () => {
   });
 });
 
-describe("Seat a pod", () => {
+describe("seating a pod", () => {
   const f = (n: number): SeatFriend => ({ publicId: `p${n}`, name: `Friend ${n}` });
   it("sets the pod size to the member count and seats the friends in join order", () => {
     expect(podFill([], 4, [f(1), f(2)])).toEqual({ podSize: 4, add: [f(1), f(2)], unseated: [] });

@@ -13,7 +13,7 @@ vi.mock("next/cache", () => ({
 }));
 
 const { cachedWorkspaceCost, clearNegativeMemo, NEGATIVE_MEMO_MS, readWorkspaceCost, COST_LOG } = await import("./anthropic-cost");
-const { MAX_PAGES } = await import("./anthropic-cost-rule");
+const { MAX_PAGES, WORKSPACE_NAME } = await import("./anthropic-cost-rule");
 const { DEPLOYMENT_ID } = await import("../cache/deployment");
 
 const KEY = "sk-ant-admin-SENTINEL-4f1c";
@@ -28,7 +28,7 @@ const costPage = (results: unknown[], more: { has_more?: boolean; next_page?: st
   ({ data: [{ starting_at: "2026-10-01T00:00:00Z", ending_at: "2026-10-02T00:00:00Z", results }], has_more: false, next_page: null, ...more });
 const wsPage = (data: unknown[], more: { has_more?: boolean; last_id?: string | null } = {}) =>
   ({ data, has_more: false, first_id: null, last_id: null, ...more });
-const THE_99 = { id: "wrkspc_99", name: "The 99", archived_at: null };
+const THE_99 = { id: "wrkspc_99", name: WORKSPACE_NAME, archived_at: null };
 const OTHER = { id: "wrkspc_cc", name: "Concert Crawl", archived_at: null };
 
 /** One API key as the list returns it: every documented field, so a test can see which survive. */
@@ -361,7 +361,7 @@ describe("cachedWorkspaceCost", () => {
   });
 
   it("carries an ambiguous count through the memo", async () => {
-    const f = fake({ ws: [() => json(wsPage([THE_99, { id: "wrkspc_dup", name: "The 99", archived_at: null }]))] });
+    const f = fake({ ws: [() => json(wsPage([THE_99, { id: "wrkspc_dup", name: WORKSPACE_NAME, archived_at: null }]))] });
     await cachedWorkspaceCost(OCT, NOW, f.deps());
     expect(await cachedWorkspaceCost(OCT, new Date(NOW.getTime() + 1_000), f.deps())).toEqual({ ok: false, kind: "ambiguous_workspace", count: 2 });
   });
