@@ -467,7 +467,7 @@ describe("MomentsProvider", () => {
     try {
       onScreen("Fixture add control");
       await advance(ARRIVE_MS);
-      expect(screen.getByRole("note", { name: "Add to wishlist, a tip" })).toBeTruthy();
+      expect(screen.getByRole("note", { name: "Fixture add control, a tip" })).toBeTruthy();
     } finally {
       Element.prototype.getClientRects = proto;
     }
