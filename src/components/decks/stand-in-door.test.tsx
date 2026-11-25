@@ -326,7 +326,7 @@ describe("a sheet over the card", () => {
     // A stand-in over the sheet draws no door of its own.
     expect(dialogs[1].querySelector('[data-testid="stand-in-door"]')).toBeNull();
     // Its way back names the sheet at both widths: the desktop pill and the phone's ×.
-    const backs = [...dialogs[1].querySelectorAll("button")].filter((b) => b.getAttribute("aria-label") === "Back to Cheaper stand-ins");
+    const backs = [...dialogs[1].querySelectorAll("button")].filter((b) => b.getAttribute("aria-label") === "Back to Fixture stand-in sheet");
     expect(backs).toHaveLength(2);
   });
 });
