@@ -365,7 +365,7 @@ describe("the review page's plate as the card's target", () => {
         }
       />,
     );
-    await click(screen.getByRole("button", { name: "Pull it" }));
+    await click(screen.getByRole("button", { name: deckVersioningCopy.review.pull }));
     expect(pulls).toBe(1);
     expect(asked).toEqual([]);
   });

@@ -51,7 +51,7 @@ const v2At = (over = 0, extra: Partial<TuningV2> = {}): TuningV2 => ({
   over,
   noticed: {
     roles: [{ role: "removal", label: "Removal", have: 6, target: 10, advisory: false }],
-    focus: "+1/+1 counters",
+    focus: "fixture focus",
     game: null,
   },
   ...extra,

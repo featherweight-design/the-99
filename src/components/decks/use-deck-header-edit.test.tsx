@@ -6,6 +6,7 @@ import { useDeckHeaderEdit } from "./use-deck-header-edit";
 vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader: vi.fn(async () => ({ ok: true })) }));
 
 import { saveDeckHeader } from "../../app/decks/tuning-actions";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 
 describe("useDeckHeaderEdit (H35, STATES-deck-description.md §2)", () => {
   beforeEach(() => {
@@ -56,7 +57,7 @@ describe("useDeckHeaderEdit (H35, STATES-deck-description.md §2)", () => {
       await Promise.resolve();
       await Promise.resolve();
     });
-    expect(result.current.announced).toBe("Saved the description.");
+    expect(result.current.announced).toBe(deckDescriptionCopy.announce.descriptionSaved);
   });
 
   it("announces nothing for a name-only save — the tagline did not change", async () => {

@@ -144,7 +144,7 @@ describe("landOnReceipt", () => {
       landOnReceipt("late");
       (document.activeElement as HTMLElement).blur();
       await frames(2);
-      expect(document.activeElement).toBe(screen.getByRole("button", { name: "Undo swap" }));
+      expect(document.activeElement).toBe(screen.getByRole("button", { name: swapToolsCopy.row.undoSwap }));
     } finally {
       rects.mockRestore();
     }

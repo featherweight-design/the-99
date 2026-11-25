@@ -192,7 +192,7 @@ describe("ShelfMenu", () => {
     menu();
     open();
     fireEvent.click(screen.getByRole("button", { name: "Delete" }));
-    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    fireEvent.click(screen.getByRole("button", { name: folderCopy.del.cancel }));
     expect(screen.getByRole("button", { name: "Rename" })).toBeInTheDocument();
     expect(stub.calls).toEqual([]);
   });

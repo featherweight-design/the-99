@@ -311,7 +311,7 @@ describe("role counter strip — unresolved rows", () => {
     const { container } = render(
       <RoleCounterStrip mix={TEST_MIX} cards={atTarget("ramp")} onSeeShelf={vi.fn()} rolesWithShelves={ALL_SHELVES} />,
     );
-    const cells = within(screen.getByLabelText("Recommended mix")).getAllByRole(
+    const cells = within(screen.getByLabelText(roleStripCopy.mixLabel)).getAllByRole(
       "figure",
       { hidden: true },
     ).length;
