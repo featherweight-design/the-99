@@ -168,7 +168,7 @@ export function CreatePreFilled({
       } catch (err) {
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
-        rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "scratch" }));
+        rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: build === "empty" ? "scratch" : "free" }));
         setError(addPanelCopy.createPicker.failed);
       }
     });

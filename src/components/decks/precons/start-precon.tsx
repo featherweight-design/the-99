@@ -6,7 +6,6 @@
 // three facts, and any card the start keeps that is not legal in Commander. The deck starts committed (Hugh, 2026-10-14).
 
 import { useAuth } from "@clerk/nextjs";
-import { unstable_rethrow } from "next/navigation";
 import { startTransition, useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createDeckFromPrecon, startPreconOwned } from "../../../app/decks/precon-actions";
 import { useDialogA11y } from "../../../lib/a11y/dialog";
@@ -201,7 +200,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
           }
         } catch (err) {
           // The redirect arrives here as a throw: the outcome is known, so the stored attempt has done its job.
-          try { unstable_rethrow(err); } catch (redirect) { writeAttempt(account, attemptFile(addFile), null); addRef.current.id = null; throw redirect; }
+          try { rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "precon" })); } catch (redirect) { writeAttempt(account, attemptFile(addFile), null); addRef.current.id = null; throw redirect; }
           // A thrown start is not a refusal: it may have committed with its response lost. The id is kept, so pressing
           // again lands on the committed deck rather than adding twice; the line does not claim a rollback.
           inFlight.current = false;

@@ -6,7 +6,7 @@
  * answered ok; the identity is what `identifyReader` already set, and no new one is added.
  */
 
-export const DECK_CREATED_SOURCE = ["scratch", "precon", "import", "guided"] as const;
+export const DECK_CREATED_SOURCE = ["scratch", "free", "precon", "import", "guided"] as const;
 export const DECK_CARD_ADDED_VIA = ["search", "suggestion", "combo"] as const;
 export const COLLECTION_IMPORTED_VIA = ["csv", "sync"] as const;
 /** How many cards an import carried, bucketed: the exact count is never sent. */

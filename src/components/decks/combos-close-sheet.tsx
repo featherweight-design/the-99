@@ -36,6 +36,7 @@ import { FactTooltip } from "../cards/fact-tooltip";
 import { ComboGlyph } from "../cards/combo-glyph";
 import { SheetFrame } from "./pass-sheet";
 import { MissingPieceWhereLine } from "./combo-where-line";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 const copy = combosCloseCopy.sheet;
 const detailCopy = combosCloseCopy.detail;
@@ -220,7 +221,10 @@ function ComboDetail({
       async () => {
         const outcome = await addCardToDeck(deckId, missing.oracleId);
         // Back to the list once the server has it: the revalidated read drops the row and the count.
-        if (!outcome || outcome.ok) onAdded();
+        if (!outcome || outcome.ok) {
+          captureEngagement("deck_card_added", { via: "combo" });
+          onAdded();
+        }
         return outcome;
       },
       card

@@ -204,9 +204,10 @@ export function useAddFriend({ friends, links, now, invites, friendLinks = false
       linkGivenUp(call, { began, now: addingNow.current, refresh, say, sheetSay, retry: () => void makeLink() });
       return;
     }
+    // The invite exists whether or not the reader is still on the chooser, so it counts before the early return.
+    if (out?.ok) captureEngagement("friend_invite_created", {});
     if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
-      captureEngagement("friend_invite_created", {});
       showOpener.current = null;
       setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listed.current) });
       if (addingNow.current === "choose") setAdding("link");

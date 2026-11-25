@@ -128,10 +128,10 @@ export function WishlistSearch({
     try {
       const out = await addToWishlistAction(r.oracleId);
       if (!out.ok) throw new Error(out.reason);
-      captureEngagement("wishlist_added", {});
       heard(r.oracleId, out.have);
       // `held`: the collection already reaches the want, so no line stands and the press stays as it was.
       if (out.status === "wanted") {
+        captureEngagement("wishlist_added", {});
         if (document.activeElement === press) setFresh((prev) => new Set(prev).add(r.oracleId));
         confirm(r.oracleId, out.want);
         onWant({ card: r, want: out.want, have: out.have });
