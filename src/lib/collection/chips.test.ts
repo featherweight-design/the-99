@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { collectionChips } from "./chips";
 import type { BrowseFilters } from "./browse";
-import { recommendationsCopy } from "../copy/recommendations";
 
 const EMPTY: BrowseFilters = { search: "", colors: [], types: [], setCodes: [] };
 const options = {
@@ -76,7 +75,7 @@ describe("collectionChips", () => {
       ],
       availability: [
         { code: "free", label: "Free" },
-        { code: "spoken", label: recommendationsCopy.shopping.spokenForGroupLabel },
+        { code: "spoken", label: "Fixture spoken label" },
       ],
     };
     expect(collectionChips({ ...EMPTY, types: ["Creature", "Land"] }, opts)[0].spoken)
@@ -118,7 +117,7 @@ describe("collectionChips", () => {
     const chip = collectionChips(
       { ...EMPTY, availability: ["soft", "hard"] as never },
       { ...options, availability: [
-        { code: "soft", label: recommendationsCopy.shopping.spokenForGroupLabel },
+        { code: "soft", label: "Fixture spoken label" },
         { code: "hard", label: "Committed" },
       ] },
     )[0];
@@ -130,7 +129,7 @@ describe("collectionChips", () => {
       { ...EMPTY, availability: ["free", "soft"] as never },
       { ...options, availability: [
         { code: "free", label: "Free" },
-        { code: "soft", label: recommendationsCopy.shopping.spokenForGroupLabel },
+        { code: "soft", label: "Fixture spoken label" },
       ] },
     )[0];
     expect(chip.markers).toEqual(["soft"]);

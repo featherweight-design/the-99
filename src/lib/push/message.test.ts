@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import { collapse, messagesFor, toMessage, type PushItem } from "./message";
-import { feedCopy } from "../copy/feed";
 import { pushCopy } from "../copy/push";
 
 const set = (key: string, name: string, batch = "run-1"): PushItem => ({ kind: "new-set", key, batch, name, cards: 281, href: `/collection/sets/${key}` });
@@ -40,7 +39,7 @@ describe("one item of each kind (the handoff's table)", () => {
     });
   });
   it("trade match: the friend's page", () => {
-    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: feedCopy.home.line.tradeMatch, route: "/friends/p-colin/spares?spare=o-m1" });
+    expect(toMessage([match("m1", "Colin", "p-colin")])).toMatchObject({ title: "Colin has a spare Ghoulcaller Gisa", body: pushCopy.one.tradeMatch.body, route: "/friends/p-colin/spares?spare=o-m1" });
   });
   it("trade match with spare requests on: the body says to ask, and the tap opens the card's sheet", () => {
     expect(toMessage([{ ...match("m1", "Colin", "p-colin"), askable: true } as PushItem])).toMatchObject({
@@ -48,7 +47,7 @@ describe("one item of each kind (the handoff's table)", () => {
     });
   });
   it("spare request: says where to answer, lands on Friends", () => {
-    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: pushCopy.one.spareOffer.body, route: "/friends", tag: "spare-request:r1" });
+    expect(toMessage([ask("r1")])).toMatchObject({ title: "Peter asks for your spare Lathliss, Dragon Queen", body: pushCopy.one.spareRequest.body, route: "/friends", tag: "spare-request:r1" });
   });
   it("an answer to the reader's own ask: who spares or keeps it, lands on Your requests, never replaces another", () => {
     expect(toMessage([answer("a1", "Colin", "yes")])).toMatchObject({ title: "Colin can spare Lathliss, Dragon Queen", body: pushCopy.one.spareOfferAnswer.yes.body, route: "/friends", tag: "spare-request:a1" });

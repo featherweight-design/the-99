@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 
 import { suggestedChangesV2Copy } from "../../copy/suggested-changes-v2";
 import { appendSentence, bracketCard, removeSentence, GAME_NOTE_MAX, pickIndex, hasOverviewContent, noticedChips, usualFor, type NoticedFacts, type NoticedRole } from "./intake";
-import { swapToolsCopy } from "../../copy/swap-tools";
 
 const copy = suggestedChangesV2Copy.intake;
 
@@ -21,12 +20,12 @@ describe("noticedChips", () => {
   it("orders the four as the handoff does: worst role gap, focus, newest game note, second role gap", () => {
     const chips = noticedChips({
       roles: [role("ramp", 9, 10), role("draw", 7, 10), role("removal", 6, 10), role("wipes", 3, 3), role("land", 30, 36, true)],
-      focus: swapToolsCopy.sheet.job.counters,
+      focus: "fixture focus",
       game: { note: "ran out of cards by turn 7", date: "Oct 24" },
     });
     expect(chips.map((c) => c.id)).toEqual(["role:removal", "focus", "game", "role:draw"]);
     expect(chips[0]).toMatchObject({ kind: "role", text: copy.noticed.roleShortChip("removal"), meta: copy.noticed.roleOf(6, 10), sentence: copy.noticed.roleShort("removal", 6, 10) });
-    expect(chips[1]).toMatchObject({ kind: "focus", text: copy.noticed.focusChip(swapToolsCopy.sheet.job.counters), meta: copy.noticed.focusMeta, sentence: copy.noticed.focus(swapToolsCopy.sheet.job.counters) });
+    expect(chips[1]).toMatchObject({ kind: "focus", text: copy.noticed.focusChip("fixture focus"), meta: copy.noticed.focusMeta, sentence: copy.noticed.focus("fixture focus") });
     expect(chips[2]).toMatchObject({ kind: "game", text: copy.noticed.gameChip("ran out of cards by turn 7"), meta: "Oct 24" });
     expect(chips[3]).toMatchObject({ kind: "role", text: copy.noticed.roleIsChip("Draw", 7, 10), meta: null, sentence: copy.noticed.roleShort("draw", 7, 10) });
   });

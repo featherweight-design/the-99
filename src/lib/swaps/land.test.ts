@@ -4,7 +4,6 @@ import {
   activatedFinds, drawbacks, fetchFinds, givesUp, GIVES_UP_PATTERNS, colorSource, landCatch, landColors, landColorsOnce, makesFreely, nameAbility, nonManaAbilities, quote,
   QUOTE_BUDGET, type LandText,
 } from "./land";
-import { swapToolsCopy } from "../copy/swap-tools";
 
 // Oracle text exactly as the catalog holds it (local-dev, 2026-09-24).
 const L = (name: string, typeLine: string, oracleText: string | null): LandText => ({ name, typeLine, oracleText });
@@ -184,7 +183,7 @@ describe("nameAbility: one case per pattern", () => {
     ["{t}: add {c}{c}. this land deals 2 damage to you.", "its extra mana"],
     ["{t}, sacrifice this land: destroy target land.", "land destruction"],
     ["{3}, {t}: exile target creature.", "removal"],
-    ["{2}{u}, {t}: counter target spell.", swapToolsCopy.sheet.job.counterspell],
+    ["{2}{u}, {t}: counter target spell.", "a counterspell"],
     ["{1}, {t}, sacrifice this land: draw a card.", "card draw"],
     ["{3}, {t}: create a 1/1 white spirit creature token.", "making tokens"],
     ["{t}: return target creature card from your graveyard to your hand.", "recursion"],
@@ -192,18 +191,18 @@ describe("nameAbility: one case per pattern", () => {
     ["{t}: scry 1.", "card selection"],
     ["{2}, {t}: target player mills two cards.", "milling"],
     ["{2}, {t}: this land deals 1 damage to any target.", "dealing damage"],
-    ["{1}, {t}: you gain 2 life.", swapToolsCopy.sheet.job.lifegain],
+    ["{1}, {t}: you gain 2 life.", "life gain"],
     ["{t}: untap target permanent.", "untapping a permanent"],
     ["{t}: target creature you control gains hexproof until end of turn.", "protection"],
     ["cycling {2}", "cycling"],
-    ["{t}: put a +1/+1 counter on target creature.", swapToolsCopy.sheet.job.counters],
+    ["{t}: put a +1/+1 counter on target creature.", "+1/+1 counters"],
     ["{t}: target assembly-worker creature gets +1/+1 until end of turn.", "a pump"],
     ["{t}: target creature can't block this turn.", "a restriction on opponents"],
     ["you may have this land enter tapped as a copy of any land on the battlefield.", "copying a land"],
     ["hideaway 4", "hideaway"],
     ["{t}: add {b}{g}.", "its extra mana"],
     ["{3}, {t}, sacrifice this land: destroy each nonland permanent with mana value x.", "a board wipe"],
-    ["{2}, {t}, sacrifice a desert: exile all graveyards.", swapToolsCopy.sheet.job.graveyardHate],
+    ["{2}, {t}, sacrifice a desert: exile all graveyards.", "graveyard hate"],
     ["{2}{c}, {t}, sacrifice this land: copy target instant or sorcery spell you control.", "copying a spell"],
     ["{4}, {t}: proliferate.", "proliferate"],
     ["{4}, {t}: target creature can't be blocked this turn.", "evasion"],
