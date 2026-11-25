@@ -51,7 +51,7 @@ const v2At = (over = 0, extra: Partial<TuningV2> = {}): TuningV2 => ({
   over,
   noticed: {
     roles: [{ role: "removal", label: "Removal", have: 6, target: 10, advisory: false }],
-    focus: swapToolsCopy.sheet.job.counters,
+    focus: "+1/+1 counters",
     game: null,
   },
   ...extra,
@@ -90,7 +90,6 @@ beforeEach(() => {
 
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
-import { swapToolsCopy } from "../../lib/copy/swap-tools";
 
 // The notes box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
 const wiring = { searchTuningNotesCards: (query: string) => searchTagCards("tuning", query) } as unknown as DeckRowWiring;

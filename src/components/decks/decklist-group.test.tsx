@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { DeckDetailCard } from "../../lib/decks/grouping";
 import { CardDetailProvider } from "../cards/card-detail-provider";
 import { ownedStateCopy } from "../../lib/copy/decks-builder";
-import { addPanelCopy } from "../../lib/copy/decks-builder";
+import { preconsCopy } from "../../lib/copy/precons";
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 
@@ -86,7 +86,7 @@ describe("DecklistGroup — read-only card view", () => {
     expect(screen.getAllByTestId("read-only-card-tile")).toHaveLength(2);
     expect(screen.queryByRole("button", { name: /remove/i })).toBeNull();
     expect(screen.getByText("CMM 312")).toBeInTheDocument();
-    expect(screen.getByText(addPanelCopy.quickAdd.rowNotOwned)).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.open.tileNotOwned)).toBeInTheDocument();
     expect(screen.getByLabelText(ownedStateCopy.notOwned)).toBeInTheDocument();
     expect(screen.getByTestId("tail").parentElement).toBe(screen.getAllByTestId("read-only-card-tile")[0].parentElement);
   });

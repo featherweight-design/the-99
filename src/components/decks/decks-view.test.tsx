@@ -39,8 +39,6 @@ import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { chassisCopy } from "../../lib/copy/filter-chassis";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { SCREEN_WHERE } from "../../lib/copy/discovery";
-import { decksStatsCopy } from "../../lib/copy/decks-stats";
 
 const NOW = "2026-09-07T12:00:00.000Z";
 
@@ -217,7 +215,7 @@ describe("DecksView", () => {
     openFilters();
     fireEvent.click(screen.getAllByRole("checkbox", { name: "Draft" })[0]);
     fireEvent.click(screen.getByRole("button", { name: refreshCopy.filters.emptyAction }));
-    expect(screen.getByText(decksStatsCopy.filter.one)).toBeInTheDocument();
+    expect(screen.getByText("1 deck")).toBeInTheDocument();
     expect(window.location.search).toBe("");
   });
 
@@ -1135,7 +1133,7 @@ describe("DecksView remembers the order", () => {
 describe("the Deck state facet", () => {
   // ONE row. The phase it used to carry is `New` and `Draft` in Status now.
   const clean = () => deckOf({
-    id: "clean", name: SCREEN_WHERE.deck, lastCommittedAt: new Date("2026-09-01T00:00:00Z"), pendingChanges: 0,
+    id: "clean", name: "a deck", lastCommittedAt: new Date("2026-09-01T00:00:00Z"), pendingChanges: 0,
   });
   const moved = () => deckOf({
     id: "moved", name: "mid-tinker", lastCommittedAt: new Date("2026-09-01T00:00:00Z"), pendingChanges: 4,
@@ -1147,7 +1145,7 @@ describe("the Deck state facet", () => {
     fireEvent.click(screen.getAllByRole("checkbox", { name: deckStateMarksCopy.filter.hasPending })[0]);
     expect(window.location.search).toBe("?state=pending");
     expect(screen.getByText("mid-tinker")).toBeInTheDocument();
-    expect(screen.queryByText(SCREEN_WHERE.deck)).not.toBeInTheDocument();
+    expect(screen.queryByText("a deck")).not.toBeInTheDocument();
   });
 
   it("offers no row for the phase, which Status owns now", () => {

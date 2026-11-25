@@ -5,7 +5,6 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { BuilderTabs, type BuilderTabSpec, type BuilderView } from "./builder-tabs";
-import { gameLogCopy } from "../../lib/copy/game-log";
 
 const DECK_TAB = { id: "deck" as const, label: "In deck", count: 12, accessibleName: "In deck, 12 cards" };
 const TUNING_TAB = { id: "tuning" as const, label: "Tuning", count: 30, accessibleName: "Tuning, 30 cards" };
@@ -124,12 +123,12 @@ describe("BuilderTabs — three tabs", () => {
   it("renders no count element when count is omitted", () => {
     render(
       <BuilderTabs
-        tabs={[DECK_TAB, { id: "games", label: "Games", accessibleName: gameLogCopy.tab.ariaNone }]}
+        tabs={[DECK_TAB, { id: "games", label: "Games", accessibleName: "Games, none logged" }]}
         view="deck"
         onViewChange={vi.fn()}
       />,
     );
-    expect(tabs()[1]).toHaveAccessibleName(gameLogCopy.tab.ariaNone);
+    expect(tabs()[1]).toHaveAccessibleName("Games, none logged");
     expect(tabs()[1].textContent).toBe("Games");
   });
 });

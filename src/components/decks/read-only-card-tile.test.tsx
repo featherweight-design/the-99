@@ -25,7 +25,7 @@ describe("ReadOnlyCardTile", () => {
   it("says an unowned card is not owned in words beside the dot, and names the precon's printing", () => {
     tile(card({ oracleId: "sol", name: "Sol Ring", owned: false, quantity: 1, printedCollectorNumber: "312" }));
     expect(screen.getByLabelText(ownedStateCopy.notOwned)).toBeInTheDocument();
-    expect(screen.getByText("not owned")).toBeInTheDocument();
+    expect(screen.getByText(preconsCopy.open.tileNotOwned)).toBeInTheDocument();
     expect(screen.getByText("CMM 312")).toBeInTheDocument();
   });
 
