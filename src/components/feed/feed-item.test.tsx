@@ -314,7 +314,7 @@ describe("a Wizards post's row (announcements boards Home-Rows and Row-States)",
 
   it("names Wizards news by its kicker and draws no lists line on it", () => {
     const { container } = list(<FeedItemRow item={post({ kind: "wizards-news" })} now={NOW} />);
-    expect(screen.getByText(feedCopy.home.quietName["wizards-news"])).toBeInTheDocument();
+    expect(screen.getByText(feedCopy.home.kicker["wizards-news"])).toBeInTheDocument();
     expect(container.querySelector("[data-feed-lists]")).toBeNull();
   });
 

@@ -1106,7 +1106,7 @@ describe("SetGridView — the last route out of a stale m=1", () => {
     search = "m=1&c=W";
     view([p("1")], ["1"]);
     const clear = screen.getByRole("button", { name: /^Clear all filters/ });
-    expect(clear.textContent).toContain(chassisCopy.chips.clearAllAriaNoSort);
+    expect(clear.textContent).toContain(chassisCopy.chips.clearAll);
   });
 });
 
