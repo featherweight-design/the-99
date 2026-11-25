@@ -88,7 +88,7 @@ describe("WaysGroup", () => {
 
   it("on the empty Collection: no rule, the short sub-lines, `Add cards`, and a pick that reads ‹ Collection", () => {
     render(<WaysGroup surface="empty" precons onAddCards={() => {}} />);
-    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.importDeck, "Add cards"]);
+    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.importDeck, collectionEditCopy.ways.addCards]);
     expect(screen.getByText(collectionEditCopy.ways.preconsSubShort)).toBeInTheDocument();
     expect(screen.getByText(collectionEditCopy.ways.addSubShort)).toBeInTheDocument();
     expect(group().className).not.toContain("border-t");
@@ -151,7 +151,7 @@ describe("The empty Collection with the ways group (S13)", () => {
   it("draws one Upload tile, then the group with Add cards", () => {
     render(<CollectionEmptyDoors ways={{ precons: true }} />);
     expect(screen.getAllByRole("link", { name: /Upload a file/ })).toHaveLength(1);
-    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.importDeck, "Add cards"]);
+    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.importDeck, collectionEditCopy.ways.addCards]);
     // The shipped second tile is gone: Add cards is the group's row.
     expect(screen.getAllByRole("button", { name: /Add cards/ })).toHaveLength(1);
     fireEvent.click(within(group()).getByRole("button", { name: /Add cards/ }));
