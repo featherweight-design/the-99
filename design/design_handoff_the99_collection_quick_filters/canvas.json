@@ -1,0 +1,4 @@
+{"v":3,"title":"Collection quick filters","launch":{"view":"canvas"},"pages":[],
+"boards":{"Main.dc.html":{"x":0,"y":0,"w":2100,"h":2900,"title":"Desktop 1300 · calls, 5 states · R2 approved"},
+"Phone.dc.html":{"x":2180,"y":0,"w":2206,"h":1360,"title":"Phone 390 · 5 states · R2 approved"}},
+"order":["Main.dc.html","Phone.dc.html"],"notes":{},"designSystems":[]}

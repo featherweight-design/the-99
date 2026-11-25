@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>R2 desktop states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;family=Chakra+Petch:wght@600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width:2100px;min-height:2900px;box-sizing:border-box;padding:48px 56px 64px;background:#0A0B0F;font-family:'IBM Plex Sans',sans-serif;color:#E6E8F0;display:flex;flex-direction:column;gap:36px">
+<div style="display:flex;flex-direction:column;gap:12px">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">R2 · 2026-11-24 · C only · approved, art refreshed</span>
+<h2 style="margin:0;font:700 34px 'Chakra Petch',sans-serif">One quick strip for every mark. The key and Filters stay as they are.</h2>
+<p style="margin:0;font-size:15px;line-height:1.6;color:#B1B6C7;max-width:1900px">This round follows Hugh's call. Nothing is added to the Filters panel, and the key stays a plain legend. Every mark gets a chip in the strip, in this order: In no deck, Two-card combos, Game changers, Tutors, Extra turns, Mass land denial, Foil. A chip whose count is 0 isn't drawn at all. Counts are live, so they change with the other filters that are on: blue instants with no Extra turns hides that chip. When filters are on, the order is the quick chips, then a hairline, then the active-filter chips. A pressed quick chip turns solid with its own ×, and never shows up twice.</p>
+</div>
+<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:40px 36px">
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#E8A25C">FULL COLLECTION · EVERY CHIP</span><img src="art/qf-d-r2-full.webp" alt="All seven chips" style="width:975px;height:713px;display:block;border-radius:14px;border:1px solid #262A35"><figcaption style="font-size:13px;line-height:1.55;color:#959AAD">All seven chips fit on the one row at 1300px, with Clear all filters still on the right. The counts are illustrative, for a collection of about 1,200 cards.</figcaption></figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#E8A25C">SMALL COLLECTION · ZERO CHIPS HIDDEN</span><img src="art/qf-d-r2-sparse.webp" alt="Four chips" style="width:975px;height:713px;display:block;border-radius:14px;border:1px solid #262A35"><figcaption style="font-size:13px;line-height:1.55;color:#959AAD">The 17-card sample has no extra-turn, land-denial or foil cards, so only four chips show. Nothing is drawn dim or at 0.</figcaption></figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#E8A25C">OTHER FILTERS ON · BLUE, INSTANT</span><img src="art/qf-d-r2-active.webp" alt="Quick chips with active filters" style="width:975px;height:713px;display:block;border-radius:14px;border:1px solid #262A35"><figcaption style="font-size:13px;line-height:1.55;color:#959AAD">Counts come from the narrowed list, and any chip that drops to 0 leaves. The active chips sit after a hairline. In a mock, the color well and Type trigger don't show the selection yet; in the build they would.</figcaption></figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#E8A25C">COMBOS · YOU OWN BOTH</span><img src="art/qf-d-r2-combo-both.webp" alt="Combos own both" style="width:975px;height:713px;display:block;border-radius:14px;border:1px solid #262A35"><figcaption style="font-size:13px;line-height:1.55;color:#959AAD">Pressing Two-card combos switches the list to pairs. Pressing it again, or adding another filter, switches back to cards.</figcaption></figure>
+<figure style="margin:0;display:flex;flex-direction:column;gap:12px"><span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;color:#E8A25C">COMBOS · YOU OWN ONE</span><img src="art/qf-d-r2-combo-one.webp" alt="Combos own one" style="width:975px;height:713px;display:block;border-radius:14px;border:1px solid #262A35"><figcaption style="font-size:13px;line-height:1.55;color:#959AAD">Same as R1. The chip's count is own-both pairs only, and own-one sits behind the toggle.</figcaption></figure>
+<div style="display:flex;flex-direction:column;gap:10px;padding:24px;border-radius:14px;background:#12141A;border:1px solid #262A35;align-self:start">
+<span style="font:500 11px 'IBM Plex Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:#E8A25C">Open questions · R2</span>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7"><b style="color:#E6E8F0">Q1.</b> Can more than one quick chip be on at once, for example Game changers and Tutors? I'd keep it to one at a time, so the strip reads as shortcuts rather than a second filter panel.</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7"><b style="color:#E6E8F0">Q2.</b> On phone, active-filter chips sit at the end of a strip that scrolls sideways, so they can end up off screen. Is the Filters button's count badge enough, or should active chips come first on phone?</p>
+<p style="margin:0;font-size:14px;line-height:1.6;color:#B1B6C7"><b style="color:#E6E8F0">Q3.</b> Should the new-combo notification link to Combos, You own both, with the pair marked NEW?</p>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2100,"height":2900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
