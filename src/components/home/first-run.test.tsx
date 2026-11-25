@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import { importReviewCopy } from "../../lib/copy/import-review";
 import { refreshCopy } from "../../lib/copy/refresh";
 import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 import { replaceCopy } from "../../lib/copy/replace";
 
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
@@ -106,7 +107,7 @@ describe("FirstRunChecklist", () => {
     render(<FirstRunChecklist />);
     expect(screen.getByText(refreshCopy.firstRun.step2Title)).toBeInTheDocument();
     expect(screen.queryByText("Already have a deck elsewhere?")).toBeNull();
-    expect(screen.queryByRole("link", { name: /^import a deck$/i })).toBeNull();
+    expect(screen.queryByRole("link", { name: deckImportCopy.entry.decksLink, exact: true })).toBeNull();
   });
 
   it("draws no Replace collection heading inside its own step-1 card", () => {
