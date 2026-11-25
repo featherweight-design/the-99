@@ -2,6 +2,7 @@ import { render } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 import { ReviewScreen } from "./review-screen";
+import { importReviewCopy } from "../../lib/copy/import-review";
 
 const preview = (over: Partial<UploadPreview>): UploadPreview => ({
   uploadId: "u",
@@ -60,7 +61,7 @@ describe("ReviewScreen counts", () => {
 
 // Landing PR 7b: why the skipped rows stay out, said only when the skipped ledger is all that was left out.
 describe("ReviewScreen · why the skipped rows stay out", () => {
-  const WHY = "Tokens, emblems and art cards aren’t in the catalog, so they stay out. Everything else is going in.";
+  const WHY = importReviewCopy.skippedWhy;
   it("says it when only tokens, emblems and art cards were left out", () => {
     expect(text(preview({ skippedByDesignCount: 4, unmatchedRows: [], parseErrors: [] }))).toContain(WHY);
   });

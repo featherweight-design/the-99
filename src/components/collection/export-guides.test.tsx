@@ -52,6 +52,6 @@ describe("ExportGuides", () => {
     const d = screen.getByRole("dialog", { name: collectionSources.signedIn.title });
     expect(within(d).getByRole("button", { name: moreGuideApps.find((a) => a.id === "delver")!.name })).toHaveAttribute("aria-expanded", "true");
     expect(within(d).getByRole("button", { name: "ManaBox" })).toHaveAttribute("aria-expanded", "false");
-    expect(d.textContent).toContain("Create CSV file");
+    expect(d.textContent).toContain((moreGuideApps.find((a) => a.id === "delver")!.steps[1][1] as { b: string }).b);
   });
 });

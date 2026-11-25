@@ -6,6 +6,7 @@ import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { Availability } from "../../lib/decks/availability";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import { RowsView } from "./rows-view";
+import { availabilityCopy } from "../../lib/copy/availability";
 
 const card: BrowseListCard = {
   oracleId: "o1",
@@ -79,7 +80,7 @@ describe("RowsView availability marker", () => {
 
   it("is count-only — the deck name never reaches a collection row", () => {
     renderRows({ ...card, availability: avail(1, 1, 0, ["Atraxa"]) });
-    expect(screen.getByText("none free")).toBeInTheDocument();
+    expect(screen.getByText(availabilityCopy.marker.hard)).toBeInTheDocument();
     expect(screen.queryByText(/Atraxa/)).toBeNull();
   });
 

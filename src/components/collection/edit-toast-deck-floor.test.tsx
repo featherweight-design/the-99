@@ -77,7 +77,7 @@ function Shell({ children, sheetUp = false }: { children?: React.ReactNode; shee
 }
 
 const unowned: BrowseCard = {
-  oracleId: "o-ghalta", name: "Ghalta, Primal Hunger", typeLine: "Creature", manaCost: "{10}{G}{G}", cmc: 12, oracleText: null,
+  oracleId: "o-ghalta", name: "Fixture Card", typeLine: "Creature", manaCost: "{10}{G}{G}", cmc: 12, oracleText: null,
   keywords: [], rarity: "rare", colorIdentity: ["G"], imageUri: null, printedName: null, quantity: 0, printings: [], setCodes: [],
   primarySetCode: "", preferredPrinting: null,
   availability: { owned: 0, hard: 0, soft: 0, free: 0, claims: [] } as unknown as BrowseCard["availability"],
@@ -94,7 +94,7 @@ describe("a save from a provider that is not the deck builder's, on a deck page"
         </Shell>
       </CollectionEditScope>,
     );
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Ghalta/ })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: /View details for Fixture Card/ })));
     await act(async () => fireEvent.click(await screen.findByTestId("edit-copies-link")));
     await screen.findByRole("dialog", { name: `edit ${unowned.name}` });
     await act(async () => sheetClose({ saved: { entryId: "e1", removed: false, total: 1, copiesRemoved: 0 } }));

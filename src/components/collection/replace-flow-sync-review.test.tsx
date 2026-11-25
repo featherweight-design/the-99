@@ -187,7 +187,7 @@ describe("ReplaceFlow · the Sync review", () => {
     confirmUpload.mockResolvedValueOnce({ nothingToSync: true });
     fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     await screen.findByText(collectionEditCopy.upload.syncNoChange);
-    fireEvent.click(screen.getByRole("button", { name: "Back to Collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.back }));
     expect(go).toHaveBeenCalledWith("/collection");
   });
 
@@ -241,7 +241,7 @@ describe("ReplaceFlow · the Sync review", () => {
     expect(tiles()[0]).toBe("3to decide");
     fail = false;
     const before = syncCalls().length;
-    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" }));
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: collectionEditCopy.upload.retry }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     expect(syncCalls().length).toBe(before + 1);
     expect(syncCalls().at(-1)?.[2]).toEqual({ pick: "everything", answers: { all: "app" } });
@@ -259,7 +259,7 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: collectionEditCopy.shortWarning.confirmSync }));
     expect(await screen.findByRole("alert")).toHaveTextContent(collectionEditCopy.upload.syncReview.failedTitleSync);
     expect(confirmUpload).toHaveBeenCalledTimes(1);
-    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" }));
+    fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: collectionEditCopy.upload.retry }));
     expect(await screen.findByRole("dialog", { name: "Syncing leaves a deck short" })).toBeTruthy();
     expect(confirmUpload).toHaveBeenCalledTimes(1);
   });

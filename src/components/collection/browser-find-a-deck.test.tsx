@@ -16,6 +16,7 @@ import { CardDetailProvider } from "../cards/card-detail-provider";
 import { resetFindADeckCalloutForTest } from "./find-a-deck-callout";
 import type { BrowseListCard } from "../../lib/collection/browse";
 import type { FindADeckState } from "../../lib/collection/find-a-deck";
+import { findADeckCopy } from "../../lib/copy/find-a-deck";
 
 // Tool discovery call 1: the call-out on All and on Free alone, and the labelled button beside each Free card.
 const card = (over: Partial<BrowseListCard> = {}): BrowseListCard =>
@@ -64,7 +65,7 @@ describe("CollectionBrowser — Find a deck", () => {
     expect(box?.dataset.findADeckCallout).toBe("all");
     expect(within(box!).getByText("3 of your cards are in no deck")).toBeInTheDocument();
     expect(document.querySelector("[data-find-a-deck]")).toBeNull();
-    fireEvent.click(within(box!).getByRole("button", { name: "Show them" }));
+    fireEvent.click(within(box!).getByRole("button", { name: findADeckCopy.show }));
     expect(capture).toHaveBeenCalledWith("find_a_deck_opened", { from: "callout_show_them" });
     expect(window.location.search).toContain("avail=free");
     expect(callout()?.dataset.findADeckCallout).toBe("free");
@@ -73,7 +74,7 @@ describe("CollectionBrowser — Find a deck", () => {
   it("on Free alone, drops Show them and puts a button by every Commander-legal card only", () => {
     window.history.replaceState(null, "", "/collection?view=rows&avail=free");
     render(view(ON));
-    expect(within(callout()!).queryByRole("button", { name: "Show them" })).toBeNull();
+    expect(within(callout()!).queryByRole("button", { name: findADeckCopy.show })).toBeNull();
     expect(screen.getAllByRole("button", { name: "Find a deck for Lightning Bolt" })).toHaveLength(2);
     expect(screen.getAllByRole("button", { name: "Find a deck for Counterspell" })).toHaveLength(2);
     expect(screen.queryByRole("button", { name: "Find a deck for Shahrazad" })).toBeNull();

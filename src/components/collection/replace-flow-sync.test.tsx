@@ -274,9 +274,9 @@ describe("ReplaceFlow · the Sync choice", () => {
       fireEvent.click(within(group).getByRole("radio", { name: /Only its tokens/ }));
       await screen.findByText(collectionEditCopy.upload.prepareFailed);
       tokensFails = false;
-      fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+      fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.retry }));
       expect(await screen.findByText("4,616 → 4,616 cards")).toBeTruthy();
-      expect(screen.queryByRole("button", { name: "Try again" })).toBeNull();
+      expect(screen.queryByRole("button", { name: collectionEditCopy.upload.retry })).toBeNull();
       expect((within(group).getByRole("radio", { name: /Only its tokens/ }) as HTMLInputElement).checked).toBe(true);
       expect(screen.getByRole("radio", { name: /Sync my collection/ }).getAttribute("aria-checked")).toBe("true");
       // The plain read and Only what it adds were read once; only the failed pick was read again.

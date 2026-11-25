@@ -30,7 +30,7 @@ const printing = (over: Partial<PrintingChoice> = {}): PrintingChoice => ({
   imageUri: null, flavorName: null, finishes: ["nonfoil", "foil"], owned: {}, ...over,
 });
 const THREE = [printing(), printing({ scryfallId: "s2", setCode: "sld", collectorNumber: "1512" }), printing({ scryfallId: "s3", setCode: "cmm", collectorNumber: "410" })];
-const GHALTA = { oracleId: OID, name: "Ghalta, Primal Hunger", imageUri: null };
+const GHALTA = { oracleId: OID, name: "Fixture Card", imageUri: null };
 
 function mount(over: Partial<Extract<AddCardsSheetProps, { mode: "add" }>> = {}) {
   const onClose = vi.fn();

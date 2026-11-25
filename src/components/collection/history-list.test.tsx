@@ -207,7 +207,7 @@ describe("HistoryList", () => {
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toMatch(/couldn’t load that/);
-    await act(async () => fireEvent.click(within(alert).getByRole("button", { name: "Try again" })));
+    await act(async () => fireEvent.click(within(alert).getByRole("button", { name: collectionEditCopy.upload.retry })));
     expect(await screen.findByText("+2")).toBeTruthy();
   });
 
