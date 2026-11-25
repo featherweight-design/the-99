@@ -164,7 +164,7 @@ describe("prose", () => {
     // apart and have nothing to do with each other. Eight words is where the
     // collisions stop.
     expect(prose("upload your collection")).toBe(false);
-    expect(prose("1 in a draft")).toBe(false);
+    expect(prose("Fixture draft")).toBe(false);
   });
 });
 

@@ -93,9 +93,9 @@ describe("assertModelCallsOn", () => {
 
   it("exits non-zero when the fetch throws", async () => {
     const fetchImpl = vi.fn(async () => {
-      throw new Error("timed out");
+      throw new Error("Fixture failure");
     }) as unknown as typeof fetch;
-    expect(await unconfirmedLine(fetchImpl)).toMatch(/^Could not confirm model calls are on \(timed out\)/);
+    expect(await unconfirmedLine(fetchImpl)).toMatch(/^Could not confirm model calls are on \(Fixture failure\)/);
   });
 
   it("exits non-zero when the reply is not JSON (an HTML challenge page)", async () => {

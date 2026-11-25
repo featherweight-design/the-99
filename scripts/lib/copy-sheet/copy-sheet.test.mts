@@ -22,10 +22,10 @@ afterEach(() => {
 });
 
 const SRC = `export const demo = {
-  title: "Your decks",
+  title: "Fixture title",
   nested: { cta: 'Add a card', code: "md" },
   ago: (t: string) => \`Last active \${t}\`,
-  count: (n: number) => (n === 1 ? "1 card" : \`\${n} cards\`),
+  count: (n: number) => (n === 1 ? "Fixture one" : \`Fixture \${n}\`),
   noun: (n: number) => plural(n, "card", "cards"),
   list: (xs: string[]) => \`Has \${xs.length > 1 ? xs.join(", ") : xs[0]} here\`,
   built: (a: string) => a.join(" and "),
@@ -51,7 +51,7 @@ describe("walk", () => {
   const rows = copyRows("src/lib/copy/demo.ts", SRC);
   const by = (k: string) => rows.filter((r) => r.key.endsWith(`#demo.${k}`) || r.key.includes(`#demo.${k}#`));
   it("lists strings, skips code tokens, keeps the quote", () => {
-    expect(by("title")[0].text).toBe("Your decks");
+    expect(by("title")[0].text).toBe("Fixture title");
     expect(by("nested.cta")[0].quote).toBe("'");
     expect(by("nested.code")).toEqual([]);
   });
@@ -60,7 +60,7 @@ describe("walk", () => {
   });
   it("makes every branch its own editable row, with the condition", () => {
     const b = by("count");
-    expect(b.map((r) => r.text)).toEqual(["1 card", "{n} cards"]);
+    expect(b.map((r) => r.text)).toEqual(["Fixture one", "Fixture {n}"]);
     expect(b[0].context).toContain("n === 1");
     expect(b[1].context).toContain("not (n === 1)");
   });
@@ -110,9 +110,9 @@ describe("applySheet", () => {
   });
   it("edits one string in place, quotes and neighbours untouched", () => {
     const root = tree({ "demo.ts": SRC });
-    const { files, changes } = applySheet(sheet(root, { "demo.nested.cta": "Add cards" }), root);
+    const { files, changes } = applySheet(sheet(root, { "demo.nested.cta": "Fixture cta" }), root);
     expect(changes).toHaveLength(1);
-    expect(files.get("src/lib/copy/demo.ts")).toBe(SRC.replace("'Add a card'", "'Add cards'"));
+    expect(files.get("src/lib/copy/demo.ts")).toBe(SRC.replace("'Add a card'", "'Fixture cta'"));
   });
   it("edits a template and keeps the arrow function and its hole", () => {
     const root = tree({ "demo.ts": SRC });
@@ -127,7 +127,7 @@ describe("applySheet", () => {
   it("edits one branch and leaves the other", () => {
     const root = tree({ "demo.ts": SRC });
     const out = applySheet(sheet(root, { "demo.count#t1": "One card" }), root).files.get("src/lib/copy/demo.ts")!;
-    expect(out).toContain('n === 1 ? "One card" : `${n} cards`');
+    expect(out).toContain('n === 1 ? "One card" : `Fixture ${n}`');
   });
   it("escapes the quote it writes inside", () => {
     const root = tree({ "demo.ts": SRC });
@@ -136,7 +136,7 @@ describe("applySheet", () => {
   });
   it("fails every bad row at once, with row numbers, and applies none", () => {
     const root = tree({ "demo.ts": SRC });
-    const run = () => applySheet(sheet(root, { "demo.ago": "Seen", "demo.title": "Your decks — all" }), root);
+    const run = () => applySheet(sheet(root, { "demo.ago": "Seen", "demo.title": "Fixture title — all" }), root);
     expect(run).toThrow(/2 bad rows, nothing applied/);
     expect(run).toThrow(/row 2: .*demo\.title.*em dash/s);
   });
@@ -147,7 +147,7 @@ describe("applySheet", () => {
   it("refuses a stale sheet", () => {
     const root = tree({ "demo.ts": SRC });
     const csv = sheet(root, { "demo.title": "Decks" });
-    writeFileSync(join(root, "src/lib/copy/demo.ts"), SRC.replace("Your decks", "Your lists"));
+    writeFileSync(join(root, "src/lib/copy/demo.ts"), SRC.replace("Fixture title", "Your lists"));
     expect(() => applySheet(csv, root)).toThrow(/changed in the code since this sheet was exported/);
   });
   it("refuses a sheet with another header or an unknown key", () => {

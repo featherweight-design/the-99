@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { branchName, commitMessage, prBody } from "./land.mjs";
 
 const changes = [
-  { key: "src/lib/copy/a.ts#a.title", from: "Your decks", to: "Decks" },
+  { key: "src/lib/copy/a.ts#a.title", from: "Fixture title", to: "Decks" },
   { key: "src/lib/copy/a.ts#a.note", from: "a | b", to: "a\nb" },
 ];
 
@@ -12,7 +12,7 @@ describe("copy:import landing text", () => {
   });
   it("lists every old -> new pair, escaping a pipe and flattening a line break so the table holds", () => {
     const body = prBody(changes, ["src/lib/copy/a.ts"]);
-    expect(body).toContain("| `a.ts#a.title` | Your decks | Decks |");
+    expect(body).toContain("| `a.ts#a.title` | Fixture title | Decks |");
     expect(body).toContain("| `a.ts#a.note` | a \\| b | a b |");
   });
   it("asks for the copy-review pass and states there is no Design round", () => {
