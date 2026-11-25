@@ -33,6 +33,7 @@
     "check:manapool": "tsx scripts/check-manapool-contract.ts",
     "check:cardkingdom": "tsx scripts/check-cardkingdom-contract.ts",
     "check:mtgjson": "tsx scripts/check-mtgjson-contract.ts",
+    "posthog:dashboards": "tsx scripts/posthog-dashboards.mts",
     "measure:precons": "tsx scripts/measure-precons.mts",
     "measure:strategy": "tsx scripts/measure-strategy-axes.mts",
     "measure:sync": "tsx scripts/measure-sync.mts",
