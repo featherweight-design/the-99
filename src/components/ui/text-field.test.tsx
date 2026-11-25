@@ -40,28 +40,28 @@ describe("SearchField", () => {
   // A div wrapper makes the icon and the box's padding dead space: the field
   // looks clickable across its whole width but only the input focuses.
   it("wraps the input in a label so the icon and chrome focus it", () => {
-    render(<SearchField aria-label="Search cards" />);
-    const input = screen.getByLabelText("Search cards");
+    render(<SearchField aria-label="Fixture search" />);
+    const input = screen.getByLabelText("Fixture search");
     expect(input.closest("label")).not.toBeNull();
   });
 
   // `??` read a deliberate `null` as an absent prop and put the magnifier back.
   it("renders no leading element when the caller asks for none", () => {
-    const { container } = render(<SearchField aria-label="Search cards" leading={null} />);
+    const { container } = render(<SearchField aria-label="Fixture search" leading={null} />);
     expect(container.textContent).not.toContain("⌕");
   });
 
   it("renders the trailing slot inside the box", () => {
-    render(<SearchField aria-label="Search cards" trailing={<button type="button">Clear</button>} />);
-    const input = screen.getByLabelText("Search cards");
+    render(<SearchField aria-label="Fixture search" trailing={<button type="button">Clear</button>} />);
+    const input = screen.getByLabelText("Fixture search");
     const clear = screen.getByRole("button", { name: "Clear" });
     expect(input.closest("label")?.contains(clear)).toBe(true);
   });
 
   it("drops a style smuggled in past the type ban", () => {
     const props = { style: { background: "red" } } as Record<string, unknown>;
-    render(<SearchField aria-label="Search cards" {...props} />);
-    expect(screen.getByLabelText("Search cards").getAttribute("style")).toBeNull();
+    render(<SearchField aria-label="Fixture search" {...props} />);
+    expect(screen.getByLabelText("Fixture search").getAttribute("style")).toBeNull();
   });
 
   // The caller styles the box, not the input — a className meant for the input
@@ -69,12 +69,12 @@ describe("SearchField", () => {
   it("routes containerClassName to the box and className to the input", () => {
     render(
       <SearchField
-        aria-label="Search cards"
+        aria-label="Fixture search"
         containerClassName="p-[11px_13px]"
         className="text-[15px]"
       />,
     );
-    const input = screen.getByLabelText("Search cards");
+    const input = screen.getByLabelText("Fixture search");
     expect(input.className).toContain("text-[15px]");
     expect(input.className).not.toContain("p-[11px_13px]");
     expect(input.closest("label")?.className).toContain("p-[11px_13px]");

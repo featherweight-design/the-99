@@ -34,7 +34,7 @@ const sheetList = [
 /** Declares a sheet opened over the open card, as the stand-ins sheet does from its door. */
 function OverCard() {
   const { registerSheet } = useCardDetail();
-  useEffect(() => registerSheet("Cheaper stand-ins", undefined, true), [registerSheet]);
+  useEffect(() => registerSheet("Fixture sheet title", undefined, true), [registerSheet]);
   return null;
 }
 

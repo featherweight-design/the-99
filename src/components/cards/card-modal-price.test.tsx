@@ -9,6 +9,7 @@ import type { BrowseCard, BrowsePrinting } from "../../lib/collection/browse";
 import { indexPriceRows, type PrintingPriceRow } from "../../lib/cards/price-lookup";
 import { setPageCopy } from "../../lib/copy/set-collections";
 import { priceCopy } from "../../lib/copy/price";
+import { cardSheetCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   // The real action reports whether it wrote; a bare `vi.fn()` resolves undefined,
@@ -594,7 +595,7 @@ describe("the phone sheet's second line (carousel R2)", () => {
     const tag = () => screen.getByTestId("modal-price-mobile");
     expect(tag()).toHaveTextContent("$2.41");
     expect(hidden(tag())).toBe(false);
-    fireEvent.click(screen.getByRole("button", { name: "Show all details" }));
+    fireEvent.click(screen.getByRole("button", { name: cardSheetCopy.grabberAria(false) }));
     expect(tag()).toHaveTextContent("$2.41");
     expect(hidden(tag())).toBe(false);
   });

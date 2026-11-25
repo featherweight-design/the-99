@@ -19,7 +19,7 @@ const { SheetLoading } = await import("./sheet-loading");
 describe("SheetLoading in a sheet", () => {
   const draw = () =>
     render(
-      <ModalPanel title="Cheaper stand-ins" closeLabel="Close" onClose={() => {}}>
+      <ModalPanel title="Fixture sheet title" closeLabel="Close" onClose={() => {}}>
         <div data-testid="column" className="flex flex-col">
           <SheetLoading heading="Fixture loading heading" status="finding lands" />
         </div>
@@ -59,7 +59,7 @@ describe("SheetLoading in a sheet", () => {
 describe("ModalChrome stand", () => {
   const sheet = (props: { stand?: boolean; overCard?: { name: string; backAria: string } }) =>
     render(
-      <ModalChrome title="Cheaper stand-ins" closeLabel="Close" onClose={() => {}} width={640} {...props}>
+      <ModalChrome title="Fixture sheet title" closeLabel="Close" onClose={() => {}} width={640} {...props}>
         <div />
       </ModalChrome>,
     ).getByTestId("receipt-modal").className;

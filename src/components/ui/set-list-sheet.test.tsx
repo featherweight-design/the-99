@@ -8,8 +8,8 @@ const copy: SetListSheetCopy = {
   panelAriaLabel: "Sets",
   sheetTitle: "Sets",
   footerSelected: (n, total) => `${n} of ${total}`,
-  searchPlaceholder: "Search sets",
-  searchAriaLabel: "Search sets",
+  searchPlaceholder: "Fixture search label",
+  searchAriaLabel: "Fixture search label",
   none: "No sets",
   empty: (q) => `No sets match ${q}`,
   optionAriaUnavailable: (name) => `${name}, none`,
@@ -44,7 +44,7 @@ describe("the set list sheet's search", () => {
   it("clears a typed search on the first Escape and closes the sheet on the next", () => {
     const onDismiss = vi.fn();
     render(<Sheet onDismiss={onDismiss} />);
-    const field = screen.getByRole("searchbox", { name: "Search sets" });
+    const field = screen.getByRole("searchbox", { name: "Fixture search label" });
     fireEvent.change(field, { target: { value: "bloom" } });
     fireEvent.keyDown(field, { key: "Escape" });
     expect(field).toHaveValue("");
@@ -56,7 +56,7 @@ describe("the set list sheet's search", () => {
   it("keeps the search after a pick and keeps the sheet open", () => {
     const onDismiss = vi.fn();
     render(<Sheet onDismiss={onDismiss} />);
-    const field = screen.getByRole("searchbox", { name: "Search sets" });
+    const field = screen.getByRole("searchbox", { name: "Fixture search label" });
     fireEvent.change(field, { target: { value: "bloom" } });
     fireEvent.click(screen.getByRole("switch", { name: /Bloomburrow/ }));
     expect(field).toHaveValue("bloom");

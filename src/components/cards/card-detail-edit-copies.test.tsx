@@ -155,7 +155,7 @@ describe("the link inside the shell, on a card that is not the reader's own row"
     function SheetOver() {
       const { registerSheet } = useCardDetail();
       const [up, setUp] = React.useState(false);
-      React.useEffect(() => (up ? registerSheet("Cheaper stand-ins", undefined, true) : undefined), [up, registerSheet]);
+      React.useEffect(() => (up ? registerSheet("Fixture sheet title", undefined, true) : undefined), [up, registerSheet]);
       return <button type="button" onClick={() => setUp(true)}>sheet up</button>;
     }
     render(
