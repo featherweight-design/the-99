@@ -3,8 +3,9 @@
 // chip's count (`comboPairCount`).
 //
 // WHAT EACH SIDE MEANS
-//   both: `ownBothQuery`, which already excludes any pair a single deck holds both of, so an own-both pair is
-//         always "in no deck together". There is no "Both in <deck>" state to carry.
+//   both: `ownBothPairsQuery`: every pair, assembled ones included, with `heldIn` naming the reader's deck that
+//         holds both (alphabetical by name, then id, when several do). No `heldIn` is "In no deck together".
+//         The card-detail clause's `ownBothQuery` still drops assembled pairs; this view is the one that draws them.
 //   one:  `ownOneQuery`: one piece held, the other not. The missing piece carries the reader's cheapest live
 //         price in their store (null reads as silence) and the drafts that already ask for it ("Wanted by").
 //
@@ -16,7 +17,7 @@ import { cards, deckCards, decks } from "../../db/schema";
 import { cheapestLiveCents } from "../cards/price-lookup";
 import { loadOwnedPrintingPrices } from "../cards/prices";
 import type { Store } from "../stores/rows";
-import { distinctPairs, ownBothQuery, ownOneQuery, type DistinctPair, type PairRow } from "./near-miss";
+import { distinctPairs, ownBothPairsQuery, ownOneQuery, type DistinctPair, type PairRow } from "./near-miss";
 
 export type ComboSide = "both" | "one";
 
@@ -31,6 +32,8 @@ export type CollectionComboPair = {
   popularity: number | null;
   a: ComboPiece;
   b: ComboPiece;
+  /** Own-both only: the reader's deck already holding both pieces. Absent when no deck does. */
+  heldIn?: { id: string; name: string };
   /** Own-one only: the piece the reader does not hold, an oracle id of `a` or `b`. */
   missingId?: string;
   /** Own-one only: cheapest live price of the missing piece in the reader's store, null when none is read. */
@@ -60,7 +63,7 @@ async function wantedByDecks(userId: string, oracleIds: string[]): Promise<Map<s
 
 export async function loadCollectionCombos(args: { userId: string; store: Store; side: ComboSide }): Promise<CollectionCombos> {
   const { userId, store, side } = args;
-  const query = side === "both" ? ownBothQuery(userId, null) : ownOneQuery(userId);
+  const query = side === "both" ? ownBothPairsQuery(userId) : ownOneQuery(userId);
   const rows = (await db.execute(query)).rows as PairRow[];
   const all: DistinctPair[] = distinctPairs(rows, { oneSided: side === "one" });
   const picked = all.slice(0, MAX_COMBO_PAIRS);
@@ -88,7 +91,8 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
 
   const pairs = picked.map((p): CollectionComboPair => {
     const base = { variantId: p.variantId, produces: p.produces, popularity: p.popularity, a: piece(p.a), b: piece(p.b) };
-    if (side === "both" || !p.missingId) return base;
+    if (side === "both") return p.heldIn ? { ...base, heldIn: p.heldIn } : base;
+    if (!p.missingId) return base;
     return {
       ...base,
       missingId: p.missingId,

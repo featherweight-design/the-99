@@ -143,6 +143,19 @@ describe("distinctPairs", () => {
   });
 
   // ONE-SIDED: the row's missing piece is the one the reader lacks, and the pair says which it is.
+  // The view's second state: a pair a deck of the reader's already holds carries that deck, from either direction.
+  it("carries the holding deck, and none when no deck holds the pair", () => {
+    const held = { held_deck_id: "d1", held_deck_name: "Edgar's Bloodline" };
+    const rows = [
+      row({ variant_id: "v1", present_id: "a", missing_id: "b", ...held }),
+      row({ variant_id: "v1", present_id: "b", missing_id: "a", ...held }),
+      row({ variant_id: "v2", present_id: "c", missing_id: "d" }),
+    ];
+    const out = distinctPairs(rows);
+    expect(out.find((p) => p.variantId === "v1")?.heldIn).toEqual({ id: "d1", name: "Edgar's Bloodline" });
+    expect(out.find((p) => p.variantId === "v2")).not.toHaveProperty("heldIn");
+  });
+
   it("names the missing piece only for the one-sided read", () => {
     const rows = [row({ variant_id: "v1", present_id: "a", missing_id: "b", missing_name: "Bee", present_name: "Aye" })];
     expect(distinctPairs(rows)[0].missingId).toBeUndefined();

@@ -60,6 +60,16 @@ describe("loadCollectionCombos", () => {
     expect(h.prices).not.toHaveBeenCalled();
   });
 
+  it("own-both: an assembled pair carries the deck that holds it", async () => {
+    const held = { held_deck_id: "d1", held_deck_name: "Brew" };
+    h.execute.mockResolvedValue({ rows: [{ ...row("v1", A, B), ...held }, { ...row("v1", B, A), ...held }, row("v2", "c", "d", 5)] });
+    h.selectRows.push([]);
+    const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "both" });
+    expect(out.total).toBe(2);
+    expect(out.pairs.find((p) => p.variantId === "v1")?.heldIn).toEqual({ id: "d1", name: "Brew" });
+    expect(out.pairs.find((p) => p.variantId === "v2")).not.toHaveProperty("heldIn");
+  });
+
   it("own-one: names the missing piece with its price and the drafts that want it", async () => {
     h.execute.mockResolvedValue({ rows: [row("v1", A, B)] });
     h.selectRows.push([], [{ oracleId: B, id: "d1", name: "Brew" }]);

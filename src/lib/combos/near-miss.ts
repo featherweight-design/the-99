@@ -55,6 +55,9 @@ export type PairRow = {
   missing_id: string;
   missing_name: string;
   missing_must_be_commander: boolean;
+  /** `ownBothPairsQuery` only: the reader's deck that holds BOTH pieces (`held_deck_rule`), null when none does. */
+  held_deck_id?: string | null;
+  held_deck_name?: string | null;
 };
 
 /** One combo as a PAIR of cards, whichever piece a row happened to call present. */
@@ -67,6 +70,8 @@ export type DistinctPair = {
   b: { oracleId: string; name: string };
   /** Own-one only: which of the two cards the reader does not hold. Absent for an own-both pair. */
   missingId?: string;
+  /** Own-both only, from `ownBothPairsQuery`: the reader's deck already holding both pieces. Absent when no deck does. */
+  heldIn?: { id: string; name: string };
 };
 
 /**
@@ -101,6 +106,7 @@ export function distinctPairs(rows: readonly PairRow[], opts: { oneSided?: boole
       // One-sided rows (`ownOneQuery`) name the card the reader does NOT hold as `missing_id`; an own-both
       // row has both held and its direction means nothing, so no field is set.
       ...(opts.oneSided ? { missingId: r.missing_id } : {}),
+      ...(r.held_deck_id && r.held_deck_name ? { heldIn: { id: r.held_deck_id, name: r.held_deck_name } } : {}),
     };
     const held = best.get(key);
     if (!held || morePopular(candidate, held)) best.set(key, candidate);
@@ -437,6 +443,70 @@ export function ownBothQuery(userIdValue: string, oracleIds: readonly string[] |
 }
 
 /**
+ * The collection VIEW's own-both read: every pair the reader owns both pieces of, ASSEMBLED ONES INCLUDED, with
+ * the deck that holds them. `ownBothQuery` drops an assembled pair on purpose (it feeds the card-detail clause,
+ * which tells a reader about a combo they have not built), and that rule is wrong for the combos view, which
+ * draws "In no deck together" and "Both in <deck>" as the two states of one list. It is a sibling, not a
+ * parameter, so the clause's query and its pins stay exactly as they were.
+ *
+ * `held_deck_*` is the holding deck, the same test `ownBothQuery` excludes on (a deck's draft list, its
+ * commander or its partner, for both pieces). WHEN SEVERAL DECKS HOLD THE PAIR, the rule is alphabetical by deck
+ * name, then id: stable between loads, and it names no deck the reader did not build with.
+ *
+ * A row with a null `held_deck_id` is exactly a row `ownBothQuery` returns, so one read answers both the view
+ * (all rows) and the marks (the null ones): `loadOwnBothPartners` filters on it.
+ */
+export function ownBothPairsQuery(userIdValue: string) {
+  const userId = sql.param(userIdValue);
+  return sql`
+    with owned as (
+      select distinct oracle_id from collection_items where user_id = ${userId}
+    ),
+    pair as (
+      select v.variant_id, v.produces, v.popularity
+      from ${spellbookVariants} v
+      join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
+      where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+        and exists (select 1 from ${spellbookVariantCards} vc2
+                    where vc2.variant_id = v.variant_id
+                      and vc2.oracle_id in (select oracle_id from owned))
+      group by v.variant_id
+      having count(*) = 2
+    )
+    select p.variant_id, p.produces, p.popularity,
+           a.oracle_id as present_id,
+           ca.name as present_name,
+           b.oracle_id as missing_id,
+           c.name as missing_name,
+           false as missing_must_be_commander,
+           hd.id as held_deck_id,
+           hd.name as held_deck_name
+    from pair p
+    join ${spellbookVariantCards} a on a.variant_id = p.variant_id
+    join ${spellbookVariantCards} b
+      on b.variant_id = p.variant_id and b.oracle_id <> a.oracle_id
+    join cards ca on ca.oracle_id = a.oracle_id
+    join cards c on c.oracle_id = b.oracle_id
+    left join lateral (
+      select d.id, d.name from decks d
+      where d.user_id = ${userId}
+        and (exists (select 1 from deck_cards dc
+                     where dc.deck_id = d.id and dc.oracle_id = a.oracle_id)
+             or d.commander_oracle_id = a.oracle_id
+             or d.partner_oracle_id = a.oracle_id)
+        and (exists (select 1 from deck_cards dc
+                     where dc.deck_id = d.id and dc.oracle_id = b.oracle_id)
+             or d.commander_oracle_id = b.oracle_id
+             or d.partner_oracle_id = b.oracle_id)
+      order by d.name, d.id
+      limit 1
+    ) hd on true
+    where a.oracle_id in (select oracle_id from owned)
+      and b.oracle_id in (select oracle_id from owned)
+  `;
+}
+
+/**
  * The collection's OWN-ONE read: every two-card combo of which the reader holds exactly one piece, one row
  * per (held piece, missing piece). The sibling of `ownBothQuery`, for the combos view's second side.
  *
@@ -512,10 +582,15 @@ export async function loadOwnBothPartners(args: {
 }): Promise<OwnBothRead> {
   if (args.oracleIds?.length === 0) return { partners: new Map(), pairs: [] };
 
-  const rows = (await db.execute(
-    ownBothQuery(args.userId, args.oracleIds ?? null),
-  )).rows as PairRow[];
-
+  // The whole collection reads `ownBothPairsQuery`: ONE read for both answers. The marks keep the rule of the
+  // card-detail clause (a pair no deck holds both of), which is the rows with no holding deck; the pairs are
+  // every row, because the view draws assembled ones too. A window is the fields route's, which has no use
+  // for the pairs, so it keeps the clause's own query untouched.
+  if (args.oracleIds == null) {
+    const all = (await db.execute(ownBothPairsQuery(args.userId))).rows as PairRow[];
+    return { partners: bestPartnerPerCard(all.filter((r) => !r.held_deck_id)), pairs: distinctPairs(all) };
+  }
+  const rows = (await db.execute(ownBothQuery(args.userId, args.oracleIds))).rows as PairRow[];
   return { partners: bestPartnerPerCard(rows), pairs: distinctPairs(rows) };
 }
 

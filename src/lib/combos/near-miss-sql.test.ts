@@ -1,6 +1,6 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, it, expect } from "vitest";
-import { inDeckPairsQuery, ownBothQuery, ownOneQuery, pairsWithOnePiece } from "./near-miss";
+import { inDeckPairsQuery, ownBothPairsQuery, ownBothQuery, ownOneQuery, pairsWithOnePiece } from "./near-miss";
 
 /**
  * THE EMITTED SQL, rendered rather than executed.
@@ -206,5 +206,24 @@ describe("ownOneQuery", () => {
   it("selects must_be_commander rather than filtering on it", () => {
     expect(sqlText).toContain("want.must_be_commander as missing_must_be_commander");
     expect(sqlText).not.toMatch(/where[^)]*must_be_commander/);
+  });
+});
+
+describe("the assembled-pair rule: the clause drops them, the view keeps them", () => {
+  const clause = dialect.sqlToQuery(ownBothQuery("u-1", null)).sql.replace(/\s+/g, " ");
+  const view = dialect.sqlToQuery(ownBothPairsQuery("u-1")).sql.replace(/\s+/g, " ");
+
+  // Guards the card-detail clause: it must keep excluding a pair a single deck holds both of.
+  it("ownBothQuery still excludes a pair one deck holds both of", () => {
+    expect(clause).toContain("and not exists ( select 1 from decks d");
+  });
+
+  // Guards the view: no exclusion, and the holding deck comes from the reader's own decks, one deterministically.
+  it("ownBothPairsQuery excludes nothing and names one holding deck of the reader's, by name then id", () => {
+    expect(view).not.toContain("not exists");
+    expect(view).toContain("left join lateral ( select d.id, d.name from decks d where d.user_id = $");
+    expect(view).toContain("order by d.name, d.id limit 1");
+    expect(view).toContain("d.commander_oracle_id = a.oracle_id");
+    expect(view).toContain("d.partner_oracle_id = b.oracle_id");
   });
 });
