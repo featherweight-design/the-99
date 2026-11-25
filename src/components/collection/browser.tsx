@@ -470,8 +470,10 @@ export function CollectionBrowser({
       // in the panel: only this component knows how many cards survive the new
       // filter set, and the string quotes that figure. At most one of the two
       // selections moves per change, so the first non-null wins outright.
+      // Pressing In no deck over a pressed fact chip clears `quick` while turning Free on: that change is the
+      // availability announcement's to name, not "off".
       const quickMessage =
-        f.quick !== filters.quick
+        f.quick !== filters.quick && (f.quick || f.availability === filters.availability)
           ? f.quick
             ? quickFilterCopy.announceOn(quickChipLabel(f.quick), filterCards(cards, f).length)
             : quickFilterCopy.announceOff(filterCards(cards, f).length)
