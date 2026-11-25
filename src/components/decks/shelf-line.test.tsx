@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { ShelfLine, ShelfTrigger, shelfSegments } from "./shelf-line";
 import { ALL_DECKS, UNFILED, shelfCounts, type Shelf } from "../../lib/decks/folder-view";
 import type { DeckFolderWithCount } from "../../lib/decks/folders";
+import { folderCopy } from "../../lib/copy/folders";
 
 const folders: DeckFolderWithCount[] = [
   { id: "f1", name: "Commander night", createdAt: new Date("2026-09-01"), deckCount: 2 },
@@ -19,7 +20,7 @@ const counts = () => shelfCounts(decks, folders);
 describe("shelfSegments", () => {
   it("orders All decks, folders by the list's own order, then Unfiled last", () => {
     expect(shelfSegments(folders, counts()).map((s) => s.label)).toEqual([
-      "All decks",
+      folderCopy.shelves.all,
       "Commander night",
       "Cube night",
       "Unfiled",
@@ -29,7 +30,7 @@ describe("shelfSegments", () => {
   it("omits Unfiled until the first folder exists", () => {
     // A bucket equal to the whole list is a distinction without a difference.
     const alone = shelfCounts([{ folderId: null }], []);
-    expect(shelfSegments([], alone).map((s) => s.label)).toEqual(["All decks"]);
+    expect(shelfSegments([], alone).map((s) => s.label)).toEqual([folderCopy.shelves.all]);
   });
 
   it("counts each shelf from the loaded decks, empty folders included", () => {
@@ -126,7 +127,7 @@ describe("ShelfTrigger", () => {
   });
 
   it("carries no shelf menu beside it", () => {
-    render(<ShelfTrigger label="All decks" count={12} open={false} onOpen={() => {}} />);
+    render(<ShelfTrigger label={folderCopy.shelves.all} count={12} open={false} onOpen={() => {}} />);
     expect(screen.getAllByRole("button")).toHaveLength(1);
   });
 });

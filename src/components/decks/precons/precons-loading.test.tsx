@@ -56,7 +56,7 @@ describe("PreconsLoading", () => {
   it("follows ?from=new in its back link, as the loaded header does", () => {
     search = "from=new";
     render(<PreconsLoading />);
-    const link = screen.getByRole("link", { name: "‹ New deck" });
+    const link = screen.getByRole("link", { name: preconsCopy.list.backNew });
     expect(link.getAttribute("href")).toBe("/decks/new");
   });
 
@@ -74,7 +74,7 @@ describe("PreconsLoading", () => {
   it("draws Precons I own's own frame for ?pick=own, not the list's tiles, with the pick's real header and a back link that follows ?from", () => {
     search = "pick=own";
     const { container } = render(<PreconsLoading />);
-    expect(screen.getByRole("heading", { name: "Precons I own" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: preconsCopy.pick.title })).toBeTruthy();
     expect(screen.getByRole("link", { name: preconsCopy.pick.backHome }).getAttribute("href")).toBe("/");
     expect(container.querySelector("[data-testid=tile-skeleton]")).toBeNull();
     expect(container.querySelectorAll("[data-testid=pick-row-skeleton]").length).toBeGreaterThan(8);
@@ -82,6 +82,6 @@ describe("PreconsLoading", () => {
     cleanup();
     search = "pick=own&from=collection";
     render(<PreconsLoading />);
-    expect(screen.getByRole("link", { name: "‹ Collection" }).getAttribute("href")).toBe("/collection");
+    expect(screen.getByRole("link", { name: preconsCopy.pick.backCollection }).getAttribute("href")).toBe("/collection");
   });
 });

@@ -4,6 +4,7 @@ import { COMMITTED } from "./__fixtures__/draft-state";
 import type { DraftState } from "../../lib/decks/draft-shape";
 import { CommanderSection } from "./change-commander-review";
 import { ART_CROP_TRIM } from "../ui/art-crop-trim";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 const row = (oracleId: string, name: string, side: "from" | "to") =>
   ({ oracleId, name, artCropUri: null, side, buy: false, price: null });
@@ -86,11 +87,11 @@ describe("the review page's Commander note for a single becoming a pair", () => 
     render(<CommanderSection state={grown({
       removes: [{ oracleId: "Atreus", from: 1, to: 0 }],
     }, "Kratos", ["Kratos", "Atreus"])} />);
-    expect(screen.getByText("a partner joins from the 99")).toBeTruthy();
+    expect(screen.getByText(changeCommanderCopy.review.notePartnerJoins)).toBeTruthy();
   });
 
   it("says only that a partner joins when it came from outside the version's 99", () => {
     render(<CommanderSection state={grown({}, "Kratos", ["Kratos", "Atreus"])} />);
-    expect(screen.getByText("a partner joins")).toBeTruthy();
+    expect(screen.getByText(changeCommanderCopy.review.notePartnerAdded)).toBeTruthy();
   });
 });

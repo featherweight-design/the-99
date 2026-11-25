@@ -5,7 +5,7 @@
 
 import { cleanup, render, screen, fireEvent } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import { exportLinkOutCopy, exportShoppingCopy } from "../../lib/copy/decks-builder";
+import { exportLinkOutCopy, exportShoppingCopy, ownedStateCopy, exportTabCopy } from "../../lib/copy/decks-builder";
 import type { Store } from "../../lib/stores/rows";
 import { StoreProvider } from "../stores/store-provider";
 import { ExportDialog } from "./export-dialog";
@@ -29,13 +29,13 @@ function openShoppingTab(store: Store = "manapool") {
   );
   // Both the mobile and the desktop subtree mount; the tab is switched on the
   // shared state, so clicking either moves both.
-  fireEvent.click(screen.getAllByRole("button", { name: "Shopping list" })[0]);
+  fireEvent.click(screen.getAllByRole("button", { name: exportTabCopy.shopping })[0]);
 }
 
 describe("ExportDialog shopping tab", () => {
   it("reads each row's ownership rather than calling every row unowned", () => {
     openShoppingTab();
-    expect(screen.getAllByLabelText("Not owned").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(ownedStateCopy.notOwned).length).toBeGreaterThan(0);
     expect(screen.getAllByLabelText("Owned").length).toBeGreaterThan(0);
   });
 
@@ -55,6 +55,6 @@ describe("ExportDialog shopping tab", () => {
     cleanup();
     openShoppingTab("tcgplayer");
     expect(screen.queryByRole("link", { name: new RegExp(exportLinkOutCopy.shopping) })).toBeNull();
-    expect(screen.getAllByLabelText("Not owned").length).toBeGreaterThan(0);
+    expect(screen.getAllByLabelText(ownedStateCopy.notOwned).length).toBeGreaterThan(0);
   });
 });

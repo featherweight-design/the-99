@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { COMMITTED } from "./__fixtures__/draft-state";
 import type { DraftState } from "../../lib/decks/draft-shape";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 vi.mock("../../app/decks/actions", () => ({ discardDeckDraft: vi.fn(), fillDeck: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
@@ -64,8 +65,8 @@ describe("focus after a change lands", () => {
 describe("commanderZoneHint", () => {
   it("names which way a traded card moved through the command zone", () => {
     const s = swapped();
-    expect(commanderZoneHint(s, "korvold", true)).toBe("from the command zone");
-    expect(commanderZoneHint(s, "prosper", false)).toBe("to the command zone");
+    expect(commanderZoneHint(s, "korvold", true)).toBe(changeCommanderCopy.banner.fromZone);
+    expect(commanderZoneHint(s, "prosper", false)).toBe(changeCommanderCopy.banner.toZone);
     expect(commanderZoneHint(s, "other", true)).toBeNull();
     expect(commanderZoneHint({ ...s, commander: null }, "korvold", true)).toBeNull();
   });

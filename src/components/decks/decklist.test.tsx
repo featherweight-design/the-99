@@ -29,6 +29,7 @@ import { DECK_VIEW_KEY } from "./group-toggle";
 import { deckStatsCopy } from "../../lib/copy/deck-stats";
 import { recommendedMix } from "../../lib/decks/mix";
 import { reveal } from "../../lib/ui/reveal";
+import { deckNotesCopy } from "../../lib/copy/deck-notes";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -1576,7 +1577,7 @@ describe("the Stats panel", () => {
 
     it("says none yet at zero and draws no count", () => {
       renderDecklist([rampOwned], { filter: "all", notesData: { open: [], done: [], readAt: 1 } });
-      expect(screen.getByRole("tab", { name: "Notes, none yet" })).toBeTruthy();
+      expect(screen.getByRole("tab", { name: deckNotesCopy.head.segmentAriaNone })).toBeTruthy();
     });
 
     it("sits beside Stats, and pressing it swaps the list for the panel", () => {
@@ -1602,7 +1603,7 @@ describe("the Stats panel", () => {
     });
     expect(sparesCalls()).toBe(1);
     const bar = screen.getByRole("tablist");
-    await act(async () => { fireEvent.click(screen.getByRole("tab", { name: "Notes, none yet" })); });
+    await act(async () => { fireEvent.click(screen.getByRole("tab", { name: deckNotesCopy.head.segmentAriaNone })); });
     await act(async () => { fireEvent.click(screen.getByRole("tab", { name: /^All/ })); });
     expect(sparesCalls()).toBe(1);
     expect(screen.getByRole("tablist")).toBe(bar);
@@ -1902,7 +1903,7 @@ describe("the Tokens group is mounted at the foot of Your deck", () => {
       tokens: read.status === "ok" ? read.tokens.map((t) => ({ ...t, joined: true })) : [],
     };
     renderDecklist([rampOwned], { filter: "shopping", tokens: joined });
-    expect(screen.getByText("No cards to buy.")).toBeTruthy();
+    expect(screen.getByText(recommendationsCopy.shopping.emptyUncovered)).toBeTruthy();
     expect(screen.getByText("Food")).toBeTruthy();
   });
 });

@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { ArrangeDecks } from "./arrange-decks";
 import type { DeckListItem } from "../../lib/decks/read";
+import { deckOrderCopy } from "../../lib/copy/deck-order";
 
 const push = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -55,7 +56,7 @@ afterEach(() => {
 describe("ArrangeDecks", () => {
   it("draws the heading, one row per deck and a 44x52 handle on each", () => {
     setup();
-    expect(screen.getByRole("heading", { name: "Arrange decks" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: deckOrderCopy.headingAll })).toBeInTheDocument();
     expect(screen.getByText("ALL DECKS · 3")).toBeInTheDocument();
     expect(names()).toEqual(["Alpha", "Bravo", "Charlie"]);
     expect(handle("Alpha").className).toContain("h-[52px]");
@@ -138,7 +139,7 @@ describe("ArrangeDecks", () => {
       press("Cancel");
       expect(onCancel).not.toHaveBeenCalled();
       expect(screen.getByRole("alertdialog")).toBeInTheDocument();
-      fireEvent.click(screen.getByRole("button", { name: "Keep arranging" }));
+      fireEvent.click(screen.getByRole("button", { name: deckOrderCopy.keep }));
       expect(screen.queryByRole("alertdialog")).toBeNull();
       expect(names()).toEqual(["Bravo", "Alpha", "Charlie"]);
       press("Cancel");

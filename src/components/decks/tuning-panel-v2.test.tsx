@@ -1,7 +1,7 @@
 import { act, fireEvent, render as rtlRender, screen, type RenderOptions } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { clockTime, localDay } from "../../lib/copy/credits";
+import { clockTime, localDay, creditsCopy } from "../../lib/copy/credits";
 import { strategyName } from "../../lib/copy/strategy-focus";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
@@ -51,7 +51,7 @@ const v2At = (over = 0, extra: Partial<TuningV2> = {}): TuningV2 => ({
   over,
   noticed: {
     roles: [{ role: "removal", label: "Removal", have: 6, target: 10, advisory: false }],
-    focus: "+1/+1 counters",
+    focus: swapToolsCopy.sheet.job.counters,
     game: null,
   },
   ...extra,
@@ -90,6 +90,7 @@ beforeEach(() => {
 
 import { searchTagCards } from "../../app/cards/tag-actions";
 import { DeckRowWiringProvider, type DeckRowWiring } from "./deck-row-wiring";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
 
 // The notes box's `[[` lookup comes through the deck wiring, as the builder shell mounts it: only that member is real here.
 const wiring = { searchTuningNotesCards: (query: string) => searchTagCards("tuning", query) } as unknown as DeckRowWiring;
@@ -128,7 +129,7 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwoFree(12));
     // The drawn state: nothing counts yet, so there is no reset to name.
     expect(standing()!.textContent).toBe("1 of 1 free");
-    expect(screen.getByRole("link", { name: "Get more credits" }).getAttribute("href")).toBe("/credits");
+    expect(screen.getByRole("link", { name: creditsCopy.chip.out }).getAttribute("href")).toBe("/credits");
     // The off press is described by C's sentence, and the reason was announced on the way in.
     const describedBy = send().getAttribute("aria-describedby");
     expect(describedBy).toBeTruthy();
@@ -159,7 +160,7 @@ describe("Suggested changes v2's 2-credit cue (Small items 7, SC-Cost)", () => {
     typeCount(12);
     expect(stop()!.textContent).toContain(deckTuningCopy.allowance.costsTwo);
     expect(standing()!.textContent).toBe("0 of 1 free · 1\u00a0paid");
-    expect(screen.queryByRole("link", { name: "Get more credits" })).toBeNull();
+    expect(screen.queryByRole("link", { name: creditsCopy.chip.out })).toBeNull();
   });
 
   it("B: welcome credits fund a run of 12, and the line says so", async () => {

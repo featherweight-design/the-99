@@ -43,6 +43,7 @@ import { spareCopy } from "../../../lib/copy/social";
 import { StoreProvider } from "../../stores/store-provider";
 import { storeCopy } from "../../../lib/copy/store";
 import { STORE_INFO } from "../../../lib/stores/info";
+import { twoFacedCopy } from "../../../lib/copy/card-surfaces";
 
 vi.mock("next/link", () => ({
   useLinkStatus: () => ({ pending: false }),
@@ -632,14 +633,14 @@ describe("CartView, a two-faced card's line", () => {
     const [item] = list().getAllByRole("listitem");
     expect(within(item).getByText("Reidane, God of the Worthy")).toBeTruthy();
     expect(within(item).queryByText(/Valkmira/)).toBeNull();
-    expect(within(item).getByText("two-faced card")).toBeTruthy();
+    expect(within(item).getByText(twoFacedCopy.markAria)).toBeTruthy();
   });
 
   it("prints the front face and the mark by deck", () => {
     render(<CartView cart={mdfc} provenance={provenance} initialView="deck" focusDeckId="gishath" />);
     expect(screen.getAllByText("Reidane, God of the Worthy").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Valkmira/)).toBeNull();
-    expect(screen.getAllByText("two-faced card").length).toBeGreaterThan(0);
+    expect(screen.getAllByText(twoFacedCopy.markAria).length).toBeGreaterThan(0);
   });
 });
 

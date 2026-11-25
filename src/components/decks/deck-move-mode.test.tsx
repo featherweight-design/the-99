@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
+import { folderCopy } from "../../lib/copy/folders";
 
 // A picker: the move, its announcement and its outcomes are the view's
 // (`decks-view.test.tsx` covers them against a deferred action).
@@ -37,7 +38,7 @@ describe("MoveMode", () => {
       "Unfiled",
       "Commander night",
       "Cube night",
-      "New folder…",
+      folderCopy.create.actionFromMove,
     ]);
   });
 
@@ -54,7 +55,7 @@ describe("MoveMode", () => {
     // `Unfiled` and `New folder…`, which is STATES M4 exactly.
     expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([
       "Unfiled",
-      "New folder…",
+      folderCopy.create.actionFromMove,
     ]);
   });
 
