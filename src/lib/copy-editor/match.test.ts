@@ -34,6 +34,24 @@ describe("matchText", () => {
     expect(keys("anything at all")).toEqual([]);
   });
 
+  it("never lets a template whose fixed text is only punctuation and spaces claim a two-sentence line", () => {
+    const i = indexRows([
+      row("h#aria", "{question}. {date}, {tail}.", ["question", "date", "tail"]),
+      row("s#b", "Pick the precons you own."),
+      row("s#rest", "Once you have an account, each box goes in whole, commander included."),
+    ]);
+    const text = "Pick the precons you own. Once you have an account, each box goes in whole, commander included.";
+    expect(matchText(i, text)).toEqual([]);
+    expect(matchText(i, "Pick the precons you own.").map((m) => m.row.key)).toEqual(["s#b"]);
+    expect(matchText(i, "Once you have an account, each box goes in whole, commander included.").map((m) => m.row.key)).toEqual(["s#rest"]);
+  });
+
+  it("still matches a template whose fixed text carries a word, however short", () => {
+    const i = indexRows([row("t#in", "{a} items in {b}", ["a", "b"]), row("t#dot", "{a} · {b}", ["a", "b"])]);
+    expect(matchText(i, "3 items in 9").map((m) => m.row.key)).toEqual(["t#in"]);
+    expect(matchText(i, "Ghalta · 99 cards")).toEqual([]);
+  });
+
   it("matches a plural word as its own row", () => {
     expect(keys("card")).toEqual(["a#card"]);
   });

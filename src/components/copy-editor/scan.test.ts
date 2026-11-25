@@ -18,6 +18,12 @@ describe("scanPage", () => {
     expect(found).toEqual(["a#title", "a#count"]);
   });
 
+  it("gives a bold lead and its body their own rows when the whole line is only a template fit", () => {
+    const steps = indexRows([row("s#b", "Add the rest as you go."), row("s#rest", "Scan cards, or search for them by name."), { ...row("t#add", "Add {h1}"), placeholders: ["h1"] }]);
+    document.body.innerHTML = `<li><span><b>Add the rest as you go.</b> Scan cards, or search for them by name.</span></li>`;
+    expect(scanPage(steps).map((e) => e.matches[0].row.key)).toEqual(["s#b", "s#rest"]);
+  });
+
   it("marks a read-only row", () => {
     document.body.innerHTML = `<p>Fixed words</p>`;
     expect(scanPage(index)[0].readOnly).toBe("edit in code: built by x");
