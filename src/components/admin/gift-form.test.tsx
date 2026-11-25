@@ -3,6 +3,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { GiftResult } from "../../lib/admin/gift-rule";
+import { adminCopy } from "../../lib/copy/admin";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh }) }));
@@ -34,7 +35,7 @@ describe("GiftForm", () => {
     render(<GiftForm accounts={ACCOUNTS} clerkDown={false} />);
     expect(screen.queryAllByRole("radio")).toEqual([]);
     fireEvent.change(screen.getByRole("searchbox", { name: "Find an account by name" }), { target: { value: "zz" } });
-    expect(screen.getByText("No account matches.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.payments.form.noMatch)).toBeInTheDocument();
     fill();
     expect(screen.getAllByRole("radio").map((r) => r.getAttribute("data-account"))).toEqual(["u_mara"]);
     expect(within(pending()!).getByText("Saving gives Mara K. 10 credits, spent after plan credits and before packs.")).toBeInTheDocument();
@@ -45,7 +46,7 @@ describe("GiftForm", () => {
     fill("10", "");
     expect(pending()).toBeNull();
     fill("501");
-    expect(screen.getByRole("alert")).toHaveTextContent("Enter a whole number from 1 to 500.");
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.payments.form.errors.units);
     expect(pending()).toBeNull();
   });
 
@@ -111,7 +112,7 @@ describe("GiftForm", () => {
     render(<GiftForm accounts={ACCOUNTS} clerkDown={false} />);
     fill();
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Grant" })));
-    expect(within(pending()!).getByRole("alert")).toHaveTextContent("This environment's Clerk does not know that account.");
+    expect(within(pending()!).getByRole("alert")).toHaveTextContent(adminCopy.payments.form.errors.unknown);
     await act(async () => fireEvent.click(within(pending()!).getByRole("button", { name: "Grant" })));
     expect(within(pending()!).getByRole("alert")).toHaveTextContent("Couldn't grant the credits, so nothing changed.");
   });
@@ -127,6 +128,6 @@ describe("GiftForm", () => {
 
   it("says when Clerk could not be read", () => {
     render(<GiftForm accounts={ACCOUNTS} clerkDown />);
-    expect(screen.getByText("Clerk could not be read, so accounts show by id.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.payments.form.clerkDown)).toBeInTheDocument();
   });
 });

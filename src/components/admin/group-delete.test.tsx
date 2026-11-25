@@ -4,6 +4,7 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { GroupDeleteResult } from "../../lib/admin/group-writes";
+import { adminCopy } from "../../lib/copy/admin";
 
 const refresh = vi.fn();
 const push = vi.fn();
@@ -19,7 +20,7 @@ const { GroupDelete } = await import("./group-delete");
 const T = "11111111-1111-4111-8111-111111111111";
 const remove = vi.fn<(id: string) => Promise<Exclude<GroupDeleteResult, { ok: true }>>>();
 const OVERRIDES = [{ name: "FEEDBACK_ENABLED" as const, label: "Overview v2", value: "on" as const }];
-const press = () => screen.getByRole("button", { name: "Delete this group" });
+const press = () => screen.getByRole("button", { name: adminCopy.groups.delete.action });
 
 // The rethrown redirect escapes the transition: in the app Next's router catches it and navigates, but nothing here
 // does, so jsdom reports it. Swallowed by prefix on both carriers (Next has moved the target between them).
@@ -48,13 +49,13 @@ describe("GroupDelete", () => {
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={OVERRIDES} remove={remove} />);
     expect(press().className).toContain("text-[color:var(--danger)]");
     expect(press()).not.toHaveAttribute("aria-disabled");
-    expect(screen.getByText("Only an empty group can go: no members, no live flyer codes.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.groups.delete.hint)).toBeInTheDocument();
     fireEvent.click(press());
     expect(screen.getByRole("dialog", { name: "Delete testers?" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Delete the group" }).className).toContain("bg-[color:var(--danger)]");
-    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: adminCopy.groups.delete.confirm }).className).toContain("bg-[color:var(--danger)]");
+    expect(screen.getByRole("button", { name: adminCopy.groups.delete.keep })).toHaveFocus();
     expect(screen.getByText("Overview v2 on goes with it. It reaches nobody now.")).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.groups.delete.keep }));
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
@@ -63,12 +64,12 @@ describe("GroupDelete", () => {
     expect(press()).toHaveAttribute("aria-disabled", "true");
     expect(press().className).toContain("aria-disabled:opacity-45");
     expect(screen.getByText("It still has 2 members. Unselect them above and save, then delete it.")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Flyer codes ›" })).toBeNull();
+    expect(screen.queryByRole("link", { name: adminCopy.groups.delete.codesLink })).toBeNull();
     fireEvent.click(press());
     expect(screen.queryByRole("dialog")).toBeNull();
     rerender(<GroupDelete id={T} name="testers" members={0} codes={[{ code: "MOXB7K", revoked: false, ended: false }]} overrides={[]} remove={remove} />);
     expect(screen.getByText("It has the live flyer code MOXB7K. Revoke it on Invites first.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Flyer codes ›" })).toHaveAttribute("href", "/admin/invites#flyer-codes");
+    expect(screen.getByRole("link", { name: adminCopy.groups.delete.codesLink })).toHaveAttribute("href", "/admin/invites#flyer-codes");
     rerender(<GroupDelete id={T} name="testers" members={2} codes={[{ code: "MOXB7K", revoked: false, ended: false }]} overrides={[]} remove={remove} />);
     expect(screen.getByText(/^It still has 2 members and the live flyer code MOXB7K\./)).toBeInTheDocument();
     // A revoked code does not block.
@@ -81,18 +82,18 @@ describe("GroupDelete", () => {
     remove.mockImplementation(() => new Promise(() => {}));
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={[]} remove={remove} />);
     fireEvent.click(press());
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.groups.delete.confirm })));
     expect(remove).toHaveBeenCalledWith(T);
     expect(push).not.toHaveBeenCalled();
     expect(screen.queryByRole("alert")).toBeNull();
-    expect(screen.getByRole("button", { name: "Delete the group" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: adminCopy.groups.delete.confirm })).toBeDisabled();
   });
 
   it("leaves for Groups when the group was already deleted elsewhere", async () => {
     remove.mockResolvedValue({ ok: false, error: "group" });
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={[]} remove={remove} />);
     fireEvent.click(press());
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.groups.delete.confirm })));
     expect(push).toHaveBeenCalledWith("/admin/groups");
     expect(refresh).not.toHaveBeenCalled();
   });
@@ -101,7 +102,7 @@ describe("GroupDelete", () => {
     remove.mockResolvedValue({ ok: false, error: "not_empty" });
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={[]} remove={remove} />);
     fireEvent.click(press());
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.groups.delete.confirm })));
     expect(screen.getByRole("alert")).toHaveTextContent("testers isn’t empty now. Nothing was deleted.");
     expect(screen.getByRole("dialog")).toContainElement(screen.getByRole("alert"));
     expect(refresh).toHaveBeenCalled();
@@ -112,9 +113,9 @@ describe("GroupDelete", () => {
     remove.mockResolvedValueOnce({ ok: false, error: "failed" }).mockRejectedValueOnce(new Error("offline"));
     render(<GroupDelete id={T} name="testers" members={0} codes={[]} overrides={[]} remove={remove} />);
     fireEvent.click(press());
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
-    expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t delete the group. Nothing was deleted.");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Delete the group" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.groups.delete.confirm })));
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.groups.delete.failed);
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.groups.delete.confirm })));
     expect(screen.getByRole("alert")).toHaveTextContent("Lost touch with the server, so the group may be gone.");
     expect(refresh).not.toHaveBeenCalled();
   });

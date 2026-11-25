@@ -4,6 +4,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AccountInvites } from "../../lib/admin/invites-rule";
+import { adminCopy } from "../../lib/copy/admin";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin/accounts/u_colin", useRouter: () => ({ refresh }) }));
@@ -27,9 +28,9 @@ const INVITES: AccountInvites = {
   invitedByFace: null,
   invited: [
     { id: "u_peter", name: "Peter", face: "PE", joined: "Oct 19" },
-    { id: null, name: "deleted account", face: null, joined: "Oct 17" },
+    { id: null, name: "Fixture deleted person", face: null, joined: "Oct 17" },
   ],
-  waitingLines: [{ id: R1, how: "by email", email: "m.chen@example.com", sent: "Oct 20", returns: "Oct 27" }],
+  waitingLines: [{ id: R1, how: "fixture channel", email: "m.chen@example.com", sent: "Oct 20", returns: "Oct 27" }],
   history: [{ when: "Oct 20 · 18:12", what: "Colin sent an invitation: 1 waiting", note: null }],
   historyCut: false,
 };
@@ -46,20 +47,20 @@ const field = (name: string) => screen.getByRole("textbox", { name: new RegExp(`
 describe("AccountInvitesSection (M2)", () => {
   it("draws the field at what is left with its help, and no pending bar until the draft differs", () => {
     render(<AccountInvitesSection accountId="u_colin" name="Colin" invites={INVITES} />);
-    expect(field("Invites left")).toHaveValue("2");
-    expect(field("Invites left")).toHaveAttribute("inputmode", "numeric");
+    expect(field(adminCopy.invites.field)).toHaveValue("2");
+    expect(field(adminCopy.invites.field)).toHaveAttribute("inputmode", "numeric");
     expect(screen.getByText("How many Colin holds now. Only a new account spends one, and nothing but this field refills it.")).toBeInTheDocument();
     expect(screen.queryByTestId("account-invites-pending")).toBeNull();
-    fireEvent.change(field("Invites left"), { target: { value: "4" } });
+    fireEvent.change(field(adminCopy.invites.field), { target: { value: "4" } });
     expect(screen.getByTestId("account-invites-pending")).toHaveTextContent("Saving sets Colin’s invites from 2 to 4. The one waiting stays waiting.");
     fireEvent.click(screen.getByRole("button", { name: "Undo" }));
-    expect(field("Invites left")).toHaveValue("2");
+    expect(field(adminCopy.invites.field)).toHaveValue("2");
     expect(screen.queryByTestId("account-invites-pending")).toBeNull();
   });
 
   it("saves the draft through the action and refreshes", async () => {
     render(<AccountInvitesSection accountId="u_colin" name="Colin" invites={INVITES} />);
-    fireEvent.change(field("Invites left"), { target: { value: " 4" } });
+    fireEvent.change(field(adminCopy.invites.field), { target: { value: " 4" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     expect(setInvites).toHaveBeenCalledWith("u_colin", " 4");
     expect(refresh).toHaveBeenCalledTimes(1);
@@ -67,9 +68,9 @@ describe("AccountInvitesSection (M2)", () => {
 
   it("refuses a draft that is not a whole number from 0 to 1,000, with no Save to press", () => {
     render(<AccountInvitesSection accountId="u_colin" name="Colin" invites={INVITES} />);
-    fireEvent.change(field("Invites left"), { target: { value: "1001" } });
-    expect(screen.getByRole("alert")).toHaveTextContent("Enter a whole number from 0 to 1,000.");
-    expect(field("Invites left")).toHaveAttribute("aria-invalid", "true");
+    fireEvent.change(field(adminCopy.invites.field), { target: { value: "1001" } });
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.invites.invalid);
+    expect(field(adminCopy.invites.field)).toHaveAttribute("aria-invalid", "true");
     expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
     expect(setInvites).not.toHaveBeenCalled();
   });
@@ -77,7 +78,7 @@ describe("AccountInvitesSection (M2)", () => {
   it("says the outcome is unknown when the action throws, and refreshes", async () => {
     setInvites.mockRejectedValue(new Error("lost"));
     render(<AccountInvitesSection accountId="u_colin" name="Colin" invites={INVITES} />);
-    fireEvent.change(field("Invites left"), { target: { value: "4" } });
+    fireEvent.change(field(adminCopy.invites.field), { target: { value: "4" } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     expect(screen.getByRole("alert")).toHaveTextContent("may have saved");
     expect(refresh).toHaveBeenCalledTimes(1);
@@ -88,12 +89,12 @@ describe("AccountInvitesSection (M2)", () => {
     expect(screen.getByTestId("account-invited-by-line")).toHaveTextContent("Invited by Hughjoined Oct 18");
     const peter = screen.getByText("Peter").closest("[data-invited]") as HTMLElement;
     expect(peter).toHaveTextContent("Invited Peterjoined Oct 19");
-    expect(within(peter).getByRole("link", { name: "Open ›" })).toHaveAttribute("href", "/admin/accounts/u_peter");
+    expect(within(peter).getByRole("link", { name: adminCopy.invites.open })).toHaveAttribute("href", "/admin/accounts/u_peter");
     const gone = document.querySelector('[data-invited="deleted"]') as HTMLElement;
-    expect(gone).toHaveTextContent("Invited deleted accountjoined Oct 17");
+    expect(gone).toHaveTextContent("Invited Fixture deleted personjoined Oct 17");
     expect(within(gone).queryByRole("link")).toBeNull();
     const waiting = document.querySelector(`[data-waiting="${R1}"]`) as HTMLElement;
-    expect(waiting).toHaveTextContent("Waiting · by email · m.chen@example.comsent Oct 20 · returns Oct 27");
+    expect(waiting).toHaveTextContent("Waiting · fixture channel · m.chen@example.comsent Oct 20 · returns Oct 27");
     expect(within(screen.getByTestId("account-invites-history")).getByText("Colin sent an invitation: 1 waiting")).toBeInTheDocument();
   });
 
@@ -143,22 +144,22 @@ describe("GroupTopUp (M3)", () => {
   it("names who rises and who already holds that many, tops up through the action, and clears the field", async () => {
     render(<GroupTopUp groupId={G} members={members} />);
     expect(screen.getByText(/^Raises every member holding fewer to this many\./)).toBeInTheDocument();
-    fireEvent.change(field("Top up each member to"), { target: { value: "3" } });
+    fireEvent.change(field(adminCopy.invites.groupField), { target: { value: "3" } });
     expect(screen.getByTestId("group-top-up-pending")).toHaveTextContent("Topping up raises 2 of 3 members to 3 invites left: Colin (2), Max (0). 1 already holds 3.");
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Top up" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: adminCopy.invites.topUp })));
     expect(topUp).toHaveBeenCalledWith(G, "3");
     expect(refresh).toHaveBeenCalledTimes(1);
-    expect(field("Top up each member to")).toHaveValue("");
+    expect(field(adminCopy.invites.groupField)).toHaveValue("");
     expect(screen.queryByTestId("group-top-up-pending")).toBeNull();
   });
 
   it("says when nobody would rise and leaves Top up unpressable; refuses a bad number", () => {
     render(<GroupTopUp groupId={G} members={members} />);
-    fireEvent.change(field("Top up each member to"), { target: { value: "0" } });
+    fireEvent.change(field(adminCopy.invites.groupField), { target: { value: "0" } });
     expect(screen.getByTestId("group-top-up-pending")).toHaveTextContent("Nobody holds fewer than 0: topping up changes nothing.");
-    expect(screen.getByRole("button", { name: "Top up" })).toBeDisabled();
-    fireEvent.change(field("Top up each member to"), { target: { value: "two" } });
-    expect(screen.getByRole("alert")).toHaveTextContent("Enter a whole number from 0 to 1,000.");
-    expect(screen.queryByRole("button", { name: "Top up" })).toBeNull();
+    expect(screen.getByRole("button", { name: adminCopy.invites.topUp })).toBeDisabled();
+    fireEvent.change(field(adminCopy.invites.groupField), { target: { value: "two" } });
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.invites.invalid);
+    expect(screen.queryByRole("button", { name: adminCopy.invites.topUp })).toBeNull();
   });
 });

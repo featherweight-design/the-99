@@ -2,6 +2,7 @@
 // state, and a group's page titled with its name and description under `‹ Groups`.
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { adminCopy } from "../../lib/copy/admin";
 
 let path = "/admin/groups";
 vi.mock("next/navigation", () => ({ usePathname: () => path }));
@@ -16,7 +17,7 @@ const CARD = {
   description: "Hugh plus one friend.",
   count: "2 members",
   members: "Hugh, Mara",
-  overrides: [{ name: "SUGGESTED_CHANGES_V2_ENABLED" as const, label: "Suggested changes v2", value: "on" as const }],
+  overrides: [{ name: "SUGGESTED_CHANGES_V2_ENABLED" as const, label: "Fixture v2 flag", value: "on" as const }],
 };
 
 describe("GroupsList", () => {
@@ -27,30 +28,30 @@ describe("GroupsList", () => {
     expect(card).toHaveTextContent("testers");
     expect(card).toHaveTextContent("2 members");
     expect(card).toHaveTextContent("Hugh, Mara");
-    expect(card).toHaveTextContent("Suggested changes v2: on");
+    expect(card).toHaveTextContent("Fixture v2 flag: on");
     expect(within(card).getByRole("link", { name: "Edit testers" })).toHaveAttribute("href", `/admin/groups/${T}`);
-    expect(screen.getByRole("link", { name: "New group" })).toHaveAttribute("href", "/admin/groups/new");
+    expect(screen.getByRole("link", { name: adminCopy.groups.newGroup })).toHaveAttribute("href", "/admin/groups/new");
   });
 
   it("says No groups yet. beside New group, and that Clerk is down", () => {
     render(<GroupsList cards={[]} count="0 groups" meta="7 accounts · 7 in no group" clerk="down" />);
-    expect(screen.getByText("No groups yet.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "New group" })).toBeInTheDocument();
-    expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.groups.none)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: adminCopy.groups.newGroup })).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.accounts.clerkDown)).toBeInTheDocument();
   });
 });
 
 describe("AdminHead on a group's page", () => {
   const groups = [{ id: T, name: "testers", description: "Hugh plus one friend." }];
-  const tabs = () => within(screen.getByRole("navigation", { name: "Admin pages" })).getAllByRole("link").map((t) => [t.textContent, t.getAttribute("aria-current")]);
+  const tabs = () => within(screen.getByRole("navigation", { name: adminCopy.tabsLabel })).getAllByRole("link").map((t) => [t.textContent, t.getAttribute("aria-current")]);
 
   it("titles itself with the group's name and description, with Groups selected and a back link", () => {
     path = `/admin/groups/${T}`;
     render(<AdminHead env="staging" groups={groups} />);
     expect(screen.getByRole("heading", { level: 1, name: "testers" })).toBeInTheDocument();
     expect(screen.getByText("Hugh plus one friend.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "‹ Groups" })).toHaveAttribute("href", "/admin/groups");
-    expect(tabs()).toEqual([["Costs", null], ["Feature flags", null], ["Groups", "page"], ["Accounts", null], ["Models", null], ["Invites", null], ["Payments", null], ["Feedback", null]]);
+    expect(screen.getByRole("link", { name: adminCopy.groups.back })).toHaveAttribute("href", "/admin/groups");
+    expect(tabs()).toEqual([["Costs", null], [adminCopy.tabs.flags, null], ["Groups", "page"], ["Accounts", null], ["Models", null], ["Invites", null], ["Payments", null], ["Feedback", null]]);
   });
 
   it("draws no sub for a group with no description, and New group on the new page", () => {
@@ -60,14 +61,14 @@ describe("AdminHead on a group's page", () => {
     unmount();
     path = "/admin/groups/new";
     render(<AdminHead env="staging" groups={groups} />);
-    expect(screen.getByRole("heading", { level: 1, name: "New group" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: adminCopy.groups.newTitle })).toBeInTheDocument();
   });
 
   it("draws the plain Groups head on the list", () => {
     path = "/admin/groups";
     render(<AdminHead env="staging" groups={groups} />);
     expect(screen.getByRole("heading", { level: 1, name: "Groups" })).toBeInTheDocument();
-    expect(screen.getByText("Named sets of accounts that share overrides. One group per account.")).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "‹ Groups" })).toBeNull();
+    expect(screen.getByText(adminCopy.groups.sub)).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: adminCopy.groups.back })).toBeNull();
   });
 });

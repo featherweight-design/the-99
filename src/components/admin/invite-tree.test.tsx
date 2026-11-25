@@ -4,6 +4,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Account } from "../../lib/admin/accounts";
 import { buildInviteTree } from "../../lib/admin/invite-tree-rule";
+import { adminCopy } from "../../lib/copy/admin";
 
 const refresh = vi.fn();
 vi.mock("next/navigation", () => ({ usePathname: () => "/admin/invites", useRouter: () => ({ refresh }) }));
@@ -49,7 +50,7 @@ const levelOf = (row: HTMLElement) => {
 describe("InviteTreeView (M4), the hierarchy", () => {
   it("is nested lists, one per level, with ordinary links and buttons and no composite tree widget", () => {
     view();
-    const t = screen.getByRole("list", { name: "Who invited whom" });
+    const t = screen.getByRole("list", { name: adminCopy.invites.tree.label });
     expect(screen.queryByRole("tree")).toBeNull();
     expect(screen.queryByRole("treeitem")).toBeNull();
     const items = rowsIn(t);
@@ -116,7 +117,7 @@ describe("InviteTreeView (M4)", () => {
     expect(screen.queryByTestId("invite-tree")).toBeNull();
     expect(screen.getByText("No account matches “zzz”.")).toBeTruthy();
     // The field is desktop only, so the cut tree carries its own way back at every width.
-    fireEvent.click(within(screen.getByText("No account matches “zzz”.")).getByRole("button", { name: "Clear search" }));
+    fireEvent.click(within(screen.getByText("No account matches “zzz”.")).getByRole("button", { name: adminCopy.invites.tree.clear }));
     expect(screen.getByTestId("invite-tree")).toBeTruthy();
     expect(screen.queryByTestId("invite-tree-filtered")).toBeNull();
   });
@@ -127,13 +128,13 @@ describe("InviteTreeView (M4)", () => {
     const line = screen.getByTestId("invite-tree-filtered");
     expect(line.className).toContain("md:hidden");
     expect(line).toHaveTextContent("Showing accounts matching “pet”.");
-    fireEvent.click(within(line).getByRole("button", { name: "Clear search" }));
+    fireEvent.click(within(line).getByRole("button", { name: adminCopy.invites.tree.clear }));
     expect(rowsIn(screen.getByTestId("invite-tree"))).toHaveLength(4);
   });
 
   it("says so when there is no account at all, and when Clerk's names did not load", () => {
     view({ roots: [], accounts: 0, invited: 0, waiting: 0, clerk: "down" });
-    expect(screen.getByText("No accounts yet.")).toBeTruthy();
-    expect(screen.getByText("Names didn’t load from Clerk.")).toBeTruthy();
+    expect(screen.getByText(adminCopy.invites.tree.empty)).toBeTruthy();
+    expect(screen.getByText(adminCopy.accounts.clerkDown)).toBeTruthy();
   });
 });

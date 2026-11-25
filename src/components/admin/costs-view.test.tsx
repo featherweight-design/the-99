@@ -4,6 +4,7 @@ import type { SettingResult } from "../../app/admin/actions";
 import { describe, expect, it, vi } from "vitest";
 import { costSummary, type CostRows, type DayRow } from "../../lib/admin/costs-rule";
 import { usdToMicro } from "../../lib/model/spend-rule";
+import { adminCopy } from "../../lib/copy/admin";
 
 const setOrgCap = vi.fn(async (_input: unknown): Promise<SettingResult> => ({ ok: true }));
 const setAccountCap = vi.fn(async (_input: unknown): Promise<SettingResult> => ({ ok: true }));
@@ -45,32 +46,32 @@ describe("CostsView, the current month (C1)", () => {
     expect(screen.getByText("October 2026")).toBeInTheDocument();
     expect(screen.getByText("Oct 1 to 11 · UTC · day 11 of 31")).toBeInTheDocument();
     expect(screen.getByText("September: $0.813 in 19 runs.")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Previous month" })).toHaveAttribute("href", "/admin?month=2026-09");
-    expect(screen.queryByRole("link", { name: "Next month" })).toBeNull();
+    expect(screen.getByRole("link", { name: adminCopy.costs.period.previous })).toHaveAttribute("href", "/admin?month=2026-09");
+    expect(screen.queryByRole("link", { name: adminCopy.costs.period.next })).toBeNull();
 
-    expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.135");
+    expect(screen.getByText(adminCopy.costs.tiles.calls).parentElement).toHaveTextContent("$1.135");
     // No plan to be a share of since 2026-10-17: the tile says its runs and pace, as Model calls does.
-    expect(screen.getByText("Player runs").parentElement).toHaveTextContent("23 runs · on pace for");
-    expect(screen.getByText("Player runs").parentElement).not.toHaveTextContent("plan");
-    expect(screen.getByText("Per active account").parentElement).toHaveTextContent("1 account with runs");
+    expect(screen.getByText(adminCopy.costs.tiles.player).parentElement).toHaveTextContent("23 runs · on pace for");
+    expect(screen.getByText(adminCopy.costs.tiles.player).parentElement).not.toHaveTextContent("plan");
+    expect(screen.getByText(adminCopy.costs.tiles.perAccount).parentElement).toHaveTextContent("1 account with runs");
 
     expect(screen.queryByText("$0.884 of $10")).toBeNull();
     expect(screen.queryByText(/hard stop|plan/)).toBeNull();
     expect(screen.getByText("$0.884 of $5")).toBeInTheDocument();
     // One row from code, one from this page and two from Anthropic; the source label sits LEFT of the row's name.
-    for (const [source, n] of [["in code", 1], ["recorded here", 1], ["from Anthropic", 2]] as const) {
+    for (const [source, n] of [[adminCopy.costs.capSource.code, 1], [adminCopy.costs.capSource.here, 1], [adminCopy.costs.capSource.anthropic, 2]] as const) {
       const tags = screen.getAllByText(source);
       expect(tags).toHaveLength(n);
       for (const tag of tags) expect(tag.previousElementSibling).toBeNull();
     }
     // No key here: the workspace row is this environment's ledger alone, and says why.
     expect(screen.getByText("$1.135 here · workspace not read")).toBeInTheDocument();
-    expect(screen.getByText("ANTHROPIC_ADMIN_KEY is not set here, so the workspace is not read.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.costs.unread.no_key)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /elsewhere/i })).toBeNull();
     // The org row is read with the workspace, so it is not read either, and says so without repeating the reason.
     expect(screen.getAllByText(/ANTHROPIC_ADMIN_KEY is not set/)).toHaveLength(1);
-    expect(capRow("Anthropic org cap").row).toHaveTextContent("not read");
-    expect(screen.getByText("The key list was not read.")).toBeInTheDocument();
+    expect(capRow(adminCopy.costs.capRows.org).row).toHaveTextContent(adminCopy.costs.orgUnread);
+    expect(screen.getByText(adminCopy.costs.keys.unread)).toBeInTheDocument();
     expect(screen.queryByRole("status")).toBeNull();
   });
 
@@ -85,8 +86,8 @@ describe("CostsView, the current month (C1)", () => {
       },
     }));
     expect(screen.getByText("$19.40 of $150")).toBeInTheDocument();
-    const { row, segs, ticks } = capRow("The 99 workspace cap");
-    expect(row).toHaveTextContent("from Anthropic");
+    const { row, segs, ticks } = capRow(adminCopy.costs.capRows.workspace);
+    expect(row).toHaveTextContent(adminCopy.costs.capSource.anthropic);
     expect(row).toHaveTextContent(
       "Mirrors Anthropic’s console. This environment’s ledger, then elsewhere hatched. Elsewhere $18.40: the other environment and anything else on this workspace. Read from Anthropic at 14:55 UTC, about five minutes behind.",
     );
@@ -112,12 +113,12 @@ describe("CostsView, the owner's share", () => {
   it("draws the share the allowance enforces, not the constant", () => {
     draw(rows([p(2, 1)], { ownerShareMicro: usdToMicro(25) }));
     expect(screen.getByText("$0.884 of $25")).toBeInTheDocument();
-    const { row, ticks } = capRow("Owner testing share");
+    const { row, ticks } = capRow(adminCopy.costs.capRows.owner);
     expect(ticks).toHaveLength(1);
     expect(ticks[0].style.left).toBe("100%");
-    expect(row).toHaveTextContent("MODEL_OWNER_MONTHLY_USD, or OWNER_SHARE_USD in spend-rule.ts when it is unset.");
+    expect(row).toHaveTextContent(adminCopy.costs.capSub.owner);
     // The bar is scaled to the share: $0.884 of $25 is 3.536% of it.
-    expect(parseFloat(capRow("Owner testing share").segs[0].style.width)).toBeCloseTo(3.536, 2);
+    expect(parseFloat(capRow(adminCopy.costs.capRows.owner).segs[0].style.width)).toBeCloseTo(3.536, 2);
   });
 });
 
@@ -125,7 +126,7 @@ describe("CostsView, caps not set", () => {
   it("draws the workspace cap's bare track, with the figure not set", () => {
     draw(rows([p(2, 1), sys(3, 0.5)], billed(12)));
     expect(screen.getByText("$12.00 · not set")).toBeInTheDocument();
-    const { segs, ticks } = capRow("The 99 workspace cap");
+    const { segs, ticks } = capRow(adminCopy.costs.capRows.workspace);
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
   });
@@ -133,7 +134,7 @@ describe("CostsView, caps not set", () => {
   it("draws the system ceiling's bare track when system spend has no ceiling", () => {
     draw(rows([p(2, 1), sys(3, 0.5)]));
     expect(screen.getByText("$0.500 · not set")).toBeInTheDocument();
-    const { segs, ticks } = capRow("System ceiling");
+    const { segs, ticks } = capRow(adminCopy.costs.capRows.ceiling);
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
   });
@@ -147,10 +148,10 @@ describe("CostsView, caps not set", () => {
       },
     }));
     // The account cap counts every origin: its bar carries the system segment beside the player's.
-    const inks = capRow("The 99 workspace cap").segs.map((el) => el.style.background);
+    const inks = capRow(adminCopy.costs.capRows.workspace).segs.map((el) => el.style.background);
     expect(inks).toEqual(["var(--accent)", "var(--success)", HATCH]);
-    expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--success)"]);
-    expect(capRow("System ceiling").ticks).toHaveLength(1);
+    expect(capRow(adminCopy.costs.capRows.ceiling).segs.map((el) => el.style.background)).toEqual(["var(--success)"]);
+    expect(capRow(adminCopy.costs.capRows.ceiling).ticks).toHaveLength(1);
   });
 
   it("splits system spend into labels and rewrites, each in its own ink, and leaves the evals out", () => {
@@ -166,15 +167,15 @@ describe("CostsView, caps not set", () => {
     expect(screen.getByText("System").parentElement).toHaveTextContent("$121.70");
     expect(screen.getByText("System").parentElement).toHaveTextContent("81% of the $150 ceiling");
     expect(screen.getByText("$121.70 of $150")).toBeInTheDocument();
-    expect(capRow("System ceiling").segs.map((el) => el.style.background)).toEqual(["var(--fact)", "var(--success)"]);
+    expect(capRow(adminCopy.costs.capRows.ceiling).segs.map((el) => el.style.background)).toEqual(["var(--fact)", "var(--success)"]);
     // The workspace cap: Anthropic's bill; the player's, then the two system inks, then elsewhere ($7.30); no eval ink.
     expect(screen.getByText("$130.00 of $250")).toBeInTheDocument();
-    expect(capRow("The 99 workspace cap").segs.map((el) => el.style.background)).toEqual(["var(--accent)", "var(--fact)", "var(--success)", HATCH]);
-    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Elsewhere $7.30:");
+    expect(capRow(adminCopy.costs.capRows.workspace).segs.map((el) => el.style.background)).toEqual(["var(--accent)", "var(--fact)", "var(--success)", HATCH]);
+    expect(capRow(adminCopy.costs.capRows.workspace).row).toHaveTextContent("Elsewhere $7.30:");
     // Every line is reference only, and the page says so.
-    expect(screen.getByText("The system ceiling and the Anthropic caps are reference lines. None of them blocks a call.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.costs.capsReference)).toBeInTheDocument();
     // The Model calls tile stays model_calls alone.
-    expect(screen.getByText("Model calls").parentElement).toHaveTextContent("$1.750");
+    expect(screen.getByText(adminCopy.costs.tiles.calls).parentElement).toHaveTextContent("$1.750");
   });
 });
 
@@ -185,18 +186,18 @@ describe("CostsView, a ceiling that starts later", () => {
     draw(rows([p(2, 1), sys(3, 0.5)], { settings: ceilingFrom("2026-11-01") }));
     expect(screen.getByText("$0.500 · not set")).toBeInTheDocument();
     expect(screen.queryByText(/of \$15/)).toBeNull();
-    const { row, segs, ticks } = capRow("System ceiling");
+    const { row, segs, ticks } = capRow(adminCopy.costs.capRows.ceiling);
     expect(row).toHaveTextContent("Starts November.");
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
-    expect(screen.getByText("System").parentElement).toHaveTextContent("labels, rewrites and prose");
+    expect(screen.getByText("System").parentElement).toHaveTextContent(adminCopy.costs.tileSub.system);
   });
 
   it("applies from the month it starts on", () => {
     draw(rows([p(2, 1), sys(3, 0.5)], { settings: ceilingFrom("2026-10-01") }));
     expect(screen.getByText("$0.500 of $15")).toBeInTheDocument();
-    expect(capRow("System ceiling").row).toHaveTextContent("System rows in model_calls and card label batches. Evals are not counted.");
-    expect(capRow("System ceiling").ticks).toHaveLength(1);
+    expect(capRow(adminCopy.costs.capRows.ceiling).row).toHaveTextContent(adminCopy.costs.capSub.ceiling);
+    expect(capRow(adminCopy.costs.capRows.ceiling).ticks).toHaveLength(1);
     expect(screen.getByText("System").parentElement).toHaveTextContent("3% of the $15 ceiling");
   });
 
@@ -214,7 +215,7 @@ describe("CostsView, a ceiling that starts later", () => {
 
   it("names the year when it starts in another one", () => {
     draw(rows([sys(3, 0.5)], { settings: ceilingFrom("2027-01-01") }));
-    expect(capRow("System ceiling").row).toHaveTextContent("Starts January 2027.");
+    expect(capRow(adminCopy.costs.capRows.ceiling).row).toHaveTextContent("Starts January 2027.");
   });
 });
 
@@ -231,18 +232,18 @@ describe("CostsView, no app-wide limit (2026-10-17)", () => {
 describe("CostsView, other months", () => {
   it("draws an empty month with zeros and the empty line (C3)", () => {
     draw(rows([], { playerAccounts: 0, ownerMicro: 0 }));
-    const calls = screen.getByText("Model calls").parentElement!;
+    const calls = screen.getByText(adminCopy.costs.tiles.calls).parentElement!;
     expect(within(calls).getByText("$0")).toBeInTheDocument();
     expect(within(calls).getByText("0 runs")).toBeInTheDocument();
     expect(screen.getByText("No model calls in October 2026.")).toBeInTheDocument();
-    expect(screen.getByText("Per active account").parentElement).toHaveTextContent("no accounts with runs");
+    expect(screen.getByText(adminCopy.costs.tiles.perAccount).parentElement).toHaveTextContent(adminCopy.costs.tileSub.accounts(0));
   });
 
   it("draws a past month to its end, with › live and no pace (C4)", () => {
     draw(rows([p(30, 4), p(1, 0.5)]), { year: 2026, month: 8 });
     expect(screen.getByText("Sep 1 to 30 · UTC")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Next month" })).toHaveAttribute("href", "/admin");
-    expect(screen.queryByText("on this pace")).toBeNull();
+    expect(screen.getByRole("link", { name: adminCopy.costs.period.next })).toHaveAttribute("href", "/admin");
+    expect(screen.queryByText(adminCopy.costs.trend.onPace)).toBeNull();
     expect(screen.queryByRole("status")).toBeNull();
     expect(screen.getByText("$4.50 by Sep 30")).toBeInTheDocument();
   });
@@ -251,14 +252,14 @@ describe("CostsView, other months", () => {
 describe("the settings actions belong to the current month", () => {
   it("offers no setting action on a past month, whose rows they could not change", () => {
     draw(rows([p(2, 1)]), { year: 2026, month: 8 });
-    for (const name of ["Change the cap", "Change the ceiling", "Change the org cap"]) {
+    for (const name of [adminCopy.costs.changeCap, adminCopy.costs.changeCeiling, adminCopy.costs.changeOrgCap]) {
       expect(screen.queryByRole("button", { name })).toBeNull();
     }
   });
 
   it("offers all three on the current month, and no elsewhere entry", () => {
     draw(rows([p(2, 1)]));
-    for (const name of ["Change the cap", "Change the ceiling", "Change the org cap"]) {
+    for (const name of [adminCopy.costs.changeCap, adminCopy.costs.changeCeiling, adminCopy.costs.changeOrgCap]) {
       expect(screen.getByRole("button", { name })).toBeInTheDocument();
     }
     expect(screen.queryByRole("button", { name: /elsewhere/i })).toBeNull();
@@ -270,13 +271,13 @@ describe("the workspace cap row", () => {
 
   it("shows the note saved with the cap, read or not", () => {
     draw(rows([p(2, 1)], { ...billed(20), settings: cap }));
-    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Note: raised for the eval run");
+    expect(capRow(adminCopy.costs.capRows.workspace).row).toHaveTextContent("Note: raised for the eval run");
   });
 
   it("names a ledger past the bill, and draws elsewhere as $0", () => {
     // Ledger $1.06 against a $1 bill: past the $0.05 floor.
     draw(rows([p(2, 1.06)], { ...billed(1), settings: cap }));
-    const { row, segs } = capRow("The 99 workspace cap");
+    const { row, segs } = capRow(adminCopy.costs.capRows.workspace);
     expect(row).toHaveTextContent("This environment’s ledger reads more than the workspace bill, so elsewhere reads $0.");
     expect(row).toHaveTextContent("Spend from before a key moved to this workspace stays billed where it ran.");
     expect(row).not.toHaveTextContent("Elsewhere $");
@@ -285,28 +286,28 @@ describe("the workspace cap row", () => {
 
   it("says elsewhere is $0 with no remark inside the tolerance", () => {
     draw(rows([p(2, 1.04)], { ...billed(1), settings: cap }));
-    const { row } = capRow("The 99 workspace cap");
+    const { row } = capRow(adminCopy.costs.capRows.workspace);
     expect(row).toHaveTextContent("Elsewhere $0: the other environment");
     expect(row).not.toHaveTextContent("reads more than");
   });
 
   it("dates a read from another day", () => {
     render(<CostsView s={costSummary(rows([p(2, 1)], billed(5)), OCT, NOW)} names={{}} month={OCT} current={OCT} now={new Date("2026-10-12T00:10:00Z")} />);
-    expect(capRow("The 99 workspace cap").row).toHaveTextContent("Read from Anthropic at Oct 11, 14:55 UTC, about five minutes behind.");
+    expect(capRow(adminCopy.costs.capRows.workspace).row).toHaveTextContent("Read from Anthropic at Oct 11, 14:55 UTC, about five minutes behind.");
   });
 
   it.each([
-    [{ ok: false, kind: "no_key" }, "ANTHROPIC_ADMIN_KEY is not set here, so the workspace is not read."],
-    [{ ok: false, kind: "refused" }, "Anthropic refused the admin key."],
-    [{ ok: false, kind: "rejected" }, "Anthropic refused the request for this month."],
-    [{ ok: false, kind: "upstream" }, "Anthropic’s cost report did not answer. A load a minute from now tries again."],
-    [{ ok: false, kind: "shape" }, "Anthropic’s cost report came back in a shape this page does not read."],
+    [{ ok: false, kind: "no_key" }, adminCopy.costs.unread.no_key],
+    [{ ok: false, kind: "refused" }, adminCopy.costs.unread.refused],
+    [{ ok: false, kind: "rejected" }, adminCopy.costs.unread.rejected],
+    [{ ok: false, kind: "upstream" }, adminCopy.costs.unread.upstream],
+    [{ ok: false, kind: "shape" }, adminCopy.costs.unread.shape],
     [{ ok: false, kind: "no_workspace" }, "No Anthropic workspace is named The 99."],
     [{ ok: false, kind: "ambiguous_workspace", count: 3 }, "3 Anthropic workspaces are named The 99, so none is read."],
   ] as const)("draws %j as the ledger alone on the bare track, with its reason", (anthropic, reason) => {
     draw(rows([p(2, 1), sys(3, 0.5)], { anthropic, settings: cap }));
     expect(screen.getByText("$1.500 here · workspace not read")).toBeInTheDocument();
-    const { row, segs, ticks } = capRow("The 99 workspace cap");
+    const { row, segs, ticks } = capRow(adminCopy.costs.capRows.workspace);
     expect(row).toHaveTextContent(reason);
     expect(row).not.toHaveTextContent("Read from Anthropic");
     expect(segs).toEqual([]);
@@ -323,8 +324,8 @@ describe("the org cap row", () => {
   it("draws the org's month against its cap: The 99, then other workspaces hatched", () => {
     draw(rows([p(2, 1)], { ...billed(124.54, 9), settings: caps }));
     expect(screen.getByText("$133.54 of $250")).toBeInTheDocument();
-    const { row, segs, ticks } = capRow("Anthropic org cap");
-    expect(row).toHaveTextContent("from Anthropic");
+    const { row, segs, ticks } = capRow(adminCopy.costs.capRows.org);
+    expect(row).toHaveTextContent(adminCopy.costs.capSource.anthropic);
     expect(row).toHaveTextContent("The 99 $124.54, other workspaces $9.00 hatched, the default workspace included.");
     expect(row).toHaveTextContent("Note: console, Oct");
     expect(segs.map((el) => el.style.background)).toEqual(["var(--accent)", HATCH]);
@@ -338,7 +339,7 @@ describe("the org cap row", () => {
     // The 99 at $100, the rest of the org a $20 credit: an $80 org, and the line says so rather than $0.
     draw(rows([p(2, 1)], { ...billed(100, -20), settings: caps }));
     expect(screen.getByText("$80.00 of $250")).toBeInTheDocument();
-    const { row, segs } = capRow("Anthropic org cap");
+    const { row, segs } = capRow(adminCopy.costs.capRows.org);
     expect(row).toHaveTextContent("The 99 $100.00, other workspaces −$20.00 hatched");
     expect(segs.map((el) => el.style.width).at(-1)).toBe("0%");
   });
@@ -346,28 +347,28 @@ describe("the org cap row", () => {
   it("draws the bare track with the figure not set when no org cap is stored", () => {
     draw(rows([p(2, 1)], billed(12, 3)));
     expect(screen.getByText("$15.00 · not set")).toBeInTheDocument();
-    const { segs, ticks } = capRow("Anthropic org cap");
+    const { segs, ticks } = capRow(adminCopy.costs.capRows.org);
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
   });
 
   it("draws the bare track when the org is not read, naming the workspace row's reason once", () => {
     draw(rows([p(2, 1)], { anthropic: { ok: false, kind: "refused" }, settings: caps }));
-    const { row, segs, ticks } = capRow("Anthropic org cap");
-    expect(row).toHaveTextContent("not read");
+    const { row, segs, ticks } = capRow(adminCopy.costs.capRows.org);
+    expect(row).toHaveTextContent(adminCopy.costs.orgUnread);
     expect(row).not.toHaveTextContent("$250");
     expect(segs).toEqual([]);
     expect(ticks).toEqual([]);
-    expect(screen.getAllByText("Anthropic refused the admin key.")).toHaveLength(1);
+    expect(screen.getAllByText(adminCopy.costs.unread.refused)).toHaveLength(1);
   });
 
   it("saves the org cap through its own action", async () => {
     draw(rows([p(2, 1)]));
-    fireEvent.click(screen.getByRole("button", { name: "Change the org cap" }));
-    const dialog = screen.getByRole("dialog", { name: "Change the org cap" });
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.costs.changeOrgCap }));
+    const dialog = screen.getByRole("dialog", { name: adminCopy.costs.changeOrgCap });
     expect(within(dialog).queryByLabelText("As of")).toBeNull();
     expect(within(dialog).queryByLabelText("Starts")).toBeNull();
-    fireEvent.change(within(dialog).getByLabelText("Amount ($)"), { target: { value: "250" } });
+    fireEvent.change(within(dialog).getByLabelText(adminCopy.setting.amount), { target: { value: "250" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(setOrgCap).toHaveBeenCalledWith({ amount: "250", note: "" }));
     expect(setAccountCap).not.toHaveBeenCalledWith({ amount: "250", note: "" });
@@ -375,7 +376,7 @@ describe("the org cap row", () => {
 });
 
 describe("the keys on The 99", () => {
-  const list = () => screen.getByRole("heading", { name: "Keys on The 99" }).parentElement!.nextElementSibling as HTMLElement;
+  const list = () => screen.getByRole("heading", { name: adminCopy.costs.keys.title }).parentElement!.nextElementSibling as HTMLElement;
 
   it("lists each key's name, hint and status", () => {
     const keys: Keys = {
@@ -383,7 +384,7 @@ describe("the keys on The 99", () => {
       rows: [PROD_KEY, { name: "GitHub workflows", hint: null, status: "other", statusWord: "expired" }],
     };
     draw(rows([p(2, 1)], billed(5, 0, keys)));
-    expect(screen.getByText("name and hint only")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.costs.keys.meta)).toBeInTheDocument();
     const items = within(list()).getAllByRole("listitem");
     expect(items).toHaveLength(2);
     expect(items[0]).toHaveTextContent("Production app");
@@ -395,13 +396,13 @@ describe("the keys on The 99", () => {
 
   it("says when the workspace holds no keys", () => {
     draw(rows([p(2, 1)], billed(5, 0, { ok: true, rows: [] })));
-    expect(within(list()).getByText("No keys on this workspace.")).toBeInTheDocument();
+    expect(within(list()).getByText(adminCopy.costs.keys.none)).toBeInTheDocument();
     expect(within(list()).queryAllByRole("listitem")).toEqual([]);
   });
 
   it("says the list was not read, beside figures that were", () => {
     draw(rows([p(2, 1)], billed(5, 2, { ok: false, kind: "upstream" })));
-    expect(within(list()).getByText("The key list was not read.")).toBeInTheDocument();
+    expect(within(list()).getByText(adminCopy.costs.keys.unread)).toBeInTheDocument();
     expect(screen.getByText("$7.00 · not set")).toBeInTheDocument();
   });
 });
@@ -410,40 +411,40 @@ describe("the settings dialog", () => {
   it("keeps what was typed when the save is refused", async () => {
     setAccountCap.mockResolvedValueOnce({ ok: false, error: "amount" });
     draw(rows([p(2, 1)]));
-    fireEvent.click(screen.getByRole("button", { name: "Change the cap" }));
-    const dialog = screen.getByRole("dialog", { name: "Change the cap" });
-    fireEvent.change(within(dialog).getByLabelText("Amount ($)"), { target: { value: "12.345" } });
-    fireEvent.change(within(dialog).getByLabelText("Note (optional)"), { target: { value: "console" } });
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.costs.changeCap }));
+    const dialog = screen.getByRole("dialog", { name: adminCopy.costs.changeCap });
+    fireEvent.change(within(dialog).getByLabelText(adminCopy.setting.amount), { target: { value: "12.345" } });
+    fireEvent.change(within(dialog).getByLabelText(adminCopy.setting.note), { target: { value: "console" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
-    await vi.waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent("Enter dollars, like 18.40."));
+    await vi.waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent(adminCopy.setting.badAmount));
     expect(setAccountCap).toHaveBeenCalledWith({ amount: "12.345", note: "console" });
-    expect(within(dialog).getByLabelText("Amount ($)")).toHaveValue("12.345");
-    expect(within(dialog).getByLabelText("Note (optional)")).toHaveValue("console");
+    expect(within(dialog).getByLabelText(adminCopy.setting.amount)).toHaveValue("12.345");
+    expect(within(dialog).getByLabelText(adminCopy.setting.note)).toHaveValue("console");
   });
 
   it("says the outcome is unknown and refreshes when the action itself is rejected, keeping what was typed", async () => {
     setAccountCap.mockRejectedValueOnce(new Error("network"));
     draw(rows([p(2, 1)]));
-    fireEvent.click(screen.getByRole("button", { name: "Change the cap" }));
-    const dialog = screen.getByRole("dialog", { name: "Change the cap" });
-    fireEvent.change(within(dialog).getByLabelText("Amount ($)"), { target: { value: "100" } });
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.costs.changeCap }));
+    const dialog = screen.getByRole("dialog", { name: adminCopy.costs.changeCap });
+    fireEvent.change(within(dialog).getByLabelText(adminCopy.setting.amount), { target: { value: "100" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(within(dialog).getByRole("alert")).toHaveTextContent(/may have saved/));
     expect(within(dialog).getByRole("alert")).not.toHaveTextContent(/Nothing changed/);
     expect(refresh).toHaveBeenCalled();
-    expect(within(dialog).getByLabelText("Amount ($)")).toHaveValue("100");
+    expect(within(dialog).getByLabelText(adminCopy.setting.amount)).toHaveValue("100");
   });
 
   it("takes the month a ceiling starts, from this UTC month on", async () => {
     draw(rows([p(2, 1)]));
-    fireEvent.click(screen.getByRole("button", { name: "Change the ceiling" }));
-    const dialog = screen.getByRole("dialog", { name: "Change the ceiling" });
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.costs.changeCeiling }));
+    const dialog = screen.getByRole("dialog", { name: adminCopy.costs.changeCeiling });
     const start = within(dialog).getByLabelText("Starts");
     const thisMonth = new Date().toISOString().slice(0, 7);
     expect(start).toHaveAttribute("type", "month");
     expect(start).toHaveValue(thisMonth);
     expect(start).toHaveAttribute("min", thisMonth);
-    fireEvent.change(within(dialog).getByLabelText("Amount ($)"), { target: { value: "15" } });
+    fireEvent.change(within(dialog).getByLabelText(adminCopy.setting.amount), { target: { value: "15" } });
     fireEvent.change(start, { target: { value: "2099-11" } });
     fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
     await vi.waitFor(() => expect(setSystemCeiling).toHaveBeenCalledWith({ amount: "15", start: "2099-11", note: "" }));
@@ -451,7 +452,7 @@ describe("the settings dialog", () => {
 
   it("is 16px on any touch screen, and 14px only for a fine pointer at md, so iOS does not zoom on focus", () => {
     draw(rows([p(2, 1)]));
-    fireEvent.click(screen.getByRole("button", { name: "Change the cap" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.costs.changeCap }));
     for (const input of within(screen.getByRole("dialog")).getAllByRole("textbox")) {
       expect(input.className).toMatch(/(^|\s)text-\[16px\](\s|$)/);
       expect(input.className).toMatch(/(^|\s)\[@media\(pointer:fine\)\]:md:text-\[14px\](\s|$)/);
@@ -551,12 +552,12 @@ describe("AdminHead", () => {
     const chip = screen.getByText(env);
     expect(chip.querySelector("[aria-hidden]")?.className).toContain(ink);
     expect(screen.getByRole("heading", { level: 1, name: "Costs" })).toBeInTheDocument();
-    const tabs = within(screen.getByRole("navigation", { name: "Admin pages" })).getAllByRole("link");
+    const tabs = within(screen.getByRole("navigation", { name: adminCopy.tabsLabel })).getAllByRole("link");
     // Only pages that exist are listed, so no tab is a 404.
     // Costs first (Hugh's ruling), then Feature flags (admin PR 8a), then Groups (9a).
     expect(tabs.map((t) => [t.textContent, t.getAttribute("href"), t.getAttribute("aria-current")])).toEqual([
       ["Costs", "/admin", "page"],
-      ["Feature flags", "/admin/flags", null],
+      [adminCopy.tabs.flags, "/admin/flags", null],
       ["Groups", "/admin/groups", null],
       ["Accounts", "/admin/accounts", null],
       ["Models", "/admin/models", null],

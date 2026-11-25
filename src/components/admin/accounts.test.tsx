@@ -6,6 +6,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AccountPage } from "../../lib/admin/account-page";
 import type { AccountRow } from "../../lib/admin/account-page-rule";
 import type { MoveResult } from "../../lib/admin/group-writes";
+import { adminMaskCopy } from "../../lib/copy/admin";
+import { adminCopy } from "../../lib/copy/admin";
 
 let path = "/admin/accounts";
 const refresh = vi.fn();
@@ -44,22 +46,22 @@ const PAGE: AccountPage = {
   canShow: true,
   role: "5 credits a day.",
   tiles: [
-    { key: "credits", label: "Credits now", figure: "0 of 5 left", sub: "reset at 9:05 PM UTC" },
+    { key: "credits", label: "Fixture credits tile", figure: "0 of 5 left", sub: "reset at 9:05 PM UTC" },
     { key: "spent", label: "Spent in October", figure: "$1.420", sub: null },
     { key: "presses", label: "Runs", figure: "34", sub: null },
-    { key: "hub", label: "Tuning hub", figure: "Drawn", sub: "2 of its tools on" },
+    { key: "hub", label: "Fixture hub tile", figure: "Drawn", sub: "2 of its tools on" },
     { key: "invites", label: "Invites", figure: "2", sub: "0 waiting · 0 spent" },
   ],
   group: { id: F, name: "friends" },
   groups: [{ id: F, name: "friends" }, { id: T, name: "testers" }],
   switches: {
-    override: [{ name: "PUSH_ENABLED", label: "Push notifications", on: true, source: "group friends", kill: false }],
+    override: [{ name: "PUSH_ENABLED", label: "Fixture push flag", on: true, source: "group friends", kill: false }],
     rule: [
-      { name: "FLYER_TRIAL_ENABLED", label: "Flyer trial", on: false, source: "env var is off", kill: true },
-      { name: "WELCOME_CREDITS_ENABLED", label: "Welcome credits", on: false, source: "Buying credits is off", kill: false },
+      { name: "FLYER_TRIAL_ENABLED", label: "Fixture flyer flag", on: false, source: "env var is off", kill: true },
+      { name: "WELCOME_CREDITS_ENABLED", label: "Fixture welcome flag", on: false, source: "Buying credits is off", kill: false },
     ],
     envOn: ["Announcements", "Feedback"],
-    envOff: ["Buying credits"],
+    envOff: ["Fixture payments flag"],
     total: 6,
   },
   features: [{ feature: "synopsis", name: "Overview", presses: 12, spent: "$0.640" }],
@@ -92,7 +94,7 @@ describe("AccountsList (A1 to A3)", () => {
     expect(rows[1]).toHaveTextContent("3 of 5");
     // Under the `Credits now` head the row says `3 of 5`, not `3 of 5 left` (R3, A1).
     expect(rows[1]).not.toHaveTextContent("3 of 5 left");
-    expect(rows[0]).toHaveTextContent("No group");
+    expect(rows[0]).toHaveTextContent(adminCopy.accounts.noGroup);
     // The phone's meta line names the group as the desktop column does, `No group` included.
     expect(rows[0]).toHaveTextContent("No group · 7 of 10");
     expect(rows[1]).toHaveTextContent("friends · 3 of 5");
@@ -114,12 +116,12 @@ describe("AccountsList (A1 to A3)", () => {
     expect(hugh).toHaveTextContent("No group · 7 of 10 · 0 invites · founder");
     expect(mara).toHaveTextContent("friends · 3 of 5 · 2 · 1 waiting · by Hugh H.");
     expect(theo).toHaveTextContent("No group · 5 of 5 · 3 invites · by deleted account");
-    expect(screen.getAllByText("Invited by", { selector: "[aria-hidden] span" })).toHaveLength(1);
+    expect(screen.getAllByText(adminCopy.invites.colInvitedBy, { selector: "[aria-hidden] span" })).toHaveLength(1);
   });
 
   it("searches the masked name through the shared search field, and says when nothing matches", () => {
     render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Name, or a whole email" });
+    const search = screen.getByRole("searchbox", { name: adminMaskCopy.accounts.search });
     fireEvent.change(search, { target: { value: "ara q" } });
     expect(within(screen.getByTestId("account-rows")).getAllByRole("listitem")).toHaveLength(1);
     fireEvent.change(search, { target: { value: "zed" } });
@@ -129,7 +131,7 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("never matches an email or a Clerk id, which the client does not hold whole", () => {
     render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Name, or a whole email" });
+    const search = screen.getByRole("searchbox", { name: adminMaskCopy.accounts.search });
     for (const q of ["example.com", "user_9", "9mara"]) {
       fireEvent.change(search, { target: { value: q } });
       expect(screen.queryByTestId("account-rows")).toBeNull();
@@ -153,7 +155,7 @@ describe("AccountsList (A1 to A3)", () => {
   it("matches an account with no name by its Account ·<tail>, never by its id's start", () => {
     const bare: AccountRow = { id: "user_7bare", name: "Account ·bare", email: null, owner: false, initials: null, group: null, credits: "", spend: "$0", invites: { left: 0, waiting: 0, invitedBy: { kind: "founder" } } };
     render(<AccountsList viewerId="user_2hugh" rows={[bare]} clerk="down" month="October" env="staging" />);
-    const search = screen.getByRole("searchbox", { name: "Name, or a whole email" });
+    const search = screen.getByRole("searchbox", { name: adminMaskCopy.accounts.search });
     fireEvent.change(search, { target: { value: "user_7" } });
     expect(screen.queryByTestId("account-rows")).toBeNull();
     fireEvent.change(search, { target: { value: "·bare" } });
@@ -217,7 +219,7 @@ describe("AccountsList (A1 to A3)", () => {
   });
 
   describe("the one field: a name, or a whole email (D10 to D13)", () => {
-    const field = () => screen.getByRole("searchbox", { name: "Name, or a whole email" });
+    const field = () => screen.getByRole("searchbox", { name: adminMaskCopy.accounts.search });
     const rowsShown = () => (screen.queryByTestId("account-rows") ? within(screen.getByTestId("account-rows")).getAllByRole("listitem") : []);
     const list = () => render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="ok" month="October" env="production" />);
 
@@ -235,7 +237,7 @@ describe("AccountsList (A1 to A3)", () => {
       list();
       fireEvent.change(field(), { target: { value: "mara@example.com" } });
       expect(rowsShown()).toHaveLength(3);
-      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
+      expect(screen.getByText(adminMaskCopy.accounts.enterToLookUp)).toBeInTheDocument();
       expect(lookUpFn).not.toHaveBeenCalled();
     });
 
@@ -246,7 +248,7 @@ describe("AccountsList (A1 to A3)", () => {
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
       expect(lookUpFn).toHaveBeenCalledTimes(1);
       expect(lookUpFn).toHaveBeenCalledWith("Mara@Example.com");
-      expect(screen.getByText("One account holds this email.")).toBeInTheDocument();
+      expect(screen.getByText(adminMaskCopy.accounts.hit)).toBeInTheDocument();
       const rows = rowsShown();
       expect(rows).toHaveLength(1);
       expect(rows[0]).toHaveTextContent("m•••@e•••.com");
@@ -261,7 +263,7 @@ describe("AccountsList (A1 to A3)", () => {
       list();
       fireEvent.change(field(), { target: { value: "nobody@example.com" } });
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
-      expect(screen.getByText("No account holds this email.")).toBeInTheDocument();
+      expect(screen.getByText(adminMaskCopy.accounts.miss)).toBeInTheDocument();
       expect(screen.queryByTestId("account-rows")).toBeNull();
       expect(screen.queryByText("Account")).toBeNull();
     });
@@ -273,9 +275,9 @@ describe("AccountsList (A1 to A3)", () => {
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
       expect(field()).toHaveValue("mara@example.com");
       expect(rowsShown()).toHaveLength(3);
-      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
+      expect(screen.getByText(adminMaskCopy.accounts.enterToLookUp)).toBeInTheDocument();
       const toast = screen.getByRole("alert");
-      expect(toast).toHaveTextContent("Couldn’t look up that email.");
+      expect(toast).toHaveTextContent(adminMaskCopy.accounts.lookUpFailed);
       await act(async () => fireEvent.click(within(toast).getByRole("button", { name: "Try again" })));
       expect(lookUpFn).toHaveBeenCalledTimes(2);
       expect(rowsShown()).toHaveLength(1);
@@ -286,11 +288,11 @@ describe("AccountsList (A1 to A3)", () => {
       list();
       fireEvent.change(field(), { target: { value: "nobody@example.com" } });
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
-      expect(screen.getByText("No account holds this email.")).toBeInTheDocument();
+      expect(screen.getByText(adminMaskCopy.accounts.miss)).toBeInTheDocument();
       fireEvent.change(field(), { target: { value: "" } });
       fireEvent.change(field(), { target: { value: "nobody@example.com" } });
-      expect(screen.queryByText("No account holds this email.")).toBeNull();
-      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
+      expect(screen.queryByText(adminMaskCopy.accounts.miss)).toBeNull();
+      expect(screen.getByText(adminMaskCopy.accounts.enterToLookUp)).toBeInTheDocument();
       expect(rowsShown()).toHaveLength(3);
     });
 
@@ -302,8 +304,8 @@ describe("AccountsList (A1 to A3)", () => {
       expect(rowsShown()).toHaveLength(1);
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
       expect(rowsShown()).toHaveLength(3);
-      expect(screen.getByText("Press Enter to look up this exact email.")).toBeInTheDocument();
-      expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t look up that email.");
+      expect(screen.getByText(adminMaskCopy.accounts.enterToLookUp)).toBeInTheDocument();
+      expect(screen.getByRole("alert")).toHaveTextContent(adminMaskCopy.accounts.lookUpFailed);
     });
 
     it("drops an answer for an address edited away while it was asked", async () => {
@@ -324,7 +326,7 @@ describe("AccountsList (A1 to A3)", () => {
       fireEvent.change(field(), { target: { value: "new@example.com" } });
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
       expect(refresh).toHaveBeenCalledTimes(1);
-      expect(screen.getByText("One account holds this email.")).toBeInTheDocument();
+      expect(screen.getByText(adminMaskCopy.accounts.hit)).toBeInTheDocument();
       expect(screen.queryByTestId("account-card")).toBeNull();
     });
 
@@ -338,7 +340,7 @@ describe("AccountsList (A1 to A3)", () => {
       fireEvent.change(field(), { target: { value: "mara@example.com" } });
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
       expect(screen.getAllByRole("alert")).toHaveLength(1);
-      expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t look up that email.");
+      expect(screen.getByRole("alert")).toHaveTextContent(adminMaskCopy.accounts.lookUpFailed);
       // Clearing the newer leaves none: the failed Show it replaced is gone for good.
       fireEvent.change(field(), { target: { value: "" } });
       expect(screen.queryByRole("alert")).toBeNull();
@@ -350,7 +352,7 @@ describe("AccountsList (A1 to A3)", () => {
       list();
       fireEvent.change(field(), { target: { value: "mara@example.com" } });
       await act(async () => fireEvent.keyDown(field(), { key: "Enter" }));
-      expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t look up that email.");
+      expect(screen.getByRole("alert")).toHaveTextContent(adminMaskCopy.accounts.lookUpFailed);
       // The whole list stays on a failed lookup, so Mara's Show is there to press.
       const mara = within(screen.getByTestId("account-rows")).getAllByRole("listitem")[1];
       await act(async () => fireEvent.click(within(mara).getByRole("button", { name: /Show/ })));
@@ -375,25 +377,25 @@ describe("AccountsList (A1 to A3)", () => {
 
   it("says the names did not load when Clerk is down", () => {
     render(<AccountsList viewerId="user_2hugh" rows={ROWS} clerk="down" month="October" env="staging" />);
-    expect(screen.getByText("Names didn’t load from Clerk.")).toBeInTheDocument();
+    expect(screen.getByText(adminCopy.accounts.clerkDown)).toBeInTheDocument();
   });
 });
 
 describe("AdminHead on the Accounts pages", () => {
-  const tabs = () => within(screen.getByRole("navigation", { name: "Admin pages" })).getAllByRole("link").map((t) => [t.textContent, t.getAttribute("aria-current")]);
+  const tabs = () => within(screen.getByRole("navigation", { name: adminCopy.tabsLabel })).getAllByRole("link").map((t) => [t.textContent, t.getAttribute("aria-current")]);
 
   it("selects Accounts, after Groups, and titles the list with no sub of its own", () => {
     path = "/admin/accounts";
     const { container } = render(<AdminHead env="staging" />);
     expect(screen.getByRole("heading", { level: 1, name: "Accounts" })).toBeInTheDocument();
     expect(container.querySelector("header p")).toBeNull();
-    expect(tabs()).toEqual([["Costs", null], ["Feature flags", null], ["Groups", null], ["Accounts", "page"], ["Models", null], ["Invites", null], ["Payments", null], ["Feedback", null]]);
+    expect(tabs()).toEqual([["Costs", null], [adminCopy.tabs.flags, null], ["Groups", null], ["Accounts", "page"], ["Models", null], ["Invites", null], ["Payments", null], ["Feedback", null]]);
   });
 
   it("draws the back link and no title on an account's page, which titles itself", () => {
     path = "/admin/accounts/user_9mara";
     render(<AdminHead env="staging" />);
-    expect(screen.getByRole("link", { name: "‹ Accounts" })).toHaveAttribute("href", "/admin/accounts");
+    expect(screen.getByRole("link", { name: adminCopy.accounts.back })).toHaveAttribute("href", "/admin/accounts");
     expect(screen.queryByRole("heading", { level: 1 })).toBeNull();
     expect(tabs().at(-5)).toEqual(["Accounts", "page"]);
   });
@@ -476,7 +478,7 @@ describe("AccountPageView (A4 to A7)", () => {
     const off = box.querySelector('[data-switch="WELCOME_CREDITS_ENABLED"]')!;
     expect(within(off as HTMLElement).getByText("Off").className).toContain("var(--fg-muted)");
     expect(box.querySelector('[data-env-list="on"]')).toHaveTextContent("On · 2Announcements, Feedback");
-    expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Buying credits");
+    expect(box.querySelector('[data-env-list="off"]')).toHaveTextContent("Off · 1Fixture payments flag");
     expect(screen.queryByText(/disagree/i)).toBeNull();
   });
 
@@ -490,7 +492,7 @@ describe("AccountPageView (A4 to A7)", () => {
     await act(async () => fireEvent.click(within(box).getByRole("radio", { name: "On" })));
     expect(setOverride).toHaveBeenCalledWith({ switchName: "ALL_FEATURES", scope: "user", targetUserId: "user_9mara", value: "on" });
     rerender(<AccountPageView page={{ ...PAGE, allFeatures: true }} />);
-    await act(async () => fireEvent.click(within(screen.getByTestId("account-all-features")).getByRole("radio", { name: "Not set" })));
+    await act(async () => fireEvent.click(within(screen.getByTestId("account-all-features")).getByRole("radio", { name: adminCopy.flag.appOpts.notSet })));
     expect(clearOverride).toHaveBeenCalledWith({ switchName: "ALL_FEATURES", scope: "user", targetUserId: "user_9mara" });
   });
 
@@ -512,7 +514,7 @@ describe("AccountPageView (A4 to A7)", () => {
 
   it("says the overrides did not load above its sections", () => {
     render(<AccountPageView page={{ ...PAGE, overridesRead: false }} />);
-    const notice = screen.getByText("Overrides didn’t load. Every flag shows its fallback.");
+    const notice = screen.getByText(adminCopy.flags.overridesUnread);
     expect(notice.compareDocumentPosition(screen.getByTestId("account-tiles")) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
@@ -531,10 +533,10 @@ describe("AccountPageView (A4 to A7)", () => {
   it("changes the group through the move action, and refreshes after it saves", async () => {
     move.mockResolvedValue({ ok: true });
     render(<AccountPageView page={PAGE} />);
-    fireEvent.click(screen.getByRole("button", { name: "Change group" }));
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.accounts.changeGroup }));
     const save = screen.getByRole("button", { name: "Save" });
     expect(save).toBeDisabled();
-    fireEvent.change(screen.getByRole("combobox", { name: "Move to" }), { target: { value: "" } });
+    fireEvent.change(screen.getByRole("combobox", { name: adminCopy.accounts.pickGroup }), { target: { value: "" } });
     await act(async () => fireEvent.click(save));
     expect(move).toHaveBeenCalledWith("user_9mara", null, undefined);
     expect(refresh).toHaveBeenCalled();
@@ -545,24 +547,24 @@ describe("AccountPageView (A4 to A7)", () => {
     const preview = { names: ["Mara Q."], count: 1, about: 0, costs: [{ key: "intake" as const, reserveMicroUsd: 40_000, meanMicroUsd: null }], credits: [5] };
     move.mockResolvedValueOnce({ ok: false, error: "confirm", preview }).mockResolvedValueOnce({ ok: false, error: "failed" });
     render(<AccountPageView page={PAGE} />);
-    fireEvent.click(screen.getByRole("button", { name: "Change group" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Move to" }), { target: { value: T } });
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.accounts.changeGroup }));
+    fireEvent.change(screen.getByRole("combobox", { name: adminCopy.accounts.pickGroup }), { target: { value: T } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
     const dialog = screen.getByRole("dialog");
     expect(dialog).toHaveTextContent("Saving changes who is in testers");
     await act(async () => fireEvent.click(within(dialog).getByRole("button", { name: /Turn on for 1/ })));
     expect(move).toHaveBeenLastCalledWith("user_9mara", T, 1);
-    expect(screen.getByRole("alert")).toHaveTextContent("Didn’t save. Nothing changed.");
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.flag.saveFailed);
     expect(refresh).not.toHaveBeenCalled();
   });
 
   it("on a thrown action says the move may have saved and refreshes, never that nothing changed", async () => {
     move.mockRejectedValueOnce(new Error("network"));
     render(<AccountPageView page={PAGE} />);
-    fireEvent.click(screen.getByRole("button", { name: "Change group" }));
-    fireEvent.change(screen.getByRole("combobox", { name: "Move to" }), { target: { value: T } });
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.accounts.changeGroup }));
+    fireEvent.change(screen.getByRole("combobox", { name: adminCopy.accounts.pickGroup }), { target: { value: T } });
     await act(async () => fireEvent.click(screen.getByRole("button", { name: "Save" })));
-    expect(screen.getByRole("alert")).toHaveTextContent("Lost touch with the server, so it may have saved. Check the page before saving again.");
+    expect(screen.getByRole("alert")).toHaveTextContent(adminCopy.groups.errors.unknown);
     expect(screen.getByRole("alert")).not.toHaveTextContent("Nothing changed");
     expect(refresh).toHaveBeenCalledTimes(1);
   });

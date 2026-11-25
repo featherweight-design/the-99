@@ -6,11 +6,12 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("../../app/admin/actions", () => ({ setAccountCap: vi.fn(), setOrgCap: vi.fn(), setSystemCeiling: vi.fn() }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn() }) }));
 import { SettingAction } from "./setting-dialog";
+import { adminCopy } from "../../lib/copy/admin";
 
 describe("SettingDialog's capped column", () => {
   it("scrolls the fields between a pinned title and pinned buttons", () => {
-    render(<SettingAction kind="ceiling" label="Change the ceiling" />);
-    fireEvent.click(screen.getByRole("button", { name: "Change the ceiling" }));
+    render(<SettingAction kind="ceiling" label={adminCopy.costs.changeCeiling} />);
+    fireEvent.click(screen.getByRole("button", { name: adminCopy.costs.changeCeiling }));
     const dialog = screen.getByRole("dialog");
     const cls = dialog.className.split(/\s+/);
     expect(cls).toEqual(expect.arrayContaining(["flex", "flex-col", "overflow-hidden", "max-h-[88dvh]"]));
@@ -19,7 +20,7 @@ describe("SettingDialog's capped column", () => {
     expect(scrollers).toHaveLength(1);
     const body = scrollers[0];
     expect(body.className.split(/\s+/)).toEqual(expect.arrayContaining(["min-h-0", "flex-1"]));
-    expect(body.contains(screen.getByRole("textbox", { name: "Amount ($)" }))).toBe(true);
+    expect(body.contains(screen.getByRole("textbox", { name: adminCopy.setting.amount }))).toBe(true);
     const title = screen.getByRole("heading");
     expect(body.contains(title)).toBe(false);
     expect(title.className).toContain("flex-none");
