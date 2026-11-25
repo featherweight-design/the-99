@@ -245,6 +245,8 @@ export const feedCopy = {
       /** With spare requests on, the press opens that card's spares sheet with Ask (signature card call 9). */
       tradeMatchAsk: askFriend,
       combo: "See the combo",
+      /** A new-combo item's second press: the Collection's combos view, that pair tagged NEW (quick filters PR 5). */
+      combosView: "See your combos",
       /** A Secret Lair or Wizards news post, on magic.wizards.com in a new tab (the link-out icon and the spoken suffix are `FeedPress`'s). */
       readOnWizards: "Read on Wizards",
       /** A Commander decklists post, the same way; beside See the lists, it is the row's quieter press. */

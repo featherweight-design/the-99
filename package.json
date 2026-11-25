@@ -77,6 +77,7 @@
     "probe:history-local-time": "node scripts/probe-history-local-time.mjs",
     "probe:draft-hidden": "node scripts/probe-draft-hidden.mjs",
     "probe:card-swipe-stacking": "node scripts/probe-card-swipe-stacking.mjs",
+    "probe:combo-feed-link": "node scripts/probe-combo-feed-link.mjs",
     "probe:combo-landing": "node scripts/probe-combo-landing.mjs",
     "probe:combo-tilt": "node scripts/probe-combo-tilt.mjs",
     "probe:card-captions": "node scripts/probe-card-captions.mjs",

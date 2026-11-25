@@ -27,7 +27,10 @@ import { refreshCopy } from "../../lib/copy/refresh";
 import { feedCopy } from "../../lib/copy/feed";
 import type { ProfileCommander } from "../../lib/social/commander";
 import { FeedPress, feedText, listsText, pressWraps, seesLists, usePostHero } from "../feed/feed-item";
+import Link from "next/link";
+import { PendingReporter } from "../shell/pending-reporter";
 import { feedAge } from "../../lib/feed/age";
+import { comboViewHref } from "../../lib/feed/combo-view-href";
 import { PersonText } from "../../lib/person-name";
 import { Face } from "../social/face";
 import { ArtLayer } from "../ui/art-layer";
@@ -193,6 +196,13 @@ export function LeadStory({
                 filled
                 className={`inline-flex max-w-full min-w-0 items-center justify-center rounded-[8px] bg-[color:var(--accent)] px-[16px] text-center font-sans text-[13.5px] font-semibold text-[color:var(--bg)] md:text-[13px] ${pressWraps(item) ? "min-h-[40px] py-[6px] [overflow-wrap:anywhere] md:min-h-[36px]" : "min-h-[40px] py-[6px] [overflow-wrap:anywhere] min-[390px]:h-[40px] min-[390px]:py-0 min-[390px]:whitespace-nowrap md:h-[36px] md:min-h-[36px]"}`}
               />
+            )}
+            {/* A new-combo lead: the Collection's combos view beside the filled See the combo, the ghost press's look. */}
+            {item.kind === "combo" && item.combo && (
+              <Link href={comboViewHref(item.combo.variantId)} data-feed-combos-view className="inline-flex h-[40px] items-center px-[4px] font-sans text-[13.5px] font-medium whitespace-nowrap text-[color:var(--fg-muted)] md:h-[36px] md:text-[13px]">
+                {`${feedCopy.home.press.combosView} ›`}
+                <PendingReporter href={comboViewHref(item.combo.variantId)} />
+              </Link>
             )}
             {ask && !receipt && (
               <AnswerPresses friend={friend} card={cardName} daysLeft={ask.daysLeft} busy={busy?.answer ?? null} locked={busy !== null}

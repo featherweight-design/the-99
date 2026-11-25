@@ -132,7 +132,7 @@ function PairCard({
     <span className="min-w-0 text-[14px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[15px]">
       {pair.a.name} <span className="font-normal text-[color:var(--fg-muted)]">+ {pair.b.name}</span>
       {isNew ? (
-        <span className="ml-[8px] rounded-[4px] border border-[color:var(--accent)] px-[5px] font-mono text-[10px] font-normal text-[color:var(--accent-text)]">{copy.newTag}</span>
+        <span data-combo-new className="ml-[8px] rounded-[4px] border border-[color:var(--accent)] px-[5px] font-mono text-[10px] font-normal text-[color:var(--accent-text)]">{copy.newTag}</span>
       ) : null}
     </span>
   );
