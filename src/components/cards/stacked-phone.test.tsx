@@ -166,7 +166,7 @@ describe("a card opened from the page", () => {
 /** A sheet opened OVER the open card, as the stand-ins sheet is from its door. */
 function OverCard() {
   const { registerSheet } = useCardDetail();
-  useEffect(() => registerSheet("Cheaper stand-ins", undefined, true), [registerSheet]);
+  useEffect(() => registerSheet("Fixture sheet title", undefined, true), [registerSheet]);
   return null;
 }
 
@@ -228,7 +228,7 @@ describe("a list sheet over a card, on the phone (call 7)", () => {
     render(
       <CardDetailProvider fetchCard={async () => birds}>
         <ModalChrome
-          title="Cheaper stand-ins"
+          title="Fixture sheet title"
           closeLabel={"Fixture close"}
           onClose={onClose}
           width={560}
@@ -257,7 +257,7 @@ describe("a stacked stand-in's Take on the phone (call 9)", () => {
   function FooterSheet() {
     const { registerSheet } = useCardDetail();
     useEffect(
-      () => registerSheet("Cheaper stand-ins", (oracleId, layout) => {
+      () => registerSheet("Fixture sheet title", (oracleId, layout) => {
         if (oracleId !== "o-birds") return null;
         if (layout === "teaserNote") return <span>in place of Ad Nauseam</span>;
         if (layout === "teaserAction" || layout === "foot") {

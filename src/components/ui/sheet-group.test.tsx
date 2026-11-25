@@ -29,7 +29,7 @@ describe("SheetGroupHeading", () => {
 describe("SheetGroupToggle", () => {
   it("is 44px on a phone and 34px from md, with the label and a ▸ while folded", () => {
     const onToggle = vi.fn();
-    render(<SheetGroupToggle all={false} onToggle={onToggle} label="Show all 12 cards" fewer="Show fewer" />);
+    render(<SheetGroupToggle all={false} onToggle={onToggle} label="Show all 12 cards" fewer="Fixture fewer" />);
     const b = screen.getByRole("button", { name: /Show all 12 cards/ });
     expect(b.getAttribute("aria-expanded")).toBe("false");
     expect(b.className).toContain("min-h-[44px] md:min-h-[34px]");
@@ -40,11 +40,11 @@ describe("SheetGroupToggle", () => {
     expect(onToggle).toHaveBeenCalledTimes(1);
   });
 
-  it("reads Show fewer and a ▸ turned down while expanded, and lets the caller move the indent", () => {
-    render(<SheetGroupToggle all onToggle={() => {}} label="Show all 12" fewer="Show fewer" className="pl-[68px]" />);
-    const b = screen.getByRole("button", { name: /Show fewer/ });
+  it("reads the fewer label and a ▸ turned down while expanded, and lets the caller move the indent", () => {
+    render(<SheetGroupToggle all onToggle={() => {}} label="Show all 12" fewer="Fixture fewer" className="pl-[68px]" />);
+    const b = screen.getByRole("button", { name: /Fixture fewer/ });
     expect(b.getAttribute("aria-expanded")).toBe("true");
-    expect(b.textContent).toBe("Show fewer▸");
+    expect(b.textContent).toBe("Fixture fewer▸");
     expect(b.querySelector("[data-chevron]")?.className).toContain("rotate-90");
     expect(b.className).toContain("pl-[68px]");
     expect(b.className).not.toContain("pl-[43px]");
@@ -54,13 +54,13 @@ describe("SheetGroupToggle", () => {
 describe("SheetGroupToggle busy", () => {
   it("is busy and not pressable while it fetches, and draws neither when not", () => {
     const onToggle = vi.fn();
-    const { rerender } = render(<SheetGroupToggle all={false} busy onToggle={onToggle} label="Show all 12 cards" fewer="Show fewer" />);
+    const { rerender } = render(<SheetGroupToggle all={false} busy onToggle={onToggle} label="Show all 12 cards" fewer="Fixture fewer" />);
     const b = screen.getByRole("button", { name: /Show all 12 cards/ });
     expect(b).toHaveAttribute("aria-busy", "true");
     expect(b).toBeDisabled();
     fireEvent.click(b);
     expect(onToggle).not.toHaveBeenCalled();
-    rerender(<SheetGroupToggle all={false} onToggle={onToggle} label="Show all 12 cards" fewer="Show fewer" />);
+    rerender(<SheetGroupToggle all={false} onToggle={onToggle} label="Show all 12 cards" fewer="Fixture fewer" />);
     expect(b).not.toHaveAttribute("aria-busy");
     expect(b).not.toBeDisabled();
   });
@@ -70,7 +70,7 @@ describe("SheetGroupToggle busy", () => {
 // swap sheets exactly as they were: the rule drawn, no spoken name, no `aria-controls`.
 describe("SheetGroupToggle · optional props", () => {
   it("draws the rule and sets no aria-label or aria-controls by default", () => {
-    render(<SheetGroupToggle all={false} onToggle={() => {}} label="Show all 12" fewer="Show fewer" />);
+    render(<SheetGroupToggle all={false} onToggle={() => {}} label="Show all 12" fewer="Fixture fewer" />);
     const b = screen.getByRole("button", { name: "Show all 12" });
     expect(b.className).toContain("border-b border-b-[color:var(--border)]");
     expect(b).not.toHaveAttribute("aria-label");
@@ -78,7 +78,7 @@ describe("SheetGroupToggle · optional props", () => {
   });
 
   it("drops the rule and names what it controls when asked", () => {
-    render(<SheetGroupToggle all onToggle={() => {}} label="Show all 15" fewer="Show fewer" rule={false} ariaLabel="Show fewer commanders revealed for Set" controls="grid-1" className="pl-0" />);
+    render(<SheetGroupToggle all onToggle={() => {}} label="Show all 15" fewer="Fixture fewer" rule={false} ariaLabel="Show fewer commanders revealed for Set" controls="grid-1" className="pl-0" />);
     const b = screen.getByRole("button", { name: "Show fewer commanders revealed for Set" });
     expect(b.className).not.toContain("border-b-[color:var(--border)]");
     expect(b.className).toContain("pl-0");

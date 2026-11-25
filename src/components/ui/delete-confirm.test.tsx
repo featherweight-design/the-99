@@ -9,7 +9,7 @@ function mount(over: Partial<Parameters<typeof DeleteConfirm>[0]> = {}) {
     <DeleteConfirm
       heading="Delete “Gishath”?"
       body="Its list goes with it."
-      cancelLabel="Keep it"
+      cancelLabel="Fixture cancel"
       confirmLabel={"Fixture confirm"}
       pendingLabel="Deleting…"
       pending={false}
@@ -27,13 +27,13 @@ describe("DeleteConfirm, the one delete pane", () => {
     mount();
     expect(screen.getByText("Delete “Gishath”?")).toBeInTheDocument();
     expect(screen.getByText("Its list goes with it.")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Keep it" })).toHaveFocus();
+    expect(screen.getByRole("button", { name: "Fixture cancel" })).toHaveFocus();
   });
 
   it("hands each press to its caller", () => {
     const { onCancel, onConfirm } = mount();
     fireEvent.click(screen.getByRole("button", { name: "Fixture confirm" }));
-    fireEvent.click(screen.getByRole("button", { name: "Keep it" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fixture cancel" }));
     expect(onConfirm).toHaveBeenCalledTimes(1);
     expect(onCancel).toHaveBeenCalledTimes(1);
   });
@@ -41,7 +41,7 @@ describe("DeleteConfirm, the one delete pane", () => {
   it("disables both buttons and names the wait while the action is in flight", () => {
     mount({ pending: true });
     expect(screen.getByRole("button", { name: "Deleting…" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Keep it" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Fixture cancel" })).toBeDisabled();
   });
 
   it("keeps the confirm's own label in flight when no pending label is given", () => {

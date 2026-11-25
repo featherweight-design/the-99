@@ -42,7 +42,7 @@ describe("a token's card details", () => {
     expect(screen.getAllByText("Token Creature — Goblin").length).toBeGreaterThan(0);
     expect(screen.getAllByText("Haste").length).toBeGreaterThan(0);
     expect(screen.getAllByText(/TM21/).length).toBeGreaterThan(0);
-    for (const label of ["Rarity", "Identity", "You own"]) expect(screen.queryByText(label)).toBeNull();
+    for (const label of ["Rarity", "Identity", /^you own$/i]) expect(screen.queryByText(label)).toBeNull();
     // Nor the phone teaser's owned line: `×0` would be a count of cards, which a token is not.
     expect(screen.queryByText(/×0/)).toBeNull();
     // The phone grid's Set cell runs across both columns, so no half cell stands empty beside it.

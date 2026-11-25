@@ -138,7 +138,7 @@ describe("CardDetailProvider", () => {
     };
     function ComboOpener() {
       const { open } = useCardDetail();
-      return <button type="button" onClick={() => open("o-signet", undefined, undefined, { combo: true })}>see the combo</button>;
+      return <button type="button" onClick={() => open("o-signet", undefined, undefined, { combo: true })}>Fixture open combo</button>;
     }
     const mountCombo = (fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? { ...SOL, comboPartners: withPartner.comboPartners } : withPartner))) =>
       render(
@@ -150,7 +150,7 @@ describe("CardDetailProvider", () => {
 
     it("opens the card with its combo block open and the sheet full", async () => {
       mountCombo();
-      await click(screen.getByText("see the combo"));
+      await click(screen.getByText("Fixture open combo"));
       expect(block()).toHaveAttribute("aria-expanded", "true");
       expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "full");
     });
@@ -166,14 +166,14 @@ describe("CardDetailProvider", () => {
       const fetchCard = vi.fn(async (id: string) => (id === "o-sol" ? { ...SOL, comboPartners: withPartner.comboPartners } : withPartner));
       function PagedOpener() {
         const { open } = useCardDetail();
-        return <button type="button" onClick={() => open("o-signet", ["o-signet", "o-sol"], undefined, { combo: true })}>see the combo</button>;
+        return <button type="button" onClick={() => open("o-signet", ["o-signet", "o-sol"], undefined, { combo: true })}>Fixture open combo</button>;
       }
       render(
         <CardDetailProvider fetchCard={fetchCard}>
           <PagedOpener />
         </CardDetailProvider>,
       );
-      await click(screen.getByText("see the combo"));
+      await click(screen.getByText("Fixture open combo"));
       expect(block()).toHaveAttribute("aria-expanded", "true");
       await click(footer(cardCarouselCopy.nextAria));
       expect(document.getElementById("card-modal-title")).toHaveTextContent("Sol Ring");
@@ -185,7 +185,7 @@ describe("CardDetailProvider", () => {
 
     it("drops the intent for a partner reached from the block", async () => {
       mountCombo();
-      await click(screen.getByText("see the combo"));
+      await click(screen.getByText("Fixture open combo"));
       await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
       expect(document.getElementById("card-modal-title")).toHaveTextContent("Sol Ring");
       expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
