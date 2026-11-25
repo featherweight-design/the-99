@@ -52,6 +52,6 @@ describe("ExportGuides", () => {
     const d = screen.getByRole("dialog", { name: collectionSources.signedIn.title });
     expect(within(d).getByRole("button", { name: moreGuideApps[1].name })).toHaveAttribute("aria-expanded", "true");
     expect(within(d).getByRole("button", { name: "ManaBox" })).toHaveAttribute("aria-expanded", "false");
-    expect(d.textContent).toContain(moreGuideApps[1].steps[1][1].b);
+    expect(d.textContent).toContain("Create CSV file");
   });
 });
