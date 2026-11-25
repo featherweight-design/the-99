@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { GuidedBanner } from "./guided-banner";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 // The first-run banner is only reachable behind auth with a fresh collection,
 // so the richness line is pinned here. Both breakpoints render it, hence the
@@ -32,7 +33,7 @@ describe("GuidedBanner", () => {
   // Discovery R3 E2 (G1): the door at the end of the banner's line at 1280, its own line at 390.
   it("ends the line in Help me choose's door at both widths with the switch on", () => {
     render(<GuidedBanner uniqueCardsRead={1418} candidateCount={24} helpMeChoose />);
-    const links = screen.getAllByRole("link", { name: "Help me choose →" });
+    const links = screen.getAllByRole("link", { name: helpMeChooseCopy.door.cta });
     expect(links).toHaveLength(2);
     for (const a of links) expect(a).toHaveAttribute("href", "/decks/new/choose");
     expect(screen.getByTestId("guided-choose-phone")).toHaveTextContent("Not sure which? Help me choose →");

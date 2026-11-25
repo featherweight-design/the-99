@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ROLE_TARGETS } from "../../lib/recs/roles";
 import { WhySection } from "./why-section";
 import type { ProfileRoleTargets } from "../../lib/profile/types";
+import { explainedCopy } from "../../lib/copy/commander-explained";
 
 const PROSE =
   "Kess decks tend to cast the same few spells twice, leaning on cheap draw and graveyard value rather than one combo line.";
@@ -28,7 +29,7 @@ function renderSection(props: Partial<Parameters<typeof WhySection>[0]> = {}) {
 describe("WhySection", () => {
   it("prints the stored sentence and the standing sentence together", () => {
     renderSection();
-    expect(screen.getByRole("heading", { name: "Why this commander" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: explainedCopy.prose.heading })).toBeInTheDocument();
     expect(screen.getByText(/Kess decks tend to cast/)).toBeInTheDocument();
     expect(screen.getByText(/cards most played with this commander/)).toBeInTheDocument();
   });
@@ -37,7 +38,7 @@ describe("WhySection", () => {
   // No note, no skeleton, no apology for the missing sentence.
   it("keeps the templated sentences when there is no stored prose", () => {
     renderSection({ prose: null });
-    expect(screen.getByRole("heading", { name: "Why this commander" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: explainedCopy.prose.heading })).toBeInTheDocument();
     expect(screen.queryByText(/Kess decks tend to cast/)).toBeNull();
     expect(screen.getByText(/cards most played with this commander/)).toBeInTheDocument();
   });
@@ -52,7 +53,7 @@ describe("WhySection", () => {
   // State 4 — the heading would be a promise the paragraph does not keep.
   it("unmounts entirely, heading included, when it has nothing to say", () => {
     renderSection({ prose: null, edhrecOwnedCount: null, edhrecTotal: null });
-    expect(screen.queryByRole("heading", { name: "Why this commander" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: explainedCopy.prose.heading })).toBeNull();
   });
 
   it("omits the gap sentence when every role is at its baseline", () => {

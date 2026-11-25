@@ -684,7 +684,7 @@ describe("the dot key", () => {
   // nothing changed, and this key is the sentence that would give it away.
   it("keeps the shipped free string when no card draws a marker", () => {
     renderSection({ roleCards: { ...EMPTY_ROLE_CARDS, ramp: makeCards(3) }, roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 } });
-    expect(screen.getByText("Owned and available.")).toBeInTheDocument();
+    expect(screen.getByText(explainedCopy.committed.dotFree)).toBeInTheDocument();
     expect(screen.queryByText(explainedCopy.committed.dotOwned)).toBeNull();
   });
 
@@ -708,7 +708,7 @@ describe("the dot key", () => {
       markerElsewhere: true, // ...but something on the page is marked.
     });
     expect(screen.getByText(explainedCopy.committed.dotOwned)).toBeInTheDocument();
-    expect(screen.queryByText("Owned and available.")).toBeNull();
+    expect(screen.queryByText(explainedCopy.committed.dotFree)).toBeNull();
   });
 
   // The other half of the same sentence: with nothing marked anywhere, the
@@ -719,7 +719,7 @@ describe("the dot key", () => {
       roleCounts: { ...BASE_ROLE_COUNTS, ramp: 3 },
       markerElsewhere: false,
     });
-    expect(screen.getByText("Owned and available.")).toBeInTheDocument();
+    expect(screen.getByText(explainedCopy.committed.dotFree)).toBeInTheDocument();
   });
 
   // A soft claim is a marker too, so the key moves for it. Under the old

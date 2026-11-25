@@ -6,6 +6,7 @@ import { SEARCH_LIMIT } from "../../lib/card-search/search";
 import { cardSearchCopy } from "../../lib/copy/card-search";
 import { RESULTS_LIMIT } from "./search-layer";
 import { Matched, SearchRow } from "./search-row";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 const row = (over: Partial<CardSearchRow> = {}): CardSearchRow => ({
   oracleId: "o-ash", name: "Ashling, the Limitless", imageUri: null, flavorName: null,
@@ -69,7 +70,7 @@ describe("the result row", () => {
 
   it("says not owned rather than nothing, and keeps the bookmark's room when it is off the wishlist", () => {
     const opt = draw(row({ owned: 0, decks: [], wishlist: false }));
-    expect(opt.textContent).toContain("not owned");
+    expect(opt.textContent).toContain(addPanelCopy.quickAdd.rowNotOwned);
     expect(opt.querySelector("svg")?.parentElement?.className).toContain("invisible");
   });
 

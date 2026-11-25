@@ -13,6 +13,7 @@ import { CoverageChip, CoverageDisclosure, CoverageRow } from "./coverage-chip";
 import type { RoleCard } from "../../lib/recs/score";
 import { avail, heldBy } from "./availability-fixture";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { recommendationsCopy } from "../../lib/copy/recommendations";
 
 /** What `markerAria` says for a hard claim naming one deck. Read from the copy
     module so an edit there does not leave this file asserting a dead sentence. */
@@ -387,7 +388,7 @@ describe("CoverageDisclosure", () => {
     // name its role — the visible label stays short beside its own panel.
     const btn = screen.getByRole("button", { name: /Show fewer ramp cards/i });
     expect(btn).toBeInTheDocument();
-    expect(btn).toHaveTextContent("Show fewer");
+    expect(btn).toHaveTextContent(recommendationsCopy.coverage.showFewer);
     expect(btn).toHaveAttribute("aria-expanded", "true");
   });
 

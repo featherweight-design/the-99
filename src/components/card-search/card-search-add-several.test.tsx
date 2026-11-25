@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { OpenAddCards } from "../collection/add-cards-host";
 import type { SearchLayerProps } from "./search-layer";
+import { cardSearchCopy } from "../../lib/copy/card-search";
 
 // Add a card from anywhere, PR 2: Add several cards closes the search under the shell's Add cards sheet, and the
 // search comes back as it was once the sheet has gone (C2, C-D3).
@@ -43,10 +44,10 @@ function mount() {
       </CardSearchRoot>
     </CollectionEditScope>,
   );
-  return screen.getByRole("button", { name: "Search all cards" });
+  return screen.getByRole("button", { name: cardSearchCopy.label });
 }
 const field = () => screen.getByRole("combobox") as HTMLInputElement;
-const way = () => screen.queryByRole("button", { name: "Add several cards" });
+const way = () => screen.queryByRole("button", { name: cardSearchCopy.addSeveral.lead });
 async function openWithLayer(icon: HTMLElement) {
   await act(async () => fireEvent.click(icon));
   // The layer's chunk lands on the open's intent.
@@ -86,11 +87,11 @@ describe("Add several cards from the search", () => {
     body.scrollTop = 120;
     await act(async () => fireEvent.click(way()!));
     await act(async () => asks[0].onOpened?.());
-    expect(screen.queryByRole("dialog", { name: "Search all cards" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: cardSearchCopy.label })).toBeNull();
     // Whatever moved the body while it was hidden, the return puts it back where the press left it.
     body.scrollTop = 0;
     await act(async () => asks[0].onClosed?.({ saved: true }));
-    expect(screen.getByRole("dialog", { name: "Search all cards" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: cardSearchCopy.label })).toBeTruthy();
     expect(field().value).toBe("");
     expect(document.activeElement).toBe(way());
     expect(body.scrollTop).toBe(120);

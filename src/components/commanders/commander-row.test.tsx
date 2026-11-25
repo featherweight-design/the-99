@@ -7,6 +7,9 @@ import { commandersCopy, discoverCopy } from "../../lib/copy/lanes";
 import { discoveryCopy } from "../../lib/copy/commander-discovery";
 import { STORE_INFO } from "../../lib/stores/info";
 import { StoreProvider } from "../stores/store-provider";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { tokensCopy } from "../../lib/copy/tokens";
+import { addPanelCopy } from "../../lib/copy/decks-builder";
 
 const { price: priceCopy } = discoveryCopy;
 
@@ -435,9 +438,9 @@ describe("CommanderRow · nothing is read off ownership", () => {
   // nothing. The retired strings are asserted ABSENT rather than trusted gone,
   // because the component compiles perfectly well while still drawing them.
   it.each([
-    "not in your collection",
-    "in your collection",
-    "new to you",
+    addPanelCopy.unowned.shelfCoverage,
+    tokensCopy.row.owned,
+    collectionEditCopy.add.newToYou,
     "clears the",
     "Your closest build",
   ])("never says %s", (phrase) => {

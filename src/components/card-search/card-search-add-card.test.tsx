@@ -5,11 +5,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CardSearchRow } from "../../lib/card-search/search";
 import type { OpenAddCards } from "../collection/add-cards-host";
 import type { SearchLayerProps } from "./search-layer";
+import { cardSearchCopy } from "../../lib/copy/card-search";
 
 // Add a card from anywhere, PR 3: a row's + (and ⌘↵ / Ctrl ↵) closes the search under the shell's Add cards sheet with
 // that card on the list, and the search comes back as it was (C3 to C6, C-D2, C-D3). A save reads the rows again (O6).
 const GHALTA: CardSearchRow = {
-  oracleId: "o-gh", name: "Ghalta, Primal Hunger", imageUri: "https://img/gh.jpg", flavorName: null,
+  oracleId: "o-gh", name: "Fixture Commander", imageUri: "https://img/gh.jpg", flavorName: null,
   owned: 0, decks: [], wishlist: false,
 };
 const actions = vi.hoisted(() => ({
@@ -75,7 +76,7 @@ function mount() {
       </CardSearchRoot>
     </CollectionEditScope>,
   );
-  return screen.getByRole("button", { name: "Search all cards" });
+  return screen.getByRole("button", { name: cardSearchCopy.label });
 }
 const field = () => screen.getByRole("combobox") as HTMLInputElement;
 const plus = () => document.querySelector<HTMLButtonElement>(`[data-card-search-row="o-gh"] [data-card-search-add]`);
@@ -109,7 +110,7 @@ describe("a search row's + opens Add cards with that card", () => {
     await searchGhalta();
     await act(async () => fireEvent.click(plus()!));
     expect(asks).toHaveLength(1);
-    expect(asks[0].initialCard).toEqual({ oracleId: "o-gh", name: "Ghalta, Primal Hunger", imageUri: "https://img/gh.jpg" });
+    expect(asks[0].initialCard).toEqual({ oracleId: "o-gh", name: "Fixture Commander", imageUri: "https://img/gh.jpg" });
     expect(asks[0].initialQuery).toBeUndefined();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.querySelector("[data-card-search-veil]")).toBeTruthy();
@@ -127,7 +128,7 @@ describe("a search row's + opens Add cards with that card", () => {
     await act(async () => asks[0].onOpened?.());
     body.scrollTop = 0;
     await act(async () => asks[0].onClosed?.({ saved: false }));
-    expect(screen.getByRole("dialog", { name: "Search all cards" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: cardSearchCopy.label })).toBeTruthy();
     expect(field().value).toBe("ghalta, p");
     expect(lastLayer!.returned).toBe("o-gh");
     expect(document.activeElement).toBe(ghaltaRow());
@@ -189,7 +190,7 @@ describe("a search row's + opens Add cards with that card", () => {
     await act(async () => fireEvent.click(plus()!));
     expect(asks).toHaveLength(1);
     expect(document.querySelector("[data-card-search-veil]")).toBeNull();
-    expect(screen.getByRole("dialog", { name: "Search all cards" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: cardSearchCopy.label })).toBeTruthy();
     expect(field().value).toBe("ghalta, p");
     expect(document.activeElement).toBe(ghaltaRow());
     expect(actions.searchAllCardsAction).toHaveBeenCalledTimes(1);

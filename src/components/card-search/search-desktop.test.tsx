@@ -2,6 +2,7 @@ import * as React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { searchFieldCopy } from "../../lib/copy/search-field";
+import { cardSearchCopy } from "../../lib/copy/card-search";
 
 vi.mock("../../app/card-search-actions", () => ({
   searchAllCardsAction: async () => [],
@@ -34,7 +35,7 @@ function mount(platform: string, { scoped = false }: { scoped?: boolean } = {}) 
   );
   render(scoped ? <CollectionEditScope>{root}</CollectionEditScope> : root);
 }
-const frame = () => screen.queryByRole("dialog", { name: "Search all cards" });
+const frame = () => screen.queryByRole("dialog", { name: cardSearchCopy.label });
 const press = (init: KeyboardEventInit) => act(async () => void fireEvent.keyDown(window, { key: "k", ...init }));
 const combobox = () => screen.getByRole("combobox");
 

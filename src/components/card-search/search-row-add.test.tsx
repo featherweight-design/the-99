@@ -7,7 +7,7 @@ import { SearchRow } from "./search-row";
 
 // Add a card from anywhere, PR 3 (C3, C-D1; READINESS O4, E8): the + at a search row's end.
 const row = (over: Partial<CardSearchRow> = {}): CardSearchRow => ({
-  oracleId: "o-gh", name: "Ghalta, Primal Hunger", imageUri: null, flavorName: null,
+  oracleId: "o-gh", name: "Fixture Commander", imageUri: null, flavorName: null,
   owned: 0, decks: [], wishlist: false, ...over,
 });
 
@@ -65,7 +65,7 @@ describe("a search row's +", () => {
     expect(plus!.tabIndex).toBe(-1);
     // jsdom reports no Mac platform: the keys off a Mac.
     expect(opt.getAttribute("aria-label")).toBe(
-      `Ghalta, Primal Hunger, not owned, ${cardSearchCopy.row.addAria(cardSearchCopy.row.addKeysOther)}`,
+      `Fixture Commander, not owned, ${cardSearchCopy.row.addAria(cardSearchCopy.row.addKeysOther)}`,
     );
     expect(opt.getAttribute("aria-keyshortcuts")).toBe("Control+Enter");
   });
@@ -74,7 +74,7 @@ describe("a search row's +", () => {
     keyboard(false);
     const { opt, plus } = draw(row(), { onAdd: vi.fn() });
     expect(plus).toBeTruthy();
-    expect(opt.getAttribute("aria-label")).toBe("Ghalta, Primal Hunger, not owned");
+    expect(opt.getAttribute("aria-label")).toBe("Fixture Commander, not owned");
     expect(opt.hasAttribute("aria-keyshortcuts")).toBe(false);
   });
 
@@ -90,7 +90,7 @@ describe("a search row's +", () => {
   it("is not drawn where nothing can add, and the row's name stays as shipped (C8)", () => {
     const { opt, plus } = draw(row());
     expect(plus).toBeNull();
-    expect(opt.getAttribute("aria-label")).toBe("Ghalta, Primal Hunger, not owned");
+    expect(opt.getAttribute("aria-label")).toBe("Fixture Commander, not owned");
     expect(opt.hasAttribute("aria-keyshortcuts")).toBe(false);
   });
 

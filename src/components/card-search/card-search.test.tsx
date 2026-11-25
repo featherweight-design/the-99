@@ -2,6 +2,7 @@ import * as React from "react";
 import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { searchFieldCopy } from "../../lib/copy/search-field";
+import { cardSearchCopy } from "../../lib/copy/card-search";
 
 const searchAllCardsAction = vi.fn(async (_q: string) => []);
 const cardSignalsAction = vi.fn(async (_ids: string[]) => ({}));
@@ -22,7 +23,7 @@ function mount() {
       <CardSearchIcon />
     </CardSearchRoot>,
   );
-  return screen.getByRole("button", { name: "Search all cards" });
+  return screen.getByRole("button", { name: cardSearchCopy.label });
 }
 const field = () => screen.getByRole("combobox");
 const type = (value: string) => act(async () => fireEvent.change(field(), { target: { value } }));
@@ -65,7 +66,7 @@ describe("the search sheet (phone)", () => {
     const icon = mount();
     expect(screen.queryByRole("dialog")).toBeNull();
     await act(async () => fireEvent.click(icon));
-    expect(screen.getByRole("dialog", { name: "Search all cards" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: cardSearchCopy.label })).toBeTruthy();
     expect(document.activeElement).toBe(field());
     expect(icon.getAttribute("aria-expanded")).toBe("true");
   });
@@ -117,7 +118,7 @@ describe("the search sheet (phone)", () => {
     await type("sol");
     await act(async () => fireEvent.keyDown(field(), { key: "Escape" }));
     expect((field() as HTMLInputElement).value).toBe("");
-    expect(screen.getByRole("dialog", { name: "Search all cards" })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: cardSearchCopy.label })).toBeTruthy();
     await act(async () => fireEvent.keyDown(field(), { key: "Escape" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(icon);
@@ -126,7 +127,7 @@ describe("the search sheet (phone)", () => {
   it("opens with an empty field after the Close button, after Back,", async () => {
     const icon = mount();
     for (const leave of [
-      () => fireEvent.click(screen.getByRole("button", { name: "Close search" })),
+      () => fireEvent.click(screen.getByRole("button", { name: cardSearchCopy.closeAria })),
       () => fireEvent(window, new PopStateEvent("popstate")),
     ]) {
       await act(async () => fireEvent.click(icon));
@@ -136,7 +137,7 @@ describe("the search sheet (phone)", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
       await act(async () => fireEvent.click(icon));
       expect((field() as HTMLInputElement).value).toBe("");
-      await act(async () => fireEvent.click(screen.getByRole("button", { name: "Close search" })));
+      await act(async () => fireEvent.click(screen.getByRole("button", { name: cardSearchCopy.closeAria })));
     }
   });
 
