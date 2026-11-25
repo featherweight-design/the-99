@@ -15,6 +15,7 @@ import { SearchField } from "../ui/text-field";
 import { WantStepper } from "./want-stepper";
 import { useTarget } from "../discovery/targets-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 const copy = wishlistCopy;
 const SEARCH_DEBOUNCE_MS = 150;
@@ -127,6 +128,7 @@ export function WishlistSearch({
     try {
       const out = await addToWishlistAction(r.oracleId);
       if (!out.ok) throw new Error(out.reason);
+      captureEngagement("wishlist_added", {});
       heard(r.oracleId, out.have);
       // `held`: the collection already reaches the want, so no line stands and the press stays as it was.
       if (out.status === "wanted") {

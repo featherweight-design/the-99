@@ -5,7 +5,6 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { unstable_rethrow } from "next/navigation";
 import { commanderGradient } from "../../lib/cards/gradients";
 import { WUBRG_COLOR } from "../../lib/collection/browse";
 import { createDeck } from "../../app/decks/actions";
@@ -35,6 +34,8 @@ import type { GuidedPicks } from "../../lib/guided/run";
 import { GuidedSheet } from "./guided/guided-sheet";
 import type { SelectedPick } from "../../lib/decks/selected-picks";
 import { SteadyLabel } from "../ui/steady-label";
+import { captureEngagement } from "../../lib/analytics/posthog";
+import { rethrowAfterRedirect } from "../../lib/analytics/engagement-redirect";
 
 // ---------------------------------------------------------------------------
 // Props
@@ -167,7 +168,7 @@ export function CreatePreFilled({
       } catch (err) {
         // See create-picker.tsx: the action's closing `redirect()` throws, and
         // without this the success path paints a failure on its way out.
-        unstable_rethrow(err);
+        rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "scratch" }));
         setError(addPanelCopy.createPicker.failed);
       }
     });
@@ -180,7 +181,7 @@ export function CreatePreFilled({
         // The answers steer the free fill under the run as they do for the free build; the picks go to the guided start, which re-checks each.
         await createDeck(oracleId, trimmed, selectedOracleIds, null, handOff?.create ?? null, "guided", picksOut);
       } catch (err) {
-        unstable_rethrow(err);
+        rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "guided" }));
         setSheet(false);
         setError(addPanelCopy.createPicker.failed);
       }

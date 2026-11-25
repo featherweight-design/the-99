@@ -23,6 +23,8 @@ import { TextField } from "../../ui/text-field";
 import { OptInCheckbox } from "../../ui/opt-in-checkbox";
 import { useDockClearance } from "../../shell/dock-clearance";
 import { SteadyLabel } from "../../ui/steady-label";
+import { captureEngagement } from "../../../lib/analytics/posthog";
+import { rethrowAfterRedirect } from "../../../lib/analytics/engagement-redirect";
 
 const copy = preconsCopy.start;
 
@@ -231,7 +233,7 @@ export function StartPreconDialog({ row, cards, body, illegal, addedOn = null, a
       } catch (err) {
         // The redirect itself arrives here as a throw, before the router navigates: rethrown, or
         // every successful start would paint the failure for the frame the navigation takes.
-        unstable_rethrow(err);
+        rethrowAfterRedirect(err, () => captureEngagement("deck_created", { source: "precon" }));
         inFlight.current = false;
         setPending(false);
         setFailed("start");

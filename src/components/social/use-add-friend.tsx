@@ -26,6 +26,7 @@ import { SocialToast, type SocialToastState } from "./social-toast";
 import { useInviteWatch } from "./use-invite-watch";
 import { linkGivenUp, usePressWait } from "./press-wait";
 import { useHydrated } from "../ui/hydrated-art";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 /** As /friends: while a link is open the clock runs on once a minute, so its time left and warning stay true. */
 const CLOCK_TICK_MS = 60_000;
@@ -205,6 +206,7 @@ export function useAddFriend({ friends, links, now, invites, friendLinks = false
     }
     if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
+      captureEngagement("friend_invite_created", {});
       showOpener.current = null;
       setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listed.current) });
       if (addingNow.current === "choose") setAdding("link");

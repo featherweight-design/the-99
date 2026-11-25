@@ -28,6 +28,7 @@ import { GameSeats, type YouSeat } from "./game-seats";
 import { MutationError } from "./mutation-error";
 import { PRIMARY } from "../ui/button";
 import { SteadyLabel } from "../ui/steady-label";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 export type GameResult = "win" | "loss" | "draw";
 
@@ -346,6 +347,7 @@ export function GameLogForm({
         setError(outcome.message);
         return;
       }
+      captureEngagement("deck_game_logged", {});
       onSaved(isFirstGame, result);
       if (prefill) onPrefillSpent?.();
       if (isFirstGame) setHolding(true);

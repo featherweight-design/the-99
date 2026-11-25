@@ -26,6 +26,7 @@ import { MutationError } from "../decks/mutation-error";
 import { ComboBody, ModalChrome, type FindingArt } from "../decks/receipt-modal";
 import { useDeckMutation } from "../decks/use-deck-mutation";
 import { GhostButton } from "../ui/button";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 const copy = combosCloseCopy;
 
@@ -181,6 +182,7 @@ export function CardComboSheet({
                     run(async () => {
                       const outcome = await addCardToDeck(deckId!, add.oracleId);
                       if (!outcome || outcome.ok) {
+                        captureEngagement("deck_card_added", { via: "combo" });
                         onAddLanded();
                         setAdded(true);
                       }

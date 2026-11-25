@@ -28,6 +28,7 @@ import { WantStepper } from "./want-stepper";
 import { momentsCopy } from "../../lib/copy/moments";
 import { useMomentAnchor } from "../moments/moments-provider";
 import { useMergedRef } from "../ui/use-merged-ref";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 const copy = wishlistCopy.details;
 
@@ -133,6 +134,7 @@ export function CardWishlist({
   const add = () =>
     write(async () => {
       const out = await addToWishlistAction(oracleId);
+      if (out.ok) captureEngagement("wishlist_added", {});
       if (out.ok && out.status === "wanted" && document.activeElement === addRef.current) setArrived(true);
       return out;
     }, copy.failedAdd);

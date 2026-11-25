@@ -27,6 +27,7 @@ import { CreatePicker } from "./create-picker";
 import { ImportNoCommander } from "./import-no-commander";
 import { DECK_NAME_MAX } from "../../lib/decks/deck-name";
 import { usePendingPush } from "../shell/pending-push";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 type ImportMode = Extract<DeckImportSource, "paste" | "file">;
 
@@ -207,6 +208,7 @@ export function ImportEntry({ compact = false, ownDefault = false }: {
         });
         if (result.ok) {
           committed = true;
+          captureEngagement("deck_created", { source: "import" });
           // The param is the whole provenance signal for the arrival chrome.
           // It belongs on the navigation rather than in a column: the deck was
           // not "imported" forever, it was imported on this one trip.

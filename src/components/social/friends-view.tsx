@@ -40,6 +40,7 @@ import { linkGivenUp, usePressWait } from "./press-wait";
 import { InviteSheet, type InviteScreen } from "./invite-sheet";
 import { InviteCountLine } from "./invite-count-line";
 import type { InviteCount } from "../../lib/invites/rules";
+import { captureEngagement } from "../../lib/analytics/posthog";
 
 const p = socialCopy.page;
 const CLOCK_TICK_MS = 60_000;
@@ -389,6 +390,7 @@ export function FriendsView({
     }
     if (began !== null && addingNow.current !== "choose") return;
     if (out?.ok) {
+      captureEngagement("friend_invite_created", {});
       showOpener.current = null;
       setShown({ token: out.token, url: out.url, expiresAt: new Date(out.expiresAt), friendsBefore: new Set(listedIds.current) });
       if (addingNow.current === "choose") setAdding("link");
