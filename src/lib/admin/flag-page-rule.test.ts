@@ -82,7 +82,7 @@ describe("switchPage", () => {
     expect(rung(p, "account")).toMatchObject({ value: "1 account: Off", decides: "decides for 1", deciding: true });
     expect(rung(p, "all")).toEqual({ key: "all", value: "1 account", tone: "plain", decides: "decides for 1", deciding: true });
     const none = allFeaturesPage("FLYER_TRIAL_ENABLED", []);
-    expect(rung(none, "all")).toEqual({ key: "all", value: "None", tone: "none", decides: "decides for none", deciding: false });
+    expect(rung(none, "all")).toEqual({ key: "all", value: "None", tone: "none", decides: adminCopy.flag.decides(0), deciding: false });
   });
 
   it("keeps the All features rung's count under a kill, refused", () => {
@@ -100,7 +100,7 @@ describe("switchPage", () => {
     ]);
     expect(p.rungs.map((r) => r.key)).toEqual(["account", "all", "group", "app", "fallback", "needs"]);
     expect(rung(p, "account")).toMatchObject({ value: "1 account: On", decides: "decides for 1", deciding: true });
-    expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: "decides for none", deciding: false });
+    expect(rung(p, "group")).toMatchObject({ value: "None", tone: "none", decides: adminCopy.flag.decides(0), deciding: false });
     expect(rung(p, "app")).toMatchObject({ value: "Off", decides: "decides for 2", deciding: true });
     expect(rung(p, "fallback")).toMatchObject({ value: "off", tone: "plain", decides: adminCopy.flag.fallbackIdle, deciding: false });
     expect(rung(p, "needs")).toMatchObject({ value: "Buying credits: on for all 3 accounts", decides: "allows all 3" });
@@ -193,7 +193,7 @@ describe("switchPage", () => {
     const p = page("MODEL_CALLS_ENABLED", { MODEL_CALLS_ENABLED: "off" }, [ov({ name: "MODEL_CALLS_ENABLED", scope: "app", value: "killed" })]);
     expect(p.rungs.map((r) => r.key)).toEqual(["killed", "app", "fallback"]);
     expect(rung(p, "killed")).toMatchObject({ value: "MODEL_CALLS_ENABLED=off", deciding: true });
-    expect(rung(p, "app")).toMatchObject({ value: "Killed", decides: "decides for none", deciding: false });
+    expect(rung(p, "app")).toMatchObject({ value: "Killed", decides: adminCopy.flag.decides(0), deciding: false });
     expect(p.app).toMatchObject({ value: "Killed", current: "killed", refused: false, stopped: true, note: adminCopy.flag.appKilledNote });
   });
 
@@ -282,7 +282,7 @@ describe("switchPage", () => {
 
   it("never says the parent allows all when there are no accounts", () => {
     const p = switchPage({ name: "WELCOME_CREDITS_ENABLED", env: envValues({ WELCOME_CREDITS_ENABLED: "true", PAYMENTS_ENABLED: "true" }), overrides: [], verdicts: new Map(), allFeatures: [], accounts: [], groups: [], events: [], historyLimit: 100, viewerId: "u1" });
-    expect(p.rungs.find((r) => r.key === "needs")).toMatchObject({ value: "Buying credits: off for all 0 accounts", decides: "decides for none" });
+    expect(p.rungs.find((r) => r.key === "needs")).toMatchObject({ value: "Buying credits: off for all 0 accounts", decides: adminCopy.flag.decides(0) });
   });
 
   it("formats times in UTC with a 24-hour clock", () => {

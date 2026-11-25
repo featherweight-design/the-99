@@ -101,7 +101,7 @@ describe("sweepStarts", () => {
   // steps stamp their own: it cannot reset the clock.
   it("does not count an unmarked row from after the cutoff", () => {
     expect(at("2026-09-29").getTime()).toBeLessThan(LEGACY_UNMARKED_BEFORE.getTime());
-    expect(sweepStarts([ledgerRow("2026-09-29", null), ledgerRow("2026-11-02", null), ledgerRow("2026-11-03", "timed out")]))
+    expect(sweepStarts([ledgerRow("2026-09-29", null), ledgerRow("2026-11-02", null), ledgerRow("2026-11-03", "Fixture unmarked report")]))
       .toEqual([at("2026-09-29")]);
   });
 

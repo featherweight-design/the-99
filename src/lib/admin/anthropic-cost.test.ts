@@ -195,7 +195,7 @@ describe("readWorkspaceCost", () => {
     const none = fake({ ws: [() => json(wsPage([OTHER]))] });
     expect(await readWorkspaceCost(OCT, NOW, none.deps())).toEqual({ ok: false, kind: "no_workspace" });
     expect(none.log.mock.calls).toEqual([[`${COST_LOG} unread kind=no_workspace`]]);
-    const two = fake({ ws: [() => json(wsPage([THE_99, { id: "wrkspc_dup", name: "the 99", archived_at: null }]))] });
+    const two = fake({ ws: [() => json(wsPage([THE_99, { id: "wrkspc_dup", name: WORKSPACE_NAME.toLowerCase(), archived_at: null }]))] });
     expect(await readWorkspaceCost(OCT, NOW, two.deps())).toEqual({ ok: false, kind: "ambiguous_workspace", count: 2 });
   });
 

@@ -1,6 +1,7 @@
 // The tool discovery events' guard (plan §6, handoff G21): one case per event, each built as the app builds it, and
 // every string value a member of its property's closed set. A prop typed `string` fails the build (below).
 import { describe, expect, it } from "vitest";
+import { feedSheetCopy } from "../copy/feed";
 import {
   ASK_CARDS,
   ASK_COUNT,
@@ -60,7 +61,7 @@ describe("tool discovery events", () => {
 
   it("feed_sheet_filter carries a feed kind, never a label", () => {
     closed("feed_sheet_filter", { kind: "price-drop" });
-    expect(() => closed("feed_sheet_filter", { kind: "Price drops" as never })).toThrow();
+    expect(() => closed("feed_sheet_filter", { kind: feedSheetCopy.kinds["price-drop"] as never })).toThrow();
   });
 
   it("feed_sheet_clear carries a bucket and whether a chip narrowed it", () => {

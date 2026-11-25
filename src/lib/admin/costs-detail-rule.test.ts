@@ -238,7 +238,7 @@ describe("the eval ledgers", () => {
   });
 
   it("names a ledger from its file", () => {
-    expect(ledgerName("ledger-help-me-choose.jsonl", "Original")).toBe("Help me choose");
+    expect(ledgerName("ledger-fixture-feature.jsonl", "Original")).toBe("Fixture feature");
     expect(ledgerName("ledger.jsonl", "Original")).toBe("Original");
   });
 });

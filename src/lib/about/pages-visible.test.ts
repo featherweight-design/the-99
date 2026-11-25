@@ -16,6 +16,12 @@ const readerAt = (floor: number, e: NodeJS.ProcessEnv = ALL_ON): SeenState => re
 const env = (o: Record<string, string>) => o as unknown as NodeJS.ProcessEnv;
 const ALL_ON = env(Object.fromEntries(SWITCH_NAMES.map((n) => [n, "true"])));
 const OFF = env({});
+// The proxy rule's retired tokens sentence, read from the rule that draws it.
+const PROXY_TOKEN_SENTENCE = Object.keys(ABOUT_RULES.proxy.sentences ?? {})[0].trim();
+// The credits rule's payments-gated pack sentence, read from the rule that draws it.
+const PACK_SENTENCE = Object.entries(ABOUT_RULES.credits.sentences ?? {}).find(([, on]) => on === "PAYMENTS_ENABLED")![0].trim();
+// The credits card's Proposed cuts row, read from the card that draws it.
+const CUTS_ROW_NAME = (ABOUT_RULES.credits.diagram!.columns[0].parts[3] as { name: string }).name;
 const units = (v: readonly VisibleSection[]) => v.flatMap((s) => [...s.labels, ...s.rules]);
 const keys = (v: readonly VisibleSection[]) => units(v).map((u) => u.key);
 
@@ -79,8 +85,8 @@ describe("each sentence follows its own switch", () => {
     ["credits with Proposed cuts, its switches retired", { ANALYSIS_TAB_ENABLED: "off", PROPOSED_CUTS_ENABLED: "off" }, "rule/credits", "So does each Proposed cuts run.", undefined],
     ["credits with the bracket and the Overview, the tab's switch retired", { ANALYSIS_TAB_ENABLED: "off" }, "rule/credits", "Reading a bracket is free. Anything written just for you", undefined],
     ["credits with payments", { PAYMENTS_ENABLED: "true" }, "rule/credits", "Pack and gift credits never expire", undefined],
-    ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", "never expire"],
-    ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", "I have one", undefined],
+    ["credits with nothing on", {}, "rule/credits", "An Overview uses one.", PACK_SENTENCE],
+    ["a proxy keeps its retired tokens sentence with nothing on", {}, "rule/proxy", PROXY_TOKEN_SENTENCE, undefined],
     ["a fill with Help me choose, its switch retired", {}, "rule/autofill", "any cards will do", undefined],
     ["a fill keeps Help me choose with its retired name off", { HELP_ME_CHOOSE_ENABLED: "off" }, "rule/autofill", "any cards will do", undefined],
     ["friends see the wishlist (its switch and friends' are retired)", {}, "rule/friends-see", "Your wishlist is theirs to read too", undefined],
@@ -165,9 +171,9 @@ describe("Suggested changes v2's About errata (Small items 6, item 3)", () => {
 
   it("swaps the credits card's empty-handed row for the two v2 rows with v2 on", () => {
     // Look deeper's switch and the Analysis tab's are retired (always on), so it sits in both lists.
-    expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", "Proposed cuts", "Came back empty-handed"]);
+    expect(creditRows(PARENTS)).toEqual(["Read the bracket", "Suggested changes run", CUTS_ROW_NAME, "Came back empty-handed"]);
     expect(creditRows({ ...PARENTS, SUGGESTED_CHANGES_V2_ENABLED: "true" }))
-      .toEqual(["Read the bracket", "Suggested changes run", "Proposed cuts", "Came back short or empty", "Short by your price cap"]);
+      .toEqual(["Read the bracket", "Suggested changes run", CUTS_ROW_NAME, "Came back short or empty", "Short by your price cap"]);
   });
 
   it("swaps the rows with v2 on whatever the retired switches say: v2 has no parent left", () => {
@@ -540,7 +546,7 @@ describe("resolveDiagram", () => {
     for (const sw of ["TUNING_ENABLED", "PROPOSED_CUTS_ENABLED", "ANALYSIS_TAB_ENABLED"]) {
       const drawn = names(rule(env({ ...(ALL_ON as Record<string, string>), [sw]: "off" }), "credits").diagram!);
       expect(drawn, sw).toContain("Suggested changes run");
-      expect(drawn, sw).toContain("Proposed cuts");
+      expect(drawn, sw).toContain(CUTS_ROW_NAME);
       expect(drawn, sw).toContain("Read the bracket");
     }
     // The wishlist's switch is retired: its chip draws whatever the env says.

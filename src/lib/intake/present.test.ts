@@ -28,7 +28,7 @@ describe("figures", () => {
   it("lights the weakest figure and tags it, dimming the rest", () => {
     const f = figures(row({ themeFits: [{ slug: "dinos", share: 0.4 }], cardFit: 0.12 }), "fit", labels);
     expect(f).toEqual([
-      { pct: 40, text: "of its decks are Dinosaurs", setsRank: false, dim: true },
+      { pct: 40, text: helpMeChooseCopy.results.figThemeTail(labels.theme("dinos")), setsRank: false, dim: true },
       { pct: 12, text: "of its decks run Regisaur Alpha", setsRank: true, dim: false },
     ]);
   });
