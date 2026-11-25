@@ -46,7 +46,7 @@ export const ENGAGEMENT_EVENT_VALUES: { [E in keyof EngagementEvents]: { [P in k
 };
 
 /**
- * Sends per event name per page session, the cap that bounds PostHog volume whatever the traffic. One for every
+ * Sends per event name per reader session, the cap that bounds PostHog volume whatever the traffic. One for every
  * event except adds, which a reader makes in runs.
  */
 export const ENGAGEMENT_SEND_CEILING: { [E in keyof EngagementEvents]: number } = {

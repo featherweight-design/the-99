@@ -168,6 +168,7 @@ export function identifyReader(userId: string): void {
  * and count each load as a new visitor.
  */
 export function resetReader(): void {
+  engagementSent.clear(); // the ceiling is per reader: the next one signing in without a reload starts fresh
   withClient((posthog) => {
     if (posthog.get_property("$user_state") !== "identified") return;
     posthog.reset();
@@ -203,13 +204,15 @@ const engagementSent = new Map<string, number>();
 
 /**
  * A core action event (`engagement-events.ts`): closed-set props only, and at most `ENGAGEMENT_SEND_CEILING` sends per
- * event name per page session, so volume is bounded whatever the traffic. Call it after the action answered ok.
+ * event name per reader session, so volume is bounded whatever the traffic. Call it after the action answered ok.
  */
 export function captureEngagement<E extends keyof EngagementEvents>(name: E, props: EngagementEvents[E]): void {
-  const sent = engagementSent.get(name) ?? 0;
-  if (sent >= ENGAGEMENT_SEND_CEILING[name]) return;
-  engagementSent.set(name, sent + 1);
-  withClient((posthog) => posthog.capture(name, { ...props }));
+  withClient((posthog) => {
+    const sent = engagementSent.get(name) ?? 0;
+    if (sent >= ENGAGEMENT_SEND_CEILING[name]) return;
+    engagementSent.set(name, sent + 1);
+    posthog.capture(name, { ...props });
+  });
 }
 
 /**
