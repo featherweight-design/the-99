@@ -5,7 +5,7 @@ import type { EditorRow } from "./rows";
 
 export type Match = { row: EditorRow; how: "exact" | "pattern" };
 
-/** A pattern needs this many fixed characters, or `{n}` and `{name}` would match every line on the page. */
+/** A pattern needs this many fixed LETTERS, or `{n}` and `{name}` would match every line on the page. */
 const MIN_LITERAL = 3;
 
 /** Longer text is matched exactly only: a pattern with several holes backtracks badly on a long line it does not fit. */
@@ -28,7 +28,8 @@ export function indexRows(rows: readonly EditorRow[]): RowIndex {
       exact.set(text, [...(exact.get(text) ?? []), row]);
       continue;
     }
-    const literal = text.replace(/\{[^{}]+\}/g, "").length;
+    // Letters, not characters: fixed text of only punctuation and spaces (". ", " · ", " of ") carries no words, so its pattern would fit almost any line.
+    const literal = (text.replace(/\{[^{}]+\}/g, "").match(/\p{L}/gu) ?? []).length;
     if (literal < MIN_LITERAL) continue;
     const source = text.split(/\{[^{}]+\}/).map(escape).join("(.+?)");
     patterns.push({ row, re: new RegExp(`^${source}$`), literal });

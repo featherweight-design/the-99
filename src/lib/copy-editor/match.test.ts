@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
+import { landingCopy } from "../copy/landing";
 import { indexRows, matchText } from "./match";
 import type { EditorRow } from "./rows";
 
+const step = landingCopy.bring.firstTimer.steps[0];
 const row = (key: string, text: string, placeholders: string[] = [], extra: Partial<EditorRow> = {}): EditorRow => ({ key, kind: "text", text, placeholders, context: "", readOnly: "", ...extra });
 
 const index = indexRows([
@@ -32,6 +34,25 @@ describe("matchText", () => {
 
   it("drops a pattern with almost no fixed text, so it cannot claim every line", () => {
     expect(keys("anything at all")).toEqual([]);
+  });
+
+  it("never lets a template whose fixed text is only punctuation and spaces claim a two-sentence line", () => {
+    const i = indexRows([
+      row("h#aria", "{question}. {date}, {tail}.", ["question", "date", "tail"]),
+      row("s#b", step.b),
+      row("s#rest", step.rest),
+    ]);
+    const text = `${step.b} ${step.rest}`;
+    expect(matchText(i, text)).toEqual([]);
+    expect(matchText(i, step.b).map((m) => m.row.key)).toEqual(["s#b"]);
+    expect(matchText(i, step.rest).map((m) => m.row.key)).toEqual(["s#rest"]);
+  });
+
+  it("still matches a template whose fixed text carries a word of three letters or more; a one- or two-letter word (of, in) is not enough", () => {
+    const i = indexRows([row("t#in", "{a} items in {b}", ["a", "b"]), row("t#dot", "{a} · {b}", ["a", "b"])]);
+    expect(matchText(i, "3 items in 9").map((m) => m.row.key)).toEqual(["t#in"]);
+    expect(matchText(i, "Zzyzx · 99 cats")).toEqual([]);
+    expect(matchText(indexRows([row("t#of", "{a} of {b}", ["a", "b"])]), "3 of 9")).toEqual([]);
   });
 
   it("matches a plural word as its own row", () => {

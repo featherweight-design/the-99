@@ -75,11 +75,17 @@ export function scanPage(index: RowIndex, root: Element = document.body): Entry[
         if (matches.length > 0) {
           const range = document.createRange();
           range.selectNodeContents(el);
+          // An element mixing text with child elements (a bold lead plus a body) whose whole text is only a template fit may be
+          // several rows side by side: outline the parts too. The whole stays, and the smaller outline under the press wins.
+          if (matches[0].how === "pattern" && nodes.some((n) => n.nodeType === Node.ELEMENT_NODE)) visitChildren(el, nodes);
           add(range, matches, el);
           return;
         }
       }
     }
+    visitChildren(el, nodes);
+  };
+  const visitChildren = (el: Element, nodes: ChildNode[]) => {
     for (const n of nodes) {
       if (n.nodeType === Node.ELEMENT_NODE) visit(n as Element);
       else if (n.nodeType === Node.TEXT_NODE) {
