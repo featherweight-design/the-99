@@ -3,6 +3,7 @@
 // route error that would bypass *Search failed* and its Retry. The form still needs its vocabulary.
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { helpMeChooseHistoryCopy } from "../../../../lib/copy/help-me-choose-history";
 
 const stub = vi.hoisted(() => ({ history: vi.fn(), past: vi.fn(), themes: vi.fn(), chip: vi.fn(), allowance: vi.fn(), read: vi.fn(), decks: vi.fn(), page: vi.fn() }));
 vi.mock("../../../../lib/auth", () => ({ requireUserId: async () => "user_1" }));
@@ -200,7 +201,7 @@ describe("the choose page", () => {
       expect(stub.allowance).not.toHaveBeenCalled();
       expect(find(tree, ReadPanel)).toBeNull();
       expect(find(tree, PastRunMeta)!.props).toMatchObject({ at: "2026-10-13T21:40:00.000Z", titleId: "past-run-title" });
-      expect(find(tree, ChooseHeader)!.props).toMatchObject({ back: { label: "‹ History" }, titleId: "past-run-title" });
+      expect(find(tree, ChooseHeader)!.props).toMatchObject({ back: { label: helpMeChooseHistoryCopy.past.back }, titleId: "past-run-title" });
     });
 
     it("draws today's empty panel, with no credit line, for a run that found nothing", async () => {

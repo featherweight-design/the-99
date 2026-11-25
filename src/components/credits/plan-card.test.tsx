@@ -232,7 +232,7 @@ describe("Cancel plan and Keep my plan", () => {
   });
 });
 
-describe("Update card", () => {
+describe("the card update action", () => {
   it("calls manageCardAction and navigates to the returned url", async () => {
     const assign = vi.fn();
     vi.stubGlobal("location", { ...window.location, assign });

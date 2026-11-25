@@ -66,7 +66,7 @@ describe("the page", () => {
 
   it("O4: with the switch off a holder keeps balances, history and the refund line, and gets no offers section", () => {
     render(<CreditsView suggestedV2={false} model={model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row] })} ret={null} />);
-    expect(screen.queryByText("Get more credits")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.pack.heading)).toBeNull();
     expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
     expect(screen.getByText(creditsPageCopy.hist.title)).toBeTruthy();
     expect(screen.getByText(/^Refunds: email/)).toBeTruthy();
@@ -75,7 +75,7 @@ describe("the page", () => {
 
   it("B1: a paused reader keeps balances and history, and the band stands where the offers were, with the address", () => {
     const { container } = render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ pack: 12 }), history: [row], blocked: true })} ret={null} />);
-    expect(screen.queryByText("Get more credits")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.pack.heading)).toBeNull();
     expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
     const band = container.querySelector("[data-pause-band]")!;
     expect(band.textContent).toBe("Buying is pausedEmail support@the-99.dev and we’ll sort it out. Your free credits and everything else work as usual.");
@@ -89,13 +89,13 @@ describe("the page", () => {
   it("O2 to O4 with a pause: the switch off draws no band, there being nothing to buy", () => {
     const { container } = render(<CreditsView suggestedV2={false} model={model({ switchOn: false, allowance: allowance({ pack: 12 }), history: [row], blocked: true })} ret={null} />);
     expect(container.querySelector("[data-pause-band]")).toBeNull();
-    expect(screen.queryByText("Get more credits")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.pack.heading)).toBeNull();
   });
 
   it("P8: a second pack is one more card in the same column under one heading", () => {
     const offers = [...packOffers(), { id: "pack40" as const, units: 100, price: "$10" }];
     const { container } = render(<CreditsView suggestedV2={false} model={model({ offers })} ret={null} />);
-    expect(screen.getAllByText("Get more credits")).toHaveLength(1);
+    expect(screen.getAllByText(creditsPageCopy.pack.heading)).toHaveLength(1);
     const buys = screen.getAllByRole("button", { name: /^Buy / });
     expect(buys.map((b) => b.getAttribute("aria-label"))).toEqual(["Buy pack: 40 credits · $5", "Buy pack: 100 credits · $10"]);
     // The card says the count and the price; the button does not say them again.
@@ -183,7 +183,7 @@ describe("the Buy press", () => {
     press();
     expect((await screen.findByRole("alert")).textContent).toBe(creditsPageCopy.buy.off);
     expect(screen.queryByRole("button", { name: /^Buy / })).toBeNull();
-    expect(screen.queryByText("Get more credits")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.pack.heading)).toBeNull();
   });
 
   it("a pause set after the page was read: says so, and puts the pause band where the offer was", async () => {
@@ -282,7 +282,7 @@ describe("the plan on the page", () => {
 
   it("K1: the plan offer sits under the one Get more credits heading, AFTER the pack (L6: the pack leads)", () => {
     render(<CreditsView suggestedV2={false} model={model()} ret={null} />);
-    expect(screen.getAllByText("Get more credits")).toHaveLength(1);
+    expect(screen.getAllByText(creditsPageCopy.pack.heading)).toHaveLength(1);
     const subscribe = screen.getByRole("button", { name: /^Subscribe/ });
     const buy = screen.getByRole("button", { name: /^Buy pack/ });
     expect(subscribe.closest("section")).toBe(buy.closest("section"));
@@ -292,7 +292,7 @@ describe("the plan on the page", () => {
   it("K2: a subscribed reader gets Your plan above the pack offer, and no Subscribe", () => {
     render(<CreditsView suggestedV2={false} model={model({ allowance: allowance({ plan: 74 }), subscription: sub(false, 2), history: [planRow] })} ret={null} />);
     const plan = screen.getByRole("heading", { name: creditsPageCopy.plan.heading });
-    const packs = screen.getByRole("heading", { name: "Get more credits" });
+    const packs = screen.getByRole("heading", { name: creditsPageCopy.pack.heading });
     expect(plan.compareDocumentPosition(packs) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByRole("button", { name: /^Subscribe/ })).toBeNull();
     expect(screen.getByRole("button", { name: creditsPageCopy.plan.cancel })).toBeTruthy();
@@ -303,7 +303,7 @@ describe("the plan on the page", () => {
     render(<CreditsView suggestedV2={false} model={model({ switchOn: false, allowance: allowance({ plan: 74 }), subscription: sub(false, 20), history: [planRow] })} ret={null} />);
     expect(screen.getAllByRole("button").map((b) => b.textContent)).toEqual([creditsPageCopy.plan.cancel, creditsPageCopy.plan.updateCard, "Receipt"]);
     for (const name of [creditsPageCopy.plan.updateCard, "Receipt"]) expect(screen.getByRole("button", { name }).querySelector("svg[data-link-out]")).toBeTruthy();
-    expect(screen.queryByText("Get more credits")).toBeNull();
+    expect(screen.queryByText(creditsPageCopy.pack.heading)).toBeNull();
   });
 
   it("O3: the switch off and a cancelled plan loses Keep my plan", () => {

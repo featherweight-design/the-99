@@ -9,7 +9,8 @@ import type { LanePrintedIn } from "../../lib/sets/printed-in";
 import { hideCommanderCopy } from "../../lib/copy/commander-explained";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { planeCopy } from "../../lib/copy/commanders-plane";
-import { commandersCopy } from "../../lib/copy/lanes";
+import { commandersCopy, filterCopy } from "../../lib/copy/lanes";
+import { commandersCopy as commandersPageCopy } from "../../lib/copy/commanders";
 
 // The reveal control is unreachable on real data by design — the beta reference
 // collection yields 24 generals and REVEAL_STEP is 25. These tests are therefore
@@ -455,7 +456,7 @@ describe("CommandersView · hidden commanders", () => {
     expect(
       screen.getByText(planeCopy.excluded.heldHidden),
     ).toBeInTheDocument();
-    expect(screen.getByText("1 match, 0 shown")).toBeInTheDocument();
+    expect(screen.getByText(planeCopy.search.heldAside(1))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: planeCopy.excluded.hiddenCta })).toHaveAttribute(
       "href",
       "/commanders/ghalta-primal-hunger",
@@ -914,7 +915,7 @@ describe("CommandersView ranking toggle", () => {
     // Two, and exactly two: the banner always renders both width branches, so an
     // exact count is what catches a second banner sneaking in.
     expect(screen.getAllByText(availabilityCopy.degraded.heading)).toHaveLength(2);
-    expect(screen.queryByText("Synergy data unavailable")).toBeNull();
+    expect(screen.queryByText(commandersPageCopy.degradedSynergy.heading)).toBeNull();
   });
 
   // Two failures are one "try again" to the player, and `retryRecs` re-runs the
@@ -924,7 +925,7 @@ describe("CommandersView ranking toggle", () => {
     expect(
       screen.getAllByText(availabilityCopy.degraded.bodyWithSynergy),
     ).toHaveLength(2);
-    expect(screen.queryByText("Synergy data unavailable")).toBeNull();
+    expect(screen.queryByText(commandersPageCopy.degradedSynergy.heading)).toBeNull();
   });
 
   // The flag is raised by ANY degraded row, so a list with one whole row and one
@@ -939,7 +940,7 @@ describe("CommandersView ranking toggle", () => {
 
   it("leaves the synergy banner alone when only EDHREC is down", () => {
     view(allDegraded(3), { degraded: true });
-    expect(screen.getAllByText("Synergy data unavailable")).toHaveLength(2);
+    expect(screen.getAllByText(commandersPageCopy.degradedSynergy.heading)).toHaveLength(2);
     expect(screen.queryByText(availabilityCopy.degraded.heading)).toBeNull();
     expect(screen.queryByText(/some scores|some fit scores/)).toBeNull();
   });
@@ -1017,7 +1018,7 @@ describe("CommandersView URL writes", () => {
 
   it("renders the colour-match control greyed with no pip lit", () => {
     view(results(3));
-    expect(screen.getByRole("radiogroup", { name: "Color match" })).toHaveAttribute(
+    expect(screen.getByRole("radiogroup", { name: filterCopy.match.legend })).toHaveAttribute(
       "aria-disabled",
       "true",
     );
@@ -1050,7 +1051,7 @@ describe("the first-run banner's door", () => {
   });
   it("draws no door with the switch off, or past first run", () => {
     const { rerender } = render(<CommandersView {...props} firstRun />);
-    expect(screen.getByText("Meet your commanders")).toBeInTheDocument();
+    expect(screen.getByText(commandersPageCopy.guidedBanner.meetTitle)).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: helpMeChooseCopy.door.cta })).toBeNull();
     rerender(<CommandersView {...props} firstRun={false} helpMeChoose />);
     expect(screen.queryByRole("link", { name: helpMeChooseCopy.door.cta })).toBeNull();
@@ -1114,7 +1115,7 @@ describe("CommandersView · hiding a row", () => {
     // Try again asks the same hide again.
     hideCommanderAction.mockResolvedValue(true);
     await act(async () => {
-      fireEvent.click(within(toast).getByRole("button", { name: "Try again" }));
+      fireEvent.click(within(toast).getByRole("button", { name: hideCommanderCopy.retry }));
     });
     expect(hideCommanderAction).toHaveBeenCalledTimes(2);
     expect(undoRow("General 1")).toBeInTheDocument();

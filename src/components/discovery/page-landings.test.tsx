@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import { useState, type ReactNode } from "react";
 import { importReviewCopy } from "../../lib/copy/import-review";
+import { socialCopy } from "../../lib/copy/social";
 
 // Try it's landing on each tool's own page (discovery R2·3, E11), against the page's REAL control: the page's own
 // reading of `?tool=` (`pageToolLanding`) handed to `ToolLandingMount`, as the server component does. A page on a busier
@@ -127,7 +128,7 @@ const PAGES: {
     page: () => (
       <FriendsHead name="Hugh" commander={null} onRename={() => {}} onOpenPicker={() => {}} invitePending={false} held={false} onInvite={() => {}} />
     ),
-    control: () => screen.getByRole("button", { name: "Add a friend" }),
+    control: () => screen.getByRole("button", { name: socialCopy.page.invite }),
     quiet: true,
   },
 ];

@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from "@testing-librar
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HiddenRow } from "../../lib/commanders/hidden-row";
 import { hiddenListCopy } from "../../lib/copy/commanders-hidden";
+import { hideCommanderCopy } from "../../lib/copy/commander-explained";
 
 // The actions are the boundary: the real ones reach the database through `lib/commanders/hidden`.
 const hideCommanderAction = vi.fn<(oracleId: string, restore?: string) => Promise<boolean>>();
@@ -158,7 +159,7 @@ describe("the Hidden list", () => {
 
       unhideCommanderAction.mockResolvedValue(true);
       await act(async () => {
-        fireEvent.click(within(toast).getByRole("button", { name: "Try again" }));
+        fireEvent.click(within(toast).getByRole("button", { name: hideCommanderCopy.retry }));
       });
       expect(unhideCommanderAction).toHaveBeenCalledTimes(2);
       expect(undoLabel("Fixture Commander back in For you")).toBeInTheDocument();
@@ -314,7 +315,7 @@ describe("the Hidden list", () => {
       });
       expect(undoLabel("Fixture Commander back in For you")).toBeInTheDocument();
       expect(undoButton("Fixture Commander")).toBeNull();
-      expect(screen.getByRole("alert")).toHaveTextContent("Couldn’t hide that again. Hide it from For you.");
+      expect(screen.getByRole("alert")).toHaveTextContent(hiddenListCopy.undoRow.refused("foryou"));
       expect(stale).toBe(1);
     });
   });
