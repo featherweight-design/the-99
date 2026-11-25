@@ -62,7 +62,6 @@ import { REVEAL_DONE_MS } from "../ui/reveal-from";
 import type { CollectionRow } from "../../lib/collection/list-wire";
 import { useCollectionFields } from "./use-collection-fields";
 import { isFreeAlone } from "../../lib/collection/quick-filters";
-import { FindADeckCallout } from "./find-a-deck-callout";
 import { FIND_A_DECK_FROM_PLACE, type FindADeckButtons } from "./find-a-deck-button";
 import type { FindADeckState } from "../../lib/collection/find-a-deck";
 import { captureToolEvent } from "../../lib/analytics/posthog";
@@ -298,7 +297,7 @@ export function CollectionBrowser({
   viewHint?: ViewHint;
   /** What the browser's saved copy of the fetched draw fields is good for (`lib/collection/saved-token`); null keeps no copy. */
   savedToken?: string | null;
-  /** The Find a deck call-out and buttons' facts (tool discovery call 1); null when the read failed, and nothing draws. */
+  /** The Find a deck buttons' facts (tool discovery call 1); null when the read failed, and nothing draws. */
   findADeck?: FindADeckState | null;
   /** Own-both pairs the reader holds: the Two-card combos chip's figure. The pairs load when the view opens. */
   comboPairCount?: number;
@@ -673,10 +672,7 @@ export function CollectionBrowser({
     [openDetail, siblings],
   );
 
-  // Tool discovery call 1. Drawn while the reader has a deck and the Free count the menu reads is above zero; on
-  // Free alone the call-out drops `Show them` and every Commander-legal card gets the labelled button.
-  const freeCount = availabilityOptions.find((o) => o.code === "free")?.count ?? 0;
-  const availability = availSelection;
+  // Tool discovery call 1: on In no deck alone every Commander-legal card gets the labelled Find a deck button.
   const findADeckOn = findADeck !== null && findADeck.hasDeck;
   const illegalIds = useMemo(() => new Set(findADeck?.illegal ?? []), [findADeck]);
   const findADeckButtons = useMemo<FindADeckButtons | null>(
@@ -692,10 +688,6 @@ export function CollectionBrowser({
         : null,
     [findADeckOn, freeAlone, illegalIds, openDetail, siblings],
   );
-  const showFreeCards = useCallback(() => {
-    captureToolEvent("find_a_deck_opened", { from: "callout_show_them" });
-    updateFilters({ ...filters, availability: ["free"] });
-  }, [filters, updateFilters]);
 
   // A `?card=` on arrival opens the modal, but only when the id is actually in the
   // filtered and sorted list the link also describes — an id filtered out by the
@@ -809,10 +801,6 @@ export function CollectionBrowser({
         <p className="px-[12px] md:px-[34px] pt-[6px] md:pt-[10px] font-mono text-[11.5px] md:text-[11px]" style={{ color: "var(--fg-faint)" }}>
           {collectionPriceCopy.readFailed}
         </p>
-      ) : null}
-
-      {findADeckOn && !findADeck.closed && freeCount > 0 && (freeAlone || availability.length === 0) ? (
-        <FindADeckCallout count={freeCount} free={freeAlone} rows={resolvedView === "rows"} onShow={showFreeCards} />
       ) : null}
 
       {/* Wrapping only the cards: the provider is a `div`, and the page's section is a flex column whose

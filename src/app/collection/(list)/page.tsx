@@ -109,8 +109,8 @@ export default async function CollectionPage({
     // between can only make the copy filed under this token newer than it says, never older.
     savedListToken(userId, env).catch(() => null),
     storeRead,
-    // The Find a deck call-out and buttons (tool discovery call 1): whether the reader has a deck, closed the call-out,
-    // and which of their cards are not Commander-legal. Quiet failure: null draws neither.
+    // The Find a deck buttons (tool discovery call 1): whether the reader has a deck
+    // and which of their cards are not Commander-legal. Quiet failure: null draws no button.
     perf.timed("findADeck", () => loadFindADeckState(userId)).catch(() => null),
   ]);
 
