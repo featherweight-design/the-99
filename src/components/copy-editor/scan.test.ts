@@ -5,7 +5,7 @@ import type { EditorRow } from "../../lib/copy-editor/rows";
 import { entryAt, OVERLAY_ATTR, scanPage, type Placed } from "./scan";
 
 const row = (key: string, text: string, readOnly = ""): EditorRow => ({ key, kind: readOnly ? "edit in code" : "text", text, placeholders: [], context: "", readOnly });
-const index = indexRows([row("a#title", "Pick a commander"), row("a#count", "{n} picks"), row("a#locked", "Fixed words", "edit in code: built by x")]);
+const index = indexRows([row("a#title", "Zzyzx gadget heading"), row("a#count", "{n} picks"), row("a#locked", "Fixed words", "edit in code: built by x")]);
 
 afterEach(() => {
   document.body.innerHTML = "";
@@ -13,7 +13,7 @@ afterEach(() => {
 
 describe("scanPage", () => {
   it("finds a known line, a template across text nodes, and leaves unknown text alone", () => {
-    document.body.innerHTML = `<h1>Pick a commander</h1><p><span>3</span> picks</p><p>Thrasios, Triton Hero</p>`;
+    document.body.innerHTML = `<h1>Zzyzx gadget heading</h1><p><span>3</span> picks</p><p>Thrasios, Triton Hero</p>`;
     const found = scanPage(index).map((e) => e.matches[0].row.key);
     expect(found).toEqual(["a#title", "a#count"]);
   });
@@ -24,7 +24,7 @@ describe("scanPage", () => {
   });
 
   it("never scans the overlay's own nodes, scripts or fields", () => {
-    document.body.innerHTML = `<div ${OVERLAY_ATTR}><p>Pick a commander</p></div><script>Pick a commander</script><textarea>Pick a commander</textarea>`;
+    document.body.innerHTML = `<div ${OVERLAY_ATTR}><p>Zzyzx gadget heading</p></div><script>Zzyzx gadget heading</script><textarea>Zzyzx gadget heading</textarea>`;
     expect(scanPage(index)).toEqual([]);
   });
 });
