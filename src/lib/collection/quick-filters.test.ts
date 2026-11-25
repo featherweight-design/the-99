@@ -104,6 +104,33 @@ describe("quickCounts", () => {
   });
 });
 
+// The figure on a chip is the length of the list its press shows: `pressQuick` (browser.tsx) sets the chip, takes the
+// free-only selection back out for a fact or foil chip, and sets it for In no deck. Pinned from rest and from In no deck.
+describe("quickCounts equals the list the chip's press shows", () => {
+  const free = { owned: 1, hard: 0, soft: 0, free: 1, claims: [] };
+  const list = [
+    listCard("a", { q: quickMask(["gameChanger"], []), availability: free }),
+    listCard("b", { q: quickMask(["gameChanger", "tutor"], []), colorIdentity: ["R"] }),
+    listCard("c", { q: quickMask(["extraTurns"], []), availability: free }),
+    listCard("d", { q: quickMask(undefined, [{ finishes: { foil: 1 } }]) }),
+  ];
+  const press = (f: BrowseFilters, key: "free" | (typeof QUICK_KEYS)[number]): BrowseFilters =>
+    key === "free"
+      ? { ...f, quick: undefined, availability: ["free"] }
+      : { ...f, quick: key, availability: isFreeAlone(f) ? [] : f.availability };
+
+  it.each([
+    ["rest", none],
+    ["In no deck pressed", { ...none, availability: ["free"] } as BrowseFilters],
+    ["a colour held", { ...none, colors: ["U"] } as BrowseFilters],
+  ])("from %s", (_name, from) => {
+    const counts = quickCounts(list, from);
+    for (const key of ["free", ...QUICK_KEYS] as const) {
+      expect(counts[key], key).toBe(filterCards(list, press(from, key)).length);
+    }
+  });
+});
+
 describe("the URL", () => {
   it.each(QUICK_KEYS)("reads quick=%s", (key) => {
     expect(params(`quick=${key}`).filters.quick).toBe(key);
