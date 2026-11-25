@@ -46,10 +46,11 @@ describe("matchText", () => {
     expect(matchText(i, "Once you have an account, each box goes in whole, commander included.").map((m) => m.row.key)).toEqual(["s#rest"]);
   });
 
-  it("still matches a template whose fixed text carries a word, however short", () => {
+  it("still matches a template whose fixed text carries a word of three letters or more; a one- or two-letter word (of, in) is not enough", () => {
     const i = indexRows([row("t#in", "{a} items in {b}", ["a", "b"]), row("t#dot", "{a} · {b}", ["a", "b"])]);
     expect(matchText(i, "3 items in 9").map((m) => m.row.key)).toEqual(["t#in"]);
     expect(matchText(i, "Ghalta · 99 cards")).toEqual([]);
+    expect(matchText(indexRows([row("t#of", "{a} of {b}", ["a", "b"])]), "3 of 9")).toEqual([]);
   });
 
   it("matches a plural word as its own row", () => {

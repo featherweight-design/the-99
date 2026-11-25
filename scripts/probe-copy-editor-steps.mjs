@@ -57,7 +57,7 @@ try {
     const ctx = await browser.newContext({ viewport: { width: vp.width, height: vp.height }, hasTouch: vp.touch, isMobile: vp.touch });
     const page = await ctx.newPage();
     await signIn(page);
-    await page.goto(`${BASE}/decks`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${BASE}${process.env.PROBE_PATH ?? "/decks"}`, { waitUntil: "domcontentloaded" });
     await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
     const door = vp.touch ? page.locator('button[aria-label="Edit copy"]:visible') : page.locator("button:visible", { hasText: "Edit copy" });
     await door.first().click();

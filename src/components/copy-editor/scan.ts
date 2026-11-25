@@ -75,16 +75,10 @@ export function scanPage(index: RowIndex, root: Element = document.body): Entry[
         if (matches.length > 0) {
           const range = document.createRange();
           range.selectNodeContents(el);
-          // An element mixing text with child elements (a bold lead plus a body) whose whole text is only a template fit is
-          // probably several rows side by side: try the parts first and keep the whole only when no part is a row.
-          const mixed = nodes.some((n) => n.nodeType === Node.ELEMENT_NODE);
-          if (!mixed || matches[0].how === "exact") {
-            add(range, matches, el);
-            return;
-          }
-          const before = out.length;
-          visitChildren(el, nodes);
-          if (out.length === before) add(range, matches, el);
+          // An element mixing text with child elements (a bold lead plus a body) whose whole text is only a template fit may be
+          // several rows side by side: outline the parts too. The whole stays, and the smaller outline under the press wins.
+          if (matches[0].how === "pattern" && nodes.some((n) => n.nodeType === Node.ELEMENT_NODE)) visitChildren(el, nodes);
+          add(range, matches, el);
           return;
         }
       }

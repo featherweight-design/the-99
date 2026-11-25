@@ -24,6 +24,12 @@ describe("scanPage", () => {
     expect(scanPage(steps).map((e) => e.matches[0].row.key)).toEqual(["s#b", "s#rest"]);
   });
 
+  it("keeps a template row for the whole line beside the rows of its parts", () => {
+    const i = indexRows([row("a#card", "card"), { ...row("a#add", "Add {name}"), placeholders: ["name"] }]);
+    document.body.innerHTML = `<p>Add <b>card</b></p>`;
+    expect(scanPage(i).map((e) => e.matches[0].row.key).sort()).toEqual(["a#add", "a#card"]);
+  });
+
   it("marks a read-only row", () => {
     document.body.innerHTML = `<p>Fixed words</p>`;
     expect(scanPage(index)[0].readOnly).toBe("edit in code: built by x");
