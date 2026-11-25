@@ -79,4 +79,13 @@ describe("stepOpensCards", () => {
     expect(stepOpensCards(data({ ...base, choose: null }), details("c1"), 2)).toBe(false);
     expect(stepOpensCards(data(base), details("c1", "c2"), 3)).toBe(false);
   });
+
+  it("reads the Upgrade step's cards (the run's swaps and the commanders) at index 6", () => {
+    const upgrade = { runId: "r", panel: { runs: [{ id: "r", pairs: [{ addId: "u1", cutId: "u2" }] }], commanders: [{ cards: [{ oracleId: "k1" }] }] } };
+    const withUpgrade = data({ ...base, upgrade });
+    expect(stepOpensCards(withUpgrade, null, 6)).toBe(false);
+    expect(stepOpensCards(withUpgrade, details("u1", "u2"), 6)).toBe(false);
+    expect(stepOpensCards(withUpgrade, details("u1", "u2", "k1"), 6)).toBe(true);
+    expect(stepOpensCards(data(base), details("u1", "u2", "k1"), 6)).toBe(false);
+  });
 });

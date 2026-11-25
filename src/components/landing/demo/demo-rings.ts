@@ -10,7 +10,7 @@ import type { RingPlace } from "./demo-ring";
 /**
  * The control each step's press ring floats over (`PressRing`): a selector for the first match inside the app panel. A ring
  * is drawn only where the press it promises does something: step 2 the first row's Fit chip ("Why it fits", the board's), step 4
- * the mark key, which decodes the marks the rows below carry, step 5 the first finding that opens its receipt, and on steps 1, 3 and 6 a card, when `cardsOpen` (every card the step draws has its details in the loaded card data:
+ * the mark key, which decodes the marks the rows below carry, step 5 the first finding that opens its receipt, and on steps 1, 3, 6 and 7 a card, when `cardsOpen` (every card the step draws has its details in the loaded card data:
  * `stepOpensCards`). A card press with no details behind it opens nothing, so with `cardsOpen` false those steps draw no ring.
  * A step with no entry draws no ring.
  */
@@ -29,7 +29,7 @@ export function ringTarget(index: number, cardsOpen = false, fine = true): strin
       // beside or below a target cannot cover it.
       // The mark in a ROW, not the key's sample of it (the key draws the same glyph and the same test id).
       if (fine) return "[data-testid='demo-deck'] [data-decklist-row] [data-testid='card-fact-gameChanger']";
-      // Not gated on `cardsOpen` like steps 1, 3 and 6: step 4 has no card-id set to test, and a press that comes before the played
+      // Not gated on `cardsOpen` like steps 1, 3, 6 and 7: step 4 has no card-id set to test, and a press that comes before the played
       // deck's details have landed fetches them and opens the card on arrival (`openCard`), so the promise holds.
       return "[data-testid='demo-deck'] [data-decklist-row]";
     case 4:
