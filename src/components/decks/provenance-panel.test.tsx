@@ -21,7 +21,7 @@ function draw() {
   fireEvent.click(screen.getByRole("button", { name: new RegExp(copy.provenance.toggle) }));
 }
 
-describe("How we make these decisions", () => {
+describe("the provenance opener", () => {
   // 3c: an opener with the tab's arrow, and a sheet titled by what was pressed.
   it("opens a sheet named by its opener, and closes it", () => {
     render(

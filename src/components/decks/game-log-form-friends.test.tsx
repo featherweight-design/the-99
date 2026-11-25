@@ -238,7 +238,7 @@ describe("a friend already seated", () => {
   });
 });
 
-describe("Seat a pod", () => {
+describe("seating a pod's members", () => {
   const pod = { id: "00000000-0000-4000-8000-0000000000c1", name: "Thursday", memberCount: 4 };
   const member = (publicId: string, displayName: string) => ({ publicId, displayName, decks: [] });
 

@@ -159,7 +159,7 @@ describe("TuningLimitsBox (H35 PR 2, \"Kept for this deck\")", () => {
   });
 });
 
-describe("Include my other decks", () => {
+describe("pulling in the other decks", () => {
   it("is not offered on a v10 run, whose Apply has no pull", () => {
     renderBox({ ownedOnly: true, otherDecksOffered: false });
     expect(screen.queryByRole("checkbox", { name: /Include my other decks/ })).toBeNull();

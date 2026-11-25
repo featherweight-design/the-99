@@ -118,7 +118,7 @@ describe("switchBits", () => {
 
 // All features (2026-10-15): one account row raises every feature and model switch, parents included,
 // for that account alone. The killed row and the account's own Off still win; plumbing is never raised.
-describe("All features", () => {
+describe("the all-features account row", () => {
   const all = (userId = "u1") => row({ switchName: ALL_FEATURES, scope: "user", userId, value: "on" });
 
   it("raises every feature and model switch for its account, and nobody else's", () => {
