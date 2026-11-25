@@ -21,6 +21,7 @@ vi.mock("../../../../../../lib/announcements/early-list-read", () => ({
 
 import EarlyListPage from "./page";
 import { OpenPreconView } from "../../../../../../components/decks/precons/open-precon-view";
+import { preconsCopy } from "../../../../../../lib/copy/precons";
 
 const visit = (id: string, position: string) => EarlyListPage({ params: Promise.resolve({ id, position }) });
 
@@ -68,7 +69,7 @@ describe("/decks/precons/early/[id]/[position]", () => {
     expect(el.type).toBe(OpenPreconView);
     expect(el.props.early).toEqual({
       lead: "Early list, from Wizards’ post on Oct 29.",
-      tail: "The release list replaces it when it arrives; then you can start a deck from this precon.",
+      tail: preconsCopy.early.tail,
       postUrl: "https://magic.wizards.com/en/news/announcements/x",
       unmatched: [{ name: "Seraph of the Dawnfire", count: 1 }],
     });
@@ -79,7 +80,7 @@ describe("/decks/precons/early/[id]/[position]", () => {
     h.read = early({ releasedOn: "2026-11-13" });
     const el = (await visit("post1", "0")) as ReactElement<{ early: { lead: string; tail: string } }>;
     expect(el.props.early.lead).toBe("Out Nov 13, but this is still Wizards’ early list:");
-    expect(el.props.early.tail).toBe("you can start a deck from this precon once the release list is in.");
+    expect(el.props.early.tail).toBe(preconsCopy.early.releasedTail);
   });
 
   it("links out only to Wizards' own site", async () => {

@@ -56,7 +56,7 @@ describe("PastRunMeta", () => {
 describe("PastRunNote", () => {
   it("says the ruled sentence, and nothing about a credit having been spent", () => {
     render(<PastRunNote nothing={false} aged={null} />);
-    expect(screen.getByTestId("past-run-note").textContent).toBe("A past run, read-only. Opening it again uses no credit.");
+    expect(screen.getByTestId("past-run-note").textContent).toBe(helpMeChooseHistoryCopy.past.note);
   });
 
   it("says a run that found nothing used no credit", () => {

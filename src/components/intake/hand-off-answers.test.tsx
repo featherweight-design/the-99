@@ -2,6 +2,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HandOffAnswers } from "../../lib/intake/hand-off-load";
 import { budgetLine, HandOffAnswersBlock } from "./hand-off-answers";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const CARD = "0000aaaa-0000-4000-8000-000000000001";
 const card = (over: Partial<NonNullable<HandOffAnswers["card"]>> = {}) => ({
@@ -28,7 +29,7 @@ describe("Built from your answers", () => {
       "Budget$150Regisaur Alpha takes $1.10 of it first. The fill buys the rest in its own order while the price fits, and finishes with basics.",
       "Bracket2 · CoreThe fill keeps every card it chooses inside bracket 2’s limits.",
     ]);
-    expect(within(screen.getByTestId("hand-off-answers")).getByRole("link", { name: "Change your answers" }).getAttribute("href"))
+    expect(within(screen.getByTestId("hand-off-answers")).getByRole("link", { name: helpMeChooseCopy.handOff.changeAria }).getAttribute("href"))
       .toBe("/decks/new/choose?t=dinosaurs");
   });
 
@@ -71,8 +72,8 @@ describe("Built from your answers", () => {
     expect(budgetLine(card())).toMatch(/^Regisaur Alpha takes \$1\.10 of it first\./);
     expect(budgetLine(card({ price: { kind: "absent" } }))).toMatch(/^Regisaur Alpha has no price on record/);
     // An owned card costs the budget nothing, and no card at all leaves the budget to the fill alone.
-    expect(budgetLine(card({ owned: true }))).toBe("The fill buys in its own order while the price fits, and finishes with basics.");
-    expect(budgetLine(null)).toBe("The fill buys in its own order while the price fits, and finishes with basics.");
+    expect(budgetLine(card({ owned: true }))).toBe(helpMeChooseCopy.handOff.budgetAlone);
+    expect(budgetLine(null)).toBe(helpMeChooseCopy.handOff.budgetAlone);
     // The card's read failed: the create still pays for it first, so no line is true yet.
     expect(budgetLine(null, true)).toBeNull();
     // Owned with every copy held: the fill buys it, so the budget pays for it first.
@@ -80,8 +81,8 @@ describe("Built from your answers", () => {
     expect(budgetLine(held)).toMatch(/^Regisaur Alpha takes \$1\.10 of it first\./);
     expect(budgetLine(held, false, true)).toBe("Regisaur Alpha takes $1.10 of it. The fill buys nothing else for the 99.");
     // Own-only: nothing is bought for the 99, unless the card is the one buy.
-    expect(budgetLine(null, false, true)).toBe("The fill buys nothing for the 99.");
-    expect(budgetLine(card({ owned: true }), false, true)).toBe("The fill buys nothing for the 99.");
+    expect(budgetLine(null, false, true)).toBe(helpMeChooseCopy.handOff.budgetOwn);
+    expect(budgetLine(card({ owned: true }), false, true)).toBe(helpMeChooseCopy.handOff.budgetOwn);
     expect(budgetLine(card(), false, true)).toBe("Regisaur Alpha takes $1.10 of it. The fill buys nothing else for the 99.");
     expect(budgetLine(card({ price: { kind: "absent" } }), false, true)).toMatch(/^Regisaur Alpha has no price on record.*nothing else/);
   });

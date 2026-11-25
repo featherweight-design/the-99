@@ -17,6 +17,8 @@ const { HeldResults } = await import("./choose-results");
 const { emptyParams } = await import("../../lib/intake/params");
 import type { TheReadState } from "../../lib/intake/run-store";
 import type { ChooseParams } from "../../lib/intake/params";
+import { creditsCopy } from "../../lib/copy/credits";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const READ = "0000cccc-0000-4000-8000-000000000001";
 const params: ChooseParams = { ...emptyParams(), results: true, words: "something scary", readId: READ };
@@ -83,8 +85,8 @@ describe("7d: reading", () => {
   it("draws the steps and the hairlined press with its cost, offers no Stop and no line, and dims the results", () => {
     draw({ kind: "pending", phase: "shortlist" }, { pool: 3445 });
     expect(panel().dataset.phase).toBe("reading");
-    expect(text()).toContain("Reading what you wrote…");
-    expect(text()).toContain("These results stay until it’s done. It usually takes under a minute.");
+    expect(text()).toContain(helpMeChooseCopy.read.pendingTitle);
+    expect(text()).toContain(helpMeChooseCopy.read.pendingLead);
     const steps = screen.getByTestId("read-steps").querySelectorAll("li");
     expect([...steps].map((s) => [s.dataset.step, s.textContent])).toEqual([
       ["now", "Scanning the 3,445 commanders your answers allownow"],
@@ -131,7 +133,7 @@ describe("7d: reading", () => {
     // panel still reads and the results stay dimmed, never a done head over the free order.
     expect(panel().dataset.phase).toBe("reading");
     expect(screen.getByTestId("results-dim").dataset.reading).toBe("true");
-    expect(screen.getByRole("status").textContent).toBe("The run is done, and its picks now lead your results.");
+    expect(screen.getByRole("status").textContent).toBe(helpMeChooseCopy.read.doneAnnounce);
     // And it asks no more.
     await act(async () => { await vi.advanceTimersByTimeAsync(6_000); });
     expect(state).toHaveBeenCalledTimes(3);
@@ -146,7 +148,7 @@ describe("7d: reading", () => {
     await act(async () => { await vi.advanceTimersByTimeAsync(2_000); });
     // Announced at once, drawn once the refresh brings the refunded standing with it.
     expect(panel().dataset.phase).toBe("reading");
-    expect(screen.getByRole("status").textContent).toBe("The run didn’t finish, so your credit came back.");
+    expect(screen.getByRole("status").textContent).toBe(helpMeChooseCopy.read.failed);
     expect(router.refresh).toHaveBeenCalled();
   });
 });
@@ -154,12 +156,12 @@ describe("7d: reading", () => {
 describe("7e, 7f: stopped and failed", () => {
   it("still draws a read a Stop settled before Stop was removed: tagged muted, no credit used, Try again with its cost", () => {
     draw({ kind: "stopped" });
-    expect(text()).toContain("Read what you wrote");
+    expect(text()).toContain(helpMeChooseCopy.read.title);
     const tag = screen.getByTestId("read-tag");
     expect(tag.textContent).toBe("stopped");
     expect(tag.className).toContain("text-[color:var(--fg-muted)]");
     expect(tag.className).toContain("var(--fg-muted)_12%");
-    expect(text()).toContain("Nothing was read, and no credit was used. These are the results for your answers alone.");
+    expect(text()).toContain(helpMeChooseCopy.read.stoppedLead);
     const retry = screen.getByRole("button", { name: "1 credit. Try again." });
     expect(retry.textContent).toBe("1 creditTry again");
     noReadIt();
@@ -170,7 +172,7 @@ describe("7e, 7f: stopped and failed", () => {
     const tag = screen.getByTestId("read-tag");
     expect(tag.textContent).toBe("didn’t finish");
     expect(tag.className).toContain("text-[color:var(--danger)]");
-    expect(text()).toContain("The run didn’t finish, so your credit came back.");
+    expect(text()).toContain(helpMeChooseCopy.read.failed);
     expect(screen.getByRole("button", { name: "1 credit. Try again." })).toBeTruthy();
     noReadIt();
   });
@@ -221,7 +223,7 @@ describe("7e, 7f: stopped and failed", () => {
 });
 
 describe("paused: the model-call switch is off", () => {
-  const PAUSED = "Anything that uses credits is paused right now. Try again later.";
+  const PAUSED = creditsCopy.paused;
   it("holds Try again and says the pause under it", () => {
     draw({ kind: "failed" }, { over: { paused: true } });
     const retry = screen.getByRole("button", { name: "Try again" }) as HTMLButtonElement;
@@ -271,7 +273,7 @@ describe("7g to 7k, 7m: done", () => {
 
   it("says a repeat used no credit (7m)", () => {
     draw(done(), { repeat: true });
-    expect(screen.getByTestId("read-line").textContent).toBe("No credit used · you asked this already");
+    expect(screen.getByTestId("read-line").textContent).toBe(helpMeChooseCopy.read.repeatLine);
   });
 
   it("draws no count when the standing could not be read", () => {
@@ -283,12 +285,12 @@ describe("7g to 7k, 7m: done", () => {
 describe("7j: nothing fits", () => {
   it("says nothing fits with no tag, links Change answers to widen, and says no credit was used", () => {
     draw({ kind: "nothing", result: { picks: [], pool: 112, weighed: 30 } });
-    expect(text()).toContain("Nothing fits what you wrote");
+    expect(text()).toContain(helpMeChooseCopy.read.emptyTitle);
     expect(screen.queryByTestId("read-tag")).toBeNull();
     expect(screen.getByTestId("read-lead").textContent).toBe(
       "It read all 112 commanders your answers allow, and none of them makes the deck you described. Your answers hold, so it didn’t look outside them.",
     );
-    const link = screen.getByRole("link", { name: "Change answers" });
+    const link = screen.getByRole("link", { name: helpMeChooseCopy.readAs.change });
     expect(link.getAttribute("href")).toBe("/decks/new/choose?w=something+scary");
     expect(screen.getByTestId("read-widen").textContent).toBe("Change answers to let it look wider, for instance with more colors.");
     expect(screen.getByTestId("read-line").textContent).toBe("No credit used · 8 of 10 left");
@@ -306,14 +308,14 @@ describe("the standing line and the server's HTML", () => {
       </ReadScope>,
     );
     expect(html).not.toContain("left");
-    expect(html).toContain("Read what you wrote");
+    expect(html).toContain(helpMeChooseCopy.read.title);
   });
 });
 
 describe("a repeat, and a visit's announcements", () => {
   it("says no credit was used for a repeat landing on a stored nothing-fits answer too", () => {
     draw({ kind: "nothing", result: { picks: [], pool: 308, weighed: 12 } }, { repeat: true });
-    expect(screen.getByTestId("read-line").textContent).toBe("No credit used · you asked this already");
+    expect(screen.getByTestId("read-line").textContent).toBe(helpMeChooseCopy.read.repeatLine);
   });
 
   it("starts each visit silent, whatever an earlier visit announced", async () => {
@@ -337,8 +339,8 @@ describe("7l, 7n: unread", () => {
   it("says the words were not read, with the bare standing and no press (F10)", () => {
     draw(null, { over: { used: 10 } });
     expect(panel().dataset.phase).toBe("unread");
-    expect(text()).toContain("What you wrote wasn’t read");
-    expect(text()).toContain("These results use your answers alone. Your words are kept for another try.");
+    expect(text()).toContain(helpMeChooseCopy.read.unreadTitle);
+    expect(text()).toContain(helpMeChooseCopy.read.unreadLead);
     expect(screen.getByTestId("read-line").textContent).toBe("0 of 10 left");
     expect(screen.queryByRole("button")).toBeNull();
     expect(screen.queryByTestId("read-tag")).toBeNull();

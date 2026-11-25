@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 import { emptyParams, parseChooseParams, type ChooseParams } from "../../lib/intake/params";
 import { narrowOptions } from "../../lib/intake/present";
 import { NarrowNote } from "./narrow-note";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const labels = { theme: (s: string) => ({ dinosaurs: "Dinosaurs", landfall: "Landfall" })[s] ?? s, card: null };
 const p: ChooseParams = {
@@ -46,7 +47,7 @@ describe("the narrow note", () => {
     expect(screen.getByTestId("narrow-few").textContent).toContain("Only one commander fits all of that");
     unmount();
     render(<NarrowNote count={0} options={options} changeHref="/decks/new/choose?t=dinosaurs" />);
-    expect(screen.getByTestId("narrow-none").textContent).toContain("No commander fits all of that");
-    expect(screen.getByRole("link", { name: "change your answers" }).getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs");
+    expect(screen.getByTestId("narrow-none").textContent).toContain(helpMeChooseCopy.narrow.none);
+    expect(screen.getByRole("link", { name: helpMeChooseCopy.narrow.yourselfLink }).getAttribute("href")).toBe("/decks/new/choose?t=dinosaurs");
   });
 });

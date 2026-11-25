@@ -3,6 +3,7 @@ import { identityName, matchupRows, singleGameCaption, SQUARES_MAX } from "./mat
 import { named } from "../person-name/mint";
 import type { Matchups } from "./matchups";
 import type { GameSummary } from "./games";
+import { gameMatchupsCopy } from "../copy/game-matchups";
 
 const summary = (wins: number, losses: number, draws = 0): GameSummary =>
   ({ count: wins + losses + draws, record: { wins, losses, draws }, axes: [], fix: [], keep: [], mixed: [] }) as unknown as GameSummary;
@@ -51,8 +52,8 @@ describe("rows by split", () => {
     expect(identityName(["W", "U", "R"])).toEqual({ name: "Jeskai", sub: null });
     expect(identityName(["U"])).toEqual({ name: "Blue", sub: null });
     expect(identityName([])).toEqual({ name: "Colorless", sub: null });
-    expect(identityName(["W", "U", "B", "R", "G"])).toEqual({ name: "Five colors", sub: null });
-    expect(identityName(["W", "U", "B", "R"])).toEqual({ name: "Four colors", sub: "no green" });
+    expect(identityName(["W", "U", "B", "R", "G"])).toEqual({ name: gameMatchupsCopy.matchups.fiveColors, sub: null });
+    expect(identityName(["W", "U", "B", "R"])).toEqual({ name: gameMatchupsCopy.matchups.fourColors, sub: "no green" });
   });
   it("draws a friend by the commander they played, else their initials", () => {
     const rows = matchupRows({ ...base, friends: [

@@ -110,7 +110,7 @@ describe("submitChoose (rework plan PR 3, F8)", () => {
     // 740 + 3 x (space + 13-letter name) = 782 drawn; the three ids take it to 905 raw, over 800.
     const w = `${"x".repeat(740)} ${tag(1)} ${tag(2)} ${tag(3)}`;
     expect(w.length).toBeGreaterThan(800);
-    tags.resolve.mockResolvedValueOnce({ text: "a deck", body: w, tagged: [] });
+    tags.resolve.mockResolvedValueOnce({ text: "fixture text", body: w, tagged: [] });
     await landed(`?w=${encodeURIComponent(w)}`);
     expect(stub.begin).toHaveBeenCalled();
   });

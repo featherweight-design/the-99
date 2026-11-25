@@ -4,6 +4,10 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { renderToString } from "react-dom/server";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { creditsCopy } from "../../lib/copy/credits";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
+import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push, hideChooseIntro: vi.fn(async () => ({ ok: true })) }));
@@ -48,8 +52,8 @@ describe("Anything else? box, board fixes", () => {
     expect(foot).not.toHaveAttribute("data-lock-hide");
     expect(foot.querySelector("button")).not.toHaveAttribute("data-lock-hide");
     expect(screen.getByText("0 / 800").closest("[data-lock-hide]")).toBeNull();
-    expect(within(foot).getByRole("button", { name: "Insert a card tag" })).toBeTruthy();
-    expect(within(foot).getByText("tag a card")).toBeTruthy();
+    expect(within(foot).getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria })).toBeTruthy();
+    expect(within(foot).getByText(TAG_A_CARD_WORDS)).toBeTruthy();
     expect(frame).toHaveAttribute("data-lock-edge");
     expect(frame.className.split(/\s+/)).not.toContain("border-[color:var(--accent)]");
     unmount();
@@ -73,23 +77,23 @@ describe("the Theme field's join", () => {
     { slug: "orcs", label: "Orcs", commanders: 20 },
     { slug: "elves", label: "Elves", commanders: 98 },
   ];
-  const group = () => screen.getByRole("radiogroup", { name: "Themes: all or any" });
+  const group = () => screen.getByRole("radiogroup", { name: helpMeChooseCopy.intake.themeJoin.aria });
 
   it("is greyed below two themes and keeps its value there", () => {
     render(<IntakeForm themes={themes} initial={{ ...emptyParams(), themes: ["orcs"], themeJoin: "any" }} />);
     expect(group().getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(within(group()).getByRole("radio", { name: "All" }));
     expect(within(group()).getByRole("radio", { name: "Any" }).getAttribute("aria-checked")).toBe("true");
-    expect(screen.getByText("EDHREC’s themes. Pick more than one if you like.")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.intake.themeCaption)).toBeTruthy();
   });
 
   it("from two themes, says its rule and sends it with the submit", () => {
     push.mockClear();
     render(<IntakeForm themes={themes} initial={{ ...emptyParams(), themes: ["orcs", "elves"] }} />);
     expect(group().getAttribute("aria-disabled")).toBeNull();
-    expect(screen.getByText("All of these: a commander has to fit every one.")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.intake.themeJoin.captionAll)).toBeTruthy();
     fireEvent.click(within(group()).getByRole("radio", { name: "Any" }));
-    expect(screen.getByText("Any of these: a commander has to fit one, and ranks by the one it fits best.")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.intake.themeJoin.captionAny)).toBeTruthy();
     fireEvent.submit(group().closest("form")!);
     expect(String(push.mock.calls[0][0])).toContain("tj=any");
   });
@@ -99,9 +103,9 @@ describe("Cards for the 99", () => {
   it("sends own-only with the submit, and says the budget caps the commander and a card it would buy", () => {
     push.mockClear();
     render(<IntakeForm themes={[]} initial={emptyParams()} />);
-    const group = screen.getByRole("radiogroup", { name: "Cards for the 99" });
+    const group = screen.getByRole("radiogroup", { name: helpMeChooseCopy.intake.pool });
     fireEvent.click(within(group).getByRole("radio", { name: "Only cards I own" }));
-    expect(screen.getByText("With the 99 from your cards, this caps the commander and any card you ask for that you’d have to buy. It never ranks.")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.intake.budgetCaptionOwn)).toBeTruthy();
     fireEvent.submit(group.closest("form")!);
     expect(String(push.mock.calls[0][0])).toContain("pool=own");
   });
@@ -132,7 +136,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
   it("7b: with text and a credit free, the press carries the pill and the first-use line", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary horrors" }} standing={credit} />);
     expect(screen.getAllByText("1 credit").length).toBeGreaterThan(0);
-    expect(presses()[0].getAttribute("aria-label")).toBe("1 credit. Find commanders and read what you wrote.");
+    expect(presses()[0].getAttribute("aria-label")).toBe(helpMeChooseCopy.read.pressAria);
     expect(screen.getAllByText(/Uses a credit\. 9 of 10 left/).length).toBeGreaterThan(0);
     expect(screen.getByText("13 / 800")).toBeTruthy();
     // 32 on the phone's 48 button, 30 on the desktop's 44 (the read's design table).
@@ -143,15 +147,15 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10 }} />);
     expect(screen.queryByText("1 credit")).toBeNull();
     expect(screen.getAllByText(/^Won’t be read: 0 of 10 left/).length).toBeGreaterThan(0);
-    expect(screen.getByText("Kept here for when a credit comes back.")).toBeTruthy();
+    expect(screen.getByText(helpMeChooseCopy.intake.extra.captionSpent)).toBeTruthy();
   });
 
   it("paused: no pill, no spent caption, and the pause said once per viewport, by the press's line", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, paused: true }} />);
     expect(screen.queryByText("1 credit")).toBeNull();
-    expect(screen.queryByText("Kept here for when a credit comes back.")).toBeNull();
+    expect(screen.queryByText(helpMeChooseCopy.intake.extra.captionSpent)).toBeNull();
     // The desktop press and the phone press each draw the line once (one is hidden per viewport); the box draws no caption.
-    const said = screen.getAllByText("Anything that uses credits is paused right now. Try again later.");
+    const said = screen.getAllByText(creditsCopy.paused);
     const lines = presses().map((b) => b.getAttribute("aria-describedby"));
     expect(said.map((el) => el.closest("p")?.id).sort()).toEqual([...lines].sort());
     expect(said).toHaveLength(2);
@@ -165,7 +169,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
     const links = screen.getAllByRole("link", { name: /Get more credits/ });
     expect(links).toHaveLength(2);
     const phone = links.find((l) => l.className.includes("md:hidden"))!;
-    expect(phone.previousElementSibling?.textContent).toContain("Kept here for when a credit comes back.");
+    expect(phone.previousElementSibling?.textContent).toContain(helpMeChooseCopy.intake.extra.captionSpent);
     expect(links.find((l) => l !== phone)!.closest("div")!.className).toContain("md:flex");
   });
 
@@ -176,7 +180,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
 
   it("describes each press by its own line, so the words going unread is announced with the button", () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), words: "scary" }} standing={{ ...credit, used: 10 }} />);
-    const presses = screen.getAllByRole("button", { name: "Find commanders" });
+    const presses = screen.getAllByRole("button", { name: helpMeChooseCopy.intake.submit });
     expect(presses).toHaveLength(2);
     for (const b of presses) {
       expect(b.getAttribute("aria-describedby")).toBeTruthy();
@@ -226,7 +230,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       // A refusal returns the form to what it was.
       for (const press of presses()) {
         expect(press.hasAttribute("aria-disabled")).toBe(false);
-        expect(press.textContent).toContain("Find commanders");
+        expect(press.textContent).toContain(helpMeChooseCopy.intake.submit);
       }
     });
 
@@ -245,12 +249,12 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       slow();
       render(<IntakeForm themes={[]} initial={emptyParams()} standing={credit} />);
       await act(async () => { fireEvent.click(presses()[0]); });
-      const pending = screen.getAllByRole("button", { name: "Find commanders" });
+      const pending = screen.getAllByRole("button", { name: helpMeChooseCopy.intake.submit });
       expect(pending).toHaveLength(2);
       for (const press of pending) {
         expect(press.getAttribute("aria-disabled")).toBe("true");
         expect(press.getAttribute("aria-busy")).toBe("true");
-        expect(press.textContent).toBe("Find commanders");
+        expect(press.textContent).toBe(helpMeChooseCopy.intake.submit);
       }
     });
 

@@ -3,6 +3,8 @@
 
 import { act, fireEvent, within, render, screen, waitFor } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push, hideChooseIntro: vi.fn(async () => ({ ok: true })) }));
@@ -44,7 +46,7 @@ describe("the form locks while it reads (small items 3, item 5)", () => {
     expect(form().getAttribute("aria-busy")).toBe("true");
     expect(form().hasAttribute("data-intake-locked")).toBe(true);
     expect(fields()).toHaveLength(7);
-    for (const label of ["Colors", "Theme", "Sets", "Cards for the 99", "Budget", "Bracket", /Anything else\?/]) {
+    for (const label of ["Colors", "Theme", "Sets", helpMeChooseCopy.intake.pool, "Budget", "Bracket", /Anything else\?/]) {
       expect(screen.getAllByText(label)[0].closest("[inert]")).not.toBeNull();
     }
     // The press itself stays outside the lock, so it keeps focus.
@@ -94,7 +96,7 @@ describe("the form locks while it reads (small items 3, item 5)", () => {
     const before = hideable().length;
     // Chip ✕ (theme and set), the Add another… input and the Sets trigger. The [[ ]] key stays drawn, disabled (Small items 6, e).
     expect(before).toBeGreaterThanOrEqual(4);
-    const key = within(form()).getByRole("button", { name: "Insert a card tag" });
+    const key = within(form()).getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
     expect(key).not.toHaveAttribute("data-lock-hide");
     expect(key).not.toBeDisabled();
     await act(async () => { fireEvent.click(press()); });
