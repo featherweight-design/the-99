@@ -127,4 +127,17 @@ describe("wantedByDecks scoping", () => {
     expect(list.pairs).toHaveLength(view.total);
     expect([...list.partners.keys()].sort()).toEqual(["c", "d"]);
   });
+
+  // Guards wanted-by: a deck drafting AND leading the card counts once, a commander-only deck counts, order is by name.
+  it("own-one: wanted-by includes a deck that leads the card, once, in name order", async () => {
+    h.execute.mockResolvedValue({ rows: [{ ...row("v1", A, B), present_id: A, missing_id: B }] });
+    h.selectRows.push(
+      [],
+      [{ oracleId: B, id: "d2", name: "Zed" }, { oracleId: B, id: "d1", name: "Ant" }],
+      [{ id: "d1", name: "Ant", commander: B, partner: null }, { id: "d3", name: "Mid", commander: "x", partner: B }],
+    );
+    h.prices.mockResolvedValue(new Map());
+    const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "one" });
+    expect(out.pairs[0]?.wantedBy?.map((d) => d.name)).toEqual(["Ant", "Mid", "Zed"]);
+  });
 });

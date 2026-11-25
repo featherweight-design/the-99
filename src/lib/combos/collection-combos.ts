@@ -11,7 +11,7 @@
 //
 // A PAIR, NOT A CARD: `distinctPairs` folds A+B and B+A, and a pair recorded under two variants, into one row.
 // The payload ships raw `produces` features; the view maps the result word.
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, or } from "drizzle-orm";
 import { db } from "../../db";
 import { cards, deckCards, decks } from "../../db/schema";
 import { cheapestLiveCents } from "../cards/price-lookup";
@@ -48,16 +48,34 @@ export type CollectionCombos = { side: ComboSide; total: number; pairs: Collecti
 async function wantedByDecks(userId: string, oracleIds: string[]): Promise<Map<string, { id: string; name: string }[]>> {
   const out = new Map<string, { id: string; name: string }[]>();
   if (oracleIds.length === 0) return out;
-  // DISTINCT: a deck may hold a card on more than one row (another section or printing), and is wanted once.
-  const rows = await db
-    .selectDistinct({ oracleId: deckCards.oracleId, id: decks.id, name: decks.name })
+  // A deck WANTS a card when its draft list holds it or when it is the deck's commander or partner, the same
+  // holding test `ownBothPairsQuery` uses (a commander is not a `deck_cards` row).
+  const drafted = await db
+    .select({ oracleId: deckCards.oracleId, id: decks.id, name: decks.name })
     .from(deckCards)
     .innerJoin(decks, eq(decks.id, deckCards.deckId))
     .where(and(eq(decks.userId, userId), inArray(deckCards.oracleId, oracleIds)));
-  for (const r of rows) {
-    const list = out.get(r.oracleId);
-    if (list) list.push({ id: r.id, name: r.name });
-    else out.set(r.oracleId, [{ id: r.id, name: r.name }]);
+  const led = await db
+    .select({ id: decks.id, name: decks.name, commander: decks.commanderOracleId, partner: decks.partnerOracleId })
+    .from(decks)
+    .where(and(eq(decks.userId, userId), or(inArray(decks.commanderOracleId, oracleIds), inArray(decks.partnerOracleId, oracleIds))));
+  const want = new Map<string, Map<string, string>>();
+  const add = (oracleId: string | null, id: string, name: string) => {
+    if (!oracleId || !oracleIds.includes(oracleId)) return;
+    // Keyed on the deck id: a deck on several rows, or both drafting and leading a card, is wanted once.
+    (want.get(oracleId) ?? want.set(oracleId, new Map()).get(oracleId)!).set(id, name);
+  };
+  for (const r of drafted) add(r.oracleId, r.id, r.name);
+  for (const r of led) {
+    add(r.commander, r.id, r.name);
+    add(r.partner, r.id, r.name);
+  }
+  // Name then id, so the chips keep their order between loads (the same rule as the own-both holding deck).
+  for (const [oracleId, decksOf] of want) {
+    out.set(
+      oracleId,
+      [...decksOf].map(([id, name]) => ({ id, name })).sort((x, y) => x.name.localeCompare(y.name) || x.id.localeCompare(y.id)),
+    );
   }
   return out;
 }
