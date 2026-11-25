@@ -512,12 +512,14 @@ export function CollectionBrowser({
         availabilityChangeAnnouncement(
           filters, f, cards, availabilityOptions, totalQuantity, intent,
         );
-      if (message) publishAnnouncement(message);
+      // The messages count cards; with the combos view up the pairs are what the reader is looking at, so none is spoken
+      // rather than a card count that matches nothing on screen.
+      if (message && combosSide === null) publishAnnouncement(message);
       setFilters(f);
       setShown(PAGE_SIZE);
       setRevealFrom(null);
     },
-    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement],
+    [filters, cards, setOptions, typeOptions, colorOptions, availabilityOptions, totalQuantity, publishAnnouncement, combosSide],
   );
   const showMore = useCallback(() => {
     setRevealFrom(shown);
@@ -549,7 +551,10 @@ export function CollectionBrowser({
     };
     return { both: side("both"), one: side("one") };
   }, [comboLoad, filtered, filters]);
-  const comboShown = combosSide && comboPairs ? comboPairs[combosSide].count : comboPairCount;
+  // Until the pairs land the count is unknown, except Own both's, which the page already carries: showing it over the
+  // Own one side (or a failed load) would be another side's number.
+  const comboShown: number | null =
+    combosSide && comboPairs ? comboPairs[combosSide].count : combosSide === "both" ? comboPairCount : null;
 
   const anyFilterActive =
     filters.search.trim() !== "" ||
@@ -619,6 +624,11 @@ export function CollectionBrowser({
     if (key === "combos") {
       // Pressing it again turns it off; pressing it on opens own both. Filters are held, not cleared.
       setNewVariantId(null);
+      // One quick chip at a time: opening the view takes a pressed quick chip (or Free) back, so no filter the strip
+      // no longer shows narrows the pairs unseen.
+      if (combosSide === null && (filters.quick !== undefined || freeAlone)) {
+        updateFilters({ ...filters, quick: undefined, availability: freeAlone ? [] : filters.availability });
+      }
       setCombosSide((side) => (side === null ? "both" : null));
       return;
     }
@@ -773,7 +783,7 @@ export function CollectionBrowser({
     <>
       <FilterBar
         colorOptions={colorOptions}
-        shown={combosSide ? comboShown : sorted.length}
+        shown={combosSide ? (comboShown ?? 0) : sorted.length}
         total={cards.length}
         chips={chassisChips}
         quickWide={quickDrawn ? quickStrip("wide") : null}
@@ -789,7 +799,9 @@ export function CollectionBrowser({
         warnResult={!combosSide && sorted.length === 0}
         resultLine={
           combosSide
-            ? quickFilterCopy.combos.result(comboShown)
+            ? comboShown === null
+              ? ""
+              : quickFilterCopy.combos.result(comboShown)
             : chassisWide
             ? collectionChassisCopy.result(
                 sorted.length,

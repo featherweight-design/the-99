@@ -12,7 +12,7 @@
 //   - rate limited in the `draw-fields` bucket, the app's own background-read rule.
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { loadCollectionComboSides } from "../../../lib/combos/collection-combos";
+import { loadCollectionComboSides, loadCollectionCombos } from "../../../lib/combos/collection-combos";
 import { requestFlags } from "../../../lib/flags/request";
 import { enforceHit } from "../../../lib/rate/observe";
 import { tooManyRequests } from "../../../lib/rate/refuse";
@@ -22,7 +22,9 @@ export const runtime = "nodejs";
 
 const HEADERS = { "Content-Type": "application/json", "Cache-Control": "private, no-store" };
 
-export async function GET() {
+// A tab still running the previous deployment asks for one side (`?side=both|one`) and reads that side's payload
+// ({ side, pairs, total }); answering it in that shape keeps its combos view working until it reloads.
+export async function GET(request: Request) {
   const { userId } = await auth();
   if (!userId) return NextResponse.json(null, { status: 401, headers: HEADERS });
   const wait = await enforceHit(userId, "draw-fields");
@@ -31,6 +33,10 @@ export async function GET() {
   // A failed read answers 500 with the same no-store headers, so the response stays uncacheable and the view can
   // draw its failed state. Prices and wanted-by already degrade to silence inside the loader.
   try {
+    const legacy = new URL(request.url).searchParams.get("side");
+    if (legacy === "both" || legacy === "one") {
+      return NextResponse.json(await loadCollectionCombos({ userId, store, side: legacy }), { headers: HEADERS });
+    }
     const combos = await loadCollectionComboSides({ userId, store });
     return NextResponse.json(combos, { headers: HEADERS });
   } catch {
