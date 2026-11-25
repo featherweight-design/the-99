@@ -6,8 +6,8 @@ import { ExportGuides } from "./export-guides";
 import { allGuideApps, collectionSources, moreGuideApps } from "../../lib/copy/collection-sources";
 
 const open = () => {
-  render(<ExportGuides className="x">How to export</ExportGuides>);
-  fireEvent.click(screen.getByRole("button", { name: collectionSources.toggle }));
+  render(<ExportGuides className="x">Fixture opener</ExportGuides>);
+  fireEvent.click(screen.getByRole("button", { name: "Fixture opener" }));
   return screen.getByRole("dialog", { name: collectionSources.signedIn.title });
 };
 
@@ -43,14 +43,14 @@ describe("ExportGuides", () => {
     const d = open();
     fireEvent.keyDown(d, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: collectionSources.toggle }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Fixture opener" }));
   });
 
   it("opens the named app's steps first when the opener names one", () => {
-    render(<ExportGuides className="x" openApp="delver">How to export</ExportGuides>);
-    fireEvent.click(screen.getByRole("button", { name: collectionSources.toggle }));
+    render(<ExportGuides className="x" openApp="delver">Fixture opener</ExportGuides>);
+    fireEvent.click(screen.getByRole("button", { name: "Fixture opener" }));
     const d = screen.getByRole("dialog", { name: collectionSources.signedIn.title });
-    expect(within(d).getByRole("button", { name: moreGuideApps[1].name })).toHaveAttribute("aria-expanded", "true");
+    expect(within(d).getByRole("button", { name: moreGuideApps.find((a) => a.id === "delver")!.name })).toHaveAttribute("aria-expanded", "true");
     expect(within(d).getByRole("button", { name: "ManaBox" })).toHaveAttribute("aria-expanded", "false");
     expect(d.textContent).toContain("Create CSV file");
   });

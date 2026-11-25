@@ -80,7 +80,7 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
     expect(screen.getByText(/This looks like a Delver Lens file\./)).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "How to export from Delver Lens" }));
     const d = screen.getByRole("dialog", { name: collectionSources.signedIn.title });
-    expect(within(d).getByRole("button", { name: moreGuideApps[1].name })).toHaveAttribute("aria-expanded", "true");
+    expect(within(d).getByRole("button", { name: moreGuideApps.find((a) => a.id === "delver")!.name })).toHaveAttribute("aria-expanded", "true");
   });
 
   it("names the app too when the server refuses a file whose header it read", async () => {
@@ -113,7 +113,7 @@ describe("UploadEntry · a file with no Name or Quantity column", () => {
     expect(previewUpload).not.toHaveBeenCalled();
   });
 
-  it("keeps the shipped words for a failure on the server", async () => {
+  it("shows the server's refusal message when it refuses the file", async () => {
     previewUpload.mockRejectedValueOnce(new Error("Fixture server refusal"));
     render(<UploadEntry currentCardCount={0} onPreview={() => {}} entry="buttons" />);
     choose(csv("Name,Quantity\nSol Ring,1\n"));

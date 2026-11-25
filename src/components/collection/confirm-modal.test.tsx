@@ -150,7 +150,7 @@ describe("ConfirmModal", () => {
       const [open, setOpen] = useState(false);
       return (
         <>
-          <button type="button" onClick={() => setOpen(true)}>Sync collection</button>
+          <button type="button" onClick={() => setOpen(true)}>Fixture trigger</button>
           {open && (
             <ConfirmModal
               preview={preview}
@@ -167,7 +167,7 @@ describe("ConfirmModal", () => {
 
     it("returns focus to the control that opened it, never the removed Cancel", () => {
       render(<Host />);
-      const trigger = screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm });
+      const trigger = screen.getByRole("button", { name: "Fixture trigger" });
       trigger.focus();
       fireEvent.click(trigger);
       fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
@@ -180,7 +180,7 @@ describe("ConfirmModal", () => {
       // A box on every element is what a browser gives it: the fallback then reaches the first deck link.
       vi.spyOn(HTMLElement.prototype, "getClientRects").mockReturnValue([{}] as unknown as DOMRectList);
       render(<Host />);
-      const trigger = screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm });
+      const trigger = screen.getByRole("button", { name: "Fixture trigger" });
       trigger.focus();
       fireEvent.click(trigger);
       expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
@@ -188,7 +188,7 @@ describe("ConfirmModal", () => {
 
     it("takes Cancel again when a refused confirm redraws the warning with other decks (E6)", () => {
       const { rerender } = render(<Host />);
-      const trigger = screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm });
+      const trigger = screen.getByRole("button", { name: "Fixture trigger" });
       trigger.focus();
       fireEvent.click(trigger);
       trigger.focus();

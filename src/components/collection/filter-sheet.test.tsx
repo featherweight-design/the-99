@@ -85,7 +85,7 @@ describe("CollectionFilterSheet", () => {
     // Asked of the whole document: the sheet portals, so the render container is empty either way.
     render(sheet({ open: false }));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(screen.queryByText(filterCopy.colour.legend)).toBeNull();
+    expect(screen.queryByText(collectionChassisCopy.sheet.colourHeading)).toBeNull();
   });
 
   it("is a modal dialog carrying every dimension the wide row draws", () => {
@@ -94,7 +94,7 @@ describe("CollectionFilterSheet", () => {
     expect(dialog).toHaveAttribute("aria-modal", "true");
     // Colour, type, availability and set — the four the compact row used to
     // push off-screen.
-    for (const heading of [filterCopy.colour.legend, "Type", "Set"]) {
+    for (const heading of [collectionChassisCopy.sheet.colourHeading, "Type", "Set"]) {
       expect(within(dialog).getByRole("heading", { name: heading })).toBeTruthy();
     }
     expect(within(dialog).getByRole("switch", { name: /White/ })).toBeTruthy();
