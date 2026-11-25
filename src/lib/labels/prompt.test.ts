@@ -199,12 +199,14 @@ describe("labelInputHash", () => {
     expect(labelInputHash(a, "m")).not.toBe(labelInputHash(b, "m"));
   });
 
-  // Version "9" is the keyed reply (each answer echoes its card's request key). Recomputing the payload
-  // with the constant itself cannot see a revert, so the literal is pinned; a row hashed under "7" with
-  // this SYSTEM is shown not to match, and a v9 hash is not a v8 one.
-  it("is version 9, so a row hashed under version 7 reads stale", () => {
-    expect(LABEL_PROMPT_VERSION).toBe("9");
+  // Version "10" adds the Clue (draw) and Treasure (ramp) role lines to SYSTEM; "9" was the keyed reply.
+  // Recomputing the payload with the constant itself cannot see a revert, so the literal is pinned; a hash
+  // under an older version is not the current one. That is the hash, not freshness: an older row still reads
+  // fresh under its OWN registered version (see "keeps version 9's entry" above), so nothing relabels.
+  it("is version 10, so a hash from version 7, 8 or 9 differs from the current one", () => {
+    expect(LABEL_PROMPT_VERSION).toBe("10");
     expect(labelInputHash(card, "m")).not.toBe(labelInputHash(card, "m", "8"));
+    expect(labelInputHash(card, "m")).not.toBe(labelInputHash(card, "m", "9"));
     const underV7 = createHash("sha256")
       .update(JSON.stringify([
         card.oracleId, renderCard(card), "7", "m", createHash("sha256").update(SYSTEM).digest("hex"),
