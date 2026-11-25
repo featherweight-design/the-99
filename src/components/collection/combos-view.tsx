@@ -65,9 +65,7 @@ function Piece({ piece, width, missing, onOpen }: { piece: ComboPiece; width: nu
             <span className="px-[6px] text-[12px] font-semibold text-[color:var(--fg-body)]">{piece.name}</span>
             <span className="font-mono text-[10px] text-[color:var(--fg-faint)]">{copy.notOwned}</span>
           </>
-        ) : (
-          <span className="font-mono text-[9px] text-[color:var(--fg-faint)]">{copy.notOwned}</span>
-        )}
+        ) : null}
       </span>
     );
   }
@@ -128,9 +126,11 @@ function PairCard({
   const width = wide ? 118 : 54;
   const [wished, setWished] = useState(false);
   const missingPiece = pair.missingId === pair.a.oracleId ? pair.a : pair.b;
+  // Own one: the card you own leads (left, bold), the missing one follows. Own both keeps the pair's order.
+  const [first, second] = side === "one" && missingPiece === pair.a ? [pair.b, pair.a] : [pair.a, pair.b];
   const names = (
-    <span className="min-w-0 text-[14px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[15px]">
-      {pair.a.name} <span className="font-normal text-[color:var(--fg-muted)]">+ {pair.b.name}</span>
+    <span data-combo-title className="min-w-0 text-[14px] font-semibold leading-[1.3] text-[color:var(--fg)] md:text-[15px]">
+      {first.name} <span className="font-normal text-[color:var(--fg-muted)]">+ {second.name}</span>
       {isNew ? (
         <span data-combo-new className="ml-[8px] rounded-[4px] border border-[color:var(--accent)] px-[5px] font-mono text-[10px] font-normal text-[color:var(--accent-text)]">{copy.newTag}</span>
       ) : null}
@@ -138,9 +138,9 @@ function PairCard({
   );
   const pieces = (
     <span className="flex flex-none items-center gap-[10px]">
-      <Piece piece={pair.a} width={width} missing={side === "one" && pair.missingId === pair.a.oracleId} onOpen={wide ? onOpenPiece : undefined} />
+      <Piece piece={first} width={width} missing={side === "one" && pair.missingId === first.oracleId} onOpen={wide ? onOpenPiece : undefined} />
       <ComboGlyph />
-      <Piece piece={pair.b} width={width} missing={side === "one" && pair.missingId === pair.b.oracleId} onOpen={wide ? onOpenPiece : undefined} />
+      <Piece piece={second} width={width} missing={side === "one" && pair.missingId === second.oracleId} onOpen={wide ? onOpenPiece : undefined} />
     </span>
   );
   const text = (

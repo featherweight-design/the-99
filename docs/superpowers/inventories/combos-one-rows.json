@@ -1,0 +1,24 @@
+{
+  "feature": "You own one rows: owned card left and bold, missing card right, phone placeholder is the + alone (quick-filters feedback PR B, Hugh 2026-11-25)",
+  "note": "Photographed on local dev, signed in as the +clerk_test account. Both rows read the same PairCard.",
+  "out": "contact-sheets/combos-one-rows",
+  "clearAbout": true,
+  "widths": [
+    { "label": "phone", "width": 390, "height": 844 },
+    { "label": "desktop", "width": 1300, "height": 900 }
+  ],
+  "rows": [
+    {
+      "id": "own-one",
+      "label": "/collection?combos=one: owned card leads, missing card right",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [{ "goto": "/collection?combos=one", "wait": "[data-combo-pair]", "settle": 1500 }]
+    },
+    {
+      "id": "own-both",
+      "label": "/collection?combos=both: unchanged",
+      "view": "src/components/collection/combos-view.tsx",
+      "steps": [{ "goto": "/collection?combos=both", "wait": "[data-combo-pair]", "settle": 1500 }]
+    }
+  ]
+}
