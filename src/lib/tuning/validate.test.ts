@@ -191,12 +191,12 @@ describe("validateSuggestions", () => {
   });
 
   it("reads a figure past the focus's own name, so a name with digits in it still holds", () => {
-    const counters: EvidencePack = { ...pack, focus: { name: "fixture focus", copies: 12, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
+    const counters: EvidencePack = { ...pack, focus: { name: "fixture +1/+1 focus", copies: 12, nonland: 60, on: [], top: [], offTop: [], candidates: [] } };
     const cite = (value: string) => validateSuggestions({
       response: { additions: [{ ...good, evidence: [{ kind: "focus", value }, { kind: "games", value: "Mana hurt in 3 of 5 games" }] }], cuts: [] }, pack: counters, resolveName,
     });
-    expect(cite("fixture focus").drops).toEqual([]);
-    expect(cite("+1/+1 counters: 12 of 60").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "focus" } });
+    expect(cite("fixture +1/+1 focus").drops).toEqual([]);
+    expect(cite("fixture +1/+1 focus: 12 of 60").drops[0]).toMatchObject({ rule: "citation", cite: { kind: "focus" } });
   });
 
   it("removes a focus citation from a cut, where the app writes its own off-plan chip", () => {
