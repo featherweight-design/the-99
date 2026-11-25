@@ -404,7 +404,7 @@ describe("GamesView: the filters", () => {
     draw(payload(TWO));
     fireEvent.click(screen.getByRole("button", { name: gameHistoryCopy.filter.open }));
     const sheet = screen.getByRole("dialog", { name: gameHistoryCopy.filter.open });
-    fireEvent.change(within(sheet).getByRole("searchbox", { name: gameHistoryCopy.filter.search }), { target: { value: "ghal" } });
+    fireEvent.change(within(sheet).getByRole("searchbox", { name: gameHistoryCopy.filter.search }), { target: { value: "fixture" } });
     expect(within(sheet).queryByText("Colin")).toBeNull();
     expect(within(sheet).getByText("Fixture Commander")).toBeInTheDocument();
   });

@@ -66,7 +66,7 @@ describe("DeckSortMenu", () => {
     it("is a menuitem past the options, with the count, and runs its action", () => {
       const onSelect = vi.fn();
       open("name", { label: "Fixture arrange label", count: 5, onSelect });
-      const row = screen.getByRole("menuitem", { name: /Arrange decks…/ });
+      const row = screen.getByRole("menuitem", { name: /Fixture arrange label/ });
       expect(row).toHaveTextContent("5");
       expect(row).not.toHaveAttribute("aria-checked");
       fireEvent.click(row);

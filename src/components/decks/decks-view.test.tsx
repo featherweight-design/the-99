@@ -37,9 +37,8 @@ import type { DeckFolderWithCount } from "../../lib/decks/folders";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
 import { deckStateMarksCopy } from "../../lib/copy/deck-state-marks";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
-import { chassisCopy } from "../../lib/copy/filter-chassis";
+import { chassisCopy, deckChassisCopy } from "../../lib/copy/filter-chassis";
 import { refreshCopy } from "../../lib/copy/refresh";
-import { decksStatsCopy } from "../../lib/copy/decks-stats";
 
 const NOW = "2026-09-07T12:00:00.000Z";
 
@@ -216,7 +215,7 @@ describe("DecksView", () => {
     openFilters();
     fireEvent.click(screen.getAllByRole("checkbox", { name: "Draft" })[0]);
     fireEvent.click(screen.getByRole("button", { name: refreshCopy.filters.emptyAction }));
-    expect(screen.getByText(decksStatsCopy.filter.one)).toBeInTheDocument();
+    expect(screen.getByText(deckChassisCopy.result(1, 1))).toBeInTheDocument();
     expect(window.location.search).toBe("");
   });
 
