@@ -32,12 +32,13 @@ vi.mock("../decks/read", () => ({ listDecksWithStats: m.listDecksWithStats, getD
 
 import { named } from "../person-name/mint";
 import { loadFriendDeck, loadFriendDecks } from "./decks";
+import { TO_BUY_STATUS } from "../decks/status";
 
 const DECK = "11111111-1111-4111-8111-111111111111";
 
 const ROW = {
   id: "deck-secret-id", name: "Thopter Factory", commanderName: "Sai, Master Thopterist", partnerName: null,
-  commanderColorIdentity: ["U"], commanderArtCropUri: "https://cards.example/sai.jpg", statusPill: "To buy",
+  commanderColorIdentity: ["U"], commanderArtCropUri: "https://cards.example/sai.jpg", statusPill: TO_BUY_STATUS,
   built: 99, ownedCount: 91, toBuyCount: 8, notes: "private note", folderName: "Shelf", lastPlayedAt: new Date(), bracket: { n: 3 },
 };
 

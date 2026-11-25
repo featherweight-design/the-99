@@ -17,6 +17,7 @@ import { Dashboard } from "./dashboard";
 import type { FeedView, HomeFeed } from "../../lib/feed/home";
 import type { CommanderListItem } from "../../lib/recs/recommend";
 import { named } from "../../lib/person-name/mint";
+import { TO_BUY_STATUS } from "../../lib/decks/status";
 
 const NOW = "2026-10-22T12:00:00.000Z";
 const READY = {
@@ -107,7 +108,7 @@ describe("Home, direction B", () => {
     id: "d1", name: "Atraxa", createdAt: new Date("2026-09-01T00:00:00Z"), commanderName: "Atraxa, Praetors' Voice",
     commanderColorIdentity: ["W", "U", "B", "G"], commanderImageUri: null, commanderArtCropUri: null, partnerName: null,
     partnerColorIdentity: null, folderId: null, folderName: null, built: 99, ownedCount: 96, toBuyCount: 3, unresolvedCount: 0,
-    pendingChanges: 0, versionNumber: null, statusPill: "To buy", bracket: null, lastPlayedAt: null,
+    pendingChanges: 0, versionNumber: null, statusPill: TO_BUY_STATUS, bracket: null, lastPlayedAt: null,
     lastEditedAt: new Date("2026-09-01T00:00:00Z"), lastCommittedAt: null, inUseElsewhere: 0, proxiedCount: 0,
   } as unknown as (typeof BASE)["decks"][number];
   const seat = (displayName: string, you = false) => ({ displayName: you ? displayName : named(displayName), you, commander: null });

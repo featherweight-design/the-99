@@ -9,6 +9,7 @@ import {
   type FilterableDeck,
 } from "./filter";
 import { DEFAULT_DECK_SORT } from "./sort";
+import { TO_BUY_STATUS } from "./status";
 
 const NOW = new Date("2026-09-07T12:00:00Z");
 
@@ -188,7 +189,7 @@ describe("URL round trip", () => {
   it("round trips a full state", () => {
     const params = filtersToParams(
       {
-        statuses: ["Draft", "To buy"],
+        statuses: ["Draft", TO_BUY_STATUS],
         states: ["pending"],
         colours: ["R", "G"],
         played: "never",
@@ -197,7 +198,7 @@ describe("URL round trip", () => {
       "name",
     );
     const back = filtersFromParams(new URLSearchParams(params.toString()));
-    expect(back.filters.statuses).toEqual(["Draft", "To buy"]);
+    expect(back.filters.statuses).toEqual(["Draft", TO_BUY_STATUS]);
     expect(back.filters.colours).toEqual(["R", "G"]);
     expect(back.filters.played).toBe("never");
     expect(back.filters.search).toBe("krenko");
@@ -271,7 +272,7 @@ describe("the status facet", () => {
   // The order IS the cascade, and it is what `?status=` serialises.
   it("lists seven values, phase first", () => {
     expect([...STATUS_ORDER]).toEqual([
-      "New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete",
+      "New", "Draft", "Over", "Building", "Unresolved", TO_BUY_STATUS, "Complete",
     ]);
   });
 

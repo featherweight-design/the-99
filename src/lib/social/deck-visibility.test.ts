@@ -1,16 +1,16 @@
 // Which decks a friend sees (friend decks G2): one pure rule over the owner's three inputs, and the hide write's SQL.
 import { describe, expect, it } from "vitest";
-import type { StatusPill } from "../decks/status";
+import { TO_BUY_STATUS, type StatusPill } from "../decks/status";
 import { DEFAULT_FRIEND_DECK_PREFS, friendCanSeeDeck, hideDeckUpdate, settingsHideDeck } from "./deck-visibility";
 import { hiddenWhy } from "./deck-visibility-rule";
 
-const PILLS: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"];
+const PILLS: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", TO_BUY_STATUS, "Complete"];
 const seen = (prefs: { seeDecks: boolean; seeUnfinished: boolean }, hiddenFromFriends = false) =>
   PILLS.filter((statusPill) => friendCanSeeDeck({ statusPill, hiddenFromFriends }, prefs));
 
 describe("friendCanSeeDeck", () => {
   it("by default shows the finished decks only: never New, Draft or Building", () => {
-    expect(seen(DEFAULT_FRIEND_DECK_PREFS)).toEqual(["Over", "Unresolved", "To buy", "Complete"]);
+    expect(seen(DEFAULT_FRIEND_DECK_PREFS)).toEqual(["Over", "Unresolved", TO_BUY_STATUS, "Complete"]);
   });
 
   it("shows every phase once drafts and building decks are included", () => {

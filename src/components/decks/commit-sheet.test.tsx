@@ -17,6 +17,7 @@ import { CommitSheet } from "./commit-sheet";
 
 vi.mock("../../app/decks/actions", () => ({ commitDeckVersion: vi.fn() }));
 import { commitDeckVersion } from "../../app/decks/actions";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 
 const push = vi.fn();
 const refresh = vi.fn();
@@ -274,7 +275,7 @@ describe("CommitSheet", () => {
     // The card count is still spoken — it is the version's own figure. What is
     // absent is any claim about shopping, including a nought one.
     expect(region.textContent).toContain("101 cards");
-    expect(region.textContent).not.toContain("to buy");
+    expect(region.textContent).not.toContain(deckStatsCopy.money.tagToBuy);
   });
 
   // The figure announced is the one the WRITE read, not the one this page was

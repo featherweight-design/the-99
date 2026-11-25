@@ -21,7 +21,7 @@
 
 import { deckIdentity } from "./format";
 import { parseDeckSort, serializeDeckSort, type DeckSort } from "./sort";
-import type { StatusPill } from "./status";
+import { TO_BUY_STATUS, type StatusPill } from "./status";
 
 export type ColourCode = "W" | "U" | "B" | "R" | "G";
 export type PlayedWindow = "thisMonth" | "never";
@@ -43,7 +43,7 @@ export const STATUS_ORDER: readonly StatusPill[] = [
   "Over",
   "Building",
   "Unresolved",
-  "To buy",
+  TO_BUY_STATUS,
   "Complete",
 ];
 

@@ -35,6 +35,7 @@ function Wrapper({ children }: { children: React.ReactNode }) {
 }
 const render = (ui: React.ReactElement) => rtlRender(ui, { wrapper: Wrapper });
 import { pullCardFromDeck } from "../../app/decks/actions";
+import { deckStatsCopy } from "../../lib/copy/deck-stats";
 
 const copy = deckVersioningCopy.review;
 const sourceCopy = copy.source;
@@ -147,7 +148,7 @@ describe("PullControl", () => {
     expect(region.textContent).toBe(
       deckVersioningCopy.commit.pullAnnouncedBuyUnknown("Sol Ring", "Atraxa"),
     );
-    expect(region.textContent).not.toContain("to buy");
+    expect(region.textContent).not.toContain(deckStatsCopy.money.tagToBuy);
     expect(region.textContent).not.toContain("0");
   });
 

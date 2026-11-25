@@ -5,9 +5,9 @@ import { describe, expect, it } from "vitest";
 import { contrast, mixOklab, parseHex } from "../theme/color";
 import { parseThemeBlocks } from "../theme/parse-css";
 import { STATUS_TOKEN, statusBarStyle, statusKeylineStyle, statusPillStyle } from "./status-style";
-import type { StatusPill } from "./status";
+import { TO_BUY_STATUS, type StatusPill } from "./status";
 
-const ALL: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", "To buy", "Complete"];
+const ALL: StatusPill[] = ["New", "Draft", "Over", "Building", "Unresolved", TO_BUY_STATUS, "Complete"];
 
 describe("status style", () => {
   it("maps every shipped status to a token, and no status to a hex", () => {
@@ -23,7 +23,7 @@ describe("status style", () => {
       // not one of the two provisional phases above it.
       Building: "--fg",
       Unresolved: "--warning",
-      "To buy": "--accent",
+      [TO_BUY_STATUS]: "--accent",
       Complete: "--success",
     });
   });
@@ -35,7 +35,7 @@ describe("status style", () => {
   });
 
   it("builds the three unexceptional pills from one rule — 18% over the plate, full label", () => {
-    for (const status of ["Unresolved", "To buy", "Complete"] as StatusPill[]) {
+    for (const status of ["Unresolved", TO_BUY_STATUS, "Complete"] as StatusPill[]) {
       const style = statusPillStyle(status);
       const token = STATUS_TOKEN[status];
       expect(style.color).toBe(`var(${token})`);

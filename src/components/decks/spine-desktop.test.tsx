@@ -11,6 +11,7 @@ import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
 import { deckHeaderCopy } from "../../lib/copy/decks-builder";
 import { changeCommanderCopy } from "../../lib/copy/change-commander";
 import { renameCopy } from "../../lib/copy/decks-builder";
+import { TO_BUY_STATUS } from "../../lib/decks/status";
 
 const saveDeckHeader = vi.hoisted(() => vi.fn(async () => ({ ok: true as const })));
 vi.mock("../../app/decks/tuning-actions", () => ({ saveDeckHeader }));
@@ -117,7 +118,7 @@ describe("SpineDesktop", () => {
   });
 
   it("colours the bar by status, not by percentage", () => {
-    const { container } = renderSpine(<SpineDesktop {...props} status="To buy" />);
+    const { container } = renderSpine(<SpineDesktop {...props} status={TO_BUY_STATUS} />);
     const fill = container.querySelector<HTMLElement>("[data-testid='spine-bar-fill']");
     expect(fill?.style.background).toBe("var(--accent)");
     expect(fill?.style.width).toBe(`${(62 / 99) * 100}%`);

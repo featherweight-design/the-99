@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { countStatus, statusPill } from "./status";
+import { countStatus, statusPill, TO_BUY_STATUS } from "./status";
 
 describe("statusPill — the phase", () => {
   // THE ROUND'S WHOLE POINT. A finished-looking list that has never been
@@ -39,7 +39,7 @@ describe("statusPill — the phase", () => {
   it("commits without changing what the counts say", () => {
     const counts = { built: 99, ownedCount: 84, bodySize: 99 };
     expect(statusPill({ ...counts, hasVersion: false })).toBe("Draft");
-    expect(statusPill({ ...counts, hasVersion: true })).toBe("To buy");
+    expect(statusPill({ ...counts, hasVersion: true })).toBe(TO_BUY_STATUS);
   });
 });
 
@@ -49,7 +49,7 @@ describe("countStatus", () => {
   // moves.
   it("answers the committed cascade with no phase of its own", () => {
     expect(countStatus({ built: 104, ownedCount: 104, bodySize: 99 })).toBe("Over");
-    expect(countStatus({ built: 99, ownedCount: 84, bodySize: 99 })).toBe("To buy");
+    expect(countStatus({ built: 99, ownedCount: 84, bodySize: 99 })).toBe(TO_BUY_STATUS);
     expect(countStatus({ built: 99, ownedCount: 99, bodySize: 99 })).toBe("Complete");
   });
 
@@ -90,7 +90,7 @@ describe("statusPill — the counts, once a deck is committed", () => {
   // cards are not owned used to read "Playable", in the same green as a deck
   // you could sleeve. A shopping list is not a deck.
   it("To buy at 99 with unowned cards", () =>
-    expect(statusPill({ built: 99, ownedCount: 84, bodySize: 99, hasVersion: true })).toBe("To buy"));
+    expect(statusPill({ built: 99, ownedCount: 84, bodySize: 99, hasVersion: true })).toBe(TO_BUY_STATUS));
 
   it("Complete at 99 with every card owned and every line named", () =>
     expect(statusPill({ built: 99, ownedCount: 99, unresolvedCount: 0, bodySize: 99, hasVersion: true })).toBe("Complete"));
@@ -99,7 +99,7 @@ describe("statusPill — the counts, once a deck is committed", () => {
   // still had 12 to buy, because older finished decks held every copy. Ownership
   // alone called that Complete.
   it("To buy at 99 when every card is owned but copies are spoken for", () =>
-    expect(statusPill({ built: 99, ownedCount: 99, unfundedCount: 12, bodySize: 99, hasVersion: true })).toBe("To buy"));
+    expect(statusPill({ built: 99, ownedCount: 99, unfundedCount: 12, bodySize: 99, hasVersion: true })).toBe(TO_BUY_STATUS));
 
   it("Complete when nothing is unfunded", () =>
     expect(statusPill({ built: 99, ownedCount: 99, unfundedCount: 0, bodySize: 99, hasVersion: true })).toBe("Complete"));
@@ -107,7 +107,7 @@ describe("statusPill — the counts, once a deck is committed", () => {
   // A caller that cannot compute the allocation still gets the ownership answer
   // rather than a wrong Complete.
   it("falls back to ownership when unfundedCount is absent", () => {
-    expect(statusPill({ built: 99, ownedCount: 84, bodySize: 99, hasVersion: true })).toBe("To buy");
+    expect(statusPill({ built: 99, ownedCount: 84, bodySize: 99, hasVersion: true })).toBe(TO_BUY_STATUS);
     expect(statusPill({ built: 99, ownedCount: 99, bodySize: 99, hasVersion: true })).toBe("Complete");
   });
 
@@ -184,11 +184,11 @@ describe("a deck whose gaps are printed", () => {
     expect(statusPill({
       built: 99, ownedCount: 92, coveredCount: 97, unfundedCount: 2, bodySize: 99,
       hasVersion: true,
-    })).toBe("To buy");
+    })).toBe(TO_BUY_STATUS);
   });
 
   it("defaults to the ownership answer for a caller that cannot count proxies", () => {
     expect(statusPill({ built: 99, ownedCount: 99, bodySize: 99, hasVersion: true })).toBe("Complete");
-    expect(statusPill({ built: 99, ownedCount: 92, bodySize: 99, hasVersion: true })).toBe("To buy");
+    expect(statusPill({ built: 99, ownedCount: 92, bodySize: 99, hasVersion: true })).toBe(TO_BUY_STATUS);
   });
 });
