@@ -90,7 +90,7 @@ describe("the open lock, desktop rail", () => {
     fireEvent.pointerEnter(slot("Decks"));
     const note = noteOf(slot("Decks"));
     expect(within(note).queryByRole("button", { name: refreshCopy.firstRun.lock.goToStep1 })).toBeNull();
-    fireEvent.click(within(note).getByRole("button", { name: refreshCopy.home.addYourCards }));
+    fireEvent.click(within(note).getByRole("button", { name: refreshCopy.firstRun.lock.addYourCards }));
     expect(push).toHaveBeenCalledWith("/collection");
   });
 
@@ -137,7 +137,7 @@ describe("the open lock, phone tab bar", () => {
     fireEvent.click(slot("Commanders"));
     const note = noteOf(slot("Commanders"));
     expect(note).toHaveTextContent(refreshCopy.firstRun.lock.withDecks);
-    fireEvent.click(within(note).getByRole("button", { name: refreshCopy.home.addYourCards }));
+    fireEvent.click(within(note).getByRole("button", { name: refreshCopy.firstRun.lock.addYourCards }));
     expect(push).toHaveBeenCalledWith("/collection");
   });
 

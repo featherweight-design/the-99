@@ -70,8 +70,8 @@ describe("the closed table's Your game cards", () => {
     render(<TableClosed closed={wire(closed([later, game({ result: { kind: "draw" } })]))} />);
     const cards = screen.getAllByRole("region", { name: copy.yourGame });
     expect(cards).toHaveLength(2);
-    expect(within(cards[0]).getByText(trackerCopy.sheet.endWonYou)).toBeTruthy();
-    expect(within(cards[1]).getByText(trackerCopy.sheet.endDraw)).toBeTruthy();
+    expect(within(cards[0]).getByText(trackerCopy.table.wonYou)).toBeTruthy();
+    expect(within(cards[1]).getByText(trackerCopy.table.draw)).toBeTruthy();
     expect(within(cards[0]).getByRole("link", { name: ruleZeroCopy.page.log }).getAttribute("href")).toContain(`game=${Date.parse("2026-11-20T05:00:00Z")}`);
   });
 
