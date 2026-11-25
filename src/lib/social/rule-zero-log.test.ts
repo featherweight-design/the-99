@@ -12,7 +12,7 @@ const MY_DECK = "d0000000-0000-4000-8000-000000000001";
 const row = (over: Partial<TableSeatRow>): TableSeatRow => ({
   seat: 1, userId: VIEWER, displayName: "Hugh", publicId: "p0000000-0000-4000-8000-000000000001", friend: null,
   deckId: MY_DECK, deckName: "Ghalta Stompy", commanderOracleId: "c0000000-0000-4000-8000-000000000001", partnerOracleId: null,
-  commanderName: "Ghalta, Primal Hunger", commanderArt: "https://art/ghalta.jpg", podName: "Thursday night", ...over,
+  commanderName: "Fixture Titan, Fixture Hunger", commanderArt: "https://art/ghalta.jpg", podName: "Thursday night", ...over,
 });
 
 const ROWS: TableSeatRow[] = [

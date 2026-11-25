@@ -67,7 +67,7 @@ describe("collection exports from TCGplayer and Delver Lens (made-up cards, unco
 
   for (const [app, csv, quantities] of [
     ["TCGplayer", TCGPLAYER, [2, 1, 4]],
-    ["Delver Lens", DELVER, [2, 1, 4]],
+    ["Fixture Lens", DELVER, [2, 1, 4]],
   ] as const) {
     it(`reads ${app}: name, quantity, set code, collector number and finish`, () => {
       const { rows, errors } = parseCollectionCsv(csv);

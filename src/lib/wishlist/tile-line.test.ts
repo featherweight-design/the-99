@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PriceFact } from "../cards/price-fact";
+import { priceCopy } from "../copy/price";
 import { wishlistTileLine } from "./tile-line";
 
 const NEWEST = new Date("2026-11-20T00:00:00Z");
@@ -15,7 +16,7 @@ describe("wishlistTileLine", () => {
   });
   it("says sold out beside a chosen printing whose row is stale", () => {
     const stale = fact(2450, new Date("2026-10-01T00:00:00Z"));
-    expect(wishlistTileLine({ price: stale, printing: sld }, NEWEST)).toEqual({ price: "sold out", printing: sld });
+    expect(wishlistTileLine({ price: stale, printing: sld }, NEWEST)).toEqual({ price: priceCopy.tag.soldOut, printing: sld });
   });
   it("draws the printing alone with no figure, and nothing with neither", () => {
     expect(wishlistTileLine({ price: null, printing: sld }, NEWEST)).toEqual({ price: null, printing: sld });

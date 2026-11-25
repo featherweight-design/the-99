@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { accountIdentity, withOwnFace } from "./identity";
+import { shellCopy } from "../copy/shell";
 
 describe("accountIdentity", () => {
   it("prefers the full name and primary email", () => {
@@ -38,7 +39,7 @@ describe("accountIdentity", () => {
   });
 
   it("names the account generically when Clerk has neither name nor email", () => {
-    expect(accountIdentity({})).toEqual({ name: "your account", email: "", initials: "?" });
+    expect(accountIdentity({})).toEqual({ name: shellCopy.accountMenu.fallbackName, email: "", initials: "?" });
   });
 
   it("uppercases initials taken from a lowercase name", () => {

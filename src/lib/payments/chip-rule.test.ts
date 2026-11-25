@@ -36,7 +36,7 @@ describe("the menu chip (M1b)", () => {
   });
 
   it("out of credits: hollow diamond and Get more credits, only while payments are on", () => {
-    expect(chip(a({ used: 5 }))).toEqual({ kind: "out", label: "Get more credits", line: null, hollow: true });
+    expect(chip(a({ used: 5 }))).toEqual({ kind: "out", label: creditsCopy.chip.out, line: null, hollow: true });
   });
 
   it("at the paid limit with credits banked is NOT out: the banked count stands", () => {
@@ -51,12 +51,6 @@ describe("the menu chip (M1b)", () => {
   it("does not warn four days out", () => {
     const planExpiresAt = new Date(NOW.getTime() + 4 * 86_400_000);
     expect(chip(a({ plan: 74, planExpiring: 74, planExpiresAt }), true, true)?.kind).toBe("credits");
-  });
-
-  it("says 1 credit in the singular", () => {
-    expect(creditsCopy.chip.credits(1)).toBe("1 credit");
-    expect(creditsCopy.chip.free(1)).toBe("1 free credit");
-    expect(creditsCopy.chip.credits(117)).toBe("117 credits");
   });
 });
 

@@ -49,3 +49,11 @@ describe("the owner's share copy", () => {
     expect(creditsCopy.again(4, 5, next)).toContain(creditsCopy.standing(4, 5, next));
   });
 });
+
+describe("the chip's count wording", () => {
+  it("says 1 credit in the singular", () => {
+    expect(creditsCopy.chip.credits(1)).toBe("1 credit");
+    expect(creditsCopy.chip.free(1)).toBe("1 free credit");
+    expect(creditsCopy.chip.credits(117)).toBe("117 credits");
+  });
+});
