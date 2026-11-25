@@ -101,7 +101,7 @@ describe("ToolCard: one press per card", () => {
   });
 
   it("the Where line lights the tool's label (Show me's target) and sits before the button", () => {
-    const c = draw({ kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 }, { note: "Reads your last commit", credit: "Fixture tool1 credit" });
+    const c = draw({ kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 }, { note: "Reads your last commit", credit: "Fixture credit" });
     const where = c.querySelector<HTMLAnchorElement>("[data-tool-card-where]")!;
     expect(where.getAttribute("href")).toBe(SHOW_ME);
     expect(where.textContent).toBe(ABOUT_PAGE_STRINGS.toolWhere);
@@ -109,7 +109,7 @@ describe("ToolCard: one press per card", () => {
     const body = where.parentElement!;
     const order = [...body.children].map((e) => e.textContent);
     expect(order).toEqual([
-      "Fixture tool1 credit",
+      "Fixture toolFixture credit",
       "Counts where a deck runs long.",
       "Reads your last commit",
       ABOUT_PAGE_STRINGS.toolWhere,
