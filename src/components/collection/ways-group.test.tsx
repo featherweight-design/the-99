@@ -37,7 +37,7 @@ beforeEach(() => {
 describe("WaysGroup", () => {
   it("is a group named by its kicker, holding Precons I own, Import a deck and Add cards by hand, in that order", () => {
     render(<WaysGroup surface="step1" precons onAddCards={() => {}} />);
-    expect(presses().map(label)).toEqual(["Precons I own", "Import a deck", collectionEditCopy.ways.addByHand]);
+    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.importDeck, collectionEditCopy.ways.addByHand]);
     expect(within(group()).getByRole("link", { name: /Precons I own/ })).toHaveAttribute("href", "/decks/precons?pick=own");
     // Landing PR 7b: from the first run, Import a deck opens with "I own these cards" ticked.
     expect(within(group()).getByRole("link", { name: /Import a deck/ })).toHaveAttribute("href", "/decks/import?own=1");
@@ -46,7 +46,7 @@ describe("WaysGroup", () => {
   it("draws the first-timer lead and Scan your cards beside Precons I own on step 1 when it is given a Scan press, and only there", () => {
     const onScan = vi.fn();
     const { unmount } = render(<WaysGroup surface="step1" precons onAddCards={() => {}} onScan={onScan} />);
-    expect(presses().map(label)).toEqual(["Precons I own", collectionEditCopy.ways.scan, "Import a deck", collectionEditCopy.ways.addByHand]);
+    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.scan, collectionEditCopy.ways.importDeck, collectionEditCopy.ways.addByHand]);
     expect(group().textContent).toContain("Pick the precons you own, then add the rest: scan them with your phone’s camera, or search for them by name.");
     fireEvent.click(within(group()).getByRole("button", { name: /Scan your cards/ }));
     expect(onScan).toHaveBeenCalledTimes(1);
@@ -58,8 +58,8 @@ describe("WaysGroup", () => {
 
   it("drops Precons I own with precons false, and the other two take two columns (S15)", () => {
     render(<WaysGroup surface="step1" precons={false} onAddCards={() => {}} />);
-    expect(presses().map(label)).toEqual(["Import a deck", collectionEditCopy.ways.addByHand]);
-    expect(screen.queryByText("Precons I own")).toBeNull();
+    expect(presses().map(label)).toEqual([collectionEditCopy.ways.importDeck, collectionEditCopy.ways.addByHand]);
+    expect(screen.queryByText(collectionEditCopy.ways.precons)).toBeNull();
     const grid = presses()[0].parentElement!;
     expect(grid.className).toContain("sm:grid-cols-2");
     expect(grid.className).not.toContain("sm:grid-cols-3");
@@ -88,7 +88,7 @@ describe("WaysGroup", () => {
 
   it("on the empty Collection: no rule, the short sub-lines, `Add cards`, and a pick that reads ‹ Collection", () => {
     render(<WaysGroup surface="empty" precons onAddCards={() => {}} />);
-    expect(presses().map(label)).toEqual(["Precons I own", "Import a deck", "Add cards"]);
+    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.importDeck, "Add cards"]);
     expect(screen.getByText(collectionEditCopy.ways.preconsSubShort)).toBeInTheDocument();
     expect(screen.getByText(collectionEditCopy.ways.addSubShort)).toBeInTheDocument();
     expect(group().className).not.toContain("border-t");
@@ -151,7 +151,7 @@ describe("The empty Collection with the ways group (S13)", () => {
   it("draws one Upload tile, then the group with Add cards", () => {
     render(<CollectionEmptyDoors ways={{ precons: true }} />);
     expect(screen.getAllByRole("link", { name: /Upload a file/ })).toHaveLength(1);
-    expect(presses().map(label)).toEqual(["Precons I own", "Import a deck", "Add cards"]);
+    expect(presses().map(label)).toEqual([collectionEditCopy.ways.precons, collectionEditCopy.ways.importDeck, "Add cards"]);
     // The shipped second tile is gone: Add cards is the group's row.
     expect(screen.getAllByRole("button", { name: /Add cards/ })).toHaveLength(1);
     fireEvent.click(within(group()).getByRole("button", { name: /Add cards/ }));
