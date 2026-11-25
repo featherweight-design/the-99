@@ -71,10 +71,10 @@ async function main() {
       console.log(`\n== ${vp.label}`);
       await page.setViewportSize({ width: vp.width, height: vp.height });
       await page.goto(`${BASE}/collection?view=rows&avail=free`, { waitUntil: "domcontentloaded" });
-      check(`${vp.label} no call-out draws`, (await onPage(page, "[data-find-a-deck-callout]").count()) === 0);
 
       const shown = onPage(page, `[data-find-a-deck="${vp.place}"]`).first();
       await shown.waitFor({ state: "visible", timeout: 15_000 });
+      check(`${vp.label} no call-out draws`, (await onPage(page, "[data-find-a-deck-callout]").count()) === 0);
       check(`${vp.label} Free rows: the ${vp.place} button shows`, await shown.isVisible());
       check(`${vp.label} Free rows: the ${vp.hidden} button is hidden`, !(await onPage(page, `[data-find-a-deck="${vp.hidden}"]`).first().isVisible()));
       const box = await shown.boundingBox();

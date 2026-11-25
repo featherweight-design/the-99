@@ -7,7 +7,7 @@ import { FEED_KINDS, type FeedKind } from "../feed/kinds";
 
 import type { ToolId } from "../discovery/tools";
 
-/** Where a press that asks for Find a deck came from (counted at the press, before the card arrives): the call-out's Show them, a tile's button, a phone row's strip, a desktop row's button, the card window's door, or an Ask answer in the card search. */
+/** Where a press that asks for Find a deck came from (counted at the press, before the card arrives): a tile's button, a phone row's strip, a desktop row's button, the card window's door, or an Ask answer in the card search. */
 export const FIND_A_DECK_FROM = ["tile_button", "row_strip", "row_button", "card_door", "ask", "quick_chip"] as const;
 export type FindADeckFrom = (typeof FIND_A_DECK_FROM)[number];
 
