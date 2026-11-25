@@ -41,8 +41,8 @@ describe("ManifestRows: a disclosure, never a control (manifest-affordance adden
   it("says in words what the mark shows, and steps the label's ink", () => {
     render(<ManifestRows rows={[read("games", true, "9 games"), read("list", false)]} />);
     const [done, pending] = screen.getAllByTestId("manifest-row");
-    expect(done.textContent).toContain("Your games read");
-    expect(pending.textContent).toContain("This list not read yet");
+    expect(done.textContent).toContain("Fixture games row read");
+    expect(pending.textContent).toContain("Fixture list row not read yet");
     expect(done.querySelector("span.flex-1")?.getAttribute("style")).toContain("var(--fg)");
     expect(pending.querySelector("span.flex-1")?.getAttribute("style")).toContain("var(--fg-body)");
   });
