@@ -12,7 +12,7 @@ import { ALL_MODELS, costOf, type ModelKey } from "./lib/card-labels-pricing.mjs
 import { recordSystemSpend } from "./lib/system-spend";
 import { publishArtifacts } from "./lib/card-labels-publish.mjs";
 import type { Job } from "../src/lib/labels/types.js";
-import { faceResolver, parseReply, screenJobs, withoutRepeats } from "../src/lib/labels/parse.js";
+import { faceResolver, parseReply, screenJobs, withoutRepeatedKinds } from "../src/lib/labels/parse.js";
 
 const client = new Anthropic({ baseURL: "https://api.anthropic.com" });
 /**
@@ -137,10 +137,10 @@ for (const [key, id] of Object.entries(submitted)) {
       // through too: a sample scores the screen the labels are written through.
       const { kept, rejected } = screenJobs(jobs);
       for (const r of rejected) malformed.push(`${card.name} [${String(r.kind)}]: ${r.problems.join(", ")}`);
-      // A repeat is dropped and RECORDED: the prompt says never to write one, so a scored sample has to show
+      // A repeat (the same job, or the same KIND of job, as the build stores it) is dropped and RECORDED: the prompt says never to write one, so a scored sample has to show
       // when the model did. Two faces returning the same job count here too, which is rare and still a repeat.
       const merged = [...(labels[card.name] ?? []), ...kept];
-      const once = withoutRepeats(merged);
+      const once = withoutRepeatedKinds(merged);
       if (once.length < merged.length) malformed.push(`${card.name}: ${merged.length - once.length} repeated job(s) dropped`);
       labels[card.name] = once;
     }
