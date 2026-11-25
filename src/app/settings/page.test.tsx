@@ -55,7 +55,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   m.env = {};
   m.loadKeptBack.mockResolvedValue([]);
-  m.loadCollectionList.mockResolvedValue({ cards: [], pricesFailed: false });
+  m.loadCollectionList.mockResolvedValue({ cards: [], pricesFailed: false, comboPairCount: 0 });
   m.loadNewsSettings.mockResolvedValue([{ kind: "new-set", on: true }]);
   m.currentUser.mockResolvedValue({
     passwordEnabled: false,

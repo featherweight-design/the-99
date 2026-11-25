@@ -50,10 +50,70 @@ export type PairRow = {
   produces: string[];
   popularity: number | null;
   present_id: string;
+  /** The held piece's name, for a query that selects it (`ownOneQuery`); the other queries name only the other piece. */
+  present_name?: string;
   missing_id: string;
   missing_name: string;
   missing_must_be_commander: boolean;
 };
+
+/** One combo as a PAIR of cards, whichever piece a row happened to call present. */
+export type DistinctPair = {
+  variantId: string;
+  produces: string[];
+  popularity: number | null;
+  /** The card with the lower oracle id, so the same pair always draws in the same order. */
+  a: { oracleId: string; name: string };
+  b: { oracleId: string; name: string };
+  /** Own-one only: which of the two cards the reader does not hold. Absent for an own-both pair. */
+  missingId?: string;
+};
+
+/**
+ * Rows as DISTINCT PAIRS: the unit the collection's combos view draws and its chip counts.
+ *
+ * `bestPartnerPerCard` cannot be that unit. It keeps one partner per card and drops `variant_id`,
+ * so it undercounts a card with two partners and cannot name a pair. The query returns each pair
+ * twice (A+B and B+A) and a pair can be recorded in several variants, so this applies
+ * `isInfiniteOrGameEnding` (what the product counts), folds unordered on the two card ids, and
+ * keeps the most popular variant (`morePopular`, a total order, so the choice is stable). The count
+ * and the view both read it, so the chip and the view cannot disagree.
+ *
+ * A name comes from whichever direction's row carries it (`missing_name` is the OTHER piece), so
+ * a pair with only one direction in the rows still names both cards when `present_name` is given.
+ * `oneSided` is for rows that run one way only (`ownOneQuery`): it records which card is missing.
+ */
+export function distinctPairs(rows: readonly PairRow[], opts: { oneSided?: boolean } = {}): DistinctPair[] {
+  const names = new Map<string, string>();
+  const best = new Map<string, DistinctPair>();
+  for (const r of rows) {
+    names.set(r.missing_id, r.missing_name);
+    if (r.present_name) names.set(r.present_id, r.present_name);
+    if (!isInfiniteOrGameEnding(r.produces)) continue;
+    const [lo, hi] = r.present_id < r.missing_id ? [r.present_id, r.missing_id] : [r.missing_id, r.present_id];
+    const key = `${lo}:${hi}`;
+    const candidate: DistinctPair = {
+      variantId: r.variant_id,
+      produces: r.produces,
+      popularity: r.popularity,
+      a: { oracleId: lo, name: "" },
+      b: { oracleId: hi, name: "" },
+      // One-sided rows (`ownOneQuery`) name the card the reader does NOT hold as `missing_id`; an own-both
+      // row has both held and its direction means nothing, so no field is set.
+      ...(opts.oneSided ? { missingId: r.missing_id } : {}),
+    };
+    const held = best.get(key);
+    if (!held || morePopular(candidate, held)) best.set(key, candidate);
+  }
+  const out: DistinctPair[] = [];
+  for (const pair of best.values()) {
+    pair.a.name = names.get(pair.a.oracleId) ?? "";
+    pair.b.name = names.get(pair.b.oracleId) ?? "";
+    out.push(pair);
+  }
+  // A stable draw order: most popular first, then by variant id.
+  return out.sort((x, y) => (morePopular(x, y) ? -1 : morePopular(y, x) ? 1 : 0));
+}
 
 /**
  * The two-piece core of the DECK read. `loadCompletionPartners` is its only caller.
@@ -376,28 +436,87 @@ export function ownBothQuery(userIdValue: string, oracleIds: readonly string[] |
   `;
 }
 
+/**
+ * The collection's OWN-ONE read: every two-card combo of which the reader holds exactly one piece, one row
+ * per (held piece, missing piece). The sibling of `ownBothQuery`, for the combos view's second side.
+ *
+ * The same rules as `pairsWithOnePiece` (template-free, exactly two distinct pieces, pruned before the group
+ * so the 5,031 two-card variants are not all grouped), against the WHOLE collection as a set: that read takes
+ * the present cards as an array parameter, and the array form is the slower one (913ms against 492ms for the
+ * same answers on a 2,805-card collection, see `loadOwnBothPartners`).
+ *
+ * `missing_must_be_commander` is SELECTED and not filtered, and that is the one place this differs from the deck
+ * read. There the flag rejects a candidate, because a card that only works from the command zone completes
+ * nothing when added to the 99. Here the claim is "you own one of the two", the same claim `ownBothQuery`
+ * makes without rule 2, and a reader who would build around the commander is the reader worth telling.
+ *
+ * Nothing here reads a deck: a card is not "missing" because it sits in a deck, only because the reader holds
+ * no copy of it.
+ */
+export function ownOneQuery(userIdValue: string) {
+  const userId = sql.param(userIdValue);
+  return sql`
+    with owned as (
+      select distinct oracle_id from collection_items where user_id = ${userId}
+    ),
+    pair as (
+      select v.variant_id, v.produces, v.popularity
+      from ${spellbookVariants} v
+      join ${spellbookVariantCards} vc on vc.variant_id = v.variant_id
+      where v.card_count = 2 and cardinality(v.requires_template_ids) = 0
+        and exists (select 1 from ${spellbookVariantCards} vc2
+                    where vc2.variant_id = v.variant_id
+                      and vc2.oracle_id in (select oracle_id from owned))
+      group by v.variant_id
+      having count(*) = 2
+    )
+    select p.variant_id, p.produces, p.popularity,
+           held.oracle_id as present_id,
+           ch.name as present_name,
+           want.oracle_id as missing_id,
+           cw.name as missing_name,
+           want.must_be_commander as missing_must_be_commander
+    from pair p
+    join ${spellbookVariantCards} held on held.variant_id = p.variant_id
+    join ${spellbookVariantCards} want
+      on want.variant_id = p.variant_id and want.oracle_id <> held.oracle_id
+    join cards ch on ch.oracle_id = held.oracle_id
+    join cards cw on cw.oracle_id = want.oracle_id
+    where held.oracle_id in (select oracle_id from owned)
+      and not exists (select 1 from owned o where o.oracle_id = want.oracle_id)
+  `;
+}
+
+/**
+ * What `loadOwnBothPartners` hands back: the per-card partners the list's marks read, and the same rows as
+ * distinct PAIRS, which the Two-card combos chip counts and the view draws. One read for both, so a page that
+ * asks for the partners pays nothing more for the count.
+ */
+export type OwnBothRead = { partners: Map<string, ComboPartner>; pairs: DistinctPair[] };
+
 export async function loadOwnBothPartners(args: {
   userId: string;
   /**
-   * The cards to answer about. OMIT IT for the whole collection, which is what `/collection`
-   * does: that surface ships every card in one payload and windows client-side, so there is no
-   * server page to scope to and any card can scroll into view.
+   * The cards to answer about. OMIT IT for the whole collection, which is what `/collection` does: that surface
+   * ships every card in one payload and windows client-side, so there is no server page to scope to and any
+   * card can scroll into view.
    *
-   * Omitting is also FASTER than passing every id, which is the opposite of what it looks
-   * like: the ids then arrive as a 2,805-element array parameter that every row is matched
-   * against, where the unscoped form joins `owned` to itself as a set. Measured on staging
-   * over a 2,805-card collection, same 65 answers both ways: **492ms unscoped, 913ms** with
-   * every id passed.
+   * Omitting is also FASTER than passing every id, which is the opposite of what it looks like: the ids then
+   * arrive as a 2,805-element array parameter that every row is matched against, where the unscoped form joins
+   * `owned` to itself as a set. Measured on staging over a 2,805-card collection, same 65 answers both ways:
+   * **492ms unscoped, 913ms** with every id passed.
+   *
+   * `pairs` is the pairs of the rows read, so it is the collection's whole list only when this is omitted.
    */
   oracleIds?: readonly string[];
-}): Promise<Map<string, ComboPartner>> {
-  if (args.oracleIds?.length === 0) return new Map();
+}): Promise<OwnBothRead> {
+  if (args.oracleIds?.length === 0) return { partners: new Map(), pairs: [] };
 
   const rows = (await db.execute(
     ownBothQuery(args.userId, args.oracleIds ?? null),
   )).rows as PairRow[];
 
-  return bestPartnerPerCard(rows);
+  return { partners: bestPartnerPerCard(rows), pairs: distinctPairs(rows) };
 }
 
 /**

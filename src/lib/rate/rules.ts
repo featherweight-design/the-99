@@ -19,7 +19,7 @@ export type RateRule = { limit: number; windowMs: number };
 export const RATE_RULES = {
   /** `GET /api/card-detail`: read ahead on hover, so a fast sweep down a decklist is dozens. */
   "card-detail": { limit: 240, windowMs: 60_000 },
-  /** `GET`/`POST /api/collection-fields` and `GET /api/discovery-fields`: the background batch loops. */
+  /** `GET`/`POST /api/collection-fields`, `GET /api/discovery-fields` and `GET /api/collection-combos`: the background reads. */
   "draw-fields": { limit: 120, windowMs: 60_000 },
   /** `POST /api/card-scan/match`: at most three lookups per card (`server-scan.ts`), each retried up to twice, at most 2 a second while scanning a stack. */
   "card-scan": { limit: 150, windowMs: 60_000 },

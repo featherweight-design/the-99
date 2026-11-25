@@ -26,7 +26,7 @@ vi.mock("../../../lib/collection/browse-read", async (orig) => ({
   ...(await orig<typeof import("../../../lib/collection/browse-read")>()),
   loadOwnedSetMeta: async () => [],
 }));
-vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: async () => ({ cards: [], pricesFailed: false }) }));
+vi.mock("../../../lib/collection/payload", () => ({ loadCollectionList: async () => ({ cards: [], pricesFailed: false, comboPairCount: 0 }) }));
 vi.mock("../../../lib/stores/preference", () => ({ readerStoreForPage: async () => "manapool" }));
 vi.mock("../../../lib/decks/availability-query", () => ({ loadAvailability: async () => null }));
 vi.mock("../../../components/collection/add-cards-sheet", () => ({ AddCardsSheet: () => null }));

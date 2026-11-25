@@ -29,30 +29,30 @@ beforeEach(() => {
 
 describe("loadCollectionList", () => {
   it("serves a list whose price read failed, says so, and stores nothing", async () => {
-    loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a" }], pricesFailed: true });
-    expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a" }], pricesFailed: true });
-    loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a", price: 80, imageUri: null }], pricesFailed: false });
+    loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a" }], pricesFailed: true, comboPairCount: 4 });
+    expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a" }], pricesFailed: true, comboPairCount: 4 });
+    loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a", price: 80, imageUri: null }], pricesFailed: false, comboPairCount: 7 });
     // A filed list comes back as the wire reads it: availability is the page's to join, so null here.
-    expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a", price: 80, imageUri: null, availability: null }], pricesFailed: false });
+    expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a", price: 80, imageUri: null, availability: null }], pricesFailed: false, comboPairCount: 7 });
     expect(loadBrowseCards).toHaveBeenCalledTimes(2);
   });
 
   // Store preference: the store prices the read and keys the entry, and Mana Pool's entry is the one it always was.
   it("reads and files a list per store", async () => {
-    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false, comboPairCount: 0 });
     await loadCollectionList("u");
     await loadCollectionList("u", "manapool");
     await loadCollectionList("u", "tcgplayer");
     expect(loadBrowseCards).toHaveBeenCalledTimes(2);
     expect(loadBrowseCards.mock.calls.map((c) => c[2])).toEqual(["manapool", "tcgplayer"]);
-    expect([...store.keys()]).toEqual(["u|g1|browse-6", "u|g1|browse-6|tcgplayer"]);
+    expect([...store.keys()]).toEqual(["u|g1|browse-7", "u|g1|browse-7|tcgplayer"]);
   });
 
   // What this pins is that the list is cached and that its key is the generation the cache layer
   // hands it. That the real key carries `catalogGeneration()` is pinned in `user-lists.test.ts`, and
   // that a price refresh moves it in `seed-prices.test.ts`.
   it("caches a priced list, and misses once the catalog generation moves", async () => {
-    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false, comboPairCount: 0 });
     await loadCollectionList("u");
     await loadCollectionList("u");
     expect(loadBrowseCards).toHaveBeenCalledTimes(1);
@@ -63,7 +63,7 @@ describe("loadCollectionList", () => {
 
   it("files the list for a day, and logs a line only when the loader ran", async () => {
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false });
+    loadBrowseCards.mockResolvedValue({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false, comboPairCount: 0 });
     await loadCollectionList("u");
     await loadCollectionList("u");
     expect(ceilings).toEqual([86_400, 86_400]);
@@ -78,7 +78,7 @@ describe("loadCollectionList", () => {
   it("files the list packed, and hands back exactly what the loader built", async () => {
     const built = [{ oracleId: "a", name: "Æther Vial", printedName: null, imageUri: null, price: 80 }];
     const back = built.map((c) => ({ ...c, availability: null }));
-    loadBrowseCards.mockResolvedValue({ cards: built, pricesFailed: false });
+    loadBrowseCards.mockResolvedValue({ cards: built, pricesFailed: false, comboPairCount: 0 });
     expect((await loadCollectionList("u")).cards).toEqual(back);
     const filed = [...store.values()];
     expect(filed).toHaveLength(1);

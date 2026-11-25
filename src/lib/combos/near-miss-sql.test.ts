@@ -1,6 +1,6 @@
 import { PgDialect } from "drizzle-orm/pg-core";
 import { describe, it, expect } from "vitest";
-import { inDeckPairsQuery, ownBothQuery, pairsWithOnePiece } from "./near-miss";
+import { inDeckPairsQuery, ownBothQuery, ownOneQuery, pairsWithOnePiece } from "./near-miss";
 
 /**
  * THE EMITTED SQL, rendered rather than executed.
@@ -181,5 +181,30 @@ describe("inDeckPairsQuery — emitted SQL", () => {
 
   it("pairs each piece with the OTHER piece, never itself", () => {
     expect(show()).toContain("b.oracle_id <> a.oracle_id");
+  });
+});
+
+describe("ownOneQuery", () => {
+  const sqlText = dialect.sqlToQuery(ownOneQuery("u-1")).sql.replace(/\s+/g, " ");
+
+  // Guards the SET form: the reader's collection is a CTE joined and tested with `not exists`, never an array
+  // parameter (the slower form, `loadOwnBothPartners`), and it is the READER's rows alone.
+  it("reads the collection as a set, scoped to the reader", () => {
+    expect(sqlText).toMatch(/from collection_items where user_id = \$\d+/);
+    expect(sqlText).not.toContain("any(");
+    expect(sqlText).toContain("not exists (select 1 from owned o where o.oracle_id = want.oracle_id)");
+  });
+
+  // Guards the prune before the group and the two-card, template-free rule.
+  it("prunes to pairs holding an owned piece before grouping, two cards, no template", () => {
+    expect(sqlText).toContain("v.card_count = 2 and cardinality(v.requires_template_ids) = 0");
+    expect(sqlText.indexOf("exists (select 1 from spellbook_variant_cards vc2")).toBeLessThan(sqlText.indexOf("group by v.variant_id"));
+    expect(sqlText).toContain("having count(*) = 2");
+  });
+
+  // `must_be_commander` is selected, not filtered: the claim is ownership of one piece.
+  it("selects must_be_commander rather than filtering on it", () => {
+    expect(sqlText).toContain("want.must_be_commander as missing_must_be_commander");
+    expect(sqlText).not.toMatch(/where[^)]*must_be_commander/);
   });
 });
