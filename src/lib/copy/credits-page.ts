@@ -10,12 +10,9 @@
 
 import { PACKS, PLANS, type PackId, type PlanId } from "../payments/packs";
 import { creditsCopy } from "./credits";
+import { dollars } from "./dollars";
 
-/** `$5`, `$12.50`: a whole-dollar price carries no cents, as the boards draw it. */
-export function dollars(cents: number): string {
-  const whole = cents % 100 === 0;
-  return `$${(cents / 100).toLocaleString("en-US", { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
-}
+export { dollars };
 
 /** A history date, `Oct 16`, in UTC: the server renders it, and a server has no reader clock. */
 export function shortDate(at: Date): string {

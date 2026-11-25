@@ -9,7 +9,7 @@
 import { useMemo, type ReactNode } from "react";
 import type { Bracket } from "../../../../lib/profile/types";
 import { preconUpgradeCopy } from "../../../../lib/copy/precon-upgrade";
-import { dollars } from "../../../../lib/copy/credits-page";
+import { dollars } from "../../../../lib/copy/dollars";
 import { WUBRG_COLOR, inWubrgOrder } from "../../../../lib/cards/colors";
 import type { OfferedCommander, PanelCard, PanelRun, UpgradePanel } from "../../../../lib/precons/upgrade/run";
 import type { SwapCombo } from "../../../../lib/precons/upgrade/validate";
