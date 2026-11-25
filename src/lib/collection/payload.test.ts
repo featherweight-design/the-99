@@ -1,4 +1,9 @@
+import { AsyncLocalStorage } from "node:async_hooks";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { recordSoftFailure } from "../cache/soft-failure";
+
+// Next puts this on `globalThis` on the server and soft-failure.ts reads it from there; these tests run outside Next.
+(globalThis as { AsyncLocalStorage?: typeof AsyncLocalStorage }).AsyncLocalStorage ??= AsyncLocalStorage;
 
 // `cacheForUser` stood in by what `unstable_cache` does: store what a load returns, store nothing
 // for a throw. The catalog generation that a price refresh moves is part of the real key.
@@ -35,6 +40,22 @@ describe("loadCollectionList", () => {
     // A filed list comes back as the wire reads it: availability is the page's to join, so null here.
     expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a", price: 80, imageUri: null, availability: null }], pricesFailed: false, comboPairCount: 7 });
     expect(loadBrowseCards).toHaveBeenCalledTimes(2);
+  });
+
+  // The quiet reads (bracket facts behind the quick chips' bits, combo partners behind the pair count) swallow a
+  // failure and record it. A list built on one is served and not stored, or the gap would be cached for the day.
+  it("serves a list built on a soft-failed read, and stores nothing", async () => {
+    loadBrowseCards.mockImplementationOnce(async () => {
+      recordSoftFailure();
+      return { cards: [{ oracleId: "a" }], pricesFailed: false, comboPairCount: 0 };
+    });
+    expect(await loadCollectionList("u")).toEqual({ cards: [{ oracleId: "a" }], pricesFailed: false, comboPairCount: 0 });
+    expect(store.size).toBe(0);
+    loadBrowseCards.mockResolvedValueOnce({ cards: [{ oracleId: "a", price: 80 }], pricesFailed: false, comboPairCount: 3 });
+    await loadCollectionList("u");
+    await loadCollectionList("u");
+    expect(loadBrowseCards).toHaveBeenCalledTimes(2);
+    expect(store.size).toBe(1);
   });
 
   // Store preference: the store prices the read and keys the entry, and Mana Pool's entry is the one it always was.

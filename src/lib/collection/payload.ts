@@ -13,18 +13,25 @@
 // read FAILED is served and never stored: the loader throws it past `unstable_cache`, which stores
 // nothing for a throw, and it is caught here, so the next visit asks again rather than reading
 // `Prices didn't load` until the catalog moves.
+import { watchSoftFailures } from "../cache/soft-failure";
 import { cacheForUser } from "../cache/user-lists";
 import { type BrowseListCard } from "./browse";
 import { loadBrowseCards } from "./browse-read";
 import type { Store } from "../stores/rows";
 import { packCollection, unpackCollection } from "./packed-list";
 
-class PricesUnread extends Error {
+/**
+ * A list built on a read that FELL BACK, carried out unstored: the prices read failed, or a quiet read (the bracket
+ * facts behind the quick chips' bits, the combo partners behind the pair count) recorded a soft failure. The data
+ * cache stores nothing for a throw, so the next visit rebuilds instead of serving the gap for a day.
+ */
+class NotStored extends Error {
   constructor(
     readonly cards: BrowseListCard[],
     readonly comboPairCount: number,
+    readonly pricesFailed: boolean,
   ) {
-    super("collection prices unread");
+    super("collection list not stored");
   }
 }
 
@@ -59,9 +66,12 @@ export async function loadCollectionList(userId: string, store: Store = "manapoo
       store === "manapool" ? ["browse-7"] : ["browse-7", store],
       async () => {
         const started = performance.now();
-        const { cards, pricesFailed, comboPairCount } = await loadBrowseCards(userId, undefined, store);
+        // `attachBracketFacts` and `attachComboPartners` swallow a failed read and record it; nothing here heard it
+        // before, so a flags outage cached a list with no tutor, extra-turn or land-denial bits for the day.
+        const { value, fellBack } = await watchSoftFailures(() => loadBrowseCards(userId, undefined, store));
+        const { cards, pricesFailed, comboPairCount } = value;
         rebuilt = Math.round(performance.now() - started);
-        if (pricesFailed) throw new PricesUnread(cards, comboPairCount);
+        if (pricesFailed || fellBack) throw new NotStored(cards, comboPairCount, pricesFailed);
         // PACKED: the data cache refuses an entry over 2 MB, which the plain list passes at about
         // 5,400 cards (a 7,256-card reader rebuilt it on every visit). As columns under brotli
         // (`packCollection`) a 23,960-card list is 1.8 MB. The key moved to `browse-6` with that shape, and to
@@ -74,7 +84,7 @@ export async function loadCollectionList(userId: string, store: Store = "manapoo
     if (rebuilt !== null) console.log(`[collection] list rebuilt ${rebuilt}ms`);
     return { cards: unpackCollection(packed.packed), pricesFailed: false, comboPairCount: packed.comboPairCount };
   } catch (error) {
-    if (!(error instanceof PricesUnread)) throw error;
-    return { cards: error.cards, pricesFailed: true, comboPairCount: error.comboPairCount };
+    if (!(error instanceof NotStored)) throw error;
+    return { cards: error.cards, pricesFailed: error.pricesFailed, comboPairCount: error.comboPairCount };
   }
 }

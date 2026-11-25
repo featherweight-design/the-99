@@ -83,7 +83,7 @@ The full text moved out of `AGENTS.md`, verbatim. `AGENTS.md` keeps each section
   data-cache limit, so the loader reran on every request), the columnar entry 1.83MB (about 13% under
   the 2 MiB limit: headroom is thin, and the next lever is dropping the draw keys from the entry and
   reading the first window's from the database). Pack 190ms, unpack 55ms. The real largest account
-  is 8.4k cards, ~0.7MB. Cache key `browse-7` (the entry also carries the Two-card combos chip's `comboPairCount`).
+  is 8.4k cards, ~0.7MB. Cache key `browse-7` (the entry also carries the Two-card combos chip's `comboPairCount`). A list built on a soft-failed quiet read (bracket facts, combo partners) or a failed price read is served and never stored (`loadCollectionList` watches `recordSoftFailure`), so a flags outage cannot cache a list with no quick-chip bits for the day.
 
   **Its grid's art waits for the page**, except the first screen's: once the server draws the grid
   (`?view=grid`, or a desktop default), a lazy img still starts on the HTML parse, and on the slow
