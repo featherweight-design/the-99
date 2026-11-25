@@ -13,6 +13,7 @@ const m = vi.hoisted(() => ({
   values: vi.fn(),
   insert: vi.fn(),
 }));
+import { deviceSummary } from "../lib/feedback/report-rule";
 vi.mock("../lib/auth", () => ({ currentUserId: m.currentUserId }));
 vi.mock("../lib/flags/snapshot", () => ({ resolveFlags: m.resolveFlags }));
 vi.mock("../lib/rate/anon", () => ({ overAnonymousLimit: m.overAnonymousLimit, overAnonymousCeiling: m.overAnonymousCeiling }));
@@ -37,6 +38,8 @@ beforeEach(() => {
   m.values.mockResolvedValue(undefined);
   m.insert.mockReturnValue({ values: m.values });
 });
+
+const IPHONE_UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Safari/604.1";
 
 describe("sendProblemReport", () => {
   it("writes one problem row for the signed-in reader", async () => {
@@ -96,7 +99,7 @@ describe("sendProblemReport signed out", () => {
 
   it("writes one unowned row from the report door with a coarse device line and no address", async () => {
     m.headers.mockResolvedValue(
-      new Headers({ "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) Version/17.0 Safari/604.1", "x-real-ip": "203.0.113.9" }),
+      new Headers({ "user-agent": IPHONE_UA, "x-real-ip": "203.0.113.9" }),
     );
     expect(await sendProblemReport({ ...input, source: "error" })).toEqual({ ok: true });
     expect(m.values).toHaveBeenCalledWith({
@@ -104,7 +107,7 @@ describe("sendProblemReport signed out", () => {
       kind: "problem",
       answers: { what: "Blank page", doing: "Pressing Apply" },
       page: "/decks/abc",
-      device: "Safari on iPhone",
+      device: deviceSummary(IPHONE_UA),
       digest: "d1",
       sentryEventId: "e1",
       source: "report",

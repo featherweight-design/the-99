@@ -139,7 +139,7 @@ describe("DeckUpgradeHost (A2c)", () => {
     expect(screen.queryByRole("button", { name: "Apply these 1 swaps" })).toBeNull();
     expect(screen.getByText(preconUpgradeCopy.history.kicker)).toBeInTheDocument();
     expect(document.querySelector("[data-last-run] [data-run-went]")!.textContent).toBe("1 swaps · no deck yet");
-    expect(screen.getByText("Nothing changes until you apply the swaps.")).toBeInTheDocument();
+    expect(screen.getByText(preconUpgradeDeckCopy.introVersions(2).head)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "History" })).toBeInTheDocument();
   });
 

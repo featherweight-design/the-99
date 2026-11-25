@@ -12,6 +12,7 @@ import { CardDetailProvider, cardDetailCopy } from "../cards/card-detail-provide
 // The modal is loaded on demand; loaded here, after the mocks, a press draws it in the same tick.
 await (await import("../cards/card-detail-provider")).warmCardModal();
 import { spokenManaCost } from "../../lib/copy/card-surfaces";
+import { availabilityCopy } from "../../lib/copy/availability";
 import { deckImportCopy } from "../../lib/copy/deck-import";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { PendingChangeProvider } from "./pending-change";
@@ -320,7 +321,7 @@ describe("DecklistRow availability marker (#43)", () => {
         onOpen={() => {}}
       />,
     );
-    expect(screen.getByText("short 1")).toBeInTheDocument();
+    expect(screen.getByText(availabilityCopy.marker.over(1))).toBeInTheDocument();
   });
 
   // M7 (discovery R1): the marker is Card assignments' moment while it draws `short`, and never `none free`.

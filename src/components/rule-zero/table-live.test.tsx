@@ -10,6 +10,7 @@ vi.mock("../../app/friends/table/actions", () => ({ markTableSeen: m.seen, markS
 vi.mock("../../app/friends/table/setup-actions", () => ({ loadTableSetupAction: vi.fn(), reseatTableAction: vi.fn(), closeTableAction: m.close }));
 
 import { TABLES } from "../../lib/social/rule-zero-fixtures";
+import { ruleZeroCopy } from "../../lib/copy/rule-zero";
 import type { TableView } from "../../lib/rule-zero/table-view";
 import { TableBody } from "./table-body";
 import { POLL_MS, TableLive } from "./table-live";
@@ -26,7 +27,7 @@ const swapped = (view: TableView, seenAt: Date | null): TableView => ({
   revision: later(60_000),
   seats: view.seats.map((s) => (plain(s.displayName) === "Colin" ? { ...s, changedAt: later(60_000) } : s)),
 });
-const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? "Your seat" : `${name}’s seat` });
+const seatOf = (name: string) => screen.getByRole("article", { name: name === "You" ? plain(ruleZeroCopy.seat.label(null)) : `${name}’s seat` });
 const readCard = () => screen.getByTestId("read-card");
 
 describe("the changed dot and Since you looked (S5, W5)", () => {

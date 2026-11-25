@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ refresh: vi.fn(), push: 
 import { FriendsView } from "./friends-view";
 import { PodsPane } from "./pods-pane";
 import { SocialToast } from "./social-toast";
-import { socialCopy } from "../../lib/copy/social";
+import { socialCopy, spareCopy } from "../../lib/copy/social";
 import { TOAST_MS } from "../collection/edit-toast";
 import type { Friend } from "../../lib/social/access";
 import { named } from "../../lib/person-name/mint";
@@ -486,7 +486,7 @@ describe("friend links", () => {
     vi.useFakeTimers({ now: NOW });
     try {
       draw({ links: [link(1, new Date(NOW.getTime() + 86_400_000 + 30_000))] });
-      expect(screen.getByText("1 day left")).toBeTruthy();
+      expect(screen.getByText(spareCopy.request.daysLeft(1))).toBeTruthy();
       await act(async () => {
         await vi.advanceTimersByTimeAsync(60_000);
       });

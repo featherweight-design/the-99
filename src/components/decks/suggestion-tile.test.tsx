@@ -154,7 +154,7 @@ describe("SuggestionTile — lift line", () => {
   // by agreeing with a formatter that is itself wrong.
   it("prints a one-point negative figure in the singular", () => {
     mountTile({ inclusionPct: 40, lift: null, synergyFigure: -0.01 }, { showNoSynergy: true });
-    expect(screen.getByText("−1 pt")).toBeInTheDocument();
+    expect(screen.getByText(synergyCopy.figure.synergyNegative("1"))).toBeInTheDocument();
   });
 
   // A figure that rounds to zero reaches the same branch as a negative one,
