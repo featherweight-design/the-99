@@ -32,6 +32,8 @@ import { readFileSync } from "node:fs";
 import { chromium } from "playwright";
 
 const BASE = process.env.PROBE_BASE ?? "http://localhost:3000";
+// PROBE_ONLY_STEP=7 runs just that step's phase (the walk to it presses nothing), for a step that was added or changed alone.
+const ONLY_STEP = Number(process.env.PROBE_ONLY_STEP ?? 0);
 const WIDTHS = [
   { label: 390, viewport: { width: 390, height: 844 } },
   { label: 1300, viewport: { width: 1300, height: 820 } },
@@ -369,6 +371,11 @@ for (const { label, viewport } of WIDTHS) {
   }
   for (let step = 1; step <= STEPS; step++) {
     await page.getByTestId("demo-step").waitFor();
+    // PROBE_ONLY_STEP=7: walk Next to that step without pressing anything on the way, run its phase, then stop.
+    if (ONLY_STEP && step < ONLY_STEP) {
+      await page.getByTestId("demo-next").click();
+      continue;
+    }
     const app = page.getByTestId("demo-app");
     // The card details, worked once on the collection's first tile and once on the deck's first commander (which pages the deck).
     if (step === 1) await modalPhase("step 1 (first collection tile)", app.locator("[data-collection-tile]").first(), { paging: false });
@@ -426,6 +433,7 @@ for (const { label, viewport } of WIDTHS) {
     console.log(`${label}px step ${step}/${STEPS}: pressed ${pressed} of ${count} controls, ${unpressed.length} click(s) failed`);
     for (const u of unpressed) console.log(`  not pressed: ${u}`);
     if (unpressed.length > MAX_UNPRESSED) fail(`${label}px step ${step}: ${unpressed.length} controls could not be pressed (more than ${MAX_UNPRESSED}); first: ${unpressed.slice(0, 5).join("; ")}`);
+    if (ONLY_STEP && step === ONLY_STEP) break;
     if (step < STEPS) await page.getByTestId("demo-next").click();
   }
   await page.waitForLoadState("networkidle");
