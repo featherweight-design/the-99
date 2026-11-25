@@ -70,6 +70,9 @@ export type StatusPill =
   | "To buy"
   | "Complete";
 
+/** The "To buy" status as a value. It is a status, not copy: the pill, the filter and every test that names it read this. */
+export const TO_BUY_STATUS = "To buy" as const satisfies StatusPill;
+
 /**
  * Order is load-bearing, and each test earns its place above the next.
  *
@@ -165,5 +168,5 @@ export function countStatus(args: {
   // That is the feature, not a hole in the test.
   const unfunded = args.unfundedCount ?? 0;
   const covered = args.coveredCount ?? args.ownedCount;
-  return covered === args.built && unfunded === 0 ? "Complete" : "To buy";
+  return covered === args.built && unfunded === 0 ? "Complete" : TO_BUY_STATUS;
 }

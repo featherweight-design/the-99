@@ -7,6 +7,7 @@ import { Dashboard } from "./dashboard";
 import { named } from "../../lib/person-name/mint";
 import type { DeckListItem } from "../../lib/decks/read";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { TO_BUY_STATUS } from "../../lib/decks/status";
 
 // `inUse` is a Map and `ready` a slice rather than a list, because the sections
 // that read them (tasks 15–17) take exactly what the loader assembled once.
@@ -67,7 +68,7 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   unresolvedCount: 0,
   pendingChanges: 0,
   versionNumber: null,
-  statusPill: "To buy",
+  statusPill: TO_BUY_STATUS,
   bracket: null,
   lastPlayedAt: null,
   lastEditedAt: new Date("2026-09-01T00:00:00Z"),

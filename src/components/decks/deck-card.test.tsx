@@ -6,6 +6,7 @@ import { proxyCopy } from "../../lib/copy/proxies";
 import { formatWhen } from "../../lib/format/when";
 import { socialCopy } from "../../lib/copy/social";
 import { refreshCopy } from "../../lib/copy/refresh";
+import { TO_BUY_STATUS } from "../../lib/decks/status";
 
 const overflowProps = vi.hoisted(() => [] as Record<string, unknown>[]);
 vi.mock("./deck-card-overflow", () => ({
@@ -36,7 +37,7 @@ const deck = (over: Partial<DeckListItem> = {}): DeckListItem => ({
   unresolvedCount: 0,
   pendingChanges: 0,
   versionNumber: null,
-  statusPill: "To buy",
+  statusPill: TO_BUY_STATUS,
   bracket: null,
   lastPlayedAt: daysBefore(2),
   lastEditedAt: new Date("2026-09-01T00:00:00Z"),
@@ -109,7 +110,7 @@ describe("DeckCard", () => {
     render(
       <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={{ copies: 3, cents: 1840, pricedCopies: 3 }} now={now} />,
     );
-    expect(screen.getByText("To buy")).toBeInTheDocument();
+    expect(screen.getByText(TO_BUY_STATUS)).toBeInTheDocument();
     expect(screen.getByText("99 / 99")).toBeInTheDocument();
     expect(screen.getByText("3 to buy · $18.40")).toBeInTheDocument();
     expect(screen.getByText("2 days ago")).toBeInTheDocument();
@@ -568,9 +569,9 @@ describe("DeckCard — the progress sentence", () => {
   it("moves the status chip off the art and onto the bar's row", () => {
     const { container } = render(<DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} deck={deck()} shopping={undefined} now={now} />);
     const band = container.querySelector<HTMLElement>("[data-deck-art]")!;
-    expect(band.textContent).not.toContain("To buy");
+    expect(band.textContent).not.toContain(TO_BUY_STATUS);
 
-    const chip = screen.getByText("To buy");
+    const chip = screen.getByText(TO_BUY_STATUS);
     // The pill sits in the chips row, which it shares with the bracket chip and the notice.
     expect(chip.parentElement!.hasAttribute("data-deck-chips")).toBe(true);
     expect(chip.className).not.toContain("absolute");
@@ -601,7 +602,7 @@ describe("DeckCard — the bracket chip", () => {
   it("draws the chip immediately after the status pill, in the same cell", () => {
     card({ permits: [3], answered: null });
     const chip = screen.getByTestId("bracket-chip");
-    const status = screen.getByText("To buy");
+    const status = screen.getByText(TO_BUY_STATUS);
     expect(chip.parentElement).toBe(status.parentElement);
     expect(status.nextElementSibling).toBe(chip);
     expect(chip.textContent).toContain("Upgraded");
@@ -719,7 +720,7 @@ describe("the tile's proxy line yields where the slot is deliberately empty", ()
     // a proxy count there takes a slot that is meant to stay empty.
     render(
       <DeckCard folders={[]} onCreateFolder={() => {}} onMove={() => {}} keepsFocus closeAfterCreate={null} now={now}
-        deck={deck({ statusPill: "To buy", proxiedCount: 3 })}
+        deck={deck({ statusPill: TO_BUY_STATUS, proxiedCount: 3 })}
         shopping={undefined}
       />,
     );

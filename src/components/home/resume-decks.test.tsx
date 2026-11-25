@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import { ResumeDecks, resumeDecks } from "./resume-decks";
 import type { DeckListItem } from "../../lib/decks/read";
 import type { ShoppingRollup } from "../../lib/decks/shopping-rollup";
+import { TO_BUY_STATUS } from "../../lib/decks/status";
 
 const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   id: "d1",
@@ -27,7 +28,7 @@ const deck = (o: Partial<DeckListItem> = {}): DeckListItem => ({
   proxiedCount: 0,
   folderId: null,
   folderName: null,
-  statusPill: "To buy",
+  statusPill: TO_BUY_STATUS,
   bracket: null,
   ...o,
 });
@@ -338,7 +339,7 @@ describe("a resume row with the bracket chip", () => {
     expect(chip.getAttribute("data-bracket")).toBe("4-5");
     expect(chip.textContent).not.toContain("Optimized");
     expect(chip.closest("[aria-hidden]")).not.toBeNull();
-    expect(screen.getByText("To buy").closest("[aria-hidden]")).not.toBeNull();
+    expect(screen.getByText(TO_BUY_STATUS).closest("[aria-hidden]")).not.toBeNull();
     const spoken = container.querySelector(".sr-only")!;
     expect(spoken.textContent).toBe("To buy, bracket Optimized or cEDH");
   });
@@ -346,12 +347,12 @@ describe("a resume row with the bracket chip", () => {
   it("draws no chip, and leaves the pill spoken, on a deck with no analysis", () => {
     const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
     expect(container.querySelector('[data-testid="bracket-chip"]')).toBeNull();
-    expect(screen.getByText("To buy").closest("[aria-hidden]")).toBeNull();
+    expect(screen.getByText(TO_BUY_STATUS).closest("[aria-hidden]")).toBeNull();
   });
 
   it("states line two's height, so rows with and without a chip line up (N4)", () => {
     const { container } = render(<ResumeDecks decks={[deck()]} shopping={rollup()} total={1} now={NOW} />);
-    const lineTwo = screen.getByText("To buy").closest("[data-resume-text] > span:nth-child(2)")!;
+    const lineTwo = screen.getByText(TO_BUY_STATUS).closest("[data-resume-text] > span:nth-child(2)")!;
     expect(lineTwo.className).toContain("h-[22px]");
     expect(lineTwo.className).toContain("md:h-[24px]");
     expect(container.querySelector("a")!.className).toContain("py-[4px]");
