@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ERROR_WORDS, messageSkeleton } from "./message-skeleton";
 
-// The leak cases are real card and deck names, the words a client error's message actually carries.
+// The leak cases are card and deck names (one an invented fixture), the words a client error's message actually carries.
 const CARDS = ["Sol Ring", "Atraxa, Praetors' Voice", "Urza's Saga", "Lightning Bolt", "The Ur-Dragon", "Fixture Titan, Fixture Hunger", "Rootha, Mastering the Moment"];
 const DECKS = ["Weekend jank", "my spicy deck", "Kitchen table brew", "Korvold Treasure Sacrifice Value Engine"];
 
