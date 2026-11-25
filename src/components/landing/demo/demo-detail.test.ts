@@ -43,17 +43,21 @@ describe("cardStepsFor", () => {
     expect([3, 4, 5].map((i) => cardStepsFor(i, "played"))).toEqual([["played"], ["played"], ["played"]]);
   });
 
-  it("loads both the over and the under chunk for step 7, whichever tab is open", () => {
-    expect(cardStepsFor(6, null)).toEqual(["over", "under"]);
+  it("loads the upgrade chunk for step 7, Precon Upgrade", () => {
+    expect(cardStepsFor(6, null)).toEqual(["upgrade"]);
   });
 
-  it("takes step 8's Shopping deck beside the binder for Which deck, and the binder alone with no shopping deck", () => {
-    expect(cardStepsFor(7, "played")).toEqual(["binder", "played"]);
-    expect(cardStepsFor(7, "under")).toEqual(["binder", "under"]);
-    expect(cardStepsFor(7, null)).toEqual(["binder"]);
+  it("loads both the over and the under chunk for step 8, whichever tab is open", () => {
+    expect(cardStepsFor(7, null)).toEqual(["over", "under"]);
   });
 
-  it("needs nothing for an index past the eight", () => {
-    expect(cardStepsFor(8, "played")).toEqual([]);
+  it("takes step 9's Shopping deck beside the binder for Which deck, and the binder alone with no shopping deck", () => {
+    expect(cardStepsFor(8, "played")).toEqual(["binder", "played"]);
+    expect(cardStepsFor(8, "under")).toEqual(["binder", "under"]);
+    expect(cardStepsFor(8, null)).toEqual(["binder"]);
+  });
+
+  it("needs nothing for an index past the nine", () => {
+    expect(cardStepsFor(9, "played")).toEqual([]);
   });
 });

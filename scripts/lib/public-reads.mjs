@@ -193,6 +193,9 @@ export const PUBLIC_SURFACE_COMPONENTS = [
   "src/components/decks/decks-mark-key.tsx",
   "src/components/decks/decklist-group-header.tsx",
   "src/components/decks/suggested-changes-run.tsx",
+  // Precon Upgrade, the landing demo's step 7 (A5b): the shipped result and the step that draws it, so the walk keeps both free of per-user modules.
+  "src/components/decks/precons/upgrade/result-view.tsx",
+  "src/components/landing/demo/demo-step-upgrade.tsx",
   "src/components/decks/suggested-changes-confirm.tsx",
   "src/components/decks/suggested-changes-intake.tsx",
   "src/components/decks/suggested-changes-pick-line.tsx",

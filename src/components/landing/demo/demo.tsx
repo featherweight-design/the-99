@@ -24,7 +24,7 @@
 import { KEEP_ON_BACK, useDialogA11y } from "../../../lib/a11y/dialog";
 import { mirrorUrl } from "../../../lib/url/mirror";
 import { useInertWhileOpen } from "../../../lib/a11y/inert-page";
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 
 import { landingCopy } from "../../../lib/copy/landing";
@@ -46,7 +46,19 @@ import { ringPlace, ringTarget, stepOpensCards } from "./demo-rings";
 import { SEGMENT } from "../../ui/segment";
 
 const c = landingCopy.demo;
-const STEPS = c.steps.length;
+/** One step's copy as the dialog reads it (the eight always there, and Upgrade's built from the claim). */
+type DemoStep = { id: string; title: (p: string) => string; tags: readonly { kind: "free" | "credit"; label: string }[]; press?: string | null };
+/** The Upgrade claim (`LandingClaims["upgrade"]`) when the fixture holds the run too, else null: the step is left out and the demo counts eight. */
+type DemoUpgradeClaim = { units: number } | null;
+/** Where the Precon Upgrade step sits among the steps (0-based): after Suggested changes, before Get it to 99. */
+const UPGRADE_AT = 6;
+/** The steps the dialog walks: the eight always there, with Precon Upgrade between the sixth and seventh when the claim and the fixture have it (`upgrade`). */
+function stepsOf(upgrade: DemoUpgradeClaim): readonly DemoStep[] {
+  if (!upgrade) return c.steps;
+  const credits = upgrade.units === 1 ? landingCopy.credits.one : landingCopy.credits.many(upgrade.units);
+  const step: DemoStep = { id: c.upgradeStep.id, title: c.upgradeStep.title, press: c.upgradeStep.press, tags: [{ kind: "credit", label: credits }] };
+  return [...c.steps.slice(0, UPGRADE_AT), step, ...c.steps.slice(UPGRADE_AT)];
+}
 /** The query parameter that holds the step the dialog is on. */
 const DEMO_PARAM = "demo";
 
@@ -64,11 +76,11 @@ const BTN_Q = `${BUTTON} border border-solid border-[color:var(--border-strong)]
 const HEADING = "m-0 font-display font-bold leading-[1.25] text-[color:var(--fg)] focus:outline-none";
 const LINK = "cursor-pointer border-0 bg-transparent p-0 underline underline-offset-[3px]";
 
-/** The eight-segment bar: a segment is lit through the step shown (all of them on the end). */
-function Bar({ lit }: { lit: number }) {
+/** The bar, a segment per step: a segment is lit through the step shown (all of them on the end). */
+function Bar({ lit, steps }: { lit: number; steps: readonly DemoStep[] }) {
   return (
     <span aria-hidden className="flex flex-1 gap-[4px]">
-      {c.steps.map((s, i) => (
+      {steps.map((s, i) => (
         <span key={s.id} data-on={i < lit || undefined} className={`${SEGMENT} bg-[color:var(--border-strong)] data-[on]:bg-[color:var(--accent)]`} />
       ))}
     </span>
@@ -133,7 +145,7 @@ function PendingSweep() {
  * Back (`useDialogA11y`); focus lands on the step's heading and returns to the section's main button. The pinned top bar is
  * `--surface-raised` over `--border-strong`: the label (Step N of 8, or The end), the bar, Skip to the end (steps only) and the close.
  */
-function DemoDialog({ onClose, onBackStep, returnFocusRef, headingRef, label, lit, onSkip, children }: {
+function DemoDialog({ onClose, onBackStep, returnFocusRef, headingRef, label, lit, steps, onSkip, children }: {
   onClose: () => void;
   /** The browser's Back on a step after the first: the step before, instead of closing. */
   onBackStep: () => boolean;
@@ -141,6 +153,7 @@ function DemoDialog({ onClose, onBackStep, returnFocusRef, headingRef, label, li
   headingRef: RefObject<HTMLElement | null>;
   label: ReactNode;
   lit: number;
+  steps: readonly DemoStep[];
   onSkip: (() => void) | null;
   children: ReactNode;
 }) {
@@ -152,7 +165,7 @@ function DemoDialog({ onClose, onBackStep, returnFocusRef, headingRef, label, li
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={c.title} tabIndex={-1} data-testid="demo-dialog" className="flex min-h-0 flex-1 flex-col focus:outline-none">
         <div className="flex flex-none items-center gap-[12px] border-b border-solid border-b-[color:var(--border-strong)] bg-[color:var(--surface-raised)] py-[4px] pl-[16px] pr-[4px] md:pl-[24px] md:pr-[12px]">
           {label}
-          <Bar lit={lit} />
+          <Bar lit={lit} steps={steps} />
           {onSkip ? (
             <button type="button" onClick={onSkip} className={`${LINK} flex min-h-[44px] items-center whitespace-nowrap text-[13px] text-[color:var(--fg-muted)] decoration-[color:var(--fg-faint)]`}>
               {c.skip}
@@ -173,7 +186,11 @@ function DemoDialog({ onClose, onBackStep, returnFocusRef, headingRef, label, li
   );
 }
 
-export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; publicPages: boolean }) {
+export function Demo({ art, publicPages, upgrade }: { art: readonly DemoArtCard[]; publicPages: boolean; upgrade: DemoUpgradeClaim }) {
+  const steps = useMemo(() => stepsOf(upgrade), [upgrade]);
+  const total = steps.length;
+  /** A dialog step's index in the full nine-step order the step modules (bodies, rings, card chunks) number by: past Upgrade's place it is one more when the step is left out. */
+  const canon = useCallback((index: number) => (upgrade || index < UPGRADE_AT ? index : index + 1), [upgrade]);
   const [phase, setPhase] = useState<Phase>({ kind: "start" });
   // The fixture and the steps' component, set together once both chunks have landed (`Start`); a step is drawn only with both.
   const [loadedApp, setLoadedApp] = useState<LoadedApp | null>(null);
@@ -243,7 +260,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
       // The details in hand: open. (Cards of an earlier step stay in memory, so a card the step shares with one opens at once.)
       if (cards && app?.cards.detailFor(cards, oracleId, role)) return show(cards);
       // The step's own chunks all landed and the card is not in them: it opens nothing.
-      const steps = app && now.kind === "step" ? app.cards.stepsOf(app.data, now.index) : [];
+      const steps = app && now.kind === "step" ? app.cards.stepsOf(app.data, canon(now.index)) : [];
       if (cards && steps.every((s) => loadedSteps.current.has(s))) return;
       // A press before the step's details landed, or after a failed fetch: fetch them now and open the card on arrival, if the reader is still on the step.
       const at = `${phaseKey(now)}:${closes.current}`;
@@ -253,7 +270,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
         })
         .catch(() => {});
     },
-    [fetchSteps],
+    [fetchSteps, canon],
   );
   const closeCard = useCallback(() => setOpened(null), []);
   const pageCard = useCallback((oracleId: string) => setOpened((o) => (o ? { ...o, oracleId } : o)), []);
@@ -269,13 +286,13 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     const now = phaseNow.current;
     // The end card goes back to where it was reached from (the "Go back" control's own target): the first skipped step, or the last.
     if (now.kind === "end") {
-      go({ kind: "step", index: now.skippedFrom ?? STEPS - 1 });
+      go({ kind: "step", index: now.skippedFrom ?? total - 1 });
       return true;
     }
     if (now.kind !== "step" || now.index === 0) return false;
     go({ kind: "step", index: now.index - 1 });
     return true;
-  }, []);
+  }, [total]);
   /** Close the dialog (the close, Escape, the browser's Back): a close from the end starts the section over, a close mid-way keeps the step. */
   const closeDialog = useCallback(() => {
     closes.current += 1;
@@ -345,7 +362,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     const at = /^step-(\d+)$/.exec(new URLSearchParams(window.location.search).get(DEMO_PARAM) ?? "");
     const index = at ? Number(at[1]) : -1;
     // A microtask: `start` sets state, which an effect's own body must not do.
-    if (index >= 0 && index < STEPS) queueMicrotask(() => start(index));
+    if (index >= 0 && index < total) queueMicrotask(() => start(index));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once, on mount: `start` is the press's own function and reads the live state.
   }, []);
 
@@ -373,12 +390,12 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
     whenIdle(() => {
       if (!live || !mounted.current) return;
-      fetchSteps(app.cards.stepsOf(app.data, stepIndex))
+      fetchSteps(app.cards.stepsOf(app.data, canon(stepIndex)))
         .then((landed) => {
           // Nothing landed (a file with none): nothing to build on, and the next step would read none too.
-          if (!landed || !live || saveData || stepIndex + 1 >= STEPS) return;
+          if (!landed || !live || saveData || stepIndex + 1 >= total) return;
           whenIdle(() => {
-            if (live && mounted.current) void fetchSteps(app.cards.stepsOf(app.data, stepIndex + 1)).catch(() => {});
+            if (live && mounted.current) void fetchSteps(app.cards.stepsOf(app.data, canon(stepIndex + 1))).catch(() => {});
           });
         })
         .catch(() => {});
@@ -386,10 +403,10 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     return () => {
       live = false;
     };
-  }, [loadedApp, stepIndex, fetchSteps]);
+  }, [loadedApp, stepIndex, fetchSteps, canon, total]);
 
 
-  const header = { id: "landing-demo", testId: "demo", eyebrow: c.eyebrow, title: c.title, lead: <Lead>{c.lead}</Lead> };
+  const header = { id: "landing-demo", testId: "demo", eyebrow: c.eyebrow, title: c.title, lead: <Lead>{c.lead(c.toolCount(total))}</Lead> };
   // The section after a close mid-way: the step to carry on from, and a quiet Start over.
   const resumeAt = phase.kind === "step" && loadedApp && !dialogOpen ? phase.index : null;
 
@@ -400,7 +417,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
           <Fan images={fanOf(art, "start")} />
           <div className="flex flex-col items-start gap-[12px]">
             <h3 className={`${HEADING} text-[21px]`}>{c.startTitle(DEMO_PLAYER)}</h3>
-            <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.startBody(DEMO_PLAYER)}</p>
+            <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.startBody(DEMO_PLAYER, c.toolCount(total))}</p>
             <div className="flex flex-wrap items-center gap-[10px]">
               <button
                 ref={mainButton}
@@ -440,7 +457,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
   if (phase.kind === "end") {
     const skipped = phase.skippedFrom;
     label = <span aria-live="polite" className={LABEL}>{c.end.label}</span>;
-    lit = STEPS;
+    lit = total;
     onSkip = null;
     body = (
       <div ref={columnScroll} className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
@@ -451,7 +468,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
               <p className="m-0 text-[14.5px] leading-[1.6] text-[color:var(--fg-body)]">{c.end.lead}</p>
               {skipped !== null ? (
                 <p className="m-0 text-[13px] text-[color:var(--fg-muted)]" data-testid="demo-skipped">
-                  {c.end.skipped(skipped + 1, STEPS)}{" "}
+                  {c.end.skipped(skipped + 1, total)}{" "}
                   <button type="button" onClick={() => go({ kind: "step", index: skipped })} className={`${LINK} text-[13px] text-[color:var(--fg-muted)]`}>
                     {c.end.goBack(skipped + 1)}
                   </button>
@@ -473,15 +490,18 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
   } else {
     const { data, Body, Host } = loadedApp;
     const { index } = phase;
-    const step = c.steps[index];
+    const step = steps[index];
+    const at = canon(index);
     const title = step.title(DEMO_PLAYER);
     // A ring and a sentence promise a press only where the press opens a card (`stepOpensCards`).
-    const cardsOpen = stepOpensCards(data, cardData, index);
-    const line = index === 0 ? step.line(DEMO_PLAYER, `${data.collection.totalCards.toLocaleString("en-US")} cards`, cardsOpen, data.collection.cards.length) : step.line(DEMO_PLAYER, "");
-    const last = index === STEPS - 1;
+    const cardsOpen = stepOpensCards(data, cardData, at);
+    const orig = c.steps[at > UPGRADE_AT ? at - 1 : at];
+    const run = data.upgrade?.panel.runs.find((r) => r.id === data.upgrade?.runId);
+    const line = at === UPGRADE_AT ? c.upgradeStep.line(DEMO_PLAYER, run?.pairs.length ?? 0) : index === 0 ? orig.line(DEMO_PLAYER, `${data.collection.totalCards.toLocaleString("en-US")} cards`, cardsOpen, data.collection.cards.length) : orig.line(DEMO_PLAYER, "");
+    const last = index === total - 1;
     // Skip to the end from the last step skips nothing, so the end says nothing was skipped.
     const toEnd = () => go({ kind: "end", skippedFrom: last ? null : index });
-    label = <span data-testid="demo-step" aria-live="polite" className={LABEL}>{c.step(index + 1, STEPS)}</span>;
+    label = <span data-testid="demo-step" aria-live="polite" className={LABEL}>{c.step(index + 1, total)}</span>;
     lit = index + 1;
     onSkip = toEnd;
     body = (
@@ -503,11 +523,11 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
                 <span className="absolute right-[12px] top-[8px] font-mono text-[9px] font-medium uppercase tracking-[0.12em] text-[color:var(--fg-faint)]">{c.stage(DEMO_PLAYER)}</span>
                 <div data-testid="demo-app" className="pt-[10px]">
                   <DemoProviders onOpen={openCard} onClose={closeCard} openOracleId={opened?.oracleId ?? null}>
-                    <Body index={index} data={data} publicPages={publicPages} onOpenCard={openPlain} />
+                    <Body index={at} data={data} publicPages={publicPages} onOpenCard={openPlain} />
                   </DemoProviders>
                   {opened && cardData ? <Host data={cardData} opened={opened} onPage={pageCard} onClose={closeCard} /> : null}
                 </div>
-                <PressRing panel={panel} selector={ringTarget(index, cardsOpen, fine)} label={(index === 3 && !fine ? c.pressCoarse : step.press) ?? ""} place={ringPlace(index, fine)} />
+                <PressRing panel={panel} selector={ringTarget(at, cardsOpen, fine)} label={(at === 3 && !fine ? c.pressCoarse : step.press) ?? ""} place={ringPlace(at, fine)} />
               </div>
             </div>
           </div>
@@ -532,7 +552,7 @@ export function Demo({ art, publicPages }: { art: readonly DemoArtCard[]; public
     <>
       {card}
       {createPortal(
-        <DemoDialog onClose={closeDialog} onBackStep={backStep} returnFocusRef={mainButton} headingRef={heading} label={label} lit={lit} onSkip={onSkip}>
+        <DemoDialog onClose={closeDialog} onBackStep={backStep} returnFocusRef={mainButton} headingRef={heading} label={label} lit={lit} steps={steps} onSkip={onSkip}>
           {body}
         </DemoDialog>,
         document.body,

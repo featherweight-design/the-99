@@ -28,6 +28,13 @@ describe("the committed projected data", () => {
     else expect(data).toBeNull();
   });
 
+  // The Upgrade step (step 7 of nine) draws only where the fixture carries one: a file without it leaves the tour at eight steps.
+  it.skipIf(!data?.upgrade)("holds an upgrade run whose swaps the step can draw", () => {
+    const up = data!.upgrade!;
+    expect(up.precon.length).toBeGreaterThan(0);
+    expect(up.panel.runs.some((r) => r.id === up.runId)).toBe(true);
+  });
+
   it.skipIf(file === null)("holds steps 1 to 6, in the shapes the drawing halves take", () => {
     const steps = file!;
     expect(steps.collection.cards.length).toBeGreaterThan(0);

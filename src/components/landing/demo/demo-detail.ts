@@ -22,9 +22,10 @@ export function detailFor(data: DemoCardData, oracleId: string, role: DemoDeckRo
  * `deckRoleOf` names it): a press on the step can open only a card these hold (with `shared`, which every step's load adds).
  *   - steps 1 to 3 (the collection, the commanders, Help me choose): the binder;
  *   - steps 4 to 6 (the played deck): the played deck's chunk;
- *   - step 7 (Get it to 99): the over deck's (Look deeper) and the under deck's (Top off, Mana Balance). The tab is the step's own
+ *   - step 7 (Precon Upgrade): the upgrade chunk (every add, every cut and both commanders of the stored run);
+ *   - step 8 (Get it to 99): the over deck's (Look deeper) and the under deck's (Top off, Mana Balance). The tab is the step's own
  *     state, so both are loaded together: whichever tab is open, a press finds its card;
- *   - step 8 (Buy only what's missing): Which deck's card (the binder) and the Shopping list's deck.
+ *   - step 9 (Buy only what's missing): Which deck's card (the binder) and the Shopping list's deck.
  * Any other index needs none.
  */
 export function cardStepsFor(index: number, shopping: DemoCardStep | null): DemoCardStep[] {
@@ -38,8 +39,10 @@ export function cardStepsFor(index: number, shopping: DemoCardStep | null): Demo
     case 5:
       return ["played"];
     case 6:
-      return ["over", "under"];
+      return ["upgrade"];
     case 7:
+      return ["over", "under"];
+    case 8:
       return shopping === null ? ["binder"] : ["binder", shopping];
     default:
       return [];

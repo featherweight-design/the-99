@@ -133,10 +133,10 @@ export const landingCopy = {
     /** The section's header, as on the board: it stays through the start, every step and the end. */
     eyebrow: "Try it",
     title: "See it work before you join",
-    lead: "A made-up player\u2019s cards and eight of the tools, working the way they do for members.",
+    lead: (tools: string) => `A made-up player\u2019s cards and ${tools} of the tools, working the way they do for members.`,
     /** The start card, inside the frame: its heading, its paragraph and its button. */
     startTitle: (player: string) => `Try it on ${player}\u2019s cards`,
-    startBody: (player: string) => `${player} is a made-up player with a real-looking binder. Step through eight of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit. It opens full screen.`,
+    startBody: (player: string, tools: string) => `${player} is a made-up player with a real-looking binder. Step through ${tools} of the tools, the way you would with your own cards. Nothing you select is saved, and nothing costs a credit. It opens full screen.`,
     start: "Start",
     /** Start's label while the demo's data loads, and the line under it when that fails (pressing Start again retries). */
     loading: "Loading",
@@ -187,7 +187,7 @@ export const landingCopy = {
         which: { kind: "credit", label: "1 credit" },
       },
     },
-    /** The eight tools, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
+    /** The eight tools that are always there, in order: the step's title, the chips it carries, the line under it and the label on the ring. */
     steps: [
       { id: "collection", title: (p: string) => `${p}\u2019s collection`, tags: [{ kind: "free", label: "Free" }], line: (p: string, cards: string, opens = false, shown = 0) => `${p} is made up, and so is the binder: ${cards}. Here are ${shown} of them.${opens ? " Select any card to open it." : ""}`, press: "Select a card" },
       { id: "commanders", title: (p: string) => `The commanders ${p} can build`, tags: [{ kind: "free", label: "Free" }], line: (p: string) => `Every commander in the binder, ranked by how much of its deck ${p} already owns. Select the fit to see why.`, press: "Why it fits" },
@@ -198,6 +198,15 @@ export const landingCopy = {
       { id: "get-to-99", title: () => "Get it to 99", tags: [], line: (p: string) => `Three tools, one tab each. Proposed cuts names the cuts for a deck over 99. Top off fills a deck under 99 from ${p}\u2019s cards. Mana Balance checks the lands.`, press: null },
       { id: "buy", title: () => "Buy only what\u2019s missing", tags: [], line: (p: string) => `Two tabs. The shopping list, cheaper stand-ins first. And Which deck needs it most?, which reads one new card against every deck ${p} has.`, press: null },
     ],
+    /** How many tools the demo steps through, in words, for the lead and the start card: eight, or nine while the Upgrade step is in. */
+    toolCount: (n: number) => (n === 9 ? "nine" : "eight"),
+    /** Step 7 of 9, Precon Upgrade (addendum A5b). Its chip is built from the claim's units (`credits.one`, `credits.many`), never typed; the step is left out when the fixture has no run or Upgrade is off. */
+    upgradeStep: {
+      id: "upgrade",
+      title: () => "Upgrade this precon",
+      line: (p: string, swaps: number) => `${p} picked who leads a precon, how strong it plays and the strategy. The 99 found ${swaps} swaps toward that plan and says why for each.`,
+      press: "Select a card",
+    },
     end: {
       /** The frame's top row, in the place of "Step N of 8". */
       label: "The end",

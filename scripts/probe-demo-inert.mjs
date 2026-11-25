@@ -1,5 +1,5 @@
 // probe:demo-inert: Try it's promise, "nothing you press is saved", checked in a real browser (public landing, 5l). Signed OUT, no
-// account and no database access of its own: it loads the landing, starts the demo and, at each of the eight steps, presses every
+// account and no database access of its own: it loads the landing, starts the demo and, at each of the nine steps, presses every
 // control inside the dummy app once (buttons, links, tabs, checkboxes), then Next. It records every network request the page
 // makes and fails on:
 //   - any non-GET request to this origin (a server action is a POST; a write is never a GET);
@@ -18,7 +18,7 @@
 // pressed: it is asserted by its href and target, because a popup is a page this probe's listeners do not watch), and that none of it sent a non-GET
 // request to ANY origin, asked this origin for a path outside the page, or touched the cookies or storage. A committed card details file
 // holding no data skips that phase (logged); one with data fails if the dialog does not open.
-// Every card-open control (5l-g): at each step that draws them (1, 3, 4, 5, 6, 7 and 8; at 7 and 8 on every tab, with Mana Balance's
+// Every card-open control (5l-g): at each step that draws them (1, 3, 4, 5, 6, 7, 8 and 9; at 8 and 9 on every tab, with Mana Balance's
 // sections opened) the probe presses EVERY one once (`CARD_OPENERS`: collection tiles, "View details for ..." buttons, Suggested
 // changes' "Open ..." names, Look deeper's cut names, Top off's names, Which deck's combo partner), asserts a dialog opens (the first
 // press of a step waits up to 4 s: the step's chunk is fetched on idle after entering it, or by that press), closes it with Escape, and
@@ -40,7 +40,7 @@ const WIDTHS = [
 const ALLOWED_PATH = /^\/(?:commander\/[^/]+$|_next\/|__nextjs_font\/|favicon|manifest|icons?\/|img\/|fonts?\/|mana\/)/;
 /** Cookies and storage keys that belong to the host app's sign-in provider and the edge, not to the demo: they move on any page load. */
 const HOST_STATE = /^(?:__clerk|__client_uat|__session|__cf_bm|_cfuvid|__refresh|clerk)/i;
-const STEPS = 8;
+const STEPS = 9;
 /** Whether the committed card details chunks hold data (5l-c/d): each `card-details/<chunk>.generated.ts` is `null` until `pnpm demo:export` writes it, and the played chunk's key decides whether the modal phase is owed. The step data file no longer carries them. */
 const CARD_DETAILS_FILE = readFileSync(new URL("../src/lib/demo/card-details/played.generated.ts", import.meta.url), "utf8");
 const HAS_CARD_DETAILS = /^export const cardDetailsJson: unknown = \{/m.test(CARD_DETAILS_FILE) && /^ "cardDetails":\s*\{/m.test(CARD_DETAILS_FILE);
@@ -60,11 +60,13 @@ const CARD_OPENERS = {
   5: { selectors: [VIEW_DETAILS] },
   // At 390 Suggested changes folds Additions and Cuts into two tabs (at 1300 both columns are drawn), so its tabs are worked too.
   6: { selectors: ["[data-testid='demo-suggested'] article button[aria-label^='Open ']", VIEW_DETAILS], tabs: true },
-  7: { selectors: [VIEW_DETAILS, "[data-testid='top-off-name']"], cutNames: true, tabs: true },
-  8: { selectors: [VIEW_DETAILS, "[data-testid='demo-which'] button[class*='dotted_var(--accent)']"], tabs: true },
+  // Precon Upgrade (A5b): every swap's card names open the details; the picks and the strategy chips are pressed by the sweep and must write nothing.
+  7: { selectors: ["[data-testid='demo-upgrade'] article button[aria-label^='Open ']"] },
+  8: { selectors: [VIEW_DETAILS, "[data-testid='top-off-name']"], cutNames: true, tabs: true },
+  9: { selectors: [VIEW_DETAILS, "[data-testid='demo-which'] button[class*='dotted_var(--accent)']"], tabs: true },
 };
 /** The steps that must draw at least one card-open control (step 5, the analysis, may draw none). */
-const MUST_FIND = new Set([1, 3, 4, 6, 7, 8]);
+const MUST_FIND = new Set([1, 3, 4, 6, 7, 8, 9]);
 /** How long a press waits for its dialog: the first of a step may fetch the step's chunk; once one has opened, a press that opens nothing is a dead control. */
 const FIRST_PRESS_WAIT = 4000;
 const LATER_PRESS_WAIT = 1200;
@@ -358,11 +360,27 @@ for (const { label, viewport } of WIDTHS) {
     if ((await readCookies()) !== cookiesStart) fail(`${tag(where)}: pressing the card controls changed the cookies`);
   };
   await enter(1);
+  // The probe walks the nine-step demo: with the Upgrade claim off (or the fixture without its run) the label reads "of 8", and a probe that walked eight would test nothing of step 7.
+  const label0 = (await page.getByTestId("demo-step").textContent()) ?? "";
+  if (!label0.includes(`of ${STEPS}`)) {
+    fail(`${label}px: the demo draws "${label0.trim()}", not ${STEPS} steps: turn the Precon Upgrade switch on for this server so step 7 is drawn`);
+    await context.close();
+    continue;
+  }
   for (let step = 1; step <= STEPS; step++) {
     await page.getByTestId("demo-step").waitFor();
     const app = page.getByTestId("demo-app");
     // The card details, worked once on the collection's first tile and once on the deck's first commander (which pages the deck).
     if (step === 1) await modalPhase("step 1 (first collection tile)", app.locator("[data-collection-tile]").first(), { paging: false });
+    if (step === 7) {
+      // Precon Upgrade (A5b): the stored run is drawn under the precon's name, no ask, no Apply and no Start the deck, with the ring on a card name.
+      if ((await app.getByTestId("demo-upgrade").count()) === 0) fail(`${label}px step 7: the Precon Upgrade body (demo-upgrade) is not drawn`);
+      for (const banned of ["Apply", "Start the deck", "Try another strategy"]) {
+        if ((await app.getByRole("button", { name: banned }).count()) > 0) fail(`${label}px step 7: a "${banned}" control is drawn on the demo`);
+      }
+      const ring = await page.getByText("Select a card", { exact: true }).count();
+      if (ring === 0 && HAS_CARD_DETAILS) fail(`${label}px step 7: no "Select a card" ring on the first added card`);
+    }
     if (step === 4) await modalPhase("step 4 (first deck card)", app.locator("button[aria-label^='View details for']").first(), { paging: true });
     // Every card-open control the step draws, once each: a dialog must open (5l-g).
     await everyCardControl(step, app);

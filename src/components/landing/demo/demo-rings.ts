@@ -3,6 +3,7 @@
 // import them from there without the whole drawing half riding in the landing's first load.
 
 import type { DemoCardData } from "../../../lib/demo/project-cards";
+import { upgradeCardIds } from "../../../lib/demo/project-upgrade";
 import type { Projected } from "../../../lib/demo/projected";
 import type { RingPlace } from "./demo-ring";
 
@@ -38,12 +39,15 @@ export function ringTarget(index: number, cardsOpen = false, fine = true): strin
       // (`deckTuningCopy.card.open`); its thumbnail beside it is `aria-hidden`, so the name button is the first match. Scoped to
       // the lines so no other "Open ..." control in the step can take the ring.
       return cardsOpen ? "[data-testid='demo-suggested'] article button[aria-label^='Open ']" : null;
+    case 6:
+      // Precon Upgrade: the first card name a swap line opens, the same press as step 6's.
+      return cardsOpen ? "[data-testid='demo-upgrade'] article button[aria-label^='Open ']" : null;
     default:
       return null;
   }
 }
 
-/** The oracle ids of the cards a step's presses open, for the steps that carry a card ring (1, 3 and 6). Empty for any other step. */
+/** The oracle ids of the cards a step's presses open, for the steps that carry a card ring (1, 3, 6 and 7). Empty for any other step. */
 function stepCardIds(data: Projected, index: number): string[] {
   switch (index) {
     case 0:
@@ -54,6 +58,8 @@ function stepCardIds(data: Projected, index: number): string[] {
       // The line items only: `StepSuggested` draws `state.items.filter(isLineItem)` and no legacy pair, so a pair's cards are no
       // press (`isLineItem`, `demo-step-analysis.tsx`, is the same test: a line carries its side).
       return (data.suggested?.state.items ?? []).flatMap((item) => ("side" in item && item.side !== undefined && "cardOracleId" in item ? [item.cardOracleId] : []));
+    case 6:
+      return upgradeCardIds(data.upgrade);
     default:
       return [];
   }
@@ -79,6 +85,7 @@ export function ringPlace(index: number, fine = true): RingPlace {
       // A mark is a small glyph amid the row's ink: the label sits to its right. A row (no hover) has its label below it.
       return fine ? "right" : "bottom";
     case 5:
+    case 6:
       return "above";
     default:
       return "top";
