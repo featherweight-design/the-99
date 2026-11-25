@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { BrowseListCard, BrowseFilters } from "./browse";
 import { filterCards } from "./browse";
+import { quickMask } from "./quick-filters";
 import { buildTypeOptions } from "./type-filter";
 import { collectionFilterCopy } from "../copy/collection";
 import {
@@ -104,6 +105,19 @@ describe("buildAvailabilityOptions", () => {
     expect(
       buildAvailabilityOptions(cards, { ...empty, types: ["Creature"] }).every((o) => o.count === 0),
     ).toBe(true);
+  });
+});
+
+describe("buildAvailabilityOptions under a quick chip", () => {
+  // A pressed chip narrows the Colors, Types and Sets counts; this menu has to count the same list.
+  it("counts only the cards the pressed chip keeps", () => {
+    const tutors = [
+      { ...card("free1", 2, 0, 0, 2), q: quickMask(["tutor"], []) },
+      card("hard1", 1, 1, 0, 0),
+    ];
+    const options = buildAvailabilityOptions(tutors, { ...empty, quick: "tutor" });
+    expect(options.find((o) => o.code === "free")?.count).toBe(1);
+    expect(options.find((o) => o.code === "hard")?.count).toBe(0);
   });
 });
 

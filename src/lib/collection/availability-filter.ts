@@ -75,6 +75,7 @@ export function buildAvailabilityOptions(
     match: filters.match,
     types: filters.types,
     setCodes: filters.setCodes,
+    quick: filters.quick,
   });
 
   const counts = new Map<AvailabilityState, number>(AVAILABILITY_STATES.map((s) => [s, 0]));
