@@ -58,7 +58,7 @@ describe("FirstRunFriendsRow", () => {
     fireEvent.click(press);
     // Through `Making a link…`, as the /friends head's press.
     expect(press.textContent).toContain(socialCopy.page.invitePending);
-    const dialog = await screen.findByRole("dialog", { name: "Add a friend" });
+    const dialog = await screen.findByRole("dialog", { name: socialCopy.page.invite });
     expect(dialog.getAttribute("data-url")).toBe("https://x/friend/t9");
     expect(actions.createInviteAction).toHaveBeenCalledTimes(1);
   });
@@ -77,7 +77,7 @@ describe("FirstRunFriendsRow", () => {
     render(<FirstRunFriendsRow {...props()} />);
     fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${c.title}`) }));
     expect(await screen.findByText(socialCopy.invites.tooMany)).toBeTruthy();
-    expect(screen.queryByRole("dialog", { name: "Add a friend" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: socialCopy.page.invite })).toBeNull();
   });
 
   it("C2: a link open reads its time left, and the row's press is Show on that link", () => {
@@ -90,7 +90,7 @@ describe("FirstRunFriendsRow", () => {
     expect(press.textContent).toContain(socialCopy.invites.show);
     expect(row(container).querySelector(".rotate-45")).toBeTruthy(); // the diamond
     fireEvent.click(press);
-    expect(screen.getByRole("dialog", { name: "Add a friend" }).getAttribute("data-url")).toMatch(/\/t1$/);
+    expect(screen.getByRole("dialog", { name: socialCopy.page.invite }).getAttribute("data-url")).toMatch(/\/t1$/);
     expect(actions.createInviteAction).not.toHaveBeenCalled();
   });
 
@@ -128,7 +128,7 @@ describe("FirstRunFriendsRow", () => {
     fireEvent.click(screen.getByRole("button", { name: c.rowAria("6 days left") }));
     const onEnded = watch.useInviteWatch.mock.calls.at(-1)![1] as (e: unknown[]) => void;
     act(() => { onEnded([{ token: "t1", friend: { publicId: "pub-Colin", displayName: named("Colin") } }]); });
-    expect(screen.queryByRole("dialog", { name: "Add a friend" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: socialCopy.page.invite })).toBeNull();
     // The redraw lands the friend: the row is done, and the toast survives the change of state.
     rerender(<FirstRunFriendsRow {...props({ friends: [friend("Colin")] })} />);
     expect(screen.getByRole("link", { name: plain(c.doneAria(socialCopy.page.accepted("Colin"))) })).toBeTruthy();
@@ -141,7 +141,7 @@ describe("FirstRunFriendsRow", () => {
     actions.createInviteAction.mockResolvedValue({ ok: true, token: "t9", url: "https://x/friend/t9", expiresAt: inDays(7) });
     const { rerender } = render(<FirstRunFriendsRow {...props()} />);
     fireEvent.click(screen.getByRole("button", { name: new RegExp(`^${c.title}`) }));
-    await screen.findByRole("dialog", { name: "Add a friend" });
+    await screen.findByRole("dialog", { name: socialCopy.page.invite });
     // The made link lands while its dialog is open: the C1 press is gone, the row is C2's Show.
     rerender(<FirstRunFriendsRow {...props({ links: [link(inDays(7), "t9")] })} />);
     const show = screen.getByRole("button", { name: c.rowAria("7 days left") });

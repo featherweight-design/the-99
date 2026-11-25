@@ -9,6 +9,7 @@ import { toolLanding } from "../../lib/discovery/tools";
 import type { MomentId } from "../../lib/moments/registry";
 import type { TargetId } from "../../lib/discovery/targets";
 import { VISIT_KEY } from "../../lib/moments/visit";
+import { swapToolsCopy } from "../../lib/copy/swap-tools";
 
 const spendMomentAction = vi.fn(async (id: unknown) => void id);
 vi.mock("../../app/moments-actions", () => ({ spendMomentAction: (id: unknown) => spendMomentAction(id) }));
@@ -412,7 +413,7 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
   }
   function Later() {
     const [on, setOn] = useState(false);
-    return on ? <Anchor id="find-a-deck" name="Find a deck for it" /> : <button type="button" onClick={() => setOn(true)}>open a card</button>;
+    return on ? <Anchor id="find-a-deck" name={swapToolsCopy.fits.callout} /> : <button type="button" onClick={() => setOn(true)}>open a card</button>;
   }
   const mountDeferred = (children: React.ReactNode) =>
     render(
@@ -434,7 +435,7 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     expect(spendMomentAction).not.toHaveBeenCalled();
     act(() => screen.getByRole("button", { name: "open a card" }).click());
     await flush();
-    const door = screen.getByRole("button", { name: "Find a deck for it" });
+    const door = screen.getByRole("button", { name: swapToolsCopy.fits.callout });
     expect(door.hasAttribute(HALO_ATTR)).toBe(true);
     expect(screen.queryByRole("note")).toBeNull();
     expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
@@ -492,7 +493,7 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
       <TargetsProvider>
         <MomentsProvider live={["find-a-deck"]} spent={[]}>
           <StaleDeferred />
-          <Anchor id="find-a-deck" name="Find a deck for it" />
+          <Anchor id="find-a-deck" name={swapToolsCopy.fits.callout} />
         </MomentsProvider>
       </TargetsProvider>,
     );
@@ -523,7 +524,7 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     expect(window.location.search).toBe("?avail=free");
     act(() => screen.getByRole("button", { name: "open a card" }).click());
     await flush();
-    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(true);
+    expect(screen.getByRole("button", { name: swapToolsCopy.fits.callout }).hasAttribute(HALO_ATTR)).toBe(true);
     expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
   });
 
@@ -536,7 +537,7 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     at("?tool=wishlist");
     act(() => screen.getByRole("button", { name: "open a card" }).click());
     await flush();
-    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(false);
+    expect(screen.getByRole("button", { name: swapToolsCopy.fits.callout }).hasAttribute(HALO_ATTR)).toBe(false);
     expect(spendMomentAction).not.toHaveBeenCalled();
     expect(window.location.search).toBe("?tool=wishlist");
   });
@@ -560,7 +561,7 @@ describe("useToolLanding, deferred (Find a deck, R2 gap 11)", () => {
     await flush();
     act(() => screen.getByRole("button", { name: "open a card" }).click());
     await flush();
-    expect(screen.getByRole("button", { name: "Find a deck for it" }).hasAttribute(HALO_ATTR)).toBe(true);
+    expect(screen.getByRole("button", { name: swapToolsCopy.fits.callout }).hasAttribute(HALO_ATTR)).toBe(true);
     expect(spendMomentAction).toHaveBeenCalledWith("find-a-deck");
   });
 });

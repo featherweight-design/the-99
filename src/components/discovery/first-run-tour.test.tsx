@@ -2,6 +2,9 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TargetId } from "../../lib/discovery/targets";
 import type { TourCredits } from "../../lib/discovery/tour-steps";
+import { pwaInstallCopy } from "../../lib/copy/pwa-install";
+import { creatorNoteCopy } from "../../lib/copy/discovery";
+import { tourCopy } from "../../lib/copy/discovery";
 
 const spend = vi.fn(() => Promise.resolve({ claimed: true }));
 let account: string | null = "user_a";
@@ -157,7 +160,7 @@ describe("FirstRunTour", () => {
     act(() => vi.advanceTimersByTime(ARRIVE_MS - 50));
     expect(screen.queryByRole("dialog")).toBeNull();
     await arrive();
-    expect(card()).toHaveAccessibleName("Start with what you own");
+    expect(card()).toHaveAccessibleName(tourCopy.steps.collection.title);
     expect(spend).toHaveBeenCalledTimes(1);
     // The visit is taken under the shared visit lock, a microtask later.
     await act(async () => {});
@@ -205,7 +208,7 @@ describe("FirstRunTour", () => {
     render(<Home />);
     screen.getByRole("button", { name: "Upload" }).focus();
     await arrive();
-    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    fireEvent.click(within(card()).getByRole("button", { name: tourCopy.skip }));
     expect(screen.getByRole("button", { name: "Upload" })).toHaveFocus();
   });
 
@@ -249,26 +252,26 @@ describe("FirstRunTour", () => {
     render(<Home />);
     await arrive();
     expect(screen.getByTestId("app").closest("[inert]")).not.toBeNull();
-    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    fireEvent.click(within(card()).getByRole("button", { name: tourCopy.skip }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByTestId("app").closest("[inert]")).toBeNull();
   });
 
   it("with the sheet's rows, walks seven: the Credits stop is fifth, lists the rows and points at the strip", async () => {
     const credits: TourCredits = [
-      { id: "overview", name: "Overview", short: "each", cost: "1 credit each" },
-      { id: "upgrade", name: "Upgrade this precon", short: "2 per run", cost: "2 credits per run" },
+      { id: "overview", name: "Overview", short: "each", cost: "Fixture cost" },
+      { id: "upgrade", name: "Fixture upgrade", short: "fixture short", cost: "Fixture cost two" },
     ];
     render(<Home credits={credits} />);
     await arrive();
-    expect(within(card()).getByText("Seven stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
+    expect(within(card()).getByText(tourCopy.steps.collection.footSeven)).toBeInTheDocument();
     for (let i = 0; i < 4; i++) next();
     expect(within(card()).getByText("5 of 7 · Credits")).toBeInTheDocument();
     expect(card().getAttribute("data-tour-card")).toBe("credits");
-    expect(within(card()).getByText("Where your credits go")).toBeInTheDocument();
+    expect(within(card()).getByText(tourCopy.steps.credits.title)).toBeInTheDocument();
     const rows = within(card()).getAllByRole("listitem");
-    expect(rows.map((r) => r.textContent)).toEqual(["Overvieweach1 credit each", "Upgrade this precon2 per run2 credits per run"]);
-    expect(within(card()).getByText("The full list: Where they work, on this line.")).toBeInTheDocument();
+    expect(rows.map((r) => r.textContent)).toEqual(["OvervieweachFixture cost", "Fixture upgradefixture shortFixture cost two"]);
+    expect(within(card()).getByText(tourCopy.steps.credits.foot)).toBeInTheDocument();
     next();
     expect(within(card()).getByText("6 of 7 · Your look")).toBeInTheDocument();
   });
@@ -276,8 +279,8 @@ describe("FirstRunTour", () => {
   it("without rows it keeps the shipped six and its foot", async () => {
     render(<Home />);
     await arrive();
-    expect(within(card()).getByText("Six stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
-    expect(screen.queryByText("Where your credits go")).toBeNull();
+    expect(within(card()).getByText(tourCopy.steps.collection.foot)).toBeInTheDocument();
+    expect(screen.queryByText(tourCopy.steps.credits.title)).toBeNull();
   });
 
   it("walks six steps, Back and Next, and Finish ends it", async () => {
@@ -344,7 +347,7 @@ describe("FirstRunTour", () => {
     await arrive();
     for (let i = 0; i < 5; i++) next();
     expect(card()).not.toHaveTextContent("one line on Home says so");
-    expect(card()).toHaveTextContent("Read the note ›");
+    expect(card()).toHaveTextContent(tourCopy.steps.whatsNew.notePress);
     expect(document.querySelector("[data-tour-ring]")).toBeNull();
   });
 
@@ -352,16 +355,16 @@ describe("FirstRunTour", () => {
     render(<Home />);
     await arrive();
     for (let i = 0; i < 5; i++) next();
-    fireEvent.click(within(card()).getByRole("button", { name: "Read the note ›" }));
+    fireEvent.click(within(card()).getByRole("button", { name: tourCopy.steps.whatsNew.notePress }));
     const note = screen.getByRole("dialog");
-    expect(note).toHaveAccessibleName("A note from the creator");
+    expect(note).toHaveAccessibleName(creatorNoteCopy.title);
     expect(document.querySelector("[data-tour-card]")).toBeNull();
   });
 
   it("never runs again in this tab once spent, when Back restores a Home whose payload still says it is due", async () => {
     const first = render(<Home />);
     await arrive();
-    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    fireEvent.click(within(card()).getByRole("button", { name: tourCopy.skip }));
     first.unmount();
     render(<Home />);
     await arrive();
@@ -400,7 +403,7 @@ describe("FirstRunTour", () => {
   it("still runs for another account signed in in the same tab", async () => {
     const first = render(<Home />);
     await arrive();
-    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    fireEvent.click(within(card()).getByRole("button", { name: tourCopy.skip }));
     first.unmount();
     account = "user_b";
     render(<Home />);
@@ -411,7 +414,7 @@ describe("FirstRunTour", () => {
   it("runs again in that same tab when asked for (`?tour=1`, R3·2): the spent mark holds off only the unasked remount", async () => {
     const first = render(<Home />);
     await arrive();
-    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    fireEvent.click(within(card()).getByRole("button", { name: tourCopy.skip }));
     first.unmount();
     render(
       <TargetsProvider>
@@ -475,12 +478,12 @@ describe("FirstRunTour taken again on a dashboard (R3·2)", () => {
     await arrive();
     expect(card()).toHaveTextContent("Drop in a new file whenever it changes.");
     next();
-    expect(card()).toHaveTextContent("Commanders, on someone else’s cards");
+    expect(card()).toHaveTextContent(tourCopy.steps.commanders.replayPicture);
     expect(card()).not.toHaveTextContent("once your cards are in");
     next();
-    expect(card()).toHaveTextContent("A deck, built by someone else");
+    expect(card()).toHaveTextContent(tourCopy.steps.decks.replayPicture);
     next();
-    expect(card()).toHaveTextContent("Shopping, inside every deck");
+    expect(card()).toHaveTextContent(tourCopy.steps.buying.picture);
   });
 
   it("keeps the once-your-cards-are-in copy while the shell's nav is locked (decks, no cards)", async () => {
@@ -488,10 +491,10 @@ describe("FirstRunTour taken again on a dashboard (R3·2)", () => {
     await arrive();
     expect(card()).toHaveTextContent("Drop in a file from ManaBox");
     next();
-    expect(card()).toHaveTextContent("Commanders, once your cards are in");
+    expect(card()).toHaveTextContent(tourCopy.steps.commanders.picture);
     expect(card()).toHaveTextContent("It opens once your cards are in.");
     next();
-    expect(card()).toHaveTextContent("A deck, once you build one");
+    expect(card()).toHaveTextContent(tourCopy.steps.decks.picture);
   });
 
   it("is the same six stops, spent through the same action (which writes only while the stamp is null)", async () => {
@@ -508,12 +511,12 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
   it("comes last when the header's slot draws, lights it, and marks the fallback row seen", async () => {
     render(<Home install="safari" />);
     await arrive();
-    expect(within(card()).getByText("Seven stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
+    expect(within(card()).getByText(tourCopy.steps.collection.footSeven)).toBeInTheDocument();
     for (let i = 0; i < 6; i++) next();
     expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();
-    expect(within(card()).getByText("Play it from your home screen")).toBeInTheDocument();
+    expect(within(card()).getByText(tourCopy.steps.install.title)).toBeInTheDocument();
     expect(within(card()).getByText(/it can send the alerts you choose/)).toBeInTheDocument();
-    expect(within(card()).getByText("Select the button up top now, or any time. Its ✕ hides it.")).toBeInTheDocument();
+    expect(within(card()).getByText(tourCopy.steps.install.foot)).toBeInTheDocument();
     expect(within(card()).getByText("Pointing at the Install button.")).toBeInTheDocument();
     expect(localStorage.getItem(INSTALL_ROW_KEY)).toBe("seen");
     // Finish only closes the tour: the slot keeps its own press.
@@ -526,10 +529,10 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
   });
 
   it("counts eight with the Credits stop too, and gives Android its own body", async () => {
-    const credits: TourCredits = [{ id: "overview", name: "Overview", short: "each", cost: "1 credit each" }];
+    const credits: TourCredits = [{ id: "overview", name: "Overview", short: "each", cost: "Fixture cost" }];
     render(<Home credits={credits} install="android" />);
     await arrive();
-    expect(within(card()).getByText("Eight stops · about a minute · ✕ skips the tour")).toBeInTheDocument();
+    expect(within(card()).getByText(tourCopy.steps.collection.footEight)).toBeInTheDocument();
     for (let i = 0; i < 7; i++) next();
     expect(within(card()).getByText("8 of 8 · Install")).toBeInTheDocument();
     expect(within(card()).getByText(/Your phone asks once\./)).toBeInTheDocument();
@@ -539,7 +542,7 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     render(<Home install="chrome" />);
     await arrive();
     for (let i = 0; i < 6; i++) next();
-    const press = within(card()).getByRole("button", { name: "Install The 99" });
+    const press = within(card()).getByRole("button", { name: pwaInstallCopy.slotAria });
     fireEvent.click(press);
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(installPress).not.toHaveBeenCalled();
@@ -555,7 +558,7 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     expect(installState().tour).toBe(true);
     await arrive();
     expect(installState().tour).toBe(true);
-    fireEvent.click(within(card()).getByRole("button", { name: "Skip the tour" }));
+    fireEvent.click(within(card()).getByRole("button", { name: tourCopy.skip }));
     expect(installState().tour).toBe(false);
     expect(localStorage.getItem(INSTALL_ROW_KEY)).toBeNull();
   });
@@ -564,7 +567,7 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     const { rerender } = render(<Home install="safari" />);
     await arrive();
     for (let i = 0; i < 6; i++) next();
-    expect(within(card()).getByRole("button", { name: "Install The 99" })).toBeInTheDocument();
+    expect(within(card()).getByRole("button", { name: pwaInstallCopy.slotAria })).toBeInTheDocument();
     rerender(<Home />);
     await act(async () => {
       vi.advanceTimersByTime(20);
@@ -573,7 +576,7 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     // Not the centred What's new fallback: the lit sentence and the body stay.
     expect(within(card()).getByText("Pointing at the Install button.")).toBeInTheDocument();
     expect(within(card()).getByText(/it can send the alerts you choose/)).toBeInTheDocument();
-    expect(within(card()).queryByRole("button", { name: "Install The 99" })).toBeNull();
+    expect(within(card()).queryByRole("button", { name: pwaInstallCopy.slotAria })).toBeNull();
     expect(document.querySelector("[data-tour-ring]")).toBeNull();
   });
 
@@ -581,7 +584,7 @@ describe("FirstRunTour's Install stop (install onboarding)", () => {
     render(<Home install="safari" />);
     await arrive();
     for (let i = 0; i < 6; i++) next();
-    fireEvent.click(within(card()).getByRole("button", { name: "Dismiss install prompt" }));
+    fireEvent.click(within(card()).getByRole("button", { name: pwaInstallCopy.dismissAria }));
     expect(installDismiss).toHaveBeenCalledTimes(1);
     expect(installPress).not.toHaveBeenCalled();
     expect(within(card()).getByText("7 of 7 · Install")).toBeInTheDocument();

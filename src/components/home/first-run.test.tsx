@@ -1,5 +1,8 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { importReviewCopy } from "../../lib/copy/import-review";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 // Step 1 reaches the upload flow through ReplaceFlow, which calls useRouter at
 // render to send a confirmed upload on to /collection. Outside an app-router
@@ -33,7 +36,7 @@ const { FirstRunChecklist } = await import("./first-run");
 
 // Add cards by hand is step 1's ways group's third row (no-collection entry S1), not a button beside Paste.
 const addByHand = () =>
-  within(screen.getByRole("group", { name: "No file? Start another way" })).getByRole("button", { name: /Add cards by hand/ });
+  within(screen.getByRole("group", { name: collectionEditCopy.ways.kicker })).getByRole("button", { name: /Add cards by hand/ });
 
 describe("FirstRunChecklist · Add cards by hand (collection edit B0c)", () => {
   it("opens the sheet from the ways group", () => {
@@ -67,13 +70,13 @@ describe("FirstRunChecklist", () => {
 
   it("greets without a name", () => {
     render(<FirstRunChecklist />);
-    expect(screen.getByRole("heading", { name: "Welcome to The 99" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: refreshCopy.firstRun.heading })).toBeInTheDocument();
   });
 
   it("says what each locked step is waiting for", () => {
     render(<FirstRunChecklist />);
-    expect(screen.getByText("Opens once your cards are in")).toBeInTheDocument();
-    expect(screen.getByText("Opens once you pick a commander")).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.firstRun.step2Locked)).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.firstRun.step3Locked)).toBeInTheDocument();
   });
 
   it("names each locked step in the accessibility tree, not just on a div", () => {
@@ -92,7 +95,7 @@ describe("FirstRunChecklist", () => {
 
   it("offers both entries into step 1", () => {
     render(<FirstRunChecklist />);
-    expect(screen.getByRole("button", { name: "Upload a CSV" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: refreshCopy.firstRun.uploadCsv })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Paste a list" })).toBeInTheDocument();
   });
 
@@ -100,7 +103,7 @@ describe("FirstRunChecklist", () => {
     // First-run rulings 1 and 2 (2026-09-28): step 1 is the collection alone, and step 2
     // is now the only place a first-run player learns import exists.
     render(<FirstRunChecklist />);
-    expect(screen.getByText("Pick a commander or import a deck")).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.firstRun.step2Title)).toBeInTheDocument();
     expect(screen.queryByText("Already have a deck elsewhere?")).toBeNull();
     expect(screen.queryByRole("link", { name: "Import a deck" })).toBeNull();
   });
@@ -118,14 +121,14 @@ describe("FirstRunChecklist", () => {
   // `probe:onboarding` says it lands. Prod walk 2026-09-28, items 3, 9 and 10.
   it("pins the card fan to the top of step 1 from sm, not the card's middle", () => {
     render(<FirstRunChecklist />);
-    const card = screen.getByRole("button", { name: "Upload a CSV" }).closest(".rounded-\\[14px\\]");
+    const card = screen.getByRole("button", { name: refreshCopy.firstRun.uploadCsv }).closest(".rounded-\\[14px\\]");
     expect(card?.className).toContain("sm:items-start");
   });
 
   it("does not let the step card's centring reach the paste panel", () => {
     render(<FirstRunChecklist />);
     fireEvent.click(screen.getByRole("button", { name: "Paste a list" }));
-    const textarea = screen.getByRole("textbox", { name: "Paste your card list" });
+    const textarea = screen.getByRole("textbox", { name: importReviewCopy.entry.pasteAria });
     // The nearest alignment rule above the textarea must be the flow's own left-aligned,
     // full-width wrapper, not the card's `text-center` / `items-center`.
     const wrapper = textarea.closest(".text-left, .text-center");
@@ -159,13 +162,13 @@ describe("FirstRunChecklist", () => {
     });
     const { container } = render(<FirstRunChecklist />);
     fireEvent.click(screen.getAllByRole("button", { name: /^Paste a list/ })[0]);
-    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), {
+    fireEvent.change(screen.getByRole("textbox", { name: importReviewCopy.entry.pasteAria }), {
       target: { value: "3 Sol Ring" },
     });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
 
     expect(await screen.findByText("Reviewing · pasted list · 1,313 rows")).toBeInTheDocument();
-    expect(screen.queryByText("Review import")).toBeNull();
+    expect(screen.queryByText(importReviewCopy.review.titlePhone)).toBeNull();
     const card = container.querySelector("[data-reviewing]");
     expect(card?.className.split(/\s+/)).toContain("items-start");
 
@@ -180,10 +183,10 @@ describe("FirstRunChecklist", () => {
   it("draws the lock's page line under the heading, from md only", () => {
     const { container } = render(<FirstRunChecklist />);
     const line = container.querySelector<HTMLElement>("[data-lock-page-line]")!;
-    expect(line).toHaveTextContent("Commanders, Discover and Decks open once your cards are in.");
+    expect(line).toHaveTextContent(refreshCopy.firstRun.lock.pageLineOpen);
     expect(line.className).toContain("hidden");
     expect(line.className).toContain("md:flex");
-    const heading = screen.getByRole("heading", { name: "Welcome to The 99" });
+    const heading = screen.getByRole("heading", { name: refreshCopy.firstRun.heading });
     expect(heading.nextElementSibling).toBe(line);
     const lock = line.querySelector<SVGElement>("svg[data-lock-size]")!;
     expect(lock.dataset.lockSize).toBe("lg");
@@ -199,7 +202,7 @@ describe("FirstRunChecklist", () => {
 
   it("marks Upload a CSV as the target of the nav's Go to step 1", () => {
     render(<FirstRunChecklist />);
-    expect(screen.getByRole("button", { name: "Upload a CSV" })).toHaveAttribute("data-step1-upload");
+    expect(screen.getByRole("button", { name: refreshCopy.firstRun.uploadCsv })).toHaveAttribute("data-step1-upload");
   });
 });
 
@@ -218,7 +221,7 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     fireEvent.click(addByHand());
     expect(sheet?.scan).toBe(false);
     act(() => sheet!.onClose());
-    fireEvent.click(within(screen.getByRole("group", { name: "No file? Start another way" })).getByRole("button", { name: /Scan your cards/ }));
+    fireEvent.click(within(screen.getByRole("group", { name: collectionEditCopy.ways.kicker })).getByRole("button", { name: /Scan your cards/ }));
     expect(sheet).toMatchObject({ scan: true, initialScan: true });
   });
 
@@ -234,7 +237,7 @@ describe("FirstRunChecklist · the foot of the steps", () => {
     const { unmount } = render(<FirstRunChecklist tour />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-credits", "none");
     unmount();
-    render(<FirstRunChecklist tour tourCredits={[{ id: "overview", name: "Overview", short: "each", cost: "1 credit each" }]} />);
+    render(<FirstRunChecklist tour tourCredits={[{ id: "overview", name: "Overview", short: "each", cost: "Fixture cost" }]} />);
     expect(screen.getByTestId("tour")).toHaveAttribute("data-credits", "1");
   });
 
@@ -269,8 +272,8 @@ describe("FirstRunChecklist · Choose your news (menu and Home PR 6)", () => {
       unmount();
       return text;
     };
-    expect(line({})).toBe("Commanders, Discover and Decks open once your cards are in.");
-    expect(line({ commandersPlace: true })).toBe("Commanders and Decks open once your cards are in.");
+    expect(line({})).toBe(refreshCopy.firstRun.lock.pageLineOpen);
+    expect(line({ commandersPlace: true })).toBe(refreshCopy.firstRun.lock.pageLineOpenPlace);
   });
 });
 

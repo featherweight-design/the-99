@@ -6,6 +6,7 @@ vi.mock("../social/use-invite-watch", () => ({ useInviteWatch: vi.fn() }));
 import { Dashboard } from "./dashboard";
 import { named } from "../../lib/person-name/mint";
 import type { DeckListItem } from "../../lib/decks/read";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 // `inUse` is a Map and `ready` a slice rather than a list, because the sections
 // that read them (tasks 15–17) take exactly what the loader assembled once.
@@ -23,7 +24,7 @@ const BASE = {
 describe("Dashboard header", () => {
   it("greets without a name and prints both kicker figures", () => {
     render(<Dashboard {...BASE} />);
-    expect(screen.getByRole("heading", { name: "Welcome back" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: refreshCopy.home.greeting })).toBeInTheDocument();
     expect(screen.getByText("1,284 cards · read 2 days ago")).toBeInTheDocument();
   });
 
@@ -34,7 +35,7 @@ describe("Dashboard header", () => {
 
   it("sends Update collection to the replace flow", () => {
     render(<Dashboard {...BASE} />);
-    expect(screen.getByRole("link", { name: "Update collection" })).toHaveAttribute(
+    expect(screen.getByRole("link", { name: refreshCopy.home.updateCollection })).toHaveAttribute(
       "href",
       "/collection/replace",
     );
@@ -44,7 +45,7 @@ describe("Dashboard header", () => {
 describe("Dashboard commitments", () => {
   it("draws the card's Shop all decks link to the cart", () => {
     render(<Dashboard {...BASE} />);
-    expect(screen.getByRole("link", { name: "Shop all decks" })).toHaveAttribute("href", "/decks/shopping");
+    expect(screen.getByRole("link", { name: refreshCopy.home.shopAllDecks })).toHaveAttribute("href", "/decks/shopping");
   });
 });
 
@@ -147,7 +148,7 @@ describe("Dashboard body", () => {
   // block has one order, and a dropdown would imply it is a list.
   it("captions the block with its order", () => {
     render(<Dashboard {...BASE} decks={[deck({ id: "a", name: "Alpha" })]} />);
-    expect(screen.getByText("last touched")).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.home.resumeSortCaption)).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /sort/i })).toBeNull();
   });
 
@@ -156,7 +157,7 @@ describe("Dashboard body", () => {
     expect(screen.queryByText("Commitments")).toBeNull();
     // A card of three zeroes after a failed query is a lie, so nothing stands
     // in for it — not a zero, not a placeholder.
-    expect(screen.queryByRole("link", { name: "Review commitments" })).toBeNull();
+    expect(screen.queryByRole("link", { name: refreshCopy.home.reviewCommitments })).toBeNull();
   });
 
   it("draws the Commitments figures against the collection's own total", () => {
@@ -172,8 +173,8 @@ describe("Dashboard at zero decks", () => {
 
   it("puts the ways in where the resume block would be", () => {
     render(<Dashboard {...BASE} decks={[]} />);
-    expect(screen.getByRole("heading", { name: "No decks yet" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Browse commanders" })).toHaveAttribute("href", "/commanders");
+    expect(screen.getByRole("heading", { name: refreshCopy.zero.decksHeading })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: refreshCopy.zero.browseCommanders })).toHaveAttribute("href", "/commanders");
     expect(screen.getByRole("link", { name: "Import a deck" })).toHaveAttribute("href", "/decks/import");
     expect(screen.queryByText(/Pick up where you left off/i)).toBeNull();
   });
@@ -195,14 +196,14 @@ describe("Dashboard at zero decks", () => {
   it("makes Browse commanders the fill and draws the header's New deck as a ghost", () => {
     render(<Dashboard {...BASE} decks={[]} />);
     const fills = screen.getAllByRole("link").filter(filled);
-    expect(fills.map((a) => a.textContent)).toEqual(["Browse commanders"]);
-    expect(filled(screen.getByRole("link", { name: "New deck" }))).toBe(false);
+    expect(fills.map((a) => a.textContent)).toEqual([refreshCopy.zero.browseCommanders]);
+    expect(filled(screen.getByRole("link", { name: refreshCopy.home.newDeck }))).toBe(false);
   });
 
   it("gives New deck the fill back, and drops the section, once a deck exists", () => {
     render(<Dashboard {...BASE} decks={[deck()]} />);
-    expect(filled(screen.getByRole("link", { name: "New deck" }))).toBe(true);
-    expect(screen.queryByRole("heading", { name: "No decks yet" })).toBeNull();
+    expect(filled(screen.getByRole("link", { name: refreshCopy.home.newDeck }))).toBe(true);
+    expect(screen.queryByRole("heading", { name: refreshCopy.zero.decksHeading })).toBeNull();
   });
 });
 
@@ -214,25 +215,25 @@ describe("Dashboard at zero cards with decks (no-collection entry S12)", () => {
   it("counts the decks in the kicker, and makes Add your cards the header's one action", () => {
     render(<Dashboard {...ZERO} noCards />);
     expect(screen.getByText("0 cards · 1 deck")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Add your cards" })).toHaveAttribute("href", "/collection");
-    expect(screen.queryByRole("link", { name: "Update collection" })).toBeNull();
-    expect(screen.queryByRole("link", { name: "New deck" })).toBeNull();
+    expect(screen.getByRole("link", { name: refreshCopy.home.addYourCards })).toHaveAttribute("href", "/collection");
+    expect(screen.queryByRole("link", { name: refreshCopy.home.updateCollection })).toBeNull();
+    expect(screen.queryByRole("link", { name: refreshCopy.home.newDeck })).toBeNull();
   });
 
   it("draws the lock's page line on desktop, and keeps the resume row that reaches the decks", () => {
     const { container } = render(<Dashboard {...ZERO} decks={[deck(), deck({ id: "d2", name: "Breya" })]} noCards />);
     expect(screen.getByText("0 cards · 2 decks")).toBeInTheDocument();
     const line = container.querySelector("[data-lock-page-line]")!;
-    expect(line).toHaveTextContent("Commanders, Discover and Decks open once your cards are in.");
+    expect(line).toHaveTextContent(refreshCopy.firstRun.lock.pageLineOpen);
     expect(line.className.split(/\s+/)).toEqual(expect.arrayContaining(["hidden", "md:flex"]));
-    expect(screen.queryByRole("heading", { name: "Ready to build" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: refreshCopy.home.readyHeading })).toBeNull();
     expect(screen.getAllByRole("link", { name: /Atraxa/ }).length).toBeGreaterThan(0);
   });
 
   it("is the shipped header without the flag, at zero cards too", () => {
     const { container } = render(<Dashboard {...ZERO} />);
-    expect(screen.getByRole("link", { name: "Update collection" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "Add your cards" })).toBeNull();
+    expect(screen.getByRole("link", { name: refreshCopy.home.updateCollection })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: refreshCopy.home.addYourCards })).toBeNull();
     expect(container.querySelector("[data-lock-page-line]")).toBeNull();
   });
 });
@@ -304,7 +305,7 @@ describe("Dashboard, Rule 0's table cards", () => {
       />,
     );
     const card = screen.getByTestId("home-table-card");
-    expect(before(screen.getByRole("heading", { name: "Welcome back" }), card)).toBe(true);
+    expect(before(screen.getByRole("heading", { name: refreshCopy.home.greeting }), card)).toBe(true);
     for (const id of ["welcome", "signature"]) expect(before(card, screen.getByTestId(id))).toBe(true);
     // The credits, then the signature ask (Q10 A).
     expect(before(screen.getByTestId("welcome"), screen.getByTestId("signature"))).toBe(true);

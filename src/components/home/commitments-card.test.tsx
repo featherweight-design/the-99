@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { CommitmentsCard } from "./commitments-card";
+import { refreshCopy } from "../../lib/copy/refresh";
 
 const shopping = (copies: number, cents: number) => ({
   byDeck: new Map(),
@@ -62,7 +63,7 @@ describe("CommitmentsCard", () => {
         totalCards={0}
       />,
     );
-    expect(screen.getByRole("link", { name: "Review commitments" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: refreshCopy.home.reviewCommitments })).toBeInTheDocument();
   });
 
   it("reviews the over-committed cards alone, not the merely sleeved ones (H2)", () => {
@@ -73,7 +74,7 @@ describe("CommitmentsCard", () => {
         totalCards={1284}
       />,
     );
-    expect(screen.getByRole("link", { name: "Review commitments" }).getAttribute("href")).toBe(
+    expect(screen.getByRole("link", { name: refreshCopy.home.reviewCommitments }).getAttribute("href")).toBe(
       "/collection?avail=over",
     );
   });
@@ -83,8 +84,8 @@ describe("CommitmentsCard", () => {
     render(
       <CommitmentsCard commitments={{ inUse: 1, overCommitted: 0 }} shopping={shopping(2, 500)} totalCards={10} />,
     );
-    const shop = screen.getByRole("link", { name: "Shop all decks" });
-    const review = screen.getByRole("link", { name: "Review commitments" });
+    const shop = screen.getByRole("link", { name: refreshCopy.home.shopAllDecks });
+    const review = screen.getByRole("link", { name: refreshCopy.home.reviewCommitments });
     expect(shop.getAttribute("href")).toBe("/decks/shopping");
     expect(shop.parentElement).toBe(review.parentElement);
     expect(review.parentElement!.hasAttribute("data-two")).toBe(true);
