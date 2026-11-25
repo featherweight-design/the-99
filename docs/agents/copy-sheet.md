@@ -22,7 +22,7 @@ Columns: `key` (`src/lib/copy/<file>#path.to.leaf`), `file`, `kind` (`text`, `br
 
 ## What the import refuses (every bad row at once, with its row number; nothing is applied)
 
-Placeholders that differ from the original's, an em dash (a bare `—` meaning no value is allowed), an exclamation mark, a banned tell word (`simply`, `just`, `easily`, `seamlessly`, `effortlessly`), a short list of British spellings, a length cap where the key names the kind of string (label/cta/button/chip 3 words, eyebrow 5, title/head 8; a hole counts as one word), a read-only row, a key that is not in the files, and a **stale sheet** (the row's current text no longer matches the code: export again).
+Placeholders that differ from the original's, an em dash (a bare `—` meaning no value is allowed), an exclamation mark, a short list of British spellings, a length cap where the key names the kind of string (label/cta/button/chip 3 words, eyebrow 5, title/head 8; a hole counts as one word), a read-only row, a key that is not in the files, and a **stale sheet** (the row's current text no longer matches the code: export again).
 
 ## Guards
 

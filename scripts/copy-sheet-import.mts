@@ -9,7 +9,7 @@
 // Of the commands this starts, only `git fetch`, `git push` and `gh pr create` see a token in the environment (GH_TOKEN,
 // GITHUB_TOKEN, COPY_EDIT_PR_TOKEN, GIT_CONFIG_COUNT/KEY_0/VALUE_0): the install, typecheck, lint and commit hooks run with
 // those removed, so no dependency script can read one. Any other name is not removed: the workflow sets only these.
-// A bad row (placeholders, em dash, banned word, stale sheet) fails the whole import and leaves nothing behind.
+// A bad row (placeholders, em dash, stale sheet) fails the whole import and leaves nothing behind.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
