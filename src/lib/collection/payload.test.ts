@@ -82,7 +82,7 @@ describe("loadCollectionList", () => {
     expect((await loadCollectionList("u")).cards).toEqual(back);
     const filed = [...store.values()];
     expect(filed).toHaveLength(1);
-    expect(typeof filed[0]).toBe("string");
+    expect(typeof (filed[0] as { packed: unknown }).packed).toBe("string");
     expect((await loadCollectionList("u")).cards).toEqual(back);
   });
 

@@ -136,7 +136,8 @@ describe("wantedByDecks scoping", () => {
       [{ oracleId: B, id: "d2", name: "Zed" }, { oracleId: B, id: "d1", name: "Ant" }],
       [{ id: "d1", name: "Ant", commander: B, partner: null }, { id: "d3", name: "Mid", commander: "x", partner: B }],
     );
-    h.prices.mockResolvedValue(new Map());
+    // The price-lookup mock reads `cents` off an entry; an absent entry would call the mocked module back.
+    h.prices.mockResolvedValue(new Map([[B, { cents: 5 }]]));
     const out = await loadCollectionCombos({ userId: "u", store: "manapool", side: "one" });
     expect(out.pairs[0]?.wantedBy?.map((d) => d.name)).toEqual(["Ant", "Mid", "Zed"]);
   });

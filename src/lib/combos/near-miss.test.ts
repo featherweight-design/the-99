@@ -13,6 +13,9 @@ const row = (over: Partial<PairRow>): PairRow => ({
   missing_id: over.missing_id ?? "partner-1",
   missing_name: over.missing_name ?? "Partner One",
   missing_must_be_commander: over.missing_must_be_commander ?? false,
+  ...(over.present_name !== undefined ? { present_name: over.present_name } : {}),
+  ...(over.held_deck_id !== undefined ? { held_deck_id: over.held_deck_id } : {}),
+  ...(over.held_deck_name !== undefined ? { held_deck_name: over.held_deck_name } : {}),
 });
 
 describe("bestPartnerPerCard", () => {
