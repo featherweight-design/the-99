@@ -4,6 +4,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { runInNewContext } from "node:vm";
 import { beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import { shellCopy } from "../lib/copy/shell";
 
 // `public/sw.js` run against a fake worker scope: which requests it answers, from where, and what it
 // keeps. It is plain JavaScript served as-is, so it is loaded as text rather than imported.
@@ -459,7 +460,7 @@ describe("push", () => {
 
   it("shows a generic notification for a payload it cannot read, never nothing (a silent push costs the subscription)", async () => {
     await push(null, "not json");
-    expect(showNotification).toHaveBeenCalledWith("The 99", expect.objectContaining({ body: "", tag: "the-99" }));
+    expect(showNotification).toHaveBeenCalledWith(shellCopy.brandName, expect.objectContaining({ body: "", tag: "the-99" }));
     showNotification.mockClear();
     const waits: Promise<unknown>[] = [];
     listeners.push({ data: null, waitUntil: (p: Promise<unknown>) => waits.push(p) });
