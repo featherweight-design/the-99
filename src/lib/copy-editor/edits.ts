@@ -1,7 +1,7 @@
 // The copy editor's edits: what an admin has changed in this browser and not yet submitted, the variations a line
 // edits together, and the rule check an edit must pass. The rules are the copy sheet's own (`problems()`), never a
 // second set: the same function the import runs on the server.
-import { problems, wordCap, wordCount } from "../../../scripts/lib/copy-sheet/validate.mts";
+import { fillsOf, problems, wordCap, wordCount } from "../../../scripts/lib/copy-sheet/validate.mts";
 import type { EditorRow } from "./rows";
 
 /** One edit: the row, the text it was made against (the stale check compares it with main), and the new text. */
@@ -54,9 +54,15 @@ export type Check = { problems: string[]; words: number; cap: number | undefined
 
 /** The copy sheet's refusals for a new text, and its word count with fill-ins counted as one. */
 export function check(row: EditorRow, next: string): Check {
-  // `problems` reads only `key`, `placeholders` and `readOnly`; the source span fields belong to the build step.
+  // `problems` reads only `key`, `placeholders`, `fills` and `readOnly`; the source span fields belong to the build step.
   return { problems: problems(row as unknown as Parameters<typeof problems>[0], next), words: wordCount(next), cap: wordCap(row.key).cap };
 }
 
 /** An edit is worth keeping only when it says something other than today's words. */
 export const changed = (row: EditorRow, to: string) => to !== row.text;
+
+/** The fill-ins this line may use that the text does not, in the order the line offers them: what an insert control lists. */
+export function unusedFills(row: EditorRow, text: string): string[] {
+  const used = new Set([...text.matchAll(/\{([^{}]+)\}/g)].map((m) => m[1]));
+  return fillsOf(row).filter((f) => !used.has(f));
+}

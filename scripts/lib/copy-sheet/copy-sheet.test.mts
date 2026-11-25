@@ -67,6 +67,17 @@ describe("walk", () => {
   it("makes the two words of plural() editable", () => {
     expect(by("noun").map((r) => r.text)).toEqual(["card", "cards"]);
   });
+  it("offers a function's text parameters as fill-ins, on every variation", () => {
+    expect(by("ago")[0].fills).toEqual(["t"]);
+    expect(by("count").map((r) => r.fills)).toEqual([["n"], ["n"]]);
+    expect(by("title")[0].fills).toEqual([]);
+  });
+  it("offers only parameters that print as text", () => {
+    const src = `export const p = {
+  a: (name: string, n: number, kind: "deck" | "card", maybe: string | null, xs: string[], loose, opt?: string) => \`Hi\`,
+};`;
+    expect(copyRows("src/lib/copy/p.ts", src)[0].fills).toEqual(["name", "n", "kind"]);
+  });
   it("hides a computed hole behind {h1}", () => {
     const r = by("list")[0];
     expect(r.text).toBe("Has {h1} here");
@@ -80,10 +91,27 @@ describe("walk", () => {
 describe("validate", () => {
   const row = copyRows("src/lib/copy/demo.ts", SRC).find((r) => r.key.endsWith("demo.ago"))!;
   it("accepts a clean edit", () => expect(problems(row, "Seen {t}")).toEqual([]));
-  it("rejects a lost, added or renamed placeholder", () => {
-    expect(problems(row, "Seen")).toHaveLength(1);
-    expect(problems(row, "Seen {t} {u}")[0]).toMatch(/placeholders/);
-    expect(problems(row, "Seen {x}")[0]).toMatch(/placeholders/);
+  it("lets a fill-in be dropped, moved or repeated", () => {
+    expect(problems(row, "Seen")).toEqual([]);
+    expect(problems(row, "{t}, seen")).toEqual([]);
+    expect(problems(row, "Seen {t} and {t}")).toEqual([]);
+  });
+  it("refuses a fill-in the line's code does not pass, a renamed one included", () => {
+    expect(problems(row, "Seen {t} {u}")).toEqual(["{u} is not a fill-in this line has ({t})"]);
+    expect(problems(row, "Seen {x} {y}")[0]).toMatch(/^\{x\} \{y\} are not fill-ins/);
+    const plain = copyRows("src/lib/copy/demo.ts", SRC).find((r) => r.key.endsWith("demo.title"))!;
+    expect(problems(plain, "Seen {t}")[0]).toMatch(/it has none/);
+  });
+  it("refuses a brace outside a fill-in", () => {
+    expect(problems(row, "Seen {t} }")).toEqual(["a brace that is not part of a fill-in"]);
+    expect(problems(row, "Seen { t")).toEqual(["a brace that is not part of a fill-in"]);
+  });
+  it("offers a row built before fills existed only its own placeholders", () => {
+    const { fills: _f, ...old } = row;
+    expect(problems(old as typeof row, "Seen {t}")).toEqual([]);
+    const branch = copyRows("src/lib/copy/demo.ts", SRC).find((r) => r.key.endsWith("demo.count#t1"))!;
+    const { fills: _g, ...oldBranch } = branch;
+    expect(problems(oldBranch as typeof branch, "{n} card")[0]).toMatch(/not a fill-in/);
   });
   it("rejects em dash, exclamation mark and British spelling, and allows words the copy rules discourage", () => {
     expect(problems(row, "Seen {t} — now")[0]).toMatch(/em dash/);
@@ -129,6 +157,20 @@ describe("applySheet", () => {
     const out = applySheet(sheet(root, { "demo.count#t1": "One card" }), root).files.get("src/lib/copy/demo.ts")!;
     expect(out).toContain('n === 1 ? "One card" : `Fixture ${n}`');
   });
+  it("drops a fill-in from a template", () => {
+    const root = tree({ "demo.ts": SRC });
+    const out = applySheet(sheet(root, { "demo.ago": "Seen lately" }), root).files.get("src/lib/copy/demo.ts")!;
+    expect(out).toContain("(t: string) => `Seen lately`");
+  });
+  it("turns a plain variation that gains a fill-in into a template, escaping everything a template reads", () => {
+    const root = tree({ "demo.ts": SRC });
+    const hostile = 'Pay ${n} `now` \\ \\{n} "quoted" it\'s';
+    const out = applySheet(sheet(root, { "demo.count#t1": hostile }), root).files.get("src/lib/copy/demo.ts")!;
+    const written = /n === 1 \? (`(?:[^`\\]|\\.)*`)/.exec(out)?.[1];
+    expect(written).toBeDefined();
+    // Evaluated as the source would be: every character of the edit is literal text except the fill-in.
+    expect(new Function("n", `return ${written};`)(1)).toBe('Pay $1 `now` \\ \\1 "quoted" it\'s');
+  });
   it("escapes the quote it writes inside", () => {
     const root = tree({ "demo.ts": SRC });
     const out = applySheet(sheet(root, { "demo.nested.cta": "Don't add" }), root).files.get("src/lib/copy/demo.ts")!;
@@ -136,7 +178,7 @@ describe("applySheet", () => {
   });
   it("fails every bad row at once, with row numbers, and applies none", () => {
     const root = tree({ "demo.ts": SRC });
-    const run = () => applySheet(sheet(root, { "demo.ago": "Seen", "demo.title": "Fixture title — all" }), root);
+    const run = () => applySheet(sheet(root, { "demo.ago": "Seen {x}", "demo.title": "Fixture title — all" }), root);
     expect(run).toThrow(/2 bad rows, nothing applied/);
     expect(run).toThrow(/row 2: .*demo\.title.*em dash/s);
   });

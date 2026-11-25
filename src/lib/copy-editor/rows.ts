@@ -13,6 +13,11 @@ export type EditorRow = {
   /** Today's text, fill-ins written `{name}`. */
   text: string;
   placeholders: string[];
+  /**
+   * The fill-ins a new text may use, any number of times or not at all: its own placeholders plus the function's text
+   * parameters. A rows file built before this field existed offers only `placeholders` (`fillsOf`).
+   */
+  fills?: string[];
   /** The condition that selects a branch, or the call that makes a row read-only. Empty for a plain text row. */
   context: string;
   /** Empty when editable; otherwise why the row cannot be edited here. */

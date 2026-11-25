@@ -44,6 +44,21 @@ const SENTRY_LOGGER = [
   },
 ];
 
+// A copy leaf's parameters are the fill-ins its text may use, and an editor may drop any of them from the text (the copy
+// sheet and the on-page editor allow it), so an unused parameter in a copy file is not a mistake. Only there:
+// `scripts/lib/copy-sheet/lint-scope.test.mts` fails if the exemption reaches any other file.
+// The options repeat the shared preset's (which the package does not export); the test fails if they drift.
+const copyArgs = {
+  files: ["src/lib/copy/**/*.ts"],
+  ignores: ["src/lib/copy/**/*.test.ts"],
+  rules: {
+    "@typescript-eslint/no-unused-vars": [
+      "error",
+      { args: "none", argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_", ignoreRestSiblings: true },
+    ],
+  },
+};
+
 const eslintConfig = defineConfig([
   // The shared preset: eslint-config-next's core-web-vitals and typescript configs, the rules
   // every fwd-stack project shares (unused vars with the `_` escape, type-only imports, `any` as a
@@ -56,6 +71,7 @@ const eslintConfig = defineConfig([
     "design/**",
   ]),
   ...nameRules,
+  copyArgs,
   { files: ["src/**/*.{ts,mts}"], ignores: ["src/lib/sentry/log-event.ts"], rules: { "no-restricted-syntax": ["error", ...SENTRY_LOGGER] } },
   {
     files: ["src/**/*.tsx"],
