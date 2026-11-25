@@ -43,7 +43,7 @@ describe("FoilMark", () => {
   it("is one glint for foil and etched, told apart by its name alone", () => {
     const { container } = render(<><FoilMark finish="foil" /><FoilMark finish="etched" /></>);
     expect(screen.getByRole("img", { name: "foil" })).toBeInTheDocument();
-    expect(screen.getByRole("img", { name: "etched foil" })).toBeInTheDocument();
+    expect(screen.getByRole("img", { name: foilMarkCopy.name.etched })).toBeInTheDocument();
     const paths = [...container.querySelectorAll("path")].map((p) => p.getAttribute("d"));
     expect(paths[0]).toBe(paths[1]);
   });
@@ -84,8 +84,8 @@ describe("FoilGlint", () => {
 
 describe("foilSpoken", () => {
   it("is the clause a name takes, and nothing for a card with no finish", () => {
-    expect(foilSpoken("foil")).toBe(", foil");
-    expect(foilSpoken("etched")).toBe(", etched foil");
+    expect(foilSpoken("foil")).toBe(foilMarkCopy.spoken.foil);
+    expect(foilSpoken("etched")).toBe(foilMarkCopy.spoken.etched);
     expect(foilSpoken(undefined)).toBe("");
   });
 });

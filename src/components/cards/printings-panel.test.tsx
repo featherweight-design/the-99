@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BrowsePrinting } from "../../lib/collection/browse";
 import { PrintingStrip, type StripPrinting } from "./printing-strip";
 import { panelGroups } from "./printings-panel";
+import { printingStripCopy } from "../../lib/copy/collection";
 
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
@@ -60,27 +61,27 @@ function Harness({ onSelect = vi.fn() }: { onSelect?: (x: StripPrinting) => void
 describe("the Search tile and panel", () => {
   it("draws the tile only on desktop, ahead of the thumbs, and keeps the shown thumb the one tab stop", () => {
     render(<Harness />);
-    const tile = screen.getByRole("button", { name: "Search printings" });
+    const tile = screen.getByRole("button", { name: printingStripCopy.searchTileAria });
     expect(tile.tabIndex).toBe(-1);
     expect(screen.getAllByRole("button", { pressed: true })[0].tabIndex).toBe(0);
   });
   it("is absent without the desktop flag", () => {
     render(<PrintingStrip printings={[A, B]} shownKey="a" onSelect={() => {}} onAnnounce={() => {}} cardName="X" colorIdentity={[]} />);
-    expect(screen.queryByRole("button", { name: "Search printings" })).toBeNull();
+    expect(screen.queryByRole("button", { name: printingStripCopy.searchTileAria })).toBeNull();
   });
   it("opens on the tile with focus on the panel, not the search field, and closes on the X, returning focus to the tile", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Search printings" }));
+    fireEvent.click(screen.getByRole("button", { name: printingStripCopy.searchTileAria }));
     expect(screen.getByTestId("printings-panel")).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByTestId("printings-panel"));
     expect(document.activeElement).not.toBe(screen.getByPlaceholderText("Search 4 printings by set"));
-    fireEvent.click(screen.getByRole("button", { name: "Close printings" }));
+    fireEvent.click(screen.getByRole("button", { name: printingStripCopy.panelClose }));
     expect(screen.queryByTestId("printings-panel")).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Search printings" }));
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: printingStripCopy.searchTileAria }));
   });
   it("filters by a query, counts the matches, and says so when none match", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Search printings" }));
+    fireEvent.click(screen.getByRole("button", { name: printingStripCopy.searchTileAria }));
     const field = screen.getByPlaceholderText("Search 4 printings by set");
     fireEvent.change(field, { target: { value: "beta" } });
     expect(screen.getByText("2 of 4 printings")).toBeTruthy();
@@ -90,7 +91,7 @@ describe("the Search tile and panel", () => {
   it("selects a printing without closing the panel", () => {
     const onSelect = vi.fn();
     render(<Harness onSelect={onSelect} />);
-    fireEvent.click(screen.getByRole("button", { name: "Search printings" }));
+    fireEvent.click(screen.getByRole("button", { name: printingStripCopy.searchTileAria }));
     const panel = screen.getByTestId("printings-panel");
     fireEvent.click(panel.querySelector('button[aria-label^="Beta Set, number 23"]')!);
     expect(onSelect).toHaveBeenCalledWith(expect.objectContaining({ scryfallId: "b2" }));
@@ -98,7 +99,7 @@ describe("the Search tile and panel", () => {
   });
   it("labels an owned thumb with its count and a pick with the diamond", () => {
     render(<Harness />);
-    fireEvent.click(screen.getByRole("button", { name: "Search printings" }));
+    fireEvent.click(screen.getByRole("button", { name: printingStripCopy.searchTileAria }));
     const panel = screen.getByTestId("printings-panel");
     expect(panel.textContent).toContain("BBB ×2");
     expect(panel.textContent).toContain("◆ SLD");

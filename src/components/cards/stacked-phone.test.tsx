@@ -6,7 +6,7 @@ import { useEffect } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import type { BrowseCard } from "../../lib/collection/browse";
-import { cardSheetCopy } from "../../lib/copy/card-carousel";
+import { cardSheetCopy, cardCarouselCopy, cardModalCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -31,7 +31,7 @@ const birds: BrowseCard = {
 function draw(onCloseSheet = vi.fn()) {
   return render(
     <CardDetailProvider fetchCard={async () => birds}>
-      <ModalChrome title="Game changers" closeLabel="Close game changers" onClose={onCloseSheet} width={760}>
+      <ModalChrome title={"Fixture sheet title"} closeLabel="Close game changers" onClose={onCloseSheet} width={760}>
         <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">open birds</CardDetailTrigger>
       </ModalChrome>
     </CardDetailProvider>,
@@ -60,10 +60,10 @@ describe("a card opened from a sheet, on the phone", () => {
   it("puts the way back in the ✕'s slot as `← {sheet}`, named in full, with no ✕ beside it", async () => {
     draw();
     await openFromSheet();
-    expect(pill()).toHaveTextContent("Game changers");
-    expect(pill()).toHaveAccessibleName(cardSheetCopy.back.a11y("Game changers"));
+    expect(pill()).toHaveTextContent("Fixture sheet title");
+    expect(pill()).toHaveAccessibleName(cardSheetCopy.back.a11y("Fixture sheet title"));
     expect(pill().querySelector('[aria-hidden="true"]')).toHaveTextContent("←");
-    expect(screen.queryByRole("button", { name: "Close card details" })).toBeNull();
+    expect(screen.queryByRole("button", { name: cardModalCopy.closeAria })).toBeNull();
   });
 
   it("caps the pill at 354 with no counter beside it", async () => {
@@ -157,7 +157,7 @@ describe("a card opened from the page", () => {
       </CardDetailProvider>,
     );
     await openFromSheet();
-    expect(screen.getAllByRole("button", { name: "Close card details" }).length).toBeGreaterThan(0);
+    expect(screen.getAllByRole("button", { name: cardModalCopy.closeAria }).length).toBeGreaterThan(0);
     expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
     expect(screen.getAllByTestId("fits-door").length).toBeGreaterThan(0);
   });
@@ -213,7 +213,7 @@ describe("paging keeps focus in the card", () => {
     const focused: string[] = [];
     opener.addEventListener("focus", () => focused.push("opener"));
     await act(async () => { fireEvent.click(opener); });
-    const next = screen.getAllByRole("button", { name: "Next card" })[0];
+    const next = screen.getAllByRole("button", { name: cardCarouselCopy.nextAria })[0];
     await act(async () => { fireEvent.click(next); });
     expect(document.getElementById("card-modal-title")).toHaveTextContent("Card B");
     expect(focused).toEqual([]);
@@ -229,7 +229,7 @@ describe("a list sheet over a card, on the phone (call 7)", () => {
       <CardDetailProvider fetchCard={async () => birds}>
         <ModalChrome
           title="Cheaper stand-ins"
-          closeLabel="Close cheaper stand-ins"
+          closeLabel={"Fixture close"}
           onClose={onClose}
           width={560}
           overCard={{ name: "Plateau", backAria: "Back to Plateau" }}
@@ -243,7 +243,7 @@ describe("a list sheet over a card, on the phone (call 7)", () => {
     expect(back).toHaveTextContent("Plateau");
     // At both widths now: not the desktop-only class it shipped with.
     expect(back).not.toHaveClass("hidden");
-    expect(screen.queryByRole("button", { name: "Close cheaper stand-ins" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Fixture close" })).toBeNull();
     expect(sheet.textContent).not.toContain("×");
     // At 52 over the card, as any sheet, not the retired 96.
     expect(sheet).toHaveClass("h-[calc(100%-52px)]");
@@ -317,15 +317,15 @@ describe("a sheet with its own phone name (s2)", () => {
           onClose={vi.fn()}
           width={700}
           backLabel="Core"
-          phoneBackLabel="What would have to go"
+          phoneBackLabel={"Fixture back title"}
         >
           <CardDetailTrigger oracleId="o-birds" name="Birds of Paradise">open birds</CardDetailTrigger>
         </ModalChrome>
       </CardDetailProvider>,
     );
     await openFromSheet();
-    expect(pill()).toHaveTextContent("What would have to go");
-    expect(pill()).toHaveAccessibleName(cardSheetCopy.back.a11y("What would have to go"));
+    expect(pill()).toHaveTextContent("Fixture back title");
+    expect(pill()).toHaveAccessibleName(cardSheetCopy.back.a11y("Fixture back title"));
     expect(screen.getByTestId("card-modal-back")).toHaveTextContent("Core");
   });
 });
@@ -374,7 +374,7 @@ describe("the rise and the drop (motion)", () => {
     const fetchCard = vi.fn(async (id: string) => cards[id] ?? null);
     render(
       <CardDetailProvider fetchCard={fetchCard}>
-        <ModalChrome title="Game changers" closeLabel="Close game changers" onClose={vi.fn()} width={760}>
+        <ModalChrome title={"Fixture sheet title"} closeLabel="Close game changers" onClose={vi.fn()} width={760}>
           <CardDetailTrigger oracleId="o-a" name="Card A" siblings={["o-a", "o-b"]}>open a</CardDetailTrigger>
         </ModalChrome>
       </CardDetailProvider>,
@@ -401,15 +401,15 @@ describe("the rise and the drop (motion)", () => {
     };
     render(
       <CardDetailProvider fetchCard={async (id) => cards[id] ?? null}>
-        <ModalChrome title="Game changers" closeLabel="Close game changers" onClose={vi.fn()} width={760}>
+        <ModalChrome title={"Fixture sheet title"} closeLabel="Close game changers" onClose={vi.fn()} width={760}>
           <CardDetailTrigger oracleId="o-a" name="Card A" siblings={["o-a", "o-b"]}>open a</CardDetailTrigger>
         </ModalChrome>
       </CardDetailProvider>,
     );
     await act(async () => { fireEvent.click(screen.getByText("open a")); });
     expect(cardDialog()).toHaveClass("anim-stack-rise");
-    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Next card" })[0]); });
-    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: "Previous card" })[0]); });
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: cardCarouselCopy.nextAria })[0]); });
+    await act(async () => { fireEvent.click(screen.getAllByRole("button", { name: cardCarouselCopy.prevAria })[0]); });
     expect(document.getElementById("card-modal-title")).toHaveTextContent("Card A");
     expect(cardDialog()).not.toHaveClass("anim-stack-rise");
   });

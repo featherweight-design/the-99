@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import type { DeckToken, DeckTokensRead } from "../../lib/tokens/read";
 import { deckPrintingsCopy } from "../../lib/copy/deck-printings";
+import { printingPickerCopy } from "../../lib/copy/collection";
 
 vi.mock("../../db", () => ({ db: {} }));
 const setCardArtPreference = vi.fn(async () => true);
@@ -84,7 +85,7 @@ describe("a deck's token printing picker", () => {
     const picked = screen.getAllByRole("radio", { name: /TCLB/ })[0];
     expect(picked.getAttribute("aria-label")).toContain("for this deck");
     expect(picked.textContent).toContain(deckPrintingsCopy.picker.pinned);
-    expect(picked.textContent).not.toContain("Your pick");
+    expect(picked.textContent).not.toContain(printingPickerCopy.printing.triggerPicked);
   });
 
   it("opens on the deck's own pick", async () => {

@@ -170,7 +170,7 @@ describe("CardModal flip control", () => {
       backImageUri: null,
       quantity: 2,
       printings: [
-        { setCode: "SLD", setName: "Secret Lair", collectorNumber: "2214",
+        { setCode: "SLD", setName: "Fixture Set Name", collectorNumber: "2214",
           releasedAt: "2025-10-27", quantity: 1, finishes: { foil: 1 }, imageUri: FRONT,
           backImageUri: BACK, hasOwnBack: true, flavorName: "Mimir's Ancient Wisdom" },
         { setCode: "M21", setName: "Core Set 2021", collectorNumber: "76",

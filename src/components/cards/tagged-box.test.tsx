@@ -1,6 +1,8 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { TaggedBox } from "./tagged-box";
+import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 
 function box(props: Partial<React.ComponentProps<typeof TaggedBox>> = {}) {
   return render(
@@ -9,13 +11,13 @@ function box(props: Partial<React.ComponentProps<typeof TaggedBox>> = {}) {
     </TaggedBox>,
   );
 }
-const key = () => screen.getByRole("button", { name: "Insert a card tag" });
+const key = () => screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria });
 
 describe("TaggedBox", () => {
   it("draws the counter from 0 / N and the shared words by default", () => {
     box();
     expect(screen.getByText("0 / 240")).toBeInTheDocument();
-    expect(screen.getByText("tag a card")).toHaveAttribute("aria-hidden", "true");
+    expect(screen.getByText(TAG_A_CARD_WORDS)).toHaveAttribute("aria-hidden", "true");
   });
 
   it("takes other words, or none", () => {
@@ -23,7 +25,7 @@ describe("TaggedBox", () => {
     expect(screen.getByText("name a card")).toBeInTheDocument();
     unmount();
     box({ words: "" });
-    expect(screen.queryByText("tag a card")).toBeNull();
+    expect(screen.queryByText(TAG_A_CARD_WORDS)).toBeNull();
   });
 
   it("lights the key only while open", () => {

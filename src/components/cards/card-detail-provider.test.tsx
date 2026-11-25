@@ -4,7 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { BrowseCard } from "../../lib/collection/browse";
 import type { ViewPrinting } from "./card-detail-provider";
 import { printingPickerCopy } from "../../lib/copy/collection";
-import { cardCarouselCopy, cardSheetCopy } from "../../lib/copy/card-carousel";
+import { cardCarouselCopy, cardSheetCopy, cardModalCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -175,9 +175,9 @@ describe("CardDetailProvider", () => {
       );
       await click(screen.getByText("see the combo"));
       expect(block()).toHaveAttribute("aria-expanded", "true");
-      await click(footer("Next card"));
+      await click(footer(cardCarouselCopy.nextAria));
       expect(document.getElementById("card-modal-title")).toHaveTextContent("Sol Ring");
-      await click(footer("Previous card"));
+      await click(footer(cardCarouselCopy.prevAria));
       expect(document.getElementById("card-modal-title")).toHaveTextContent("Arcane Signet");
       expect(block()).toHaveAttribute("aria-expanded", "false");
       expect(screen.getByTestId("card-sheet")).toHaveAttribute("data-sheet", "teaser");
@@ -264,7 +264,7 @@ describe("CardDetailProvider", () => {
       await act(async () => { screen.getByRole("button", { name: /Two-card combos/ }).click(); });
       await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
       expect(screen.getByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y("Arcane Signet"));
-      await act(async () => { screen.getAllByRole("button", { name: "Previous card" })[0].click(); });
+      await act(async () => { screen.getAllByRole("button", { name: cardCarouselCopy.prevAria })[0].click(); });
       expect(title()).toHaveTextContent("Arcane Signet");
       expect(screen.queryByTestId("card-modal-back-mobile")).toBeNull();
       await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
@@ -291,7 +291,7 @@ describe("CardDetailProvider", () => {
       function SheetOver() {
         const { registerSheet } = useCardDetail();
         const [up, setUp] = React.useState(false);
-        React.useEffect(() => (up ? registerSheet("Cheaper stand-ins", undefined, true) : undefined), [up, registerSheet]);
+        React.useEffect(() => (up ? registerSheet("Fixture sheet title", undefined, true) : undefined), [up, registerSheet]);
         return <button type="button" onClick={() => setUp((v) => !v)}>toggle sheet</button>;
       }
       render(
@@ -306,7 +306,7 @@ describe("CardDetailProvider", () => {
       await act(async () => { screen.getByRole("button", { name: "Sol Ring" }).click(); });
       await act(async () => { fireEvent.click(screen.getByText("toggle sheet")); });
       await act(async () => { fireEvent.click(screen.getByText("open sol from the sheet")); });
-      expect(screen.getByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y("Cheaper stand-ins"));
+      expect(screen.getByTestId("card-modal-back-mobile")).toHaveAccessibleName(cardSheetCopy.back.a11y("Fixture sheet title"));
       await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
       await act(async () => { await new Promise((r) => setTimeout(r, 250)); });
       await act(async () => { fireEvent.click(screen.getByText("toggle sheet")); });
@@ -647,7 +647,7 @@ describe("CardDetailProvider", () => {
     await click(trigger);
     await screen.findByRole("dialog");
 
-    await click(screen.getAllByRole("button", { name: "Close card details" })[0]);
+    await click(screen.getAllByRole("button", { name: cardModalCopy.closeAria })[0]);
     await waitFor(() => expect(document.activeElement).toBe(trigger));
   });
 
@@ -680,7 +680,7 @@ describe("CardDetailProvider", () => {
       const tile = screen.getByText("plain tile");
       await click(tile);
       await screen.findByRole("dialog");
-      await click(screen.getAllByRole("button", { name: "Close card details" })[0]);
+      await click(screen.getAllByRole("button", { name: cardModalCopy.closeAria })[0]);
       await waitFor(() => expect(document.activeElement).toBe(tile));
     });
 
@@ -689,7 +689,7 @@ describe("CardDetailProvider", () => {
       const tile = screen.getByText("plain tile");
       await click(tile);
       await screen.findByRole("dialog");
-      await click(footer("Next card"));
+      await click(footer(cardCarouselCopy.nextAria));
       await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
       await act(async () => { fireEvent.keyDown(document, { key: "Escape" }); });
       await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
@@ -712,12 +712,12 @@ describe("CardDetailProvider", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    expect(footer("Previous card")).toHaveAttribute("aria-disabled", "true");
-    await click(footer("Next card"));
+    expect(footer(cardCarouselCopy.prevAria)).toHaveAttribute("aria-disabled", "true");
+    await click(footer(cardCarouselCopy.nextAria));
 
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
-    expect(footer("Next card")).toHaveAttribute("aria-disabled", "true");
-    expect(footer("Previous card")).toHaveAttribute("aria-disabled", "false");
+    expect(footer(cardCarouselCopy.nextAria)).toHaveAttribute("aria-disabled", "true");
+    expect(footer(cardCarouselCopy.prevAria)).toHaveAttribute("aria-disabled", "false");
   });
 
   // The commander and a suggestion belong to no list; forcing paging there would page
@@ -729,8 +729,8 @@ describe("CardDetailProvider", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    expect(screen.queryByRole("button", { name: "Previous card" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Next card" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: cardCarouselCopy.prevAria })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: cardCarouselCopy.nextAria })).not.toBeInTheDocument();
     expect(screen.queryByText("1 of 1")).not.toBeInTheDocument();
   });
 
@@ -749,10 +749,10 @@ describe("CardDetailProvider", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
     // A list of one at open: decision 6 draws no carousel, so there is no button yet.
-    expect(screen.queryByRole("button", { name: "Next card" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: cardCarouselCopy.nextAria })).not.toBeInTheDocument();
 
     await click(screen.getByRole("button", { name: "refile" }));
-    await click(footer("Next card"));
+    await click(footer(cardCarouselCopy.nextAria));
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
   });
 
@@ -842,9 +842,9 @@ describe("CardDetailProvider card cache", () => {
     await click(screen.getByRole("button", { name: cardDetailCopy.triggerAria("Arcane Signet") }));
     await screen.findByRole("dialog");
 
-    await click(footer("Next card"));
+    await click(footer(cardCarouselCopy.nextAria));
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
-    await click(footer("Previous card"));
+    await click(footer(cardCarouselCopy.prevAria));
 
     expect(screen.getByRole("dialog")).toHaveAccessibleName("Arcane Signet");
     expect(screen.queryByText(cardDetailCopy.loading)).not.toBeInTheDocument();
@@ -1368,9 +1368,9 @@ describe("CardDetailProvider open-at-printing scope", () => {
     await screen.findByRole("dialog");
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
 
-    await click(footer("Next card"));
+    await click(footer(cardCarouselCopy.nextAria));
     await waitFor(() => expect(screen.getByRole("dialog")).toBeInTheDocument());
-    await click(footer("Previous card"));
+    await click(footer(cardCarouselCopy.prevAria));
 
     await waitFor(() => expect(art().some((b) => b.includes("rvr-24"))).toBe(false));
   });
@@ -1410,7 +1410,7 @@ describe("CardDetailProvider open-at-printing scope", () => {
     await screen.findByRole("dialog");
     expect(art().some((b) => b.includes("rvr-24"))).toBe(true);
 
-    await click(footer("Next card"));
+    await click(footer(cardCarouselCopy.nextAria));
     await waitFor(() => expect(fetchCard).toHaveBeenCalledWith("o-sol", undefined));
     // Arcane Signet is still the card on screen, and still wearing the printing that was
     // clicked. The page did not happen.
@@ -1919,7 +1919,7 @@ describe("CardDetailProvider reads the neighbors ahead (carousel, H23)", () => {
     await act(async () => { fireEvent.click(screen.getByText("open plain")); });
     await screen.findByRole("dialog");
     expect(prefetchCard).not.toHaveBeenCalled();
-    await click(screen.getAllByRole("button", { name: "Close card details" })[0]);
+    await click(screen.getAllByRole("button", { name: cardModalCopy.closeAria })[0]);
 
     await act(async () => { fireEvent.click(screen.getByText("open with list")); });
     await screen.findByRole("dialog");
@@ -2330,7 +2330,7 @@ describe("viewPrintings", () => {
     render(tree());
     await click(screen.getByText("Arcane Signet"));
     await screen.findByRole("dialog");
-    await click(footer("Next card"));
+    await click(footer(cardCarouselCopy.nextAria));
     await waitFor(() => expect(screen.getByRole("dialog")).toHaveAccessibleName("Sol Ring"));
     await waitFor(() => expect(screen.getByRole("dialog").outerHTML).toContain("precon-sol.jpg"));
   });

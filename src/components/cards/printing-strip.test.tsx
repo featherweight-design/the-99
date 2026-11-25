@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BrowsePrinting } from "../../lib/collection/browse";
 import { PrintingStrip, orderStrip, stripKey, type StripPrinting } from "./printing-strip";
+import { printingStripCopy } from "../../lib/copy/collection";
 
 vi.mock("../../lib/ui/reveal", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../../lib/ui/reveal")>()),
@@ -151,11 +152,11 @@ describe("PrintingStrip", () => {
 
   it("draws no paddle unless asked, and none while the row fits", () => {
     renderStrip();
-    expect(screen.queryByRole("button", { name: "More printings" })).toBeNull();
+    expect(screen.queryByRole("button", { name: printingStripCopy.forward })).toBeNull();
     cleanup();
     renderStrip({ paddles: true });
     // jsdom lays nothing out: scrollWidth equals clientWidth, so nothing overflows.
-    expect(screen.queryByRole("button", { name: "More printings" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Previous printings" })).toBeNull();
+    expect(screen.queryByRole("button", { name: printingStripCopy.forward })).toBeNull();
+    expect(screen.queryByRole("button", { name: printingStripCopy.back })).toBeNull();
   });
 });

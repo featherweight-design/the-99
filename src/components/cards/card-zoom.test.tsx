@@ -5,6 +5,7 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import type { BrowseCard } from "../../lib/collection/browse";
 import { cardZoomCopy } from "../../lib/copy/card-surfaces";
 import { indexPriceRows } from "../../lib/cards/price-lookup";
+import { cardModalCopy } from "../../lib/copy/card-carousel";
 
 vi.mock("../../app/collection/actions", () => ({
   setCardArtPreference: vi.fn(async () => true),
@@ -187,7 +188,7 @@ describe("the zoom", () => {
     mount();
     openZoom();
 
-    const covered = screen.getAllByRole("button", { name: "Close card details" });
+    const covered = screen.getAllByRole("button", { name: cardModalCopy.closeAria });
     expect(covered.length).toBeGreaterThan(0);
     for (const button of covered) {
       expect(button.closest("[inert]")).not.toBeNull();
@@ -229,7 +230,7 @@ describe("the zoom", () => {
     // would have moved the dialog's initial focus onto "Look at … up close".
     mount();
 
-    expect(document.activeElement).toBe(screen.getAllByRole("button", { name: "Close card details" })[0]);
+    expect(document.activeElement).toBe(screen.getAllByRole("button", { name: cardModalCopy.closeAria })[0]);
   });
 
   it("walks down the ladder on a quick double-press", () => {

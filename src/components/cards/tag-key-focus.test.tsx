@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { CardTagList } from "./card-tag-picker";
 import { TaggedBox } from "./tagged-box";
 import { useTaggedField } from "./use-tagged-field";
+import { deckDescriptionCopy } from "../../lib/copy/deck-description";
 
 function Harness() {
   const ref = useRef<HTMLTextAreaElement>(null);
@@ -39,11 +40,11 @@ describe("the tag key with the field unfocused", () => {
     field.setSelectionRange(5, 5);
     screen.getByRole("button", { name: "elsewhere" }).focus();
     expect(document.activeElement).not.toBe(field);
-    fireEvent.click(screen.getByRole("button", { name: "Insert a card tag" }));
+    fireEvent.click(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }));
     act(() => { vi.runAllTimers(); });
     expect(field.value).toBe("hello[[]]");
     expect(document.activeElement).toBe(field);
     expect(field.selectionStart).toBe(7);
-    expect(screen.getByRole("button", { name: "Insert a card tag" }).className).toContain("bg-[color:var(--elevated)]");
+    expect(screen.getByRole("button", { name: deckDescriptionCopy.notes.tagHelp.insertAria }).className).toContain("bg-[color:var(--elevated)]");
   });
 });

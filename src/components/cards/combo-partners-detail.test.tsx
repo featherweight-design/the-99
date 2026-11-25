@@ -4,6 +4,7 @@ import type { BrowseCard } from "../../lib/collection/browse";
 import { comboAwarenessCopy } from "../../lib/copy/combo-awareness";
 import type { ModalComboPartner } from "../../lib/combos/near-miss";
 import { ComboPartnersDetail } from "./combo-partners-detail";
+import { preconsCopy } from "../../lib/copy/precons";
 
 const partner = (over: Partial<ModalComboPartner> = {}): ModalComboPartner => ({
   oracleId: "p-1", name: "Isochron Scepter", state: "owned", popularity: 100, ...over,
@@ -113,7 +114,7 @@ describe("the card modal's combo block", () => {
     const text = screen.getByRole("button", { name: /Two-card combos/ }).textContent ?? "";
     expect(text).toContain(comboAwarenessCopy.modal.summary.inDeck(1));
     expect(text).toContain(comboAwarenessCopy.modal.summary.notOwned(2));
-    expect(text, "a zero state was printed").not.toContain("you own");
+    expect(text, "a zero state was printed").not.toContain(preconsCopy.row.ownLead);
     expect(text.indexOf("in this deck")).toBeLessThan(text.indexOf("you don"));
   });
 
