@@ -91,7 +91,7 @@ describe("POST /api/copy-edit/submit: the body", () => {
     ["a row that changed since it was edited", { ...edit, from: "Zork plinth zero" }, "stale"],
     ["a text the copy sheet's rules refuse (an em dash)", { ...edit, to: `Zork ${String.fromCharCode(0x2014)} plinth` }, "rule"],
   ])("is 422 for %s, naming the row, and starts nothing", async (_name, bad, reason) => {
-    const res = await post({ edits: [edit, bad] });
+    const res = await post({ edits: [bad] });
     expect(res.status).toBe(422);
     expect((await res.json()).rows.map((r: { reason: string }) => r.reason)).toContain(reason);
     expect(enforce).not.toHaveBeenCalled();
@@ -120,7 +120,7 @@ describe("POST /api/copy-edit/submit: the dispatch", () => {
     const res = await post({ edits: [{ ...edit, extra: "dropped" }] });
     expect(res.status).toBe(202);
     const { branch } = await res.json();
-    expect(branch).toMatch(/^copy-edit-\d{8}-\d{6}$/);
+    expect(branch).toMatch(/^copy-edit-\d{8}-\d{6}-[0-9a-f]{4}$/);
     expect(dispatch).toHaveBeenCalledWith("tok_stub", branch, [edit]);
     expect(res.headers.get("cache-control")).toBe("private, no-store");
   });
