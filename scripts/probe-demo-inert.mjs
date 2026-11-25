@@ -378,8 +378,10 @@ for (const { label, viewport } of WIDTHS) {
       for (const banned of ["Apply", "Start the deck", "Try another strategy"]) {
         if ((await app.getByRole("button", { name: banned }).count()) > 0) fail(`${label}px step 7: a "${banned}" control is drawn on the demo`);
       }
+      // The ring draws once the upgrade's card chunk has loaded (on idle after the step opens): wait for it before counting.
+      await page.getByText("Select a card", { exact: true }).first().waitFor({ timeout: 8000 }).catch(() => {});
       const ring = await page.getByText("Select a card", { exact: true }).count();
-      if (ring === 0 && HAS_CARD_DETAILS) fail(`${label}px step 7: no "Select a card" ring on the first added card`);
+      if (ring === 0) fail(`${label}px step 7: no "Select a card" ring on the first added card`);
     }
     if (step === 4) await modalPhase("step 4 (first deck card)", app.locator("button[aria-label^='View details for']").first(), { paging: true });
     // Every card-open control the step draws, once each: a dialog must open (5l-g).

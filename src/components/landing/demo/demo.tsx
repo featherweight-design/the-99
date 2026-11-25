@@ -1,7 +1,7 @@
 "use client";
 // Try it, the live dummy app (public landing, 5l; addendum A2 `A2-Demo-*`): the section keeps ONE card, the start card (with
 // Carry on from step N and Start over after a close), and Start opens the demo as a FULL-SCREEN DIALOG at every width. The
-// dialog is a pinned top bar (Step N of 8, the bar, Skip to the end, a bare close), then: below 1024px one column that scrolls
+// dialog is a pinned top bar (Step N of 8 or 9, the bar, Skip to the end, a bare close), then: below 1024px one column that scrolls
 // (the step's words and the app) between the bar and a pinned Back/Next bar, centred at 680px from 768; from 1024px two
 // columns, the words at the left (320px, 360px from 1200) with Back and Next directly under them and never scrolling, and
 // only the app side scrolling, its content capped at 1080px. ONE component at every width, laid out by CSS alone. The app is
@@ -143,7 +143,7 @@ function PendingSweep() {
 /**
  * The full-screen dialog: scroll-locked, focus-trapped, inert page behind it, closed by the bare close, Escape or the browser's
  * Back (`useDialogA11y`); focus lands on the step's heading and returns to the section's main button. The pinned top bar is
- * `--surface-raised` over `--border-strong`: the label (Step N of 8, or The end), the bar, Skip to the end (steps only) and the close.
+ * `--surface-raised` over `--border-strong`: the label (Step N of 8 or 9, or The end), the bar, Skip to the end (steps only) and the close.
  */
 function DemoDialog({ onClose, onBackStep, returnFocusRef, headingRef, label, lit, steps, onSkip, children }: {
   onClose: () => void;
