@@ -4,6 +4,8 @@ import type { ComponentProps, MouseEvent, ReactNode } from "react";
 import { CollectionPlaceHead, placeFromPathname, visibleTabs, type CollectionPlace } from "./collection-place-head";
 import { collectionTabsCopy } from "../../lib/copy/collection";
 import { wishlistCopy } from "../../lib/copy/wishlist";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
 
 let pathname = "/collection";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname, useRouter: () => ({ push: vi.fn() }) }));
@@ -306,7 +308,7 @@ describe("CollectionPlaceHead \u00b7 Add cards (collection editing)", () => {
 
   it("switch off: Replace sits alone in main's own markup, with no Add and no reserved wrapper", () => {
     withSwitch(false);
-    const replace = screen.getByText("Replace collection").closest("a")!;
+    const replace = screen.getByText(collectionPlaceCopy.replaceCollection).closest("a")!;
     expect(replace.className).toContain("hidden md:inline-block");
     expect(replace.parentElement?.className ?? "").not.toContain("md:gap-[10px]");
     expect(screen.queryByTestId("collection-add")).toBeNull();
@@ -316,8 +318,8 @@ describe("CollectionPlaceHead \u00b7 Add cards (collection editing)", () => {
 
   it("switch on: + Add beside Replace on desktop, and in place of Replace on the phone strip", () => {
     withSwitch(true);
-    expect(screen.getByTestId("collection-add")).toHaveTextContent("Add cards");
-    expect(screen.getByText("Upload a file")).toBeInTheDocument();
+    expect(screen.getByTestId("collection-add")).toHaveTextContent(collectionEditCopy.head.add);
+    expect(screen.getByText(collectionEditCopy.head.upload)).toBeInTheDocument();
     expect(screen.getByTestId("collection-add-phone")).toHaveTextContent("Add");
     expect(within(strip()).queryByText("Replace")).toBeNull();
     expect(within(strip()).getByText("History")).toBeInTheDocument();
@@ -331,8 +333,8 @@ describe("CollectionPlaceHead \u00b7 Add cards (collection editing)", () => {
     render(<CollectionPlaceHead stats={OWNED} lastUpdatedLabel="today" editEnabled historyHasEntries wishlistEnabled={wishlist} />);
     expect(tabNames()).toHaveLength(wishlist ? 5 : 4);
     const add = screen.getByTestId("collection-add-phone");
-    expect(add).toHaveTextContent("Add +");
-    expect(add).toHaveAccessibleName("Add cards");
+    expect(add).toHaveTextContent(collectionEditCopy.head.addShort);
+    expect(add).toHaveAccessibleName(collectionEditCopy.head.add);
     expect(add.className).not.toContain("basis-0");
     for (const tab of within(strip()).getAllByRole("link")) expect(tab.className).toContain("max-md:basis-0");
     for (const tab of within(strip()).getAllByRole("link")) expect(tab.className).toContain("max-md:min-w-max");
@@ -350,7 +352,7 @@ describe("CollectionPlaceHead \u00b7 Add cards (collection editing)", () => {
     const trigger = screen.getByTestId(id);
     trigger.focus();
     fireEvent.click(trigger);
-    expect(screen.getByRole("dialog", { name: "Add cards" })).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: collectionEditCopy.head.add })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Close" }));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
     expect(trigger).toHaveFocus();

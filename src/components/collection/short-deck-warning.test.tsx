@@ -2,6 +2,8 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { ShortDeck } from "../../lib/collection/write";
 import { groupShortDecks, ShortDeckWarning } from "./short-deck-warning";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { gotItCopy } from "../../lib/copy/i-got-it";
 
 const line = (deckId: string, oracleId: string, short: number): ShortDeck => ({
   deckId,
@@ -25,14 +27,14 @@ describe("ShortDeckWarning", () => {
   it("words I got it's toast Undo with its own verb, Cancel still focused", () => {
     draw([line("a", "x", 1)], { source: "undo" });
     expect(screen.getByRole("heading", { name: "Undoing leaves a deck short" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Undo anyway" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: gotItCopy.shortWarning.confirmUndo })).toBeTruthy();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
   });
 
   it("focuses Cancel, and the confirm is the elevated secondary rather than the accent or red", () => {
     draw([line("a", "x", 1)]);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
-    const confirm = screen.getByRole("button", { name: "Replace anyway" });
+    const confirm = screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmReplace });
     expect(confirm.className).toContain("--elevated");
     expect(confirm.className).not.toMatch(/accent|danger/);
   });
@@ -47,7 +49,7 @@ describe("ShortDeckWarning", () => {
   it("one card: each row reads `short N`", () => {
     draw([line("a", "x", 2), line("b", "x", 1)]);
     expect(screen.getByText("short 2")).toBeTruthy();
-    expect(screen.getByText("short 1")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.shortWarning.chooser.short)).toBeTruthy();
   });
 
   it("several cards: rows read `N cards short` and open onto their cards", () => {
@@ -100,7 +102,7 @@ describe("ShortDeckWarning", () => {
     expect(screen.getByRole("heading", { name: "Decks that will read short · 2" })).toBeTruthy();
     expect(screen.getByText("Deck a")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Replace anyway" })).toBeNull();
+    expect(screen.queryByRole("button", { name: collectionEditCopy.shortWarning.confirmReplace })).toBeNull();
     expect(screen.queryByText(/Nothing about these decks changes/)).toBeNull();
   });
 

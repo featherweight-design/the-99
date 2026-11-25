@@ -8,6 +8,7 @@ import type { ShortDeck } from "../../lib/collection/write";
 import { ReviewScreen } from "./review-screen";
 import { ShortDeckWarning } from "./short-deck-warning";
 import { SyncConflicts, syncBar, syncFigures, type SyncConflictsHandle, type SyncReviewControls } from "./sync-review";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 // Collection Sync, the review (plan PR 3): the tiles, the conflicts, the bulk rules, the bar and its held state.
 
@@ -86,12 +87,12 @@ describe("Sync review · the tiles", () => {
 
   it("inks `to decide` and its edge in warning while above 0, and faint at 0", () => {
     const { unmount } = renderReview(data({ counts: { conflicts: 3, undecided: 2 } }));
-    let tile = screen.getByText("to decide").parentElement!;
+    let tile = screen.getByText(collectionEditCopy.upload.syncReview.tiles.decide).parentElement!;
     expect(tile.style.borderColor).toBe("var(--warning)");
     expect((tile.firstElementChild as HTMLElement).style.color).toBe("var(--warning)");
     unmount();
     renderReview(data());
-    tile = screen.getByText("to decide").parentElement!;
+    tile = screen.getByText(collectionEditCopy.upload.syncReview.tiles.decide).parentElement!;
     expect(tile.style.borderColor).toBe("");
     expect((tile.firstElementChild as HTMLElement).style.color).toBe("var(--fg-faint)");
   });
@@ -99,15 +100,15 @@ describe("Sync review · the tiles", () => {
   it("inks `from the file` and `kept` faint at 0, as `to decide` is", () => {
     renderReview(data({ counts: { taken: 0, kept: 0 }, kept: { rows: [], total: 0 } }));
     const ink = (label: string) => (screen.getByText(label).parentElement!.firstElementChild as HTMLElement).style.color;
-    expect(ink("from the file")).toBe("var(--fg-faint)");
-    expect(ink("kept from The 99")).toBe("var(--fg-faint)");
+    expect(ink(collectionEditCopy.upload.syncReview.tiles.file)).toBe("var(--fg-faint)");
+    expect(ink(collectionEditCopy.upload.syncReview.tiles.kept)).toBe("var(--fg-faint)");
   });
 
   it("inks `from the file` in success and `kept` in fg above 0", () => {
     renderReview(data());
     const ink = (label: string) => (screen.getByText(label).parentElement!.firstElementChild as HTMLElement).style.color;
-    expect(ink("from the file")).toBe("var(--success)");
-    expect(ink("kept from The 99")).toBe("var(--fg)");
+    expect(ink(collectionEditCopy.upload.syncReview.tiles.file)).toBe("var(--success)");
+    expect(ink(collectionEditCopy.upload.syncReview.tiles.kept)).toBe("var(--fg)");
   });
 
   it("moves an answered conflict to its side: App into kept, File into from the file", () => {
@@ -212,7 +213,7 @@ describe("G4 · Replace's issues panel is unchanged", () => {
     );
     expect(container.textContent).toMatch(/120\s*token and emblem rows skipped/);
     expect(container.textContent).not.toMatch(/(?<!token and )emblem rows skipped/);
-    expect(screen.getByRole("button", { name: "Replace collection" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: collectionEditCopy.upload.confirmReplace })).toBeTruthy();
   });
 });
 
@@ -360,7 +361,7 @@ describe("Sync review · the bar", () => {
     const onContinue = vi.fn();
     render(<Harness />);
     const button = confirmButton();
-    expect(button.textContent).toBe("Sync collection");
+    expect(button.textContent).toBe(collectionEditCopy.upload.syncReview.bar.confirm);
     expect(button.getAttribute("aria-disabled")).toBe("true");
     expect(button).not.toBeDisabled();
     expect(button.className).toContain("opacity-40");
@@ -411,7 +412,7 @@ describe("Sync review · the bar", () => {
     const onLeave = vi.fn();
     renderReview(data({ counts: { taken: 0 }, tokensChange: false, nothing: true }), controls({ onLeave }));
     // No planned change, never "already has everything": Sync may be keeping an app deletion the file disagrees with.
-    const note = screen.getByText("Nothing in this file changes your collection.");
+    const note = screen.getByText(collectionEditCopy.upload.syncNoChange);
     expect(note.className).toContain("text-[color:var(--fg-muted)]");
     // One line says it: the note above. The bar is only the way back and carries no sentence of its own.
     expect(screen.queryByText("Nothing will change.")).toBeNull();
@@ -420,7 +421,7 @@ describe("Sync review · the bar", () => {
     expect(bar).not.toBeNull();
     expect(bar!.querySelector("p")).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Sync collection" })).toBeNull();
+    expect(screen.queryByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm })).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Back to Collection" }));
     expect(onLeave).toHaveBeenCalled();
   });
@@ -440,7 +441,7 @@ describe("Sync review · the bar", () => {
 
   it("composes the bar's sentence for every state", () => {
     const f = (c: Partial<UploadSyncPreview["counts"]>, o: Partial<Omit<UploadSyncPreview, "counts">> = {}) => syncBar(syncFigures(data({ counts: c, ...o }).sync!, []));
-    expect(f({ taken: 18, kept: 0 })).toEqual({ kind: "confirm", line: "Taking 18 cards from the file, with 114 token changes. Nothing of yours to keep.", label: "Sync collection" });
+    expect(f({ taken: 18, kept: 0 })).toEqual({ kind: "confirm", line: "Taking 18 cards from the file, with 114 token changes. Nothing of yours to keep.", label: collectionEditCopy.upload.syncReview.bar.confirm });
     expect(f({ taken: 17, kept: 118, conflicts: 3, undecided: 0, answeredFile: 2 }).line).toBe(
       "Taking 19 cards from the file and keeping 119 of yours, with 114 token changes. You decided 3.",
     );
@@ -463,7 +464,7 @@ describe("Sync review · the bar", () => {
     // `planTokenWrite` can plan a write that changes no count (a read marker, a printing, an ownership source).
     renderReview(data({ counts: { taken: 0, kept: 2 }, tokensChange: true, tokensChanged: 0, nothing: false }));
     expect(screen.getByText("Your cards stay as they are, including the 2 you changed. The file’s tokens are recorded, and no count changes.")).toBeTruthy();
-    expect(confirmButton().textContent).toBe("Sync collection");
+    expect(confirmButton().textContent).toBe(collectionEditCopy.upload.syncReview.bar.confirm);
     expect(screen.queryByText(/\b0 tokens? changes?\b/)).toBeNull();
     expect(screen.queryByText(/Sync 0/)).toBeNull();
   });
@@ -477,7 +478,7 @@ describe("ShortDeckWarning · Sync's words", () => {
     ] as ShortDeck[];
     render(<ShortDeckWarning source="sync" decks={decks} pending={false} onCancel={vi.fn()} onConfirm={vi.fn()} />);
     expect(screen.getByRole("heading", { name: "Syncing leaves 2 decks short" })).toBeTruthy();
-    const confirm = screen.getByRole("button", { name: "Sync anyway" });
+    const confirm = screen.getByRole("button", { name: collectionEditCopy.shortWarning.confirmSync });
     expect(confirm.className).not.toMatch(/danger/);
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancel" }));
   });

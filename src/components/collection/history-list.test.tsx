@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { HistoryEntry, HistoryListEntry } from "../../lib/collection/history";
 import type { HistoryRow } from "../../db/schema";
 import { reveal } from "../../lib/ui/reveal";
+import { gotItCopy } from "../../lib/copy/i-got-it";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 const loadEntry = vi.fn();
 const loadPage = vi.fn();
@@ -74,7 +76,7 @@ describe("HistoryList", () => {
     draw([entry({}), entry({ id: "e2", kind: "upload_replace", uploadFilename: "manabox-oct.csv", copiesUp: 64, copiesDown: 150, rowCount: 412, createdAt: new Date("2026-10-08T21:10:00Z") })]);
     expect(screen.getByRole("heading", { name: "Today · Oct 9" })).toBeTruthy();
     expect(screen.getByRole("heading", { name: "Yesterday · Oct 8" })).toBeTruthy();
-    expect(screen.getByText("Added in the app")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.history.kinds.add)).toBeTruthy();
     expect(screen.getByText("+2 copies across 1 card")).toBeTruthy();
     expect(screen.getByText("+64 · −150 copies across 412 cards")).toBeTruthy();
     expect(screen.getByText("manabox-oct.csv", { exact: false })).toBeTruthy();
@@ -84,7 +86,7 @@ describe("HistoryList", () => {
 
   it("draws the empty state dated from the ship date, with the foot under it", () => {
     draw([], { ship: new Date("2026-10-09T00:00:00Z") });
-    expect(screen.getByText("Nothing’s changed yet")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.history.emptyTitle)).toBeTruthy();
     expect(screen.getByText(/Uploads and edits since Oct 9 show up here/)).toBeTruthy();
     expect(screen.getByText(/History keeps 90 days/)).toBeTruthy();
   });
@@ -113,7 +115,7 @@ describe("HistoryList", () => {
     expect(screen.getByRole("tab", { name: "New · 10" })).toBeTruthy();
     // The groups swap the row list, so they are a tablist (d9's ruling 2), in a well that scrolls sideways at
     // a phone's width rather than overflowing it, each tab naming the list it shows.
-    const groups = screen.getByRole("tablist", { name: "Changes to your collection" });
+    const groups = screen.getByRole("tablist", { name: collectionEditCopy.history.heading });
     expect(groups.querySelector("[aria-pressed]")).toBeNull();
     expect(groups.className).toContain("overflow-x-auto");
     const left = screen.getByRole("tab", { name: "Left · 40" });
@@ -137,7 +139,7 @@ describe("HistoryList", () => {
     loadEntry.mockResolvedValue(detail(e, [row("Sol Ring", 2, 2)]));
     draw([e]);
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
-    expect(await screen.findByText("details changed")).toBeTruthy();
+    expect(await screen.findByText(collectionEditCopy.history.rowDetails)).toBeTruthy();
   });
 
   it("offers Revert on an entry that is not reverted, and opens the confirmation from it", async () => {
@@ -153,7 +155,7 @@ describe("HistoryList", () => {
     const e = entry({ kind: "upload_sync", uploadFilename: "The Vault 10-14-26.csv", rowCount: 2 });
     loadEntry.mockResolvedValue(detail(e, [row("Swords to Plowshares", 1, 0), row("Esper Sentinel", 1, 2)], {}, { kept: 119, decided: 3, tokens: 114 }));
     draw([e]);
-    expect(screen.getByText("Sync upload")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.history.kinds.uploadSync)).toBeTruthy();
     expect(screen.getByText("The Vault 10-14-26.csv", { exact: false })).toBeTruthy();
     await act(async () => fireEvent.click(screen.getByRole("button", { expanded: false })));
     const lead = await screen.findByText("Kept the 119 cards you’d changed in the app. You decided 3. Changed 114 tokens.");
@@ -176,7 +178,7 @@ describe("HistoryList", () => {
     previewRevert.mockReturnValue(new Promise(() => {}));
     draw([entry({ kind: "upload_sync", uploadFilename: "vault.csv" }), entry({ id: "e2", kind: "upload_replace", uploadFilename: "box.csv" })]);
     fireEvent.click(screen.getByRole("button", { name: "Revert vault.csv" }));
-    expect(await screen.findByRole("dialog", { name: "Revert this sync?" })).toBeTruthy();
+    expect(await screen.findByRole("dialog", { name: collectionEditCopy.revert.titleSync })).toBeTruthy();
   });
 
   it("states a zero figure and an explicit empty panel for an entry that moved no copies", async () => {
@@ -225,7 +227,7 @@ describe("HistoryList", () => {
   it("tags a Shopping purchase From Shopping and links its deck by the name it has now (§D1)", () => {
     const deck = "7284ff0a-6e76-4dc0-8af5-fc630a403b2b";
     draw([entry({ kind: "edit", source: `shopping:${deck}`, firstName: "Swords to Plowshares", shoppingDeck: { id: deck, name: "HD Gishath" } })]);
-    expect(screen.getByText("From Shopping")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.history.kinds.shopping)).toBeTruthy();
     const link = screen.getByRole("link", { name: "HD Gishath" });
     expect(link.getAttribute("href")).toBe(`/decks/${deck}`);
     expect(link.closest("p")?.textContent).toBe("From HD Gishath’s Shopping list");
@@ -236,7 +238,7 @@ describe("HistoryList", () => {
 
   it("tags a cart purchase From Shopping and links the cart, never one deck", () => {
     draw([entry({ kind: "edit", source: "shopping:cart:d1,d2", firstName: "Sol Ring", shoppingCart: true })]);
-    expect(screen.getByText("From Shopping")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.history.kinds.shopping)).toBeTruthy();
     const link = screen.getByRole("link", { name: "Shopping for all decks" });
     expect(link.getAttribute("href")).toBe("/decks/shopping");
     expect(link.closest("p")?.textContent).toBe("From Shopping for all decks");
@@ -335,7 +337,7 @@ describe("HistoryList", () => {
 
   it("names a deleted deck without a link and keeps Revert (§D3)", () => {
     draw([entry({ kind: "edit", source: "shopping:x", firstName: "Swords to Plowshares", shoppingDeck: { id: "x", name: null } })]);
-    expect(screen.getByText("From the Shopping list of a deck you’ve since deleted")).toBeTruthy();
+    expect(screen.getByText(gotItCopy.history.fromDeleted)).toBeTruthy();
     expect(screen.queryByRole("link")).toBeNull();
     expect(screen.getByRole("button", { name: "Revert Swords to Plowshares" })).toBeTruthy();
   });
@@ -366,18 +368,18 @@ describe("HistoryList", () => {
   it("names a revert whose original has aged out, and draws no link to it", () => {
     draw([entry({ id: "rv", kind: "revert", revertsId: "old", revertsVisible: false, firstName: null })]);
     expect(screen.getByText("Reverted a change from before Oct 1")).toBeTruthy();
-    expect(screen.getByText("That change has aged out of history.")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.history.agedNote)).toBeTruthy();
   });
 
   it("pages older entries in, and keeps the list when the page fails", async () => {
     draw([entry({})], { nextBefore: 5 });
     loadPage.mockRejectedValueOnce(new Error("x")).mockResolvedValueOnce({ entries: [entry({ id: "e0", seq: 4, firstName: "Mana Crypt", createdAt: new Date("2026-10-02T10:00:00Z") })], nextBefore: null });
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show older changes" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.history.olderEntries })));
     expect((await screen.findByRole("alert")).textContent).toMatch(/couldn’t load that/);
     expect(screen.getByText("Sol Ring", { exact: false })).toBeTruthy();
-    await act(async () => fireEvent.click(screen.getByRole("button", { name: "Show older changes" })));
+    await act(async () => fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.history.olderEntries })));
     expect(await screen.findByText("Mana Crypt", { exact: false })).toBeTruthy();
-    expect(screen.queryByRole("button", { name: "Show older changes" })).toBeNull();
+    expect(screen.queryByRole("button", { name: collectionEditCopy.history.olderEntries })).toBeNull();
     expect(loadPage).toHaveBeenLastCalledWith(5);
   });
 
@@ -418,7 +420,7 @@ describe("HistoryList in the reader's zone", () => {
       entry({ id: "b", createdAt: new Date("2026-11-18T21:02:00Z") }),
       entry({ id: "c", createdAt: new Date("2026-11-18T20:13:00Z") }),
     ]);
-    expect(screen.getByText("Just now")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.history.justNow)).toBeTruthy();
     expect(screen.getByText("12 min ago")).toBeTruthy();
     expect(screen.getByText("1:13 PM")).toBeTruthy();
   });

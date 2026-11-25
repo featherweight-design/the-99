@@ -3,6 +3,10 @@ import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { CollectionFilterSheet } from "./filter-sheet";
 import type { BrowseFilters } from "../../lib/collection/browse";
 import { availabilityCopy } from "../../lib/copy/availability";
+import { collectionPlaceCopy } from "../../lib/copy/collection-browse";
+import { collectionChassisCopy } from "../../lib/copy/collection";
+import { filterCopy } from "../../lib/copy/lanes";
+import { collectionFilterCopy } from "../../lib/copy/collection";
 
 const FILTERS: BrowseFilters = {
   search: "",
@@ -55,7 +59,7 @@ function sheet(over: Partial<Parameters<typeof CollectionFilterSheet>[0]> = {}) 
 // assertion opens it first. The trigger is the sheet's only route to it.
 const openSets = () => {
   fireEvent.click(screen.getByRole("button", { name: /Filter by set/ }));
-  return screen.getByRole("dialog", { name: "Filter by set" });
+  return screen.getByRole("dialog", { name: collectionFilterCopy.set.panelAriaLabel });
 };
 
 describe("CollectionFilterSheet", () => {
@@ -81,16 +85,16 @@ describe("CollectionFilterSheet", () => {
     // Asked of the whole document: the sheet portals, so the render container is empty either way.
     render(sheet({ open: false }));
     expect(document.querySelector('[role="dialog"]')).toBeNull();
-    expect(screen.queryByText("Color identity")).toBeNull();
+    expect(screen.queryByText(filterCopy.colour.legend)).toBeNull();
   });
 
   it("is a modal dialog carrying every dimension the wide row draws", () => {
     render(sheet());
-    const dialog = screen.getByRole("dialog", { name: "Filter cards" });
+    const dialog = screen.getByRole("dialog", { name: collectionChassisCopy.sheet.title });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     // Colour, type, availability and set — the four the compact row used to
     // push off-screen.
-    for (const heading of ["Color identity", "Type", "Set"]) {
+    for (const heading of [filterCopy.colour.legend, "Type", "Set"]) {
       expect(within(dialog).getByRole("heading", { name: heading })).toBeTruthy();
     }
     expect(within(dialog).getByRole("switch", { name: /White/ })).toBeTruthy();
@@ -98,7 +102,7 @@ describe("CollectionFilterSheet", () => {
     expect(within(dialog).getByRole("switch", { name: /Free/ })).toBeTruthy();
     // H10, round 3: the control's own compact caption (not a heading role, so the loop above
     // cannot see it) must not repeat the Group's "Color identity" h3.
-    expect(within(dialog).getAllByText("Color identity")).toHaveLength(1);
+    expect(within(dialog).getAllByText(filterCopy.colour.legend)).toHaveLength(1);
     // Set is the one dimension that is a row rather than chips: a collection
     // reaches into the hundreds, and the list under a field was most of the
     // sheet and resized it on every keystroke.
@@ -111,10 +115,10 @@ describe("CollectionFilterSheet", () => {
     // second copy in here would be two controls for one filter. The only field
     // in the sheet is the set list's own.
     render(sheet());
-    expect(screen.queryByLabelText("Search your cards")).toBeNull();
+    expect(screen.queryByLabelText(collectionPlaceCopy.searchAria)).toBeNull();
     // Nor the set field, which lives in the panel the Set row opens.
-    expect(screen.queryByLabelText("Search your sets")).toBeNull();
-    expect(within(openSets()).getByLabelText("Search your sets")).toBeTruthy();
+    expect(screen.queryByLabelText(collectionChassisCopy.sheet.setSearchAria)).toBeNull();
+    expect(within(openSets()).getByLabelText(collectionChassisCopy.sheet.setSearchAria)).toBeTruthy();
   });
 
   it("hands a toggle back as a whole new value, as the wide form does", () => {
@@ -176,7 +180,7 @@ describe("CollectionFilterSheet", () => {
     // Otherwise unticking a set means clearing the field to find it again.
     render(sheet({ filters: { ...FILTERS, setCodes: ["LEA"] } }));
     openSets();
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "bloom" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "bloom" } });
     expect(screen.getByRole("switch", { name: /Bloomburrow/ })).toBeTruthy();
     expect(screen.getByRole("switch", { name: /Limited Edition Alpha/ })).toBeTruthy();
   });
@@ -186,7 +190,7 @@ describe("CollectionFilterSheet", () => {
     // so a reader typing `zzz` watched the list empty and heard nothing.
     const { container } = render(sheet());
     const panel = openSets();
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "zzz" } });
     act(() => vi.advanceTimersByTime(301));
     // The PANEL's region, not the sheet's: the panel is `aria-modal`, so a count
     // written outside it is written where nothing can read it.
@@ -200,7 +204,7 @@ describe("CollectionFilterSheet", () => {
     // two and exactly one matches.
     render(sheet({ filters: { ...FILTERS, setCodes: ["LEA"] } }));
     const panel = openSets();
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "bloom" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "bloom" } });
     act(() => vi.advanceTimersByTime(301));
     expect(panel.querySelector("[role='status']")?.textContent).toBe("1 set matches bloom");
   });
@@ -210,9 +214,9 @@ describe("CollectionFilterSheet", () => {
     // whole vocabulary as a match count nobody asked for.
     render(sheet());
     const panel = openSets();
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "bloom" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "bloom" } });
     act(() => vi.advanceTimersByTime(301));
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "" } });
     act(() => vi.advanceTimersByTime(301));
     expect(panel.querySelector("[role='status']")?.textContent).toBe("1 set matches bloom");
   });
@@ -222,7 +226,7 @@ describe("CollectionFilterSheet", () => {
     // say something different about the same state.
     render(sheet({ setOptions: [] }));
     const panel = openSets();
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "zzz" } });
     act(() => vi.advanceTimersByTime(301));
     expect(panel.querySelector("[role='status']")?.textContent).toBe("");
   });
@@ -256,14 +260,14 @@ describe("CollectionFilterSheet", () => {
     // "No sets match " with nothing after it.
     render(sheet({ setOptions: [] }));
     openSets();
-    expect(screen.getByText("No sets to filter by")).toBeTruthy();
+    expect(screen.getByText(collectionChassisCopy.sheet.setNone)).toBeTruthy();
     expect(screen.queryByText(/No sets match\s*$/)).toBeNull();
   });
 
   it("says so when a set query matches nothing", () => {
     render(sheet());
     openSets();
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "zzz" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "zzz" } });
     expect(screen.getByText("No sets match zzz")).toBeTruthy();
   });
 
@@ -323,14 +327,14 @@ describe("CollectionFilterSheet", () => {
     // Bloomburrow.
     render(sheet());
     openSets();
-    fireEvent.change(screen.getByLabelText("Search your sets"), { target: { value: "BLB" } });
+    fireEvent.change(screen.getByLabelText(collectionChassisCopy.sheet.setSearchAria), { target: { value: "BLB" } });
     expect(screen.getByRole("switch", { name: /Bloomburrow/ })).toBeTruthy();
   });
 
   // #6 — the panel above the sheet.
   it("opens the set list as a second dialog, and makes the sheet inert", () => {
     render(sheet());
-    const sheetDialog = screen.getByRole("dialog", { name: "Filter cards" });
+    const sheetDialog = screen.getByRole("dialog", { name: collectionChassisCopy.sheet.title });
     expect(sheetDialog).not.toHaveAttribute("inert");
     openSets();
     expect(screen.getAllByRole("dialog", { hidden: true })).toHaveLength(2);

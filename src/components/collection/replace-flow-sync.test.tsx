@@ -1,6 +1,8 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { importReviewCopy } from "../../lib/copy/import-review";
 
 // Collection Sync, the choice step (plan PR 2): what ReplaceFlow reads and draws with the switch on and off.
 
@@ -52,7 +54,7 @@ async function reachChoice(sync: boolean) {
   previewPaste.mockResolvedValueOnce(preview);
   render(<ReplaceFlow currentCardCount={10} deckCheck sync={sync} />);
   fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
-  fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
+  fireEvent.change(screen.getByRole("textbox", { name: importReviewCopy.entry.pasteAria }), { target: { value: "3 Sol Ring" } });
   fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
   return screen.findByRole("radiogroup");
 }
@@ -69,7 +71,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     await reachChoice(false);
     expect(previewChange.mock.calls.map((c) => c[1])).toEqual(["replace", "add"]);
     expect(screen.getAllByRole("radio").map((r) => r.getAttribute("data-choice"))).toEqual(["replace", "add"]);
-    expect(screen.queryByText("What’s this file for?")).toBeNull();
+    expect(screen.queryByText(collectionEditCopy.upload.choiceTitleSync)).toBeNull();
   });
 
   it("with the switch on, reads the plain Sync and draws it third, and its Continue opens Sync's review", async () => {
@@ -86,10 +88,10 @@ describe("ReplaceFlow · the Sync choice", () => {
     expect(card.getAttribute("aria-checked")).toBe("true");
     // Replace still reaches its review from the same choice.
     fireEvent.click(screen.getByRole("radio", { name: /Replace my collection/ }));
-    expect(screen.getByRole("button", { name: "Review the replace →" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: collectionEditCopy.upload.continueReplace })).toBeEnabled();
     fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Review the sync →" }));
-    expect(await screen.findByRole("heading", { name: "Review before you sync" })).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.continueSync }));
+    expect(await screen.findByRole("heading", { name: collectionEditCopy.upload.syncReview.title })).toBeTruthy();
   });
 
   it("leaves Replace and Add standing when the Sync read fails", async () => {
@@ -105,7 +107,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     previewChange.mockImplementation(async (_id: string, mode: string) =>
       mode === "sync" ? syncData(4616, {}, { unavailable: "noRecord" }, "") : plain(mode === "add" ? 8961 : 4345));
     await reachChoice(true);
-    const card = screen.getByRole("radio", { name: "Sync my collection" });
+    const card = screen.getByRole("radio", { name: collectionEditCopy.upload.syncTitle });
     expect(card.getAttribute("aria-disabled")).toBe("true");
     fireEvent.click(card);
     expect(card.getAttribute("aria-checked")).toBe("false");
@@ -122,7 +124,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     // The anchor's date, and the holdings the file lacks against the anchor's file (12), not the planned removals (16).
     expect(screen.getByText("This file looks older than your Sep 28 upload.").parentElement!.textContent).toContain("It’s missing 12 cards");
     fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
-    const group = await screen.findByRole("group", { name: "What should Sync take from this file?" });
+    const group = await screen.findByRole("group", { name: collectionEditCopy.upload.staleQuestion });
     expect((within(group).getByRole("radio", { name: /Only what it adds/ }) as HTMLInputElement).checked).toBe(true);
     // The card's figure follows the pick: BOTH ends from Only what it adds' own dry run (its before is 4,617).
     await screen.findByText("4,617 → 4,619 cards");
@@ -143,7 +145,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     fireEvent.click(screen.getByRole("radio", { name: /Add these cards/ }));
     expect(screen.queryByRole("group")).toBeNull();
     fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
-    const back = screen.getByRole("group", { name: "What should Sync take from this file?" });
+    const back = screen.getByRole("group", { name: collectionEditCopy.upload.staleQuestion });
     expect((within(back).getByRole("radio", { name: /Everything, removals too/ }) as HTMLInputElement).checked).toBe(true);
     expect((within(back).getByRole("radio", { name: /Only what it adds/ }) as HTMLInputElement).checked).toBe(false);
     expect(screen.getByText("4,616 → 4,580 cards")).toBeTruthy();
@@ -167,15 +169,15 @@ describe("ReplaceFlow · the Sync choice", () => {
     });
     await reachChoice(true);
     fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
-    await screen.findByRole("group", { name: "What should Sync take from this file?" });
+    await screen.findByRole("group", { name: collectionEditCopy.upload.staleQuestion });
     await act(async () => release(undefined));
-    const card = screen.getByRole("radio", { name: "Sync my collection" });
+    const card = screen.getByRole("radio", { name: collectionEditCopy.upload.syncTitle });
     expect(card.getAttribute("aria-disabled")).toBe("true");
     expect(card.getAttribute("aria-checked")).toBe("false");
-    const go = screen.queryByRole("button", { name: "Review the sync →" });
+    const go = screen.queryByRole("button", { name: collectionEditCopy.upload.continueSync });
     if (go) fireEvent.click(go);
-    expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
-    expect(screen.queryByText("Nothing in this file changes your collection.")).toBeNull();
+    expect(screen.queryByRole("heading", { name: collectionEditCopy.upload.syncReview.title })).toBeNull();
+    expect(screen.queryByText(collectionEditCopy.upload.syncNoChange)).toBeNull();
   });
 
   it("leaves a Replace review standing when a pick's read finds the base gone", async () => {
@@ -188,7 +190,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     });
     await reachChoice(true);
     fireEvent.click(screen.getByRole("radio", { name: /Replace my collection/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Review the replace →" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.continueReplace }));
     await screen.findByRole("heading", { name: /Review before you replace/ });
     await act(async () => release(undefined));
     expect(screen.getByRole("heading", { name: /Review before you replace/ })).toBeTruthy();
@@ -218,7 +220,7 @@ describe("ReplaceFlow · the Sync choice", () => {
     expect(banner.textContent).toContain("Its cards match that upload exactly. Syncing it changes 1 token.");
     fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
     expect(screen.getByText("Your cards stay as they are. 1 token changes.")).toBeTruthy();
-    expect(screen.getByText("Next: the tokens this sync changes. Your cards don’t move.")).toBeTruthy();
+    expect(screen.getByText(collectionEditCopy.upload.nextSyncTokens)).toBeTruthy();
     // Nothing on the step reads as recording, or as something unrecorded.
     expect(document.body.textContent).not.toMatch(/record|unrecorded|its \d+ tokens?/i);
   });
@@ -243,7 +245,7 @@ describe("ReplaceFlow · the Sync choice", () => {
       });
       await reachChoice(true);
       fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
-      const group = await screen.findByRole("group", { name: "What should Sync take from this file?" });
+      const group = await screen.findByRole("group", { name: collectionEditCopy.upload.staleQuestion });
       await waitFor(() => expect(held.map((h) => h.pick).sort()).toEqual(["additions", "tokens"]));
       // Flip the pick back and forth with both reads still pending.
       fireEvent.click(within(group).getByRole("radio", { name: /Only its tokens/ }));
@@ -268,9 +270,9 @@ describe("ReplaceFlow · the Sync choice", () => {
       });
       await reachChoice(true);
       fireEvent.click(screen.getByRole("radio", { name: /Sync my collection/ }));
-      const group = await screen.findByRole("group", { name: "What should Sync take from this file?" });
+      const group = await screen.findByRole("group", { name: collectionEditCopy.upload.staleQuestion });
       fireEvent.click(within(group).getByRole("radio", { name: /Only its tokens/ }));
-      await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.");
+      await screen.findByText(collectionEditCopy.upload.prepareFailed);
       tokensFails = false;
       fireEvent.click(screen.getByRole("button", { name: "Try again" }));
       expect(await screen.findByText("4,616 → 4,616 cards")).toBeTruthy();
@@ -296,7 +298,7 @@ describe("ReplaceFlow · Sync's other ways in", () => {
     previewPaste.mockResolvedValueOnce(p);
     render(<ReplaceFlow currentCardCount={p.currentCollectionCount} deckCheck {...props} />);
     fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
-    fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Soldier" } });
+    fireEvent.change(screen.getByRole("textbox", { name: importReviewCopy.entry.pasteAria }), { target: { value: "3 Soldier" } });
     fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
   }
   // A tokens-only read: no card moves, 114 tokens change.
@@ -313,7 +315,7 @@ describe("ReplaceFlow · Sync's other ways in", () => {
     await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
     await screen.findByRole("radiogroup");
     expect(previewChange.mock.calls.map((c) => [c[1], c[2]])).toEqual([["sync", { pick: "tokens" }]]);
-    const reason = "Only tokens in this file matched. Replace and Add need at least one card.";
+    const reason = collectionEditCopy.upload.choiceNoCards;
     for (const name of [/Replace my collection/, /Add these cards/]) {
       const card = screen.getByRole("radio", { name });
       expect(card.getAttribute("aria-disabled")).toBe("true");
@@ -327,8 +329,8 @@ describe("ReplaceFlow · Sync's other ways in", () => {
     expect(sync.getAttribute("aria-disabled")).toBeNull();
     expect(within(sync).getByText("4,616 → 4,616 cards")).toBeTruthy();
     fireEvent.click(sync);
-    fireEvent.click(screen.getByRole("button", { name: "Review the sync →" }));
-    await screen.findByRole("heading", { name: "Review before you sync" });
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.continueSync }));
+    await screen.findByRole("heading", { name: collectionEditCopy.upload.syncReview.title });
     // No second tokens read: the plain read IS the pick's.
     expect(previewChange).toHaveBeenCalledTimes(1);
     confirmUpload.mockResolvedValueOnce(undefined);
@@ -340,14 +342,14 @@ describe("ReplaceFlow · Sync's other ways in", () => {
   it("with the switch off, a file of tokens alone still fails to prepare, as it always has", async () => {
     previewChange.mockRejectedValue(new Error("Upload has no matched cards; refusing to replace collection"));
     await reachWith({ ...preview, matchedCardCount: 0 }, { sync: false });
-    expect(await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.")).toBeTruthy();
+    expect(await screen.findByText(collectionEditCopy.upload.prepareFailed)).toBeTruthy();
     expect(previewChange.mock.calls.map((c) => c[1])).toEqual(["replace", "add"]);
   });
 
   it("a file of tokens alone whose token read fails too has nothing to offer: the prepare error", async () => {
     previewChange.mockRejectedValue(new Error("boom"));
     await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
-    expect(await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.")).toBeTruthy();
+    expect(await screen.findByText(collectionEditCopy.upload.prepareFailed)).toBeTruthy();
     expect(screen.queryByRole("radiogroup")).toBeNull();
   });
 
@@ -355,9 +357,9 @@ describe("ReplaceFlow · Sync's other ways in", () => {
     previewChange.mockImplementation(async (_id: string, mode: string) =>
       mode === "sync" ? syncData(4616, {}, { unavailable: why }, "") : plain(4616));
     await reachWith({ ...preview, matchedCardCount: 0 }, { sync: true });
-    expect(await screen.findByText("We couldn’t read how this file compares to your collection. Nothing was changed.")).toBeTruthy();
+    expect(await screen.findByText(collectionEditCopy.upload.prepareFailed)).toBeTruthy();
     expect(screen.queryByRole("radiogroup")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Review the sync →" })).toBeNull();
+    expect(screen.queryByRole("button", { name: collectionEditCopy.upload.continueSync })).toBeNull();
   });
 
   it("an emptied collection with an anchor gets the choice, so Sync is reachable", async () => {

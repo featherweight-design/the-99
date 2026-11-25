@@ -5,6 +5,8 @@ import fs from "node:fs";
 import { missingNamedFiles } from "../../../scripts/lib/named-files.mjs";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { refreshCopy } from "../../lib/copy/refresh";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn(), refresh: vi.fn() }) }));
 vi.mock("../discovery/home-tour", () => ({ HomeTour: () => null }));
@@ -23,7 +25,7 @@ const { WaysGroup, preconsPickHref } = await import("./ways-group");
 const { FirstRunChecklist } = await import("../home/first-run");
 const { CollectionEmptyDoors } = await import("./collection-empty-doors");
 
-const group = () => screen.getByRole("group", { name: "No file? Start another way" });
+const group = () => screen.getByRole("group", { name: collectionEditCopy.ways.kicker });
 const presses = () => Array.from(group().querySelectorAll("a, button")) as HTMLElement[];
 const label = (el: HTMLElement) => el.querySelector("span")?.firstChild?.textContent;
 
@@ -35,7 +37,7 @@ beforeEach(() => {
 describe("WaysGroup", () => {
   it("is a group named by its kicker, holding Precons I own, Import a deck and Add cards by hand, in that order", () => {
     render(<WaysGroup surface="step1" precons onAddCards={() => {}} />);
-    expect(presses().map(label)).toEqual(["Precons I own", "Import a deck", "Add cards by hand"]);
+    expect(presses().map(label)).toEqual(["Precons I own", "Import a deck", collectionEditCopy.ways.addByHand]);
     expect(within(group()).getByRole("link", { name: /Precons I own/ })).toHaveAttribute("href", "/decks/precons?pick=own");
     // Landing PR 7b: from the first run, Import a deck opens with "I own these cards" ticked.
     expect(within(group()).getByRole("link", { name: /Import a deck/ })).toHaveAttribute("href", "/decks/import?own=1");
@@ -44,7 +46,7 @@ describe("WaysGroup", () => {
   it("draws the first-timer lead and Scan your cards beside Precons I own on step 1 when it is given a Scan press, and only there", () => {
     const onScan = vi.fn();
     const { unmount } = render(<WaysGroup surface="step1" precons onAddCards={() => {}} onScan={onScan} />);
-    expect(presses().map(label)).toEqual(["Precons I own", "Scan your cards", "Import a deck", "Add cards by hand"]);
+    expect(presses().map(label)).toEqual(["Precons I own", collectionEditCopy.ways.scan, "Import a deck", collectionEditCopy.ways.addByHand]);
     expect(group().textContent).toContain("Pick the precons you own, then add the rest: scan them with your phone’s camera, or search for them by name.");
     fireEvent.click(within(group()).getByRole("button", { name: /Scan your cards/ }));
     expect(onScan).toHaveBeenCalledTimes(1);
@@ -56,7 +58,7 @@ describe("WaysGroup", () => {
 
   it("drops Precons I own with precons false, and the other two take two columns (S15)", () => {
     render(<WaysGroup surface="step1" precons={false} onAddCards={() => {}} />);
-    expect(presses().map(label)).toEqual(["Import a deck", "Add cards by hand"]);
+    expect(presses().map(label)).toEqual(["Import a deck", collectionEditCopy.ways.addByHand]);
     expect(screen.queryByText("Precons I own")).toBeNull();
     const grid = presses()[0].parentElement!;
     expect(grid.className).toContain("sm:grid-cols-2");
@@ -79,16 +81,16 @@ describe("WaysGroup", () => {
 
   it("carries a sub-line on desktop only, the full form on step 1", () => {
     render(<WaysGroup surface="step1" precons onAddCards={() => {}} />);
-    const sub = screen.getByText("Pick the boxes. We know every card in them.");
+    const sub = screen.getByText(collectionEditCopy.ways.preconsSub);
     expect(sub.className.split(/\s+/)).toEqual(expect.arrayContaining(["hidden", "sm:block"]));
-    expect(screen.getByText("Search by name and add them one by one.")).toBeInTheDocument();
+    expect(screen.getByText(collectionEditCopy.ways.addSub)).toBeInTheDocument();
   });
 
   it("on the empty Collection: no rule, the short sub-lines, `Add cards`, and a pick that reads ‹ Collection", () => {
     render(<WaysGroup surface="empty" precons onAddCards={() => {}} />);
     expect(presses().map(label)).toEqual(["Precons I own", "Import a deck", "Add cards"]);
-    expect(screen.getByText("Pick the boxes you own.")).toBeInTheDocument();
-    expect(screen.getByText("Search by name, one by one.")).toBeInTheDocument();
+    expect(screen.getByText(collectionEditCopy.ways.preconsSubShort)).toBeInTheDocument();
+    expect(screen.getByText(collectionEditCopy.ways.addSubShort)).toBeInTheDocument();
     expect(group().className).not.toContain("border-t");
     expect(within(group()).getByRole("link", { name: /Precons I own/ })).toHaveAttribute(
       "href",
@@ -113,7 +115,7 @@ describe("Step 1 with the ways group (S1)", () => {
     // The row is the upload's alone: Upload a CSV (the one fill), then Paste a list.
     expect(paste.nextElementSibling).toBeNull();
     expect(Array.from(paste.parentElement!.querySelectorAll("button")).map((b) => b.textContent)).toEqual([
-      "Upload a CSV",
+      refreshCopy.firstRun.uploadCsv,
       "Paste a list",
     ]);
     const add = within(group()).getByRole("button", { name: /Add cards by hand/ });
@@ -133,14 +135,14 @@ describe("Step 1 with the ways group (S1)", () => {
 
   it("names three locked slots in the page line, and the phone body no longer names the add", () => {
     render(<FirstRunChecklist />);
-    expect(screen.getByText("Commanders, Discover and Decks open once your cards are in.")).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.firstRun.lock.pageLineOpen)).toBeInTheDocument();
     expect(screen.queryByText(/or add cards by hand/)).toBeNull();
   });
 
   it("leaves the group out while the paste panel is open", () => {
     render(<FirstRunChecklist />);
     fireEvent.click(screen.getByRole("button", { name: "Paste a list" }));
-    expect(screen.queryByRole("group", { name: "No file? Start another way" })).toBeNull();
+    expect(screen.queryByRole("group", { name: collectionEditCopy.ways.kicker })).toBeNull();
   });
 
 });
@@ -158,7 +160,7 @@ describe("The empty Collection with the ways group (S13)", () => {
 
   it("with the switch off keeps the two equal doors", () => {
     render(<CollectionEmptyDoors />);
-    expect(screen.queryByRole("group", { name: "No file? Start another way" })).toBeNull();
+    expect(screen.queryByRole("group", { name: collectionEditCopy.ways.kicker })).toBeNull();
     expect(screen.getByRole("button", { name: /Add cards/ }).className).toBe(
       screen.getByRole("link", { name: /Upload a file/ }).className,
     );

@@ -3,6 +3,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { UploadPreview } from "../../app/collection/actions";
 import type { SyncAnswers, SyncReviewRow } from "../../lib/collection/sync";
 import type { ShortDeck } from "../../lib/collection/write";
+import { collectionEditCopy } from "../../lib/copy/collection-edit";
+import { importReviewCopy } from "../../lib/copy/import-review";
 
 // Collection Sync, the review in the flow (plan PR 3): each answer re-reads the dry run so every figure and the
 // digest stay the server's, the newest read wins, and each of Sync's confirm refusals is answered in place.
@@ -74,11 +76,11 @@ async function reachSyncReview() {
   previewPaste.mockResolvedValueOnce(preview);
   render(<ReplaceFlow currentCardCount={10} deckCheck sync />);
   fireEvent.click(screen.getAllByRole("button", { name: /Paste a list instead/ })[0]);
-  fireEvent.change(screen.getByRole("textbox", { name: "Paste your card list" }), { target: { value: "3 Sol Ring" } });
+  fireEvent.change(screen.getByRole("textbox", { name: importReviewCopy.entry.pasteAria }), { target: { value: "3 Sol Ring" } });
   fireEvent.click(screen.getByRole("button", { name: /^Preview/ }));
   fireEvent.click(await screen.findByRole("radio", { name: /Sync my collection/ }));
-  fireEvent.click(screen.getByRole("button", { name: "Review the sync →" }));
-  await screen.findByRole("heading", { name: "Review before you sync" });
+  fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.continueSync }));
+  await screen.findByRole("heading", { name: collectionEditCopy.upload.syncReview.title });
 }
 
 const tiles = () => [...document.querySelector("[aria-live]")!.children].map((t) => t.textContent);
@@ -107,7 +109,7 @@ describe("ReplaceFlow · the Sync review", () => {
     expect(screen.getByText(/Taking the file’s count overwrites 3 cards/)).toBeTruthy();
 
     confirmUpload.mockResolvedValueOnce(undefined);
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     await waitFor(() => expect(confirmUpload).toHaveBeenCalled());
     expect(confirmUpload.mock.calls[0][1]).toMatchObject({ mode: "sync", pick: "everything", answers: { all: "file" }, planDigest: 'd:{"all":"file"}' });
     await waitFor(() => expect(go).toHaveBeenCalledWith("/collection/replace/summary/up_1"));
@@ -139,7 +141,7 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
-    fireEvent.click(await screen.findByRole("button", { name: "Review the sync →" }));
+    fireEvent.click(await screen.findByRole("button", { name: collectionEditCopy.upload.continueSync }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     expect(screen.getByRole("button", { name: "Keep the app’s for all 3" }).getAttribute("aria-pressed")).toBe("true");
   });
@@ -154,7 +156,7 @@ describe("ReplaceFlow · the Sync review", () => {
     await screen.findByText(/overwrites 1 card /);
     const before = syncCalls().length;
     confirmUpload.mockResolvedValueOnce({ undecided: 1 });
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     await waitFor(() => expect(syncCalls().length).toBe(before + 1));
     // Every shipped row reads answered here, so focus stands on the section itself; no toast, no alert.
     await waitFor(() => expect(document.activeElement?.getAttribute("aria-labelledby")).toBe("sync-conflicts-heading"));
@@ -168,7 +170,7 @@ describe("ReplaceFlow · the Sync review", () => {
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     const before = syncCalls().length;
     confirmUpload.mockResolvedValueOnce({ stale: true });
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     await screen.findByText(/This changed while you were deciding\./);
     expect(syncCalls().length).toBe(before + 1);
     expect(syncCalls().at(-1)?.[2]).toEqual({ pick: "everything", answers: { all: "app" } });
@@ -183,8 +185,8 @@ describe("ReplaceFlow · the Sync review", () => {
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     nothing = true;
     confirmUpload.mockResolvedValueOnce({ nothingToSync: true });
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
-    await screen.findByText("Nothing in this file changes your collection.");
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
+    await screen.findByText(collectionEditCopy.upload.syncNoChange);
     fireEvent.click(screen.getByRole("button", { name: "Back to Collection" }));
     expect(go).toHaveBeenCalledWith("/collection");
   });
@@ -195,8 +197,8 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     confirmUpload.mockResolvedValueOnce({ unavailable: "noRecord" });
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
-    const card = await screen.findByRole("radio", { name: "Sync my collection" });
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
+    const card = await screen.findByRole("radio", { name: collectionEditCopy.upload.syncTitle });
     expect(card.getAttribute("aria-disabled")).toBe("true");
     expect(card.getAttribute("aria-checked")).toBe("false");
   });
@@ -207,9 +209,9 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     confirmUpload.mockRejectedValueOnce(new Error("boom"));
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t sync that");
-    expect(screen.getByRole("alert")).toHaveTextContent("Your collection is unchanged, and this review is still here.");
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(collectionEditCopy.upload.syncReview.failedTitleSync);
+    expect(screen.getByRole("alert")).toHaveTextContent(collectionEditCopy.upload.failedBody);
     expect(screen.getByRole("button", { name: "Keep the app’s for all 3" }).getAttribute("aria-pressed")).toBe("true");
   });
 
@@ -219,8 +221,8 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     confirmUpload.mockRejectedValueOnce(new Error("boom"));
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t sync that");
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(collectionEditCopy.upload.syncReview.failedTitleSync);
     // A new answer re-reads; the fresh figures are not drawn under the old failure.
     fireEvent.click(within(row("Esper Sentinel")).getByRole("radio", { name: "File ×2" }));
     await screen.findByText(/overwrites 1 card /);
@@ -252,10 +254,10 @@ describe("ReplaceFlow · the Sync review", () => {
     await reachSyncReview();
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     confirmUpload.mockRejectedValueOnce(new Error("boom"));
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sync anyway" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("We couldn’t sync that");
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: collectionEditCopy.shortWarning.confirmSync }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(collectionEditCopy.upload.syncReview.failedTitleSync);
     expect(confirmUpload).toHaveBeenCalledTimes(1);
     fireEvent.click(within(screen.getByRole("alert")).getByRole("button", { name: "Try again" }));
     expect(await screen.findByRole("dialog", { name: "Syncing leaves a deck short" })).toBeTruthy();
@@ -268,10 +270,10 @@ describe("ReplaceFlow · the Sync review", () => {
     await reachSyncReview();
     gone = true;
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
-    const card = await screen.findByRole("radio", { name: "Sync my collection" });
+    const card = await screen.findByRole("radio", { name: collectionEditCopy.upload.syncTitle });
     expect(card.getAttribute("aria-disabled")).toBe("true");
-    expect(screen.queryByText("Nothing in this file changes your collection.")).toBeNull();
-    expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
+    expect(screen.queryByText(collectionEditCopy.upload.syncNoChange)).toBeNull();
+    expect(screen.queryByRole("heading", { name: collectionEditCopy.upload.syncReview.title })).toBeNull();
   });
 
   it("goes back to the choice when a thrown confirm's own re-read finds the base gone", async () => {
@@ -284,10 +286,10 @@ describe("ReplaceFlow · the Sync review", () => {
       gone = true;
       throw new Error("boom");
     });
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
-    const card = await screen.findByRole("radio", { name: "Sync my collection" });
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
+    const card = await screen.findByRole("radio", { name: collectionEditCopy.upload.syncTitle });
     expect(card.getAttribute("aria-disabled")).toBe("true");
-    expect(screen.queryByRole("heading", { name: "Review before you sync" })).toBeNull();
+    expect(screen.queryByRole("heading", { name: collectionEditCopy.upload.syncReview.title })).toBeNull();
   });
 
   it("drops a Sync read still in flight once the reader leaves for another review", async () => {
@@ -301,7 +303,7 @@ describe("ReplaceFlow · the Sync review", () => {
     await waitFor(() => expect(syncCalls().at(-1)?.[2]).toEqual({ pick: "everything", answers: { all: "app" } }));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     fireEvent.click(await screen.findByRole("radio", { name: /Replace my collection/ }));
-    fireEvent.click(screen.getByRole("button", { name: "Review the replace →" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.continueReplace }));
     await screen.findByRole("heading", { name: /Review before you replace/ });
     await act(async () => release(undefined));
     // The Sync read's short deck never lands on the Replace review.
@@ -321,7 +323,7 @@ describe("ReplaceFlow · the Sync review", () => {
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
     more = true;
     confirmUpload.mockResolvedValueOnce({ undecided: 1 });
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     await waitFor(() => expect(document.activeElement).toBe(within(row("Teferi's Protection")).getByRole("radio", { name: "App ×3" })));
   }, 15_000);
 
@@ -330,7 +332,7 @@ describe("ReplaceFlow · the Sync review", () => {
     await reachSyncReview();
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     const dialog = await screen.findByRole("dialog", { name: "Syncing leaves a deck short" });
     expect(confirmUpload).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(within(dialog).getByRole("button", { name: "Cancel" }));
@@ -338,9 +340,9 @@ describe("ReplaceFlow · the Sync review", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(confirmUpload).not.toHaveBeenCalled();
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     confirmUpload.mockResolvedValueOnce(undefined);
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sync anyway" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: collectionEditCopy.shortWarning.confirmSync }));
     await waitFor(() => expect(confirmUpload).toHaveBeenCalled());
     expect(confirmUpload.mock.calls[0][1]).toMatchObject({ mode: "sync", confirmShort: [shortDeck], answers: { all: "app" } });
     await waitFor(() => expect(go).toHaveBeenCalledWith("/collection/replace/summary/up_1"));
@@ -351,9 +353,9 @@ describe("ReplaceFlow · the Sync review", () => {
     await reachSyncReview();
     fireEvent.click(screen.getByRole("button", { name: "Keep the app’s for all 3" }));
     await waitFor(() => expect(tiles()[0]).toBe("0to decide"));
-    fireEvent.click(screen.getByRole("button", { name: "Sync collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm }));
     confirmUpload.mockResolvedValueOnce({ stale: true });
-    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: "Sync anyway" }));
+    fireEvent.click(within(await screen.findByRole("dialog")).getByRole("button", { name: collectionEditCopy.shortWarning.confirmSync }));
     await screen.findByText(/This changed while you were deciding\./);
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(screen.getByRole("button", { name: "Keep the app’s for all 3" }).getAttribute("aria-pressed")).toBe("true");
