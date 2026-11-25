@@ -589,7 +589,7 @@ export async function loadOwnBothPartners(args: {
    * `owned` to itself as a set. Measured on staging over a 2,805-card collection, same 65 answers both ways:
    * **492ms unscoped, 913ms** with every id passed.
    *
-   * `pairs` is the pairs of the rows read, so it is the collection's whole list only when this is omitted.
+   * `pairs` is the collection's whole list, and only when this is omitted: a window returns none.
    */
   oracleIds?: readonly string[];
 }): Promise<OwnBothRead> {
@@ -604,7 +604,8 @@ export async function loadOwnBothPartners(args: {
     return { partners: bestPartnerPerCard(all.filter((r) => !r.held)), pairs: distinctPairs(all) };
   }
   const rows = (await db.execute(ownBothQuery(args.userId, args.oracleIds))).rows as PairRow[];
-  return { partners: bestPartnerPerCard(rows), pairs: distinctPairs(rows) };
+  // A window is the fields route's, which draws marks and never a count: no pairs are built for it.
+  return { partners: bestPartnerPerCard(rows), pairs: [] };
 }
 
 /**

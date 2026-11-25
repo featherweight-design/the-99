@@ -12,7 +12,7 @@ const h = vi.hoisted(() => ({
 vi.mock("../../db", () => {
   const chain = () => {
     const c: Record<string, unknown> = {};
-    for (const k of ["select", "from", "innerJoin"]) c[k] = () => c;
+    for (const k of ["select", "selectDistinct", "from", "innerJoin"]) c[k] = () => c;
     c.where = (w: unknown) => {
       h.wheres.push(w);
       return c;

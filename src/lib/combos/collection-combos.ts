@@ -48,8 +48,9 @@ export type CollectionCombos = { side: ComboSide; total: number; pairs: Collecti
 async function wantedByDecks(userId: string, oracleIds: string[]): Promise<Map<string, { id: string; name: string }[]>> {
   const out = new Map<string, { id: string; name: string }[]>();
   if (oracleIds.length === 0) return out;
+  // DISTINCT: a deck may hold a card on more than one row (another section or printing), and is wanted once.
   const rows = await db
-    .select({ oracleId: deckCards.oracleId, id: decks.id, name: decks.name })
+    .selectDistinct({ oracleId: deckCards.oracleId, id: decks.id, name: decks.name })
     .from(deckCards)
     .innerJoin(decks, eq(decks.id, deckCards.deckId))
     .where(and(eq(decks.userId, userId), inArray(deckCards.oracleId, oracleIds)));
@@ -60,6 +61,8 @@ async function wantedByDecks(userId: string, oracleIds: string[]): Promise<Map<s
   }
   return out;
 }
+
+const noDecks = new Map<string, { id: string; name: string }[]>();
 
 export async function loadCollectionCombos(args: { userId: string; store: Store; side: ComboSide }): Promise<CollectionCombos> {
   const { userId, store, side } = args;
@@ -86,7 +89,7 @@ export async function loadCollectionCombos(args: { userId: string; store: Store;
   // A failed price read costs the price, never the list: silence is the honest outcome.
   const [prices, wanted] = await Promise.all([
     side === "one" ? loadOwnedPrintingPrices(missingIds, store).catch(() => null) : Promise.resolve(null),
-    side === "one" ? wantedByDecks(userId, missingIds).catch(() => new Map<string, { id: string; name: string }[]>()) : Promise.resolve(new Map<string, { id: string; name: string }[]>()),
+    side === "one" ? wantedByDecks(userId, missingIds).catch(() => noDecks) : Promise.resolve(noDecks),
   ]);
 
   const pairs = picked.map((p): CollectionComboPair => {

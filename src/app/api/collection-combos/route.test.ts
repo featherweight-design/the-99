@@ -27,6 +27,13 @@ describe("GET /api/collection-combos", () => {
     expect(stub.load).toHaveBeenCalledWith({ userId: "user_1", store: "manapool", side: "one" });
   });
 
+  it("answers 500 uncached when the read fails, so the view can draw its failed state", async () => {
+    stub.load.mockRejectedValue(new Error("db down"));
+    const res = await get("side=both");
+    expect(res.status).toBe(500);
+    expect(res.headers.get("cache-control")).toBe("private, no-store");
+  });
+
   it("refuses a signed-out request before any read", async () => {
     stub.userId = null;
     expect((await get("side=both")).status).toBe(401);

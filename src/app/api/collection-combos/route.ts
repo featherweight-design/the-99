@@ -29,6 +29,12 @@ export async function GET(req: NextRequest) {
   const wait = await enforceHit(userId, "draw-fields");
   if (wait !== null) return tooManyRequests(wait, HEADERS);
   const store = await readerStoreForPage(userId, await requestFlags(userId)).catch(() => "manapool" as const);
-  const combos = await loadCollectionCombos({ userId, store, side: side as ComboSide });
-  return NextResponse.json(combos, { headers: HEADERS });
+  // A failed read answers 500 with the same no-store headers, so the response stays uncacheable and the view can
+  // draw its failed state. Prices and wanted-by already degrade to silence inside the loader.
+  try {
+    const combos = await loadCollectionCombos({ userId, store, side: side as ComboSide });
+    return NextResponse.json(combos, { headers: HEADERS });
+  } catch {
+    return NextResponse.json(null, { status: 500, headers: HEADERS });
+  }
 }
