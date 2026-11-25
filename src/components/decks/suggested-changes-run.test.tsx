@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { pullCardFromDeck } from "../../app/decks/actions";
 import { deckTuningCopy } from "../../lib/copy/deck-tuning";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
-import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY } from "../../lib/copy/deck-sort";
+import { DECK_GROUPING_ARIA, DECK_GROUPING_KEY, DECK_GROUPING_LABELS } from "../../lib/copy/deck-sort";
 import { suggestedChangesV2Copy } from "../../lib/copy/suggested-changes-v2";
 import { tuningHubCopy } from "../../lib/copy/tuning-hub";
 import type { LineItem, TuningLive, V2Ask } from "../../lib/tuning/state";
@@ -260,7 +260,7 @@ describe("the results", () => {
       ask: otherDecks,
       lines: [...adds(5, (i) => ({ picked: i === 0, availability: i === 0 ? held : null })), ...cuts(5, (i) => ({ picked: i === 0 }))],
     });
-    const reason = "That card is that deck’s commander.";
+    const reason = "fixture refusal reason";
     t.actions.apply.mockResolvedValueOnce({
       ok: false, message: deckTuningCopy.lists.applyRefused, refusal: { kind: "pull", itemId: "a0", message: reason },
     });
@@ -491,7 +491,7 @@ describe("the results", () => {
     await press(pick("a0"));
     expect((document.querySelector('[data-sc-side="add"] [data-sc-group="Instants"] h4') as HTMLElement).textContent)
       .toContain(sc.results.withPicks(10));
-    await press(screen.getByRole("radio", { name: "By role" }));
+    await press(screen.getByRole("radio", { name: DECK_GROUPING_LABELS.role }));
     expect(localStorage.getItem(DECK_GROUPING_KEY)).toBe("role");
     expect((document.querySelector('[data-sc-side="add"] [data-sc-group="removal"] h4') as HTMLElement).textContent)
       .toContain(sc.results.roleHead(6, 10));

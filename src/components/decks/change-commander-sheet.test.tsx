@@ -294,7 +294,7 @@ describe("ChangeCommanderSheet for a pair", () => {
     mount(true);
     fireEvent.click(await screen.findByRole("button", { name: "Choose Ishai and Reyhan" }));
     fireEvent.click(screen.getByRole("radio", { name: "Thrasios" }));
-    fireEvent.click(screen.getByRole("button", { name: "Back to the list" }));
+    fireEvent.click(screen.getByRole("button", { name: changeCommanderCopy.confirm.backList }));
     fireEvent.click(screen.getByRole("button", { name: "Choose Ishai and Reyhan" }));
     expect(screen.getByRole("radio", { name: "Thrasios" }).getAttribute("aria-checked")).toBe("true");
   });

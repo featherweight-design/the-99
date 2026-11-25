@@ -4,6 +4,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { ArrivalStrip, PreconArrivalBand } from "./arrival-strip";
 import { UpdateStrip } from "./update-strip";
+import { deckImportCopy } from "../../lib/copy/deck-import";
 
 vi.mock("next/link", () => ({ default: ({ href, children, className }: { href: string; children: React.ReactNode; className?: string }) => <a href={href} className={className}>{children}</a> }));
 vi.mock("../shell/pending-reporter", () => ({ PendingReporter: () => null }));
@@ -15,7 +16,7 @@ describe("the ticked import's strip (S10)", () => {
     render(<ArrivalStrip onDismiss={noop} importedLineCount={100} added={{ entryId: "e1", copies: 100 }} />);
     expect(screen.getByText("All 100 lines came over clean.")).toBeTruthy();
     expect(screen.getByText(/^All 100 cards added to your collection\./)).toBeTruthy();
-    expect(screen.getByText("Imported from your list a moment ago")).toBeTruthy();
+    expect(screen.getByText(deckImportCopy.arrival.own.meta)).toBeTruthy();
     expect(screen.getByRole("link", { name: "History" }).getAttribute("href")).toBe("/collection/history?entry=e1");
     // The one-line form is gone at both widths: the phone takes the same three lines.
     expect(screen.queryByText(/came over · from your list/)).toBeNull();

@@ -61,7 +61,7 @@ const copy = swapToolsCopy.modal;
 /** Declares a sheet opened over the open card, as the stand-ins sheet does from the door. */
 function OverCard() {
   const { registerSheet } = useCardDetail();
-  useEffect(() => registerSheet("Cheaper stand-ins", undefined, true), [registerSheet]);
+  useEffect(() => registerSheet("Fixture stand-in sheet", undefined, true), [registerSheet]);
   return null;
 }
 function Seed({ receipt }: { receipt?: SwapReceipt }) {
@@ -268,7 +268,7 @@ describe("focus after a take", () => {
         <div data-swap-id="s1"><button type="button">Undo swap</button></div>
       </>,
     );
-    const undo = screen.getByRole("button", { name: "Undo swap" });
+    const undo = screen.getByRole("button", { name: swapToolsCopy.row.undoSwap });
     await press("shop plateau");
     // Paging to another card while the modal stays open: focus stays out of the page behind it.
     await press("shop tower");
@@ -326,7 +326,7 @@ describe("a sheet over the card", () => {
     // A stand-in over the sheet draws no door of its own.
     expect(dialogs[1].querySelector('[data-testid="stand-in-door"]')).toBeNull();
     // Its way back names the sheet at both widths: the desktop pill and the phone's ×.
-    const backs = [...dialogs[1].querySelectorAll("button")].filter((b) => b.getAttribute("aria-label") === "Back to Cheaper stand-ins");
+    const backs = [...dialogs[1].querySelectorAll("button")].filter((b) => b.getAttribute("aria-label") === "Back to Fixture stand-in sheet");
     expect(backs).toHaveLength(2);
   });
 });

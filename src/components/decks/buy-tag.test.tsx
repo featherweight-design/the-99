@@ -305,11 +305,11 @@ describe("BuyTag as I got it's button (press)", () => {
 
   it("carries the spoken-for sentence as its description, not as its name", () => {
     render(
-      <BuyTag variant="row" label="a second copy to buy" price={PRICED} newestAsOf={NEWEST} density="full" press={press()} />,
+      <BuyTag variant="row" label="Fixture spoken-for sentence" price={PRICED} newestAsOf={NEWEST} density="full" press={press()} />,
     );
     const button = screen.getByRole("button", { name: gotItCopy.row.tagAria("Etali, Primal Conqueror") });
     expect(button.getAttribute("aria-describedby")).toBeTruthy();
-    expect(button).toHaveAccessibleDescription(/a second copy to buy/);
+    expect(button).toHaveAccessibleDescription(/Fixture spoken-for sentence/);
   });
 
   it("puts `over $X` under the plate, inside the button, and in the description", () => {

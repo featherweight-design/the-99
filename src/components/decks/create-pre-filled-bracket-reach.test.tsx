@@ -4,6 +4,7 @@
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { HandOffReach } from "../../lib/intake/hand-off-reach";
+import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 
 const createDeck = vi.hoisted(() => vi.fn(async () => {}));
 const readReach = vi.hoisted(() => vi.fn());
@@ -91,7 +92,7 @@ describe("the hand-off's Bracket row, read", () => {
       + "From my collectionBuilds from your cards: bracket 1-2."
       + "Hit bracket 3Adds Rhystic Study, about $32, to buy. It joins the deck’s Shopping list.",
     );
-    expect(screen.getByTestId("bracket-choice-waiting").textContent).toBe("Choose how to build it under Bracket to create the deck.");
+    expect(screen.getByTestId("bracket-choice-waiting").textContent).toBe(helpMeChooseCopy.handOff.reach.waiting);
     expect(createButton().hasAttribute("disabled")).toBe(true);
     await submit();
     expect(createDeck).not.toHaveBeenCalled();

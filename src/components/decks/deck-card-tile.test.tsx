@@ -12,6 +12,7 @@ await (await import("../cards/card-detail-provider")).warmCardModal();
 import { proxyCopy } from "../../lib/copy/proxies";
 import { deckVersioningCopy } from "../../lib/copy/deck-versioning";
 import { PendingChangeProvider } from "./pending-change";
+import { foilMarkCopy } from "../../lib/copy/foil-mark";
 
 const { addCardToDeck, removeCardFromDeck } = vi.hoisted(() => ({
   addCardToDeck: vi.fn(),
@@ -597,7 +598,7 @@ describe("DeckCardTile foil glint", () => {
     expect(glints()).toHaveLength(1);
     const dot = document.querySelector("[data-owned], [aria-label='Owned'], [aria-label='Not owned']");
     expect(dot).not.toBeNull();
-    expect(screen.getAllByRole("button").some((b) => (b.getAttribute("aria-label") ?? "").includes(", etched foil"))).toBe(true);
+    expect(screen.getAllByRole("button").some((b) => (b.getAttribute("aria-label") ?? "").includes(foilMarkCopy.spoken.etched))).toBe(true);
   });
   it("draws nothing for a plain card, part-foil, or a card with no art", () => {
     renderTile(<DeckCardTile deckId="d1" card={card} />);

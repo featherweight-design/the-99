@@ -2,6 +2,7 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { useState } from "react";
 import { describe, expect, it } from "vitest";
 import { DeckSearchField } from "./deck-filter-column";
+import { searchFieldCopy } from "../../lib/copy/search-field";
 
 function Host({ size }: { size: "column" | "sheet" }) {
   const [q, setQ] = useState("elves");
@@ -15,7 +16,7 @@ describe("DeckSearchField", () => {
     it(`clears in one tap and keeps focus (${size})`, () => {
       render(<Host size={size} />);
       const input = screen.getByRole("searchbox") as HTMLInputElement;
-      const clear = screen.getByRole("button", { name: "Clear search" });
+      const clear = screen.getByRole("button", { name: searchFieldCopy.clear });
       expect(fireEvent.mouseDown(clear)).toBe(false);
       fireEvent.click(clear);
       expect(input.value).toBe("");

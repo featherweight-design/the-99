@@ -666,14 +666,14 @@ describe("a carried Overview's aside", () => {
 
   it("reads from the precon list beside the label, with nothing to press", () => {
     draw(carried());
-    expect(aside()?.textContent).toBe("from the precon list");
+    expect(aside()?.textContent).toBe(copy.fromPrecon);
     expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
     expect(screen.queryByRole("button", { name: copy.writeOne })).toBeNull();
   });
 
   it("gains before your changes after the first edit, whole and with no write control", () => {
     draw(carried({ stale: true }), { readingFresh: false });
-    expect(aside()?.textContent).toBe("from the precon list, before your changes");
+    expect(aside()?.textContent).toBe(copy.fromPreconStale);
     expect(screen.getByRole("button", { name: /Sol Ring/ })).toBeTruthy();
     expect(screen.queryByRole("button", { name: copy.writeNew })).toBeNull();
     expect(screen.queryByText(copy.olderThanList)).toBeNull();

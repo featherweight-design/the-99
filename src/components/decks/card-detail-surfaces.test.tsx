@@ -19,6 +19,7 @@ import { Decklist } from "./decklist";
 import { SuggestionTile } from "./suggestion-tile";
 import { QuickAddBar } from "./quick-add-bar";
 import { recommendedMix } from "../../lib/decks/mix";
+import { changeCommanderCopy } from "../../lib/copy/change-commander";
 
 /** The asserted baseline, through the real function rather than restated — a hand-built
  *  literal drifts from the type the moment a field is added, which is how 120 of these broke. */
@@ -200,7 +201,7 @@ describe("deck card-detail triggers", () => {
 
     // One per band. The two widths are separate trees here — the wash strategy
     // differs, not only the skin — so both are in the DOM and one is CSS-hidden.
-    const triggers = screen.getAllByRole("button", { name: "View card details" });
+    const triggers = screen.getAllByRole("button", { name: changeCommanderCopy.detailsAria });
     expect(triggers).toHaveLength(2);
     await act(async () => {
       fireEvent.click(triggers[0]);
