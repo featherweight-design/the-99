@@ -28,7 +28,7 @@ describe("CommitmentsCard", () => {
         totalCards={10}
       />,
     );
-    expect(screen.getByText("1 card")).toBeInTheDocument();
+    expect(screen.getByText(refreshCopy.home.overCommittedValue(1))).toBeInTheDocument();
   });
 
   it("prints the shopping total as copies and money", () => {

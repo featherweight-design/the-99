@@ -176,8 +176,8 @@ describe("SetGridView — 0% and 100%", () => {
     // and stays empty until the reader sells a card, so there is no state to lose. Owned
     // still means something in the extras, so it stays (H12).
     view([p("1")], ["1"]);
-    expect(screen.queryByRole("button", { name: "Missing only" })).toBeNull();
-    expect(screen.getByRole("button", { name: "Owned only" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: setFilterCopy.ownership.missing.label })).toBeNull();
+    expect(screen.getByRole("button", { name: setFilterCopy.ownership.owned.label })).toBeInTheDocument();
   });
 
   it("promotes the extras count into the head at 100 percent", () => {
@@ -233,7 +233,7 @@ describe("SetGridView — filters", () => {
     // Every cell is already loaded, so a toggle is a presentation change over data in
     // hand: routing is the request being avoided. `own`, never `m=1` (H10 took `m`).
     view([p("1"), p("2")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: "Missing only" }));
+    fireEvent.click(screen.getByRole("button", { name: setFilterCopy.ownership.missing.label }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?own=missing");
   });
 
@@ -241,7 +241,7 @@ describe("SetGridView — filters", () => {
     // The legacy `m=1` reads as missing, and leaves the URL with it.
     search = "m=1";
     view([p("1"), p("2")], ["1"]);
-    const missing = screen.getByRole("button", { name: "Missing only" });
+    const missing = screen.getByRole("button", { name: setFilterCopy.ownership.missing.label });
     expect(missing).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(missing);
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk");
@@ -250,17 +250,17 @@ describe("SetGridView — filters", () => {
   // H12: the mirror filter.
   it("writes owned-only as own=owned", () => {
     view([p("1"), p("2")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: "Owned only" }));
+    fireEvent.click(screen.getByRole("button", { name: setFilterCopy.ownership.owned.label }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?own=owned");
   });
 
   it("makes Missing and Owned mutually exclusive", () => {
     search = "own=missing";
     view([p("1"), p("2")], ["1"]);
-    fireEvent.click(screen.getByRole("button", { name: "Owned only" }));
+    fireEvent.click(screen.getByRole("button", { name: setFilterCopy.ownership.owned.label }));
     expect(replaceState).toHaveBeenCalledWith(null, "", "/collection/sets/dsk?own=owned");
-    expect(screen.getByRole("button", { name: "Owned only" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "Missing only" })).toHaveAttribute("aria-pressed", "false");
+    expect(screen.getByRole("button", { name: setFilterCopy.ownership.owned.label })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: setFilterCopy.ownership.missing.label })).toHaveAttribute("aria-pressed", "false");
   });
 
   it("hides missing cells under owned-only and says what it shows", () => {
@@ -398,7 +398,7 @@ describe("SetGridView — the cost strip's scope", () => {
         staleAsOf={null}
       />,
     );
-    expect(screen.getByText("Send 1 to Mana Pool")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cost.send(1))).toBeInTheDocument();
     expect(screen.getByText("over 1 of the 1 missing")).toBeInTheDocument();
   });
 
@@ -422,7 +422,7 @@ describe("SetGridView — the cost strip's scope", () => {
       />,
     );
     expect(screen.getByText(setPageCopy.cost.labelExtras)).toBeInTheDocument();
-    expect(screen.getByText("Send 2 to Mana Pool")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cost.send(2))).toBeInTheDocument();
   });
 
   it("offers no send at a store with no cart, and still costs the missing cards there", () => {
@@ -486,8 +486,8 @@ describe("SetGridView — phone and desktop are one document", () => {
     // Two buttons with one accessible name read as correct at either width alone and
     // wrong in the document that contains both.
     view([p("1"), p("2")], ["1"]);
-    expect(screen.getAllByRole("button", { name: "Missing only" })).toHaveLength(1);
-    expect(screen.getAllByRole("button", { name: "Owned only" })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: setFilterCopy.ownership.missing.label })).toHaveLength(1);
+    expect(screen.getAllByRole("button", { name: setFilterCopy.ownership.owned.label })).toHaveLength(1);
   });
 
   // H13: on the phone ownership lives in the drawer, as chips with counts.
@@ -839,14 +839,14 @@ describe("SetGridView — the rack, chassis-conformant", () => {
   it("orders chips by dimension, never by click order", () => {
     search = "m=1&r=rare&c=W";
     view([p("1", { rarity: "rare" }), p("2", { rarity: "common" })], []);
-    expect(chipLabels()).toEqual(["White", "Rare", "Missing only"]);
+    expect(chipLabels()).toEqual(["White", "Rare", setFilterCopy.ownership.missing.label]);
   });
 
   // H10 and H13: the modifier's own chip after the pips, and one chip per rarity.
   it("chips Exactly, each rarity and Owned in dimension order", () => {
     search = "own=owned&r=mythic,rare&m=exact&c=W";
     view([p("1", { rarity: "rare" }), p("2", { rarity: "mythic" })], ["1", "2"]);
-    expect(chipLabels()).toEqual(["White", "Exactly", "Rare", "Mythic", "Owned only"]);
+    expect(chipLabels()).toEqual(["White", "Exactly", "Rare", "Mythic", setFilterCopy.ownership.owned.label]);
   });
 
   it("removes one rarity from its own chip and keeps the other", () => {
@@ -1354,7 +1354,7 @@ describe("SetGridView — the name search", () => {
     view([p("1", { name: "Plains" }), p("2", { name: "Mountain" })], []);
     // One missing cell matches, so the button offers one and not two — and the link it
     // builds carries that one card, not the whole set.
-    expect(screen.getByText("Send 1 to Mana Pool")).toBeInTheDocument();
+    expect(screen.getByText(setPageCopy.cost.send(1))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /1 missing card,/ })).toBeInTheDocument();
   });
 
@@ -2337,7 +2337,7 @@ describe("SetGridView — the phone head collapses past a threshold", () => {
     scrollTo(0);
     expect(isShy(container)).toBe(false);
     expect(own().className).toContain("md:flex");
-    expect(screen.getByRole("button", { name: "Owned only" })).toHaveAttribute("aria-pressed", "true");
+    expect(screen.getByRole("button", { name: setFilterCopy.ownership.owned.label })).toHaveAttribute("aria-pressed", "true");
     expect(within(sort()).getByRole("button").getAttribute("aria-label") ?? "").toMatch(/price/i);
   });
 

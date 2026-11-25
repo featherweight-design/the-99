@@ -417,12 +417,12 @@ describe("Sync review · the bar", () => {
     // One line says it: the note above. The bar is only the way back and carries no sentence of its own.
     expect(screen.queryByText("Nothing will change.")).toBeNull();
     // …and draws no empty sentence line in its place (it would still take the phone's 10px gap).
-    const bar = screen.getByRole("button", { name: "Back to Collection" }).closest("div[style*='border-top']");
+    const bar = screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.back }).closest("div[style*='border-top']");
     expect(bar).not.toBeNull();
     expect(bar!.querySelector("p")).toBeNull();
     expect(screen.queryByRole("button", { name: "Cancel" })).toBeNull();
     expect(screen.queryByRole("button", { name: collectionEditCopy.upload.syncReview.bar.confirm })).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Back to Collection" }));
+    fireEvent.click(screen.getByRole("button", { name: collectionEditCopy.upload.syncReview.bar.back }));
     expect(onLeave).toHaveBeenCalled();
   });
 

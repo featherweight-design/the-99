@@ -63,7 +63,7 @@ describe("ShortDeckWarning", () => {
 
   it("several cards: a deck short on only one of them still opens onto that card", () => {
     draw([line("a", "x", 1), line("a", "y", 2), line("b", "x", 1)]);
-    const one = screen.getByRole("button", { name: "1 card short" });
+    const one = screen.getByRole("button", { name: collectionEditCopy.shortWarning.figureMany(1) });
     fireEvent.click(one);
     expect(screen.getByText("Card x", { selector: "li span" })).toBeTruthy();
   });

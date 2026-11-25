@@ -9,14 +9,17 @@ vi.mock("../../app/friends/actions", () => actions);
 vi.mock("../social/invite-sheet", () => ({
   InviteSheet: ({ screen }: { screen: string }) => <div role="dialog" aria-label="Invite chooser" data-screen={screen} />,
 }));
-vi.mock("../social/add-friend-dialog", () => ({
-  // Closing hands focus back through `returnFocusRef`, as the real dialog's `useDialogA11y` does.
-  AddFriendDialog: ({ url, onClose, returnFocusRef }: { url: string; onClose: () => void; returnFocusRef?: { current: HTMLElement | null } }) => (
-    <div role="dialog" aria-label="Add a friend" data-url={url}>
-      <button type="button" onClick={() => { onClose(); returnFocusRef?.current?.focus(); }}>close</button>
-    </div>
-  ),
-}));
+vi.mock("../social/add-friend-dialog", async () => {
+  const { socialCopy: copy } = await import("../../lib/copy/social");
+  return {
+    // Closing hands focus back through `returnFocusRef`, as the real dialog's `useDialogA11y` does.
+    AddFriendDialog: ({ url, onClose, returnFocusRef }: { url: string; onClose: () => void; returnFocusRef?: { current: HTMLElement | null } }) => (
+      <div role="dialog" aria-label={copy.page.invite} data-url={url}>
+        <button type="button" onClick={() => { onClose(); returnFocusRef?.current?.focus(); }}>close</button>
+      </div>
+    ),
+  };
+});
 const watch = vi.hoisted(() => ({ useInviteWatch: vi.fn() }));
 vi.mock("../social/use-invite-watch", () => watch);
 // Step 1's upload flow calls into these at render; nothing here uploads.

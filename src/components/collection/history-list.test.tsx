@@ -239,7 +239,7 @@ describe("HistoryList", () => {
   it("tags a cart purchase From Shopping and links the cart, never one deck", () => {
     draw([entry({ kind: "edit", source: "shopping:cart:d1,d2", firstName: "Sol Ring", shoppingCart: true })]);
     expect(screen.getByText(collectionEditCopy.history.kinds.shopping)).toBeTruthy();
-    const link = screen.getByRole("link", { name: "Shopping for all decks" });
+    const link = screen.getByRole("link", { name: gotItCopy.history.fromCart.link });
     expect(link.getAttribute("href")).toBe("/decks/shopping");
     expect(link.closest("p")?.textContent).toBe("From Shopping for all decks");
     expect(link.closest("button")).toBeNull();
@@ -248,14 +248,14 @@ describe("HistoryList", () => {
   it("names the decks a cart purchase was bought for, linked, with the overflow counted", () => {
     const cartDecks = { named: [{ id: "d1", name: "Gishath" }, { id: "d2", name: "Omnath" }, { id: "d3", name: "Atraxa" }], more: 2, gone: 1 };
     draw([entry({ kind: "edit", source: "shopping:cart:d1,d2,d3", firstName: "Sol Ring", shoppingCart: true, cartDecks })]);
-    const p = screen.getByRole("link", { name: "Shopping for all decks" }).closest("p")!;
+    const p = screen.getByRole("link", { name: gotItCopy.history.fromCart.link }).closest("p")!;
     expect(p.textContent).toBe("From Shopping for all decks. Bought for Gishath, Omnath, Atraxa, 2 more and a deck you’ve since deleted.");
     expect(screen.getByRole("link", { name: "Omnath" }).getAttribute("href")).toBe("/decks/d2");
   });
 
   it("says only that a cart purchase's decks are gone when none survive", () => {
     draw([entry({ kind: "edit", source: "shopping:cart:d1,d2", firstName: "Sol Ring", shoppingCart: true, cartDecks: { named: [], more: 0, gone: 2 } })]);
-    expect(screen.getByRole("link", { name: "Shopping for all decks" }).closest("p")?.textContent)
+    expect(screen.getByRole("link", { name: gotItCopy.history.fromCart.link }).closest("p")?.textContent)
       .toBe("From Shopping for all decks. Bought for 2 decks you’ve since deleted.");
   });
 

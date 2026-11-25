@@ -175,7 +175,7 @@ describe("Dashboard at zero decks", () => {
     render(<Dashboard {...BASE} decks={[]} />);
     expect(screen.getByRole("heading", { name: refreshCopy.zero.decksHeading })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: refreshCopy.zero.browseCommanders })).toHaveAttribute("href", "/commanders");
-    expect(screen.getByRole("link", { name: "Import a deck" })).toHaveAttribute("href", "/decks/import");
+    expect(screen.getByRole("link", { name: refreshCopy.zero.importDeck })).toHaveAttribute("href", "/decks/import");
     expect(screen.queryByText(/Pick up where you left off/i)).toBeNull();
   });
 

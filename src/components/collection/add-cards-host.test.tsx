@@ -12,18 +12,21 @@ let pathname = "/decks/abc";
 vi.mock("next/navigation", () => ({ usePathname: () => pathname }));
 // The sheet has its own tests; here it is a stand-in that reports its props and offers each way out.
 const sheetProps = vi.fn();
-vi.mock("./add-cards-sheet", () => ({
-  AddCardsSheet: (p: Extract<AddCardsSheetProps, { mode: "add" }>) => {
-    sheetProps(p);
-    return (
-      <div role="dialog" aria-label="Add cards">
-        <button type="button" onClick={() => p.onSaved?.(2)}>save</button>
-        <button type="button" onClick={() => p.onClose()}>done</button>
-        <button type="button" onClick={() => p.onClose(true)}>history</button>
-      </div>
-    );
-  },
-}));
+vi.mock("./add-cards-sheet", async () => {
+  const { collectionEditCopy: copy } = await import("../../lib/copy/collection-edit");
+  return {
+    AddCardsSheet: (p: Extract<AddCardsSheetProps, { mode: "add" }>) => {
+      sheetProps(p);
+      return (
+        <div role="dialog" aria-label={copy.head.add}>
+          <button type="button" onClick={() => p.onSaved?.(2)}>save</button>
+          <button type="button" onClick={() => p.onClose()}>done</button>
+          <button type="button" onClick={() => p.onClose(true)}>history</button>
+        </div>
+      );
+    },
+  };
+});
 
 const { AddCardsHost, useAddCards, useAddCardsUp } = await import("./add-cards-host");
 const { CollectionEditScope } = await import("../cards/collection-edit-scope");

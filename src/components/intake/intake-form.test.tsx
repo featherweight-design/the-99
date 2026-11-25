@@ -8,6 +8,8 @@ import { creditsCopy } from "../../lib/copy/credits";
 import { helpMeChooseCopy } from "../../lib/copy/help-me-choose";
 import { TAG_A_CARD_WORDS } from "../../lib/copy/card-tags";
 import { deckDescriptionCopy } from "../../lib/copy/deck-description";
+import { deckNotesCopy } from "../../lib/copy/deck-notes";
+import { filterCopy } from "../../lib/copy/lanes";
 
 const push = vi.hoisted(() => vi.fn(async (query: string) => { void query; return { kind: "refused" as const }; }));
 vi.mock("../../app/decks/new/choose/actions", () => ({ submitChoose: push, hideChooseIntro: vi.fn(async () => ({ ok: true })) }));
@@ -99,7 +101,7 @@ describe("the Theme field's join", () => {
   });
 });
 
-describe("Cards for the 99", () => {
+describe("the own-only pool and the budget caption", () => {
   it("sends own-only with the submit, and says the budget caps the commander and a card it would buy", () => {
     push.mockClear();
     render(<IntakeForm themes={[]} initial={emptyParams()} />);
@@ -300,7 +302,7 @@ describe("Anything else? (the read addendum, 7a to 7c and 7n)", () => {
       searchTag.mockResolvedValueOnce([]);
       render(<IntakeForm themes={[]} initial={emptyParams()} />);
       type("a deck with [[Zzqx");
-      expect(await screen.findByText("No card by that name.")).toBeTruthy();
+      expect(await screen.findByText(deckNotesCopy.picker.noCard)).toBeTruthy();
     });
 
     it("lets Tab leave the box at the three-tag limit instead of holding it for a pick that does nothing", async () => {
@@ -355,7 +357,7 @@ describe("the Bracket field's heads-up (bracket reach R1b, board A)", () => {
   it("reruns when the color match changes: under Any a blue-black commander can play the blue card", async () => {
     render(<IntakeForm themes={[]} initial={{ ...emptyParams(), bracket: 3, colors: ["b"], match: "exactly" }} />);
     expect(await screen.findByText(/a deck would be bracket 1-2\. What reaching 3 takes depends on the commander/)).toBeTruthy();
-    const group = screen.getByRole("radiogroup", { name: "Color match" });
+    const group = screen.getByRole("radiogroup", { name: filterCopy.match.legend });
     fireEvent.click(within(group).getAllByRole("radio")[0]);
     expect(screen.getByText("3 · Upgraded. Your cards would reach it.")).toBeTruthy();
   });
