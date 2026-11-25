@@ -7,7 +7,7 @@ vi.mock("../decks/price-query", () => ({ loadPrices: m.loadPrices }));
 
 import { distinctCards, loadTradeAsk } from "./trade-ask";
 
-const A = { oracleId: "a", name: "Ghalta, Primal Hunger", imageUri: null };
+const A = { oracleId: "a", name: "Fixture Titan, Fixture Hunger", imageUri: null };
 const B = { oracleId: "b", name: "Rhystic Study", imageUri: "https://img/b" };
 beforeEach(() => {
   m.loadPrices.mockReset();

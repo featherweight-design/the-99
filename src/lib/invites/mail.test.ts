@@ -5,12 +5,12 @@ import { mailConfig, RESEND_URL, sendMail } from "./mail";
 import { friendLinkCopy } from "../copy/friend-links";
 
 const SECRET = "ab".repeat(32);
-const FULL = { RESEND_API_KEY: "re_test_123", INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET, APP_ORIGIN: "https://the-99.dev" };
+const FULL = { RESEND_API_KEY: "re_test_123", INVITE_EMAIL_FROM: "Fixture Sender <invites@mail.the-99.dev>", INVITE_CODE_SECRET: SECRET, APP_ORIGIN: "https://the-99.dev" };
 const MAIL = { to: "new@x.dev", subject: friendLinkCopy.sheet.codeKicker, text: "123456", html: "<p>123456</p>" };
 
 describe("mailConfig", () => {
   it("is configured only with the key, a sender address and the code secret", () => {
-    expect(mailConfig(FULL)).toEqual({ apiKey: "re_test_123", from: "The 99 <invites@mail.the-99.dev>", origin: "https://the-99.dev" });
+    expect(mailConfig(FULL)).toEqual({ apiKey: "re_test_123", from: "Fixture Sender <invites@mail.the-99.dev>", origin: "https://the-99.dev" });
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "invites@mail.the-99.dev" })).not.toBeNull();
   });
 
@@ -30,8 +30,8 @@ describe("mailConfig", () => {
     expect(mailConfig({ ...FULL, RESEND_API_KEY: "sk_live_x" })).toBeNull();
     expect(mailConfig({ ...FULL, RESEND_API_KEY: "  " })).toBeNull();
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: undefined })).toBeNull();
-    expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "The 99" })).toBeNull();
-    expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "The 99 <invites@mail.the-99.dev" })).toBeNull();
+    expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "Fixture Sender" })).toBeNull();
+    expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "Fixture Sender <invites@mail.the-99.dev" })).toBeNull();
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "invites@mail.the-99.dev>" })).toBeNull();
     expect(mailConfig({ ...FULL, INVITE_EMAIL_FROM: "<invites@mail.the-99.dev>" })).not.toBeNull();
     expect(mailConfig({ ...FULL, INVITE_CODE_SECRET: undefined })).toBeNull();

@@ -121,8 +121,8 @@ describe("playerText", () => {
 
   it("counts Unicode code points, not UTF-16 code units, so emoji don't count double", () => {
     const seventyOneEmoji = "\u{1F600}".repeat(71); // 142 UTF-16 code units, 71 code points
-    expect(() => playerText("A note", seventyOneEmoji, 71)).not.toThrow();
-    expect(() => playerText("A note", seventyOneEmoji, 70)).toThrow(/71 characters, over its 70-character cap/);
+    expect(() => playerText("Fixture note", seventyOneEmoji, 71)).not.toThrow();
+    expect(() => playerText("Fixture note", seventyOneEmoji, 70)).toThrow(/71 characters, over its 70-character cap/);
   });
 
   it("names both tags in the system-prompt rule, so a reader of the rule can match them to the block", () => {

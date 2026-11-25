@@ -36,7 +36,7 @@ describe("the menu chip (M1b)", () => {
   });
 
   it("out of credits: hollow diamond and Get more credits, only while payments are on", () => {
-    expect(chip(a({ used: 5 }))).toEqual({ kind: "out", label: "Get more credits", line: null, hollow: true });
+    expect(chip(a({ used: 5 }))).toEqual({ kind: "out", label: creditsCopy.chip.out, line: null, hollow: true });
   });
 
   it("at the paid limit with credits banked is NOT out: the banked count stands", () => {

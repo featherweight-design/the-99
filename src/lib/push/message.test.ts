@@ -24,11 +24,11 @@ describe("one item of each kind (the handoff's table)", () => {
 
   it("new set: the set's page", () => {
     const m = toMessage([set("eoe", "Edge of Eternities")]);
-    expect(m).toMatchObject({ title: "Edge of Eternities is out", body: "281 cards. See the set.", route: "/collection/sets/eoe", tag: "new-set", keys: ["eoe"] });
+    expect(m).toMatchObject({ title: "Edge of Eternities is out", body: pushCopy.one.newSet.body(281), route: "/collection/sets/eoe", tag: "new-set", keys: ["eoe"] });
   });
   it("new set with no card count yet: still goes, without the figure", () => {
     const m = toMessage([{ ...set("eoe", "Edge of Eternities"), cards: null } as PushItem]);
-    expect(m).toMatchObject({ title: "Edge of Eternities is out", body: "See the set.", route: "/collection/sets/eoe" });
+    expect(m).toMatchObject({ title: "Edge of Eternities is out", body: pushCopy.one.newSet.body(null), route: "/collection/sets/eoe" });
   });
   it("new precon: the precon's page", () => {
     expect(toMessage([precon("ci", "Counter Intelligence")])).toMatchObject({ title: "Counter Intelligence precon is out", body: "You own 31 of its 100 cards.", route: "/decks/precons/ci" });
@@ -156,7 +156,7 @@ describe("a seat notice (Rule 0 revisions, item 6)", () => {
       const m = wide("Colin", "x".repeat(12));
       expect(len(m.title)).toBe(40);
       expect(m.title).toBe(`Colin seated you at ${"x".repeat(12)}’s table`);
-      expect(m.body).toBe("Pick your deck at the table.");
+      expect(m.body).toBe(pushCopy.one.seat.body(null));
     });
     it("splits at 41: the pod and deck move to the body", () => {
       const m = wide("Colin", "x".repeat(13), "Atraxa");
@@ -230,6 +230,6 @@ describe("a game to log (log reminder, PR 3)", () => {
   it("names no winners for three or more games", () => {
     const m = toMessage([log(T1, 1), log(T1, 2), log(T1, 3)]);
     expect(m.title).toBe("3 games at Thursday night’s table");
-    expect(m.body).toBe("Log them: every seat is filled in.");
+    expect(m.body).toBe(pushCopy.one.log.many.body({ kind: "won", winner: "Colin" }, null));
   });
 });
