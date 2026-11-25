@@ -5,6 +5,9 @@
 //   --dry     validate and print the old -> new list against origin/main; push nothing
 //   --no-pr   stop after the commit (the worktree and branch stay for you)
 //   --local [--root <dir>]   apply in place to a tree you name, no git (what the tests and a hand edit use)
+//   --branch copy-edit-YYYYMMDD-HHMMSS   name the branch (the copy editor's workflow does, so the editor can find the PR)
+// Only `git fetch`, `git push` and `gh pr create` see a token in the environment (GH_TOKEN, GITHUB_TOKEN, COPY_EDIT_PR_TOKEN,
+// GIT_CONFIG_COUNT/KEY_0/VALUE_0): the install, typecheck, lint and commit hooks run with those removed, so no dependency script can read one.
 // A bad row (placeholders, em dash, banned word, stale sheet) fails the whole import and leaves nothing behind.
 import { execFileSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
@@ -12,14 +15,17 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { branchName, commitMessage, prBody } from "./lib/copy-sheet/land.mjs";
 import { applySheet } from "./lib/copy-sheet/sheet.mjs";
+import { EDIT_BRANCH_RE } from "./lib/copy-sheet/submission.mjs";
 import { rewriteTests, testsSection, type TestRewrite } from "./lib/copy-sheet/test-rewrite.mjs";
 
 const args = process.argv.slice(2);
 const flag = (f: string) => args.includes(f);
 const rootAt = args.indexOf("--root");
-const csvPath = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--root");
-if (!csvPath) {
-  console.error("usage: pnpm copy:import <edited.csv> [--dry] [--no-pr] | --local [--root <dir>]");
+const branchAt = args.indexOf("--branch");
+const givenBranch = branchAt >= 0 ? args[branchAt + 1] : undefined;
+const csvPath = args.find((a, i) => !a.startsWith("--") && args[i - 1] !== "--root" && args[i - 1] !== "--branch");
+if (!csvPath || (branchAt >= 0 && !EDIT_BRANCH_RE.test(givenBranch ?? ""))) {
+  console.error("usage: pnpm copy:import <edited.csv> [--dry] [--no-pr] [--branch copy-edit-YYYYMMDD-HHMMSS] | --local [--root <dir>]");
   process.exit(2);
 }
 const csv = readFileSync(resolve(csvPath), "utf8");
@@ -29,8 +35,14 @@ function fail(e: unknown): never {
   process.exit(1);
 }
 
+// `env -u` rather than a filtered copy of process.env: the flag-read guard (rightly) refuses code that hands the environment on.
+const UNSET = ["GH_TOKEN", "GITHUB_TOKEN", "COPY_EDIT_PR_TOKEN", "GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0"].flatMap((k) => ["-u", k]);
+
+/** Runs a command with no token variable in its environment. */
 const run = (cmd: string, a: string[], cwd: string, stdio: "pipe" | "inherit" = "pipe") =>
-  execFileSync(cmd, a, { cwd, stdio, encoding: "utf8" })?.toString().trim() ?? "";
+  execFileSync("env", [...UNSET, cmd, ...a], { cwd, stdio, encoding: "utf8" })?.toString().trim() ?? "";
+/** Runs `git fetch`, `git push` or `gh`, the only commands that need the token. */
+const runAuth = (cmd: string, a: string[], cwd: string) => execFileSync(cmd, a, { cwd, stdio: "pipe", encoding: "utf8" })?.toString().trim() ?? "";
 
 function printChanges(changes: { key: string; from: string; to: string }[]) {
   for (const c of changes) console.log(`${c.key}\n  - ${c.from}\n  + ${c.to}`);
@@ -94,8 +106,8 @@ for (const sig of ["SIGINT", "SIGTERM"] as const) {
 try {
   const common = resolve(here, run("git", ["rev-parse", "--git-common-dir"], here));
   repo = common.endsWith(".git") ? resolve(common, "..") : common;
-  run("git", ["fetch", "-q", "origin", "main"], repo);
-  branch = branchName(new Date());
+  runAuth("git", ["fetch", "-q", "origin", "main"], repo);
+  branch = givenBranch ?? branchName(new Date());
   tree = join(repo, ".worktrees", branch);
   if (existsSync(tree)) throw new Error(`${tree} already exists: one import a minute; wait or remove it`);
   run("git", ["worktree", "add", "-q", "-b", branch, tree, "origin/main"], repo);
@@ -129,10 +141,10 @@ try {
     rmSync(scratch, { recursive: true, force: true });
     process.exit(0);
   }
-  run("git", ["push", "-q", "-u", "origin", branch], tree);
+  runAuth("git", ["push", "-q", "-u", "origin", branch], tree);
   pushed = true;
   writeFileSync(join(scratch, "b.md"), prBody(changes, names, tests));
-  const url = run("gh", ["pr", "create", "--title", `Copy sheet: ${changes.length} wording change${changes.length === 1 ? "" : "s"}`, "--body-file", join(scratch, "b.md")], tree);
+  const url = runAuth("gh", ["pr", "create", "--title", `Copy sheet: ${changes.length} wording change${changes.length === 1 ? "" : "s"}`, "--body-file", join(scratch, "b.md")], tree);
   console.log(`Opened ${url}. Copy-review the old -> new list in the body before it lands.`);
   cleanup();
 } catch (e) {

@@ -171,6 +171,11 @@ export const RATE_RULES = {
    * quickly is tens a minute, so 120 a minute leaves room for that and bounds a scripted loop. Over the limit the fact is left off.
    */
   "upgrade-set-bracket": { limit: 120, windowMs: 60_000 },
+  /**
+   * Submitting the on-page copy editor's edits (admin on staging only): each one starts a workflow that opens a pull request, so ONE a
+   * minute per admin, ENFORCED. An honest submit is a batch of edits sent once; the editor holds the rest in the tray.
+   */
+  "copy-edit-submit": { limit: 1, windowMs: 60_000 },
 } as const satisfies Record<string, RateRule>;
 
 export type RateBucket = keyof typeof RATE_RULES;
