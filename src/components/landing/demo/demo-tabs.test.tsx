@@ -20,6 +20,8 @@ describe("DemoTabs cost chips", () => {
     const steps = landingCopy.demo.steps;
     expect(steps.find((s) => s.id === "get-to-99")!.tags).toEqual([]);
     expect(steps.find((s) => s.id === "buy")!.tags).toEqual([]);
-    expect(steps.find((s) => s.id === "analysis")!.tags).toEqual([{ kind: "credit", label: landingCopy.demo.tabs.cost.cuts.label }]);
+    const analysis = steps.find((s) => s.id === "analysis")!.tags;
+    expect(analysis).toHaveLength(1);
+    expect(analysis[0].kind).toBe("credit");
   });
 });

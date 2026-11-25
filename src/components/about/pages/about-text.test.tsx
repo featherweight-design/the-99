@@ -6,7 +6,6 @@ import { ABOUT_RULES, ABOUT_SECTIONS } from "../../../lib/copy/about-pages";
 import { AboutText } from "./about-text";
 import { PROOF_ENVS, aboutTextSnapshot } from "./about-text.fixture";
 import before from "./about-text.snapshot.json";
-import { exportLinkOutCopy } from "../../../lib/copy/decks-builder";
 
 /** The renderer About's labels and sub lines use. */
 const render = (text: string) => renderToStaticMarkup(createElement(AboutText, { text }));
@@ -27,7 +26,7 @@ describe("About's words, rendered (Small items 7, item 6, F1)", () => {
 
   it("changes the two cart units exactly as intended", () => {
     const now = aboutTextSnapshot(render);
-    const total = ` is the selected decks’ missing cards at single-copy prices. ${B(exportLinkOutCopy.shopping)} sends them there.`;
+    const total = ` is the selected decks’ missing cards at single-copy prices. ${B(ABOUT_SECTIONS.flatMap((s) => s.labels).find((l) => l.region === "shopping/all-decks/total")!.rest.split("**")[1])} sends them there.`;
     expect(now["on|unit:shopping/all-decks/total"]).toBe(`The total|${total}`);
     expect(now["cart|unit:shopping/all-decks/total"]).toBe(`The total|${total}`);
     // Spare requests are always on (SOCIAL_FRIENDS_ENABLED retired), so both readers name By friend.

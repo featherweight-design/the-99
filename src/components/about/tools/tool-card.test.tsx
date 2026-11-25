@@ -3,7 +3,6 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 import type { ToolCardModel } from "../../../lib/discovery/showcase";
 import { TOOL_DOOR, TOOL_PRESS, ToolCard } from "./tool-card";
-import { tuningHubCopy } from "../../../lib/copy/tuning-hub";
 import { showcaseCopy } from "../../../lib/copy/discovery";
 import { ABOUT_PAGE_STRINGS } from "../../../lib/copy/about-pages";
 
@@ -102,7 +101,7 @@ describe("ToolCard: one press per card", () => {
   });
 
   it("the Where line lights the tool's label (Show me's target) and sits before the button", () => {
-    const c = draw({ kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 }, { note: "Reads your last commit", credit: tuningHubCopy.history.tier.credit });
+    const c = draw({ kind: "deck", href: "/decks/d1", deck: "Kinnan", more: 0 }, { note: "Reads your last commit", credit: "Fixture tool1 credit" });
     const where = c.querySelector<HTMLAnchorElement>("[data-tool-card-where]")!;
     expect(where.getAttribute("href")).toBe(SHOW_ME);
     expect(where.textContent).toBe(ABOUT_PAGE_STRINGS.toolWhere);
