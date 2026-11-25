@@ -8,7 +8,8 @@ const RULE = "@typescript-eslint/no-unused-vars";
 const eslint = new ESLint({ cwd: process.cwd() });
 const optionsFor = async (file: string) => ((await eslint.calculateConfigForFile(file)) as { rules: Record<string, unknown[]> }).rules[RULE];
 
-describe("the unused-argument exemption", () => {
+// Loading the whole flat config is slow on a cold runner.
+describe("the unused-argument exemption", { timeout: 60_000 }, () => {
   it("applies to copy files, and differs from the shared rule only in args", async () => {
     const [copyLevel, copy] = (await optionsFor("src/lib/copy/landing.ts")) as [unknown, Record<string, unknown>];
     const [baseLevel, base] = (await optionsFor("src/lib/copy-editor/edits.ts")) as [unknown, Record<string, unknown>];

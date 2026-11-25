@@ -195,7 +195,7 @@ function Body({ rows, row, edits, onSave, onClose }: { rows: readonly EditorRow[
             <FillField label={t.fieldLabel} removeLabel={t.removeFill} value={values[r.key]} invalid={c.problems.length > 0} autoFocus={i === 0} onChange={(next) => setValues((v) => ({ ...v, [r.key]: next }))} />
             <div role="status" className="mt-1 text-[12px]">
               <div className="text-[color:var(--fg-muted)]">{t.words(c.words, c.cap)}</div>
-              {r.placeholders.length > 0 && <div className="text-[color:var(--fg-muted)]">{t.fill}</div>}
+              {/\{[^{}]+\}/.test(values[r.key] ?? "") && <div className="text-[color:var(--fg-muted)]">{t.fill}</div>}
               {c.problems.map((p) => (
                 <div key={p} className="text-[color:var(--danger)]">
                   {sentence(p)}.

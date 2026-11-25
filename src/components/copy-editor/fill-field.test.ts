@@ -33,6 +33,17 @@ describe("chipAtCaret", () => {
     expect(chipAtCaret(host, "forward")).toBe(chip);
     expect(chipAtCaret(host, "back")).toBeNull();
   });
+  it("looks past empty text nodes a remove or an insert leaves between the caret and the chip", () => {
+    const host = field(HTML);
+    const chip = host.childNodes[1];
+    const empty = document.createTextNode("");
+    chip.after(empty, document.createTextNode(""));
+    caret(host.childNodes[3], 0);
+    expect(chipAtCaret(host, "back")).toBe(chip);
+    caret(host, 3);
+    expect(chipAtCaret(host, "back")).toBe(chip);
+    expect(empty.data).toBe("");
+  });
   it("leaves the caret mid-text alone", () => {
     const host = field(HTML);
     caret(host.childNodes[2], 2);

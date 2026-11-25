@@ -47,16 +47,14 @@ const SENTRY_LOGGER = [
 // A copy leaf's parameters are the fill-ins its text may use, and an editor may drop any of them from the text (the copy
 // sheet and the on-page editor allow it), so an unused parameter in a copy file is not a mistake. Only there:
 // `scripts/lib/copy-sheet/lint-scope.test.mts` fails if the exemption reaches any other file.
-// The options repeat the shared preset's (which the package does not export); the test fails if they drift.
+// Every other option is read from the shared preset, so a change there reaches copy files too.
+const UNUSED = "@typescript-eslint/no-unused-vars";
+const presetUnused = next.findLast((c) => c.rules?.[UNUSED])?.rules[UNUSED];
+if (!Array.isArray(presetUnused) || typeof presetUnused[1] !== "object") throw new Error(`eslint.config.mjs: the shared preset no longer sets ${UNUSED} with options`);
 const copyArgs = {
   files: ["src/lib/copy/**/*.ts"],
   ignores: ["src/lib/copy/**/*.test.ts"],
-  rules: {
-    "@typescript-eslint/no-unused-vars": [
-      "error",
-      { args: "none", argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_", varsIgnorePattern: "^_", destructuredArrayIgnorePattern: "^_", ignoreRestSiblings: true },
-    ],
-  },
+  rules: { [UNUSED]: [presetUnused[0], { ...presetUnused[1], args: "none" }] },
 };
 
 const eslintConfig = defineConfig([

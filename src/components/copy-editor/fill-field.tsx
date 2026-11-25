@@ -60,6 +60,8 @@ export function chipAtCaret(host: HTMLElement, dir: "back" | "forward"): HTMLEle
     if (dir === "back" ? o > 0 : o < len) return null;
     node = dir === "back" ? c.previousSibling : c.nextSibling;
   } else return null;
+  // A remove or an insert can leave empty text nodes between the caret and a chip; they hold nothing to delete.
+  while (node && node.nodeType === Node.TEXT_NODE && (node as Text).data === "") node = dir === "back" ? node.previousSibling : node.nextSibling;
   return node instanceof HTMLElement && node.hasAttribute(CHIP) ? node : null;
 }
 
@@ -159,9 +161,12 @@ export function FillField({
         remove(c);
       }}
       onMouseDown={(e) => {
-        // The ✕ acts on press, before the browser moves the caret into the chip or starts a drag.
-        const x = (e.target as HTMLElement).closest(`[${REMOVE}]`);
-        const c = x?.closest(`[${CHIP}]`);
+        // A press on the ✕ must not move the caret into the chip or start a drag; the click below removes it.
+        if ((e.target as HTMLElement).closest(`[${REMOVE}]`)) e.preventDefault();
+      }}
+      onClick={(e) => {
+        // On click, not mousedown, so a screen reader's activation (a click with no mousedown) removes the chip too.
+        const c = (e.target as HTMLElement).closest(`[${REMOVE}]`)?.closest(`[${CHIP}]`);
         if (!(c instanceof HTMLElement)) return;
         e.preventDefault();
         remove(c);
